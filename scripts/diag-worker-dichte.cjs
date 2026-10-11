@@ -460,7 +460,7 @@ function realismus() {
         };
         const taeter = {
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
-            flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: Ebene-1-Bett folgt dem Hang statt S = ks·A^−θ)",
+            flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
             hammond: "keine Ebenen (RELIEF_KNOTEN hoch im Tiefland, Aue F zu schmal)",
             dorfplaetze: "kein ebener Talboden (Aue F, AUE_QUER)",
             schicht: ort
@@ -483,7 +483,7 @@ function realismus() {
             stoerung: stoer && { senken1mJeKm2: stoer.senken1mJeKm2, minimaJeKm2: stoer.minimaJeKm2 },
         });
         console.log(
-            `\n  ${saat}: ${us.toFixed(2)} µs/Spalte · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.zellen} Zellen) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
+            `\n  ${saat}: ${us.toFixed(2)} µs/Spalte · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.klassen} Klassen aus ${st.flint.zellen} Zellen; je Zelle θ ${st.flint.thetaZelle} R² ${st.flint.r2Zelle}) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
         );
         console.log(
             `    Schicht-Ort ${ort ? `(${Math.round(ox)}, ${Math.round(oz)})` : "— (kein Schicht-Term)"}: Kliff≥60° ${(100 * schicht.kliff).toFixed(1)} % · Schutt 30–40° ${(100 * schicht.schutt).toFixed(1)} % (Ruhewinkel 33–37° ${(100 * schicht.ruhe).toFixed(1)} %) · Pediment 0,5–7° ${(100 * schicht.pediment).toFixed(1)} %`

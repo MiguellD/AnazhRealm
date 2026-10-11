@@ -834,12 +834,14 @@
     // Indizes benannter Seen (eine Senke, die einen trägt, zählt nicht). Die Zahlen und ihre Korridore: Nordstern §4.1.
     //   senken1mJeKm2  geschlossene Senken tiefer als 1 m (Komponenten der Füll-Tiefe > 1 m) je km² Land
     //   minimaJeKm2    strikte lokale Minima je km² (die K09a-Zahl 32,9; beliebig flach)
-    //   flint          θ und R² der Regression log S ~ log A über Gerinne-Zellen (A ≥ 0,1 km²)
+    //   flint          θ und R² der Regression log S ~ log A über die Flächen-Klassen der Gerinne-Zellen (A ≥ 0,1 km²;
+    //                  Median je 0,1 Dekaden) — thetaZelle/r2Zelle: dieselbe Regression über die Einzel-Zellen
     //   hammond        1-km²-Fenster (gleitend 250 m), sanft = mehr als die Hälfte der Zellen mit Hang < 8 %
     //   dorfplaetze    120-m-Plätze (5×5 Zellen bei 30 m): jede Zelle Hang ≤ 8 %, Spanne ≤ 3 m, trocken; je 300 m einer
     const LINSE = Object.freeze({
         senkeTiefe: 1,
         flintAMin: 1e5,
+        flintKlasseMin: 5,
         hangSanft: 0.08,
         platzSeite: 120,
         platzSpanne: 3,
@@ -1086,6 +1088,41 @@
             sxx += (lx[i] - mx) ** 2;
             syy += (ly[i] - my) ** 2;
         }
+        // Die tragende Regression (TopoToolbox `slopearea`): der Median des Gefälles je Flächen-Klasse (0,1 Dekaden,
+        // ≥ 5 Zellen) — die Einzel-Zelle streut auf dem 30-m-Raster um den Faktor 10 (die D8-Bahn pendelt über Aue
+        // und Flanke), der Zusammenhang S ~ A^−θ lebt in der Klasse.
+        const klassen = new Map();
+        for (let i = 0; i < lx.length; i++) {
+            const b = Math.floor(lx[i] / (0.1 * Math.LN10));
+            let c = klassen.get(b);
+            if (!c) klassen.set(b, (c = { x: 0, y: [] }));
+            c.x += lx[i];
+            c.y.push(ly[i]);
+        }
+        let bn = 0;
+        let bmx = 0;
+        let bmy = 0;
+        const bx = [];
+        const by = [];
+        for (const c of klassen.values()) {
+            if (c.y.length < LINSE.flintKlasseMin) continue;
+            c.y.sort((a, b) => a - b);
+            bx.push(c.x / c.y.length);
+            by.push(c.y[c.y.length >> 1]);
+            bmx += bx[bn];
+            bmy += by[bn];
+            bn++;
+        }
+        bmx /= bn || 1;
+        bmy /= bn || 1;
+        let bxy = 0;
+        let bxx = 0;
+        let byy = 0;
+        for (let i = 0; i < bn; i++) {
+            bxy += (bx[i] - bmx) * (by[i] - bmy);
+            bxx += (bx[i] - bmx) ** 2;
+            byy += (by[i] - bmy) ** 2;
+        }
         // Hammond-Fenster (1 km², gleitend)
         const win = Math.round(LINSE.fensterSeite / step);
         const sh = Math.max(1, Math.round(LINSE.fensterSchritt / step));
@@ -1161,8 +1198,11 @@
             anteilSenkeTiefer1m: land ? r3(d1 / land) : null,
             anteilSenkeTiefer5m: land ? r3(d5 / land) : null,
             flint: {
-                theta: lx.length > 2 ? r3(-sxy / sxx) : null,
-                r2: lx.length > 2 ? r3((sxy * sxy) / (sxx * syy)) : null,
+                theta: bn > 3 ? r3(-bxy / bxx) : null,
+                r2: bn > 3 ? r3((bxy * bxy) / (bxx * byy)) : null,
+                klassen: bn,
+                thetaZelle: lx.length > 2 ? r3(-sxy / sxx) : null,
+                r2Zelle: lx.length > 2 ? r3((sxy * sxy) / (sxx * syy)) : null,
                 zellen: lx.length,
             },
             hammond: { fenster: fen, sanft, spanneP50m: spannen.length ? Math.round(10 * q(spannen, 0.5)) / 10 : null },
