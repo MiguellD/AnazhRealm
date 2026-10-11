@@ -1794,6 +1794,20 @@
       "laeufe": [
         "38096257646/1"
       ]
+    },
+    "Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)": {
+      "s": 175,
+      "n": 0,
+      "lauf": "npm run gate:kamera-laub",
+      "geschaetzt": "lokal 116 s (Radeon-Klon, headless, 11.10.) x 1,5 Läufer-Faktor",
+      "laeufe": []
+    },
+    "Die Kamera-Leib-Linse (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)": {
+      "s": 130,
+      "n": 0,
+      "lauf": "npm run gate:kamera-leib",
+      "geschaetzt": "lokal 85 s (Radeon-Klon, headless, 11.10.) x 1,5 Läufer-Faktor",
+      "laeufe": []
     }
   },
   "vorher": {

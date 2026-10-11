@@ -105,6 +105,8 @@ function nahDeckungInSeite(o) {
         obj.geometry.attributes &&
         obj.geometry.attributes.position &&
         !(obj.material && obj.material.visible === false) &&
+        // was die Kamera zeichnet: der Schatten-Zwilling (SHADOW_TWIN_LAYER, Stoff „schatten") wirft nur in den Kaskaden
+        obj.layers.test(st.camera.layers) &&
         !obj.isSkinnedMesh &&
         obj.name !== "himmel" &&
         obj.name !== "wasserSatz" &&
