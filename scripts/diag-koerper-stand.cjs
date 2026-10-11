@@ -176,7 +176,16 @@ async function proben() {
                 if (sol && inLuft) {
                     if (luftOben - y >= 3.0) {
                         const boden = r._fieldSurfaceBelow(x, y + 0.5, z, 2);
-                        if (Number.isFinite(boden) && top - boden > 6) hoehle = { x, z, top, boden };
+                        // ein tragender Höhlen-Boden: ≥ 1,5 m Fels darunter und derselbe Boden 1,5 m weiter (dort steht
+                        // das Tier) — seit K16 liegen die Höhlen 16 m und tiefer, ihre Böden sind Rippen und Bänder: auf
+                        // einer 0,3-m-Rippe sank die Kapsel 2,2 m durch, die Tier-Probe fand keinen Boden (CI 11.10.)
+                        const b2 = Number.isFinite(boden) ? r._fieldSurfaceBelow(x + 1.5, boden + 1, z, 3) : null;
+                        const traegt =
+                            Number.isFinite(boden) &&
+                            r._fieldSolid(x, boden - 1.5, z) &&
+                            Number.isFinite(b2) &&
+                            Math.abs(b2 - boden) <= 0.6;
+                        if (traegt && top - boden > 6) hoehle = { x, z, top, boden };
                     }
                     break;
                 }

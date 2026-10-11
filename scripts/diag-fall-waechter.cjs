@@ -660,13 +660,17 @@ async function probe(K) {
             }
         return out;
     };
-    // ── O1 DER WAGEN UNTER DEM ÜBERHANG (Spaltgrund −900,6/−976,1)
-    const O1 = { x: -900.6, z: -976.1 };
+    // ── O1 DER WAGEN UNTER DEM ÜBERHANG — am Prüf-Spalt (`__pruefSpalt`, scripts/lib/orte-des-gesetzes.cjs): seit die
+    // Canyon-Maske fiel (K16), trägt die Welt keinen Spalt und keinen Überhang mehr (der feste Spaltgrund −900,6/−976,1 lag
+    // unter freiem Himmel, Grund Infinity); der Spalt wird mit dem Verb des Spielers gegraben, sein Rand hängt über.
+    const PS = window.__pruefSpalt({ nahe: [-904, -975] });
+    if (!PS || !PS.ueberhang || !PS.rand) throw new Error("kein Prüf-Spalt (keine trockene Ebene im Umkreis)");
+    const O1 = { x: PS.ueberhang.x, z: PS.ueberhang.z };
     const o1 = async (name) => {
-        await einschwingen(-904, -975);
+        await einschwingen(PS.rand.x - 4, PS.rand.z);
         raeumen(O1.x, O1.z, 30);
-        const grund = grundUnter(O1.x, 20, O1.z);
-        if (!Number.isFinite(grund) || grund > 18 || dachAn(O1.x, O1.z) - grund < 8)
+        const grund = grundUnter(O1.x, PS.ueberhang.grund + 1, O1.z);
+        if (!Number.isFinite(grund) || dachAn(O1.x, O1.z) - grund < 8)
             return {
                 name,
                 fehler: `kein Überhang an ${ort(O1.x, O1.z)} (Grund ${grund}, Oberkante ${dachAn(O1.x, O1.z)})`,
@@ -709,12 +713,12 @@ async function probe(K) {
     // ── O2 DIE SCHAU-FAHRT über die Spaltkante
     {
         const name = "O2 Schau-Fahrt über die Spaltkante";
-        const S = { x: -912, z: -975 };
+        const S = { x: PS.rand.x - 8, z: PS.rand.z };
         const grund = grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z);
         const e = await wagen(S.x, S.z, grund, Math.PI / 2);
         if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
         else {
-            raeumen(-900, -975, 40);
+            raeumen(PS.x0, PS.rand.z, 40);
             for (let i = 0; i < 12; i++) takt();
             st.playerVel.setValue(10.6, 0, 0);
             if (e._fahr) e._fahr.vlong = 10.6;
@@ -730,8 +734,12 @@ async function probe(K) {
             weg(e);
         }
     }
-    // ── O3 DIE HÖHLE der Boden-Funktion
-    const O3 = { x: -875.5, z: -1229.4 };
+    // ── O3 DIE HÖHLE — der Stollen des Prüf-Spalts (`__pruefSpalt`, 5 m breit, 5 m hoch, 10 m Fels darüber): seit K16
+    // liegen die natürlichen Höhlen 16 m und tiefer, versiegelt, ihre Böden Rippen und Bänder — an der alten Höhle der
+    // Schau (−875,5/−1229,4) passte der Wagen nicht in den Gang (Zensus: 3 GT 29,5–31,8 m aufs Dach, im Fels gesetzt) und
+    // der Wolf stand auf einer Rippe 0,95 m über dem Grund seiner Mitte. Die Schau prüft den Leib in einer Höhle, in die
+    // er passt — wie der Spieler sie gräbt.
+    const O3 = { x: PS.stollen.x1 + 10, z: PS.stollen.z + 1 };
     await einschwingen(O3.x, O3.z);
     raeumen(O3.x, O3.z, 40);
     // die Höhle am Ort der Schau: die nächste Spalte mit ≥ 4 m Fels über ≥ 3 m Luft (das Dichtefeld des Orts trägt den
@@ -1134,6 +1142,7 @@ async function probe(K) {
         args: ["--no-sandbox", "--disable-gpu"],
     });
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     page.setDefaultTimeout(880000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));

@@ -578,8 +578,12 @@ async function probe(arg) {
                 for (let dx = -84; dx <= 84; dx += 4) if (dx * dx + dz * dz <= 84 * 84 && nass(x + dx, z + dz)) return false;
             return true;
         };
+        // Nie auf der Lichtung der Genesis-Plattform (40 m): dort wächst nach dem Gesetz nichts (`_naturSetzen`), die Birke
+        // des Absenders fiele als Lichtung statt als Ort — seit K16 ist die Heimat trocken und wäre der erste Kandidat.
+        const g0 = r._genesisMitte();
         let ort = null;
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
+            if (Math.hypot(x - g0.x, z - g0.z) < 40) continue;
             if (r._landAt(x, z, 1) && trockenUm(x, z)) {
                 ort = { x, z };
                 break;

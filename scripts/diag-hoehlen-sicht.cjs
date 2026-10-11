@@ -538,6 +538,7 @@ const server = http.createServer((req, res) => {
                 .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     await page.evaluateOnNewDocument(installHoehlenStrahl);
+    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     let befund = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -545,8 +546,18 @@ const server = http.createServer((req, res) => {
             timeout: 120000,
         });
         befund = await page.evaluate(async (ORTE) => {
-            const MESS = ORTE.mess,
-                HINAUS = ORTE.hinaus;
+            // DER PRÜF-SPALT (`__pruefSpalt`, scripts/lib/orte-des-gesetzes.cjs): seit die Canyon-Maske fiel (K16), bleibt
+            // jede Höhlen-Decke 16 m unter dem Boden — die Welt trägt keine Mündung mehr (Mündung null, das Auge „hinaus“ nicht
+            // in Höhlen-Luft). Der Spalt und sein Stollen werden mit dem Verb des Spielers gegraben, an der nächsten Ebene zur
+            // Mess-Wiese; die Blicke Wiese und Hang stehen 24 m westlich des Spalts, der Blick hinaus im Stollen.
+            const PS = window.__pruefSpalt({ nahe: [ORTE.mess.x, ORTE.mess.z] });
+            if (!PS) throw new Error("kein Prüf-Spalt (keine trockene Ebene im Umkreis der Mess-Wiese)");
+            const MESS = { x: PS.x0 - 24, z: PS.z0 },
+                HINAUS = {
+                    spieler: [PS.x0 - 26, PS.S - 14, PS.z0],
+                    auge: [PS.x0 - 26, PS.S - 12.5, PS.z0],
+                    ziel: [PS.x0 + 74, PS.S - 18.5, PS.z0],
+                };
             const r = window.anazhRealm,
                 st = r.state,
                 T = window.THREE;

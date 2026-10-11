@@ -885,13 +885,20 @@ async function probeLeben(expected) {
         const ws = r._atlasWaterLevelAt(a, b, hh(a, b)); // der Spiegel des Gesetzes (wie gate:vehicle-drive)
         return Number.isFinite(ws) && ws > hh(a, b) - 0.3;
     };
-    // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x.
+    // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x — auf der nächsten
+    // Ebene des Gesetzes zur Mess-Wiese (`__ebenOrt`, scripts/lib/orte-des-gesetzes.cjs): seit der Landform im Kern (K16)
+    // liegt die Mess-Wiese an einem Hang (Spanne 34,8 m in ± 40 m), Gasse und Strecke lagen schräg (L8 der Bär 0,07 m, L9 die
+    // Haut des Reiters durch die Tür). Die Strecke beginnt 36 m vor der Mitte der Ebene; Hang, Klippe, Querhang und Wasser
+    // sucht die Probe weiter um die Mess-Wiese (`mo`).
     const mo = expected.messort;
+    const eb = window.__ebenOrt({ nahe: mo, halb: 40, spanne: 3 });
+    const mf = eb ? [eb.x - 36, eb.z] : mo;
+    res.ebene = eb;
     let start = null;
     for (let ring = 0; ring <= 4; ring++)
         for (let k = 0; k < (ring ? 8 : 1); k++) {
-            const cx = mo[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
-            const cz = mo[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
+            const cx = mf[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
+            const cz = mf[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
             let trocken = true;
             let stufe = 0;
             for (const dz of [-3, 0, 3]) {
@@ -1498,8 +1505,8 @@ async function probeLeben(expected) {
             };
             for (let ring = 0; ring <= 6; ring++)
                 for (let k = 0; k < (ring ? 12 : 1); k++) {
-                    const x = mo[0] + Math.cos((k * Math.PI) / 6) * ring * 24;
-                    const zz = mo[1] + Math.sin((k * Math.PI) / 6) * ring * 24;
+                    const x = mf[0] + Math.cos((k * Math.PI) / 6) * ring * 24;
+                    const zz = mf[1] + Math.sin((k * Math.PI) / 6) * ring * 24;
                     for (let d = 0; d < 8; d++) {
                         const a = (d * Math.PI) / 4;
                         if (frei(x, zz, Math.sin(a), Math.cos(a))) return { x, z: zz, fahrt: a };
@@ -1946,10 +1953,16 @@ async function probeLeben(expected) {
         );
         // L2 DIE SPALTKANTE: 11,4 m/s in +x auf den Rand des 23-m-Spalts (−904/−975) — der Wagen stand in EINEM Schritt (11,44 →
         // 0,19 m/s), Gas danach 0,00 m, der Bug über der Kante. Soll: er fährt über die Kante und FÄLLT.
-        S.spalt = await lebenFahrt({ ort: [-904, -975], start: [-912, -975], gier: Math.PI / 2, v0: 11.4 }, 150);
+        // Der Spalt ist der Prüf-Spalt (`__pruefSpalt`, gegraben mit dem Verb des Spielers): seit die Canyon-Maske fiel (K16),
+        // trägt die Welt keinen Spalt mehr — der feste Ort lag an einem Hang (Rand 67,7 m, Grund 63,2 m, vakuös).
+        const PS = window.__pruefSpalt({ nahe: expected.messort });
+        S.spalt = PS && PS.rand
+            ? await lebenFahrt({ ort: [PS.rand.x, PS.rand.z], start: [PS.rand.x - 8, PS.rand.z], gier: Math.PI / 2, v0: 11.4 }, 150)
+            : null;
         if (S.spalt) {
-            S.spalt.rand = hh(-904, -975);
-            S.spalt.grund = Math.min(hh(-898, -975), hh(-897, -975));
+            S.spalt.rand = hh(PS.rand.x, PS.rand.z);
+            S.spalt.grund = Math.min(hh(PS.x0, PS.rand.z), hh(PS.x0 + 1, PS.rand.z));
+            S.spalt.ort = [PS.rand.x, PS.rand.z];
         }
         // L3–L5 DER STOSS (Leben-Schau 07.10.: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je in
         // EINEM Frame, kein Rückprall, der Gegner bewegt sich nicht, keine Rückmeldung): der GT fährt mit W aus 9 m Anlauf
@@ -3373,6 +3386,7 @@ async function probeLeben(expected) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: softwareWebGpuArgs() });
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;
@@ -3543,7 +3557,7 @@ async function probeLeben(expected) {
     );
     const L2 = S.spalt;
     check(
-        "L2 Spaltkante (−904/−975, 11,4 m/s in +x): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
+        "L2 Spaltkante (am Prüf-Spalt, 11,4 m/s in +x): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
         !hat("kern") && !hat("spalt"),
         L2
             ? `Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · bis x ${L2.xMax.toFixed(2)} · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`

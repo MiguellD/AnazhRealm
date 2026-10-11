@@ -182,6 +182,106 @@ function orteAn() {
         window.__wasserOrtCache[schluessel] = ort;
         return { ...ort, hydro: r._hydroFor(ort.x, ort.z) };
     };
+    // DER PRÜF-SPALT (K16b, Klasse H): seit die Canyon-Maske fiel (K16 1b98d609), bleibt jede Höhlen-Decke 16 m unter dem
+    // Boden — die Welt trägt keinen Spalt, keinen Überhang und keine Mündung mehr (im 5-km-Quadrat um den Ursprung fällt
+    // der Boden an 1 von 1,56 Mio. Stellen > 8 m auf 4 m). Die Proben, die einen Körper unter einem Überhang, über einer
+    // Spaltkante oder in einer Mündung prüfen, graben ihn mit dem Verb des Spielers (`carveVoxelSphere`, EINE Edit-Wahrheit
+    // für Feld, Gitter und Worker): ein Spalt längs z (Kugeln r 12, Mitte 10 m unter dem Rand — die Luft ist in der Tiefe
+    // breiter als oben, der Rand hängt über) und ein Stollen in die Westwand (Kugeln r 3,5, 13 m tief, 22 m lang — die
+    // Mündung, seine Luft liegt 10–15 m unter der Ebene, 5 m breit). Unter der Bühne liegt 20 m keine natürliche Höhle (die Decken beginnen 16 m unter dem Boden, 24 m fand sich in 640 m keine Ebene). Der Ort: die nächste trockene, ebene Fläche (± 24 m Spanne ≤ 4 m, kein Wasser in ± 36 m) zum Anker `nahe`.
+    // Rückgabe { x0, z0, S, rand, grund, ueberhang: { x, z, grund, dach }, muendung: { x, y, z, dx, dz }, stollen } | null.
+    // DIE EBENE (K16b, Klasse B): die nächste trockene, ebene Fläche zum Anker `nahe` — ± `halb` m (Raster 6 m) liegt die
+    // Spanne des Bodens ≤ `spanne` m, kein Wasser in ± (halb + 12) m. Seit der Landform im Kern liegt die Mess-Wiese
+    // (−900/−850) an einem Hang (Spanne 34,8 m in ± 40 m, Stufe bis 0,82 m je m): die Proben, die dort eine flache Gasse,
+    // eine Strecke oder einen Bauplatz suchten, fanden den Hang. Rückgabe { x, z, y } | null (Ringe zu 16 m, bis 640 m).
+    window.__ebenOrt = (opt) => {
+        const r = window.anazhRealm;
+        const nahe = (opt && opt.nahe) || [0, 0];
+        const halb = (opt && opt.halb) || 24;
+        const spanne = (opt && opt.spanne) || 4;
+        // `massiv` m: so tief liegt unter der Fläche (Raster 8 m) kein Hohlraum — der Grund einer Bühne, die gegraben wird
+        const massiv = (opt && opt.massiv) || 0;
+        const schluessel = ["eben", nahe.join(","), halb, spanne, massiv].join("@");
+        window.__wasserOrtCache = window.__wasserOrtCache || {};
+        if (window.__wasserOrtCache[schluessel]) return window.__wasserOrtCache[schluessel];
+        const top = (x, z) => r._voxelSurfaceY(x, z);
+        const eben = (x, z) => {
+            let lo = Infinity;
+            let hi = -Infinity;
+            for (let dz = -halb; dz <= halb; dz += 6)
+                for (let dx = -halb; dx <= halb; dx += 6) {
+                    const h = top(x + dx, z + dz);
+                    if (!Number.isFinite(h)) return null;
+                    lo = Math.min(lo, h);
+                    hi = Math.max(hi, h);
+                    if (hi - lo > spanne) return null;
+                }
+            for (let dz = -halb - 12; dz <= halb + 12; dz += 6)
+                for (let dx = -halb - 12; dx <= halb + 12; dx += 6) if (r._nassAt(x + dx, z + dz)) return null;
+            if (massiv > 0)
+                for (let dz = -halb - 8; dz <= halb + 8; dz += 8)
+                    for (let dx = -halb - 8; dx <= halb + 8; dx += 8) {
+                        const h = top(x + dx, z + dz);
+                        for (let y = h - 1; y > h - massiv; y -= 1) if (!r._fieldSolid(x + dx, y, z + dz)) return null;
+                    }
+            return top(x, z);
+        };
+        for (let ring = 0; ring <= 40; ring++)
+            for (let k = 0; k < (ring ? 8 * ring : 1); k++) {
+                const a = (k / (ring ? 8 * ring : 1)) * 2 * Math.PI;
+                const x = Math.round(nahe[0] + Math.cos(a) * ring * 16);
+                const z = Math.round(nahe[1] + Math.sin(a) * ring * 16);
+                const y = eben(x, z);
+                if (y !== null) return (window.__wasserOrtCache[schluessel] = { x, z, y });
+            }
+        return null;
+    };
+    window.__pruefSpalt = (opt) => {
+        const r = window.anazhRealm;
+        const nahe = (opt && opt.nahe) || [0, 0];
+        const schluessel = "spalt@" + nahe.join(",");
+        window.__wasserOrtCache = window.__wasserOrtCache || {};
+        if (window.__wasserOrtCache[schluessel]) return window.__wasserOrtCache[schluessel];
+        const top = (x, z) => r._voxelSurfaceY(x, z);
+        const e = window.__ebenOrt({ nahe, halb: 24, spanne: 4, massiv: 20 });
+        if (!e) return null;
+        const [x0, z0, S] = [e.x, e.z, e.y];
+        for (let z = z0 - 16; z <= z0 + 16; z += 4) r.carveVoxelSphere(x0, S - 10, z, 12);
+        for (let x = x0 - 8; x >= x0 - 30; x -= 3) r.carveVoxelSphere(x, S - 13, z0, 3.5);
+        const fest = (x, y, z) => r._fieldSolid(x, y, z);
+        // der Rand: längs +x der letzte Punkt vor dem Abbruch (> 3 m auf 0,5 m), z neben dem Stollen (z0 + 12)
+        const zr = z0 + 12;
+        let rand = null;
+        for (let x = x0 - 20; x < x0; x += 0.5) {
+            const a = top(x, zr);
+            const b = top(x + 0.5, zr);
+            if (Number.isFinite(a) && Number.isFinite(b) && a - b > 3) {
+                rand = { x, z: zr, y: a };
+                break;
+            }
+        }
+        const grund = { x: x0, z: zr, y: top(x0, zr) };
+        // der Überhang: die Säule hinter dem Rand, die unter Fels ≥ 3 m Luft über festem Grund trägt (zur Kante hin)
+        let ueberhang = null;
+        for (let x = rand ? rand.x - 6 : x0 - 14; x <= (rand ? rand.x : x0) && !ueberhang; x += 0.5) {
+            const dach = top(x, zr);
+            if (!Number.isFinite(dach)) continue;
+            let luftOben = null;
+            for (let y = dach - 0.25; y > dach - 30; y -= 0.25) {
+                const f = fest(x, y, zr);
+                if (!f && luftOben === null) luftOben = y;
+                if (f && luftOben !== null) {
+                    // die Luft des Spalts beginnt unter der Lippe (≤ 4 m), nie eine natürliche Höhle darunter
+                    if (luftOben - y >= 3 && luftOben > dach - 4) ueberhang = { x, z: zr, grund: y, dach };
+                    break;
+                }
+            }
+        }
+        const muendung = { x: x0 - 9, y: S - 13, z: z0, dx: 1, dz: 0 };
+        const aus = { x0, z0, S, rand, grund, ueberhang, muendung, stollen: { x1: x0 - 30, y: S - 13, z: z0 } };
+        window.__wasserOrtCache[schluessel] = aus;
+        return aus;
+    };
     // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
     // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
     window.__wasserChunk = (art) => {
