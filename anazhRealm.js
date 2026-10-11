@@ -18904,10 +18904,12 @@ class AnazhRealm {
             if (imStand && !L.an && !(L.tritt >= 0)) {
                 if (stand || !g.legInit) pfoteHier(K, L, fx, fz, BM);
                 else {
-                    L.x = fx;
-                    L.z = fz;
+                    // die Pfote setzt, wo die Landung in der Welt stand (unten), sonst auf das Ziel des Gesetzes
+                    L.x = L.land ? L.lx : fx;
+                    L.z = L.land ? L.lz : fz;
                     L.an = true;
                 }
+                L.land = false;
             }
             if (imStand && L.an && !(L.tritt >= 0) && !tritt) {
                 const fern = stand
@@ -18951,6 +18953,18 @@ class AnazhRealm {
                     fx = L.ax + (fx - L.ax) * w;
                     fz = L.az + (fz - L.az) * w;
                 }
+                // DIE LANDUNG STEHT IN DER WELT (K07): ab 0,85 π hält die sinkende Pfote den Punkt, an dem sie aufsetzt — das
+                // Ziel des Gesetzes lief dort mit dem Leib, wo Phase und Leib im Folgen voneinander abwichen (bis auf die
+                // Hälfte), und die Pfote strich die letzten 3 cm über den Boden (am Querhang 64 % des Wolf-Schlupfs)
+                if (!L.an && u >= 0.85 * Math.PI) {
+                    if (!L.land) {
+                        L.land = true;
+                        L.lx = fx;
+                        L.lz = fz;
+                    }
+                    fx = L.lx;
+                    fz = L.lz;
+                } else L.land = false;
             }
             const Z = ziele[i];
             Z[0] = fx;
