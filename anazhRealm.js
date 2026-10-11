@@ -38224,8 +38224,16 @@ class AnazhRealm {
             throw new Error("Fern-Ring: der Stoff braucht TSL und die Saison-Uniform (uSeasonMul)");
         const material = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 1, metalness: 0 });
         const krone = TSL.attribute("aKrone", "vec4");
+        // DAS KRONENDACH TRÄGT ERST JENSEITS DER BÄUME (K16, der Farbsprung): bis zum Karten-Horizont stehen die Bäume selbst
+        // (Mesh, Karte; `SCATTER.outerM`, ihr Rand dünnt über `KARTEN_HORIZONT_SAUM_M` aus) — dort zeigt der Ring den Boden
+        // wie jeder gebaute Chunk, und das Dach blendet über denselben Saum ein (Abstand zum Auge). Vorher malte er das Dach
+        // ab der Chunk-Kante: der gebaute Boden stand braun als Platte im grünen Teppich.
+        const dachRand = AnazhRealm.SCATTER.outerM;
+        const dachSaum = AnazhRealm.KARTEN_HORIZONT_SAUM_M;
+        const dachWeg = TSL.positionWorld.xz.sub(TSL.cameraPosition.xz).length();
+        const dach = krone.a.mul(TSL.smoothstep(TSL.float(dachRand - dachSaum), TSL.float(dachRand), dachWeg));
         material.colorNode = TSL.vec4(
-            TSL.mix(TSL.attribute("color", "vec3"), krone.rgb.mul(su.uSeasonMul), krone.a),
+            TSL.mix(TSL.attribute("color", "vec3"), krone.rgb.mul(su.uSeasonMul), dach),
             TSL.float(1.0)
         );
         const meshes = [];
@@ -38381,11 +38389,15 @@ class AnazhRealm {
         const d = Math.hypot(dx, dz) || 1;
         const rx = dx / d;
         const rz = dz / d;
+        // Isotrop über die längere Maschen-Seite × 1,5: eine Box nur so breit wie die Masche liess das 20-m-Mosaik quer zur
+        // 11-m-Teilung stehen (Werkbank 11.10., Makro 300 m: die Streifen blieben), die runde, weitere Box dämpft es (Rest im
+        // Mittelfeld offen: 3 × 3 Abtastungen auf λ 20 m bleiben teils kohärent).
+        const h = 1.5 * Math.max(fuss.ht, fuss.hr);
         const U = [-2 / 3, 0, 2 / 3];
         for (let i = 0; i < 3; i++)
             for (let j = 0; j < 3; j++) {
-                const ur = U[i] * fuss.hr;
-                const ut = U[j] * fuss.ht;
+                const ur = U[i] * h;
+                const ut = U[j] * h;
                 this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t);
                 const a = t[6];
                 for (let c = 0; c < 3; c++) {
