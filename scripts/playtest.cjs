@@ -18654,8 +18654,10 @@ async function checkBandV18275FoliageGrowth(ctx) {
         const span = r._voxelChunkConfig().span;
         const pcx = Math.floor(pm.position.x / span),
             pcz = Math.floor(pm.position.z / span);
-        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon.
-        st.foliageRadius = 30;
+        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der kleinste Radius,
+        // den der Regler fährt (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
+        // Chunk-Eck (die Genesis-Plattform steht seit K16 auf dem Ursprung) fiel der eigene Chunk heraus.
+        st.foliageRadius = r.constructor.PERF_FOLIAGE_RADIUS_MIN;
         out.farDeferred = r._foliageChunkInRadius(pcx + 6, pcz + 6) === false;
         out.nearIncluded = r._foliageChunkInRadius(pcx, pcz) === true;
         // (2) Radius wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
@@ -20537,7 +20539,10 @@ async function checkBandHydrosphere(ctx) {
                 out.flussNah = db(fegen(rp.x, rp.z).fluss.db);
                 out.flussFern = db(fegen(rp.x + 5000, rp.z + 5000).fluss.db);
             }
-            const wf = Array.isArray(hydro.waterfalls) && hydro.waterfalls.length ? hydro.waterfalls[0] : null;
+            // Der Wasserfall, wo das Gesetz ihn setzt (`__wasserOrt("fall")`): die Heimat-Kachel trug ihre Stürze an den
+            // Gruben der Canyon-Maske (K16 gefallen) — der Lauf des Flussnetzes fällt dort nirgends 6 m steil.
+            const wfOrt = window.__wasserOrt("fall");
+            const wf = wfOrt ? wfOrt.fall : null;
             out.hasWaterfall = !!wf;
             if (wf) {
                 out.fallNah = db(fegen(wf.x, wf.z).fall.db);
@@ -20564,14 +20569,14 @@ async function checkBandHydrosphere(ctx) {
             e.hasRiver === true && e.flussNah >= e.schwelle && e.flussFern < e.schwelle,
             `nah=${zahl(e.flussNah)} dB fern=${zahl(e.flussFern)} dB`
         );
-        // Pflicht wie vor der Welle (V9.43-e): die Hydrosphäre der Standard-Saat trägt Wasserfälle — fehlt einer, ist
-        // das ein Befund, kein stilles Auslassen.
+        // Pflicht wie vor der Welle (V9.43-e): die Hydrosphäre der Standard-Saat trägt Wasserfälle (die Kacheln bis zum
+        // zweiten Ring um den Ursprung) — fehlt einer, ist das ein Befund, kein stilles Auslassen.
         check(
             "Welle 5 Klang: der Wasserfall donnert nah, schweigt fern",
             e.hasWaterfall === true && e.fallNah >= e.schwelle && e.fallFern < e.schwelle,
             e.hasWaterfall
                 ? `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB`
-                : "kein Wasserfall in der Hydrosphäre"
+                : "kein Wasserfall in den Kacheln bis zum zweiten Ring"
         );
     }
 }
@@ -22979,7 +22984,17 @@ async function checkBandV17117FarWater(ctx) {
         const regHalf = (h.dim * h.cell) / 2; // ±1024
         // Der Ozean-Chunk liegt am Meer-Ort des Gesetzes (`__wasserOrt`: das Meer liegt seit K16 jenseits des
         // Kontinents, nicht mehr im Ring um die Heimat); der Land-Chunk jenseits der Heimat über Chunk-Indizes
-        // (selbst-konsistent: der Klassifikations-Punkt = der Chunk-Mittelpunkt).
+        // (selbst-konsistent: der Klassifikations-Punkt = der Chunk-Mittelpunkt), Hochland ohne Wasser des Gesetzes im
+        // Fußabdruck + 64 m (die Fluss-Zelle des Index 32 m + die Ecke eines Segments): das Makro über Meer + 30 m und
+        // kein Spiegel über dem Meer (`_atlasWaterLevelAt` als Existenz-Probe) — die Kacheln um die Heimat tragen das
+        // Flussnetz auch im Hochland (K16), und ein Chunk am Fluss trägt zu Recht Wasser.
+        const trocken = (ox, oz) => {
+            for (let x = ox - 64; x <= ox + span + 64; x += 8)
+                for (let z = oz - 64; z <= oz + span + 64; z += 8)
+                    if (!(r._terrainMacroSurfaceY(x, z, true) > WL + 30) || r._atlasWaterLevelAt(x, z, Infinity) > WL)
+                        return false;
+            return true;
+        };
         const meerOrt = window.__wasserOrt("meer");
         const oCx = meerOrt ? Math.floor(meerOrt.x / span) : null;
         const oCz = meerOrt ? Math.floor(meerOrt.z / span) : null;
@@ -22992,7 +23007,7 @@ async function checkBandV17117FarWater(ctx) {
                 const mx = cx * span + span / 2;
                 const mz = cz * span + span / 2;
                 if (Math.max(Math.abs(mx), Math.abs(mz)) <= regHalf + span) continue; // ganz beyond
-                if (r._terrainMacroSurfaceY(mx, mz, true) > WL + 30) {
+                if (r._terrainMacroSurfaceY(mx, mz, true) > WL + 30 && trocken(cx * span, cz * span)) {
                     lCx = cx;
                     lCz = cz;
                 }
@@ -23057,6 +23072,7 @@ async function checkBandV17117FarWater(ctx) {
         res.oceanWaterCells > 0,
         `cells=${res.oceanWaterCells}`
     );
+    check("V17.117 H3: beyond-region Land-Chunk gefunden (Hochland ohne Wasser des Gesetzes)", res.foundLand === true);
     if (res.foundLand) {
         check("V17.117 H3: beyond-region Land — Gate false (kein Mehraufwand)", res.landGate === false);
         check(
@@ -27724,6 +27740,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
+        window.__setzOrt("stein_block");
         // confirmBuild prüft im pfad-Modus phantomOnGround; headless läuft tickBuildMode (Raycast-
         // Stabilität) nicht → stabilen Phantom-Stand simulieren.
         if (r.state.buildMode) r.state.buildMode.phantomOnGround = true;
@@ -27740,6 +27757,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
+        window.__setzOrt("stein_block");
         const archBeforeNoMat = r.state.architectures.length;
         const builtNoMat = r.confirmBuild();
         out.pfadRejectsWithoutMaterial = builtNoMat === false;
@@ -27751,6 +27769,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
+        window.__setzOrt("stein_block");
         const archBeforeSchoepfer = r.state.architectures.length;
         const builtSchoepfer = r.confirmBuild();
         out.schoepferBuildsFree = builtSchoepfer === true;
@@ -27765,6 +27784,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
+        window.__setzOrt("stein_block");
         const archBeforeFriedenNoMat = r.state.architectures.length;
         const builtFriedenNoMat = r.confirmBuild();
         out.friedenRejectsWithoutMaterial = builtFriedenNoMat === false;
@@ -27775,6 +27795,7 @@ async function checkBandWelle6HCreatures(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
+        window.__setzOrt("stein_block");
         const archBeforeFriedenMat = r.state.architectures.length;
         const stoneBeforeFrieden = r.state.player.inventory[0].count;
         const builtFriedenMat = r.confirmBuild();
@@ -39783,6 +39804,7 @@ async function checkBandWelle6XAudit(ctx) {
         r._clearBuildMode && r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
+        window.__setzOrt("stein_block");
         if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
         const archBeforeBlock = r.state.architectures.length;
         const stoneBeforeBlock = r.state.player.inventory[0].count;
@@ -55518,11 +55540,33 @@ async function checkBandRing6Workshop(ctx) {
         // DIE DOKU-LINSE (bewusst UNGESTRIPPT) für Marker, die per Definition im KOMMENTAR wohnen — nie
         // rohes .toString() (Apparat-Ratchet), nie __codeOf; CODE-Behauptungen gehören in __codeOf/__consumes.
         window.__dokuOf = (fnOrSrc) => String(fnOrSrc);
+        // DER SETZ-ORT (K16): ein Bau-Band ohne `tickBuildMode` (headless zielt kein Raycast) stellt das Phantom des Werks
+        // `name` auf den Boden der nächsten Stelle um den Spieler, die die Natur-Wand freigibt (`_naturWand`: die Lichtung
+        // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
+        // (die offene Stelle der Ankunft ist der Ursprung). Rückgabe { x, y, z } oder null.
+        window.__setzOrt = (name) => {
+            const r = window.anazhRealm;
+            const bm = r.state.buildMode;
+            const p = r.state.playerMesh.position;
+            for (let R = 0; R <= 240; R += 6)
+                for (let a = 0; a < (R ? 16 : 1); a++) {
+                    const x = p.x + R * Math.cos((a / 16) * 2 * Math.PI);
+                    const z = p.z + R * Math.sin((a / 16) * 2 * Math.PI);
+                    const y = r.getTerrainHeightAt(x, z);
+                    if (!Number.isFinite(y)) continue;
+                    if (r._istNatur({ type: name }) && r._naturWand(name, { x, y: y + 0.5, z }, {})) continue;
+                    if (bm && bm.phantomMesh) bm.phantomMesh.position.set(x, y, z);
+                    return { x, y, z };
+                }
+            return null;
+        };
         // DER WASSER-ORT (K16): jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
         // ihn setzt — die Heimat-Kachel trägt keinen (die Seen sind die Senken des Flussnetzes, ≤ 1 je km²; das Meer liegt
         // jenseits des Kontinents). „see“: die nächste benannte Senke (gelaende-core `benannteSeen`), deren Kachel einen
         // gerenderten See (Spiegel > Meer + 2 m, ≥ 16 Zellen) trägt; „meer“: der nächste Punkt unter dem Meeresspiegel auf
-        // Ringen um den Ursprung, dort die nächste Ozean-Zelle. Die Kachel wird über den EINEN Kachel-Eingang registriert
+        // Ringen um den Ursprung, dort die nächste Ozean-Zelle; „fall“: der Wasserfall der nächsten Kachel, die einen trägt
+        // (Ringe von Kacheln um den Ursprung bis zum zweiten — die Täler sind das Flussnetz, ein Sturz lebt, wo ein Lauf
+        // steil fällt, nicht mehr an den Gruben der Canyon-Maske). Die Kachel wird über den EINEN Kachel-Eingang registriert
         // (`_ensureHydroTilesAround`), damit jeder Hydro-Leser (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
         window.__wasserOrt = (art) => {
             const r = window.anazhRealm;
@@ -55557,7 +55601,20 @@ async function checkBandRing6Workshop(ctx) {
             } else if (art === "hoehle") {
                 // eine trockene Höhle unter oder neben einem See des Gesetzes: von seinem Spiegel abwärts erst fester
                 // Grund (die Decke), dann Luft (die Höhle), dann wieder Grund (ihr Boden). Gesucht in den See-Zellen und
-                // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst.
+                // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst — so, wie die Wasser-Zellen
+                // sie sehen: je 1,8-m-Zelle das Mittel der Dichte an ihren acht Ecken (`_buildVoxelChunkWaterCells`, das
+                // Gitter liegt auf Vielfachen des Schritts). Seit die Canyon-Maske fiel (K16), bleibt die Decke 16 m unter
+                // dem Boden; die Meter-Probe einer Spalte fand unter dem See eine Höhle, die keine Zelle trägt (0 von 0).
+                const cfgH = r._voxelChunkConfig(0);
+                const S = cfgH.step;
+                const oyH = (r.state.terrainBaseHeight || 0) - cfgH.floorDrop;
+                const zelleFest = (cx, cy, cz) => {
+                    let d = 0;
+                    for (const ex of [-S / 2, S / 2])
+                        for (const ey of [-S / 2, S / 2])
+                            for (const ez of [-S / 2, S / 2]) d += r._terrainDensityAt(cx + ex, cy + ey, cz + ez);
+                    return d > 0;
+                };
                 const step = 64;
                 const n = 375;
                 const kand = G.benannteSeen(L, -12000, -12000, step, n)
@@ -55581,17 +55638,31 @@ async function checkBandRing6Workshop(ctx) {
                             const p = zelle(h, q);
                             for (let sz = -6; sz <= 6 && !ort; sz += 4)
                                 for (let sx = -6; sx <= 6 && !ort; sx += 4) {
+                                    const cx = (Math.floor((p.x + sx) / S) + 0.5) * S;
+                                    const cz = (Math.floor((p.z + sz) / S) + 0.5) * S;
                                     let stufe = 0;
-                                    for (let y = lake.level - 0.5; y > lake.level - 40 && stufe < 3; y -= 1) {
-                                        const fest = r._terrainDensityAt(p.x + sx, y, p.z + sz) > 0;
+                                    const j0 = Math.floor((lake.level - 0.5 - oyH) / S);
+                                    for (let j = j0; j > j0 - 40 / S && stufe < 3; j--) {
+                                        const fest = zelleFest(cx, oyH + (j + 0.5) * S, cz);
                                         if ((stufe === 0 && fest) || (stufe === 1 && !fest) || (stufe === 2 && fest))
                                             stufe++;
                                     }
-                                    if (stufe === 3) ort = { x: p.x + sx, z: p.z + sz, lake };
+                                    if (stufe === 3) ort = { x: cx, z: cz, lake };
                                 }
                         }
                     }
                 }
+            } else if (art === "fall") {
+                const size = r.constructor.HYDROSPHERE.regionSize;
+                for (let ring = 0; ring <= 2 && !ort; ring++)
+                    for (let rz = -ring; rz <= ring && !ort; rz++)
+                        for (let rx = -ring; rx <= ring && !ort; rx++) {
+                            if (Math.max(Math.abs(rx), Math.abs(rz)) !== ring) continue;
+                            r._ensureHydroTilesAround(rx * size, rz * size, 0);
+                            const h = r._hydroFor(rx * size, rz * size);
+                            const wf = h && Array.isArray(h.waterfalls) && h.waterfalls.length ? h.waterfalls[0] : null;
+                            if (wf) ort = { x: wf.x, z: wf.z, lake: null, fall: wf };
+                        }
             } else if (art === "meer") {
                 for (let R = 512; R <= 40000 && !ort; R += 512)
                     for (let a = 0; a < 64; a++) {
