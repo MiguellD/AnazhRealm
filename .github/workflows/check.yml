@@ -943,12 +943,14 @@ jobs:
               run: npm run gate:albedo-tafel
 
             - name: Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 8
               # Die Werkbank im Software-Holz (swiftshader, kienspan) an der Mess-Wiese: je Ort im Chunk-Quadrat der Boden-Satz
               # und der Fern-Ring orthogonal aus 420 m ueber 132 m, beide Leser gegen das Gesetz an der Stelle (_fernRingTeile) -
               # ROT beim Namen, wenn einer ausserhalb seines Bands liegt (main 2c8deda9: der Boden-Satz +133 bis +143 %), zu wenige
-              # Wald- oder Wiesen-Orte, ein leerer Schuss oder die Karte der Fern-Krone fuer den Ort nicht steht. Der Selbsttest
-              # des Urteils zuerst. Lokal 23-31 s.
+              # Wald- oder Wiesen-Orte, ein leerer Schuss oder die Karte der Fern-Krone fuer den Ort nicht steht. Je Ort zwei
+              # Runden, die sich wiederholen muessen; davor die Upload-Probe im Hauptbild: jedes Daten-Bild des Boden-Stoffs
+              # erreicht die GPU in drei Bildern (ohne den Textur-Waechter der Diaet 5 von 5 alt). Der Selbsttest des Urteils
+              # zuerst. Lokal 40-47 s; in Gruppe 8 traegt die Waage 10,3 min, in Gruppe 2 lag sie bei 10,9 von 11 min.
               run: npm run gate:nah-fern
 
             - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)

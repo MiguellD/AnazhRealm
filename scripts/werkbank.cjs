@@ -1292,26 +1292,146 @@ async function starte() {
                     // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen: nach dem Umstellen hielt die Karte
                     // bereit 1 mit der Mitte am Spawn, am Messort mischte nichts — nah Y 0,13 wie main). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
                     // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
-                    // trotzdem und urteilt laut.
-                    await page.evaluate(async () => {
+                    // trotzdem und urteilt laut — mit dem Zustand der Welt (`welt`) beim Namen.
+                    // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
+                    // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
+                    // einem von acht frischen Läufen (Integration V18.542, Software-Holz unter Last) fehlte der Linse die
+                    // Nord-Reihe des Quadrats, die Wiese hatte 1 statt 3 Orte (ROT „wiese: 1 Orte“ ohne Grund).
+                    const welt = await page.evaluate(async () => {
                         const r = window.anazhRealm;
                         const st = r.state;
-                        const frist = performance.now() + 120000;
+                        const t0 = performance.now();
+                        const frist = t0 + 120000;
+                        const quadrat = () => {
+                            const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
+                            const span = r._voxelChunkConfig().span;
+                            const pp = st.playerMesh.position;
+                            const cx = Math.floor(pp.x / span),
+                                cz = Math.floor(pp.z / span);
+                            const fehlt = [];
+                            for (let dx = -2; dx <= 2; dx++)
+                                for (let dz = -2; dz <= 2; dz++) {
+                                    const key = `${cx + dx},${cz + dz}`;
+                                    const e = st.voxelChunks ? st.voxelChunks.get(key) : null;
+                                    if (!(e && e.empty) && !(satz && satz.bloecke.has(key))) fehlt.push(key);
+                                }
+                            return { chunk: `${cx},${cz}`, fehlt };
+                        };
+                        let q = quadrat(),
+                            takte = 0;
+                        const zustand = (gestanden) => {
+                            const k = st.fernKroneNah;
+                            return {
+                                gestanden,
+                                ms: Math.round(performance.now() - t0),
+                                takte,
+                                chunk: q.chunk,
+                                fehlt: q.fehlt,
+                                gebaut: r._builtRingRadius(),
+                                ring: st.chunkRingRadius,
+                                imBau: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
+                                karte: k ? (k.U.bereit.value === 1 && !k.job ? 1 : 0) : null,
+                            };
+                        };
                         while (performance.now() < frist) {
                             if (!(st.chunkRingRadius >= 2)) st.chunkRingRadius = 2;
                             if (!(st._activeRingRadius >= 2)) st._activeRingRadius = 2;
                             const k = st.fernKroneNah;
                             const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
-                            if (r._builtRingRadius() >= 2 && !baut && (!k || (k.U.bereit.value === 1 && !k.job))) return;
+                            q = quadrat();
+                            if (q.fehlt.length === 0 && !baut && (!k || (k.U.bereit.value === 1 && !k.job)))
+                                return zustand(true);
                             try {
                                 if (window.__buehne) window.__buehne();
                                 if (window.__ortSchritt) window.__ortSchritt();
                                 r._gameLoopTick(performance.now());
                             } catch (_e) {}
+                            takte++;
                             await new Promise((w) => setTimeout(w, 50));
                         }
+                        q = quadrat();
+                        return zustand(false);
+                    });
+                    // DER UPLOAD IM HAUPTBILD (Integration V18.542), VOR der Linse in der stehenden Welt: die Linse schießt in
+                    // einem eigenen Pass — dort baut jedes Render-Objekt neu und lädt jede Textur frisch, das Hauptbild nicht
+                    // (die Observer-Diät refresht nur, was sich ändert). Die Daten-Bilder des Boden-Stoffs (Fern-Krone,
+                    // Wege-Karte, Kronen-Streu) heben ihre Version, dann laufen drei Takte der Welt: jede muss die GPU erreichen
+                    // (r184 `_textures`), sonst zeichnet der Boden im Spiel ein altes Bild. Vor dem Textur-Wächter der Diät
+                    // hielt die GPU 20 Takte lang die alte.
+                    const upload = await page.evaluate(async () => {
+                        const r = window.anazhRealm;
+                        const st = r.state;
+                        const rend = st.renderer;
+                        const texe = [];
+                        if (st.fernKroneNah) texe.push(st.fernKroneNah.tex);
+                        if (st.wegeKarte) for (const s of st.wegeKarte.stufen) texe.push(s.tex, s.kronen.tex);
+                        const gpu = (t) => {
+                            const d = rend._textures.get(t);
+                            return d && Number.isFinite(d.version) ? d.version : -1;
+                        };
+                        // DIE BILDER: ein Takt zeichnet nur, wenn die GPU-Leine frei ist (`_gpuLeineFrei`) — im Software-Holz
+                        // zeichneten drei Takte hintereinander kein Bild (die Probe war blind). Gezählt wird `_loopRender`.
+                        let gezeichnet = 0;
+                        const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
+                        const altRender = r._loopRender;
+                        r._loopRender = function (...a) {
+                            gezeichnet++;
+                            return altRender.apply(this, a);
+                        };
+                        const bilder = async (n) => {
+                            const ziel = gezeichnet + n;
+                            const frist = performance.now() + 30000;
+                            while (gezeichnet < ziel && performance.now() < frist) {
+                                try {
+                                    if (window.__buehne) window.__buehne();
+                                    r._gameLoopTick(performance.now());
+                                } catch (_e) {}
+                                await new Promise((w) => setTimeout(w, 50));
+                            }
+                            return n - Math.max(0, ziel - gezeichnet);
+                        };
+                        // DIE RUHE: jede Änderung am Boden-Satz (ein Chunk tritt ein, der Geomorph schreibt) refresht sein
+                        // Render-Objekt und lädt dabei jede Textur mit — die Probe gilt nur in drei Bildern, in denen der Satz
+                        // ruht (nach der Linse lud das Neu-Aufnehmen der Bündel jede Textur ohnehin: blind). Ruht er in fünf
+                        // Versuchen nie, urteilt die Probe laut.
+                        const satzV = () => {
+                            const s = st.chunkSaetze && st.chunkSaetze.get("boden");
+                            const g = s && s.geom;
+                            if (!g) return "leer";
+                            let v = g.id + ":" + (g.index ? g.index.version : -1);
+                            for (const k in g.attributes) v += ":" + g.attributes[k].version;
+                            return v;
+                        };
+                        let versuche = 0,
+                            ruhig = false,
+                            soll = null,
+                            danach = 0;
+                        try {
+                            while (versuche < 5 && !ruhig) {
+                                versuche++;
+                                await bilder(versuche === 1 ? 10 : 5);
+                                const v0 = satzV();
+                                soll = texe.map((t) => {
+                                    t.needsUpdate = true;
+                                    return t.version;
+                                });
+                                danach = await bilder(3);
+                                ruhig = satzV() === v0;
+                            }
+                        } finally {
+                            if (eigen) r._loopRender = altRender;
+                            else delete r._loopRender;
+                        }
+                        return {
+                            ruhig,
+                            versuche,
+                            bilder: danach,
+                            texe: texe.map((t, i) => ({ name: t.name, soll: soll[i], gpu: gpu(t) })),
+                        };
                     });
                     const m = await page.evaluate(() => window.__nahFernSicht({}));
+                    m.welt = welt;
+                    m.upload = upload;
                     const u = require("./lib/licht-linsen.cjs").nahFernUrteil(m);
                     const aus = Object.assign({ messung: m }, u);
                     if (b.datei) fs.writeFileSync(path.resolve(b.datei), JSON.stringify(aus, null, 1));
@@ -2139,6 +2259,69 @@ async function starte() {
                 /leerer Schuss/
             );
             pruefe("Karte steht nicht", LL.nahFernUrteil({ orte: ruhig, nahKarte: 0 }), /NAH-FERN Karte: .*bereit 0/);
+            const frisch = [
+                { name: "fern-krone-nah", soll: 4, gpu: 4 },
+                { name: "wege-karte:nah", soll: 21, gpu: 21 },
+            ];
+            const hoch = (texe, ruhigOk, bilder) => ({ ruhig: ruhigOk !== false, versuche: 1, bilder: bilder == null ? 3 : bilder, texe });
+            pruefe("das Hauptbild lädt jedes Daten-Bild", LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch) }), null);
+            pruefe(
+                "ein Daten-Bild bleibt alt",
+                LL.nahFernUrteil({
+                    orte: ruhig,
+                    upload: hoch([frisch[0], { name: "kronen-streu:nah", soll: 18, gpu: 17 }]),
+                }),
+                /NAH-FERN Upload: kronen-streu:nah — die GPU hält Version 17, der Schreiber hob sie auf 18/
+            );
+            pruefe("die Upload-Probe ohne Bild", LL.nahFernUrteil({ orte: ruhig, upload: hoch([]) }), /die Probe ist blind/);
+            pruefe(
+                "die Upload-Probe ohne gezeichnetes Bild",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch, true, 0) }),
+                /NAH-FERN Upload: 0 von 3 Bildern gezeichnet/
+            );
+            pruefe(
+                "die Upload-Probe in einer Welt, die nie ruht",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch, false) }),
+                /NAH-FERN Upload: der Boden-Satz ruhte in 1 Versuchen nie drei Takte/
+            );
+            pruefe(
+                "die Welt steht",
+                LL.nahFernUrteil({ orte: ruhig, welt: { gestanden: true, ms: 900, chunk: "-21,-20", fehlt: [] } }),
+                null
+            );
+            pruefe(
+                "die Welt stand nicht",
+                LL.nahFernUrteil({
+                    orte: ruhig,
+                    welt: { gestanden: false, ms: 120000, chunk: "-21,-20", fehlt: ["-19,-18"], gebaut: 1, ring: 2, imBau: 3, karte: 1 },
+                }),
+                /NAH-FERN Welt: das Quadrat der Linse stand nach 120 s nicht \(Chunk -21,-20, fehlt 1: -19,-18/
+            );
+            pruefe(
+                "ein Schuss, der nicht stillsteht",
+                LL.nahFernUrteil({
+                    orte: ruhig.map((o, i) =>
+                        i
+                            ? o
+                            : Object.assign(ort("wald", 0, 0.06, 0.058), {
+                                  nah: { n: 4096, Y: 0.6, rgb: [0.6, 0.6, 0.6], still: false, spur: { hell: [[4096, 0.69]] } },
+                              })
+                    ),
+                }),
+                /NAH-FERN wald 0\/0: der Schuss nah stand nicht still oder wiederholte sich nicht/
+            );
+            pruefe(
+                "ein Paar, das sich in vier Runden nicht wiederholt",
+                LL.nahFernUrteil({
+                    orte: ruhig.map((o, i) => {
+                        if (i) return o;
+                        const w = ort("wald", 0, 0.06, 0.058);
+                        w.fern.wiederholt = false;
+                        return Object.assign(w, { runden: 4, verworfen: [[0.06, 0.15]] });
+                    }),
+                }),
+                /NAH-FERN wald 0\/0: der Schuss fern stand nicht still oder wiederholte sich nicht \(Runden 4/
+            );
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
@@ -2148,10 +2331,22 @@ async function starte() {
         }
         o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
         if (o && o.zeilen) {
+            const w = o.messung && o.messung.welt;
+            if (w)
+                console.log(
+                    `  Welt ${w.gestanden ? "steht" : "STAND NICHT"} nach ${w.ms} ms (${w.takte} Takte): Chunk ${w.chunk}, ` +
+                        `fehlt ${w.fehlt.length}, gebaut ${w.gebaut}, Ring ${w.ring}, im Bau ${w.imBau}, Karte ${w.karte}`
+                );
             for (const z of o.zeilen)
                 console.log(
                     `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
-                        `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern})`
+                        `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern}) · Runden ${z.runden}`
+                );
+            const up = o.messung && o.messung.upload;
+            if (up)
+                console.log(
+                    `  Upload im Hauptbild (${up.ruhig ? "ruhig" : "UNRUHIG"}, Versuch ${up.versuche}, ${up.bilder} Bilder): ` +
+                        (up.texe || []).map((u) => `${u.name} GPU ${u.gpu}/${u.soll}`).join(" · ")
                 );
             for (const b of o.befunde) console.log("  ROT " + b);
             console.log(

@@ -779,9 +779,17 @@ function nahFernSicht(opts) {
             // Das Licht der Linse (nur Umgebungslicht) ist ein neuer Lichter-Satz, ihr Ziel ein neuer Pass: jeder Stoff zeichnet
             // hier zum ersten Mal und wartet auf seine Pipeline (`_erstWartet`, die Welt baut sie asynchron) — in frischer
             // Sitzung zeichnete der Boden-Satz 0 von 4 096 Bildpunkten, erst nach Sekunden voll. Der Schuss steht darum erst,
-            // wenn zwei Läufe dieselben Bildpunkte decken (höchstens 20 s).
+            // wenn zwei Läufe dieselben Bildpunkte decken UND dieselbe Helligkeit zeigen (höchstens 20 s): in einem von acht
+            // frischen Läufen (Integration V18.542, Software-Holz unter Last) zeigte der erste Schuss den Boden-Satz an einem
+            // Wald-Ort bei voller Deckung mit Y 0,694 statt 0,053 (ROT +1 200 % gegen das Gesetz, im Lauf danach grün) — die
+            // Deckung allein hielt ein Bild für fertig, das sich noch änderte. Die Spur (Bildpunkte, Helligkeit je Lauf) reist
+            // mit; steht der Schuss nach der Frist nicht still, urteilt die Linse laut (`still`).
             let px = null,
-                n = -1;
+                n = -1,
+                yAlt = NaN,
+                still = false,
+                laeufe = 0;
+            const spur = [];
             const frist = performance.now() + 20000;
             for (let lauf = 0; ; lauf++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -791,16 +799,34 @@ function nahFernSicht(opts) {
                 rend.render(sc, cam);
                 rend.setRenderTarget(null);
                 px = await lies();
-                let m = 0;
-                for (let i = 3; i < px.length; i += 4) if (px[i] > 0.5) m++;
-                if ((m === n && m > 0) || performance.now() > frist) break;
+                laeufe = lauf + 1;
+                let m = 0,
+                    s = 0;
+                for (let i = 3; i < px.length; i += 4)
+                    if (px[i] > 0.5) {
+                        m++;
+                        s += 0.2126 * px[i - 3] + 0.7152 * px[i - 2] + 0.0722 * px[i - 1];
+                    }
+                const y = m ? s / m : 0;
+                if (spur.length < 12) spur.push([m, +y.toFixed(4)]);
+                if (m === n && m > 0 && Math.abs(y - yAlt) <= 1e-4 + 1e-3 * yAlt) {
+                    still = true;
+                    break;
+                }
+                if (performance.now() > frist) break;
                 n = m;
+                yAlt = y;
                 // im Software-Holz übersetzt ein Programm über viele Läufe (gemessen: die ersten zwei Orte leer)
                 if (m === 0 || lauf >= 4) await new Promise((w) => setTimeout(w, 100));
             }
-            return px;
+            return { px, still, laeufe, spur };
         };
-        const mittel = (hell, dunkel) => {
+        const mittel = (sh, sd) => {
+            const hell = sh.px,
+                dunkel = sd.px;
+            const still = sh.still && sd.still;
+            // die Spur reist nur mit, wenn ein Schuss mehr als die zwei Mindest-Läufe brauchte oder nicht stillstand
+            const spur = !still || sh.laeufe > 2 || sd.laeufe > 2 ? { hell: sh.spur, dunkel: sd.spur } : undefined;
             let n = 0,
                 R = 0,
                 G = 0,
@@ -812,12 +838,14 @@ function nahFernSicht(opts) {
                 G += hell[i * 4 + 1] - dunkel[i * 4 + 1];
                 B += hell[i * 4 + 2] - dunkel[i * 4 + 2];
             }
-            if (!n) return { n: 0 };
+            if (!n) return { n: 0, still, spur };
             const rgb = [R / n, G / n, B / n];
             return {
                 n,
                 rgb: rgb.map((v) => +v.toFixed(4)),
                 Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                still,
+                spur,
             };
         };
         const aus = [];
@@ -826,15 +854,42 @@ function nahFernSicht(opts) {
                 cam.position.set(o.x, o.y + H, o.z + 0.01);
                 cam.lookAt(o.x, o.y, o.z);
                 cam.updateMatrixWorld(true);
-                const nah = mittel(await schuss(istNah, Math.PI), await schuss(istNah, 0));
-                const fern = mittel(await schuss(istFern, Math.PI), await schuss(istFern, 0));
+                // DIE WIEDERHOLUNG: ein Paar (nah, fern) zählt erst, wenn die nächste Runde an derselben Stelle dieselben
+                // Bildpunkte und dieselbe Albedo (1 %) zeigt — höchstens vier Runden, sonst urteilt die Linse laut
+                // (`wiederholt` false). In frischen Sitzungen (Integration V18.542, Software-Holz unter Last, 2 von 16 Läufen)
+                // zeigte die ERSTE Runde am ersten Ort einen Leser falsch und still: der Boden-Satz Y 0,694 statt 0,053, der
+                // Fern-Ring 0,152 statt 0,063 — die Stille eines Schusses allein hielt ein falsches Bild für fertig.
+                const paar = async () => ({
+                    nah: mittel(await schuss(istNah, Math.PI), await schuss(istNah, 0)),
+                    fern: mittel(await schuss(istFern, Math.PI), await schuss(istFern, 0)),
+                });
+                const gleich = (a, b) =>
+                    a.n > 0 && a.n === b.n && Math.abs(a.Y - b.Y) <= 0.01 * Math.max(a.Y, b.Y) + 1e-4;
+                let vor = await paar(),
+                    jetzt = null,
+                    runden = 1;
+                const verworfen = [];
+                for (;;) {
+                    jetzt = await paar();
+                    runden++;
+                    if (gleich(vor.nah, jetzt.nah) && gleich(vor.fern, jetzt.fern)) break;
+                    verworfen.push([vor.nah.Y, vor.fern.Y]);
+                    if (runden >= 4) {
+                        jetzt.nah.wiederholt = gleich(vor.nah, jetzt.nah);
+                        jetzt.fern.wiederholt = gleich(vor.fern, jetzt.fern);
+                        break;
+                    }
+                    vor = jetzt;
+                }
                 aus.push({
                     ort: [o.x, o.z],
                     d: Math.round(Math.hypot(o.x - pp.x, o.z - pp.z)),
                     klasse: o.klasse,
                     deckung: +o.deckung.toFixed(2),
-                    nah,
-                    fern,
+                    nah: jetzt.nah,
+                    fern: jetzt.fern,
+                    runden,
+                    verworfen: verworfen.length ? verworfen : undefined,
                     gesetz: gesetz(o.x, o.z),
                 });
             }
@@ -861,11 +916,34 @@ function nahFernSicht(opts) {
 // jeder liegt in SEINEM Band um das Gesetz — der Boden-Satz eng (`nah`: Karte 8 Bit im Raster N), der Fern-Ring nach seiner
 // Abtastung (`fern`: Schale 0 schnappt auf 24 m; über 132 m gemessen −12 … +18 %), dazu der Grün-Anteil g / (r + g + b). ROT
 // beim Namen (Klasse, Ort, nah gegen fern, der TÄTER: der Leser außerhalb seines Bands), wenn einer Klasse Orte fehlen (mindestens
-// drei Wald- und drei Wiesen-Orte), ein Schuss leer blieb, das Gesetz fehlt oder die Karte der Fern-Krone nicht steht.
+// drei Wald- und drei Wiesen-Orte), ein Schuss leer blieb oder nicht stillstand, das Gesetz fehlt, die Karte der Fern-Krone
+// nicht steht, die Welt vor der Linse nicht stand (`welt`: das 5 × 5 der Chunks um den Spieler im Boden-Satz) oder ein
+// Daten-Bild des Boden-Stoffs die GPU des Hauptbilds nicht erreicht (`upload`: Version gehoben, drei Takte, in denen der
+// Boden-Satz ruht, die GPU hält sie).
 function nahFernUrteil(messung, band) {
     band = Object.assign({ nah: 0.1, fern: 0.25, gruenNah: 0.03, gruenFern: 0.05, jeKlasse: 3 }, band || {});
     const befunde = [];
     const zeilen = [];
+    const w = messung && messung.welt;
+    if (w && w.gestanden !== true)
+        befunde.push(
+            `NAH-FERN Welt: das Quadrat der Linse stand nach ${(w.ms / 1000).toFixed(0)} s nicht (Chunk ${w.chunk}, fehlt ` +
+                `${(w.fehlt || []).length}: ${(w.fehlt || []).slice(0, 6).join(" ")}; gebaut ${w.gebaut}, Ring ${w.ring}, im Bau ` +
+                `${w.imBau}, Karte ${w.karte})`
+        );
+    const up = messung && messung.upload;
+    if (up && up.ruhig !== true)
+        befunde.push(`NAH-FERN Upload: der Boden-Satz ruhte in ${up.versuche} Versuchen nie drei Takte — die Probe ist blind`);
+    if (up && !(up.bilder >= 3))
+        befunde.push(`NAH-FERN Upload: ${up.bilder} von 3 Bildern gezeichnet (die GPU-Leine hielt) — die Probe ist blind`);
+    if (up && !(up.texe && up.texe.length))
+        befunde.push("NAH-FERN Upload: kein Daten-Bild des Boden-Stoffs gefunden — die Probe ist blind");
+    for (const u of (up && up.texe) || [])
+        if (!(u.gpu >= u.soll))
+            befunde.push(
+                `NAH-FERN Upload: ${u.name} — die GPU hält Version ${u.gpu}, der Schreiber hob sie auf ${u.soll}; der Boden ` +
+                    "zeichnet im Hauptbild ein altes Bild"
+            );
     if (messung && messung.nahKarte === 0)
         befunde.push(
             "NAH-FERN Karte: die Fern-Krone des nahen Bodens steht nicht für diesen Ort (bereit 0 oder Füll-Job offen) — der Boden mischt nichts"
@@ -881,6 +959,15 @@ function nahFernUrteil(messung, band) {
         if (!o.nah || !o.fern || !o.nah.n || !o.fern.n) {
             befunde.push(
                 `NAH-FERN ${o.klasse} ${o.ort.join("/")}: leerer Schuss (nah ${o.nah ? o.nah.n : 0} px, fern ${o.fern ? o.fern.n : 0} px)`
+            );
+            continue;
+        }
+        const unstet = ["nah", "fern"].filter((k) => o[k].still === false || o[k].wiederholt === false);
+        if (unstet.length) {
+            befunde.push(
+                `NAH-FERN ${o.klasse} ${o.ort.join("/")}: der Schuss ${unstet.join(" und ")} stand nicht still oder wiederholte ` +
+                    `sich nicht (Runden ${o.runden || 1}, verworfen ${JSON.stringify(o.verworfen || [])}, Spur ` +
+                    `${JSON.stringify((o[unstet[0]].spur || {}).hell || [])})`
             );
             continue;
         }
@@ -907,6 +994,7 @@ function nahFernUrteil(messung, band) {
             fernGesetz: +dF.toFixed(3),
             gruenNah: +gN.toFixed(3),
             gruenFern: +gF.toFixed(3),
+            runden: o.runden || 1,
         });
         const taeter = [];
         if (Math.abs(dN) > band.nah || Math.abs(gN) > band.gruenNah)
