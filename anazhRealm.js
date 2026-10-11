@@ -29068,11 +29068,6 @@ class AnazhRealm {
         const sed = P.sediment;
         const sand = P.sand;
         const packedDirt = P.dirt;
-        // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
-        // Basis), nicht absolutes y. HARTKODIERT + im Worker gespiegelt (eine Runtime-Tunable würde den
-        // Worker desyncen, V17.100).
-        const SNOW_PROM_START = AnazhRealm.SCHNEE_PROMINENZ.start;
-        const SNOW_PROM_FULL = AnazhRealm.SCHNEE_PROMINENZ.voll;
         const ss = (e0, e1, x) => {
             let t = (x - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -29112,13 +29107,9 @@ class AnazhRealm {
         // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-        // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
-        // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
-        // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
-        // surf-relativen Schichten nachziehen. cont0 ist die kontinentale Basis des Gelände-Gesetzbuchs (`kontinentBasis`
-        // — dieselbe Funktion ruft der Worker in `attachFieldColors`).
-        const _cont0 = globalThis.__gelaendeCore.kontinentBasis(this._gelaende(), x, z);
-        mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
+        // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
+        // in `attachFieldColors`).
+        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
@@ -38450,13 +38441,37 @@ class AnazhRealm {
     }
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
-    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, weicht der Ring (−60 m).
+    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, liegt der Ring knapp UNTER
+    // dem Gebauten (`_fernRingUnterGebaut`).
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
         let y = law < wl ? wl - F.wasserDrop : law;
         if (p.row === 0) y -= F.saumDrop;
-        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60;
+        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z))
+            y = this._fernRingUnterGebaut(p.x, p.z, y);
         return y;
+    }
+
+    // DER RING UNTER DEM GEBAUTEN (K16, der Saum): unter einem gebauten Chunk liegt der Ring `unterGebaut` unter dem Gesetz
+    // (das Surface-Nets-Netz weicht ±0,5 m vom Gesetz, das Gebaute deckt ihn per Tiefe) und unter jeder Grabung, die die
+    // Säule senkt (Kugel-Kappe des carve-Edits, 1 m Luft). Bis K16 tauchte er −60 m: jede Ring-Masche an der Kante des
+    // Gebauten fiel als 60-m-Schlitz ab — der gebaute Boden stand als Platte über einer Grube (Bild k16/schnee-nachher-*).
+    _fernRingUnterGebaut(x, z, y) {
+        let u = y - AnazhRealm.FERN_RING.unterGebaut;
+        const meta = this.state.worldMeta;
+        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        if (!edits) return u;
+        for (let i = 0; i < edits.length; i++) {
+            const e = edits[i];
+            if (!e || e.mode !== "carve") continue;
+            const dx = x - e.x;
+            const dz = z - e.z;
+            const r2 = e.r * e.r - dx * dx - dz * dz;
+            if (r2 <= 0) continue;
+            const boden = e.y - Math.sqrt(r2) - 1;
+            if (boden < u) u = boden;
+        }
+        return u;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -100561,6 +100576,7 @@ AnazhRealm.FERN_RING = Object.freeze({
     ]),
     randPad: 40,
     saumDrop: 6,
+    unterGebaut: 2,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,
@@ -102271,10 +102287,6 @@ AnazhRealm.LICHEN = Object.freeze({
     // Decken-Anstrich).
     strength: 0.22,
 });
-// Schnee auf Prominenz (`_bodenFarbeAt`): Start/Voll in m über der kontinentalen Basis. Der Worker
-// `attachFieldColors` spiegelt die zwei Zahlen hartkodiert. Die Farben selbst sind die Boden-Palette
-// (`AnazhRealm.BODEN_FARBE`, Studio PORTAL_GROUND nach dem Farb-Gesetz).
-AnazhRealm.SCHNEE_PROMINENZ = Object.freeze({ start: 50, voll: 115 });
 
 // FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
 // magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an

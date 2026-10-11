@@ -180,10 +180,9 @@ const server = http.createServer((req, res) => {
             }
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
-            // DER RING WEICHT DEM GEBAUTEN (gespiegelt): trägt ein gebauter,
-            // sichtbarer Chunk die Säule, taucht der Zone-Vertex −60 (die
-            // Live-Wahrheit derselben Naht — _chunkDecktRing ist die Quelle).
-            if (s === 0 && rad <= fr.deckZoneRad * 1.35 && r._chunkDecktRing(sx, sz)) expY -= 60;
+            // DER RING UNTER DEM GEBAUTEN (gespiegelt): trägt ein gebauter, sichtbarer Chunk die Säule, liegt der Zone-
+            // Vertex `unterGebaut` unter dem Gesetz (ohne Grabung in der Probe-Welt; _chunkDecktRing ist die Quelle).
+            if (s === 0 && rad <= fr.deckZoneRad * 1.35 && r._chunkDecktRing(sx, sz)) expY -= F.unterGebaut;
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
@@ -358,7 +357,7 @@ const server = http.createServer((req, res) => {
         if (fr7 && res.fzLaeufe >= 1) {
             fzWorst = 0;
             // DIESELBE Erwartung wie Band 2 (`probeVertex`: Snap · Deck-Zone mit vollem Gesetz · Wasser-Klemme · Saum ·
-            // der Ring weicht dem Gebauten −60) — eine eigene Teil-Formel ohne Deck-Zone und Weich-Wand maß 61 m
+            // der Ring unter dem Gebauten) — eine eigene Teil-Formel ohne Deck-Zone und Weich-Wand maß 61 m
             // „Abweichung", wo der Ring nur dem gebauten Chunk wich.
             for (let k = 0; k < 60; k++) {
                 const g = (fr7.cursor + 1 + ((k * 47) % (fr7.totalVerts - fr7.cursor - 1))) | 0;

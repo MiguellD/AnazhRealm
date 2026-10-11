@@ -232,7 +232,7 @@ async function probe(page, welt, mitAbdruck) {
                 return hex(h);
             };
             // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
-            // Punkten in drei Höhen über der Makro-Höhe (die Schnee-Prominenz `y − Basis − kontinentBasis` greift erst
+            // Punkten in drei Höhen über der Makro-Höhe (die Schneegrenze `schnee` des Kerns greift erst
             // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache) und die
             // Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
             // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort). Vorher = nachher beweist die Leser byte-gleich.
@@ -419,7 +419,9 @@ function realismus() {
     const RAND = Math.round(2000 / SCHRITT);
     const AUSSEN = HALB + RAND * SCHRITT;
     const n = Math.floor((2 * AUSSEN) / SCHRITT) + 1;
-    console.log("\n========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) =========");
+    console.log(
+        "\n========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) ========="
+    );
     const welten = [];
     let rot = false;
     const stoerung = (x, z) => 3 * Math.sin(x / 12.7) * Math.sin(z / 12.7);
@@ -432,8 +434,9 @@ function realismus() {
         const us = Number(process.hrtime.bigint() - t0) / 1000 / (n * n);
         const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
         const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
-        // Das Schicht-Gesetz am Schicht-Ort (der Kern nennt ihn; ohne Schicht-Term: der Ursprung) auf 2-m-Raster, 600 m.
-        const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -HALB, -HALB, HALB, HALB) : null;
+        // Das Schicht-Gesetz am Schicht-Ort auf 2-m-Raster, 600 m: das Tafelland ist ein ORT (Stil-Feld λ 5,2 km), der Kern
+        // nennt ihn im Umkreis von 8 km (16 × 16 km — in 4 × 4 km fehlt er zwei von drei Welten); ohne Ort: der Ursprung.
+        const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -8000, -8000, 8000, 8000) : null;
         const ox = ort ? ort.x : 0;
         const oz = ort ? ort.z : 0;
         const fn = 301;
@@ -456,20 +459,29 @@ function realismus() {
             schicht: !!ort && schicht.kliff >= 0.02 && schicht.schutt >= 0.05 && schicht.pediment >= 0.2,
         };
         const taeter = {
-            senken: "geschlossene fBm-Mulden ohne Auslass (wildnisY: Rausch-Summe cont/ranges/ranges2/detail, kein Abfluss-Gesetz)",
-            flint: "der Hang kennt kein Einzugsgebiet (kein Flussnetz; S unabhängig von A)",
-            hammond: "überall dieselbe Rauheit (ridgeAmp ≥ 5 m auch im Tiefland, Detail-Oktave λ 22 m)",
-            dorfplaetze: "kein ebener Talboden (keine Aue: das Tal-Querprofil fehlt außer dem EINEN Anker-Tal)",
+            senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
+            flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: Ebene-1-Bett folgt dem Hang statt S = ks·A^−θ)",
+            hammond: "keine Ebenen (RELIEF_KNOTEN hoch im Tiefland, Aue F zu schmal)",
+            dorfplaetze: "kein ebener Talboden (Aue F, AUE_QUER)",
             schicht: ort
-                ? "die Bänder fehlen am Schicht-Ort"
-                : "kein Schicht-Term: die Terrassen-Sperre (flat = 1 − slope/0,35, < ≈19°) verbietet das Kliff",
+                ? "die Bänder fehlen am Schicht-Ort (treppe/schichtMass: Kliff, Schutthang, Pediment)"
+                : "kein Tafelland in 16 × 16 km (grossform: Stil-Feld)",
         };
         let stoer = null;
         if (SELBSTTEST) {
             const HS = H.map((h, k) => h + stoerung(-AUSSEN + (k % n) * SCHRITT, -AUSSEN + ((k / n) | 0) * SCHRITT));
             stoer = Z.statistik(HS, n, SCHRITT, L.waterLevel, benannt, RAND);
         }
-        welten.push({ saat, raster: { halbM: HALB, randM: RAND * SCHRITT, schrittM: SCHRITT, n }, usJeSpalte: +us.toFixed(2), statistik: st, schichtOrt: ort ? { x: ox, z: oz, stil: ort.stil } : null, schicht, urteil, stoerung: stoer && { senken1mJeKm2: stoer.senken1mJeKm2, minimaJeKm2: stoer.minimaJeKm2 } });
+        welten.push({
+            saat,
+            raster: { halbM: HALB, randM: RAND * SCHRITT, schrittM: SCHRITT, n },
+            usJeSpalte: +us.toFixed(2),
+            statistik: st,
+            schichtOrt: ort ? { x: ox, z: oz, stil: ort.stil } : null,
+            schicht,
+            urteil,
+            stoerung: stoer && { senken1mJeKm2: stoer.senken1mJeKm2, minimaJeKm2: stoer.minimaJeKm2 },
+        });
         console.log(
             `\n  ${saat}: ${us.toFixed(2)} µs/Spalte · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.zellen} Zellen) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
         );
@@ -484,7 +496,11 @@ function realismus() {
         if (stoer) console.log(`    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km²`);
     }
     const JSON_ZIEL = JSON_AUS;
-    if (JSON_ZIEL) fs.writeFileSync(JSON_ZIEL, JSON.stringify({ zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten }, null, 1));
+    if (JSON_ZIEL)
+        fs.writeFileSync(
+            JSON_ZIEL,
+            JSON.stringify({ zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten }, null, 1)
+        );
     if (SELBSTTEST) {
         const blind = welten.some((w) => !(w.stoerung && w.stoerung.senken1mJeKm2 > 1));
         console.log(
@@ -492,7 +508,9 @@ function realismus() {
         );
         return blind ? 1 : 0;
     }
-    console.log(`\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten"}\n`);
+    console.log(
+        `\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten"}\n`
+    );
     return rot ? 1 : 0;
 }
 

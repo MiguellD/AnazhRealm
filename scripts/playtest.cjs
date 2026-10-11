@@ -20043,7 +20043,10 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV947Results && !voxelV947Results.error) {
         const ev = voxelV947Results;
-        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren", ev.methodsExist);
+        check(
+            "Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren",
+            ev.methodsExist
+        );
         check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
         check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
         if (ev.methodsExist && ev.wired) {
@@ -27989,7 +27992,10 @@ async function checkBandV18132FerneSeen(ctx) {
                 for (let j = 0; j < 6; j++) {
                     const x = -900 + i * 360;
                     const z = -900 + j * 360;
-                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), window.__gelaendeCore.erosionDelta(r._gelaende(), x, z));
+                    v.push(
+                        r._atlasWaterLevelAt(x, z, -Infinity),
+                        window.__gelaendeCore.erosionDelta(r._gelaende(), x, z)
+                    );
                 }
             return JSON.stringify(v);
         };
@@ -28013,7 +28019,10 @@ async function checkBandV18132FerneSeen(ctx) {
         check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)", res.machinery);
+    check(
+        "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)",
+        res.machinery
+    );
     check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
     check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
     check(
@@ -33024,7 +33033,8 @@ async function checkBandV18193MakroErbgut(ctx) {
             out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
             out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
             out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
-            out.validatorAcceptsValid = A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
+            out.validatorAcceptsValid =
+                A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
             // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
             const badNaN = window.__gelaendeCore.ankerAusSaat("nan-test");
             badNaN.massivR = NaN;
@@ -33222,22 +33232,16 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const s = r.state;
         const out = {};
 
-        // (G1) SNOWBAND auf PROMINENZ statt absolutem y: die Source trägt die PROMINENZ-Konstanten +
-        // y − base − _cont0, die alte ss(12,42,y) fehlt, und der Schnee-Anteil der NAHEN Region
-        // (±300 m) ist < 0.1.
+        // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer), die
+        // Prominenz über einer Basis (V17.105) ist gefallen, die alte ss(12,42,y) fehlt.
         const attachSrc = window.__codeOf(r._bodenFarbeAt);
-        out.snowOnProminence = /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
+        out.snowOnProminence = /__gelaendeCore\.schnee\(/.test(attachSrc) && !/SNOW_PROM|_cont0/.test(attachSrc);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
         out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
 
-        const ss = (e0, e1, v) => {
-            let t = (v - e0) / (e1 - e0);
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            return t * t * (3 - 2 * t);
-        };
-        // Die Prominenz misst am Gesetz (die kontinentale Basis des Gelände-Gesetzbuchs), nie an einer Kopie.
-        const cont0At = (x, z) => window.__gelaendeCore.kontinentBasis(r._gelaende(), x, z);
+        // Die Probe misst am Gesetz (gelaende-core `schnee`), nie an einer Kopie.
+        const schneeAt = (y) => window.__gelaendeCore.schnee(r._gelaende(), y);
         let snowSum = 0;
         let nSamples = 0;
         const base = s.terrainBaseHeight || 0;
@@ -33259,20 +33263,19 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             const y = r._terrainMacroSurfaceY(x, z, false);
             const wY = r._waterLevelAt ? r._waterLevelAt(x, z) : -3;
             if (y <= wY + 0.5) continue;
-            const prom = y - base - cont0At(x, z);
-            snowSum += ss(50, 115, prom);
+            const sn = schneeAt(y);
+            snowSum += sn;
             nSamples++;
-            // Tiefland-Klasse: prominence < 30 m (klar unter SNOW_PROM_START=50)
-            if (prom < 30) {
-                lowProminSnowSum += ss(50, 115, prom);
+            // Tiefland-Klasse: ≤ 100 m über dem Meer (klar unter der Schneegrenze, K16 — der 85-m-Spawn-Hügel war weiß)
+            if (y - (Number.isFinite(s.waterLevel) ? s.waterLevel : base - 3) <= 100) {
+                lowProminSnowSum += sn;
                 lowProminN++;
             }
         }
         out.snowMeanNear = nSamples ? snowSum / nSamples : 1;
         out.snowLowProminMean = lowProminN ? lowProminSnowSum / lowProminN : 0;
         out.snowLowProminN = lowProminN;
-        // Im Tiefland (prom<30) MUSS Schnee ≈ 0 sein (smoothstep gibt < 0.01
-        // bei prom < 30 da SNOW_PROM_START=50). Wand: < 0.02
+        // Im Tiefland (≤ 100 m über dem Meer) MUSS Schnee ≈ 0 sein (die Schneegrenze beginnt bei SCHNEE.start).
         out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
         // (G2) CHUNK-SEAM: Pad+Crop-Mechanismus präsent (V9.42-b der Wahrheits-
@@ -33380,12 +33383,12 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
 
     // (G1) SNOWBAND
     check(
-        "Γ6 (G1a) Schnee-Formel auf PROMINENZ (V17.105): SNOW_PROM_START + (y-base-_cont0) in Source",
+        "Γ6 (G1a) Schneegrenze ist Gesetz (K16): _bodenFarbeAt ruft gelaende-core schnee, keine Prominenz-Kopie",
         res.snowOnProminence === true
     );
     check("Γ6 (G1b) ALTE absolute Schnee-Zeile ss(12,42,y) GESTRICHEN", res.snowOldAbsoluteGone === true);
     check(
-        `Γ6 (G1c) Tiefland-Schnee (prominence<30 m) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — V17.105-Heilung)`,
+        `Γ6 (G1c) Tiefland-Schnee (≤ 100 m über dem Meer) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — K16)`,
         res.snowLowProminOk === true
     );
     // (G2) CHUNK-SEAM
@@ -34977,7 +34980,8 @@ async function checkBandV18209Konsolidierung(ctx) {
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
         out.gamma4Anker = typeof r._macroAnker === "function";
         out.gamma6Snowband =
-            typeof r._attachVoxelFieldColors === "function" && /SNOW_PROM_START/.test(window.__codeOf(r._bodenFarbeAt));
+            typeof r._attachVoxelFieldColors === "function" &&
+            /__gelaendeCore\.schnee\(/.test(window.__codeOf(r._bodenFarbeAt));
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
@@ -38882,10 +38886,14 @@ async function checkBandKonvergenzTierBaum(ctx) {
                 r.isInFrustum = () => true;
                 t5.position.set(pm5.position.x + 200, pm5.position.y, pm5.position.z + 200);
                 r.updateCreatures(0.016);
-                out.fernFar = gl5.istFern === true && gl5.nah.visible === false && gl5.meshes.every((m) => m.layers.isEnabled(0));
+                out.fernFar =
+                    gl5.istFern === true && gl5.nah.visible === false && gl5.meshes.every((m) => m.layers.isEnabled(0));
                 t5.position.set(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2);
                 r.updateCreatures(0.016);
-                out.fernNear = gl5.istFern === false && gl5.nah.visible === true && gl5.meshes.every((m) => !m.layers.isEnabled(0));
+                out.fernNear =
+                    gl5.istFern === false &&
+                    gl5.nah.visible === true &&
+                    gl5.meshes.every((m) => !m.layers.isEnabled(0));
             }
         } finally {
             r.isInFrustum = origFrustum5;

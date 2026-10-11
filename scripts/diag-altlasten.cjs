@@ -613,11 +613,23 @@ const FORBIDDEN = [
     // WELLE LF KAMPF (Vertrags-Akt 09.10., der Biss ist der Ansprung): die Biss-Reichweite um die Mitten (2,4 m, jede Gestalt)
     // und der feste Pirsch-Stopp (1,6 m) kehren nicht zurück — die Reichweite ist der Weg des Ansprungs, gebissen wird, wo der
     // Kopf den Leib berührt.
-    { token: "strikeRange", fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", auch: ["tetrapoda-core.js"] },
-    { token: "pirschStoppM", fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", auch: ["tetrapoda-core.js"] },
+    {
+        token: "strikeRange",
+        fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)",
+        auch: ["tetrapoda-core.js"],
+    },
+    {
+        token: "pirschStoppM",
+        fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs",
+        auch: ["tetrapoda-core.js"],
+    },
     // der Nachklang des Tod-Kippens (0,35 s, dann war der Leib fort) kehrt nicht zurück — ein Tier liegt gefuehl.leichnamSec
     // und sinkt in leichnamSinkSec in die Erde (Vertrags-Akt 09.10., Posten 7)
-    { token: "kippNachklangSec", fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)", auch: ["schmiede-core.js"] },
+    {
+        token: "kippNachklangSec",
+        fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)",
+        auch: ["schmiede-core.js"],
+    },
     // die Frage je Leser („lebt das Tier?") kehrt nicht zurück — der Leichnam verlässt beim Tod die Liste der Wesen und liegt
     // in state.leichname (Nachbesserung 3: vorher fragten 14 Methoden selbst nach dying, 5 Leser über diese Frage)
     { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
@@ -778,8 +790,14 @@ const FORBIDDEN = [
     // S3 wiese-gestalten (08.10.): die Senken der Nah-Wiese hingen unter EINER Gruppe „nahWiese" — die Täter-Klasse las den
     // obersten Knoten und buchte beide Stufen unter „nahWiese" (die Band-Linse sah nie, welche Stufe das Band sprengt). Jetzt
     // ist jede Senke ihr eigener oberster Knoten `nahWiese:L<stufe>:<v>:<teil>` (Täter `nahWiese:L1` · `nahWiese:L2`).
-    { token: "nahWiese:${v}:L${stufe}", fiel: "S3 wiese-gestalten — der Name trägt die Stufe vorn (nahWiese:L<stufe>:<v>:<teil>)" },
-    { token: "nw.gruppe", fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene" },
+    {
+        token: "nahWiese:${v}:L${stufe}",
+        fiel: "S3 wiese-gestalten — der Name trägt die Stufe vorn (nahWiese:L<stufe>:<v>:<teil>)",
+    },
+    {
+        token: "nw.gruppe",
+        fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene",
+    },
     // DIE STUFE 0 HAT EINE BEDEUTUNG (Welle 6, 06.10.): buildInstance baute den Strauch über die Steuer-Globale
     // `__strauchZeile` als Nah-Stufe, das Labor (build() → emitTree, Knopf L0) als Klingen-Krone (~175k Dreiecke, kein
     // Golden, kein Empfänger). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (die Stufen-Wand unten); die Globale
@@ -971,7 +989,10 @@ const FORBIDDEN = [
     // V18.538 (welle-lf-rudel × S3 kreatur): beide skinnten die Stufe 1 — rudel als zweites Skelett mit einem Spiegel je
     // Auswertung (27 Gelenk-Kopien) und einem Tier-Sonderweg im Gelenk-Guss, S3 als EIN Skelett für Tier UND Mensch.
     // EINE Wahrheit: die Grobstufe bindet an die Knochen der feinen; der Spiegel und der Sonderweg kehren nicht zurück.
-    { token: "_tierFernFolgt", fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)" },
+    {
+        token: "_tierFernFolgt",
+        fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)",
+    },
     {
         token: "fernStarr",
         fiel: "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg",
@@ -991,14 +1012,24 @@ const FORBIDDEN = [
     { token: "_wurfDreiecke", fiel: "S3 — der Wurf-Vorsatz der L1-Rinde", auch: ["foundry-core.js"] },
     { token: "barkFein", fiel: "S3 — die Rinde der L1 ist EIN Teil, der Wurf ein eigenes", auch: ["foundry-core.js"] },
     { token: "nadelKarte", fiel: "S3 — der Nadel-Ast ist sein Wedel (tree[Stufe].wedel)", auch: ["foundry-core.js"] },
-    { token: "BLATT_ATLAS_NADEL", fiel: "S3 — Zelle 3 ist die Wedel-Zelle (BLATT_ATLAS_WEDEL)", auch: ["foundry-core.js", "phyto-core.js"] },
+    {
+        token: "BLATT_ATLAS_NADEL",
+        fiel: "S3 — Zelle 3 ist die Wedel-Zelle (BLATT_ATLAS_WEDEL)",
+        auch: ["foundry-core.js", "phyto-core.js"],
+    },
     { token: "NADEL_ZWEIG", fiel: "S3 — der Maler der Zelle 3 malt den Wedel (WEDEL_ZWEIG)", auch: ["phyto-core.js"] },
     // 0910-3 A (Gegenprüfung): der Wasser-Neubau im resize-Handler war ein Zwilling des Vorher-Textur-Wächters der Diät
     // (`_diaetVorTextur` trägt JEDEN Größenwechsel); was bleibt, ist der Tausch des Tiefen-KNOTENS (`_tiefenKnotenTausch`).
-    { token: "_tiefenLeserNeuBinden", fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler" },
+    {
+        token: "_tiefenLeserNeuBinden",
+        fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler",
+    },
     // S3 haus (10.10.): der Fernkörper des Gesetzbuchs ist die NUR-WURF-Stufe 3 (`huelle()`, Beipack __fern, fernform "huelle") —
     // der Wirts-Fit der Häuser, seine Dach-Prismen-Marke und seine Linse fallen; die Fernform liest `_huelleVon`
-    { token: "_archFachwerkFit", fiel: "S3 haus — die Fernform ist die Hülle des Gesetzbuchs (_huelleVon → _archFoundryZiegel)" },
+    {
+        token: "_archFachwerkFit",
+        fiel: "S3 haus — die Fernform ist die Hülle des Gesetzbuchs (_huelleVon → _archFoundryZiegel)",
+    },
     { token: "prismFlip", fiel: "S3 haus — der Keil trägt seinen Typ (HUELLE_KEIL_TYP: First ±x/±z, Walm)" },
     {
         token: "diag-arch-fachwerk-fit",
@@ -1011,7 +1042,10 @@ const FORBIDDEN = [
     { token: "_kreaturBodenUnter", fiel: "Leben-Schau 2 — jeder Körper liest seinen Boden über _koerperBodenUnter" },
     { token: "_fahrTerrainBoden", fiel: "Leben-Schau 2 — die Ebene des Werks liest _werkBoden (den Boden unter ihm)" },
     { token: "_baumWeltSkala", fiel: "Leben-Schau 2 — _studioWeltSkala trägt die Welt-Skala jedes Studio-Werks" },
-    { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
+    {
+        token: "STUDIO_WORLD_SCALE",
+        fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)",
+    },
     { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
     { token: "_baumHuellenNachBuch", fiel: "Leben-Schau 2 — die Stamm-Hülle misst ab dem Spawn in der Welt-Skala" },
     // DIE TOR-HÜLLE IST GESETZ-DATEN (Gegenprüfung 10.10.): der Wirt baute die Tor-Gestalt am Spawn synchron nach (15–50 ms je
@@ -1027,7 +1061,10 @@ const FORBIDDEN = [
     // trägt (der Zell-Stempel überschreibt eine Wasser-Zelle) — nie ein Merk-Feld, gefragt am Lade-Zustand des Baus (beim
     // Reload „trocken"), nie eine zweite Wahrheit (das Gesetz samt Rand-Füllung weckte am Seerand den Automaten).
     { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt seine Zellen)" },
-    { token: "_stempelImWasser", fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)" },
+    {
+        token: "_stempelImWasser",
+        fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)",
+    },
     // K09a (11.10.) — DAS GELÄNDE-GESETZBUCH: die Makro-Höhe und ihre Hilfen wohnen in gelaende-core.js; die Stamm-
     // Methoden und der Worker-Spiegel sind gefallen (Stamm `_terrainMacroSurfaceY` und Worker rufen `hoehe`).
     ...[
@@ -1060,6 +1097,9 @@ const FORBIDDEN = [
         ["tarnMulde", "die Mulden-Form des Tarns"],
         ["tarnDelta", "die Tarn-Senkung des Wildnis-Terms"],
         ["state.tarns", "die Tarn-Liste im Zustand"],
+        ["SCHNEE_PROMINENZ", "die Schnee-Prominenz (die Schneegrenze `schnee` wohnt im Gesetzbuch)"],
+        ["SNOW_PROM_", "der Worker-Spiegel der Schnee-Prominenz"],
+        ["kontinentBasis", "die Prominenz-Basis der Schneegrenze"],
         ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
     ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
 ];
@@ -1339,7 +1379,10 @@ const ZWILLINGE = [
             /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
             "die Relief-, Stil- und Hochland-Masken des Rausch-Gesetzes",
         ],
-        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg als Maske"],
+        [
+            /\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/,
+            "Canyon und Tafelberg als Maske",
+        ],
         [/["'`]-macro-ridge["'`]/, "den Grat-Strom des Makro-Ankers"],
         [/["'`]-macro-anker["'`]/, "den Samen-Strom des Makro-Ankers"],
         [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
@@ -1349,7 +1392,10 @@ const ZWILLINGE = [
             "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
         ],
         [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske"],
-        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b|\btwoSig2\s*:/, "die Tarn-Mulde (die Seen sind die Senken des Netzes)"],
+        [
+            /Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b|\btwoSig2\s*:/,
+            "die Tarn-Mulde (die Seen sind die Senken des Netzes)",
+        ],
     ].map(([muster, was]) => ({
         muster,
         gefallen: true,
@@ -1885,13 +1931,7 @@ function main() {
     // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. feld-wgsl.js (der Welt-March im WGSL) steht
     // mit drin: der trilineare Brick-March (feldTriAbtast/feldTriGrad, V18.528) fiel dort (Integration W0 — die
     // Band-Wand trug dieselbe Liste ein zweites Mal, die Rückkehr-Wand ist die EINE).
-    const files = [
-        "anazhRealm.js",
-        "voxel-worker.js",
-        "index.html",
-        "signaling-server.js",
-        "foundry-core.js",
-    ]
+    const files = ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
 
@@ -2160,12 +2200,13 @@ function main() {
             feuert("voxel-worker.js", cont0, "Kontinentalität C") &&
             feuert("anazhRealm.js", maske, "Massiv-Maske") &&
             feuert("gelaende-core.js", maske, "Massiv-Maske") &&
-            feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
+            feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
+            feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
             still("voxel-worker.js", cont0) &&
             still("anazhRealm.js", maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);

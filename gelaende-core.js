@@ -197,6 +197,7 @@
         { id: "schuttWinkel", gruppe: "kliffs", einheit: "°", min: 30, max: 38, step: 0.5, def: 35, law: "Ruhewinkel des Schutthangs" },
         { id: "pedimentWinkel", gruppe: "kliffs", einheit: "°", min: 0.5, max: 7, step: 0.5, def: 2.5, law: "Neigung des Pediments" },
         { id: "schichtDicke", gruppe: "kliffs", einheit: "m", min: 8, max: 60, step: 1, def: 26, law: "Mächtigkeit einer Schicht" },
+        { id: "hartAnteil", gruppe: "kliffs", einheit: "1", min: 0.3, max: 0.7, step: 0.05, def: 0.55, law: "Anteil der harten (kliffbildenden) Lage" },
         // RAUHEIT
         { id: "rinnen", gruppe: "rauheit", einheit: "1", min: 0, max: 1.5, step: 0.05, def: 1, law: "Rinnen-Netz (Ebene 2) — Einschnitt" },
         { id: "detail", gruppe: "rauheit", einheit: "1", min: 0, max: 1, step: 0.05, def: 0.6, law: "hang-begrenztes Detail" },
@@ -339,6 +340,7 @@
             tp: Math.tan((P.pedimentWinkel * Math.PI) / 180),
             ts: Math.tan((P.schuttWinkel * Math.PI) / 180),
             tc: Math.tan((P.kliffWinkel * Math.PI) / 180),
+            schicht: null, // die Schicht-Periode (`schichtMass`), einmal je Netz
         };
         NETZE.set(schl, N);
         return N;
@@ -518,9 +520,8 @@
         const stil = kn.k === 0 ? gf.stil : 0;
         let reach = F + W;
         if (stil > 0.001) {
-            const T = P.schichtDicke;
-            const per = (0.6 * T) / N.ts + (0.4 * T) / N.tc + T * 0.9;
-            reach = Math.max(reach, F + 140 + Math.ceil((gf.rel + 40) / T) * per);
+            const M = schichtMass(N);
+            reach = Math.max(reach, F + 140 + Math.ceil((gf.rel + 40) / M.T) * M.per);
         }
         return {
             ax: kn.x,
@@ -563,28 +564,36 @@
         M.set(key, z);
         return z;
     }
-    // Der Anstieg der Schicht-Treppe über die Distanz u jenseits der Aue: Pediment, dann je Schicht Schutthang (60 % der
-    // Mächtigkeit am Ruhewinkel), Kliff (40 % am Kliff-Winkel) und eine Bank.
+    // DIE SCHICHT-PERIODE (T5) — EINE Quelle für Treppe, Reichweite und Schicht-Ort: eine Schicht der Mächtigkeit T ist die
+    // weiche Lage (Schutthang am Ruhewinkel), die harte Lage (`hartAnteil` · T am Kliff-Winkel) und die Bank (T/2). Monument
+    // Valley: das Kliff des de-Chelly-Sandsteins über dem Schutthang des Organ-Rock-Schiefers, je etwa die Hälfte.
+    function schichtMass(N) {
+        if (N.schicht) return N.schicht;
+        const T = N.P.schichtDicke;
+        const hc = N.P.hartAnteil * T;
+        const hs = T - hc;
+        const wS = hs / N.ts;
+        const wC = hc / N.tc;
+        const wB = 0.5 * T;
+        N.schicht = { T, hs, hc, wS, wC, wB, per: wS + wC + wB };
+        return N.schicht;
+    }
+    // Der Anstieg der Schicht-Treppe über die Distanz u jenseits der Aue: Pediment, dann je Schicht Schutthang, Kliff und
+    // eine Bank (`schichtMass`).
     function treppe(N, u) {
         const ped = 140;
         if (u <= ped) return u * N.tp;
         let r = u - ped;
-        const T = N.P.schichtDicke;
-        const hs = 0.6 * T;
-        const hc = 0.4 * T;
-        const wS = hs / N.ts;
-        const wC = hc / N.tc;
-        const wB = T * 0.9;
+        const M = schichtMass(N);
         const tb = N.tp * 0.5;
-        const per = wS + wC + wB;
-        const L = Math.floor(r / per);
-        r -= L * per;
-        let h = ped * N.tp + L * (T + wB * tb);
-        if (r < wS) return h + r * N.ts;
-        h += hs;
-        r -= wS;
-        if (r < wC) return h + r * N.tc;
-        return h + hc + (r - wC) * tb;
+        const L = Math.floor(r / M.per);
+        r -= L * M.per;
+        let h = ped * N.tp + L * (M.T + M.wB * tb);
+        if (r < M.wS) return h + r * N.ts;
+        h += M.hs;
+        r -= M.wS;
+        if (r < M.wC) return h + r * N.tc;
+        return h + M.hc + (r - M.wC) * tb;
     }
     // DER TALGRUND an (x, z): die Sohlen der Ebene-0-Knoten, stetig gemittelt (Gewicht (1 − d²/R²)², R = 1,6 Kanten) — die
     // Basis der Hülle (Talgrund + Relief): die Gipfel stehen über IHREM Tal, nie über einer erfundenen Ebene.
@@ -708,11 +717,15 @@
     function warpZ(n, x, z) {
         return n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
     }
-    // DIE KONTINENTALE GRUNDHÖHE an (x, z) relativ zur Basis — der OFFSET der Großform (der Talgrund lag zu tief: Schnee
-    // auf jedem 60-m-Hügel, Bild k16/nachher-makro-300m.png). Leser: die Schnee-Prominenz
-    // `y − Basis − kontinentBasis` der Boden-Farbe (Stamm `_bodenFarbeAt`, Worker `attachFieldColors`).
-    function kontinentBasis(L, x, z) {
-        return grossform(netzFuer(L), x, z).off;
+    // DIE SCHNEEGRENZE (K16): Schnee liegt nach der Höhe über dem Meer (die Temperatur fällt mit der Höhe), nie nach
+    // einer Prominenz über einer erfundenen Basis — die Prominenz über dem OFFSET weißte jeden 85-m-Hügel (12–22 % des
+    // Landes über 50 m Prominenz). Die Landform trägt Gipfel bis ~200 m über dem Meer; die Grenze 140 → 185 m legt
+    // Schnee auf die obersten 1–3 % des Landes. Leser: die Boden-Farbe (Stamm `_bodenFarbeAt`, Worker
+    // `attachFieldColors`) — der Anteil 0…1 an der Höhe y.
+    const SCHNEE = Object.freeze({ start: 140, voll: 185 });
+    function schnee(L, y) {
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - 3;
+        return glatt(SCHNEE.start, SCHNEE.voll, y - wl);
     }
 
     function wildnisY(L, x, z, mitDetail) {
@@ -779,8 +792,7 @@
     function schichtOrt(L, x0, z0, x1, z1) {
         const N = netzFuer(L);
         const S = N.S[0];
-        const T = N.P.schichtDicke;
-        const per = (0.6 * T) / N.ts + (0.4 * T) / N.tc + T * 0.9;
+        const per = schichtMass(N).per;
         let best = null;
         let bw = 0;
         for (let j = Math.floor(z0 / S); j <= Math.floor(z1 / S); j++)
@@ -1199,7 +1211,8 @@
         erbgutNormal: erbgutNormal,
         wildnisY: wildnisY,
         termY: termY,
-        kontinentBasis: kontinentBasis,
+        SCHNEE: SCHNEE,
+        schnee: schnee,
         grossform: (L, x, z) => grossform(netzFuer(L), x, z),
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
