@@ -1796,9 +1796,12 @@
       ]
     },
     "Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK\")": {
-      "s": 130,
-      "geschaetzt": "Median des Schritts „Voller Headless-Playtest (~5340 Invarianten)\" der letzten 5 Nacht-Läufe von playtest-full.yml auf main (GitHub-API, Läufer ubuntu-latest): 112 · 86 · 130 · 134 · 148 s (Läufe 38131111970 · 38043501838 · 37919728435 · 37765891668 · 37607543521) — bis zum ersten Lauf in check.yml",
-      "lauf": "npm run playtest | tee playtest-voll.log grep -qx \"✅ Alle Invarianten OK\" playtest-voll.log"
+      "s": 84,
+      "n": 1,
+      "lauf": "npm run playtest | tee playtest-voll.log grep -qx \"✅ Alle Invarianten OK\" playtest-voll.log",
+      "laeufe": [
+        "38159690142/1"
+      ]
     }
   },
   "vorher": {
