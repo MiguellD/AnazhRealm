@@ -1046,6 +1046,16 @@ const FORBIDDEN = [
         ["function erbgutTermY(", "termY (der Worker-Spiegel)"],
         ["function macroAnker(", "die Lage reicht macroAnker (der Worker-Spiegel)"],
     ].map(([token, kern]) => ({ token, fiel: `K09a — gelaende-core ${kern}` })),
+    // K16 (11.10.) — DIE LANDFORM: das Flussnetz des Gesetzbuchs trägt die Täler; die Erosions-Simulation, der Ein-Massiv-
+    // Anker, die 3D-Rauheit und der WGSL-Spiegel des alten Rausch-Gesetzes fielen.
+    ...[
+        ["_computeErosion", "die Kachel-Erosion (36 Iterationen, ±26 m, Naht)"],
+        ["_erosionIncisionPass", "der Inzisions-Pass der Erosion"],
+        ["_thermalErosionPass", "der Talus-Pass der Erosion"],
+        ["_worldgenComputeErosionAndTarns", "die Erosion im Worldgen (`_worldgenTarns`)"],
+        ["_isValidMacroAnker", "die Anker-Wand (der Anker fiel)"],
+        ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
+    ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1857,7 +1867,6 @@ function main() {
         "index.html",
         "signaling-server.js",
         "foundry-core.js",
-        "feld-wgsl.js",
     ]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));

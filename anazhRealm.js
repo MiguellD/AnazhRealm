@@ -13155,6 +13155,8 @@ class AnazhRealm {
     static _weltMetaHeil(m) {
         if (typeof m.seed !== "string" || m.seed.length === 0) m.seed = "anazh-realm-seed";
         m.voxelTerrain = true;
+        // K16: das Gelände ist das Flussnetz des Gesetzbuchs — der Ein-Massiv-Anker alter Welten fällt (sie ziehen um).
+        delete m.macro;
     }
 
     // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,
@@ -20733,35 +20735,6 @@ class AnazhRealm {
         });
     }
 
-    // Fluviale Erosion via STREAM-POWER-Inzision (Braun & Willett / Fastscape): `_computeErosion` sampelt
-    // die Makro-Surface und lässt Terrain + Drainage ~30 Iterationen ko-evolvieren (Priority-Flood →
-    // Flow-Direction → Flow-Accumulation → Inzision). `Δh = k·A^m·S^n` schneidet, wo viel Wasser fließt
-    // (Täler tief, Grate mit A≈1 bleiben scharf, Becken-Auslässe am stärksten).
-    // `_terrainMacroSurfaceY` addiert das Delta; deterministisch ohne RNG.
-    static get EROSION() {
-        return Object.freeze({
-            regionSize: 2048, // m — dieselbe Region wie die Hydrosphäre
-            cell: 16, // m → dim = 128 (dasselbe Raster wie die Hydrosphäre)
-            iterations: 36, // Landschafts-Evolutions-Iterationen
-            fillEpsilon: 0.01, // Priority-Flood-ε (definiertes Gefälle je Zelle)
-            streamK: 0.4, // Stream-Power-Konstante k in Δh = k·A^m·S^n
-            channelMinArea: 14, // Zellen — Inzision NUR ab dieser Drainage-Fläche
-            // (fluviale Erosion gilt für Kanäle; Hänge/Grate mit A darunter
-            // bleiben unberührt → die scharfen Gipfel überleben unversehrt; die
-            // Schwelle schützt die Grate, also dürfen k/Iterationen kräftig sein).
-            areaExp: 0.5, // m — Exponent der Drainage-Fläche A (Zell-Zahl)
-            slopeExp: 1.0, // n — Exponent des Gefälles S
-            maxIncisionPerPass: 1.1, // m — Klemme je Iteration (Stabilität)
-            edgeTaper: 10, // Zellen — das Delta wird zum Region-Rand auf 0 getapert
-            maxDelta: 26, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle).
-            // 26 m, weil der Talus-Pass Steilwände stärker abträgt (enger ließe 60°-Cusps stehen); hält die
-            // Decken-Marge (Surface-Max ~110 m, Decke 133 m).
-            // Thermische Erosion (Talus): Stream-Power SCHÄRFT, der Talus-Pass GLÄTTET — Hänge über dem
-            // Ruhewinkel tragen ins Tal ab; beide ko-evolvieren je Iteration (hydraulisch + thermisch).
-            talusAngle: 25, // ° — Ruhewinkel; Hänge darüber fliessen ab
-            talusFactor: 0.55, // Anteil des Überschuss-Transports je Iteration
-        });
-    }
 
     // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden. Die Stream-
     // Power-Erosion (V9.47) entwässert jedes Hochbecken → ohne diesen Pass
@@ -24281,9 +24254,6 @@ class AnazhRealm {
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
-            // Der persistierte macroAnker reist mit — sonst baut der Worker nach einer Konstanten-Änderung
-            // einen anderen Anker als der Main (Naht-Drift). null bei gen < 3.
-            macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
             // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
             // rechnet dieselben Zahlen, nie eine eigene Ableitung.
             erbgut: this._erbgut(),
@@ -24320,14 +24290,8 @@ class AnazhRealm {
         snap.hydroBand = this.state.hydroBand
             ? { top: this.state.hydroBand.top, bottom: this.state.hydroBand.bottom }
             : null;
-        const e = this.state.erosion;
-        if (e) {
-            snap.erosion = { originX: e.originX, originZ: e.originZ, cell: e.cell, dim: e.dim, delta: e.delta };
-        } else {
-            snap.erosion = null;
-        }
         snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
-        // Die fernen Kacheln reisen mit (plain Object {key: tile}, gelesen in hydroFor/erosionFor) — sonst
+        // Die fernen Kacheln reisen mit (plain Object {key: tile}, gelesen in hydroFor) — sonst
         // baut der Worker ferne Chunks gegen die OOB-Wahrheit = Determinismus-Bruch main↔worker.
         snap.hydroTiles = null;
         if (this.state.hydroTiles && this.state.hydroTiles.size) {
@@ -24347,20 +24311,6 @@ class AnazhRealm {
                     lakeW: t.lakeW,
                     lakeNear: t.lakeNear,
                     water: t.water || null,
-                };
-            }
-        }
-        snap.erosionTiles = null;
-        if (this.state.erosionTiles && this.state.erosionTiles.size) {
-            snap.erosionTiles = {};
-            for (const [key, t] of this.state.erosionTiles) {
-                if (!t) continue;
-                snap.erosionTiles[key] = {
-                    originX: t.originX,
-                    originZ: t.originZ,
-                    cell: t.cell,
-                    dim: t.dim,
-                    delta: t.delta,
                 };
             }
         }
@@ -24552,19 +24502,17 @@ class AnazhRealm {
             return c._idbReady;
         }
         // Stempel = AnazhRealm.VERSION (jeder Release bustet — bewusst statt SHA über den Stamm) + genVersion
-        // + macroAnker-Hash (ein fremder Anker darf nie alte Bytes lesen) + die Form des Replys (CHUNK_IDB_FORM);
+        // + die Form des Replys (CHUNK_IDB_FORM);
         // Mismatch → clear. Der SEED lebt im
         // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
-        const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
-        // + der Hash des Erbguts (seine Terme formen jeden Chunk: ein fremdes Erbgut darf nie alte Bytes lesen).
+        // + der Hash des Erbguts (seine Terme und die Regler der Landform formen jeden Chunk: ein fremdes Erbgut darf nie
+        // alte Bytes lesen).
         const stamp =
             AnazhRealm.VERSION +
             "|" +
             genV +
-            "|" +
-            this._fastHash(JSON.stringify(anker || null)) +
-            "|" +
+            "|landform|" +
             this._erbgut().hash +
             "|" +
             AnazhRealm.CHUNK_IDB_FORM;
@@ -27200,7 +27148,7 @@ class AnazhRealm {
         this.state.terrainEverGenerated = true;
         if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
-        this._worldgenComputeErosionAndTarns();
+        this._worldgenTarns();
 
         // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight bleiben
         // null/0 in einer Voxel-Welt (voxelTerrain konstant true seit V9.35).
@@ -27322,23 +27270,12 @@ class AnazhRealm {
     // ===== ATLAS §08 · WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen =====
     // V9.47 — Hydraulische Tröpfchen-Erosion carvt dendritische Täler + füllt
     // Becken mit Sediment. MUSS hier laufen — VOR allem Surface-abhängigen
-    // Worldgen (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) →
-    // alle sehen das erodierte Gelände. V9.51 — der Tarn-Pass: Bergseen als
-    // additive Hochmulden ins Erosions-Delta. try/catch — ein Erosions-Fehler
-    // darf den Worldgen nie brechen.
-    _worldgenComputeErosionAndTarns() {
-        try {
-            this.state.erosion = this._computeErosion();
-            this.log(
-                `V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.iterations} Stream-Power-Iterationen über ${AnazhRealm.EROSION.regionSize}m-Region`,
-                "INFO"
-            );
-            const tarns = this._hydroSeedTarns();
-            this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
-        } catch (e) {
-            this.state.erosion = null;
-            this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
-        }
+
+    // Der Tarn-Pass (Bergseen, benannte Senken) VOR der Hydrosphäre. Die Täler trägt das Flussnetz des Gelände-
+    // Gesetzbuchs (K16) — keine Erosions-Simulation mehr, das Gelände entwässert aus sich selbst.
+    _worldgenTarns() {
+        const tarns = this._hydroSeedTarns();
+        this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
     }
 
     // Worldgen-Inseln über `spawnIslandAt` (Surface-Nets, ein Pfad); Spawn-Y aus der echten Voxel-Surface
@@ -27411,7 +27348,6 @@ class AnazhRealm {
             // fernen Kacheln des ALTEN Seeds muessen fallen (lazy-Neubau aus
             // dem neuen Seed; derived, nie persistiert).
             this.state.hydroTiles = new Map();
-            this.state.erosionTiles = new Map();
             const hydro = this._computeHydrosphere();
             this.state.hydrosphere = hydro;
             this.log(
@@ -27550,289 +27486,11 @@ class AnazhRealm {
 
     // Dichte-Feld: > 0 fest, < 0 Luft, 0 Oberfläche = 2D-Makro-Oberfläche (`surf − y`) + zwei 3D-Noise-
     // Bänder (Höhlen, Überhänge); die Makro-Oberfläche ist die EINE Quelle für Dichte UND Hydrosphäre.
-    // Erosion (Stream-Power-Inzision): die ROHE Makro-Surface ko-evolviert `EROSION.iterations`-mal mit
-    // der Drainage (`_erosionIncisionPass`), gespeichert als Delta (erodiert − roh). Läuft VOR
-    // `_computeHydrosphere`; zirkelfrei (das Erosions-Delta des Gesetzbuchs, gelaende-core `erosionDelta`, ist 0 solange `state.erosion` null), ohne RNG.
-    _computeErosion(origin = null) {
-        // Die Erosion ist Zustand des Wildnis-Terms (nur der Wildnis-Term, gelaende-core `wildnisY`, liest ihr Delta): eine Welt ohne ihn rechnet sie nicht.
-        if (!(this._erbgut().wildnis > 0)) {
-            if (!origin) this.state.erosion = null;
-            return null;
-        }
-        const E = AnazhRealm.EROSION;
-        const dim = Math.max(8, Math.round(E.regionSize / E.cell));
-        // Parametrisierter Ursprung (Kachel-Erosion): die Heimat-Region nullt `state.erosion` (Re-Compute-
-        // Reinheit); eine Kachel lässt sie stehen — `erosionFuer` (gelaende-core) ist exklusiv, die Kachel sampelt roh.
-        const originX = origin && Number.isFinite(origin.x) ? origin.x : -E.regionSize / 2;
-        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -E.regionSize / 2;
-        const n = dim * dim;
-        // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
-        // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
-        if (!origin) this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
-        // `_terrainMacroSurfaceY` addiert sonst die Tarn-Mulden: die Erosion läuft VOR `_hydroSeedTarns` und
-        // muss auch beim Re-Run tarn-frei sampeln (sonst divergieren die Läufe) — saved + restored im finally.
-        // Sie läuft vor Architekturen/Edits und bleibt statische Worldgen-Geomorphologie (kein Recompute).
-        const savedTarns = this.state.tarns;
-        this.state.tarns = null;
-        const h = new Float64Array(n);
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                h[i + j * dim] = this._terrainMacroSurfaceY(originX + i * E.cell, originZ + j * E.cell, false);
-            }
-        }
-        const orig = Float64Array.from(h);
-        // (2) Scratch-Puffer EINMAL allozieren — die Iterationen verwenden sie
-        // wieder (kein GC-Druck über die Pässe).
-        const buf = {
-            filled: new Float64Array(n),
-            flowTo: new Int32Array(n),
-            accum: new Float64Array(n),
-            visited: new Uint8Array(n),
-            order: new Int32Array(n),
-            hpK: new Float64Array(n),
-            hpV: new Int32Array(n),
-            thermalDelta: new Float64Array(n), // V14.2 Talus-Akkumulator
-            thNbIdx: new Int32Array(8), // V14.2 niedrigere Nachbarn (pro Zelle)
-            thNbExc: new Float64Array(8), // V14.2 deren Überschuss
-        };
-        // (3) Terrain + Drainage ko-evolvieren lassen: Inzision SCHÄRFT (fluviale
-        // Täler), der Talus-Pass GLÄTTET (Hänge auf den Ruhewinkel) — zusammen
-        // ergeben sie natürliche Berge mit Talus-Flanken statt 60°-Cusps.
-        for (let it = 0; it < E.iterations; it++) {
-            this._erosionIncisionPass(h, dim, buf, E);
-            this._thermalErosionPass(h, dim, buf, E);
-        }
-        // (4) Delta = erodiert − roh, geklemmt + zum Region-Rand auf 0 getapert
-        // (sonst klaffte eine Stufe zum un-erodierten Umland jenseits der Region).
-        const delta = new Float32Array(n);
-        const taper = E.edgeTaper;
-        const md = E.maxDelta;
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                const idx = i + j * dim;
-                let dv = h[idx] - orig[idx];
-                if (dv > md) dv = md;
-                else if (dv < -md) dv = -md;
-                const edge = Math.min(i, j, dim - 1 - i, dim - 1 - j);
-                if (edge < taper) dv *= edge / taper;
-                delta[idx] = dv;
-            }
-        }
-        this.state.tarns = savedTarns; // V9.51 — Tarns wiederhergestellt
-        return {
-            delta,
-            dim,
-            cell: E.cell,
-            originX,
-            originZ,
-            regionSize: E.regionSize,
-            flowTo: Int32Array.from(buf.flowTo),
-        };
-    }
-
-    // Eine Stream-Power-Inzisions-Iteration auf `h` (in-place): (1) Priority-Flood (Barnes) → `filled`,
-    // (2) D8-Flow-Direction → `flowTo`, (3) Flow-Accumulation → `accum`, (4) Inzision `Δh = k·A^m·S^n`.
-    // Grate (A≈1) schneiden kaum ein, Täler tief → das Relief WÄCHST. `buf`-Scratch kommt vom Aufrufer.
-    _erosionIncisionPass(h, dim, buf, E) {
-        const n = dim * dim;
-        const { filled, flowTo, accum, visited, order, hpK, hpV } = buf;
-        visited.fill(0);
-        // --- (1) Priority-Flood: binärer Min-Heap, mit den Rand-Zellen geseedet ---
-        let hlen = 0;
-        const swap = (a, b) => {
-            const k = hpK[a];
-            hpK[a] = hpK[b];
-            hpK[b] = k;
-            const v = hpV[a];
-            hpV[a] = hpV[b];
-            hpV[b] = v;
-        };
-        const push = (k, v) => {
-            hpK[hlen] = k;
-            hpV[hlen] = v;
-            let c = hlen++;
-            while (c > 0) {
-                const p = (c - 1) >> 1;
-                if (hpK[p] <= hpK[c]) break;
-                swap(p, c);
-                c = p;
-            }
-        };
-        const pop = () => {
-            const top = hpV[0];
-            hlen--;
-            if (hlen > 0) {
-                hpK[0] = hpK[hlen];
-                hpV[0] = hpV[hlen];
-                let c = 0;
-                for (;;) {
-                    const l = c * 2 + 1;
-                    const r = l + 1;
-                    let s = c;
-                    if (l < hlen && hpK[l] < hpK[s]) s = l;
-                    if (r < hlen && hpK[r] < hpK[s]) s = r;
-                    if (s === c) break;
-                    swap(s, c);
-                    c = s;
-                }
-            }
-            return top;
-        };
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                if (i !== 0 && j !== 0 && i !== dim - 1 && j !== dim - 1) continue;
-                const idx = i + j * dim;
-                filled[idx] = h[idx];
-                visited[idx] = 1;
-                push(h[idx], idx);
-            }
-        }
-        const eps = E.fillEpsilon;
-        // Die Pop-Reihenfolge IST die nach Füllhöhe aufsteigend sortierte
-        // Reihenfolge — in `order` festgehalten spart das einen O(n log n)-
-        // Sort je Iteration (Accumulation + Inzision brauchen diese Ordnung).
-        let oi = 0;
-        while (hlen > 0) {
-            const c = pop();
-            order[oi++] = c;
-            const ci = c % dim;
-            const cj = (c / dim) | 0;
-            for (let dj = -1; dj <= 1; dj++) {
-                for (let di = -1; di <= 1; di++) {
-                    if (di === 0 && dj === 0) continue;
-                    const ni = ci + di;
-                    const nj = cj + dj;
-                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                    const nb = ni + nj * dim;
-                    if (visited[nb]) continue;
-                    filled[nb] = h[nb] > filled[c] + eps ? h[nb] : filled[c] + eps;
-                    visited[nb] = 1;
-                    push(filled[nb], nb);
-                }
-            }
-        }
-        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → steilster GEFÄLLE-Nachbar ---
-        // Steilstes SLOPE (drop/dist, dist=√2 diagonal), nie steilster absoluter Drop — der bevorzugt
-        // Diagonalen und gibt Drainage, Erosion und Hydro-Flow einen Diagonal-Grain (diag-flow-bias).
-        const INV_DIAG = 1 / Math.SQRT2;
-        for (let j = 1; j < dim - 1; j++) {
-            for (let i = 1; i < dim - 1; i++) {
-                const idx = i + j * dim;
-                const fHere = filled[idx];
-                let best = -1;
-                let bestSlope = 0;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
-                        if (di === 0 && dj === 0) continue;
-                        const nb = i + di + (j + dj) * dim;
-                        const drop = fHere - filled[nb];
-                        if (drop <= 0) continue; // nur bergab
-                        const slope = di !== 0 && dj !== 0 ? drop * INV_DIAG : drop;
-                        if (slope > bestSlope) {
-                            bestSlope = slope;
-                            best = nb;
-                        }
-                    }
-                }
-                flowTo[idx] = best;
-            }
-        }
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) flowTo[i + j * dim] = -1;
-            }
-        }
-        // --- (3) Flow-Accumulation: `order` rückwärts (absteigende Füllhöhe)
-        // → eine Zelle wird VOR ihrer Abfluss-Zelle verarbeitet. ---
-        for (let i = 0; i < n; i++) accum[i] = 1;
-        for (let o = n - 1; o >= 0; o--) {
-            const c = order[o];
-            const t = flowTo[c];
-            if (t >= 0) accum[t] += accum[c];
-        }
-        // --- (4) Inzision: Δh = k·A^m·S^n je Zelle, STROMAB-ZUERST (`order` vorwärts): die Abfluss-Zelle
-        // ist schon gesenkt, wenn ihr Zufluss dran ist → der Kanal wandert gemeinsam nach unten. ---
-        const k = E.streamK;
-        const cap = E.maxIncisionPerPass;
-        const m = E.areaExp;
-        const nn = E.slopeExp;
-        const minA = E.channelMinArea;
-        for (let o = 0; o < n; o++) {
-            const c = order[o];
-            const t = flowTo[c];
-            if (t < 0) continue;
-            // fluviale Inzision nur in Kanälen — Hänge/Grate (A < minA)
-            // bleiben unberührt, die scharfen Gipfel überleben.
-            if (accum[c] < minA) continue;
-            const slope = (filled[c] - filled[t]) / E.cell;
-            if (slope <= 0) continue;
-            // nicht unter den Abfluss-Nachbarn schneiden (keine Flow-Inversion).
-            const room = h[c] - h[t];
-            if (room <= 0) continue;
-            let inc = k * Math.pow(accum[c], m) * Math.pow(slope, nn);
-            if (inc > cap) inc = cap;
-            if (inc > room) inc = room;
-            h[c] -= inc;
-        }
-    }
-
-    // Thermische Erosion (Angle-of-Repose): Zellen steiler als der Ruhewinkel geben Überschuss an
-    // niedrigere Nachbarn ab (massenerhaltend) → Talus-Flanken statt 60°-Cusps. Transport in einen
-    // SEPARATEN Akkumulator (`thermalDelta`), nie in-place — sonst hinge das Ergebnis von der
-    // Scan-Reihenfolge ab (Determinismus-Bruch).
-    _thermalErosionPass(h, dim, buf, E) {
-        const n = dim * dim;
-        const td = buf.thermalDelta;
-        td.fill(0);
-        // max stabile Höhendifferenz = tan(Ruhewinkel) · Zell-Distanz; der
-        // Diagonal-Nachbar ist √2 weiter → höhere Schwelle (sonst Achsen-Grid-
-        // Bias wie der V13.3-D8-Flow-Befund).
-        const talusT = Math.tan((E.talusAngle * Math.PI) / 180) * E.cell;
-        const talusD = talusT * Math.SQRT2;
-        const factor = E.talusFactor;
-        const nbIdx = buf.thNbIdx;
-        const nbExc = buf.thNbExc;
-        for (let j = 1; j < dim - 1; j++) {
-            for (let i = 1; i < dim - 1; i++) {
-                const idx = i + j * dim;
-                const hc = h[idx];
-                let cnt = 0;
-                let sumExc = 0;
-                let maxExc = 0;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
-                        if (di === 0 && dj === 0) continue;
-                        const nb = i + di + (j + dj) * dim;
-                        const T = di !== 0 && dj !== 0 ? talusD : talusT;
-                        const diff = hc - h[nb] - T;
-                        if (diff > 0) {
-                            nbIdx[cnt] = nb;
-                            nbExc[cnt] = diff;
-                            cnt++;
-                            sumExc += diff;
-                            if (diff > maxExc) maxExc = diff;
-                        }
-                    }
-                }
-                if (sumExc > 0) {
-                    // Bewege einen Bruchteil des GRÖSSTEN Überschusses, proportional
-                    // auf die instabilen Nachbarn verteilt (Musgrave-Thermal-Modell).
-                    const move = factor * maxExc * 0.5;
-                    td[idx] -= move;
-                    for (let p = 0; p < cnt; p++) {
-                        td[nbIdx[p]] += move * (nbExc[p] / sumExc);
-                    }
-                }
-            }
-        }
-        for (let i = 0; i < n; i++) h[i] += td[i];
-    }
-
     // ===== FERNE BINNENGEWAESSER: die seed-deterministischen KACHELN =====
-    // Die Heimat-Region (state.hydrosphere/erosion, ±1024 m) bleibt unangetastet; jenseits liefert eine
-    // lazy Kachel (2048 m, dieselbe Maschinerie) Seen·Flüsse·Erosion = f(seed, Kachel) — für jeden Peer
-    // gleich. Der Kachel-Schlüssel und die Erosions-Auflösung wohnen im Gelände-Gesetzbuch (gelaende-core.js
-    // `kachelSchluessel` · `erosionFuer`), Stamm und voxel-worker lesen sie dort; Kacheln sind DERIVED (nie im
+    // Die Heimat-Region (state.hydrosphere, ±1024 m) bleibt unangetastet; jenseits liefert eine
+    // lazy Kachel (2048 m, dieselbe Maschinerie) Seen·Flüsse = f(seed, Kachel) — für jeden Peer
+    // gleich. Der Kachel-Schlüssel wohnt im Gelände-Gesetzbuch (gelaende-core.js
+    // `kachelSchluessel`), Stamm und voxel-worker lesen ihn dort; Kacheln sind DERIVED (nie im
     // Snapshot), Welt-Regen leert sie.
     // Die EINE Region-Aufloesung fuer alle Hydro-Leser: Heimat-Region, wenn
     // (x,z) in ihr liegt; sonst die Kachel; sonst die Heimat (deren OOB-Logik
@@ -27870,17 +27528,9 @@ class AnazhRealm {
                 if (rx === 0 && rz === 0) continue;
                 const key = `${rx},${rz}`;
                 if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
-                if (!this.state.erosionTiles) this.state.erosionTiles = new Map();
                 if (this.state.hydroTiles.has(key)) continue;
                 const t0 = performance.now();
                 const origin = { x: rx * size - half, z: rz * size - half };
-                // EROSION ZUERST (wie die Heimat: die Hydro-Probe sieht die erodierten Täler via gelaende-core erosionFuer).
-                // flowTo (64 KB) trägt nur der Heimat-Atlas (diag-flow-bias liest ihn) — die Kachel bleibt schlank.
-                const eTile = this._computeErosion(origin);
-                if (eTile) {
-                    eTile.flowTo = null;
-                    this.state.erosionTiles.set(key, eTile);
-                }
                 this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
                 this._computeHydroBand();
                 made++;
@@ -27899,17 +27549,16 @@ class AnazhRealm {
         return made;
     }
 
-    // Tarn-Pass: Bergseen als Gauss-Mulden im Erosions-Delta an hohen, sanft geneigten Stellen. Läuft
-    // NACH `_computeErosion`, VOR `_computeHydrosphere` → das Priority-Flood füllt die Mulde zum See, die
-    // bestehende Wasser-Maschinerie rendert ihn. Deterministisch (seed-Noise), legt `state.tarns` ab.
-    // ACHTUNG: wer `_computeErosion` neu rechnet, MUSS diesen Pass danach erneut rufen.
+    // Tarn-Pass: Bergseen (benannte Senken) als Gauss-Mulden an hohen, sanft geneigten Stellen. Läuft VOR
+    // `_computeHydrosphere` → das Priority-Flood füllt die Mulde zum See, die bestehende Wasser-Maschinerie
+    // rendert ihn. Deterministisch (seed-Noise), legt `state.tarns` ab.
     _hydroSeedTarns() {
         this.state.tarns = [];
         // Die Tarne sind Mulden des Wildnis-Terms (gelaende-core `wildnisY` addiert sie): eine Welt ohne ihn sät keine.
         if (!(this._erbgut().wildnis > 0)) return this.state.tarns;
         const T = AnazhRealm.TARN;
         const base = this.state.terrainBaseHeight || 0;
-        const region = AnazhRealm.EROSION.regionSize;
+        const region = AnazhRealm.HYDROSPHERE.regionSize;
         const n = this._gelaende().noise;
         const half = region / 2;
         const cols = Math.max(3, Math.round(region / T.spacing));
@@ -27936,7 +27585,7 @@ class AnazhRealm {
         const reliefThr = Math.max(base + T.minReliefAbs, sorted[Math.floor(sorted.length * T.reliefPercentile)]);
         // --- Kandidaten gaten + akzeptieren ---
         const tarns = [];
-        const d = AnazhRealm.EROSION.cell;
+        const d = 16; // m — der Hang-Schritt des Tarn-Gates
         const minSep = T.radiusMax;
         for (const p of pts) {
             if (!Number.isFinite(p.surf) || p.surf < reliefThr) continue;
@@ -27979,54 +27628,6 @@ class AnazhRealm {
         return tarns;
     }
 
-    // Der persistierte Anker (worldMeta.macro) IST die Source of Truth: eine Welt behält ihren Original-
-    // Anker, auch wenn Konstanten sich ändern; Main↔Worker via `_voxelWorkerSnapshotState.macroAnker`.
-    // Persistenz reist im worldMeta-Spread. Alte Welt ohne macro → re-compute aus Seed (gen≥3) oder null;
-    // korruptes Feld → verwerfen + neu bauen (must-ignore).
-    _macroAnker() {
-        if (this._macroAnkerCache) return this._macroAnkerCache;
-        if (this._genVersion() < 3) return null;
-        // Der Anker ist Zustand des Wildnis-Terms: eine Welt ohne ihn hat keinen (und schreibt keinen in ihr worldMeta).
-        if (!(this._erbgut().wildnis > 0)) return null;
-        const wm = this.state.worldMeta;
-        if (!wm) return null;
-        if (wm.macro && AnazhRealm._isValidMacroAnker(wm.macro)) {
-            this._macroAnkerCache = wm.macro;
-            return this._macroAnkerCache;
-        }
-        const seed = wm.seed || "anazh-realm-seed";
-        this._macroAnkerCache = globalThis.__gelaendeCore.ankerAusSaat(seed);
-        // Erbgut persistieren — der nächste Lade-Vorgang liest aus wm.macro
-        // (und damit auch ein geteiltes Welt-Bündel: signiert+additiv).
-        wm.macro = this._macroAnkerCache;
-        return this._macroAnkerCache;
-    }
-
-    // Struktur-Validierung gegen korrupte macro-Felder (Müll, falsches Schema, manipuliertes Bündel —
-    // must-ignore); prüft Form, nicht Semantik (die deckt die Abfluss-Invariante).
-    static _isValidMacroAnker(m) {
-        if (!m || typeof m !== "object") return false;
-        if (!m.massivC || typeof m.massivC.x !== "number" || typeof m.massivC.z !== "number") return false;
-        if (typeof m.massivR !== "number" || !Number.isFinite(m.massivR)) return false;
-        if (typeof m.massivH !== "number" || !Number.isFinite(m.massivH)) return false;
-        if (typeof m.massivRot !== "number" || !Number.isFinite(m.massivRot)) return false;
-        if (typeof m.massivAspect !== "number" || !Number.isFinite(m.massivAspect)) return false;
-        if (!m.beckenC || typeof m.beckenC.x !== "number" || typeof m.beckenC.z !== "number") return false;
-        if (typeof m.beckenR !== "number" || !Number.isFinite(m.beckenR)) return false;
-        if (typeof m.beckenD !== "number" || !Number.isFinite(m.beckenD)) return false;
-        if (!Array.isArray(m.talVertices) || m.talVertices.length < 2) return false;
-        if (!Array.isArray(m.talFloors) || m.talFloors.length !== m.talVertices.length) return false;
-        for (const v of m.talVertices) {
-            if (!v || typeof v.x !== "number" || typeof v.z !== "number") return false;
-            if (!Number.isFinite(v.x) || !Number.isFinite(v.z)) return false;
-        }
-        for (const f of m.talFloors) {
-            if (typeof f !== "number" || !Number.isFinite(f)) return false;
-        }
-        if (typeof m.talBreite !== "number" || typeof m.talTrenchTiefe !== "number") return false;
-        if (typeof m.talTrenchBreite !== "number" || typeof m.talBlendExp !== "number") return false;
-        return true;
-    }
 
     // Abfluss-Invariante: an N=32 Strahlen am Becken-Rim die Makro-Höhe messen (includeDetail=false);
     // die Spannweite max−min MUSS > beckenD*0.5 sein → ein klarer Tiefweg, nie ein rund umringtes
@@ -28099,9 +27700,8 @@ class AnazhRealm {
         return Math.hypot(dxh, dzh);
     }
 
-    // Rock-Exposure: slope-getrieben + Massiv-Bias (im Massiv-Footprint mehr
-    // Fels-Wahrscheinlichkeit). LAAS-Form: `smoothstep(0.75, 1.45, slope) +
-    // massivMask · 0.18`. Returnt [0, 1+] (Clamping macht der Konsument).
+    // Rock-Exposure: slope-getrieben, `smoothstep(0.75, 1.45, slope)` — die Kliffs und Flanken des Flussnetzes tragen
+    // den Fels (K16: der Massiv-Bias des Ein-Massiv-Ankers fiel mit ihm). Returnt [0, 1].
     _rockExposureAt(x, z) {
         const slope = this._slopeAt(x, z);
         const ss = (e0, e1, v) => {
@@ -28109,11 +27709,7 @@ class AnazhRealm {
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        let exposure = ss(0.75, 1.45, slope);
-        // Die Massiv-Maske des Ankers (smoothstep-Glocke ohne Grate) aus dem Gelände-Gesetzbuch.
-        const anker = this._macroAnker();
-        if (anker) exposure += globalThis.__gelaendeCore.massivMaske(anker, x, z) * 0.18;
-        return exposure;
+        return ss(0.75, 1.45, slope);
     }
 
     // DIE EINE 2D-HÖHE der Welt: das Gelände-Gesetzbuch (gelaende-core.js `hoehe` — der Term-Auswerter des Erbguts,
@@ -28125,8 +27721,8 @@ class AnazhRealm {
 
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
     // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
-    // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `macroAnker` ist `_macroAnker()` (null bei
-    // genVersion < 3), `erbgut` die gemerkte Normalform, `regionSize` die Kachel-Kante der Hydrosphäre.
+    // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `erbgut` ist die gemerkte Normalform (sie trägt die
+    // Regler der Landform), `regionSize` die Kachel-Kante der Hydrosphäre.
     _gelaende() {
         if (this._gelaendeLage) return this._gelaendeLage;
         const realm = this;
@@ -28147,17 +27743,8 @@ class AnazhRealm {
             get terrainSteepness() {
                 return realm.state.terrainSteepness;
             },
-            get erosion() {
-                return realm.state.erosion;
-            },
-            get erosionTiles() {
-                return realm.state.erosionTiles;
-            },
             get tarns() {
                 return realm.state.tarns;
-            },
-            get macroAnker() {
-                return realm._macroAnker();
             },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
@@ -28170,7 +27757,7 @@ class AnazhRealm {
     }
 
     // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
-    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed nach dem Muster `_isValidMacroAnker`, aber
+    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed und
     // ohne stillen Ersatz: eine unbekannte Term-Art, eine fehlende Zahl oder eine Form außerhalb der Regeln WIRFT — die
     // Welt erwacht nicht und sagt es auf dem Ladeschirm (init), nie still Wildnis. `wildnis` ist das Gewicht des
     // Wildnis-Terms (1 = die Welt trägt ihn, 0 = nicht); `_wildnisTraegt` und die Spalte lesen es.
@@ -28243,7 +27830,7 @@ class AnazhRealm {
         return quelle === "nexus" || quelle === "rule:nexus";
     }
 
-    // Der Hydrosphäre-Compute-Pfad (`_computeErosion`, `_hydroSeedTarns`, `_hydroInit`) liest direkt
+    // Der Hydrosphäre-Compute-Pfad (`_hydroSeedTarns`, `_hydroInit`) liest direkt
     // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
 
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
@@ -28265,12 +27852,8 @@ class AnazhRealm {
         // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
         // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
         const wild = (this._erbgutCache || this._erbgut()).wildnis;
-        let roughScale = 0;
         let ceilOffset = -24;
         if (wild > 0) {
-            // T6c — WEITE FELDER: die Rauheits-Maske des Gesetzbuchs (λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
-            const mtnR = globalThis.__gelaendeCore.rauheit(L, x, z);
-            roughScale = (0.16 + 0.84 * mtnR) * wild;
             // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
             const canyonOpen = Math.max(
                 0,
@@ -28293,7 +27876,6 @@ class AnazhRealm {
         out.base = base;
         out.surf = surf;
         out.wild = wild;
-        out.roughScale = roughScale;
         out.ceilOffset = ceilOffset;
         out.hydroActive = hydroActive;
         out.hydroCarve = hydroCarve;
@@ -28311,8 +27893,6 @@ class AnazhRealm {
         let d = surf - y;
         // Rauheit und Höhlen sind Wildnis: ohne ihr Gewicht (ctx.wild 0) wird kein noise3D gerechnet.
         if (ctx.wild > 0) {
-            d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-            d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
             const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
             const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
             const caveEnv = caveFloor * caveCeil * ctx.wild;
@@ -34777,7 +34357,7 @@ class AnazhRealm {
     // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
     // Gitter und nimmt den ERSTEN Fels — ist ein Gitterpunkt über `hoehe` Fels, liegt die Oberfläche dort oder höher.
     // Dichte-Proben an genau diesen Gitterpunkten (dieselbe Subtraktions-Kette, derselbe Spalten-Kontext, dieselbe Dichte
-    // `_fieldDensityAt` samt Edits) statt des Scans: (1) der höchste Punkt unter dem Rauheits-Band (surf − 12·roughScale —
+    // `_fieldDensityAt` samt Edits) statt des Scans: (1) der höchste Punkt unter der Makro-Höhe (surf —
     // dort ist Fels, wo keine Höhle ist), sonst der tiefste über `hoehe`; (2) ist der tiefste über `hoehe` Luft und der
     // darunter Fels, liegt die Oberfläche auf der Kante dazwischen (die Interpolation des Scans, bitgleich) — oder höher,
     // falls darüber noch Fels hängt. false = unbewiesen, der Scan entscheidet. Die Wasser-Suche (`_findNearestWaterPoint`)
@@ -34792,7 +34372,7 @@ class AnazhRealm {
         const top = floorY + cfg.dimY * cfg.step - 8;
         const bottom = floorY + 12;
         const skipAbove = Math.max(ctx.surf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2);
-        const band = ctx.surf - 12 * ctx.roughScale;
+        const band = ctx.surf;
         let unterBand = null,
             tiefster = null;
         for (let y = top; y >= bottom && y > hoehe; y -= 1.2) {
@@ -39226,12 +38806,30 @@ class AnazhRealm {
     }
 
     // ===== DER FELD-ZEICHNER =====
-    // Ein voller Fern-Ring-Refresh (Boot + Re-Anker) läuft als EIN GPU-Compute durch denselben WGSL-
-    // Text (feld-wgsl.js) — der Horizont steht im nächsten Frame; die budgetierte CPU-Schleife
-    // verfeinert danach aufs f64-Gesetz (GPU = f32-Seh-Wahrheit; die Physik liest diese Höhen NIE).
-    // Ohne Device/Kern zeichnet die CPU allein — gleiche Formel, kein Zahlen-Zwilling.
+    // Ein voller Fern-Ring-Refresh (Boot + Re-Anker) und der Feld-Pass lesen die Höhen der Ferne aus dem EINEN Gelände-
+    // Gesetzbuch (gelaende-core `hoehe`, K16: das Flussnetz ist memoisierter Zustand je Saat — ein WGSL-Spiegel des
+    // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task höchstens
+    // `FELD_SCHEIBE` Punkte, der Spiel-Takt läuft dazwischen weiter (Streaming ist heilig).
+    _feldZeichnerHoehen(punkte, includeDetail) {
+        const n = (punkte.length / 2) | 0;
+        const werte = new Float32Array(n);
+        const SCHEIBE = AnazhRealm.FELD_SCHEIBE;
+        let k = 0;
+        return new Promise((fertig) => {
+            const scheibe = () => {
+                const ende = Math.min(n, k + SCHEIBE);
+                for (; k < ende; k++) werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail);
+                if (k < n) setTimeout(scheibe, 0);
+                else fertig(werte);
+            };
+            scheibe();
+        });
+    }
+    static get FELD_SCHEIBE() {
+        return 1500;
+    }
 
-    // Zeichen-Device: ZUERST das des Renderers (r184 WebGPUBackend, geteilt), sonst lazy ein eigenes
+    // Zeichen-Device des Feld-Panoramas: ZUERST das des Renderers (r184 WebGPUBackend, geteilt), sonst lazy ein eigenes
     // (memoisiert; der Null-Renderer hat keins, swiftshader-Vulkan liefert echtes WebGPU).
     _feldZeichnerDevice() {
         try {
@@ -39252,115 +38850,10 @@ class AnazhRealm {
         return this._feldZeichnerEigenDevP;
     }
 
-    // EIN GPU-Lauf des Makro-Gesetzes über `punkte` ((x,z)-Paare, Float32): Eingaben aus den LEBENDEN
-    // Quellen (spiegelEingaben, kein Zahlen-Zwilling), Pipeline memoisiert, Buffers je Lauf frisch +
-    // zerstört. null (kein Device/Kern, Validierungsfehler) → der Rufer lässt die CPU zeichnen.
-    async _feldZeichnerHoehen(punkte, includeDetail) {
-        const fw = (typeof window !== "undefined" && window.__feldWgsl) || null;
-        if (!fw || typeof fw.spiegelEingaben !== "function") return null;
-        const device = this._feldZeichnerDevice() || (await this._feldZeichnerEigenDevice());
-        if (!device) return null;
-        try {
-            const n = (punkte.length / 2) | 0;
-            const e = fw.spiegelEingaben(this);
-            if (!e) return null;
-            device.pushErrorScope("validation");
-            if (!this._feldZeichnerPipe || this._feldZeichnerPipeDev !== device) {
-                const mod = device.createShaderModule({ code: fw.WGSL_MAKRO });
-                this._feldZeichnerPipe = device.createComputePipeline({
-                    layout: "auto",
-                    compute: { module: mod, entryPoint: "main" },
-                });
-                this._feldZeichnerPipeDev = device;
-            }
-            const pipe = this._feldZeichnerPipe;
-            const mkStorage = (arr) => {
-                const buf = device.createBuffer({
-                    size: Math.max(4, arr.byteLength),
-                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-                });
-                device.queue.writeBuffer(buf, 0, arr.buffer, arr.byteOffset, arr.byteLength);
-                return buf;
-            };
-            const uniBytes = new ArrayBuffer(48);
-            const uf = new Float32Array(uniBytes, 0, 8);
-            const uu = new Uint32Array(uniBytes, 32, 4);
-            uf[0] = e.base;
-            uf[1] = e.steilheit;
-            uf[2] = e.wasser;
-            uf[3] = includeDetail ? 1 : 0; // der Ring liest das Gesetz OHNE Detail-Oktave
-            uf[4] = e.hatAnker;
-            uf[5] = e.eroOriginX;
-            uf[6] = e.eroOriginZ;
-            uf[7] = e.eroCell;
-            uu[0] = e.eroDim;
-            uu[1] = e.nTarns;
-            uu[2] = e.nTal;
-            uu[3] = n;
-            const uniBuf = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-            device.queue.writeBuffer(uniBuf, 0, uniBytes);
-            const bufs = [
-                mkStorage(e.permVoxel),
-                mkStorage(e.permMod12Voxel),
-                mkStorage(e.permRidge),
-                mkStorage(e.ankerPack),
-                mkStorage(e.erosionGrid),
-                mkStorage(e.tarnPack),
-                mkStorage(punkte),
-            ];
-            const outBuf = device.createBuffer({
-                size: n * 4,
-                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
-            });
-            const staging = device.createBuffer({
-                size: n * 4,
-                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
-            });
-            const bind = device.createBindGroup({
-                layout: pipe.getBindGroupLayout(0),
-                entries: [{ binding: 0, resource: { buffer: uniBuf } }].concat(
-                    bufs.map((b, i) => ({ binding: i + 1, resource: { buffer: b } })),
-                    [{ binding: 8, resource: { buffer: outBuf } }]
-                ),
-            });
-            const err = await device.popErrorScope();
-            if (err) {
-                this.log("Feld-Zeichner: WGSL-Validierung scheiterte — die CPU zeichnet. " + err.message, "ERROR");
-                return null;
-            }
-            const enc = device.createCommandEncoder();
-            const pass = enc.beginComputePass();
-            pass.setPipeline(pipe);
-            pass.setBindGroup(0, bind);
-            pass.dispatchWorkgroups(Math.ceil(n / 64));
-            pass.end();
-            enc.copyBufferToBuffer(outBuf, 0, staging, 0, n * 4);
-            device.queue.submit([enc.finish()]);
-            await staging.mapAsync(GPUMapMode.READ);
-            const werte = new Float32Array(staging.getMappedRange().slice(0));
-            staging.unmap();
-            for (const b of bufs.concat([uniBuf, outBuf, staging])) {
-                try {
-                    b.destroy();
-                } catch (_e) {}
-            }
-            return werte;
-        } catch (err) {
-            this.log(
-                "Feld-Zeichner: GPU-Lauf scheiterte (" + ((err && err.message) || err) + ") — die CPU zeichnet.",
-                "WARN"
-            );
-            return null;
-        }
-    }
-
     // Ring-Maler: alle Punkte des Ankers packen, EIN Feld-Lauf, Ergebnis durch dieselbe Setz-Naht wie
     // die CPU. Generations-Stempel verwirft überholte Flüge (Re-Anker/Dispose); fr.cursor bleibt.
     _fernRingGpuMal(fr) {
         if (fr.gpuFlug) return;
-        const fw = (typeof window !== "undefined" && window.__feldWgsl) || null;
-        const gpuDa = this._feldZeichnerDevice() || (typeof navigator !== "undefined" && navigator.gpu);
-        if (!fw || !gpuDa) return;
         const n = fr.totalVerts;
         const punkte = new Float32Array(n * 2);
         const pts = new Array(n);
@@ -39372,7 +38865,7 @@ class AnazhRealm {
         }
         fr.gpuFlug = true;
         const gen = (fr.gen = (fr.gen || 0) + 1);
-        // Mittel-Ring: in der Deck-Zone das VOLLE Gesetz (der WGSL-Spiegel trägt includeDetail). Zwei Flüge
+        // Mittel-Ring: in der Deck-Zone das VOLLE Gesetz (mit Detail). Zwei Flüge
         // (Makro für alle + VOLL für die Zonen-Vertices), gemischt über _fernRingDeckMisch → ab dem ersten
         // GPU-Anstrich wahr geformt, kein Makro→Voll-Sprung im Loch.
         const zonenIdx = [];
@@ -46018,8 +45511,8 @@ class AnazhRealm {
         if (state.worldMeta && typeof state.worldMeta === "object") {
             // DIE WELTGRENZE: die geladene Welt ersetzt das worldMeta ganz (`_weltMetaWechsel`), das EINE Heil jeder Welt
             // heilt sie (Seed, Voxel-Boden), und die Gedächtnisse der Seite, die welt-eigene Felder spiegeln
-            // (`AnazhRealm.WELT_GRENZE.gedaechtnis`: Erbgut-Merker, Anker, Ring, Vorschau, Dorf-Zug), fallen mit ihm — der
-            // Heiß-Pfad liest den Erbgut-Merker direkt, `_macroAnker` gab bis 10.10. den Anker der Welt davor zurück.
+            // (`AnazhRealm.WELT_GRENZE.gedaechtnis`: Erbgut-Merker, Ring, Vorschau, Dorf-Zug), fallen mit ihm — der
+            // Heiß-Pfad liest den Erbgut-Merker direkt.
             this.state.worldMeta = this._weltMetaWechsel(state.worldMeta);
             AnazhRealm._weltMetaHeil(this.state.worldMeta);
             for (const k of AnazhRealm.WELT_GRENZE.gedaechtnis) this[k] = null;
@@ -103081,7 +102574,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
     platz: Object.freeze(["worldId", "slug", "bornAt"]),
     gedaechtnis: Object.freeze([
         "_erbgutCache",
-        "_macroAnkerCache",
         "_genesisRingFertig",
         "_portalPreviewFertig",
         "_portalPreviewAwaiting",

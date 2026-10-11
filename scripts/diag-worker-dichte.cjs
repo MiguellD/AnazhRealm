@@ -233,7 +233,7 @@ async function probe(page, welt, mitAbdruck) {
             };
             // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
             // Punkten in drei Höhen über der Makro-Höhe (die Schnee-Prominenz `y − Basis − kontinentBasis` greift erst
-            // hoch), die Fels-Exposition (`massivMaske`, die Steilheit an der Makro-Höhe statt am Chunk-Cache), die Tarn-
+            // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache), die Tarn-
             // Mulden (`tarnMulde`) und die Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
             // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort). Vorher = nachher beweist die Leser byte-gleich.
             const leserSha = async () => {
@@ -281,7 +281,7 @@ async function probe(page, welt, mitAbdruck) {
                 out.shaLeser = await leserSha();
                 out.shaLeser.worker = await workerFarbeSha();
                 // DREI WELT-SAATEN (K09a): der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
-                // chirurgische Regenesis wie gate:dritter-spiegel (Ströme, Anker, Erosion DANN Tarns), dann der Abdruck.
+                // chirurgische Regenesis (Ströme DANN Tarns; das Netz des Gesetzbuchs ist je Saat gemerkt), dann der Abdruck.
                 if (welt === "standard") {
                     out.shaSaaten = { [s.worldMeta.seed]: out.shaMakro };
                     out.shaLeserSaaten = {};
@@ -290,12 +290,9 @@ async function probe(page, welt, mitAbdruck) {
                     const regenesis = (saat, macro) => {
                         s.worldMeta.seed = saat;
                         r._voxelNoise = null;
-                        r._macroRidgeNoise = null;
-                        r._macroAnkerCache = null;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
-                        s.erosionTiles = new Map();
-                        r._worldgenComputeErosionAndTarns();
+                        r._worldgenTarns();
                     };
                     for (const saat of ["w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"]) {
                         regenesis(saat, undefined);
@@ -402,10 +399,7 @@ function realismusLage(K, saat) {
         baseHeight: 0,
         waterLevel: -3,
         terrainSteepness: 1,
-        erosion: null,
-        erosionTiles: null,
         tarns: null,
-        macroAnker: typeof G.ankerAusSaat === "function" ? G.ankerAusSaat(saat) : null,
         erbgut: { terme: G.erbgutNormal(undefined), wildnis: 1 },
         regionSize: 2048,
     };
@@ -539,7 +533,7 @@ function realismus() {
     // DIE ABSENZ (plan §10 R1): der Name der Bühne steht nur in spec/ und in der Werkbank — der Stamm, der Worker und der
     // Seh-Spiegel lesen Zahlen (Terme, Wildnis-Gewicht), nie einen Namen (kein Flag unter anderem Namen).
     const NAME = /pruefbuehne|prüfbühne/i;
-    for (const datei of ["anazhRealm.js", "voxel-worker.js", "feld-wgsl.js"]) {
+    for (const datei of ["anazhRealm.js", "voxel-worker.js"]) {
         const n = (fs.readFileSync(path.join(root, datei), "utf8").match(new RegExp(NAME.source, "gi")) || []).length;
         if (n) {
             console.log(`  ⛔ ABSENZ: ${datei} nennt die Bühne ${n}× (ein Flag statt der Terme)`);

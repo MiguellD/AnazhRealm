@@ -331,10 +331,22 @@
     // DAS NETZ einer Welt (je Saat, Regler, Basis und Wasserspiegel): die memoisierten Knoten und Zellen-Listen. Reine
     // Ableitung — jeder Wert ist eine Funktion von (Saat, Regler, Ebene, Zelle), nie von der Reihenfolge der Fragen.
     const NETZE = new Map();
+    // Der Heiß-Pfad (jede Spalte): die Lage merkt ihr Netz an der Identität ihrer Eingaben (Rausch-Strom, Erbgut-Normalform,
+    // Basis, Wasser) — der Schlüssel-Text entsteht nur beim Wechsel.
+    const LAGE_NETZ = new WeakMap();
     function netzFuer(L) {
-        const P = landformRegler(L);
+        const noise = L.noise;
+        const erbgut = L.erbgut;
         const base = L.baseHeight || 0;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : base + 4;
+        const m = LAGE_NETZ.get(L);
+        if (m && m.noise === noise && m.erbgut === erbgut && m.base === base && m.wl === wl) return m.N;
+        const N = netzNeu(L, base, wl);
+        LAGE_NETZ.set(L, { noise, erbgut, base, wl, N });
+        return N;
+    }
+    function netzNeu(L, base, wl) {
+        const P = landformRegler(L);
         let schl = L.seed + "|" + base + "|" + wl;
         for (const r of LANDFORM_REGLER) schl += "|" + P[r.id];
         const da = NETZE.get(schl);
@@ -722,11 +734,11 @@
     function warpZ(n, x, z) {
         return n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
     }
-    // DIE KONTINENTALE GRUNDHÖHE an (x, z) relativ zur Basis — der Talgrund (die Sohlen des Netzes). Leser: die Schnee-Prominenz
+    // DIE KONTINENTALE GRUNDHÖHE an (x, z) relativ zur Basis — der OFFSET der Großform (der Talgrund lag zu tief: Schnee
+    // auf jedem 60-m-Hügel, Bild k16/nachher-makro-300m.png). Leser: die Schnee-Prominenz
     // `y − Basis − kontinentBasis` der Boden-Farbe (Stamm `_bodenFarbeAt`, Worker `attachFieldColors`).
     function kontinentBasis(L, x, z) {
-        const N = netzFuer(L);
-        return talgrund(N, x, z) - N.base;
+        return grossform(netzFuer(L), x, z).off;
     }
 
     function wildnisY(L, x, z, mitDetail) {

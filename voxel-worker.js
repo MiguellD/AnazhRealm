@@ -52,7 +52,7 @@ importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + _
 
 // K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
 // Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel ·
-// terrainSteepness · erosion · erosionTiles · tarns · macroAnker · erbgut · regionSize). Fehlt der Kern, wirft der
+// terrainSteepness · tarns · erbgut · regionSize). Fehlt der Kern, wirft der
 // Worker beim Laden (fail-closed, nie still eine eigene Höhe).
 importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 const G = self.__gelaendeCore;
@@ -66,9 +66,7 @@ const state = {
     waterLevel: 0,
     hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
     hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
-    erosionTiles: null, // A3 (V18.132) — {key: {originX, originZ, cell, dim, delta}}
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
-    erosion: null, // { originX, originZ, cell, dim, delta }
     tarns: null, // Array of { x, z, d, reach2, twoSig2 }
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
@@ -83,10 +81,6 @@ const state = {
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
     genVersion: 1,
-    // Γ4-Vollendung V18.193 — der vom Main persistierte Erbgut-Anker.
-    // Worker liest IHN statt selbst zu bauen → konsistent über
-    // Konstanten-Wechsel + Welt-Bündel-Import.
-    macroAnker: null,
     // die Kachel-Kante der Hydro-Regionen (Main `HYDROSPHERE.regionSize`) — der Kachel-Schlüssel des Gesetzbuchs liest sie
     regionSize: null,
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
@@ -223,9 +217,7 @@ function applyStateSnapshot(snap) {
     if (typeof snap.terrainSteepness === "number") state.terrainSteepness = snap.terrainSteepness; // V14.7: ridgeAmp-Skala
     if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
-    if (snap.erosion !== undefined) state.erosion = snap.erosion;
     if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
-    if (snap.erosionTiles !== undefined) state.erosionTiles = snap.erosionTiles; // A3 (V18.132)
     if (snap.tarns !== undefined) state.tarns = snap.tarns;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
@@ -240,10 +232,6 @@ function applyStateSnapshot(snap) {
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
-    // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
-    // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
-    // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
-    if (snap.macroAnker !== undefined) state.macroAnker = snap.macroAnker;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
 }
@@ -366,11 +354,8 @@ function terrainColumnContext(x, z) {
     const base = state.baseHeight || 0;
     // DAS WILDNIS-GEWICHT der Spalte (Mirror): Rauheit und Höhlen-Hülle wiegen mit ihm; 0 → kein noise3D.
     const wild = state.erbgut.wildnis;
-    let roughScale = 0;
     let ceilOffset = -24;
     if (wild > 0) {
-        const mtnR = G.rauheit(state, x, z);
-        roughScale = (0.16 + 0.84 * mtnR) * wild;
         const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
         const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
         ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
@@ -383,7 +368,7 @@ function terrainColumnContext(x, z) {
         hydroCarve = hydrosphereCarveAt(x, z);
         lake = hydrosphereLakeAt(x, z);
     }
-    return { surf, wild, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
+    return { surf, wild, base, ceilOffset, hydroActive, hydroCarve, lake };
 }
 
 // Die per-VOXEL-Hälfte (y-abhängig, OHNE Edits) — mirror von `_terrainBaseDensityAtCol`.
@@ -392,8 +377,6 @@ function terrainBaseDensityCol(x, y, z, ctx) {
     let d = surf - y;
     // Rauheit und Höhlen sind Wildnis (Mirror): ohne ihr Gewicht kein noise3D.
     if (ctx.wild > 0) {
-        d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-        d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
         const base = ctx.base;
         const caveFloor = clamp01((y - (base - 28)) / 8);
         const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
