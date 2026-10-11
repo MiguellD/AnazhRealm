@@ -1383,6 +1383,9 @@ const ZWILLINGE = [
             /\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/,
             "Canyon und Tafelberg als Maske",
         ],
+        // Die Canyon-Maske der Höhlen-Decke (λ 154 m): sie hob die Decke 8 m über den Boden, die Höhle brach als Grube
+        // ohne Abfluss durch — am gebauten Boden 15,2 → 4,2 Senken > 1 m je km² (die Täler sind das Flussnetz).
+        [/\*\s*0\.0065\s*\+\s*41\.7\b/, "die Canyon-Maske der Höhlen-Decke"],
         [/["'`]-macro-ridge["'`]/, "den Grat-Strom des Makro-Ankers"],
         [/["'`]-macro-anker["'`]/, "den Samen-Strom des Makro-Ankers"],
         [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
