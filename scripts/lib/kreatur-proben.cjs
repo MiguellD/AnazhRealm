@@ -2078,7 +2078,11 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_sockel;
         });
         if (!e) return { fehler: "Sockel nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-2, unten, -2, 2, oben, 2] });
+        // die EINE Hüllen-Form (N5, S3 haus): der Sockel als Kasten c ± h, rolle "fest" — 4 × 4 m, von `unten` bis `oben`
+        r._hausHuelleSetzen(e, {
+            stufe: 0,
+            teile: [{ art: "box", c: [0, (unten + oben) / 2, 0], h: [2, (oben - unten) / 2, 2], rolle: "fest" }],
+        });
         if (!Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length) return { fehler: "Sockel ohne Hülle" };
         const box = e.blockerAABBs[0];
         const mx = (box.minX + box.maxX) / 2,
