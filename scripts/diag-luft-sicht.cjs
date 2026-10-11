@@ -21,6 +21,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const ORTE = require("./lib/orte-des-gesetzes.cjs");
 
 const PORT = Number(process.env.LUFT_PORT || 4594);
 const SELFTEST = process.argv.includes("--selftest");
@@ -84,21 +85,13 @@ function probe(stoerung) {
     out.tKante = +Math.exp((-K * kante) / out.sichtSonne).toFixed(3);
     out.tFern = +Math.exp((-K * fernKante) / out.sichtSonne).toFixed(4);
     // Unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera (Welle L, W-L-d; bis V18.531 die Augen des
-    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des größten Sees der Heimat-Region.
-    const h = st.hydrosphere;
-    const see =
-        h && h.lakes
-            ? h.lakes.filter((l) => l.cells && l.cells.length).sort((a, b) => b.cells.length - a.cells.length)[0]
-            : null;
+    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des Sees des Gesetzes (`__wasserOrt("see")`,
+    // scripts/lib/orte-des-gesetzes.cjs — die Heimat trägt seit K16 keinen See).
+    const see = window.__wasserOrt("see");
     const cam = st.camera;
-    if (see && cam) {
-        const c = see.cells[0];
+    if (see && see.lake && cam) {
         const camAlt = cam.position.clone();
-        cam.position.set(
-            h.originX + ((c % h.dim) + 0.5) * h.cell,
-            see.level - 3,
-            h.originZ + (Math.floor(c / h.dim) + 0.5) * h.cell
-        );
+        cam.position.set(see.x, see.lake.level - 3, see.z);
         cam.updateMatrixWorld(true);
         r._applyDayNightToScene();
         out.sichtWasser = Math.round(r._luftSichtM(augeY));
@@ -161,6 +154,7 @@ function urteil(S) {
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
     });
+    await page.evaluateOnNewDocument(ORTE.ORTE_INSTALL);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

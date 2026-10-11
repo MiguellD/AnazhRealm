@@ -222,10 +222,26 @@ async function proben() {
     kapsel(30);
     // ── K4 TIER AM HANG: die Hang-Stelle (12–30°, die Karte geschlossen im 2-m-Umkreis) mit dem größten Abstand Gesetz ↔
     // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene Stelle (≤ 3°) für die Tod-Lage ──
+    // Gesucht über den gebauten Ring (± 150 m, die Karte reicht ± 194 m): seit der Landform im Kern (K16) trägt die Heimat
+    // im 60-m-Umkreis keinen Hang mit sichtbarem Abstand Gesetz ↔ Karte mehr. Der Weg des Tiers (± 8 m längs der Falllinie)
+    // muss auf geschlossener, stetiger Karte liegen — sonst misst die Treppe eine Kante, nie den Hang (CI 11.10.: 3 004 cm).
+    const wegStetig = (x, z, k) => {
+        const kx = karte(x + 1, z) - k;
+        const kz = karte(x, z + 1) - k;
+        const lg = Math.hypot(kx, kz) || 1;
+        let alt = null;
+        for (let s = -9; s <= 9; s += 0.5) {
+            const w = karte(x + (kx / lg) * s, z + (kz / lg) * s);
+            if (w === null) return false;
+            if (alt !== null && Math.abs(w - alt) > 0.45) return false;
+            alt = w;
+        }
+        return true;
+    };
     let hang = null;
     let eben = null;
-    for (let dx = -60; dx <= 60; dx += 2)
-        for (let dz = -60; dz <= 60; dz += 2) {
+    for (let dx = -150; dx <= 150; dx += 2)
+        for (let dz = -150; dz <= 150; dz += 2) {
             const x = start.x + dx;
             const z = start.z + dz;
             const k = karte(x, z);
@@ -240,7 +256,9 @@ async function proben() {
             const ab = Math.abs(g - k);
             if (neig <= 3 && ab < 0.1 && (!eben || neig < eben.neig)) eben = { x, z, karte: k, gesetz: g, neig };
             if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
-            if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
+            if (hang && ab <= hang.abstand) continue;
+            if (!wegStetig(x, z, k)) continue;
+            hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
         }
     o.hang = hang;
     o.eben = eben;

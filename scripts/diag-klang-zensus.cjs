@@ -209,34 +209,11 @@ function werkzeug() {
     // DIE ORTE aus dem Gesetz.
     W.orte = async (wx, wz) => {
         const orte = { wiese: { x: wx, z: wz } };
-        // Seeufer: nächster trockener Punkt, der 3–7 m vor stillem Wasser liegt.
-        let best = null;
-        for (let r0 = 16; r0 <= 480 && !best; r0 += 16) {
-            for (let a = 0; a < 64; a++) {
-                const ang = (a / 64) * Math.PI * 2;
-                const x = wx + Math.sin(ang) * r0;
-                const z = wz + Math.cos(ang) * r0;
-                if (!W.nass(x, z) || W.fliesst(x, z)) continue;
-                // vom Wasser zurück Richtung Wiese, bis trocken
-                const ux = (wx - x) / r0;
-                const uz = (wz - z) / r0;
-                for (let s = 1; s < 40; s++) {
-                    const qx = x + ux * s;
-                    const qz = z + uz * s;
-                    if (!W.nass(qx, qz)) {
-                        // drei Meter hinter dem ersten trockenen Punkt (das Wasser 3–4 m entfernt): das Ohr hört das Ufer auf
-                        // seinem ersten Ring (4 m). Mit vier Metern traf der erste Ring den trockenen Saum, seit die Welt das
-                        // flache Ufer zeichnet und der Körper es liest (Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
-                        const fx = qx + ux * 3;
-                        const fz = qz + uz * 3;
-                        if (!W.nass(fx, fz)) best = { x: fx, z: fz, wasser: { x, z } };
-                        break;
-                    }
-                }
-                if (best) break;
-            }
-            await sleep(0);
-        }
+        // Seeufer: das Ufer des Sees des Gesetzes (`__wasserOrt("ufer")`, scripts/lib/orte-des-gesetzes.cjs — die Heimat trägt
+        // seit K16 keinen See): drei Meter hinter dem ersten trockenen Punkt vor stillem Wasser (das Wasser 3–4 m entfernt),
+        // das Ohr hört das Ufer auf seinem ersten Ring (4 m; Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
+        const u = window.__wasserOrt("ufer");
+        const best = u ? { x: u.x, z: u.z, wasser: u.wasser } : null;
         if (best) orte.seeufer = best;
         W.wasserPunkt = best ? best.wasser : null; // die Ereignis-Tour lässt das Wasser hier zurückströmen
         // Waldinneres: höchste Kronen-Deckung der Kronen-Karte auf trockenem Land (die Karte trägt die stehenden Kronen;
@@ -288,12 +265,9 @@ function werkzeug() {
         // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
         // das Becken eines Falls bis zur Krone seines Kanals: am 9,1-m-Fall der Mess-Wiese ist kein Punkt ≤ 12 m trocken.
         // Das SOLL misst die Ferne mit (SOLL.fallArm).
-        const h = r._hydroFor(wx, wz);
-        let wfN = null;
-        for (const f of (h && h.waterfalls) || []) {
-            const d = Math.hypot(f.x - wx, f.z - wz);
-            if (!wfN || d < wfN.d) wfN = { f, d };
-        }
+        // Der Fall ist der nächste des Gesetzes (`__wasserOrt("fall")`: die Heimat-Kachel trägt seit K16 keinen).
+        const fo = window.__wasserOrt("fall");
+        const wfN = fo ? { f: fo.fall, d: Math.hypot(fo.x - wx, fo.z - wz) } : null;
         for (const rad of wfN ? [3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24] : []) {
             for (let a = 0; a < 16 && !orte.fallArm; a++) {
                 const ang = (a / 16) * Math.PI * 2;
@@ -305,7 +279,7 @@ function werkzeug() {
             if (orte.fallArm) break;
         }
         // Kein trockener Punkt / kein Fall: die Spur reist mit (der Befund O nennt den Ort).
-        if (!orte.fallArm) orte.fallSuche = wfN ? { x: wfN.f.x, z: wfN.f.z, d: Math.round(wfN.d) } : "kein Wasserfall der Region";
+        if (!orte.fallArm) orte.fallSuche = wfN ? { x: wfN.f.x, z: wfN.f.z, d: Math.round(wfN.d) } : "kein Wasserfall des Gesetzes";
         return orte;
     };
     // Der Abgriff ist, was der Spieler hört: hinter der Spitzen-Wand (ohne Wand — ein alter Stand — der Master).
@@ -1297,6 +1271,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
             window.__anazhHeadlessNullRenderer = true;
         });
         await page.evaluateOnNewDocument(quellenAbgriff);
+        await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
         const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
@@ -1327,7 +1302,9 @@ function drucke(zeilen, offline, kostenErg, lab) {
         console.log("Orte:", JSON.stringify(orte));
         const daten = {};
         const offline = {};
-        for (const name of ["wiese", "seeufer", "wald", "dorf", "glutArm", "fallArm"]) {
+        // Die Heimat-Orte zuerst, die fernen Orte des Gesetzes (See-Ufer 5,6 km, Fall) zuletzt: die Reise dorthin räumt den
+        // Bestand der Heimat, ein Wald danach stünde halb gebaut.
+        for (const name of ["wiese", "wald", "dorf", "glutArm", "seeufer", "fallArm"]) {
             if (!orte[name]) continue;
             daten[name] = await messeOrt(page, name, orte[name]);
             const z = daten[name].zensus;
