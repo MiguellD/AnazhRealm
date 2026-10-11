@@ -52750,7 +52750,7 @@ class AnazhRealm {
     // Durchqueren der Membran-Ebene = BETRETEN (derselbe enterPortal-Chokepoint wie die E-Taste).
 
     // Die geteilte Membran-Geometrie je Gestalt (Plane spanW×height, Gesetz-seg).
-    // DIE HÜLLE UM DIE WELLE (0910-4, Spike der Prüfbühne 10.10.): die Membran trug `frustumCulled = false` („Wellen-
+    // DIE HÜLLE UM DIE WELLE (0910-4, Spike der Prüf-Welt 10.10.): die Membran trug `frustumCulled = false` („Wellen-
     // Verformung sprengt die statische Hülle") und zeichnete am Genesis-Ring 8 Befehle und 129 600 Dreiecke auch mit dem
     // Ring im Rücken. Die Welle (`positionNode = (x, y, d0)`) verschiebt jede Ecke NUR in z, und |d0| ≤ der Amplitude des
     // Gesetzes (`_membranAmplitude`): die Hülle trägt sie, das Culling bleibt an. Die Notfall-Fläche liegt in z = 0, also darin.
