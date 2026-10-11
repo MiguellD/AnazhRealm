@@ -1324,30 +1324,52 @@
         stand: 0.05, // m/s — darunter steht das Tier
         vMax: 15, // m/s — Sprünge der Lage (Spawn, Peer-Schnapp) sind kein Lauf
     });
-    function gangSchritt(v, L) {
-        var G = GANG_GESETZ;
-        if (!(v > G.stand) || !(L > 0)) return { omega: 0, S: 0, schritt: 0 };
-        var vv = Math.min(v, G.vMax);
-        var vh = vv / Math.sqrt(G.g * L);
-        var lamMax = (2 * L * Math.tan(G.maxWinkel)) / G.tastgrad;
-        var lam = Math.min(L * (G.schrittBasis + G.schrittFroude * vh), lamMax);
-        return { omega: (2 * Math.PI * vv) / lam, S: G.tastgrad * lam, schritt: lam };
+    // DIE ZEILE DES GESETZES (K07, additiv): gangSchritt und gangFuss sind das EINE Gang-Gesetz für Vier- und Zweibeiner —
+    // die Zeile Z trägt die Zahlen der Gestalt (der Mensch: koerper-core fx.bewegung.gang), ohne Zeile gilt GANG_GESETZ
+    // (die Tiere, byte-gleich). Fehlt der Zeile ein Feld (g, stand, vMax), trägt GANG_GESETZ. Der Tastgrad wandert mit der
+    // Froude-Zahl Fr = v̂² vom Gehen (tastgrad) zum Laufen (tastgradLauf), wo die Zeile ihn nennt (laufFroude = die Fr der
+    // Mitte des Wechsels; Alexander 2004: Gehen 0,55–0,7, Laufen ≈ 0,39, der Wechsel bei Fr ≈ 0,5). Zurück kommt auch der
+    // Tastgrad (tast), den gangFuss als Anteil des Stands am Zyklus liest, und der Hub des Schwungs (× L) — er wandert mit
+    // demselben Wechsel zu hubLauf, wo die Zeile ihn nennt (der laufende Fuß schwingt hoch, der gehende knapp).
+    function gangZahl(Z, k) {
+        return Z && typeof Z[k] === "number" ? Z[k] : GANG_GESETZ[k];
     }
-    // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}.
-    function gangFuss(ph, S) {
+    function gangSchritt(v, L, Z) {
+        var G = Z || GANG_GESETZ;
+        var tast = gangZahl(G, "tastgrad"),
+            hub = gangZahl(G, "hub");
+        if (!(v > gangZahl(G, "stand")) || !(L > 0)) return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub };
+        var vv = Math.min(v, gangZahl(G, "vMax"));
+        var vh = vv / Math.sqrt(gangZahl(G, "g") * L);
+        if (G.tastgradLauf > 0 && G.laufFroude > 0) {
+            var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * G.laufFroude) / (0.6 * G.laufFroude)));
+            w = w * w * (3 - 2 * w);
+            tast += (G.tastgradLauf - tast) * w;
+            if (G.hubLauf > 0) hub += (G.hubLauf - hub) * w;
+        }
+        var lamMax = (2 * L * Math.tan(gangZahl(G, "maxWinkel"))) / tast;
+        var lam = Math.min(L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh), lamMax);
+        return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub };
+    }
+    // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
+    // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π (byte-gleich zum Tier-Gang).
+    // hubForm aus der Zeile Z (sonst GANG_GESETZ).
+    function gangFuss(ph, S, tast, Z) {
         var TAU = 2 * Math.PI;
         var u = ((ph % TAU) + TAU) % TAU;
-        if (u >= Math.PI) return { dz: S / 2 - (S * (u - Math.PI)) / Math.PI, hub: 0 };
+        var sw = tast > 0 && tast < 1 && tast !== 0.5 ? TAU * (1 - tast) : Math.PI;
+        var halb = sw === Math.PI;
+        if (u >= sw) return { dz: S / 2 - (S * (u - sw)) / (halb ? Math.PI : TAU - sw), hub: 0 };
         // Hermite von −S/2 (Abheben hinten) nach +S/2 (Aufsetzen vorn), beide Enden mit der Stand-Rate (rückwärts)
-        var t = u / Math.PI,
-            m = -S;
+        var t = u / sw,
+            m = halb ? -S : (-S * sw) / (TAU - sw);
         var h00 = 2 * t * t * t - 3 * t * t + 1,
             h10 = t * t * t - 2 * t * t + t,
             h01 = -2 * t * t * t + 3 * t * t,
             h11 = t * t * t - t * t;
         return {
             dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m,
-            hub: Math.pow(Math.sin(u), GANG_GESETZ.hubForm),
+            hub: Math.pow(Math.sin(halb ? u : (u * Math.PI) / sw), gangZahl(Z, "hubForm")),
         };
     }
 

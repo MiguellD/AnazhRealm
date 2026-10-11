@@ -545,10 +545,27 @@
                         // gemerkt, feuert beim Aufsetzen). Byte-gleich zum
                         // historischen Host-Satz (0.3 / 0.12).
                         sprung: { coyoteSec: 0.3, bufferSec: 0.12 },
-                        // GANG-KALIBRIERUNG (Zensus 17.07., rein additiv): der
-                        // Schrittlaengen-Faktor der distance-matched Phase
-                        // (Schritt = kalib * gebaute Beinlaenge) -- eicht die
-                        // Welt-Optik auf ~5.5 rad/s beim Basistempo. Byte-gleich 4.0.
+                        // DIE GANG-ZEILE DES ZWEIBEINERS (K07, Vertrags-Akt): die
+                        // Zahlen des EINEN Gang-Gesetzes (tetrapoda gangSchritt/
+                        // gangFuss, dieselbe Formel wie die Tiere) fuer den Menschen
+                        // -- Schrittlaenge je Zyklus L*(schrittBasis + schrittFroude*
+                        // v/sqrt(g*L)) mit L = gebaute Beinlaenge, der Tastgrad vom
+                        // Gehen (0.6) zum Laufen (0.35) um Fr = laufFroude (Alexander
+                        // 2004), maxWinkel deckelt den Fussweg, hub*L hebt den Fuss im
+                        // Schwung (laufend hubLauf*L). Geeicht auf 1.34 m/s ~ 1.9 Schritte/s bei 0.7 m und
+                        // 6 m/s ~ 3 Schritte/s (Weidmann 1993). Der Eich-Faktor
+                        // des Schritt-Blocks (Schritt 3.4 m, 0.34 Schritte/s) faellt.
+                        gang: {
+                            schrittBasis: 0.78,
+                            schrittFroude: 1.89,
+                            tastgrad: 0.6,
+                            tastgradLauf: 0.35,
+                            laufFroude: 0.5,
+                            maxWinkel: 0.72,
+                            hub: 0.12,
+                            hubLauf: 0.3,
+                            hubForm: 0.5,
+                        },
                         // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
                         // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
                         // Rig-Gaenge (rad/s; war der divergente Stamm-Zwilling
@@ -557,7 +574,7 @@
                         // klangTempoMin = die Schritt-Klang-Schwelle (m/s --
                         // darunter feuert kein Schritt-Burst; die Timbre-Tabelle
                         // wohnt im klang-Gesetzbuch SCHRITT_TIMBRE).
-                        schritt: { kalib: 4.0, taktCompound: 5.5, klangTempoMin: 0.9 },
+                        schritt: { taktCompound: 5.5, klangTempoMin: 0.9 },
                         // AKTIONS-AUSDAUER (Zensus 17.07., rein additiv): die
                         // Ausdauer-Kosten EINER Maus-Arm-Aktion (Hieb/Abbau/
                         // Platzieren) im Pfad-Modus -- reist wie ausdauerProS/

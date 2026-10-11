@@ -10513,7 +10513,7 @@ class AnazhRealm {
     // Peer) liest EINE Kern-Zahl (fx.bewegung.schritt.taktCompound), skaliert über die Emotions-Brücke
     // (freq-Ratio des koerper-Bewegungsprofils; ohne Emotionen Faktor 1). Fail-closed (Kern-Pflicht).
     _compoundTaktHz(emotions) {
-        let hz = AnazhRealm._bewegungsBlock("schritt", ["kalib", "taktCompound"]).taktCompound;
+        let hz = AnazhRealm._bewegungsBlock("schritt", ["taktCompound", "klangTempoMin"]).taktCompound;
         if (emotions) {
             const mpv = this._koerperMotionProfile(true, emotions);
             const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
@@ -10554,7 +10554,9 @@ class AnazhRealm {
         }
         const T = AnazhRealm.SCHRITT_KLANG;
         const phase = Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0;
-        const halb = Math.floor(phase / Math.PI);
+        // der Ton fällt, wenn ein Fuß aufsetzt: bei der Phase des Aufsetzens des Gang-Gesetzes (je Bein um π versetzt)
+        const auf = halter._gait && Number.isFinite(halter._gait.auf) ? halter._gait.auf : 0;
+        const halb = Math.floor((phase - auf) / Math.PI);
         if (!grounded || underwater || !(speed > T.tempoMin) || k.halb === null || halb < k.halb) {
             k.halb = halb; // ankern OHNE Ereignis (Stand/Luft/Schwimmen/Phasen-Reset)
             return;
@@ -17501,35 +17503,39 @@ class AnazhRealm {
     // Rein RENDER-seitig — kein Snapshot-/Worker-/Sim-Pfad liest diese Zahlen.
     // Linse: gate:koerper-bewegung.
 
-    // WEG-PHASE (distance-matched): Phase ∝ zurückgelegte Distanz / Schrittlänge, wie entry._ridePhase.
-    // Eine 2π-Phase = 2 Schritte ⇒ rad/s = π·v/Schritt; die Schritt-Distanz bleibt konstant (kein Skaten).
-    _gaitPhaseRate(speed, schritt) {
-        const v = Number(speed);
-        const s = Number(schritt);
-        if (!(v > 0) || !(s > 1e-3)) return 0;
-        return (Math.PI * v) / s;
+    // DAS EINE GANG-GESETZ DES ZWEIBEINERS (K07): Takt, Fußweg und Tastgrad aus tetrapoda `gangSchritt` — dieselbe Formel,
+    // nach der die Tiere gehen — mit der Zweibeiner-Zeile fx.bewegung.gang; L = die GEBAUTE Beinlänge (einmal am Rig
+    // vermessen, Welt-Maß aus der Gelenk-Skala). Die Phase bleibt weg-getrieben (2π je Doppelschritt Λ, ω = 2π·v/Λ).
+    // Vorher eichte ein Faktor des Schritt-Blocks (4,0 × Bein ≈ 3,4 m je Schritt) den Takt auf 5,5 rad/s beim Basistempo:
+    // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs.
+    _gaitGesetz(rig, speed) {
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        if (!core || typeof core.gangSchritt !== "function") return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
+        const Z = AnazhRealm._bewegungsBlock("gang", ["schrittBasis", "schrittFroude", "tastgrad", "maxWinkel", "hub"]);
+        const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
+        return core.gangSchritt(v, this._gaitBeinMass(rig).L, Z);
     }
-    // Schrittlänge aus der GEBAUTEN Beinlänge (einmal am Rig vermessen, Welt-Maß aus der Gelenk-Skala).
-    // Der Kalibrierfaktor wohnt im Gesetzbuch (fx.bewegung.schritt.kalib via _bewegungsBlock): er eicht
-    // auf ~5.5 rad/s bei state.speed 6 — ein anatomischer Schritt gäbe beim übermenschlich schnellen
-    // Welt-Läufer ~25 rad/s Bein-Wirbel.
-    _gaitSchrittLen(rig) {
-        if (!rig) return 3.4;
-        if (Number.isFinite(rig._schritt)) return rig._schritt;
-        let bein = 0;
-        try {
-            if (rig.legL && rig.legL.hip && rig.legL.knee && rig.legL.ankle) {
-                const sv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
-                rig.legL.hip.getWorldScale(sv);
-                const wpl = Math.abs(sv.y) || 1;
-                bein = (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) * wpl;
-            }
-        } catch (_e) {
-            bein = 0;
+    // Die Bein-Maße des Rigs, einmal vermessen: Ober- und Unterschenkel im Gelenk-Raum (l1, l2), die Welt-Skala der
+    // Hüfte lotrecht (wpl) und längs (wz — das Becken des Menschen ist ungleich skaliert, 0,93 quer und längs: ein
+    // Fußweg in Metern ist längs ein anderes Maß im Gelenk-Raum als lotrecht, sonst kurzt die Pose den Stand um 7 % und
+    // der Fuß gleitet), die Beinlänge in Metern (L = (l1 + l2)·wpl — die L, an der das Gang-Gesetz die Schrittlänge misst).
+    _gaitBeinMass(rig) {
+        if (rig && rig._beinMass) return rig._beinMass;
+        let l1 = 0,
+            l2 = 0,
+            wpl = 0,
+            wz = 0;
+        if (rig && rig.legL && rig.legL.hip && rig.legL.knee && rig.legL.ankle) {
+            const sv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
+            rig.legL.hip.getWorldScale(sv);
+            wpl = Math.abs(sv.y) || 1;
+            wz = Math.abs(sv.z) || wpl;
+            l1 = rig.legL.knee.position.length();
+            l2 = rig.legL.ankle.position.length();
         }
-        const kalib = AnazhRealm._bewegungsBlock("schritt", ["kalib"]).kalib;
-        rig._schritt = bein > 0.1 ? Math.min(6, Math.max(0.8, kalib * bein)) : 3.4;
-        return rig._schritt;
+        const M = { l1, l2, wpl, wz, L: (l1 + l2) * wpl };
+        if (rig && M.L > 0.1) rig._beinMass = M;
+        return M;
     }
     // POSEN-BLEND: w(speed) exp-geglättet statt hartem isMoving-Schnitt — Rampe 0.25→0.55 m/s, k=10,
     // plus harte ±0.2-Steilheits-Wand je Tick. NaN-Wände VOR dem Gedächtnis.
@@ -17583,10 +17589,18 @@ class AnazhRealm {
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
-        halter.walkPhase = (halter.walkPhase || 0) + d * this._gaitPhaseRate(v, this._gaitSchrittLen(rig)) * emoF;
+        const gs = this._gaitGesetz(rig, v);
+        halter.walkPhase = (halter.walkPhase || 0) + d * gs.omega * emoF;
         halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
-        const g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null });
+        const g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, L: 0 });
         g.w = halter._gaitW;
+        // das Fuß-Ziel des Gesetzes: der Fußweg im Stand (die Emotion reist als Kadenz — bei gleichem Weg kürzt sie den
+        // Schritt, der Fuß im Stand bleibt stehen), der Tastgrad, die Phase des Aufsetzens (2π·(1 − Tastgrad)), die Beinlänge
+        g.S = gs.S / emoF;
+        g.tast = gs.tast;
+        g.hub = gs.hub;
+        g.auf = 2 * Math.PI * (1 - gs.tast);
+        g.L = this._gaitBeinMass(rig).L;
         // ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel — der
         // Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-
         // Wahrheit selbst (fail-closed via _bewegungsKoeff, kurzgeschlossen).
@@ -17657,6 +17671,7 @@ class AnazhRealm {
             const tv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
             L.hip.getWorldScale(tv);
             const wpl = Math.abs(tv.y) || 0;
+            const wz = Math.abs(tv.z) || wpl;
             const l1 = L.knee.position.length() * wpl;
             const l2 = L.ankle.position.length() * wpl;
             if (!(l1 > 0.02) || !(l2 > 0.02)) return null;
@@ -17666,6 +17681,7 @@ class AnazhRealm {
                 l1,
                 l2,
                 wpl,
+                wz,
                 soleH,
                 hang: 0,
                 soleY: 0,
@@ -17709,16 +17725,18 @@ class AnazhRealm {
         if (drop < -0.3 * reach) drop = -0.3 * reach;
         if (drop < -0.005 && r.hips && ik.wpl > 0) r.hips.position.y += drop / ik.wpl;
         if (r.spine) r.spine.rotation.x += ik.hang * 0.35;
-        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, Math.sin(walkPhase), w);
-        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, Math.sin(walkPhase + Math.PI), w);
+        // der Stand jedes Beins kommt aus dem Gang-Gesetz (die Pose dieses Takts, _animateHumanoidRig)
+        const st = r._gangStand;
+        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, !st || st[0], w);
+        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, !st || st[1], w);
     }
-    _gaitLegIK(leg, ik, probe, lock, foot, sinPh, w) {
+    _gaitLegIK(leg, ik, probe, lock, foot, imStand, w) {
         const av = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
         leg.ankle.getWorldPosition(av); // FK nach Pose+Becken (frische Ahnen-Matrizen)
         foot.x = av.x;
         foot.z = av.z;
         const geht = w >= 0.35;
-        const stance = geht ? sinPh > 0.1 : true; // Idle: beide Füße geplantet
+        const stance = geht ? imStand : true; // Idle: beide Füße geplantet
         if (!stance) {
             lock.on = false;
             return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
@@ -17738,13 +17756,14 @@ class AnazhRealm {
         }
         const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
         leg.hip.getWorldPosition(hv);
-        const vor = (tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw);
+        // der Vorlauf längs in das lotrechte Maß der Kette (das Becken ist längs ungleich skaliert, _gaitBeinMass)
+        const vor = ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl));
         const unten = hv.y - (probe.g + ik.soleH);
         if (!(unten > 0.05)) {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
         }
-        if (geht && Math.hypot(vor, unten) > (ik.l1 + ik.l2) * 0.98) {
+        if (geht && Math.hypot(vor, unten) > (ik.l1 + ik.l2) * 0.995) {
             lock.on = false;
             return; // das Ziel entläuft der Reichweite → Lock löst, die Pose übernimmt
         }
@@ -17853,30 +17872,67 @@ class AnazhRealm {
             }
             // V18.491.142 KPMUL_VIS.host=map-alpha — map-α reads kpMul; still no MOTION_RIG_MAP kpMul row (Vertrag .87 Map-Verbot).
         }
+        // DIE BEINE AUF DAS ZIEL DES GESETZES (K07): jeder Fuß folgt tetrapoda `gangFuss` — im Stand wandert er am Boden
+        // mit genau dem Tempo des Leibs zurück (er steht in der Welt), im Schwung kehrt er gehoben nach vorn —, Hüfte, Knie
+        // und Knöchel stellt die Zwei-Knochen-IK auf dieses Ziel (die Sohle bleibt eben). Das Becken sinkt, bis beide Füße
+        // ihr Ziel erreichen (das umgekehrte Pendel: oben in der Mitte des Stands, unten im Doppel-Stand). Derselbe Pfad
+        // trägt den lokalen Avatar, den Peer und jeden Bewohner mit Rig; vorher schwangen die Beine ±0,5 rad als Sinus um
+        // einen 3,4-m-Schritt (der Fuß glitt), und nur der lokale Avatar hielt den Stand-Fuß fest.
+        const S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
+        const M = S > 0 ? this._gaitBeinMass(r) : null;
+        let sw = Math.sin(walkPhase);
+        r._gangSenke = 0;
+        if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true; // ohne Gesetzes-Pose stehen beide Füße
+        if (M && M.l1 > 0 && M.l2 > 0) {
+            const core = window.__tetrapodaCore;
+            const Z = AnazhRealm._bewegungsBlock("gang", ["schrittBasis", "schrittFroude", "tastgrad", "maxWinkel", "hub"]);
+            const tast = gait.tast;
+            const Sl = S / M.wz; // der Fußweg längs, im Gelenk-Raum
+            const hubL = ((gait.hub > 0 ? gait.hub : Z.hub) * M.L) / M.wpl;
+            const L12 = M.l1 + M.l2;
+            const reich = 0.995 * L12;
+            const FL = core.gangFuss(walkPhase, Sl, tast, Z);
+            const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z);
+            const hL = FL.hub * hubL;
+            const hR = FR.hub * hubL;
+            const senke = (dz, h) => L12 - h - Math.sqrt(Math.max(0, reich * reich - dz * dz));
+            const tief = Math.max(0.005 * L12, senke(FL.dz, hL), senke(FR.dz, hR));
+            r._gangSenke = tief;
+            const auf = 2 * Math.PI * (1 - tast);
+            const u = (p) => ((p % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            r._gangStand = r._gangStand || [false, false];
+            r._gangStand[0] = u(walkPhase) >= auf;
+            r._gangStand[1] = u(walkPhase + Math.PI) >= auf;
+            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, L12 - tief - hL);
+            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, L12 - tief - hR);
+            add(r.legL.hip, "x", ikL.hip * w);
+            add(r.legL.knee, "x", ikL.knee * w);
+            add(r.legL.ankle, "x", -(ikL.hip + ikL.knee) * w);
+            add(r.legR.hip, "x", ikR.hip * w);
+            add(r.legR.knee, "x", ikR.knee * w);
+            add(r.legR.ankle, "x", -(ikR.hip + ikR.knee) * w);
+            // das Bein-Signal für Arme und Becken: −1, wenn das linke Bein vorn steht (Arm L schwingt gegen Bein L)
+            sw = Math.max(-1, Math.min(1, (FR.dz - FL.dz) / Sl));
+        }
         if (w > 0.001) {
-            // ── GEHEN ×w — Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag +0.4).
-            // Knie beugt NACH HINTEN (+, wie die Sitz-Pose); negativ wäre Hyperextension (Vogel-Knie).
-            const sw = Math.sin(walkPhase);
+            // ── GEHEN ×w — Arme gegen die Beine, Becken-Roll/Yaw + Brust-Gegendreh im Takt des Bein-Signals.
             const wa = w * amp;
-            add(r.legL.hip, "x", 0.5 * sw * wa);
-            add(r.legR.hip, "x", 0.5 * Math.sin(walkPhase + Math.PI) * wa);
-            add(r.legL.knee, "x", 0.85 * Math.max(0, Math.sin(walkPhase + 0.4)) * wa);
-            add(r.legR.knee, "x", 0.85 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)) * wa);
             // Arme gegen die Beine (Arm L mit Bein R)
             add(r.armL.shoulder, "x", -0.4 * sw * wa);
             add(r.armR.shoulder, "x", 0.4 * sw * wa);
             add(r.armL.elbow, "x", (-0.3 - 0.2 * Math.max(0, -sw) * amp) * w);
             add(r.armR.elbow, "x", (-0.3 - 0.2 * Math.max(0, sw) * amp) * w);
-            // Becken-Roll/Yaw + Brust-Gegendreh
-            add(r.hips, "z", 0.05 * sw * wa);
-            add(r.hips, "y", 0.07 * sw * wa);
+            // Rumpf-Roll/Yaw über dem Becken + Brust-Gegendreh: das Becken trägt die Beine und dreht nicht mit (eine
+            // Becken-Drehung schwenkte die Bein-Kette um die Hüfte, der Stand-Fuß glitt 8 cm je Schritt seitlich)
+            add(r.spine, "z", 0.05 * sw * wa);
+            add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
-        // CoM-Bob (doppelte Frequenz) — absolut über der EINMAL gecachten Basis;
-        // ×w: der Bob klingt beim Stopp aus, statt eingefroren stehenzubleiben.
+        // Die Becken-Senke des Gangs — absolut über der EINMAL gecachten Basis;
+        // ×w: sie klingt beim Stopp aus, statt eingefroren stehenzubleiben.
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
-            r.hips.position.y = r._baseHipY + Math.abs(Math.cos(walkPhase)) * 0.3 * (r.kh || 1) * amp * w;
+            r.hips.position.y = r._baseHipY - r._gangSenke * w;
         }
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
@@ -101877,7 +101933,7 @@ AnazhRealm._parkourGesetz = function () {
     return null;
 };
 // Der EINE Bewegungs-Block-Leser: luft (Beschleunigungs-/Brems-Kurven), sprung (Coyote-/Buffer-
-// Fenster), schritt (Gang-Kalibrierfaktor) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder
+// Fenster), schritt (Compound-Takt, Klang-Schwelle), gang (die Zweibeiner-Zeile des Gang-Gesetzes) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder
 // ein Pflicht-Feld (felder) nicht-finit → Bruch, nie Misch-Gesetz. Memo nur im Erfolgs-Fall.
 AnazhRealm._bewegungsBlock = function (block, felder) {
     const memo = AnazhRealm._bewegungsBlockMemo || (AnazhRealm._bewegungsBlockMemo = Object.create(null));
@@ -106379,7 +106435,7 @@ AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
 AnazhRealm.SCHRITT_KLANG = Object.freeze({
     get tempoMin() {
         // m/s — darunter (Mikro-Rutsch im Stand) feuert kein Schritt
-        return AnazhRealm._bewegungsBlock("schritt", ["kalib", "klangTempoMin"]).klangTempoMin;
+        return AnazhRealm._bewegungsBlock("schritt", ["taktCompound", "klangTempoMin"]).klangTempoMin;
     },
     maxProTick: 2, // Frame-Hänger feuern keinen Burst-Schwall (max 2 Füße/Frame)
     gainDeckel: 0.12, // absolute Decke jedes Bursts (unter dem Kampf-Treffer)

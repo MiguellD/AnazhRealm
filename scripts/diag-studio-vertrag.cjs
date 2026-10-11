@@ -583,8 +583,12 @@ function validateManifest(m) {
         const spg = fxB.sprung;
         if (!spg || !Number.isFinite(spg.coyoteSec) || !Number.isFinite(spg.bufferSec))
             v.push("§8.2+ fx.bewegung.sprung unvollständig (coyoteSec/bufferSec)");
-        if (!fxB.schritt || !Number.isFinite(fxB.schritt.kalib))
-            v.push("§8.2+ fx.bewegung.schritt.kalib fehlt (Gang-Kalibrierung)");
+        if (!fxB.schritt || !Number.isFinite(fxB.schritt.taktCompound) || !Number.isFinite(fxB.schritt.klangTempoMin))
+            v.push("§8.2+ fx.bewegung.schritt unvollständig (taktCompound/klangTempoMin)");
+        // K07: die Zweibeiner-Zeile des EINEN Gang-Gesetzes (tetrapoda gangSchritt/gangFuss)
+        const gz = fxB.gang;
+        if (!gz || !["schrittBasis", "schrittFroude", "tastgrad", "maxWinkel", "hub"].every((k) => Number.isFinite(gz[k])))
+            v.push("§8.2+ fx.bewegung.gang unvollständig (schrittBasis/schrittFroude/tastgrad/maxWinkel/hub)");
         if (!Number.isFinite(fxB.aktionAusdauer)) v.push("§8.2+ fx.bewegung.aktionAusdauer fehlt (Maus-Arm-Aktion)");
     }
     if (m.arena) {
