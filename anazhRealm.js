@@ -39091,13 +39091,38 @@ class AnazhRealm {
     }
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
-    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, weicht der Ring (−60 m).
+    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo Gebautes jedes Dreieck um den Punkt trägt, weicht der Ring
+    // (−60 m, `_fernRingWeicht`).
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
         let y = law < wl ? wl - F.wasserDrop : law;
         if (p.row === 0) y -= F.saumDrop;
-        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60;
+        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._fernRingWeicht(fr, p)) y -= 60;
         return y;
+    }
+
+    // DER RING WEICHT DEM GEBAUTEN nur, wo JEDES Dreieck um den Punkt unter Gebautem liegt: der Punkt und seine acht
+    // Nachbarn im Gitter der Schale (Reihe ± 1, Winkel ± 1) stehen auf einem gebauten, sichtbaren Chunk. Ein versenkter
+    // Punkt neben einem freien zog sein Dreieck über die Kante des Chunk-Quadrats hinab — die Reihen der Schale 0 stehen
+    // dort 50–60 m auseinander: 1 m vor dem Quadrat lag der Ring im Median 23 m, bis 54 m unter dem Gesetz (1110-2,
+    // Prüfbühne, 148 von 180 Proben über 1 m). Die Dreiecke an der Kante tragen jetzt das Gesetz der Deck-Zone; unter dem
+    // Gebauten weicht der Ring weiter (kein Durchstich unter Edits).
+    _fernRingWeicht(fr, p) {
+        if (!this._chunkDecktRing(p.x, p.z)) return false;
+        const F = AnazhRealm.FERN_RING;
+        const W = F.winkel;
+        const basis = p.s * W * F.reihen;
+        const ai = p.li - p.row * W;
+        for (let dr = -1; dr <= 1; dr++) {
+            const r2 = p.row + dr;
+            if (r2 < 0 || r2 >= F.reihen) continue;
+            for (let da = -1; da <= 1; da++) {
+                if (dr === 0 && da === 0) continue;
+                const q = this._fernRingPunkt(fr, basis + r2 * W + ((ai + da + W) % W));
+                if (!this._chunkDecktRing(q.x, q.z)) return false;
+            }
+        }
+        return true;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,

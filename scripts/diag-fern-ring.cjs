@@ -180,10 +180,10 @@ const server = http.createServer((req, res) => {
             }
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
-            // DER RING WEICHT DEM GEBAUTEN (gespiegelt): trägt ein gebauter,
-            // sichtbarer Chunk die Säule, taucht der Zone-Vertex −60 (die
-            // Live-Wahrheit derselben Naht — _chunkDecktRing ist die Quelle).
-            if (s === 0 && rad <= fr.deckZoneRad * 1.35 && r._chunkDecktRing(sx, sz)) expY -= 60;
+            // DER RING WEICHT DEM GEBAUTEN (gespiegelt): trägt Gebautes jedes
+            // Dreieck um den Zone-Vertex, taucht er −60 (die Live-Wahrheit
+            // derselben Naht — _fernRingWeicht ist die Quelle).
+            if (s === 0 && rad <= fr.deckZoneRad * 1.35 && r._fernRingWeicht(fr, r._fernRingPunkt(fr, gIdx))) expY -= 60;
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
@@ -210,6 +210,104 @@ const server = http.createServer((req, res) => {
         // SELBSTTEST: die verfälschte Erwartung (law + 0.5) MUSS rot fallen.
         const pf = probeAll(0.5);
         res.selftestRed = pf.bad === 60;
+
+        // ===== (2b) DIE RING-GRENZE (1110-2): vor dem Gebauten liegt der Ring auf seinem Gesetz =====
+        // Die Deckung der Probe ist das Quadrat des Ziel-Rings um den Anker (`_chunkDecktRing` ersetzt, die Regel
+        // `_fernRingWeicht` liest sie wie im Spiel); die Punkte der Deck-Zone gehen durch die EINE Setz-Naht. Senkrechte
+        // Strahlen 1, 5 und 10 m vor jeder Kante des Quadrats treffen den Ring: der Sprung ist seine Höhe gegen die
+        // Mischung der Ecken-Gesetze (Deck-Zone · Wasser-Klemme · Saum, ohne das Weichen) — nur eine Ecken-Regel zieht ihn
+        // weg, nie die Abtastung. Selbsttest: die alte Regel (jede gedeckte Ecke weicht −60) MUSS rot fallen.
+        {
+            const T = window.THREE;
+            const span = r._voxelChunkConfig().span;
+            const R2 = Math.max(1, Math.round(fr.deckZoneRad / span - 0.5));
+            const pcx = Math.floor(fr.anchorX / span);
+            const pcz = Math.floor(fr.anchorZ / span);
+            const x0 = (pcx - R2) * span,
+                x1 = (pcx + R2 + 1) * span,
+                z0 = (pcz - R2) * span,
+                z1 = (pcz + R2 + 1) * span;
+            const wlG = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const perG = F.winkel * F.reihen;
+            const zone = [];
+            for (let g = 0; g < perG; g++) {
+                const p = r._fernRingPunkt(fr, g);
+                if (p.rad <= fr.deckZoneRad * 1.35) zone.push(p);
+            }
+            const gesetz = (p) => {
+                const m = r._terrainMacroSurfaceY(p.x, p.z, false);
+                return r._fernRingDeckMisch(fr, p.rad, m, r._terrainMacroSurfaceY(p.x, p.z, true));
+            };
+            const setzen = () => {
+                for (const p of zone) r._fernRingSetzVertex(fr, p, gesetz(p), wlG);
+                const geo0 = fr.meshes[0].geometry;
+                geo0.computeBoundingSphere();
+                fr.meshes[0].updateMatrixWorld(true);
+            };
+            const messen = () => {
+                const pos = fr.meshes[0].geometry.attributes.position;
+                const ray = new T.Raycaster();
+                const tri = new T.Triangle();
+                const bc = new T.Vector3();
+                const ohneWeichen = (i) => {
+                    const p = r._fernRingPunkt(fr, i);
+                    const law = gesetz(p);
+                    return (law < wlG ? wlG - F.wasserDrop : law) - (p.row === 0 ? F.saumDrop : 0);
+                };
+                const s = [];
+                const punkte = [];
+                for (let k = 0; k < 20; k++) {
+                    const f = (k + 0.5) / 20;
+                    for (const d of [1, 5, 10]) {
+                        punkte.push([x1 + d, z0 + f * (z1 - z0), d], [x0 - d, z0 + f * (z1 - z0), d]);
+                        punkte.push([x0 + f * (x1 - x0), z1 + d, d], [x0 + f * (x1 - x0), z0 - d, d]);
+                    }
+                }
+                let versenkt = 0;
+                for (const [x, z, d] of punkte) {
+                    ray.set(new T.Vector3(x, 5000, z), new T.Vector3(0, -1, 0));
+                    ray.far = 10000;
+                    const h = ray.intersectObject(fr.meshes[0], false)[0];
+                    if (!h) continue;
+                    const ii = [h.face.a, h.face.b, h.face.c];
+                    const v = ii.map((i) => new T.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+                    tri.set(v[0], v[1], v[2]);
+                    tri.getBarycoord(h.point, bc);
+                    const soll = ii.map(ohneWeichen);
+                    const y = bc.x * soll[0] + bc.y * soll[1] + bc.z * soll[2];
+                    if (v.some((q, j) => soll[j] - q.y > 30)) versenkt++;
+                    s.push({ x: Math.round(x), z: Math.round(z), d, sprung: +(h.point.y - y).toFixed(2) });
+                }
+                s.sort((a, b) => Math.abs(b.sprung) - Math.abs(a.sprung));
+                const abs = s.map((e) => Math.abs(e.sprung)).sort((a, b) => a - b);
+                return {
+                    proben: s.length,
+                    versenkt,
+                    max: abs.length ? abs[abs.length - 1] : null,
+                    median: abs.length ? abs[abs.length >> 1] : null,
+                    schlimmster: s[0] || null,
+                };
+            };
+            const deckt0 = r._chunkDecktRing;
+            const weicht0 = r._fernRingWeicht;
+            r._chunkDecktRing = (x, z) => x >= x0 && x < x1 && z >= z0 && z < z1;
+            try {
+                setzen();
+                res.grenze = messen();
+                // der eingespielte Täter: die alte Regel
+                r._fernRingWeicht = function (frr, p) {
+                    return this._chunkDecktRing(p.x, p.z);
+                };
+                setzen();
+                res.grenzeAlt = messen();
+            } finally {
+                r._chunkDecktRing = deckt0;
+                if (weicht0 === Object.getPrototypeOf(r)._fernRingWeicht) delete r._fernRingWeicht;
+                else r._fernRingWeicht = weicht0;
+                setzen();
+            }
+            res.grenzeQuadrat = [x0, x1, z0, z1];
+        }
 
         // ===== (3) RE-ZENTRIEREN: 400 m Teleport + Ticks pumpen =====
         const oldAnchorX = fr.anchorX;
@@ -527,6 +625,20 @@ const server = http.createServer((req, res) => {
         `bad=${out.probesBad} worst=${out.probesWorst && out.probesWorst.toFixed(4)}`
     );
     check("SELBSTTEST: die verfälschte Erwartung (law + 0.5) fällt rot (60/60)", out.selftestRed === true);
+    const gz = out.grenze || {};
+    const ga = out.grenzeAlt || {};
+    const ort = (e) => (e && e.schlimmster ? ` bei ${e.schlimmster.x}/${e.schlimmster.z}, ${e.schlimmster.d} m vor der Kante` : "");
+    check(
+        "2b: RING-GRENZE — vor dem Gebauten liegt der Ring auf seinem Gesetz (|Sprung| ≤ 0,5 m, kein weichendes Dreieck)",
+        gz.proben >= 200 && gz.versenkt === 0 && gz.max <= 0.5,
+        `${gz.proben} Proben, Sprung max ${gz.max} m, Median ${gz.median} m${ort(gz)}` +
+            (gz.versenkt ? ` — TÄTER: der Ring weicht dem Gebauten (−60) über die Kante, ${gz.versenkt} Treffer` : "")
+    );
+    check(
+        "2b SELBSTTEST: die alte Regel (jede gedeckte Ecke weicht −60) fällt rot beim Namen",
+        ga.versenkt > 0 && ga.max > 10,
+        `alt: ${ga.versenkt} Treffer auf weichenden Dreiecken, Sprung max ${ga.max} m, Median ${ga.median} m${ort(ga)}`
+    );
     check(
         "3: RE-ZENTRIEREN — der Anker wandert QUANTISIERT nach 400-m-Teleport",
         out.anchorMoved === true && out.anchorQuantized === true
