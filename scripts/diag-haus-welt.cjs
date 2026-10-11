@@ -32,7 +32,7 @@
 //   W8  DIE LICHTUNG (Entscheid D3): die Genesis-Plattform ist ein Grundriss derselben Wand — über ihrer Scheibe keine Krone
 //       (Wald-Gesetz × Welt-Skala) eines Natur-Eintrags oder einer Streu-Zelle, keine Kachel-Pflanze auf ihr; der Hain der
 //       KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er wächst), jede Absage steht im
-//       Programm-Log (natur_weicht) und der Satz „pflanz mir eine eiche" auf der Plattform nennt die Lichtung, nie
+//       Programm-Log (das Ergebnis des Setz-Ops, `ergebnis`) und der Satz „pflanz mir eine eiche" auf der Plattform nennt die Lichtung, nie
 //       „gewachsen". Selbsttests: die Wand ohne die Lichtung, der Wald und der Hain der KI an der Wand vorbei, die Wand still.
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · w4 · w4b · w6), der Hauptlauf alle.
@@ -64,13 +64,14 @@ const MIME = {
 const BASIS = {
     // ohne die Hülle des Gesetzbuchs: nur die Wände der Tür-Zeile (vier EG-Wände mit Tür-Lücke — die Basis-Blocker der
     // Siedlungs-Häuser vor der Welle, hier schon gedreht), keine Böden, Tritte, Innenwände
-    huelle: [["if (hu && Array.isArray(hu.boxen)) {", "if (false) {"]],
+    huelle: [["if (fest && fest.length) {", "if (false) {"]],
     // die gedrehte Box als achsparallele Welt-AABB gelesen
     obb: [["        const ob = box.obb;\n        if (ob) {", "        const ob = null;\n        if (ob) {"]],
     // die Natur wirft in den Grundriss, und das Dorf räumt nicht
     grundriss: [
-        // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit)
-        ["return position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;", "return false;"],
+        // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit); seit Schau-2
+        // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss
+        ["const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "const g = false;"],
         ["if (entry) this._grundrissRaeumen(entry);", ""],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
@@ -94,7 +95,7 @@ const BASIS = {
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [["            this._naturSetzen(task.name, task.position, task.opts);", "            this.spawnArchitecture(task.name, task.position, task.opts);"]],
     // eine Quelle geht an der Wand vorbei: der Hain der KI (`spawn_studio`) setzt seine Natur direkt — an der Plattform UND im Haus
-    kihain: [["if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))", "if (this.spawnArchitecture(name, ort, opts))"]],
+    kihain: [["? this._naturSetzen(name, ort, opts, null, absage)", "? this.spawnArchitecture(name, ort, opts)"]],
     // die Wand nimmt still: der Hain fällt ohne Absage — der Chat sagte „gewachsen" bei 0 Bäumen
     stumm: [["            if (absage) absage(wo);\n", ""]],
     // die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den Worker)
@@ -110,11 +111,15 @@ const BASIS = {
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // die Höhe des Footprints aus vier Ecken + Mitte, ohne den Tür-Vorplatz (der Stand vor dem Raster)
+    // die Höhe des Footprints aus vier Ecken + Mitte, ohne den Tür-Vorplatz (der Stand vor dem Raster) — das Raster lebt seit
+    // der Gegenprüfung 10.10. im EINEN `_fundamentRaster` (Höhe der Siedlung und Land jedes Fundaments)
     raster: [
-        ["const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));", "const nx = 1;"],
-        ["const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));", "const nz = 1;"],
-        ["if (tu && Number.isFinite(tu.x) && Number.isFinite(tu.z) && Number.isFinite(tu.w))", "if (false)"],
+        ["const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));", "const nx = 1;"],
+        ["const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));", "const nz = 1;"],
+        [
+            "out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 0.25, false]);\n                out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 1, false]);",
+            "void 0;",
+        ],
     ],
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
@@ -544,7 +549,7 @@ async function proben(phasen) {
                 for (let a = 0; a < 16 && fx === null; a++) {
                     const qx = L.x + Math.cos((a / 16) * Math.PI * 2) * 120;
                     const qz = L.z + Math.sin((a / 16) * Math.PI * 2) * 120;
-                    if (r._isAboveWaterAt(qx, qz, 0.5) && Number.isFinite(r.getTerrainHeightAt(qx, qz))) fx = [qx, qz];
+                    if (r._landAt(qx, qz, 0.5) && Number.isFinite(r.getTerrainHeightAt(qx, qz))) fx = [qx, qz];
                 }
                 if (fx) {
                     stell(fx[0], r.getTerrainHeightAt(fx[0], fx[1]) + 3, fx[1]);
@@ -624,8 +629,8 @@ async function proben(phasen) {
                     try {
                         const res = r.dslRun(prog, { source: "test" });
                         for (const e of res.log || [])
-                            if (e.event === "natur_weicht")
-                                for (const k of ["haus", "lichtung"]) weicht[k] += (e.grundriss && e.grundriss[k]) || 0;
+                            if (e.event === "ergebnis")
+                                for (const k of ["haus", "lichtung"]) weicht[k] += (e.gruende && e.gruende[k]) || 0;
                     } catch (e) {
                         fehler.push(String(e).slice(0, 80));
                     }
@@ -669,7 +674,7 @@ async function proben(phasen) {
             for (let a = 0; a < 16 && w8.gegenprobe === null; a++) {
                 const gx = L.x + Math.cos((a / 16) * Math.PI * 2) * 150;
                 const gz = L.z + Math.sin((a / 16) * Math.PI * 2) * 150;
-                if (!r._isAboveWaterAt(gx, gz, 0.5)) continue;
+                if (!r._landAt(gx, gz, 0.5)) continue;
                 if (s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60)) continue;
                 w8.gegenprobe = hain(gx, gz).neu.length;
             }
@@ -839,7 +844,7 @@ async function proben(phasen) {
                     const cz = start.z + Math.sin((a / 48) * Math.PI * 2) * d;
                     if (orte.some((q) => Math.hypot(q.x - cx, q.z - cz) < 70)) continue;
                     if (Math.hypot(cx - fx, cz - fz) < 120 || Math.hypot(cx - dorfMitte.x, cz - dorfMitte.z) < 90) continue;
-                    if (!r._isAboveWaterAt(cx, cz, 0.5)) continue;
+                    if (!r._landAt(cx, cz, 0.5)) continue;
                     const gx = (r0(cx + 4, cz) - r0(cx - 4, cz)) / 8;
                     const gz = (r0(cx, cz + 4) - r0(cx, cz - 4)) / 8;
                     if (!Number.isFinite(gx) || !Number.isFinite(gz) || Math.hypot(gx, gz) < 0.02) continue;
@@ -886,7 +891,9 @@ async function proben(phasen) {
                 continue;
             }
             orte.push(ort);
-            const huelleVon = (e) => (e._hausHuelle ? e._hausHuelle.boxen.length / 6 : 0);
+            // die Solids der Hülle (die EINE Hüllen-Form, S3: je Box ein Teil mit rolle "fest")
+            const huelleVon = (e) =>
+                e._hausHuelle && Array.isArray(e._hausHuelle.teile) ? e._hausHuelle.teile.filter((t) => t.rolle !== "sicht").length : 0;
             // der Weg (haus-lokal): frontal auf die Tür; beim Hof-Haus durch das Tor, rechts am Brunnen vorbei (das Gesetz des
             // Hofs: zC = Front − Hof-Tiefe, Torriegel 2,8 m, Brunnen mittig im Hof)
             const wegpunkte = [];
@@ -1046,9 +1053,9 @@ function urteil(o) {
             if (ueber.length) f.push(`W8 Lichtung: über der Genesis-Scheibe (r ${w.plattform[2]} m) ${ueber.join(", ")}`);
             if (w.kiHaus) f.push(`W8 Hain im Haus: ${w.kiHaus} Bäume der KI im Grundriss von ${w.kiHausTyp}`);
             const stumm = [];
-            if (!w.kiHaus && !(w.kiWeichtHaus >= 1)) stumm.push(`der Hain im Haus fiel ohne Eintrag (natur_weicht haus ${w.kiWeichtHaus})`);
+            if (!w.kiHaus && !(w.kiWeichtHaus >= 1)) stumm.push(`der Hain im Haus fiel ohne Eintrag (ergebnis haus ${w.kiWeichtHaus})`);
             if (!w.kiPlattform && !(w.kiWeichtPlattform >= 1))
-                stumm.push(`der Hain auf der Plattform fiel ohne Eintrag (natur_weicht lichtung ${w.kiWeichtPlattform})`);
+                stumm.push(`der Hain auf der Plattform fiel ohne Eintrag (ergebnis lichtung ${w.kiWeichtPlattform})`);
             if (w.chatGewachsen === 0 && !(/Lichtung/.test(w.chatSatz || "") && !/gewachsen|gepflanzt/.test(w.chatSatz || "")))
                 stumm.push(`der Chat sagt „${w.chatSatz}" bei 0 Bäumen (Soll: die Lichtung benannt, nie „gewachsen")`);
             if (w.chatBaeume) stumm.push(`der Satz pflanzte ${w.chatBaeume} Bäume über die Scheibe`);

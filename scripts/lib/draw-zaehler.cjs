@@ -39,6 +39,39 @@ function passName(scene, camera) {
     return (scene && scene.name) || (camera && (camera.name || camera.type)) || "?";
 }
 
+// DER SATZ-INHALT (S3 haus, 1b): ein Satz (je Stoff des gesetzten Baus) zeichnet je Pass EINEN Befehl über die Zellen
+// seines Abschnitts — die Klasse „bauSatz" verschwieg, wer darin liegt (die rote bau-Ratsche der Mess-Wiese war die
+// Feuerstelle, kein Haus). Je Satz-Zeichnung zerfällt der Abschnitt des Passes (`s.abschnitte`: haupt · k<i> · anders) in
+// seine Zellen: Zelle → Bereich (`z.bereich.key`, der Schlüssel der Instanz-Gruppe) → die Täter-Klasse des Stamms
+// (`instanzKlasse` = `AnazhRealm._instanzKlasse`) — Klasse × Zellen × Dreiecke, dazu die entarteten Lücken des Laufs
+// (`lücke`), ohne Rest (ein Rest steht als `REST` im Inhalt: die Linse rechnet falsch). Die Zelle eines Bau-Bereichs ist
+// die Instanz gleichen Platzes (`_bauSatzBlock`: je Instanz eine Zelle) — ihr Eintrag (`slotEintrag`: Gruppen-Schlüssel →
+// Platz → Bau-Eintrag) ist das Exemplar. Rein: die Werkbank installiert sie (`ZAEHLER_INSTALL`), gate:profiband pflanzt einen
+// Bereich und prüft, dass er erscheint (Selbsttest).
+function satzInhalt(s, pass, drawTris, instanzKlasse, slotEintrag) {
+    const a = s.abschnitte.get(pass === "haupt" ? "haupt" : /^k\d+$/.test(pass) ? pass : "anders");
+    const je = new Map();
+    let zellTris = 0;
+    for (const z of a ? a.liste : []) {
+        const b = z.bereich;
+        const kl = instanzKlasse(b.key);
+        const e = je.get(kl) || { zellen: 0, tris: 0, eintraege: new Set() };
+        const t = z.idx.length / 3;
+        e.zellen++;
+        e.tris += t;
+        zellTris += t;
+        const ein = slotEintrag ? slotEintrag.get(b.key) : null;
+        const id = ein ? ein.get(b.zellen.indexOf(z)) : undefined;
+        if (id != null) e.eintraege.add(id);
+        je.set(kl, e);
+    }
+    const luecke = a ? (a.ende - a.n) / 3 : 0;
+    if (luecke > 0) je.set("lücke", { zellen: 0, tris: luecke, eintraege: new Set() });
+    const rest = Math.round(drawTris - zellTris - luecke);
+    if (rest !== 0) je.set("REST", { zellen: 0, tris: rest, eintraege: new Set() });
+    return je;
+}
+
 function drawZensus(opts) {
     return (async () => {
         const o = opts || {};
@@ -64,12 +97,35 @@ function drawZensus(opts) {
                 if (!m) slotEintrag.set(s.key, (m = new Map()));
                 m.set(s.slot, e.id);
             }
+        // DER SATZ-INHALT (S3 haus, 1b, `satzInhalt` unten): nur die Bau-Sätze (`userData.bauSatz`: Bau, Ausstattung,
+        // Formationen, ihr Wurf) — ihr Bereich ist eine Instanz-Gruppe; Boden und Wasser sind Chunks, die Streu Kacheln (ihr
+        // Name ist ihr Täter).
+        const satzOf = new Map();
+        if (st.chunkSaetze)
+            for (const s of st.chunkSaetze.values())
+                if (s && s.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
+        const inhalt = {};
+        const instanzKlasse = (key) => r.constructor._instanzKlasse(key);
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
             const kl = klasse(object);
             const pass = passOf(scene, camera);
             const k = kl + "|" + pass;
             const g = object.geometry;
+            const satz = satzOf.get(object);
+            if (satz && g) {
+                const n0 = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
+                const dr0 = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n0) : n0;
+                const je = window.__satzInhalt(satz, pass, dr0 / 3, instanzKlasse, slotEintrag);
+                const ziel = inhalt[k] || (inhalt[k] = new Map());
+                for (const [ikl, v] of je) {
+                    const e = ziel.get(ikl) || { zellen: 0, tris: 0, eintraege: new Set() };
+                    e.zellen += v.zellen;
+                    e.tris += v.tris;
+                    for (const id of v.eintraege) e.eintraege.add(id);
+                    ziel.set(ikl, e);
+                }
+            }
             // je Draw EIN Befehl: seit V18.510 ist jedes Leaf eine InstancedMesh (der Batch-Zweig fiel mit dem Batch)
             const cmd = 1;
             let tris = 0;
@@ -175,6 +231,24 @@ function drawZensus(opts) {
             kk.tris += Math.round(v.tris);
             kk.je[p] = v.cmd;
             kk.jeTris[p] = Math.round(v.tris);
+            // der Satz-Inhalt dieses Passes: Klasse × Zellen × Dreiecke (die größten zuerst), je Klasse ihre Exemplare
+            const ih = inhalt[k];
+            if (ih) {
+                kk.inhalt = kk.inhalt || {};
+                kk.inhalt[p] = [...ih.entries()]
+                    .map(([ikl, e]) => {
+                        const st1 = /:L(\d)$/.exec(ikl);
+                        return {
+                            klasse: ikl,
+                            stufe: st1 ? Number(st1[1]) : null,
+                            art: artOf(ikl),
+                            zellen: e.zellen,
+                            tris: Math.round(e.tris),
+                            eintraege: [...e.eintraege],
+                        };
+                    })
+                    .sort((x, y) => y.tris - x.tris);
+            }
         }
         const gesamt = Object.values(passe).reduce((a, e) => ({ cmd: a.cmd + e.cmd, tris: a.tris + e.tris }), {
             cmd: 0,
@@ -198,6 +272,7 @@ function drawZensus(opts) {
                     exemplare: w ? w.eintraege.size || w.orte.size : 0,
                     dMin: w && Number.isFinite(w.dMin) ? Math.round(w.dMin) : null,
                     dMax: w && w.inst ? Math.round(w.dMax) : null,
+                    ...(v.inhalt ? { inhalt: v.inhalt } : {}),
                 };
             });
         // Die Programm-Linse: verschiedene Vertex-/Fragment-Programme und Render-Pipelines. Ein Puffer-Name je
@@ -437,12 +512,14 @@ function texturZensus() {
 }
 
 module.exports = {
+    satzInhalt,
     texturErzeuger,
     vramFalte,
     // Die Faltung lebt ab Dokument-Start (der Abgriff bucht schon beim ersten Anlegen): `page.evaluateOnNewDocument`.
     FALTE_INSTALL: `window.__vramFalte = ${vramFalte.toString()};`,
     ZAEHLER_INSTALL:
         `window.__passName = ${passName.toString()};` +
+        `window.__satzInhalt = ${satzInhalt.toString()};` +
         `window.__drawZensus = ${drawZensus.toString()};` +
         `window.__pufferZensus = ${pufferZensus.toString()};` +
         `window.__kehrausJetzt = ${kehrausJetzt.toString()};` +

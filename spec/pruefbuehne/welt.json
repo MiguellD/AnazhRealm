@@ -1,0 +1,217 @@
+{
+    "zweck": "DIE PRÜFBÜHNE (Spike 09.10., artifacts/profiband/pruefbuehne/plan.md §6): eine Welt aus dem Welt-Motor, deren Erbgut statt der Wildnis analytische Gelände-Terme trägt — eine Insel im Meer (Plateau 12 m über dem Spiegel, Kuppel 0,3 %, Schelf auf 12 m unter den Spiegel), die 30°-Rampe an S2 und die Meeres-Bucht mit Furt und Kolk an S5. Höhen relativ zur Basis (terrainBaseHeight 0; der Meeresspiegel liegt bei Basis − 3). Wo der Wildnis-Term nicht wiegt, wirft das Feld nichts: kein Wald, keine Streu, keine ungesetzten Tiere, kein Dorf, keine Schwebe-Insel. Geboren wie jede fremde Welt: importWorldBeside (Welt-Tor) + aktiv + Reload. Die Hindernis-Station S4 (0|−170) ist Saat des Snapshots: sechs Steinkörper als Baupläne und Bauten (Würfel, Säule, Mauer, Gasse, Hausrumpf 45°, Engpass), ihre Sohle auf dem Insel-Term, die Spec in stationen.json — sie reisen durch dieselbe Snapshot-Tür wie jedes Haus eines Saves.",
+    "playerPosition": null,
+    "knowledgeBase": [],
+    "version": "18.537.0",
+    "selfAwareness": { "components": [], "weaknesses": [] },
+    "creatures": [],
+    "creatureEmotions": [],
+    "terrainSteepness": 1,
+    "terrainBaseHeight": 0,
+    "weather": "sunny",
+    "worldMeta": {
+        "worldId": "pruefbuehne",
+        "slug": "pruefbuehne",
+        "creator": "local",
+        "visibility": "privat",
+        "parentWorlds": [],
+        "bornAt": 0,
+        "seed": "pruefbuehne-1",
+        "genVersion": 9,
+        "schemaVersion": "10.5-chunk-delta-v1",
+        "gameMode": "frieden",
+        "voxelTerrain": true,
+        "bauSame": {},
+        "erbgut": {
+            "terme": [
+                { "art": "insel", "x": 0, "z": 0, "r": 420, "plateau": 9, "kuppel": 0.003, "schelf": 60, "grund": -15 },
+                {
+                    "art": "rampe",
+                    "x": 0,
+                    "z": 170,
+                    "richtung": 0,
+                    "breite": 30,
+                    "lauf": 32,
+                    "krone": 12,
+                    "winkel": 30,
+                    "boeschung": 45
+                },
+                {
+                    "art": "bucht",
+                    "x0": 0,
+                    "z0": -330,
+                    "x1": 0,
+                    "z1": -540,
+                    "sohle": 64,
+                    "grund": -6,
+                    "ufer": 25,
+                    "furtLage": 50,
+                    "furtBreite": 6,
+                    "furtKrone": -3.6,
+                    "furtFlanke": 20,
+                    "kolkLage": 20,
+                    "kolkR": 10,
+                    "kolkTiefe": 6
+                }
+            ]
+        }
+    },
+    "dslAbilities": [],
+    "dslHistory": [],
+    "dslPatternMemory": {},
+    "playerPathBuckets": null,
+    "worldJournal": {
+        "entries": [
+            { "id": 1, "at": 0, "tick": 0, "type": "genesis", "text": "Ich erwache als pruefbuehne.", "ctx": {} }
+        ],
+        "seen": { "genesis": true }
+    },
+    "playerEmotions": { "joy": 0, "awe": 0, "sorrow": 0, "hope": 0, "peace": 0, "chaos": 0 },
+    "playerSoul": "human",
+    "playerTools": [],
+    "architectures": [
+        {
+            "id": "saat-s4-wuerfel",
+            "type": "pruef_wuerfel",
+            "position": { "x": -14, "y": 10.278166, "z": -160 },
+            "seed": 4001,
+            "scale": 1,
+            "rotationY": 0
+        },
+        {
+            "id": "saat-s4-saeule",
+            "type": "pruef_saeule",
+            "position": { "x": -6, "y": 10.279663, "z": -160 },
+            "seed": 4002,
+            "scale": 1,
+            "rotationY": 0
+        },
+        {
+            "id": "saat-s4-mauer",
+            "type": "pruef_mauer",
+            "position": { "x": 8, "y": 10.2794, "z": -160 },
+            "seed": 4003,
+            "scale": 1,
+            "rotationY": 0
+        },
+        {
+            "id": "saat-s4-gasse",
+            "type": "pruef_gasse",
+            "position": { "x": -12, "y": 10.212814, "z": -182 },
+            "seed": 4004,
+            "scale": 1,
+            "rotationY": 0
+        },
+        {
+            "id": "saat-s4-hausrumpf",
+            "type": "pruef_hausrumpf",
+            "position": { "x": 2, "y": 10.213967, "z": -182 },
+            "seed": 4005,
+            "scale": 1,
+            "rotationY": 0.7853981633974483
+        },
+        {
+            "id": "saat-s4-engpass",
+            "type": "pruef_engpass",
+            "position": { "x": 16, "y": 10.211894, "z": -182 },
+            "seed": 4006,
+            "scale": 1,
+            "rotationY": 0
+        }
+    ],
+    "blueprints": [
+        {
+            "name": "pruef_wuerfel",
+            "label": "pruef_wuerfel",
+            "parts": [
+                {
+                    "shape": "box",
+                    "position": { "x": 0, "y": 1, "z": 0 },
+                    "size": { "x": 2, "y": 2, "z": 2 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        },
+        {
+            "name": "pruef_saeule",
+            "label": "pruef_saeule",
+            "parts": [
+                {
+                    "shape": "cylinder",
+                    "position": { "x": 0, "y": 1.5, "z": 0 },
+                    "size": { "x": 0.6, "y": 3, "z": 0.6 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        },
+        {
+            "name": "pruef_mauer",
+            "label": "pruef_mauer",
+            "parts": [
+                {
+                    "shape": "box",
+                    "position": { "x": 0, "y": 1, "z": 0 },
+                    "size": { "x": 10, "y": 2, "z": 0.4 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        },
+        {
+            "name": "pruef_gasse",
+            "label": "pruef_gasse",
+            "parts": [
+                {
+                    "shape": "box",
+                    "position": { "x": -0.8, "y": 1.25, "z": 0 },
+                    "size": { "x": 0.4, "y": 2.5, "z": 8 },
+                    "material": "stein"
+                },
+                {
+                    "shape": "box",
+                    "position": { "x": 0.8, "y": 1.25, "z": 0 },
+                    "size": { "x": 0.4, "y": 2.5, "z": 8 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        },
+        {
+            "name": "pruef_hausrumpf",
+            "label": "pruef_hausrumpf",
+            "parts": [
+                {
+                    "shape": "box",
+                    "position": { "x": 0, "y": 1.5, "z": 0 },
+                    "size": { "x": 6, "y": 3, "z": 8 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        },
+        {
+            "name": "pruef_engpass",
+            "label": "pruef_engpass",
+            "parts": [
+                {
+                    "shape": "box",
+                    "position": { "x": -2.5, "y": 1, "z": 0 },
+                    "size": { "x": 3, "y": 2, "z": 3 },
+                    "material": "stein"
+                },
+                {
+                    "shape": "box",
+                    "position": { "x": 2.5, "y": 1, "z": 0 },
+                    "size": { "x": 3, "y": 2, "z": 3 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        }
+    ],
+    "tools": [],
+    "materials": [],
+    "hotbar": []
+}

@@ -1254,6 +1254,9 @@ async function probeLeben(expected) {
             // Die Labor-Spur: derselbe Kern (Stand an der Lage, dann Kräfte — die Folge der Probefahrt, um einen Stand
             // versetzt), dieselben Eingaben, derselbe Boden. Wo der Kontakt-Löser griff, übernimmt sie die Lage der Welt.
             const q = Object.assign({}, z0);
+            // der Boden UNTER dem Werk liest die Lage seines Fahr-Zustands (`_werkBoden`, Leben-Schau 2) — die Spur fährt als er
+            const fahrRoh = g1._fahr;
+            g1._fahr = q;
             let maxM = 0;
             let bei = -1;
             let maxY = 0;
@@ -1278,6 +1281,7 @@ async function probeLeben(expected) {
                     bei = n;
                 }
             }
+            g1._fahr = fahrRoh;
             S.labor = { schritte: spur.length, maxM, bei, maxY, kontakte, weg: Math.hypot(q.x - z0.x, q.z - z0.z) };
         }
         if (g1) weg(g1);
@@ -1714,7 +1718,11 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: gasse.fahrt + 0.6 }
                 );
                 if (!e) return null;
-                r._hausHuelleSetzen(e, { stufe: 0, boxen: [-6, -3, -0.4, 6, 2.5, 0.4] });
+                // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
+                r._hausHuelleSetzen(e, {
+                    stufe: 0,
+                    teile: [{ art: "box", c: [0, -0.25, 0], h: [6, 2.75, 0.4], rolle: "fest" }],
+                });
                 const box = (e.blockerAABBs || []).find((b) => b.obb);
                 if (!box) {
                     r.removeArchitecture(e);

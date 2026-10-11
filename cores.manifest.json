@@ -47,5 +47,12 @@
         "scripts": ["tetrapoda-core.js"],
         "vertrag": "tetrapoda-core.js",
         "ns": "__tetrapodaCore"
+    },
+    {
+        "id": "gelaende",
+        "scripts": ["gelaende-core.js"],
+        "vertrag": "gelaende-core.js",
+        "ns": "__gelaendeCore",
+        "funktion": true
     }
 ]

@@ -318,7 +318,9 @@ function pageHtml() {
         const i = next++;
         const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
         const k = window.__phytoCore.budgetSippen(r.meshes || []);
-        out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null };
+        // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
+        const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
+        out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
         if (mitAbdruck && mitAbdruck[i]) {
           const a = await bauAbdruck(r.meshes || []);
           out[i].abdruck = a.teile > 0 ? a.hash : null;

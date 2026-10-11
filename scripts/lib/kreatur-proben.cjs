@@ -93,15 +93,26 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 40; k++) {
             const x = P0.x + dx + (k % 8) * 3,
                 z = P0.z + dz + Math.floor(k / 8) * 3;
-            if (!r._isAboveWaterAt || r._isAboveWaterAt(x, z)) {
+            if (r._landAt(x, z)) {
                 const h = r.getTerrainHeightAt(x, z);
                 return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
             }
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
-    // Ein Ort auf Land ohne Bauwerks-Hülle im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand gleitet ein Leib
-    // längs der Box-Kante (achsparallel), das misst die Hindernis-Probe, nicht die Richtung der Jagd.
+    // Ein Ort auf Land ohne Bauwerks-Hülle und ohne Wasser im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand
+    // gleitet ein Leib längs der Box-Kante (achsparallel), im Wasser schwimmt er in einer Himmelsrichtung ans Ufer
+    // (`_creatureWaterContextAt`, vier Richtungen) — beides misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der
+    // Jagd. Seit Schau-2 nennt das Land (`_landAt`) das Ufer eines Sees genau (die Zwillings-Probe dehnte jeden See um
+    // eine 16-m-Zelle): ohne die Wasser-Wand wählte die Probe ein Feld am Ufer, und die Jagd lief ins Wasser.
+    const imUmkreisLand = (x, z, R) => {
+        for (const f of [0.5, 1])
+            for (let q = 0; q < 8; q++) {
+                const a = (q / 8) * Math.PI * 2;
+                if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
+            }
+        return true;
+    };
     const frei = (dx, dz, R) => {
         const arches = s.architectures || [];
         for (let ring = 0; ring < 40; ring++) {
@@ -110,7 +121,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + dx + Math.cos(a) * ring * 8,
                     z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) continue;
                 let ok = true;
                 for (const e of arches) {
                     if (!e || !e.blockerAABBs || !e.position) continue;
@@ -127,6 +138,41 @@ async function kreaturProben(r, T, opts) {
             }
         }
         return null;
+    };
+    // DAS FELD OHNE HÖHLE (Leben-Schau 2): ein Ort, unter dessen Umkreis (der Weg des Spielers und der Folger, x −10…+35,
+    // z −8…+35) 15 m tief keine Höhle liegt — die Wand hält ein Tier jetzt in jeder Höhle, in die es läuft (ein Folger ohne
+    // Wegfindung bleibt darin; vorher sprang er beim ersten Wand-Kontakt durch das Dach auf die Wiese). Die Gang-Probe misst
+    // den freien Lauf: am Hang von land(0, 0) lief der Fuchs in einen 1,2-m-Stollen unter dem Hügel.
+    const ohneHoehle = (x0, z0, x1, z1) => {
+        for (let x = x0; x <= x1; x += 3)
+            for (let z = z0; z <= z1; z += 3) {
+                const top = r._voxelSurfaceY(x, z);
+                if (!Number.isFinite(top)) return false;
+                for (const t of [1, 3, 6, 10, 15]) if (!r._fieldSolid(x, top - t, z)) return false;
+            }
+        return true;
+    };
+    const feldOhneHoehle = (dx, dz) => {
+        for (let ring = 0; ring < 30; ring++) {
+            const n = Math.max(1, ring * 6);
+            for (let q = 0; q < n; q++) {
+                const a = (q / n) * Math.PI * 2;
+                const x = P0.x + dx + Math.cos(a) * ring * 10,
+                    z = P0.z + dz + Math.sin(a) * ring * 10;
+                if (r._nassAt(x, z)) continue; // die EINE Nässe am Körper (kein stiller Wächter: fehlt sie, bricht der Lauf)
+                if (!ohneHoehle(x - 10, z - 8, x + 35, z + 35)) continue;
+                const h = r.getTerrainHeightAt(x, z);
+                return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
+            }
+        }
+        return null;
+    };
+    // DER ORT NEBEN DEM SPIELER auf dem Land (Leben-Schau 2): die Höhe des Spielers ist am Hang nicht die des Tiers — 8 m
+    // daneben lag sie unter der Wiese in einer Höhle (gate:kreatur-takt gier: der Fuchs 8 m unter dem Gras; vorher sprang er
+    // beim ersten Wand-Kontakt durch das Dach hinauf, jetzt hält ihn die Wand).
+    const neben = (x, z) => {
+        const h = r.getTerrainHeightAt(x, z);
+        return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
     };
     const tier = (p, seele, bodySize) => {
         const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, bodySize: bodySize || 1 });
@@ -478,10 +524,11 @@ async function kreaturProben(r, T, opts) {
     await buehne("gier", async (restore) => {
         r.setGameMode("frieden");
         const arten = ["wesen", "wolf", "fuchs"];
-        const start = land(0, 0);
+        const start = feldOhneHoehle(0, 0);
+        if (!start) return { fehler: "kein Feld ohne Höhle (45 × 43 m, 15 m tief) für den Gang" };
         pm.set(start.x, start.y, start.z);
         const tiere = arten.map((a, i) => {
-            const c = tier({ x: pm.x - 4 - i * 2, y: pm.y, z: pm.z - 3 }, a);
+            const c = tier(neben(pm.x - 4 - i * 2, pm.z - 3), a);
             ruhig(c);
             r.assignCreatureTask(c, "follow_player", {}, { silent: true });
             return c;
@@ -721,7 +768,8 @@ async function kreaturProben(r, T, opts) {
             achs5 = 0,
             achsWasser = 0,
             bedroht = 0,
-            fort = 0;
+            fort = 0,
+            imWasser = 0;
         const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
         let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
         let wv = { x: wolf.position.x, z: wolf.position.z };
@@ -734,6 +782,7 @@ async function kreaturProben(r, T, opts) {
             const anprall = geschoben.has(wolf.position);
             geschoben.clear();
             if (jagt && anprall) kontakt++;
+            if (jagt && r._nassAt(wolf.position.x, wolf.position.z)) imWasser++; // die Jagd im Wasser (Diagnose)
             if (jagt && !anprall && Math.hypot(dx, dz) / dt > 0.3) {
                 jagdFrames++;
                 const h = Math.atan2(dx, dz);
@@ -807,6 +856,7 @@ async function kreaturProben(r, T, opts) {
         return {
             jagdFrames,
             kontaktFrames: kontakt,
+            wasserFrames: imWasser,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
             achsZielAnteil: jagdFrames ? +(achsZiel / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
@@ -1094,7 +1144,11 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_haus;
         });
         if (!e) return { fehler: "Haus nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-4, -3, -0.4, 4, 2.5, 0.4] });
+        // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
+        r._hausHuelleSetzen(e, {
+            stufe: 0,
+            teile: [{ art: "box", c: [0, -0.25, 0], h: [4, 2.75, 0.4], rolle: "fest" }],
+        });
         const box = (e.blockerAABBs || []).find((b) => b.obb);
         if (!box) return { fehler: "die Hülle trägt keine gedrehte Box" };
         const ob = box.obb;
@@ -1568,7 +1622,7 @@ async function kreaturProben(r, T, opts) {
         const ring = (seele) =>
             [0, 1, 2, 3].map((k) => {
                 const a = (k / 4) * Math.PI * 2 + 0.4;
-                const c = tier({ x: pm.x + Math.cos(a) * 6, y: pm.y, z: pm.z + Math.sin(a) * 6 }, seele, 1);
+                const c = tier(neben(pm.x + Math.cos(a) * 6, pm.z + Math.sin(a) * 6), seele, 1);
                 ruhig(c);
                 return c;
             });
@@ -2064,7 +2118,7 @@ async function kreaturProben(r, T, opts) {
         });
         s.player.hp = 1e9;
         const woelfe = [-0.25, 0, 0.25].map((a) => {
-            const c = tier({ x: pm.x + Math.sin(a) * 11, y: pm.y, z: pm.z + Math.cos(a) * 11 }, "wolf", 1);
+            const c = tier(neben(pm.x + Math.sin(a) * 11, pm.z + Math.cos(a) * 11), "wolf", 1);
             ruhig(c);
             return c;
         });
@@ -2140,7 +2194,11 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_sockel;
         });
         if (!e) return { fehler: "Sockel nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-2, unten, -2, 2, oben, 2] });
+        // die EINE Hüllen-Form (N5, S3 haus): der Sockel als Kasten c ± h, rolle "fest" — 4 × 4 m, von `unten` bis `oben`
+        r._hausHuelleSetzen(e, {
+            stufe: 0,
+            teile: [{ art: "box", c: [0, (unten + oben) / 2, 0], h: [2, (oben - unten) / 2, 2], rolle: "fest" }],
+        });
         if (!Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length) return { fehler: "Sockel ohne Hülle" };
         const box = e.blockerAABBs[0];
         const mx = (box.minX + box.maxX) / 2,
@@ -2237,7 +2295,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + Math.cos(a) * ring * 5,
                     z = P0.z + Math.sin(a) * ring * 5;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z)) continue;
                 const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
                     gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
                 const g = Math.hypot(gx, gz);
@@ -2435,7 +2493,7 @@ async function kreaturProben(r, T, opts) {
             for (const d of [45, 55, 65, 75, 85, 95]) {
                 const x = P0.x + Math.cos(a) * d,
                     z = P0.z + Math.sin(a) * d;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) ok = false;
+                if (!r._landAt(x, z)) ok = false;
             }
             if (ok) richtung = a;
         }

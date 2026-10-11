@@ -360,6 +360,42 @@ jobs:
               # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
               run: npm run gate:carve
 
+            - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
+              if: matrix.gruppe == 1
+              # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
+              # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
+              # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
+              # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
+              run: npm run gate:worker-dichte
+
+            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
+              if: matrix.gruppe == 3
+              # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
+              # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
+              # (spec/pruefbuehne/welt.json) Zuwachs 0 je Wurf, in der Wildnis als Feld-Kontrolle > 0, der Akt des Menschen
+              # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
+              # Dazu die S4-Probe: die sechs Hindernis-Koerper der Saat (stationen.json s4-hindernisse) stehen je Teil
+              # mit ihrer Blocker-Box <= 0,1 m an der Spec und im Blocker-Netz; der Selbsttest rueckt die Mauer 0,5 m.
+              run: npm run gate:pruefbuehne
+
+            - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
+              if: matrix.gruppe == 6
+              # Faehrt die echte Welt (Null-Renderer) je Weg in einem frischen Browser-Kontext: Welt A traegt ein Zeichen in
+              # jedem welt-eigenen Feld (Erbgut der Pruefbuehne, Anker, Edits, Dorf-Zellen, Stempel, Rolle, Gedaechtnisse der
+              # Seite, ein Tier), Welt B ist eine Wildnis-Welt ohne all das. Nach jedem Weg nennt die Linse jedes Feld von A,
+              # das B in der Seite, in ihren Lesern, im Worker-Spiegel oder im Speicher traegt, beim Namen. Der Selbsttest
+              # mischt den alten Spread am Lade-Engpass zum Schein darunter und muss rot werden.
+              run: npm run gate:weltgrenze
+
+            - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
+              if: matrix.gruppe == 9
+              # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
+              # worldMeta, mehrere Welten + Wechsel, korrupter Platz + gueltiges .bak, nur IndexedDB, IndexedDB frischer, und ein
+              # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
+              # mit ihrer Marke, Boot 2 bleibt stabil, die leere Form erwacht frisch und laut. Der Selbsttest laesst die
+              # Rettungs-Kette zum Schein nur den Platz lesen und muss an korrupt, nur-IDB und IDB-frischer rot werden.
+              run: npm run gate:boot-rettung
+
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
               if: matrix.gruppe == 10
               # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
@@ -578,6 +614,27 @@ jobs:
               # fuenf Runden mit Abriss, Kappe, neu gestempelter Huelle, neuem Array und neuen Baeumen; ein Strahl prueft nur
               # die Boxen, die sein Segment beruehren; das Netz ist der Bestand; jeder Schreiber des Bestands stempelt.
               run: npm run gate:blocker-netz
+
+            - name: Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)
+              if: matrix.gruppe == 5
+              # Null-Renderer, Foundry an, die Mess-Wiese (150 m) und je Klasse ein Exemplar (sieben Fels-Arten, GT, sieben
+              # Tore, Haus, Brunnen, Marktstand): je Studio-Werk das Bild (die Studio-Gestalt LOD 0 in ihrer Instanz-Matrix)
+              # gegen die Blocker-Boxen in ihrem Rahmen — keine Box ragt ueber das Bild, Fels, Tor (ausser der Passage) und Wagen
+              # sind ganz gedeckt, der Fels-Blocker misst die gezeichnete Gestalt, kein Blocker baut eine Gestalt auf dem
+              # Haupt-Thread (jeder buildInstance eines Kerns am Spawn beim Namen; 10.10.: sieben Tore nachgebaut). Befund 09.10.:
+              # der Felsturm stiess als Eisen-Mast 4,4 x 16,8 m. Der Spender-Felsturm und das Tor ohne Pfosten fallen rot beim
+              # Namen; Haus und Ausstattung stehen als OFFEN mit Zahl; Selbsttest inklusive.
+              run: npm run gate:kollision-bild
+
+            - name: Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)
+              if: matrix.gruppe == 1
+              # Null-Renderer, echter Spiel-Takt: der Wagen im Spaltgrund unter dem Ueberhang (−900,6/−976,1), die Fahrt der
+              # Schau ueber die Spaltkante, Wagen, gestossener und sterbender Wolf und Spieler in der Hoehle (−875,5/−1229,4), ein Zensus
+              # der Ueberhang-Spalten — keiner faellt durch seinen Grund, keiner springt aufs Dach (Boden-Wahrheit: das
+              # Dichtefeld). Befund 09.10.: −6 428 m nach 30 s. AST-Wand: die Koerper-Schritte (auch die Tod-Lage) lesen nur den
+              # Boden unter dem Leib, jeder andere Leser der Oberkante an einem Leib ist benannt; der eingeschmuggelte Dach-Leser
+              # faellt rot beim Namen; Selbsttest inklusive.
+              run: npm run gate:fall-waechter
 
             - name: Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)
               if: matrix.gruppe == 2
@@ -905,7 +962,7 @@ jobs:
               # DIE WALD-SCHWESTER ALS DELIBERATER AKT: exportSettlement (fachwerk-core, das
               # exportDrive-Muster) ist deterministisch + sha256-eingefroren (siedlung.json);
               # der Export reist durch den EINEN Worker (Bruecke generisch, M8), der Host hebt
-              # die Slots positions-deterministisch, wasser-bewacht (_isAboveWaterAt) und
+              # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
               run: npm run gate:settlement
@@ -1246,6 +1303,22 @@ jobs:
               # zuerst.
               run: npm run gate:wasser-leben
 
+            - name: Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)
+              if: matrix.gruppe == 10
+              # Der Schau-Ablauf am Fluss −872/−1127 im echten Spiel-Takt (Bau-Eiche, „pflanz mir einen eichenhain am
+              # wasser", 1200 Takte): kein Stamm unter dem gezeichneten Wasser, der Wasser-Automat schläft; jedes gesetzte
+              # Werk (Wald, Hain, Dorf mit Fundament) vor seinem Stempel gegen Bild UND Gesetz des Wassers; der GT in einer
+              # Furt bremst (1 s nach dem Eintauchen ≤ 50 %), die Kamera nie unter dem Spiegel; die Leser der EINEN
+              # Wasser-Wahrheit statisch; der Wasser-Term des Kerns (ohne Tiefe byte-gleich, die EINE Masse des Wagens).
+              # D: ein Damm quer über den Fluss in einer frischen Welt, 1200 Takte, gespeichert, neu geladen — der Stausee
+              # bildet sich neu (nasse Punkte ± 10 % des Staus), sein Abbau weckt den Automaten. R: das Nexus-Dorf am Seerand
+              # weckt den Automaten nicht, das Wasser bleibt (± 1 %). E: jeder Setz-Op mit erzwungenem Fehl-Grund sagt die
+              # tatsächliche Zahl und den Grund. A (Karte K02, FZ-01): der GT fährt mit Vollgas die Rampe der Furt hinab —
+              # 3 s nach der Ansaugung ≤ 0,5 m/s, kein Vortrieb, nie über das Dach im Wasser; der Ausstieg an Land steht
+              # neben dem Wagen, im See (≥ 1,35 m) schwimmt er; K6: der Wasserschlag sperrt die Räder am Hang.
+              # --selftest zuerst. ~3 min.
+              run: npm run gate:werk-im-wasser
+
             - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
               if: matrix.gruppe == 6
               # Die STEHENDE Linse gegen „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im
@@ -1297,6 +1370,17 @@ jobs:
               # Diaet die Kamera-Knoten ueber die Vendor-Bahn stellt, laesst keinen Stempel ueberleben (181d3c9e: 0,11).
               # --selftest zuerst: injizierte Taeter fallen rot.
               run: npm run gate:kamera-treue
+
+            - name: Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
+              if: matrix.gruppe == 10
+              # voll 10 (die leichteste Gruppe, 7,4 -> 7,7 min; 17 s aus Lauf 38038945137/1 in spec/ci/ci-zeiten.json).
+              # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne mit dem echten Leib des
+              # Spielers, der echten Ego-Regel (_applyEgoSicht) und der echten Haupt-Kamera am Auge: in der Ego-Sicht wirft der
+              # Leib (Schatten-Maske am Boden, IoU >= 0,9 gegen dieselbe Pose in der 3rd-Person), die Haupt-Kamera sieht 0
+              # Bildpunkte Leib, das Geraet in der Hand bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede
+              # Maske zurueck. Fuenf eingeschmuggelte Regeln (main: visible, Ebene 0 bleibt, fremde Ebene, das Geraet mit,
+              # Zwilling geweckt) fallen je beim Namen. --selftest zuerst.
+              run: npm run gate:ego-schatten
 
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
               if: matrix.gruppe == 9

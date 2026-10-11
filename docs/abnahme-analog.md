@@ -60,9 +60,10 @@ Primitive-Kodierung (2 Texel je Primitiv, `pA.w`/`pB.w`):
   Karte bis zu ihrem Rand im Saum vor `SCATTER.outerM` (B2c `fernform: "karte"`, `_archInKartenZone`, `_archKartenHorizont`,
   gate:fernwald); ihr Analog-Satz (Ketten-Kegel + Kronen-Lappen) fiel 05.10. ganz — aus 45 m
   standen dort glatte, gestreifte, einfarbig hellgrüne Ellipsoide.
-- **C Architektur + Streu:** `_archZiegelFern` — Häuser über `_archFachwerkFit` (Balken, Gefach,
-  Verbände, Prisma-Dach, Gaube/Flügel; ≤ 24 Primitive), gesetzte Studio-Dinge ohne Karte (Fels,
-  Kristall) über `_archFoundryZiegel` (Foundry-Flat, Box-Satz), sonst
+- **C Architektur + Streu:** `_archZiegelFern` — Häuser und Ausstattung über `_archFoundryZiegel` mit der Fernform
+  `"huelle"` (S3: die Liste der NUR-WURF-Stufe 3 des Gesetzbuchs, Beipack `__fern`, der Leser `_huelleVon` — Wände,
+  Keil-Dächer mit Walm, Kamin, Flügel, Anbau; ≤ 24 Teile; der Wirts-Fit `_archFachwerkFit` fiel), gesetzte Studio-Dinge
+  ohne Karte (Fels, Kristall) über `_archFoundryZiegel` (Foundry-Flat, Box-Satz), sonst
   `_archBoxFit` (≤ 24 AABB) — das ist die Gestalt JENSEITS der Mesh-Zone. Die Mesh-Zone ist der
   geregelte Cull-Radius (100–150 m): dort IST das Studio-Mesh mit seiner LOD-Kette die Gestalt
   (L0 < 12 m · L1 < 26 m · L2 darüber — die Studio-Distanzen d0/d1, der Host-Umweg fiel; Haus seit V18.500: L1 = die Flächen-Stufe des Studios,
@@ -187,9 +188,9 @@ Mit dem AAA-Schnitt (V18.496):
     EINE Uhr (45 s).
 
 Stehende Linsen: `node scripts/diag-arch-feld.cjs` (A Slots · B 0 ausgebrannt · C geteilter
-Kapsel-Satz · D Feld-Licht ≙ Mesh-Licht, Band 0,8–1,25) und `node scripts/diag-arch-fachwerk-fit.cjs`
-(Welt-Haus ohne `studioOv`: Maße aus Defaults, Sattel-Dach, keine schwarze Farbe; volles
-Fachwerk behält Dach und Wände).
+Kapsel-Satz · D Feld-Licht ≙ Mesh-Licht, Band 0,8–1,25) und `npm run gate:haus-fern` (S3: der Fernkörper des
+Gesetzbuchs — Wurf-Deckung zur L0, Umriss L1 ↔ L2, First auf x, Aufblähung, innen; die Linse des Wirts-Fits
+`diag-arch-fachwerk-fit.cjs` fiel mit ihm).
 
 ## Das Urteil (ehrlich)
 
@@ -204,8 +205,8 @@ Fachwerk behält Dach und Wände).
 - **Ehrlich offen:** die „sehr dunklen Schattenseiten" (Box 0,5 las rgb ≈ 64/71/80) waren das
   lineare Render-Target der Sonde; im echten Frame lasen sie blaustichig (V18.504 geheilt, unten);
   offen ist die Überbelichtung der geeichten Licht-Kette (18-%-Karte 212 statt ~120);
-  der ferne Fachwerk-Satz (jenseits der Mesh-Zone) kennt das Backstein-Gefach nicht (hell statt
-  rot); einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
+  der ferne Haus-Satz (jenseits der Mesh-Zone, S3 die Hülle des Gesetzbuchs) trägt je Teil EINE Farbe (die Wand
+  den gemessenen Fassaden-Ton, kein Gefach-Muster); einzelne Billboard-Karten scheitern in swiftshader („ohne brauchbaren Payload");
   D (Wiese) — die Wiesen-Linse (`npm run lens:wiese`) findet die besonnte Stelle, aus Augenhöhe
   liest der Boden grau (Halm-Kontrast 0,20 / 0,05); der echte GPU-Trace auf dem Schöpfer-Holz.
 

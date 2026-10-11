@@ -8,8 +8,10 @@
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan]
 //                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
-//   node scripts/werkbank.cjs umstellen --ort <id>         an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
-//                                                           genesis): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
+//   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
+//                                                           genesis · dorf · buehne): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts;
+//                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
+//                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
@@ -670,7 +672,9 @@ function tierZahl() {
 
 // DAS EINSCHWINGEN DER BAND-MESSUNG (Seiten-Kontext): der Spiel-Takt läuft mit der Bühne (Mittag · Sonne · Sommer),
 // bis der Bau ruht — die Foundry-Schlange leer und kein Auftrag im Flug, kein Karten-Bake offen, kein Streu-Nachschub,
-// keine aufgeschobene Streu-Region, kein Chunk im Bau, und die Zahl der Chunks, der lebenden Instanzen und der
+// keine aufgeschobene Streu-Region, kein Chunk im Bau, kein Dorf-Export unterwegs und keine wachsende Siedlung (der
+// Messort dorf läuft mit dem Dorf-Zug; die EINE Liste `einschwingOffen`, band-urteil), und die Zahl der Chunks, der
+// lebenden Instanzen und der
 // ungebauten Bauten in der Mesh-Zone steht
 // still — `ruhig` Takte am Stück. Ein Bau, der in Ruhe ungebaut bleibt (Bake-Lücke), steht im Ergebnis, er hält das
 // Einschwingen nicht auf. Deckel `capMs`: dann `eingeschwungen: false`, und die Ratsche verweigert den Nachzug — ein
@@ -680,7 +684,6 @@ function bandEinschwingen(k) {
     return (async () => {
         const r = window.anazhRealm;
         const st = r.state;
-        const f = r._foundry;
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const RUHIG = k.ruhig || 30;
         // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
@@ -716,19 +719,8 @@ function bandEinschwingen(k) {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
             takte++;
-            o = {};
-            if (f && f.warte && f.warte.length) o.foundryWarte = f.warte.length;
-            if (f && f.pending && f.pending.size) o.foundryImFlug = f.pending.size;
-            const kb = (r._impostorBakeQueue || []).length + (r._impostorBakePending ? 1 : 0);
-            if (kb) o.kartenBake = kb;
-            if (r._scatterRefillPending) o.streuNachschub = 1;
-            if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
-            // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
-            // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
-            // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
-            // aufgeschoben" und sah fehlende und angeschnittene Regionen nie (Befund 09.10.).
-            const streuListe = [];
-            if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
+            // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
+            o = window.__einschwingOffen(r);
             const s = stand();
             if (s.loadScale < 1) o.loadScale = s.loadScale;
             if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
@@ -862,6 +854,7 @@ async function starte() {
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(LINSEN_INSTALL);
         await page.evaluate(ZAEHLER_INSTALL);
+        await page.evaluate(BAND.EINSCHWING_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(DIAET.DIAET_INSTALL);
@@ -902,6 +895,32 @@ async function starte() {
     // der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
+    // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`, 1110-6): die Prüfbühne ist eine geborene Welt — sie betritt die
+    // Seite wie im Spiel durch das Welt-Tor (importWorldBeside + aktiv + Neuladen). Steht die Seite schon in ihr (derselbe
+    // slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
+    const weltDesOrts = async (ort) => {
+        const json = JSON.parse(fs.readFileSync(path.join(root, "spec", ort.welt), "utf8"));
+        const slug = json.worldMeta && json.worldMeta.slug;
+        if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
+        const steht = () =>
+            page.evaluate((s) => {
+                const m = window.anazhRealm.state.worldMeta;
+                return !!(m && m.slug === s);
+            }, slug);
+        if (await steht()) return { slug, neu: false };
+        const res = await page.evaluate((j) => {
+            const r = window.anazhRealm;
+            const x = r.importWorldBeside(j);
+            if (!x || !x.ok) return { fehler: JSON.stringify(x).slice(0, 200) };
+            r.activeWorldSet(x.worldId);
+            return { id: x.worldId };
+        }, json);
+        if (res.fehler) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
+        await lade();
+        await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+        if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
+        return { slug, neu: true, id: res.id };
+    };
     const umstellen = (x, z, o) =>
         page.evaluate(
             async (x, z, o) => {
@@ -919,10 +938,32 @@ async function starte() {
                         );
                 }
                 window.__ortTakt = (o && o.takt) || [];
+                // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — an der
+                // Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, die GPU-Bank derselben Seite um 0,2 ms; an der Bühne
+                // stand der Lade-Ring je Sitzung bei 25 oder 81–93 Chunks (der Ring wächst nur bei Kopfraum und vollem
+                // Ring, `_activeRingRadius`), die Bank derselben Pose um 0,8–1,0 ms (1110-6). `ring` setzt Ziel UND aktiven
+                // Ring, wie der Null-Renderer es tut.
+                const FELD = {
+                    foliageRadius: ["foliageRadius"],
+                    architectureCullingRadius: ["architectureCullingRadius"],
+                    dichte: ["_foliageDensityScale"],
+                    perfTargetMs: ["perfTargetMs"],
+                    ring: ["chunkRingRadius", "_activeRingRadius"],
+                };
+                const stell = (o && o.stell) || null;
+                for (const k of Object.keys(stell || {}))
+                    if (!FELD[k]) throw new Error(`Messort ${o.ort}: unbekannte Stellgröße „${k}" (${Object.keys(FELD).join(", ")})`);
+                window.__ortStell = stell
+                    ? () => {
+                          for (const [k, v] of Object.entries(stell)) for (const f of FELD[k]) r.state[f] = v;
+                      }
+                    : null;
                 window.__ortSchritt = () => {
+                    if (window.__ortStell) window.__ortStell();
                     const pm = r.state.playerMesh.position;
                     for (const m of window.__ortTakt) r[m](pm);
                 };
+                if (window.__ortStell) window.__ortStell();
                 if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
                 else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
                 if (o && Number.isFinite(o.gier)) {
@@ -947,9 +988,18 @@ async function starte() {
                         stabil = 0;
                         last = sz;
                     }
-                    if (takte >= 40 && stabil >= 15) break;
+                    // Ein Toggle-Ort ruht erst, wenn der gebaute Ring sein Ziel erreicht und kein Chunk mehr im Bau ist.
+                    const ruht =
+                        !stell ||
+                        ((!stell.ring || r._builtRingRadius() >= stell.ring) &&
+                            !(r.state.voxelMeshPending && r.state.voxelMeshPending.size > 0));
+                    if (takte >= 40 && stabil >= 15 && ruht) break;
                     await sleep(50);
                 }
+                if (stell && stell.ring && r._builtRingRadius() < stell.ring)
+                    throw new Error(
+                        `Messort ${o.ort}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${stell.ring}`
+                    );
                 return {
                     takte,
                     chunks: last,
@@ -1154,14 +1204,27 @@ async function starte() {
                     if (b.ort) {
                         const ort = BAND.ladeSpec(b.ort).ort;
                         aktOrt = ort.id;
-                        const o = await umstellen(ort.spieler[0], ort.spieler[1], {
+                        const welt = ort.welt ? await weltDesOrts(ort) : null;
+                        // DIE POSE (Toggle-Ort): eine Station des Orts mit eigenem Spieler-Platz und Blick
+                        const pose = b.pose ? (ort.posen || []).find((p) => p.id === b.pose) : null;
+                        if (b.pose && !pose)
+                            throw new Error(
+                                `Messort ${ort.id}: keine Pose „${b.pose}" (posen: ${(ort.posen || []).map((p) => p.id).join(", ")})`
+                            );
+                        const stelle = pose || ort;
+                        const o = await umstellen(stelle.spieler[0], stelle.spieler[1], {
                             ort: ort.id,
                             anker: ort.anker || null,
-                            gier: BAND.ortGier(ort),
+                            gier: BAND.ortGier(stelle),
                             dorfZug: ort.dorfZug,
                             takt: ort.ortTakt,
+                            stell: ort.stell || null,
                         });
-                        return send(Object.assign({ ort: ort.id, spieler: ort.spieler }, o, { ms: Date.now() - t0 }));
+                        return send(
+                            Object.assign({ ort: ort.id, pose: pose ? pose.id : null, welt, spieler: stelle.spieler }, o, {
+                                ms: Date.now() - t0,
+                            })
+                        );
                     }
                     aktOrt = null;
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
@@ -1465,6 +1528,9 @@ async function starte() {
                     // DIE BAND-MESSUNG: einschwingen (bis der Bau ruht), Proben (das Maximum je Klasse × Pass), dann der
                     // VRAM je Erzeuger, die Szenen-Puffer je Klasse, der Fluss und die GPU-Bank — geurteilt gegen Haushalt
                     // und Ratsche (spec/profiband).
+                    // Ein Toggle-Ort (bank, 1110-6) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
+                    const bandSpec = BAND.ladeSpec(b.ort);
+                    BAND.ratscheVon(bandSpec);
                     // DIE STEMPEL-WACHE je Phase: welche Frames den Pool füllen, ohne ihn aufzulösen, steht beim Namen.
                     const w0 = await stempel();
                     const messung = await page.evaluate(bandEinschwingen, {
@@ -1529,7 +1595,8 @@ async function starte() {
                               urteil: w3.ueberlauf === 0 && w3.warnung === 0 ? "GRUEN" : "ROT",
                           }
                         : null;
-                    const { haushalt, ratsche, ort } = BAND.ladeSpec(b.ort);
+                    const { haushalt, ort } = bandSpec;
+                    const ratsche = BAND.ratscheVon(bandSpec);
                     const zensus = BAND.zensusMax(proben);
                     const u = BAND.bandUrteil({
                         zensus,
@@ -1967,7 +2034,7 @@ async function starte() {
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
     let o;
     if (cmd === "status") o = await rufe("/status");
-    else if (cmd === "umstellen") o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort") });
+    else if (cmd === "umstellen") o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose") });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -2061,7 +2128,9 @@ async function starte() {
         // sie nach (setzt ungemessene Felder, senkt gemessene, hebt nie).
         const dateien = a.map((f) => path.resolve(f));
         const laeufe = dateien.map((f) => JSON.parse(fs.readFileSync(f, "utf8")));
-        const { haushalt, ratsche, ort } = BAND.ladeSpec(opt("--ort"));
+        const ratscheSpec = BAND.ladeSpec(opt("--ort"));
+        const { haushalt, ort } = ratscheSpec;
+        const ratsche = BAND.ratscheVon(ratscheSpec);
         const fehler = [];
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
         const boots = new Set(laeufe.map((u) => u.boot && u.boot.art));

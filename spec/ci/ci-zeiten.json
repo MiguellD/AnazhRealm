@@ -611,6 +611,22 @@
         "38095155944"
       ]
     },
+    "Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)": {
+      "s": 21,
+      "n": 1,
+      "lauf": "npm run gate:kollision-bild",
+      "laeufe": [
+        "38110641263/1"
+      ]
+    },
+    "Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)": {
+      "s": 69,
+      "n": 1,
+      "lauf": "npm run gate:fall-waechter",
+      "laeufe": [
+        "38110641263/1"
+      ]
+    },
     "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)": {
       "s": 15,
       "n": 5,
@@ -1184,15 +1200,11 @@
       ]
     },
     "Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)": {
-      "s": 348,
-      "n": 5,
+      "s": 378,
+      "n": 1,
       "lauf": "npm run gate:portal-konformanz",
       "laeufe": [
-        "38098149763/1",
-        "38098149763/2",
-        "38096987107",
-        "38096257646",
-        "38095155944"
+        "38148115649/1"
       ]
     },
     "Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)": {
@@ -1615,6 +1627,14 @@
         "38095155944"
       ]
     },
+    "Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)": {
+      "s": 138,
+      "n": 1,
+      "lauf": "npm run gate:werk-im-wasser",
+      "laeufe": [
+        "38117156383/1"
+      ]
+    },
     "GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)": {
       "s": 65,
       "n": 5,
@@ -1675,6 +1695,14 @@
         "38095155944"
       ]
     },
+    "Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)": {
+      "s": 17,
+      "n": 1,
+      "lauf": "npm run gate:ego-schatten",
+      "laeufe": [
+        "38038945137/1"
+      ]
+    },
     "Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {
       "s": 74,
       "n": 5,
@@ -1733,6 +1761,38 @@
         "38096987107",
         "38096257646",
         "38095155944"
+      ]
+    },
+    "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)": {
+      "s": 14,
+      "n": 1,
+      "lauf": "npm run gate:worker-dichte",
+      "laeufe": [
+        "38096257646/1"
+      ]
+    },
+    "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)": {
+      "s": 136,
+      "n": 1,
+      "lauf": "npm run gate:pruefbuehne",
+      "laeufe": [
+        "38096257646/1"
+      ]
+    },
+    "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
+      "s": 112,
+      "n": 1,
+      "lauf": "npm run gate:weltgrenze",
+      "laeufe": [
+        "38096257646/1"
+      ]
+    },
+    "Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)": {
+      "s": 76,
+      "n": 1,
+      "lauf": "npm run gate:boot-rettung",
+      "laeufe": [
+        "38096257646/1"
       ]
     }
   },

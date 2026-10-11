@@ -5200,6 +5200,9 @@ init();
         if (mat === grassMat) return "grass";
         if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
         if (typeof schattenMat !== "undefined" && mat === schattenMat) return "schatten";
+        // DER EINE SCHATTEN-STOFF eines Zweit-Kerns (S3: die Stufe 3 von Haus und Ausstattung, fachwerk `wurfStoff`, gestempelt
+        // `userData.__stoff = "schatten"`) — dieselbe Material-Identität wie der Schatten-Teil der Baum-L1.
+        if (mat.userData && mat.userData.__stoff === "schatten") return "schatten";
         return "unknown";
     }
     function __extractAssetMesh(mesh, zweitKern, basisInv) {
@@ -5460,12 +5463,14 @@ init();
                     console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
                 }
             }
-            // DIE HÜLLE REIST MIT (Welle L, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
-            // Kollisions-Liste haus-lokal — die Solids des Gesetzbuchs, jede Stufe die der Stufe 0 (hausSolids) — als
-            // Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis).
-            // Nach dem Budget-Ausgang: der Beipack ist kein Teil. Andere Gestalten tragen das Feld nie.
-            if (g && g.userData && g.userData.__huelle && Array.isArray(g.userData.__huelle.boxen))
-                meshes.push({ kind: "__huelle", huelle: { stufe: g.userData.__huelle.stufe, boxen: g.userData.__huelle.boxen } });
+            // DIE HÜLLEN REISEN MIT (Welle L + S3, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
+            // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
+            // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
+            // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
+            // kein Teil. Andere Gestalten tragen die Felder nie.
+            for (const __bp of ["__huelle", "__fern"])
+                if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
+                    meshes.push({ kind: __bp, huelle: g.userData[__bp] });
         } catch (e) {
             meshes = [];
             try {

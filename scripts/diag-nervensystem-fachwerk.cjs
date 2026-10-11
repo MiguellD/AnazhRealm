@@ -5,12 +5,12 @@
 // (N5.7, mode "settlement" + siteTag "haus" — der deliberate Kanal, Worldgen streut nicht) —
 // der Stamm bekam KEINEN Logik-Zweig (M8). Gestraffte Schwester zu
 // diag-nervensystem-schmiede.cjs, PLUS die MEHR-STUFEN-PROBE (die erste Domaene mit
-// kindStages [0,1,2] ausserhalb der Baeume — der Flatten-Chokepoint muss die
+// kindStages [0,1,2,3] (3 = NUR-WURF, S3 haus) ausserhalb der Baeume — der Flatten-Chokepoint muss die
 // Distanz-Wahl auf die DEKLARIERTEN Stufen klemmen statt fail-closed auf [0]):
 //   S (statisch, Node): Manifest traegt fachwerk (ns __fachwerkCore) · KIND_POLICY
 //     traegt die haus-Zeile (prefix haus_, donor haus_basis) · der Auto-Register-
 //     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · fachwerk-core
-//     deklariert kindStages.haus == [0,1,2] · die Rezepte tragen fx.place
+//     deklariert kindStages.haus == [0,1,2,3] · die Rezepte tragen fx.place
 //     {mode:"settlement", siteTag:"haus"} als DATEN · die Donor-SUBSTANZ haus_basis
 //     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (kein portalMeta/roleManual —
 //     die Rolle EMERGIERT; zwei Front-Segmente = die TUER-LUECKE ist KEIN Part,
@@ -18,12 +18,12 @@
 //     AUSLÖSCHUNGS-WELLE). --selftest injiziert 3 Verletzungen.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-
 //     Rezepte (Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
-//     [0,1,2] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
+//     [0,1,2,3] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
 //     haus_alemannisch entsteht am EINEN Chokepoint (Donor-Klon, KEIN
 //     _grownSpecies) · die generische haus_-Regel loest auf · die Place-
 //     Aufloesung liefert mode "settlement", der Dispatch benennt den deliberaten Kanal (kein Worldgen-Streuer) + keine
 //     haus_-Wald-Nische · _foundryRequest("alemannisch",7,L) liefert Meshes
-//     end-to-end fuer ALLE drei Stufen (Mesh-Zahl je Stufe geloggt) · der
+//     end-to-end fuer ALLE vier Stufen (die Stufe 3 mit Beipack __fern; der Wurf-Ruf nennt sie beim Namen) (Mesh-Zahl je Stufe geloggt) · der
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
@@ -113,8 +113,8 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
     out.push([
-        "S4: fachwerk-core deklariert kindStages.haus == [0, 1, 2] (B2-Vertrags-Daten — die Mehr-Stufen-Wahrheit)",
-        /kindStages:\s*\{\s*haus:\s*\[0,\s*1,\s*2\]\s*[,}]/.test(fcSrc),
+        "S4: fachwerk-core deklariert kindStages.haus == [0, 1, 2, 3] (B2-Vertrags-Daten — die Mehr-Stufen-Wahrheit; 3 = NUR-WURF, S3 haus)",
+        /kindStages:\s*\{\s*haus:\s*\[0,\s*1,\s*2,\s*3\]\s*[,}]/.test(fcSrc),
     ]);
     out.push([
         'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "settlement" + siteTag "haus" — N5.7, W-A5b)',
@@ -181,7 +181,7 @@ function ksRow(src, name) {
         const s2 = staticLaws(brokenPolicy, fcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: haus-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
         // V3: die Stufen-Deklaration kollabiert -> S4 muss rot werden (die Mehr-Stufen-Wand).
-        const brokenStages = fcSrc.replace("kindStages: { haus: [0, 1, 2],", "kindStages: { haus: [0],");
+        const brokenStages = fcSrc.replace("kindStages: { haus: [0, 1, 2, 3],", "kindStages: { haus: [0],");
         const s4 = staticLaws(anazhSrc, brokenStages, manifestSrc).find((l) => l[0].startsWith("S4"));
         check("Selbst-Test 3: kindStages.haus auf [0] kollabiert -> S4 feuert", s4 && s4[1] === false);
         if (errs.length) {
@@ -288,15 +288,20 @@ function ksRow(src, name) {
         } catch (e) {
             res.p.err = (e && e.message) || String(e);
         }
-        // ===== E: das ASSET selbst — ALLE DREI STUFEN end-to-end (Worker-Dispatch + BuildGroup) =====
+        // ===== E: das ASSET selbst — ALLE VIER STUFEN end-to-end (Worker-Dispatch + BuildGroup; die Stufe 3 ist
+        // NUR-WURF, S3 haus: sie trägt ihre Fernform als Beipack __fern) =====
         try {
             res.e.meshCount = {};
-            for (const L of [0, 1, 2]) {
+            for (const L of [0, 1, 2, 3]) {
                 const meshes = await Promise.race([
                     r._foundryRequest("alemannisch", 7, L),
                     new Promise((res3) => setTimeout(() => res3(null), 45000)),
                 ]);
                 res.e.meshCount[L] = Array.isArray(meshes) ? meshes.length : -1;
+                if (L === 3)
+                    res.e.fern3 =
+                        Array.isArray(meshes) &&
+                        meshes.some((m) => m && m.kind === "__fern" && m.huelle && Array.isArray(m.huelle.teile));
                 if (L === 0 && Array.isArray(meshes) && meshes.length) {
                     res.e.hasMatColor = meshes.some(
                         (m) => m && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
@@ -317,7 +322,7 @@ function ksRow(src, name) {
         } catch (e) {
             res.e.err = (e && e.message) || String(e);
         }
-        // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2] LEBT) =====
+        // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
         // FLÄCHEN-STUFE (V18.500 — der Test wandert mit dem Entscheid): L1 ist eine echte
         // Studio-Stufe (17–33 % von L0), der Host-Umweg lodServe {1:2} ist gefallen. Also:
@@ -336,6 +341,8 @@ function ksRow(src, name) {
             res.f.k1 = probe("hanseatisch", 1);
             res.f.k5 = probe("japanisch", 5);
             res.f.k0 = probe("japanisch", 0);
+            // der Wurf- und Fern-Ruf (S3 haus): eine NUR-WURF-Stufe beim Namen baut genau sie, nie die Klammer
+            res.f.k3 = probe("tudor", 3);
         } catch (e) {
             res.f.err = (e && e.message) || String(e);
         }
@@ -363,8 +370,8 @@ function ksRow(src, name) {
         String(out.b.paramsHaus)
     );
     check(
-        "B: kindStages.haus == [0,1,2] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene)",
-        out.b.ksHaus === "[0,1,2]",
+        "B: kindStages.haus == [0,1,2,3] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene; 3 = NUR-WURF)",
+        out.b.ksHaus === "[0,1,2,3]",
         String(out.b.ksHaus)
     );
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
@@ -420,12 +427,17 @@ function ksRow(src, name) {
     );
     check("P: keine haus_-Nische in der Wald-Liste", out.p.inExtras === false);
     check(
-        "E: der Worker liefert das Haus-Asset auf ALLEN drei Stufen (Meshes > 0 je Stufe)",
-        out.e.meshCount && out.e.meshCount[0] > 0 && out.e.meshCount[1] > 0 && out.e.meshCount[2] > 0,
+        "E: der Worker liefert das Haus-Asset auf ALLEN vier Stufen (Meshes > 0 je Stufe; die Stufe 3 mit Beipack __fern)",
+        out.e.meshCount &&
+            out.e.meshCount[0] > 0 &&
+            out.e.meshCount[1] > 0 &&
+            out.e.meshCount[2] > 0 &&
+            out.e.meshCount[3] > 0 &&
+            out.e.fern3 === true,
         out.e.err || JSON.stringify(out.e.meshCount)
     );
     console.log(
-        `      ↳ end-to-end Mesh-Zahl alemannisch je Stufe: L0=${out.e.meshCount && out.e.meshCount[0]} · L1=${out.e.meshCount && out.e.meshCount[1]} · L2=${out.e.meshCount && out.e.meshCount[2]}`
+        `      ↳ end-to-end Mesh-Zahl alemannisch je Stufe: L0=${out.e.meshCount && out.e.meshCount[0]} · L1=${out.e.meshCount && out.e.meshCount[1]} · L2=${out.e.meshCount && out.e.meshCount[2]} · L3=${out.e.meshCount && out.e.meshCount[3]} (__fern ${out.e.fern3})`
     );
     check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
     check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
@@ -446,6 +458,11 @@ function ksRow(src, name) {
         String(out.f.k5)
     );
     check("F: die Wahl 0 bleibt die feine Stufe |0|", /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.k0 || ""), String(out.f.k0));
+    check(
+        "F (NUR-WURF, S3 haus): der Wurf-Ruf nennt die Stufe 3 beim Namen und baut genau sie |3| (die Klammer gilt nur dem Distanz-Wunsch)",
+        /^[^|]*\|[^|]*\|3(\||$)/.test(out.f.k3 || ""),
+        String(out.f.k3)
+    );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
@@ -453,7 +470,7 @@ function ksRow(src, name) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2] + B4-Regler + Asset auf allen drei Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
+        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2,3] + B4-Regler + Asset auf allen vier Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
     );
     process.exit(0);
 })().catch((e) => {

@@ -55,10 +55,173 @@
                     "art": "gate",
                     "stufe": 0,
                     "pass": "haupt",
-                    "dreieckeJeTor": 60000,
+                    "dreieckeJe": 60000,
                     "quelle": "Synthese §4 W3 (Tor-L0 auf das Band 60 000, porta-core LOD-Budget)"
                 }
             ]
+        },
+        {
+            "id": "dorf",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick nach Nordost (45°): der Zug rückt das Dorf in seinen Blickkegel (`_siedlungsAnker`: jedes Haus mit Reichweite + 3,5 m vor dem Spieler — derselbe Plan-Anker −763,2/−828,7 für denselben Spieler-Ort, in jedem Boot). Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "spieler": [
+                -841,
+                -861
+            ],
+            "blick": [
+                -834,
+                -854
+            ],
+            "dorfZug": true,
+            "ortTakt": [],
+            "ratsche": "ratsche-dorf.json",
+            "soll": [
+                {
+                    "name": "Haus-Wurf",
+                    "art": "haus",
+                    "stufen": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "pass": "k0",
+                    "dreieckeJe": 96,
+                    "quelle": "S3 haus (Plan §3.3, Entscheid E1): die nurWurf-Stufe 3 des Gesetzbuchs (fachwerk-core) wirft für jede Stufe; vorher warf jedes Haus seine L0 (~70k) bzw. L1 (~15k) selbst, die L2 gar nicht"
+                },
+                {
+                    "name": "Haus-Wurf",
+                    "art": "haus",
+                    "stufen": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "pass": "k1",
+                    "dreieckeJe": 96,
+                    "quelle": "S3 haus (Plan §3.3, Entscheid E1): die nurWurf-Stufe 3 des Gesetzbuchs (fachwerk-core) wirft für jede Stufe; vorher warf jedes Haus seine L0 (~70k) bzw. L1 (~15k) selbst, die L2 gar nicht"
+                },
+                {
+                    "name": "Ausstattungs-Wurf",
+                    "art": "ausstattung",
+                    "stufen": [
+                        1,
+                        3
+                    ],
+                    "pass": "k0",
+                    "dreieckeJe": 48,
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für die L1; die L0 wirft selbst (die Zeile Ausstattungs-Wurf nah)"
+                },
+                {
+                    "name": "Ausstattungs-Wurf nah",
+                    "art": "ausstattung",
+                    "stufen": [
+                        0
+                    ],
+                    "pass": "k0",
+                    "dreieckeJe": 3400,
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die Ausstattungs-L0 wirft selbst (nah < 12 m, höchstens drei im Bild) — ihre Budget-Zeile 3 400 Dreiecke je Exemplar"
+                },
+                {
+                    "name": "Ausstattungs-Wurf",
+                    "art": "ausstattung",
+                    "stufen": [
+                        1,
+                        3
+                    ],
+                    "pass": "k1",
+                    "dreieckeJe": 48,
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für die L1; die L0 wirft selbst (die Zeile Ausstattungs-Wurf nah)"
+                },
+                {
+                    "name": "Ausstattungs-Wurf nah",
+                    "art": "ausstattung",
+                    "stufen": [
+                        0
+                    ],
+                    "pass": "k1",
+                    "dreieckeJe": 3400,
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die Ausstattungs-L0 wirft selbst (nah < 12 m, höchstens drei im Bild) — ihre Budget-Zeile 3 400 Dreiecke je Exemplar"
+                }
+            ]
+        },
+        {
+            "id": "buehne",
+            "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station, alle aus der Reichweite des Genesis-Rings am Ursprung (seine Tore L0 trugen an s0 +6 ms je nachdem, ob sie beim Messen schon standen); fester Lade-Ring (`stell.ring`: an derselben Pose 25 oder 81–93 Chunks je Sitzung, 0,8–1,0 ms). Der Ort der Toggle-Urteile unter 0,3 ms (gemessen 11.10. GTX 1060: drei Welt-Instanzen 13,50–13,64 ms, Mittel je Sitzung in 0,085 ms; das Licht des Auges 0,47 ms). Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
+            "welt": "pruefbuehne/welt.json",
+            "spieler": [
+                300,
+                0
+            ],
+            "blick": [
+                420,
+                0
+            ],
+            "dorfZug": false,
+            "ortTakt": [],
+            "stell": {
+                "foliageRadius": 240,
+                "architectureCullingRadius": 150,
+                "dichte": 1,
+                "perfTargetMs": 1000,
+                "ring": 4
+            },
+            "posen": [
+                {
+                    "id": "ost",
+                    "spieler": [
+                        300,
+                        0
+                    ],
+                    "blick": [
+                        420,
+                        0
+                    ],
+                    "satz": "300 m östlich des Ursprungs über das Plateau auf die Schelf-Kante — der Genesis-Ring am Ursprung liegt im Rücken und jenseits des Bau-Radius"
+                },
+                {
+                    "id": "west",
+                    "spieler": [
+                        -300,
+                        0
+                    ],
+                    "blick": [
+                        -420,
+                        0
+                    ],
+                    "satz": "dasselbe nach Westen"
+                },
+                {
+                    "id": "s4-hindernisse",
+                    "spieler": [
+                        0,
+                        -140
+                    ],
+                    "blick": [
+                        0,
+                        -170
+                    ],
+                    "satz": "die sechs Steinkörper der Hindernis-Station, der Ursprung im Rücken"
+                },
+                {
+                    "id": "s5-bucht",
+                    "spieler": [
+                        0,
+                        -260
+                    ],
+                    "blick": [
+                        0,
+                        -380
+                    ],
+                    "satz": "vom Plateau-Rand über das Wasser der Bucht auf Furt und Kolk"
+                }
+            ],
+            "bank": {
+                "n": 120,
+                "runden": 6,
+                "je": 2,
+                "soll": 0.1
+            }
         }
     ],
     "klassen": [
@@ -233,7 +396,8 @@
                     ],
                     "stufe": [
                         0,
-                        1
+                        1,
+                        3
                     ]
                 },
                 {
@@ -247,6 +411,9 @@
                 },
                 {
                     "muster": "^bauSatz$"
+                },
+                {
+                    "muster": "^bauWurf$"
                 }
             ]
         },

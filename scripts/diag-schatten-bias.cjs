@@ -661,8 +661,8 @@ async function probe(cfg) {
             };
         }
         if (w.art === "spieler") {
-            // die Beine des Spielers: in der Ego-Sicht blendet `_applyEgoSicht` Kopf und Haut aus (sie werfen dann gar nicht) —
-            // die Probe misst den Leib in der 3rd-Sicht
+            // die Beine des Spielers: in der Ego-Sicht legt `_applyEgoSicht` Kopf und Haut auf SHADOW_TWIN_LAYER (sie werfen,
+            // die Haupt-Kamera sieht sie nicht, gate:ego-schatten) — die Probe misst den Leib in der 3rd-Sicht (Ebene 0)
             const modusAlt = st.cameraMode;
             st.cameraMode = "third";
             r._applyEgoSicht();
