@@ -23859,6 +23859,13 @@ class AnazhRealm {
                 `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen passenden Höhlen-Graph`
             );
         geom.hoehle = Object.assign({}, H, { step: this._voxelChunkConfig(lod).step });
+        geom.setAttribute(
+            "aHimmel",
+            new THREE.Float32BufferAttribute(
+                AnazhRealm._himmelsSicht(meshData.indices, H.tri, meshData.positions.length / 3, geom.hoehle.step),
+                1
+            )
+        );
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -27956,6 +27963,10 @@ class AnazhRealm {
         // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        geom.setAttribute(
+            "aHimmel",
+            new THREE.Float32BufferAttribute(AnazhRealm._himmelsSicht(indices, triZelle, positions.length / 3, step), 1)
+        );
         if (hoehle)
             geom.hoehle = {
                 tri: Int32Array.from(triZelle),
@@ -30753,6 +30764,9 @@ class AnazhRealm {
             geomorph: true,
             wegeKarte: true,
         });
+        // DIE HIMMELS-SICHT (`_himmelsSicht`, je Vertex aus dem Höhlen-Graph): das Himmels-Licht (Umgebung, Hemi, Ambient)
+        // erreicht nur, was den Himmel sieht — r184 multipliziert die Verdeckung in das indirekte Licht (diffus und Glanz).
+        mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
         // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
         // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
         // Morph-Attributen — die equals()-Bahn sieht Rebuilds (neue Geometrie-id).
@@ -32879,8 +32893,10 @@ class AnazhRealm {
         const tgt = geom.attributes.aMorphTarget;
         const nrm = geom.attributes.normal;
         const col = geom.attributes.color;
+        const him = geom.attributes.aHimmel;
         const idx = geom.index ? geom.index.array : null;
         if (!pos || !tgt || !idx) return;
+        if (!him) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keine Himmels-Sicht (aHimmel)`);
         // Kürzere Spannen überspringen (Sliver). Nicht höher: dünne Risse (0.12–0.3 m) zeigen am
         // Grazing-Winkel den Nachthimmel; der Z-Fight ist durch Skirt + DoubleSide entschärft.
         const MIN_SPAN = 0.12;
@@ -32891,6 +32907,7 @@ class AnazhRealm {
         const P = [],
             N = [],
             C = [],
+            HS = [],
             I = [];
         const seen = new Set();
         for (let t = 0; t < idx.length; t += 3) {
@@ -32924,6 +32941,7 @@ class AnazhRealm {
                 for (const v of [a, b, b, a]) {
                     N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
                     C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
+                    HS.push(him.getX(v));
                 }
                 I.push(base, base + 1, base + 2, base, base + 2, base + 3);
                 // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
@@ -32934,6 +32952,7 @@ class AnazhRealm {
                     N.push(0, 0.2, 0); // grob nach oben/aussen — der Vorhang ist meist verdeckt
                     const cv = s === 1 || s === 2 ? b : a;
                     C.push(col ? col.getX(cv) : 0.5, col ? col.getY(cv) : 0.5, col ? col.getZ(cv) : 0.5);
+                    HS.push(him.getX(cv));
                 }
                 I.push(sBase, sBase + 1, sBase + 2, sBase, sBase + 2, sBase + 3);
             }
@@ -32945,6 +32964,8 @@ class AnazhRealm {
         bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
         bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(P), 3));
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
+        // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
+        bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         this._chunkSatzEin("boden", "stitch:" + key, bg, key);
@@ -66552,6 +66573,7 @@ class AnazhRealm {
                     ["color", 3],
                     ["aMorphTarget", 3],
                     ["aMorphWeight", 1],
+                    ["aHimmel", 1],
                 ],
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
@@ -67489,6 +67511,43 @@ class AnazhRealm {
     // die Schatten-Karte trägt je Strahl die ERSTE Fläche vom Licht, und die liegt in Himmels-Luft oder hinter einer Mündung —
     // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
     // Zellen, nie die Weltgröße.
+
+    // DIE HIMMELS-SICHT des Bodens (K02a, Auge 11 bei 762/−138): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht —
+    // die Umgebung (der EINE Himmel), Hemi und Ambient sind Himmels-Licht, und der Boden-Stoff liest diesen Wert als seine
+    // Verdeckung (`aoNode` des Chunk-Materials). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft,
+    // −1 = Himmels-Luft): jede Fläche der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt
+    // (`step` m) um exp(−step / HIMMELS_SICHT.m) — über die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine
+    // Höhle ohne Himmels-Fläche im Chunk sieht ihn nie (0). Vorher lag der Himmel auf jeder Höhlen-Wand: 22 m unter dem Fels
+    // stand die Ich-Sicht in einem blaugrauen Schleier (Sonne im Schatten, Umgebung voll; ohne Umgebung Helligkeit 0).
+    // Ohne Höhlen-Graph (kein Boden-Chunk) sieht jede Fläche den Himmel.
+    static _himmelsSicht(index, tri, n, step) {
+        const V = new Float32Array(n);
+        if (!tri) return V.fill(1);
+        const nT = (index.length / 3) | 0;
+        if (tri.length !== nT) throw new Error(`_himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const schritt = Math.exp(-step / AnazhRealm.HIMMELS_SICHT.m);
+        const hop = new Int8Array(n).fill(-1);
+        for (let t = 0; t < nT; t++)
+            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
+        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
+        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
+        for (let k = 1; k <= schritte; k++) {
+            let neu = 0;
+            for (let t = 0; t < nT; t++) {
+                const a = index[3 * t],
+                    b = index[3 * t + 1],
+                    c = index[3 * t + 2];
+                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
+                    if (hop[a] < 0) ((hop[a] = k), neu++);
+                    if (hop[b] < 0) ((hop[b] = k), neu++);
+                    if (hop[c] < 0) ((hop[c] = k), neu++);
+                }
+            }
+            if (!neu) break;
+        }
+        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
+        return V;
+    }
 
     // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
     // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).
@@ -98356,6 +98415,9 @@ AnazhRealm.WASSER_BILD_RAND = 0.6;
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
 AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
+// DIE HIMMELS-SICHT des Bodens (`_himmelsSicht`): das Himmels-Licht fällt in der Höhlen-Luft je Meter Netz-Weg von der
+// nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
+AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;

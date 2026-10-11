@@ -25,7 +25,11 @@
 //       Stempel des Knotens, `_hoehlenSicht` den Weg hinaus); (g) kein Page-Error;
 //   (h) GEDÄCHTNIS — die gemerkte Horizont-Sperre gilt nur dem Boden, den sie gemessen hat: im Stand an der Mündung hält
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
-//       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging).
+//       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging);
+//   (i) HIMMELS-LICHT (K02a, Auge 11 bei 762/−138) — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
+//       `aHimmel`, `_himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
+//       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell. Vorher lag der volle Himmel auf jeder Höhlen-Wand: 22 m
+//       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -107,6 +111,34 @@ function urteil(b) {
         v.push(
             "CODE: `_hoehlenSicht` ruft `_hoehlenHinaus` nicht (kein Strahl kommt aus einer Höhle an der Sperre vorbei)"
         );
+    // (i) HIMMELS-LICHT: keine Höhlen-Wand trägt mehr Himmel, als ihr gerader Abstand zur nächsten Himmels-Fläche lässt,
+    // und die Mündung bleibt hell (die Sicht fällt nicht schon an der Kante auf null)
+    const hl = b.himmel;
+    if (!c.himmelLiest)
+        v.push(
+            "CODE: `_getVoxelChunkMaterial` liest die Himmels-Sicht nicht (`aoNode` = `aHimmel`) — das Himmels-Licht liegt " +
+                "auf jeder Höhlen-Wand"
+        );
+    if (!hl || !(hl.hoehle > 0)) v.push("LEER: (i) Himmels-Licht: kein Höhlen-Vertex im Boden-Satz (die Wand prüfte nichts)");
+    else {
+        if (hl.ohneAttribut)
+            v.push(
+                `HIMMELS-LICHT: der Boden-Satz trägt keine Himmels-Sicht — ${hl.hoehle} Höhlen-Vertices sehen den vollen ` +
+                    `Himmel, ${hl.tief} davon tiefer als ${hl.tiefM} m hinter der nächsten Himmels-Fläche`
+            );
+        else if (hl.ueber.length > 0) {
+            const u = hl.ueber[0];
+            v.push(
+                `HIMMELS-LICHT: ${hl.ueber.length} von ${hl.hoehle} Höhlen-Vertices tragen mehr Himmel, als ihr Abstand lässt, ` +
+                    `zuerst ${JSON.stringify(u.p)}: Himmels-Sicht ${u.v} bei ${u.d} m (höchstens ${u.max})`
+            );
+        }
+        if (!hl.ohneAttribut && !(hl.muendMittel >= hl.muendMin))
+            v.push(
+                `SCHWARZE MÜNDUNG: ${hl.muend} Höhlen-Vertices in den Mündungs-Boxen tragen im Mittel ` +
+                    `${hl.muendMittel} Himmels-Sicht (mindestens ${hl.muendMin}) — der Himmel fällt schon an der Kante weg`
+            );
+    }
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }
@@ -161,7 +193,17 @@ function selbsttest() {
             },
         ],
         gedaechtnis: { vor: 0, nach: 6, imBild: 6 },
-        code: { passLiest: true, abschnittLiest: true, hinausLiest: true },
+        code: { passLiest: true, abschnittLiest: true, hinausLiest: true, himmelLiest: true },
+        himmel: {
+            hoehle: 900,
+            tief: 300,
+            tiefM: 14,
+            ueber: [],
+            muend: 40,
+            muendMittel: 0.5,
+            muendMin: 0.15,
+            ohneAttribut: false,
+        },
         pageErrors: [],
     };
     const fehler = [];
@@ -211,6 +253,20 @@ function selbsttest() {
         ],
         ["stumpfes Gedächtnis", (b) => (b.gedaechtnis.vor = 6), /LINSE STUMPF: \(h\) Gedächtnis/],
         ["Gedächtnis ohne Mündung", (b) => (b.gedaechtnis = null), /LEER: \(h\) Gedächtnis/],
+        // (i) der Befund von Auge 11: der Himmel liegt auf jeder Höhlen-Wand (der Stand vor K02a)
+        [
+            "Himmel in der Höhle",
+            (b) => Object.assign(b.himmel, { ohneAttribut: true }),
+            /HIMMELS-LICHT: der Boden-Satz trägt keine Himmels-Sicht — 900 Höhlen-Vertices/,
+        ],
+        [
+            "zu viel Himmel",
+            (b) => b.himmel.ueber.push({ p: [762, 11, -140], v: 1, d: 22.4, max: 0.02 }),
+            /HIMMELS-LICHT: 1 von 900 Höhlen-Vertices .*[762,11,-140]/,
+        ],
+        ["schwarze Mündung", (b) => (b.himmel.muendMittel = 0), /SCHWARZE MÜNDUNG: 40 Höhlen-Vertices in den Mündungs-Boxen/],
+        ["Stoff ohne Himmels-Sicht", (b) => (b.code.himmelLiest = false), /CODE: `_getVoxelChunkMaterial` liest/],
+        ["Himmel ohne Höhle", (b) => (b.himmel.hoehle = 0), /LEER: \(i\) Himmels-Licht/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -599,8 +655,104 @@ const server = http.createServer((req, res) => {
             cam.position.copy(merk.p);
             cam.quaternion.copy(merk.q);
             cam.updateMatrixWorld(true);
+            // ── (i) HIMMELS-LICHT: je Höhlen-Vertex des Boden-Satzes (nur in Dreiecken der Höhlen-Luft) die Himmels-Sicht
+            // `aHimmel` gegen die unabhängige Wahrheit — den GERADEN Abstand d zum nächsten Vertex einer Himmels-Fläche: der
+            // Netz-Weg ist nie kürzer, eine Kante höchstens 2,5 Schritte lang, also trägt keiner mehr als exp(−0,4·d/m) + 0,02 (der
+            // gerade Abstand darf durch Fels führen: die Grenze ist nur oben scharf); die Höhlen-Vertices in den Mündungs-Boxen des
+            // Graphs (`tore`, Höhlen-Luft neben Himmels-Luft — die Wahrheit des Dichtefelds) tragen im Mittel mindestens 0,15.
+            {
+                const A = r.constructor;
+                const bs = [...r.state.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
+                const geo = bs && bs.geom;
+                const PA = geo && geo.attributes.position;
+                const HA = geo && geo.attributes.aHimmel;
+                const himmelV = new Set(),
+                    hoehleV = new Set();
+                for (const b of bs ? bs.bloecke.values() : [])
+                    for (const zl of b.zellen || []) {
+                        const ziel = zl.knoten ? hoehleV : himmelV;
+                        for (let i = 0; i < zl.idx.length; i++) ziel.add(zl.idx[i]);
+                    }
+                for (const i of himmelV) hoehleV.delete(i);
+                const mundV = new Set();
+                const pm = new window.THREE.Vector3();
+                for (const b of bs ? bs.bloecke.values() : [])
+                    for (const zl of b.zellen || []) {
+                        const kn = zl.knoten;
+                        if (!kn || !kn.tore || kn.tore.length === 0) continue;
+                        for (let i = 0; i < zl.idx.length; i++) {
+                            const j = zl.idx[i];
+                            pm.set(PA.getX(j), PA.getY(j), PA.getZ(j));
+                            if (hoehleV.has(j) && kn.tore.some((t) => t.box && t.box.containsPoint(pm))) mundV.add(j);
+                        }
+                    }
+                const L = A.HIMMELS_SICHT ? A.HIMMELS_SICHT.m : 3;
+                const TIEF = 14,
+                    R = 2,
+                    GR = 15;
+                const gitter = new Map();
+                for (const i of himmelV) {
+                    const k = Math.floor(PA.getX(i) / R) + "," + Math.floor(PA.getY(i) / R) + "," + Math.floor(PA.getZ(i) / R);
+                    let l = gitter.get(k);
+                    if (!l) gitter.set(k, (l = []));
+                    l.push(i);
+                }
+                const abstand = (x, y, z) => {
+                    let best = Infinity;
+                    const n = Math.ceil(GR / R);
+                    const gx = Math.floor(x / R),
+                        gy = Math.floor(y / R),
+                        gz = Math.floor(z / R);
+                    for (let a = -n; a <= n; a++)
+                        for (let bb = -n; bb <= n; bb++)
+                            for (let c = -n; c <= n; c++) {
+                                const l = gitter.get(gx + a + "," + (gy + bb) + "," + (gz + c));
+                                if (l)
+                                    for (const j of l) {
+                                        const d = Math.hypot(PA.getX(j) - x, PA.getY(j) - y, PA.getZ(j) - z);
+                                        if (d < best) best = d;
+                                    }
+                            }
+                    return best;
+                };
+                const hl = {
+                    hoehle: hoehleV.size,
+                    tief: 0,
+                    tiefM: TIEF,
+                    ueber: [],
+                    muend: mundV.size,
+                    muendMittel: null,
+                    muendMin: 0.15,
+                    ohneAttribut: !HA,
+                };
+                let ms = 0,
+                    k = 0;
+                for (const i of hoehleV) {
+                    // jeder dritte Vertex (die Kosten der Linse)
+                    const x = PA.getX(i),
+                        y = PA.getY(i),
+                        z = PA.getZ(i);
+                    if (k++ % 3 !== 0) continue;
+                    const d = abstand(x, y, z);
+                    if (d > TIEF) hl.tief++;
+                    if (!HA) continue;
+                    const v = HA.getX(i);
+                    const max = Math.exp((-0.4 * d) / L) + 0.02;
+                    if (v > max && hl.ueber.length < 50)
+                        hl.ueber.push({
+                            p: [x, y, z].map((q) => +q.toFixed(1)),
+                            v: +v.toFixed(3),
+                            d: +d.toFixed(2),
+                            max: +max.toFixed(3),
+                        });
+                }
+                if (HA) for (const i of mundV) ms += HA.getX(i);
+                hl.muendMittel = mundV.size ? +(ms / mundV.size).toFixed(3) : null;
+                aus.himmel = hl;
+            }
             // ── (f) der EINE Chokepoint liest die Sicht
             const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
+            aus.code.himmelLiest = /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(code(r._getVoxelChunkMaterial));
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
             aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
@@ -642,6 +794,14 @@ const server = http.createServer((req, res) => {
         console.log(
             `  (h) Gedächtnis an der Mündung: ${gd.imBild} Mündungen im Bild · im Stand neu gemessen ${gd.vor} · nach ` +
                 `\`_chunkSatzMarke("boden", ${gd.bereich})\` neu gemessen ${gd.nach}`
+        );
+    const hl = befund.himmel;
+    if (hl)
+        console.log(
+            `  (i) Himmels-Licht: ${hl.hoehle} Höhlen-Vertices (jeder dritte geprüft), ${hl.tief} tiefer als ${hl.tiefM} m · ` +
+                (hl.ohneAttribut
+                    ? "der Boden-Satz trägt keine Himmels-Sicht"
+                    : `über dem Abstand ${hl.ueber.length} · in den Mündungen ${hl.muend}, im Mittel ${hl.muendMittel}`)
         );
     const v = urteil(befund);
     if (v.length) {
