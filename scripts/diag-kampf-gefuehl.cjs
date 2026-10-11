@@ -228,7 +228,7 @@ function reichVerdict(R) {
 // (T26) DER HIEB TRIFFT IM HORIZONT-BLICK (K13 — pure Funktion, Probe UND Selbst-Test): die Klick-Pfad-Matrix — 8 Waffen ×
 // {0,9 m · 1,3 m · Reichweite − 0,2 m} × {Rumpf, Horizont} × {3rd, 1st} gegen einen gehaltenen Wolf, geklickt über den EINEN
 // Dispatcher (tryMouseBreak, nie _beginPlayerSwing direkt): jeder der 96 Fälle macht Schaden; je rotem Fall der Täter beim
-// Namen (kein Schwung · kein Ziel unter dem Fadenkreuz · zu weit · Sweep vorbei). Ein Wolf hinter dem Rücken bleibt heil
+// Namen (kein Schwung · kein Ziel unter dem Fadenkreuz · zu weit · Sweep vorbei). Ein Wolf hinter dem Rücken und ein Begleiter bleiben heil
 // (kein Ziel, kein Schaden); ein Wolf unter dem Fadenkreuz jenseits der Klinge (der Dolch, Reichweite + 0,8 m) bleibt ein Luftschlag mit
 // dem Hinweis — nie ein Pflücken oder Graben dahinter. Vorher: Rumpf 46 von 48, Horizont 0 von 48 („kein Ziel").
 const KLICK_SOLL = { faelle: 96 };
@@ -251,6 +251,9 @@ function klickVerdict(M) {
         v.push(
             `klick-ruecken: der Wolf hinter dem Rücken (dot ${M.ruecken.dot}) wird gewählt oder getroffen (${M.ruecken.dmg})`
         );
+    if (!M.begleiter) v.push("klick-begleiter keine Probe");
+    else if (M.begleiter.dmg > 0 || M.begleiter.ziel)
+        v.push(`klick-begleiter: der Wolf, der dir folgt, wird im Kegel gewählt oder getroffen (${M.begleiter.dmg})`);
     if (!M.zuWeit) v.push("klick-zuweit keine Probe");
     else if (!M.zuWeit.schwung || !M.zuWeit.gesagt || M.zuWeit.dmg > 0)
         v.push(
@@ -2117,6 +2120,12 @@ async function WELLE_L() {
                 wolf.updateMatrixWorld(true);
                 const rk = klick(wolf);
                 const dot = vorn.x * (wolf.position.x - pm.position.x) + vorn.z * (wolf.position.z - pm.position.z);
+                // der Wolf als Begleiter (er folgt dir) 1,3 m vor dir, der Blick waagrecht über ihn: der Kegel wählt ihn nie
+                r.assignCreatureTask(wolf, "follow_player", {}, { silent: true });
+                stelle(wolf, 1.3);
+                horizont(rumpfPunkt(wolf));
+                const bg = klick(wolf);
+                r.assignCreatureTask(wolf, "wander", {}, { silent: true });
                 // der Dolch Reichweite + 0,8 m vor dem Wolf, das Fadenkreuz auf ihm (3rd): jenseits der Klinge
                 r.setCameraMode("third");
                 ausruesten("klinge_dolch");
@@ -2136,6 +2145,7 @@ async function WELLE_L() {
                 w.z.klick = {
                     faelle,
                     ruecken: { dmg: rk.dmg, ziel: rk.ziel, dot: +dot.toFixed(2) },
+                    begleiter: { dmg: bg.dmg, ziel: bg.ziel },
                     zuWeit: {
                         klinge: +klingeD.toFixed(2),
                         schwung: zw.schwung,
@@ -4061,12 +4071,12 @@ async function WELLE_L() {
         const kZahl = (blick) =>
             `${kf.filter((f) => f.blick === blick && f.dmg > 0).length}/${kf.filter((f) => f.blick === blick).length}`;
         console.log(
-            `  (T26) Klick-Pfad-Matrix (8 Waffen × 3 Abstände × 3rd/1st): Rumpf ${kZahl("rumpf")} · Horizont ${kZahl("horizont")} mit Schaden · Rücken ${JSON.stringify(kz.ruecken || null)} · Dolch jenseits ${JSON.stringify(kz.zuWeit || null)} · ${kz.ms} ms`
+            `  (T26) Klick-Pfad-Matrix (8 Waffen × 3 Abstände × 3rd/1st): Rumpf ${kZahl("rumpf")} · Horizont ${kZahl("horizont")} mit Schaden · Rücken ${JSON.stringify(kz.ruecken || null)} · Begleiter ${JSON.stringify(kz.begleiter || null)} · Dolch jenseits ${JSON.stringify(kz.zuWeit || null)} · ${kz.ms} ms`
         );
         const klv = klickVerdict(z.klick);
         check(
             klv.length === 0,
-            "K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem Rücken bleibt heil, jenseits der Klinge ein Luftschlag mit Hinweis" +
+            "K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem Rücken und der Begleiter bleiben heil, jenseits der Klinge ein Luftschlag mit Hinweis" +
                 (klv.length ? " — " + klv.join(" · ") : "")
         );
         const selbstK = Array.isArray(kz.selbst) ? kz.selbst : [];
@@ -4089,6 +4099,7 @@ async function WELLE_L() {
                 })),
             ],
             ruecken: { dmg: 12, ziel: true, dot: -1 },
+            begleiter: { dmg: 9, ziel: true },
             zuWeit: { klinge: 1.02, schwung: false, gesagt: false, dmg: 0, verb: "pfluecken" },
         });
         const klvGut = klickVerdict({
@@ -4100,11 +4111,12 @@ async function WELLE_L() {
                 dmg: 7,
             })),
             ruecken: { dmg: 0, ziel: false, dot: -1 },
+            begleiter: { dmg: 0, ziel: false },
             zuWeit: { klinge: 1.02, schwung: true, gesagt: true, dmg: 0, verb: "hieb" },
         });
         check(
             klvGut.length === 0 &&
-                ["klick-horizont", "klick-ruecken", "klick-zuweit"].every((t) => klvAlt.some((x) => x.startsWith(t))) &&
+                ["klick-horizont", "klick-ruecken", "klick-begleiter", "klick-zuweit"].every((t) => klvAlt.some((x) => x.startsWith(t))) &&
                 selbstK.length === 6 &&
                 selbstK.every((t) => !!t) &&
                 selbstK.includes("kein Ziel unter dem Fadenkreuz"),

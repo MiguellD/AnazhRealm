@@ -84218,6 +84218,10 @@ class AnazhRealm {
         let bestW = Infinity;
         for (const c of cs) {
             if (!c || !this._trefferErreichbar(c, S.x, S.z, klinge)) continue;
+            // ein Begleiter (ein Auftrag des Spielers: folgen, warten, sammeln) wird nie im Kegel gewählt — wer ihn schlagen
+            // will, zielt auf ihn; sonst träfe das Pflücken neben dem folgenden Hund den Hund
+            const auftrag = this._getCreatureTask(c);
+            if (auftrag && auftrag.name !== "wander") continue;
             const gl = this._kreaturTrefferGlieder(c);
             if (!gl) continue;
             c.updateMatrixWorld(true);
