@@ -444,6 +444,12 @@ async function leibWiese(arg) {
     const st = r.state;
     const out = { fuss: { posen: [] }, ritt: { posen: [] } };
     try {
+        // Bild-Paare (`arg.bilder`): der Spiel-Loop ruht (die Probe taktet selbst), die Tiere halten still
+        if (arg.bilder) {
+            st.renderer.setAnimationLoop(null);
+            if (window.__tiereHalten) window.__tiereHalten();
+            out.bilder = {};
+        }
         await r._foundryAwaitBook(45000);
         st.playerMesh.position.set(arg.x, r._voxelSurfaceY(arg.x, arg.z) + 1.8, arg.z);
         out.fehlt = await L.steht(60000);
@@ -514,6 +520,22 @@ async function leibWiese(arg) {
                     L.messen(null)
                 )
             );
+            if (arg.bilder && arg.bilder.ids.includes(p.id)) {
+                window.__buehne();
+                L.ruhig();
+                const W = arg.bilder.w;
+                const H = arg.bilder.h;
+                const auf = await window.__ausgabeAufnahme(W, H, 1);
+                const cv = document.createElement("canvas");
+                cv.width = W;
+                cv.height = H;
+                const ctx = cv.getContext("2d");
+                const img = ctx.createImageData(W, H);
+                img.data.set(auf.u8.subarray(0, W * H * 4));
+                ctx.putImageData(img, 0, 0);
+                out.bilder[p.id] = { png: cv.toDataURL("image/png"), dc: auf.info.drawCalls, dreiecke: auf.info.triangles };
+                if (Object.keys(out.bilder).length >= arg.bilder.ids.length) return out;
+            }
         }
         // DER RUNDGANG: 240 Bilder um das erste Haus (Radius Box + 1,2 m), der Blick tangential — Kamera-Sprünge > 2 m
         const h = je.haus[0] || je.fels[0];
@@ -617,6 +639,8 @@ function ninja(arg) {
         };
         for (let i = 0; i < arg.wp.length; i++)
             for (const yw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+                // `arg.nur`: nur diese Pose (das Bild), keine Tunnel-Probe
+                if (arg.nur != null && i * 4 + [0, Math.PI / 2, Math.PI, -Math.PI / 2].indexOf(yw) !== arg.nur) continue;
                 const [x, z, y] = arg.wp[i];
                 for (const k in keys) keys[k] = false;
                 character.position.x = x;
@@ -659,13 +683,14 @@ function ninja(arg) {
                     if (ok) taeter.push(`${name} zwischen Ziel und Kamera`);
                 }
                 out.posen.push({
-                    id: `pose-${String(out.posen.length).padStart(2, "0")} P${i} ${Math.round((yw * 180) / Math.PI)}°`,
+                    id: `pose-${String(i * 4 + [0, Math.PI / 2, Math.PI, -Math.PI / 2].indexOf(yw)).padStart(2, "0")} P${i} ${Math.round((yw * 180) / Math.PI)}°`,
                     cam: [+c.x.toFixed(2), +c.y.toFixed(2), +c.z.toFixed(2)],
                     ziel: Lk.map((q) => +q.toFixed(2)),
                     figur: [+character.position.x.toFixed(2), +play.posY.toFixed(2), +character.position.z.toFixed(2)],
                     taeter,
                 });
             }
+        if (arg.nur != null) return out;
         for (const k in keys) keys[k] = false;
         character.position.x = 3.6;
         character.position.z = 21;
@@ -1113,6 +1138,7 @@ async function probe(arg) {
         process.exit(0);
     }
 
+    if (opt("--leib-bilder", null)) return leibBilder(opt("--leib-bilder", null));
     if (BILDER) return bildPaare();
 
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
@@ -1301,6 +1327,68 @@ async function bildPaare() {
         if (fehler.length) console.log(`  Seiten-Fehler: ${fehler.length} (${fehler.slice(0, 3).join(" | ")})`);
     } finally {
         await browser.close();
+        try {
+            fs.rmSync(profil, { recursive: true, force: true });
+        } catch (_e) {}
+    }
+    process.exit(0);
+}
+
+// ── DIE BILD-PAARE DES LEIBS am echten Renderer (`--leib-bilder <ordner>`; Fenster, Hardware-Adapter): die Posen pose-00 und
+// pose-01 der Mess-Wiese aus dem Ausgabe-Pfad (scripts/lib/ausgabe-aufnahme.cjs, Bühne Mittag · Sonne · Sommer) und NP-03
+// pose-14 des Körper-Studios (sein Bild-Schirm). Vorher und Nachher sind zwei Läufe: KAMERA_LAUB_STAMM / KAMERA_LAUB_STUDIO
+// tragen den Vor-Stand, `--phase vorher|nachher` den Datei-Namen. ──
+async function leibBilder(ordner) {
+    const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const phase = opt("--phase", "nachher");
+    fs.mkdirSync(ordner, { recursive: true });
+    await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
+    const profil = path.join(require("os").tmpdir(), `kamera-leib-profil-${Date.now()}`);
+    const browser = await puppeteer.launch({
+        headless: false,
+        userDataDir: profil,
+        protocolTimeout: 3600000,
+        defaultViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+        args: [...echteWebGpuArgs(), "--window-size=1300,860"],
+    });
+    const bericht = { phase, posen: {} };
+    try {
+        const page = await browser.newPage();
+        await page.evaluateOnNewDocument(() => {
+            window.__anazhForceFoundry = true;
+            window.__anazhAutoSettlement = false;
+        });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", { timeout: 120000 });
+        await page.evaluate(AUSGABE_INSTALL);
+        await page.evaluate(leibInstall, { R: LEIB_R });
+        const w = await page.evaluate(leibWiese, { x: WIESE.x, z: WIESE.z, quote: LEIB_WIESE, bilder: { ids: ["pose-00", "pose-01"], w: 1280, h: 720 } });
+        if (w.err) console.log(`  Wiese: Ausnahme ${String(w.err).split("\n")[0]}`);
+        for (const [id, b] of Object.entries(w.bilder || {})) {
+            fs.writeFileSync(path.join(ordner, `${id}-${phase}.png`), Buffer.from(b.png.split(",")[1], "base64"));
+            const p = w.fuss.posen.find((q) => q.id === id) || {};
+            bericht.posen[id] = { anker: p.anker, kamera: p.c, arm: p.arm, taeter: p.taeter, dc: b.dc, dreiecke: b.dreiecke };
+            console.log(`  ${id}-${phase}.png  ${p.anker} · Kamera ${(p.c || []).join("/")} · Arm ${p.arm} m · Täter ${(p.taeter || []).join(", ") || "keiner"}`);
+        }
+        // NP-03 pose-14 (P3, 180°): die Pose stellen, 90 Schritte, dann zeichnet das Studio sein Bild; der Regler-Panel weicht
+        await page.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.waitForFunction(
+            // eslint-disable-next-line no-undef
+            () => typeof enterPlay === "function" && typeof playPhysics === "function" && typeof parkBoxes !== "undefined" && parkBoxes.length > 0,
+            { timeout: 120000 }
+        );
+        const n = await page.evaluate(ninja, { wp: NINJA_WP, rand: NINJA_RAND, nur: 14 });
+        await new Promise((res) => setTimeout(res, 600));
+        await page.addStyleTag({ content: "#ui{display:none!important}" });
+        await new Promise((res) => setTimeout(res, 300));
+        await page.screenshot({ path: path.join(ordner, `np03-pose-14-${phase}.png`) });
+        const q = (n.posen || [])[0] || {};
+        bericht.posen["np03-pose-14"] = q;
+        console.log(`  np03-pose-14-${phase}.png  ${q.id} · Kamera ${(q.cam || []).join("/")} · Täter ${(q.taeter || []).join(", ") || "keiner"}`);
+        fs.writeFileSync(path.join(ordner, `bericht-${phase}.json`), JSON.stringify(bericht, null, 1));
+    } finally {
+        await browser.close();
+        server.close();
         try {
             fs.rmSync(profil, { recursive: true, force: true });
         } catch (_e) {}

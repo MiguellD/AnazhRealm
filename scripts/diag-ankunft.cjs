@@ -705,7 +705,12 @@ async function probe(arg) {
             const hh = (x, z) => r.getTerrainHeightAt(x, z);
             // Die Pflanzen beiseite (die Blocker der Natur-Einträge) und die Kronen-Grenze eines Vor-Stands neutral: das Soll,
             // das nur Boden und Bau erzwingen. Der Täter beim Namen: Stamm (Blocker) oder Krone (die Kronen-Grenze).
-            const pflanzen = st.architectures.filter((a) => a && natur(a) && a.blockerAABBs);
+            // Pflanze ist, wessen Boxen alle `pflanze` tragen (der Wurf geht `durchPflanzen`); der Fels ist Natur, aber keine
+            // Pflanze — er hält die Kamera wie der Bau (K06: die Kugel der Kamera hielt im Ritt 2 von 496 Proben an Natur ohne
+            // Pflanzen-Box, die der Mittelstrahl um weniger als ihren Radius verfehlte; die Linse nannte sie „Stamm")
+            const pflanzen = st.architectures.filter(
+                (a) => a && natur(a) && a.blockerAABBs && a.blockerAABBs.length && a.blockerAABBs.every((b) => b && b.pflanze === true)
+            );
             const hatKronen = typeof r._kameraKronenGrenze === "function";
             const ohneStaemme = (an) => {
                 for (const a of pflanzen) {
