@@ -1,0 +1,58 @@
+BAND ROT: Befehle 95/208 (0.46×) · Dreiecke 583k/680k (0.86×) · VRAM MB 124.4/118 (1.05×) · GPU ms/Frame 12.24/16.7 (0.73×)
+ORT dorf — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1          158k/200k  bodenSatz 3 · fern-ring 3 · wasserSatz 1 · farWater 1
+streu                         5/9          5/0/0            53k/40k !streuSatz 5
+nahWiese                      4/4          4/0/0            46k/80k  nahWiese:L1 2 · nahWiese:L2 2
+karten                        1/1          1/0/0             934/1k  fimp:atlas:L2 1
+baum                        35/40         26/8/1          114k/150k  f:fichte:L1 7 · f:tanne:L1 6 · f:birke:L1 6 · f:eiche:L1 6
+busch                         6/8          4/2/0            70k/40k !f:strauch:L1 4 · f:strauch:L0 2
+tier*                        0/30          0/0/0              0/60k  
+bau                         15/40         12/2/1            45k/60k  bauSatz 11 · bauWurf 2 · bau-fundament 1 · siedlung-zaun 1
+    bauSatz k0: f:feuerstelle:L0 2 Zellen = 2 820
+    bauSatz haupt: f:griechisch:L1 4 Zellen = 17 622 · f:griechisch:L2 21 Zellen = 16 032 · f:feuerstelle:L1 22 Zellen = 6 545 · f:marktstand:L1 4 Zellen = 754
+    bauWurf k0: f:griechisch:L3 8 Zellen = 430 · f:feuerstelle:L3 14 Zellen = 336 · f:marktstand:L3 2 Zellen = 70
+    bauWurf k1: f:feuerstelle:L3 12 Zellen = 288 · f:griechisch:L3 2 Zellen = 104 · f:marktstand:L3 2 Zellen = 70
+formationen                  3/20          1/1/1             8k/30k  formationenSatz 3
+    formationenSatz k0: f:zacken:L0 10 Zellen = 3 200
+    formationenSatz k1: f:zacken:L0 5 Zellen = 1 600
+    formationenSatz haupt: f:zacken:L0 9 Zellen = 2 880
+einzelstuecke               18/25          8/5/5            88k/15k !spieler 10 · dsl-insel 3 · feld-pass 2 · himmel 1
+reserve                      0/19          0/0/0               0/4k  
+SUMME                      95/208        67/19/9          583k/680k  Abstand 0.46× Befehle · 0.86× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+SOLL Ausstattungs-Wurf nah ausstattung k0: 1410 Dreiecke je Exemplar (2 im Bild) / 3400 (0.41×) — Täter f:feuerstelle:L0 2 820
+SOLL Haus-Wurf haus k0: 54 Dreiecke je Exemplar (8 im Bild) / 96 (0.56×) — Täter f:griechisch:L3 430
+SOLL Haus-Wurf haus k1: 52 Dreiecke je Exemplar (2 im Bild) / 96 (0.54×) — Täter f:griechisch:L3 104
+SOLL Ausstattungs-Wurf ausstattung k1: 26 Dreiecke je Exemplar (14 im Bild) / 48 (0.54×) — Täter f:feuerstelle:L3 288 · f:marktstand:L3 70
+SOLL Ausstattungs-Wurf ausstattung k0: 25 Dreiecke je Exemplar (16 im Bild) / 48 (0.52×) — Täter f:feuerstelle:L3 336 · f:marktstand:L3 70
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 124.4 MB / Band 118 MB (1.05×) — je Erzeuger:
+     39.4 MB  619   buf:szene  (bodenSatz · bauSatz · streuSatz)
+     19.8 MB  2     tex:TRAANode.history
+     15.8 MB  1     tex:TRAANode.resolve
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.9 MB  1     tex:output
+      7.9 MB  1     tex:depth
+      4.0 MB  2     tex:szene
+      4.0 MB  2     tex:wege-karte
+      2.7 MB  1     tex:karte-albedo
+      1.9 MB  1     tex:feld-pass-panorama
+      1.3 MB  1     tex:karte-normal
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+      0.7 MB  1     tex:laub-cluster-atlas
+      0.5 MB  1     tex:welt-march-liste
+      0.5 MB  2     tex:kronen-streu
+      0.3 MB  1     tex:welt-march-kapseln
+
+erst-Boot, Ladung 1 · eingeschwungen nach 384 Takten (33 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 209 Antworten 65.7 MB — von der Platte 10 (0.4 MB), Neubau 65.2 MB
+
+BAND ROT: Befehle 95/208 (0.46×) · Dreiecke 583k/680k (0.86×) · VRAM MB 124.4/118 (1.05×) · GPU ms/Frame 12.24/16.7 (0.73×)
+LINSE SAUBER — jeder Täter benannt und im Haushalt, keine Klasse über ihrer Ratsche.
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 104/2048
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab540\dorf2-B.json

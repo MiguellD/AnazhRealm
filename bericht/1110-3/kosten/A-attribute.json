@@ -1,0 +1,29 @@
+{
+ "ergebnis": {
+  "position": 7.337,
+  "normal": 7.131,
+  "color": 7.112,
+  "aMorphTarget": 2.677,
+  "skinIndex": 1.376,
+  "skinWeight": 1.376,
+  "aLodLevel": 1.251,
+  "aH0": 0.993,
+  "aH0L": 0.993,
+  "aMorphWeight": 0.892,
+  "uv": 0.569,
+  "aWurzel": 0.324,
+  "aSchale": 0.324,
+  "aWiege": 0.197,
+  "aKrone": 0.141,
+  "aFlow": 0.137,
+  "aWave": 0.069,
+  "aDepth": 0.069,
+  "aSlope": 0.069,
+  "instanceColor": 0.032,
+  "aKarte": 0.031,
+  "aDeckt": 0.027,
+  "aMag": 0.011,
+  "SUMME": 33.137
+ },
+ "ms": 3
+}
