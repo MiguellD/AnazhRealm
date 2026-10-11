@@ -18564,7 +18564,8 @@ class AnazhRealm {
         let VA = group.userData && group.userData._verhaltenAktion;
         if (VA) {
             const nowS = this.state.creatureAnimationTime; // die Kreatur-Uhr, an der updateCreatures die Aktion stempelt
-            if (nowS >= VA.bis || !VA.def) {
+            // (ein Biss, der noch nicht geschnappt hat, fällt erst im Schnappen — die Landung trägt den Kopf: _kreaturBissTakt)
+            if ((nowS >= VA.bis && !VA.biss) || !VA.def) {
                 group.userData._verhaltenAktion = null;
                 VA = null;
             } else if (VA.def.profil) {
@@ -19436,9 +19437,8 @@ class AnazhRealm {
     _tickKreaturVerhalten(creature, i, nowS) {
         const ud = creature.userData;
         if (!ud) return;
-        // der Ansprung eines Bisses (_kreaturBissAnsatz) spielt zu Ende — auch in Hetze und Flucht
-        const AB = ud._verhaltenAktion;
-        if (AB && AB.bissAkt && nowS < AB.bis) return;
+        // der Ansprung eines Bisses (_kreaturBissAnsatz) spielt zu Ende — auch in Hetze und Flucht, bis zur Landung
+        if (this._kreaturAnsprungOffen(creature)) return;
         const z = ud._motionZustand;
         if (z === "flucht" || z === "schwimmen" || z === "hetzen") {
             ud._verhaltenAktion = null;
@@ -22208,8 +22208,7 @@ class AnazhRealm {
         const ud = creature && creature.userData;
         if (!ud) return false;
         const now = this.state.creatureAnimationTime;
-        const A0 = ud._verhaltenAktion;
-        if (A0 && A0.bissAkt && now < A0.bis) return false; // ein Ansprung läuft
+        if (this._kreaturAnsprungOffen(creature)) return false; // ein Ansprung läuft
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
         const spalt = this._kreaturBissSpalt(creature, ziel);
         if (spalt === null || spalt > this._kreaturBissReich(creature)) return false;
@@ -22227,26 +22226,43 @@ class AnazhRealm {
             bissAkt: true,
             biss: { ziel: ziel || null, quelle, dmg },
         };
-        if (def.hop === true) this.creatureJump(creature);
+        if (def.hop === true) this.creatureJump(creature, true);
         this._feelCreatureAction(creature, "attack", 1);
         return true;
     }
 
+    // DER OFFENE ANSPRUNG (K13) — die EINE Frage aller Biss-Wege (Ansatz, Schnappen, Wunsch, Verhaltens-Takt): ein Ansprung ist
+    // offen, solange seine Geste läuft (Kreatur-Uhr < bis) oder sein Biss noch nicht geschnappt hat und der Leib noch nicht
+    // steht (der Hüpfer in der Luft) — die Landung gehört zum Sprung.
+    _kreaturAnsprungOffen(creature) {
+        const ud = creature && creature.userData;
+        const A0 = ud && ud._verhaltenAktion;
+        if (!A0 || !A0.bissAkt) return false;
+        if (this.state.creatureAnimationTime < A0.bis) return true;
+        return !!A0.biss && (ud._hopH > 0 || ud._hopV > 0);
+    }
+
     // DAS SCHNAPPEN (je Kreatur-Takt, solange ein Ansprung offen ist — nach der Lage und der Pose des Takts): berührt der Kopf
     // den Leib des Ziels (_kreaturBissKontakt), beißt das Tier EINMAL — der Schaden durch das Tor des Ziels (damagePlayer /
-    // damageCreature), der Stoß durch das EINE Impuls-Gesetz (_bissStoss). Ein Ziel, das stirbt oder fort ist, und das Ende der
-    // Geste schließen den Biss ohne Schaden.
+    // damageCreature), der Stoß durch das EINE Impuls-Gesetz (_bissStoss). Ein Ziel, das stirbt oder fort ist, schließt den Biss
+    // ohne Schaden, ebenso das Ende des Ansprungs (_kreaturAnsprungOffen): DIE LANDUNG ZÄHLT NOCH (K13) — der Takt, in dem der
+    // Leib aufsetzt, trägt den Kopf auf den Leib; vorher schloss die Uhr der Geste den Biss in genau diesem Takt, bevor der Kopf
+    // ihn berührte (ein ruhiger Fuchs: der Spalt −0,03 m im Landungs-Takt, kein Biss).
     _kreaturBissTakt(creature) {
         const ud = creature.userData;
         const A0 = ud && ud._verhaltenAktion;
         const B = A0 && A0.biss;
         if (!B) return;
         const ziel = B.ziel;
-        if (this.state.creatureAnimationTime >= A0.bis || (ziel && this.state.creatures.indexOf(ziel) === -1)) {
+        if (ziel && this.state.creatures.indexOf(ziel) === -1) {
             A0.biss = null; // ins Leere
             return;
         }
         if (!this._kreaturBissKontakt(creature, ziel)) {
+            if (!this._kreaturAnsprungOffen(creature)) {
+                A0.biss = null; // gelandet, ins Leere
+                return;
+            }
             const m = this._kreaturMaul(creature, this._bissMaulKon || (this._bissMaulKon = {}));
             if (m) this._kreaturBissKopf(creature, A0, m, ziel);
             return;
@@ -22332,7 +22348,9 @@ class AnazhRealm {
         const m = maul || this._kreaturMaul(creature, this._bissMaulRad || (this._bissMaulRad = {}));
         if (!m) return null;
         const kopfOben =
-            Math.max(m.ay, m.by) + m.r + (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature) : 0);
+            Math.max(m.ay, m.by) +
+            m.r +
+            (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature, true) : 0);
         if (!ziel) {
             const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
             if (K.y0 > kopfOben) return Infinity;
@@ -23872,7 +23890,7 @@ class AnazhRealm {
                 const VA = udW._verhaltenAktion;
                 const now = this.state.creatureAnimationTime;
                 const B = VA && VA.biss;
-                if (B && now < VA.bis) {
+                if (B && this._kreaturAnsprungOffen(creature)) {
                     // DER ANSPRUNG (Welle LF kampf, Posten 5): solange der Biss nicht geschnappt hat, trägt der Sprung den Kopf
                     // auf das Ziel — derselbe Weg wie die Hetze (_kreaturJagdZug): der Wunsch zeigt auf es, das Ankunfts-Gesetz
                     // im Sprint der Gestalt plus dem Lauf des Ziels von ihm fort hält ihn dort, wo der Kopf über der
@@ -25590,17 +25608,20 @@ class AnazhRealm {
     // (freude.tempoMul). Der Abflug ist die Parabel v0 = √(2·g·h) mit dem g des Gang-Gesetzes; der Takt in updateCreatures
     // trägt sie ON TOP der geerdeten Lage (die Erdung bleibt die Wahrheit). Eine Aktion mit `hop` (bound, pounce) zündet
     // ihn (_tickKreaturVerhalten) — kein Abflug in m/s daneben (der alte `def.hop` war ein Zwilling: der frohe Sprung stieg
-    // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu.
-    creatureJump(creature) {
+    // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu. `ansprung`: der Sprung eines Bisses (_kreaturSprungHoehe).
+    creatureJump(creature, ansprung = false) {
         const ud = creature && creature.userData;
         if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
-        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * this._kreaturSprungHoehe(creature));
+        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * this._kreaturSprungHoehe(creature, ansprung));
         return true;
     }
     // DIE HÖHE DES SPRUNGS (m) — das Freude-Gesetz, die EINE Quelle (creatureJump, die Flugzeit des Ansprungs
-    // _kreaturSprungZeit): froh hopHochM, sonst hopBasisM.
-    _kreaturSprungHoehe(creature) {
+    // _kreaturSprungZeit, die Höhe, die ein Biss erreicht): froh hopHochM, sonst hopBasisM. DER ANSPRUNG EINES BISSES ist kein
+    // Freuden-Sprung (K13): er springt den Grund-Hüpfer, wie froh der Jäger auch ist — vorher trug ein froher Fuchs den Kopf
+    // 1,2 m hoch über das Kitz (Spalt 0,12–0,19 m, 4 von 12 Ansprüngen ins Leere; gate:kampf-gefuehl T15 wackelte je Boot).
+    _kreaturSprungHoehe(creature, ansprung = false) {
         const F = AnazhRealm._verhaltenGesetz().freude;
+        if (ansprung) return F.hopBasisM;
         const froh = this.state.creatureEmotions[this.state.creatures.indexOf(creature)] === "happy";
         return froh ? F.hopHochM : F.hopBasisM;
     }
@@ -25610,7 +25631,10 @@ class AnazhRealm {
     _kreaturSprungZeit(creature) {
         const BG = AnazhRealm._bissGesetz();
         if (BG.geste.hop !== true) return BG.dauer;
-        return Math.max(BG.dauer, 2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature)) / AnazhRealm._hopSchwere()));
+        return Math.max(
+            BG.dauer,
+            2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature, true)) / AnazhRealm._hopSchwere())
+        );
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -84025,22 +84049,31 @@ class AnazhRealm {
         // _kampfZielAbstand; dazu der Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
         // die Klinge reichte 2,46 m: am Hang 9 Schwünge, 0 Treffer, kein Hinweis. Steht das Tier unter dem Fadenkreuz
         // jenseits der Klinge, nennt der Spieler-Kanal beim Drücken die Reichweite (der Klick bleibt ein Luftschlag).
-        const creaturePick = this._pickCreatureAtCrosshair();
+        // DIE EINE ZIEL-WAHL DES HIEBS (K13): liegt kein Leib unter dem Fadenkreuz, wählt der Schwung-Kegel
+        // (_kampfKegelZiel) — wer waagrecht über den Wolf blickt, schlägt den Wolf (vorher 0 von 48 Horizont-Fällen: die Klinge
+        // fegte über ihn). Steht das Tier unter dem Fadenkreuz jenseits der Klinge, bleibt der Klick ein Luftschlag mit dem
+        // Hinweis — nie ein Pflücken oder Graben hinter dem Tier (vorher pflückte der Dolch 1,3 m vor dem Wolf die Blüte dahinter).
         const pick = this._pickArchitectureAtCrosshair();
         let verb = null;
         let zuWeit = null;
-        if (creaturePick && creaturePick.point) {
+        let creaturePick = null;
+        const pmB = this.state.playerMesh;
+        if (pmB) {
             const K = AnazhRealm._arenaGesetz().schwung;
-            const pmB = this.state.playerMesh;
-            const pt = creaturePick.point;
             const R = this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {}));
-            const nahDist = pmB ? this._kampfZielAbstand(R, pt) : Infinity;
-            const creatureDist = this.state.camera.position.distanceTo(pt);
-            const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
             const klinge = R.reach + K.bladeRadiusM;
-            if (creatureDist <= archDist) {
-                if (nahDist <= klinge) verb = "hieb";
-                else zuWeit = { d: nahDist, klinge };
+            const unter = this._pickCreatureAtCrosshair();
+            const tier = unter && unter.point ? unter : this._kampfKegelZiel(R, klinge);
+            if (tier) {
+                const pt = tier.point;
+                const creatureDist = this.state.camera.position.distanceTo(pt);
+                const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
+                if (creatureDist <= archDist) {
+                    const nahDist = this._kampfZielAbstand(R, pt);
+                    verb = "hieb";
+                    if (nahDist <= klinge) creaturePick = tier;
+                    else zuWeit = { d: nahDist, klinge };
+                }
             }
         }
         // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in Arm-Laenge wird GEPFLUECKT (wer auf die
@@ -84073,7 +84106,7 @@ class AnazhRealm {
                 );
             }
             // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
-            return this._playerAttackCreature(verb === "hieb" && !zuWeit ? creaturePick : null);
+            return this._playerAttackCreature(creaturePick);
         }
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
@@ -84170,6 +84203,52 @@ class AnazhRealm {
         while (node && !creatureByMesh.has(node)) node = node.parent;
         const creature = node ? creatureByMesh.get(node) : null;
         return creature ? { creature, point: intersects[0].point } : null;
+    }
+
+    // DER SCHWUNG-KEGEL DER ZIEL-WAHL (K13, schmiede ARENA.schwung.zielKegelUntenRad — Welt und Arena-Lab lesen dieselbe Zeile):
+    // liegt kein Leib unter dem Fadenkreuz, wählt der Hieb den Leib im Sektor, den die Klinge fegt — von der Schulter im Stand (den
+    // Ausfall tritt der Hieb erst nach dem Ziel an: _kampfKlingenAchse) jeder Punkt der Treffer-Gestalt (Enden und Mitte jeder
+    // Glied-Kapsel, _kreaturTrefferGlieder) in der Reichweite der Klinge (im Ausfall gemessen wie das Verb-Tor:
+    // _kampfZielAbstand), dessen Gier höchstens arcHalfRad neben dem Fadenkreuz liegt und
+    // dessen Neigung höchstens zielKegelUntenRad darunter (nie darüber, nie hinter dem Rücken). Gewählt wird das lebende Tier,
+    // dessen Punkt dem Fadenkreuz am nächsten liegt (der Winkel), und dieser Punkt: durch ihn geht die Klinge
+    // (_kampfZielMerken). Das Grob-Tor (_trefferErreichbar) filtert jeden Leib außer Reichweite, bevor die Gestalt rechnet.
+    // Rückgabe { creature, point } oder null.
+    _kampfKegelZiel(R, klinge) {
+        const cs = this.state.creatures;
+        const F = this._fadenkreuzStrahl();
+        const pm = this.state.playerMesh;
+        if (!F || !pm || !Array.isArray(cs) || !cs.length) return null;
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const S = this._kampfSchulter(R, pm.rotation.y, 0, 0, 0, this._kegelS || (this._kegelS = {}));
+        const gF = Math.atan2(F.d.x, F.d.z);
+        const nF = Math.asin(Math.max(-1, Math.min(1, F.d.y)));
+        const P = this._kegelP || (this._kegelP = new THREE.Vector3());
+        let best = null;
+        let bestW = Infinity;
+        for (const c of cs) {
+            if (!c || !this._trefferErreichbar(c, S.x, S.z, klinge)) continue;
+            const gl = this._kreaturTrefferGlieder(c);
+            if (!gl) continue;
+            c.updateMatrixWorld(true);
+            for (const g of gl) {
+                for (let k = 0; k <= 2; k++) {
+                    P.copy(g.a)
+                        .lerp(g.b, k / 2)
+                        .applyMatrix4(g.anker.matrixWorld);
+                    const h = Math.hypot(P.x - S.x, P.z - S.z);
+                    let dg = Math.atan2(P.x - S.x, P.z - S.z) - gF;
+                    dg = Math.atan2(Math.sin(dg), Math.cos(dg));
+                    const dn = Math.atan2(P.y - S.y, h) - nF;
+                    if (Math.abs(dg) > K.arcHalfRad || dn > 0 || dn < -K.zielKegelUntenRad) continue;
+                    const w = Math.hypot(dg, dn);
+                    if (w >= bestW || this._kampfZielAbstand(R, P) > klinge) continue;
+                    bestW = w;
+                    best = { creature: c, point: P.clone() };
+                }
+            }
+        }
+        return best;
     }
 
     // Welle 6.H Phase 2F.3 — Inventar-Konsum für Konsumables. Findet ersten
@@ -101945,6 +102024,7 @@ AnazhRealm._arenaGesetz = function () {
         a.bogen &&
         Number.isFinite(a.schwung.dauerProSqrtI) &&
         Number.isFinite(a.schwung.windupFrac) &&
+        Number.isFinite(a.schwung.zielKegelUntenRad) &&
         Number.isFinite(a.gefuehl.wucht) &&
         Number.isFinite(a.gefuehl.pProKb) &&
         Number.isFinite(a.bogen.muendungM)
