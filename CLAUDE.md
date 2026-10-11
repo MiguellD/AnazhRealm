@@ -32,7 +32,8 @@ Niederlage: benannte offene Punkte fallen GANZ, der Rest steht ehrlich offen mit
    Gebautes".
 9. Beweise proportional: gezielt und schnell (Konsum-Probe, Blick, byte-Diff) — nie
    minutenlanges Absicherungs-Theater.
-10. Nach jeder Fehler-Klasse baue die LINSE, die den Täter beim NAMEN nennt — baue nie auf
+10. Nach jeder Fehler-Klasse baue die LINSE, die den Täter beim NAMEN nennt — vorher ROT am Täter,
+    in einer bestehenden Familie, mit Selbsttest, ≤ 3 min CI und benanntem Konsum-Leser — baue nie auf
     Wachsamkeit.
 
 **DIE VERBOTE.** Melde nie „fertig", was nur im Testrahmen lebt (headless beweist Mechanik, nie
@@ -216,7 +217,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass rendert mit der Kaskaden-Kamera (`cameraPosition`
     = Licht-Kamera, 145 m weit) und liest nur colorNode.a · map.a · maskShadowNode, nie opacityNode — jede LOD-Maske misst
     vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Schatten-
-    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; vor dem Push läuft JEDER CI-Schritt lokal, nie eine Auswahl;
+    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; lokal läuft der Puls der berührten Methoden + playtest:fast,
+    der Integrator fährt den vollen Playtest je Merge, die CI richtet die Batterie — gemergt wird nur bei grüner Zweig-CI;
     Echt-Renderer-Linsen auf CPU-Raster fahren das Software-Holz (`?holz=kienspan`) — auf „voll" kostet ein Compile 50–70 s;
     swiftshader kompiliert synchron (kein KHR_parallel_shader_compile, `compileAsync` blockiert), `_gameLoopTick` rendert
     selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`). Und ein
