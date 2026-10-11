@@ -24276,6 +24276,8 @@ class AnazhRealm {
             bankRundung: AnazhRealm.HYDROSPHERE.bankRundung,
             dammBreite: AnazhRealm.HYDROSPHERE.dammBreite,
             dammFreibord: AnazhRealm.HYDROSPHERE.dammFreibord,
+            // die Kachel-Kante der Hydro-Regionen: das Gelände-Gesetzbuch rechnet den Kachel-Schlüssel aus der Lage
+            regionSize: AnazhRealm.HYDROSPHERE.regionSize,
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
@@ -27550,9 +27552,9 @@ class AnazhRealm {
     // Bänder (Höhlen, Überhänge); die Makro-Oberfläche ist die EINE Quelle für Dichte UND Hydrosphäre.
     // Erosion (Stream-Power-Inzision): die ROHE Makro-Surface ko-evolviert `EROSION.iterations`-mal mit
     // der Drainage (`_erosionIncisionPass`), gespeichert als Delta (erodiert − roh). Läuft VOR
-    // `_computeHydrosphere`; zirkelfrei (`_erosionDeltaAt` = 0 solange `state.erosion` null), ohne RNG.
+    // `_computeHydrosphere`; zirkelfrei (das Erosions-Delta des Gesetzbuchs, gelaende-core `erosionDelta`, ist 0 solange `state.erosion` null), ohne RNG.
     _computeErosion(origin = null) {
-        // Die Erosion ist Zustand des Wildnis-Terms (nur `_wildnisY` liest ihr Delta): eine Welt ohne ihn rechnet sie nicht.
+        // Die Erosion ist Zustand des Wildnis-Terms (nur der Wildnis-Term, gelaende-core `wildnisY`, liest ihr Delta): eine Welt ohne ihn rechnet sie nicht.
         if (!(this._erbgut().wildnis > 0)) {
             if (!origin) this.state.erosion = null;
             return null;
@@ -27560,7 +27562,7 @@ class AnazhRealm {
         const E = AnazhRealm.EROSION;
         const dim = Math.max(8, Math.round(E.regionSize / E.cell));
         // Parametrisierter Ursprung (Kachel-Erosion): die Heimat-Region nullt `state.erosion` (Re-Compute-
-        // Reinheit); eine Kachel lässt sie stehen — `_erosionFor` ist exklusiv, die Kachel sampelt roh.
+        // Reinheit); eine Kachel lässt sie stehen — `erosionFuer` (gelaende-core) ist exklusiv, die Kachel sampelt roh.
         const originX = origin && Number.isFinite(origin.x) ? origin.x : -E.regionSize / 2;
         const originZ = origin && Number.isFinite(origin.z) ? origin.z : -E.regionSize / 2;
         const n = dim * dim;
@@ -27829,14 +27831,9 @@ class AnazhRealm {
     // ===== FERNE BINNENGEWAESSER: die seed-deterministischen KACHELN =====
     // Die Heimat-Region (state.hydrosphere/erosion, ±1024 m) bleibt unangetastet; jenseits liefert eine
     // lazy Kachel (2048 m, dieselbe Maschinerie) Seen·Flüsse·Erosion = f(seed, Kachel) — für jeden Peer
-    // gleich. Worker-gespiegelt (hydroFor/erosionFor in voxel-worker.js); Kacheln sind DERIVED (nie im
+    // gleich. Der Kachel-Schlüssel und die Erosions-Auflösung wohnen im Gelände-Gesetzbuch (gelaende-core.js
+    // `kachelSchluessel` · `erosionFuer`), Stamm und voxel-worker lesen sie dort; Kacheln sind DERIVED (nie im
     // Snapshot), Welt-Regen leert sie.
-    _hydroTileKeyFor(x, z) {
-        const size = AnazhRealm.HYDROSPHERE.regionSize;
-        const half = size / 2;
-        return `${Math.floor((x + half) / size)},${Math.floor((z + half) / size)}`;
-    }
-
     // Die EINE Region-Aufloesung fuer alle Hydro-Leser: Heimat-Region, wenn
     // (x,z) in ihr liegt; sonst die Kachel; sonst die Heimat (deren OOB-Logik
     // in den Lesern = exakt der alte Pfad — H3-Ozean etc., bit-identisch).
@@ -27847,25 +27844,11 @@ class AnazhRealm {
             if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
             const tiles = this.state.hydroTiles;
             if (tiles && tiles.size) {
-                const t = tiles.get(this._hydroTileKeyFor(x, z));
+                const t = tiles.get(globalThis.__gelaendeCore.kachelSchluessel(this._gelaende(), x, z));
                 if (t && t.ready) return t;
             }
         }
         return h;
-    }
-
-    _erosionFor(x, z) {
-        const e = this.state.erosion;
-        if (e) {
-            const sizeM = e.dim * e.cell;
-            if (x >= e.originX && z >= e.originZ && x < e.originX + sizeM && z < e.originZ + sizeM) return e;
-        }
-        const tiles = this.state.erosionTiles;
-        if (tiles && tiles.size) {
-            const t = tiles.get(this._hydroTileKeyFor(x, z));
-            if (t) return t;
-        }
-        return e;
     }
 
     // Stellt sicher, dass jede Kachel, die [x±r, z±r] schneidet, berechnet ist (Heimat "0,0" immer).
@@ -27891,7 +27874,7 @@ class AnazhRealm {
                 if (this.state.hydroTiles.has(key)) continue;
                 const t0 = performance.now();
                 const origin = { x: rx * size - half, z: rz * size - half };
-                // EROSION ZUERST (wie die Heimat: die Hydro-Probe sieht die erodierten Täler via _erosionFor).
+                // EROSION ZUERST (wie die Heimat: die Hydro-Probe sieht die erodierten Täler via gelaende-core erosionFuer).
                 // flowTo (64 KB) trägt nur der Heimat-Atlas (diag-flow-bias liest ihn) — die Kachel bleibt schlank.
                 const eTile = this._computeErosion(origin);
                 if (eTile) {
@@ -27916,38 +27899,18 @@ class AnazhRealm {
         return made;
     }
 
-    _erosionDeltaAt(x, z) {
-        const e = this._erosionFor(x, z);
-        if (!e) return 0;
-        const fx = (x - e.originX) / e.cell;
-        const fz = (z - e.originZ) / e.cell;
-        if (fx < 0 || fz < 0 || fx >= e.dim - 1 || fz >= e.dim - 1) return 0;
-        const i0 = fx | 0;
-        const j0 = fz | 0;
-        const tx = fx - i0;
-        const tz = fz - j0;
-        const d = e.delta;
-        const dim = e.dim;
-        const a = i0 + j0 * dim;
-        return (d[a] * (1 - tx) + d[a + 1] * tx) * (1 - tz) + (d[a + dim] * (1 - tx) + d[a + dim + 1] * tx) * tz;
-    }
-
     // Tarn-Pass: Bergseen als Gauss-Mulden im Erosions-Delta an hohen, sanft geneigten Stellen. Läuft
     // NACH `_computeErosion`, VOR `_computeHydrosphere` → das Priority-Flood füllt die Mulde zum See, die
     // bestehende Wasser-Maschinerie rendert ihn. Deterministisch (seed-Noise), legt `state.tarns` ab.
     // ACHTUNG: wer `_computeErosion` neu rechnet, MUSS diesen Pass danach erneut rufen.
     _hydroSeedTarns() {
         this.state.tarns = [];
-        // Die Tarne sind Mulden des Wildnis-Terms (`_wildnisY` addiert sie): eine Welt ohne ihn sät keine.
+        // Die Tarne sind Mulden des Wildnis-Terms (gelaende-core `wildnisY` addiert sie): eine Welt ohne ihn sät keine.
         if (!(this._erbgut().wildnis > 0)) return this.state.tarns;
         const T = AnazhRealm.TARN;
         const base = this.state.terrainBaseHeight || 0;
         const region = AnazhRealm.EROSION.regionSize;
-        if (!this._voxelNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._voxelNoise = new SimplexNoise(seed + ":voxel");
-        }
-        const n = this._voxelNoise;
+        const n = this._gelaende().noise;
         const half = region / 2;
         const cols = Math.max(3, Math.round(region / T.spacing));
         const cellW = region / cols;
@@ -28024,109 +27987,6 @@ class AnazhRealm {
         return tarns;
     }
 
-    // Tarn-Mulden-Senkung an xz (≤ 0, eine Gauss-Mulde je Tarn); `_terrainMacroSurfaceY` addiert sie →
-    // Hydrosphäre + Mesher sehen die Becken. Per-Tarn-Early-Out → eine tarn-lose Welt kostet 0 Ops.
-    _tarnDeltaAt(x, z) {
-        const tarns = this.state.tarns;
-        if (!tarns || !tarns.length) return 0;
-        let delta = 0;
-        for (let i = 0; i < tarns.length; i++) {
-            const t = tarns[i];
-            const dx = x - t.x;
-            const dz = z - t.z;
-            const d2 = dx * dx + dz * dz;
-            if (d2 > t.reach2) continue;
-            delta -= t.d * Math.exp(-d2 / t.twoSig2);
-        }
-        return delta;
-    }
-
-    // Makro-Oberfläche: Domain-Warp (±70 m, Kämme mäandern) + regionales Erosions-Feld (moduliert die
-    // ridged-Amplitude 9..42 m: Tiefland vs. alpin) über drei 2D-Oktaven (kontinental λ~1080 m, ridged,
-    // Detail λ~22 m). `includeDetail=false` für die Hydrosphäre: die Detail-Oktave aliast bei 16-m-
-    // Abtastung (die Drainage folgte dem Rauschen). Makro-Anker: `_makeMacroAnker(seed)` = pure f(seed),
-    // `_macroAnker()` lazy pro Welt (gen<3 → null), `_macroSurfaceContribution(x, z)` = Massiv+Tal+Becken.
-    _makeMacroAnker(seed) {
-        const noise = new SimplexNoise(seed + "-macro-anker");
-        // Pseudo-zufalls-Float-Stream aus dem deterministischen Noise. Wir
-        // brauchen nur ~15 [0,1]-Werte; der Seed-Suffix garantiert Γ5-Stream-
-        // Disziplin (kein Re-Roll anderer Welt-Streams).
-        const r01 = (k) => (noise.noise2D(k * 17.3, k * 9.7) + 1) * 0.5;
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const MA = AnazhRealm.MACRO_ANKER;
-        // Massiv-Position: irgendwo im Spawn-Bereich (~700 m vom Ursprung)
-        const massivAng = r01(1) * Math.PI * 2;
-        const massivDist = MA.spawnRadius * (0.4 + r01(2) * 0.5);
-        const massivC = {
-            x: Math.cos(massivAng) * massivDist,
-            z: Math.sin(massivAng) * massivDist,
-        };
-        const massivR = lerp(MA.massivRadiusMin, MA.massivRadiusMax, r01(3));
-        const massivH = lerp(MA.massivHoeheMin, MA.massivHoeheMax, r01(4));
-        // Streichrichtung: 12°-120° (Vorzug NE-SW wie LAAS §4.2-Maß)
-        const massivRot = 0.2 + r01(5) * 1.7;
-        // Becken: ungefähr gegenüber dem Massiv, deutlich versetzt
-        const beckenAng = massivAng + Math.PI + (r01(6) - 0.5) * 0.5;
-        const beckenDist = lerp(MA.beckenDistMin, MA.beckenDistMax, r01(7));
-        const beckenC = {
-            x: Math.cos(beckenAng) * beckenDist,
-            z: Math.sin(beckenAng) * beckenDist,
-        };
-        const beckenR = lerp(MA.beckenRadiusMin, MA.beckenRadiusMax, r01(8));
-        const beckenD = lerp(MA.beckenTiefeMin, MA.beckenTiefeMax, r01(9));
-        // Tal: N Vertices vom MASSIV-RAND (nicht Zentrum — sonst überschriebe der Tal-Lerp den Massiv-Boost)
-        // zum Becken-Zentrum, Per-Vertex-Floors monoton fallend (smoothstep) → der Hauptfluss endet im Becken.
-        const N = MA.talVertices;
-        const talVertices = [];
-        const talFloors = [];
-        const dx = beckenC.x - massivC.x;
-        const dz = beckenC.z - massivC.z;
-        const len = Math.hypot(dx, dz) || 1;
-        const ux = dx / len;
-        const uz = dz / len;
-        const perpX = -uz;
-        const perpZ = ux;
-        // Tal beginnt knapp ausserhalb des Massiv-Hauptkörpers (am Massiv-
-        // Sockel-Rand → das Tal "kommt vom Berg herunter")
-        const talStartX = massivC.x + ux * massivR;
-        const talStartZ = massivC.z + uz * massivR;
-        const tdx = beckenC.x - talStartX;
-        const tdz = beckenC.z - talStartZ;
-        const startFloor = massivH * 0.15; // sanft am Massiv-Sockel-Rand
-        const endFloor = -beckenD * 0.6; // im Becken-Boden enden
-        for (let i = 0; i < N; i++) {
-            const t = N === 1 ? 0 : i / (N - 1);
-            const lerpX = talStartX + tdx * t;
-            const lerpZ = talStartZ + tdz * t;
-            // Endpunkte unverschoben (Tal-Start am Massiv-Rand + Becken-Anker
-            // FEST), nur Mitten-Vertices ±50 m jittern (Plan §4.5)
-            const jitterScale = i === 0 || i === N - 1 ? 0 : 1;
-            const jitter = (r01(10 + i) - 0.5) * MA.talJitter * jitterScale;
-            talVertices.push({
-                x: lerpX + perpX * jitter,
-                z: lerpZ + perpZ * jitter,
-            });
-            const tSm = t * t * (3 - 2 * t); // smoothstep für monotonen Fall
-            talFloors.push(startFloor + (endFloor - startFloor) * tSm);
-        }
-        return {
-            massivC,
-            massivR,
-            massivH,
-            massivRot,
-            massivAspect: MA.massivAspect,
-            beckenC,
-            beckenR,
-            beckenD,
-            talVertices,
-            talFloors,
-            talBreite: MA.talBreite,
-            talTrenchTiefe: MA.talTrenchTiefe,
-            talTrenchBreite: MA.talTrenchBreite,
-            talBlendExp: MA.talBlendExp,
-        };
-    }
-
     // Der persistierte Anker (worldMeta.macro) IST die Source of Truth: eine Welt behält ihren Original-
     // Anker, auch wenn Konstanten sich ändern; Main↔Worker via `_voxelWorkerSnapshotState.macroAnker`.
     // Persistenz reist im worldMeta-Spread. Alte Welt ohne macro → re-compute aus Seed (gen≥3) oder null;
@@ -28143,7 +28003,7 @@ class AnazhRealm {
             return this._macroAnkerCache;
         }
         const seed = wm.seed || "anazh-realm-seed";
-        this._macroAnkerCache = this._makeMacroAnker(seed);
+        this._macroAnkerCache = globalThis.__gelaendeCore.ankerAusSaat(seed);
         // Erbgut persistieren — der nächste Lade-Vorgang liest aus wm.macro
         // (und damit auch ein geteiltes Welt-Bündel: signiert+additiv).
         wm.macro = this._macroAnkerCache;
@@ -28276,138 +28136,57 @@ class AnazhRealm {
         return exposure;
     }
 
-    // Ridge-Noise für scharfe Grate: sieben Oktaven `(1 − |noise|)²` mit anisotroper Rotation (NE-SW-
-    // Streichrichtung), eigener Stream `seed + "-macro-ridge"` (Γ5: kein Re-Roll anderer Streams).
-    // Oktav-Offset `i·7.31` (nie `+i` — Symmetrie-Beats), persistence 0.52, lacunarity 2.13.
-    _ridgeAnkerNoise(x, z) {
-        if (!this._macroRidgeNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._macroRidgeNoise = new SimplexNoise(seed + "-macro-ridge");
-        }
-        const n = this._macroRidgeNoise;
-        // Anisotrope Domain: 45°-Rotation × 1.65-Y-Stauchung → Grate richten
-        // sich NE-SW aus (LAAS §4.2-Maß). Skala 1/600 → λ~600 m Massiv-Grat-Skala.
-        const rxBase = (x + z) * 0.7071;
-        const rzBase = (z - x) * 0.7071 * 1.65;
-        const SCALE = 1 / 600;
-        let ridge = 0;
-        let amp = 0.5;
-        let freq = SCALE;
-        let norm = 0;
-        for (let i = 0; i < 7; i++) {
-            const v = n.noise2D(rxBase * freq + i * 7.31, rzBase * freq + i * 7.31);
-            const nv = 1 - Math.abs(v);
-            ridge += nv * nv * amp;
-            norm += amp;
-            amp *= 0.52;
-            freq *= 2.13;
-        }
-        return ridge / norm;
-    }
-
-    // Drei Terme der Makro-Geographie: Massiv-Boost (Ridge-Noise im Maskel), Tal-Senke (U-Profil +
-    // Innentrog, Lerp zum Ziel-Floor), Becken-Mulde. Rein f(x, z, anker) → bit-identisch im Worker.
-    _macroSurfaceContribution(x, z, anker) {
-        // (1) Massiv: der Maskel `mShape` bündelt die Grate ins Massiv-Footprint, die Grate kommen aus
-        // `_ridgeAnkerNoise`. Form `mask × (ridge^1.5 × H_core + mask × H_lift)` = scharfe Gipfel-Linien
-        // plus breiter Sockel-Lift.
-        const ddx = x - anker.massivC.x;
-        const ddz = z - anker.massivC.z;
-        const cs = Math.cos(anker.massivRot);
-        const sn = Math.sin(anker.massivRot);
-        const rxA = ddx * cs - ddz * sn;
-        const rzA = ddx * sn + ddz * cs;
-        const ax = rxA / anker.massivAspect;
-        const aDist = Math.hypot(ax, rzA);
-        const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
-        const mShape = mT * mT * (3 - 2 * mT);
-        const ridge = this._ridgeAnkerNoise(x, z);
-        const ridgePow = Math.pow(ridge, 1.5);
-        const massiv = mShape * (ridgePow * anker.massivH * 1.25 + mShape * anker.massivH * 0.35);
-        // (2) Becken-Senke — smoothstep-Mulde
-        const bdx = x - anker.beckenC.x;
-        const bdz = z - anker.beckenC.z;
-        const bDist = Math.hypot(bdx, bdz);
-        const bT = Math.max(0, Math.min(1, 1 - bDist / anker.beckenR));
-        const becken = -bT * bT * (3 - 2 * bT) * anker.beckenD;
-        // (3) Tal — Distanz zur Polyline + Per-Vertex-Floor (monoton fallend
-        // vom Massiv-Fuß zum Becken). Bilineare Floor-Interpolation am
-        // segmenteigenen t-Parameter, exakt das §4.6-Muster.
-        let tDist = Infinity;
-        let tFloor = 0;
-        for (let i = 0; i + 1 < anker.talVertices.length; i++) {
-            const A = anker.talVertices[i];
-            const B = anker.talVertices[i + 1];
-            const ex = B.x - A.x;
-            const ez = B.z - A.z;
-            const len2 = ex * ex + ez * ez || 1;
-            let t = ((x - A.x) * ex + (z - A.z) * ez) / len2;
-            if (t < 0) t = 0;
-            else if (t > 1) t = 1;
-            const dx = x - (A.x + ex * t);
-            const dz = z - (A.z + ez * t);
-            const d = Math.hypot(dx, dz);
-            if (d < tDist) {
-                tDist = d;
-                tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
-            }
-        }
-        return { massiv, becken, tDist, tFloor, mShape };
-    }
-
-    // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres ERBGUTS (`_erbgut().terme`): der erste Term setzt den
-    // Startwert (die Wildnis `_wildnisY` oder eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe
-    // addiert, die Bucht schneidet (Minimum). Eine Welt ohne Erbgut liest [wildnis]: kein Term wird addiert, der Wert
-    // ist byte-gleich zum Rumpf (gate:worker-dichte --abdruck). Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
-    // Fern-Ring, Spawn-Ort, Erosion); MUSS bit-identisch im Worker (`terrainMacroSurfaceY`).
+    // DIE EINE 2D-HÖHE der Welt: das Gelände-Gesetzbuch (gelaende-core.js `hoehe` — der Term-Auswerter des Erbguts,
+    // der Wildnis-Term, der Makro-Anker) an der Lage dieser Welt. Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
+    // Fern-Ring, Spawn-Ort, Erosion); der voxel-worker ruft DASSELBE Gesetzbuch mit seinem Zustand (kein Spiegel).
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
-        const T = (this._erbgutCache || this._erbgut()).terme;
-        const t0 = T[0];
-        let h = t0.art === "wildnis" ? this._wildnisY(x, z, includeDetail) : AnazhRealm._erbgutTermY(t0, 0, x, z, this);
-        for (let i = 1; i < T.length; i++) h = AnazhRealm._erbgutTermY(T[i], h, x, z, this);
-        return h;
+        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail);
     }
 
-    // Ein Term des Erbguts an (x, z) auf die Höhe `h` darunter (Bühnen-Terme sind analytisch, kein Rauschen). Höhen sind
-    // relativ zur Basis (`terrainBaseHeight`; der Meeresspiegel liegt bei Basis − 3). Die Winkel-Größen (Sinus, Tangens)
-    // rechnet `_erbgutNormal` EINMAL, der Worker liest dieselben Zahlen. MUSS bit-identisch im Worker (`erbgutTermY`).
-    static _erbgutTermY(t, h, x, z, realm) {
-        const base = realm.state.terrainBaseHeight || 0;
-        if (t.art === "insel") {
-            // Plateau mit Kuppel (steigt zur Mitte, entwässert), dann der Schelf (smoothstep) bis zum Grund.
-            const r = Math.hypot(x - t.x, z - t.z);
-            if (r <= t.r) return base + t.plateau + t.kuppel * (t.r - r);
-            const u = (r - t.r) / t.schelf;
-            if (u >= 1) return base + t.grund;
-            return base + t.plateau + (t.grund - t.plateau) * (u * u * (3 - 2 * u));
-        }
-        if (t.art === "rampe") {
-            // Der Damm: längs der Falllinie (u) die Krone, beidseits der Lauf mit dem Winkel; quer (v) die Breite, dahinter
-            // die Böschung. Addiert (≥ 0).
-            const dx = x - t.x;
-            const dz = z - t.z;
-            const u = Math.abs(dx * t.ux + dz * t.uz) - t.krone * 0.5;
-            let p = u > 0 ? t.hoehe - u * t.tanW : t.hoehe;
-            if (p <= 0) return h;
-            const w = Math.abs(dz * t.ux - dx * t.uz) - t.breite * 0.5;
-            if (w > 0) p -= w * t.tanB;
-            return p > 0 ? h + p : h;
-        }
-        // "bucht": die Rinne A → B (offene Mündung ins Meer), Sohle eben, quer die Ufer mit ihrem Winkel; längs eine
-        // Furt-Schwelle (Krone über ihre Breite, Flanken mit tanF) und ein Kolk (Kosinus-Mulde). Schneidet (Minimum).
-        let q = ((x - t.x0) * t.ex + (z - t.z0) * t.ez) / t.len2;
-        if (q < 0) q = 0;
-        else if (q > 1) q = 1;
-        const d = Math.hypot(x - (t.x0 + t.ex * q), z - (t.z0 + t.ez * q));
-        let g = base + t.grund;
-        const f = Math.abs(q * t.len - t.furtLage) - t.furtBreite * 0.5;
-        const furt = base + t.furtKrone - (f > 0 ? f * t.tanF : 0);
-        if (furt > g) g = furt;
-        const kd = Math.hypot(x - t.kolkX, z - t.kolkZ);
-        if (kd < t.kolkR) g -= t.kolkTiefe * 0.5 * (1 + Math.cos((Math.PI * kd) / t.kolkR));
-        const w = d - t.sohle * 0.5;
-        const b = w > 0 ? g + w * t.tanU : g;
-        return b < h ? b : h;
+    // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
+    // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
+    // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `macroAnker` ist `_macroAnker()` (null bei
+    // genVersion < 3), `erbgut` die gemerkte Normalform, `regionSize` die Kachel-Kante der Hydrosphäre.
+    _gelaende() {
+        if (this._gelaendeLage) return this._gelaendeLage;
+        const realm = this;
+        this._gelaendeLage = {
+            get seed() {
+                return (realm.state.worldMeta && realm.state.worldMeta.seed) || "anazh-realm-seed";
+            },
+            get noise() {
+                if (!realm._voxelNoise) realm._voxelNoise = new SimplexNoise(this.seed + ":voxel");
+                return realm._voxelNoise;
+            },
+            get baseHeight() {
+                return realm.state.terrainBaseHeight;
+            },
+            get waterLevel() {
+                return realm.state.waterLevel;
+            },
+            get terrainSteepness() {
+                return realm.state.terrainSteepness;
+            },
+            get erosion() {
+                return realm.state.erosion;
+            },
+            get erosionTiles() {
+                return realm.state.erosionTiles;
+            },
+            get tarns() {
+                return realm.state.tarns;
+            },
+            get macroAnker() {
+                return realm._macroAnker();
+            },
+            get erbgut() {
+                return realm._erbgutCache || realm._erbgut();
+            },
+            get regionSize() {
+                return AnazhRealm.HYDROSPHERE.regionSize;
+            },
+        };
+        return this._gelaendeLage;
     }
 
     // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
@@ -28564,188 +28343,6 @@ class AnazhRealm {
         return quelle === "nexus" || quelle === "rule:nexus";
     }
 
-    // DER WILDNIS-TERM (`art: "wildnis"`): die Natur-Höhe der Welt — Rauschen, Erosion, Makro-Anker, Canyon, Tafelberg,
-    // Deckel, Tiefsee und Tarn. Unteilbar: ihre Klemmen folgen nichtlinear aufeinander (der Anker addiert vor Canyon-
-    // Boden, Terrasse, Deckel, Tiefsee und Tarn-Klemme), darum ist sie EIN Term und nie die Summe ihrer Teile.
-    _wildnisY(x, z, includeDetail = true) {
-        if (!this._voxelNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._voxelNoise = new SimplexNoise(seed + ":voxel");
-        }
-        const n = this._voxelNoise;
-        const base = this.state.terrainBaseHeight || 0;
-        // (a) Domain-Warp — verschobene Sample-Koordinaten (bricht die
-        // Gitter-Parallelität der ridged-Kämme; λ~3900 m, ±70 m Versatz).
-        const warpX = n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-        const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-        const wx = x + warpX;
-        const wz = z + warpZ;
-        // (0a) Kontinentale Basis (λ~7100 m), nach oben gebiast (Hochland bis +130 m, Becken bis −55 m) —
-        // die DOMINANTE Skala muss die GRÖSSTE sein; tect/cont/ranges setzen Mittel- und Gipfel-Strukturen
-        // darauf.
-        const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
-        // Asymmetrisch: HEBT Hochländer bis ~+145 m, senkt Becken nur bis −15 m
-        // (E[cont0]≈+25 m → die Land-Marge bleibt erhalten/steigt, KEIN Ertränken
-        // — die V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser).
-        const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3: +12 Offset kompensiert die abgesenkten flachen Regionen (Land-Marge)
-        // (0b) Tektonische Oktave (λ~1136 m) formt die breiten Massive; die gestreckten + gedämpften
-        // ridged-`ranges` sitzen darauf nur als Textur.
-        const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 45;
-        // (b) Ruggedness-Feld [0,1] — regionale Terrain-Typ-Maske (λ~2000 m); `mtn` quadriert → Tiefland ist
-        // der Normalfall. Moduliert ALLE Relief-Oktaven (ridgeAmp, cont, detail) → echte flache Ebenen.
-        const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
-        let mtn = 1 - ero;
-        if (mtn < 0) mtn = 0;
-        mtn *= mtn;
-        // (b2) Regionale Differenzierung über ZWEI unabhängige große-λ Masken → DREI Region-Typen:
-        // Relief-Maske (λ~5300) = Tiefland (kein Uplift → Felder/Wasser) vs Hochland; Stil-Maske (λ~4500) =
-        // Plateau (upBroad) vs Kette (upRidge², flow-gewarpt) im Hochland. Große λ = kohärente km-Regionen;
-        // unabhängig → die Charaktere mischen frei.
-        const reliefN = n.noise2D(wx * 0.00019 + 33.1, wz * 0.00019 + 71.7) * 0.5 + 0.5; // λ~5300, [0,1]
-        let upliftMask = Math.min(1, Math.max(0, (reliefN - 0.42) / 0.2));
-        upliftMask = upliftMask * upliftMask * (3 - 2 * upliftMask); // 0 = Tiefland-Region (Felder/Wasser)
-        const styleN = n.noise2D(wx * 0.00022 + 91.3, wz * 0.00022 + 5.9) * 0.5 + 0.5; // λ~4500, [0,1]
-        let chainW = Math.min(1, Math.max(0, (styleN - 0.46) / 0.16));
-        chainW = chainW * chainW * (3 - 2 * chainW); // 0 = Plateau-Stil, 1 = Ketten-Stil
-        const upBroad = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1)); // [0,1] broad-Plateau-Form
-        const upWarpX = n.noise2D(wx * 0.0002 + 51.7, wz * 0.0002 + 13.1) * 300;
-        const upWarpZ = n.noise2D(wx * 0.0002 + 27.3, wz * 0.0002 + 88.9) * 300;
-        const upRidge = 1 - Math.abs(n.noise2D((wx + upWarpX) * 0.00028 + 19.3, (wz + upWarpZ) * 0.00028 + 7.1));
-        const upland = upliftMask * ((1 - chainW) * upBroad * 105 + chainW * upRidge * upRidge * 115);
-        // (1) kontinentale Oktave — V14.7: λ~172→~625 m gestreckt (freq 0.0058→
-        // 0.0016) → breite Undulation statt Hügel-Gewimmel. mtn-moduliert (±8..36 m).
-        const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn);
-        // (2) ridged-Amplitude: Ebenen 5, Gebirge max 43. `terrainSteepness` (DSL-Op `terrain_steepness`,
-        // 0.1–2.0, Default 1.0 = bit-identisch) skaliert sie; MUSS im Worker mit (Snapshot-Feld
-        // terrainSteepness).
-        const ridgeAmp = (5 + 38 * mtn) * (this.state.terrainSteepness || 1);
-        // (2a) ridged-Oktave (`(1−|noise|)²` faltet zu Kämmen) — V14.7: λ~77→~333 m
-        // gestreckt (freq 0.013→0.003) → breite Bergrücken statt λ77-Mikro-Cusps.
-        const rN = n.noise2D(wx * 0.003, wz * 0.003);
-        const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
-        // (2b) zweite ridged-Oktave (V9.58-b) — V14.7: λ~38→~133 m (freq 0.026→0.0075),
-        // ½ Amp. Multifraktal: grosse Kämme tragen kleinere Sekundär-Kämme.
-        const rN2 = n.noise2D(wx * 0.0075 + 5.7, wz * 0.0075 - 2.3);
-        const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
-        // (3) feine Detail-Oktave — un-gewarpt, hochfrequent.
-        const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4: Ebenen fast glatt (±1), Gebirge körnig (±4)
-        // V9.47 — das hydraulische-Erosions-Delta. 0, solange `state.erosion`
-        // noch nicht gebaut ist (`_computeErosion` sampelt dann die ROHE
-        // Surface — kein Zirkel). Carvt Täler, füllt Becken mit Sediment.
-        let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + this._erosionDeltaAt(x, z);
-        // Makro-Geographie: Massiv-Boost + Tal-Senke (U-Profil, Lerp zum Per-Vertex-Floor, Innentrog) +
-        // Becken-Mulde, deterministisch aus dem Seed. Schleuse genVersion ≥ 3 über `_macroAnker()` (gen 1/2
-        // sehen das Feld nicht). MUSS bit-identisch im Worker (`voxel-worker.js`).
-        const _macroAnker = this._macroAnker();
-        if (_macroAnker) {
-            const _m = this._macroSurfaceContribution(x, z, _macroAnker);
-            // Massiv-Boost (jetzt Ridge-Noise im Maskel) + Becken-Senke
-            withoutTarn += _m.massiv + _m.becken;
-            // Drainage-by-Design: außerhalb des Tal-Korridors Zusatzhöhe ∝ Tal-Distanz → monotone Vor-Neigung,
-            // die Drainage findet das Tal (kein closed basin abseits). `(1−mShape)` schützt das Massiv, der
-            // Becken-Block den Becken-Innenraum.
-            const _distOutsideTal = Math.max(0, _m.tDist - _macroAnker.talBreite);
-            const _drainageH = Math.min(_distOutsideTal * 0.06, 35);
-            const _distBecken = Math.hypot(x - _macroAnker.beckenC.x, z - _macroAnker.beckenC.z);
-            const _beckenBlock = Math.max(
-                0,
-                Math.min(1, (_distBecken - _macroAnker.beckenR * 0.6) / (_macroAnker.beckenR * 0.4))
-            );
-            withoutTarn += _drainageH * (1 - _m.mShape) * _beckenBlock;
-            // Tal: innerhalb der Tal-Breite zum Per-Vertex-Floor LERPEN (pow-U-Profil + smoothstep-Innentrog),
-            // nicht blind subtrahieren — das Tal mündet im richtigen Niveau.
-            if (_m.tDist < _macroAnker.talBreite) {
-                const _uT = _m.tDist / _macroAnker.talBreite;
-                const _uShape = Math.pow(_uT, _macroAnker.talBlendExp);
-                const _target = base + _m.tFloor;
-                withoutTarn = withoutTarn + (_target - withoutTarn) * (1 - _uShape);
-                // Innentrog: konzentrierter Strom (Fluss findet sich VON SELBST
-                // im Trog wegen niedrigster Höhe + Flow-Akkumulation)
-                if (_m.tDist < _macroAnker.talTrenchBreite) {
-                    const _iT = 1 - _m.tDist / _macroAnker.talTrenchBreite;
-                    const _iShape = _iT * _iT * (3 - 2 * _iT);
-                    withoutTarn -= _iShape * _macroAnker.talTrenchTiefe;
-                }
-            }
-        }
-        // === T6 — Drama auf KONTINENTALER Skala (λ1000–7000 m); MUSS bit-identisch im Worker-Mirror ===
-        // T6a Canyons: ridged Ravine-System (λ~960 m, V-Täler über `1−|noise|`) × sparse Region-Maske
-        // (λ~3300 m) carvt Schluchten bis ~150 m; Floor base-65 (Chunk-Decke base-90 → kein Loch).
-        const canyonRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.0003 + 61.1, wz * 0.0003 - 28.7) - 0.3) / 0.18));
-        if (canyonRegion > 0.001) {
-            const cR = 1 - Math.abs(n.noise2D(wx * 0.00105 + 8.3, wz * 0.00105 - 14.9));
-            const cProfile = Math.max(0, (cR - 0.6) / 0.4); // scharfe V-Schlucht (oberste ~40 % des Grats)
-            withoutTarn -= cProfile * cProfile * canyonRegion * 150; // quadratisch = scharfe Sohle
-            const cFloor = base - 65;
-            if (withoutTarn < cFloor) withoutTarn = cFloor;
-        }
-        // T7a Tafelberge: slope-gated SMOOTH TERRACE — nur wo der Hang flach ist terrassieren, mit gerundeten
-        // Stufen (smootherstep, C1-stetig); hartes `round(h/26)·26` stapelte auf steilen Flanken eine
-        // Ziehharmonika. MUSS bit-identisch im Worker.
-        const mesaRegion = Math.max(
-            0,
-            Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13)
-        );
-        if (mesaRegion > 0.001) {
-            // Flatness aus dem Gradienten der DOMINANTEN glatten Struktur (cont0 λ7100 + tect λ1136; die
-            // gewarpten wx/wz als Basis — der Warp variiert langsam, für ein Steilheits-GATE genügt das).
-            const sm = (sx, sz) => {
-                const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
-                return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
-            };
-            const gd = 7;
-            const dhx = sm(wx + gd, wz) - sm(wx - gd, wz);
-            const dhz = sm(wx, wz + gd) - sm(wx, wz - gd);
-            const slope = Math.sqrt(dhx * dhx + dhz * dhz) / (2 * gd); // m/m
-            let flat = 1 - Math.min(1, slope / 0.35); // Hang > ~19° → kein Terrace (glatt)
-            flat = flat * flat * (3 - 2 * flat); // smoothstep
-            const strength = mesaRegion * flat;
-            if (strength > 0.001) {
-                const stepH = 26;
-                const f = withoutTarn / stepH;
-                const fl = Math.floor(f);
-                const t = f - fl;
-                const shaped = t * t * t * (t * (t * 6 - 15) + 10); // smootherstep → flaches Shelf + gerundete Kante
-                const terraced = (fl + shaped) * stepH;
-                withoutTarn += (terraced - withoutTarn) * strength;
-            }
-        }
-        // Kein Mountain-Cap: die Berge tragen ihre volle Höhe (Gipfel bis ~+247 m). Nur ein unsichtbarer
-        // Sicherheits-Backstop bei 255 (tanh-Asymptote ~267 + Roughness 12 = 279 < Decke 282.6) gegen Noise-
-        // Ausreißer über die Voxel-Decke (kein Sign-Change → Löcher). Greift VOR dem Sub-Ozean-/Tarn-Block.
-        // MUSS bit-identisch im Worker (`voxel-worker.js`).
-        if (withoutTarn > 255) withoutTarn = 255 + 12 * Math.tanh((withoutTarn - 255) / 12);
-        // Ozean-Tiefe in Schichten: subMask blendet ab 3..9 m ein (Shelf unberührt); slopeDrop linear ab 4 m
-        // Tiefe (−0.6 m/m → Continental Slope); drei tiefen-skalierte Variations-Oktaven (subA Hügel,
-        // subRidge Kämme & Trenches, subC Sediment). Garantie: bei subMask=1 + maxNoise bleibt surface <
-        // waterRef (keine Phantom-Inseln).
-        const waterRefSub = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
-        const depthBelow = waterRefSub - withoutTarn;
-        let withoutTarnFinal = withoutTarn;
-        if (depthBelow > 1.5) {
-            const subMask = Math.min(1, Math.max(0, (depthBelow - 3) / 6));
-            const slope = Math.max(0, depthBelow - 4);
-            const slopeDrop = -slope * 0.6;
-            const subA = n.noise2D(x * 0.019, z * 0.019 + 31) * (3 + slope * 0.3);
-            const rBN = n.noise2D(x * 0.026 + 17, z * 0.026 + 9);
-            const subRidge = ((1 - Math.abs(rBN)) * (1 - Math.abs(rBN)) - 0.3) * (3 + slope * 0.25);
-            const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
-            withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
-        }
-        // Sanfter Tiefsee-Clamp (Asymptote base−120): der Sub-Ozean-Block reicht fern bis ~−144 m und bräche
-        // den Chunk-Boden (−135); unsichtbar (Fog/Tiefe), darum kein Deckel. MUSS bit-identisch im Worker.
-        const abyssClamp = base - 112;
-        if (withoutTarnFinal < abyssClamp)
-            withoutTarnFinal = abyssClamp - 8 * Math.tanh((abyssClamp - withoutTarnFinal) / 8);
-        // `_tarnDeltaAt` addiert die Bergsee-Mulden (0, solange `state.tarns` leer). KRITISCH: Bowl-Boden auf
-        // waterLevel+1 geklemmt — sonst erreicht der Border-Ozean-Flood den Tarn über sub-Wasser-Zellen
-        // (Ozean statt See). Der Klemm-Boden ist der See-Boden; das Priority-Flood füllt bis zum Rand.
-        const tarnDelta = this._tarnDeltaAt(x, z);
-        if (tarnDelta === 0) return withoutTarnFinal;
-        const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
-        return Math.max(withoutTarnFinal + tarnDelta, waterRef + 1);
-    }
-
     // Der Hydrosphäre-Compute-Pfad (`_computeErosion`, `_hydroSeedTarns`, `_hydroInit`) liest direkt
     // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
 
@@ -28761,11 +28358,8 @@ class AnazhRealm {
     // _fieldSurfaceBelow, Gradient-y-Paar) münzen frisch über den Wrapper; nur der ctx-lose Heiß-Pfad
     // (_terrainBaseDensityAt) füllt seinen privaten Scratch.
     _terrainColumnContextIn(x, z, out) {
-        if (!this._voxelNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._voxelNoise = new SimplexNoise(seed + ":voxel");
-        }
-        const n = this._voxelNoise;
+        const L = this._gelaende();
+        const n = L.noise;
         const base = this.state.terrainBaseHeight || 0;
         const surf = this._terrainMacroSurfaceY(x, z);
         // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
@@ -28774,11 +28368,8 @@ class AnazhRealm {
         let roughScale = 0;
         let ceilOffset = -24;
         if (wild > 0) {
-            // T6c — WEITE FELDER: `mtnR` (Ruggedness, λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
-            const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
-            let mtnR = 1 - eroR;
-            if (mtnR < 0) mtnR = 0;
-            mtnR *= mtnR;
+            // T6c — WEITE FELDER: die Rauheits-Maske des Gesetzbuchs (λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
+            const mtnR = globalThis.__gelaendeCore.rauheit(L, x, z);
             roughScale = (0.16 + 0.84 * mtnR) * wild;
             // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
             const canyonOpen = Math.max(
@@ -30147,11 +29738,7 @@ class AnazhRealm {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
-        if (!this._voxelNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._voxelNoise = new SimplexNoise(seed + ":voxel");
-        }
-        const sandNoise = this._voxelNoise;
+        const sandNoise = this._gelaende().noise;
         const base = this.state.terrainBaseHeight || 0;
         const P = AnazhRealm.BODEN_FARBE;
         const stone = P.rock;
@@ -60115,14 +59702,11 @@ class AnazhRealm {
     // Wind-Vektor an (x, z): deterministisch aus dem Welt-Seed (_voxelNoise), dreht sanft über
     // km-Distanzen (windScale = 1/1000). windTimeRate = 0 → statischer Wind je Welt (deterministisch).
     _worldWindDirAt(x, z, t) {
-        if (!this._voxelNoise) {
-            const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            this._voxelNoise = new SimplexNoise(seed + ":voxel");
-        }
+        const n = this._gelaende().noise;
         const S = AnazhRealm.SCENT;
         const tt = (typeof t === "number" ? t : 0) * S.windTimeRate;
         // Wind-Phase: Noise als Winkel-Quelle (0..2π).
-        const phase = (this._voxelNoise.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
+        const phase = (n.noise2D(x * S.windScale + tt, z * S.windScale - tt) + 1) * Math.PI;
         return { x: Math.cos(phase), z: Math.sin(phase) };
     }
 
@@ -101896,6 +101480,8 @@ AnazhRealm.GESETZ_KERNE = Object.freeze({
     // Welt-Look-Gesetze (HIMMEL/WASSER, foundry-core __terrainCore) sind
     // Kern-Pflicht wie jedes andere Gesetzbuch (die Wand meldet den Ausfall).
     terrain: "__terrainCore",
+    // K09a — das Gelände-Gesetzbuch (gelaende-core.js): die EINE 2D-Höhe für Stamm, voxel-worker und Studio.
+    gelaende: "__gelaendeCore",
 });
 AnazhRealm.Gesetz = function (pfad, fallback) {
     const memo = AnazhRealm._gesetzStromMemo || (AnazhRealm._gesetzStromMemo = new Map());
@@ -104071,35 +103657,8 @@ AnazhRealm.SPATIAL_TRANSFERABLE_TAGS = Object.freeze(["wärmeleitung", "stromlei
 AnazhRealm.SPATIAL_HOLLOW_SHAPES = Object.freeze(new Set(["sphere", "torus"]));
 // Compound-Bonus-Faktoren (SPATIAL_*_BONUS, weiter unten): multiplikativ auf die aggregierten
 // Compound-Tags nach Standard-MAX, konservativ — der große Effekt entsteht aus der Kombination.
-// MACRO_ANKER — das designte Geographie-Skelett (genVersion ≥ 3): je Seed ein Trio aus Massiv
-// (Position+Form, anisotropes smoothstep-Profil, NE-SW-Streichrichtung), Becken (smoothstep-Mulde)
-// und einer 5-Vertex-Tal-Polyline (U-Profil + Innentrog); die Noise-Schichten texturieren darauf.
-// Spillpunkt-Garantie: Tal-End-Vertex == Becken-Zentrum + monoton fallender talFloor → kein
-// closed basin.
+// MACRO_ANKER wohnt im Gelände-Gesetzbuch (gelaende-core.js, K09a).
 // FEUCHTE (unten) — die fünfte Welt-Stimme (aus der Hydrosphäre abgeleitet, nicht Noise).
-AnazhRealm.MACRO_ANKER = Object.freeze({
-    // Massiv: anisotrope smoothstep-Glocke (Vertiefung-Übergang zu Ridge-Noise)
-    spawnRadius: 700, // Massiv-Spawn um (0,0) — bewusst nah am Spieler-Spawn
-    massivRadiusMin: 480,
-    massivRadiusMax: 720,
-    massivHoeheMin: 70,
-    massivHoeheMax: 110,
-    massivAspect: 1.6, // anisotrop entlang Streichrichtung (LAAS §4.2-Maß)
-    // Becken: ungefähr gegenüber dem Massiv, deutlich versetzt
-    beckenDistMin: 900,
-    beckenDistMax: 1500,
-    beckenRadiusMin: 280,
-    beckenRadiusMax: 420,
-    beckenTiefeMin: 12,
-    beckenTiefeMax: 22,
-    // Tal: 5 Vertices vom Massiv-Fuß zum Becken-Zentrum
-    talVertices: 5,
-    talJitter: 100, // ±50 m senkrecht zur Massiv-Becken-Achse
-    talBreite: 120, // halbe Breite des U-Profils
-    talTrenchTiefe: 14, // zusätzliche Innentrog-Senke (Fluss-Bett)
-    talTrenchBreite: 28, // halbe Breite des Innentrogs
-    talBlendExp: 2.2, // U-Profil-Exponent (smoothstep-quasi); LAAS-Wert
-});
 AnazhRealm.FEUCHTE = Object.freeze({
     flussReichweite: 26, // m jenseits der Fluss-Halbbreite, smoothstep-Fade
     hoeheNah: 1.5, // ≤ so hoch überm Wasserspiegel = voll feucht (Niederung)

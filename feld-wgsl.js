@@ -10,9 +10,11 @@
 // EINE QUELLE, KEIN ZAHLEN-ZWILLING (Gesetz #0): die Permutationstabellen
 // kommen NICHT aus einer WGSL-Kopie der Seed-Ableitung (alea/masher bleibt
 // f64-CPU-Arbeit), sondern `spiegelEingaben(realm)` liest die LEBENDEN
-// Tabellen (`realm._voxelNoise.perm/permMod12`, `realm._macroRidgeNoise.perm`)
-// und die lebenden Daten-Overlays (Erosions-Heimat-Grid, Tarns, Makro-Anker,
-// Skalare) und packt sie als Buffer. Driftet das JS-Gesetz, wird die Linse
+// Tabellen aus dem Gelände-Gesetzbuch (gelaende-core.js, K09a: die Lage
+// `realm._gelaende()` — ihr Strom `noise.perm/permMod12` — und der Grat-
+// Strom `__gelaendeCore.gratRauschen(saat).perm`) und die lebenden Daten-
+// Overlays derselben Lage (Erosions-Heimat-Grid, Tarns, Makro-Anker, Skalare)
+// und packt sie als Buffer. Driftet das JS-Gesetz, wird die Linse
 // rot (Selbsttest: eine injizierte Abweichung sprengt die Bänder).
 //
 // FORM: namespaced IIFE (Kern-Muster) → root.__feldWgsl = { VERSION,
@@ -26,9 +28,9 @@
     //
     // Bind-Group 0 (Layout „auto", 1 Uniform + 8 Storage):
     //   @0 uniform  Skalare        (8×f32 + 4×u32, 48 Bytes — Reihenfolge unten)
-    //   @1 storage  permV[512]     u32 — realm._voxelNoise.perm
-    //   @2 storage  permMod12V[512] u32 — realm._voxelNoise.permMod12
-    //   @3 storage  permR[512]     u32 — realm._macroRidgeNoise.perm
+    //   @1 storage  permV[512]     u32 — Lage noise.perm (`_voxelNoise`)
+    //   @2 storage  permMod12V[512] u32 — Lage noise.permMod12
+    //   @3 storage  permR[512]     u32 — __gelaendeCore.gratRauschen(saat).perm
     //                                    (mod 12 rechnet der Shader: perm % 12)
     //   @4 storage  anker[]        f32 — Makro-Anker-Pack (Layout siehe
     //                                    spiegelEingaben; [14..] Tal-Vertices
@@ -45,8 +47,8 @@
     // max-Band der Linse. tanh-Argumente sind auf ±30 geklemmt (f32-sicher,
     // tanh(30) == 1.0 — numerisch identisch zur JS-f64-Sättigung).
     const WGSL_MAKRO = `// DER DRITTE SPIEGEL — SEH-SPIEGEL, nie Physik-Wahrheit (das-feld-zeichnet.md §3).
-// f32-Port von anazhRealm.js _terrainMacroSurfaceY + _erosionDeltaAt + _tarnDeltaAt
-// + _macroSurfaceContribution + _ridgeAnkerNoise + vendor/simplex-noise.js noise2D.
+// f32-Port von gelaende-core.js hoehe/wildnisY + erosionDelta + tarnDelta
+// + ankerBeitrag + grat + vendor/simplex-noise.js noise2D.
 
 struct Skalare {
     base: f32,          // state.terrainBaseHeight || 0
@@ -167,7 +169,7 @@ fn noise2dR(xin: f32, yin: f32) -> f32 {
     return 70.0 * (n0 + n1 + n2);
 }
 
-// _erosionDeltaAt — bilinear über das EINE Heimat-Grid (Kacheln reisen nicht:
+// erosionDelta (gelaende-core) — bilinear über das EINE Heimat-Grid (Kacheln reisen nicht:
 // der Seh-Spiegel v1 deckt die Heimat-Region; jenseits liefert er das rohe
 // Makro-Gesetz, exakt wie das JS vor dem Kachel-Bau).
 fn erosionDeltaAt(x: f32, z: f32) -> f32 {
@@ -186,7 +188,7 @@ fn erosionDeltaAt(x: f32, z: f32) -> f32 {
         + (eroGrid[a + dim] * (1.0 - tx) + eroGrid[a + dim + 1u] * tx) * tz;
 }
 
-// _tarnDeltaAt — Gauss-Mulden-Liste mit reach2-Early-Out.
+// tarnDelta (gelaende-core) — Gauss-Mulden-Liste mit reach2-Early-Out.
 fn tarnDeltaAt(x: f32, z: f32) -> f32 {
     var delta = 0.0;
     for (var i = 0u; i < S.nTarns; i = i + 1u) {
@@ -200,7 +202,7 @@ fn tarnDeltaAt(x: f32, z: f32) -> f32 {
     return delta;
 }
 
-// _ridgeAnkerNoise — 7-Oktaven-ridged-FBM auf dem -macro-ridge-Strom
+// grat (gelaende-core) — 7-Oktaven-ridged-FBM auf dem -macro-ridge-Strom
 // (rotierte + anisotrop gestreckte Basis, amp 0.52er-Fall, freq 2.13er-Sprung).
 fn ridgeAnkerNoise(x: f32, z: f32) -> f32 {
     let rxBase = (x + z) * 0.7071;
@@ -228,7 +230,7 @@ struct MakroBeitrag {
     mShape: f32,
 };
 
-// _macroSurfaceContribution — Massiv (rotierte Ellipse × Ridge-Noise^1.5),
+// ankerBeitrag (gelaende-core) — Massiv (rotierte Ellipse × Ridge-Noise^1.5),
 // Becken-Mulde, Tal-Polyline-Distanz + per-Segment-Floor-Lerp.
 fn macroSurfaceContribution(x: f32, z: f32) -> MakroBeitrag {
     let ddx = x - anker[0];
@@ -422,35 +424,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Heimat-Grid und die Tarn-Liste. Rückgabe: plain Objekt mit typed arrays
     // + Metadaten — 1:1 die Bind-Group-Inhalte für WGSL_MAKRO.
     function spiegelEingaben(realm) {
-        if (!realm || typeof realm._terrainMacroSurfaceY !== "function") {
-            throw new Error("__feldWgsl.spiegelEingaben: realm ohne _terrainMacroSurfaceY");
+        if (!realm || typeof realm._gelaende !== "function") {
+            throw new Error("__feldWgsl.spiegelEingaben: realm ohne Gelände-Lage (_gelaende)");
+        }
+        const G = root.__gelaendeCore;
+        if (!G || typeof G.gratRauschen !== "function") {
+            throw new Error("__feldWgsl.spiegelEingaben: gelaende-core fehlt");
         }
         // Der Spiegel trägt nur den Wildnis-Term: trägt das Erbgut der Welt mehr oder anderes (Insel, Rampe,
         // Bucht), lehnt er ab (null → der Feld-Pass bleibt unsichtbar, die CPU zeichnet die Schalen) — nie malt er Wildnis
         // über eine andere Welt.
         const erbgut = realm._erbgut();
         if (erbgut.terme.length !== 1 || !(erbgut.wildnis > 0)) return null;
-        // Lazy-Init der lebenden Streams (ein Aufruf weckt _voxelNoise und —
-        // wenn ein Anker existiert — _macroRidgeNoise über den Anker-Pfad).
-        realm._terrainMacroSurfaceY(0, 0);
-        if (!realm._macroRidgeNoise && typeof realm._ridgeAnkerNoise === "function") {
-            realm._ridgeAnkerNoise(0, 0); // ankerlose Welt: Ridge-Strom direkt wecken
-        }
-        const vn = realm._voxelNoise;
-        const rn = realm._macroRidgeNoise;
+        // Die Lage des Gesetzbuchs: ihr Strom entsteht beim ersten Lesen, der Grat-Strom folgt der Saat.
+        const L = realm._gelaende();
+        const vn = L.noise;
+        const rn = G.gratRauschen(L.seed);
         if (!vn || !vn.perm || !vn.permMod12) {
-            throw new Error("__feldWgsl.spiegelEingaben: _voxelNoise (perm/permMod12) fehlt");
+            throw new Error("__feldWgsl.spiegelEingaben: der Welt-Strom (perm/permMod12) fehlt");
         }
         if (!rn || !rn.perm) {
-            throw new Error("__feldWgsl.spiegelEingaben: _macroRidgeNoise (perm) fehlt");
+            throw new Error("__feldWgsl.spiegelEingaben: der Grat-Strom (perm) fehlt");
         }
-        const st = realm.state || {};
-        const base = st.terrainBaseHeight || 0;
-        const steilheit = st.terrainSteepness || 1;
-        const wasser = Number.isFinite(st.waterLevel) ? st.waterLevel : base + 4;
+        const base = L.baseHeight || 0;
+        const steilheit = L.terrainSteepness || 1;
+        const wasser = Number.isFinite(L.waterLevel) ? L.waterLevel : base + 4;
 
         // Makro-Anker (persistiertes Erbgut; gen<3 → null → hatAnker 0).
-        const anker = typeof realm._macroAnker === "function" ? realm._macroAnker() : null;
+        const anker = L.macroAnker;
         const nTal = anker && Array.isArray(anker.talVertices) ? anker.talVertices.length : 0;
         // Pack-Layout (Indices == WGSL-Leser):
         //   [0..1] massivC.x/z  [2] massivR  [3] massivH  [4] massivRot
@@ -481,7 +482,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
 
         // Erosions-HEIMAT-Grid (±1024 m; kann vor dem Worldgen null sein → dim 0).
-        const ero = typeof realm._erosionFor === "function" ? realm._erosionFor(0, 0) : null;
+        const ero = G.erosionFuer(L, 0, 0);
         const eroDim = ero && ero.delta && ero.dim >= 2 ? ero.dim : 0;
         const erosionGrid = eroDim
             ? ero.delta instanceof Float32Array
@@ -489,8 +490,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 : Float32Array.from(ero.delta)
             : new Float32Array(1);
 
-        // Tarn-Liste (je 5 Werte — exakt die _tarnDeltaAt-Leser-Reihenfolge).
-        const tarnListe = Array.isArray(st.tarns) ? st.tarns : [];
+        // Tarn-Liste (je 5 Werte — exakt die Leser-Reihenfolge von gelaende-core tarnDelta).
+        const tarnListe = Array.isArray(L.tarns) ? L.tarns : [];
         const nTarns = tarnListe.length;
         const tarnPack = new Float32Array(Math.max(1, nTarns * 5));
         for (let i = 0; i < nTarns; i++) {

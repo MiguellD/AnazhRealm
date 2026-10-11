@@ -888,3 +888,22 @@ erscheinen als Studio-Rezepte in der Werkstatt, W-A1-Straße), `fx.place
 Der GUSS ihres Ofens (§8.4, `BAKERS_BY_KIND.kreatur/.koerper`) trägt seit S1 Wände das Bake-Golden
 `spec/asset-contract/ofen/` (`gate:ofen-contract`): sha256 je Stoff-Klasse × Gelenk, je Gelenk und je
 Beipack, jede Art × jede Stufe der Ofen-Stufen-Zeile (§8.5).
+
+## §9 v1.2 — Der Gesetz-Kern: reine Funktionen ohne Rezept (NORMATIV, K09a, 11.10.2026)
+
+Ein Kern, der ein GESETZ als reine Funktion trägt und weder Rezepte noch Gestalt liefert (die Gelände-Höhe:
+`gelaende-core.js`, `__gelaendeCore`), ist ein **Gesetz-Kern**. Seine Manifest-Zeile trägt `"funktion": true` und
+einen Namensraum; der Namensraum erklärt `STUDIO_VERTRAG = 1` und `FUNKTION = 1`. Für ihn gelten B1–B6 nicht: er
+trägt KEINE `PRESETS` (kein Buch-Eintrag, keine Werkstatt-Rezepte), KEIN `buildInstance` (kein build-asset-Dispatch),
+KEIN `MESHFREI` (das gilt Rezept-Kernen ohne Gestalt) und KEINE `PARAMS_BY_KIND`; er trägt mindestens eine Funktion.
+Die Brücke liest ihn generisch (die Zweit-Kern-Schleife findet keinen Block und überspringt ihn), der Foundry-Worker
+lädt ihn mit (das Studio liest dasselbe Gesetz). Seine Funktionen sind rein: `f(Lage, x, z, …)` — die Lage reicht der
+Wirt, der Kern hält keinen Welt-Zustand außer Strömen, die er aus der Saat ableitet. Validator: `gate:studio-vertrag`
+(beide Seiten der Erklärung, die Absenz der Blöcke, die Funktions-Fläche; Selbsttest), die Zwillings-Wand in
+`gate:altlasten` hält die Formeln im Gesetzbuch.
+
+**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)` (der
+Term-Auswerter des Erbguts, der Wildnis-Term, der Makro-Anker `ankerAusSaat`/`ankerBeitrag`/`grat`, Erosions- und
+Tarn-Delta, die Rauheits-Maske `rauheit`, der Kachel-Schlüssel); geladen vom Stamm (vor `anazhRealm.js`), vom
+voxel-worker (`importScripts` mit `?v=`) und vom Foundry-Worker; `feld-wgsl.js` bleibt der Seh-Spiegel und liest seine
+Eingaben aus ihm.

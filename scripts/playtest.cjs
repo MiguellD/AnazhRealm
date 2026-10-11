@@ -19991,7 +19991,7 @@ async function checkBandHydrosphere(ctx) {
         out.methodsExist =
             typeof r._computeErosion === "function" &&
             typeof r._erosionIncisionPass === "function" &&
-            typeof r._erosionDeltaAt === "function";
+            typeof window.__gelaendeCore.erosionDelta === "function";
         out.stateDeclared = "erosion" in r.state;
         const e = r.state.erosion;
         out.wired =
@@ -20030,10 +20030,10 @@ async function checkBandHydrosphere(ctx) {
         let sum2 = 0;
         for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
         out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
-        // (4) `_erosionDeltaAt`: 0 weit ausserhalb der Region, im
+        // (4) das Erosions-Delta (gelaende-core `erosionDelta`): 0 weit ausserhalb der Region, im
         // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
-        out.deltaZeroOutside = r._erosionDeltaAt(99999, 99999) === 0;
-        out.deltaFiniteInside = Number.isFinite(r._erosionDeltaAt(0, 0));
+        out.deltaZeroOutside = window.__gelaendeCore.erosionDelta(r._gelaende(), 99999, 99999) === 0;
+        out.deltaFiniteInside = Number.isFinite(window.__gelaendeCore.erosionDelta(r._gelaende(), 0, 0));
         out.perfOk = out.recomputeMs < 600;
         // den Worldgen-Erosions-Stand wiederherstellen (das letzte
         // `_computeErosion` liess state.erosion null).
@@ -20043,7 +20043,7 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV947Results && !voxelV947Results.error) {
         const ev = voxelV947Results;
-        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + _erosionDeltaAt existieren", ev.methodsExist);
+        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren", ev.methodsExist);
         check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
         check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
         if (ev.methodsExist && ev.wired) {
@@ -20059,7 +20059,7 @@ async function checkBandHydrosphere(ctx) {
             check("Voxel V14.2: das Relief überlebt die Glättung (stark-erodierter Anteil < 60 %)", ev.reliefSurvives);
             check("Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)", ev.deterministic);
             check(
-                "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
+                "Voxel V9.47: gelaende-core erosionDelta — 0 ausserhalb der Region, endlich im Inneren",
                 ev.deltaZeroOutside && ev.deltaFiniteInside
             );
             check(
@@ -27951,14 +27951,13 @@ async function checkBandV18132FerneSeen(ctx) {
         const out = {};
         out.machinery =
             typeof r._hydroFor === "function" &&
-            typeof r._erosionFor === "function" &&
-            typeof r._hydroTileKeyFor === "function" &&
+            typeof window.__gelaendeCore.erosionFuer === "function" &&
+            typeof window.__gelaendeCore.kachelSchluessel === "function" &&
             typeof r._ensureHydroTilesAround === "function";
         // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
         // V18.180-FIX §6.4: _hydroWaterLevelAt fiel (V9.69-Zwei-Skalen-Lücke);
         // _waterLevelAt ist die EINE Auftrieb-Wahrheit (Bergsee-bewusst).
         const readers = [
-            r._erosionDeltaAt,
             r._hydrosphereCarveAt,
             r._hydrosphereLakeAt,
             r._waterLevelAt,
@@ -27966,7 +27965,10 @@ async function checkBandV18132FerneSeen(ctx) {
             r._hydroRiverAt,
             r._voxelChunkHasAnyWater,
         ];
-        out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(window.__codeOf(f)));
+        // Das Erosions-Delta liest seine Region im Gelände-Gesetzbuch (gelaende-core `erosionFuer`).
+        out.readersResolved =
+            readers.every((f) => /_hydroFor/.test(window.__codeOf(f))) &&
+            /erosionFuer\(/.test(window.__codeOf(window.__gelaendeCore.erosionDelta));
         // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
         out.buildGuarded = /_ensureHydroTilesAround/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
@@ -27974,7 +27976,7 @@ async function checkBandV18132FerneSeen(ctx) {
             const src = await fetch("voxel-worker.js").then((x) => x.text());
             out.workerMirror =
                 /function hydroFor\(/.test(src) &&
-                /function erosionFor\(/.test(src) &&
+                /importScripts\([^\n]*"gelaende-core\.js"/.test(src) &&
                 /snap\.hydroTiles/.test(src) &&
                 /snap\.erosionTiles/.test(src);
         } catch (_e) {
@@ -27991,7 +27993,7 @@ async function checkBandV18132FerneSeen(ctx) {
                 for (let j = 0; j < 6; j++) {
                     const x = -900 + i * 360;
                     const z = -900 + j * 360;
-                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), r._erosionDeltaAt(x, z));
+                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), window.__gelaendeCore.erosionDelta(r._gelaende(), x, z));
                 }
             return JSON.stringify(v);
         };
@@ -28015,7 +28017,7 @@ async function checkBandV18132FerneSeen(ctx) {
         check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/_erosionFor/_ensure...)", res.machinery);
+    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)", res.machinery);
     check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
     check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
     check(
@@ -31139,10 +31141,11 @@ async function checkBandGammaGenese(ctx) {
         const A = r.constructor;
         const out = {};
         out.struct =
-            typeof r._makeMacroAnker === "function" &&
+            typeof window.__gelaendeCore.ankerAusSaat === "function" &&
             typeof r._macroAnker === "function" &&
-            typeof r._macroSurfaceContribution === "function" &&
-            Object.isFrozen(A.MACRO_ANKER);
+            typeof window.__gelaendeCore.ankerBeitrag === "function" &&
+            Object.isFrozen(window.__gelaendeCore.MACRO_ANKER) &&
+            !("MACRO_ANKER" in A);
         const orig = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
         try {
             if (!r.state.worldMeta) r.state.worldMeta = {};
@@ -31194,7 +31197,7 @@ async function checkBandGammaGenese(ctx) {
         return out;
     });
     check(
-        `Γ4 Struktur: _makeMacroAnker/_macroAnker/_macroSurfaceContribution + MACRO_ANKER frozen`,
+        `Γ4 Struktur: gelaende-core ankerAusSaat/ankerBeitrag + MACRO_ANKER frozen, _macroAnker am Stamm`,
         resG4.struct === true
     );
     check(`Γ4 _macroAnker() liefert eine Anker-Struktur (gen 3)`, resG4.ankerExists === true);
@@ -33025,17 +33028,17 @@ async function checkBandV18193MakroErbgut(ctx) {
             out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
             out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
             out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
-            out.validatorAcceptsValid = A._isValidMacroAnker(r._makeMacroAnker("validator-test")) === true;
+            out.validatorAcceptsValid = A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
             // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
-            const badNaN = r._makeMacroAnker("nan-test");
+            const badNaN = window.__gelaendeCore.ankerAusSaat("nan-test");
             badNaN.massivR = NaN;
             out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
 
             // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
             let allDet = true;
             for (const seed of SEEDS) {
-                const a = r._makeMacroAnker(seed);
-                const b = r._makeMacroAnker(seed);
+                const a = window.__gelaendeCore.ankerAusSaat(seed);
+                const b = window.__gelaendeCore.ankerAusSaat(seed);
                 if (
                     a.massivC.x !== b.massivC.x ||
                     a.massivR !== b.massivR ||
@@ -33061,7 +33064,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                 delete r.state.worldMeta.macro;
                 r._macroAnkerCache = null;
                 r._voxelNoise = null;
-                r._macroRidgeNoise = null;
                 const ank1 = r._macroAnker();
                 out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
 
@@ -33117,7 +33119,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                     delete r.state.worldMeta.macro;
                     r._macroAnkerCache = null;
                     r._voxelNoise = null;
-                    r._macroRidgeNoise = null;
                     const anker = r._macroAnker();
                     const spill = r._macroSpillpointAnalysis(anker);
                     spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
@@ -33135,7 +33136,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                     delete r.state.worldMeta.macro;
                     r._macroAnkerCache = null;
                     r._voxelNoise = null;
-                    r._macroRidgeNoise = null;
                     const anker = r._macroAnker();
                     const spill = r._macroSpillpointAnalysis(anker);
                     if (spill.spillVsTalDeg < 60) nearTalCount++;
@@ -33172,7 +33172,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                 }
                 r._macroAnkerCache = null;
                 r._voxelNoise = null;
-                r._macroRidgeNoise = null;
             }
             return out;
         },

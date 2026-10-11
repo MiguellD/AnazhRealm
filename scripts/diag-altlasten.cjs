@@ -1028,6 +1028,24 @@ const FORBIDDEN = [
     // Reload „trocken"), nie eine zweite Wahrheit (das Gesetz samt Rand-Füllung weckte am Seerand den Automaten).
     { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt seine Zellen)" },
     { token: "_stempelImWasser", fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)" },
+    // K09a (11.10.) — DAS GELÄNDE-GESETZBUCH: die Makro-Höhe und ihre Hilfen wohnen in gelaende-core.js; die Stamm-
+    // Methoden und der Worker-Spiegel sind gefallen (Stamm `_terrainMacroSurfaceY` und Worker rufen `hoehe`).
+    ...[
+        ["_wildnisY", "wildnisY"],
+        ["_erbgutTermY", "termY"],
+        ["_macroSurfaceContribution", "ankerBeitrag"],
+        ["_ridgeAnkerNoise", "grat"],
+        ["_macroRidgeNoise", "gratRauschen (der Strom folgt der Saat)"],
+        ["_makeMacroAnker", "ankerAusSaat"],
+        ["_erosionDeltaAt", "erosionDelta"],
+        ["_erosionFor", "erosionFuer"],
+        ["_tarnDeltaAt", "tarnDelta"],
+        ["_hydroTileKeyFor", "kachelSchluessel"],
+        ["MACRO_ANKER_", "MACRO_ANKER (die Literal-Zwillinge des Workers)"],
+        ["function terrainMacroSurfaceY(", "hoehe (der Worker-Spiegel)"],
+        ["function erbgutTermY(", "termY (der Worker-Spiegel)"],
+        ["function macroAnker(", "die Lage reicht macroAnker (der Worker-Spiegel)"],
+    ].map(([token, kern]) => ({ token, fiel: `K09a — gelaende-core ${kern}` })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1272,17 +1290,37 @@ const ZWILLINGE = [
         verboten: ["anazhRealm.js"],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
+    // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme, Makro-Anker samt
+    // Grat-Strom, Erosions- und Tarn-Delta, die Rauheits-Maske) lebt in gelaende-core.js; Stamm und voxel-worker rufen
+    // sie, der bit-identische Worker-Spiegel fiel physisch (feld-wgsl.js bleibt der Seh-Spiegel und steht nicht hier).
+    ...[
+        ["wx * 0.00014 + 7.2", "die kontinentale Basis des Wildnis-Terms"],
+        ['"-macro-ridge"', "der Grat-Strom des Makro-Ankers"],
+        ['"-macro-anker"', "der Samen-Strom des Makro-Ankers"],
+        ["255 + 12 * Math.tanh(", "der Sicherheits-Deckel der Makro-Höhe"],
+        ["noise2D(x * 0.0005, z * 0.0005)", "die Rauheits-Maske (Wildnis-Term und Spalten-Kontext lesen `rauheit`)"],
+        ["Math.exp(-d2 / t.twoSig2)", "das Tarn-Delta"],
+        ["t.kuppel * (t.r - r)", "der Insel-Term des Erbguts"],
+    ].map(([fingerprint, was]) => ({
+        fingerprint,
+        gesetzbuch: "gelaende-core.js",
+        verboten: ["anazhRealm.js", "voxel-worker.js"],
+        fiel: `K09a — ${was} wohnt im Gelände-Gesetzbuch (der Worker-Spiegel fiel)`,
+    })),
 ];
 
-function scanZwillinge() {
+// `ersatz` (Selbsttest): { datei: Text } liest statt der Platte.
+function scanZwillinge(ersatz = {}) {
     const root = path.join(__dirname, "..");
+    const lies = (f) => (f in ersatz ? ersatz[f] : fs.readFileSync(path.join(root, f), "utf8"));
     const errs = [];
     for (const z of ZWILLINGE) {
-        const home = fs.readFileSync(path.join(root, z.gesetzbuch), "utf8");
-        if (home.indexOf(z.fingerprint) < 0)
+        if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
+            errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — "${z.fingerprint}" hat kein Zuhause`);
+        else if (lies(z.gesetzbuch).indexOf(z.fingerprint) < 0)
             errs.push(`Zwillings-Wand: Fingerabdruck "${z.fingerprint}" fehlt im Gesetzbuch ${z.gesetzbuch}`);
         for (const f of z.verboten) {
-            const src = stripComments(fs.readFileSync(path.join(root, f), "utf8"));
+            const src = stripComments(lies(f));
             if (src.indexOf(z.fingerprint) >= 0)
                 errs.push(`Zwillings-Wand: ${f} trägt wieder "${z.fingerprint}" (fiel: ${z.fiel})`);
         }
@@ -2014,6 +2052,22 @@ function main() {
                 ? "✅ SELBST-TEST: die Alias-Wand feuert (der Mammut als Buche erkannt)"
                 : "❌ SELBST-TEST: die Alias-Wand feuert nicht"
         );
+        // Die Zwillings-Wand muss feuern (K09a): ein Worker, der die kontinentale Basis wieder selbst rechnet, und ein
+        // fehlendes Gesetzbuch — beide beim Namen; ein Kommentar darf den Fingerabdruck zitieren.
+        const workerProbe = "const state = {};\n";
+        const zwillingFeuert =
+            scanZwillinge({
+                "voxel-worker.js": workerProbe + "const cB = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);\n",
+            }).some((e) => /voxel-worker\.js trägt wieder "wx \* 0\.00014 \+ 7\.2"/.test(e)) &&
+            !scanZwillinge({ "voxel-worker.js": workerProbe + "// wx * 0.00014 + 7.2\n" }).some((e) =>
+                /voxel-worker\.js trägt wieder/.test(e)
+            );
+        console.log(
+            zwillingFeuert
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (die kontinentale Basis im Worker erkannt, der Kommentar nicht)"
+                : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
+        );
+        if (!zwillingFeuert) process.exit(1);
         process.exit(fired && aliasFeuert ? 0 : 1);
     }
 

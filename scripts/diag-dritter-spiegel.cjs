@@ -13,7 +13,7 @@
 //      `_terrainMacroSurfaceY`) gegen den GPU-Compute-Lauf; Bänder auf
 //      meanAbs / p95 / Anteil>2 m / max — UND (V18.485) als MULTI-SEED-
 //      SWEEP über 3 Welten in EINEM Boot: das Gesetz liest genau 6 seed-
-//      abhängige Größen (_voxelNoise · _macroRidgeNoise · Anker/wm.macro ·
+//      abhängige Größen (_voxelNoise · der Grat-Strom des Gesetzbuchs · Anker/wm.macro ·
 //      erosion · tarns; base/steilheit/wasser sind seed-neutral) — die
 //      werden je Seed chirurgisch regeneriert (worldgen-identische
 //      Reihenfolge: Erosion DANN Tarns), kein Welt-Wechsel/Reload nötig.
@@ -265,7 +265,6 @@ const server = http.createServer((req, res) => {
                     // ERBGUT gewinnt sonst über den Seed (_macroAnker liest es zuerst).
                     r.state.worldMeta.seed = seedK;
                     r._voxelNoise = null;
-                    r._macroRidgeNoise = null;
                     r._macroAnkerCache = null;
                     delete r.state.worldMeta.macro;
                     r.state.erosionTiles = new Map();
@@ -331,7 +330,6 @@ const server = http.createServer((req, res) => {
             if (macroAlt !== undefined) r.state.worldMeta.macro = macroAlt;
             else delete r.state.worldMeta.macro;
             r._voxelNoise = null;
-            r._macroRidgeNoise = null;
             r._macroAnkerCache = null;
             device.destroy();
             return res;
