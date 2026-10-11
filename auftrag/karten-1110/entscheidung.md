@@ -899,3 +899,9 @@ selbst — offen benannt, jeder kippbar durch ein Wort des Schöpfers:
    fährt den Puls (≤ 2 min: Syntax, eslint, Format geänderter Dateien, statische Wände, Byte-Verträge < 30 s, playtest:fast); die volle
    Batterie (≤ 12 min durch Breite) läuft auf integ-probe und main, nachts, auf Abruf und bei `[ci voll]`. §2.8 Schritt 3 heißt damit:
    R0/R1 brauchen den grünen Puls, R2/R3 tragen am letzten Push `[ci voll]` und brauchen die volle Batterie grün.
+8. **Prüfung gebündelt, Neubau statt Flicken (Schöpfer 11.10.: „sehe immer noch unglaublich viele Prüfungen — Optimierung sollte nicht
+   länger dauern als Neuerstellung“):** R0/R1-Karten ohne eigenen Prüfer (Linse + Puls + Bild des Bauers; der Integrator prüft gebündelt),
+   R2/R3 behalten ihren Prüfer. Integration bündelt 2–3 Zweige je Durchgang mit EINEM vollen Playtest am Ende (je eigener Merge-Commit für
+   die Bisektion). Braucht eine Klasse mehr als einen Bauer + eine Nachbesserung (wie K02: 8 Arbeiter), wird die Domäne im Studio neu gebaut
+   statt weiter geflickt. Studios und Module beginnen jetzt im Neubau-Modus: K09a Gelände-Kern → Gelände-Studio mit den Landformen (Bild-
+   Schleife in Minuten, Lab = Welt über den Kern) → Ort im Fachwerk-Studio auf diesem Gelände (K10) → Schienen der Modul-Zerlegung (K09b).
