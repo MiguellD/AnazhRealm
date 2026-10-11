@@ -769,6 +769,8 @@ async function lauf() {
             { timeout: 600000, polling: 250 }
         );
         await page.evaluate(WASSER_INSTALL);
+        // die Orte des Gesetzes (See, sein Weg, der nasse Fluss, die Küste — scripts/lib/orte-des-gesetzes.cjs)
+        await page.evaluate(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
         if (BILD) {
             const ordner = (() => {
                 const i = process.argv.indexOf("--bilder");
@@ -787,9 +789,10 @@ async function lauf() {
                 delete befund.bild[k];
             }
         } else {
-            // Die Welt an das Ostufer des Sees der Mess-Wiese streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
-            // die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit von gestern.
-            await page.evaluate(async () => {
+            // Die Welt an das Ostufer des Sees des Gesetzes streamen (`__seeWeg`; bis K16 der See der Mess-Wiese, −890/−650 —
+            // Sync-Bau, Worker ausgehängt, wie der Playtest): die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit
+            // von gestern.
+            befund.orte = await page.evaluate(async () => {
                 const r = window.anazhRealm;
                 const st = r.state;
                 if (st.renderer) {
@@ -798,7 +801,10 @@ async function lauf() {
                         st.renderer.renderAsync = () => Promise.resolve();
                 }
                 st.postProcessingFailed = true;
-                st.playerMesh.position.set(-890, r._voxelSurfaceY(-890, -650) + 0.6, -650);
+                const W = window.__seeWeg();
+                if (!W) return { fehler: "kein See des Gesetzes" };
+                const [ox, oz] = W.start;
+                st.playerMesh.position.set(ox, r._voxelSurfaceY(ox, oz) + 0.6, oz);
                 const worker = st.voxelWorker;
                 st.voxelWorker = null;
                 const start = performance.now();
@@ -817,6 +823,20 @@ async function lauf() {
                     await new Promise((res) => setTimeout(res, 0));
                 }
                 st.voxelWorker = worker;
+                const F = window.__wasserOrt("fluss", { nahe: W.start });
+                const K = window.__wasserOrt("kueste");
+                const R1 = (v) => Math.round(v * 10) / 10;
+                return {
+                    see: {
+                        mitte: W.mitte,
+                        start: W.start,
+                        tiefe: R1(W.tiefe),
+                        spiegel: R1(W.spiegel),
+                        rand: W.rand.length,
+                    },
+                    fluss: F ? [R1(F.x), R1(F.z), F.punkt] : null,
+                    kueste: K ? [R1(K.x), R1(K.z)] : null,
+                };
             });
             // `--nur a,b`: nur diese Proben (Werkbank-Fragen; das Gate fährt alle)
             const nurI = process.argv.indexOf("--nur");

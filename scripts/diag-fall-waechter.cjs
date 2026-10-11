@@ -631,6 +631,10 @@ async function probe(K) {
     const proben = [];
     const ort = (x, z) => x.toFixed(1) + "/" + z.toFixed(1);
     // DIE ÜBERHANG-SPALTEN um (cx, cz): von der Oberkante abwärts Fels ≥ felsMin, dann Luft ≥ luftMin, dann ein Grund ≥ 1 m Fels.
+    // Die Decke ist höchstens FELS_MAX dick — ein Überhang, den ein Leib erreicht (der Rand des Spalts, der Stollen); die
+    // versiegelten Höhlen des Gesetzes (seit K16 die Decke ≥ 16 m) erreicht kein Leib: dort setzte der Zensus den Wagen in
+    // eine Tasche, in die er nicht passt (K16b-n4: GT an −783,1/−899,7 unter 23 m Fels, 30,87 m aufs Dach).
+    const FELS_MAX = 12;
     const spaltenUm = (cx, cz, n, felsMin = 2, luftMin = 3) => {
         const out = [];
         for (let rr = 0; rr <= 40 && out.length < n; rr += 3)
@@ -647,7 +651,7 @@ async function probe(K) {
                     y -= 0.1;
                     fels += 0.1;
                 }
-                if (fels < felsMin) continue;
+                if (fels < felsMin || fels > FELS_MAX) continue;
                 let luft = 0;
                 while (y > top - 60 && !r._fieldSolid(x, y, z)) {
                     y -= 0.1;
@@ -734,7 +738,7 @@ async function probe(K) {
             weg(e);
         }
     }
-    // ── O3 DIE HÖHLE — der Stollen des Prüf-Spalts (`__pruefSpalt`, 5 m breit, 5 m hoch, 10 m Fels darüber): seit K16
+    // ── O3 DIE HÖHLE — der Stollen des Prüf-Spalts (`__pruefSpalt`, eben über 3 m Breite, 6 m hoch, 7 m Fels darüber): seit K16
     // liegen die natürlichen Höhlen 16 m und tiefer, versiegelt, ihre Böden Rippen und Bänder — an der alten Höhle der
     // Schau (−875,5/−1229,4) passte der Wagen nicht in den Gang (Zensus: 3 GT 29,5–31,8 m aufs Dach, im Fels gesetzt) und
     // der Wolf stand auf einer Rippe 0,95 m über dem Grund seiner Mitte. Die Schau prüft den Leib in einer Höhle, in die
@@ -900,11 +904,17 @@ async function probe(K) {
     }
     {
         const name = "O3 Wolf läuft in die Wand";
+        // der Stollen ist breit (sein Boden eben über 3 m): der Wolf startet quer zur Achse, wo die Wand im Umkreis von 2,5 m
+        // steht — auf dem Grund an seinem Ort
+        let HW = null;
+        for (let d = 0; d <= 4 && !HW && hoehleOk; d += 0.5) {
+            const g = grundUnter(H.x, hoehleGrund + 1.5, H.z + d);
+            if (Number.isFinite(g) && wandUm(H.x, H.z + d, g)) HW = { x: H.x, z: H.z + d, grund: g };
+        }
         if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
-        else if (!wandUm(H.x, H.z, hoehleGrund))
-            proben.push({ name, fehler: "keine Wand der Höhle im Umkreis von 2,5 m" });
+        else if (!HW) proben.push({ name, fehler: "keine Wand der Höhle im Umkreis von 2,5 m" });
         else {
-            const m = await wolfStoss(H.x, H.z, hoehleGrund, "lauf");
+            const m = await wolfStoss(HW.x, HW.z, HW.grund, "lauf");
             proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
         }
     }

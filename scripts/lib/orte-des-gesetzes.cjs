@@ -5,7 +5,7 @@
 // Proben, die in der Heimat suchten, wurden blind (Zweig-CI 38168337384 an grund-studio: Luft-Sicht „unter Wasser −1 m“,
 // Klang „S seeufer“ und „O fallArm“, der Scatter-Selbsttest ohne Wasser, das Werk im Wasser). EIN Ort je Art, gecacht je Seite.
 //
-//   window.__wasserOrt(art, { nahe })  "see" · "ufer" · "meer" · "hoehle" · "fall" · "fluss" (der nächste nasse Fluss-Punkt
+//   window.__wasserOrt(art, { nahe })  "see" · "ufer" · "meer" · "kueste" · "hoehle" · "fall" · "fluss" (der nächste nasse Fluss-Punkt
 //                              zum Anker `nahe`) → { x, z, hydro, lake?, wasser?, fall?, fluss?, punkt? } | null
 //   window.__wasserChunk(art)  der Chunk am Ort, synchron über den EINEN Build-Eingang gebaut → Schlüssel | null
 //
@@ -109,6 +109,21 @@ function orteAn() {
                     if (best >= 0) ort = { ...zelle(h, best), lake: null };
                     break;
                 }
+        } else if (art === "kueste") {
+            // die Küste: vom Meer-Ort zum Ursprung der erste Punkt, an dem das Gesetz kein Wasser trägt (`_nassAt` ohne
+            // Chunk), zurück 8 m ins Wasser — das Ufer des Meers mit seinem Küsten-Streifen
+            const m = window.__wasserOrt("meer");
+            if (m) {
+                const lg = Math.hypot(m.x, m.z) || 1;
+                const ux = -m.x / lg;
+                const uz = -m.z / lg;
+                for (let s = 0; s < 4000 && !ort; s += 4) {
+                    const x = m.x + ux * s;
+                    const z = m.z + uz * s;
+                    r._ensureHydroTilesAround(x, z, 0);
+                    if (!r._nassAt(x, z)) ort = { x: x - ux * 8, z: z - uz * 8, lake: null, land: { x, z } };
+                }
+            }
         } else if (art === "ufer") {
             // das Ufer des Sees: von einer Rand-Zelle des Sees (nass, still) landeinwärts der erste trockene Punkt, dann
             // 3 m weiter — das Wasser liegt 3–4 m entfernt, das Ohr hört es auf seinem ersten Ring. Trocken und still nach
@@ -145,8 +160,8 @@ function orteAn() {
                 }
             }
         } else if (art === "fluss") {
-            // der nächste Fluss-Punkt mit gezeichnetem Wasser (`_nassAt`) zum Anker `nahe` (Standard: der Ursprung) — die
-            // Quell-Läufe des Flussnetzes tragen auf ihren ersten Metern kein Wasser, ein Fluss-Punkt allein ist kein Bach.
+            // der nächste Fluss-Punkt mit gezeichnetem Wasser (`_nassAt`) zum Anker `nahe` (Standard: der Ursprung), nie ein
+            // Punkt im See (`inLake`: dort trägt der See, nicht der Lauf) — ein Fluss-Punkt allein ist kein Bach.
             const [ax, az] = nahe || [0, 0];
             r._ensureHydroTilesAround(ax, az, 200);
             const h = r._hydroFor(ax, az);
@@ -155,7 +170,7 @@ function orteAn() {
                 f.points.forEach((q, i) => {
                     const d = Math.hypot(q.x - ax, q.z - az);
                     if (best && d >= best.d) return;
-                    if (!r._nassAt(q.x, q.z)) return;
+                    if (q.inLake || !r._nassAt(q.x, q.z)) return;
                     best = { d, x: q.x, z: q.z, fluss: f, punkt: i };
                 });
             if (best) ort = { x: best.x, z: best.z, fluss: best.fluss, punkt: best.punkt, lake: null };
@@ -182,13 +197,104 @@ function orteAn() {
         window.__wasserOrtCache[schluessel] = ort;
         return { ...ort, hydro: r._hydroFor(ort.x, ort.z) };
     };
+    // DER HAFEN (K16b, Klasse W): Wasser, das das Sheet über Atlas-Land zeichnet — gegraben mit dem Verb des Spielers an der
+    // Küste des Gesetzes (`__wasserOrt("kueste")`): ein Kanal (Kugeln r 4, 2 m unter dem Meeresspiegel) von 10 m im Meer
+    // 70 m landeinwärts und ein Becken (r 9) an seinem Ende. Das Atlas-Raster nennt das Becken Land (jenseits seines
+    // 3×3-Rands), die Zellen fluten es vom Meer her. Bis K16 trug die Küste −88/−880 solche Spalten von selbst; die Küste der
+    // Landform steigt glatt 0,5 m über den Meeresspiegel (am Ort 0 Spalten). Rückgabe { x, z } (die Mitte des Beckens) | null.
+    window.__hafen = () => {
+        const r = window.anazhRealm;
+        window.__wasserOrtCache = window.__wasserOrtCache || {};
+        if (window.__wasserOrtCache.hafen) return window.__wasserOrtCache.hafen;
+        const K = window.__wasserOrt("kueste");
+        if (!K || !K.land) return null;
+        const wl = r.state.waterLevel;
+        const lg = Math.hypot(K.land.x, K.land.z) || 1;
+        const ux = -K.land.x / lg;
+        const uz = -K.land.z / lg;
+        for (let s = -10; s <= 70; s += 3) r.carveVoxelSphere(K.land.x + ux * s, wl - 2, K.land.z + uz * s, 4);
+        const aus = { x: K.land.x + ux * 70, z: K.land.z + uz * 70 };
+        r.carveVoxelSphere(aus.x, wl - 2, aus.z, 9);
+        window.__wasserOrtCache.hafen = aus;
+        return aus;
+    };
+    // DER WEG IN DEN SEE (K16b, Klasse W): der See des Gesetzes (`__wasserOrt("see")`) als Bühne der Proben, die vom Ufer
+    // hineingehen, schwimmen, fahren, im Fenster zählen — bis K16 der See der Mess-Wiese (Ostufer −884/−650, Mitte −935/−650
+    // 8 m tief, Rand-Streifen x = −944). `mitte`: die tiefste Zelle (der Grund `_voxelSurfaceY`), von der der Weg nach Osten
+    // (+x, die Proben gehen nach −x hinein) über keinen Fluss (`_waterFlowAt`) ans trockene Ufer führt; `start` 4 m hinter der
+    // Uferlinie (`_nassAt`); `rand`: Atlas-Land neben dem See (waterKind 0, 3×3 an einer See-Zelle), sein Boden ≥ 1 m unter
+    // dem Spiegel (der Streifen, den das Gefährt lesen muss); `fenster` ± 40 m um die Mitte. Rückgabe
+    // { mitte: [x, z], start: [x, z], tiefe, spiegel, rand: [[x, z]…], fenster: [x0, z0, x1, z1], lake } | null.
+    window.__seeWeg = () => {
+        const r = window.anazhRealm;
+        window.__wasserOrtCache = window.__wasserOrtCache || {};
+        if (window.__wasserOrtCache.seeWeg) return window.__wasserOrtCache.seeWeg;
+        const see = window.__wasserOrt("see");
+        if (!see || !see.lake || !see.hydro) return null;
+        const h = see.hydro;
+        const lake = see.lake;
+        const S = lake.level;
+        const zelle = (q) => ({
+            x: h.originX + ((q % h.dim) + 0.5) * h.cell,
+            z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell,
+        });
+        const tief = [];
+        for (const q of lake.cells) {
+            const p = zelle(q);
+            const g = r._voxelSurfaceY(p.x, p.z);
+            if (Number.isFinite(g)) tief.push({ x: p.x, z: p.z, tiefe: S - g });
+        }
+        tief.sort((a, b) => b.tiefe - a.tiefe);
+        let weg = null;
+        for (const m of tief) {
+            let ufer = null;
+            for (let s = 1; s < 200; s++) {
+                const x = m.x + s;
+                if (r._waterFlowAt(x, m.z)) break;
+                if (!r._nassAt(x, m.z)) {
+                    ufer = x;
+                    break;
+                }
+            }
+            if (ufer === null || r._nassAt(ufer + 4, m.z) || r._waterFlowAt(ufer + 4, m.z)) continue;
+            weg = { mitte: [m.x, m.z], start: [ufer + 4, m.z], tiefe: m.tiefe };
+            break;
+        }
+        if (!weg) return null;
+        const inSee = new Set(lake.cells);
+        const rand = [];
+        const gesehen = new Set();
+        for (const q of lake.cells)
+            for (let dj = -1; dj <= 1; dj++)
+                for (let di = -1; di <= 1; di++) {
+                    const n = q + di + dj * h.dim;
+                    if (inSee.has(n) || gesehen.has(n) || h.water.waterKind[n] !== 0) continue;
+                    gesehen.add(n);
+                    const p = zelle(n);
+                    const g = r._voxelSurfaceY(p.x, p.z);
+                    if (Number.isFinite(g) && S - g >= 1) rand.push([p.x, p.z]);
+                }
+        const [mx, mz] = weg.mitte;
+        const aus = Object.assign(weg, {
+            spiegel: S,
+            rand: rand.sort((p, q) => Math.hypot(p[0] - mx, p[1] - mz) - Math.hypot(q[0] - mx, q[1] - mz)).slice(0, 13),
+            fenster: [mx - 40, mz - 40, mx + 40, mz + 40],
+            lake,
+        });
+        window.__wasserOrtCache.seeWeg = aus;
+        return aus;
+    };
     // DER PRÜF-SPALT (K16b, Klasse H): seit die Canyon-Maske fiel (K16 1b98d609), bleibt jede Höhlen-Decke 16 m unter dem
     // Boden — die Welt trägt keinen Spalt, keinen Überhang und keine Mündung mehr (im 5-km-Quadrat um den Ursprung fällt
     // der Boden an 1 von 1,56 Mio. Stellen > 8 m auf 4 m). Die Proben, die einen Körper unter einem Überhang, über einer
     // Spaltkante oder in einer Mündung prüfen, graben ihn mit dem Verb des Spielers (`carveVoxelSphere`, EINE Edit-Wahrheit
-    // für Feld, Gitter und Worker): ein Spalt längs z (Kugeln r 12, Mitte 10 m unter dem Rand — die Luft ist in der Tiefe
-    // breiter als oben, der Rand hängt über) und ein Stollen in die Westwand (Kugeln r 3,5, 13 m tief, 22 m lang — die
-    // Mündung, seine Luft liegt 10–15 m unter der Ebene, 5 m breit). Unter der Bühne liegt 20 m keine natürliche Höhle (die Decken beginnen 16 m unter dem Boden, 24 m fand sich in 640 m keine Ebene). Der Ort: die nächste trockene, ebene Fläche (± 24 m Spanne ≤ 4 m, kein Wasser in ± 36 m) zum Anker `nahe`.
+    // für Feld, Gitter und Worker): ein Spalt längs z (Kugeln r 11, Mitte 7 m unter dem Rand — die Luft ist in der Tiefe
+    // breiter als oben, der Rand hängt über) und ein Stollen in die Westwand (drei Reihen Kugeln r 3,5 nebeneinander, Mitte
+    // 10 m tief, 22 m lang — die Mündung; sein Boden liegt eben über 3 m Breite, 6 m Luft unter 7 m Fels). Unter der Bühne
+    // liegt 20 m keine natürliche Höhle (die Decken beginnen 16 m unter dem Boden, 24 m fand sich in 640 m keine Ebene) —
+    // der Grund des Spalts bleibt darin (13–16 m): bis K16b-n4 grub der Spalt 22 m tief, sein Boden lag 2 m über den
+    // versiegelten Höhlen, der Zensus des Fall-Wächters fand dort Leiber 14–34 m unter dem Grund. Der Ort: die nächste
+    // trockene, ebene Fläche (± 24 m Spanne ≤ 4 m, kein Wasser in ± 36 m) zum Anker `nahe`.
     // Rückgabe { x0, z0, S, rand, grund, ueberhang: { x, z, grund, dach }, muendung: { x, y, z, dx, dz }, stollen } | null.
     // DIE EBENE (K16b, Klasse B): die nächste trockene, ebene Fläche zum Anker `nahe` — ± `halb` m (Raster 6 m) liegt die
     // Spanne des Bodens ≤ `spanne` m, kein Wasser in ± (halb + 12) m. Seit der Landform im Kern liegt die Mess-Wiese
@@ -246,8 +352,9 @@ function orteAn() {
         const e = window.__ebenOrt({ nahe, halb: 24, spanne: 4, massiv: 20 });
         if (!e) return null;
         const [x0, z0, S] = [e.x, e.z, e.y];
-        for (let z = z0 - 16; z <= z0 + 16; z += 4) r.carveVoxelSphere(x0, S - 10, z, 12);
-        for (let x = x0 - 8; x >= x0 - 30; x -= 3) r.carveVoxelSphere(x, S - 13, z0, 3.5);
+        for (let z = z0 - 16; z <= z0 + 16; z += 4) r.carveVoxelSphere(x0, S - 7, z, 11);
+        for (const dz of [-1.5, 0, 1.5])
+            for (let x = x0 - 8; x >= x0 - 30; x -= 3) r.carveVoxelSphere(x, S - 10, z0 + dz, 3.5);
         const fest = (x, y, z) => r._fieldSolid(x, y, z);
         // der Rand: längs +x der letzte Punkt vor dem Abbruch (> 3 m auf 0,5 m), z neben dem Stollen (z0 + 12)
         const zr = z0 + 12;
@@ -277,8 +384,8 @@ function orteAn() {
                 }
             }
         }
-        const muendung = { x: x0 - 9, y: S - 13, z: z0, dx: 1, dz: 0 };
-        const aus = { x0, z0, S, rand, grund, ueberhang, muendung, stollen: { x1: x0 - 30, y: S - 13, z: z0 } };
+        const muendung = { x: x0 - 9, y: S - 10, z: z0, dx: 1, dz: 0 };
+        const aus = { x0, z0, S, rand, grund, ueberhang, muendung, stollen: { x1: x0 - 30, y: S - 10, z: z0 } };
         window.__wasserOrtCache[schluessel] = aus;
         return aus;
     };

@@ -21812,6 +21812,26 @@ class AnazhRealm {
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
     }
 
+    // DIE STRÖMUNG IM SIM-SCHRITT (K16b, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): ein schwimmender Leib
+    // (`_kreaturSchwimmt` über dem Boden unter ihm, `_koerperBodenUnter` — nie der Boden-Cache des Frame-Takts) treibt je
+    // Schritt mit der EINEN Strömung (`_waterFlowAt`, dieselbe wie beim Spieler und im Klang). Vorher trieb ihn der
+    // Frame-Takt um flow · delta: ein gestoßener Fuchs im Fluss stand nach 20 Sim-Schritten je Bildrate 1,9 mm anders
+    // (gate:fahr-leben L8 — bis K16 lag sein Wasser im See der Mess-Wiese, ohne Strömung). Billig zuerst: ohne Strömung an
+    // seinem Ort (O(1) über die Fluss-Buckets) fragt kein Leib nach Boden und Wasser.
+    _kreaturStroemSchritt(dt) {
+        const wesen = this.state.creatures;
+        if (!wesen || !wesen.length || !(dt > 0)) return;
+        for (const c of wesen) {
+            if (!c || !c.userData || !c.position) continue;
+            const fl = this._waterFlowAt(c.position.x, c.position.z);
+            if (!fl) continue;
+            const boden = this._koerperBodenUnter(c.position.x, c.position.y, c.position.z);
+            if (this._kreaturSchwimmt(c, boden) === null) continue;
+            c.position.x += fl.x * dt;
+            c.position.z += fl.z * dt;
+        }
+    }
+
     // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
     // getragenem Stoß der Weg dieses Schritts — in Teil-Schritten von höchstens dem halben Leib-Radius, je Teil-Schritt die
     // EINE Hülle (`_kreaturHuellenKontakt`): die Achse erreicht in einem Teil-Schritt nie die Mitte einer Wand, gleich wie
@@ -23876,16 +23896,7 @@ class AnazhRealm {
             const pz0 = creature.position.z;
             creature.position.x += Math.sin(steuer.gier) * steuer.v * delta;
             creature.position.z += Math.cos(steuer.gier) * steuer.v * delta;
-            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
-            // Land-Läufer nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim
-            // Spieler).
-            if (waterSurface !== null) {
-                const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
-                if (_fl) {
-                    creature.position.x += _fl.x * delta;
-                    creature.position.z += _fl.z * delta;
-                }
-            }
+            // Die STRÖMUNG trägt den schwimmenden Leib im festen Sim-Schritt (`_kreaturStroemSchritt`), nie hier im Frame-Takt.
             // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
             // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
             // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
@@ -95273,6 +95284,7 @@ class AnazhRealm {
         if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
+        this._kreaturStroemSchritt(dt);
         this._leibKontakte();
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den

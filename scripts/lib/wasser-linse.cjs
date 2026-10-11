@@ -196,25 +196,16 @@ function wasserKoerper(opts) {
         const DT = A.FIXED_DT;
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const ziel = o.see || [-944, -640];
-        const seen = (h.lakes || []).filter((l) => l.level > (st.waterLevel || 0) + 2 && l.cells && l.cells.length > 8);
-        let see = null,
-            best = Infinity;
-        for (const l of seen) {
-            const cx = (l.bbox.minX + l.bbox.maxX) / 2,
-                cz = (l.bbox.minZ + l.bbox.maxZ) / 2;
-            const d = Math.hypot(cx - ziel[0], cz - ziel[1]);
-            if (d < best) {
-                best = d;
-                see = l;
-            }
-        }
+        // Der See des Gesetzes (`__seeWeg`, scripts/lib/orte-des-gesetzes.cjs): seit der Landform im Kern (K16) trägt die
+        // Heimat keinen See — bis dahin der See der Mess-Wiese, Ostufer −884/−650, Mitte −935/−650.
+        const W = window.__seeWeg ? window.__seeWeg() : null;
+        const see = W ? W.lake : null;
         if (!see) return { fehler: "kein See" };
         const spiegel = see.level;
-        // Der Weg des Befunds (06.10., Station 1): vom Ostufer (−884/−650, trockenes Gras) nach Westen bis −935 (8 m
-        // tief) — kein Fluss quert ihn; dort Lage, Kraulen und Eintauchen.
-        const [x0, mz] = o.start || [-884, -650];
-        const mx = (o.ziel || [-935, -650])[0];
+        // Der Weg des Befunds (06.10., Station 1): vom Ostufer (trockenes Gras) nach Westen bis zur tiefsten Stelle — kein
+        // Fluss quert ihn; dort Lage, Kraulen und Eintauchen.
+        const [x0, mz] = o.start || W.start;
+        const mx = (o.ziel || W.mitte)[0];
         const grundMitte = r._voxelSurfaceY(mx, mz);
         const tiefeMitte = grundMitte !== null ? spiegel - grundMitte : null;
         // Die Brustkorb-Linie aus dem Körper-Gesetz: Brustwarzen-Höhe nippleY/H der Proportionen × Welt-Körperhöhe
@@ -539,7 +530,10 @@ function wasserUfer(opts) {
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
         const HC = r.constructor.HYDROSPHERE;
-        const ziel = o.ort || [-872, -1127];
+        const fo = o.ort
+            ? null
+            : window.__wasserOrt("fluss", { nahe: window.__seeWeg() ? window.__seeWeg().start : null });
+        const ziel = o.ort || (fo ? [fo.x, fo.z] : [0, 0]);
         let best = null,
             bd = Infinity;
         // Die Heimat-Region und die fernen Kacheln (der Fluss des Befunds liegt jenseits ±1024 m).
@@ -1256,17 +1250,9 @@ function wasserWagen(opts) {
         const st = r.state;
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const ziel = o.see || [-944, -640];
-        let see = null,
-            best = Infinity;
-        for (const l of h.lakes || []) {
-            if (!(l.level > (st.waterLevel || 0) + 2) || !l.cells || l.cells.length <= 8) continue;
-            const d = Math.hypot((l.bbox.minX + l.bbox.maxX) / 2 - ziel[0], (l.bbox.minZ + l.bbox.maxZ) / 2 - ziel[1]);
-            if (d < best) {
-                best = d;
-                see = l;
-            }
-        }
+        // der See des Gesetzes (`__seeWeg`): bis K16 der See der Mess-Wiese (Mitte −935/−650, Rand-Streifen x = −944)
+        const W = window.__seeWeg ? window.__seeWeg() : null;
+        const see = W ? W.lake : null;
         if (!see) return { fehler: "kein See" };
         const S = see.level;
         const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
@@ -1324,13 +1310,12 @@ function wasserWagen(opts) {
         };
         const aus = { see: { spiegel: R(S, 2) } };
         try {
-            const mitte = o.mitte || [-935, -650];
+            const mitte = o.mitte || W.mitte;
             aus.wagen = fahre("fahrzeug_gt", mitte[0], mitte[1]);
             aus.boot = fahre(BOOT, mitte[0], mitte[1]);
             // (c) der Rand-Streifen: Atlas-Land neben dem See, der Boden ≥ 1 m unter dem Spiegel.
             const rand = [];
-            for (let z = -690; z >= -726; z -= 3) {
-                const x = -944;
+            for (const [x, z] of W.rand) {
                 const boden = r._voxelSurfaceY(x, z);
                 if (!Number.isFinite(boden) || S - boden < 1) continue;
                 const hr = r._hydroFor(x, z);
@@ -1350,8 +1335,8 @@ function wasserWagen(opts) {
             // (d) Bug-ab: der Punkt des Wegs vom Ostufer mit dem steilsten Seegrund und ≥ 2,5 m Wasser.
             let steil = null,
                 gMax = 0;
-            for (let x = -890; x >= -934; x -= 1) {
-                const z = -650;
+            for (let x = W.start[0]; x >= W.mitte[0] + 1; x -= 1) {
+                const z = W.mitte[1];
                 const b0 = r._voxelSurfaceY(x, z),
                     b1 = r._voxelSurfaceY(x - 2, z);
                 if (!Number.isFinite(b0) || !Number.isFinite(b1) || S - b0 < 2.5) continue;
@@ -1695,8 +1680,11 @@ function wasserQuelle(opts) {
         huelle.rinnsal = qBett;
         return huelle;
     };
-    // die Kachel des Bachs der Mess-Wiese (−856/−1160) gehört immer zum Mess-Ring
-    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(-856, -1160, 64);
+    // die Kachel des Bachs (der nasse Fluss des Gesetzes am See, `__wasserOrt("fluss")`; bis K16 −856/−1160) gehört immer
+    // zum Mess-Ring
+    const bach =
+        window.__seeWeg && window.__seeWeg() ? window.__wasserOrt("fluss", { nahe: window.__seeWeg().start }) : null;
+    if (bach && typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(bach.x, bach.z, 64);
     const regionen = [];
     const dazu = (h) => {
         if (h && h.ready && Array.isArray(h.rivers) && regionen.indexOf(h) < 0) regionen.push(h);
@@ -1898,8 +1886,11 @@ function wasserBach(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
-    const ZX = Number.isFinite(o.x) ? o.x : -856,
-        ZZ = Number.isFinite(o.z) ? o.z : -1160;
+    // der Bach: der nasse Fluss des Gesetzes am See (`__wasserOrt("fluss")`; bis K16 der Bach der Mess-Wiese −856/−1160)
+    const fo =
+        window.__seeWeg && window.__seeWeg() ? window.__wasserOrt("fluss", { nahe: window.__seeWeg().start }) : null;
+    const ZX = Number.isFinite(o.x) ? o.x : fo ? fo.x : 0,
+        ZZ = Number.isFinite(o.z) ? o.z : fo ? fo.z : 0;
     if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(ZX, ZZ, 64);
     const h = r._hydroFor(ZX, ZZ);
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre am Bach" };
@@ -1965,7 +1956,9 @@ function wasserBach(opts) {
 // Pflanzen im Fenster (`__wasserFlora`).
 function wasserSee(opts) {
     const o = opts || {};
-    const f = o.fenster || [-930, -690, -850, -610];
+    // das See-Fenster: ± 40 m um die tiefste Stelle des Sees des Gesetzes (bis K16 −930/−690 … −850/−610)
+    const W = window.__seeWeg ? window.__seeWeg() : null;
+    const f = o.fenster || (W ? W.fenster : [0, 0, 0, 0]);
     const sicht = window.__wasserSichtNetz();
     const aus = sicht.fenster(f[0], f[1], f[2], f[3], o.d || 0.5);
     aus.fenster = f;
@@ -2281,10 +2274,11 @@ function wasserLeser(opts) {
         };
         const bsp = { klang: [], scheu: [], kueste: [], trinken: [] };
         const R1 = (v) => Math.round(v * 10) / 10;
-        for (const [px, pz] of o.orte || [
-            [-890, -650],
-            [-88, -880],
-        ]) {
+        // am See des Gesetzes und am Hafen seiner Küste (`__hafen`: das Sheet über Atlas-Land; bis K16 −890/−650 und −88/−880)
+        const W = window.__seeWeg ? window.__seeWeg() : null;
+        const K = window.__hafen ? window.__hafen() : null;
+        const orte = o.orte || [W ? W.start : null, K ? [K.x, K.z] : null].filter(Boolean);
+        for (const [px, pz] of orte) {
             await strom(px, pz);
             aus.orte.push([px, pz, st.voxelChunks.size]);
             const pcx = Math.floor(px / span),

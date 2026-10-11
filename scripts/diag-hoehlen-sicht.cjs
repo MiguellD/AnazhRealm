@@ -554,9 +554,9 @@ const server = http.createServer((req, res) => {
             if (!PS) throw new Error("kein Prüf-Spalt (keine trockene Ebene im Umkreis der Mess-Wiese)");
             const MESS = { x: PS.x0 - 24, z: PS.z0 },
                 HINAUS = {
-                    spieler: [PS.x0 - 26, PS.S - 14, PS.z0],
-                    auge: [PS.x0 - 26, PS.S - 12.5, PS.z0],
-                    ziel: [PS.x0 + 74, PS.S - 18.5, PS.z0],
+                    spieler: [PS.x0 - 26, PS.stollen.y - 1, PS.z0],
+                    auge: [PS.x0 - 26, PS.stollen.y + 0.5, PS.z0],
+                    ziel: [PS.x0 + 74, PS.stollen.y - 5.5, PS.z0],
                 };
             const r = window.anazhRealm,
                 st = r.state,
