@@ -726,7 +726,7 @@ function stationVerdict(s) {
     if (!sp) out.push("spalt keine Probe");
     else if (!(sp.rand - sp.grund >= STATION.randM))
         out.push(`spalt vakuös (Rand ${(sp.rand || 0).toFixed(1)} m, Grund ${(sp.grund || 0).toFixed(1)} m)`);
-    else if (!(sp.xMax > -899.5 && sp.yMin < sp.rand - STATION.fallM))
+    else if (!(sp.xMax > sp.randX + 4.5 && sp.yMin < sp.rand - STATION.fallM))
         out.push(
             `spalt-wand: der Wagen hält an der Kante (bis x ${sp.xMax.toFixed(2)}, tiefste Höhe ${sp.yMin.toFixed(2)} m bei Rand ${sp.rand.toFixed(2)} m) — eine unsichtbare Wand`
         );
@@ -1946,10 +1946,41 @@ async function probeLeben(expected) {
         );
         // L2 DIE SPALTKANTE: 11,4 m/s in +x auf den Rand des 23-m-Spalts (−904/−975) — der Wagen stand in EINEM Schritt (11,44 →
         // 0,19 m/s), Gas danach 0,00 m, der Bug über der Kante. Soll: er fährt über die Kante und FÄLLT.
-        S.spalt = await lebenFahrt({ ort: [-904, -975], start: [-912, -975], gier: Math.PI / 2, v0: 11.4 }, 150);
+        // Seit K16 (die Canyon-Maske fiel) liegt an −904/−975 kein Spalt mehr, sondern ein Hang (0,6 m je m) mit einer Eiche
+        // (−904,5/−976) in der Bahn: der Wagen hielt an ihr, 5 m gefahren. Der Ort kommt aus der Welt — die nächste Kante um
+        // die Mess-Wiese, hinter der der Boden in +x 6–7 m weiter mindestens STATION.randM + 1 tiefer liegt, davor 8 m
+        // trockener, stetiger Anlauf (≤ 0,5 m je m), kein Blocker in ±2,5 m von 10 m davor bis 8 m dahinter.
+        const kante = (() => {
+            const frei = (kx, kz) => {
+                for (const e of st.architectures) {
+                    if (!e || !e.position || !e.blockerAABBs || Math.hypot(e.position.x - kx, e.position.z - kz) > 40) continue;
+                    for (const b of e.blockerAABBs)
+                        if (b.maxX > kx - 10 && b.minX < kx + 8 && b.maxZ > kz - 2.5 && b.minZ < kz + 2.5) return false;
+                }
+                return true;
+            };
+            for (let ring = 0; ring <= 120; ring++)
+                for (let k = 0; k < (ring ? 8 * ring : 1); k++) {
+                    const a = ring ? (k / (8 * ring)) * Math.PI * 2 : 0;
+                    const kx = Math.round(mo[0] + Math.cos(a) * ring * 4);
+                    const kz = Math.round(mo[1] + Math.sin(a) * ring * 4);
+                    const rand = hh(kx, kz);
+                    if (!Number.isFinite(rand) || !(rand - Math.min(hh(kx + 6, kz), hh(kx + 7, kz)) >= expected.randM + 1)) continue;
+                    let ok = !nass(kx, kz);
+                    for (let s0 = 1; s0 <= 8 && ok; s0++)
+                        ok = !nass(kx - s0, kz) && Math.abs(hh(kx - s0, kz) - hh(kx - s0 + 1, kz)) <= 0.5;
+                    if (ok && frei(kx, kz)) return { x: kx, z: kz };
+                }
+            return null;
+        })();
+        S.spalt = kante
+            ? await lebenFahrt({ ort: [kante.x, kante.z], start: [kante.x - 8, kante.z], gier: Math.PI / 2, v0: 11.4 }, 150)
+            : null;
         if (S.spalt) {
-            S.spalt.rand = hh(-904, -975);
-            S.spalt.grund = Math.min(hh(-898, -975), hh(-897, -975));
+            S.spalt.randX = kante.x;
+            S.spalt.randZ = kante.z;
+            S.spalt.rand = hh(kante.x, kante.z);
+            S.spalt.grund = Math.min(hh(kante.x + 6, kante.z), hh(kante.x + 7, kante.z));
         }
         // L3–L5 DER STOSS (Leben-Schau 07.10.: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je in
         // EINEM Frame, kein Rückprall, der Gegner bewegt sich nicht, keine Rückmeldung): der GT fährt mit W aus 9 m Anlauf
@@ -2868,7 +2899,7 @@ async function probeLeben(expected) {
             huelleTeil: { tief: 0.0, abstand: 0.2, nah: 0.03 },
             pflicht: { satz: "bruch", ebene: "bruch" },
             hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
-            spalt: { rand: 32.4, grund: 15, xMax: -896, yMin: 18 },
+            spalt: { randX: -904, rand: 32.4, grund: 15, xMax: -896, yMin: 18 },
             stossFels: { kontakt: 40, vVor: 6.5, vNach: -1.3, vMinNach: -1.3, ereignisse: 1, ruck: 3, zielWeg: 0 },
             stossWagen: { kontakt: 40, vVor: 6.5, vNach: 2.3, vMinNach: 2.3, ereignisse: 1, ruck: 3, zielWeg: 2.1 },
             stossBaer: { kontakt: 40, vVor: 6.5, vNach: 5.0, vMinNach: 5.0, ereignisse: 1, ruck: 2, zielWeg: 3.2 },
@@ -2937,10 +2968,10 @@ async function probeLeben(expected) {
             ],
             [
                 "Spaltkante: der Wagen steht bei x −904,09 (11,7 → 0,17 m/s, Leben-Schau: 11,44 → 0,19)",
-                { spalt: { rand: 32.4, grund: 15, xMax: -904.09, yMin: 32.42 } },
+                { spalt: { randX: -904, rand: 32.4, grund: 15, xMax: -904.09, yMin: 32.42 } },
                 "spalt-wand",
             ],
-            ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, xMax: -896, yMin: 18 } }, "spalt vakuös"],
+            ["Spalt ohne Spalt (vakuös)", { spalt: { randX: -904, rand: 32.4, grund: 31, xMax: -896, yMin: 18 } }, "spalt vakuös"],
             [
                 "Fels: 10,41 → 0,16 m/s in EINEM Frame, kein Rückprall (Leben-Schau 07.10.)",
                 {
@@ -3382,7 +3413,7 @@ async function probeLeben(expected) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
-    const out = await page.evaluate(probeLeben, { messort });
+    const out = await page.evaluate(probeLeben, { messort, randM: STATION.randM });
     await browser.close();
     server.close();
 
@@ -3543,10 +3574,10 @@ async function probeLeben(expected) {
     );
     const L2 = S.spalt;
     check(
-        "L2 Spaltkante (−904/−975, 11,4 m/s in +x): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
+        "L2 Spaltkante (die nächste Kante der Mess-Wiese, 11,4 m/s in +x): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
         !hat("kern") && !hat("spalt"),
         L2
-            ? `Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · bis x ${L2.xMax.toFixed(2)} · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
+            ? `Kante ${L2.randX}/${L2.randZ} · Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · bis x ${L2.xMax.toFixed(2)} · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
             : "keine Probe"
     );
     const z2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
