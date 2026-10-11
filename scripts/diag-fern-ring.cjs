@@ -24,6 +24,8 @@
 //       (≤ 2 %). Selbsttest: das alte 2-m-Tauchen fällt rot.
 //   (10) DIE FERN-FARBE OHNE STREIFEN (K16) — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
 //       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
+//   (11) DAS DACH IST DER BESTAND (K16) — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
+//       Generator auf 192 × 192 m um den Spieler stehen lässt (0,8–1,25); Selbsttest: die Geburt als Deckung fällt rot.
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
@@ -758,6 +760,81 @@ const server = http.createServer((req, res) => {
         } catch (e9) {
             res.nahtErr = String((e9 && e9.stack) || e9).slice(0, 400);
         }
+        try {
+            // ===== (11) DAS DACH IST DER BESTAND =====
+            // Die Deckung des Kronendachs (Fern-Farbe out[6], fussM 0) gegen die Kronen-Deckung, die der Wald-Generator auf
+            // derselben Fläche wirklich stehen lässt: 192 × 192 m um den Spieler, jeder stehende Dart (_forestCellDarts +
+            // _forestDartSteht, die Perf-Kappung keep) mit seiner Krone (_kronenRadiusFuer) auf ein 1-m-Raster gemalt, je
+            // 32-m-Land-Kachel gegen das Mittel der Dach-Deckung (4-m-Raster). SELBSTTEST: das alte Dach (die Geburt als Deckung,
+            // phyto-core forestBestand.geburt) fällt rot.
+            const H = 96;
+            const pp = r.state.playerMesh.position;
+            const x0 = Math.round(pp.x) - H;
+            const z0 = Math.round(pp.z) - H;
+            const N = 2 * H;
+            const F = r.constructor.FOREST;
+            const seedInt = r._forestSeedInt();
+            const fd = r._effectiveFoliageDensity();
+            const memo = new Map();
+            const cellDarts = (gx, gz) => {
+                const k = gx + "," + gz;
+                let d = memo.get(k);
+                if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
+                return d;
+            };
+            const deck = new Uint8Array(N * N);
+            for (let gz = Math.floor(z0 / F.cell); gz <= Math.floor((z0 + N) / F.cell); gz++)
+                for (let gx = Math.floor(x0 / F.cell); gx <= Math.floor((x0 + N) / F.cell); gx++)
+                    for (const d of cellDarts(gx, gz)) {
+                        if (!r._forestDartSteht(d, gx, gz, cellDarts) || (fd < 1 && d.keep >= fd)) continue;
+                        const rad = r._kronenRadiusFuer(d.sp, d.s);
+                        if (!(rad > 0)) continue;
+                        for (let j = Math.max(0, Math.floor(d.z - rad - z0)); j <= Math.min(N - 1, Math.ceil(d.z + rad - z0)); j++)
+                            for (let i = Math.max(0, Math.floor(d.x - rad - x0)); i <= Math.min(N - 1, Math.ceil(d.x + rad - x0)); i++)
+                                if ((x0 + i + 0.5 - d.x) ** 2 + (z0 + j + 0.5 - d.z) ** 2 <= rad * rad) deck[j * N + i] = 1;
+                    }
+            const core = globalThis.__phytoCore;
+            const fbm = (px, pz) => r._forestFbm(px, pz);
+            const wl = r.state.waterLevel;
+            const t = new Float32Array(7);
+            let g = 0;
+            let ng = 0;
+            let a = 0;
+            let alt = 0;
+            let na = 0;
+            const K = 32;
+            for (let kj = 0; kj < N / K; kj++)
+                for (let ki = 0; ki < N / K; ki++) {
+                    let gk = 0;
+                    let ak = 0;
+                    let altK = 0;
+                    let land = 0;
+                    for (let j = 2; j < K; j += 4)
+                        for (let i = 2; i < K; i += 4) {
+                            const x = x0 + ki * K + i;
+                            const z = z0 + kj * K + j;
+                            const y = r._terrainMacroSurfaceY(x, z, true);
+                            if (!(y > wl + 0.4)) continue;
+                            land++;
+                            r._fernFarbeTeile(x, y, z, t, null, 0);
+                            ak += t[6];
+                            altK += core.forestBestand(fbm, x, z, 0).geburt;
+                        }
+                    if (land < 48) continue;
+                    for (let j = 0; j < K; j++) for (let i = 0; i < K; i++) gk += deck[(kj * K + j) * N + ki * K + i];
+                    g += gk / (K * K);
+                    ng++;
+                    a += ak / land;
+                    alt += altK / land;
+                    na++;
+                }
+            res.dachKacheln = ng;
+            res.dachGemessen = ng ? g / ng : NaN;
+            res.dachDeckung = na ? a / na : NaN;
+            res.dachAlt = na ? alt / na : NaN;
+        } catch (e11) {
+            res.dachErr = String((e11 && e11.stack) || e11).slice(0, 400);
+        }
         r._fernRingDispose();
         res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
 
@@ -903,6 +980,16 @@ const server = http.createServer((req, res) => {
             out.streifenSelbst[1] <= 0.3,
         `reihen=${out.streifenN} median=${(+out.streifenMedian).toFixed(3)} p90=${(+out.streifenP90).toFixed(3)} selbsttest zufall=${(+(out.streifenSelbst || [])[0]).toFixed(2)} glatt=${(+(out.streifenSelbst || [])[1]).toFixed(2)}`
     );
+    {
+        const q = out.dachGemessen / out.dachDeckung;
+        const qAlt = out.dachGemessen / out.dachAlt;
+        check(
+            "11: DAS DACH IST DER BESTAND — die Deckung des Kronendachs trifft die Kronen-Deckung des gepflanzten Waldes (192 × 192 m, je 32-m-Land-Kachel) im Verhältnis 0,8–1,25; Selbsttest: das alte Dach (die Geburt als Deckung) fällt rot",
+            out.dachKacheln >= 8 && q >= 0.8 && q <= 1.25 && !(qAlt >= 0.8 && qAlt <= 1.25),
+            `kacheln=${out.dachKacheln} gepflanzt=${(+out.dachGemessen).toFixed(3)} dach=${(+out.dachDeckung).toFixed(3)} verhaeltnis=${q.toFixed(3)} selbsttest-alt=${(+out.dachAlt).toFixed(3)} (${qAlt.toFixed(3)})` +
+                (out.dachErr ? ` err=${out.dachErr}` : "")
+        );
+    }
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
 
     if (errs.length) {

@@ -38344,9 +38344,12 @@ class AnazhRealm {
             !core ||
             typeof core.forestNische !== "function" ||
             typeof core.forestGeburt !== "function" ||
-            typeof core.forestBestand !== "function"
+            typeof core.forestBestand !== "function" ||
+            typeof core.forestKronenDeckung !== "function"
         )
-            throw new Error("Fern-Farbe: phyto-core forestNische/forestGeburt/forestBestand fehlen (KERN-PFLICHT)");
+            throw new Error(
+                "Fern-Farbe: phyto-core forestNische/forestGeburt/forestBestand/forestKronenDeckung fehlen (KERN-PFLICHT)"
+            );
         this._bodenFarbeAt(x, y, z, out, fussM);
         const ctx =
             this._fernNischeCtx ||
@@ -38360,12 +38363,27 @@ class AnazhRealm {
         // forestGeburt) — die feine Bestands-Oktave (λ 26 m) faltete die Deckung jeder Masche (Streifen-Index der Deckung 0,82–1,09).
         const B = core.forestBestand(ctx.fbm, x, z, fussM > 0 ? fussM : 0);
         const sd = B.sd;
-        out[6] = B.deckung;
         ctx.baseH = (this.state && this.state.terrainBaseHeight) || 0;
         ctx.fussM = fussM > 0 ? fussM : 0;
         const N = core.forestNische(x, z, y, sd, ctx);
         const L = this._fernLaubLinear();
         const w = [N.wF, N.wT, N.wE, N.wB, N.wW];
+        // DIE DECKUNG IST DER GEPFLANZTE BESTAND (K16, die Naht): der Anteil unter Kronen, den der Wald-Generator mit seiner
+        // Schüchternheit an diesem Ort stehen lässt (phyto-core `forestKronenDeckung` aus Geburt, Bestandsdichte und der
+        // Arten-Mischung mit ihren Kronen, `FOREST.crown`) — bis K16 las das Dach die Geburt (0,90) als Deckung, der gepflanzte
+        // Wald deckt 0,16: jenseits des Karten-Horizonts stand geschlossenes Grün vor offenem Wald (gate:fern-ring Band 11).
+        const C = AnazhRealm.FOREST.crown;
+        const kr =
+            this._fernKronenTmp ||
+            (this._fernKronenTmp = [
+                [0, C.baum_kiefer],
+                [0, C.baum_tanne],
+                [0, C.baum_eiche],
+                [0, C.baum_birke],
+                [0, C.baum_erle],
+            ]);
+        for (let i = 0; i < 5; i++) kr[i][0] = w[i];
+        out[6] = core.forestKronenDeckung(sd, B.geburt, kr, AnazhRealm.FOREST);
         const S = AnazhRealm.FERN_FARBE.kronenSchatten;
         let summe = 0;
         let r = 0;
@@ -100760,7 +100778,10 @@ AnazhRealm.FERN_RING = Object.freeze({
     randPad: 40,
     saumDrop: 6,
     unterGebaut: 2,
-    unterSaum: 0.3,
+    // An der Naht drinnen: tiefer als das Gebaute vom Gesetz weicht (gate:fern-ring Band 9: chunk-eigen-p95 0,108 m nach dem
+    // Fall der Canyon-Maske; 0,15 m stach 2,02 % durch), flacher als die Masche über die Kante draußen trägt (0,3 m: Bias
+    // −0,198 m, 0,2 m: −0,132 m bei 1,76 % Durchstich).
+    unterSaum: 0.2,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,
