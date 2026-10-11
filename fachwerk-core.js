@@ -3562,13 +3562,16 @@
     // Legacy-Abfall (1 − d/R)^abfall), `reichweiteM` und `abfall` des Punktlichts, `flacker` das Atmen der Flamme (relativ,
     // zwei Sinus in 6–10 Hz, `lichtFlackern`), `hoeheM` die Höhe des Licht-Mittelpunkts über dem Boden. `feuer` ist das
     // Herdfeuer des Labors (fachwerk.js: PointLight 0xff7a35, 9 m, Abfall 2, 0,35 m über dem Bett; sein Tageszeit-Satz .228
-    // mittag/morgen 1,6 · abend 2,2 · nacht 3,0 — bis K11 überschrieb der Bild-Takt ihn mit 1,4 ± 0,25), `fenster` das
-    // Nachtlicht der Glas-Stoffe (die Glut je Tageszeit, 0xffb45e), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern
-    // Fachwerk-Soll; die Nacht-Stärke der Feuerstelle über die Reichweite des Laternen-Abstands 9 m hinaus, der Kopf auf der
-    // Lichthöhe des Labors bei 3,7 m Straße). Leser: das Labor (Herdfeuer, Fenster) und die Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit
+    // mittag/morgen 1,6 · abend 2,2 — bis K11 überschrieb der Bild-Takt ihn mit 1,4 ± 0,25); die NACHT trägt das Feuer nach
+    // dem Nordstern-Soll Fachwerk (nachts hebt warmes Licht den Platz auf 2–5 lx, der Rest im Mondlicht 0,1–0,3 lx; Vollmond
+    // 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224): mit nacht 3,0 trug es in 2 m das 8-Fache des Mondes (≈ 2 lx, der Boden
+    // am Feuer aus 2 m Luma 0,05 — schwarz-rot), mit nacht 12 das 33-Fache (≈ 8 lx, Luma 0,22; K11 Runde 2, echte GPU), ein
+    // echtes Lagerfeuer trägt dort das Hundertfache; `fenster` das Nachtlicht der Glas-Stoffe (die Glut je Tageszeit,
+    // 0xffb45e), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern Fachwerk-Soll: der Kopf auf der Lichthöhe des Labors
+    // bei 3,7 m Straße; zwischen zwei Laternen im Abstand 9 m trägt der Platz ≈ 2 lx, unter ihnen ≈ 5 lx — das Band 2–5 lx). Leser: das Labor (Herdfeuer, Fenster) und die Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit
     // Datum — die Laternen eines Plans, K10; `_leuchtStoff`: Fenster).
     var LICHT_GESETZ = {
-        feuer: { farbe: 0xff7a35, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 3 }, reichweiteM: 9, abfall: 2, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        feuer: { farbe: 0xff7a35, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 12 }, reichweiteM: 9, abfall: 2, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { farbe: 0xffb45e, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
         laterne: { farbe: 0xff8a27, staerke: 3, reichweiteM: 12, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };

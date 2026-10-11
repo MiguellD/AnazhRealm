@@ -16286,17 +16286,6 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshStandardNodeMaterial !== "function") {
-            // Defensive (Bootstrap-Bruch): klassisches Standard OHNE Wind. Im WebGPU-required-Normalbetrieb
-            // (V12.0-a) nie erreicht.
-            this.state._grassMat = new THREE.MeshStandardMaterial({
-                color: 0x5fa743,
-                side: THREE.DoubleSide,
-                roughness: 1,
-                metalness: 0,
-            });
-            return this.state._grassMat;
-        }
         // Natives MeshStandardNodeMaterial (rau, nicht-metallisch): die WebGPU-Lighting-Pipeline rechnet Licht +
         // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
         // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
@@ -16393,6 +16382,7 @@ class AnazhRealm {
         // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
         // Graph hängt nur an geteilten Wind-Uniforms + Attributen — equals()-Bahn.
         this._materialObserverDiaet(mat);
+        this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;
     }
@@ -31727,19 +31717,19 @@ class AnazhRealm {
             // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
             // _dayNightApplyHemiUndLuft).
             terrainMoonRim: TSL.uniform(0.0),
-            // DAS LICHT DES AUGES (K15): Farbe × Stärke am Auge (linear); der Boden-Stoff trägt es unter Fels
-            // (`_buildPbrNodeMaterial`, 1 − aHimmel), unter dem Himmel 0. EIN Schreiber: `_dayNightApplyAugenLicht`.
-            augenLicht: TSL.uniform(new THREE.Color(0, 0, 0)),
-            // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz die Lage im Blick-Raum (xyz) mit der Reichweite (w, 0 = leer)
-            // und die lineare Farbe × Stärke (rgb) mit dem Abfall (a) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`):
-            // ein Wechsel der Quellen baut kein Programm. Dazu die Glut der wachen Fenster (lineare Farbe × Glut des
-            // Zeitplans). EIN Schreiber: `_leuchtTakt`.
+            // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz der Welt-Ort (xyz) mit der Reichweite (w, 0 = leer), die
+            // lineare Farbe × Stärke (rgb) mit dem Abfall (a) und der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
+            // Himmel fehlt — das Licht des Auges) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
+            // Quellen baut kein Programm. Der Welt-Ort gilt jedem Renderer der Seite (der Stoff rechnet ihn mit der Kamera
+            // SEINES Renderers in den Blick-Raum). Dazu die Glut der wachen Fenster (lineare Farbe × Glut des Zeitplans).
+            // EIN Schreiber: `_leuchtTakt`.
             lichtLage: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
                 TSL.uniform(new THREE.Vector4(0, 0, 0, 0))
             ),
             lichtFarbe: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
                 TSL.uniform(new THREE.Vector4(0, 0, 0, 2))
             ),
+            lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
@@ -32384,47 +32374,9 @@ class AnazhRealm {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
-            // DAS LICHT DES AUGES (K02a, K15 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`): eine Eigenschaft der Flächen unter
-            // Fels, kein Szenen-Licht. Ein Punkt-Licht ab Boot stand im Licht-Hash JEDES beleuchteten Stoffs und rechnete
-            // seine BRDF in jedem Fragment, auch unter dem Himmel auf Stärke 0 (OMEN 1110-3, GTX 1060: 0,48 ms je Frame).
-            // Hier rechnet es nur der Boden, gewichtet mit dem fehlenden Himmel der Fläche (1 − `aHimmel`) und der Stärke
-            // am Auge (die geteilte Uniform `augenLicht` = Farbe × Stärke, unter dem Himmel 0): dieselbe Rechnung wie r184s
-            // Punkt-Licht am Auge (Lambert + GGX des Vendors, Abstand und Fenster aus `AUGEN_LICHT`), nur wo beides nicht 0 ist.
-            // ZWEI FALLEN (Werkbank 11.10., echte GPU): r184 baut die Emissiv-Zuweisung VOR der Lichtung — liest der Term
-            // `normalView`/`positionViewDirection` (EINE Variable je Programm) zuerst im Zweig, steht ihre Zuweisung nur dort,
-            // und unter dem Himmel lichtete jede Boden-Fläche mit der Normale 0 (schwarz, die Mündung Helligkeit 60 statt 123):
-            // die BEDINGUNG des Zweigs liest sie (r184 `select` baut die Bedingung vor dem `if`). Und `three/tsl` der Seite kennt
-            // `diffuseContribution`/`specularColorBlended` nicht — die Stoff-Werte kommen aus `diffuseColor` · `metalness` ·
-            // `specularColor` · `specularF90` (wie r184 sie mischt).
-            // KEIN Fn-RUMPF (Integration V18.541, voller Playtest RAUSCH-GESETZ (B): „1 verborgene Fn-Rümpfe (Soll 0)"): ein
-            // Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler, der Stoff-Graph sieht ihn nicht — der Term ist ein
-            // Ausdruck und `select` der Zweig, Lambert und GGX des Vendors stehen ausgeschrieben (BRDF_Lambert, BRDF_GGX und
-            // F_Schlick tragen kein Layout; D_GGX und V_GGX_SmithCorrelated tragen ihres).
-            if (opts.himmelsSicht) {
-                const _Te = THREE.TSL;
-                const _A = AnazhRealm.AUGEN_LICHT;
-                const _uAuge = this.state.atmoUniforms.augenLicht;
-                const _hS = _Te.attribute("aHimmel", "float");
-                const _unterFels = _hS.oneMinus();
-                const _N = _Te.normalView;
-                const _L = _Te.positionViewDirection; // vom Fragment zum Auge (das Licht steht am Auge)
-                const _d = _Te.positionView.length();
-                const _nl = _N.dot(_L);
-                // der Zweig rechnet nur, wo der Term nicht 0 ist: Fels über der Fläche und Licht am Auge · die Fläche dem Auge
-                // zugewandt · innerhalb der Reichweite (das Fenster ist dort 0)
-                const _zweig = _unterFels
-                    .mul(_uAuge.r)
-                    .greaterThan(0)
-                    .and(_nl.greaterThan(0))
-                    .and(_d.lessThan(_A.reichweiteM));
-                // r184 getDistanceAttenuation: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)²
-                let _abst = _d.div(_A.reichweiteM).pow4().oneMinus().clamp().pow2();
-                if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
-                const _nlc = _nl.clamp();
-                const _E = _uAuge.mul(_nlc.mul(_abst).mul(_unterFels));
-                // die EINE BRDF eines Punktlichts (K11, `_punktLichtBrdf`) — das Licht steht am Auge: L = V
-                mat.emissiveNode = _Te.select(_zweig, _E.mul(this._punktLichtBrdf(_Te, _N, _L, _L, _nlc)), _Te.vec3(0));
-            }
+            // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
+            // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
+            // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
                 try {
@@ -32444,8 +32396,8 @@ class AnazhRealm {
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
         // Laub (useFlexAttr) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
-        // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11)
-        this._leuchtStoff(mat, null);
+        // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
+        this._leuchtStoff(mat, null, opts.himmelsSicht ? THREE.TSL.attribute("aHimmel", "float") : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
@@ -32454,80 +32406,84 @@ class AnazhRealm {
         return mat;
     }
 
-    // DAS LEUCHTQUELLEN-GESETZ IM STOFF (K11): jeder beleuchtete Stoff der Welt (der Stoff-Bau `_buildPbrNodeMaterial` samt
-    // Toon-Weg und der Foundry-Stoff `_foundryTreeMaterial`) trägt den Licht-Pool als Term seines Leuchtens, und ein Stoff,
-    // dessen Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
-    // (`atmoUniforms.fensterGlut`). KEIN Szenen-Licht: r184 sammelt jedes Szenen-Licht in den Licht-Hash jedes beleuchteten
-    // Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine feste Zahl geteilter Uniforms ab dem Boot (EIN
-    // Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm. Dasselbe Muster wie das Licht des Auges (K15).
-    _leuchtStoff(mat, mp) {
-        const Te = typeof THREE !== "undefined" ? THREE.TSL : null;
-        if (!mat || mat.isNodeMaterial !== true || !Te) return mat;
+    // DAS LEUCHTQUELLEN-GESETZ IM STOFF (K11): JEDER beleuchtete Stoff der Welt trägt den Licht-Pool als Term seines Leuchtens
+    // — der Stoff-Bau `_buildPbrNodeMaterial` (und mit ihm jeder Toon-Aufruf), der Foundry-Stoff `_foundryTreeMaterial` und
+    // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
+    // die Wand: gate:pruefbuehne S0 (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
+    // Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
+    // (`atmoUniforms.fensterGlut`); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
+    // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
+    // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
+    // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
+    // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
+    _leuchtStoff(mat, mp, himmel) {
+        if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
+        const Te = THREE.TSL;
         const atmo = this._ensureAtmoUniforms();
-        if (!atmo || !atmo.lichtLage) return mat;
-        // die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist die Quelle: sie leuchtet in ihrer Farbe und liest den Pool nicht
-        if (mp && (mp.seh === "glut" || mp.leucht > 0)) return mat;
+        mat.userData = mat.userData || {};
+        if (mp && (mp.seh === "glut" || mp.leucht > 0)) {
+            mat.userData.lichtPool = "quelle";
+            return mat;
+        }
         let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
         if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
-        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo));
+        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        mat.userData.lichtPool = true;
         return mat;
     }
 
-    // DER LICHT-POOL ALS TERM (K11): je Platz ein Zweig mit der Rechnung des Labors — der Abfall des r128-Punktlichts
-    // (1 − d/R)^abfall, die Stärke schon durch LEGACY_LICHT (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der
-    // Abfall des Labors ist nah an der Quelle beschränkt (eine Flamme ist keine Punkt-Singularität: r184s 1/d² legte die
-    // Steine am Bett auf das Zehnfache ihrer Glut, und der lokale Kontrast der Ausgabe kehrte die Glut daneben ins Schwarze).
-    // Die BEDINGUNG liest `positionView` und `normalView` (EINE Variable je Programm: r184 baut das Leuchten VOR der
-    // Lichtung — zuerst im Zweig gelesen, stünde ihre Zuweisung nur dort, die Falle des Lichts des Auges) und rechnet nur, wo
-    // der Platz trägt: eine Reichweite, die Fläche in ihr und ihm zugewandt. Die Blick-Richtung rechnet der Zweig selbst aus
-    // `positionView` (nie `positionViewDirection` zuerst im Zweig).
-    _lichtPoolTerm(Te, atmo) {
+    // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
+    // Platz ein Zweig mit der Rechnung des Labors — der Abfall des r128-Punktlichts (1 − d/R)^abfall, die Stärke schon durch
+    // LEGACY_LICHT (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Abfall des Labors ist nah an der Quelle
+    // beschränkt (eine Flamme ist keine Punkt-Singularität: r184s 1/d² legte die Steine am Bett auf das Zehnfache ihrer Glut, und
+    // das Licht des Auges lag mit 1/d an der Wand weiß) und fällt an der Reichweite stetig auf 0. Der Welt-Ort des Platzes geht
+    // mit `cameraViewMatrix` (der Kamera DES zeichnenden Renderers) in den Blick-Raum. Die BEDINGUNG liest `positionView` und
+    // `normalView` (EINE Variable je Programm: r184 baut das Leuchten VOR der Lichtung — zuerst im Zweig gelesen, stünde ihre
+    // Zuweisung nur dort, die Falle des Lichts des Auges) und rechnet nur, wo der Platz trägt: eine Reichweite, ein Gewicht
+    // (der Himmels-Ersatz), die Fläche in ihr und ihm zugewandt. Die Blick-Richtung rechnet der Zweig aus `positionView`.
+    _lichtPoolTerm(Te, atmo, himmel) {
         const N = Te.normalView;
         const P = Te.positionView;
         let summe = null;
         for (let k = 0; k < atmo.lichtLage.length; k++) {
             const lage = atmo.lichtLage[k];
             const farbe = atmo.lichtFarbe[k];
-            const zuLicht = lage.xyz.sub(P);
+            const ersatz = atmo.lichtErsatz[k];
+            const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
+            const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
+            const d = Lv.length();
             const bedingung = lage.w
                 .greaterThan(0)
-                .and(zuLicht.length().lessThan(lage.w))
-                .and(N.dot(zuLicht).greaterThan(0));
-            const Lv = lage.xyz.sub(P);
-            const d = Lv.length();
+                .and(gewicht.greaterThan(0))
+                .and(d.lessThan(lage.w))
+                .and(N.dot(Lv).greaterThan(0));
             const L = Lv.div(d);
             const nl = N.dot(L).clamp();
             const abst = d.div(lage.w).oneMinus().clamp().pow(farbe.a);
-            const beitrag = farbe.rgb.mul(nl.mul(abst)).mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
+            const beitrag = farbe.rgb
+                .mul(nl.mul(abst).mul(gewicht))
+                .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
             const term = Te.select(bedingung, beitrag, Te.vec3(0));
             summe = summe ? summe.add(term) : term;
         }
         return summe;
     }
 
-    // DIE EINE BRDF EINES PUNKTLICHTS (K11; das Licht des Auges und jeder Platz des Licht-Pools): r184s Lambert + GGX
-    // ausgeschrieben — BRDF_Lambert, BRDF_GGX und F_Schlick tragen kein Layout (ein Fn-Aufruf ohne Layout baut seinen Rumpf erst
-    // im Compiler, der Stoff-Graph sieht ihn nicht), D_GGX und V_GGX_SmithCorrelated tragen ihres; die Stoff-Werte aus
-    // `diffuseColor` · `metalness` · `specularColor` · `specularF90` (wie r184 sie mischt — `three/tsl` der Seite kennt
-    // `diffuseContribution`/`specularColorBlended` nicht). N, L, V normiert im Blick-Raum, `nl` = N·L geklemmt. Steht das
-    // Licht am Auge (V === L), ist H = L: N·H = N·V = N·L und V·H = 1.
+    // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,
+    // BRDF_GGX und F_Schlick tragen kein Layout (ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler, der Stoff-Graph
+    // sieht ihn nicht), D_GGX und V_GGX_SmithCorrelated tragen ihres; die Stoff-Werte aus `diffuseColor` · `metalness` ·
+    // `specularColor` · `specularF90` (wie r184 sie mischt — `three/tsl` der Seite kennt `diffuseContribution`/
+    // `specularColorBlended` nicht). N, L, V normiert im Blick-Raum, `nl` = N·L geklemmt.
     _punktLichtBrdf(Te, N, L, V, nl) {
         const alb = Te.diffuseColor.rgb;
         const met = Te.metalness;
         const a = Te.roughness.pow2();
         const f0 = Te.mix(Te.specularColor, alb, met);
-        let fres;
-        let nv = nl;
-        let nh = nl;
-        if (V === L)
-            fres = Te.float(Math.pow(2, -5.55473 - 6.98316)); // r184 F_Schlick bei V·H = 1
-        else {
-            const H = L.add(V).normalize();
-            const vh = V.dot(H).clamp();
-            nv = N.dot(V).clamp();
-            nh = N.dot(H).clamp();
-            fres = Te.exp2(vh.mul(-5.55473).sub(6.98316).mul(vh)); // r184 F_Schlick: 2^((−5,55473 · V·H − 6,98316) · V·H)
-        }
+        const H = L.add(V).normalize();
+        const vh = V.dot(H).clamp();
+        const nv = N.dot(V).clamp();
+        const nh = N.dot(H).clamp();
+        const fres = Te.exp2(vh.mul(-5.55473).sub(6.98316).mul(vh)); // r184 F_Schlick: 2^((−5,55473 · V·H − 6,98316) · V·H)
         const F = f0.mul(fres.oneMinus()).add(Te.specularF90.mul(fres));
         const glanz = F.mul(Te.V_GGX_SmithCorrelated({ alpha: a, dotNL: nl, dotNV: nv })).mul(
             Te.D_GGX({ alpha: a, dotNH: nh })
@@ -33399,17 +33355,7 @@ class AnazhRealm {
     _buildToonNodeMaterial(opts = {}) {
         // PBR ist die EINE Material-Wahrheit: dieser Aufruf baut IMMER PBR (roughness/metalness aus den
         // Material-Tags); der Name bleibt für die ~14 Aufrufstellen — kein Toon-Zwilling.
-        const pbr = typeof this._buildPbrNodeMaterial === "function" ? this._buildPbrNodeMaterial(opts) : null;
-        if (pbr) return pbr;
-        // Sicherheits-Fallback (nur falls r184/MeshStandardNodeMaterial fehlt — in der
-        // vendored r184 nie der Fall): ein schlichtes lit Material, kein Toon mehr.
-        const params = {};
-        if (opts.color !== undefined) params.color = opts.color;
-        if (opts.side !== undefined) params.side = opts.side;
-        if (opts.transparent !== undefined) params.transparent = opts.transparent;
-        if (opts.opacity !== undefined) params.opacity = opts.opacity;
-        if (opts.vertexColors) params.vertexColors = true;
-        return new THREE.MeshStandardNodeMaterial(params);
+        return this._buildPbrNodeMaterial(opts);
     }
 
     // ===== ATLAS §11 · VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits =====
@@ -38949,6 +38895,7 @@ class AnazhRealm {
             TSL.mix(TSL.attribute("color", "vec3"), krone.rgb.mul(su.uSeasonMul), krone.a),
             TSL.float(1.0)
         );
+        this._leuchtStoff(material, null); // das Leuchtquellen-Gesetz (K11): jeder beleuchtete Stoff trägt den Pool
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const geo = new THREE.BufferGeometry();
@@ -53698,14 +53645,14 @@ class AnazhRealm {
     // DAS LICHT DES TORS (K11): das Lab-portalLight ist ein Bürger des Licht-Pools — das wache Tor (das nächste aktive) trägt
     // sein Emitter-Datum aus porta GLUT_GESETZ (Farbe, Reichweite, Abfall, Höhe am Spring-Punkt) und die Stärke des Labors
     // `glutIntensity(act, puls)`; der Licht-Takt liest es (`_leuchtQuellen`). Kein Szenen-Licht (bis K11 ein PointLight, das
-    // beim ersten Tor in die Szene trat und dort auf 0 blieb). Ohne porta-Gesetz trägt das Tor kein Licht.
+    // beim ersten Tor in die Szene trat und dort auf 0 blieb). Ohne waches Tor kein Licht.
     _tickPortalLicht(rec) {
-        const PC = globalThis.__portaCore;
-        const G = PC && PC.GLUT_GESETZ;
-        if (!rec || !G || typeof PC.glutIntensity !== "function") {
+        if (!rec) {
             this._portalLeuchte = null;
             return;
         }
+        const PC = globalThis.__portaCore;
+        const G = PC.GLUT_GESETZ;
         const e = rec.entry;
         const mu = rec.tor.mu;
         const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
@@ -53965,6 +53912,7 @@ class AnazhRealm {
                 metalness: 0,
             });
             mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
+            this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
             mesh.name = "dorf-rauch";
             mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
@@ -66731,8 +66679,8 @@ class AnazhRealm {
     // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide.
     _treeShadowTwinMaterial() {
         if (this._treeShadowTwinMat) return this._treeShadowTwinMat;
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
         const m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        this._leuchtStoff(m, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         m.userData.shadowTwin = true;
         this._treeShadowTwinMat = m;
         return m;
@@ -70560,11 +70508,14 @@ class AnazhRealm {
                 })());
             const mat =
                 this._archFundMat ||
-                (this._archFundMat = new THREE.MeshStandardNodeMaterial({
-                    color: 0x7a7168,
-                    roughness: 1,
-                    metalness: 0,
-                })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
+                (this._archFundMat = this._leuchtStoff(
+                    new THREE.MeshStandardNodeMaterial({
+                        color: 0x7a7168,
+                        roughness: 1,
+                        metalness: 0,
+                    }),
+                    null
+                )); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz), der Licht-Pool (K11) das Feuer
             const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
             AnazhRealm._instanzZahl(mesh, 0);
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
@@ -71242,7 +71193,10 @@ class AnazhRealm {
         // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
         const mat =
             this._stlWegeMat ||
-            (this._stlWegeMat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
+            (this._stlWegeMat = this._leuchtStoff(
+                new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }),
+                null
+            )); // der Licht-Pool (K11)
         const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
@@ -74273,10 +74227,11 @@ class AnazhRealm {
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
     // über `spawnArchitecture` (Bauplan `brunnen_dorf`). Aufrufer: `spawnSettlement` ·
     // `_autoSettlementSpawnCell` · Reload-Rebuild (so.nurWege — Brunnen sind persistierte Architektur).
-    // Konsum: fences/felder/trees/staende/brunnen; unkonsumiert (export-stripped): mauer/laternen/fluss.
+    // Konsum: fences/felder/trees/staende/brunnen/laternen (das Licht, `_laternenLesen`); unkonsumiert (export-stripped): mauer/fluss.
     _spawnSettlementErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        this._laternenLesen(plan, origin, so && so.key ? so.key : null); // die Laternen leuchten (K11, LICHT_GESETZ.laterne)
         if (so && so.nurWege) return;
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         let n = 0;
@@ -87708,16 +87663,9 @@ class AnazhRealm {
     // die Farbe immer. DoubleSide (Blatt/Tube dünn/gewickelt, wie die Welt).
     _workshopPreviewFoliageMat() {
         if (this._wsPreviewFoliageMat) return this._wsPreviewFoliageMat;
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
         const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.82, metalness: 0 });
-        try {
-            const TSL = THREE.TSL;
-            if (TSL && TSL.attribute && TSL.vec4) {
-                mat.colorNode = TSL.vec4(TSL.attribute("color", "vec3"), 1.0);
-            }
-        } catch (_e) {
-            /* kein color-Attribut → Default-Albedo (kein Crash) */
-        }
+        mat.colorNode = THREE.TSL.vec4(THREE.TSL.attribute("color", "vec3"), 1.0);
+        this._leuchtStoff(mat, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         this._wsPreviewFoliageMat = mat;
         return mat;
     }
@@ -92255,80 +92203,123 @@ class AnazhRealm {
     // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
     // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
-    // ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem Abstand, mit Abfall in `AUGEN_LICHT.karteM`)
-    // dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte).
-    // Es ist KEIN Szenen-Licht (K15): die Uniform `atmoUniforms.augenLicht` (Farbe × Stärke) trägt es in den Boden-Stoff,
-    // der es nur unter Fels rechnet (`_buildPbrNodeMaterial`, 1 − aHimmel) — kein anderer Stoff zahlt es.
+    // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
+    // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes (1 − d/R)^abfall).
+    // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
+    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
+    // die EINE Übersetzung Labor → Welt sie trägt wie jede Quelle. Unter dem Himmel ist es aus (`_augenLeuchte` null).
     _dayNightApplyAugenLicht() {
         const st = this.state;
-        const atmo = this._ensureAtmoUniforms();
-        if (!atmo) return;
         const cam = st.camera;
         const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
         st.himmelAmAuge = h;
         const B = AnazhRealm.BELICHTUNG;
         const A = AnazhRealm.AUGEN_LICHT;
         const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
-        const I = (1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall) * (1 / k);
-        atmo.augenLicht.value.set(A.farbe).multiplyScalar(I > 1e-4 ? I : 0);
+        const abstKarte = Math.pow(1 - A.karteM / A.reichweiteM, A.abfall);
+        const I = ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) / (k * abstKarte);
+        if (!(I > 1e-4)) {
+            this._augenLeuchte = null;
+            return;
+        }
+        const q =
+            this._augenLeuchte ||
+            (this._augenLeuchte = {
+                quelle: "auge",
+                L: { farbe: A.farbe, staerke: 0, reichweiteM: A.reichweiteM, abfall: A.abfall, ersatz: true },
+                masse: 1,
+                phase: 0,
+            });
+        q.L.staerke = I / AnazhRealm.LEGACY_LICHT;
     }
 
     // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
-    // Die Plätze gehen an die nächsten Leuchtquellen im Umkreis des Auges (`_leuchtQuellen`; neu gewählt je `wahlS` oder nach
-    // `wahlM` Weg), die Stärke je Bild: das Emitter-Datum des Kerns über die EINE Übersetzung Labor → Welt
-    // (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan
-    // (`_lichtZeitplan`). Die Lage steht im Blick-Raum des Auges (der Stoff rechnet mit `positionView`). Unabhängig vom Klang.
-    // Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort, Stärke, Reichweite, Abfall, lineare Farbe).
+    // Die Plätze gehen an die Leuchtquellen, deren Reichweite dem Auge am nächsten kommt (`_leuchtQuellen`: das Licht des
+    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis, die Laternen der Pläne, das wache Tor; neu gewählt je `wahlS`
+    // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
+    // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
+    // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
+    // Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
+    // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
+    // Stärke, Reichweite, Abfall, lineare Farbe, Himmels-Ersatz, Blende).
     _leuchtTakt() {
         const st = this.state;
         const atmo = st.atmoUniforms;
         const cam = st.camera;
-        if (!atmo || !atmo.lichtLage || !cam) return;
+        if (!atmo || !cam) return; // vor der Welt: kein Stoff liest den Pool
         const LP = AnazhRealm.LICHT_POOL;
-        const FC = globalThis.__fachwerkCore;
-        const LG = FC && FC.LICHT_GESETZ;
-        if (LG && LG.fenster)
-            atmo.fensterGlut.value.set(LG.fenster.farbe).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
+        const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
+        atmo.fensterGlut.value.set(LG.fenster.farbe).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
         const pool =
-            this._leuchtPool || (this._leuchtPool = { t: -Infinity, x: NaN, y: NaN, z: NaN, wahl: [], plaetze: [] });
+            this._leuchtPool ||
+            (this._leuchtPool = {
+                t: -Infinity,
+                uhr: -Infinity,
+                x: NaN,
+                y: NaN,
+                z: NaN,
+                wahl: [],
+                halter: new Array(LP.plaetze).fill(null),
+                blende: new Float32Array(LP.plaetze),
+                plaetze: [],
+            });
         const cp = cam.position;
         const jetzt = performance.now() / 1000;
+        const schritt = Math.max(0, jetzt - pool.uhr) / LP.blendeS;
+        pool.uhr = jetzt;
         if (jetzt - pool.t >= LP.wahlS || !(Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM)) {
             pool.t = jetzt;
             pool.x = cp.x;
             pool.y = cp.y;
             pool.z = cp.z;
-            const q = this._leuchtQuellen(cp.x, cp.z, LP.umkreisM);
-            q.sort((a, b) => a.d2 - b.d2);
+            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM);
+            q.sort((a, b) => a.rang - b.rang);
             pool.wahl = q.slice(0, LP.plaetze);
         }
-        cam.updateMatrixWorld();
-        const inv = this._leuchtBlick || (this._leuchtBlick = new THREE.Matrix4());
-        inv.copy(cam.matrixWorld).invert();
-        const v = this._leuchtV || (this._leuchtV = new THREE.Vector3());
+        // die Plätze: gewählt bleibt und blendet ein, abgewählt blendet aus, der freie Platz nimmt die nächste Gewählte
+        const H = pool.halter;
+        for (let k = 0; k < H.length; k++) {
+            const neu = H[k] && pool.wahl.find((w) => w.id === H[k].id);
+            if (neu) {
+                H[k] = neu;
+                pool.blende[k] = Math.min(1, pool.blende[k] + schritt);
+            } else if (H[k]) {
+                pool.blende[k] = Math.max(0, pool.blende[k] - schritt);
+                if (pool.blende[k] === 0) H[k] = null;
+            }
+        }
+        for (const w of pool.wahl) {
+            if (H.some((h) => h && h.id === w.id)) continue;
+            const frei = H.indexOf(null);
+            if (frei < 0) break;
+            H[frei] = w;
+            pool.blende[frei] = Math.min(1, schritt);
+        }
         const c = this._leuchtC || (this._leuchtC = new THREE.Color());
         const t = this._windZeit();
         pool.plaetze.length = 0;
-        for (let k = 0; k < atmo.lichtLage.length; k++) {
-            const q = pool.wahl[k];
+        for (let k = 0; k < H.length; k++) {
+            const q = H[k];
             const lage = atmo.lichtLage[k].value;
             const farbe = atmo.lichtFarbe[k].value;
-            const L = q && q.L;
-            const fl =
-                L && L.flacker && FC && typeof FC.lichtFlackern === "function"
-                    ? L.flacker.amp * FC.lichtFlackern(L, t, q.phase)
-                    : 0;
-            const I = L ? this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit) : 0;
-            // der Stoff rechnet den Abfall 2 (r184 physikalisch); eine Quelle mit anderem Abfall trägt er nicht
+            const I = q ? this._leuchtStaerke(q, t) * pool.blende[k] : 0;
             if (!(I > 0)) {
                 lage.set(0, 0, 0, 0);
-                farbe.set(0, 0, 0, 2);
+                farbe.set(0, 0, 0, 0);
+                atmo.lichtErsatz[k].value = 0;
                 continue;
             }
-            v.set(q.x, q.y, q.z).applyMatrix4(inv);
-            lage.set(v.x, v.y, v.z, L.reichweiteM);
+            const L = q.L;
+            // das Licht des Auges folgt ihm je Bild
+            if (q.quelle === "auge") {
+                q.x = cp.x;
+                q.y = cp.y;
+                q.z = cp.z;
+            }
+            lage.set(q.x, q.y, q.z, L.reichweiteM);
             c.set(L.farbe);
             farbe.set(c.r * I, c.g * I, c.b * I, L.abfall);
+            atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
             pool.plaetze.push({
                 quelle: q.quelle,
                 x: q.x,
@@ -92338,29 +92329,45 @@ class AnazhRealm {
                 reichweite: L.reichweiteM,
                 abfall: L.abfall,
                 farbe: [c.r, c.g, c.b],
+                ersatz: !!L.ersatz,
+                blende: pool.blende[k],
             });
         }
     }
 
-    // DIE LEUCHTQUELLEN um (x, z) im Umkreis R (K11): jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim
-    // Eintritt) mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist
-    // es ihres (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett
-    // der Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laterne eines Plans (K10) als Eintrag
-    // mit Datum, und das wache Tor (`_portalLeuchte`). Die Lichthöhe liest das Datum (`hoeheM` über dem Boden des Eintrags).
-    _leuchtQuellen(x, z, R) {
+    // DIE STÄRKE einer Quelle zur Wind-Zeit t (K11): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
+    _leuchtStaerke(q, t) {
+        const L = q.L;
+        const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
+        return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
+    }
+
+    // DIE LEUCHTQUELLEN um das Auge (x, y, z) im Umkreis R (K11), je mit stabiler Kennung (`id`) und Rang (der Abstand des
+    // Auges zur Kugel ihrer Reichweite, 0 in ihr — dann der Abstand selbst, das Nächste zuerst): das Licht des Auges
+    // (`_augenLeuchte`, am Auge: Rang 0), jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim Eintritt)
+    // mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist es ihres
+    // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
+    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laternen der Pläne (`_laternenLesen`, Zellen)
+    // und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
+    _leuchtQuellen(x, y, z, R) {
         const out = [];
+        const t = this._windZeit();
+        const nimm = (id, q) => {
+            const d = Math.hypot(q.x - x, q.y - y, q.z - z);
+            if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
+            out.push(Object.assign(q, { id, rang: Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+        };
+        const auge = this._augenLeuchte;
+        if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
         const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
         const bezug = (Math.PI / 4) * bett * bett;
         for (const e of this._blockerMit("licht")) {
             const p = e.position;
-            if (!p) continue;
-            const d2 = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
-            if (d2 > R * R) continue;
+            if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
             const L = this._lichtDatum(e);
-            if (!L) continue;
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
             const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
-            out.push({
+            nimm(e, {
                 quelle: e.type,
                 x: p.x,
                 y: p.y - 0.5 + (L.hoeheM || 0) * sk,
@@ -92368,15 +92375,47 @@ class AnazhRealm {
                 L,
                 masse: a > 0 ? a / bezug : sk * sk,
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
-                d2,
             });
         }
-        const tor = this._portalLeuchte;
-        if (tor) {
-            const d2 = (tor.x - x) * (tor.x - x) + (tor.z - z) * (tor.z - z);
-            if (d2 <= R * R) out.push(Object.assign({ d2 }, tor));
+        const LZ = this._laternen;
+        if (LZ) {
+            const Z = AnazhRealm.LICHT_POOL.zelleM;
+            for (let i = Math.floor((x - R) / Z); i <= Math.floor((x + R) / Z); i++)
+                for (let j = Math.floor((z - R) / Z); j <= Math.floor((z + R) / Z); j++)
+                    for (const l of LZ.zellen.get(i + "," + j) || []) nimm(l, Object.assign({}, l));
         }
+        const tor = this._portalLeuchte;
+        if (tor) nimm(tor, Object.assign({}, tor));
         return out;
+    }
+
+    // DER LESER DER LATERNEN (K11 ↔ K10): `laternen[]` eines Siedlungs-Plans (fachwerk exportSettlement, je Laterne x/z
+    // plan-lokal) wird Leuchtquelle mit dem Datum LICHT_GESETZ.laterne — der Kopf `hoeheM` über dem Boden des Gesetzes —, je
+    // Plan einmal (der Schlüssel der Siedlung, wie die Wege), abgelegt in Zellen von `LICHT_POOL.zelleM` (die Wahl liest nur die
+    // Zellen um das Auge, nie alle Laternen der Welt). Gerufen aus dem EINEN Hebe-Chokepoint `_spawnSettlementErlebnis`.
+    _laternenLesen(plan, origin, key) {
+        if (!plan || !Array.isArray(plan.laternen) || plan.laternen.length === 0) return 0;
+        const LZ = this._laternen || (this._laternen = { zellen: new Map(), schluessel: new Set() });
+        if (key) {
+            if (LZ.schluessel.has(key)) return 0;
+            LZ.schluessel.add(key);
+        }
+        const L = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
+        const Z = AnazhRealm.LICHT_POOL.zelleM;
+        let n = 0;
+        for (const l of plan.laternen) {
+            if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
+            const wx = origin.x + l.x;
+            const wz = origin.z + l.z;
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (!Number.isFinite(wy)) continue;
+            const zk = Math.floor(wx / Z) + "," + Math.floor(wz / Z);
+            const liste = LZ.zellen.get(zk) || [];
+            liste.push({ quelle: "laterne", x: wx, y: wy + L.hoeheM, z: wz, L, masse: 1, phase: 0 });
+            LZ.zellen.set(zk, liste);
+            n++;
+        }
+        return n;
     }
 
     // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
@@ -92385,14 +92424,12 @@ class AnazhRealm {
     _lichtDatum(entry) {
         const L = this._lichtDatumDerGestalt(entry);
         if (L) return L;
-        const FC = globalThis.__fachwerkCore;
-        return FC && FC.LICHT_GESETZ && this._glutFlaeche(entry) > 0 ? FC.LICHT_GESETZ.feuer : null;
+        return this._glutFlaeche(entry) > 0 ? globalThis.__fachwerkCore.LICHT_GESETZ.feuer : null;
     }
 
     // Das Emitter-Datum der Studio-Gestalt eines Eintrags (`fx.licht` ihres Rezepts) oder null.
     _lichtDatumDerGestalt(entry) {
         const FC = globalThis.__fachwerkCore;
-        if (!entry || !FC || !FC.PRESETS) return null;
         const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
         const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
         return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
@@ -100788,26 +100825,27 @@ AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
 // nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
 AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
-// Helligkeit wie am Tag — die 18-%-Karte das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge adaptiert an sein
-// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 (1 − (d/R)⁴)² blendet
-// es bis `reichweiteM` aus (bei 10 m 88 %, 15 m 47 %, 18 m 12 %). Es ist ein Term des Boden-Stoffs unter Fels
-// (`_buildPbrNodeMaterial`, 1 − aHimmel), kein Szenen-Licht (K15). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
-// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz; ohne Abfall trägt der Fels in jeder
-// Nähe seine Maserung. `farbe` warmweiß (~4500 K, sRGB) — eine Flamme (0xffc489) tönte den Fels orange; der Himmel am
-// Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
+// Helligkeit wie am Tag — die 18-%-Karte in `karteM` das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge
+// adaptiert an sein Licht). Es ist ein Platz des Licht-Pools mit Himmels-Ersatz (K11) und fällt nach dem EINEN Punktlicht-
+// Gesetz (1 − d/R)^abfall: mit `abfall` 1 zeigt die Wand in 0,3 m 1,09× die Karte in 2 m (ihre Maserung), in 10 m 56 %, in
+// 15 m 28 %, und an `reichweiteM` fällt es stetig auf 0. Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
+// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz. `farbe` warmweiß (~4500 K, sRGB) — eine
+// Flamme (0xffc489) tönte den Fels orange; der Himmel am Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis
+// `umkreisM`, neu nach `neuM` Metern Weg.
 AnazhRealm.AUGEN_LICHT = Object.freeze({
     karteM: 2,
-    abfall: 0,
+    abfall: 1,
     reichweiteM: 20,
     farbe: 0xffe2c6,
     umkreisM: 4,
     neuM: 0.25,
 });
 // DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
-// Uniforms — ein Wechsel der Quellen baut kein Programm) an den nächsten Leuchtquellen im `umkreisM` um das Auge (die Reichweite
-// eines Feuers 9 m, einer Laterne 12 m, eines Tors 14 m — dahinter trägt keine Quelle zum Bild nah am Auge bei), neu gewählt
-// je `wahlS` Sekunden oder nach `wahlM` Metern Weg.
-AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1 });
+// Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
+// am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
+// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt). Die Laternen der
+// Pläne liegen in Zellen von `zelleM` Metern (die Wahl liest nur die Zellen um das Auge).
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5, zelleM: 32 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;

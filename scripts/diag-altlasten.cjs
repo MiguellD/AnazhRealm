@@ -1054,6 +1054,15 @@ const FORBIDDEN = [
     { token: "AugenLichtNode", fiel: "K15 — der Punkt-Licht-Knoten hinter TSL.If" },
     { token: "_AugenLicht", fiel: "K15 — die Licht-Klasse des Auges" },
     { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
+    // DAS EINE LEUCHTQUELLEN-GESETZ (K11 Runde 2): das Licht des Auges ist ein Platz des Licht-Pools (`_augenLeuchte`, mit
+    // Himmels-Ersatz), sein eigener Term mit r184-Abfall stand als zweites Punktlicht-Gesetz neben dem Pool; der Glut-Umlauf des
+    // Klangs und das Szenen-Licht des Tors fielen (das Verzeichnis „glut“, der Pool).
+    { token: "atmoUniforms.augenLicht", fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)" },
+    { token: "augenLicht: TSL.uniform", fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)" },
+    { token: "_umweltGlutSweep", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
+    { token: "bautenJeFrame", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
+    { token: "this._portalLicht ", fiel: "K11 — das Szenen-Licht des Tors (ein Bürger des Licht-Pools)" },
+    { token: "new THREE.PointLight(", fiel: "K11 — jedes Punktlicht ist ein Platz des Licht-Pools (`_lichtPoolTerm`)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
