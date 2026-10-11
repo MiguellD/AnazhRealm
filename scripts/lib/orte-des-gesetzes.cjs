@@ -55,7 +55,19 @@ function orteAn() {
         } else if (art === "hoehle") {
             // eine trockene Höhle unter oder neben einem See des Gesetzes: von seinem Spiegel abwärts erst fester
             // Grund (die Decke), dann Luft (die Höhle), dann wieder Grund (ihr Boden). Gesucht in den See-Zellen und
-            // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst.
+            // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst — so, wie die Wasser-Zellen
+            // sie sehen: je Zelle des Chunk-Gitters das Mittel der Dichte an ihren acht Ecken (`_buildVoxelChunkWaterCells`);
+            // die Meter-Probe einer Spalte fand unter dem See eine Höhle, die keine Zelle trägt (0 von 0).
+            const cfgH = r._voxelChunkConfig(0);
+            const S = cfgH.step;
+            const oyH = (r.state.terrainBaseHeight || 0) - cfgH.floorDrop;
+            const zelleFest = (cx, cy, cz) => {
+                let d = 0;
+                for (const ex of [-S / 2, S / 2])
+                    for (const ey of [-S / 2, S / 2])
+                        for (const ez of [-S / 2, S / 2]) d += r._terrainDensityAt(cx + ex, cy + ey, cz + ez);
+                return d > 0;
+            };
             const step = 64;
             const n = 375;
             const kand = G.benannteSeen(L, -12000, -12000, step, n)
@@ -79,13 +91,16 @@ function orteAn() {
                         const p = zelle(h, q);
                         for (let sz = -6; sz <= 6 && !ort; sz += 4)
                             for (let sx = -6; sx <= 6 && !ort; sx += 4) {
+                                const cx = (Math.floor((p.x + sx) / S) + 0.5) * S;
+                                const cz = (Math.floor((p.z + sz) / S) + 0.5) * S;
                                 let stufe = 0;
-                                for (let y = lake.level - 0.5; y > lake.level - 40 && stufe < 3; y -= 1) {
-                                    const fest = r._terrainDensityAt(p.x + sx, y, p.z + sz) > 0;
+                                const j0 = Math.floor((lake.level - 0.5 - oyH) / S);
+                                for (let j = j0; j > j0 - 40 / S && stufe < 3; j--) {
+                                    const fest = zelleFest(cx, oyH + (j + 0.5) * S, cz);
                                     if ((stufe === 0 && fest) || (stufe === 1 && !fest) || (stufe === 2 && fest))
                                         stufe++;
                                 }
-                                if (stufe === 3) ort = { x: p.x + sx, z: p.z + sz, lake };
+                                if (stufe === 3) ort = { x: cx, z: cz, lake };
                             }
                     }
                 }
