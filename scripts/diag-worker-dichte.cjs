@@ -15,7 +15,7 @@
 // Kugel auf jede Ecke ihres Kastens, der Worker übersprang über dem Band).
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
-//   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (terrainSteepness 1 → 1,0001,
+//   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (die Basis-Höhe + 1 cm,
 //                                                      nur im Worker) MUSS rot werden; der saubere Lauf grün
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
 //                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
@@ -315,8 +315,8 @@ async function probe(page, welt, mitAbdruck) {
     );
 }
 
-// Der Selbsttest: EIN Term nur im Worker verfälscht (terrainSteepness skaliert die ridged-Amplitude im Spiegel
-// `terrainMacroSurfaceY`) — die Linse MUSS das beim Ort und Gitter nennen.
+// Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm — die Steilheit
+// las es seit K16 nicht mehr, der Selbsttest war blind) — die Linse MUSS das beim Ort und Gitter nennen.
 async function verfaelsche(page, an) {
     return page.evaluate(async (an) => {
         const r = window.anazhRealm;
@@ -325,7 +325,8 @@ async function verfaelsche(page, an) {
         return new Promise((res, rej) => {
             const id = s.voxelWorkerNextRequestId++;
             s.voxelWorkerPending.set(id, { resolve: res, reject: rej });
-            s.voxelWorker.postMessage({ type: "state-update", delta: { terrainSteepness: 1.0001 }, requestId: id });
+            const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
+            s.voxelWorker.postMessage({ type: "state-update", delta, requestId: id });
         });
     }, an);
 }
@@ -340,7 +341,7 @@ async function probeVerfaelscht(page) {
         r.__dichteOrig = orig;
         r._voxelWorkerSnapshotState = function () {
             const snap = orig.call(this);
-            snap.terrainSteepness = 1.0001;
+            snap.baseHeight = (snap.baseHeight || 0) + 0.01;
             return snap;
         };
     });
@@ -609,7 +610,7 @@ function realismus() {
             const v = await probeVerfaelscht(page);
             selbst = { abweichend: v.abweichend, maxDiff: v.maxDiff, gitter: v.gitter };
             console.log(
-                `\n  SELBSTTEST (terrainSteepness 1 → 1,0001 nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
+                `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
             );
         }
     }

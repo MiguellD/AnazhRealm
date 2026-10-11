@@ -24223,7 +24223,6 @@ class AnazhRealm {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
-            terrainSteepness: typeof this.state.terrainSteepness === "number" ? this.state.terrainSteepness : 1, // V14.7: ridgeAmp-Skala (Worker-Mirror)
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             // der Fluss-Kanal (Welle L): Freibord und das Gesetz der Bank reisen mit — der Worker baut dasselbe Bett
@@ -27148,8 +27147,9 @@ class AnazhRealm {
 
         // ### Terrain-State ###
         // In der Voxel-Welt sind heightData/minHeight/maxHeight null bzw. 0 (Konsumenten ignorieren sie);
-        // terrainSteepness skaliert die ridged-Amplitude in `_terrainMacroSurfaceY`; terrainBaseHeight ist
-        // die Voxel-Anker-Höhe (Killplane-Basis, getTerrainHeightAt-Fallback).
+        // terrainSteepness trägt nur noch die Licht-Flachheit des Bodens (`terrainFlatten`) — das Gelände-Gesetz liest es seit
+        // K16 nicht (die Landform liegt im Erbgut); terrainBaseHeight ist die Voxel-Anker-Höhe (Killplane-Basis,
+        // getTerrainHeightAt-Fallback).
         this.state.groundHeightField = heightData;
         this.state.minHeight = minHeight;
         this.state.maxHeight = maxHeight;
@@ -27580,9 +27580,6 @@ class AnazhRealm {
             },
             get waterLevel() {
                 return realm.state.waterLevel;
-            },
-            get terrainSteepness() {
-                return realm.state.terrainSteepness;
             },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
@@ -38252,11 +38249,15 @@ class AnazhRealm {
         const krone = TSL.attribute("aKrone", "vec4");
         // DAS KRONENDACH TRÄGT ERST JENSEITS DER BÄUME (K16, der Farbsprung): bis zum Karten-Horizont stehen die Bäume selbst
         // (Mesh, Karte; `SCATTER.outerM`, ihr Rand dünnt über `KARTEN_HORIZONT_SAUM_M` aus) — dort zeigt der Ring den Boden
-        // wie jeder gebaute Chunk, und das Dach blendet über denselben Saum ein (Abstand zum Auge). Vorher malte er das Dach
-        // ab der Chunk-Kante: der gebaute Boden stand braun als Platte im grünen Teppich.
+        // wie jeder gebaute Chunk, und das Dach blendet über denselben Saum ein. Vorher malte er das Dach ab der Chunk-Kante:
+        // der gebaute Boden stand braun als Platte im grünen Teppich. DIE MITTE DES DACHS ist die Mitte der Bäume (`uDachMitte`,
+        // je Takt aus dem Spieler — `tickArchitectureCulling` misst den Karten-Horizont von ihm in XZ): das Dach ist das
+        // Komplement des Bestands, kein Stufen-Urteil (das misst vom Auge, `uLodAuge`). Vom Auge gemessen lag es, sobald die
+        // Kamera den Spieler verließ (Makro-Blick), doppelt über stehenden Bäumen und ließ jenseits ihres Horizonts kahlen Grund.
         const dachRand = AnazhRealm.SCATTER.outerM;
+        const uDachMitte = TSL.uniform(new THREE.Vector2(playerPos.x, playerPos.z));
         const dachSaum = AnazhRealm.KARTEN_HORIZONT_SAUM_M;
-        const dachWeg = TSL.positionWorld.xz.sub(TSL.cameraPosition.xz).length();
+        const dachWeg = TSL.positionWorld.xz.sub(uDachMitte).length();
         const dach = krone.a.mul(TSL.smoothstep(TSL.float(dachRand - dachSaum), TSL.float(dachRand), dachWeg));
         const material = this._buildToonNodeMaterial({
             vertexColors: true,
@@ -38305,6 +38306,7 @@ class AnazhRealm {
             anchorX: Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
             anchorZ: Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant,
             builtRing: targetRing, // Sicht-Regler-Wechsel → Neubau (Deck-Zone folgt)
+            uDachMitte, // die Mitte des Kronendachs = die Mitte der Bäume (je Takt, `_tickFernRing`)
             // Bis zu diesem Radius (Chunk-Ziel-Zone + Blende) tragen die Schale-0-Reihen das VOLLE Gesetz
             // leicht gesenkt → wahres Terrain deckt jedes Chunk-Loch (s. _fernRingRefresh).
             deckZoneRad: (targetRing + 0.5) * cfg.span,
@@ -40856,6 +40858,7 @@ class AnazhRealm {
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
         for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
+        fr.uDachMitte.value.set(playerPos.x, playerPos.z); // das Dach folgt der Mitte der Bäume (der Spieler, XZ)
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
