@@ -414,16 +414,16 @@ function urteil(o) {
     else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1)) f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
     if (!o.hoehle) f.push("K2 Aufbau: keine Höhle im Raster");
     else {
-        if (!o.k2 || !(o.k2.abstandCm <= 10)) f.push(`K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
-        if (!o.k3 || !(o.k3.abstandM <= 0.15)) f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
+        if (!o.k2 || !Number.isFinite(o.k2.abstandCm) || !(o.k2.abstandCm <= 10)) f.push(`K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
+        if (!o.k3 || !Number.isFinite(o.k3.abstandM) || !(o.k3.abstandM <= 0.15)) f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
     }
     if (!o.hang) f.push("K4 Aufbau: keine Hang-Stelle im Raster");
     else {
-        if (!o.k4 || !(o.k4.sohlen >= 40) || !(o.k4.medianCm <= 6))
+        if (!o.k4 || !(o.k4.sohlen >= 40) || !Number.isFinite(o.k4.medianCm) || !(o.k4.medianCm <= 6))
             f.push(`K4 Sohlen gegen die Karte: Median ${o.k4 ? o.k4.medianCm : "?"} cm, p90 ${o.k4 ? o.k4.p90Cm : "?"} cm (die Sicht steht auf dem Gesetz)`);
-        if (!o.k4 || !(o.k4.leibMedianCm <= 6))
+        if (!o.k4 || !Number.isFinite(o.k4.leibMedianCm) || !(o.k4.leibMedianCm <= 6))
             f.push(`K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`);
-        if (!o.k4b || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
+        if (!o.k4b || !Number.isFinite(o.k4b.treppeCm) || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
             f.push(

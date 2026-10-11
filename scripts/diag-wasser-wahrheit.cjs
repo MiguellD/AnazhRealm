@@ -69,6 +69,7 @@ const server = http.createServer((req, res) => {
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
     });
+    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -170,10 +171,12 @@ const server = http.createServer((req, res) => {
             }
 
             // ── FIXTURE 2 (F2) — DIE RIM-WAND: −Inf liefert an Land neben Wasser KEIN Wasser ──
-            // Echte Region: eine atlas-LAND-Spalte mit Wasser-Körper im 3×3, ohne Fluss.
+            // Echte Region: eine atlas-LAND-Spalte mit Wasser-Körper im 3×3, ohne Fluss — in der Kachel des Sees des
+            // Gesetzes (`__wasserOrt("see")`, scripts/lib/orte-des-gesetzes.cjs: die Heimat trägt seit K16 keinen See).
             let shore = null;
             {
-                const h = r._hydroFor(0, 0);
+                const seeOrt = window.__wasserOrt("see");
+                const h = seeOrt ? seeOrt.hydro : null;
                 if (h && h.ready && h.water && h.water.waterKind) {
                     const wK = h.water.waterKind;
                     const wY = h.water.waterY;
@@ -200,7 +203,7 @@ const server = http.createServer((req, res) => {
                 }
             }
             o.shore = shore;
-            if (!shore) fail("F2: keine Rim-Ufer-Spalte in der Heimat-Region gefunden (Welt ohne Ufer?)");
+            if (!shore) fail("F2: keine Rim-Ufer-Spalte in der Kachel des Sees des Gesetzes gefunden (Welt ohne Ufer?)");
             else {
                 const lInf = r._atlasWaterLevelAt(shore.px, shore.pz, -Infinity);
                 const lUnder = r._atlasWaterLevelAt(shore.px, shore.pz, shore.rim - 5);
