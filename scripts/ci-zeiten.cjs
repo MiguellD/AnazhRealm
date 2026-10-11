@@ -70,23 +70,30 @@ function schritteAus(doc) {
         gruen.push(...r.workflow_runs);
         if (r.workflow_runs.length < 50) break;
     }
+    // eine Messung = ein Versuch eines Laufs: die genannten Läufe mit JEDEM Versuch (eine Wiederholung über die API ist
+    // eine zweite Messung desselben Kopfs), die übrigen mit ihrem letzten
     const laeufe = [];
-    for (const id of zuerst) laeufe.push(gruen.find((r) => r.id === id) || (await api(`/actions/runs/${id}`)));
-    for (const r of gruen) if (!laeufe.some((x) => x.id === r.id)) laeufe.push(r);
-    // je Schritt die ersten JE_SCHRITT Läufe, die ihn tragen
+    for (const id of zuerst) {
+        const r = gruen.find((x) => x.id === id) || (await api(`/actions/runs/${id}`));
+        for (let a = 1; a <= r.run_attempt; a++) laeufe.push({ r, a, lauf: `${r.id}/${a}` });
+    }
+    for (const r of gruen) if (!zuerst.includes(r.id)) laeufe.push({ r, a: r.run_attempt, lauf: String(r.id) });
+    // je Schritt die ersten JE_SCHRITT Messungen, die ihn tragen
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     const vorb = [];
     const ymlAm = new Map();
-    for (const r of laeufe) {
+    for (const { r, a, lauf: messung } of laeufe) {
         if ([...proben.values()].every((p) => p.length >= JE_SCHRITT) && vorb.length >= 25) break;
-        if (r.conclusion !== "success") throw new Error(`Lauf ${r.id} ist ${r.conclusion}, nicht grün`);
         if (!ymlAm.has(r.head_sha)) {
             const c = await api(`/contents/${WORKFLOW}?ref=${r.head_sha}`);
             ymlAm.set(r.head_sha, schritteAus(yaml.load(Buffer.from(c.content, "base64").toString("utf8"))));
         }
         const damals = ymlAm.get(r.head_sha);
-        const jobs = (await api(`/actions/runs/${r.id}/jobs?per_page=100`)).jobs;
+        const jobs = (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs;
+        const rot = jobs.filter((j) => !["success", "skipped"].includes(j.conclusion));
+        if (rot.length) throw new Error(`Lauf ${messung} trägt ${rot.map((j) => j.name + " " + j.conclusion).join(", ")}`);
         for (const job of jobs) {
+            if (job.conclusion === "skipped") continue;
             let v = 0;
             for (const s of job.steps || []) {
                 const t = sek(s.started_at, s.completed_at);
@@ -100,9 +107,9 @@ function schritteAus(doc) {
                     if (
                         (n === s.name || (dLauf && dLauf === l)) &&
                         proben.get(n).length < JE_SCHRITT &&
-                        !proben.get(n).some((p) => p.lauf === r.id)
+                        !proben.get(n).some((p) => p.lauf === messung)
                     )
-                        proben.get(n).push({ lauf: r.id, s: t });
+                        proben.get(n).push({ lauf: messung, s: t });
             }
             if (vorb.length < 25) vorb.push(v);
         }
