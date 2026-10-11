@@ -13460,7 +13460,7 @@ class AnazhRealm {
             creatures: [],
             creatureEmotions: [],
             terrainSteepness: 1.0,
-            terrainBaseHeight: 0.0,
+            terrainBaseHeight: globalThis.__gelaendeCore.GRUND.basis, // der Grund einer frisch geborenen Welt (Kern)
             weather: "sunny",
             // Eine neue Welt ist eigenständig: sie erbt von der alten NUR die Wahl des Schöpfers (die Positiv-Liste
             // `AnazhRealm.WELT_GRENZE.geburt`: visibility, creator), nie ihre Identität — keine parentWorlds (Fusion: Ring
@@ -16154,9 +16154,11 @@ class AnazhRealm {
     // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − 3`): bis zur Welle L lief davor eine 13×13-Stichprobe
+        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − GRUND.meerUnterBasis` des Kerns): bis zur Welle L lief davor eine 13×13-Stichprobe
         // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
-        if (typeof this.state.waterLevel !== "number") this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+        if (typeof this.state.waterLevel !== "number")
+            this.state.waterLevel =
+                (this.state.terrainBaseHeight || 0) - globalThis.__gelaendeCore.GRUND.meerUnterBasis;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
@@ -20694,7 +20696,7 @@ class AnazhRealm {
     // Accumulation braucht eine endliche Wasserscheide); cell 16 m → 128² Zellen im Perf-Budget.
     static get HYDROSPHERE() {
         return Object.freeze({
-            regionSize: 2048, // Region-Kantenlänge in m (um den Welt-Ursprung)
+            regionSize: globalThis.__gelaendeCore.GRUND.kachel, // Region-Kantenlänge in m (um den Welt-Ursprung; der Grund des Kerns)
             cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
             fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
             // Fluss-Schwelle adaptiv: max(absoluter Boden, Anteil des größten
@@ -27571,7 +27573,8 @@ class AnazhRealm {
                 return (realm.state.worldMeta && realm.state.worldMeta.seed) || "anazh-realm-seed";
             },
             get noise() {
-                if (!realm._voxelNoise) realm._voxelNoise = new SimplexNoise(this.seed + ":voxel");
+                if (!realm._voxelNoise)
+                    realm._voxelNoise = globalThis.__gelaendeCore.lageRausch(this.seed, SimplexNoise);
                 return realm._voxelNoise;
             },
             get baseHeight() {
@@ -35485,7 +35488,7 @@ class AnazhRealm {
         const base = this.state.terrainBaseHeight || 0;
         let waterLevel = this.state.waterLevel;
         if (typeof waterLevel !== "number" || !Number.isFinite(waterLevel)) {
-            waterLevel = base - 3;
+            waterLevel = base - globalThis.__gelaendeCore.GRUND.meerUnterBasis;
         }
         const size = H.regionSize;
         const cell = H.cell;
@@ -46716,7 +46719,7 @@ class AnazhRealm {
     // Die aktive Welt bleibt; `reload` springt direkt in die importierte.
     // DIE WELT AUS EINEM PLAN (K16b): der Export des Gelände-Studios (`{ art: "gelaende-plan", v, saat, regler }`) wird die
     // Welt, die er beschreibt — eine frisch geborene Welt (wie „Neue Welt", vor ihrem Erst-Spawn) mit der Saat des Plans
-    // und seinen Reglern im Erbgut (`planErbgut`), auf dem Grund der Plan-Lage (`PLAN_GRUND`). Die Welt erfindet nichts:
+    // und seinen Reglern im Erbgut (`planErbgut`), auf dem Grund des Kerns (`GRUND`). Die Welt erfindet nichts:
     // ihre Höhe ist `hoehe` an genau der Lage, die das Studio rechnete (`planLage`) — Studio = Welt byte-gleich
     // (gate:worker-dichte --studio). Wirft mit dem Grund, wenn der Plan nicht gelesen werden kann. Leser: die Welt-Tür
     // (`_openWeltTorDialog`) und das Studio („Welt bauen").
@@ -46727,7 +46730,6 @@ class AnazhRealm {
         meta.seed = plan.saat;
         meta.variantSeed = this._generateVariantSeedPool(plan.saat);
         const snap = this._buildEmptyWorldSnapshot(meta, false);
-        snap.terrainBaseHeight = G.PLAN_GRUND.basis;
         snap.worldMeta.erbgut = G.planErbgut(plan);
         snap.worldMeta.voxelTerrain = true;
         return snap;

@@ -5,7 +5,7 @@
 //   · die REGLER sind die Parameter des EINEN Kerns (`__gelaendeCore.LANDFORM_REGLER`), das Panel baut jede Zeile aus
 //     ihnen (Name, Einheit, Bereich, Schritt, Standard, Gesetz); die vier Gruppen zeigen ihre Haupt-Regler, der Rest liegt
 //     hinter „mehr";
-//   · die MAKRO-ANSICHT und die ZAHL-LEISTE rechnet der Makro-Worker mit demselben Gesetzbuch (`planLage` → `hoehe`,
+//   · die MAKRO-ANSICHT und die ZAHL-LEISTE rechnet der Makro-Worker mit demselben Gesetzbuch (`lageAus` → `hoehe`,
 //     `statistik`, `urteil`) — sofort beim Griff, ohne den Takt der Welt;
 //   · der EXPORT ist EIN Plan (`planNormal`: Saat + Regler), „Welt bauen" legt ihn durch die Welt-Tür des Stamms
 //     (`_weltAusPlan` → `_weltBetreten`) — die Welt erwacht neu und liest ihn byte-gleich (gate:worker-dichte --studio).
@@ -87,13 +87,13 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
     const st = {
         realm: null,
         G: null,
-        planA: null, // die gebaute Welt
-        planB: null, // der Entwurf
+        lageA: null, // A: das Abbild der gebauten Welt (`lageAbbild` ihrer Lage — jede Welt, wie sie steht)
+        planB: null, // B: der Entwurf (der Plan, den „Welt bauen" in die Welt legt)
         zeige: "B",
         kamera: "makro",
         worker: null,
         naechsteId: 1,
-        erg: { A: null, B: null }, // je Plan: { id, plan, grob, voll, schicht }
+        erg: { A: null, B: null }, // je Spur: { id, lage, plan (nur B), grob, voll, schicht }
         jobs: new Map(), // id → "A" | "B"
         warten: [],
         abdruck: new Map(),
@@ -133,20 +133,24 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             }
         };
     }
-    // Ein Plan in den Worker: die Antwort überholt jeden älteren Entwurf.
+    // Eine Lage in den Worker (A: die gebaute Welt, B: die Welt des Entwurfs): die Antwort überholt jeden älteren Auftrag.
     function rechne(welcher) {
         const id = st.naechsteId++;
         st.jobs.forEach((w, alt) => w === welcher && st.jobs.delete(alt));
-        st.erg[welcher] = { id, plan: st.G.planNormal(st[welcher === "A" ? "planA" : "planB"]) };
+        const plan = welcher === "B" ? st.G.planNormal(st.planB) : null;
+        st.erg[welcher] = { id, plan, lage: plan ? st.G.planAbbild(plan) : st.lageA };
         st.jobs.set(id, welcher);
-        st.worker.postMessage({ id, spur: welcher, plan: st.erg[welcher].plan, stufen: ["grob"] });
+        st.worker.postMessage({ id, spur: welcher, lage: st.erg[welcher].lage, stufen: ["grob"] });
         const mk = $(".makro");
         if (mk) mk.classList.add("laeuft");
     }
     function ruhig() {
+        // ruhig = beide Spuren stehen: A (die gebaute Welt) und B (der jüngste Entwurf)
         const fertig = () => {
+            const a = st.erg.A;
             const b = st.erg.B;
-            return !!(b && b.voll && (b.schicht || b.fehler) && b.plan && planText(b.plan) === planText(st.planB));
+            const steht = (e) => !!(e && (e.fehler || (e.voll && e.schicht)));
+            return steht(a) && steht(b) && !!b.plan && planText(b.plan) === planText(st.planB);
         };
         if (fertig()) return Promise.resolve();
         return new Promise((res) => st.warten.push({ fertig, res }));
@@ -230,11 +234,36 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         const b = e && e.schicht && e.schicht.baender;
         const pz = (x) => (100 * x).toFixed(1).replace(".", ",");
         const kz = (x) => (x == null ? "–" : String(x).replace(".", ","));
+        // Die Titel lesen den Korridor, die Linse und die Bänder des Kerns (`KORRIDOR`, `LINSE`, `HANG_BAENDER`) — kein Text-Zwilling.
+        const K = st.G.KORRIDOR;
+        const LI = st.G.LINSE;
+        const HB = st.G.HANG_BAENDER;
+        const bd = (b) => `${kz(b[0])}–${kz(b[1])}°`;
         const zeilen = [
-            ["Senken > 1 m", s ? `${kz(s.senken1mJeKm2)} / km²` : "…", u.senken, "≤ 1 je km² (Lindsay & Creed)"],
-            ["Flint θ", s ? `${kz(s.flint.theta)} · R² ${kz(s.flint.r2)}` : "…", u.flint, "θ 0,3–0,7 bei R² ≥ 0,5"],
-            ["sanfte km²", s ? `${s.hammond.sanft} / ${s.hammond.fenster}` : "…", u.hammond, "Hammond: > ½ unter 8 %"],
-            ["Dorfplätze", s ? String(s.dorfplaetze) : "…", u.dorfplaetze, "≥ 3 (120 m, ≤ 8 %, ≤ 3 m)"],
+            [
+                "Senken > 1 m",
+                s ? `${kz(s.senken1mJeKm2)} / km²` : "…",
+                u.senken,
+                `≤ ${kz(K.senkenJeKm2)} je km² (Lindsay & Creed)`,
+            ],
+            [
+                "Flint θ",
+                s ? `${kz(s.flint.theta)} · R² ${kz(s.flint.r2)}` : "…",
+                u.flint,
+                `θ ${kz(K.thetaMin)}–${kz(K.thetaMax)} bei R² ≥ ${kz(K.r2Min)}`,
+            ],
+            [
+                "sanfte km²",
+                s ? `${s.hammond.sanft} / ${s.hammond.fenster}` : "…",
+                u.hammond,
+                `Hammond: ≥ ${K.hammondSanft} Fenster, > ½ unter ${kz(100 * LI.hangSanft)} %`,
+            ],
+            [
+                "Dorfplätze",
+                s ? String(s.dorfplaetze) : "…",
+                u.dorfplaetze,
+                `≥ ${K.dorfplaetze} (${LI.platzSeite} m, ≤ ${kz(100 * LI.hangSanft)} %, ≤ ${kz(LI.platzSpanne)} m)`,
+            ],
             [
                 "Schicht-Gesetz",
                 !e || !e.schicht
@@ -243,7 +272,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                       ? `K ${pz(b.kliff)}  S ${pz(b.schutt)}  P ${pz(b.pediment)}`
                       : "kein Tafelland",
                 u.schicht,
-                "Kliff ≥ 2 % · Schutt ≥ 5 % · Pediment ≥ 20 %",
+                `Kliff ≥ ${pz(K.kliff)} % · Schutt ≥ ${pz(K.schutt)} % · Pediment ≥ ${pz(K.pediment)} %`,
             ],
             [
                 "Hang p50 · p90",
@@ -264,19 +293,28 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         }
         const h = document.createElement("div");
         h.className = "hist";
-        h.title = "Hang-Histogramm je 5° (grün: Pediment 0,5–7°, ocker: Schutthang 30–40°, rot: Kliff ≥ 60°)";
+        h.title = `Hang-Histogramm je 5° (grün: Pediment ${bd(HB.pediment)}, ocker: Schutthang ${bd(HB.schutt)}, rot: Kliff ≥ ${kz(HB.kliff[0])}°)`;
         const cv = document.createElement("canvas");
         cv.width = 270;
         cv.height = 30;
         h.appendChild(cv);
         box.appendChild(h);
-        if (v && v.hist) {
+        const hist = s && s.hang.grad5;
+        if (hist) {
             const ctx = cv.getContext("2d");
-            const max = Math.max(1, ...v.hist.map((x) => Math.sqrt(x)));
-            const w = cv.width / v.hist.length;
-            v.hist.forEach((x, i) => {
+            const max = Math.max(1, ...hist.map((x) => Math.sqrt(x)));
+            const w = cv.width / hist.length;
+            // je Klasse [g, g + 5°) die Farbe des Bandes, das sie berührt
+            const in_ = (b, g) => g < b[1] && g + 5 > b[0];
+            hist.forEach((x, i) => {
                 const g = i * 5;
-                ctx.fillStyle = g < 10 ? "#4ec98a" : g >= 30 && g < 40 ? "#d9a55a" : g >= 60 ? "#e0664a" : "#6d8a9c";
+                ctx.fillStyle = in_(HB.kliff, g)
+                    ? "#e0664a"
+                    : in_(HB.schutt, g)
+                      ? "#d9a55a"
+                      : in_(HB.pediment, g)
+                        ? "#4ec98a"
+                        : "#6d8a9c";
                 const hh = (Math.sqrt(x) / max) * (cv.height - 2);
                 ctx.fillRect(i * w + 1, cv.height - hh, w - 2, hh);
             });
@@ -577,8 +615,11 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         camera.lookAt(kam.ziel.x, kam.ziel.y, kam.ziel.z);
     }
 
-    // ── der Plan der Welt und der Start ──
-    function planDerWelt(r) {
+    // ── die Welt, der Entwurf und der Start ──
+    // A ist die gebaute Welt, wie sie steht: das Abbild IHRER Lage (Saat, Basis, Wasser, jeder Term des Erbguts) — nie eine
+    // Projektion auf einen Plan. Der Entwurf B beginnt bei ihrer Saat und den Reglern ihres Wildnis-Terms; B zeigt die Welt,
+    // die „Welt bauen" aus ihm gebiert (`planAbbild`).
+    function entwurfDerWelt(r) {
         const G = st.G;
         const L = r._gelaende();
         return G.planNormal({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: String(L.seed), regler: G.landformRegler(L) });
@@ -586,14 +627,16 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
     function start() {
         const r = window.anazhRealm;
         const G = window.__gelaendeCore;
-        if (!r || !G || !r.state || !r.state.worldMeta || !r.state.scene || typeof r._gelaende !== "function") {
+        // die Welt steht erst mit ihrem Wasserspiegel (`_buildWaterPlane`) — vorher wäre das Abbild ihrer Lage unvollständig
+        const da = r && G && r.state && r.state.worldMeta && r.state.scene && typeof r._gelaende === "function";
+        if (!da || typeof r.state.waterLevel !== "number") {
             setTimeout(start, 120);
             return;
         }
         st.realm = r;
         st.G = G;
-        st.planA = planDerWelt(r);
-        st.planB = st.planA;
+        st.lageA = G.lageAbbild(r._gelaende());
+        st.planB = entwurfDerWelt(r);
         workerStart();
         baue();
         rechne("A");
@@ -602,12 +645,13 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         // DIE PROBE (gate:worker-dichte --studio) und die Werkbank lesen das Studio hier.
         window.__gelaendeStudio = Object.freeze({
             ruhig,
+            // der Stand der GEZEIGTEN Spur (A oder B) — plan ist immer der Entwurf
             zustand() {
-                const e = st.erg.B || {};
+                const e = st.erg[st.zeige] || {};
                 const v = e.voll || {};
                 return {
+                    zeigt: st.zeige,
                     plan: st.G.planNormal(st.planB),
-                    planA: st.planA,
                     rasterSha: v.rasterSha || null,
                     makroSha: v.makroSha || null,
                     statistik: v.statistik || null,
@@ -621,7 +665,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                 const id = st.naechsteId++;
                 return new Promise((res, rej) => {
                     st.abdruck.set(id, { res, rej });
-                    st.worker.postMessage({ art: "abdruck", id, plan: st.G.planNormal(plan) });
+                    st.worker.postMessage({ art: "abdruck", id, lage: st.G.planAbbild(plan) });
                 });
             },
             kamera,

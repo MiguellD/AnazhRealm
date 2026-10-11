@@ -724,7 +724,7 @@
     // `attachFieldColors`) — der Anteil 0…1 an der Höhe y.
     const SCHNEE = Object.freeze({ start: 140, voll: 185 });
     function schnee(L, y) {
-        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - 3;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         return glatt(SCHNEE.start, SCHNEE.voll, y - wl);
     }
 
@@ -1190,6 +1190,9 @@
                 p50Prozent: hang.length ? Math.round(1000 * q(hang, 0.5)) / 10 : null,
                 p90Prozent: hang.length ? Math.round(1000 * q(hang, 0.9)) / 10 : null,
                 anteilUnter8Prozent: hang.length ? r3(hang.filter((v) => v < LINSE.hangSanft).length / hang.length) : null,
+                // das Hang-Histogramm des inneren Landes je 5° (0–75°, die letzte Klasse sammelt den Rest): das Bild der
+                // Zahl in der Leiste des Studios
+                grad5: hang.reduce((a, s) => (a[Math.min(14, Math.floor((Math.atan(s) * 180) / Math.PI / 5))]++, a), new Array(15).fill(0)),
             },
             senken1mJeKm2: km2 > 0 ? Math.round((100 * senken) / km2) / 100 : null,
             senken1m: senken,
@@ -1211,8 +1214,15 @@
         };
     }
     // Das Hang-Histogramm in Grad (zentrale Differenzen auf einem feinen Raster): die Anteile der Bänder des Schicht-
-    // Gesetzes — Pediment 0,5–7°, Schutthang 30–40° (Ruhewinkel 33–37°), Kliff ≥ 60°.
+    // Gesetzes (`HANG_BAENDER` — EINE Quelle für die Linse und die Farben des Hang-Histogramms im Studio).
+    const HANG_BAENDER = Object.freeze({
+        pediment: Object.freeze([0.5, 7]),
+        schutt: Object.freeze([30, 40]),
+        ruhe: Object.freeze([33, 37]),
+        kliff: Object.freeze([60, 90]),
+    });
     function hangBaender(H, n, step, maske) {
+        const B = HANG_BAENDER;
         let c = 0;
         let ped = 0;
         let schutt = 0;
@@ -1226,10 +1236,10 @@
                 const g = Math.hypot((H[k + 1] - H[k - 1]) / (2 * step), (H[k + n] - H[k - n]) / (2 * step));
                 const w = Math.atan(g) * DEG;
                 c++;
-                if (w >= 0.5 && w <= 7) ped++;
-                if (w >= 30 && w <= 40) schutt++;
-                if (w >= 33 && w <= 37) ruhe++;
-                if (w >= 60) kliff++;
+                if (w >= B.pediment[0] && w <= B.pediment[1]) ped++;
+                if (w >= B.schutt[0] && w <= B.schutt[1]) schutt++;
+                if (w >= B.ruhe[0] && w <= B.ruhe[1]) ruhe++;
+                if (w >= B.kliff[0]) kliff++;
             }
         const r3 = (v) => Math.round(v * 1000) / 1000;
         if (!c) return { zellen: 0, pediment: 0, schutt: 0, ruhe: 0, kliff: 0 };
@@ -1272,32 +1282,34 @@
         detail: "Grate",
     });
     // DIE BENANNTEN LANDSCHAFTEN: je Preset nur die Regler, die es vom Gesetz abweichen lässt (der Rest ist def). Jede
-    // trägt ihr Bild aus Nordstern §4.1 und steht mit der Saat der Welt im Natur-Korridor der Linse (gate:worker-dichte
-    // --studio liest sie). Leser: die Preset-Knöpfe des Studios.
+    // trägt ihr Bild aus Nordstern §4.1 und steht im Natur-Korridor der Linse: kein Ziel rot, das Tafelland trägt das
+    // Schicht-Gesetz — die Studio-Probe (gate:gelaende-studio) drückt jeden Knopf und verlangt es an ihrer Saat; gemessen
+    // auch an den drei Saaten der Gelände-Linse (θ je Preset 0,5–0,55: unter dem Standard 0,45 fiel das gemessene θ an
+    // einzelnen Saaten unter 0,3). Leser: die Preset-Knöpfe des Studios.
     const LANDFORM_PRESETS = Object.freeze([
         Object.freeze({
             id: "mittelgebirge",
             name: "Mittelgebirge",
             bild: "sanfte Kuppen, weite Auen, dichtes Talnetz",
-            regler: Object.freeze({ land: 0.45, hoehe: 0.7, rauhLambda: 4600, netzDichte: 1.15, talForm: 1.25, trog: 0.1, aue: 1.5, tafel: 0.1, detail: 0.45 }),
+            regler: Object.freeze({ land: 0.45, hoehe: 0.7, rauhLambda: 4600, netzDichte: 1.15, talForm: 1.25, trog: 0.1, aue: 1.5, theta: 0.52, tafel: 0.1, detail: 0.45 }),
         }),
         Object.freeze({
             id: "alpental",
             name: "Alpental",
             bild: "Trogtäler unter hohen Graten (Lauterbrunnental)",
-            regler: Object.freeze({ land: 0.6, hoehe: 1.5, kontinentLambda: 12000, rauhLambda: 2400, netzDichte: 0.85, talForm: 1.8, trog: 1, aue: 0.8, ks: 9, tafel: 0.05, rinnen: 1.2, detail: 0.8 }),
+            regler: Object.freeze({ land: 0.6, hoehe: 1.5, kontinentLambda: 12000, rauhLambda: 2400, netzDichte: 0.85, talForm: 1.8, trog: 1, aue: 0.8, ks: 9, theta: 0.55, tafel: 0.05, rinnen: 1.2, detail: 0.8 }),
         }),
         Object.freeze({
             id: "tafelland",
             name: "Tafelland",
             bild: "Kliff über Schutthang über Pediment (Monument Valley)",
-            regler: Object.freeze({ land: 0.5, hoehe: 1.1, rauhLambda: 3600, netzDichte: 0.9, talForm: 1.5, theta: 0.55, tafel: 1, kliffWinkel: 78, schichtDicke: 30, hartAnteil: 0.6, aue: 1.3, detail: 0.35 }),
+            regler: Object.freeze({ land: 0.5, hoehe: 1.1, rauhLambda: 3600, netzDichte: 1.1, talForm: 1.5, theta: 0.5, tafel: 1, kliffWinkel: 82, schichtDicke: 30, hartAnteil: 0.7, aue: 1.3, detail: 0.35 }),
         }),
         Object.freeze({
             id: "kueste",
             name: "Küste",
             bild: "Land und Meer verzahnt, Buchten und flache Mündungen",
-            regler: Object.freeze({ land: 0.2, kontinentLambda: 6500, hoehe: 0.85, netzDichte: 1.2, aue: 1.6, tafel: 0.3, rinnen: 0.8 }),
+            regler: Object.freeze({ land: 0.25, kontinentLambda: 6500, hoehe: 0.85, netzDichte: 1.2, aue: 1.6, theta: 0.5, tafel: 0.1, rinnen: 0.8 }),
         }),
     ]);
     // DER NATUR-KORRIDOR der Gelände-Linse (Nordstern §4.1, Karte K16) — EINE Quelle für die Wand (`diag-worker-dichte
@@ -1344,8 +1356,10 @@
     // (`_weltAusPlan`), die Studio-Probe.
     const PLAN_ART = "gelaende-plan";
     const PLAN_VERSION = 1;
-    // Der Grund einer Plan-Welt: sie wird auf der Basis 0 geboren, das Meer liegt bei Basis − 3 (`_buildWaterPlane`).
-    const PLAN_GRUND = Object.freeze({ basis: 0, meer: -3, kachel: 2048 });
+    // DER GRUND jeder Welt — EINE Quelle: eine frisch geborene Welt (und jede Plan-Welt) steht auf der Basis 0, das Meer
+    // liegt `meerUnterBasis` unter der Basis (`_buildWaterPlane`, `_hydroInit`), die Hydrosphäre rechnet in Kacheln der
+    // Kante `kachel` (`HYDROSPHERE.regionSize`), der Rausch-Strom der Höhe ist Saat + `strom` (`lageRausch`).
+    const GRUND = Object.freeze({ basis: 0, meerUnterBasis: 3, kachel: 2048, strom: ":voxel" });
     function planNormal(roh) {
         const nein = (grund) => {
             throw new Error(`Gelände-Plan abgelehnt: ${grund}`);
@@ -1372,19 +1386,47 @@
         const p = planNormal(plan);
         return { terme: [Object.assign({ art: "wildnis" }, p.regler)] };
     }
-    // Die Gelände-Lage einer Plan-Welt, wie die Welt sie nach dem Import liest (Saat-Strom, Grund, Erbgut-Normalform) —
-    // `Rausch` ist der SimplexNoise-Konstruktor des Wirts (vendor/simplex-noise.js).
-    function planLage(plan, Rausch) {
+    // DIE LAGE AUS IHREM ABBILD — EINE Rechnung für jede Lage, die `hoehe` liest: die Welt (`_gelaende`, ihr Rausch-Strom),
+    // der Worker der Welt (`voxel-worker` applyStateSnapshot), der Plan (`planLage`), der Makro-Worker des Studios (A = die
+    // gebaute Welt aus ihrem Abbild, B = der Entwurf) und die Gelände-Linse (`diag-worker-dichte --realismus`). Das Abbild
+    // ist reine Daten (es reist per postMessage): Saat, Basis, Wasserspiegel, Erbgut-Normalform, Kachel-Kante.
+    function lageRausch(seed, Rausch) {
+        return new Rausch(String(seed) + GRUND.strom);
+    }
+    function lageAbbild(L) {
+        return {
+            seed: String(L.seed),
+            baseHeight: L.baseHeight,
+            waterLevel: L.waterLevel,
+            erbgut: { terme: L.erbgut.terme, wildnis: L.erbgut.wildnis },
+            regionSize: L.regionSize,
+        };
+    }
+    function lageAus(a, Rausch) {
+        return {
+            seed: a.seed,
+            noise: lageRausch(a.seed, Rausch),
+            baseHeight: a.baseHeight,
+            waterLevel: a.waterLevel,
+            erbgut: a.erbgut,
+            regionSize: a.regionSize,
+        };
+    }
+    // Das Abbild der Welt, die ein Plan gebiert (`_weltAusPlan`): Saat des Plans, der Grund (`GRUND`), EIN Wildnis-Term.
+    function planAbbild(plan) {
         const p = planNormal(plan);
         return {
             seed: p.saat,
-            noise: new Rausch(p.saat + ":voxel"),
-            baseHeight: PLAN_GRUND.basis,
-            waterLevel: PLAN_GRUND.basis + PLAN_GRUND.meer,
-            terrainSteepness: 1,
+            baseHeight: GRUND.basis,
+            waterLevel: GRUND.basis - GRUND.meerUnterBasis,
             erbgut: { terme: erbgutNormal(planErbgut(p)), wildnis: 1 },
-            regionSize: PLAN_GRUND.kachel,
+            regionSize: GRUND.kachel,
         };
+    }
+    // Die Gelände-Lage einer Plan-Welt, wie die Welt sie nach dem Import liest — `Rausch` ist der SimplexNoise-Konstruktor
+    // des Wirts (vendor/simplex-noise.js).
+    function planLage(plan, Rausch) {
+        return lageAus(planAbbild(plan), Rausch);
     }
 
     root.__gelaendeCore = Object.freeze({
@@ -1395,13 +1437,18 @@
         urteil: urteil,
         PLAN_ART: PLAN_ART,
         PLAN_VERSION: PLAN_VERSION,
-        PLAN_GRUND: PLAN_GRUND,
+        GRUND: GRUND,
         planNormal: planNormal,
         planErbgut: planErbgut,
+        lageRausch: lageRausch,
+        lageAbbild: lageAbbild,
+        lageAus: lageAus,
+        planAbbild: planAbbild,
         planLage: planLage,
         LINSE: LINSE,
         statistik: statistik,
         hangBaender: hangBaender,
+        HANG_BAENDER: HANG_BAENDER,
         VERSION: VERSION,
         STUDIO_VERTRAG: 1, // G4.3 — EINE Versions-Semantik
         FUNKTION: 1, // studio-vertrag §9 — ein Gesetz-Kern: reine Funktionen, keine Rezepte, keine Gestalt

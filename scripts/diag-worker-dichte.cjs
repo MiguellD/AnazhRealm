@@ -391,17 +391,18 @@ function gelaendeKern(wurzel) {
     vm.runInContext(fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"), ctx);
     return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
 }
-function realismusLage(K, saat) {
-    const G = K.G;
-    return {
+// Die Lage einer frisch geborenen Welt der Saat: der Grund und die Lage-Rechnung aus DIESEM Kern (`GRUND`, `lageAus`),
+// das Gesetz (Erbgut-Normalform, Rausch) aus der gemessenen Wurzel.
+function realismusLage(K, Z, saat) {
+    const g = Z.GRUND;
+    const abbild = {
         seed: saat,
-        noise: new K.SimplexNoise(saat + ":voxel"),
-        baseHeight: 0,
-        waterLevel: -3,
-        terrainSteepness: 1,
-        erbgut: { terme: G.erbgutNormal(undefined), wildnis: 1 },
-        regionSize: 2048,
+        baseHeight: g.basis,
+        waterLevel: g.basis - g.meerUnterBasis,
+        erbgut: { terme: K.G.erbgutNormal(undefined), wildnis: 1 },
+        regionSize: g.kachel,
     };
+    return Z.lageAus(abbild, K.SimplexNoise);
 }
 function realismus() {
     // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
@@ -427,7 +428,7 @@ function realismus() {
     let rot = false;
     const stoerung = (x, z) => 3 * Math.sin(x / 12.7) * Math.sin(z / 12.7);
     for (const saat of REALISMUS_SAATEN) {
-        const L = realismusLage(K, saat);
+        const L = realismusLage(K, Z, saat);
         const H = new Array(n * n);
         const t0 = process.hrtime.bigint();
         for (let j = 0; j < n; j++)
@@ -517,9 +518,86 @@ function realismus() {
 // Regler, der das Raster nicht ändert, ist TOT) —, exportiert den Plan (die Bytes des Downloads), legt ihn durch die
 // Welt-Tür (Welt-Tor „Ersetzen" — die Tür, durch die jede Datei zur Welt wird) und misst nach dem Reload in der Welt
 // denselben Makro-Abdruck (64×64, ±852 m, mit und ohne Detail) und dieselbe Statistik (`_terrainMacroSurfaceY` auf dem
-// Raster des Studios). Studio = Welt byte-gleich, sonst ROT beim Namen. Der Selbsttest: das Studio rechnet den Abdruck
-// eines um EINEN Schritt verstellten Plans — die Welt MUSS sich von ihm unterscheiden (die Linse sieht einen Schritt).
+// Raster des Studios). Studio = Welt byte-gleich, sonst ROT beim Namen. Davor zwei Wände der Bedienung:
+//   A = DIE GEBAUTE WELT: das Studio steht über einer Welt, die kein Plan beschreibt (Basis 7 m, eine Rampe im Erbgut) —
+//       unter A zeigt es dieselbe Welt (Makro-Abdruck und Statistik wie die Welt selbst), nie eine Projektion auf einen Plan;
+//   DIE PRESETS (`LANDFORM_PRESETS`): jeder Knopf legt seine Regler in den Entwurf, kein Ziel fällt aus dem Natur-Korridor
+//       (`urteil` false), und mindestens eine Landschaft trägt das Schicht-Gesetz (Kliff über Schutthang über Pediment).
+// Der Selbsttest: das Studio rechnet den Abdruck eines um EINEN Schritt verstellten Plans — die Welt MUSS sich von ihm
+// unterscheiden (die Linse sieht einen Schritt); ein Preset außerhalb des Korridors und Presets ohne Schicht-Gesetz MÜSSEN
+// rot werden.
 //   --studio [--selftest] [--json datei]
+// Die Befunde der Preset-Wand (rein — der Selbsttest füttert sie mit einem Täter).
+function presetBefunde(liste) {
+    const b = [];
+    for (const p of liste) {
+        if (p.fehlt) {
+            b.push(`Preset ${p.id}: kein Knopf im Panel ([data-preset="${p.id}"])`);
+            continue;
+        }
+        if (!p.traegt) b.push(`Preset ${p.id}: der Entwurf trägt seine Regler nicht`);
+        if (!p.urteil) {
+            b.push(`Preset ${p.id}: kein Urteil (die Leiste blieb leer)`);
+            continue;
+        }
+        for (const [k, v] of Object.entries(p.urteil))
+            if (v === false) b.push(`Preset ${p.id}: ${k} außerhalb des Natur-Korridors (KORRIDOR)`);
+    }
+    if (!liste.some((p) => p.urteil && p.urteil.schicht === true))
+        b.push("kein Preset trägt das Schicht-Gesetz (Kliff über Schutthang über Pediment)");
+    return b;
+}
+// Die Welt in der Seite gemessen, unabhängig vom Studio: der Makro-Abdruck (64×64, ±852 m, mit und ohne Detail) und die
+// Statistik auf dem Raster des Studios — beides über `_terrainMacroSurfaceY`, die Höhe, die die Welt baut.
+function weltMessen(page, raster) {
+    return page.evaluate(
+        async (n, schritt, x0) => {
+            const r = window.anazhRealm;
+            const G = window.__gelaendeCore;
+            const hex = async (arr) => {
+                const d = await crypto.subtle.digest(
+                    "SHA-256",
+                    arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength)
+                );
+                return Array.from(new Uint8Array(d))
+                    .map((b) => b.toString(16).padStart(2, "0"))
+                    .join("");
+            };
+            const h = new Float64Array(64 * 64 * 2);
+            let q = 0;
+            for (let j = 0; j < 64; j++)
+                for (let i = 0; i < 64; i++) {
+                    h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, true);
+                    h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, false);
+                }
+            const H = new Float64Array(n * n);
+            for (let j = 0; j < n; j++)
+                for (let i = 0; i < n; i++)
+                    H[i + j * n] = r._terrainMacroSurfaceY(x0 + i * schritt, x0 + j * schritt, true);
+            const L = r._gelaende();
+            const st = G.statistik(
+                H,
+                n,
+                schritt,
+                L.waterLevel,
+                G.benannteSeen(L, x0, x0, schritt, n),
+                Math.round(2000 / schritt)
+            );
+            return {
+                makroSha: await hex(h),
+                statistik: st,
+                seed: L.seed,
+                basis: L.baseHeight,
+                wasser: L.waterLevel,
+                terme: r._erbgut().terme.map((t) => t.art),
+                erbgut: r._erbgut().terme[0],
+            };
+        },
+        raster.n,
+        raster.schritt,
+        raster.x0
+    );
+}
 async function studioProbe() {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
@@ -543,6 +621,30 @@ async function studioProbe() {
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.evaluate(() => localStorage.clear());
+        // DIE FREMDE WELT: eine Welt, die kein Plan beschreibt (Basis 7 m, das Meer darunter, eine Rampe hinter der Wildnis),
+        // wird die aktive Welt — über ihr öffnet sich das Studio.
+        const b0 = await boote(page);
+        if (!b0.ok) throw new Error("die Welt vor der fremden Welt erwachte nicht");
+        const nav0 = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const G = window.__gelaendeCore;
+            const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
+            snap.terrainBaseHeight = 7;
+            snap.worldMeta.erbgut.terme.push({
+                art: "rampe",
+                x: 60,
+                z: -40,
+                winkel: 14,
+                richtung: 35,
+                lauf: 80,
+                breite: 14,
+                krone: 6,
+                boeschung: 40,
+            });
+            setTimeout(() => r._weltBetreten(snap), 0);
+        });
+        await nav0;
         await page.goto(`http://127.0.0.1:${PORT}/index.html?studio=gelaende`, {
             waitUntil: "domcontentloaded",
             timeout: 60000,
@@ -564,7 +666,31 @@ async function studioProbe() {
             );
             throw new Error("kein Studio");
         }
+        // A = DIE GEBAUTE WELT: das Studio zeigt unter A die Welt, die steht — gemessen an der Welt selbst.
+        const zA = await page.evaluate(async () => {
+            const S = window.__gelaendeStudio;
+            S.zeige("A");
+            await S.ruhig();
+            return S.zustand();
+        });
+        const weltA = await weltMessen(page, zA.raster);
+        const aGleich = zA.makroSha === weltA.makroSha;
+        const aStat = JSON.stringify(zA.statistik) === JSON.stringify(weltA.statistik);
+        out.a = { welt: weltA, studio: { makroSha: zA.makroSha, statistik: zA.statistik } };
+        console.log(
+            `  A über der fremden Welt (Basis ${weltA.basis} m, Meer ${weltA.wasser} m, Terme ${weltA.terme.join("+")}): Makro ${String(zA.makroSha).slice(0, 16)} ${aGleich ? "=" : "≠"} Welt ${weltA.makroSha.slice(0, 16)} · Statistik ${aStat ? "=" : "≠"}`
+        );
+        if (weltA.basis !== 7 || weltA.terme.length < 2)
+            befunde.push(
+                `die fremde Welt steht nicht (Basis ${weltA.basis}, Terme ${weltA.terme.join("+")}) — A bliebe ungeprüft`
+            );
+        if (!aGleich)
+            befunde.push(
+                "A ≠ die gebaute Welt: das Studio zeigt unter A eine andere Welt als die, die steht (Makro-Abdruck)"
+            );
+        if (!aStat) befunde.push("A ≠ die gebaute Welt: die Statistik unter A ist nicht die der Welt");
         const z0 = await page.evaluate(async () => {
+            window.__gelaendeStudio.zeige("B");
             await window.__gelaendeStudio.ruhig();
             return window.__gelaendeStudio.zustand();
         });
@@ -632,6 +758,47 @@ async function studioProbe() {
         console.log(
             `  Export: ${studio.text.length} Bytes · Saat ${plan.saat} · ${Object.keys(plan.regler).length} Regler · Makro ${studio.zustand.makroSha.slice(0, 16)}`
         );
+        // DIE PRESETS: jeder Knopf aus `LANDFORM_PRESETS`, die Zahl-Leiste danach.
+        const presets = await page.evaluate(async () => {
+            const S = window.__gelaendeStudio;
+            const G = window.__gelaendeCore;
+            const aus = [];
+            for (const P of G.LANDFORM_PRESETS) {
+                const k = document.querySelector(`#gelaende-studio [data-preset="${P.id}"]`);
+                if (!k) {
+                    aus.push({ id: P.id, fehlt: true });
+                    continue;
+                }
+                k.click();
+                await S.ruhig();
+                const z = S.zustand();
+                aus.push({
+                    id: P.id,
+                    traegt: z.zeigt === "B" && Object.keys(P.regler).every((id) => z.plan.regler[id] === P.regler[id]),
+                    urteil: z.urteil,
+                    schicht: z.schicht,
+                    statistik: z.statistik && {
+                        senken: z.statistik.senken1mJeKm2,
+                        theta: z.statistik.flint.theta,
+                        r2: z.statistik.flint.r2,
+                        sanft: z.statistik.hammond.sanft,
+                        plaetze: z.statistik.dorfplaetze,
+                    },
+                });
+            }
+            return aus;
+        });
+        out.presets = presets;
+        for (const p of presets) {
+            const ziele = Object.entries(p.urteil || {})
+                .map(([k, v]) => `${k} ${v === true ? "✓" : v === false ? "✗" : "–"}`)
+                .join(" · ");
+            const z = p.statistik
+                ? ` (Senken ${p.statistik.senken}/km² · θ ${p.statistik.theta} R² ${p.statistik.r2} · Hammond ${p.statistik.sanft} · Plätze ${p.statistik.plaetze}${p.schicht ? ` · K/S/P ${p.schicht.kliff}/${p.schicht.schutt}/${p.schicht.pediment}` : ""})`
+                : "";
+            console.log(`    Preset ${p.id.padEnd(14)} ${p.fehlt ? "kein Knopf" : ziele}${z}`);
+        }
+        befunde.push(...presetBefunde(presets));
         // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         const b2 = await boote(page);
@@ -653,46 +820,7 @@ async function studioProbe() {
         const b3 = await boote(page);
         if (!b3.ok) throw new Error("die Welt aus dem Plan erwachte nicht");
         console.log(`  Import: Welt-Tor „Ersetzen" → Reload → Boot ${b3.ms} ms (Seed ${b3.seed})`);
-        const welt = await page.evaluate(
-            async (n, schritt, x0) => {
-                const r = window.anazhRealm;
-                r._gameLoopTick = () => {};
-                const G = window.__gelaendeCore;
-                const hex = async (arr) => {
-                    const d = await crypto.subtle.digest(
-                        "SHA-256",
-                        arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength)
-                    );
-                    return Array.from(new Uint8Array(d))
-                        .map((b) => b.toString(16).padStart(2, "0"))
-                        .join("");
-                };
-                const h = new Float64Array(64 * 64 * 2);
-                let q = 0;
-                for (let j = 0; j < 64; j++)
-                    for (let i = 0; i < 64; i++) {
-                        h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, true);
-                        h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, false);
-                    }
-                const H = new Float64Array(n * n);
-                for (let j = 0; j < n; j++)
-                    for (let i = 0; i < n; i++)
-                        H[i + j * n] = r._terrainMacroSurfaceY(x0 + i * schritt, x0 + j * schritt, true);
-                const L = r._gelaende();
-                const st = G.statistik(
-                    H,
-                    n,
-                    schritt,
-                    L.waterLevel,
-                    G.benannteSeen(L, x0, x0, schritt, n),
-                    Math.round(2000 / schritt)
-                );
-                return { makroSha: await hex(h), statistik: st, seed: L.seed, erbgut: r._erbgut().terme[0] };
-            },
-            studio.zustand.raster.n,
-            studio.zustand.raster.schritt,
-            studio.zustand.raster.x0
-        );
+        const welt = await weltMessen(page, studio.zustand.raster);
         out.welt = welt;
         const gleich = welt.makroSha === studio.zustand.makroSha;
         const statGleich = JSON.stringify(welt.statistik) === JSON.stringify(studio.zustand.statistik);
@@ -709,6 +837,23 @@ async function studioProbe() {
                 `  SELBSTTEST: ein Schritt am Regler „hoehe" ${sieht ? "ändert den Abdruck (die Linse sieht ihn)" : "BLIEB UNSICHTBAR"}`
             );
             if (!sieht) befunde.push("SELBSTTEST: der Abdruck sieht einen Regler-Schritt nicht");
+            // die Preset-Wand mit Tätern: ein Ziel außerhalb des Korridors, und keine Landschaft mit Schicht-Gesetz
+            const nennt = presetBefunde([
+                {
+                    id: "taeter",
+                    traegt: true,
+                    urteil: { senken: false, flint: true, hammond: true, dorfplaetze: true, schicht: null },
+                },
+            ]);
+            const presetSieht =
+                nennt.some((b) => /taeter: senken außerhalb/.test(b)) &&
+                nennt.some((b) => /kein Preset trägt das Schicht-Gesetz/.test(b));
+            out.selbsttest.presetSieht = presetSieht;
+            console.log(
+                `  SELBSTTEST: die Preset-Wand ${presetSieht ? "nennt den Täter (senken, kein Schicht-Gesetz)" : "BLIEB BLIND"}`
+            );
+            if (!presetSieht)
+                befunde.push("SELBSTTEST: die Preset-Wand sieht ein Preset außerhalb des Korridors nicht");
         }
     } catch (e) {
         if (!befunde.length) befunde.push(String((e && e.message) || e));

@@ -1,7 +1,8 @@
 // AnazhRealm — worlds/gelaende/makro-worker.js: DIE MAKRO-ANSICHT DES GELÄNDE-STUDIOS (K16b), off-thread.
 //
-// Das Studio fragt je Entwurf (ein Plan: Saat + Regler) — dieser Worker rechnet ihn mit DEMSELBEN Gesetzbuch wie die Welt
-// (gelaende-core.js `hoehe` an `planLage`; kein Spiegel, keine eigene Höhe) und antwortet in drei Stufen, jede ein Bild:
+// Das Studio fragt je Spur eine Lage als Abbild (A: die gebaute Welt `lageAbbild`, B: die Welt des Entwurfs `planAbbild`) —
+// dieser Worker rechnet sie mit DEMSELBEN Gesetzbuch wie die Welt (gelaende-core.js `hoehe` an `lageAus`; kein Spiegel,
+// keine eigene Höhe) und antwortet in drei Stufen, jede ein Bild:
 //   grob    90 × 90 Spalten (90 m) — das Bild unter dem Finger, während der Regler noch gleitet
 //   voll    268 × 268 Spalten (30 m, das Raster der Gelände-Linse: 4 × 4 km innen + 2 km Rand) — Bild, Statistik, Urteil,
 //           der Makro-Abdruck (64 × 64, ±852 m, mit und ohne Detail — derselbe wie `diag-worker-dichte --abdruck`)
@@ -20,7 +21,8 @@ const V = (function () {
 importScripts("../../vendor/simplex-noise.js");
 importScripts("../../gelaende-core.js" + (V ? "?v=" + V : ""));
 const G = self.__gelaendeCore;
-if (!G || typeof G.planLage !== "function") throw new Error("makro-worker: gelaende-core trägt keinen Plan");
+if (!G || typeof G.lageAus !== "function")
+    throw new Error("makro-worker: gelaende-core trägt keine Lage-Rechnung (lageAus)");
 
 const RASTER = Object.freeze({
     grob: { n: 90, schritt: 90, x0: -4005 },
@@ -209,8 +211,8 @@ async function schichtBaender(L, id, spur) {
     return { ort, baender: G.hangBaender(HF, fn, 2, maske) };
 }
 
-async function rechne(id, spur, plan, stufen) {
-    const L = G.planLage(plan, self.SimplexNoise);
+async function rechne(id, spur, abbild, stufen) {
+    const L = G.lageAus(abbild, self.SimplexNoise);
     if (stufen.includes("grob")) {
         const R = RASTER.grob;
         const H = await raster(L, R, id, spur);
@@ -224,15 +226,6 @@ async function rechne(id, spur, plan, stufen) {
     const px = faerbe(H, R.n, R.schritt, L);
     const benannt = G.benannteSeen(L, R.x0, R.x0, R.schritt, R.n);
     const statistik = G.statistik(H, R.n, R.schritt, L.waterLevel, benannt, RAND);
-    // Das Hang-Histogramm des inneren Landes (je 5°, 0–75°): das Bild der Zahl in der Leiste.
-    const hist = new Array(15).fill(0);
-    for (let j = RAND; j < R.n - RAND; j++)
-        for (let i = RAND; i < R.n - RAND; i++) {
-            const k = i + j * R.n;
-            if (H[k] <= L.waterLevel) continue;
-            const g = Math.hypot((H[k + 1] - H[k - 1]) / (2 * R.schritt), (H[k + R.n] - H[k - R.n]) / (2 * R.schritt));
-            hist[Math.min(14, Math.floor((Math.atan(g) * 180) / Math.PI / 5))]++;
-        }
     const voll = {
         id,
         stufe: "voll",
@@ -240,7 +233,6 @@ async function rechne(id, spur, plan, stufen) {
         raster: { n: R.n, schritt: R.schritt, x0: R.x0 },
         px,
         statistik,
-        hist,
         urteil: G.urteil(statistik, null),
         rasterSha: await sha(H),
         makroSha: await makroSha(L),
@@ -261,9 +253,9 @@ async function rechne(id, spur, plan, stufen) {
 self.onmessage = (ev) => {
     const m = ev.data || {};
     if (m.art === "abdruck") {
-        // Der Abdruck eines beliebigen Plans (die Probe: ein Schritt am Regler MUSS ihn ändern).
+        // Der Abdruck einer beliebigen Lage (die Probe: ein Schritt am Regler MUSS ihn ändern).
         try {
-            makroSha(G.planLage(m.plan, self.SimplexNoise)).then((s) =>
+            makroSha(G.lageAus(m.lage, self.SimplexNoise)).then((s) =>
                 self.postMessage({ id: m.id, stufe: "abdruck", makroSha: s })
             );
         } catch (e) {
@@ -273,7 +265,7 @@ self.onmessage = (ev) => {
     }
     const spur = m.spur === "A" ? "A" : "B";
     juengste[spur] = m.id;
-    rechne(m.id, spur, m.plan, m.stufen || ["grob"]).catch((e) =>
+    rechne(m.id, spur, m.lage, m.stufen || ["grob"]).catch((e) =>
         self.postMessage({ id: m.id, stufe: "fehler", grund: String((e && e.message) || e) })
     );
 };

@@ -209,7 +209,7 @@ function applyStateSnapshot(snap) {
     if (!snap) return;
     if (snap.seed && snap.seed !== state.seed) {
         state.seed = snap.seed;
-        state.noise = new SimplexNoise(state.seed + ":voxel");
+        state.noise = G.lageRausch(state.seed, SimplexNoise);
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
