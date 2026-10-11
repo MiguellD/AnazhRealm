@@ -10671,7 +10671,8 @@ class AnazhRealm {
         const s = this.state.symphony;
         const pl = this.state.player;
         const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
-        const fz = e && e.id === pl.mountedArch && e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
+        const fz =
+            e && e.id === pl.mountedArch && e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
         if (s.fahrt && (!fz || s.fahrt.entry !== e)) {
             s.fahrt.stimme.stop(s.ctx.currentTime);
             s.fahrt = null;
@@ -55647,7 +55648,10 @@ class AnazhRealm {
                     entry.position.x = x;
                     entry.position.z = z;
                     entry.rotationY = rj - Math.PI / 2; // Studio-Wagen: Template-Gier = Fahrt − π/2
-                    this.log(`Fahr-Platz: ${entry.type} steht ${r} m weiter auf fahrbarem Grund (dort: ${grund}).`, "INFO");
+                    this.log(
+                        `Fahr-Platz: ${entry.type} steht ${r} m weiter auf fahrbarem Grund (dort: ${grund}).`,
+                        "INFO"
+                    );
                     return;
                 }
             }
@@ -55672,26 +55676,29 @@ class AnazhRealm {
         return null;
     }
 
-    // Der STAND bei (x, z): das Gesetz des Kerns (vehicle-core fahrPlatz: die Ebene der Räder trägt, die Anfahrt bergauf) und
-    // die Welt des Wirts: keine Wand des Geländes unter der Hülle (5 × 3 Punkte — der Fels, der in den Wagen ragt),
-    // keine Box eines Baus, Baums oder Wagens im Band der Hülle (der EINE Struktur-Löser mit der Hülle als Körper, wie im
-    // Ritt), kein Wasser am Ort (`_nassAt`), der Spieler nicht unter dem Wagen. Die Wand ist die des Kontakts
-    // (`_fahrGelaendeWand` ohne Fahrt-Richtung: jede steile Fläche zählt).
+    // Der STAND bei (x, z): das Gesetz des Kerns (vehicle-core fahrPlatz: die Ebene der Räder trägt, die Anfahrt bergauf) auf
+    // dem Boden des Werks (`_werkBoden` — derselbe, auf dem `_fahrzeugStand` ihn danach abstellt und der Ritt ihn fährt) und
+    // die Welt des Wirts: E steigt ein (kein Tor reicht mit seiner E-Reichweite an einen Platz, von dem aus der Spieler
+    // einsteigt — sonst betritt E das Tor: „bau mir einen gt" stand 5,3 m vor welt_portal), die Hülle steht auf dem Land
+    // eines Werks (`_landAt`: die Mitte, dann die vier Ecken), keine Wand des Geländes unter der Hülle (5 × 3 Punkte — der
+    // Fels, der in den Wagen ragt), keine Box eines Baus, Baums oder Wagens im Band der Hülle (der EINE Struktur-Löser mit der
+    // Hülle als Körper, wie im Ritt), der Spieler nicht unter dem Wagen. Die Wand ist die des Kontakts (`_fahrGelaendeWand`
+    // ohne Fahrt-Richtung: jede steile Fläche zählt). Die billigen Proben zuerst (Lehre 25).
     _fahrStandFrei(entry, G, k, x, z, ry) {
         const { vc } = AnazhRealm._fahrPlatzGesetz();
-        const pl = vc.fahrPlatz(
-            G,
-            this._fahrTerrainBoden || (this._fahrTerrainBoden = (a, b) => this.getTerrainHeightAt(a, b)),
-            x,
-            z,
-            ry - Math.PI / 2
-        );
+        const pl = vc.fahrPlatz(G, this._werkBoden(entry), x, z, ry - Math.PI / 2);
         if (!pl.ok) return pl.grund;
+        const torFrei = AnazhRealm.PORTAL_REACH_M + AnazhRealm.MOUNT_RANGE_M;
+        for (const t of this._blockerMit("isPortal"))
+            if (t.position && (t.position.x - x) ** 2 + (t.position.z - z) ** 2 < torFrei * torFrei) return "tor";
         const eb = pl.eb;
         const fX = Math.sin(ry);
         const fZ = Math.cos(ry);
         const qX = Math.cos(ry);
         const qZ = -Math.sin(ry);
+        if (!this._landAt(x, z)) return "wasser";
+        for (const l of [k.bug, k.heck])
+            for (const q of [-k.hw, k.hw]) if (!this._landAt(x + l * fX + q * qX, z + l * fZ + q * qZ)) return "wasser";
         const tS = Math.tan(eb.steig);
         const tW = Math.tan(eb.wank);
         for (let i = 0; i <= 4; i++) {
@@ -55702,7 +55709,6 @@ class AnazhRealm {
                 if (this._fahrGelaendeWand(px, pz, eb.y + tS * l + tW * q, k, 0, 0)) return "fels";
             }
         }
-        if (this._nassAt(x, z)) return "wasser";
         const pm = this.state.playerMesh;
         if (pm && pm.position) {
             const dx = pm.position.x - (x + fX * k.mitte);
@@ -55937,12 +55943,14 @@ class AnazhRealm {
                 continue;
             }
             // DER GESTOSSENE WAGEN RUTSCHT (das EINE Impuls-Gesetz): die Handbremse hält ihn, sein Hüllen-Kontakt trägt den
-            // Stoß weiter (Bauwerke, Wagen, Leiber), seine Blocker ziehen mit.
+            // Stoß weiter (Bauwerke, Wagen, Leiber), seine Blocker ziehen mit. Ohne Fahrer tritt keiner die Bremse: im Kern ist
+            // `brake` unter bremsV der Rückwärtsgang (die Taste S) — der leere Wagen fuhr damit rückwärts in den Spieler (K12:
+            // mit dem Rückwärtsgang des Kerns 0,67 m tief, gate:fahr-leben L6).
             const rutscht = Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs;
             if (rutscht) {
                 const x0 = fz.x;
                 const z0 = fz.z;
-                vc.fahrKraefte(fz, { brake: 1, hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
+                vc.fahrKraefte(fz, { hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
                 entry._rideYaw = fz.yaw + Math.PI / 2;
                 const k = this._fahrHuelle(entry);
                 if (k) {
@@ -74918,6 +74926,22 @@ class AnazhRealm {
             this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
         }
     }
+    // DER WUNSCH-ORT DER VORSCHAU vor einem Tor des Genesis-Rings: ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der
+    // Ring steht um ihn); `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das
+    // Platz-Gesetz (`_fahrPlatzSuche`). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben P: an jedem Tor).
+    // → { x, y, z, blick } oder null (kein Boden).
+    _portalVorschauOrt(portal) {
+        const M = this._genesisMitte();
+        const px = portal.position.x || 0;
+        const pz = portal.position.z || 0;
+        const len = Math.hypot(px - M.x, pz - M.z) || 1;
+        const ox = px + ((px - M.x) / len) * 8;
+        const oz = pz + ((pz - M.z) / len) * 8;
+        const y = this.getTerrainHeightAt(ox, oz);
+        if (!Number.isFinite(y)) return null;
+        return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(px - M.x, pz - M.z) };
+    }
+
     // PORTAL-PREVIEW: EIN Preview je Studio-Tor (~8 m radial vor welt_<worldKey>), sichtbar vorm iframe.
     // Doppelt idempotent (worldMeta.portalPreview<Key> + Existenz-Probe auf id); Foundry kalt → Skip + EIN
     // Await-Book je worldKey, nächster Tick retry. Typen: fachwerk→haus_alemannisch, garage→fahrzeug_gt,
@@ -74963,15 +74987,8 @@ class AnazhRealm {
                 });
             return;
         }
-        // ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der Ring steht um ihn).
-        const M = this._genesisMitte();
-        const px = portal.position.x || 0;
-        const pz = portal.position.z || 0;
-        const len = Math.hypot(px - M.x, pz - M.z) || 1;
-        const ox = px + ((px - M.x) / len) * 8;
-        const oz = pz + ((pz - M.z) / len) * 8;
-        const y = this.getTerrainHeightAt(ox, oz);
-        if (!Number.isFinite(y)) return;
+        const ort = this._portalVorschauOrt(portal);
+        if (!ort) return;
         // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
         const seed =
             worldKey === "fachwerk"
@@ -74986,7 +75003,7 @@ class AnazhRealm {
         const opts = { silent: true, autonomous: true, id, seed };
         // Der Vorschau-Wagen schaut vom Ring hinaus in die Welt (Studio-Wagen: Template-Gier = Fahrt − π/2); wo er steht,
         // entscheidet das Platz-Gesetz (`_fahrPlatzSuche` in spawnArchitecture: der nächste fahrbare Grund mit Bahn).
-        if (worldKey === "garage") opts.rotationY = Math.atan2(px - M.x, pz - M.z) - Math.PI / 2;
+        if (worldKey === "garage") opts.rotationY = ort.blick - Math.PI / 2;
         // Nur fachwerk/haus_*: die Vorschau trägt ihre Prägung (studioOv: Stil, Verband, Geschosse, Maße, Dach) — der
         // Bau des Gesetzbuchs liest sie, fremde Schlüssel ignoriert er. Der Stempel gewinnt: ein Eintrag ohne studioOv
         // bleibt; ov nur bei Neu-Spawn.
@@ -75003,7 +75020,7 @@ class AnazhRealm {
                 fluegelSide: 1,
             });
         }
-        const entry = this.spawnArchitecture(type, { x: ox, y: y + 0.5, z: oz }, opts);
+        const entry = this.spawnArchitecture(type, { x: ort.x, y: ort.y, z: ort.z }, opts);
         if (entry) {
             wm[metaKey] = true;
             fertig[worldKey] = true;
@@ -79699,7 +79716,7 @@ class AnazhRealm {
             : this.spawnArchitecture(name, position, absage ? Object.assign({}, opts, { absage }) : opts);
     }
 
-    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | "wasser" | false) — der EINE Leser von
+    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | "wagen" | "wasser" | false) — der EINE Leser von
     // Grundriss und Krone; `_naturSetzen` setzt danach, das Bau-Phantom färbt sich danach. NATUR WEICHT DEM WASSER (Schau-2
     // wasser-wahrheit): ein benannter Wurf steht nie, wo sein Fuß kein Land ist (`_stammFussLand`: die Achse und der
     // Fuß-Kreis, 5 cm über dem Spiegel — der Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am
@@ -79881,7 +79898,7 @@ class AnazhRealm {
     // dessen Bauplan sie trägt (die Genesis-Plattform: ihre Scheibe plus die Reichweite des Wurfs, `max(rand, krone)` —
     // über ihr steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) hält die Häuser, die
     // Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei jedem Spawn/Abriss eines Baus
-    // mit Grundriss. Rückgabe: "lichtung" | "haus" | false.
+    // mit Grundriss. Rückgabe: "lichtung" | "wagen" | "haus" | false.
     _imGrundriss(x, z, rand = 0.8, krone = 0) {
         const G = 32;
         const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
@@ -79907,6 +79924,23 @@ class AnazhRealm {
         }
         const reich = Math.max(rand, krone);
         for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
+        // DER WAGEN (K12 Fahr-Bahn): ein Studio-Wagen ist Bau, nie Natur — in seiner Hülle (+ `rand`, der Stamm; eine Krone
+        // darf über das Dach) steht kein Wurf. Befund: nach dem Platz des Vorschau-GT setzte die Wald-Schlange
+        // (`_tickPendingVegSpawns`) eine Tanne 2,1 m vor seinen Ursprung, in die Hülle — W 2 s brachte 0,08 m. Die Wagen
+        // fahren: sie stehen nicht im Gitter, je Frage zählt ihre lebende Lage (das Blocker-Netz, wenige je Welt).
+        for (const w of this._blockerMit("moveable")) {
+            if (!w._fahrAchseX || !w.position) continue;
+            const dx = x - w.position.x;
+            const dz = z - w.position.z;
+            const u = this._fahrUmriss(w);
+            if (dx * dx + dz * dz > (Math.max(u.bug, -u.heck) + u.hw + rand) ** 2) continue;
+            const ry = Number.isFinite(w._rideYaw)
+                ? w._rideYaw
+                : (Number.isFinite(w.rotationY) ? w.rotationY : 0) + Math.PI / 2;
+            const l = dx * Math.sin(ry) + dz * Math.cos(ry);
+            const q = dx * Math.cos(ry) - dz * Math.sin(ry);
+            if (l >= u.heck - rand && l <= u.bug + rand && Math.abs(q) <= u.hw + rand) return "wagen";
+        }
         if (gitter.zellen.size === 0) return false;
         const l = gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G)));
         if (!l) return false;
@@ -95952,28 +95986,36 @@ class AnazhRealm {
         if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
         return this._fahrHuelleBau(entry, entry._fahrSatz);
     }
+    // DER UMRISS eines Wagens im Fahrt-Rahmen (m): Bug, Heck, halbe Breite, Dach — ein Studio-Wagen aus dem Gesetz seiner
+    // Hülle (vehicle-core exportDrive.huelle × Größe), sonst aus der Gestalt des Bauplans. Leser: die Hülle des Ritts und des
+    // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imGrundriss`: kein Wurf der Natur in einem Wagen).
+    _fahrUmriss(entry) {
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
+        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX)
+            return {
+                bug: h.noseX * sc,
+                heck: h.tailX * sc,
+                hw: h.bw * sc,
+                dach: (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc,
+            };
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const ext = bp ? this._compoundVisualExtent(bp) : null;
+        const halb = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
+        return {
+            bug: halb,
+            heck: -halb,
+            hw: ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6,
+            dach: ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5,
+        };
+    }
+
     // Die Hülle aus dem Gesetz (je Eintrag einmal, `mountArchitecture` setzt sie frisch): der Ritt liest sie über
     // `_fahrHuelle`, der Platz eines Wagens, den die Welt hinstellt (`_fahrPlatzFrei`), schon vor der ersten Fahrt.
     _fahrHuelleBau(entry, G) {
         if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
-        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
-        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
-        let bug, heck, hw, dach;
-        if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX) {
-            bug = h.noseX * sc;
-            heck = h.tailX * sc;
-            hw = h.bw * sc;
-            dach = (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc;
-        } else {
-            const bp = this.state.blueprints && this.state.blueprints[entry.type];
-            const ext = bp ? this._compoundVisualExtent(bp) : null;
-            const halb = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-            bug = halb;
-            heck = -halb;
-            hw = ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6;
-            dach = ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5;
-        }
+        const { bug, heck, hw, dach } = this._fahrUmriss(entry);
         // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
         const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * G.radR;
         // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
@@ -101756,7 +101798,9 @@ AnazhRealm._fahrSchrittGesetz = function () {
         ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
             (f) => typeof vc[f] === "function"
         ) &&
-        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) => Number.isFinite(S[k]))
+        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) =>
+            Number.isFinite(S[k])
+        )
     ) {
         AnazhRealm._fahrSchrittMemo = { vc, S };
         return AnazhRealm._fahrSchrittMemo;
@@ -101774,7 +101818,9 @@ AnazhRealm._fahrPlatzGesetz = function () {
     if (
         P &&
         typeof vc.fahrPlatz === "function" &&
-        ["anfahrAnteil", "bahnLaengen", "suchRadiusM", "suchSchrittM", "richtungen"].every((k) => Number.isFinite(P[k])) &&
+        ["anfahrAnteil", "bahnLaengen", "suchRadiusM", "suchSchrittM", "richtungen"].every((k) =>
+            Number.isFinite(P[k])
+        ) &&
         P.suchSchrittM > 0 &&
         P.richtungen >= 1
     ) {
@@ -105008,6 +105054,7 @@ AnazhRealm._llmFuenferModell = function (model) {
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
     haus: "im Grundriss eines Hauses wächst nichts",
+    wagen: "in einem Wagen wächst nichts",
     wasser: "im Wasser steht nichts, am Ufer schon",
 });
 // DIE GRÜNDE DES ERGEBNIS-SATZES (`_ergebnisSatz`, Schau-2 Runde 3): jeder Wurf, der nicht steht, trägt einen — die Wand

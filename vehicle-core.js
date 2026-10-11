@@ -2310,7 +2310,7 @@
         //    im Band misst der Wirt (Feld und Bauten sind seine Welt). Befund: die Vorschau stand 38° steil, 40° gewankt auf dem
         //    Felsblock (W 3 s 0,08 m). ──
         platz: {
-            anfahrAnteil: 0.5, // die Anfahrt bergauf ≥ die Haelfte der Anfahrt in der Ebene (GT: bis ~23°)
+            anfahrAnteil: 0.7, // die Anfahrt bergauf ≥ 70 % der Anfahrt in der Ebene (GT bis 14,2°, SUV bis 9,8°)
             bahnLaengen: 1, // DIE BAHN: vor und hinter dem Wagen je so viele Wagenlaengen derselbe fahrbare Grund
             suchRadiusM: 32, // die Ankunft steht auf Fels: der naechste fahrbare Grund liegt dort ~20–30 m weiter
             suchSchrittM: 2,
