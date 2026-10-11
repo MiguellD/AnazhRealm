@@ -253,9 +253,13 @@ async function blickStufe(check) {
             !hit(ex - mu.rimAx * 0.6, ey + 1.2, ez) &&
             !hit(ex, ey + 1.2, ez + mu.zFace * 0.8) &&
             !hit(ex, ey + 1.2, ez - mu.zFace * 0.8);
-        // Pfosten-Probe: mitten im Rahmen, beidseitig.
-        const jambX = mu.rimAx + Math.max(0.3, mu.jambW * (mu.orders + 0.5)) / 2;
-        res.k.pfostenSolide = hit(ex + jambX, ey + 1.2, ez) && hit(ex - jambX, ey + 1.2, ez);
+        // Pfosten-Probe: mitten im Rahmen, beidseitig — der Pfosten reicht von der Öffnung bis zur gezeichneten Außenkante
+        // (die gemintete Hülle des Gesetzbuchs `__portaCore.TOR_HUELLE`, seit der Leben-Schau 2 aus dem Bild statt aus
+        // jambW·(Ordnungen + ½); je Seite [pfostenX, pfostenZ, obenX, obenZ]).
+        const hm = globalThis.__portaCore.TOR_HUELLE[tor.gestalt];
+        const jambXr = (mu.rimAx + hm.seiten[1][0]) / 2;
+        const jambXl = (mu.rimAx + hm.seiten[0][0]) / 2;
+        res.k.pfostenSolide = hit(ex + jambXr, ey + 1.2, ez) && hit(ex - jambXl, ey + 1.2, ez);
         // Krone-Probe: über dem Scheitel.
         res.k.kroneSolide = hit(ex, ey + mu.apexY + 0.15, ez);
 
@@ -359,9 +363,11 @@ async function blickStufe(check) {
     check("Boot + warmes Buch (geisttor im LIVE-Buch)", out.boot && out.warm);
     check("welt_portal gespawnt + Tor-Gesetz aufgelöst", out.spawned && out.torGesetz, `gestalt=${out.gestalt}`);
     if (out.k) {
+        // je Seite (Leben-Schau 2, `TOR_HUELLE` des Gesetzbuchs): Pfosten bis zur Kämpferlinie · Rahmen darüber · Schulter · die
+        // halbe Krone — eine Ruine trägt hier einen Stein, dort keinen
         check(
-            "K: Gesetz-Hülle trägt 5 Boxen (Pfosten×2 · Schultern×2 · Krone)",
-            out.k.boxCount === 5,
+            "K: Gesetz-Hülle trägt 8 Boxen (je Seite Pfosten · Rahmen · Schulter · halbe Krone)",
+            out.k.boxCount === 8,
             `boxen=${out.k.boxCount}`
         );
         check("K: die APERTUR ist körperlich FREI (5 Probe-Punkte, Torso-Höhe)", out.k.aperturFrei === true);

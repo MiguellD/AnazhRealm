@@ -1079,7 +1079,7 @@ function wasserRegen(opts) {
 // tiefem Boden — See, Fluss, Rand-Spiegel) und über der eine FEST-Zelle steht (die Decke). Ihr Boden (`_fieldSurfaceBelow`)
 // ist der Grund eines Körpers in der Höhle: die EINE Wasser-Wahrheit am Körper darf dort kein Wasser lesen (Chokepoint), der
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
-// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_kreaturBodenUnter` liefert). Bis 8f09227d las der Körper den
+// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert). Bis 8f09227d las der Körper den
 // Spiegel des Gesetzes ohne Decke: im Höhlen-Boden unter dem See der Mess-Wiese 393 von 400 Proben „nass".
 function wasserHoehle(opts) {
     return (async () => {

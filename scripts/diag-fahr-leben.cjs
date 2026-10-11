@@ -1254,6 +1254,9 @@ async function probeLeben(expected) {
             // Die Labor-Spur: derselbe Kern (Stand an der Lage, dann Kräfte — die Folge der Probefahrt, um einen Stand
             // versetzt), dieselben Eingaben, derselbe Boden. Wo der Kontakt-Löser griff, übernimmt sie die Lage der Welt.
             const q = Object.assign({}, z0);
+            // der Boden UNTER dem Werk liest die Lage seines Fahr-Zustands (`_werkBoden`, Leben-Schau 2) — die Spur fährt als er
+            const fahrRoh = g1._fahr;
+            g1._fahr = q;
             let maxM = 0;
             let bei = -1;
             let maxY = 0;
@@ -1278,6 +1281,7 @@ async function probeLeben(expected) {
                     bei = n;
                 }
             }
+            g1._fahr = fahrRoh;
             S.labor = { schritte: spur.length, maxM, bei, maxY, kontakte, weg: Math.hypot(q.x - z0.x, q.z - z0.z) };
         }
         if (g1) weg(g1);

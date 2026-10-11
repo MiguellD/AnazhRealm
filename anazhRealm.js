@@ -16707,6 +16707,18 @@ class AnazhRealm {
         // DAS GEMÜT WIRD MIT DEM LEIB GEGOSSEN (Welle LF): Gattung × die EINE Masse des eben gegossenen Leibs
         // (`_creatureTemperament` → `_leibMasse`), gecacht je Gattung × Größe — der Takt liest es, statt es zu rechnen.
         this._creatureTemperament(group);
+        // DER ERSTE GRUND (Leben-Schau 2): der Ort des Rufs liest seinen Boden (`_koerperBodenUnter`, im Gestein trägt die
+        // Säule) — jede Bewegung danach ist ein SCHRITT von ihm (`_koerperSchritt`, die Wand hält). Vorher las erst der
+        // erste Takt den Boden: schob ihn ein Stoß (der Spieler am selben Ort) 0,7 m in den Fuß der Höhlenwand, stand der
+        // frische Wolf auf dem Dach (42,90 m über dem Grund 30,40). DIE FELS-BLASE: die Höhe des Rufers ist eine Schätzung
+        // (die des Spielers, ein Ort 2–15 m daneben am Hang) — ein Ruf landet nur in einer Luft, die einen Leib trägt (2 m
+        // über dem Grund frei), in einer engeren Blase im Hang trägt die Säule wie im Gestein (gate:kreatur-takt: ein Fuchs,
+        // gerufen 8 m unter der Wiese, lag in 1,2 m Luft unter 7 m Fels).
+        let grund0 = this._koerperBodenUnter(x, y, z);
+        if (this._fieldSolid(x, grund0 + 2, z)) grund0 = this._koerperBodenUnter(x, NaN, z);
+        group.userData.cachedGroundY = grund0;
+        group.userData.cachedGroundX = x;
+        group.userData.cachedGroundZ = z;
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -16717,7 +16729,7 @@ class AnazhRealm {
             emotion === "sad"
                 ? { joy: 0, awe: 0, sorrow: 0.4, hope: 0, peace: 0, chaos: 0 }
                 : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
-        // Kein Physik-Body: Kreaturen erden feld-nativ (`_creatureGroundY` → `_voxelSurfaceY`), bewegen sich
+        // Kein Physik-Body: Kreaturen erden feld-nativ (`_creatureGroundY` → der Boden unter dem Körper), bewegen sich
         // kinematisch in `updateCreatures`; Knockback via `creature.userData.knockVel`.
         // Der erste Ruf des neuen Wesens (klang:UMWELT.tier — die Stimme folgt dem Körper).
         this._tierRuf(group, emotion === "sad" ? "trauer" : "freude");
@@ -17363,11 +17375,12 @@ class AnazhRealm {
     }
     // (4) HANG-PITCH aus zwei Bodenproben (vorn/hinten). rotation.x-Konvention:
     // +x kippt die Nase ABWÄRTS ⇒ vorn höher → negativ (die Nase hebt sich).
-    // Klemme ±0.6 rad (~34°) — steiler ist Kletterwand, kein Gang.
+    // Klemme ±GANG_DECKEL_RAD (0,6 rad, ~34°) — steiler ist Kletterwand, kein Gang (`_kreaturKletterwand`).
     _slopePitch(gVorn, gHinten, spann) {
         if (!Number.isFinite(gVorn) || !Number.isFinite(gHinten) || !(spann > 1e-3)) return 0;
         const p = Math.atan2(gHinten - gVorn, spann);
-        return Math.max(-0.6, Math.min(0.6, p));
+        const d = AnazhRealm.GANG_DECKEL_RAD;
+        return Math.max(-d, Math.min(d, p));
     }
     // DER EINE GANG-TICK (Chokepoint Spieler + Peers): Weg-Phase am Halter akkumulieren, Blend-Gewicht
     // glätten, Amplitude mit dem Tempo skalieren (≈1 Basis, 1.3 Sprint). opts.ik=true rüstet Fuß-IK —
@@ -17400,8 +17413,14 @@ class AnazhRealm {
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
     // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
     // Definition); sonst die Boden-Karte des Chunks (`_chunkSurfaceAt`, bilinear, das gezeichnete Mesh) — solange sie im
-    // STAND_SICHT_BAND um den Träger liegt; außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) und ohne
-    // Karte der Träger selbst. Leser: Fuß-IK des Menschen (`_gaitBodenY`), Tier-Lage (`_creatureSlopeProben`).
+    // STAND_SICHT_BAND um den Träger liegt. Außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) liest er das
+    // GESETZ AM PUNKT — den Boden unter dem Körper ab dem Träger (`_koerperBodenUnter`: abwärts, der Hang zwei Meter hinauf),
+    // im selben Band. Prüfung 2 K02a: dort trug der Träger JEDEN Punkt — die Pfoten des Wolfs am Wandfuß standen auf der
+    // Höhe seines Leibs, nicht auf dem Boden unter ihnen (die Haut 0,30–0,46 m im Fels in 5 von 8 Blickrichtungen), und der
+    // in die Wand laufende Wolf stand auf seinem 0,5-m-Grund-Cache 0,55 m unter dem Hang. Die Kosten folgen den Körpern
+    // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
+    // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
+    // Stoß-Schritt, die Tod-Lage.
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
         const span = this._voxelChunkConfig(0).span;
@@ -17410,7 +17429,11 @@ class AnazhRealm {
         const e = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         const k = e && e.surfMap ? this._chunkSurfaceAt(e, cx, cz, x, z) : null;
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
-        return Number.isFinite(k) && Math.abs(k - traegerY) <= AnazhRealm.STAND_SICHT_BAND ? k : traegerY;
+        const band = AnazhRealm.STAND_SICHT_BAND;
+        if (!Number.isFinite(k)) return traegerY;
+        if (Math.abs(k - traegerY) <= band) return k;
+        const g = this._koerperBodenUnter(x, traegerY, z);
+        return Number.isFinite(g) && Math.abs(g - traegerY) <= band ? g : traegerY;
     }
     // Der Boden unterm Fuß — der EINE Proben-Chokepoint des Biped-IK: der Stand-Leser der Sicht um den TRÄGER desselben
     // Kapsel-Schritts (`_stepCharacter` stempelt `_kapselTraegerY`/`_kapselStruktur`). Vorher las die Probe das Gelände
@@ -19858,16 +19881,18 @@ class AnazhRealm {
         // die Haltung des Falls steht fest: die Tod-Lage rechnet mit der Pose dieses Augenblicks, und kein Stufen-Wechsel
         // stellt den Leib danach in die Ruhe der Gestalt (`_gelenkStufe`; beide Stufen tragen dieselben Knochen)
         ud._gelenk.haltungFest = true;
+        // wohin Platz ist: die Flanke hangab, steht dort eine Wand, die andere Flanke (_todKippWahl)
+        const kipp = this._todKippWahl(creature, hx, hz);
         creature.userData.dying = {
             t: 0,
             dauer: K.kippDauerSec,
             nachklang: K.leichnamSec,
             sinken: K.leichnamSinkSec,
-            dirX: hx,
-            dirZ: hz,
+            dirX: kipp.hx,
+            dirZ: kipp.hz,
             baseQuat: creature.quaternion.clone(),
             baseY: creature.position.y,
-            hebe: this._todHebeTafel(creature, hx, hz),
+            hebe: kipp.hebe,
         };
         this._leibZeichenFrei(creature);
         // DER LEICHNAM IST KEIN WESEN (Welle LF kampf Nachbesserung 3): er verlässt die EINE Liste der Wesen im Moment des
@@ -19933,9 +19958,48 @@ class AnazhRealm {
                 pE.push(dx * ax + dz * az);
             }
         }
-        // der gezeichnete Boden unter einem Punkt (die Karte im Band um das Gesetz der Wurzel)
-        const g0 = this.getTerrainHeightAt(px, pz);
-        const boden = (x, z) => this._standSicht(x, z, g0, false);
+        // DER BODEN UNTER JEDEM PUNKT (Leben-Schau 2, Gegenprüfung 10.10.): das Gesetz unter einem Punkt ist der Schritt-Boden
+        // des Leibs von seiner Wurzel aus (`_koerperSchritt` vom Boden UNTER dem Leib, `_koerperBodenUnter`: über den Hang,
+        // nie durch ein Dach — eine Wand ist null und trägt keinen Punkt), auf einem Raster von TOD_BODEN_ZELLE um die
+        // Wurzel (je Zelle einmal je Tod, bilinear); gezeichnet ist die Karte, wo sie im Band um dieses Gesetz liegt
+        // (`_standSicht`, Lehre 22). In der Höhle trägt die Karte das Dach, außerhalb des Bands: dort trägt das Gesetz. Bis
+        // dahin las die Tod-Lage die Oberkante der Säule als Gesetz der Wurzel und je Punkt nur dieses eine: in der Höhle der
+        // Schau (−876,0/−1229,5, der Grund fällt 45° längs der Kipp-Richtung) sank der tote Wolf 0,46 m in den Grund
+        // (gate:fall-waechter O3).
+        const g0 = this._koerperBodenUnter(px, py - (creature.userData._hopH || 0), pz);
+        const Z = AnazhRealm.TOD_BODEN_ZELLE;
+        const zellen = new Map();
+        const zelle = (i, k) => {
+            const key = (i + 512) * 1024 + (k + 512);
+            let g = zellen.get(key);
+            if (g === undefined) {
+                const s = this._koerperSchritt(px, pz, g0, px + i * Z, pz + k * Z);
+                g = s === null ? NaN : s;
+                zellen.set(key, g);
+            }
+            return g;
+        };
+        const boden = (x, z) => {
+            const fx = (x - px) / Z;
+            const fz = (z - pz) / Z;
+            const i = Math.floor(fx);
+            const k = Math.floor(fz);
+            const tx = fx - i;
+            const tz = fz - k;
+            // bilinear über die Ecken mit Boden (eine Wand-Ecke fällt aus dem Gewicht, nie der ganze Punkt)
+            const g00 = zelle(i, k);
+            const g10 = zelle(i + 1, k);
+            const g01 = zelle(i, k + 1);
+            const g11 = zelle(i + 1, k + 1);
+            const w00 = Number.isFinite(g00) ? (1 - tx) * (1 - tz) : 0;
+            const w10 = Number.isFinite(g10) ? tx * (1 - tz) : 0;
+            const w01 = Number.isFinite(g01) ? (1 - tx) * tz : 0;
+            const w11 = Number.isFinite(g11) ? tx * tz : 0;
+            const sw = w00 + w10 + w01 + w11;
+            if (!(sw > 0)) return NaN;
+            const sg = (w00 && g00 * w00) + (w10 && g10 * w10) + (w01 && g01 * w01) + (w11 && g11 * w11);
+            return this._standSicht(x, z, sg / sw, false);
+        };
         // je Winkel: der kleinste Abstand Haut − Boden bei Wurzel-Hebung 0
         const spalt = (k) => {
             const t = (wMax * k) / n;
@@ -19953,12 +20017,39 @@ class AnazhRealm {
         };
         const stand = spalt(0);
         if (!Number.isFinite(stand)) return null;
+        // DAS SOLL DES KLEINSTEN ABSTANDS: was er im Stand war — stand der Leib schon im Boden (der Stand am Fuß einer Wand
+        // steiler als 45°, stand < 0), geht das Soll im Kippen linear auf 0: der tote Leib legt sich AUF den Boden, nie
+        // tiefer. Vorher hielt die Tafel den Stand-Fehler: ein Wolf, der 0,68 m im Hang stand, sank kippend 0,92 m in den Grund.
         const hebe = new Float32Array(n + 1);
         for (let k = 1; k <= n; k++) {
+            const soll = stand < 0 ? stand * (1 - k / n) : stand;
             const sp = spalt(k);
-            hebe[k] = Number.isFinite(sp) ? stand - sp : hebe[k - 1];
+            hebe[k] = Number.isFinite(sp) ? soll - sp : hebe[k - 1];
         }
         return hebe;
+    }
+
+    // DIE KIPP-RICHTUNG (Prüfung 2 K02a, Wolf am Wandfuß, Gier 225°): der Leib kippt auf die Flanke hangab (_kreaturFaellt)
+    // — steigt dort der Boden unter der gekippten Haut so, dass die Tafel die Wurzel mehr als eine Stufe heben müsste, kippt
+    // er in eine Wand (unter Fels gelesen am Punkt: die Wurzel stieg 2,8 m auf den Wand-Buckel; aus dem Raster ohne Wand sank
+    // er 0,84 m hinein). Dann fällt er dorthin, wo Platz ist: zuerst auf die andere Flanke, erst wo keine Flanke Platz hat
+    // längs der Achse (der Leib liegt auf einer Flanke — längs der Achse stand der Hirsch auf dem Hinterteil, Bild ks09);
+    // hat keine Richtung Platz, die mit dem kleinsten Hub. Hebt die erste Flanke höchstens eine Stufe, bleibt alles, wie es war.
+    _todKippWahl(creature, hx, hz) {
+        const hub = (h) => (h ? Math.max(...h) : Infinity);
+        const stufe = AnazhRealm.PLAYER_STEP_UP;
+        let best = { hx, hz, hebe: this._todHebeTafel(creature, hx, hz) };
+        if (!(hub(best.hebe) > stufe)) return best;
+        for (const [x, z] of [
+            [-hx, -hz],
+            [hz, -hx],
+            [-hz, hx],
+        ]) {
+            const hebe = this._todHebeTafel(creature, x, z);
+            if (hub(hebe) < hub(best.hebe)) best = { hx: x, hz: z, hebe };
+            if (!(hub(best.hebe) > stufe)) return best;
+        }
+        return best;
     }
 
     // === Helper: kontext-abhängiges Args-Mapping für creature_task(paramArg) ===
@@ -21599,6 +21690,17 @@ class AnazhRealm {
             this._kreaturLeib(c, L, leib);
             const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
             const h = dt / teile;
+            ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
+            ud._wandBlickGang = false; // sein Grund (unten) ist ohne Blick voraus gesetzt — der Gang blickt neu
+            // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
+            // im festen Schritt): der Grund des letzten Stoß-Schritts, steht der Leib noch dort; sonst der Boden unter ihm. Nie
+            // der Boden-Cache des Frame-Takts (Budget, Bildrate: gate:fahr-leben L8, Bär 1,8 cm je Bildrate).
+            const sx = c.position.x;
+            const sz = c.position.z;
+            const sg0 = ud._stossGrund;
+            const amOrt = sg0 && sg0.x === sx && sg0.z === sz;
+            const sg = amOrt ? sg0.g : this._koerperBodenUnter(sx, c.position.y, sz);
+            const sgGenau = amOrt ? sg0.genau : this._feldKanteGenau(sx, sg, sz);
             for (let k = 0; k < teile; k++) {
                 const x0 = c.position.x;
                 const z0 = c.position.z;
@@ -21624,7 +21726,36 @@ class AnazhRealm {
             // Wasserlinie seiner Gestalt), steht er an seiner Schwimm-Linie (`_kreaturSchwimmLinie`, dieselbe wie im
             // Frame-Takt) — vorher setzte dieser Schritt auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser
             // sank beim Gleiten 2,77 m tief), danach setzte der Frame-Takt die Höhe mit seiner Welle (L8: 0,127 m je Bildrate).
-            const gesetz = this.getTerrainHeightAt(c.position.x, c.position.z);
+            // der Boden UNTER dem Leib (`_koerperBodenUnter`, ab seiner Höhe), nie die Oberkante der Säule — ein in der Höhle
+            // gestoßenes Tier glitt sonst aufs Dach. Der Boden ist der SCHRITT vom Grund des Schritt-Beginns (`_koerperSchritt`):
+            // trug er den Leib in die Wand, steht er, wo der Schritt begann, und der Stoß stirbt in der Wand (unelastisch, wie
+            // an jeder Hülle).
+            let gesetz = this._koerperSchritt(sx, sz, sg, c.position.x, c.position.z);
+            if (gesetz === null) {
+                c.position.x = sx;
+                c.position.z = sz;
+                sv.x = 0;
+                sv.z = 0;
+                gesetz = sg;
+            }
+            // DIE STEILE WAND: ein Stoß schiebt den Leib keinen Hang steiler als 45° hinauf — dort stirbt er wie an jeder Wand.
+            // Vorher hielt ihn nur die Reibung, und ein mit 6 m/s gestoßener Wolf glitt 4,7 m die 56°-Wand der Höhle hinauf.
+            // Gemessen an der GENAUEN Kante (`_feldKanteGenau`): die Bisektion des Boden-Lesers trägt 8 mm je nach Start-Höhe,
+            // und die Start-Höhe trägt die Bildrate (Lockstep, gate:fahr-leben L8).
+            let genau = gesetz === sg ? sgGenau : this._feldKanteGenau(c.position.x, gesetz, c.position.z);
+            if (genau - sgGenau > Math.hypot(c.position.x - sx, c.position.z - sz)) {
+                c.position.x = sx;
+                c.position.z = sz;
+                sv.x = 0;
+                sv.z = 0;
+                gesetz = sg;
+                genau = sgGenau;
+            }
+            const sgN = ud._stossGrund || (ud._stossGrund = { x: 0, z: 0, g: 0, genau: 0 });
+            sgN.x = c.position.x;
+            sgN.z = c.position.z;
+            sgN.g = gesetz;
+            sgN.genau = genau;
             const spiegelS = this._kreaturSchwimmt(c, gesetz);
             if (spiegelS !== null) c.position.y = this._kreaturSchwimmLinie(c, spiegelS);
             else {
@@ -21682,10 +21813,19 @@ class AnazhRealm {
     // und Frame auf eine feste Diagonale (DDA durchs Dichtefeld + Segment gegen JEDES Bauwerk), nur im Blick, die Antwort
     // ein Math.random-Stoß — 29–37 % der CPU (OMEN-Profil), und die Tiere liefen durch Häuser (R-D7: 21 % der Frames).
     _kreaturHuellenKontakt(creature, L, px0, pz0) {
-        const arches = this.state.architectures;
-        if (!arches || !arches.length) return;
         const ud = creature.userData;
         const p = creature.position;
+        // DIE FELS-WAND (`_creatureGroundY`): die Ebene vor der Wand hält den Leib — er geht seitlich und zurück, nie hinein
+        const wh = ud && ud._wandHalt;
+        if (wh) {
+            const ein = (p.x - wh.x) * wh.nx + (p.z - wh.z) * wh.nz;
+            if (ein > 0) {
+                p.x -= wh.nx * ein;
+                p.z -= wh.nz * ein;
+            }
+        }
+        const arches = this.state.architectures;
+        if (!arches || !arches.length) return;
         const t = this.state.creatureAnimationTime;
         let nah = ud._huellenNah;
         if (!nah || Math.abs(p.x - nah.x) > 4 || Math.abs(p.z - nah.z) > 4 || !(t - nah.t < 1)) {
@@ -22930,6 +23070,61 @@ class AnazhRealm {
         return ud._koerperLaengeM;
     }
 
+    // DIE HALBE LÄNGE des Leibs (m) — vom Ort der Wurzel bis zur Probe vorn und hinten (`_creatureSlopeProben`) und bis zur
+    // Stirn seines Schritts (`_kreaturKletterwand`): 0,35 × Körperlänge, 0,25–4 m, einmal je Kreatur.
+    _kreaturHalbLaenge(creature) {
+        const ud = creature.userData;
+        if (!Number.isFinite(ud._slopeHalbLen))
+            ud._slopeHalbLen = Math.min(4, Math.max(0.25, this._creatureKoerperLaenge(creature) * 0.35));
+        return ud._slopeHalbLen;
+    }
+
+    // DIE KLETTERWAND (Prüfung 2 K02a, gate:fall-waechter „Wolf läuft in die Wand"): steht ein Leib mit der Wurzel bei (x, z)
+    // auf dem Grund g und blickt längs (dx, dz), liegen Stirn und Heck eine halbe Länge `hl` vor und hinter ihr — ihr Boden
+    // das Gesetz am Punkt ab g (`_koerperBodenUnter`, wie die Sicht unter Fels die vier Proben der Lage liest). Steht die
+    // Stirn höher über dem Heck, als der Leib nicken kann (2 · hl · tan GANG_DECKEL_RAD — darüber hebt ihn der Deckel), ist
+    // dort kein Gang, nur Wand. Sie gilt UNTER FELS (`_kreaturUnterFels`); unter freiem Himmel bleibt eine Klippe, wie sie
+    // war (`_koerperSchritt`). Vorher stieg der laufende Wolf die gekrümmte Höhlenwand hinauf, bis seine Stirn 1,40 m über
+    // dem Heck lag, und der Nick-Deckel hob ihn 1,00 m über seinen Grund.
+    _kreaturKletterwand(x, z, g, dx, dz, hl) {
+        const vorn = this._koerperBodenUnter(x + dx * hl, g, z + dz * hl);
+        const heck = this._koerperBodenUnter(x - dx * hl, g, z - dz * hl);
+        return vorn - heck > 2 * hl * Math.tan(AnazhRealm.GANG_DECKEL_RAD);
+    }
+
+    // UNTER FELS steht ein Leib auf dem Grund g bei (x, z), wenn über ihm Fels hängt — in 2,5 bis 13 m Höhe (fünf
+    // Dichte-Proben: die Höhle trägt ≥ 2,4 m Luft, `STAND_SICHT_BAND`; ein Überhang ebenso). Ein Spalt im Gesetz, den das
+    // 1,8-m-Netz nicht zeichnet, ist offen zum Himmel: dort nicht (gate:kreatur-takt, der Wolf jagte den Sprinter durch
+    // einen 2,7 m tiefen Spalt und blieb sonst darin). Leser: die Kletterwand des Tier-Schritts (`_creatureGroundY`).
+    _kreaturUnterFels(x, g, z) {
+        if (!Number.isFinite(g)) return false;
+        for (const h of [2.5, 4, 6, 9, 13]) if (this._fieldSolid(x, g + h, z)) return true;
+        return false;
+    }
+
+    // DER GANG BIS ZUR WAND: welcher Teil t ∈ [0, 1] eines Schritts von (x0, z0, g0) nach (x1, z1, g1) trägt die Stirn
+    // (längs dx, dz) noch unter dem Deckel, und sein Grund g — {t: 1, g: g1}, wenn sein Ende es tut, sonst vier Halbierungen
+    // über den Schritt, jede mit ihrem Schritt-Boden (`_koerperSchritt`; ein Dach ist Wand). Der Leib hält dort, wo die Stirn
+    // die Wand erreicht, nie einen ganzen Cache-Schritt (0,5 m) davor oder dahinter. Kosten nur an der Wand.
+    _kreaturGangBis(x0, z0, g0, x1, z1, g1, dx, dz, hl) {
+        if (!this._kreaturKletterwand(x1, z1, g1, dx, dz, hl)) return { t: 1, g: g1 };
+        let lo = 0;
+        let gLo = g0;
+        let hi = 1;
+        for (let k = 0; k < 4; k++) {
+            const t = (lo + hi) / 2;
+            const x = x0 + (x1 - x0) * t;
+            const z = z0 + (z1 - z0) * t;
+            const g = this._koerperSchritt(x0, z0, g0, x, z);
+            if (g === null || this._kreaturKletterwand(x, z, g, dx, dz, hl)) hi = t;
+            else {
+                lo = t;
+                gLo = g;
+            }
+        }
+        return { t: lo, g: gLo };
+    }
+
     // ═══ TIER-BODENKONTAKT ═══
     // Vier Bodenproben je NAHER Kreatur im Leib-Rahmen (vorn/hinten längs der Gier, links/rechts quer): Pitch und Roll
     // über _slopePitch (dieselbe Hang-Formel wie der Biped), Basis = Proben-Mitte. Jede Probe liest die SICHT
@@ -22939,10 +23134,7 @@ class AnazhRealm {
     // bei 27° Querhang (Leben-Prüfung R-D15, R-D10, R-D11). Keine finite Probe → null. Linse: gate:tier-stand.
     _creatureSlopeProben(creature, centerG) {
         const ud = creature.userData;
-        let hl = ud._slopeHalbLen;
-        if (!Number.isFinite(hl)) {
-            hl = ud._slopeHalbLen = Math.min(4, Math.max(0.25, this._creatureKoerperLaenge(creature) * 0.35));
-        }
+        const hl = this._kreaturHalbLaenge(creature);
         const hw = hl * 0.45; // die halbe Spur der Pfoten quer zum Leib
         const yaw = creature.rotation.y || 0;
         const fX = Math.sin(yaw);
@@ -22951,30 +23143,61 @@ class AnazhRealm {
         const ox = [fX * hl, -fX * hl, fZ * hw, -fZ * hw];
         const oz = [fZ * hl, -fZ * hl, -fX * hw, fX * hw];
         const y = [0, 0, 0, 0];
+        let mitteSicht = null;
+        // der Ort, an dem die Mitte ihr Gesetz las (`_creatureGroundY`, Cache je 0,5 m)
+        const gx = Number.isFinite(ud.cachedGroundX) ? ud.cachedGroundX : creature.position.x;
+        const gz = Number.isFinite(ud.cachedGroundZ) ? ud.cachedGroundZ : creature.position.z;
         for (let k = 0; k < 4; k++) {
             const px = creature.position.x + ox[k];
             const pz = creature.position.z + oz[k];
             this._creatureSlopeProbe(P[k], px, pz, centerG);
             const v = this._standSicht(px, pz, Number.isFinite(P[k].g) ? P[k].g : centerG, false);
-            y[k] = Number.isFinite(v) ? v : centerG;
+            // EINE KANTE ist keine Ebene (Leben-Schau 2, gate:fall-waechter — wie der Fahr-Kern `fahrEbene`): liegt das Gesetz
+            // einer Probe steiler als 45° über oder unter dem der Mitte — gemessen zwischen den Orten, an denen beide ihr Gesetz
+            // lasen (ihre Caches wandern je 0,5 m, eine nachlaufende Hang-Probe ist keine Kante) — und weiter als zwei Stufen,
+            // trägt sie weniger, ab vier Stufen nicht mehr: sie stünde in einer anderen Schicht (ein Loch in die tiefere Höhle),
+            // und die Mitte der vier zog den Leib in den Fels (ein in der Höhle gestoßener Wolf stand 1,5 m unter seinem Grund).
+            // Dort trägt die Sicht unter der Mitte. Weich, damit eine Hang-Stufe keine Treppe zieht (gate:koerper-stand).
+            const roh = Number.isFinite(v) ? v : centerG;
+            const dh = Number.isFinite(P[k].g) ? Math.abs(P[k].g - centerG) : 0;
+            const stufe = AnazhRealm.PLAYER_STEP_UP;
+            const w =
+                dh <= Math.hypot(P[k].x - gx, P[k].z - gz)
+                    ? 1
+                    : Math.max(0, Math.min(1, (4 * stufe - dh) / (2 * stufe)));
+            if (w >= 1) y[k] = roh;
+            else {
+                if (mitteSicht === null) {
+                    const ms = this._standSicht(creature.position.x, creature.position.z, centerG, false);
+                    mitteSicht = Number.isFinite(ms) ? ms : centerG;
+                }
+                y[k] = mitteSicht + (roh - mitteSicht) * w;
+            }
         }
         if (!y.every(Number.isFinite)) return null;
-        return {
-            mitte: (y[0] + y[1] + y[2] + y[3]) / 4,
-            pitch: this._slopePitch(y[0], y[1], 2 * hl),
-            roll: Math.max(-0.6, Math.min(0.6, Math.atan2(y[2] - y[3], 2 * hw))),
-        };
+        const pitch = this._slopePitch(y[0], y[1], 2 * hl);
+        const deckel = AnazhRealm.GANG_DECKEL_RAD;
+        const roll = Math.max(-deckel, Math.min(deckel, Math.atan2(y[2] - y[3], 2 * hw)));
+        // DER DECKEL DES NICKS hebt den Leib (Prüfung 2 K02a, Wolf am Wandfuß, Gier 180°): steiler als der Deckel (0,6 rad)
+        // stünde die bergseitige Probe unter der Ebene des Leibs — die Wurzel hebt sich um das, was der Deckel offen lässt,
+        // der Leib liegt auf der höheren Stütze (die Pfoten talseitig reicht der Gang). Ohne Deckel (≤ 34°) bleibt die Mitte.
+        // Ein GEHENDER Leib kommt dorthin nie (die Kletterwand seines Schritts, `_creatureGroundY`): der Hub trägt den
+        // gesetzten oder gestoßenen Leib am Wandfuß, nie den, der in die Wand läuft.
+        const offen =
+            Math.max(0, Math.abs(y[1] - y[0]) / 2 - hl * Math.tan(Math.abs(pitch))) +
+            Math.max(0, Math.abs(y[2] - y[3]) / 2 - hw * Math.tan(Math.abs(roll)));
+        return { mitte: (y[0] + y[1] + y[2] + y[3]) / 4 + offen, pitch, roll };
     }
     // EINE Gesetz-Probe (gecacht): re-scannt nur nach > 0.5 m Wanderung UND mit freiem Frame-Budget (der
     // Kreatur-FPS-Dirigent V17.113 — dieselbe Kasse wie _creatureGroundY; Budget leer → der stale Cache trägt den Frame).
-    // Der Boden UNTER dem Körper (`_kreaturBodenUnter` ab der Gesetz-Höhe der Mitte), nie die Oberkante der Säule.
+    // Der Boden UNTER dem Körper (`_koerperBodenUnter` ab der Gesetz-Höhe der Mitte), nie die Oberkante der Säule.
     _creatureSlopeProbe(p, x, z, yRef) {
         const dx = x - p.x;
         const dz = z - p.z;
         if (Number.isFinite(p.g) && Number.isFinite(dx) && Number.isFinite(dz) && dx * dx + dz * dz < 0.25) return;
         if (!(this._creatureGroundBudget > 0)) return;
         this._creatureGroundBudget--;
-        const g = this._kreaturBodenUnter(x, yRef, z);
+        const g = this._koerperBodenUnter(x, yRef, z);
         p.x = x;
         p.z = z;
         p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
@@ -24363,6 +24586,14 @@ class AnazhRealm {
                 `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen passenden Höhlen-Graph`
             );
         geom.hoehle = Object.assign({}, H, { step: this._voxelChunkConfig(lod).step });
+        geom.setAttribute(
+            "aHimmel",
+            new THREE.Float32BufferAttribute(
+                AnazhRealm._himmelsSicht(meshData.indices, H.tri, meshData.positions.length / 3, geom.hoehle.step),
+                1
+            )
+        );
+        this._bodenFarbeUnterFels(geom);
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -24383,7 +24614,16 @@ class AnazhRealm {
             const oy = base - lod0Cfg.floorDrop;
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
-        const karte = this._bodenKarteAusMesh(meshData.positions, meshData.indices, meshData.colors, cx, cz, lod);
+        // die Karte liest die FERTIGE Farbe (nach dem Stein unter Fels), wie der synchrone Bau — vorher die rohe des
+        // Workers: am Spawn-Chunk 27 Grün-Zellen anders als der Sync-Bau (playtest Perf-3.c Boden-Karte)
+        const karte = this._bodenKarteAusMesh(
+            meshData.positions,
+            meshData.indices,
+            geom.attributes.color.array,
+            cx,
+            cz,
+            lod
+        );
         return {
             mesh,
             kind: "filled",
@@ -24475,6 +24715,7 @@ class AnazhRealm {
     // (r164 hat webgl-legacy/WebGLNodeBuilder entfernt → NodeMaterials laufen
     // nur auf WebGPU). `kind`-Param gestrichen.
     _configureRenderer(renderer) {
+        this._augenLichtRegistrieren(renderer);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
         renderer.setClearColor(0x000000, 1);
@@ -28796,6 +29037,10 @@ class AnazhRealm {
         // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        geom.setAttribute(
+            "aHimmel",
+            new THREE.Float32BufferAttribute(AnazhRealm._himmelsSicht(indices, triZelle, positions.length / 3, step), 1)
+        );
         if (hoehle)
             geom.hoehle = {
                 tri: Int32Array.from(triZelle),
@@ -29668,6 +29913,30 @@ class AnazhRealm {
             colors[i * 3 + 2] = out[2];
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        this._bodenFarbeUnterFels(geom);
+    }
+
+    // UNTER FELS WÄCHST NICHTS (K02a, Auge 11 bei 762/−138): die Boden-Farbe ist eine Funktion von (x, z) — Wiese, Feuchte,
+    // Schnee liegen auf der Säule —, und der Höhlen-Boden 25 m unter der Wiese trug ihr Grün (der Stoff liest daraus noch
+    // seine Wiese, `_terrainGeologyAlbedo`). Was den Himmel nicht sieht, ist Fels: die Farbe fällt mit der Himmels-Sicht
+    // (`aHimmel`, `_himmelsSicht`) auf den Stein der Palette (`BODEN_FARBE.rock`) — an der Mündung ein Saum, in der Höhle
+    // Stein; unter dem Himmel (aHimmel 1) bleibt jede Zahl, wie sie war. Beide Bau-Wege rufen es: der synchrone über
+    // `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht (`_buildVoxelChunkDataFromWorkerMesh`).
+    _bodenFarbeUnterFels(geom) {
+        const col = geom.attributes.color;
+        const him = geom.attributes.aHimmel;
+        if (!col || !him) return;
+        const fels = AnazhRealm.BODEN_FARBE.rock;
+        const C = col.array;
+        const H = him.array;
+        for (let i = 0; i < H.length; i++) {
+            const t = 1 - H[i];
+            if (!(t > 0)) continue;
+            C[3 * i] += (fels[0] - C[3 * i]) * t;
+            C[3 * i + 1] += (fels[1] - C[3 * i + 1]) * t;
+            C[3 * i + 2] += (fels[2] - C[3 * i + 2]) * t;
+        }
+        col.needsUpdate = true;
     }
 
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
@@ -31597,6 +31866,7 @@ class AnazhRealm {
             side: THREE.DoubleSide,
             geomorph: true,
             wegeKarte: true,
+            himmelsSicht: true, // die Verdeckung des Himmels-Lichts und die Normale der Höhle (`_buildPbrNodeMaterial`)
         });
         // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
         // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
@@ -32331,7 +32601,17 @@ class AnazhRealm {
                     // 68 statt 133 — gate:altlasten Normal-Wand). Derselbe Wert wie vorher, `normalWorld` baut nur die
                     // Licht-Stufe (die End-Normale aus diesem normalNode).
                     const _nGeo = _Tn.normalWorldGeometry.mul(_Tn.faceDirection);
-                    let _baseN = _Tn.mix(_nGeo, _up, _flat);
+                    // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
+                    // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
+                    // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
+                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, `_himmelsSicht`)
+                    // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
+                    // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
+                    // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
+                    const _hS = opts.himmelsSicht ? _Tn.attribute("aHimmel", "float") : null;
+                    let _baseN = _hS
+                        ? _Tn.mix(_Tn.normalWorldGeometry, _up, _flat.mul(_hS))
+                        : _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
                     if (_Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
@@ -32380,6 +32660,9 @@ class AnazhRealm {
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
             }
+            // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
+            // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
+            if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
                 try {
@@ -33724,8 +34007,10 @@ class AnazhRealm {
         const tgt = geom.attributes.aMorphTarget;
         const nrm = geom.attributes.normal;
         const col = geom.attributes.color;
+        const him = geom.attributes.aHimmel;
         const idx = geom.index ? geom.index.array : null;
         if (!pos || !tgt || !idx) return;
+        if (!him) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keine Himmels-Sicht (aHimmel)`);
         // Kürzere Spannen überspringen (Sliver). Nicht höher: dünne Risse (0.12–0.3 m) zeigen am
         // Grazing-Winkel den Nachthimmel; der Z-Fight ist durch Skirt + DoubleSide entschärft.
         const MIN_SPAN = 0.12;
@@ -33736,6 +34021,7 @@ class AnazhRealm {
         const P = [],
             N = [],
             C = [],
+            HS = [],
             I = [];
         const seen = new Set();
         for (let t = 0; t < idx.length; t += 3) {
@@ -33769,6 +34055,7 @@ class AnazhRealm {
                 for (const v of [a, b, b, a]) {
                     N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
                     C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
+                    HS.push(him.getX(v));
                 }
                 I.push(base, base + 1, base + 2, base, base + 2, base + 3);
                 // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
@@ -33779,6 +34066,7 @@ class AnazhRealm {
                     N.push(0, 0.2, 0); // grob nach oben/aussen — der Vorhang ist meist verdeckt
                     const cv = s === 1 || s === 2 ? b : a;
                     C.push(col ? col.getX(cv) : 0.5, col ? col.getY(cv) : 0.5, col ? col.getZ(cv) : 0.5);
+                    HS.push(him.getX(cv));
                 }
                 I.push(sBase, sBase + 1, sBase + 2, sBase, sBase + 2, sBase + 3);
             }
@@ -33790,6 +34078,8 @@ class AnazhRealm {
         bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
         bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(P), 3));
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
+        // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
+        bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         this._chunkSatzEin("boden", "stitch:" + key, bg, key);
@@ -34709,7 +34999,14 @@ class AnazhRealm {
     // Kapsel-Schritt (`_fieldSurfaceBelow`), ab der Körper-Höhe abwärts statt ab der Chunk-Decke. `_voxelSurfaceY` nahm
     // die erste Luft→Fels-Grenze von OBEN: ein Wolf, gerufen auf dem Höhlen-Boden, stand im ersten Frame auf dem Dach
     // (+32,6 m). Ohne Fels im Band (Sturz, Spawn hoch über dem Grund) trägt die Oberkante der Säule.
-    _kreaturBodenUnter(x, yRef, z) {
+    // JEDER KÖRPER (Leben-Schau 2, 09.10., Spaltgrund −900,3/−976,1): auch das Gefährt und das gestoßene Tier lesen hier
+    // ihren Boden. Der Fahr-Schritt las die Oberkante der Säule (`getTerrainHeightAt`): unter dem Überhang des Spalts
+    // (Fels 22,3–29,5 m, Luft 16–22,3 m) stand der Boden 12 m ÜBER dem Wagen, der Flug-Zweig des Kerns ließ ihn fallen —
+    // −6 428 m nach 30 s, durch den Grund bei 16 m. Leser: `_creatureGroundY`, `_creatureSlopeProbe`, `_kreaturStossSchritt`,
+    // `_fahrBoden`, `_rittEbene`, `_rittSchritt`, `_todHebeTafel`, der Ruf `spawnCreatureAt`. gate:fall-waechter (Q) nennt
+    // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
+    // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
+    _koerperBodenUnter(x, yRef, z) {
         if (Number.isFinite(yRef)) {
             // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
             // Gang (ein Spawn im Gestein), dort trägt die Säule
@@ -34718,6 +35015,40 @@ class AnazhRealm {
             if (g !== null) return g;
         }
         return this._voxelSurfaceY(x, z);
+    }
+
+    // DIE KANTE GENAU: die Fels-Grenze um den gefundenen Grund `g` (`_fieldSurfaceBelow` liegt bis 7,8 mm darunter, je nach
+    // Start-Höhe) auf 0,2 µm — wer an ihr misst, misst den Ort, nie die Höhe, von der aus gesucht wurde. Leser: der Stoß.
+    _feldKanteGenau(x, g, z) {
+        let lo = g - 0.002;
+        let hi = g + 0.01;
+        if (!this._fieldSolid(x, lo, z) || this._fieldSolid(x, hi, z)) return g;
+        for (let i = 0; i < 16; i++) {
+            const m = (lo + hi) / 2;
+            if (this._fieldSolid(x, m, z)) lo = m;
+            else hi = m;
+        }
+        return lo;
+    }
+
+    // DER SCHRITT DES KÖRPERS (Leben-Schau 2, CI 38009273564): der Boden eines Leibs, der auf dem Grund `vg` bei (vx, vz)
+    // stand und nach (x, z) geht — oder null: die WAND. Gelesen wie `_koerperBodenUnter` ab seinem Grund (abwärts, der
+    // Hang 2 m aufwärts, jenseits die Oberkante der Säule — eine Klippe unter freiem Himmel), aber nie DURCH EIN DACH: steigt
+    // der Leib über eine Stufe, muss über seinem alten Stand Luft bis über den neuen Grund sein, sonst liegt Fels dazwischen
+    // (die Decke der Höhle, ein Überhang) und der Schritt geht in die Wand. Vorher trug jeder Schritt im Fels die Oberkante
+    // der Säule: ein in der Höhle an die Wand gestoßener Wolf stand auf ihrem Dach (11,88 m über dem Grund), ein in sie
+    // laufender ebenso (11,73 m). Leser: `_creatureGroundY`, `_kreaturStossSchritt`.
+    _koerperSchritt(vx, vz, vg, x, z) {
+        const y0 = vg + AnazhRealm.PLAYER_STEP_UP;
+        if (!this._fieldSolid(x, y0, z)) {
+            const g = this._fieldSurfaceBelow(x, y0, z, 40);
+            return g !== null ? g : this._koerperBodenUnter(x, NaN, z);
+        }
+        const g = this._koerperBodenUnter(x, vg, z);
+        const oben = g + 0.2;
+        if (this._fieldSolid(vx, oben, vz)) return null;
+        const fels = this._fieldSurfaceBelow(vx, oben, vz, oben - vg);
+        return fels !== null && fels > y0 ? null : g;
     }
 
     // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
@@ -34761,33 +35092,127 @@ class AnazhRealm {
         return unten + 1.2 * Math.min(1, Math.max(0, t)) > hoehe;
     }
 
-    // Boden-Cache je Kreatur: der Boden unter dem Körper (`_kreaturBodenUnter`) nur neu scannen, wenn sie sich > 0.5 m
+    // Boden-Cache je Kreatur: der Boden unter dem Körper (`_koerperBodenUnter`) nur neu scannen, wenn sie sich > 0.5 m
     // bewegt hat UND Frame-Budget frei ist — sonst Cache; eine frische Kreatur scannt einmal ohne Budget (ein
     // Makro-Schätzwert hob sie in der Höhle aufs Dach, und von dort fand der Scan nur noch das Dach). Der Scan-Aufwand pro
     // Frame ist unabhängig von der Kreatur-Zahl. EINE Quelle für Settle + `_creatureWaterContextAt` (kein Doppel-Scan); der
     // liefert { inWater, depthBelow, submerged, distToShore (Cap 12 m), shoreDir (XZ-Einheit Richtung Ufer | null) }.
+    // DIE FELS-WAND DES TIERS (Leben-Schau 2, CI 38009273564): ein Schritt (kein Versetzen — weiter als 2 m vom letzten
+    // Boden trägt die Säule, Ruf und Portal) liest den Boden als Schritt vom letzten Grund (`_koerperSchritt`): ging der
+    // Leib in die Wand, steht er wieder, wo er zuletzt Boden las, sein Lauf hält, und die Ebene durch diesen Ort quer zum
+    // Schritt hält ihn (`_wandHalt`, im Hüllen-Kontakt jedes Tier-Schritts). Jeder neue Boden blickt eine Cache-Weite
+    // (0,5 m) längs der Gier voraus — liegt dort Wand, hält die Ebene den Leib davor, bevor er hinein geht (EINE
+    // Dichte-Probe je Neu-Scan, die Wand-Regel nur, wo sie Fels trifft). Vorher trug der Fels-Fall die Oberkante der
+    // Säule: der Wolf stand auf dem Dach der Höhle.
+    // DIE KLETTERWAND (Prüfung 2 K02a): Wand ist auch, wo die Stirn des Leibs höher über seinem Heck steht, als er nicken
+    // kann (`_kreaturKletterwand`) — der Schritt endet dort, wo die Stirn sie erreicht (`_kreaturGangBis`), und der Blick
+    // voraus (`_kreaturBlickVoraus`) setzt die Ebene an denselben Ort: nach jedem neuen Grund, und wo der Grund ohne Blick
+    // gesetzt wurde (Ruf, Stoß), die Gier sich dreht oder der Leib anläuft, auch am gecachten Ort. Die Regel gilt dem GANG
+    // (der Leib läuft, `_steuer.v` > 0) UNTER FELS (`_kreaturUnterFels`) — ein Stoß, eine Hülle, die ihn schiebt, tragen ihn
+    // wie zuvor (der Stoß hat seine 45°-Wand, `_kreaturStossSchritt`), eine Klippe unter freiem Himmel bleibt, wie sie war.
+    // Vorher hielt nur ein Dach, und der Blick
+    // fehlte nach dem Stoß: der laufende Wolf stieg die gekrümmte Höhlenwand 1 m hinauf und sprang beim nächsten Grund 0,5 m
+    // zurück, unter CPU-Last hob ihn der Nick-Deckel 1,00 m über seinen Grund.
     _creatureGroundY(creature) {
         const cx = creature.position.x;
         const cz = creature.position.z;
         const ud = creature.userData;
+        let schritt = false;
         if (ud.cachedGroundY !== undefined) {
             const dx = cx - ud.cachedGroundX;
             const dz = cz - ud.cachedGroundZ;
-            if (dx * dx + dz * dz < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
+            const d2 = dx * dx + dz * dz;
+            if (d2 < 0.25) {
+                // < 0.5 m bewegt → Cache; läuft der Leib und fehlt sein Blick als Gang, oder drehte sich die Gier → er blickt
+                // vom Ort des Grunds
+                if (
+                    this._creatureGroundBudget > 0 &&
+                    Number.isFinite(ud.cachedGroundY) &&
+                    ud._steuer &&
+                    ud._steuer.v > 0 &&
+                    (!ud._wandBlickGang || !(Math.abs((creature.rotation.y || 0) - ud._wandBlickGier) <= 0.25))
+                ) {
+                    this._creatureGroundBudget--;
+                    this._kreaturBlickVoraus(creature, ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY);
+                }
+                return ud.cachedGroundY;
+            }
+            schritt = d2 < 4 && Number.isFinite(ud.cachedGroundY);
         }
         if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
             if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
-            const gY = this._kreaturBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
+            let gY = schritt
+                ? this._koerperSchritt(ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY, cx, cz)
+                : this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
+            const hl = this._kreaturHalbLaenge(creature);
+            if (schritt) {
+                const x0 = ud.cachedGroundX;
+                const z0 = ud.cachedGroundZ;
+                const g0 = ud.cachedGroundY;
+                const n = Math.hypot(cx - x0, cz - z0);
+                const nx = (cx - x0) / n;
+                const nz = (cz - z0) / n;
+                const gang = !!(ud._steuer && ud._steuer.v > 0);
+                const w =
+                    gY === null
+                        ? { t: 0, g: g0 }
+                        : gang && this._kreaturUnterFels(x0, g0, z0)
+                          ? this._kreaturGangBis(x0, z0, g0, cx, cz, gY, nx, nz, hl)
+                          : { t: 1, g: gY };
+                if (w.t < 1) {
+                    // die Wand: der Leib steht, wo seine Stirn sie erreicht (oder wo er zuletzt Boden las), sein Lauf hält
+                    const hx = x0 + (cx - x0) * w.t;
+                    const hz = z0 + (cz - z0) * w.t;
+                    ud._wandHalt = { x: hx, z: hz, nx, nz };
+                    ud._wandBlickGier = creature.rotation.y || 0;
+                    ud._wandBlickGang = gang;
+                    creature.position.x = hx;
+                    creature.position.z = hz;
+                    if (ud._steuer) ud._steuer.v = 0;
+                    ud.cachedGroundY = w.g;
+                    ud.cachedGroundX = hx;
+                    ud.cachedGroundZ = hz;
+                    return w.g;
+                }
+            }
             ud.cachedGroundY = gY;
             ud.cachedGroundX = cx;
             ud.cachedGroundZ = cz;
+            this._kreaturBlickVoraus(creature, cx, cz, gY);
             return gY;
         }
-        // Budget erschöpft: leicht veralteter Cache (imperzeptibel, < 1 Frame) ODER
-        // — für eine frische Kreatur ohne Cache — ein billiger Makro-Schätzwert
-        // (kein Density-Scan; nächsten Frame vom Budget verfeinert).
-        if (ud.cachedGroundY !== undefined) return ud.cachedGroundY;
-        return this._terrainMacroSurfaceY(cx, cz);
+        // Budget erschöpft: der leicht veraltete Cache (imperzeptibel, < 1 Frame) — eine frische Kreatur scannte oben. Der
+        // Makro-Schätzwert dahinter war unerreichbar und las die Oberkante der Säule (das Dach); er fiel (Leben-Schau 2).
+        return ud.cachedGroundY;
+    }
+
+    // DER BLICK VORAUS des Tier-Schritts (`_creatureGroundY`): vom Grund g bei (x, z) eine Cache-Weite (0,5 m) längs der
+    // Gier — liegt dort ein Dach über dem Weg (`_koerperSchritt` null) oder erreicht die Stirn eine Kletterwand
+    // (`_kreaturGangBis`), hält die Ebene `_wandHalt` den Leib dort, wo es beginnt. Erst die Filter: Fels eine Stufe über dem
+    // Grund dort, oder (im Gang unter Fels) die Kletterwand am nächsten Stand — erst dann der Schritt-Boden dort. Gier und
+    // Gang des Blicks stehen in `_wandBlickGier` und `_wandBlickGang` (ein Ruf, ein Stoß löscht sie).
+    _kreaturBlickVoraus(creature, x, z, g) {
+        const ud = creature.userData;
+        const gier = creature.rotation.y || 0;
+        const gang = !!(ud._steuer && ud._steuer.v > 0);
+        ud._wandBlickGier = gier;
+        ud._wandBlickGang = gang;
+        ud._wandHalt = null;
+        if (!Number.isFinite(g)) return;
+        const hl = this._kreaturHalbLaenge(creature);
+        const vx = Math.sin(gier);
+        const vz = Math.cos(gier);
+        const ax = x + vx * 0.5;
+        const az = z + vz * 0.5;
+        const kletter = gang && this._kreaturUnterFels(x, g, z);
+        if (
+            !this._fieldSolid(ax, g + AnazhRealm.PLAYER_STEP_UP, az) &&
+            !(kletter && this._kreaturKletterwand(ax, az, g, vx, vz, hl))
+        )
+            return;
+        const gA = this._koerperSchritt(x, z, g, ax, az);
+        const t = gA === null ? 0 : kletter ? this._kreaturGangBis(x, z, g, ax, az, gA, vx, vz, hl).t : 1;
+        if (t < 1) ud._wandHalt = { x: x + vx * 0.5 * t, z: z + vz * 0.5 * t, nx: vx, nz: vz };
     }
 
     _creatureWaterContextAt(creature, surfaceY) {
@@ -34867,8 +35292,8 @@ class AnazhRealm {
         if (!part || !part.size || !part.position) return null;
         // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden
         // (groupOrigin + part.position·scale, Größe part.size·scale — der
-        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp). `mul`: die Welt-Skala des Studio-Baums
-        // (`_baumWeltSkala`), mit der er gezeichnet wird.
+        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp). `mul`: die Welt-Skala des Studio-Werks
+        // (`_studioWeltSkala`), mit der es gezeichnet wird.
         const scale = (Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1) * (mul > 0 ? mul : 1);
         const hx = ((part.size.x || 1) / 2) * scale;
         const hy = ((part.size.y || 1) / 2) * scale;
@@ -34961,12 +35386,13 @@ class AnazhRealm {
         return { minX, maxX, minZ, maxZ, topY, botY };
     }
 
-    // Die Welt-Skala eines Studio-Baums: dieselbe, mit der er gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets)
-    // — 1 für alles, was kein Studio-Baum ist (Haus, Tor, Wagen und Fels tragen ihre eigene Studio-Hülle).
-    _baumWeltSkala(entry) {
+    // Die Welt-Skala eines Studio-Werks: dieselbe, mit der es gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets) —
+    // JEDES Werk, das das Studio zeichnet (Leben-Schau 2, 09.10.: bis dahin nur die Bäume; Fels 0,34–0,42, Kristall 0,15 und
+    // Blume 0,27 kollidierten in Vorlagen-Größe), 1 für alles, was das Studio nicht zeichnet.
+    _studioWeltSkala(entry) {
         if (!entry || !this._foundryEnabled()) return 1;
         const pr = this._foundryPresetForEntry(entry);
-        if (!pr || !this._foundryPresetIsTree(pr)) return 1;
+        if (!pr) return 1;
         const k = this._foundryWorldScaleMatrix(pr).elements[0];
         return Number.isFinite(k) && k > 0 ? k : 1;
     }
@@ -35013,14 +35439,16 @@ class AnazhRealm {
                 return;
             }
         }
-        // FELS-/KRISTALL-HÜLLE (18.07.) — vierter Gesetz-Zweig (die Tor-Klasse):
-        // Streu-Formationen decken die GEMESSENE Studio-Hülle statt der
-        // Substanz-Variant-Parts. Fail-closed: keine Tafel/Hülle → Parts-Pfad.
+        // FELS-/KRISTALL-HÜLLE (18.07.) — vierter Gesetz-Zweig (die Tor-Klasse): JEDES Werk, das das Studio als Fels
+        // zeichnet, deckt die GEMESSENE Studio-Hülle in seiner Welt-Skala statt der Substanz-Parts (Leben-Schau 2: der
+        // Felsturm stieß als 4,4 × 16,8-m-Eisenmast, gezeichnet stand ein 1,4 × 0,8-m-Zacken). Fail-closed: das Studio
+        // zeichnet ihn nicht → Parts-Pfad (die Parts SIND dann das Bild).
         const felsParts = this._felsBlockerParts(entry);
         if (felsParts) {
             const felsBoxes = [];
+            const kFels = this._studioWeltSkala(entry);
             for (const part of felsParts) {
-                const aabb = this._blockerComputePartAABB(entry, part);
+                const aabb = this._blockerComputePartAABB(entry, part, kFels);
                 if (aabb) felsBoxes.push(aabb);
             }
             if (felsBoxes.length) {
@@ -35035,8 +35463,9 @@ class AnazhRealm {
         // DIE STAMM-HÜLLE IM WELTMASS (Leben-Schau 07.10., L-Kamera / V-D1): der Studio-Baum steht in der Welt × seiner
         // Welt-Skala (`_foundryWorldScaleMatrix`, 3,4–4,0), sein Stamm-Blocker stand im Vorlagen-Maß — 0,19 m halbe Breite
         // und 0,6 m hoch an einer Kiefer, deren Stamm 13 m hoch steht: der Spieler lief durch den Stamm, die 3rd-Kamera
-        // stand in ihm (0,53 m von der Achse). Kollision == Optik: die Teile tragen dieselbe Skala wie die Gestalt.
-        const kWelt = this._baumWeltSkala(entry);
+        // stand in ihm (0,53 m von der Achse). Kollision == Optik: die Teile tragen dieselbe Skala wie die Gestalt — jedes
+        // Studio-Werk, nicht nur der Baum (Leben-Schau 2: die Blume 0,27 stand 2,1 m über ihrem Bild).
+        const kWelt = this._studioWeltSkala(entry);
         const scD = (Number.isFinite(entry.scale) ? entry.scale : 1) * kWelt;
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
@@ -35636,24 +36065,34 @@ class AnazhRealm {
         return teile;
     }
 
-    // Fels-/Kristall-Hülle: die Streu-Formationen (fels_var* bzw. kristall_var*) kollidieren mit der
-    // gemessenen Studio-Hülle (fx.huelle der Tafel, synchron via __terrainCore.PHYTO_PRESETS) statt mit
-    // Substanz-Parts. NUR die *_var-Klasse: felsbogen/felsturm behalten ihre Öffnungs-Parts (eine
-    // Voll-Box schlösse den Bogen).
+    // Fels-/Kristall-Hülle: JEDES Werk, das das Studio als Fels zeichnet (sein Preset ist ein Fels-Rezept mit gemessener
+    // Hülle: die Streu-Formationen fels_var*/kristall_var*, Felsturm, Felsbogen, Steinblock, Kiesel, Felsbrocken, Geode …),
+    // kollidiert mit der gemessenen Studio-Hülle (fx.huelle der Tafel, synchron via __terrainCore.PHYTO_PRESETS) statt mit
+    // Substanz-Parts. Bis zur Leben-Schau 2 nur die *_var-Klasse: Felsbogen und Felsturm behielten ihre Spender-Parts (ein
+    // Stein-Bogen 8,4 × 8 m, ein Eisen-Mast 4,4 × 16,8 m) — gezeichnet wird aber der Zacken des Studios, ohne Bogen.
+    // Nur, wo das Studio zeichnet (ohne Foundry sind die Parts das Bild).
     _felsBlockerParts(entry) {
-        if (!entry || typeof entry.type !== "string") return null;
-        if (!/^(fels|kristall)_var\d+$/.test(entry.type)) return null;
+        if (!entry || typeof entry.type !== "string" || !this._foundryEnabled()) return null;
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
         const tab = tc && tc.PHYTO_PRESETS;
         if (!tab) return null;
         const preset = this._foundryPresetForEntry(entry);
         const rec = preset ? tab[preset] : null;
-        const h = rec && rec.kind === "rock" && rec.fx && rec.fx.huelle;
-        if (!h || !Number.isFinite(h.rx) || !Number.isFinite(h.y1)) return null;
+        if (!rec || rec.kind !== "rock") return null;
+        // DIE HÜLLE SEINER GESTALT (Leben-Schau 2): das Studio zeichnet je Samen EINE von V Gestalten (`_foundryVariantFor`),
+        // die Tafel trägt je Gestalt ihre gemessene Hülle [x0, x1, y1, z0, z1] im Vorlagen-Raum. V liest der Blocker aus dem
+        // Kern (synchron am Spawn, Lockstep) — für die Fels-Arten dieselbe Zahl, die das Buch dem Bild gibt. Eine Fels-Art ohne
+        // Zeile für ihre Gestalt ist ein Vertragsbruch (laut), nie ein stiller Rückfall auf die Spender-Parts.
+        const H = rec.fx && rec.fx.huellen;
+        const g = this._foundryVariantFor(entry.seed, preset, AnazhRealm._studioGestaltenKern(preset));
+        const h = Array.isArray(H) && Number.isInteger(g) ? H[g - 1] : null;
+        if (!Array.isArray(h) || h.length !== 5 || !h.every(Number.isFinite))
+            return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".fx.huellen[" + g + "]");
+        const [x0, x1, y1, z0, z1] = h;
         return [
             {
-                position: { x: 0, y: h.y1 / 2, z: 0 },
-                size: { x: h.rx * 2, y: h.y1, z: h.rz * 2 },
+                position: { x: (x0 + x1) / 2, y: y1 / 2, z: (z0 + z1) / 2 },
+                size: { x: x1 - x0, y: y1, z: z1 - z0 },
             },
         ];
     }
@@ -35666,41 +36105,40 @@ class AnazhRealm {
         if (!tor) return null;
         const mu = tor.mu;
         if (!mu || !Number.isFinite(mu.apexY)) return null;
-        const halbTiefe = Math.max(
-            mu.zFace + 0.05,
-            (mu.orders - 1) * mu.depthStep + (mu.frameDepth * (1 + 0.18 * (mu.orders - 1))) / 2
-        );
-        const tiefe = halbTiefe * 2;
-        const pfostenB = Math.max(0.3, mu.jambW * (mu.orders + 0.5));
-        const kroneH = Math.max(0.3, mu.jambW * 1.3);
+        // DIE MASSE AUS DEM BILD (Leben-Schau 2, gate:kollision-bild): Pfosten-Außenkante, Tiefe und Krone der gezeichneten
+        // Gestalt trägt das Gesetzbuch als gemintete Daten (`__portaCore.TOR_HUELLE`, je Seite [pfostenX, pfostenZ, obenX,
+        // obenZ] + Oberkante, gemessen an buildInstance LOD 0 — gate:porta-contract hält die Mint-Treue) — die Öffnung (±rimAx
+        // bis zur Bogenkurve) und die Schultern bleiben das Gesetz. Bis dahin schätzte der Wirt sie aus dem Gesetz (der
+        // Drachentor-Pfosten stand 0,57 m neben seinem Bild, die Ruine 0,99 m innerhalb), danach baute er die Gestalt beim
+        // ersten Spawn jeder Gestalt synchron auf dem Haupt-Thread nach (Gegenprüfung 10.10.: 15–50 ms je Gestalt, 231–244 ms
+        // für die sieben, am Genesis-Ring, an jedem Restore mit Toren, am ersten Setzen in der Werkstatt). Jetzt eine Lesung.
+        const hm = AnazhRealm.Gesetz("porta:TOR_HUELLE." + tor.gestalt, null);
+        const zeileOk = (z) => Array.isArray(z) && z.length === 4 && z.every(Number.isFinite);
+        if (!hm || !Array.isArray(hm.seiten) || !hm.seiten.every(zeileOk) || !Number.isFinite(hm.oberkante))
+            return AnazhRealm._kernPflichtBruch("porta:TOR_HUELLE." + tor.gestalt);
         const rise = Math.max(0.05, mu.apexY - mu.springY);
         const schulterB = mu.rimAx * 0.45;
         const schulterY0 = mu.springY + rise * 0.3;
-        const pseudo = [
-            // Pfosten L/R — von der Öffnungskante (±rimAx) nach außen, volle Höhe.
-            {
-                position: { x: -(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 },
-                size: { x: pfostenB, y: mu.apexY, z: tiefe },
-            },
-            {
-                position: { x: +(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 },
-                size: { x: pfostenB, y: mu.apexY, z: tiefe },
-            },
-            // Bogen-Schultern — die Haunches über der Kämpferlinie (Mitte frei).
-            {
-                position: { x: -(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
-                size: { x: schulterB, y: mu.apexY - schulterY0, z: tiefe },
-            },
-            {
-                position: { x: +(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
-                size: { x: schulterB, y: mu.apexY - schulterY0, z: tiefe },
-            },
-            // Krone — Schlussstein-/Rim-Zone über dem Scheitel, volle Breite.
-            {
-                position: { x: 0, y: mu.apexY + kroneH / 2, z: 0 },
-                size: { x: 2 * (mu.rimAx + pfostenB), y: kroneH, z: tiefe },
-            },
-        ];
+        const box = (x0, x1, y0, y1, hz) =>
+            x1 - x0 > 0.02 && y1 - y0 > 0.02 && hz > 0.01
+                ? {
+                      position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: 0 },
+                      size: { x: x1 - x0, y: y1 - y0, z: 2 * hz },
+                  }
+                : null;
+        const pseudo = [];
+        [-1, 1].forEach((sx, k) => {
+            const [pfostenX, pfostenZ, obenX, obenZ] = hm.seiten[k];
+            const spiegel = (b) =>
+                b ? Object.assign(b, { position: Object.assign(b.position, { x: sx * b.position.x }) }) : null;
+            // Pfosten — von der Öffnungskante (rimAx) bis zur gezeichneten Außenkante, bis zur Kämpferlinie
+            pseudo.push(spiegel(box(mu.rimAx, pfostenX, 0, mu.springY, pfostenZ)));
+            // über der Kämpferlinie bis zum Scheitel: der Rahmen bis zur Außenkante oben, die Schulter über der Öffnung
+            pseudo.push(spiegel(box(mu.rimAx, obenX, mu.springY, mu.apexY, obenZ)));
+            pseudo.push(spiegel(box(mu.rimAx - schulterB, mu.rimAx, schulterY0, mu.apexY, obenZ)));
+            // die Krone über dem Scheitel bis zur gezeichneten Oberkante, die Hälfte dieser Seite
+            pseudo.push(spiegel(box(0, obenX, mu.apexY, hm.oberkante, obenZ)));
+        });
         const boxes = [];
         for (const part of pseudo) {
             const aabb = this._blockerComputePartAABB(entry, part);
@@ -55189,12 +55627,31 @@ class AnazhRealm {
         const { vc } = AnazhRealm._fahrSchrittGesetz();
         const eb = vc.fahrEbene(
             { auf: this._rittAufstand(entry) },
-            this._fahrTerrainBoden || (this._fahrTerrainBoden = (a, b) => this.getTerrainHeightAt(a, b)),
+            this._werkBoden(entry),
             x,
             z,
             fahrtYaw - Math.PI / 2
         );
         return eb ? { y: eb.y, nick: -eb.steig, wank: eb.wank } : null;
+    }
+
+    // DER BODEN UNTER EINEM WERK (Leben-Schau 2, 09.10.): der Boden des Körpers (`_koerperBodenUnter`) ab der Höhe des
+    // Werks — der Ebene seiner Räder im Fahr-Zustand, sonst seiner Basis (y − 0,5). Bis dahin las jeder Fahr- und Ritt-Leser
+    // die Oberkante der Säule: unter einem Überhang oder in einer Höhle lag der Boden über dem Werk (der Wagen fiel im
+    // Spaltgrund durch die Welt, ein in der Höhle gesetzter Wagen sprang aufs Dach). Je Werk EINE Funktion.
+    _werkBoden(entry) {
+        if (entry._werkBodenFn) return entry._werkBodenFn;
+        entry._werkBodenFn = (x, z) => {
+            const fz = entry._fahr;
+            const ref =
+                fz && Number.isFinite(fz.y)
+                    ? fz.y
+                    : entry.position && Number.isFinite(entry.position.y)
+                      ? entry.position.y - 0.5
+                      : NaN;
+            return this._koerperBodenUnter(x, ref, z);
+        };
+        return entry._werkBodenFn;
     }
 
     // DER FAHR-SATZ eines gerittenen Werks (Welle L, Q13): der EINE Fahr-Schritt des Kerns (vehicle-core fahrGesetz) aus
@@ -55241,8 +55698,9 @@ class AnazhRealm {
         if (entry._fahrBodenFn) return entry._fahrBodenFn;
         const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
         const traegt = gestalt.linie !== Infinity;
+        const boden = this._werkBoden(entry); // der Boden UNTER dem Werk, nie die Oberkante der Säule
         entry._fahrBodenFn = (x, z) => {
-            const t = this.getTerrainHeightAt(x, z);
+            const t = boden(x, z);
             if (!traegt || !Number.isFinite(t)) return t;
             this._koerperWasser(x, z, t, gestalt);
             return gestalt.lage.schwimmt ? gestalt.lage.unterkante : t;
@@ -55333,7 +55791,7 @@ class AnazhRealm {
         // Gesetz-Werk die Wasserlinie auf der ballistischen Vertikale des Fahr-Schritts (`_fahrBoden`), seine Feder federt
         // den Aufbau (Nick · Wank · Hub); ein Werk ohne Fahr-Gesetz folgt ihr mit exp-k 8.
         entry._afloat = false;
-        const t0 = this.getTerrainHeightAt(pm.x, pm.z);
+        const t0 = this._werkBoden(entry)(pm.x, pm.z);
         const gestalt = this._fahrzeugGestalt(entry, rideProf);
         if (gestalt.linie !== Infinity && Number.isFinite(t0)) {
             this._koerperWasser(pm.x, pm.z, t0, gestalt);
@@ -67453,6 +67911,7 @@ class AnazhRealm {
                     ["color", 3],
                     ["aMorphTarget", 3],
                     ["aMorphWeight", 1],
+                    ["aHimmel", 1],
                 ],
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
@@ -68400,6 +68859,43 @@ class AnazhRealm {
     // die Schatten-Karte trägt je Strahl die ERSTE Fläche vom Licht, und die liegt in Himmels-Luft oder hinter einer Mündung —
     // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
     // Zellen, nie die Weltgröße.
+
+    // DIE HIMMELS-SICHT des Bodens (K02a, Auge 11 bei 762/−138): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht —
+    // die Umgebung (der EINE Himmel), Hemi und Ambient sind Himmels-Licht, und der Boden-Stoff liest diesen Wert als seine
+    // Verdeckung (`aoNode` des Chunk-Materials). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft,
+    // −1 = Himmels-Luft): jede Fläche der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt
+    // (`step` m) um exp(−step / HIMMELS_SICHT.m) — über die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine
+    // Höhle ohne Himmels-Fläche im Chunk sieht ihn nie (0). Vorher lag der Himmel auf jeder Höhlen-Wand: 22 m unter dem Fels
+    // stand die Ich-Sicht in einem blaugrauen Schleier (Sonne im Schatten, Umgebung voll; ohne Umgebung Helligkeit 0).
+    // Ohne Höhlen-Graph (kein Boden-Chunk) sieht jede Fläche den Himmel.
+    static _himmelsSicht(index, tri, n, step) {
+        const V = new Float32Array(n);
+        if (!tri) return V.fill(1);
+        const nT = (index.length / 3) | 0;
+        if (tri.length !== nT) throw new Error(`_himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const schritt = Math.exp(-step / AnazhRealm.HIMMELS_SICHT.m);
+        const hop = new Int8Array(n).fill(-1);
+        for (let t = 0; t < nT; t++)
+            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
+        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
+        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
+        for (let k = 1; k <= schritte; k++) {
+            let neu = 0;
+            for (let t = 0; t < nT; t++) {
+                const a = index[3 * t],
+                    b = index[3 * t + 1],
+                    c = index[3 * t + 2];
+                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
+                    if (hop[a] < 0) ((hop[a] = k), neu++);
+                    if (hop[b] < 0) ((hop[b] = k), neu++);
+                    if (hop[c] < 0) ((hop[c] = k), neu++);
+                }
+            }
+            if (!neu) break;
+        }
+        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
+        return V;
+    }
 
     // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
     // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).
@@ -73046,18 +73542,8 @@ class AnazhRealm {
             this._blattAtlasBild = m.blattAtlas;
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
-        // Die Welt-Skala der Bäume steht (`PORTAL_RENDER_CONFIG.placement`): die Stamm-Hülle der Bäume, die vor dem Buch
-        // entstanden (Reload mit kaltem Buch), misst jetzt im Weltmaß.
-        this._baumHuellenNachBuch();
-    }
-
-    // Die Stamm-Blocker (`_populateBlockerAABBs` × `_baumWeltSkala`) jedes Baum-Eintrags neu — einmal nach der Buch-Ankunft,
-    // die Kosten tragen nur die Baum-Einträge.
-    _baumHuellenNachBuch() {
-        for (const e of this.state.architectures || []) {
-            if (!e || !e.position || !/^baum_/.test(e.type || "")) continue;
-            this._populateBlockerAABBs(e);
-        }
+        // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
+        // `_baumHuellenNachBuch` fiel mit dem Hand-Spiegel, Leben-Schau 2.)
     }
 
     // DER START-GURT (Leben-Schau 07.10., L7): je Studio-Art EIN platzierbares Werk, in der Reihenfolge des Katalogs
@@ -77444,8 +77930,10 @@ class AnazhRealm {
     // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
     // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
     // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.
-    _foundryVariantFor(seed, preset) {
-        const V = this._foundryGestalten(preset);
+    // `Vk` (optional): die Gestalten-Zahl aus dem Kern (`_studioGestaltenKern`) — der Blocker eines Fels-Werks wählt seine
+    // Gestalt synchron am Spawn, das Bild mit der Zahl des Buchs (für die Fels-Arten dieselbe; gate:kollision-bild misst es).
+    _foundryVariantFor(seed, preset, Vk) {
+        const V = Number.isInteger(Vk) && Vk >= 1 ? Vk : this._foundryGestalten(preset);
         if (!V) return null;
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
@@ -78273,19 +78761,21 @@ class AnazhRealm {
         return out;
     }
     // Die EINE Template→Welt-Scale-Quelle (Studio `SCALE[sp]·tr.s·0.82`): gecachte Scale-Matrix für die
-    // Flat-Leaves. Bäume tragen den 0.82-Wald-Mul, strauch/blume die reinen Tabellen-Werte, Fels/Kristall/
-    // Unbekanntes → Identität (separat abgeglichen, hier NICHT anfassen). Read-only → ein Cache je Faktor.
+    // Flat-Leaves. Bäume tragen den 0.82-Wald-Mul, strauch/blume/Fels/Kristall die reinen Tabellen-Werte,
+    // Unbekanntes → Identität. Read-only → ein Cache je Faktor. Leser: das Bild (`_foundryFlattenFor`, die Karte) UND die
+    // Kollision (`_studioWeltSkala`) — beide in derselben Skala.
     _foundryWorldScaleMatrix(preset) {
         if (!this._foundryScaleMats) this._foundryScaleMats = new Map();
         // Die LIVE-Quelle führt: `PORTAL_RENDER_CONFIG.placement` (foundry-core.js via get-render-config)
         // trägt die Welt-Skala je Preset — Studio-Edit oder neues Preset folgt ohne Code (gate:nervensystem).
-        // STUDIO_WORLD_SCALE ist NUR Boot-Fenster-Fallback. Understory (Vorlagen-scale < 1) trägt den
-        // 0.82-Mul NICHT; ein Preset ohne scale-Zeile → 1.
+        // Vor dem Buch liest sie DIESELBE Tafel synchron aus dem Kern (`__terrainCore.PORTAL_RENDER_CONFIG`) — der
+        // Hand-Spiegel STUDIO_WORLD_SCALE fiel (er trug nur die Bäume: ein Fels kollidierte bis zum Buch in
+        // Vorlagen-Größe, Leben-Schau 2). Understory (Vorlagen-scale < 1) trägt den 0.82-Mul NICHT; ein Preset ohne
+        // scale-Zeile → 1.
         const rc = AnazhRealm._studioRenderConfig;
-        const live = rc && rc.placement && rc.placement.scale ? rc.placement : null;
-        const T = live ? live.scale : AnazhRealm.STUDIO_WORLD_SCALE;
-        const treeMul =
-            live && typeof live.treeScaleMul === "number" ? live.treeScaleMul : AnazhRealm.STUDIO_TREE_SCALE_MUL;
+        const live = rc && rc.placement && rc.placement.scale ? rc.placement : AnazhRealm._studioPlatzKern();
+        const T = live.scale;
+        const treeMul = live.treeScaleMul;
         const base = T && Object.prototype.hasOwnProperty.call(T, preset) ? T[preset] : 1;
         const k = base === 1 ? 1 : base < 1 ? base : base * treeMul;
         let m = this._foundryScaleMats.get(k);
@@ -91048,6 +91538,7 @@ class AnazhRealm {
         this._dayNightApplyHemiUndLuft(angle, tint, sunDir);
         this._dayNightApplyWaterMaterials(lightDir);
         this._dayNightApplyBelichtung();
+        this._dayNightApplyAugenLicht();
     }
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor/lightColor/
@@ -91517,6 +92008,117 @@ class AnazhRealm {
         const karte = (0.18 / Math.PI) * E;
         const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
         rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+    }
+
+    // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
+    // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
+    // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
+    // Anteil des Himmels, der fehlt (`_himmelAmAuge`), und ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem
+    // Abstand, mit Abfall in `AUGEN_LICHT.karteM`) dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte). Unter
+    // dem Himmel steht es auf 0 — sein Graph überspringt sich dann (`_augenLichtRegistrieren`), die Welt zahlt es nur in der
+    // Höhle.
+    _dayNightApplyAugenLicht() {
+        const st = this.state;
+        const L = st.augenLicht;
+        if (!L) return;
+        const cam = st.camera;
+        const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
+        st.himmelAmAuge = h;
+        if (cam) L.position.copy(cam.position);
+        const B = AnazhRealm.BELICHTUNG;
+        const A = AnazhRealm.AUGEN_LICHT;
+        const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
+        const I = (1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall) * (1 / k);
+        L.intensity = I > 1e-4 ? I : 0;
+        L.updateMatrixWorld();
+    }
+
+    // Die Klasse des Lichts des Auges: ein Punkt-Licht (r184 rechnet es wie jedes andere), mit eigenem Knoten
+    // (`_augenLichtRegistrieren`). Einmal je Seite.
+    static _augenLichtKlasse() {
+        if (!AnazhRealm._AugenLicht) AnazhRealm._AugenLicht = class AugenLicht extends THREE.PointLight {};
+        return AnazhRealm._AugenLicht;
+    }
+
+    // Der Knoten des Lichts des Auges (r184 vendor/three.webgpu.min.js gelesen: AnalyticLightNode.setup baut die direkte
+    // Lichtung über `lightsNode.setupDirectLight`, die Farbe ist eine Uniform aus Farbe × Stärke, je Frame). Er ist der
+    // PointLightNode, nur hinter einer Bedingung auf diese Uniform: steht das Licht auf 0 (unter dem Himmel), überspringt jedes
+    // Programm seinen Term — die Welt zahlt das Licht nur, wo es leuchtet, und die Licht-Menge (der Programm-Schlüssel) bleibt
+    // dieselbe. Der Null-Renderer hat keinen Licht-Graph; ein echter ohne Knoten-Bibliothek ist ein Vendor-Bruch (laut).
+    _augenLichtRegistrieren(renderer) {
+        if (!renderer || renderer._isHeadlessNull) return;
+        const lib = renderer.library;
+        if (!lib || typeof lib.getLightNodeClass !== "function" || typeof lib.addLight !== "function")
+            throw new Error("_augenLichtRegistrieren: r184-Renderer ohne Licht-Bibliothek (Vendor-Drift)");
+        const Klasse = AnazhRealm._augenLichtKlasse();
+        if (lib.getLightNodeClass(Klasse)) return;
+        const Punkt = lib.getLightNodeClass(THREE.PointLight);
+        if (!Punkt) throw new Error("_augenLichtRegistrieren: r184 kennt keinen PointLightNode (Vendor-Drift)");
+        const TSL = THREE.TSL;
+        class AugenLichtNode extends Punkt {
+            setup(builder) {
+                const c = this.colorNode;
+                TSL.If(c.x.add(c.y).add(c.z).greaterThan(0), () => Punkt.prototype.setup.call(this, builder));
+            }
+        }
+        lib.addLight(AugenLichtNode, Klasse);
+    }
+
+    // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
+    // (`aHimmel`) um ihn, gewichtet 1/(d² + ¼) im Umkreis `AUGEN_LICHT.umkreisM`. Steht der Ort in keiner Luft-Box eines
+    // Höhlen-Knotens (`_hoehlenKnoten`, dieselbe Probe wie die Höhlen-Sicht), ist er Himmels-Luft: 1. Die Kosten folgen dem
+    // Auge: nur in einer Höhlen-Box, nur die Zellen im Umkreis, neu erst nach `AUGEN_LICHT.neuM` Weg oder neuem Boden.
+    _himmelAmAuge(x, y, z) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get("boden") : null;
+        if (!s || !s.hoehle) return 1;
+        const A = AnazhRealm.AUGEN_LICHT;
+        const c = this._himmelAugeMerk || (this._himmelAugeMerk = { x: NaN, y: NaN, z: NaN, boden: -1, wert: 1 });
+        const dx0 = x - c.x,
+            dy0 = y - c.y,
+            dz0 = z - c.z;
+        if (c.boden === s.hoehle.boden && dx0 * dx0 + dy0 * dy0 + dz0 * dz0 < A.neuM * A.neuM) return c.wert;
+        c.x = x;
+        c.y = y;
+        c.z = z;
+        c.boden = s.hoehle.boden;
+        const v = this._himmelAugeV || (this._himmelAugeV = new THREE.Vector3());
+        v.set(x, y, z);
+        const span = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(x / span),
+            cz = Math.floor(z / span);
+        const um = [];
+        let drin = false;
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                const b = s.bloecke.get(cx + dx + "," + (cz + dz));
+                if (!b) continue;
+                um.push(b);
+                if (!drin && b.hoehle)
+                    for (const kn of b.hoehle.knoten) if (kn.luft && kn.luft.containsPoint(v)) drin = true;
+            }
+        if (!drin) return (c.wert = 1);
+        const P = s.geom.attributes.position.array;
+        const H = s.geom.attributes.aHimmel.array;
+        const R2 = A.umkreisM * A.umkreisM;
+        let summe = 0,
+            gewicht = 0;
+        for (const b of um)
+            for (const zl of b.zellen) {
+                if (zl.huelle.isEmpty() || zl.huelle.distanceToPoint(v) > A.umkreisM) continue;
+                const I = zl.idx;
+                for (let i = 0; i < I.length; i++) {
+                    const o = I[i] * 3;
+                    const ddx = P[o] - x,
+                        ddy = P[o + 1] - y,
+                        ddz = P[o + 2] - z;
+                    const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+                    if (d2 > R2) continue;
+                    const w = 1 / (d2 + 0.25);
+                    summe += w * H[I[i]];
+                    gewicht += w;
+                }
+            }
+        return (c.wert = gewicht > 0 ? summe / gewicht : 1);
     }
 
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben
@@ -93920,6 +94522,15 @@ class AnazhRealm {
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
+        // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): von Anfang an in der Szene — die Licht-Menge jedes Programms
+        // bleibt dieselbe (kein Neubau der Pipelines, keine Bundle-Lücke, wenn das Auge eine Höhle betritt); unter dem
+        // Himmel steht es auf 0 und sein Graph überspringt sich.
+        const AL = AnazhRealm.AUGEN_LICHT;
+        const augenLicht = new (AnazhRealm._augenLichtKlasse())(AL.farbe, 0, AL.reichweiteM, AL.abfall);
+        augenLicht.castShadow = false;
+        augenLicht.name = "augenLicht";
+        scene.add(augenLicht);
+        this.state.augenLicht = augenLicht;
         // DIE LUFT (`scene.fogNode`): die EINE Luftperspektive für jedes Material; Farbe, Extinktion und Sonne
         // synct _applyDayNightToScene. Ungebautes deckt der Fern-Ring (Loch-Deckel), nie ein Nebel-Kokon.
         this._luftEnsure();
@@ -94906,7 +95517,7 @@ class AnazhRealm {
     }
 
     // Kein Ammo: der Spieler läuft feld-nativ (`_stepCharacter`), Kreaturen erden aus
-    // `_creatureGroundY`, Fahrzeuge aus `getTerrainHeightAt`. Dieser Schritt fährt nur den
+    // `_creatureGroundY`, Fahrzeuge aus `_werkBoden` (beide `_koerperBodenUnter`). Dieser Schritt fährt nur den
     // Feld-Controller (Wasser-Auftrieb/Killplane des Spielers leben in `_stepCharacter`).
     _loopPhysicsSync(delta, currentTime) {
         this._stepCharacter(delta, currentTime);
@@ -99825,6 +100436,24 @@ AnazhRealm.WASSER_BILD_RAND = 0.6;
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
 AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
+// DIE HIMMELS-SICHT des Bodens (`_himmelsSicht`): das Himmels-Licht fällt in der Höhlen-Luft je Meter Netz-Weg von der
+// nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
+AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
+// DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
+// Helligkeit wie am Tag — die 18-%-Karte das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge adaptiert an sein
+// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 blendet es bis
+// `reichweiteM` aus (bei 10 m 94 %, 15 m 70 %, 18 m 12 %). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
+// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz; ohne Abfall trägt der Fels in jeder
+// Nähe seine Maserung. `farbe` warmweiß (~4500 K, sRGB) — eine Flamme (0xffc489) tönte den Fels orange; der Himmel am
+// Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
+AnazhRealm.AUGEN_LICHT = Object.freeze({
+    karteM: 2,
+    abfall: 0,
+    reichweiteM: 20,
+    farbe: 0xffe2c6,
+    umkreisM: 4,
+    neuM: 0.25,
+});
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
@@ -102894,26 +103523,33 @@ AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
 });
 
-// STUDIO_WORLD_SCALE — Studio-Welt-Scale-Tabelle (Vorlage phytogenesis, byte-treu): das Studio baut
-// Templates KLEIN (Baum ~4.1 m) und platziert sie mit DIESEN Faktoren (Bäume zusätzlich ·0.82) →
-// 14-m-Eichen, 1.3-m-Sträucher. Konsument: der EINE Chokepoint `_foundryWorldScaleMatrix` →
-// `_foundryFlattenFor`/`_foundryBuildImpostorFlat`. Ändert sich die Tabelle im Portalfile, muss
-// dieser Spiegel nach (Doc-Sync-Grep: STUDIO_WORLD_SCALE).
+// DIE PLATZIERUNG DES KERNS (Leben-Schau 2, 09.10.): die Welt-Skala je Preset (`placement.scale`, `treeScaleMul`) lebt
+// EINMAL in foundry-core.js (`PORTAL_RENDER_CONFIG.placement`) und reist synchron im Terrain-Namensraum — der Leser vor
+// dem Buch (`_foundryWorldScaleMatrix`). Der Hand-Spiegel STUDIO_WORLD_SCALE (acht Baum-/Busch-Zeilen) fiel: ohne Fels-
+// und Kristall-Zeilen kollidierte jeder Fels bis zum Buch in Vorlagen-Größe. Fehlt der Kern, bricht es laut.
+AnazhRealm._studioPlatzKern = function () {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const pl = tc && tc.PORTAL_RENDER_CONFIG ? tc.PORTAL_RENDER_CONFIG.placement : null;
+    if (!pl || !pl.scale || typeof pl.treeScaleMul !== "number")
+        throw new Error("Die Platzierung: foundry-core.js fehlt (__terrainCore.PORTAL_RENDER_CONFIG.placement)");
+    return pl;
+};
+// Die Gestalten-Zahl einer Art aus dem Kern (`PORTAL_RENDER_CONFIG.lod.budget.gestalten`, synchron): die Budget-Zeile der
+// Art, sonst '*' — dieselbe Regel wie `_foundryGestalten` am Buch (das Buch mischt die Zeilen der Zweit-Kerne hinzu, die
+// Fels-Arten tragen nur die Zeilen dieses Kerns). Leser: der Fels-Blocker (`_felsBlockerParts`).
+AnazhRealm._studioGestaltenKern = function (preset) {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const rc = tc ? tc.PORTAL_RENDER_CONFIG : null;
+    const G = rc && rc.lod && rc.lod.budget ? rc.lod.budget.gestalten : null;
+    if (!G) return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.lod.budget.gestalten");
+    const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
+    if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
+    return V;
+};
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit
 // Kronen-Schüchternheit + Arten-Nische. `crown` = Beästungsradius (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.
 // Gelesen NUR von `_forestCellDarts`/`_forestPlantChunk`.
-AnazhRealm.STUDIO_WORLD_SCALE = Object.freeze({
-    eiche: 4.16,
-    fichte: 4.85,
-    birke: 4.13,
-    tanne: 4.26,
-    weide: 2.75,
-    mammut: 4.31,
-    strauch: 0.332,
-    blume: 0.27,
-});
-AnazhRealm.STUDIO_TREE_SCALE_MUL = 0.82; // der Vorlagen-Wald-Mul (Z.2375, nur Bäume)
 AnazhRealm.FOREST = Object.freeze({
     cell: 12, // Poisson-Zell-Raster (m) — Kronen-Schüchternheit liest ±2 Zellen
     pack: 1.16, // Zentren ≥ pack·(Ti+Tj): echte Lichtkonkurrenz (Vorlage PACK, kein Ineinanderwachsen)
@@ -105255,6 +105891,9 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// DER DECKEL DES GANGS (rad, ~34°): so weit nickt und wankt ein gehender Leib höchstens — steiler ist Kletterwand, kein Gang.
+// Leser: `_slopePitch` (Mensch und Tier), der Wank der Tier-Proben, die Kletterwand des Tier-Schritts (`_kreaturKletterwand`).
+AnazhRealm.GANG_DECKEL_RAD = 0.6;
 // DER STAND-LESER DER SICHT (`_standSicht`): die Boden-Karte (das gezeichnete Mesh) zählt nur, solange sie in diesem Band um
 // den Träger des Körpers liegt — Mesh gegen Gesetz misst ±0,3 m (Hang-Fuß bis 0,63 m, an Kanten bis 1 m); über einer
 // Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden
@@ -105265,6 +105904,11 @@ AnazhRealm.STAND_SICHT_BAND = 2.0;
 AnazhRealm.TOD_KIPP_RAD = 1.45;
 AnazhRealm.TOD_KIPP_STUETZ = 16;
 AnazhRealm.TOD_KIPP_PUNKTE = 1500;
+// Die Zelle des Boden-Rasters der Tod-Lage (m): je Zelle EIN Schritt-Boden des Leibs (`_koerperSchritt`), bilinear dazwischen.
+// Gemessen 10.10. (Null-Renderer, je 5 Tode): in der Höhle O3 liegt der Wolf 0,02–0,06 m über seinem Stand-Kontakt (die alte
+// Tafel: 0,46–0,52 m darunter); je Tod kostet das Raster 180 (Höhle) bzw. 206 (Freiland) Feld-Proben neben den 25 568
+// Karten-Lesungen, die auch die alte Tafel trug.
+AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
 AnazhRealm.PLAYER_KH = 0.2125;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er

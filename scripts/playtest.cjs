@@ -22889,7 +22889,18 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         }
         out.idxMismatches = idxMismatches;
         out.idxBitIdentical = idxMismatches === 0;
-        // Colors bit-identisch?
+        // Colors bit-identisch? Der Worker-Weg ist das Worker-Mesh UND sein Haupt-Thread-Schritt (die Himmels-Sicht und
+        // der Stein unter Fels, `_bodenFarbeUnterFels`, K02a): verglichen wird der FERTIGE Bau beider Wege — vorher las
+        // der Vergleich die rohen Worker-Farben gegen den fertigen Sync-Bau (8 328 Abweichungen am Spawn-Chunk, 0,071).
+        // Die Zellen reisen als Kopie (der Bau stempelt sie, der Zellen-Vergleich unten liest die ungestempelten).
+        const wFertig = r._buildVoxelChunkDataFromWorkerMesh(
+            cx,
+            cz,
+            lod,
+            Object.assign({}, workerMesh, {
+                waterCells: workerMesh.waterCells ? workerMesh.waterCells.slice() : workerMesh.waterCells,
+            })
+        );
         const syncCol = syncFresh.mesh.geometry.getAttribute("color");
         out.syncColCount = syncCol ? syncCol.count : 0;
         out.workerColCount = workerMesh.colors.length / 3;
@@ -22897,7 +22908,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         let maxColDelta = 0;
         if (syncCol) {
             const syncColArr = syncCol.array;
-            const workerColArr = workerMesh.colors;
+            const workerColArr = wFertig.mesh.geometry.getAttribute("color").array;
             const lenC = Math.min(syncColArr.length, workerColArr.length);
             for (let i = 0; i < lenC; i++) {
                 const ad = Math.abs(syncColArr[i] - workerColArr[i]);
@@ -22908,6 +22919,22 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.colMismatches = colMismatches;
         out.maxColDelta = maxColDelta;
         out.colBitIdentical = colMismatches === 0;
+        // Die Boden-Karte (Höhe + Grün, `_bodenKarteAusMesh`) beider Wege: wer AUF dem Boden steht, liest sie
+        let gruenMismatches = 0;
+        let hoeheMismatches = 0;
+        const gS = syncFresh.gruenMap;
+        const gW = wFertig.gruenMap;
+        const hS = syncFresh.surfMap;
+        const hW = wFertig.surfMap;
+        out.karteDa = !!(gS && gW && hS && hW && gS.length === gW.length && hS.length === hW.length);
+        if (out.karteDa)
+            for (let i = 0; i < gS.length; i++) {
+                if (gS[i] !== gW[i]) gruenMismatches++;
+                if (!(hS[i] === hW[i] || (Number.isNaN(hS[i]) && Number.isNaN(hW[i])))) hoeheMismatches++;
+            }
+        out.gruenMismatches = gruenMismatches;
+        out.hoeheMismatches = hoeheMismatches;
+        wFertig.mesh.geometry.dispose();
         // WaterCells: der Worker liefert OHNE Architektur-Stempel, der Sync-Pfad MIT → am Spawn-Chunk (0,0)
         // mit Worldgen-Bäumen sind Cell-Mismatches erwartet (< ~100 je Architektur). Pipeline-Beweis ist
         // darum die gleiche Cell-ANZAHL.
@@ -22974,6 +23001,11 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         "Welle Perf-3.c V9.91: colors BIT-IDENTISCH",
         res.colBitIdentical,
         `colMismatches=${res.colMismatches}, maxColDelta=${res.maxColDelta}`
+    );
+    check(
+        "Welle Perf-3.c V9.91: Boden-Karte (Höhe + Grün) BIT-IDENTISCH (sync vs Worker-Weg, beide fertig)",
+        res.karteDa && res.gruenMismatches === 0 && res.hoeheMismatches === 0,
+        `karte=${res.karteDa}, gruenMismatches=${res.gruenMismatches}, hoeheMismatches=${res.hoeheMismatches}`
     );
     check(
         "Welle Perf-3.c V9.91: Cell-Counts identisch (Architektur-Stempel-Toleranz)",
@@ -24127,15 +24159,15 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_koerperBodenUnter`:
         // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
         // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY =
-            /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
-            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
-            /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
+            /_koerperBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
+            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._koerperBodenUnter)) &&
+            /_voxelSurfaceY\(/.test(window.__codeOf(r._koerperBodenUnter));
         out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
         out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
@@ -24143,7 +24175,8 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
         out.groundCacheFn = typeof r._creatureGroundY === "function";
         if (out.groundCacheFn) {
-            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), userData: {} });
+            // der Leib trägt seine Gier (der Boden blickt längs ihr voraus, Leben-Schau 2) — eine Kreatur ist eine Group
+            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), rotation: new THREE.Euler(), userData: {} });
             r._creatureGroundBudget = 5;
             const m = mk(12, 12);
             const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4
@@ -24213,7 +24246,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
     check(
-        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
+        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_koerperBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
     check(

@@ -1005,6 +1005,18 @@ const FORBIDDEN = [
         fiel: "S3 haus — die Linse des Wirts-Fits; der Fernkörper misst gate:haus-fern",
         auch: ["package.json", ".github/workflows/check.yml"],
     },
+    // KOLLISION = BILD (Leben-Schau 2, 09.10.): jeder Körper liest den Boden UNTER sich (der Wagen las die Oberkante der Säule
+    // und fiel unter dem Überhang des Spalts durch die Welt), jedes Studio-Werk kollidiert in seiner Welt-Skala und Gestalt
+    // (der Felsturm stieß als Eisen-Mast), die Platzierung liest der Kern statt eines Hand-Spiegels.
+    { token: "_kreaturBodenUnter", fiel: "Leben-Schau 2 — jeder Körper liest seinen Boden über _koerperBodenUnter" },
+    { token: "_fahrTerrainBoden", fiel: "Leben-Schau 2 — die Ebene des Werks liest _werkBoden (den Boden unter ihm)" },
+    { token: "_baumWeltSkala", fiel: "Leben-Schau 2 — _studioWeltSkala trägt die Welt-Skala jedes Studio-Werks" },
+    { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
+    { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
+    { token: "_baumHuellenNachBuch", fiel: "Leben-Schau 2 — die Stamm-Hülle misst ab dem Spawn in der Welt-Skala" },
+    // DIE TOR-HÜLLE IST GESETZ-DATEN (Gegenprüfung 10.10.): der Wirt baute die Tor-Gestalt am Spawn synchron nach (15–50 ms je
+    // Gestalt auf dem Haupt-Thread) — er liest die gemintete Tafel `__portaCore.TOR_HUELLE`.
+    { token: "_torHuelleGemessen", fiel: "Leben-Schau 2 — der Wirt liest TOR_HUELLE, er baut kein Tor nach" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

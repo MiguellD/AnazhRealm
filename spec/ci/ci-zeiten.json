@@ -611,6 +611,22 @@
         "38095155944"
       ]
     },
+    "Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)": {
+      "s": 21,
+      "n": 1,
+      "lauf": "npm run gate:kollision-bild",
+      "laeufe": [
+        "38110641263/1"
+      ]
+    },
+    "Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)": {
+      "s": 69,
+      "n": 1,
+      "lauf": "npm run gate:fall-waechter",
+      "laeufe": [
+        "38110641263/1"
+      ]
+    },
     "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)": {
       "s": 15,
       "n": 5,
