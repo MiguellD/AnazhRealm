@@ -126,7 +126,7 @@ jobs:
               # GPU-frei, reines Node: liest die Boden-Zeilen des Pflanzen-Kerns (placement.boden ring nah), jeder Emitter mit
               # weichem Gewebe backt seine Palette über vegFarbe; die Senken zeichnen mit dem Studio-Stoff (nie Lambert —
               # r184-Lambert liest scene.environment nie diffus) und wiegen im EINEN Wind; der Karten-Codec kodiert sRGB.
-              run: npm run gate:streu-wahrheit || echo "::error title=ROT::gate:streu-wahrheit"
+              run: npm run gate:streu-wahrheit
 
             - name: Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)
               if: matrix.gruppe == 2
@@ -134,7 +134,7 @@ jobs:
               # gerade, normiert auf die Körperhöhe — Hand-Länge/-Breite, Handgelenk, Unterarm/Oberarm, Kopf-Höhe/-Breite,
               # Pupillen-Abstand, Augapfel, Iris, Mund, Fuß gegen koerper-core MENSCH_SOLL. --selftest zuerst: 1,5-fache
               # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
-              run: npm run gate:mensch-anatomie || echo "::error title=ROT::gate:mensch-anatomie"
+              run: npm run gate:mensch-anatomie
 
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               if: matrix.gruppe == 2
@@ -144,7 +144,7 @@ jobs:
               # (a) growSkeleton(P, seq) ist DETERMINISTISCH (identisch P+seq → byte-identisch);
               # (b) Richter-Eingang (countCap 3600/leafBudget 480/xorshift-seq) ≠ Foundry-Eingang
               # (countCap 8800/leafBudget 20000/mulberry-seq) → dokumentierte Distanz ≫ 0.
-              run: npm run gate:one-wuchs-parity || echo "::error title=ROT::gate:one-wuchs-parity"
+              run: npm run gate:one-wuchs-parity
 
             - name: Single-Quote-Template-Strings (B2-Pattern)
               if: matrix.gruppe == 1
@@ -188,7 +188,7 @@ jobs:
               # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
               # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte; sin/cos/atan2/hypot halten ihre Ratsche,
               # spec/asset-contract/plattform-ratsche.json) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
-              run: npm run gate:vehicle-contract || echo "::error title=ROT::gate:vehicle-contract"
+              run: npm run gate:vehicle-contract
 
             - name: Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)
               if: matrix.gruppe == 2
@@ -196,7 +196,7 @@ jobs:
               # (r128) — Determinismus · Seed-Invarianz · ov-Kanal · lod-Klemme · Plattform-Probe (jede Transzendente
               # ±1 ULP kippt kein Byte: das Raster am Ausgang, Ratsche 0) · Selbst-Test. Bis S1 Waende lief er nur lokal —
               # und war unter Node 22 rot (16/16, three r128 CatmullRom 'centripetal' + convertSRGBToLinear rufen pow).
-              run: npm run gate:porta-contract || echo "::error title=ROT::gate:porta-contract"
+              run: npm run gate:porta-contract
 
             - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
               if: matrix.gruppe == 2
@@ -205,7 +205,7 @@ jobs:
               # ov-Kanal · lod-Klemme · Split-Parität buildInstance==buildWeaponModel je Gattung ·
               # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte, Täter Datei:Zeile; sin/cos/atan2/hypot halten ihre
               # Ratsche, spec/asset-contract/plattform-ratsche.json) · Selbst-Test.
-              run: npm run gate:schmiede-contract || echo "::error title=ROT::gate:schmiede-contract"
+              run: npm run gate:schmiede-contract
 
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               if: matrix.gruppe == 2
@@ -214,7 +214,7 @@ jobs:
               # scaleFor(darkness)/dna-Baender · motion: endliche Profile) · Determinismus
               # (zwei frische vm-Kontexte byte-gleich) · Selbst-Test (korruptes Golden rot) · Plattform-Probe
               # (S1 Waende: die Daten rufen beim Laden keine Transzendente, Ratschen-Zeile v7).
-              run: npm run gate:daten-contract || echo "::error title=ROT::gate:daten-contract"
+              run: npm run gate:daten-contract
 
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               if: matrix.gruppe == 2
@@ -274,7 +274,7 @@ jobs:
               # Brusttiefe, Bauch-Aufzug, Rumpf-Länge, Unterarm, Kopf-Höhe, Ohr, Rute und das Fell-Muster am Vertex
               # (Bauch/Rücken, Läufe/Flanke, Rutenspitze/Flanke) gegen tetrapoda ANATOMIE_SOLL, dazu die Dreiecke beider
               # Stufen gegen das Kreatur-Budget. --selftest zuerst: gestreckter Rumpf, einfarbiges Fell, Maßstab 1 → rot.
-              run: npm run gate:tier-anatomie || echo "::error title=ROT::gate:tier-anatomie"
+              run: npm run gate:tier-anatomie
 
             # DIE ERST-ZEICHNUNGS-WAND (Welle K, die Hänger-Klasse): eine erste Zeichnung baut ihren Stoff im Pass (je Render-
             # Aufruf einer) und lässt ihre Pipeline asynchron entstehen; ein Objekt, das schon zeichnete, baut einen Neubau im
@@ -286,7 +286,7 @@ jobs:
             # Pipeline, hängender Fehler-Scope; mit stummer Anmeldung MUSS er fehlen).
             - name: Erst-Zeichnungs-Wand (echter Renderer — kein Frame trägt eine synchrone Pipeline der Welt)
               if: matrix.gruppe == 3
-              run: npm run gate:hitch-telemetrie || echo "::error title=ROT::gate:hitch-telemetrie"
+              run: npm run gate:hitch-telemetrie
 
             - name: Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)
               if: matrix.gruppe == 7
@@ -294,7 +294,7 @@ jobs:
               # exitet non-zero an der WURZEL (mit Stack) — BEVOR der Playtest in Folge-Fehlern
               # ertrinkt. Fängt einen `is not a function`-Boot-Tod (ein verrutschter Methoden-Schnitt),
               # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
-              run: npm run gate:page-error || echo "::error title=ROT::gate:page-error"
+              run: npm run gate:page-error
 
             - name: Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)
               if: matrix.gruppe == 7
@@ -303,7 +303,7 @@ jobs:
               # Pixel-Ratio Frames nach dem Ereignis), zurueck, die Pixel-Ratio allein — je Schritt keine WebGPU-Validierung,
               # gezaehlt in gerenderten Frames. Der resize-Handler baut keinen Leser neu (die Diaet traegt jeden
               # Groessenwechsel, die Quelle haelt es); ohne ihren Vorher-Textur-Waechter faellt der Pixel-Ratio-Schritt beim Namen. EIN Boot.
-              run: npm run gate:fenster-wechsel || echo "::error title=ROT::gate:fenster-wechsel"
+              run: npm run gate:fenster-wechsel
 
             - name: Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)
               if: matrix.gruppe == 7
@@ -311,21 +311,21 @@ jobs:
               # resize-Handler in drei Fenstergroessen, gespiegelt: je Pass und Taeter-Klasse zaehlt das kleinere Fenster
               # hoechstens so viel wie das groessere (Spannen, beide Klammern); das Fell-Gesetz liest den EINEN Schirm-
               # Massstab (`_schirm`), kein Gesetz liest den Schirm an ihm vorbei; die Selbsttests feuern.
-              run: npm run gate:schirm-monotonie || echo "::error title=ROT::gate:schirm-monotonie"
+              run: npm run gate:schirm-monotonie
 
             - name: Stellvertreter-Wand (der Feld-Pass marcht nur in den Hüllen seiner Sätze, das Panorama nur am Himmel)
               if: matrix.gruppe == 4
               # Fährt die ECHTEN Organ-Methoden (GPU-frei): die Obergrenze folgt dem höchsten belegten Slot, der Takt setzt
               # die Instanzen und zieht Raster und Strahl aus EINER Matrix, der March-Draw trägt Rückseiten-Stellvertreter mit
               # Fragment-Tiefe, das Panorama hat weder Schleife noch Fragment-Tiefe (früher Tiefentest); die Selbsttests feuern.
-              run: npm run gate:feld-stellvertreter || echo "::error title=ROT::gate:feld-stellvertreter"
+              run: npm run gate:feld-stellvertreter
 
             - name: Schatten-Wand (je CSM-Kaskade am echten Leser — nah im Regler-Takt, fern seltener)
               if: matrix.gruppe == 5
               # Fährt den ECHTEN _loopShadowUpdate gegen Schein-Kaskaden (GPU-frei): autoUpdate aus, nah jeden Frame
               # (Intervall 1) bzw. höchstens jeden nahMax-ten, fern im fernFaktor-Takt, ein Sonnen-Sprung erzwingt
               # beide; der Selbsttest zeigt, dass der alte Schreiber (renderer.shadowMap.needsUpdate) keine erreicht.
-              run: npm run gate:schatten-takt || echo "::error title=ROT::gate:schatten-takt"
+              run: npm run gate:schatten-takt
 
             - name: Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)
               if: matrix.gruppe == 9
@@ -335,7 +335,7 @@ jobs:
               # Regionen und Werfer in der Kaskaden-Box, der Boden-Satz ist Empfaenger und Werfer, jede Werfer-Klasse
               # der Szene ist der Box bekannt; EIN Kompilier-Weg, EINE Szenen-Tiefe; Kompilate stellen keine Kaskade.
               # Die Selbsttests zeigen, dass die alten Regeln (Haupt-Urteil je Pass, Huellen ohne Boden) rot werden.
-              run: npm run gate:schatten-werfer || echo "::error title=ROT::gate:schatten-werfer"
+              run: npm run gate:schatten-werfer
 
             - name: Schatten-Bias (das Gesetz der Kaskade statt eines festen Meter-Werts)
               if: matrix.gruppe == 3
@@ -343,14 +343,14 @@ jobs:
               # (`_schattenBias`: Texel der Kaskade, EINE Quelle atmosphere.shadowBias). Der Selbsttest zeigt, dass ein fester
               # Meter-Wert, ein leerer Schatten, eine vakuöse Probe, Akne und eine blinde Akne-Probe rot werden. Die Messung am
               # echten Renderer (Boden-IoU kleiner Werfer, Akne-Platten, Zähne) fährt der OMEN: diag-schatten-bias.cjs --echt.
-              run: npm run gate:schatten-bias || echo "::error title=ROT::gate:schatten-bias"
+              run: npm run gate:schatten-bias
 
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 6
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
               # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
-              run: npm run gate:persistence || echo "::error title=ROT::gate:persistence"
+              run: npm run gate:persistence
 
             - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
               if: matrix.gruppe == 7
@@ -358,7 +358,7 @@ jobs:
               # gesunder Frame → SYNC (instant-Carve-Feedback auf starker HW), Frame über Budget →
               # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
               # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
-              run: npm run gate:carve || echo "::error title=ROT::gate:carve"
+              run: npm run gate:carve
 
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
               if: matrix.gruppe == 1
@@ -366,14 +366,14 @@ jobs:
               # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
               # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
               # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
-              run: npm run gate:worker-dichte || echo "::error title=ROT::gate:worker-dichte"
+              run: npm run gate:worker-dichte
 
             - name: Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)
               if: matrix.gruppe == 1
               # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
               # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
               # muss die Senken rot faerben.
-              run: npm run gate:gelaende-realismus || echo "::error title=ROT::gate:gelaende-realismus"
+              run: npm run gate:gelaende-realismus
 
             - name: Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)
               if: matrix.gruppe == 5
@@ -383,7 +383,7 @@ jobs:
               # rotes Ziel, das Schicht-Gesetz an mindestens einem; der Export (EIN Plan) durch das Welt-Tor, nach dem
               # Reload derselbe Makro-Abdruck (64 x 64) und dieselbe Statistik in der Welt. Der Selbsttest: ein Schritt am
               # Regler "hoehe" aendert den Abdruck, ein Preset ausserhalb des Korridors faellt rot (Karte K16b).
-              run: npm run gate:gelaende-studio || echo "::error title=ROT::gate:gelaende-studio"
+              run: npm run gate:gelaende-studio
 
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
               if: matrix.gruppe == 3
@@ -393,7 +393,7 @@ jobs:
               # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
               # Dazu die S4-Probe: die sechs Hindernis-Koerper der Saat (stationen.json s4-hindernisse) stehen je Teil
               # mit ihrer Blocker-Box <= 0,1 m an der Spec und im Blocker-Netz; der Selbsttest rueckt die Mauer 0,5 m.
-              run: npm run gate:pruefbuehne || echo "::error title=ROT::gate:pruefbuehne"
+              run: npm run gate:pruefbuehne
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
               if: matrix.gruppe == 6
@@ -402,7 +402,7 @@ jobs:
               # Seite, ein Tier), Welt B ist eine Wildnis-Welt ohne all das. Nach jedem Weg nennt die Linse jedes Feld von A,
               # das B in der Seite, in ihren Lesern, im Worker-Spiegel oder im Speicher traegt, beim Namen. Der Selbsttest
               # mischt den alten Spread am Lade-Engpass zum Schein darunter und muss rot werden.
-              run: npm run gate:weltgrenze || echo "::error title=ROT::gate:weltgrenze"
+              run: npm run gate:weltgrenze
 
             - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
               if: matrix.gruppe == 9
@@ -411,7 +411,7 @@ jobs:
               # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
               # mit ihrer Marke, Boot 2 bleibt stabil, die leere Form erwacht frisch und laut. Der Selbsttest laesst die
               # Rettungs-Kette zum Schein nur den Platz lesen und muss an korrupt, nur-IDB und IDB-frischer rot werden.
-              run: npm run gate:boot-rettung || echo "::error title=ROT::gate:boot-rettung"
+              run: npm run gate:boot-rettung
 
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
               if: matrix.gruppe == 10
@@ -420,7 +420,7 @@ jobs:
               # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
               # KEIN Dünnen (volle Wiese, gate-treu); über Budget → kein Dünnen (V18.282). Die V18.280-Hälfte
               # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
-              run: npm run gate:grass-thin || echo "::error title=ROT::gate:grass-thin"
+              run: npm run gate:grass-thin
 
             - name: Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)
               if: matrix.gruppe == 10
@@ -428,7 +428,7 @@ jobs:
               # der Tap liest den PRO-FRAME-Zähler, sense.renderCalls bleibt beschränkt + session-invariant
               # (die V18.427-Klasse als Invariante), der Regler-Eingang renderLoadMs ist ehrlich; statisch:
               # kein Render-Linsen-Skript liest `.calls` nackt, der Flugschreiber trägt das version-Feld.
-              run: npm run gate:render-tap || echo "::error title=ROT::gate:render-tap"
+              run: npm run gate:render-tap
 
             - name: Regler-Simulation mit ehrlichen Zahlen (W1 — fold→regulate→actuate)
               if: matrix.gruppe == 1
@@ -436,7 +436,7 @@ jobs:
               # Pendeln + 0 Thin-Rebuilds im Studio-Regime; Streaming-Rückstau → Budget MAX (heilig);
               # starke GPU → Erholung; Session-Zeit-Invarianz (identischer Input früh/spät ⇒ identische
               # Stellgrößen). Fing beim Erstlauf die NaN-EWMA-Vergiftung (argloser _gameLoopTick).
-              run: npm run gate:regler-sim || echo "::error title=ROT::gate:regler-sim"
+              run: npm run gate:regler-sim
 
             - name: Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
               if: matrix.gruppe == 6
@@ -446,7 +446,7 @@ jobs:
               # _tickArchitectureLOD, _lodTreeVisHeight, _foundrySichtHoehe, _chunkSatzAbschnitt, _hoehlenSicht. main 66005ca6:
               # Dichte, Stempel und Lage in 100 % der Takte (CPU-Takt frei 4,8 -> 11,7 ms). Gegenprobe (stossende Dichte) und
               # --selftest zuerst.
-              run: npm run gate:takt-atem || echo "::error title=ROT::gate:takt-atem"
+              run: npm run gate:takt-atem
 
             - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)
               if: matrix.gruppe == 3
@@ -457,7 +457,7 @@ jobs:
               # Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot, die Bühnen-
               # Wahrheit der Welt (`_buehneSteht`) liest dieselbe Streu, ihr Deckel öffnet laut (WARN).
               # Headless = Mechanik-Ordnung; die Wall-Clock-Wahrheit liefert die Schöpfer-GPU (W8).
-              run: npm run gate:boot-stage || echo "::error title=ROT::gate:boot-stage"
+              run: npm run gate:boot-stage
 
             - name: Bewegungs-Garantie unter Last (P1 — die 3-FPS-Realität als Linse)
               if: matrix.gruppe == 3
@@ -467,7 +467,7 @@ jobs:
               # Worker — der Mesh kommt nie) trägt die feld-native Kollision (V18.331) die Bewegung;
               # (c) die Boden-Garantie: nie im Soliden, nie Void (der Nachfolger des BVH-Ankers).
               # Selbst-Test: eine künstlich gepinnte Position macht die Linse rot (nicht blind).
-              run: npm run gate:move-under-load || echo "::error title=ROT::gate:move-under-load"
+              run: npm run gate:move-under-load
 
             - name: Scatter-Wasser-Gate A/B-Byte-Wand (W3.3a — die Benchmark bewegt sich nie)
               if: matrix.gruppe == 4
@@ -475,7 +475,7 @@ jobs:
               # (state.__scatterExactWater, das Referenz-Ufer) und einmal im Produktions-Pfad gebaut →
               # region.cells byte-identisch. Plus Mess-Bound |field.height−exakt| + Null-Zensus der
               # einzigen konstruktiven Rest-Klasse; Selbst-Test: falsches Wasser-Verdikt → Diff feuert.
-              run: npm run gate:scatter-ab || echo "::error title=ROT::gate:scatter-ab"
+              run: npm run gate:scatter-ab
 
             - name: Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)
               if: matrix.gruppe == 5
@@ -483,7 +483,7 @@ jobs:
               # cz/cx/emitted-Fortsetzung): region.cells byte-exakt + HISM-Slot-Bilanz identisch (das
               # Doppel-Add wäre im cells-Vergleich unsichtbar) + kein halber Bake je in der Map +
               # Dispose-Storno mitten in der Fortsetzung crasht nie. Headless=One-Shot (gate-treu).
-              run: npm run gate:scatter-slice || echo "::error title=ROT::gate:scatter-slice"
+              run: npm run gate:scatter-slice
 
             - name: Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)
               if: matrix.gruppe == 5
@@ -494,7 +494,7 @@ jobs:
               # Slots an und rechnen keinen Fit; Geröll passt fern aus seinen 6 größten Steinen. Selbst-Tests: eine
               # injizierte Geröll-L0-Instanz bei 200 m wird rot (mit Namen), die ECHTE Erschöpfung lässt Zellen
               # warten (0 L0) und setzt die Wand im Allokator, ein fehlendes fernform bricht fail-closed.
-              run: npm run gate:streu-fern || echo "::error title=ROT::gate:streu-fern"
+              run: npm run gate:streu-fern
 
             - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
               if: matrix.gruppe == 1
@@ -503,7 +503,7 @@ jobs:
               # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
               # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
               # Schnell (3 Chunks); der volle ring-4 `gate:seam` läuft in Gruppe 3 (Chunk-Naht).
-              run: npm run gate:seam-normal || echo "::error title=ROT::gate:seam-normal"
+              run: npm run gate:seam-normal
 
             - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
               if: matrix.gruppe == 7
@@ -511,7 +511,7 @@ jobs:
               # (kein 2. Pass, keine MRT-Depth → das swiftshader-Blank-Risiko bleibt klein). Beweist headless
               # die EINE Quelle (godrayUniforms) + den March in _ensurePostProcessing + die Frame-Projektion
               # + dass der Perf-Lever `_godrayScale` dem EINEN Regler folgt (Last→aus, Kopfraum→voll, headless→MAX).
-              run: npm run gate:godray || echo "::error title=ROT::gate:godray"
+              run: npm run gate:godray
 
             - name: Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)
               if: matrix.gruppe == 5
@@ -521,7 +521,7 @@ jobs:
               # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
               # Plattform-Probe (S1 Waende): 43 Faelle bauen in einem zweiten Worker mit ±1 ULP auf jeder
               # Transzendenten — die Pflanzen sind ungerastert und stehen benannt (plattform-ratsche.json, Zeile v1).
-              run: npm run gate:asset-contract || echo "::error title=ROT::gate:asset-contract"
+              run: npm run gate:asset-contract
 
             - name: Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)
               if: matrix.gruppe == 8
@@ -532,7 +532,7 @@ jobs:
               # Blüte, Blatt x3 und einen fehlenden Leser rot. Integration 05.10.: jede Karte der Weide liest die Weiden-Zelle,
               # und die Fracht des Blatt-Atlas (BC1 / rgba, vormultipliziert) liest durch den EINEN Leser je Stufe wie das
               # Labor (± 3 %) — BC1 gerade gelesen (ohne Teilen durch alpha) macht der Selbsttest rot.
-              run: npm run gate:pflanzen-nah || echo "::error title=ROT::gate:pflanzen-nah"
+              run: npm run gate:pflanzen-nah
 
             - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)
               if: matrix.gruppe == 10
@@ -541,7 +541,7 @@ jobs:
               # Fels, Boden-Streu) und Ofen (jede Gattung, der Mensch) - und verlangt phyto-core budgetSippen == die
               # Leaves des Wirts (Draws und Dreiecke). Im selben Lauf der Selbst-Test: ohne Verschmelzen bzw.
               # Starr-Bindung muss sie die Abweichung nennen.
-              run: npm run gate:sippen-wirt || echo "::error title=ROT::gate:sippen-wirt"
+              run: npm run gate:sippen-wirt
 
             - name: Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)
               if: matrix.gruppe == 2
@@ -553,7 +553,7 @@ jobs:
               # Beweis: EIN Preset (eiche, lod 2) live minten → zurücklesen → byte-gleich (sha256 je
               # Puffer, unabhängig vor der b64-Kodierung gerechnet). --selftest zuerst: ein korruptes
               # Pack-Artefakt macht die Linse rot (nicht vakuös).
-              run: npm run gate:pack-contract || echo "::error title=ROT::gate:pack-contract"
+              run: npm run gate:pack-contract
 
             - name: Fluss-Wand (V18.511 — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau)
               if: matrix.gruppe == 7
@@ -566,14 +566,14 @@ jobs:
               # Welt-Sonde (Null-Renderer, echter Studio-Worker, Platte an): Gestalten je Art = Budget, 0 Karten-Art-
               # L2, 0 LRU-Räumungen im Boot, ein Saison-Wechsel baut 0, der Zweit-Boot baut <= 5 MB neu.
               # --selftest zuerst: jede Bruch-Klasse macht die Wand rot.
-              run: npm run gate:fluss || echo "::error title=ROT::gate:fluss"
+              run: npm run gate:fluss
 
             - name: Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)
               if: matrix.gruppe == 10
               # Zählung statt Zeit: 300 brennbare Bauten + EIN fernes Brennglas → der Brennglas-Takt ruft
               # computeCompoundTags 0-mal; 3 Bauten in Reichweite → höchstens 3 je Takt. Befund: Ø 20 ms je
               # Spiel-Takt für die Tags aller Bauten. --selftest: die alte Reihenfolge macht die Wand rot.
-              run: npm run gate:takt || echo "::error title=ROT::gate:takt"
+              run: npm run gate:takt
 
             - name: Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)
               if: matrix.gruppe == 7
@@ -581,7 +581,7 @@ jobs:
               # EIN Wasser-Satz, je Nah-Streu-Senke EINE InstancedMesh (keine Waise), keine Deck-Streu, kein @p:-Bau, kein
               # p:-Bundle; Treue (Views byte-gleich, Index verschoben, Blöcke nah → fern) und Konsum (ein Chunk-Abbau
               # ändert den Satz, nicht die Szene). --selftest zuerst: injizierte Täter fallen rot und werden genannt.
-              run: npm run gate:chunk-satz || echo "::error title=ROT::gate:chunk-satz"
+              run: npm run gate:chunk-satz
 
             - name: Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)
               if: matrix.gruppe == 4
@@ -589,7 +589,7 @@ jobs:
               # Mündung, IN der Höhle) trifft jeder Strahl gegen den ganzen Boden-Satz zuerst eine Zelle des Abschnitts (kein
               # Loch), und jeder Empfänger, dessen Weg zum Licht Boden trifft, trifft einen der Kaskade (kein Licht-Leck); die
               # Wiese zeichnet weniger Höhle, als ihr Frustum trägt. --selftest zuerst: injizierte Täter fallen rot.
-              run: npm run gate:hoehlen-sicht || echo "::error title=ROT::gate:hoehlen-sicht"
+              run: npm run gate:hoehlen-sicht
 
             - name: Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)
               if: matrix.gruppe == 1
@@ -601,7 +601,7 @@ jobs:
               # als stand:ohne beim Namen rot. Das atmende Auge (Kamera und Maske +-1 mm, unter dem Halt) arbeitet nicht,
               # und die gehaltene Wahl trägt eine Instanz an der Kante ihres Fensters (ohne den Halt als Rand fehlt sie).
               # --selftest zuerst.
-              run: npm run gate:sicht-arbeit || echo "::error title=ROT::gate:sicht-arbeit"
+              run: npm run gate:sicht-arbeit
 
             - name: Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)
               if: matrix.gruppe == 5
@@ -613,7 +613,7 @@ jobs:
               # die Uhr geht nur ihren Gang, das Wetter bleibt, jeder Taeter steht beim Namen; nach "frei" zieht nur der
               # Wetter-Zug im Takt das Wort, das die Welt wuenscht; der Regler zeigt die Welt-Zeit; der Tag traegt eine Szene;
               # im Stamm schreibt die Uhr nur _uhrSetzen, kein Nexus-Wurf traegt einen Uhr-Op. --selftest zuerst.
-              run: npm run gate:wetter-wache || echo "::error title=ROT::gate:wetter-wache"
+              run: npm run gate:wetter-wache
 
             - name: Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)
               if: matrix.gruppe == 5
@@ -622,7 +622,7 @@ jobs:
               # verzoegertes Programm) - die Welt bleibt, jeder Zug steht als verweigert beim Namen seiner Quelle; ein Akt an
               # dslEval vorbei faellt rot; ohne Halt wirkt das Spiel wie immer; jeder Op der DSL hat ein Urteil, der Nexus
               # komponiert nur beurteilte Ops. --selftest zuerst.
-              run: npm run gate:weltakt-wache || echo "::error title=ROT::gate:weltakt-wache"
+              run: npm run gate:weltakt-wache
 
             - name: Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)
               if: matrix.gruppe == 5
@@ -630,7 +630,7 @@ jobs:
               # Schleife ueber den ganzen Bestand (kurz, lang ueber den 80-m-Cull, senkrecht, achsparallel, aus einer Box) in
               # fuenf Runden mit Abriss, Kappe, neu gestempelter Huelle, neuem Array und neuen Baeumen; ein Strahl prueft nur
               # die Boxen, die sein Segment beruehren; das Netz ist der Bestand; jeder Schreiber des Bestands stempelt.
-              run: npm run gate:blocker-netz || echo "::error title=ROT::gate:blocker-netz"
+              run: npm run gate:blocker-netz
 
             - name: Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)
               if: matrix.gruppe == 5
@@ -641,7 +641,7 @@ jobs:
               # Haupt-Thread (jeder buildInstance eines Kerns am Spawn beim Namen; 10.10.: sieben Tore nachgebaut). Befund 09.10.:
               # der Felsturm stiess als Eisen-Mast 4,4 x 16,8 m. Der Spender-Felsturm und das Tor ohne Pfosten fallen rot beim
               # Namen; Haus und Ausstattung stehen als OFFEN mit Zahl; Selbsttest inklusive.
-              run: npm run gate:kollision-bild || echo "::error title=ROT::gate:kollision-bild"
+              run: npm run gate:kollision-bild
 
             - name: Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)
               if: matrix.gruppe == 1
@@ -651,7 +651,7 @@ jobs:
               # Dichtefeld). Befund 09.10.: −6 428 m nach 30 s. AST-Wand: die Koerper-Schritte (auch die Tod-Lage) lesen nur den
               # Boden unter dem Leib, jeder andere Leser der Oberkante an einem Leib ist benannt; der eingeschmuggelte Dach-Leser
               # faellt rot beim Namen; Selbsttest inklusive.
-              run: npm run gate:fall-waechter || echo "::error title=ROT::gate:fall-waechter"
+              run: npm run gate:fall-waechter
 
             - name: Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)
               if: matrix.gruppe == 2
@@ -660,7 +660,7 @@ jobs:
               # byte-gleich wie der alte Takt ueber den ganzen Bestand (Hitze, Saetze, Feuer), mit Abriss, neuem Array und
               # neuen Zielen mitten im Tag, und fasst nur die Betroffenen an; das Verzeichnis je Affordanz und Kamin ist der
               # Filter ueber den Bestand (auch nach einem nachgezogenen Tor); Resonanz und Dorf-Rauch wie die Schleife.
-              run: npm run gate:brennglas-takt || echo "::error title=ROT::gate:brennglas-takt"
+              run: npm run gate:brennglas-takt
 
             - name: Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)
               if: matrix.gruppe == 8
@@ -668,7 +668,7 @@ jobs:
               # ueber eine Werkstatt-Sitzung (verschieben, Stoff, Form, Farbe, hinzufuegen, loeschen, Undo/Redo, direkte Aenderungen
               # ohne API, defineMaterial, ein geladener Spielstand, neues Teile-Array, neues Bauplan-Objekt) urteilt das Gedaechtnis
               # byte-gleich wie die Rechnung und rechnet nur nach einer Aenderung; ein Schluessel ohne Stoffe faellt rot.
-              run: npm run gate:raum-tags || echo "::error title=ROT::gate:raum-tags"
+              run: npm run gate:raum-tags
 
             - name: Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)
               if: matrix.gruppe == 9
@@ -676,14 +676,14 @@ jobs:
               # zählt je Frame die Blatt-Rufe der Fege-Takte (Ring, Stufen-Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum).
               # In Ruhe 0 Einheiten; mit gebrochener Wache arbeitet jeder Takt und keiner ändert die Welt (nichts verschlafen);
               # ein Baum und ein Regler-Schritt wecken, Gehen arbeitet, ein Sprung baut den Spieler-Chunk. --selftest zuerst.
-              run: npm run gate:stand-takt || echo "::error title=ROT::gate:stand-takt"
+              run: npm run gate:stand-takt
 
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
               if: matrix.gruppe == 4
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
               # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher
               # sah der headless-Gate nur den Grammatik-Alt-Pfad) — _foundryRequest liefert echte Meshes.
-              run: npm run gate:foundry-warm || echo "::error title=ROT::gate:foundry-warm"
+              run: npm run gate:foundry-warm
 
             - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
               if: matrix.gruppe == 4
@@ -691,14 +691,14 @@ jobs:
               # phytogenesis.js), die Shell liest seine Top-Level-Globals. Beweist, dass das Portal im vollen
               # Display-Modus (Renderer+Welt+UI, nicht ?asset-foundry) ohne page-error bootet — ein
               # übersehener Bezug flöge hier als ReferenceError auf (der asset-foundry-Modus kehrt vorher zurück).
-              run: npm run gate:portal-boot || echo "::error title=ROT::gate:portal-boot"
+              run: npm run gate:portal-boot
 
             - name: Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)
               if: matrix.gruppe == 7
               # P4: der overBudget?0-bakeBudget liess die nahen LOD0/1-Bäume unter Last nie backen (=die kahle
               # Nähe). Seit P3a bäckt der Worker off-thread → der Throttle ist hinfällig. Beweist headless, dass
               # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
-              run: npm run gate:foundry-deadlock || echo "::error title=ROT::gate:foundry-deadlock"
+              run: npm run gate:foundry-deadlock
 
             - name: Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)
               if: matrix.gruppe == 8
@@ -707,7 +707,7 @@ jobs:
               # 895 an der Mess-Wiese). Beweist headless: jedes Karten-Ding der Karten-Zone traegt seine Karte
               # (Stufe 2, voll), keins einen Satz, jenseits des Horizonts geraeumt, am Radius dieselben Slots.
               # Der Selbsttest macht den alten Weg (A, D) und einen injizierten Satz (B) rot.
-              run: npm run gate:fernwald || echo "::error title=ROT::gate:fernwald"
+              run: npm run gate:fernwald
 
             - name: Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)
               if: matrix.gruppe == 8
@@ -715,7 +715,7 @@ jobs:
               # gebaute Fernform. Beweist headless an DENSELBEN Uniforms, die der Luft-Knoten liest: klarer
               # Sommertag >= 5 km (Koschmieder 2 %), Regen/Sturm dichter, Hoehe weiter, Ring-Kante klar, die
               # Nebel-Kulisse fort; der Selbsttest macht eine injizierte 80-m-Wand und einen THREE.Fog rot.
-              run: npm run gate:luft-sicht || echo "::error title=ROT::gate:luft-sicht"
+              run: npm run gate:luft-sicht
 
             - name: Himmel-Tag (am Mittag steht kein Punkt am Himmel)
               if: matrix.gruppe == 9
@@ -723,7 +723,7 @@ jobs:
               # Mittagshimmel. Die Wandelsterne sind Punkte des Sternfelds, die Daemmerung setzt die Grenzgroesse:
               # Mittag 0 Punkte, Abendstern in der Daemmerung, nachts alle; der Mond am Tag blass. Der Selbsttest
               # macht eine injizierte Himmelskugel und eine zu tiefe Mittags-Grenze rot.
-              run: npm run gate:himmel-tag || echo "::error title=ROT::gate:himmel-tag"
+              run: npm run gate:himmel-tag
 
             - name: Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)
               if: matrix.gruppe == 5
@@ -731,7 +731,7 @@ jobs:
               # harte Kanten, schwarze Naht-Linien, Gras durch den Weg. Jetzt malt _stlWegeBuild sie in die
               # Wege-Karte (Boden-Shader + Wiese lesen dieselben Bytes): kein flacher Streifen im Pool, weicher Rand,
               # Konsum belegt. Der Selbsttest macht einen injizierten Boden-Streifen und eine harte Kante rot.
-              run: npm run gate:weg-boden || echo "::error title=ROT::gate:weg-boden"
+              run: npm run gate:weg-boden
 
             - name: Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)
               if: matrix.gruppe == 6
@@ -739,14 +739,14 @@ jobs:
               # 1 Chunk (43 m) war -> die Vegetation lag vor dem Boden = der ferne Billboard-Ring beim Spawn.
               # Beweist headless (forcierter Nicht-headless-Ramp-Pfad), dass foliageRadius an der gebauten
               # Ring-Kante bleibt statt auf MAX zu rennen.
-              run: npm run gate:boot-foliage-ring || echo "::error title=ROT::gate:boot-foliage-ring"
+              run: npm run gate:boot-foliage-ring
 
             - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
               if: matrix.gruppe == 2
               # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
               # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-
               # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
-              run: npm run gate:foundry-impostor || echo "::error title=ROT::gate:foundry-impostor"
+              run: npm run gate:foundry-impostor
 
             - name: V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept
               if: matrix.gruppe == 3
@@ -755,7 +755,7 @@ jobs:
               # erkennt die Repräsentanten (fels_var0->rock, kristall_var0->crystal). Null-Renderer, GPU-frei:
               # prüft die reine _foundryPresetForEntry-Auflösung + _workshopRecipeKind (Kristall->kristalle,
               # Fels->Rezept nach Form-Klasse, glut bleibt bewusst Part-Look). Eine Regression rot.
-              run: npm run gate:v1-resolve || echo "::error title=ROT::gate:v1-resolve"
+              run: npm run gate:v1-resolve
 
             - name: V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik
               if: matrix.gruppe == 6
@@ -763,7 +763,7 @@ jobs:
               # tickt die Welt, enumeriert die Instanz-Gruppen, klassifiziert nach Foundry-Leaf (f:/fimp:)
               # vs Grammatik. 0 Grammatik-Baum-Gruppen = kein Nachbau. Der Scatter trägt Bäume UND Fels/
               # Kiesel/Blume/Strauch als Studio-Asset (fscatter:*); nur ungemappte Arten bleiben Grammatik.
-              run: npm run gate:no-second-treebuilder || echo "::error title=ROT::gate:no-second-treebuilder"
+              run: npm run gate:no-second-treebuilder
 
             - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
               if: matrix.gruppe == 6
@@ -775,7 +775,7 @@ jobs:
               # (f.cache) oder sichtbar attestiert (fscatter/f:/fimp:/Gras-Memo); LRU-Räumungen (f.lruEvicted)
               # sind bewusst, kein Verlust → 0 verlorene Keys = das stille Verhungern (V18.309-Klasse) ist
               # strukturell laut. Selbst-Tests: injizierte Fremd-Emitter + synthetisch verlorener Key → rot.
-              run: npm run gate:asset-inventory || echo "::error title=ROT::gate:asset-inventory"
+              run: npm run gate:asset-inventory
 
             - name: Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass
               if: matrix.gruppe == 8
@@ -784,14 +784,14 @@ jobs:
               # (fort und zurück, sieben Umzüge): nach jedem Umzug je Gruppe count gegen die Lebenden, Marke i trägt Slot i,
               # keine Null-3×3 — jeder Befund mit Senke · Pass · Dreiecken. Quelle: kein count an _instanzZahl vorbei, keine
               # Free-Liste, kein Shader-Riegel. Selbsttest: ein freier Slot, eine sichtbare leere Hülle, eine count-Zeile → rot.
-              run: npm run gate:freie-slots || echo "::error title=ROT::gate:freie-slots"
+              run: npm run gate:freie-slots
 
             - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
               if: matrix.gruppe == 3
               # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
               # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,
               # rain kontinuierlich (0/~0.6/1.0), fog über die Transition monoton. Null-Renderer, GPU-frei.
-              run: npm run gate:weather-vector || echo "::error title=ROT::gate:weather-vector"
+              run: npm run gate:weather-vector
 
             - name: Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau
               if: matrix.gruppe == 3
@@ -799,7 +799,7 @@ jobs:
               # uSeasonMul. Node-Orakel: _saisonMul des Stamms == seasonColors + uSeasonMul-Zeile der Studio-Shell
               # (64 Phasen, Sommer exakt x1); die Stützstellen leben NUR im SAISON_GESETZ (foundry-core); Nah-Wiese,
               # Foundry-Laub/-Gras und Karten-Stoff lesen die Uniform. --selftest zuerst: fünf Brüche → rot.
-              run: npm run gate:season-meadow || echo "::error title=ROT::gate:season-meadow"
+              run: npm run gate:season-meadow
 
             - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das LRU-Leck
               if: matrix.gruppe == 10
@@ -807,7 +807,7 @@ jobs:
               # InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-Zähler über
               # 4 Churn-Zyklen (Deckel 32, 96 Gestalten): dispose feuert, der Speicher bleibt flach (kein lineares Leck),
               # REF-GUARD: keine Geometrie wird disposed solange _liveRefs > 0 (kein Use-after-free).
-              run: npm run gate:foundry-memory || echo "::error title=ROT::gate:foundry-memory"
+              run: npm run gate:foundry-memory
 
             - name: S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)
               if: matrix.gruppe == 8
@@ -817,7 +817,7 @@ jobs:
               # Und die Werkstatt zeigt auf der L2-Baumstufe das 8-Winkel-Billboard (InstancedMesh aus dem
               # Foundry-Impostor), NICHT die schwere L2-Geometrie. Null-Renderer, hardware-unabhängig:
               # Source-Proben + Behavioral (der Aufruf @lod2 liefert die 6-Vertex-Impostor-Kreuz-Geometrie).
-              run: npm run gate:s4-impostor-workshop || echo "::error title=ROT::gate:s4-impostor-workshop"
+              run: npm run gate:s4-impostor-workshop
 
             - name: Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)
               if: matrix.gruppe == 2
@@ -826,7 +826,7 @@ jobs:
               # kommt live durch die Brücke an; (C) eine Daten-Mutation ändert die Welt-Skala SOFORT
               # (live gewinnt gegen jeden Hardcode-Spiegel); (D) ein NEUES kind:tree-Preset registriert
               # sich als Auto-Blueprint + wird vom Wald-Generator gestreut — ohne AnazhRealm-Edit.
-              run: npm run gate:nervensystem || echo "::error title=ROT::gate:nervensystem"
+              run: npm run gate:nervensystem
 
             - name: Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)
               if: matrix.gruppe == 6
@@ -834,7 +834,7 @@ jobs:
               # LIVE-Buch trägt die kind:vehicle-Presets, der N7.5-Merge lebt am EINEN Ingest-
               # Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id>
               # entsteht + der Worker liefert das Fahrzeug-Asset — ohne eine Zeile AnazhRealm-Edit.
-              run: npm run gate:nervensystem-vehicle || echo "::error title=ROT::gate:nervensystem-vehicle"
+              run: npm run gate:nervensystem-vehicle
 
             - name: Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)
               if: matrix.gruppe == 2
@@ -845,7 +845,7 @@ jobs:
               # Nische nein (disjunkt); (d) site-Rezept (N5.6) registriert + siteTag als Daten, streut
               # nicht; (e) must-ignore/must-preserve unbekannter Felder. Inklusive Selbst-Test
               # (Verletzungs-Injektion: none-Art erscheint doch → die Detektion feuert).
-              run: npm run gate:place-policy || echo "::error title=ROT::gate:place-policy"
+              run: npm run gate:place-policy
 
             - name: Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)
               if: matrix.gruppe == 4
@@ -858,7 +858,7 @@ jobs:
               # (kein Buch) die Emergenz byte-gleich; (d) Formel-Parität Kern==Probefahrt-Primitive;
               # (e) Selbst-Test (verfälschtes fahrprofil → Divergenz erkannt). Der Bewegungs-Loop
               # bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul nur in _loopPlayerMovement).
-              run: npm run gate:vehicle-drive || echo "::error title=ROT::gate:vehicle-drive"
+              run: npm run gate:vehicle-drive
 
             - name: Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)
               if: matrix.gruppe == 5
@@ -867,7 +867,7 @@ jobs:
               # Teleport-Zähler 0, Sim-Weg = Fahr-Weg, der Reiter sitzt (nie „in der Luft"), keine Gier ohne Lenkung.
               # Befund 06.10.: 114 von 114 Frames Teleport, 25,95 m simuliert gegen 10,27 m gefahren, 84° Gier am Hang.
               # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
-              run: npm run gate:fahr-leben || echo "::error title=ROT::gate:fahr-leben"
+              run: npm run gate:fahr-leben
 
             - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)
               if: matrix.gruppe == 7
@@ -875,7 +875,7 @@ jobs:
               # Umsehen ohne Seitenfehler (vorher ReferenceError dragging je Mausbewegung), der Fahr-HUD als Flex-Band,
               # der Tacho in km/h aus FAHR.kmh (vorher x12), Preset-Wechsel und erstes Laden ohne Leck (P = DEFAULT_P +
               # Preset + Kultur), die Kultur abwaehlbar. Inklusive Selbst-Test.
-              run: npm run gate:garage-labor || echo "::error title=ROT::gate:garage-labor"
+              run: npm run gate:garage-labor
 
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
               if: matrix.gruppe == 5
@@ -887,7 +887,7 @@ jobs:
               # Auto-Blueprint tor_drachentor am EINEN Chokepoint · Tor-Asset end-to-end durch den
               # Worker · site streut nicht [N5.6] · Fail-Closed-Clamp auf Stufe 0). Inklusive
               # Selbst-Test (injizierte Verletzungen feuern).
-              run: npm run gate:nervensystem-porta || echo "::error title=ROT::gate:nervensystem-porta"
+              run: npm run gate:nervensystem-porta
 
             - name: Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)
               if: matrix.gruppe == 7
@@ -900,7 +900,7 @@ jobs:
               # B4-paramsByKind.weapon 18 Dials · Auto-Blueprint klinge_<id> am EINEN Chokepoint ·
               # Klingen-Asset end-to-end durch den Worker · hand streut nicht [N5.5] ·
               # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
-              run: npm run gate:nervensystem-schmiede || echo "::error title=ROT::gate:nervensystem-schmiede"
+              run: npm run gate:nervensystem-schmiede
 
             - name: Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)
               if: matrix.gruppe == 8
@@ -915,7 +915,7 @@ jobs:
               # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
               # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
               # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S9.
-              run: npm run gate:kampf-gefuehl || echo "::error title=ROT::gate:kampf-gefuehl"
+              run: npm run gate:kampf-gefuehl
 
             - name: Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)
               if: matrix.gruppe == 6
@@ -926,7 +926,7 @@ jobs:
               # Aura, keine Traglast, kein Wesen-Takt, keine Stimme, die Wurzel der Tod-Lage auf dem Stand-Boden, nach der Frist
               # fort. Sechs Taeter im selben Boot (Sicht, Kopie, Zeichen, Sprung, Wesen, Stimme) muessen beim Namen rot lesen.
               # Lokal 18 s, CI 15 s (Lauf 38030449627).
-              run: npm run gate:tod-zensus || echo "::error title=ROT::gate:tod-zensus"
+              run: npm run gate:tod-zensus
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)
               if: matrix.gruppe == 1
@@ -934,7 +934,7 @@ jobs:
               # und je Klinge/Werkzeug urteilt die Linse jeden Stoff gegen sein Band (Gummi, Kunststoff, Lack, Glas, Metall,
               # Holz, Leder, Schnur) - Taeter beim Namen: ohne-stoff, labor-stoff, band, klarlack, lack-art, durchsicht,
               # toenung, lack-gestalt, transport. Node-direkt (r128), inklusive Selbst-Test.
-              run: npm run gate:gegenstand-stoff || echo "::error title=ROT::gate:gegenstand-stoff"
+              run: npm run gate:gegenstand-stoff
 
             - name: Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)
               if: matrix.gruppe == 2
@@ -946,7 +946,7 @@ jobs:
               # im echten r128 (swiftshader) liest die Labor-Linse die Karte 0,180 und ein roh gelesenes Hex (der alte Defekt
               # des Labors, als Taeter eingespielt) steht ueber dem Rand. Die Messung selbst: werkbank albedo --tafel (Welt,
               # echte GPU) und diag-albedo-tafel.cjs --labor (Labor).
-              run: npm run gate:albedo-tafel || echo "::error title=ROT::gate:albedo-tafel"
+              run: npm run gate:albedo-tafel
 
             - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
               if: matrix.gruppe == 6
@@ -961,7 +961,7 @@ jobs:
               # am EINEN Chokepoint · Haus-Asset end-to-end auf ALLEN drei Stufen · der
               # Flatten-Chokepoint bedient die Wahlen 1/2 mit den ECHTEN Stufen statt
               # [0]-Kollaps). Inklusive Selbst-Test (injizierte Verletzungen).
-              run: npm run gate:nervensystem-fachwerk || echo "::error title=ROT::gate:nervensystem-fachwerk"
+              run: npm run gate:nervensystem-fachwerk
 
             - name: Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)
               if: matrix.gruppe == 8
@@ -972,7 +972,7 @@ jobs:
               # lod-Klemme · Split-Parität buildInstance == Shell-Komposition der Kern-
               # Primitive je Rezept×Stufe · Selbst-Test (korruptes Golden wird rot) · Plattform-Probe (S1 Waende:
               # Haeuser benannt in der Ratsche, die gerasterte Ausstattung 0 von 15).
-              run: npm run gate:fachwerk-contract || echo "::error title=ROT::gate:fachwerk-contract"
+              run: npm run gate:fachwerk-contract
 
             - name: Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)
               if: matrix.gruppe == 7
@@ -982,7 +982,7 @@ jobs:
               # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
-              run: npm run gate:settlement || echo "::error title=ROT::gate:settlement"
+              run: npm run gate:settlement
 
             - name: Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)
               if: matrix.gruppe == 4
@@ -992,7 +992,7 @@ jobs:
               # Lauf (EG→OG, OG→2.OG, Speicher) erreicht seine Höhe, am Austritt steht der Kopf unter dem Dach · B4 die
               # Keller-Decke ist nie die Wiesen-Platte · B5 von oben zeigt der Fluss Wasser · B6 Antike × 18/40/120 baut.
               # --selftest: je Defekt serviert der Server die Basis-Zeile (Lab-Shell bzw. fachwerk-core) → genau seine Probe rot.
-              run: npm run gate:studio-begehen || echo "::error title=ROT::gate:studio-begehen"
+              run: npm run gate:studio-begehen
 
             - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
               if: matrix.gruppe == 9
@@ -1000,7 +1000,7 @@ jobs:
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
               # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden (die Rad-
               # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
-              run: npm run gate:koerper-stand || echo "::error title=ROT::gate:koerper-stand"
+              run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
               if: matrix.gruppe == 2
@@ -1009,7 +1009,7 @@ jobs:
               # Grundriss · W5 Kollision == Optik je Rasterpunkt · W8 die Genesis-Lichtung ist ein Grundriss derselben
               # Natur-Wand (keine Krone, keine Streu, kein Hain der KI über der Scheibe, Entscheid D3).
               # --selftest: Basis-Zeilen serviert → genau ihre Probe rot.
-              run: npm run gate:haus-welt || echo "::error title=ROT::gate:haus-welt"
+              run: npm run gate:haus-welt
 
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
               if: matrix.gruppe == 6
@@ -1020,7 +1020,7 @@ jobs:
               # (Zahl-Deckel 70k), Promotion nah, Cull + Ghost-/Band-Slot-Bilanz sauber
               # ueber Churn, und der Klon erbt die studioGestalt (W-A3.1, donorOnly bewusst
               # nicht). Inkl. Selbst-Test.
-              run: npm run gate:trias || echo "::error title=ROT::gate:trias"
+              run: npm run gate:trias
 
             - name: Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)
               if: matrix.gruppe == 7
@@ -1030,7 +1030,7 @@ jobs:
               # der Herkunfts-Marke), die Werkstatt fuehrt die Rezepte — und der EINE
               # Audio-Konsument lebt (das Lofi-Pad faehrt das Genesis-Tempo, fail-soft
               # byte-alt auf LOFI_BPM). Inkl. Selbst-Test.
-              run: npm run gate:nervensystem-labs || echo "::error title=ROT::gate:nervensystem-labs"
+              run: npm run gate:nervensystem-labs
 
             - name: Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)
               if: matrix.gruppe == 10
@@ -1038,7 +1038,7 @@ jobs:
               # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
               # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
               # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
-              run: npm run gate:tier-gang || echo "::error title=ROT::gate:tier-gang"
+              run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
               if: matrix.gruppe == 9
@@ -1057,7 +1057,7 @@ jobs:
               # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
               # wer läuft, wird ausgewertet). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
-              run: npm run gate:kreatur-takt || echo "::error title=ROT::gate:kreatur-takt"
+              run: npm run gate:kreatur-takt
 
             - name: Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)
               if: matrix.gruppe == 9
@@ -1066,7 +1066,7 @@ jobs:
               # ihre Knochen SIND die der feinen), schmale Puffer — und (W) der Werfer je Gestalt: je Art und Mensch nah und
               # mittel wirft genau der Wurf-Teil der Grobstufe (`wurf.seh` der Kern-Zeile, Tier ≤ 6 200 / 1, Mensch ≤ 38 000 / 5),
               # nah nie die feine Stufe; Absenz der castShadow-Literale und der Wirts-Distanzen. Fünf Selbst-Tests (S1–S5).
-              run: npm run gate:kreatur-kosten || echo "::error title=ROT::gate:kreatur-kosten"
+              run: npm run gate:kreatur-kosten
 
             - name: Die gelenkige Grobstufe (S3 — gate tier-fern am EINEN Stufen-Schalter)
               if: matrix.gruppe == 1
@@ -1074,7 +1074,7 @@ jobs:
               # die gelenkige Grobstufe (dieselben Knochen), die Grenze des Schalters IST die Kern-Zeile (ab, hyst); Hysterese
               # ohne Flackern und ohne Guss im Takt, die Sim-Spur byte-gleich mit und ohne Schalter; Selbst-Test (gestubbter
               # Schalter) rot.
-              run: npm run gate:tier-fern || echo "::error title=ROT::gate:tier-fern"
+              run: npm run gate:tier-fern
 
             - name: Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)
               if: matrix.gruppe == 7
@@ -1083,7 +1083,7 @@ jobs:
               # bis S1 nur von Hand bewiesen (3a0248e8, 8e6f628c). Node-direkt im vm wie der Foundry-Worker;
               # Determinismus, Samen-Invarianz, Plattform-Probe (pow 0, sin/cos benannt), Selbst-Test: ein
               # verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.
-              run: npm run gate:ofen-contract || echo "::error title=ROT::gate:ofen-contract"
+              run: npm run gate:ofen-contract
 
             - name: Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)
               if: matrix.gruppe == 10
@@ -1098,7 +1098,7 @@ jobs:
               # Inkl. Selbst-Test (Drohn-Zwilling, stumme Schleife, Ufer ohne Wasser, Voll-Umlauf, Ereignis-
               # Glocke, Graph ohne Werkstatt, Ruf im Spiel-Takt, Glut ohne Spitzen-Wand, Ping-Zwilling im Stamm,
               # Wald ohne Bestand).
-              run: npm run gate:klang-zensus || echo "::error title=ROT::gate:klang-zensus"
+              run: npm run gate:klang-zensus
 
             - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
               if: matrix.gruppe == 3
@@ -1107,7 +1107,7 @@ jobs:
               # (kein Welt-Cache-Gift), die Werkstatt zeigt die Studio-Rezepte (gras) + Slider
               # aus den Daten, die Donoren (fahrzeug_wagen/tor_basis) treten in keinem Picker
               # auf, das Interim ist ehrlich (pending statt Donor-Part-Gestalt).
-              run: npm run gate:rezept-katalog || echo "::error title=ROT::gate:rezept-katalog"
+              run: npm run gate:rezept-katalog
 
             - name: Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)
               if: matrix.gruppe == 4
@@ -1115,7 +1115,7 @@ jobs:
               # Entry-Resolver; das Studio-Tor materialisiert end-to-end ohne Doppel-Bild, die
               # Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt
               # in BEIDEN Regimen (Hook -> Part-Pfad).
-              run: npm run gate:portal-gestalt || echo "::error title=ROT::gate:portal-gestalt"
+              run: npm run gate:portal-gestalt
 
             - name: Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)
               if: matrix.gruppe == 1
@@ -1132,7 +1132,7 @@ jobs:
               # --selftest zuerst: begegnung ohne Quellen-Prüfung, die Heimat beantwortet jede ready, skeleton mit
               # Element-Adapter und Markup-Panel, skeleton und terrain ohne Manifest (der Server antwortet 404), fluid
               # meldet ihr Manifest ohne „flut", die garage trägt eins ohne Soll-Zeile → jede Wand rot und beim Namen.
-              run: npm run gate:portal-konformanz || echo "::error title=ROT::gate:portal-konformanz"
+              run: npm run gate:portal-konformanz
 
             - name: Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)
               if: matrix.gruppe == 10
@@ -1143,7 +1143,7 @@ jobs:
               # reglerTot 18 von 113 → Soll 0 · reglerBudget (Rand-Wert über der Budget-Zeile) 9 → Soll 0. --selftest zuerst:
               # die Brücke ohne ov → jeder vehicle-Regler tot; ein Regler-Bau, der wirft bzw. NaN rechnet → BRICHT; der Ofen
               # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT.
-              run: npm run gate:regler-wirkt || echo "::error title=ROT::gate:regler-wirkt"
+              run: npm run gate:regler-wirkt
 
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               if: matrix.gruppe == 4
@@ -1153,7 +1153,7 @@ jobs:
               # Rampen ohne Loch, Impostor-fin; die Drift-Wand gegen jeden Studio-GLSL-Edit);
               # (b) headless foundry-ON: der Distanz-Sweep über thresh01/thresh12 — IM Band Slots
               # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
-              run: npm run gate:foundry-crossfade || echo "::error title=ROT::gate:foundry-crossfade"
+              run: npm run gate:foundry-crossfade
 
             # ── DIE WÄNDE OHNE WORKFLOW (09.10., gate:ci-deckung (W)) ── Bis hier liefen 50 der 152 `gate:*` nirgends
             # automatisch. Die folgenden 29 fahren headless (Null-Renderer, swiftshader nur für Rechen- und Bäcker-Proben)
@@ -1164,94 +1164,94 @@ jobs:
             # wer nur abgeschaltet läuft (nächtlich, || true, continue-on-error), ist (S) rot.
             - name: Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)
               if: matrix.gruppe == 9
-              run: npm run gate:tier-separation || echo "::error title=ROT::gate:tier-separation"
+              run: npm run gate:tier-separation
 
             - name: Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)
               if: matrix.gruppe == 8
-              run: npm run gate:koerper-bewegung || echo "::error title=ROT::gate:koerper-bewegung"
+              run: npm run gate:koerper-bewegung
 
             - name: Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)
               if: matrix.gruppe == 9
-              run: npm run gate:schritt-klang || echo "::error title=ROT::gate:schritt-klang"
+              run: npm run gate:schritt-klang
 
             - name: Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)
               if: matrix.gruppe == 10
-              run: npm run gate:reload-treue || echo "::error title=ROT::gate:reload-treue"
+              run: npm run gate:reload-treue
 
             - name: Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)
               if: matrix.gruppe == 1
-              run: npm run gate:studio-uebergabe || echo "::error title=ROT::gate:studio-uebergabe"
+              run: npm run gate:studio-uebergabe
 
             - name: P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)
               if: matrix.gruppe == 8
-              run: npm run gate:p2p-gestalt || echo "::error title=ROT::gate:p2p-gestalt"
+              run: npm run gate:p2p-gestalt
 
             - name: Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)
               if: matrix.gruppe == 9
-              run: npm run gate:praegung-welt || echo "::error title=ROT::gate:praegung-welt"
+              run: npm run gate:praegung-welt
 
             - name: Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)
               if: matrix.gruppe == 6
-              run: npm run gate:scatter-lod || echo "::error title=ROT::gate:scatter-lod"
+              run: npm run gate:scatter-lod
 
             - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
               if: matrix.gruppe == 10
-              run: npm run gate:leistungs-vertrag || echo "::error title=ROT::gate:leistungs-vertrag"
+              run: npm run gate:leistungs-vertrag
 
             - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
               if: matrix.gruppe == 4
-              run: npm run gate:erstarren || echo "::error title=ROT::gate:erstarren"
+              run: npm run gate:erstarren
 
             - name: Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)
               if: matrix.gruppe == 2
-              run: npm run gate:existenz-boden || echo "::error title=ROT::gate:existenz-boden"
+              run: npm run gate:existenz-boden
 
             - name: Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)
               if: matrix.gruppe == 5
-              run: npm run gate:perf-panel || echo "::error title=ROT::gate:perf-panel"
+              run: npm run gate:perf-panel
 
             - name: GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)
               if: matrix.gruppe == 10
-              run: npm run gate:gpu-zeit || echo "::error title=ROT::gate:gpu-zeit"
+              run: npm run gate:gpu-zeit
 
             - name: Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)
               if: matrix.gruppe == 10
-              run: npm run gate:render-diaet || echo "::error title=ROT::gate:render-diaet"
+              run: npm run gate:render-diaet
 
             - name: Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)
               if: matrix.gruppe == 1
-              run: npm run gate:foliage-res || echo "::error title=ROT::gate:foliage-res"
+              run: npm run gate:foliage-res
 
             - name: Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)
               if: matrix.gruppe == 9
-              run: npm run gate:fern-ring || echo "::error title=ROT::gate:fern-ring"
+              run: npm run gate:fern-ring
 
             - name: WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)
               if: matrix.gruppe == 9
               # swiftshader-GL (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rückfall wird einmal laut
               # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen und ein
               # Render trägt Substanz.
-              run: npm run gate:webgl-probe || echo "::error title=ROT::gate:webgl-probe"
+              run: npm run gate:webgl-probe
 
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
               if: matrix.gruppe == 3
-              run: npm run gate:fern-wasser || echo "::error title=ROT::gate:fern-wasser"
+              run: npm run gate:fern-wasser
 
             - name: Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)
               if: matrix.gruppe == 4
-              run: npm run gate:warm-start || echo "::error title=ROT::gate:warm-start"
+              run: npm run gate:warm-start
 
             - name: Wasser-Wahrheit (kein Wasser an der Wand, kein Spiegel über Land, keine bleibenden Blobs, Stau nur geschlossen)
               if: matrix.gruppe == 2
-              run: npm run gate:wasser-wahrheit || echo "::error title=ROT::gate:wasser-wahrheit"
+              run: npm run gate:wasser-wahrheit
 
             - name: Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)
               if: matrix.gruppe == 4
-              run: npm run gate:kopplung || echo "::error title=ROT::gate:kopplung"
+              run: npm run gate:kopplung
 
             - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
               if: matrix.gruppe == 6
-              run: npm run gate:worker-watersheet || echo "::error title=ROT::gate:worker-watersheet"
+              run: npm run gate:worker-watersheet
 
             - name: Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)
               if: matrix.gruppe == 7
@@ -1261,50 +1261,50 @@ jobs:
               # Huelle traegt die Amplitude der Welle; mit frustumCulled = false nennt der Selbsttest jede Membran.
               # Gruppe 3 seit der Vereinigung mit waende-ci (EIN Schritt): sie lief in integ-probe ce10dcb6 (Lauf 38092890885)
               # 19,3 min, Gruppe 1 22,5 min, Gruppe 2 26,6 min; der Schritt kostet im Zweig 21 s (Lauf 38021693010).
-              run: npm run gate:portal-membran || echo "::error title=ROT::gate:portal-membran"
+              run: npm run gate:portal-membran
 
             - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
               if: matrix.gruppe == 1
-              run: npm run gate:fahrzeug-fern || echo "::error title=ROT::gate:fahrzeug-fern"
+              run: npm run gate:fahrzeug-fern
 
             - name: Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)
               if: matrix.gruppe == 9
-              run: npm run gate:baecker-kanal || echo "::error title=ROT::gate:baecker-kanal"
+              run: npm run gate:baecker-kanal
 
             - name: Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)
               if: matrix.gruppe == 5
-              run: npm run gate:konsum-matrix || echo "::error title=ROT::gate:konsum-matrix"
+              run: npm run gate:konsum-matrix
 
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
               if: matrix.gruppe == 5
-              run: npm run gate:seam || echo "::error title=ROT::gate:seam"
+              run: npm run gate:seam
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 8
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
               # bricht jede Stelle einzeln.
-              run: npm run gate:v1-pfad || echo "::error title=ROT::gate:v1-pfad"
+              run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
               if: matrix.gruppe == 8
               # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
               # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
               # und Wand je einzeln.
-              run: npm run gate:werkstatt-weg || echo "::error title=ROT::gate:werkstatt-weg"
+              run: npm run gate:werkstatt-weg
 
             - name: Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)
               if: matrix.gruppe == 6
               # Die Defekte der sichtbaren Leben-Schau 07.10. auf den v1-Schritten 1-2, je beim Namen: jede Probe ruft den
               # Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest nennt jeden Befund-Zustand und
               # die statische Wand feuert am Vor-Stand.
-              run: npm run gate:ankunft || echo "::error title=ROT::gate:ankunft"
+              run: npm run gate:ankunft
 
             - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
               if: matrix.gruppe == 2
               # Die Werkbank nennt jede WebGPU-Validierung mit Pass und Objekt (scripts/lib/gpu-fehler.cjs); der
               # Selbsttest zeichnet auf einer nackten WebGPU-Seite einmal ohne Vertex-Slot - die Linse muss ihn nennen.
-              run: npm run gate:gpu-fehler || echo "::error title=ROT::gate:gpu-fehler"
+              run: npm run gate:gpu-fehler
 
             - name: Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)
               if: matrix.gruppe == 9
@@ -1314,7 +1314,7 @@ jobs:
               # Licht, Medium), die Decke über trockenen Höhlen, der Wagen watet und das Boot treibt, keine Ufer-Flut,
               # Klang · Tier-Scheu · Küsten-Sheet lesen die EINE Wahrheit, die Ufer-Bänder stetig über die Krone. --selftest
               # zuerst.
-              run: npm run gate:wasser-leben || echo "::error title=ROT::gate:wasser-leben"
+              run: npm run gate:wasser-leben
 
             - name: Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)
               if: matrix.gruppe == 10
@@ -1330,7 +1330,7 @@ jobs:
               # 3 s nach der Ansaugung ≤ 0,5 m/s, kein Vortrieb, nie über das Dach im Wasser; der Ausstieg an Land steht
               # neben dem Wagen, im See (≥ 1,35 m) schwimmt er; K6: der Wasserschlag sperrt die Räder am Hang.
               # --selftest zuerst. ~3 min.
-              run: npm run gate:werk-im-wasser || echo "::error title=ROT::gate:werk-im-wasser"
+              run: npm run gate:werk-im-wasser
 
             - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
               if: matrix.gruppe == 6
@@ -1350,7 +1350,7 @@ jobs:
               # eingeschwungen satzfrei, Ruhe ohne Satz und ohne Karten-Brücke < 64 m, nach 400 m fort und zurück
               # satzfrei binnen 120 Takten. --selftest zuerst: ein
               # erzwungener Kapsel-Satz in 20 m wird rot und genannt.
-              run: npm run gate:analog-nah || echo "::error title=ROT::gate:analog-nah"
+              run: npm run gate:analog-nah
 
             - name: Frost-Wand (echter Renderer — das Weltbild folgt der Kamera durch Werkstatt, Ich- und Hof-Buehne)
               if: matrix.gruppe == 8
@@ -1360,7 +1360,7 @@ jobs:
               # je Schritt folgt das Bild der gedrehten Kamera, jeder Index-Puffer der Welt traegt sein Format, kein Device meldet,
               # die Wachen des Spiels schweigen; danach die Taeter (Index ueber der Vertex-Zahl, ein fremd geweiteter Mensch-Index):
               # die Index-Wache nennt beide beim Namen, die GPU-Wache zaehlt, das stehende Bild wird erkannt.
-              run: npm run gate:weltbild-frost || echo "::error title=ROT::gate:weltbild-frost"
+              run: npm run gate:weltbild-frost
 
             - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
               if: matrix.gruppe == 6
@@ -1371,7 +1371,7 @@ jobs:
               # Szenen-Tiefe kopiert, der Direktpfad zeichnet mit Tiefe (die nahe Kiste deckt die ferne), die Post-Kette
               # ohne Leinwand-Tiefe. Dazu die Shader-Kosten-Linse am erzeugten WGSL der Ausgabe (hoechstens 9 unbedingte
               # Abtastungen, Godrays und Kontrast im Zweig hinter ihrer Staerke) und die Godrays mit der Sonne im Bild.
-              run: npm run gate:post-kette || echo "::error title=ROT::gate:post-kette"
+              run: npm run gate:post-kette
 
             - name: Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
               if: matrix.gruppe == 6
@@ -1382,7 +1382,7 @@ jobs:
               # Aenderung im Stand zeichnet wie der volle Refresh; VERSCHACHTELT: ein Schatten-Render, dessen Werfer ohne
               # Diaet die Kamera-Knoten ueber die Vendor-Bahn stellt, laesst keinen Stempel ueberleben (181d3c9e: 0,11).
               # --selftest zuerst: injizierte Taeter fallen rot.
-              run: npm run gate:kamera-treue || echo "::error title=ROT::gate:kamera-treue"
+              run: npm run gate:kamera-treue
 
             - name: Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
               if: matrix.gruppe == 10
@@ -1393,7 +1393,7 @@ jobs:
               # Bildpunkte Leib, das Geraet in der Hand bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede
               # Maske zurueck. Fuenf eingeschmuggelte Regeln (main: visible, Ebene 0 bleibt, fremde Ebene, das Geraet mit,
               # Zwilling geweckt) fallen je beim Namen. --selftest zuerst.
-              run: npm run gate:ego-schatten || echo "::error title=ROT::gate:ego-schatten"
+              run: npm run gate:ego-schatten
 
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
               if: matrix.gruppe == 9
@@ -1402,7 +1402,7 @@ jobs:
               # niederfrequente Effekte, Tiefe ohne Leser oder doppelt, 32 bit mit 16-bit-Inhalt). Dazu eine Schatten-Buehne
               # durch die Huelle der Kaskaden (Pass ohne Farb-Anhang, Schatten faellt, keine GPU-Validierung) und je Klasse
               # ein eingeschmuggelter Taeter, der beim Namen rot faellt und danach restlos fort ist. --selftest zuerst.
-              run: npm run gate:ziel-zensus || echo "::error title=ROT::gate:ziel-zensus"
+              run: npm run gate:ziel-zensus
 
             - name: Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
               if: matrix.gruppe == 8
@@ -1414,14 +1414,14 @@ jobs:
               # mit Zaehler 0). ROT bei jeder Device-Meldung, jeder Zeile der GPU-Wache und jedem Seitenfehler; zuletzt ohne die
               # Huellen (Vendor-Methoden) muessen „incomplete occlusion query“, „No occlusion queries“, „weak set“ und der
               # Letzte beim Namen fallen.
-              run: npm run gate:verdeckungs-abfrage || echo "::error title=ROT::gate:verdeckungs-abfrage"
+              run: npm run gate:verdeckungs-abfrage
 
             - name: Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)
               if: matrix.gruppe == 3
               # Fährt den ECHTEN Renderer (swiftshader, Software-Holz) mit dem echten Wasser-Material auf einem Fluss-Bogen:
               # kein Zebra bei Wasser-Uhr 3600 s gegen 60 s, kein Schaum ohne Gesetz-Grund, der Sturm bewegt das Wasser
               # (Wind-Zeile des Gesetzes); der Sturm-Regen allein auf Schwarz zeigt Schlieren, quer zum Wind geneigt.
-              run: npm run gate:wasser-leben:bild || echo "::error title=ROT::gate:wasser-leben:bild"
+              run: npm run gate:wasser-leben:bild
 
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               if: matrix.gruppe == 10
