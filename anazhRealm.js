@@ -17205,8 +17205,14 @@ class AnazhRealm {
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
     // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
     // Definition); sonst die Boden-Karte des Chunks (`_chunkSurfaceAt`, bilinear, das gezeichnete Mesh) — solange sie im
-    // STAND_SICHT_BAND um den Träger liegt; außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) und ohne
-    // Karte der Träger selbst. Leser: Fuß-IK des Menschen (`_gaitBodenY`), Tier-Lage (`_creatureSlopeProben`).
+    // STAND_SICHT_BAND um den Träger liegt. Außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) liest er das
+    // GESETZ AM PUNKT — den Boden unter dem Körper ab dem Träger (`_koerperBodenUnter`: abwärts, der Hang zwei Meter hinauf),
+    // im selben Band. Prüfung 2 K02a: dort trug der Träger JEDEN Punkt — die Pfoten des Wolfs am Wandfuß standen auf der
+    // Höhe seines Leibs, nicht auf dem Boden unter ihnen (die Haut 0,30–0,46 m im Fels in 5 von 8 Blickrichtungen), und der
+    // in die Wand laufende Wolf stand auf seinem 0,5-m-Grund-Cache 0,55 m unter dem Hang. Die Kosten folgen den Körpern
+    // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
+    // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
+    // Stoß-Schritt, die Tod-Lage.
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
         const span = this._voxelChunkConfig(0).span;
@@ -17215,7 +17221,11 @@ class AnazhRealm {
         const e = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
         const k = e && e.surfMap ? this._chunkSurfaceAt(e, cx, cz, x, z) : null;
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
-        return Number.isFinite(k) && Math.abs(k - traegerY) <= AnazhRealm.STAND_SICHT_BAND ? k : traegerY;
+        const band = AnazhRealm.STAND_SICHT_BAND;
+        if (!Number.isFinite(k)) return traegerY;
+        if (Math.abs(k - traegerY) <= band) return k;
+        const g = this._koerperBodenUnter(x, traegerY, z);
+        return Number.isFinite(g) && Math.abs(g - traegerY) <= band ? g : traegerY;
     }
     // Der Boden unterm Fuß — der EINE Proben-Chokepoint des Biped-IK: der Stand-Leser der Sicht um den TRÄGER desselben
     // Kapsel-Schritts (`_stepCharacter` stempelt `_kapselTraegerY`/`_kapselStruktur`). Vorher las die Probe das Gelände
@@ -19607,15 +19617,16 @@ class AnazhRealm {
             hx = Math.cos(ry);
             hz = -Math.sin(ry);
         }
+        const kipp = this._todKippWahl(creature, hx, hz);
         creature.userData.dying = {
             t: 0,
             dauer: K.kippDauerSec,
             nachklang: K.kippNachklangSec,
-            dirX: hx,
-            dirZ: hz,
+            dirX: kipp.hx,
+            dirZ: kipp.hz,
             baseQuat: creature.quaternion.clone(),
             baseY: creature.position.y,
-            hebe: this._todHebeTafel(creature, hx, hz),
+            hebe: kipp.hebe,
             sounded: false,
         };
     }
@@ -19730,6 +19741,26 @@ class AnazhRealm {
             hebe[k] = Number.isFinite(sp) ? soll - sp : hebe[k - 1];
         }
         return hebe;
+    }
+
+    // DIE KIPP-RICHTUNG (Prüfung 2 K02a, Wolf am Wandfuß, Gier 225°): der Leib kippt hangabwärts — steigt dort der Boden
+    // unter der gekippten Haut so, dass die Tafel die Wurzel mehr als eine Stufe heben müsste, kippt er in eine Wand (unter
+    // Fels gelesen am Punkt: die Wurzel stieg 2,8 m auf den Wand-Buckel; aus dem Raster ohne Wand sank er 0,84 m hinein).
+    // Dann fällt er dorthin, wo Platz ist: die Richtung unter hangabwärts, hangaufwärts und den beiden Seiten mit dem
+    // kleinsten Hub (bei Gleichstand die erste). Hebt hangabwärts höchstens eine Stufe, bleibt alles, wie es war.
+    _todKippWahl(creature, hx, hz) {
+        const hub = (h) => (h ? Math.max(...h) : Infinity);
+        let best = { hx, hz, hebe: this._todHebeTafel(creature, hx, hz) };
+        if (!(hub(best.hebe) > AnazhRealm.PLAYER_STEP_UP)) return best;
+        for (const [x, z] of [
+            [-hx, -hz],
+            [hz, -hx],
+            [-hz, hx],
+        ]) {
+            const hebe = this._todHebeTafel(creature, x, z);
+            if (hub(hebe) < hub(best.hebe)) best = { hx: x, hz: z, hebe };
+        }
+        return best;
     }
 
     // === Helper: kontext-abhängiges Args-Mapping für creature_task(paramArg) ===
@@ -22509,11 +22540,15 @@ class AnazhRealm {
             }
         }
         if (!y.every(Number.isFinite)) return null;
-        return {
-            mitte: (y[0] + y[1] + y[2] + y[3]) / 4,
-            pitch: this._slopePitch(y[0], y[1], 2 * hl),
-            roll: Math.max(-0.6, Math.min(0.6, Math.atan2(y[2] - y[3], 2 * hw))),
-        };
+        const pitch = this._slopePitch(y[0], y[1], 2 * hl);
+        const roll = Math.max(-0.6, Math.min(0.6, Math.atan2(y[2] - y[3], 2 * hw)));
+        // DER DECKEL DES NICKS hebt den Leib (Prüfung 2 K02a, Wolf am Wandfuß, Gier 180°): steiler als der Deckel (0,6 rad)
+        // stünde die bergseitige Probe unter der Ebene des Leibs — die Wurzel hebt sich um das, was der Deckel offen lässt,
+        // der Leib liegt auf der höheren Stütze (die Pfoten talseitig reicht der Gang). Ohne Deckel (≤ 34°) bleibt die Mitte.
+        const offen =
+            Math.max(0, Math.abs(y[1] - y[0]) / 2 - hl * Math.tan(Math.abs(pitch))) +
+            Math.max(0, Math.abs(y[2] - y[3]) / 2 - hw * Math.tan(Math.abs(roll)));
+        return { mitte: (y[0] + y[1] + y[2] + y[3]) / 4 + offen, pitch, roll };
     }
     // EINE Gesetz-Probe (gecacht): re-scannt nur nach > 0.5 m Wanderung UND mit freiem Frame-Budget (der
     // Kreatur-FPS-Dirigent V17.113 — dieselbe Kasse wie _creatureGroundY; Budget leer → der stale Cache trägt den Frame).

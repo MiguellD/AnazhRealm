@@ -52,6 +52,9 @@ const TOD_LIEGT_M = 0.25; // so hoch über dem Fels liegt sie höchstens (über 
 // auf einem 50°-Hang bis 0,2 m unter dem Fels)
 const TOD_SCHWEBT_M = 0.5; // so hoch hebt die Tod-Lage die tiefste Stelle im Kippen nie (die Flanke legt sich auf den Boden)
 const TOD_GIER = 8; // so viele Blickrichtungen stirbt der Wolf am Ort (die Lage hängt an der Kipp-Richtung und am Leib darüber)
+// IN DER HÖHLE steht ein Tier auf dem Gesetz (die Sicht hat dort keine Karte): so weit liegt seine Wurzel höchstens neben dem
+// Fels unter ihr — die Ebene seiner vier Proben über einem gekrümmten Grund (am Wandfuß), nie ein Sicht-Band von 2 m
+const HOEHLE_M = 0.25;
 // Die Körper-Schritte und die Leser, die nie den Boden eines Körpers liefern dürfen.
 const KOERPER_SCHRITTE = [
     "_fahrBoden",
@@ -174,9 +177,13 @@ function urteil(b) {
         }
         const wo = `${p.koerper} bei ${p.ort}`;
         // ein Tier steht auf der Sicht (Q4, Lehre 22: der sichtbare Boden ist das Mesh) — sein Leib darf so weit neben dem
-        // Gesetz liegen, wie das Stand-Band des Spiels trägt (`band`, STAND_SICHT_BAND); Wagen und Spieler stehen auf dem Gesetz
-        const fallM = Number.isFinite(p.band) ? Math.max(FALL_M, p.band) : FALL_M;
-        const stehtM = Number.isFinite(p.band) ? Math.max(STEHT_M, p.band) : STEHT_M;
+        // Gesetz liegen, wie das Stand-Band des Spiels trägt (`band`, STAND_SICHT_BAND); Wagen und Spieler stehen auf dem Gesetz.
+        // IN DER HÖHLE (O3) hat die Sicht keine Karte (sie trägt die Oberkante der Säule): dort steht auch das Tier auf dem
+        // Gesetz, und sein Band ist HOEHLE_M (Prüfung 2 K02a: „Wolf läuft in die Wand" endete 0,55 m unter seinem Grund und war
+        // nur grün, weil das Sicht-Band 2 m trug)
+        const hoehle = Number.isFinite(p.band) && p.name.startsWith("O3 ");
+        const fallM = hoehle ? HOEHLE_M : Number.isFinite(p.band) ? Math.max(FALL_M, p.band) : FALL_M;
+        const stehtM = hoehle ? HOEHLE_M : Number.isFinite(p.band) ? Math.max(STEHT_M, p.band) : STEHT_M;
         if (p.tiefsteUnter > fallM)
             v.push(
                 `(O) DURCH DEN BODEN: ${p.name} — ${wo} lag ${p.tiefsteUnter.toFixed(2)} m unter dem Fels unter ihm` +
@@ -198,6 +205,14 @@ function urteil(b) {
             if (t.stehtM === null || t.liegtM === null || t.kippMin === null)
                 v.push(`LEER: ${p.name} — keine Haut gemessen (Stand ${t.stehtM}, Lage ${t.liegtM})`);
             else {
+                // DER LEBENDE STAND (Prüfung 2 K02a, vorher OFFEN): am Fuß der Höhlenwand stand der Wolf vor dem Tod in 5 von 8
+                // Blickrichtungen mit der Haut bis 0,46 m im Fels — die Pfoten lasen in der Höhle die Höhe des Leibs, nie den
+                // Boden unter sich (`_standSicht` ohne Karte)
+                if (t.stehtM < -TOD_M)
+                    v.push(
+                        `(O) STAND IM FELS: ${p.name} — ${wo} steht lebend mit der Haut ${(-t.stehtM).toFixed(2)} m im Fels ` +
+                            `(höchstens ${TOD_M} m)`
+                    );
                 const oben = Math.max(t.stehtM, 0);
                 if (t.liegtM < -TOD_M)
                     v.push(
@@ -310,6 +325,16 @@ function selbsttest() {
             /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 2\.50 m unter dem Fels/,
         ],
         [
+            "das Sicht-Band trägt in der Höhle nicht (Prüfung 2 K02a: 0,55 m unter dem Grund)",
+            (b) => Object.assign(b.proben[5], { tiefsteUnter: 0.55, yEnde: 29.85, grundEnde: 30.4 }),
+            /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 0\.55 m unter dem Fels/,
+        ],
+        [
+            "der lebende Wolf steht am Wandfuß im Fels (Prüfung 2 K02a)",
+            (b) => Object.assign(b.proben[6].tod, { stehtM: -0.46 }),
+            /\(O\) STAND IM FELS: O3 Wolf stirbt in der Höhle — Tier wolf#5 .* Haut 0\.46 m im Fels/,
+        ],
+        [
             "der tote Wolf liegt im Grund (Gegenprüfung 10.10.)",
             (b) => Object.assign(b.proben[6].tod, { liegtM: -0.38, kippMin: -0.38 }),
             /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 \(stirbt\) .* liegt 0\.38 m im Fels/,
@@ -349,14 +374,15 @@ function selbsttest() {
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
     {
-        // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf dem Mesh, 0,75 m unter dem Gesetz — im Band, grün
+        // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
+        // seiner Wurzel (der Grund krümmt sich unter dem Leib) — im Höhlen-Band, grün
         const b = klon();
-        Object.assign(b.proben[5], { tiefsteUnter: 1.0, yEnde: 31.52, grundEnde: 32.27 });
+        Object.assign(b.proben[5], { tiefsteUnter: 0.2, yEnde: 30.2, grundEnde: 30.4 });
         const v = urteil(b);
         console.log(
-            `  ${v.length ? "❌" : "✅"} Selbsttest „Tier im Sicht-Band" bleibt grün: ${v.join(" · ") || "grün"}`
+            `  ${v.length ? "❌" : "✅"} Selbsttest „Tier im Höhlen-Band" bleibt grün: ${v.join(" · ") || "grün"}`
         );
-        if (v.length) fehler.push("ein Tier im Sicht-Band fällt rot: " + v.join(" · "));
+        if (v.length) fehler.push("ein Tier im Höhlen-Band fällt rot: " + v.join(" · "));
     }
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -1077,13 +1103,12 @@ async function probe(K) {
                             `${fx(p.tod.kippMin)} … ${fx(p.tod.kippMax)} m`
                           : "")
         );
-    // OFFEN (nie grün gezählt): der LEBENDE Leib am Fuß einer Höhlenwand steiler als 45° — die Stand-Ebene des Tiers
-    // (`_creatureSlopeProben`) nimmt die steilere Probe als Kante aus, der Leib steht flacher als der Hang
-    const imFels = befund.proben.filter((p) => p.tod && Number.isFinite(p.tod.stehtM) && p.tod.stehtM < -TOD_M);
-    if (imFels.length)
+    // DER LEBENDE STAND am Wandfuß (urteil: STAND IM FELS): je Blickrichtung die tiefste Stelle der Haut über dem Fels
+    const stand = befund.proben.filter((p) => p.tod && Number.isFinite(p.tod.stehtM)).map((p) => p.tod.stehtM);
+    if (stand.length)
         console.log(
-            `  OFFEN (Stand am Wandfuß): ${imFels.length} von ${befund.proben.filter((p) => p.tod).length} lebenden Wölfen ` +
-                `stehen mit der Haut bis ${(-Math.min(...imFels.map((p) => p.tod.stehtM))).toFixed(2)} m im Fels`
+            `  Lebender Stand am Wandfuß: ${stand.filter((s) => s < -TOD_M).length} von ${stand.length} Wölfen tiefer als ` +
+                `${TOD_M} m im Fels, Haut ${Math.min(...stand).toFixed(2)} … ${Math.max(...stand).toFixed(2)} m über dem Fels`
         );
     console.log(
         `  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben} Proben, ${befund.zensus.taeter.length} Täter`
