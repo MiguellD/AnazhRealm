@@ -36700,10 +36700,8 @@ class AnazhRealm {
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
-        // uEmotion ist der Kopplungs-Haken (0 = neutral). Die Regler initialisiert der persistierte Atmosphäre-
-        // Wert (Settings-Slider, überlebt Reload), sonst Default.
+        // Die Regler initialisiert der persistierte Atmosphäre-Wert (Settings-Slider, überlebt Reload), sonst Default.
         const atmoW = this.state.atmosphere || {};
-        const uEmotion = uniform(0.0);
         // Mindest-Wasser-Dicke (Meter optischer Weg): Fragmente darunter fallen per alphaTest (der 16-m-Atlas-
         // Spiegel blutet minimal über Voxel-Grate → flaches Blatt); tiefes Wasser bleibt. Default 0 (der
         // Durchlass macht dünnes Wasser schon durchsichtig), live über setWaterCull.
@@ -36900,9 +36898,9 @@ class AnazhRealm {
         const whitewater = smoothstep(float(1.2), float(3.2), aSlopeV).mul(
             float(0.25).add(riverS1.mul(0.75).mul(detailFade))
         );
-        // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
-        // im Wasser); default 0 = exakt das alte Bild.
-        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
+        // Kein Schaum ohne Gesetz-Grund: bis K16b hob die Stimmung des Spielers (V14-Haken, Ruhe 0,39 · Hoffnung 0,06 an der
+        // Ankunft) den Schaum auf JEDER Wasser-Fläche um 0,05 — 18,8 % des ruhigen Flusses weiß (gate:wasser-leben B1).
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater), 0.0, 1.0);
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
@@ -36989,8 +36987,6 @@ class AnazhRealm {
             irr: uIrr,
             sunCol: uSunCol,
             light: uLight,
-            // emotion ist der V14-Haken.
-            emotion: uEmotion,
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
@@ -99641,21 +99637,6 @@ class AnazhRealm {
         // Flow-Shader scrollt den Schaum stromab nach per-Vertex-`aFlow`.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
             this.state.hydroSurfaceUniforms.time.value = currentTime;
-        }
-        // `uEmotion` füttern: die Stimmung hebt den Schaum (s. `_ensureHydroSurfaceMaterial`) — positive
-        // Gefühle beleben das Wasser, Trauer dämpft.
-        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
-            const em = this.state.player && this.state.player.emotions;
-            const vital = em
-                ? Math.max(
-                      0,
-                      Math.min(
-                          1,
-                          (em.joy || 0) * 0.6 + (em.peace || 0) * 0.5 + (em.hope || 0) * 0.3 - (em.sorrow || 0) * 0.5
-                      )
-                  )
-                : 0;
-            this.state.hydroSurfaceUniforms.emotion.value = vital;
         }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).

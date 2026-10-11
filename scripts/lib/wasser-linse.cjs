@@ -774,6 +774,9 @@ function wasserBild(opts) {
         const T = window.THREE;
         const renderer = st.renderer;
         if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
+        // der Renderer steht, bevor die Probe zeichnet (r184: „render() called before the backend is initialized“ — die
+        // Hydrosphäre ist bereit, bevor das Backend steht)
+        await renderer.init();
         const mat = r._ensureHydroSurfaceMaterial();
         const U = st.hydroSurfaceUniforms;
         // Ein Fluss-Bogen (Radius 40 m, 14 m breit, 120°) mit dem Strömungs-Attribut, wie es das Zell-Sheet trägt: die
@@ -991,6 +994,9 @@ function wasserRegen(opts) {
         const T = window.THREE;
         const renderer = st.renderer;
         if (!renderer || !renderer.backend || renderer.backend.isNullBackend) return { fehler: "kein echter Renderer" };
+        // der Renderer steht, bevor die Probe zeichnet (r184: „render() called before the backend is initialized“ — die
+        // Hydrosphäre ist bereit, bevor das Backend steht)
+        await renderer.init();
         const W = o.w || 640,
             H = o.h || 360;
         renderer.setAnimationLoop(null);

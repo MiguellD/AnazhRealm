@@ -41853,7 +41853,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterDepthShoreline = waterDepthShoreline;
         // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
-        // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
+        // Der Schaum ist das Gesetz (K16b): kein Emotions-Haken mehr am Wasser (er hob den Schaum jeder Fläche ohne Grund).
         out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
         // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + Default + Source-Probe.
         out.waterMinDepthUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.minDepth);
@@ -41913,7 +41913,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)",
             v830Results.waterDepthShoreline
         );
-        check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
+        check("V13.5: kein Emotions-Schaum am Wasser — der Schaum ist das Gesetz (gate:wasser-leben B1)", !v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
         check("V13.9.2: setWaterCull-Setter (Slider + Persistenz) vorhanden", v830Results.waterCullSetter);
