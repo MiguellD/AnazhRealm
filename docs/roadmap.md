@@ -32,12 +32,12 @@ Schritte oder den FPS-Boden trägt.
 ### §0.frozen · Die Frozen-Liste
 
 Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit dem Schöpfer-Wort
-„analog!"). Stand V18.496: Schöpfer-Wort 30.09. „am Ende AAA-Niveau, nicht Kapseln" — nah und
-mittel das Studio-Mesh mit seiner LOD-Kette, das Feld nur fern; die Mesh-Zone steht (0 ungebaut,
-`docs/abnahme-analog.md`); die Vegetation trägt seit V18.506 das Farb-Gesetz (Laub 0,42 → 0,16),
-seit V18.507 EIN Himmel am Tag und die Belichtung aus dem Licht (Karte 212 → 173), seit V18.508 nah
-die Nah-Wiese auf der Boden-Karte (D gefallen); offen: das Profi-Band auf jedem Standardgerät
-(Schöpfer-Wort 02.10.: „richter ist nicht mein rechner").
+„analog!", seit 30.09. in der AAA-Lesart „am Ende AAA-Niveau, nicht Kapseln"). Neu gefasst 11.10.
+(Entscheidung 1110 §5.1, Vollmacht des Schöpfers): B Bäume und C Architektur fielen mit dem Beweis-Satz
+A1 (echte GPU, Ausgabe-Pfad, `docs/abnahme-analog.md` § A1: Mesh-Zone 0 ungebaut in jedem Schuss); offen
+stehen A (die Kopf-Zeile des Fell-Gesetzes, 5,79 px je Strähne an Armlänge), B der Pfad ohne Bruch, C der
+Ort auf dem Gelände und E das Profi-Band auf jedem Standardgerät mit seinem Kriterium (Radeon 890M und
+GTX 1060, Wiese und Genesis, Regler voll; Schöpfer-Wort 02.10.: „richter ist nicht mein rechner").
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 

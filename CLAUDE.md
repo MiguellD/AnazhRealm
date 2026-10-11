@@ -110,8 +110,8 @@ Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINS
 EIN Übergang · WASSER = EINE Wahrheit, jedes Werk fragt das Land samt Sockel · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie auf integ-probe, main und nachts.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
-`aaa8`–`aaa10`) · D gefallen (V18.508) · E gemessen; offen: das Profi-Band auf jedem Standardgerät.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes (5,79 px je Strähne an
+Armlänge, A1 11.10.) · B Pfad ohne Bruch · C Ort auf dem Gelände · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis).
 
 ## Architektur (die Karte)
 
