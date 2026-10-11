@@ -17168,11 +17168,12 @@ class AnazhRealm {
     }
     // (4) HANG-PITCH aus zwei Bodenproben (vorn/hinten). rotation.x-Konvention:
     // +x kippt die Nase ABWÄRTS ⇒ vorn höher → negativ (die Nase hebt sich).
-    // Klemme ±0.6 rad (~34°) — steiler ist Kletterwand, kein Gang.
+    // Klemme ±GANG_DECKEL_RAD (0,6 rad, ~34°) — steiler ist Kletterwand, kein Gang (`_kreaturKletterwand`).
     _slopePitch(gVorn, gHinten, spann) {
         if (!Number.isFinite(gVorn) || !Number.isFinite(gHinten) || !(spann > 1e-3)) return 0;
         const p = Math.atan2(gHinten - gVorn, spann);
-        return Math.max(-0.6, Math.min(0.6, p));
+        const d = AnazhRealm.GANG_DECKEL_RAD;
+        return Math.max(-d, Math.min(d, p));
     }
     // DER EINE GANG-TICK (Chokepoint Spieler + Peers): Weg-Phase am Halter akkumulieren, Blend-Gewicht
     // glätten, Amplitude mit dem Tempo skalieren (≈1 Basis, 1.3 Sprint). opts.ik=true rüstet Fuß-IK —
@@ -21367,6 +21368,7 @@ class AnazhRealm {
             const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
             const h = dt / teile;
             ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
+            ud._wandBlickGang = false; // sein Grund (unten) ist ohne Blick voraus gesetzt — der Gang blickt neu
             // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
             // im festen Schritt): der Grund des letzten Stoß-Schritts, steht der Leib noch dort; sonst der Boden unter ihm. Nie
             // der Boden-Cache des Frame-Takts (Budget, Bildrate: gate:fahr-leben L8, Bär 1,8 cm je Bildrate).
@@ -22487,6 +22489,54 @@ class AnazhRealm {
         return ud._koerperLaengeM;
     }
 
+    // DIE HALBE LÄNGE des Leibs (m) — vom Ort der Wurzel bis zur Probe vorn und hinten (`_creatureSlopeProben`) und bis zur
+    // Stirn seines Schritts (`_kreaturKletterwand`): 0,35 × Körperlänge, 0,25–4 m, einmal je Kreatur.
+    _kreaturHalbLaenge(creature) {
+        const ud = creature.userData;
+        if (!Number.isFinite(ud._slopeHalbLen))
+            ud._slopeHalbLen = Math.min(4, Math.max(0.25, this._creatureKoerperLaenge(creature) * 0.35));
+        return ud._slopeHalbLen;
+    }
+
+    // DIE KLETTERWAND (Prüfung 2 K02a, gate:fall-waechter „Wolf läuft in die Wand"): steht ein Leib mit der Wurzel bei (x, z)
+    // auf dem Grund g und blickt längs (dx, dz), liegen Stirn und Heck eine halbe Länge `hl` vor und hinter ihr. Steht an
+    // der Stirn Fels höher über dem Boden des Hecks, als der Leib nicken kann (2 · hl · tan GANG_DECKEL_RAD — darüber hebt ihn
+    // der Deckel, `_creatureSlopeProben`), ist dort kein Gang, nur Wand. Billig zuerst: nur wo die Stirn mehr als einen
+    // halben Hub über der Wurzel Fels trägt (am gleichmäßigen Hang genau die Grenze), liest er den Boden des Hecks
+    // (`_koerperSchritt`, eine Wand dort: der Grund der Wurzel). Vorher stieg der laufende Wolf die gekrümmte Höhlenwand
+    // hinauf, bis seine Stirn 1,40 m über dem Grund lag, und der Nick-Deckel hob ihn 1,00 m über ihn.
+    _kreaturKletterwand(x, z, g, dx, dz, hl) {
+        const tan = Math.tan(AnazhRealm.GANG_DECKEL_RAD);
+        const sx = x + dx * hl;
+        const sz = z + dz * hl;
+        if (!this._fieldSolid(sx, g + hl * tan, sz)) return false;
+        const heck = this._koerperSchritt(x, z, g, x - dx * hl, z - dz * hl);
+        return this._fieldSolid(sx, (heck === null ? g : heck) + 2 * hl * tan, sz);
+    }
+
+    // DER GANG BIS ZUR WAND: welcher Teil t ∈ [0, 1] eines Schritts von (x0, z0, g0) nach (x1, z1, g1) trägt die Stirn
+    // (längs dx, dz) noch unter dem Deckel, und sein Grund g — {t: 1, g: g1}, wenn sein Ende es tut, sonst vier Halbierungen
+    // über den Schritt, jede mit ihrem Schritt-Boden (`_koerperSchritt`; ein Dach ist Wand). Der Leib hält dort, wo die Stirn
+    // die Wand erreicht, nie einen ganzen Cache-Schritt (0,5 m) davor oder dahinter. Kosten nur an der Wand.
+    _kreaturGangBis(x0, z0, g0, x1, z1, g1, dx, dz, hl) {
+        if (!this._kreaturKletterwand(x1, z1, g1, dx, dz, hl)) return { t: 1, g: g1 };
+        let lo = 0;
+        let gLo = g0;
+        let hi = 1;
+        for (let k = 0; k < 4; k++) {
+            const t = (lo + hi) / 2;
+            const x = x0 + (x1 - x0) * t;
+            const z = z0 + (z1 - z0) * t;
+            const g = this._koerperSchritt(x0, z0, g0, x, z);
+            if (g === null || this._kreaturKletterwand(x, z, g, dx, dz, hl)) hi = t;
+            else {
+                lo = t;
+                gLo = g;
+            }
+        }
+        return { t: lo, g: gLo };
+    }
+
     // ═══ TIER-BODENKONTAKT ═══
     // Vier Bodenproben je NAHER Kreatur im Leib-Rahmen (vorn/hinten längs der Gier, links/rechts quer): Pitch und Roll
     // über _slopePitch (dieselbe Hang-Formel wie der Biped), Basis = Proben-Mitte. Jede Probe liest die SICHT
@@ -22496,10 +22546,7 @@ class AnazhRealm {
     // bei 27° Querhang (Leben-Prüfung R-D15, R-D10, R-D11). Keine finite Probe → null. Linse: gate:tier-stand.
     _creatureSlopeProben(creature, centerG) {
         const ud = creature.userData;
-        let hl = ud._slopeHalbLen;
-        if (!Number.isFinite(hl)) {
-            hl = ud._slopeHalbLen = Math.min(4, Math.max(0.25, this._creatureKoerperLaenge(creature) * 0.35));
-        }
+        const hl = this._kreaturHalbLaenge(creature);
         const hw = hl * 0.45; // die halbe Spur der Pfoten quer zum Leib
         const yaw = creature.rotation.y || 0;
         const fX = Math.sin(yaw);
@@ -22541,10 +22588,13 @@ class AnazhRealm {
         }
         if (!y.every(Number.isFinite)) return null;
         const pitch = this._slopePitch(y[0], y[1], 2 * hl);
-        const roll = Math.max(-0.6, Math.min(0.6, Math.atan2(y[2] - y[3], 2 * hw)));
+        const deckel = AnazhRealm.GANG_DECKEL_RAD;
+        const roll = Math.max(-deckel, Math.min(deckel, Math.atan2(y[2] - y[3], 2 * hw)));
         // DER DECKEL DES NICKS hebt den Leib (Prüfung 2 K02a, Wolf am Wandfuß, Gier 180°): steiler als der Deckel (0,6 rad)
         // stünde die bergseitige Probe unter der Ebene des Leibs — die Wurzel hebt sich um das, was der Deckel offen lässt,
         // der Leib liegt auf der höheren Stütze (die Pfoten talseitig reicht der Gang). Ohne Deckel (≤ 34°) bleibt die Mitte.
+        // Ein GEHENDER Leib kommt dorthin nie (die Kletterwand seines Schritts, `_creatureGroundY`): der Hub trägt den
+        // gesetzten oder gestoßenen Leib am Wandfuß, nie den, der in die Wand läuft.
         const offen =
             Math.max(0, Math.abs(y[1] - y[0]) / 2 - hl * Math.tan(Math.abs(pitch))) +
             Math.max(0, Math.abs(y[2] - y[3]) / 2 - hw * Math.tan(Math.abs(roll)));
@@ -34062,6 +34112,14 @@ class AnazhRealm {
     // (0,5 m) längs der Gier voraus — liegt dort Wand, hält die Ebene den Leib davor, bevor er hinein geht (EINE
     // Dichte-Probe je Neu-Scan, die Wand-Regel nur, wo sie Fels trifft). Vorher trug der Fels-Fall die Oberkante der
     // Säule: der Wolf stand auf dem Dach der Höhle.
+    // DIE KLETTERWAND (Prüfung 2 K02a): Wand ist auch, wo die Stirn des Leibs höher über seinem Heck steht, als er nicken
+    // kann (`_kreaturKletterwand`) — der Schritt endet dort, wo die Stirn sie erreicht (`_kreaturGangBis`), und der Blick
+    // voraus (`_kreaturBlickVoraus`) setzt die Ebene an denselben Ort: nach jedem neuen Grund, und wo der Grund ohne Blick
+    // gesetzt wurde (Ruf, Stoß), die Gier sich dreht oder der Leib anläuft, auch am gecachten Ort. Die Regel gilt dem GANG
+    // (der Leib läuft, `_steuer.v` > 0) — ein Stoß, eine Hülle, die ihn schiebt, tragen ihn wie zuvor (der Stoß hat seine
+    // 45°-Wand, `_kreaturStossSchritt`). Vorher hielt nur ein Dach, und der Blick
+    // fehlte nach dem Stoß: der laufende Wolf stieg die gekrümmte Höhlenwand 1 m hinauf und sprang beim nächsten Grund 0,5 m
+    // zurück, unter CPU-Last hob ihn der Nick-Deckel 1,00 m über seinen Grund.
     _creatureGroundY(creature) {
         const cx = creature.position.x;
         const cz = creature.position.z;
@@ -34071,42 +34129,97 @@ class AnazhRealm {
             const dx = cx - ud.cachedGroundX;
             const dz = cz - ud.cachedGroundZ;
             const d2 = dx * dx + dz * dz;
-            if (d2 < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
+            if (d2 < 0.25) {
+                // < 0.5 m bewegt → Cache; läuft der Leib und fehlt sein Blick als Gang, oder drehte sich die Gier → er blickt
+                // vom Ort des Grunds
+                if (
+                    this._creatureGroundBudget > 0 &&
+                    Number.isFinite(ud.cachedGroundY) &&
+                    ud._steuer &&
+                    ud._steuer.v > 0 &&
+                    (!ud._wandBlickGang || !(Math.abs((creature.rotation.y || 0) - ud._wandBlickGier) <= 0.25))
+                ) {
+                    this._creatureGroundBudget--;
+                    this._kreaturBlickVoraus(creature, ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY);
+                }
+                return ud.cachedGroundY;
+            }
             schritt = d2 < 4 && Number.isFinite(ud.cachedGroundY);
         }
         if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
             if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
-            const gY = schritt
+            let gY = schritt
                 ? this._koerperSchritt(ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY, cx, cz)
                 : this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
-            if (gY === null) {
-                const nx = cx - ud.cachedGroundX;
-                const nz = cz - ud.cachedGroundZ;
-                const n = Math.hypot(nx, nz);
-                ud._wandHalt = { x: ud.cachedGroundX, z: ud.cachedGroundZ, nx: nx / n, nz: nz / n };
-                creature.position.x = ud.cachedGroundX;
-                creature.position.z = ud.cachedGroundZ;
-                if (ud._steuer) ud._steuer.v = 0;
-                return ud.cachedGroundY;
+            const hl = this._kreaturHalbLaenge(creature);
+            if (schritt) {
+                const x0 = ud.cachedGroundX;
+                const z0 = ud.cachedGroundZ;
+                const g0 = ud.cachedGroundY;
+                const n = Math.hypot(cx - x0, cz - z0);
+                const nx = (cx - x0) / n;
+                const nz = (cz - z0) / n;
+                const gang = !!(ud._steuer && ud._steuer.v > 0);
+                const w =
+                    gY === null
+                        ? { t: 0, g: g0 }
+                        : gang
+                          ? this._kreaturGangBis(x0, z0, g0, cx, cz, gY, nx, nz, hl)
+                          : { t: 1, g: gY };
+                if (w.t < 1) {
+                    // die Wand: der Leib steht, wo seine Stirn sie erreicht (oder wo er zuletzt Boden las), sein Lauf hält
+                    const hx = x0 + (cx - x0) * w.t;
+                    const hz = z0 + (cz - z0) * w.t;
+                    ud._wandHalt = { x: hx, z: hz, nx, nz };
+                    ud._wandBlickGier = creature.rotation.y || 0;
+                    ud._wandBlickGang = gang;
+                    creature.position.x = hx;
+                    creature.position.z = hz;
+                    if (ud._steuer) ud._steuer.v = 0;
+                    ud.cachedGroundY = w.g;
+                    ud.cachedGroundX = hx;
+                    ud.cachedGroundZ = hz;
+                    return w.g;
+                }
             }
             ud.cachedGroundY = gY;
             ud.cachedGroundX = cx;
             ud.cachedGroundZ = cz;
-            const gier = creature.rotation.y || 0;
-            const vx = Math.sin(gier);
-            const vz = Math.cos(gier);
-            const ax = cx + vx * 0.5;
-            const az = cz + vz * 0.5;
-            ud._wandHalt =
-                this._fieldSolid(ax, gY + AnazhRealm.PLAYER_STEP_UP, az) &&
-                this._koerperSchritt(cx, cz, gY, ax, az) === null
-                    ? { x: cx, z: cz, nx: vx, nz: vz }
-                    : null;
+            this._kreaturBlickVoraus(creature, cx, cz, gY);
             return gY;
         }
         // Budget erschöpft: der leicht veraltete Cache (imperzeptibel, < 1 Frame) — eine frische Kreatur scannte oben. Der
         // Makro-Schätzwert dahinter war unerreichbar und las die Oberkante der Säule (das Dach); er fiel (Leben-Schau 2).
         return ud.cachedGroundY;
+    }
+
+    // DER BLICK VORAUS des Tier-Schritts (`_creatureGroundY`): vom Grund g bei (x, z) eine Cache-Weite (0,5 m) längs der
+    // Gier — liegt dort ein Dach über dem Weg (`_koerperSchritt` null) oder erreicht die Stirn eine Kletterwand
+    // (`_kreaturGangBis`), hält die Ebene `_wandHalt` den Leib dort, wo es beginnt. Billige Filter zuerst: Fels eine Stufe
+    // über dem Grund dort, oder Fels an der Stirn des nächsten Stands über dem halben Hub des Deckels (sein Grund hier
+    // geschätzt, nur im Gang) — erst dann der Schritt-Boden dort. Gier und Gang des Blicks stehen in `_wandBlickGier` und
+    // `_wandBlickGang` (ein Ruf, ein Stoß löscht sie).
+    _kreaturBlickVoraus(creature, x, z, g) {
+        const ud = creature.userData;
+        const gier = creature.rotation.y || 0;
+        const gang = !!(ud._steuer && ud._steuer.v > 0);
+        ud._wandBlickGier = gier;
+        ud._wandBlickGang = gang;
+        ud._wandHalt = null;
+        if (!Number.isFinite(g)) return;
+        const hl = this._kreaturHalbLaenge(creature);
+        const vx = Math.sin(gier);
+        const vz = Math.cos(gier);
+        const ax = x + vx * 0.5;
+        const az = z + vz * 0.5;
+        if (
+            !this._fieldSolid(ax, g + AnazhRealm.PLAYER_STEP_UP, az) &&
+            !(gang && this._fieldSolid(ax + vx * hl, g + hl * Math.tan(AnazhRealm.GANG_DECKEL_RAD), az + vz * hl))
+        )
+            return;
+        const gA = this._koerperSchritt(x, z, g, ax, az);
+        const t = gA === null ? 0 : gang ? this._kreaturGangBis(x, z, g, ax, az, gA, vx, vz, hl).t : 1;
+        if (t < 1) ud._wandHalt = { x: x + vx * 0.5 * t, z: z + vz * 0.5 * t, nx: vx, nz: vz };
     }
 
     _creatureWaterContextAt(creature, surfaceY) {
@@ -103936,6 +104049,9 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// DER DECKEL DES GANGS (rad, ~34°): so weit nickt und wankt ein gehender Leib höchstens — steiler ist Kletterwand, kein Gang.
+// Leser: `_slopePitch` (Mensch und Tier), der Wank der Tier-Proben, die Kletterwand des Tier-Schritts (`_kreaturKletterwand`).
+AnazhRealm.GANG_DECKEL_RAD = 0.6;
 // DER STAND-LESER DER SICHT (`_standSicht`): die Boden-Karte (das gezeichnete Mesh) zählt nur, solange sie in diesem Band um
 // den Träger des Körpers liegt — Mesh gegen Gesetz misst ±0,3 m (Hang-Fuß bis 0,63 m, an Kanten bis 1 m); über einer
 // Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden

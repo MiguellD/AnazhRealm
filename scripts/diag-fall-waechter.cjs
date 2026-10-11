@@ -55,6 +55,9 @@ const TOD_GIER = 8; // so viele Blickrichtungen stirbt der Wolf am Ort (die Lage
 // IN DER HÖHLE steht ein Tier auf dem Gesetz (die Sicht hat dort keine Karte): so weit liegt seine Wurzel höchstens neben dem
 // Fels unter ihr — die Ebene seiner vier Proben über einem gekrümmten Grund (am Wandfuß), nie ein Sicht-Band von 2 m
 const HOEHLE_M = 0.25;
+// so viel mehr, als der Gang-Deckel über die Länge des Leibs trägt, steht seine Stirn höchstens über seinem Heck (der Halt
+// halbiert seinen Schritt viermal, die Linse misst das Dichtefeld in 2-cm-Schritten)
+const STIRN_M = 0.1;
 // Die Körper-Schritte und die Leser, die nie den Boden eines Körpers liefern dürfen.
 const KOERPER_SCHRITTE = [
     "_fahrBoden",
@@ -200,6 +203,20 @@ function urteil(b) {
                 `(O) STEHT NICHT: ${p.name} — ${wo} ruht ${(p.yEnde - p.grundEnde).toFixed(2)} m über seinem Grund ` +
                     `(y ${p.yEnde.toFixed(2)}, Grund ${p.grundEnde.toFixed(2)})`
             );
+        // DIE KLETTERWAND (Prüfung 2 K02a): der laufende Leib hält, wo seine Stirn die Wand erreicht — sie steht nie höher über
+        // seinem Heck, als der Gang-Deckel über die Länge des Leibs trägt (`_kreaturKletterwand`), oder als sie beim Anlauf
+        // schon stand (ein Leib, den der Ruf oder ein Stoß in eine steile Mulde setzte, läuft nur nicht hinauf)
+        if (p.name === "O3 Wolf läuft in die Wand") {
+            const s = p.stirn;
+            if (!s || !Number.isFinite(s.hoch) || !Number.isFinite(s.start) || !Number.isFinite(s.deckel))
+                v.push(`LEER: ${p.name} — keine Stirn gemessen`);
+            else if (s.hoch > Math.max(s.deckel, s.start) + STIRN_M)
+                v.push(
+                    `(O) KLETTERWAND: ${p.name} — ${wo} steht mit der Stirn ${s.hoch.toFixed(2)} m über seinem Heck ` +
+                        `(beim Anlauf ${s.start.toFixed(2)} m; je ${s.hl.toFixed(2)} m vor und hinter der Wurzel; der ` +
+                        `Gang-Deckel trägt ${s.deckel.toFixed(2)} m)`
+                );
+        }
         if (p.tod) {
             const t = p.tod;
             if (t.stehtM === null || t.liegtM === null || t.kippMin === null)
@@ -276,7 +293,10 @@ function selbsttest() {
             probe("O3 Wagen in der Höhle", "Wagen fahrzeug_gt#11"),
             probe("O3 Wolf in der Höhle", "Tier wolf#3", { band: 2 }),
             probe("O3 Spieler in der Höhle", "Spieler"),
-            probe("O3 Wolf läuft in die Wand", "Tier wolf#4 (läuft an die Wand 0.4 m)", { band: 2 }),
+            probe("O3 Wolf läuft in die Wand", "Tier wolf#4 (läuft an die Wand 0.4 m)", {
+                band: 2,
+                stirn: { hoch: 0.68, start: 0.66, hl: 0.26, deckel: 0.35 },
+            }),
             probe("O3 Wolf stirbt in der Höhle", "Tier wolf#5 (stirbt)", {
                 band: 2,
                 ruhe: false,
@@ -328,6 +348,16 @@ function selbsttest() {
             "das Sicht-Band trägt in der Höhle nicht (Prüfung 2 K02a: 0,55 m unter dem Grund)",
             (b) => Object.assign(b.proben[5], { tiefsteUnter: 0.55, yEnde: 29.85, grundEnde: 30.4 }),
             /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 0\.55 m unter dem Fels/,
+        ],
+        [
+            "der laufende Wolf steigt die Höhlenwand hinauf (Prüfung 2 K02a, unter CPU-Last 1,00 m gehoben)",
+            (b) => Object.assign(b.proben[5].stirn, { hoch: 1.4 }),
+            /\(O\) KLETTERWAND: O3 Wolf läuft in die Wand — Tier wolf#4 .* Stirn 1\.40 m über seinem Heck/,
+        ],
+        [
+            "der laufende Wolf ohne Stirn",
+            (b) => (b.proben[5].stirn = null),
+            /LEER: O3 Wolf läuft in die Wand — keine Stirn gemessen/,
         ],
         [
             "der lebende Wolf steht am Wandfuß im Fels (Prüfung 2 K02a)",
@@ -758,6 +788,22 @@ async function probe(K) {
     // die Oberkante der Säule (CI 38009273564: ein gestoßener Wolf 11,88 m auf dem Dach der Höhle).
     const steuerRoh = A._steuerGesetz;
     const kappe = st.maxCreatures;
+    // DIE STIRN eines Leibs (Prüfung 2 K02a): wie hoch der Boden eine halbe Länge voraus (längs `gier`) über dem eine halbe
+    // Länge hinter der Wurzel liegt (das Dichtefeld, 2-cm-Schritte, je Punkt von der Höhe des Grunds aus)
+    const stirnAn = (w, gier) => {
+        const g0 = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
+        if (!Number.isFinite(g0)) return NaN;
+        const hl = r._kreaturHalbLaenge(w);
+        const bodenAn = (s) => {
+            const px = w.position.x + Math.sin(gier) * hl * s,
+                pz = w.position.z + Math.cos(gier) * hl * s;
+            let h = g0;
+            if (r._fieldSolid(px, h, pz)) while (h < g0 + 3 && r._fieldSolid(px, h, pz)) h += 0.02;
+            else while (h > g0 - 3 && !r._fieldSolid(px, h, pz)) h -= 0.02;
+            return h;
+        };
+        return bodenAn(1) - bodenAn(-1);
+    };
     const wolfStoss = async (x, z, y, art) => {
         const wand = wandUm(x, z, y);
         const rx = wand ? wand.dx : 1,
@@ -778,6 +824,7 @@ async function probe(K) {
             if (!w) return null;
             for (let i = 0; i < 20; i++) takt();
             const v0 = wand ? 6 : 3;
+            const stirnStart = lauf ? stirnAn(w, Math.atan2(rx, rz)) : NaN;
             if (lauf) steuer.lauf = true;
             else w.userData._stossV = { x: rx * v0, z: rz * v0 };
             let tiefsteUnter = -Infinity,
@@ -790,7 +837,19 @@ async function probe(K) {
                 if (w.position.y < yMin) yMin = w.position.y;
             }
             const gE = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
+            // DIE STIRN des laufenden Leibs am Ende und beim Anlauf — gegen den Hub, den der Gang-Deckel über die Länge trägt;
+            // höher, als er beim Anlauf schon stand, steht er auf einer Kletterwand, die er hinaufstieg (vorher: die Stirn 1,40
+            // bis 3,60 m über dem Heck, der Leib 1,00 m über seinen Grund gehoben)
+            const stirn = lauf
+                ? {
+                      hoch: stirnAn(w, w.rotation.y || 0),
+                      start: stirnStart,
+                      hl: r._kreaturHalbLaenge(w),
+                      deckel: 2 * r._kreaturHalbLaenge(w) * Math.tan(A.GANG_DECKEL_RAD),
+                  }
+                : null;
             const out = {
+                stirn,
                 koerper:
                     "Tier wolf#" +
                     (w.userData.id != null ? w.userData.id : w.id) +
@@ -1101,6 +1160,10 @@ async function probe(K) {
                       (p.tod
                           ? ` · Tod: Haut über dem Fels im Stand ${fx(p.tod.stehtM)} m, liegend ${fx(p.tod.liegtM)} m, im Kippen ` +
                             `${fx(p.tod.kippMin)} … ${fx(p.tod.kippMax)} m`
+                          : "") +
+                      (p.stirn
+                          ? ` · Stirn ${fx(p.stirn.hoch)} m über dem Heck (Anlauf ${fx(p.stirn.start)} m, je ${fx(p.stirn.hl)} m, ` +
+                            `Deckel ${fx(p.stirn.deckel)} m)`
                           : "")
         );
     // DER LEBENDE STAND am Wandfuß (urteil: STAND IM FELS): je Blickrichtung die tiefste Stelle der Haut über dem Fels
