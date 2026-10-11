@@ -10,6 +10,7 @@
 // Leib zieht jeden Frame weiter). Vorher deckelte der Takt seinen Schritt auf 0,1 s (die Phase blieb 25 % hinter dem
 // Weg, Schlupf 0,27) und die Leiter tastete den schnellen Fuchs-Trab unter seinem Takt ab (Schlupf 1,33).
 //   DER SPIELER-LEIB (K07): derselbe Aufsetz-Punkt, dieselbe Schwelle am Menschen (LEIB, unten), dazu Kadenz und Töne.
+//   DAS KÖRPER-STUDIO (K07): derselbe Schlupf am Menschen des Labors im Spiel-Modus (STUDIO, unten) — geduckt, gehen, Sprint.
 //   --selftest: das Gang-Gesetz gestubbt (fester Takt, feste Auslenkung — der Vor-Welle-Gang) → der Schlupf steigt
 //   über die Schwelle, die Linse feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
@@ -18,10 +19,13 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
+// TIER_GANG_TEIL=studio: nur das Labor (der Entwicklungs-Lauf; das Gate fährt beide)
+const NUR_STUDIO = process.env.TIER_GANG_TEIL === "studio";
 // die Ratsche (K07): 0,2 → 0,05 — der Fuß im Stand steht (Gleiten < 5 %), Tier und Mensch an EINER Schwelle
 const SCHWELLE = 0.05;
 const KADENZ_GEHEN = 1.5; // Schritte/s bei 1,15 m/s (physio-pedia, Weidmann 1993)
@@ -165,9 +169,19 @@ const LEIB = (k) => {
     if (k.stub) {
         window.__gangEcht = core.gangSchritt;
         // der Vor-Wellen-Gang des Menschen: 3,4 m je Schritt, der Sinus-Schwung (±0,5 rad ≈ 0,86 m Fußweg)
-        core.gangSchritt = (v) => (v > 0.05 ? { omega: (Math.PI * v) / 3.4, S: 0.86, schritt: 6.8, tast: 0.5 } : { omega: 0, S: 0, schritt: 0, tast: 0.5 });
+        core.gangSchritt = (v) =>
+            v > 0.05
+                ? { omega: (Math.PI * v) / 3.4, S: 0.86, schritt: 6.8, tast: 0.5 }
+                : { omega: 0, S: 0, schritt: 0, tast: 0.5 };
     }
-    const gespeichert = { vel: s.playerVel, uw: s.playerUnderwater, arch: p.mountedArch, luft: s.isInAir, tr: s._kapselTraegerY, st: s._kapselStruktur };
+    const gespeichert = {
+        vel: s.playerVel,
+        uw: s.playerUnderwater,
+        arch: p.mountedArch,
+        luft: s.isInAir,
+        tr: s._kapselTraegerY,
+        st: s._kapselStruktur,
+    };
     const pos0 = mesh.position.clone(),
         rot0 = mesh.rotation.y;
     s.playerUnderwater = false;
@@ -192,7 +206,11 @@ const LEIB = (k) => {
         w.y = sohle();
         return a.worldToLocal(w.clone());
     });
-    const beinM = typeof r._gaitBeinMass === "function" ? r._gaitBeinMass(rig).L : (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) * (rig.legL.hip.getWorldScale(new T.Vector3()).y || 1);
+    const beinM =
+        typeof r._gaitBeinMass === "function"
+            ? r._gaitBeinMass(rig).L
+            : (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) *
+              (rig.legL.hip.getWorldScale(new T.Vector3()).y || 1);
     const zeilen = [];
     for (const [name, v] of [
         ["gehen (W)", 1.15],
@@ -258,13 +276,99 @@ const LEIB = (k) => {
     s._kapselStruktur = gespeichert.st;
     mesh.position.copy(pos0);
     mesh.rotation.y = rot0;
-    const taeter = typeof r._gaitGesetz === "function" ? "_gaitGesetz (fx.bewegung.gang)" : "_gaitSchrittLen (schritt.kalib)";
+    const taeter =
+        typeof r._gaitGesetz === "function" ? "_gaitGesetz (fx.bewegung.gang)" : "_gaitSchrittLen (schritt.kalib)";
     return { zeilen, taeter };
+};
+
+// DAS KÖRPER-STUDIO (K07): derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
+// und playPhysics ziehen den Leib mit festem Takt 1/60 s über ebenen Boden (die Park-Boxen ruhen), je Takt das Fuß-
+// gelenk beider Beine in der Welt. Derselbe Schlupf (Weg des Stand-Fußes / Weg des Leibs, Stand = unterste 5 % der
+// Beinlänge), dazu die Kadenz aus der Phase. Vorher ging das Labor nach einem eigenen Modell (cad = sp·0,155).
+const STUDIO = (k) => {
+    /* eslint-disable no-undef */
+    const core = window.__tetrapodaCore;
+    if (k.stub && core) {
+        window.__gangEcht = core.gangSchritt;
+        core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, hub: 0.1 });
+    }
+    if (!play.on) enterPlay();
+    const boxen = parkBoxes.splice(0, parkBoxes.length);
+    // ein ebener Boden ohne Hindernis (der Boden des Labors ist selbst eine Park-Box)
+    parkBoxes.push({ cx: 0, cy: -0.45, cz: 0, sx: 4000, sy: 1, sz: 4000, maxY: 0.05, minY: -0.95, wall: false });
+    const dt = 1 / 60,
+        N = 300,
+        EIN = 90;
+    for (const c of Object.keys(keys)) delete keys[c];
+    Object.assign(keys, k.tasten);
+    play.yaw = 0;
+    play.vx = play.vz = play.vy = 0;
+    play.posY = play.smY = 0.05;
+    play.onGround = true;
+    play.slide = 0;
+    character.position.set(0, 0.05, 0);
+    const cs = character.scale.x || 1;
+    const bein = (L1 + L2) * cs;
+    const T = window.THREE;
+    const w = new T.Vector3();
+    const spur = [[], []],
+        leib = [];
+    let phase = 0,
+        phPrev = play.gaitPhase;
+    for (let i = 0; i < N; i++) {
+        playInput(dt);
+        playPhysics(dt);
+        character.updateMatrixWorld(true);
+        ["ankle1", "ankle-1"].forEach((n, j) => {
+            parts[n].getWorldPosition(w);
+            spur[j].push({ x: w.x, y: w.y, z: w.z });
+        });
+        leib.push({ x: character.position.x, z: character.position.z });
+        if (i >= EIN) phase += (play.gaitPhase - phPrev + 1) % 1;
+        phPrev = play.gaitPhase;
+    }
+    for (const c of Object.keys(keys)) delete keys[c];
+    parkBoxes.splice(0, parkBoxes.length, ...boxen);
+    if (k.stub && core) core.gangSchritt = window.__gangEcht;
+    let wegFuss = 0,
+        wegLeib = 0,
+        standTakte = 0;
+    for (let j = 0; j < 2; j++) {
+        let ymin = Infinity;
+        for (let i = EIN; i < N; i++) ymin = Math.min(ymin, spur[j][i].y);
+        for (let i = EIN + 1; i < N; i++) {
+            const a = spur[j][i - 1],
+                b = spur[j][i];
+            if (a.y > ymin + 0.05 * bein || b.y > ymin + 0.05 * bein) continue;
+            standTakte++;
+            wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
+            wegLeib += Math.hypot(leib[i].x - leib[i - 1].x, leib[i].z - leib[i - 1].z);
+        }
+    }
+    const zeit = (N - EIN) * dt;
+    const v = Math.hypot(leib[N - 1].x - leib[EIN].x, leib[N - 1].z - leib[EIN].z) / zeit;
+    return {
+        name: k.name,
+        v: +v.toFixed(2),
+        beinE: +bein.toFixed(3),
+        standAnteil: +(standTakte / (2 * (N - EIN - 1))).toFixed(2),
+        schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
+        kadenz: +((2 * phase) / zeit).toFixed(2),
+        taeter:
+            typeof gangGesetz === "function"
+                ? "gangGesetz (tetrapoda gangSchritt/gangFuss)"
+                : "playGait (cad = sp·0,155, eigenes Modell)",
+    };
+    /* eslint-enable no-undef */
 };
 
 (async () => {
     await new Promise((res) => server.listen(PORT, res));
-    const browser = await puppeteer.launch({ headless: "new", protocolTimeout: 300000, args: ["--no-sandbox", "--disable-gpu"] });
+    const browser = await puppeteer.launch({
+        headless: "new",
+        protocolTimeout: 300000,
+        args: ["--no-sandbox", "--disable-gpu"],
+    });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
@@ -273,46 +377,90 @@ const LEIB = (k) => {
     });
     let rot = 0;
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
-        await page.waitForFunction(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function", {
-            timeout: 60000,
-        });
-        const zeilen = [];
-        for (const seele of ["wolf", "fuchs", "baer", "wesen"]) {
-            for (const v of [0.8, 1.6, 3.0]) zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST }));
-            // unter Last: 30 fps, die Raten-Leiter 1/4
-            for (const v of [1.6, 3.0]) zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST, fps: 30, last: true }));
-        }
-        for (const z of zeilen) {
-            if (z.fehler) {
-                console.log("  ❌", z.fehler);
-                rot++;
-                continue;
-            }
-            const ok = z.schlupf !== null && z.schlupf <= SCHWELLE;
-            console.log(
-                `  ${ok ? "✅" : "❌"} ${z.seele.padEnd(5)} ${z.v.toFixed(1)} m/s${z.last ? " (" + z.last + ")" : ""} · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Drift je Pfote ${z.drift.join(" ")}`
+        if (!NUR_STUDIO) {
+            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+            await page.waitForFunction(
+                () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
+                {
+                    timeout: 120000,
+                }
             );
-            if (!ok) rot++;
-        }
-        const leib = await page.evaluate(LEIB, { stub: SELBST });
-        if (leib.fehler) {
-            console.log("  ❌ Spieler-Leib:", leib.fehler);
-            rot++;
-        } else {
-            for (const z of leib.zeilen) {
-                const gleit = z.schlupf !== null && z.schlupf <= SCHWELLE;
-                const kad = z.v > 2 || z.kadenz >= KADENZ_GEHEN;
-                const ton = z.soll > 0 && Math.abs(z.toene - z.soll) <= TON_TOLERANZ * z.soll;
-                const ok = gleit && kad && ton;
+            await page.waitForFunction(
+                () => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function",
+                {
+                    timeout: 60000,
+                }
+            );
+            const zeilen = [];
+            for (const seele of ["wolf", "fuchs", "baer", "wesen"]) {
+                for (const v of [0.8, 1.6, 3.0]) zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST }));
+                // unter Last: 30 fps, die Raten-Leiter 1/4
+                for (const v of [1.6, 3.0])
+                    zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST, fps: 30, last: true }));
+            }
+            for (const z of zeilen) {
+                if (z.fehler) {
+                    console.log("  ❌", z.fehler);
+                    rot++;
+                    continue;
+                }
+                const ok = z.schlupf !== null && z.schlupf <= SCHWELLE;
                 console.log(
-                    `  ${ok ? "✅" : "❌"} mensch ${z.name} ${z.v.toFixed(2)} m/s · Bein ${z.beinM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${gleit ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s (${z.schrittM} m je Schritt)${kad ? "" : " < " + KADENZ_GEHEN} · Töne ${z.toene} / Soll ${z.soll}${ton ? "" : " (± 15 % verfehlt)"}${ok ? "" : " — Täter: " + leib.taeter}`
+                    `  ${ok ? "✅" : "❌"} ${z.seele.padEnd(5)} ${z.v.toFixed(1)} m/s${z.last ? " (" + z.last + ")" : ""} · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Drift je Pfote ${z.drift.join(" ")}`
                 );
                 if (!ok) rot++;
             }
+            const leib = await page.evaluate(LEIB, { stub: SELBST });
+            if (leib.fehler) {
+                console.log("  ❌ Spieler-Leib:", leib.fehler);
+                rot++;
+            } else {
+                for (const z of leib.zeilen) {
+                    const gleit = z.schlupf !== null && z.schlupf <= SCHWELLE;
+                    const kad = z.v > 2 || z.kadenz >= KADENZ_GEHEN;
+                    const ton = z.soll > 0 && Math.abs(z.toene - z.soll) <= TON_TOLERANZ * z.soll;
+                    const ok = gleit && kad && ton;
+                    console.log(
+                        `  ${ok ? "✅" : "❌"} mensch ${z.name} ${z.v.toFixed(2)} m/s · Bein ${z.beinM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${gleit ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s (${z.schrittM} m je Schritt)${kad ? "" : " < " + KADENZ_GEHEN} · Töne ${z.toene} / Soll ${z.soll}${ton ? "" : " (± 15 % verfehlt)"}${ok ? "" : " — Täter: " + leib.taeter}`
+                    );
+                    if (!ok) rot++;
+                }
+            }
+        }
+        // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
+        const sb = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: softwareWebGpuArgs() });
+        try {
+            const sp = await sb.newPage();
+            sp.setDefaultTimeout(280000);
+            sp.on("pageerror", (e) => console.log("[STUDIO-PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+            await sp.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
+                waitUntil: "domcontentloaded",
+                timeout: 240000,
+            });
+            // eslint-disable-next-line no-undef
+            await sp.waitForFunction(
+                () =>
+                    typeof enterPlay === "function" &&
+                    typeof playPhysics === "function" &&
+                    typeof parkBoxes !== "undefined",
+                {
+                    timeout: 90000,
+                }
+            );
+            for (const [name, tasten] of [
+                ["geduckt", { KeyW: true, ControlLeft: true }],
+                ["gehen", { KeyW: true }],
+                ["sprint", { KeyW: true, ShiftLeft: true }],
+            ]) {
+                const z = await sp.evaluate(STUDIO, { name, tasten, stub: SELBST });
+                const ok = z.schlupf !== null && z.schlupf <= SCHWELLE;
+                console.log(
+                    `  ${ok ? "✅" : "❌"} studio ${z.name} ${z.v} E/s · Bein ${z.beinE} E · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${ok ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s · Täter ${z.taeter}`
+                );
+                if (!ok) rot++;
+            }
+        } finally {
+            await sb.close();
         }
     } finally {
         await browser.close();
@@ -330,7 +478,9 @@ const LEIB = (k) => {
         console.error(`\n❌ ROT — ${rot} Läufe gleiten (Schlupf > ${SCHWELLE}).`);
         process.exit(1);
     }
-    console.log(`\n✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ ${SCHWELLE}) bei Schritt, Trab und schnellem Trab; der Mensch geht und läuft nach demselben Gesetz (Kadenz ≥ ${KADENZ_GEHEN}, Töne ± 15 %).`);
+    console.log(
+        `\n✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ ${SCHWELLE}) bei Schritt, Trab und schnellem Trab; der Mensch geht und läuft nach demselben Gesetz (Kadenz ≥ ${KADENZ_GEHEN}, Töne ± 15 %), in der Welt und im Körper-Studio.`
+    );
     process.exit(0);
 })().catch((e) => {
     console.error("GLEIT-LINSE-FEHLER:", e);
