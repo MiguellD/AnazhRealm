@@ -32025,8 +32025,11 @@ class AnazhRealm {
                             _terrRough
                         );
                         if (_geo) {
-                            albedoNode = _geo;
-                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
+                            // Der Chunk-Boden (Wege-Karte) trägt dort, wo kein echter Wald zeichnet, das Kronendach des
+                            // Fern-Rings (`_fernKroneNahMisch`, 0910-8) — dieselbe Boden-Farbe je Ort nah und fern.
+                            const _alb = opts.wegeKarte === true ? this._fernKroneNahMisch(_Ta, _geo) : _geo;
+                            albedoNode = _alb;
+                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
                     } else if (opts.useFlexAttr && _Ta.vec4) {
@@ -39162,13 +39165,126 @@ class AnazhRealm {
     }
 
     // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die offenen Ring-Farben, dann der
-    // Farb-Job des Feld-Passes. Über dem Frame-Budget das knappe Maß; nie null — mindestens `mindestJeTakt` Punkte.
+    // Farb-Job des Feld-Passes, dann die Fern-Krone des nahen Bodens. Über dem Frame-Budget das knappe Maß; nie null —
+    // mindestens `mindestJeTakt` Punkte.
     _fernFarbTakt(fr) {
         const K = AnazhRealm.FERN_FARBE;
         const ende = performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt);
         const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
         const fp = this.state.feldPass;
         if (fp && fp.farbJob) this._feldPassFaerben(fp, ende, rest);
+        this._fernKroneNahTakt(ende);
+    }
+
+    // DIE FERN-KRONE DES NAHEN BODENS (0910-8, „die weiße Masse“): der Fern-Ring trägt den Wald als Kronendach × Deckung
+    // (`_fernFarbeTeile`), aber unter dem Chunk-Quadrat deckt ihn der Boden-Satz. Der gezeichnete Wald endet am Laub-Radius
+    // des Reglers (gemessen 11.10. an der Wiese: dichte Kronen bis 120 m bei Laub-Radius 115, bis 200 m bei 235) und ab 384 m
+    // vom Auge (die Karte des Baums); dazwischen trug NIEMAND den Wald — der Boden-Satz zeigte nackten Boden, aus 420 m Höhe das
+    // ganze Quadrat (das weiße Quadrat im Oliv des Panoramas). Jetzt liest der Boden-Satz dort, wo kein echter Wald zeichnet,
+    // DIESELBEN Teile wie der Fern-Ring (EIN Gedächtnis `_fernRingTeile`, ganzzahlige Punkte) aus einer Karte über dem Quadrat
+    // und mischt zum Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — wie der Ring-Stoff, eine Formel.
+    // Die Kronenfarbe reist sRGB-kodiert in 8 Bit (linear lägen 0,03–0,1 in 8–25 Stufen), die Deckung linear im Alpha.
+    // Die Karte füllt sich im Fern-Farb-Budget und tauscht erst, wenn sie ganz steht (`bereit`); bis dahin mischt nichts.
+    static get FERN_KRONE_NAH() {
+        return Object.freeze({ N: 64, rand: 3, saumM: 30, sichtM: 384 });
+    }
+    _fernKroneNahEnsure() {
+        const st = this.state;
+        if (st.fernKroneNah) return st.fernKroneNah;
+        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!TSL || !TSL.uniform) return null;
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        const daten = new Uint8Array(K.N * K.N * 4);
+        const tex = new THREE.DataTexture(daten, K.N, K.N, THREE.RGBAFormat, THREE.UnsignedByteType);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.generateMipmaps = false;
+        tex.name = "fern-krone-nah";
+        tex.needsUpdate = true;
+        const U = this._uniformHeimatTeilen({
+            mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+            groesse: TSL.uniform(1),
+            bereit: TSL.uniform(0),
+            waldR: TSL.uniform(0),
+            spieler: TSL.uniform(new THREE.Vector2(0, 0)),
+        });
+        st.fernKroneNah = { N: K.N, tex, daten, puffer: new Uint8Array(K.N * K.N * 4), U, job: null, anker: null };
+        return st.fernKroneNah;
+    }
+
+    // Der Takt der Karte: Wald-Radius und Spieler je Takt; die Karte folgt dem Quadrat ((2·Ring + rand)·span, Anker auf
+    // ein Viertel davon gerastert) und füllt sich, bis die Frist `ende` steht.
+    _fernKroneNahTakt(ende) {
+        const st = this.state;
+        const k = st.fernKroneNah || this._fernKroneNahEnsure();
+        const pm = st.playerMesh;
+        if (!k || !pm) return;
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        k.U.waldR.value = Number.isFinite(st.foliageRadius) ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        k.U.spieler.value.set(pm.position.x, pm.position.z);
+        const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        const groesse = this._voxelChunkConfig().span * (2 * ring + K.rand);
+        const raster = groesse / 4;
+        const mx = Math.round(pm.position.x / raster) * raster;
+        const mz = Math.round(pm.position.z / raster) * raster;
+        const a = k.anker;
+        if (!k.job && (!a || a.x !== mx || a.z !== mz || a.groesse !== groesse)) k.job = { mx, mz, groesse, i: 0 };
+        const j = k.job;
+        if (!j) return;
+        const N = k.N;
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const sRGB = (c) => {
+            const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+            return Math.round(v * 255);
+        };
+        while (j.i < N * N && performance.now() < ende) {
+            const ix = j.i % N;
+            const iz = (j.i / N) | 0;
+            const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
+            const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
+            const law = this._terrainMacroSurfaceY(x, z, false);
+            const t = this._fernRingTeile(x, z, law, law < wl, true);
+            const o = j.i * 4;
+            k.puffer[o] = sRGB(t[3]);
+            k.puffer[o + 1] = sRGB(t[4]);
+            k.puffer[o + 2] = sRGB(t[5]);
+            k.puffer[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
+            j.i++;
+        }
+        if (j.i < N * N) return;
+        k.daten.set(k.puffer);
+        k.tex.needsUpdate = true;
+        k.U.mitte.value.set(j.mx, j.mz);
+        k.U.groesse.value = j.groesse;
+        k.U.bereit.value = 1;
+        k.anker = { x: j.mx, z: j.mz, groesse: j.groesse };
+        k.job = null;
+    }
+
+    // Die Mischung im Boden-Stoff (TSL): wo kein echter Wald zeichnet — jenseits des Laub-Radius vom Spieler (mit Saum)
+    // oder jenseits der Karten-Sicht des Baums vom Auge —, trägt der Boden das Kronendach × Saison nach der Deckung, wie der
+    // Fern-Ring. Ohne Karte, Saison oder TSL bricht der Boden-Stoff laut.
+    _fernKroneNahMisch(_T, alb) {
+        const k = this._fernKroneNahEnsure();
+        const su = this._ensureSeasonUniforms();
+        if (!k || !su || !su.uSeasonMul || !_T.texture || !_T.positionWorld || !_T.cameraPosition)
+            throw new Error("Fern-Krone (nah): der Boden-Stoff braucht Karte, Saison-Uniform und TSL");
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        const xz = _T.positionWorld.xz;
+        const uv = xz.sub(k.U.mitte).div(k.U.groesse).add(0.5);
+        const s = _T.texture(k.tex, uv);
+        const innen = _T.step(_T.max(uv.x.sub(0.5).abs(), uv.y.sub(0.5).abs()), _T.float(0.5));
+        const dSp = xz.sub(k.U.spieler).length();
+        const dAuge = _T.positionWorld.sub(_T.cameraPosition).length();
+        const ohneWald = _T.max(
+            _T.smoothstep(k.U.waldR, k.U.waldR.add(K.saumM), dSp),
+            _T.smoothstep(_T.float(K.sichtM - K.saumM), _T.float(K.sichtM), dAuge)
+        );
+        const w = s.a.mul(ohneWald).mul(k.U.bereit).mul(innen);
+        return _T.mix(alb, s.rgb.mul(su.uSeasonMul), w);
     }
 
     // DIE EINE DECK-FORMEL (CPU-Refresh UND GPU-Maler mischen durch sie — kein
