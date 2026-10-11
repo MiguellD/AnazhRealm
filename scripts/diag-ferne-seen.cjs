@@ -86,7 +86,7 @@ const server = http.createServer((req, res) => {
                     const z = -1000 + (j + 0.5) * 125;
                     vals.push(
                         r._atlasWaterLevelAt(x, z, -Infinity),
-                        r._erosionDeltaAt(x, z),
+                        window.__gelaendeCore.erosionDelta(r._gelaende(), x, z),
                         r._terrainMacroSurfaceY(x, z, true)
                     );
                 }

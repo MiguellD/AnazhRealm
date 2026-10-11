@@ -14,7 +14,8 @@
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
 //   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz,
 //             Folgen ohne Gas ↔ Bremse (≤ 30 Wechsel je Minute, R-D17)
-//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
+//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf, der Lauf nicht auf sein Ziel), die Beute
+//             läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Bären nicht),
 //             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
@@ -27,8 +28,8 @@
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
 //   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,2
 //             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
-//   ferngang  (Welle LF) laufende Hirsche in der Standbild-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
-//             in ≥ 95 % der laufenden Takte (nie das Standbild, nie eingefrorene Knochen)
+//   ferngang  (Welle LF) laufende Hirsche in der Grobstufen-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
+//             in ≥ 95 % der laufenden Takte (nie ein Standbild, nie eingefrorene Knochen)
 "use strict";
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
@@ -92,15 +93,26 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 40; k++) {
             const x = P0.x + dx + (k % 8) * 3,
                 z = P0.z + dz + Math.floor(k / 8) * 3;
-            if (!r._isAboveWaterAt || r._isAboveWaterAt(x, z)) {
+            if (r._landAt(x, z)) {
                 const h = r.getTerrainHeightAt(x, z);
                 return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
             }
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
-    // Ein Ort auf Land ohne Bauwerks-Hülle im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand gleitet ein Leib
-    // längs der Box-Kante (achsparallel), das misst die Hindernis-Probe, nicht die Richtung der Jagd.
+    // Ein Ort auf Land ohne Bauwerks-Hülle und ohne Wasser im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand
+    // gleitet ein Leib längs der Box-Kante (achsparallel), im Wasser schwimmt er in einer Himmelsrichtung ans Ufer
+    // (`_creatureWaterContextAt`, vier Richtungen) — beides misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der
+    // Jagd. Seit Schau-2 nennt das Land (`_landAt`) das Ufer eines Sees genau (die Zwillings-Probe dehnte jeden See um
+    // eine 16-m-Zelle): ohne die Wasser-Wand wählte die Probe ein Feld am Ufer, und die Jagd lief ins Wasser.
+    const imUmkreisLand = (x, z, R) => {
+        for (const f of [0.5, 1])
+            for (let q = 0; q < 8; q++) {
+                const a = (q / 8) * Math.PI * 2;
+                if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
+            }
+        return true;
+    };
     const frei = (dx, dz, R) => {
         const arches = s.architectures || [];
         for (let ring = 0; ring < 40; ring++) {
@@ -109,7 +121,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + dx + Math.cos(a) * ring * 8,
                     z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) continue;
                 let ok = true;
                 for (const e of arches) {
                     if (!e || !e.blockerAABBs || !e.position) continue;
@@ -126,6 +138,41 @@ async function kreaturProben(r, T, opts) {
             }
         }
         return null;
+    };
+    // DAS FELD OHNE HÖHLE (Leben-Schau 2): ein Ort, unter dessen Umkreis (der Weg des Spielers und der Folger, x −10…+35,
+    // z −8…+35) 15 m tief keine Höhle liegt — die Wand hält ein Tier jetzt in jeder Höhle, in die es läuft (ein Folger ohne
+    // Wegfindung bleibt darin; vorher sprang er beim ersten Wand-Kontakt durch das Dach auf die Wiese). Die Gang-Probe misst
+    // den freien Lauf: am Hang von land(0, 0) lief der Fuchs in einen 1,2-m-Stollen unter dem Hügel.
+    const ohneHoehle = (x0, z0, x1, z1) => {
+        for (let x = x0; x <= x1; x += 3)
+            for (let z = z0; z <= z1; z += 3) {
+                const top = r._voxelSurfaceY(x, z);
+                if (!Number.isFinite(top)) return false;
+                for (const t of [1, 3, 6, 10, 15]) if (!r._fieldSolid(x, top - t, z)) return false;
+            }
+        return true;
+    };
+    const feldOhneHoehle = (dx, dz) => {
+        for (let ring = 0; ring < 30; ring++) {
+            const n = Math.max(1, ring * 6);
+            for (let q = 0; q < n; q++) {
+                const a = (q / n) * Math.PI * 2;
+                const x = P0.x + dx + Math.cos(a) * ring * 10,
+                    z = P0.z + dz + Math.sin(a) * ring * 10;
+                if (r._nassAt(x, z)) continue; // die EINE Nässe am Körper (kein stiller Wächter: fehlt sie, bricht der Lauf)
+                if (!ohneHoehle(x - 10, z - 8, x + 35, z + 35)) continue;
+                const h = r.getTerrainHeightAt(x, z);
+                return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
+            }
+        }
+        return null;
+    };
+    // DER ORT NEBEN DEM SPIELER auf dem Land (Leben-Schau 2): die Höhe des Spielers ist am Hang nicht die des Tiers — 8 m
+    // daneben lag sie unter der Wiese in einer Höhle (gate:kreatur-takt gier: der Fuchs 8 m unter dem Gras; vorher sprang er
+    // beim ersten Wand-Kontakt durch das Dach hinauf, jetzt hält ihn die Wand).
+    const neben = (x, z) => {
+        const h = r.getTerrainHeightAt(x, z);
+        return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
     };
     const tier = (p, seele, bodySize) => {
         const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, bodySize: bodySize || 1 });
@@ -477,10 +524,11 @@ async function kreaturProben(r, T, opts) {
     await buehne("gier", async (restore) => {
         r.setGameMode("frieden");
         const arten = ["wesen", "wolf", "fuchs"];
-        const start = land(0, 0);
+        const start = feldOhneHoehle(0, 0);
+        if (!start) return { fehler: "kein Feld ohne Höhle (45 × 43 m, 15 m tief) für den Gang" };
         pm.set(start.x, start.y, start.z);
         const tiere = arten.map((a, i) => {
-            const c = tier({ x: pm.x - 4 - i * 2, y: pm.y, z: pm.z - 3 }, a);
+            const c = tier(neben(pm.x - 4 - i * 2, pm.z - 3), a);
             ruhig(c);
             r.assignCreatureTask(c, "follow_player", {}, { silent: true });
             return c;
@@ -702,12 +750,28 @@ async function kreaturProben(r, T, opts) {
         const dt = 1 / 60;
         const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
+        // DIE PEILUNG DES ZIELS (mitlaufend, durchgereicht): wohin der EINE Jagd-Weg den Wolf in seinem letzten Ruf schickte
+        // — das Ziel und der Ort des Wolfs in diesem Ruf
+        let peilung = null;
+        decke(
+            restore,
+            "_kreaturJagdZug",
+            (alt) =>
+                function (c, tx, tz, ...rest) {
+                    if (c === wolf) peilung = { tx, tz, x: c.position.x, z: c.position.z };
+                    return alt.call(this, c, tx, tz, ...rest);
+                }
+        );
         let jagdFrames = 0,
             kontakt = 0,
             achs = 0,
             achs5 = 0,
+            achsWasser = 0,
             bedroht = 0,
-            fort = 0;
+            fort = 0,
+            imWasser = 0;
+        const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
+        let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
         let wv = { x: wolf.position.x, z: wolf.position.z };
         const bv = beute.map((c) => ({ x: c.position.x, z: c.position.z }));
         for (let k = 0; k < 1800; k++) {
@@ -718,6 +782,7 @@ async function kreaturProben(r, T, opts) {
             const anprall = geschoben.has(wolf.position);
             geschoben.clear();
             if (jagt && anprall) kontakt++;
+            if (jagt && r._nassAt(wolf.position.x, wolf.position.z)) imWasser++; // die Jagd im Wasser (Diagnose)
             if (jagt && !anprall && Math.hypot(dx, dz) / dt > 0.3) {
                 jagdFrames++;
                 const h = Math.atan2(dx, dz);
@@ -727,7 +792,44 @@ async function kreaturProben(r, T, opts) {
                 // Himmelsachse, der Lauf lag auf ihr (Basis: 100 % auf 0,25° genau). Ein stetiger Gradient trifft das
                 // 0,5°-Fenster je Achse zufällig in ~0,6 % der Takte; nahe einer Achse liegt er nur, wenn der Wind dort
                 // weht (die Fahne des Geruchs) — darum zählt das enge Fenster, das 5°-Fenster steht als Zahl daneben.
-                if (grad(m) < 0.25) achs++;
+                // DER LAUF AUF SEIN ZIEL (Nachbesserung 4, der Täter der zwei CI-Ausschläge 38,4 % / 16,2 %): eine gerade Hetze
+                // hinter einer Beute, die genau längs einer Himmelsachse flieht (sie flieht vom Jäger fort, er läuft auf sie zu —
+                // die Linie hält ihre Richtung), oder ein gerader Lauf auf ein Ziel, das auf einer Achse liegt, ist kein Raster.
+                // Welche Linie entsteht, hängt am Zustand der Welt beim Start der Probe (Bauten 1 121–1 258 je Boot, die
+                // Kreatur-Uhr nach einem Einschwingen auf der Wand-Uhr). 169 Orte, Kreatur-Uhr und Wind fest: die alte Zählung
+                // bis 15,0 % (83 Achsen-Takte, jeder auf sein Ziel), diese höchstens 1,9 %. Das Raster (R-D12) dreht den Lauf von
+                // der Peilung fort (Täter jagd: 22–28 %) — gezählt wird nur der Achsen-Takt, dessen Lauf mehr als 1° neben der
+                // Peilung des Ziels liegt.
+                const aufZiel =
+                    !!peilung &&
+                    Math.abs(wrap(h - Math.atan2(peilung.tx - peilung.x, peilung.tz - peilung.z))) <
+                        (1 * Math.PI) / 180;
+                if (grad(m) < 0.25 && aufZiel) achsZiel++;
+                else if (grad(m) < 0.25) {
+                    achs++;
+                    // DER ORT DES ACHSEN-TAKTS (Bericht, die Linse nennt die Quelle): im Wasser (die Ufer-Scheu sucht das Ufer
+                    // in vier Himmelsrichtungen), die Gier selbst auf einer Achse (der Leib läuft längs seiner Gier), ein
+                    // reiner Achsen-Schritt (dx oder dz exakt 0), im Ansprung, mit getragenem Stoß; dazu drei Beispiele
+                    const ud = wolf.userData;
+                    const gier = ud._steuer ? ud._steuer.gier : wolf.rotation.y;
+                    let mg = Infinity;
+                    for (let q = 0; q < 4; q++) mg = Math.min(mg, Math.abs(wrap(gier - (q * Math.PI) / 2)));
+                    if (r._creatureWaterContextAt(wolf, r._creatureGroundY(wolf)).inWater) achsWasser++;
+                    if (grad(mg) < 0.25) achsOrt.gierAchse++;
+                    if (dx === 0 || dz === 0) achsOrt.rein++;
+                    if (ud._verhaltenAktion && ud._verhaltenAktion.biss) achsOrt.ansprung++;
+                    if (ud._stossV) achsOrt.stoss++;
+                    if (achsOrt.beispiele.length < 3)
+                        achsOrt.beispiele.push({
+                            k,
+                            zs: ud._motionZustand,
+                            ziel: ud._jagdZiel ? String(ud._jagdZiel).slice(0, 8) : null,
+                            v: ud._steuer ? +ud._steuer.v.toFixed(2) : null,
+                            gierGrad: +grad(gier).toFixed(2),
+                            dx: +dx.toFixed(4),
+                            dz: +dz.toFixed(4),
+                        });
+                }
                 if (grad(m) < 5) achs5++;
             }
             // Die Beute, die den Jäger bemerkt (Zustand flucht — ein pirschender Jäger bleibt bis jagd.pirschSichtM
@@ -754,8 +856,12 @@ async function kreaturProben(r, T, opts) {
         return {
             jagdFrames,
             kontaktFrames: kontakt,
+            wasserFrames: imWasser,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
+            achsZielAnteil: jagdFrames ? +(achsZiel / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
+            achsImWasser: achsWasser,
+            achsOrt,
             bedrohtFrames: bedroht,
             fortAnteil: bedroht ? +(fort / bedroht).toFixed(3) : null,
             bisse: beute.filter((c) => c.userData.hp < 9999).length,
@@ -1038,7 +1144,11 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_haus;
         });
         if (!e) return { fehler: "Haus nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-4, -3, -0.4, 4, 2.5, 0.4] });
+        // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
+        r._hausHuelleSetzen(e, {
+            stufe: 0,
+            teile: [{ art: "box", c: [0, -0.25, 0], h: [4, 2.75, 0.4], rolle: "fest" }],
+        });
         const box = (e.blockerAABBs || []).find((b) => b.obb);
         if (!box) return { fehler: "die Hülle trägt keine gedrehte Box" };
         const ob = box.obb;
@@ -1174,6 +1284,7 @@ async function kreaturProben(r, T, opts) {
                         const o = alt.call(this, cr);
                         if (o) {
                             delete o.hp;
+                            delete o.hpAnteil; // die Wunde reist als Anteil des Lebens (Welle LF kampf Nachbesserung 2)
                             delete o.gier;
                         }
                         return o;
@@ -1263,7 +1374,7 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
-        // innerhalb der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST 35 m): dort geht auch ein Welt-Tier
+        // diesseits der Stufen-Grenze der Welt-Tiere (`ab` 35 m der Kern-Zeile kreatur): dort geht auch ein Welt-Tier
         const o = land(14, -16);
         const dt = 1 / 30;
         let x = o.x;
@@ -1511,7 +1622,7 @@ async function kreaturProben(r, T, opts) {
         const ring = (seele) =>
             [0, 1, 2, 3].map((k) => {
                 const a = (k / 4) * Math.PI * 2 + 0.4;
-                const c = tier({ x: pm.x + Math.cos(a) * 6, y: pm.y, z: pm.z + Math.sin(a) * 6 }, seele, 1);
+                const c = tier(neben(pm.x + Math.cos(a) * 6, pm.z + Math.sin(a) * 6), seele, 1);
                 ruhig(c);
                 return c;
             });
@@ -1813,7 +1924,8 @@ async function kreaturProben(r, T, opts) {
                         const dx = tx - c.position.x,
                             dz = tz - c.position.z;
                         const J = A._verhaltenGesetz().jagd;
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                     }
             );
         if (taeter === "jagd-schritt") schrittJagd();
@@ -1854,7 +1966,10 @@ async function kreaturProben(r, T, opts) {
             if (z === "jagd" || z === "hetzen") {
                 jagdT += dt;
                 jagdWeg += v;
-                if (v / dt > 0.3) {
+                // der Weg ZUR BEUTE zählt nur die Schritte der Jagd auf sie: verliert der Wolf den Hirsch und kommt dem
+                // Spieler nah, jagt er ihn (_jagdZiel "spieler") — seit der Biss ein Ansprung ist (Welle LF kampf), springt er
+                // ihn an, statt still neben ihm aus der Ferne zu beißen; diese Schritte gehen nicht zum Hirsch
+                if (v / dt > 0.3 && wolf.userData._jagdZiel !== "spieler") {
                     bewegt++;
                     if (vx * (hx - wx) + vz * (hz - wz) > 0) hin++;
                 }
@@ -1919,15 +2034,15 @@ async function kreaturProben(r, T, opts) {
             s.player.respawnGraceUntil = altGnade;
         });
         s.player.hp = 1e9;
+        // gezählt wird der Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf) — nicht der Ansprung
         let spielerBisse = 0;
         decke(
             restore,
-            "_tickCreatureHuntStrike",
+            "damagePlayer",
             (alt) =>
-                function (...a) {
-                    const o = alt.apply(this, a);
-                    if (o) spielerBisse++;
-                    return o;
+                function (amount, quelle) {
+                    if (quelle === "jagd") spielerBisse++;
+                    return alt.call(this, amount, quelle);
                 }
         );
         const sprint = s.sprintSpeed;
@@ -1935,6 +2050,10 @@ async function kreaturProben(r, T, opts) {
         let abstMin = abst0;
         for (let k = 0; k < 600; k++) {
             pm.x += sprint * dt;
+            // die Füße des Läufers bleiben auf dem Boden (die Probe trägt ihn ohne Physik; der Biss braucht den Kopf am
+            // Leib, auch in der Höhe — Welle LF kampf)
+            const hS = r.getTerrainHeightAt(pm.x, pm.z);
+            if (Number.isFinite(hS)) pm.y = hS + 0.5;
             ruhigSpieler();
             takt(dt);
             abstMin = Math.min(abstMin, Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z));
@@ -1985,7 +2104,8 @@ async function kreaturProben(r, T, opts) {
                         const dx = tx - c.position.x,
                             dz = tz - c.position.z;
                         const J = A._verhaltenGesetz().jagd;
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                     }
             );
         const o = frei(60, -60, 25) || land(60, -60);
@@ -1998,19 +2118,19 @@ async function kreaturProben(r, T, opts) {
         });
         s.player.hp = 1e9;
         const woelfe = [-0.25, 0, 0.25].map((a) => {
-            const c = tier({ x: pm.x + Math.sin(a) * 11, y: pm.y, z: pm.z + Math.cos(a) * 11 }, "wolf", 1);
+            const c = tier(neben(pm.x + Math.sin(a) * 11, pm.z + Math.cos(a) * 11), "wolf", 1);
             ruhig(c);
             return c;
         });
+        // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf)
         let ersterBiss = null;
         decke(
             restore,
-            "_tickCreatureHuntStrike",
+            "damagePlayer",
             (alt) =>
-                function (...a) {
-                    const out = alt.apply(this, a);
-                    if (out && ersterBiss === null) ersterBiss = luecke();
-                    return out;
+                function (amount, quelle) {
+                    if (quelle === "jagd" && ersterBiss === null) ersterBiss = luecke();
+                    return alt.call(this, amount, quelle);
                 }
         );
         const luecke = () => {
@@ -2074,7 +2194,11 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_sockel;
         });
         if (!e) return { fehler: "Sockel nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-2, unten, -2, 2, oben, 2] });
+        // die EINE Hüllen-Form (N5, S3 haus): der Sockel als Kasten c ± h, rolle "fest" — 4 × 4 m, von `unten` bis `oben`
+        r._hausHuelleSetzen(e, {
+            stufe: 0,
+            teile: [{ art: "box", c: [0, (unten + oben) / 2, 0], h: [2, (oben - unten) / 2, 2], rolle: "fest" }],
+        });
         if (!Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length) return { fehler: "Sockel ohne Hülle" };
         const box = e.blockerAABBs[0];
         const mx = (box.minX + box.maxX) / 2,
@@ -2171,7 +2295,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + Math.cos(a) * ring * 5,
                     z = P0.z + Math.sin(a) * ring * 5;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z)) continue;
                 const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
                     gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
                 const g = Math.hypot(gx, gz);
@@ -2319,12 +2443,13 @@ async function kreaturProben(r, T, opts) {
 
     // ── ferngang (Leben-Schau 07.10., D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
     // (jenseits der Standbild-Schwelle 35·L fror der Baum in der Stand-Pose ein, das gemergte Standbild trug ihn, die
-    // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Gemessen am echten Takt: 4 Hirsche in der Standbild-Zone
-    // (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er steht, der Blick liegt auf ihnen); je laufendem Takt
-    // (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER Leib die Beine nicht bewegt: trägt das Fern-Bild, zählen
-    // die Gelenke, an die seine Haut gebunden ist (ein Fern-Bild ohne Haut-Gelenke ist ein Standbild — es gleitet immer),
-    // sonst die des Baums; gleiten heißt, die Hüft-Winkel der vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet
-    // dreimal aus) in 0,02 rad ──
+    // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Seit S3 trägt jenseits der Stufen-Grenze (`ab` × Größe)
+    // die gelenkige Grobstufe das Bild, an die Knochen der feinen gebunden (EIN Skelett, `_gelenkGestalt`). Gemessen am
+    // echten Takt: 4 Hirsche in der Grobstufen-Zone (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er
+    // steht, der Blick liegt auf ihnen); je laufendem Takt (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER
+    // Leib die Beine nicht bewegt: trägt die Grobstufe, zählen die Gelenke, an die ihre Haut gebunden ist (eine Grobstufe
+    // ohne Haut-Gelenke ist ein Standbild — sie gleitet immer), sonst die der feinen; gleiten heißt, die Hüft-Winkel der
+    // vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet dreimal aus) in 0,02 rad ──
     await buehne("ferngang", async (restore) => {
         r.setGameMode("frieden");
         const altUhr = s.creatureAnimationTime;
@@ -2338,16 +2463,26 @@ async function kreaturProben(r, T, opts) {
                 "_kreaturLaeuft",
                 () =>
                     function () {
-                        return false; // der Täter: der Standbild-Freeze gilt auch dem, der läuft
+                        return false; // der Täter: die Ruhe jenseits der Grenze gilt auch dem, der läuft
                     }
             );
-        if (taeter === "ferngang-spiegel")
+        if (taeter === "ferngang-bindung")
             decke(
                 restore,
-                "_tierFernFolgt",
-                () =>
-                    function () {
-                        // der Täter: das Fern-Bild trägt nicht die Pose des Baums (das ungeskinnte Standbild)
+                "_gelenkGestalt",
+                (orig) =>
+                    function (...arg) {
+                        // der Täter: die Grobstufe trägt ihre EIGENEN Knochen (das Fern-Bild vor S3 ohne Spiegel) — sie
+                        // bindet nie an die animierten Knochen der feinen
+                        const g = orig.apply(this, arg);
+                        if (g && g.fern) {
+                            const eigene = {};
+                            g.fern.traverse((n) => {
+                                if ((n.isGroup || n.isBone) && n.name) eigene[n.name] = n;
+                            });
+                            r.constructor._ofenKlonRebind(g.fern, eigene);
+                        }
+                        return g;
                     }
             );
         // die Richtung mit Land in 45–90 m
@@ -2358,7 +2493,7 @@ async function kreaturProben(r, T, opts) {
             for (const d of [45, 55, 65, 75, 85, 95]) {
                 const x = P0.x + Math.cos(a) * d,
                     z = P0.z + Math.sin(a) * d;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) ok = false;
+                if (!r._landAt(x, z)) ok = false;
             }
             if (ok) richtung = a;
         }
@@ -2366,7 +2501,7 @@ async function kreaturProben(r, T, opts) {
         const ux = Math.cos(richtung),
             uz = Math.sin(richtung);
         kamera(ux, uz);
-        const zonen = { standbild: [45, 50, 55, 60], kapsel: [70, 77, 84, 90] };
+        const zonen = { grobstufe: [45, 50, 55, 60], kapsel: [70, 77, 84, 90] };
         const tiere = [];
         for (const [zone, ds] of Object.entries(zonen))
             ds.forEach((d, k) => {
@@ -2379,13 +2514,14 @@ async function kreaturProben(r, T, opts) {
                 tiere.push({ c, zone, spur: [], lage: null });
             });
         const BEINE = ["legFL", "legFR", "legHL", "legHR"];
-        // der sichtbare Leib: das Fern-Bild (die Gelenke seiner Haut) oder der Baum
+        // der sichtbare Leib: die Grobstufe (die Gelenke ihrer Haut) oder die feine Stufe
         const sichtbar = (c) => {
             const tb = c.userData._tierBaum;
-            if (!tb) return { fern: false, beine: null };
-            if (tb.fern && tb.fern.visible && !(tb.wrap && tb.wrap.visible)) {
+            const gl = c.userData._gelenk;
+            if (!tb || !gl) return { fern: false, beine: null };
+            if (gl.fern.visible && !gl.nah.visible) {
                 let haut = null;
-                tb.fern.traverse((o) => {
+                gl.fern.traverse((o) => {
                     if (!haut && o.isSkinnedMesh && o.skeleton && o.userData && o.userData.__skinJoints) haut = o;
                 });
                 if (!haut) return { fern: true, beine: null };
@@ -2397,7 +2533,7 @@ async function kreaturProben(r, T, opts) {
             return { fern: false, beine: Tt ? BEINE.map((n) => (Tt[n] ? Tt[n].rotation.x : 0)) : null };
         };
         const z = {
-            standbild: { lauf: 0, gleit: 0, fernBild: 0 },
+            grobstufe: { lauf: 0, gleit: 0, fernBild: 0 },
             kapsel: { lauf: 0, gleit: 0, fernBild: 0 },
         };
         const dt = 1 / 60;
@@ -2409,7 +2545,7 @@ async function kreaturProben(r, T, opts) {
                 const p = { x: c.position.x, z: c.position.z };
                 const sb = sichtbar(c);
                 const b = sb.beine;
-                if (t.warFern !== sb.fern) t.spur.length = 0; // der Wechsel Baum ↔ Fern-Bild beginnt eine neue Spur
+                if (t.warFern !== sb.fern) t.spur.length = 0; // der Wechsel feine Stufe ↔ Grobstufe beginnt eine neue Spur
                 t.warFern = sb.fern;
                 t.spur.push(b);
                 if (t.spur.length > 24) t.spur.shift();
@@ -2542,7 +2678,7 @@ function urteil(name, z) {
         soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
         soll(
             z.achsAnteil !== null && z.achsAnteil < 0.1,
-            `Jagd auf den Achsen (0,25°) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %)`
+            `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; auf das Ziel ${(z.achsZielAnteil * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte; Ort ${JSON.stringify(z.achsOrt || null)})`
         );
         soll(z.bedrohtFrames >= 60, `nur ${z.bedrohtFrames} bedrohte Beute-Frames`);
         soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);
@@ -2735,13 +2871,13 @@ function urteil(name, z) {
     }
     if (name === "ferngang") {
         for (const [zone, Z] of [
-            ["Standbild-Zone 45–60 m", z.standbild],
+            ["Grobstufen-Zone 45–60 m", z.grobstufe],
             ["Kapsel-Zone 70–90 m", z.kapsel],
         ]) {
             soll(Z.laufTakte >= 200, `${zone}: nur ${Z.laufTakte} laufende Takte (die Probe braucht ≥ 200)`);
             soll(
                 Z.gleitAnteil !== null && Z.gleitAnteil <= 0.05,
-                `ferner Gang gleitet: ${zone} ${Z.gleitTakte} von ${Z.laufTakte} laufenden Takten ohne Beinschlag (Soll ≤ 5 %; das Fern-Bild trug ${Z.fernBild})`
+                `ferner Gang gleitet: ${zone} ${Z.gleitTakte} von ${Z.laufTakte} laufenden Takten ohne Beinschlag (Soll ≤ 5 %; die Grobstufe trug ${Z.fernBild})`
             );
         }
     }
@@ -2824,7 +2960,7 @@ const TAETER = {
     ],
     ferngang: [
         ["ferngang", /ferner Gang gleitet/],
-        ["ferngang-spiegel", /ferner Gang gleitet: Standbild-Zone/],
+        ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
 };
 

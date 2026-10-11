@@ -164,3 +164,30 @@ Vertrags-Akt (Leben-Prüfung S-S2 „die Studio-Treppe ist begehbar"; Re-Mint vo
   Golden-Fällen ändern sich genau die sechs `hanseatisch` (s7 · s12345 × L0/L1/L2 —
   die einzige Kultur mit drei Geschossen und Speicher), `siedlung.json` und
   `ausstattung.json` bleiben byte-gleich.
+
+## Nachtrag FERNKÖRPER-GESETZ (10.10.2026, S3 haus) — die Stufe 3 und die EINE Hüllen-Form
+
+Vertrags-Akt (Studio-Welle S3 „Kosten ins Asset", Plan §3.3; Lehre 19: die Kosten wohnen im Asset). Befund (Kern
+736e1e8f, `gate:haus-fern`): jede gezeigte Stufe warf sich selbst — L0 31 660–101 716 Dreiecke je Haus und Kaskade, L1
+2 464–31 000, die L2 gar nicht (der Schatten sprang bei 26 m weg); der Fernkörper (`lod2Koerper`) las die Massen-Hülle
+`B.ext` statt des Grundrisses (Aufblähung bis +2,0 m, First quer 60 von 128), die Fernform rechnete der Wirt
+(`_archFachwerkFit`, 503 Zeilen).
+
+- **DIE MASSEN DES BAUS** (`H.masse`, additiv, kein Bau liest sie zurück): je Teil des Grundrisses Rechteck, Höhen und
+  Dach — Haupt (mit Walm, Überstand, Schwung), Flügel, Hof-Arm, Anbau, Turm, Portikus, Vordach, Kuppel, Terrassen,
+  Rundbau, Sockel, Treppe, Gaube, Vorkragung, Zinnen.
+- **DER FERNKÖRPER** (`koerperListe`): die EINE Liste der Hüllen-Form (docs/studio-vertrag.md N5) aus den Massen —
+  grundriss-treu, der First nach dem Haus-Gesetz auf x, der Überstand der Traufe, der Walm, das Schwungdach als
+  Kasten und Überstand-Keil unter der gehobenen Traufe; INNEN (Wand 1,5 cm hinter der Grundriss-Ebene, Dach 3 cm
+  unter der Dachhaut); nach Rang gekürzt auf die Budget-Zeile (≤ 96 Dreiecke, ≤ 24 Teile). Drei Leser, EINE Liste:
+  die L2 bakt sie mit Dachhaut über ihr Destillat (`lod2Koerper`), die Stufe 3 ist ihr Gitter (`huelleGeoms`),
+  `huelle()` gibt sie aus und sie reist als Beipack `__fern`.
+- **DIE STUFE 3 (nurWurf)**: `kindStages.haus = [0, 1, 2, 3]`, `ausstattung = [0, 1, 3]`; die Stufe 3 wird nie gezeigt —
+  ihr Stoff ist der EINE Schatten-Stoff (`wurfStoff`: unsichtbar, beidseitig, alphaTest 0,5, `userData.__stoff =
+  "schatten"`, `aDeckt` 1), jede gezeigte Stufe wirft sie (`schatten: 3`; die Ausstattungs-L0 wirft selbst). Ausstattung:
+  Feuerstelle Achteck-Ring mit Scheit-Kuppe (24), Marktstand Tisch · Zargen · Waren · Ablage · Plane · Volant · Pfosten
+  · Fass aus der Wahl der L1 (≤ 40), Brunnen Kranz · Pfosten · Schindel-Dach · Haspel (40).
+- **DIE KOLLISION** (`__huelle`, Welle L) wandert in dieselbe Form: je Solid-Box ein Teil, `rolle: "fest"`.
+- **DIE HAUS-KARTE IST FINAL GESTRICHEN**: das Befehle-Ziel trägt seit W6 der Bau-Satz, eine Karte zeigte bei 26–64 m
+  Parallaxe; die Fernstufe ist die grundriss-treue L2, jenseits 64 m die Hülle (`fernform: "huelle"`).
+- Byte-Beweis siehe den Commit des Akts (die L0/L1-Fälle und `siedlung.json` byte-gleich, die L2 neu, die Stufe 3 neu).

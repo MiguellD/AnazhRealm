@@ -221,7 +221,14 @@ async function checkRing2Dsl(ctx) {
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
 
         const jpBefore = r.state.jumpPower;
-        const res1 = r.dslRun(["weather", "rainy"]);
+        // UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Probe spricht als Spieler — ein Programm ohne Quelle ist
+        // eine Stimme der Welt und wünscht das Wetter nur (der Wetter-Zug zieht es in seinem Takt).
+        const res0 = r.dslRun(["weather", "stormy"]);
+        out.weltWuenscht =
+            res0.ok &&
+            r.state.weather !== "stormy" &&
+            res0.log.some((e) => e.event === "wetter_gewuenscht" || e.event === "wetter_gehalten");
+        const res1 = r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
         // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
@@ -229,7 +236,7 @@ async function checkRing2Dsl(ctx) {
         const jBand = r._koerperGesetzBand("jumpPower");
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
         const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
-        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]]);
+        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]], { source: "human" });
         out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
@@ -316,7 +323,11 @@ async function checkRing2Dsl(ctx) {
     } else {
         check("Welt-Identität (worldId) gesetzt", dslResults.worldIdSet);
         check("Welt-Slug gesetzt", dslResults.slugSet);
-        check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
+        check("DSL-Effekt: weather wirkt auf state (Satz des Spielers)", dslResults.weatherEffect);
+        check(
+            "Leben-Schau 2: ein Programm ohne Quelle (die Welt) schreibt das Wetter nie selbst — es wünscht",
+            dslResults.weltWuenscht
+        );
         check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
         check("DSL-Position: at_origin + spawn_creature wirkt", dslResults.positionEffect);
         check("DSL-Condition: when/weather_is verzweigt korrekt", dslResults.conditionEffect);
@@ -2722,7 +2733,8 @@ async function checkBandV1741RuleThread(ctx) {
         r.state.weather = "sunny";
         nRule.lastFired = -Infinity;
         r._tickWorldRules(now());
-        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && r.state.weather === "rainy";
+        // die Nexus-Regel feuerte (sie wünscht das Wetter nur — Leben-Schau 2), und keine Erinnerung entstand
+        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && nRule.fires === 1;
 
         // restore
         r.state.worldRules = savedRules;
@@ -4207,13 +4219,20 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = r.state.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
-        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang), dann folgt
-        // der Abschied — die Frist synthetisch verstreichen lassen, updateCreatures räumt.
-        const kipptErst = killR.killed && !!c1.userData.dying && r.state.creatures.indexOf(c1) !== -1;
+        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang) — er verlässt die Wesen und
+        // liegt in state.leichname —, dann folgt der Abschied: die Frist synthetisch verstreichen lassen, updateCreatures räumt.
+        const kipptErst =
+            killR.killed &&
+            !!c1.userData.dying &&
+            r.state.creatures.indexOf(c1) === -1 &&
+            r.state.leichname.indexOf(c1) !== -1;
         c1.userData.dying.t = 9999;
         r.updateCreatures(0.016);
         out.killRemoves =
-            kipptErst && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+            kipptErst &&
+            r.state.leichname.indexOf(c1) === -1 &&
+            !c1.parent &&
+            r.state.creatures.length === countBefore - 1;
         out.lootToInventory = matUnits(p.inventory) > 0;
 
         // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
@@ -10276,6 +10295,111 @@ async function checkBandRing8(ctx) {
         // Legacy-Single-Key wurde nach Migration (falls vorhanden) entfernt.
         out.legacyKeyAbsent = localStorage.getItem("anazhRealmState") === null;
 
+        // DIE GEBURT ERBT NICHTS (Positiv-Liste, 09.10.): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
+        // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
+        // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
+        // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.
+        {
+            const echt = r.state.worldMeta;
+            r.state.worldMeta = Object.assign({}, echt, {
+                macro: { massivC: { x: 1, z: 2 } },
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                settlementCells: { start: { x: 0, z: 0 } },
+                genesisPortalRing: true,
+                portalPreviewFachwerk: true,
+                erbgut: { terme: [{ art: "wildnis" }] },
+                saat: [{ dsl: "x" }],
+                role: "host",
+                hostInfo: { peerId: "p" },
+                banList: { peerIds: ["p"], vibePassKeys: [] },
+                guestRights: "frieden",
+                worldAddress: "anazh://alt",
+                regionsActive: true,
+                currentRegionKey: "r0_0",
+                visibility: "privat",
+                creator: "local",
+            });
+            let leer = null;
+            try {
+                leer = r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta("test-erbe"), false);
+            } finally {
+                r.state.worldMeta = echt;
+            }
+            const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
+            const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
+            const POSITIV = new Set(["visibility", "creator"]);
+            const wmNeu = (leer && leer.worldMeta) || {};
+            out.geborenGeerbt = Object.keys(wmNeu).filter(
+                (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
+            );
+            out.geborenPositiv = wmNeu.visibility === "privat" && wmNeu.creator === "local";
+        }
+        // DIE EMPFÄNGER-WAND DES ERBGUTS (docs/taille-spec.md §3): ohne Feld [wildnis]; eine unbekannte Term-Art, ein
+        // Grund-Term nicht zuerst, eine fehlende Zahl werfen (fail-closed, nie still Wildnis).
+        {
+            const wirft = (roh) => {
+                try {
+                    window.__gelaendeCore.erbgutNormal(roh);
+                    return "";
+                } catch (e) {
+                    return String(e.message);
+                }
+            };
+            out.erbgutWand = {
+                ohne: JSON.stringify(window.__gelaendeCore.erbgutNormal(undefined)) === '[{"art":"wildnis"}]',
+                unbekannt: /unbekannte Term-Art/.test(wirft({ terme: [{ art: "vulkan" }] })),
+                grundZuerst: /nur der erste Term/.test(
+                    wirft({
+                        terme: [
+                            {
+                                art: "rampe",
+                                x: 0,
+                                z: 0,
+                                richtung: 0,
+                                breite: 9,
+                                lauf: 9,
+                                krone: 1,
+                                winkel: 9,
+                                boeschung: 45,
+                            },
+                        ],
+                    })
+                ),
+                zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
+            };
+        }
+        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build nicht
+        // trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als Snapshot eines
+        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben (bis 10.10. nahmen die Türen sie mit
+        // ok:true an, der Zeiger blieb stehen, und jeder Reload scheiterte am Ladeschirm).
+        {
+            const fremd = () => ({
+                worldMeta: {
+                    worldId: "w-tuer-korridor",
+                    slug: "tuer-korridor",
+                    erbgut: { terme: [{ art: "korridor" }] },
+                },
+            });
+            const index0 = r.worldsIndexLoad().length;
+            const zeiger0 = r.activeWorldGet();
+            const welt0 = r.state.worldMeta;
+            const p2pRolle0 = r.state.p2p.role;
+            const daneben = r.importWorldBeside(fremd());
+            const gast = r._importGuestWorld(fremd(), { url: "ws://127.0.0.1:1", roomId: "w-tuer-korridor" }, null);
+            r.state.p2p.pendingWorldSnapshot = true;
+            const mitspieler = r._p2pApplyWorldSnapshot("tuer-peer", fremd());
+            out.erbgutTueren = {
+                daneben: daneben && daneben.ok === false && /unbekannte Term-Art/.test(daneben.reason),
+                gast: gast === null,
+                mitspieler: mitspieler && mitspieler.ok === false && /unbekannte Term-Art/.test(mitspieler.reason),
+                index: r.worldsIndexLoad().length === index0,
+                zeiger: r.activeWorldGet() === zeiger0,
+                welt: r.state.worldMeta === welt0 && r.state.p2p.role === p2pRolle0,
+                gespeichert: localStorage.getItem(r.worldStorageKey("w-tuer-korridor")) === null,
+            };
+            r.state.p2p.pendingWorldSnapshot = false;
+        }
+
         // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
         // Ziel: Ring-8-Invarianten ohne page-reload prüfbar.
         const beforeCount = r.worldsIndexLoad().length;
@@ -10381,6 +10505,24 @@ async function checkBandRing8(ctx) {
         check("Ring 8: anazhRealmActiveWorld zeigt auf aktive Welt", ring8Results.activeWorldPointerSet);
         check("Ring 8: Per-Welt-Save-Key existiert", ring8Results.perWorldSaveExists);
         check("Ring 8: Legacy-Single-Key nach Migration weg", ring8Results.legacyKeyAbsent);
+        check(
+            "Ring 8: eine neue Welt erbt kein Identitäts-Feld der alten (Positiv-Liste visibility · creator)",
+            Array.isArray(ring8Results.geborenGeerbt) && ring8Results.geborenGeerbt.length === 0,
+            `geerbt: ${(ring8Results.geborenGeerbt || ["?"]).join(", ") || "—"}`
+        );
+        check("Ring 8: die Positiv-Liste reist (visibility, creator)", ring8Results.geborenPositiv === true);
+        const ew = ring8Results.erbgutWand || {};
+        check(
+            "Erbgut: ohne Feld [wildnis]; unbekannte Term-Art, Grund nicht zuerst, fehlende Zahl werfen (fail-closed)",
+            ew.ohne === true && ew.unbekannt === true && ew.grundZuerst === true && ew.zahl === true,
+            JSON.stringify(ew)
+        );
+        const et = ring8Results.erbgutTueren || {};
+        check(
+            "Erbgut: keine Tür lässt ein fremdes Erbgut ein (Welt-Tor, Einladung, Mitspieler) — Index, Zeiger, Welt bleiben",
+            ["daneben", "gast", "mitspieler", "index", "zeiger", "welt", "gespeichert"].every((k) => et[k] === true),
+            JSON.stringify(et)
+        );
         check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
         check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
         check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);
@@ -11837,27 +11979,36 @@ async function checkBandRing11AndW7Mesh(ctx) {
         const noHost = r._p2pRequestWorldResync();
         out.resyncNoHost = noHost.ok === false && noHost.reason === "no_host";
 
-        // _p2pApplyWorldSnapshot extrahiert: setzt role guest +
-        // ruft activeWorldSet (sonst landet ein Reload in der
-        // ALTEN Welt). loadState + activeWorldSet gestubbt.
-        const origLoad = r.loadState;
-        const origActive = r.activeWorldSet;
-        let activeSetTo = null;
-        r.loadState = () => {
-            // loadState würde worldMeta.worldId setzen — wir
-            // simulieren die Host-worldId.
-            r.state.worldMeta.worldId = "host-world-xyz";
-        };
-        r.activeWorldSet = (wid) => {
-            activeSetTo = wid;
-        };
+        // _p2pApplyWorldSnapshot geht durch DIE TÜR `_weltBetreten`: ein Snapshot ohne worldId bekommt seine eigene (nie
+        // den Platz der Welt der Seite), liegt mit role guest + hostInfo im Speicher, der Aktiv-Zeiger zeigt auf ihn (sonst
+        // landet ein Reload in der ALTEN Welt); die Seite lädt ihn nicht in sich. `_testNoReload` hält den Reload an.
+        const zeiger0 = r.activeWorldGet();
+        const welt0 = r.state.worldMeta.worldId;
         p2p.role = "host";
         p2p._testNoReload = true;
-        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} }, { reload: false });
-        out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
-        out.applySetsActiveWorld = activeSetTo === "host-world-xyz";
-        r.loadState = origLoad;
-        r.activeWorldSet = origActive;
+        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
+        let abgelegt = null;
+        try {
+            abgelegt = applyRes.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(applyRes.worldId))) : null;
+        } catch (_e) {
+            abgelegt = null;
+        }
+        out.applyExtractedWorks =
+            applyRes.ok === true &&
+            p2p.role === "guest" &&
+            !!abgelegt &&
+            abgelegt.worldMeta.role === "guest" &&
+            abgelegt.worldMeta.hostInfo.peerId === "hostX";
+        out.applySetsActiveWorld =
+            !!applyRes.worldId &&
+            applyRes.worldId !== welt0 &&
+            r.activeWorldGet() === applyRes.worldId &&
+            r.state.worldMeta.worldId === welt0;
+        if (applyRes.worldId) {
+            localStorage.removeItem(r.worldStorageKey(applyRes.worldId));
+            r.worldsIndexRemove(applyRes.worldId);
+        }
+        r.activeWorldSet(zeiger0);
 
         // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
         out.pullCooldownFields =
@@ -11904,8 +12055,14 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("W7 P2: ein Stück ohne laufenden Pull wird verworfen", w7p2Results.chunkRejectsWhenNotPending);
         check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
         check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
-        check("W7 P2: _p2pApplyWorldSnapshot setzt die Guest-Rolle", w7p2Results.applyExtractedWorks);
-        check("W7 P2: _p2pApplyWorldSnapshot setzt den Aktiv-Welt-Zeiger", w7p2Results.applySetsActiveWorld);
+        check(
+            "W7 P2: _p2pApplyWorldSnapshot legt die Host-Welt als Gast ab (role guest + hostInfo)",
+            w7p2Results.applyExtractedWorks
+        );
+        check(
+            "W7 P2: _p2pApplyWorldSnapshot gibt einer Welt ohne worldId ihre eigene und setzt den Aktiv-Zeiger (die Seite bleibt)",
+            w7p2Results.applySetsActiveWorld
+        );
         check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
         check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
     }
@@ -15084,6 +15241,31 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
         const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
         out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
+        // DIE WELT REIST NUR ZU EINEM LESER IHRES ERBGUTS (Plan R11, `_erbgutTeilbar`): trägt die Welt ein Erbgut jenseits
+        // der Wildnis, bekommt ein Anfrager ohne Erbgut-Stufe (ein Build davor) keinen Snapshot — er zeichnete still
+        // Wildnis darunter; ein Leser (`erbgut` ≥ 1) bekommt ihn. Die lebende Welt trägt das Erbgut nur synchron (kein
+        // Takt dazwischen), ihr Erbgut-Merker bleibt unberührt.
+        {
+            const T = r.constructor;
+            const buehne = {
+                terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
+            };
+            const echt = r.state.worldMeta;
+            r.state.worldMeta = Object.assign({}, echt, { erbgut: buehne });
+            sentMsgs.length = 0;
+            try {
+                r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "alt-build" }));
+            } finally {
+                r.state.worldMeta = echt;
+            }
+            out.erbgutReise = {
+                altVerweigert: sentMsgs.length === 0,
+                teilbarWildnis: T._erbgutTeilbar({}, {}) === null,
+                teilbarLeser: T._erbgutTeilbar({ erbgut: buehne }, { erbgut: T.ERBGUT_PROTOKOLL }) === null,
+                verweigertAlt: /liest kein Erbgut/.test(String(T._erbgutTeilbar({ erbgut: buehne }, {}))),
+                stufe: T.ERBGUT_PROTOKOLL >= 1,
+            };
+        }
         r._p2pSignal = origSignal;
         sentMsgs.length = 0;
         r.state.p2p.role = "solo";
@@ -15137,6 +15319,12 @@ async function checkBandLateMultiUser(ctx) {
         check(
             "Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)",
             ring115Results.hostAnswersRequestWithSnapshot
+        );
+        const er = ring115Results.erbgutReise || {};
+        check(
+            "Ring 11.5: eine Welt mit Erbgut reist nur zu einem Leser (Anfrager ohne Erbgut-Stufe bekommt keinen Snapshot)",
+            ["altVerweigert", "teilbarWildnis", "teilbarLeser", "verweigertAlt", "stufe"].every((k) => er[k] === true),
+            JSON.stringify(er)
         );
         check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
         check(
@@ -17482,9 +17670,16 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
         const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
         const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-        const tx = playerPos.x + 50;
+        // der Ort des Baums liegt auf dem LAND (Schau-2: die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
+        // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
+        let tx = playerPos.x + 50;
         const ty = playerPos.y;
-        const tz = playerPos.z + 50;
+        let tz = playerPos.z + 50;
+        out.treeOrtWasser = !r._landAt(tx, tz, 0.4);
+        for (let k = 0; k < 64 && !r._landAt(tx, tz, 0.4); k++) {
+            tx = playerPos.x + 50 + Math.cos(k * 0.9) * (4 + k);
+            tz = playerPos.z + 50 + Math.sin(k * 0.9) * (4 + k);
+        }
 
         r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
         r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
@@ -19796,7 +19991,7 @@ async function checkBandHydrosphere(ctx) {
         out.methodsExist =
             typeof r._computeErosion === "function" &&
             typeof r._erosionIncisionPass === "function" &&
-            typeof r._erosionDeltaAt === "function";
+            typeof window.__gelaendeCore.erosionDelta === "function";
         out.stateDeclared = "erosion" in r.state;
         const e = r.state.erosion;
         out.wired =
@@ -19835,10 +20030,10 @@ async function checkBandHydrosphere(ctx) {
         let sum2 = 0;
         for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
         out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
-        // (4) `_erosionDeltaAt`: 0 weit ausserhalb der Region, im
+        // (4) das Erosions-Delta (gelaende-core `erosionDelta`): 0 weit ausserhalb der Region, im
         // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
-        out.deltaZeroOutside = r._erosionDeltaAt(99999, 99999) === 0;
-        out.deltaFiniteInside = Number.isFinite(r._erosionDeltaAt(0, 0));
+        out.deltaZeroOutside = window.__gelaendeCore.erosionDelta(r._gelaende(), 99999, 99999) === 0;
+        out.deltaFiniteInside = Number.isFinite(window.__gelaendeCore.erosionDelta(r._gelaende(), 0, 0));
         out.perfOk = out.recomputeMs < 600;
         // den Worldgen-Erosions-Stand wiederherstellen (das letzte
         // `_computeErosion` liess state.erosion null).
@@ -19848,7 +20043,7 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV947Results && !voxelV947Results.error) {
         const ev = voxelV947Results;
-        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + _erosionDeltaAt existieren", ev.methodsExist);
+        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren", ev.methodsExist);
         check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
         check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
         if (ev.methodsExist && ev.wired) {
@@ -19864,7 +20059,7 @@ async function checkBandHydrosphere(ctx) {
             check("Voxel V14.2: das Relief überlebt die Glättung (stark-erodierter Anteil < 60 %)", ev.reliefSurvives);
             check("Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)", ev.deterministic);
             check(
-                "Voxel V9.47: _erosionDeltaAt — 0 ausserhalb der Region, endlich im Inneren",
+                "Voxel V9.47: gelaende-core erosionDelta — 0 ausserhalb der Region, endlich im Inneren",
                 ev.deltaZeroOutside && ev.deltaFiniteInside
             );
             check(
@@ -22701,7 +22896,18 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         }
         out.idxMismatches = idxMismatches;
         out.idxBitIdentical = idxMismatches === 0;
-        // Colors bit-identisch?
+        // Colors bit-identisch? Der Worker-Weg ist das Worker-Mesh UND sein Haupt-Thread-Schritt (die Himmels-Sicht und
+        // der Stein unter Fels, `_bodenFarbeUnterFels`, K02a): verglichen wird der FERTIGE Bau beider Wege — vorher las
+        // der Vergleich die rohen Worker-Farben gegen den fertigen Sync-Bau (8 328 Abweichungen am Spawn-Chunk, 0,071).
+        // Die Zellen reisen als Kopie (der Bau stempelt sie, der Zellen-Vergleich unten liest die ungestempelten).
+        const wFertig = r._buildVoxelChunkDataFromWorkerMesh(
+            cx,
+            cz,
+            lod,
+            Object.assign({}, workerMesh, {
+                waterCells: workerMesh.waterCells ? workerMesh.waterCells.slice() : workerMesh.waterCells,
+            })
+        );
         const syncCol = syncFresh.mesh.geometry.getAttribute("color");
         out.syncColCount = syncCol ? syncCol.count : 0;
         out.workerColCount = workerMesh.colors.length / 3;
@@ -22709,7 +22915,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         let maxColDelta = 0;
         if (syncCol) {
             const syncColArr = syncCol.array;
-            const workerColArr = workerMesh.colors;
+            const workerColArr = wFertig.mesh.geometry.getAttribute("color").array;
             const lenC = Math.min(syncColArr.length, workerColArr.length);
             for (let i = 0; i < lenC; i++) {
                 const ad = Math.abs(syncColArr[i] - workerColArr[i]);
@@ -22720,6 +22926,22 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.colMismatches = colMismatches;
         out.maxColDelta = maxColDelta;
         out.colBitIdentical = colMismatches === 0;
+        // Die Boden-Karte (Höhe + Grün, `_bodenKarteAusMesh`) beider Wege: wer AUF dem Boden steht, liest sie
+        let gruenMismatches = 0;
+        let hoeheMismatches = 0;
+        const gS = syncFresh.gruenMap;
+        const gW = wFertig.gruenMap;
+        const hS = syncFresh.surfMap;
+        const hW = wFertig.surfMap;
+        out.karteDa = !!(gS && gW && hS && hW && gS.length === gW.length && hS.length === hW.length);
+        if (out.karteDa)
+            for (let i = 0; i < gS.length; i++) {
+                if (gS[i] !== gW[i]) gruenMismatches++;
+                if (!(hS[i] === hW[i] || (Number.isNaN(hS[i]) && Number.isNaN(hW[i])))) hoeheMismatches++;
+            }
+        out.gruenMismatches = gruenMismatches;
+        out.hoeheMismatches = hoeheMismatches;
+        wFertig.mesh.geometry.dispose();
         // WaterCells: der Worker liefert OHNE Architektur-Stempel, der Sync-Pfad MIT → am Spawn-Chunk (0,0)
         // mit Worldgen-Bäumen sind Cell-Mismatches erwartet (< ~100 je Architektur). Pipeline-Beweis ist
         // darum die gleiche Cell-ANZAHL.
@@ -22786,6 +23008,11 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         "Welle Perf-3.c V9.91: colors BIT-IDENTISCH",
         res.colBitIdentical,
         `colMismatches=${res.colMismatches}, maxColDelta=${res.maxColDelta}`
+    );
+    check(
+        "Welle Perf-3.c V9.91: Boden-Karte (Höhe + Grün) BIT-IDENTISCH (sync vs Worker-Weg, beide fertig)",
+        res.karteDa && res.gruenMismatches === 0 && res.hoeheMismatches === 0,
+        `karte=${res.karteDa}, gruenMismatches=${res.gruenMismatches}, hoeheMismatches=${res.hoeheMismatches}`
     );
     check(
         "Welle Perf-3.c V9.91: Cell-Counts identisch (Architektur-Stempel-Toleranz)",
@@ -23939,15 +24166,15 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_koerperBodenUnter`:
         // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
         // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY =
-            /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
-            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
-            /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
+            /_koerperBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
+            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._koerperBodenUnter)) &&
+            /_voxelSurfaceY\(/.test(window.__codeOf(r._koerperBodenUnter));
         out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
         out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
@@ -23955,7 +24182,8 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
         out.groundCacheFn = typeof r._creatureGroundY === "function";
         if (out.groundCacheFn) {
-            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), userData: {} });
+            // der Leib trägt seine Gier (der Boden blickt längs ihr voraus, Leben-Schau 2) — eine Kreatur ist eine Group
+            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), rotation: new THREE.Euler(), userData: {} });
             r._creatureGroundBudget = 5;
             const m = mk(12, 12);
             const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4
@@ -24025,7 +24253,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
     check(
-        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
+        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_koerperBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
     check(
@@ -27723,14 +27951,13 @@ async function checkBandV18132FerneSeen(ctx) {
         const out = {};
         out.machinery =
             typeof r._hydroFor === "function" &&
-            typeof r._erosionFor === "function" &&
-            typeof r._hydroTileKeyFor === "function" &&
+            typeof window.__gelaendeCore.erosionFuer === "function" &&
+            typeof window.__gelaendeCore.kachelSchluessel === "function" &&
             typeof r._ensureHydroTilesAround === "function";
         // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
         // V18.180-FIX §6.4: _hydroWaterLevelAt fiel (V9.69-Zwei-Skalen-Lücke);
         // _waterLevelAt ist die EINE Auftrieb-Wahrheit (Bergsee-bewusst).
         const readers = [
-            r._erosionDeltaAt,
             r._hydrosphereCarveAt,
             r._hydrosphereLakeAt,
             r._waterLevelAt,
@@ -27738,7 +27965,10 @@ async function checkBandV18132FerneSeen(ctx) {
             r._hydroRiverAt,
             r._voxelChunkHasAnyWater,
         ];
-        out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(window.__codeOf(f)));
+        // Das Erosions-Delta liest seine Region im Gelände-Gesetzbuch (gelaende-core `erosionFuer`).
+        out.readersResolved =
+            readers.every((f) => /_hydroFor/.test(window.__codeOf(f))) &&
+            /erosionFuer\(/.test(window.__codeOf(window.__gelaendeCore.erosionDelta));
         // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
         out.buildGuarded = /_ensureHydroTilesAround/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
@@ -27746,7 +27976,7 @@ async function checkBandV18132FerneSeen(ctx) {
             const src = await fetch("voxel-worker.js").then((x) => x.text());
             out.workerMirror =
                 /function hydroFor\(/.test(src) &&
-                /function erosionFor\(/.test(src) &&
+                /importScripts\([^\n]*"gelaende-core\.js"/.test(src) &&
                 /snap\.hydroTiles/.test(src) &&
                 /snap\.erosionTiles/.test(src);
         } catch (_e) {
@@ -27763,7 +27993,7 @@ async function checkBandV18132FerneSeen(ctx) {
                 for (let j = 0; j < 6; j++) {
                     const x = -900 + i * 360;
                     const z = -900 + j * 360;
-                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), r._erosionDeltaAt(x, z));
+                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), window.__gelaendeCore.erosionDelta(r._gelaende(), x, z));
                 }
             return JSON.stringify(v);
         };
@@ -27787,7 +28017,7 @@ async function checkBandV18132FerneSeen(ctx) {
         check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/_erosionFor/_ensure...)", res.machinery);
+    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)", res.machinery);
     check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
     check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
     check(
@@ -28563,7 +28793,7 @@ async function checkBandPhaseEThreat(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const HUNT = r.constructor._verhaltenGesetz().jagd;
-        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeRange > 0;
+        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeCooldownSec > 0;
         // Die Raubtier-Seele (ALTLASTEN-NULL: der WOLF): registriert + predator-
         // markiert + aus BEIDEN Ambient-Pickern gefiltert (sparsam per Konstruktion).
         const soul = r.constructor.CREATURE_SOULS.wolf;
@@ -28581,17 +28811,51 @@ async function checkBandPhaseEThreat(ctx) {
         const savedMax = r.state.maxCreatures;
         const savedEmo = {};
         for (const k of Object.keys(p.emotions)) savedEmo[k] = p.emotions[k];
+        const savedOrt = { x: pm.x, y: pm.y, z: pm.z };
         const spawned = [];
         try {
             r.setGameMode("pfad");
             p.respawnGraceUntil = -Infinity;
             r.state.maxCreatures = r.state.creatures.length + 4;
+            // der Spieler steht auf dem Boden: der Biss braucht den Kopf am Leib, auch in der Höhe (Welle LF kampf)
+            pm.y = r.getTerrainHeightAt(pm.x, pm.z) + r.constructor.PLAYER_FOOT_OFFSET;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "wolf");
             spawned.push(wolf);
             // W-D/M-F1 (V18.170) — die Spieler-Klemme schiebt frische Spawns auf
-            // ≥3 m (> strikeRange 2.4); dieser Test prüft den BISS, nicht den
-            // Spawn-Ort → die Kreatur rückt explizit in Biss-Distanz (V9.56-i).
-            if (wolf) wolf.position.set(pm.x + 2, pm.y, pm.z);
+            // ≥3 m; dieser Test prüft den BISS, nicht den Spawn-Ort → die Kreatur
+            // rückt explizit in die Weite ihres Ansprungs (V9.56-i; Welle LF kampf:
+            // der Biss ist der Ansprung, 1,2 m reicht jeder Größe), ihm zugewandt.
+            if (wolf) {
+                wolf.position.set(pm.x + 1.2, pm.y, pm.z);
+                wolf.rotation.set(0, -Math.PI / 2, 0);
+                wolf.userData._steuer = null;
+            }
+            // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
+            // den Leib berührt — der Kreatur-Takt läuft, bis der Ansprung schnappt oder endet (höchstens 1,5 s). Ein
+            // voriger Ansprung landet erst (die Biss-Uhr ruht so lange: kein Biss, den die Probe nicht setzt).
+            const bissOffen = (c) => {
+                const A0 = c.userData._verhaltenAktion;
+                return A0 && A0.bissAkt && r.state.creatureAnimationTime < A0.bis ? A0 : null;
+            };
+            // der Takt des Spiels: der Kreatur-Takt, dann der feste Sim-Schritt der Leiber (getragener Stoß, Leib an Leib)
+            const takt = () => {
+                r.updateCreatures(1 / 60);
+                r._kreaturStossSchritt(1 / 60);
+                r._leibKontakte();
+            };
+            const beiss = (c) => {
+                const uhr = c.userData.nextHuntStrikeAt;
+                c.userData.nextHuntStrikeAt = 1e12; // (endlich: die Biss-Uhr liest nur endliche Zeiten)
+                for (let k = 0; bissOffen(c) && k < 90; k++) takt();
+                c.userData.nextHuntStrikeAt = uhr;
+                const ok = r._tickCreatureHuntStrike(c);
+                for (let k = 0; ok && k < 90; k++) {
+                    const A0 = bissOffen(c);
+                    if (!A0 || !A0.biss) break;
+                    takt();
+                }
+                return ok;
+            };
             // (1) die GATTUNG trägt WILD (predator = Carnivor-diet als Daten;
             // die Substanz bleibt Richter für alle Nicht-Raubtiere).
             out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
@@ -28612,14 +28876,14 @@ async function checkBandPhaseEThreat(ctx) {
             p.stats.defense = 0;
             p.hp = p.stats.hpMax || 100;
             const hp0 = p.hp;
-            const bit = r._tickCreatureHuntStrike(wolf);
+            const bit = beiss(wolf);
             out.strikeHits = bit === true && p.hp < hp0;
             out.cooldownGates = r._tickCreatureHuntStrike(wolf) === false;
             const dealt1 = hp0 - p.hp;
             wolf.userData.nextHuntStrikeAt = 0;
             p.stats.defense = 3;
             const hp1 = p.hp;
-            r._tickCreatureHuntStrike(wolf);
+            beiss(wolf);
             const dealt2 = hp1 - p.hp;
             p.stats.defense = savedDef;
             out.armorDampens = dealt2 < dealt1 - 1e-9 && dealt2 >= 1;
@@ -28629,7 +28893,7 @@ async function checkBandPhaseEThreat(ctx) {
             p.emotions.sorrow = 0;
             const sor0 = p.emotions.sorrow || 0;
             wolf.userData.nextHuntStrikeAt = 0;
-            r._tickCreatureHuntStrike(wolf);
+            beiss(wolf);
             out.fearFelt = (p.emotions.sorrow || 0) > sor0;
             // (5) der TRIUMPH: ein frischer Jäger fällt von Spieler-Hand → joy steigt.
             // joy ebenso ZUERST auf 0 (dieselbe Decken-Konfundierung) → der Anstieg ist messbar.
@@ -28652,6 +28916,7 @@ async function checkBandPhaseEThreat(ctx) {
             r.state.maxCreatures = savedMax;
             for (const k of Object.keys(p.emotions)) p.emotions[k] = savedEmo[k] || 0;
             r.setGameMode(savedMode);
+            pm.set(savedOrt.x, savedOrt.y, savedOrt.z);
         }
         return out;
     });
@@ -29013,7 +29278,7 @@ async function checkBandR6Capability(ctx) {
             r._portalOverlay = savedPo || null;
             r.state.capabilityProposals = savedProps;
             r.state.grantedCapabilities = savedCaps;
-            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "band-r6");
+            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "human");
             else r.state.weather = savedWeather;
         }
         return out;
@@ -30876,10 +31141,11 @@ async function checkBandGammaGenese(ctx) {
         const A = r.constructor;
         const out = {};
         out.struct =
-            typeof r._makeMacroAnker === "function" &&
+            typeof window.__gelaendeCore.ankerAusSaat === "function" &&
             typeof r._macroAnker === "function" &&
-            typeof r._macroSurfaceContribution === "function" &&
-            Object.isFrozen(A.MACRO_ANKER);
+            typeof window.__gelaendeCore.ankerBeitrag === "function" &&
+            Object.isFrozen(window.__gelaendeCore.MACRO_ANKER) &&
+            !("MACRO_ANKER" in A);
         const orig = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
         try {
             if (!r.state.worldMeta) r.state.worldMeta = {};
@@ -30931,7 +31197,7 @@ async function checkBandGammaGenese(ctx) {
         return out;
     });
     check(
-        `Γ4 Struktur: _makeMacroAnker/_macroAnker/_macroSurfaceContribution + MACRO_ANKER frozen`,
+        `Γ4 Struktur: gelaende-core ankerAusSaat/ankerBeitrag + MACRO_ANKER frozen, _macroAnker am Stamm`,
         resG4.struct === true
     );
     check(`Γ4 _macroAnker() liefert eine Anker-Struktur (gen 3)`, resG4.ankerExists === true);
@@ -32762,17 +33028,17 @@ async function checkBandV18193MakroErbgut(ctx) {
             out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
             out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
             out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
-            out.validatorAcceptsValid = A._isValidMacroAnker(r._makeMacroAnker("validator-test")) === true;
+            out.validatorAcceptsValid = A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
             // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
-            const badNaN = r._makeMacroAnker("nan-test");
+            const badNaN = window.__gelaendeCore.ankerAusSaat("nan-test");
             badNaN.massivR = NaN;
             out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
 
             // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
             let allDet = true;
             for (const seed of SEEDS) {
-                const a = r._makeMacroAnker(seed);
-                const b = r._makeMacroAnker(seed);
+                const a = window.__gelaendeCore.ankerAusSaat(seed);
+                const b = window.__gelaendeCore.ankerAusSaat(seed);
                 if (
                     a.massivC.x !== b.massivC.x ||
                     a.massivR !== b.massivR ||
@@ -32798,7 +33064,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                 delete r.state.worldMeta.macro;
                 r._macroAnkerCache = null;
                 r._voxelNoise = null;
-                r._macroRidgeNoise = null;
                 const ank1 = r._macroAnker();
                 out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
 
@@ -32854,7 +33119,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                     delete r.state.worldMeta.macro;
                     r._macroAnkerCache = null;
                     r._voxelNoise = null;
-                    r._macroRidgeNoise = null;
                     const anker = r._macroAnker();
                     const spill = r._macroSpillpointAnalysis(anker);
                     spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
@@ -32872,7 +33136,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                     delete r.state.worldMeta.macro;
                     r._macroAnkerCache = null;
                     r._voxelNoise = null;
-                    r._macroRidgeNoise = null;
                     const anker = r._macroAnker();
                     const spill = r._macroSpillpointAnalysis(anker);
                     if (spill.spillVsTalDeg < 60) nearTalCount++;
@@ -32909,7 +33172,6 @@ async function checkBandV18193MakroErbgut(ctx) {
                 }
                 r._macroAnkerCache = null;
                 r._voxelNoise = null;
-                r._macroRidgeNoise = null;
             }
             return out;
         },
@@ -32978,13 +33240,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        const cont0At = (x, z) => {
-            if (!r._voxelNoise) return 0;
-            const wpX = r._voxelNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-            const wpZ = r._voxelNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-            const cB = r._voxelNoise.noise2D((x + wpX) * 0.00014 + 7.2, (z + wpZ) * 0.00014 + 3.8);
-            return Math.max(0, cB) * 130 + cB * 15 + 12;
-        };
+        // Die Prominenz misst am Gesetz (die kontinentale Basis des Gelände-Gesetzbuchs), nie an einer Kopie.
+        const cont0At = (x, z) => window.__gelaendeCore.kontinentBasis(r._gelaende(), x, z);
         let snowSum = 0;
         let nSamples = 0;
         const base = s.terrainBaseHeight || 0;
@@ -35060,7 +35317,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             if (prey) r.removeCreature(prey);
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
-            // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
+            // in 1,2 m → der Ansprung trifft UND stößt die Beute vom Jäger weg.
             r.state.creatures = savedCreatures;
             const pmS = r.state.playerMesh.position;
             const capS = r.state.maxCreatures;
@@ -35070,12 +35327,27 @@ async function checkBandV18210Verdrahtung(ctx) {
             const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
             r.state.maxCreatures = capS;
             if (jaeger && beute) {
-                beute.position.set(jaeger.position.x + 1.5, jaeger.position.y, jaeger.position.z);
+                const B0 = { x: jaeger.position.x + 1.2, z: jaeger.position.z };
+                beute.position.set(B0.x, jaeger.position.y, B0.z);
                 beute.userData.hp = 1e6; // der Biss soll stoßen, nicht töten
                 beute.userData._stossV = null;
+                jaeger.rotation.set(0, Math.PI / 2, 0); // der Beute zugewandt
+                jaeger.userData._steuer = null;
                 r.state.creatures = [jaeger, beute];
                 jaeger.userData.nextHuntStrikeAt = -Infinity;
                 const struck = r._tickCreatureScentStrike(jaeger);
+                // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
+                // der feste Sim-Schritt der Leiber), bis das Maul am Leib schnappt (höchstens 1,5 s; die Beute steht still)
+                for (let k = 0; struck && k < 90; k++) {
+                    const A0 = jaeger.userData._verhaltenAktion;
+                    if (!A0 || !A0.biss) break;
+                    beute.position.x = B0.x;
+                    beute.position.z = B0.z;
+                    beute.userData._steuer = null;
+                    r.updateCreatures(1 / 60);
+                    r._kreaturStossSchritt(1 / 60);
+                    r._leibKontakte();
+                }
                 const sv = beute.userData._stossV;
                 out.a3StrikeHits = struck === true && !!sv && sv.x > 0;
                 r.state.creatures = savedCreatures;
@@ -38262,7 +38534,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                     d = 20 + (i % 8) * 8;
                 const x = p.x + Math.cos(a) * d,
                     z = p.z + Math.sin(a) * d;
-                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._isAboveWaterAt(x, z, 2)) spot = { x, z };
+                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._landAt(x, z, 2)) spot = { x, z };
             }
             out.spot = !!spot;
             const vorher = archs.length;
@@ -38270,7 +38542,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             const neu = archs.slice(vorher);
             out.neuZahl = neu.length;
             out.alleEiche = neu.length > 0 && neu.every((e) => e.type === "baum_eiche");
-            out.alleTrocken = neu.every((e) => r._isAboveWaterAt(e.position.x, e.position.z, 0.2));
+            out.alleTrocken = neu.every((e) => r._landAt(e.position.x, e.position.z, 0.2));
             out.alleGeerdet = neu.every((e) => {
                 const sy = r._voxelSurfaceY(e.position.x, e.position.z);
                 return Number.isFinite(sy) && Math.abs(e.position.y - (sy + 0.5)) < 0.6;
@@ -38295,7 +38567,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             for (let dz = -166; dz <= 166; dz += 4)
                 for (let dx = -166; dx <= 166; dx += 4) {
                     const d = Math.hypot(dx, dz);
-                    if (d > 166 || r._isAboveWaterAt(pm0.x + dx, pm0.z + dz, 0.2)) continue;
+                    if (d > 166 || r._landAt(pm0.x + dx, pm0.z + dz, 0.2)) continue;
                     nassFern = true;
                     if (d <= 150) nassNah = true;
                     nassPunkte.push([pm0.x + dx, pm0.z + dz]);
@@ -38317,7 +38589,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             const benannt = nwFehler === "kein Wasser im Umkreis von 160 m";
             out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
-            out.nearWaterTrocken = nw ? r._isAboveWaterAt(nw.x, nw.z, 0.3) : benannt;
+            out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;
             const prompt = r.llmBuildSystemPrompt();
             out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
             out.promptWoerter = /Bäume: /.test(prompt);
@@ -38591,9 +38863,9 @@ async function checkBandKonvergenzTierBaum(ctx) {
         const stand = trabLauf(0);
         out.trabZahlen = { lauf, stand };
         out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen < 0 && stand.falte < 0.05);
-        // (5) DER FERN-GUSS + sein CONSUM: die Kreatur trägt das gemergte
-        // Standbild (wenige Meshes); updateCreatures toggelt es jenseits
-        // TIER_FERN_DIST (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
+        // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
+        // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
+        // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
         out.fernExists = false;
         out.fernMeshN = -1;
         out.fernFar = false;
@@ -38607,21 +38879,17 @@ async function checkBandKonvergenzTierBaum(ctx) {
             r.state.creatures = [];
             r.state.creatureEmotions = [];
             t5 = r.spawnCreatureAt(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2, "happy", "wolf");
-            if (t5 && t5.userData._tierBaum && t5.userData._tierBaum.fern) {
-                const tB5 = t5.userData._tierBaum;
+            const gl5 = t5 && t5.userData._gelenk;
+            if (gl5 && gl5.fern) {
                 out.fernExists = true;
-                let n5 = 0;
-                tB5.fern.traverse((m5) => {
-                    if (m5.isMesh) n5++;
-                });
-                out.fernMeshN = n5;
+                out.fernMeshN = gl5.meshes.length;
                 r.isInFrustum = () => true;
                 t5.position.set(pm5.position.x + 200, pm5.position.y, pm5.position.z + 200);
                 r.updateCreatures(0.016);
-                out.fernFar = tB5.fern.visible === true && tB5.wrap.visible === false;
+                out.fernFar = gl5.istFern === true && gl5.nah.visible === false && gl5.meshes.every((m) => m.layers.isEnabled(0));
                 t5.position.set(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2);
                 r.updateCreatures(0.016);
-                out.fernNear = tB5.wrap.visible === true && tB5.fern.visible === false;
+                out.fernNear = gl5.istFern === false && gl5.nah.visible === true && gl5.meshes.every((m) => !m.layers.isEnabled(0));
             }
         } finally {
             r.isInFrustum = origFrustum5;
@@ -38652,11 +38920,11 @@ async function checkBandKonvergenzTierBaum(ctx) {
         res && res.trab === true
     );
     check(
-        `KONVERGENZ III (5) DER FERN-GUSS existiert (≤16 Meshes, gemessen ${res && res.fernMeshN})`,
+        `KONVERGENZ III (5) DIE GELENKIGE GROBSTUFE existiert (≤16 Meshes, gemessen ${res && res.fernMeshN})`,
         !!res && res.fernExists === true && res.fernMeshN > 0 && res.fernMeshN <= 16
     );
     check(
-        "KONVERGENZ III (5) CONSUM: fern trägt das Standbild, nah der lebendige Baum",
+        "KONVERGENZ III (5) CONSUM: fern trägt die Grobstufe das Bild, nah der volle Baum (die Grobstufe nur in den Kaskaden)",
         !!res && res.fernFar === true && res.fernNear === true
     );
 }
@@ -40353,10 +40621,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl (V9.56-i).
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
+        // Der Tag trägt eine Szene (Leben-Schau 2): Mittag bis Sonnenuntergang = TAG_SZENE_MINUTEN (15) → 60 min.
         out.dayLengthConstantsExist =
             AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
             AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
+            AnazhRealm.TAG_SZENE_MINUTEN === 15 &&
+            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
         out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
         // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
         // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
@@ -40383,17 +40653,17 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
 
         // setTimeOfDay setzt korrekt
-        r.setTimeOfDay(0.25);
+        r.setTimeOfDay(0.25, "human");
         out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
         // Sonnenaufgang Label
         out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
         out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
 
         // tickDayNight schreitet voran
-        r.setTimeOfDay(0.4);
+        r.setTimeOfDay(0.4, "human");
         const beforeT = r.state.timeOfDay;
         r.state._lastDayNightTick = 0;
-        r.tickDayNight(0.5); // 0.5 s delta, dayLength=8min=480s → +0.001
+        r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
         out.tickAdvances = r.state.timeOfDay > beforeT;
         // setDayLength clamped
         r.setDayLength(5);
@@ -40402,11 +40672,14 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
         r.setDayLength(0); // < min 1
         out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
-        r.setDayLength(8); // zurück
+        r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
 
-        // DSL-Op set_time_of_day
-        r.dslRun(["set_time_of_day", 0.7]);
+        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler (Leben-Schau 2): sein Satz stellt sie, der Nexus nie
+        r.dslRun(["set_time_of_day", 0.7], { source: "human" });
         out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
+        const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
+        out.dslNexusUhrGehalten =
+            Math.abs(r.state.timeOfDay - 0.7) < 0.001 && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
         // NON_BROADCASTABLE
         out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
 
@@ -40419,10 +40692,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität: tags die SONNE (oben,
         // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
         // (ein Licht von unten wüsche die Nacht aus).
-        r.setTimeOfDay(0.5); // Mittag
+        r.setTimeOfDay(0.5, "human"); // Mittag
         const noonY = r.state.directionalLight.position.y;
         const noonInt = r.state.directionalLight.intensity;
-        r.setTimeOfDay(0); // Mitternacht
+        r.setTimeOfDay(0, "human"); // Mitternacht
         const dlN = r.state.directionalLight;
         const midnightY = dlN.position.y;
         const midnightCool = dlN.color.b > dlN.color.r; // Mondlicht ist kühl (b > r)
@@ -40442,8 +40715,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // Setze sunny als Ausgangspunkt
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
-        // weather-DSL-Op startet Transition + setzt state.weather sofort
-        r.dslRun(["weather", "rainy"]);
+        // weather-DSL-Op startet Transition + setzt state.weather sofort (der Satz des Spielers; die Welt wünscht nur)
+        r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherStateImmediate = r.state.weather === "rainy";
         out.weatherTransitionStarted = !!r.state.weatherTransition;
         out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
@@ -40542,7 +40815,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
             wave6g3Results.dayLengthDefault
         );
-        check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
+        check(
+            "Welle 6.G3.a: Tag-Längen-Konstanten (1/60/60 = 4 Szenen zu 15 min) korrekt",
+            wave6g3Results.dayLengthConstantsExist
+        );
         check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
         check(
             "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
@@ -40565,7 +40841,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
-        check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt", wave6g3Results.dslSetTimeOfDay);
+        check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt (Satz des Spielers)", wave6g3Results.dslSetTimeOfDay);
+        check(
+            "Leben-Schau 2: set_time_of_day des Nexus stellt die Uhr nie (uhr_gehalten im Protokoll)",
+            wave6g3Results.dslNexusUhrGehalten
+        );
         check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
         check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
         check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
@@ -40700,7 +40980,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- Vision 4: Sky-Tint moduliert mit awe
         // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
-        r.setTimeOfDay(0.5); // Mittag
+        r.setTimeOfDay(0.5, "human"); // Mittag
         r.state.player.emotions.awe = 0;
         r.state.player.emotions.joy = 0;
         r.state.player.emotions.sorrow = 0;
@@ -40803,10 +41083,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.grenze;
         out.starIntensityExists = !!starU;
         if (starU) {
-            r.setTimeOfDay(0.5); // Mittag
+            r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
             const grenzeMittag = starU.value;
-            r.setTimeOfDay(0); // Mitternacht
+            r.setTimeOfDay(0, "human"); // Mitternacht
             r._applyDayNightToScene();
             const grenzeNacht = starU.value;
             const hellster = Math.min(...r.constructor.HIMMEL.wandelsterne.map((w) => w.mag));
@@ -40822,11 +41102,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
             // ist das kamera-unabhängige Maß für über/unter dem Horizont.
             const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
-            r.setTimeOfDay(0.5); // Mittag
+            r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
             const sunYNoon = offY(r.state.sunMesh);
             const moonYNoon = offY(r.state.moonMesh);
-            r.setTimeOfDay(0); // Mitternacht
+            r.setTimeOfDay(0, "human"); // Mitternacht
             r._applyDayNightToScene();
             const sunYMidnight = offY(r.state.sunMesh);
             const moonYMidnight = offY(r.state.moonMesh);
@@ -40836,7 +41116,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.sunLowAtMidnight = sunYMidnight < -100;
             out.moonHighAtMidnight = moonYMidnight > 100;
         }
-        r.setTimeOfDay(0.5); // Reset
+        r.setTimeOfDay(0.5, "human"); // Reset
 
         // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
         // (auraTintStrength=1 gilt noch aus dem Block-Anfang — Mechanismus-Marge.)
@@ -41112,12 +41392,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.fogColorSet = !!lf && (lf.r > 0 || lf.g > 0 || lf.b > 0);
 
         // 2. Hemisphere-skyColor moduliert mit Tageszeit
-        r.setTimeOfDay(0.5);
+        r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();
         const hemiNoonR = r.state.hemiLight.color.r;
         const hemiNoonG = r.state.hemiLight.color.g;
         const hemiNoonB = r.state.hemiLight.color.b;
-        r.setTimeOfDay(0); // Mitternacht
+        r.setTimeOfDay(0, "human"); // Mitternacht
         r._applyDayNightToScene();
         const hemiNightR = r.state.hemiLight.color.r;
         const hemiNightG = r.state.hemiLight.color.g;
@@ -41129,11 +41409,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
-        r.setTimeOfDay(0.5);
+        r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();
         const intensityNoon = r.state.hemiLight.intensity;
         const belichtungMittag = r.state.renderer.toneMappingExposure;
-        r.setTimeOfDay(0);
+        r.setTimeOfDay(0, "human");
         r._applyDayNightToScene();
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
@@ -41145,7 +41425,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
         // testet MIT Opt-in und mockt den echten Leser (auraAt).
-        r.setTimeOfDay(0.5);
+        r.setTimeOfDay(0.5, "human");
         const origWFA = r.worldFieldAt;
         const origAuraAt = r.auraAt;
         const savedAuraStrength = r.state.atmosphere ? r.state.atmosphere.auraTintStrength : undefined;
@@ -41614,27 +41894,38 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Avatar-Hide im 1st-Person ---
         out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
-        // Render-Loop hält player.visible=true und versteckt im 1st-Person nur den KOPF (headPart.visible =
-        // cameraMode==="third") im Chokepoint `_applyEgoSicht`. Das Pattern akzeptiert beide Formen, verlangt
-        // aber die Modus-Quelle in DERSELBEN Funktion (kein blindes `= third`-Match).
+        // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5, Chokepoint `_applyEgoSicht`): im 1st liegt jeder Knoten des Leibs
+        // (Kopf-Part + _creatureSkin-Hülle, ohne das Gerät in der Hand), der im 3rd auf Ebene 0 lag, nicht mehr dort und auf
+        // SHADOW_TWIN_LAYER (die Kaskaden werfen ihn); 3rd gibt jede Maske genau zurück; `visible` wechselt nie.
         {
-            let found = false;
-            const proto = Object.getPrototypeOf(r);
-            for (const name of Object.getOwnPropertyNames(proto)) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    const src = window.__codeOf(fn);
-                    if (
-                        /headPart\.visible\s*=\s*(this\.state\.cameraMode|third)\b/.test(src) &&
-                        /cameraMode\s*===\s*"third"/.test(src)
-                    )
-                        found = true;
-                } catch {
-                    /* skip */
-                }
-            }
-            out.avatarHideInLoop = found;
+            const pm = r.state.playerMesh;
+            const E = r.constructor.SHADOW_TWIN_LAYER;
+            const knoten = [];
+            const sammle = (o) => {
+                if (o.userData && o.userData._gehalten) return;
+                knoten.push(o);
+                for (const k of o.children) sammle(k);
+            };
+            const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
+            if (kopf) sammle(kopf);
+            for (const ch of (pm && pm.children) || []) if (ch.userData && ch.userData._creatureSkin) sammle(ch);
+            const vorher = r.state.cameraMode;
+            r.setCameraMode("third");
+            const dritt = knoten.map((o) => o.layers.mask);
+            const sicht = knoten.map((o) => o.visible);
+            r.setCameraMode("first");
+            let leib = 0;
+            let ego = true;
+            knoten.forEach((o, i) => {
+                if (o.visible !== sicht[i]) ego = false;
+                if (!(dritt[i] & 1)) return;
+                leib++;
+                if (o.layers.isEnabled(0) || !o.layers.isEnabled(E)) ego = false;
+            });
+            r.setCameraMode("third");
+            const zurueck = knoten.every((o, i) => o.layers.mask === dritt[i] && o.visible === sicht[i]);
+            r.setCameraMode(vorher);
+            out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
         }
 
         // --- Instanced-Gras (Voxel-Gras-Pendant) ---
@@ -41753,10 +42044,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v829Results && !v829Results.error) {
-        check(
-            "V8.29.1: nur der Kopf wird im 1st-Person versteckt (Avatar bleibt sichtbar)",
-            v829Results.avatarHideInLoop
-        );
+        {
+            const e = v829Results.egoEbene || {};
+            check(
+                "V8.29.1 (0910-5): die Ego-Sicht ist EIN Ebenen-Schalter — 1st nimmt den Leib aus Ebene 0 auf SHADOW_TWIN_LAYER (er wirft), 3rd gibt die Maske zurück, visible wechselt nie",
+                e.leib > 0 && e.ego === true && e.zurueck === true,
+                JSON.stringify(e)
+            );
+        }
         check(
             "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
             v829Results.grassMethodsExist
@@ -46420,7 +46715,13 @@ async function checkBandV18129HochBecken(ctx) {
         out.capReadsStau = /_stauFieldsNear/.test(window.__codeOf(r._ensureWaterCALevel));
         out.pinHasDrip = /src\[c\] === 2/.test(window.__codeOf(r._tickWorldWaterCA));
         out.editInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r._addVoxelEdit));
-        out.spawnInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.spawnArchitecture));
+        // der Bau weckt am Zell-Stempel (Schau-2, Gegenprüfungen Runden 2 und 3): wo sein Stempel in die Zellen kommt — der
+        // Neubau des Fußabdrucks beim Bau, der Reload, das Wieder-Strömen —, wenn er eine Wasser-Zelle überschreibt
+        out.spawnInvalidates =
+            /_rebuildVoxelChunk\(/.test(window.__codeOf(r.spawnArchitecture)) &&
+            /=== STATE\.WATER[\s\S]*_invalidateWaterCapsAround/.test(
+                window.__codeOf(r._stampArchitectureSolidCellsInto)
+            );
         out.removeInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.removeArchitecture));
         // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
         // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
@@ -46484,7 +46785,7 @@ async function checkBandV18129HochBecken(ctx) {
         res.capReadsStau && res.pinHasDrip
     );
     check(
-        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Spawn · Remove)",
+        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Bau am Zell-Stempel · Abbau)",
         res.editInvalidates && res.spawnInvalidates && res.removeInvalidates
     );
     check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
@@ -46709,7 +47010,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // V17.111 R1 — deterministische schräge Sonne: der Light-Space-Snap
             // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
             // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
-            r.setTimeOfDay(0.3);
+            r.setTimeOfDay(0.3, "human");
             pm.position.x = 123.5;
             pm.position.z = -77.25;
             r._applyDayNightToScene();
@@ -46745,7 +47046,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
             pm.position.x = ox;
             pm.position.z = oz;
-            r.setTimeOfDay(oTod);
+            r.setTimeOfDay(oTod, "human");
             r._applyDayNightToScene();
         }
         return out;
@@ -49140,15 +49441,37 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         const origMode = r.getGameMode();
         const chatOutput = document.getElementById("chat-output");
 
-        // Test schöpfer-Auto: der Wetter ändert sich tatsächlich
+        // Test schöpfer-Auto (Gegenprüfung uhr-wetter): das Wesen handelt VON SELBST — ohne Zusage des Spielers ist es Welt
+        // (`_himmelSchreiber`): gegen das stehende Wort des Spielers hält das Wetter (der Hinweis sagt es), ohne Wort wünscht
+        // das Wesen das nächste Wort, und der Wetter-Zug zieht es (die Welt ändert sich beobachtbar). Vorher schrieb es als
+        // „creature:" wie ein Gesetz des Spielers und nahm ihm sein Wort (sunny/sunny → rainy/rainy).
         r.setGameMode("schöpfer");
-        const beforeWeather = r.state.weather;
-        const targetWeather = beforeWeather === "rainy" ? "sunny" : "rainy";
+        const __wort0 = r.state.wetterWort;
+        const __wunsch0 = r.state.wetterWunsch;
+        const __zugUhr0 = r.state.weatherEffectTime;
+        r.state.weatherEffectTime = 0;
+        r.dslRun(["weather", "sunny"], { source: "human" });
         const beforeAuto = chatOutput ? chatOutput.children.length : 0;
-        r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather]);
-        out.autoExecutedInSchöpfer = r.state.weather === targetWeather;
+        r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", "rainy"]);
+        out.autoHaeltWort = r.state.weather === "sunny" && r.state.wetterWort === "sunny";
         const afterAuto = chatOutput ? chatOutput.children.length : 0;
         out.autoChatLineAdded = afterAuto > beforeAuto;
+        out.autoHinweisWort =
+            !!chatOutput && /hält dein Wort/.test((chatOutput.lastElementChild || {}).textContent || "");
+        r.dslRun(["weather", "frei"], { source: "human" });
+        r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", "rainy"]);
+        const __wunsch = r.state.wetterWunsch;
+        out.autoWuenscht =
+            r.state.weather === "sunny" &&
+            !!__wunsch &&
+            __wunsch.wort === "rainy" &&
+            __wunsch.quelle === "creature:TestProgramKreatur";
+        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK + 0.5;
+        r._loopWeatherAndGrowth(0);
+        out.autoExecutedInSchöpfer = r.state.weather === "rainy";
+        r.state.wetterWort = __wort0;
+        r.state.wetterWunsch = __wunsch0;
+        r.state.weatherEffectTime = __zugUhr0;
         // Memory-Eintrag: auto_executed_action
         const memTypes = (c.userData.memory || []).map((m) => m.type);
         out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
@@ -49258,10 +49581,14 @@ async function checkBandWelle6HCreatureLlm(ctx) {
                 wave6hP2eV3Results.promptMentionsModus
         );
         check(
-            "Welle 6.H P2E V3: schöpfer-Modus → auto-execute (Wetter ändert sich tatsächlich) + chat-Hinweis-Zeile + Memory auto_executed_action",
-            wave6hP2eV3Results.autoExecutedInSchöpfer &&
+            "Welle 6.H P2E V3: schöpfer-Modus → auto-execute als Welt: gegen das Wort des Spielers hält das Wetter (Hinweis), ohne Wort wünscht das Wesen und der Wetter-Zug zieht es + chat-Hinweis-Zeile + Memory auto_executed_action",
+            wave6hP2eV3Results.autoHaeltWort &&
+                wave6hP2eV3Results.autoHinweisWort &&
+                wave6hP2eV3Results.autoWuenscht &&
+                wave6hP2eV3Results.autoExecutedInSchöpfer &&
                 wave6hP2eV3Results.autoChatLineAdded &&
-                wave6hP2eV3Results.memoryHasAutoExecuted
+                wave6hP2eV3Results.memoryHasAutoExecuted,
+            `hält ${wave6hP2eV3Results.autoHaeltWort} · Hinweis ${wave6hP2eV3Results.autoHinweisWort} · wünscht ${wave6hP2eV3Results.autoWuenscht} · Zug zieht ${wave6hP2eV3Results.autoExecutedInSchöpfer}`
         );
         check(
             "Welle 6.H P2E V3: pfad-Modus → KEIN auto-execute, statt Buttons gerendert (.chat-proposal-pending)",
@@ -53073,22 +53400,28 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
         r.state.lifeField = savedLifeRing3;
 
-        // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy". lastTick nahe currentTime, damit
-        // der Decay sorrow nicht vor dem Trigger unter die Schwelle drückt.
+        // (c) Schwellen-Trigger: sorrow > 0.7 → Regen. lastTick nahe currentTime, damit der Decay sorrow nicht vor dem
+        // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Emotion ist eine
+        // Stimme der Welt — sie WÜNSCHT das Wort, der Wetter-Zug zieht es in seinem Takt (ohne stehendes Wort des Spielers).
+        r._wetterFreigeben("human");
         r.state.weather = "sunny";
         r.state.player.emotions.sorrow = 0.9;
         r.state.player.emotionLastApply.sorrow = -Infinity;
         r.state.player.emotionLastTick = 199;
         r.updatePlayerEmotions(200);
         out.sorrowAfterTick = r.state.player.emotions.sorrow;
-        out.sorrowTriggersRain = r.state.weather === "rainy";
+        const sorrowWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
+        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+        r._loopWeatherAndGrowth(0);
+        out.sorrowTriggersRain = sorrowWunsch === "rainy" && r.state.weather === "rainy";
 
         // (d) Trigger respektiert Cooldown — zweiter Tick 5s später
-        //     darf nicht wieder feuern.
+        //     darf nicht wieder feuern (kein neuer Wunsch).
         r.state.weather = "sunny";
+        r.state.wetterWunsch = null;
         r.state.player.emotionLastTick = 204;
         r.updatePlayerEmotions(205);
-        out.cooldownRespected = r.state.weather === "sunny";
+        out.cooldownRespected = r.state.weather === "sunny" && r.state.wetterWunsch === null;
 
         // (e) DSL-Condition emotion_above
         r.state.player.emotions.joy = 0.9;
@@ -53143,7 +53476,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
             ring3Results.decayLowered,
             `joy 0.5 → ${ring3Results.joyAfterDecay.toFixed(3)} nach 10s`
         );
-        check("Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'", ring3Results.sorrowTriggersRain);
+        check(
+            "Ring 3: sorrow > 0.7 wünscht Regen, der Wetter-Zug zieht ihn (Leben-Schau 2)",
+            ring3Results.sorrowTriggersRain
+        );
         check("Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)", ring3Results.cooldownRespected);
         check("Ring 3: DSL-Condition emotion_above evaluiert korrekt", ring3Results.dslConditionJoyAbove);
         check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
@@ -53177,15 +53513,21 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.updatePlayerEmotions(300);
         out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
-        // (b) hope > 0.7 → wetter sunny + kreaturen happy
+        // (b) hope > 0.7 → wetter sunny + kreaturen happy (das Wetter wünscht die Emotion, der Wetter-Zug zieht es —
+        // Leben-Schau 2: die Welt schreibt das Wetter nie selbst)
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.hope = 0.9;
+        r._wetterFreigeben("human");
         r.state.weather = "rainy";
         r.state.creatureEmotions = r.state.creatures.map(() => "sad");
         p.emotionLastTick = 399;
         r.updatePlayerEmotions(400);
         const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
-        out.hopeTriggersSunnyHappy = r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
+        const hopeWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
+        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+        r._loopWeatherAndGrowth(0);
+        out.hopeTriggersSunnyHappy =
+            hopeWunsch === "sunny" && r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
 
         // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere (Leben-Schau 07.10.: der alte Op schrieb
         // userData.speedMul, das niemand las) — jedes Tier trägt den Hauch, und sein Charakter-Tempo LIEST ihn (im Band).
@@ -53255,7 +53597,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
     } else {
         check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
-        check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
+        check(
+            "Ring 3 V2: hope > 0.7 triggert chain(sunny, happy) — die Sonne über den Wetter-Zug",
+            ring3v2Results.hopeTriggersSunnyHappy
+        );
         check(
             "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (Tempo-Hauch 0,7, gelesen im Wander-Band)",
             ring3v2Results.peaceTriggersSlowdown

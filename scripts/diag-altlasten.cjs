@@ -168,7 +168,10 @@ const FORBIDDEN = [
     // Der Körper im Wasser liest EINE Wahrheit (`_koerperWasser`: die Lauf-Fläche des Gesetzes über seinem Grund + die
     // Abweichung des Live-Automaten), nie das 1,8-m-Zell-Dach; die Strömung ist das Gesetz (wellen.adv) und koppelt additiv.
     { token: "_playerWaterContext", fiel: "Welle L Q6 — das Zell-Dach als Körper-Spiegel (W-K2)" },
-    { token: "_waterCellAt", fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen" },
+    {
+        token: "_waterCellAt",
+        fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen",
+    },
     { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
     { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
     // Der Fluss-Spiegel ist das Gesetz (`_hydroRiverSpiegel`: stromab nie steigend, quer waagrecht; das Bett folgt ihm) —
@@ -196,7 +199,11 @@ const FORBIDDEN = [
     // Vertex aus Saat und Zeit rechnet; die Punktwolke (Math.random-Saat, je Frame im Haupt-Thread gefallen, 1 Pixel groß)
     // und die eigenen Zahlen des Labors sind gefallen (W-R1/W-kD5).
     { token: "sys.lastT", fiel: "Welle L Q7 — der Regen fiel je Frame im Haupt-Thread; die Lage rechnet der Vertex" },
-    { token: "dt * 42", fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ", auch: ["worlds/terrain/phytogenesis.js"] },
+    {
+        token: "dt * 42",
+        fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ",
+        auch: ["worlds/terrain/phytogenesis.js"],
+    },
     // DIE UFER-BÄNDER sind stetig: Strand, Schlick, Pfad und Höhen-Feuchte lesen beide Bezüge (`_waterLevelAt` → see ·
     // fluss · ufer); das Strand-Fenster schnitt die Glocke bei 2,0 m, die Worker-Feuchte las eine Halbbreite, die kein
     // Segment trägt (2137 von 7578 Ufer-Vertices anders gefärbt als im Main).
@@ -209,7 +216,10 @@ const FORBIDDEN = [
     { token: "kn.T - y", fiel: "Gegenprüfung 07.10. — das Gewicht der Gleit-Zone; die Dichte nimmt Kanal und Damm" },
     // DER SCHILF-BEZUG der Nah-Streu liest beide Bezüge (`_nahStreuBodenGewicht`: das Band über See und das über dem Fluss
     // mit seiner Kronen-Blende), jede andere Art die EINE Wahrheit am Körper; das Maximum der Spiegel sprang an der Krone.
-    { token: "_nahStreuSpiegel", fiel: "Gegenprüfung 07.10. — der Kronen-Sprung des Schilf-Bands (13 Sprünge bis 1,0)" },
+    {
+        token: "_nahStreuSpiegel",
+        fiel: "Gegenprüfung 07.10. — der Kronen-Sprung des Schilf-Bands (13 Sprünge bis 1,0)",
+    },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
@@ -522,7 +532,11 @@ const FORBIDDEN = [
     // DAS SPRUNG-GESETZ (Nachbesserung 07.10., Vertrags-Akt): die Huepf-Hoehe der Freude ist die EINE Quelle eines
     // Sprungs (creatureJump, v0 = √(2·g·h)) — der lineare Faktor Hoehe → m/s und der Abflug in m/s der Aktionen (bound
     // 3,2, pounce 4,5: der frohe Sprung stieg 0,52 statt 1,2 m) kehren weder im Stamm noch im Gesetzbuch zurueck.
-    { token: "impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)", auch: ["tetrapoda-core.js"] },
+    {
+        token: "impulsProM",
+        fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)",
+        auch: ["tetrapoda-core.js"],
+    },
     { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
     { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
     { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
@@ -541,6 +555,17 @@ const FORBIDDEN = [
     { token: '"player_speed", Number((4', fiel: "Welle LF rudel — kein Würfel schreibt das Lauf-Tempo" },
     { token: '"creatures_size_mul", Number(', fiel: "Welle LF rudel — kein Würfel schreibt die Tier-Größe" },
     { token: "cr.scale.multiplyScalar(f)", fiel: "Welle LF rudel — die Tier-Größe ist die bodySize-Achse" },
+    // LEBEN-SCHAU 2 (09.10., §6 #1): UHR UND WETTER GEHÖREN DEM SPIELER — der Zwilling `time_of_day` (schrieb die Uhr roh neben
+    // set_time_of_day; Nexus-Würfel Gewicht 5, Mutationen in Nexus-Gesetzen warfen die Uhr 30-mal in 160 s) und die Tag-Länge
+    // im Spielstand (jeder alte Stand hielt den 8-min-Tag fest) kehren nicht zurück; die Uhr schreibt nur `_uhrSetzen`, das
+    // Wetter nur `_setWeather` (gate:wetter-wache).
+    { token: '"time_of_day"', fiel: "Leben-Schau 2 — der Zwilling fiel, die Uhr stellt nur set_time_of_day" },
+    { token: "time_of_day: ([value])", fiel: "Leben-Schau 2 — der Zwilling time_of_day schrieb die Uhr roh" },
+    {
+        token: "this.state.dayLengthMinutes = state.dayLengthMinutes",
+        fiel: "Leben-Schau 2 — die Tag-Länge ist die Wahl des Spielers (localStorage), das Laden setzt sie nie",
+    },
+    { token: "dayLengthMinutes || 8", fiel: "Leben-Schau 2 — der Standard ist DAY_LENGTH_DEFAULT_MINUTES (60)" },
     { token: "player_size_mul", fiel: "Welle LF rudel — die Spieler-Skala ohne Gesetz-Achse fiel" },
     { token: "cr.userData.speedMul =", fiel: "Welle LF rudel — der Tempo-Hauch wird gelesen (tempoHauch)" },
     // WELLE LF RUDEL (D16/K-D12, Vertrags-Akt 08.10.): das Temperament aus der Substanz (Resonanz-Signaturen, Floor, die
@@ -548,19 +573,59 @@ const FORBIDDEN = [
     // Tiere sind tag-gleich (Lehre 8), das Gemüt ist temperamentDerGattung (Ernährung × Masse).
     { token: "TG.signaturen", fiel: "Welle LF rudel — das Temperament ist temperamentDerGattung" },
     { token: "_temperamentSoul", fiel: "Welle LF rudel — das Temperament ist je Gattung × Größe gecacht" },
-    { token: "boldFromDichte", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
-    { token: "shyFromLebendig", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
+    {
+        token: "boldFromDichte",
+        fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
+        auch: ["tetrapoda-core.js"],
+    },
+    {
+        token: "shyFromLebendig",
+        fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
+        auch: ["tetrapoda-core.js"],
+    },
     // WELLE LF RUDEL (Vertrags-Akt 08.10., der persönliche Raum): der feste Paar-Radius jeder Art, das feste Herden-Fenster
     // und der feste Neugier-Stopp kehren nicht zurück — der Raum ist die Körper-Kugel des Leibs × raumKugel.
-    { token: "radiusBaseM", fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)", auch: ["tetrapoda-core.js"] },
-    { token: "minAbstSq", fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums", auch: ["tetrapoda-core.js"] },
+    {
+        token: "radiusBaseM",
+        fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)",
+        auch: ["tetrapoda-core.js"],
+    },
+    {
+        token: "minAbstSq",
+        fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums",
+        auch: ["tetrapoda-core.js"],
+    },
     { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
     { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
     // WELLE LF RUDEL (Vertrags-Akt 08.10., die Jagd schließt sich): der Gradient der Witterung über vier Proben (nah an
     // der Quelle zeigte er vom Ziel fort), der Trab der Flucht und der Biss-Takt auf der Wand-Uhr kehren nicht zurück.
-    { token: "scentProbeM", fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase", auch: ["tetrapoda-core.js"] },
+    {
+        token: "scentProbeM",
+        fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase",
+        auch: ["tetrapoda-core.js"],
+    },
     { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
-    { token: "fleeSpeedBoost", fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt", auch: ["tetrapoda-core.js"] },
+    {
+        token: "fleeSpeedBoost",
+        fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt",
+        auch: ["tetrapoda-core.js"],
+    },
+    // WELLE LF KAMPF (Vertrags-Akt 09.10., der Biss ist der Ansprung): die Biss-Reichweite um die Mitten (2,4 m, jede Gestalt)
+    // und der feste Pirsch-Stopp (1,6 m) kehren nicht zurück — die Reichweite ist der Weg des Ansprungs, gebissen wird, wo der
+    // Kopf den Leib berührt.
+    { token: "strikeRange", fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", auch: ["tetrapoda-core.js"] },
+    { token: "pirschStoppM", fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", auch: ["tetrapoda-core.js"] },
+    // der Nachklang des Tod-Kippens (0,35 s, dann war der Leib fort) kehrt nicht zurück — ein Tier liegt gefuehl.leichnamSec
+    // und sinkt in leichnamSinkSec in die Erde (Vertrags-Akt 09.10., Posten 7)
+    { token: "kippNachklangSec", fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)", auch: ["schmiede-core.js"] },
+    // die Frage je Leser („lebt das Tier?") kehrt nicht zurück — der Leichnam verlässt beim Tod die Liste der Wesen und liegt
+    // in state.leichname (Nachbesserung 3: vorher fragten 14 Methoden selbst nach dying, 5 Leser über diese Frage)
+    { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
+    { token: "_kreaturZahlLebend", fiel: "Welle LF kampf — die Zahl der Wesen ist state.creatures.length" },
+    // EGO-SCHATTEN (0910-5, V18.540): die Ich-Regel schaltet Ebenen, nie `visible` — das Merk-Paar der Haut-Verbergung aus
+    // Welle LF (die Haut ging mit `visible` und nahm ihren Wurf mit) kehrt nicht zurück.
+    { token: "_egoVerborgen", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
+    { token: "_egoWar", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
@@ -709,7 +774,12 @@ const FORBIDDEN = [
     // gefüllt vom Sicht-Satz je Büschel (`_nahWieseSicht`). Der Kachel-Mesh-Bau und sein Entsorgen kehren nie zurück.
     { token: "_nahWieseKachelMeshes", fiel: "Welle 6 — die Senken der Nah-Wiese (_nahWieseSenken, _nahWieseSicht)" },
     { token: "_nahWieseKachelEntsorgen", fiel: "Welle 6 — die Kachel trägt nur Daten (_nahWieseKachelFaellt)" },
-    { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:<v>:L<stufe>:<teil>)" },
+    { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:L<stufe>:<v>:<teil>)" },
+    // S3 wiese-gestalten (08.10.): die Senken der Nah-Wiese hingen unter EINER Gruppe „nahWiese" — die Täter-Klasse las den
+    // obersten Knoten und buchte beide Stufen unter „nahWiese" (die Band-Linse sah nie, welche Stufe das Band sprengt). Jetzt
+    // ist jede Senke ihr eigener oberster Knoten `nahWiese:L<stufe>:<v>:<teil>` (Täter `nahWiese:L1` · `nahWiese:L2`).
+    { token: "nahWiese:${v}:L${stufe}", fiel: "S3 wiese-gestalten — der Name trägt die Stufe vorn (nahWiese:L<stufe>:<v>:<teil>)" },
+    { token: "nw.gruppe", fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene" },
     // DIE STUFE 0 HAT EINE BEDEUTUNG (Welle 6, 06.10.): buildInstance baute den Strauch über die Steuer-Globale
     // `__strauchZeile` als Nah-Stufe, das Labor (build() → emitTree, Knopf L0) als Klingen-Krone (~175k Dreiecke, kein
     // Golden, kein Empfänger). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (die Stufen-Wand unten); die Globale
@@ -802,11 +872,17 @@ const FORBIDDEN = [
     { token: "_hausTuerBlockerParts", fiel: "Welle L — die Haus-Hülle der Stufe (_hausBlockerBoxen, OBB)" },
     { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
     { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
-    { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
+    {
+        token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT",
+        fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)",
+    },
     { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
     // DER SAME DES WERKS (Gegenprüfung 08.10.): der Zähler des Welt-Stroms ist Welt-Gedächtnis, der Same eines Werks EINER.
     { token: "_bauSameZaehler", fiel: "Gegenprüfung 08.10. — der Zähler des Welt-Stroms reist in worldMeta.bauSame" },
-    { token: "Math.imul(seedNum, 131)", fiel: "Gegenprüfung 08.10. — EIN Same je Werk (_werkSame), vier Kopien fielen" },
+    {
+        token: "Math.imul(seedNum, 131)",
+        fiel: "Gegenprüfung 08.10. — EIN Same je Werk (_werkSame), vier Kopien fielen",
+    },
     // D5 (Integration Welle L, 07.10.): das Tier am gedrehten Haus — der OBB-Zweig des Kapsel-Lösers ließ den Kontakt-
     // Empfänger des Tiers fallen und drehte die Parkour-Wand des Spielers über eine Zeit-Gleichheit zurück; die Gier-Ordnung
     // YXZ setzte der Takt je Frame neu. Der Kontakt reist im Empfänger (`_wandKontaktSetzen`), YXZ setzt `spawnCreatureAt`.
@@ -815,12 +891,19 @@ const FORBIDDEN = [
     // DER EINE FAHR-SCHRITT (Welle L, Q13, 06.10.): die zweite Kopie des Zweispur-Modells im Stamm fiel (Längs-Antrieb als
     // exp-Lerp, gemessene Längs-Beschleunigung, eigene Federn je Werk) — der Ritt fährt vehicle-core fahrSchritt, die
     // Probefahrt auch (`FlatF` lebt nur im Kern: gate:fahr-leben K1).
-    { token: "_fahrVLongPrev", fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)" },
+    {
+        token: "_fahrVLongPrev",
+        fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)",
+    },
     { token: "_ridePitchV", fiel: "Welle L Q13 — die Nick-Feder lebt im Fahr-Zustand des Kerns (fNickV)" },
     { token: "_rideKurvenRollV", fiel: "Welle L Q13 — die Wank-Feder lebt im Fahr-Zustand des Kerns (fWankV)" },
     { token: "_rideHeaveV", fiel: "Welle L Q13 — die Hub-Feder lebt im Fahr-Zustand des Kerns (fHubV)" },
     { token: "_rideYawPrev", fiel: "Welle L Q13 — die Quer-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLat)" },
-    { token: "Spring.prototype.step", fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern", auch: ["worlds/garage/garage.js"] },
+    {
+        token: "Spring.prototype.step",
+        fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern",
+        auch: ["worlds/garage/garage.js"],
+    },
     // DAS EINE TREFFER-URTEIL (Welle L, Klasse Q8): fünf Phantom-Leser ohne Definition im Kern (zone = null in 222 von
     // 222 Treffern), die gattungs- und höhenblinde Säule, die Schadens-Klemme und die Wirts-Eichung des Pfeils sind
     // gefallen — das Urteil fällt schmiede trefferUrteil, getroffen wird die Gestalt (_kreaturGliedTreffer).
@@ -849,7 +932,10 @@ const FORBIDDEN = [
     // DIE LICHTUNG IST EIN GRUNDRISS (Integration Welle L, Stufe auge-v1, Entscheid D3): der Pflanz-Gang des Walds hielt die
     // Genesis-Scheibe mit einem eigenen Filter frei — die Streu, die Promotion, die Nah-Streu und der Hain der KI standen über
     // ihr. Die Plattform trägt ihre Lichtung im Bauplan (`_grundrissVon`), die EINE Natur-Wand fragt die Krone (`_naturKrone`).
-    { token: "_genesisLichtung", fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)" },
+    {
+        token: "_genesisLichtung",
+        fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)",
+    },
     { token: "_forestKroneWelt", fiel: "Integration L D3 — die Krone eines Wurfs ist _naturKrone (jede Quelle)" },
     // DIE ERST-ZEICHNUNG (Welle K, Hänger): die erste Zeichnung baut den Stoff im Pass (je Render-Aufruf einer) und lässt die
     // Pipeline asynchron entstehen — am EINEN Ort (`_configureRenderer`). Die Vorwärmer daneben fallen: das r184-compileAsync
@@ -862,13 +948,112 @@ const FORBIDDEN = [
     { token: "_pipeOfenMerke", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
     { token: "_pipeOfenTick", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
     { token: "_pipeOfenDone", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
-    { token: "_bundleReifeWache", fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht" },
+    {
+        token: "_bundleReifeWache",
+        fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht",
+    },
     { token: "_foundryWarmedMats", fiel: "Welle K — die Erst-Zeichnung" },
     // DIE BEREITSCHAFT AM ZUSTAND (Welle K, Nachbesserung): die Neuaufnahme hing am Vendor-Versprechen (es wartet auf
     // popErrorScope: auf der Spielseite > 5 s, auf Windows-swiftshader nie) und der Neubau meldete sich nie an — EINE
     // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
     { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
     { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
+    // S3 kreatur (Lehre 19): die Grobstufe der Gelenk-Gestalt ist gelenkig — das Standbild an der Wurzel fiel, die L1 bindet
+    // an die Knochen der L0 unter EINEM Wrap (`_gelenkGestalt`), EIN Stufen-Schalter (`_gelenkStufe`) ersetzt die vier
+    // Schreiber (updateCreatures, der Mensch-Toggle, die Werkstatt Tier + Mensch); die Fern-Wraps und ihr Leser fallen.
+    { token: "_menschFern", fiel: "S3 kreatur — die Gelenk-Gestalt (_gelenk) und der EINE Schalter _gelenkStufe" },
+    { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
+    // S3 kreatur: die Stufen-Grenze lebt im Kern (lod.budget.kreatur/koerper[1].ab, hyst der Art) — die Gestalt liest sie
+    // beim Bau (`_gelenkGestalt` → `_gelenk.abM`), jeder Leser fragt die Gestalt; die Wirts-Distanzen fallen.
+    { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
+    { token: "TIER_FERN_HYST", fiel: "S3 kreatur — die Hysterese ist lod.budget.kreatur.hyst (_gelenk.hyst)" },
+    { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.koerper[1].ab (_gelenk.abM)" },
+    // V18.538 (welle-lf-rudel × S3 kreatur): beide skinnten die Stufe 1 — rudel als zweites Skelett mit einem Spiegel je
+    // Auswertung (27 Gelenk-Kopien) und einem Tier-Sonderweg im Gelenk-Guss, S3 als EIN Skelett für Tier UND Mensch.
+    // EINE Wahrheit: die Grobstufe bindet an die Knochen der feinen; der Spiegel und der Sonderweg kehren nicht zurück.
+    { token: "_tierFernFolgt", fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)" },
+    {
+        token: "fernStarr",
+        fiel: "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg",
+        auch: ["foundry-core.js"],
+    },
+    // S3 PFLANZEN (09.10.) — DER DRAWRANGE-WURF-VORSATZ IST GEFALLEN: die Baum-L1 liefert ihren Wurf als eigenes Gitter
+    // (`teil: "schatten"`, aDeckt, EIN Schatten-Stoff); der Index-Vorsatz der Rinde, seine Zahl je Teil und das
+    // Vorsatz-Verschmelzen leben nirgends mehr. Die Nadel-Karte ist mit dem Wedel gefallen (der Nadel-Ast IST seine Strähne
+    // aus der Wedel-Zelle), der Blatt-Stride der Laub-L0 mit der Lagen-Wahl.
+    {
+        token: "__wurf",
+        fiel: "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz",
+        auch: ["foundry-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    { token: "lf.wurf", fiel: "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)" },
+    { token: "wurfe", fiel: "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)" },
+    { token: "_wurfDreiecke", fiel: "S3 — der Wurf-Vorsatz der L1-Rinde", auch: ["foundry-core.js"] },
+    { token: "barkFein", fiel: "S3 — die Rinde der L1 ist EIN Teil, der Wurf ein eigenes", auch: ["foundry-core.js"] },
+    { token: "nadelKarte", fiel: "S3 — der Nadel-Ast ist sein Wedel (tree[Stufe].wedel)", auch: ["foundry-core.js"] },
+    { token: "BLATT_ATLAS_NADEL", fiel: "S3 — Zelle 3 ist die Wedel-Zelle (BLATT_ATLAS_WEDEL)", auch: ["foundry-core.js", "phyto-core.js"] },
+    { token: "NADEL_ZWEIG", fiel: "S3 — der Maler der Zelle 3 malt den Wedel (WEDEL_ZWEIG)", auch: ["phyto-core.js"] },
+    // 0910-3 A (Gegenprüfung): der Wasser-Neubau im resize-Handler war ein Zwilling des Vorher-Textur-Wächters der Diät
+    // (`_diaetVorTextur` trägt JEDEN Größenwechsel); was bleibt, ist der Tausch des Tiefen-KNOTENS (`_tiefenKnotenTausch`).
+    { token: "_tiefenLeserNeuBinden", fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler" },
+    // S3 haus (10.10.): der Fernkörper des Gesetzbuchs ist die NUR-WURF-Stufe 3 (`huelle()`, Beipack __fern, fernform "huelle") —
+    // der Wirts-Fit der Häuser, seine Dach-Prismen-Marke und seine Linse fallen; die Fernform liest `_huelleVon`
+    { token: "_archFachwerkFit", fiel: "S3 haus — die Fernform ist die Hülle des Gesetzbuchs (_huelleVon → _archFoundryZiegel)" },
+    { token: "prismFlip", fiel: "S3 haus — der Keil trägt seinen Typ (HUELLE_KEIL_TYP: First ±x/±z, Walm)" },
+    {
+        token: "diag-arch-fachwerk-fit",
+        fiel: "S3 haus — die Linse des Wirts-Fits; der Fernkörper misst gate:haus-fern",
+        auch: ["package.json", ".github/workflows/check.yml"],
+    },
+    // KOLLISION = BILD (Leben-Schau 2, 09.10.): jeder Körper liest den Boden UNTER sich (der Wagen las die Oberkante der Säule
+    // und fiel unter dem Überhang des Spalts durch die Welt), jedes Studio-Werk kollidiert in seiner Welt-Skala und Gestalt
+    // (der Felsturm stieß als Eisen-Mast), die Platzierung liest der Kern statt eines Hand-Spiegels.
+    { token: "_kreaturBodenUnter", fiel: "Leben-Schau 2 — jeder Körper liest seinen Boden über _koerperBodenUnter" },
+    { token: "_fahrTerrainBoden", fiel: "Leben-Schau 2 — die Ebene des Werks liest _werkBoden (den Boden unter ihm)" },
+    { token: "_baumWeltSkala", fiel: "Leben-Schau 2 — _studioWeltSkala trägt die Welt-Skala jedes Studio-Werks" },
+    { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
+    { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
+    { token: "_baumHuellenNachBuch", fiel: "Leben-Schau 2 — die Stamm-Hülle misst ab dem Spawn in der Welt-Skala" },
+    // DIE TOR-HÜLLE IST GESETZ-DATEN (Gegenprüfung 10.10.): der Wirt baute die Tor-Gestalt am Spawn synchron nach (15–50 ms je
+    // Gestalt auf dem Haupt-Thread) — er liest die gemintete Tafel `__portaCore.TOR_HUELLE`.
+    { token: "_torHuelleGemessen", fiel: "Leben-Schau 2 — der Wirt liest TOR_HUELLE, er baut kein Tor nach" },
+    // DIE EINE WASSER-WAHRHEIT (Schau-2 wasser-wahrheit, 09.10.): die Land-Probe las den Bezug der Ufer-Bänder
+    // (`_waterLevelAt`), blind für das gezeichnete Wasser — jedes Werk fragt das Land (`_landAt`: Bild UND Gesetz).
+    { token: "_isAboveWaterAt", fiel: "Schau-2 — die Zwillings-Probe des Lands (jedes Werk fragt `_landAt`)" },
+    // DIE EINE MASSE DES WAGENS (Schau-2, Gegenprüfung Runde 2): der Wasser-Term trägt die Masse des Fahr-Satzes ×
+    // masseDichte (dieselbe, die jeder Stoß liest), nie eine eigene Schüttdichte über dem Hüll-Quader.
+    { token: "wasser.schuett", fiel: "Schau-2 — die zweite Wagen-Masse des Wasser-Terms", auch: ["vehicle-core.js"] },
+    // DER DAMM (Schau-2, Gegenprüfungen Runden 2 und 3): ob ein Stempel Wasser verdrängt, sagen DIESELBEN Zellen, die der Chunk
+    // trägt (der Zell-Stempel überschreibt eine Wasser-Zelle) — nie ein Merk-Feld, gefragt am Lade-Zustand des Baus (beim
+    // Reload „trocken"), nie eine zweite Wahrheit (das Gesetz samt Rand-Füllung weckte am Seerand den Automaten).
+    { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt seine Zellen)" },
+    { token: "_stempelImWasser", fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)" },
+    // K09a (11.10.) — DAS GELÄNDE-GESETZBUCH: die Makro-Höhe und ihre Hilfen wohnen in gelaende-core.js; die Stamm-
+    // Methoden und der Worker-Spiegel sind gefallen (Stamm `_terrainMacroSurfaceY` und Worker rufen `hoehe`).
+    ...[
+        ["_wildnisY", "wildnisY"],
+        ["_erbgutTermY", "termY"],
+        ["_macroSurfaceContribution", "ankerBeitrag"],
+        ["_ridgeAnkerNoise", "grat"],
+        ["_macroRidgeNoise", "gratRauschen (der Strom folgt der Saat)"],
+        ["_makeMacroAnker", "ankerAusSaat"],
+        ["_erosionDeltaAt", "erosionDelta"],
+        ["_erosionFor", "erosionFuer"],
+        ["_tarnDeltaAt", "tarnDelta"],
+        ["_hydroTileKeyFor", "kachelSchluessel"],
+        ["MACRO_ANKER_", "MACRO_ANKER (die Literal-Zwillinge des Workers)"],
+        ["function terrainMacroSurfaceY(", "hoehe (der Worker-Spiegel)"],
+        ["function erbgutTermY(", "termY (der Worker-Spiegel)"],
+        ["function macroAnker(", "die Lage reicht macroAnker (der Worker-Spiegel)"],
+    ].map(([token, kern]) => ({ token, fiel: `K09a — gelaende-core ${kern}` })),
+    // DAS LICHT DES AUGES OHNE SZENEN-LICHT (K15, OMEN 1110-3): das Punkt-Licht am Auge stand ab Boot in der Szene und im
+    // Licht-Hash jedes beleuchteten Stoffs — 0,48 ms je Frame auch unter dem Himmel (Stärke 0, der TSL.If-Knoten sparte den
+    // Term nicht). Es ist ein Term des Boden-Stoffs unter Fels (`atmoUniforms.augenLicht`, 1 − aHimmel).
+    { token: "_augenLichtKlasse", fiel: "K15 — die Licht-Klasse des Auges (der Boden-Stoff trägt den Term)" },
+    { token: "_augenLichtRegistrieren", fiel: "K15 — der eigene Licht-Knoten in der r184-Bibliothek" },
+    { token: "AugenLichtNode", fiel: "K15 — der Punkt-Licht-Knoten hinter TSL.If" },
+    { token: "_AugenLicht", fiel: "K15 — die Licht-Klasse des Auges" },
+    { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1113,19 +1298,97 @@ const ZWILLINGE = [
         verboten: ["anazhRealm.js"],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
+    // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
+    // Makro-Anker samt Grat-Strom und Massiv-Maske, Erosions- und Tarn-Delta samt Mulden-Form, die Rauheits-Maske, die
+    // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
+    // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
+    // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
+    // (`gelaendeLeser`); feld-wgsl.js bleibt der Seh-Spiegel (f32-WGSL), das Terrain-Studio liest den Kern mit G2 (K09b).
+    ...[
+        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die kontinentale Basis des Wildnis-Terms (`kontinentBasis`)"],
+        [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
+        [
+            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
+            "die Relief-, Stil- und Hochland-Masken des Wildnis-Terms",
+        ],
+        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg"],
+        [/["'`]-macro-ridge["'`]/, "der Grat-Strom des Makro-Ankers"],
+        [/["'`]-macro-anker["'`]/, "der Samen-Strom des Makro-Ankers"],
+        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
+        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers (`massivMaske`)"],
+        [
+            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
+            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
+        ],
+        [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
+        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske (`rauheit`)"],
+        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b/, "das Tarn-Delta"],
+        [/\btwoSig2\s*:/, "die Mulden-Form des Tarns (`tarnMulde`)"],
+        [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
+        [/\btan[UFWB]\s*:/, "die Normalform des Erbguts (`erbgutNormal`)"],
+    ].map(([muster, was]) => ({
+        muster,
+        gesetzbuch: "gelaende-core.js",
+        verboten: gelaendeLeser(),
+        fiel: `K09a — Heimat im Gelände-Gesetzbuch: ${was}`,
+    })),
 ];
 
-function scanZwillinge() {
+// Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
+// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie). Diese Wand trägt die Muster
+// selbst als Proben und steht nicht in der Liste.
+function gelaendeLeser() {
     const root = path.join(__dirname, "..");
+    const wurzel = fs
+        .readdirSync(root)
+        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && f !== "feld-wgsl.js");
+    const skripte = (d) =>
+        fs
+            .readdirSync(path.join(root, d))
+            .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "diag-altlasten.cjs")
+            .map((f) => d + "/" + f);
+    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"));
+}
+
+// `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
+// Muster (`muster`, ohne g-Flag); der Fund nennt Datei, Zeile und Text. Roh-Vorfilter vor dem Kommentar-Abzug, je
+// Datei EIN Lesen und EIN Abzug.
+function scanZwillinge(ersatz = {}) {
+    const root = path.join(__dirname, "..");
+    const roh = new Map();
+    const lies = (f) => {
+        if (f in ersatz) return ersatz[f];
+        if (!roh.has(f)) roh.set(f, fs.readFileSync(path.join(root, f), "utf8"));
+        return roh.get(f);
+    };
+    const code = new Map();
+    const ohneKommentar = (f) => {
+        if (f in ersatz) return stripComments(ersatz[f]);
+        if (!code.has(f)) code.set(f, stripComments(lies(f)));
+        return code.get(f);
+    };
+    const finde = (z, text) => {
+        if (z.muster) {
+            const m = z.muster.exec(text);
+            return m ? { at: m.index, was: m[0] } : null;
+        }
+        const at = text.indexOf(z.fingerprint);
+        return at < 0 ? null : { at, was: z.fingerprint };
+    };
     const errs = [];
     for (const z of ZWILLINGE) {
-        const home = fs.readFileSync(path.join(root, z.gesetzbuch), "utf8");
-        if (home.indexOf(z.fingerprint) < 0)
-            errs.push(`Zwillings-Wand: Fingerabdruck "${z.fingerprint}" fehlt im Gesetzbuch ${z.gesetzbuch}`);
+        const name = z.fingerprint ? `"${z.fingerprint}"` : String(z.muster);
+        if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
+            errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — ${name} hat kein Zuhause`);
+        else if (!finde(z, lies(z.gesetzbuch)))
+            errs.push(`Zwillings-Wand: Fingerabdruck ${name} fehlt im Gesetzbuch ${z.gesetzbuch}`);
         for (const f of z.verboten) {
-            const src = stripComments(fs.readFileSync(path.join(root, f), "utf8"));
-            if (src.indexOf(z.fingerprint) >= 0)
-                errs.push(`Zwillings-Wand: ${f} trägt wieder "${z.fingerprint}" (fiel: ${z.fiel})`);
+            if (!finde(z, lies(f))) continue;
+            const src = ohneKommentar(f);
+            const hit = finde(z, src);
+            if (!hit) continue;
+            const zeile = src.slice(0, hit.at).split("\n").length;
+            errs.push(`Zwillings-Wand: ${f}:${zeile} trägt wieder „${hit.was}" (fiel: ${z.fiel})`);
         }
     }
     return errs;
@@ -1236,7 +1499,10 @@ const ENTSORGUNG_BESITZER = {
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
-    removeCreature: { arten: ["material"], grund: "Aufgaben-Aura und Trage-Sprite der Kreatur (je Kreatur frisch)" },
+    _leibZeichenFrei: {
+        arten: ["material"],
+        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — im Fall und im Abschied",
+    },
     _refreshCreatureTaskAura: { arten: ["material"], grund: "die Aufgaben-Aura (je Aufgabe frisch)" },
     _refreshCreatureCarryingVisual: { arten: ["material"], grund: "das Trage-Sprite (je Last frisch)" },
     _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },
@@ -1510,6 +1776,63 @@ function scanPortWand(dateien) {
             errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
     return errs;
 }
+// DIE HÜLLEN-FORM-WAND (S3 haus, K08): der Wirt liest die Hülle eines Baus in der EINEN Form (N5: `{ stufe, teile }`,
+// der Leser `_huelleVon`, fail-closed) — die Zahlen-Zeile `{ stufe, boxen }` fiel mit ee37daf7 als Wirts-Form (sie lebt nur
+// im Gesetzbuch, fachwerk-core `huelleAusBoxen`). Die Probe `sockel` kam mit V18.538 und gab dem Wirt noch die alte Zeile —
+// ein KERN-PFLICHT-Bruch, den erst playtest 2/3 der CI fand. Kein Wirts-Code (Stamm, Gates, Linsen) trägt `boxen` als
+// Objekt-Schlüssel; Kommentare und Texte (die Kern-Ersetzungen von diag-haus-welt) zählen nicht. Rot mit Datei:Zeile.
+function ohneTexte(src) {
+    const code = stripComments(src);
+    let out = "";
+    let mode = "code";
+    for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+        if (mode === "code") {
+            if (c === "'") mode = "sq";
+            else if (c === '"') mode = "dq";
+            else if (c === "`") mode = "tpl";
+            out += c;
+            continue;
+        }
+        if (c === "\\") {
+            out += " " + (code[i + 1] === "\n" ? "\n" : " ");
+            i++;
+            continue;
+        }
+        if ((mode === "sq" && c === "'") || (mode === "dq" && c === '"') || (mode === "tpl" && c === "`")) {
+            mode = "code";
+            out += c;
+            continue;
+        }
+        out += c === "\n" ? c : " ";
+    }
+    return out;
+}
+function scanHuellenFormWand(dateien) {
+    const errs = [];
+    const alt = /[{,]\s*boxen\s*:|[{,]\s*boxen\s*\}|\{\s*boxen\s*,/g;
+    for (const [name, src] of dateien) {
+        const code = ohneTexte(src);
+        for (const m of code.matchAll(alt)) {
+            const zeile = code.slice(0, m.index + m[0].indexOf("boxen")).split("\n").length;
+            errs.push(
+                `Hüllen-Form-Wand: ${name}:${zeile} gibt dem Wirt die alte Hüllen-Zeile (boxen) — die EINE Form trägt teile (N5, _huelleVon)`
+            );
+        }
+    }
+    return errs;
+}
+function wirtsDateien(root, files) {
+    const gesehen = new Set();
+    const aus = [];
+    for (const f of files.concat(gateDateien(root).map(([n]) => path.join(root, n)))) {
+        const n = path.relative(root, f).split(path.sep).join("/");
+        if (gesehen.has(n)) continue;
+        gesehen.add(n);
+        aus.push([n, fs.readFileSync(f, "utf8")]);
+    }
+    return aus;
+}
 function gateDateien(root) {
     const aus = [];
     for (const d of ["scripts", "scripts/lib"])
@@ -1714,6 +2037,36 @@ function main() {
             process.exit(1);
         }
         console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
+        // Die Hüllen-Form-Wand muss feuern: die alte Zeile als Schlüssel und als Kurzform, über eine Variable gereicht —
+        // ein Kommentar und ein Text (die Kern-Ersetzung) dürfen sie tragen, die Form mit teile ist still.
+        const wirt = wirtsDateien(root, files);
+        const sockel = "r._hausHuelleSetzen(e, { stufe: 0, boxen: [-2, u, -2, 2, o, 2] });\n";
+        const huelleRot = scanHuellenFormWand([
+            ["scripts/lib/x.cjs", "const a = 1;\n" + sockel],
+            ["scripts/y.cjs", "const h = { stufe, boxen };\nr._hausHuelleSetzen(e, h);\n"],
+        ]);
+        const huelleStill = scanHuellenFormWand([
+            ["scripts/z.cjs", "// " + sockel + "const k = " + JSON.stringify(sockel) + ";\nconst n = boxen.length;\n"],
+            ["scripts/w.cjs", 'r._hausHuelleSetzen(e, { stufe: 0, teile: [{ art: "box", rolle: "fest" }] });\n'],
+        ]);
+        const huelleFeuert =
+            scanHuellenFormWand(wirt).length === 0 &&
+            huelleRot.length === 2 &&
+            /x\.cjs:2 /.test(huelleRot[0]) &&
+            /y\.cjs:1 /.test(huelleRot[1]) &&
+            huelleStill.length === 0;
+        if (!huelleFeuert) {
+            console.log(
+                "❌ SELBST-TEST: die Hüllen-Form-Wand feuert nicht (oder steht heute rot)",
+                scanHuellenFormWand(wirt),
+                huelleRot,
+                huelleStill
+            );
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Hüllen-Form-Wand feuert (${wirt.length} Wirts-Dateien, ${huelleRot[0]} · Kurzform erkannt)`
+        );
         // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
         const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
@@ -1765,6 +2118,31 @@ function main() {
                 ? "✅ SELBST-TEST: die Alias-Wand feuert (der Mammut als Buche erkannt)"
                 : "❌ SELBST-TEST: die Alias-Wand feuert nicht"
         );
+        // Die Zwillings-Wand muss feuern (K09a, Prüfung 1): die kontinentale Basis in der Schreibweise der Farb-Pfade
+        // (`(x + _wpX) * 0.00014 + 7.2`), die Massiv-Maske im Stamm und eine Linse mit eigener Tarn-Mulde — je beim Namen
+        // samt Zeile; ein Kommentar darf jeden Abdruck zitieren.
+        const probe = "const state = {};\n";
+        const feuert = (datei, zeile, re) =>
+            scanZwillinge({ [datei]: probe + zeile + "\n" }).some((e) =>
+                new RegExp(`${datei.replace(/[.]/g, "\\.")}:2 trägt wieder .*${re}`).test(e)
+            );
+        const still = (datei, zeile) =>
+            !scanZwillinge({ [datei]: probe + "// " + zeile + "\n" }).some((e) => e.includes(datei + ":"));
+        const cont0 = "const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);";
+        const maske = "const ax = rxA / anker.massivAspect;";
+        const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
+        const zwillingFeuert =
+            feuert("voxel-worker.js", cont0, "kontinentale Basis") &&
+            feuert("anazhRealm.js", maske, "Massiv-Maske") &&
+            feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
+            still("voxel-worker.js", cont0) &&
+            still("anazhRealm.js", maske);
+        console.log(
+            zwillingFeuert
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
+                : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
+        );
+        if (!zwillingFeuert) process.exit(1);
         process.exit(fired && aliasFeuert ? 0 : 1);
     }
 
@@ -1778,6 +2156,7 @@ function main() {
         .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanHuellenFormWand(wirtsDateien(root, files)))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm und in den Linsen:");
@@ -1785,7 +2164,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 

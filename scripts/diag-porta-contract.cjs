@@ -193,6 +193,44 @@ function compare(golden, actual) {
     );
     globalThis.__portaCore = PC;
 
+    // 5c) DIE TOR-HÜLLE (Leben-Schau 2, Nachbesserung 10.10.): die gemintete Tafel `TOR_HUELLE`, mit der der Wirt jedes Tor
+    //     stoßen lässt, IST die gebaute Gestalt — je Rezept und Zahl deckt die Tafel das Gemessene und liegt höchstens 1 cm
+    //     darüber (scripts/lib/tor-huelle.cjs). Bis dahin baute der Wirt die Gestalt beim ersten Spawn synchron auf dem
+    //     Haupt-Thread nach; ändert sich der Bau, nennt die Linse die Zahl beim Namen. `MINT_TOR_HUELLE=1` druckt die Tafel.
+    const { torHuelleMessen, torHuelleTafel, torHuelleTreue } = require("./lib/tor-huelle.cjs");
+    const gemessen = {};
+    for (const id of Object.keys(PC.PRESETS)) {
+        const m = torHuelleMessen(PC, global.THREE, id);
+        if (m) gemessen[id] = m;
+    }
+    if (process.env.MINT_TOR_HUELLE === "1") {
+        console.log("  TOR_HUELLE (gemintet, für porta-core.js):");
+        for (const [id, z] of Object.entries(torHuelleTafel(PC, global.THREE)))
+            console.log(
+                `        ${id}: { seiten: ${JSON.stringify(z.seiten).replace(/,/g, ", ")}, oberkante: ${z.oberkante} },`
+            );
+    }
+    const treue = torHuelleTreue(PC.TOR_HUELLE, gemessen);
+    check(
+        `Tor-Hülle: TOR_HUELLE ist die gebaute Gestalt (${Object.keys(gemessen).length} Rezepte, je 9 Zahlen, ≤ 1 cm darüber)`,
+        Object.keys(gemessen).length === ORDNUNGEN.length && treue.length === 0,
+        treue[0] || ""
+    );
+    for (let i = 1; i < treue.length; i++) console.log(`      ↳ ${treue[i]}`);
+    {
+        // der eingeschmuggelte Täter: eine Pfosten-Kante 20 cm innerhalb des Bilds, eine fehlende Zeile
+        const schmal = JSON.parse(JSON.stringify(PC.TOR_HUELLE));
+        schmal.ruine.seiten[1][0] -= 0.2;
+        delete schmal.geisttor;
+        const t = torHuelleTreue(schmal, gemessen);
+        check(
+            "SELBST-TEST: eine zu schmale Tor-Hülle und eine fehlende Zeile werden beim Namen genannt",
+            t.some((s) => /^ruine\.seiten\[1\]\.pfostenX: Tafel 5\.09/.test(s)) &&
+                t.some((s) => /^geisttor: keine Zeile/.test(s)),
+            t.join(" · ")
+        );
+    }
+
     // 6) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot (gegen das Ist selbst, damit der
     //    Selbst-Test auch auf einem roten Stand misst, was er misst).
     const eigen = { cases: actual };

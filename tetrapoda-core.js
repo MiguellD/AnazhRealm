@@ -23,7 +23,7 @@
     var MESHFREI = 1; // v1.1 §8 — components-only-Kern (keine Gestalt, nur Daten)
     // v1.2 §8.5 (V18.478, rein additiv) — DIE OFEN-STUFEN-ZEILE: ein MESHFREI-Kern
     // deklariert hiermit die LOD-Stufen, die der WIRTS-OFEN seiner Gestalt bäckt
-    // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gemergtes Fern-Standbild).
+    // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gelenkige Grobstufe).
     // B2 bleibt N/A (kein buildInstance) — die Zeile ist die VERTRAGS-Wahrheit der
     // Pipe-Bäckerei (BAKERS_BY_KIND), gemessen von gate:konsum-matrix/gate:tier-fern.
     // B2c-Daten (W8, rein additiv): DAS BUDGET je Ofen-Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
@@ -33,15 +33,22 @@
     // starren Stoffe je Bindungs-Klasse (Haut und Fell-Schale bleiben) und Seh-Klasse (TIER_MATERIAL_KLASSEN.seh:
     // das glimmende Auge · Hornhaut/Pupille · Nase/Ballen · Fell · Klaue/Zahn bleiben getrennt — L1 5 ist das
     // gemessene Minimum); schatten = die werfende Stufe.
-    // gestalten = Individuen je Gattung (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // gestalten = Individuen je Gattung (gefüllt je Rezept unten bei PRESETS): EINE — der Guss ist seed-invariant
+    // (Same 1 ≡ 2 byte-gleich, 4/4, L0 und L1), 16 Gestalten waren 16 byte-gleiche Zwillinge. Eine Seed-Achse ist ein
+    // Re-Mint-Akt, nie eine Zahl hier (S3 08.10., gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { kreatur: [0, 1] },
             budget: {
                 kreatur: {
-                    0: { tris: 62000, band: 20000, draws: 8, schatten: 0 },
-                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1 },
+                    0: { tris: 62000, band: 20000, draws: 8, schatten: 1 },
+                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1, ab: 35, wurf: { seh: ["haar"] } },
+                    // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m × Körpergröße das Bild und wirft für beide
+                    // Stufen (die feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil
+                    // (das Fell: Leib, Ohren, Lider, Pfoten). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 35 m: der
+                    // Beinschwung ist dort ~2,7 px (die Grenze war bis S3 die Wirts-Konstante TIER_FERN_DIST_SQ).
+                    hyst: 0.1,
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",
                 },
@@ -133,13 +140,15 @@
         jagd: {
             radius: 12, // m — Spieler-Witterungs-Reichweite (darueber wandert das Raubtier)
             speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
-            strikeRange: 2.4, // m — Biss-Reichweite (die EINE Reichweiten-Wahrheit, auch Gegenwehr)
             strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
             damageMul: 0.8, // × dem damage-Stat des Wesens
             fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
             triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
             scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
-            pirschStoppM: 1.6, // m — SCHLUSS-WELLE: naeher pirscht der Jaeger nicht heran (Stopp vor dem Biss)
+            // DER BISS IST DER ANSPRUNG (Welle LF kampf 09.10., VERTRAGS-AKT): gebissen wird im Ansprung (aktionen.pounce),
+            // wenn der Kopf der Gestalt den Leib des Ziels beruehrt — die Reichweite ist der Weg des Ansprungs (pounce.tempo ×
+            // tempoEinheit × seine Dauer), die Hetze haelt, wo das Maul den Leib erreicht. strikeRange (2,4 m um die Mitten,
+            // jede Gestalt) und pirschStoppM (1,6 m) fielen: Bisse ohne Geste aus 1,36–2,39 m (Leben-Schau 07.10., K-D13).
             // DIE JAGD SCHLIESST SICH (Welle LF 08.10., VERTRAGS-AKT): der Jaeger pirscht (unbemerkt bis pirschSichtM),
             // bezieht im Rudel seinen Platz auf dem Ring hetzM um das Ziel (die Flanke) und hetzt von dort im Sprint der
             // Gestalt (STEUER_GESETZ.sprint); Beute ist, wer nicht wild ist und hoechstens beuteMasse × die eigene Masse
@@ -210,7 +219,7 @@
         // groessen (die Koerpergroessen-Baender,
         // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
-        // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
+        // Kohaesion) · wasser (Ufer-Scheu) — plus
         // stimmung.schwellen oben (furcht.neugierStoppM fiel mit dem persoenlichen Raum, Welle LF). Der Wirt liest
         // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
         // Werte sind byte-gleich den historischen Stamm-Literalen.
@@ -1523,7 +1532,19 @@
     // ── 0710-4 (rein additiv) — DER BISS ALS STOSS: der Jäger trifft mit seiner Vorhand (Kopf, Hals, Brust) — dieser
     //    Anteil seiner Masse — im Tempo des Ansprungs (VERHALTEN.aktionen.pounce.tempo × tempoEinheit(L)). Sein Impuls
     //    geht durch das EINE Impuls-Gesetz des Wirts wie Klinge, Pfeil und Wagen (vorher: Schaden ohne Rückstoß). ──
-    var BISS = Object.freeze({ masseAnteil: 0.3 });
+    // ── Welle LF 09.10. (rein additiv) — DER KOPF ZIELT: im Ansprung neigt der Jaeger den Kopf auf den Leib des Ziels, in
+    //    diesem Bereich (rad, Nase abwaerts positiv wie headX): hoch bis -0,6 (die Kehle eines Stehenden), tief bis 1,0 (die
+    //    Flanke eines Kitzes; grasen senkt die Nase mit 0,95 ins Gras); liegt der Leib tiefer als der Kopf, senkt er die Front
+    //    bis rumpfNeigung (rad, wie bodyX: die Verbeugung playbow senkt sie um 0,35) — so reicht das Maul an den Ruecken eines
+    //    Fuchses. ──
+    var BISS = Object.freeze({ masseAnteil: 0.3, kopfNeigung: Object.freeze([-0.6, 1.0]), rumpfNeigung: 0.5 });
+    // ── Welle LF 09.10. (rein additiv) — DIE KAMPF-GRÖSSE DES LEIBS: Biss, Haut und Leben eines Tiers folgen der EINEN Masse
+    //    seines Leibs (das Volumen der Gestalt × dichteKgM3 — Gattung UND Größe) gegen die Bezugs-Masse refKg, den Wolf der
+    //    Größe 1 (64 kg; an ihm ist der Biss geeicht, 8,73 HP am Spieler). Die Kraft des Bisses wächst mit dem Querschnitt der
+    //    Kau-Muskeln (∝ m^⅔; Christiansen & Wroe 2007: Beißkraft ∝ Körpermasse^0,6–0,7), die Dicke der Haut mit der Länge
+    //    (∝ m^⅓), das Leben mit dem Querschnitt des Leibs (∝ m^⅔). Wirt: _kreaturKampfGroesse in computeCreatureStats (vorher
+    //    damage 19,75 und defense 11,9 für jede Gattung und Größe — die Tiere sind tag-gleich). ──
+    var KAMPF = Object.freeze({ refKg: 64, biss: 2 / 3, haut: 1 / 3, leben: 2 / 3 });
 
     // ════════════════════════════════════════════════════════════════════
     // DIE ART-GESTALT (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen"): die Anatomie je Art als
@@ -2803,6 +2824,7 @@
         bauTier: bauTier,
         MASSSTAB: MASSSTAB,
         BISS: BISS,
+        KAMPF: KAMPF,
         ART_GESTALT: ART_GESTALT,
         artGestalt: artGestalt,
         tierAuge: tierAuge,

@@ -32,7 +32,8 @@ Niederlage: benannte offene Punkte fallen GANZ, der Rest steht ehrlich offen mit
    Gebautes".
 9. Beweise proportional: gezielt und schnell (Konsum-Probe, Blick, byte-Diff) — nie
    minutenlanges Absicherungs-Theater.
-10. Nach jeder Fehler-Klasse baue die LINSE, die den Täter beim NAMEN nennt — baue nie auf
+10. Nach jeder Fehler-Klasse baue die LINSE, die den Täter beim NAMEN nennt — vorher ROT am Täter,
+    in einer bestehenden Familie, mit Selbsttest, ≤ 3 min CI und benanntem Konsum-Leser — baue nie auf
     Wachsamkeit.
 
 **DIE VERBOTE.** Melde nie „fertig", was nur im Testrahmen lebt (headless beweist Mechanik, nie
@@ -71,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.537.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.541.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,30 +81,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.537 — DER TAKT FRAGT DIE NACHBARSCHAFT, DAS RUDEL HAT EINEN LEIB:** das Blocker-Netz trägt ein Verzeichnis je
-Affordanz (`_blockerMit`); Brennglas, Strahlen, Heben, Portal, Dorf-Rauch und Boost-Resonanz fragen Verzeichnis oder Plätze
-statt des Bestands (1 578 → 1 Einträge je Brennglas-Takt, Boost-Spitze 11,1 → 0,4 ms), die Raum-Tags haben ein Gedächtnis
-mit Inhalts-Schlüssel, die Haus-Tür scannt jede Sekunde. Das Rudel: der persönliche Raum je Leib im EINEN Leib-Löser
-(`_leibKontakte`), das Temperament aus Gattung und Masse, Jagd-Kreis und Rudel-Ring, Bein-Lot, Fern-Gang, das Tier auf der
-Auflage der Bauten, der Nexus würfelt kein Körper-Gesetz (Durchdringung 0 von 870 Takten, Separation 2,06 → 0,10 ms).
+**V18.541 — DER EINE GELÄNDE-KERN, DAS LICHT DES AUGES OHNE DAUER-KOSTEN, DIE PRÜFBÜHNE ALS MESSORT:** Stamm, voxel-worker
+und playtest lesen EIN Gesetzbuch der Höhe (`gelaende-core.js`, 16 Funktionen; der Worker-Spiegel der Makro-Höhe, 442 Zeilen,
+und `_erbgutNormal` fielen; 44/44 Dichte-Gitter maxDiff 0; die Zwillings-Wand in gate:altlasten ist ein MUSTER über jede Datei,
+11 → 0 Funde); das Licht des Auges ist ein Term des Boden-Stoffs unter Fels statt eines Szenen-Lichts ab Boot (OMEN 1110-3:
++0,48 ms je Frame auch unter dem Himmel; Lichter 4 → 3, Programme 36/35/33/36 gleich, kein verborgener Fn-Rumpf); die
+Prüfbühne ist der GPU-Messort im EINEN Instrument (4 Posen, 2σ ≤ 0,064 ms gegen 0,35–1,72 ms an der Wiese, `--streuung` nur
+bei gleichem Takt); gate:portal-konformanz schleust in EINER CDP-Reise (Portal-Schritt voll 1/10 846 → 370 s).
 
-**V18.496–536 — AAA NAH, KOSTEN-MECHANIK, ANKUNFT:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN
-Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft, Welle 5 (Pflanzen nah, Fernwald, Stoffe, Fell,
-Klang); die GPU-Kette (gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (Erst-Zeichnung `_erstWartet`,
-Stand-Wache, Diät, host-vram) und L (Wasser, Backend-Gesetz, `_disposeSoulGroup`), die CI in drei Gruppen; V18.536 EIN
-Impuls-Gesetz (Fahrzeug, Leib, Biss), der Weg Werkstatt → stehendes Werk (`_setzUrteil`), die Ankunft (Ladeschirm, EIN
-Tasten-Fänger), der Frost, der Mess-Halt jedes Welt-Akts (OMEN gegen V18.535: Frame p95 25,0 → 16,9 ms). Werkbank:
-`albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
+**V18.496–540 — AAA NAH, KOSTEN-MECHANIK, ANKUNFT, NACHBARSCHAFT, STUDIO-ZEILE, TOD, PRÜF-WELT:** Studio-Mesh mit LOD-Kette,
+EINE geskinnte Haut, FARB-GESETZ, EIN Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft; die
+GPU-Kette (gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (`_erstWartet`, Diät, host-vram) und L (Wasser,
+Backend-Gesetz); V18.536–537 EIN Impuls-Gesetz, `_setzUrteil`, das Blocker-Netz, EIN Leib-Löser (`_leibKontakte`); V18.538
+Baum- und Gras-Zeile im Studio, `_schattenBias` (OMEN: gpu-bank 14,08 → 11,79 ms, Wiese IM BAND 77 · 453k · 110,3 MB);
+V18.539 der Tod an EINER Stelle (`_kreaturFaellt`, `_leibSicht`, `_gelenkStufe`), `_nexusPerfActuate` (CPU p95 10,8 → 5,6
+ms), die CI in zwei Stufen; V18.540 die Prüf-Welt aus dem Welt-Motor (`_weltBetreten`), der ganze Leib im Ego-Wurf, das Haus
+fern NUR-WURF, `aHimmel`, EINE Wasser-Wahrheit (`_werkBoden`, `_aussteigOrt`). Werkbank: `albedo` · `licht` · `zaehlen` · `band`.
 
-**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, je Satz ein
+**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE; die Höhe = EIN Gelände-Kern `gelaende-core.js` für Stamm, Worker und Playtest, die Terme des Erbguts, Wildnis = EIN Term, die Prüfbühne `spec/pruefbuehne`) · WELT-MARCH: EIN Pass, je Satz ein
 Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
-Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz · WALD-ORT = die Kronen-Karte
+Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz, das Licht des Auges ein Term unter Fels · WALD-ORT = die Kronen-Karte
 · GRAS = nah Nah-Wiese, fern Boden-Funktion · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
-Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz
-(`_passTrifft`), jede Wahl hält nach `_wahlHaelt` · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft
-(höchstens ein Bildpunkt in der Bildecke) · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6 Golden-Sätze + Ofen in der CI ·
-MESSORTE = Wiese und Genesis-Ring · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz (Verzeichnis je
-Affordanz + Plätze), nie der Bestand · LEIB = EIN Leib-Löser im festen Sim-Schritt, EINE Masse.
+Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, der Bias je Kaskade aus der Texel-Kante, EIN Werfer je Gestalt, in der
+Ego-Sicht der ganze Leib, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz (`_passTrifft`), jede Wahl hält nach `_wahlHaelt`
+· SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6
+Golden-Sätze + Ofen in der CI, der Bau folgt seiner Budget-Zeile, das Haus fern seiner NUR-WURF-Stufe · MESSORTE = Wiese,
+Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz · LEIB = EIN Leib-Löser · TOD =
+EIN Übergang · WASSER = EINE Wahrheit, jedes Werk fragt das Land samt Sockel · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie auf integ-probe, main und nachts.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
@@ -137,7 +141,11 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
    ungetont (r184), so logen aaa8–aaa11 „dunkle Schattenseiten".
 6. **Tests wandern mit dem Code;** Absenz-Greps über `window.__codeOf` (Kommentare zitieren).
 7. **Worker-Spiegel bit-identisch** (Main ↔ voxel-worker; jede Sheet-/Density-Änderung in BEIDE +
-   `diag-worker-watersheet` maxDiff 0). Welt-Substanz zieht aus Γ5-Seed-Streams, nie Math.random.
+   `diag-worker-watersheet` maxDiff 0; das Chunk-Gitter `gate:worker-dichte`, Edits auch über dem Band). Welt-Substanz
+   zieht aus Γ5-Seed-Streams, nie Math.random. Gesetz statt Spiegel, wo es geht: die 2D-Höhe spiegelt niemand mehr —
+   Stamm und Worker rufen EIN Gesetzbuch (`gelaende-core.js`, die Lage = Worker-`state` bzw. Stamm-`_gelaende()`).
+   Ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes Skript, nie ein Variablen-Name (`wx * 0.00014 + 7.2`
+   ließ `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-Pfaden durch).
 8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; die Tiere sind bewusst tag-identisch —
    Differenzierung über die Größen-/Gattungs-Achse, nie über Tags).
 9. **`gate | tail` maskiert Exit-Codes** — Exits IMMER explizit (`echo EXIT=$?`).
@@ -213,7 +221,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass rendert mit der Kaskaden-Kamera (`cameraPosition`
     = Licht-Kamera, 145 m weit) und liest nur colorNode.a · map.a · maskShadowNode, nie opacityNode — jede LOD-Maske misst
     vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Schatten-
-    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; vor dem Push läuft JEDER CI-Schritt lokal, nie eine Auswahl;
+    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; lokal läuft der Puls der berührten Methoden + playtest:fast,
+    der Integrator fährt den vollen Playtest je Merge, die CI richtet die Batterie — gemergt wird nur bei grüner Zweig-CI;
     Echt-Renderer-Linsen auf CPU-Raster fahren das Software-Holz (`?holz=kienspan`) — auf „voll" kostet ein Compile 50–70 s;
     swiftshader kompiliert synchron (kein KHR_parallel_shader_compile, `compileAsync` blockiert), `_gameLoopTick` rendert
     selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`). Und ein

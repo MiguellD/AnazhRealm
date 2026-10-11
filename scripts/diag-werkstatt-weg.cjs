@@ -482,7 +482,7 @@ async function probe(argW) {
             const a = (k / 16) * Math.PI * 2;
             const x = P0.x + Math.cos(a) * ring;
             const z = P0.z + Math.sin(a) * ring;
-            if (!r._isAboveWaterAt(x, z, 1)) continue;
+            if (!r._landAt(x, z, 1)) continue;
             if (r._imGrundriss(x, z, 0.8, 12)) continue;
             const y = r._voxelSurfaceY(x, z);
             if (!Number.isFinite(y)) continue;
@@ -996,7 +996,7 @@ async function probe(argW) {
                 m.werkKey = werkKey(e);
                 m.werkDreh = dreh(e);
                 m.werkTint = tint(e);
-                // Die Hülle des Werks (seine Blocker, seit v1-ankunft in der Welt-Skala des Studio-Baums, `_baumWeltSkala`):
+                // Die Hülle des Werks (seine Blocker, seit v1-ankunft in der Welt-Skala des Studio-Werks, `_studioWeltSkala`):
                 // wie weit sie waagrecht über seinen Ort reicht — die Klemme muss sie tragen, sonst steht der Spieler im Werk.
                 let hq = 0;
                 for (const b of e.blockerAABBs || [])

@@ -347,7 +347,7 @@ async function welt() {
             foundryOffen: offen(),
             dStern: +dStern.toFixed(2),
             dWolf: +cam.position.distanceTo(w.position).toFixed(2),
-            nahGrenze: +(Math.sqrt(r.constructor.TIER_FERN_DIST_SQ) * (w.scale.x || 1)).toFixed(1),
+            nahGrenze: +(window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * (w.scale.x || 1)).toFixed(1),
         };
     }, GROESSEN);
     if (boot.fatal) {

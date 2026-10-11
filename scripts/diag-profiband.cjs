@@ -21,6 +21,10 @@
 //   H6  DIE MESSORTE (S1 W1f, `messorte`): jeder Ort trägt Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche
 //       (H2 je Ort); jede Methode, die ein Ort-Takt oder ein Anker nennt, trägt der Stamm (ein umbenannter Ring-Bauer
 //       liefe still aus jedem Werkbank-Takt, der Ort stünde leer; ein umbenannter Anker ließe den Ort ungeprüft wandern)
+//   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
+//       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt);
+//       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
+//       (haupt) und ≤ Haushalt
 //
 // Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -36,6 +40,9 @@
 // Richtung, mit doppelter id, fremder oder geteilter Ratsche wird rot · dieselbe Klasse ist über der Ratsche ihres Orts rot,
 // über der eines anderen nicht · die Tor-Hülle je Tor (Soll-Zeile des Genesis-Rings) · ein toter Ort-Takt wird rot ·
 // ein Lauf, der nicht im Zustand seines Orts stand (Dorf-Zug, Aufstellung, Blick, Ort-Takt), wird beim Namen genannt.
+// S3 haus: der Satz-Inhalt nennt den Täter im EINEN Befehl eines Satzes (ein gepflanzter Bereich erscheint, ein falscher
+// Draw-Umfang als REST; die Ratschen-Zeile „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760") · der Wurf je Exemplar
+// (Soll-Zeile mit `stufen`, Messort dorf) · das Einschwingen wartet auf den Dorf-Zug (Export, wachsende Siedlung).
 //
 //   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
 "use strict";
@@ -184,6 +191,120 @@ function ortTaktLebt(haushalt, src) {
         }
     }
     return { errs, n };
+}
+
+// P — DIE PROJEKTION (S3 pflanzen, 09.10.; GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
+// läuft — Σ Instanzen (der Zensus `spec/profiband/zensus-wiese.json`, je Art × Stufe × Pass am gestellten Ort gezählt) ×
+// Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über die
+// Golden-Samen) ≤ Haushalt der Klasse. Befund: der Haushalt baum 150 000 stand seit W0, die Studio-Zeile tree[0] 18 000 /
+// tree[1] 10 000 rechnete nie gegen ihn (Band V18.536: baum 417k, die Projektion 421k). Pflicht ab dem Vertrags-Akt (die
+// eingefrorene render-config trägt tree[0].lagen); vorher zeigt sie die Zahl.
+const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
+const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
+function goldenDreiecke(arten) {
+    const haupt = {},
+        wurf = {};
+    for (const f of fs.readdirSync(GOLDEN)) {
+        const m = /^(.+)-s(-?\d+)-L([01])-summer\.json$/.exec(f);
+        if (!m || !arten.has(m[1])) continue;
+        const g = JSON.parse(fs.readFileSync(path.join(GOLDEN, f), "utf8"));
+        let t = 0,
+            w = 0;
+        for (const x of g.meshes || []) {
+            if (!x.attrs || !x.attrs.position) continue;
+            // der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der Schatten-Teil (S3, teil
+            // "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
+            const n = x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+            if (x.teil === "schatten") w += n;
+            else t += n;
+        }
+        const k = m[1] + "|" + m[3];
+        haupt[k] = Math.max(haupt[k] || 0, t);
+        if (m[3] === "1") wurf[m[1]] = Math.max(wurf[m[1]] || 0, w);
+    }
+    return { haupt, wurf };
+}
+function projektion(zensus, tris) {
+    const jePass = {};
+    let summe = 0;
+    const fehlt = [];
+    for (const z of zensus.zeilen) {
+        const t = z.pass === "haupt" ? tris.haupt[z.art + "|" + z.stufe] : tris.wurf[z.art];
+        if (!Number.isFinite(t)) {
+            fehlt.push(`${z.art} L${z.stufe} ${z.pass}`);
+            continue;
+        }
+        const d = z.inst * t;
+        jePass[z.pass] = (jePass[z.pass] || 0) + d;
+        summe += d;
+    }
+    return { summe, jePass, fehlt };
+}
+function projektionsWand(haushalt, zensus, tris) {
+    const k = haushalt.klassen.find((x) => x.id === zensus.klasse);
+    const p = projektion(zensus, tris);
+    const errs = [];
+    if (!k) errs.push(`P: der Zensus nennt die Klasse ${zensus.klasse}, der Haushalt trägt sie nicht`);
+    for (const f of p.fehlt) errs.push(`P: ${f} ohne Golden-Dreiecke`);
+    if (k && p.summe > k.dreiecke)
+        errs.push(`P: ${zensus.klasse} projiziert ${Math.round(p.summe)} Dreiecke > Haushalt ${k.dreiecke} (${zensus.ort})`);
+    return { p, errs, soll: k ? k.dreiecke : null };
+}
+function projektionPflicht() {
+    const rc = JSON.parse(fs.readFileSync(path.join(GOLDEN, "render-config.json"), "utf8"));
+    const t0 = rc && rc.lod && rc.lod.budget && rc.lod.budget.tree && rc.lod.budget.tree[0];
+    return !!(t0 && t0.lagen != null);
+}
+
+// P — DIE ZEILE nahWiese (S3 wiese-gestalten × pflanzen, Integration V18.538): die Nah-Wiese zeichnet genau ihre Gestalten
+// (je Vorlage × Stufe × Teil EINE Senke `nahWiese:L<stufe>:<v>:<teil>`), die Golden-Samen des Grases SIND diese Gestalten —
+// die Zeile nimmt je Zensus-Zeile die Golden-Dreiecke IHRER Gestalt (das Maximum über die Samen, wie beim Baum, hätte an der
+// Mess-Wiese 63 002 statt der gemessenen 54 994 projiziert) und hält Σ Büschel × Dreiecke je Pass gegen die Ratsche der
+// Klasse am Ort, darüber den Haushalt. Ein fehlender Ratschen-Wert ist nie 0 (Lehre 17): er wird beim Namen genannt.
+function gestaltDreiecke(art, zeilen) {
+    const out = {};
+    for (const z of zeilen) {
+        const f = path.join(GOLDEN, `${art}-s${z.gestalt}-L${z.stufe}-summer.json`);
+        if (!fs.existsSync(f)) continue;
+        const g = JSON.parse(fs.readFileSync(f, "utf8"));
+        let t = 0;
+        for (const x of g.meshes || []) {
+            if (!x.attrs || !x.attrs.position || x.teil === "schatten") continue;
+            t += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+        }
+        out[z.gestalt + "|" + z.stufe] = t;
+    }
+    return out;
+}
+function gestaltWand(haushalt, ratsche, block, ort, tris) {
+    const k = haushalt.klassen.find((x) => x.id === block.klasse);
+    const rz = ratsche && ratsche.klassen ? ratsche.klassen[block.klasse] : null;
+    const errs = [];
+    const jePass = {};
+    const jeStufe = {};
+    let summe = 0;
+    if (!k) errs.push(`P: die Zeile ${block.klasse} nennt eine Klasse, die der Haushalt nicht trägt`);
+    for (const z of block.zeilen) {
+        const t = tris[z.gestalt + "|" + z.stufe];
+        if (!Number.isFinite(t)) {
+            errs.push(`P: ${block.art} Gestalt ${z.gestalt} L${z.stufe} ohne Golden-Dreiecke`);
+            continue;
+        }
+        const d = z.inst * t;
+        jePass[z.pass] = (jePass[z.pass] || 0) + d;
+        jeStufe["L" + z.stufe] = (jeStufe["L" + z.stufe] || 0) + d;
+        summe += d;
+    }
+    for (const [pass, d] of Object.entries(jePass)) {
+        const r = rz && rz[pass] ? rz[pass].dreiecke : null;
+        if (r == null || !Number.isFinite(r))
+            errs.push(`P: die Ratsche (${ort}) trägt für ${block.klasse} ${pass} keine Dreiecke — kein Soll, keine Zeile`);
+        else if (d > r) errs.push(`P: ${block.klasse} ${pass} projiziert ${d} Dreiecke > Ratsche ${r} (${ort})`);
+    }
+    if (k && summe > k.dreiecke)
+        errs.push(`P: ${block.klasse} projiziert ${summe} Dreiecke > Haushalt ${k.dreiecke} (${ort})`);
+    const soll = rz && rz.haupt ? rz.haupt.dreiecke : null;
+    return { summe, jePass, jeStufe, soll, haushalt: k ? k.dreiecke : null, errs };
 }
 
 function selbsttest() {
@@ -747,6 +868,170 @@ function selbsttest() {
             BAND.ortGestellt(wiese, undefined).length === 1
     );
 
+    // S25 — die Projektion (P): die Ist-Projektion von V18.536 (Golden-Dreiecke des Zensus `vorher`) liegt über dem
+    // Haushalt baum und wird rot; dieselbe Wiese mit dem Soll je Instanz (L0 7 000 · L1 2 300 · Wurf 1 000) bleibt
+    // grün; eine Zensus-Zeile ohne Golden-Dreiecke wird beim Namen genannt.
+    const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
+    const ist = projektionsWand(haushalt, zs, zs.vorher);
+    const sollT = { haupt: {}, wurf: {} };
+    for (const z of zs.zeilen) {
+        sollT.haupt[z.art + "|0"] = 7000;
+        sollT.haupt[z.art + "|1"] = 2300;
+        sollT.wurf[z.art] = 1000;
+    }
+    const soll = projektionsWand(haushalt, zs, sollT);
+    const luecke = projektionsWand(haushalt, zs, { haupt: {}, wurf: sollT.wurf });
+    t(
+        `Projektion: die Ist-Wiese V18.536 (${Math.round(ist.p.summe)} Dreiecke) ist rot, das Soll je Instanz (${Math.round(soll.p.summe)}) grün, eine Zeile ohne Golden-Dreiecke beim Namen`,
+        ist.errs.length === 1 &&
+            /projiziert/.test(ist.errs[0]) &&
+            ist.p.summe > 400000 &&
+            soll.errs.length === 0 &&
+            luecke.errs.some((x) => /ohne Golden-Dreiecke/.test(x))
+    );
+
+    // S26 — DER SATZ-INHALT (S3 haus, 1b): ein Satz zeichnet je Pass EINEN Befehl — die Ratschen-Zeile nennt, wer darin
+    // liegt („bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760"), die Tabelle druckt den Inhalt je Pass.
+    const r26 = JSON.parse(JSON.stringify(rt));
+    r26.klassen.bau.k0 = { befehle: 1, dreiecke: 4224 };
+    const satz26 = {
+        klasse: "bauSatz",
+        stufe: null,
+        art: null,
+        je: { haupt: 1, k0: 1 },
+        jeTris: { haupt: 18445, k0: 12760 },
+        inhalt: {
+            k0: [{ klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [] }],
+        },
+    };
+    const u26 = urteil([satz26], r26);
+    const zeile26 = u26.rot.find((x) => x.art === "ratsche" && /^bau k0/.test(x.text));
+    t(
+        "Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760\", die Tabelle den Inhalt",
+        !!zeile26 &&
+            /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(zeile26.text) &&
+            /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(BAND.bandTabelle(u26))
+    );
+    // S26b — der Satz-Inhalt am Satz selbst (draw-zaehler `satzInhalt`, die Seiten-Funktion): ein in k0 gepflanzter Bereich
+    // (die Gruppe einer Feuerstelle, 3 Instanzen = 3 Zellen à 440 Dreiecke, ihre Einträge 7/8/9) erscheint mit Klasse,
+    // Zellen, Dreiecken und Exemplaren; die Lücke des Laufs steht als `lücke`, ohne Rest; das Hauptbild ohne den Bereich
+    // nennt ihn nicht, ein falscher Draw-Umfang erscheint als REST.
+    const key26 = "f:feuerstelle|1|1:0";
+    const b26 = { key: key26, zellen: [] };
+    for (let i = 0; i < 3; i++) b26.zellen.push({ bereich: b26, idx: new Uint32Array(1320) });
+    const satz26b = {
+        abschnitte: new Map([
+            ["k0", { liste: b26.zellen.slice(), n: 3960, ende: 3960 + 30 }],
+            ["haupt", { liste: [], n: 0, ende: 0 }],
+        ]),
+    };
+    const ein26 = new Map([[key26, new Map([[0, 7], [1, 8], [2, 9]])]]);
+    const i26 = DZ.satzInhalt(satz26b, "k0", (3960 + 30) / 3, S.instanz, ein26);
+    const f26 = i26.get("f:feuerstelle:L1");
+    t(
+        "Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), " +
+            "das Hauptbild ohne ihn nicht, ein falscher Draw-Umfang als REST",
+        !!f26 &&
+            f26.zellen === 3 &&
+            f26.tris === 1320 &&
+            [...f26.eintraege].join(",") === "7,8,9" &&
+            i26.get("lücke").tris === 10 &&
+            !i26.has("REST") &&
+            DZ.satzInhalt(satz26b, "haupt", 0, S.instanz, ein26).size === 0 &&
+            DZ.satzInhalt(satz26b, "k0", 1500, S.instanz, ein26).get("REST").tris === 170
+    );
+    // S27 — DER WURF JE EXEMPLAR (Soll-Zeile mit `stufen`, Messort dorf): zwei Häuser werfen in k0 ihre L0 (140 000) und
+    // eine L1 (15 000) über den Satz-Inhalt → 77 500 je Haus (807×); eine Art daneben zählt nicht; `stufe` UND `stufen`
+    // zugleich (oder keins) bricht das Schema. Ein Pass ohne Exemplar trägt keine Zeile.
+    const dorf = BAND.ortOf(haushalt, "dorf");
+    const satz27 = {
+        klasse: "bauSatz",
+        stufe: null,
+        art: null,
+        je: { k0: 1 },
+        jeTris: { k0: 155000 + 12760 },
+        inhalt: {
+            k0: [
+                { klasse: "f:alemannisch:L0", stufe: 0, art: "haus", zellen: 6, tris: 140000, eintraege: [11, 12] },
+                { klasse: "f:griechisch:L1", stufe: 1, art: "haus", zellen: 3, tris: 15000, eintraege: [12] },
+                { klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [1, 2] },
+            ],
+        },
+    };
+    const s27 = BAND.ortSoll(dorf, { klassen: [satz27] });
+    const haus27 = s27.find((x) => x.name === "Haus-Wurf" && /k0/.test(x.klasse));
+    const h27 = (f) => {
+        const h = JSON.parse(JSON.stringify(haushalt));
+        f(h.messorte.find((o) => o.id === "dorf").soll[0]);
+        return BAND.messortePruefen(h);
+    };
+    t(
+        "Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im " +
+            "Haus-Wurf; stufe + stufen bzw. keins bricht das Schema; ohne k1 keine k1-Zeile",
+        !!haus27 &&
+            haus27.huelle === 77500 &&
+            haus27.exemplare === 2 &&
+            haus27.faktor === 807.29 &&
+            /f:alemannisch:L0/.test(haus27.taeter) &&
+            !s27.some((x) => /k1/.test(x.klasse)) &&
+            s27.some((x) => x.name === "Ausstattungs-Wurf" && x.huelle === 6380) &&
+            h27((s) => (s.stufe = 0)).some((x) => /Soll-Zeile/.test(x)) &&
+            h27((s) => delete s.stufen).some((x) => /Soll-Zeile/.test(x)) &&
+            !BAND.messortePruefen(haushalt).length
+    );
+    // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts.
+    const welt28 = (z) =>
+        Object.assign(
+            {
+                state: { voxelMeshPending: new Set(), scatterRegions: new Map() },
+                _foundry: { warte: [], pending: new Map() },
+                _impostorBakeQueue: [],
+                _autoSettlementQueue: null,
+                _autoSettlementPendingKey: null,
+                _streuWartet: () => false,
+            },
+            z
+        );
+    const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
+    t(
+        "Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht",
+        o28.dorfWaechst === "1/3" &&
+            BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
+            Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
+            /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
+    );
+    // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; dieselben Büschel mit dem Maximum
+    // über die Samen (jede Gestalt trüge die schwerste) liegen darüber und werden rot; eine Gestalt ohne Golden und eine
+    // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
+    const nwB = zs.nahWiese;
+    const nwT = gestaltDreiecke(nwB.art, nwB.zeilen);
+    const rtW = BAND.ladeSpec(zs.ort).ratsche;
+    const nwEcht = gestaltWand(haushalt, rtW, nwB, zs.ort, nwT);
+    const maxT = {};
+    for (const z of nwB.zeilen) {
+        const k = z.gestalt + "|" + z.stufe;
+        for (const y of nwB.zeilen) if (y.stufe === z.stufe) maxT[k] = Math.max(maxT[k] || 0, nwT[y.gestalt + "|" + y.stufe]);
+    }
+    const nwMax = gestaltWand(haushalt, rtW, nwB, zs.ort, maxT);
+    const nwFremd = gestaltWand(
+        haushalt,
+        rtW,
+        Object.assign({}, nwB, { zeilen: nwB.zeilen.concat([{ gestalt: 99, stufe: 1, pass: "haupt", inst: 1 }]) }),
+        zs.ort,
+        nwT
+    );
+    const rtLeer = JSON.parse(JSON.stringify(rtW));
+    rtLeer.klassen[nwB.klasse].haupt.dreiecke = null;
+    const nwOhne = gestaltWand(haushalt, rtLeer, nwB, zs.ort, nwT);
+    t(
+        `Projektion nahWiese: die Mess-Wiese (${nwEcht.summe} Dreiecke) liegt unter der Ratsche ${nwEcht.soll}, das Maximum über die Samen (${nwMax.summe}) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen`,
+        nwEcht.errs.length === 0 &&
+            nwMax.errs.some((x) => /> Ratsche/.test(x)) &&
+            nwFremd.errs.some((x) => /Gestalt 99 L1 ohne Golden-Dreiecke/.test(x)) &&
+            nwOhne.errs.some((x) => /keine Dreiecke/.test(x))
+    );
+
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
     if (rot.length) {
@@ -763,7 +1048,8 @@ function main() {
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
     // H2 je Ort: jede Ratsche trägt das Schema (die Mess-Wiese und jeder weitere Ort).
-    const orte = (haushalt.messorte || []).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
+    // (ein Toggle-Ort mit `bank` trägt keine Ratsche — H1 prüft sein Schema)
+    const orte = (haushalt.messorte || []).filter((o) => o.ratsche).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
     for (const { o, r } of orte) for (const f of BAND.ratschePruefen(r, haushalt)) errs.push(`H2 [${o.id}] ${f}`);
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const nw = namensWand(stamm);
@@ -774,6 +1060,34 @@ function main() {
     for (const f of nl.errs) errs.push("H5 " + f);
     const ot = ortTaktLebt(haushalt, stamm);
     for (const f of ot.errs) errs.push("H6 " + f);
+    // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht ab dem Vertrags-Akt).
+    const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
+    const pw = projektionsWand(haushalt, zs, goldenDreiecke(new Set(zs.zeilen.map((z) => z.art))));
+    const pflicht = projektionPflicht();
+    if (pflicht) for (const f of pw.errs) errs.push(f);
+    console.log(
+        `P Projektion ${zs.ort}/${zs.klasse}: ${Math.round(pw.p.summe)} Dreiecke (Haushalt ${pw.soll}; ` +
+            Object.entries(pw.p.jePass)
+                .map(([p, d]) => `${p} ${Math.round(d)}`)
+                .join(" · ") +
+            `)` +
+            (pflicht ? "" : pw.errs.length ? ` — noch keine Pflicht (render-config ohne tree[0].lagen): ${pw.errs.join("; ")}` : "")
+    );
+    // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
+    const nwB = zs.nahWiese;
+    if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
+        errs.push(`P: der Zensus ${zs.ort} trägt keine Zeile nahWiese (je Gestalt × Stufe die gelegten Büschel)`);
+    else {
+        const nw = gestaltWand(haushalt, BAND.ladeSpec(zs.ort).ratsche, nwB, zs.ort, gestaltDreiecke(nwB.art, nwB.zeilen));
+        for (const f of nw.errs) errs.push(f);
+        console.log(
+            `P Projektion ${zs.ort}/${nwB.klasse}: ${nw.summe} Dreiecke (Ratsche ${nw.soll}, Haushalt ${nw.haushalt}; ` +
+                Object.entries(nw.jeStufe)
+                    .map(([s, d]) => `${s} ${d}`)
+                    .join(" · ") +
+                `)`
+        );
+    }
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);

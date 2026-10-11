@@ -15,7 +15,8 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 1. CLAUDE.md lesen: GOLDENE DEFINITION + BETRIEBSGESETZ + Stand.
 2. `docs/PFLICHT-OFFEN.md` lesen — das ist der EINZIGE Scope. Nichts hinzufügen.
 3. Eine Zeile: **Chokepoint + was stirbt.**
-4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name.
+4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name. Die Karte des Koordinators (≤ 25 Zeilen, `koordination/auftrag/`)
+   ist Auftrag, kein Plan-Doc.
 
 ---
 

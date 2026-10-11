@@ -95,11 +95,9 @@ const server = http.createServer((req, res) => {
                 // ... und bis der Vorrat steht (`_foundryPrefetchLibrary`): solange er saugt, baut der gelüftete Ring
                 // jede neue Region leer und aufgeschoben (der Prefetch-Zweig von `_scatterRegion`).
                 const vorrat = () => !!(r._foundry && r._foundry._prefetching);
-                const wartend = () => {
-                    let n = 0;
-                    if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg && reg._deferredFoundry) n++;
-                    return n;
-                };
+                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
+                // — der Streamer lief noch nie — als „keine wartet")
+                const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
                 while ((wartend() > 0 || vorrat()) && performance.now() < dlW) {
                     for (let i = 0; i < 30; i++) {
                         try {
@@ -108,7 +106,8 @@ const server = http.createServer((req, res) => {
                     }
                     await sleep(30);
                 }
-                o.wartendNachBoot = wartend() + (vorrat() ? 1 : 0);
+                o.wartendListe = [];
+                o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
                 o.vorratSaugt = vorrat();
             }
             const _oH0 = st.renderer._isHeadlessNull;
@@ -159,15 +158,33 @@ const server = http.createServer((req, res) => {
             // Regionen in Scheiben neu baute (Zellen 0 → 53), lief durch zwei Batches ohne neuen Schlüssel und münzte
             // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
             {
-                const ringStand = () => {
-                    const keys = [];
-                    let offen = 0;
+                // was am Ring wartet: die EINE Antwort der Welt je Region in Reichweite (`_streuWartet` — auch eine fehlende
+                // Karte, Befund 09.10.: der eigene Zähler las sie als „|0") und jede Region der Karte, die noch wartet
+                // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
+                const ringWartet = () => {
+                    const liste = [];
+                    r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
                     if (st.scatterRegions)
-                        for (const [k, reg] of st.scatterRegions) {
-                            keys.push(k);
-                            if (reg && (reg._cont || reg._deferredFoundry)) offen++;
+                        for (const k of st.scatterRegions.keys()) {
+                            const grund = r._streuRegionWartet(k);
+                            if (grund && !liste.includes(`${k} ${grund}`)) liste.push(`${k} ${grund}`);
                         }
-                    return keys.sort().join(";") + "|" + offen;
+                    return liste;
+                };
+                const ringStand = () =>
+                    (st.scatterRegions ? Array.from(st.scatterRegions.keys()).sort().join(";") : "") + "|" + ringWartet().length;
+                // ... und die Foundry ist still: kein Auftrag im Flug (`pending`, Werk und Bäcker), keiner in der EINEN
+                // Worker-Schlange (`warte`), keine Lieferung im Ingest-Takt. Ein Bau dauert 0,1–25 s; zwei ruhige Batches
+                // sind ein Takt-Maß, keine Uhr — am langsamen CI-Läufer (11.10., integ-probe b0bcb073 und 03997b3f, 3 Läufe
+                // je 168 Gruppen beim Fenster-Start) lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal
+                // mit 3 s späteren Worker-Antworten 88 Mints, 80 → 168. Das Fenster maß den Boot, nicht den Stand.
+                const foundryOffen = () => {
+                    const f = r._foundry;
+                    return (
+                        (f && f.pending ? f.pending.size : 0) +
+                        (f && f.warte ? f.warte.length : 0) +
+                        (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0)
+                    );
                 };
                 const dlQ = performance.now() + 180000;
                 let ruhigeBatches = 0;
@@ -182,15 +199,16 @@ const server = http.createServer((req, res) => {
                         if (i % 20 === 0) await sleep(15);
                     }
                     const ring1 = ringStand();
-                    const ruhig = (r._archGruppenMints || 0) === mv && ring0 === ring1 && ring1.endsWith("|0");
+                    const ruhig =
+                        (r._archGruppenMints || 0) === mv &&
+                        ring0 === ring1 &&
+                        ring1.endsWith("|0") &&
+                        foundryOffen() === 0;
                     ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
                 }
                 o.quieszent = ruhigeBatches >= 2;
-                o.ringOffen = [];
-                if (st.scatterRegions)
-                    for (const [k, reg] of st.scatterRegions)
-                        if (reg && (reg._cont || reg._deferredFoundry))
-                            o.ringOffen.push(k + (reg._cont ? " Scheibe offen" : "") + (reg._deferredFoundry ? " wartet" : ""));
+                o.ringOffen = ringWartet();
+                o.foundryOffen = foundryOffen();
             }
             // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
             // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
@@ -310,7 +328,9 @@ const server = http.createServer((req, res) => {
 
     console.log("=== DER LEISTUNGS-VERTRAG — die Laufzeit-Ökonomie als Gate ===");
     console.log(`  BOOT-SETTLE: wartende Regionen + saugender Vorrat = ${out.wartendNachBoot} (erwartet 0)`);
-    console.log(`  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent}`);
+    console.log(
+        `  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent} (Foundry offen beim Fenster-Start: ${out.foundryOffen})`
+    );
     console.log(`  V1 STAND-CHURN: Mints im Stand-Fenster = ${out.standMints} (erwartet 0)`);
     console.log(`  V3 GRUPPEN-STABILITÄT: ${out.groups0} → max ${out.groupsMax} → ${out.groupsEnde}`);
     console.log(
@@ -326,11 +346,11 @@ const server = http.createServer((req, res) => {
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
     if (out.wartendNachBoot !== 0)
         errs.push(
-            `BOOT: nach 150 s headless warten ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen auf ein Studio-Asset (_deferredFoundry)${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
+            `BOOT: nach 150 s headless stehen ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen in Reichweite nicht (_streuWartet: ${(out.wartendListe || []).join(", ") || "—"})${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
         );
     if (!out.quieszent)
         errs.push(
-            `QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"})`
+            `QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"}; Foundry ${out.foundryOffen} Aufträge offen)`
         );
     if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
     if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);

@@ -303,6 +303,7 @@ let barkNormalTex = null,
     foliageMatTex,
     grassMat,
     stemMat,
+    schattenMat,
     _terMat = null,
     _envMats = [];
 let _leafAtlas = null; // FIX v31: foliageMatTex = Multi-Blatt-Texturkarten (L1); _leafAtlas = zur Laufzeit GEMALTER Cluster-Atlas (Canvas-2D, deterministisch, kein GL-Risiko)
@@ -387,7 +388,7 @@ let curSeason = "summer";
 /* ---------- Aufbau / Sitz / Rahmung / Abbau ------------------------------- */
 function disposeSubject() {
     if (!subject) return;
-    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat];
+    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat, schattenMat];
     subject.traverse((o) => {
         if (o.isMesh) {
             o.geometry.dispose();
@@ -5198,6 +5199,10 @@ init();
         if (mat === foliageMat) return "foliage";
         if (mat === grassMat) return "grass";
         if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
+        if (typeof schattenMat !== "undefined" && mat === schattenMat) return "schatten";
+        // DER EINE SCHATTEN-STOFF eines Zweit-Kerns (S3: die Stufe 3 von Haus und Ausstattung, fachwerk `wurfStoff`, gestempelt
+        // `userData.__stoff = "schatten"`) — dieselbe Material-Identität wie der Schatten-Teil der Baum-L1.
+        if (mat.userData && mat.userData.__stoff === "schatten") return "schatten";
         return "unknown";
     }
     function __extractAssetMesh(mesh, zweitKern, basisInv) {
@@ -5215,10 +5220,10 @@ init();
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
-        // DER WURF-TEIL REIST MIT (W6, additiv, must-ignore): die Baum-L1 nennt je Teil die Zahl der Dreiecke, die werfen
-        // (der Vorsatz des Index, foundry-core tree[1].wurf) — der Wirt wirft nur diesen Vorsatz. Andere Teile tragen das
-        // Feld nie (ihre Replies bleiben byte-alt).
-        if (mesh.userData && Number.isInteger(mesh.userData.__wurf)) out.wurf = mesh.userData.__wurf;
+        // DER SCHATTEN-TEIL REIST MIT (S3, 09.10., additiv, must-ignore): die Baum-L1 liefert ihren Wurf als eigenes Teil
+        // (foundry-core tree[1].wurf, `teil: "schatten"`, Attribut aDeckt) — der Wirt zeichnet es nur in den Kaskaden.
+        // Andere Teile tragen das Feld nie (ihre Replies bleiben byte-alt). Der drawRange-Vorsatz (`wurf`) ist gefallen.
+        if (mesh.userData && typeof mesh.userData.__teil === "string") out.teil = mesh.userData.__teil;
         // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
         // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
         // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut
@@ -5458,12 +5463,14 @@ init();
                     console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
                 }
             }
-            // DIE HÜLLE REIST MIT (Welle L, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
-            // Kollisions-Liste haus-lokal — die Solids des Gesetzbuchs, jede Stufe die der Stufe 0 (hausSolids) — als
-            // Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis).
-            // Nach dem Budget-Ausgang: der Beipack ist kein Teil. Andere Gestalten tragen das Feld nie.
-            if (g && g.userData && g.userData.__huelle && Array.isArray(g.userData.__huelle.boxen))
-                meshes.push({ kind: "__huelle", huelle: { stufe: g.userData.__huelle.stufe, boxen: g.userData.__huelle.boxen } });
+            // DIE HÜLLEN REISEN MIT (Welle L + S3, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
+            // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
+            // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
+            // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
+            // kein Teil. Andere Gestalten tragen die Felder nie.
+            for (const __bp of ["__huelle", "__fern"])
+                if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
+                    meshes.push({ kind: __bp, huelle: g.userData[__bp] });
         } catch (e) {
             meshes = [];
             try {

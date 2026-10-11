@@ -51,7 +51,7 @@ seinen eigenen Leuchtturm betreiben, auf jedem Rechner, der Node hat.
 npm run check           # Statik: node --check aller Kerne + Atlas/Source-Probes/Studio-Vertrag/Altlasten/Betriebsgesetz
 npm run atlas           # die LIVE-Karte der Stamm-Zonen (<1 s; --find <regex>)
 npm run lint            # ESLint
-npm run format:check    # Prettier (der Stamm braucht einige Minuten)
+npm run format:check    # Prettier in Teilen auf allen Kernen (~6 s; ganz am Stück 2,5 min)
 npm run playtest:fast   # ~18 Kern-Gesundheits-Checks (~45 s) — der Dev-Loop
 npm run playtest        # ~5000 Headless-Invarianten über ~240 Bänder (~4 min, GPU-frei) — das Merge-Gate
 npm run gate:<name>     # die Domänen-Linsen (Liste: package.json)

@@ -100,7 +100,7 @@ if (V) {
         "VERHALTEN trägt die Seelen-Blöcke jagd/furcht/temperament/wandern",
         !!(
             V.jagd &&
-            Number.isFinite(V.jagd.strikeRange) &&
+            Number.isFinite(V.jagd.strikeCooldownSec) &&
             V.furcht &&
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
@@ -111,13 +111,12 @@ if (V) {
         )
     );
     // ── A4) SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke reisen:
-    // Stopp-Distanzen (jagd/furcht) · Stimmungs-Schwellen · freude (die Huepf-Hoehen
+    // Stimmungs-Schwellen · freude (die Huepf-Hoehen
     // sind das Sprung-Gesetz; sprung.impulsProM fiel, Welle L) · Größen-Bänder ·
     // separation · aufgaben · herde · wasser.
     check(
-        "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser + Stopp-Distanzen)",
+        "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser)",
         !!(
-            Number.isFinite(V.jagd && V.jagd.pirschStoppM) &&
             Number.isFinite(V.herde && V.herde.fensterRaum) &&
             V.stimmung.schwellen &&
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
@@ -151,7 +150,7 @@ probe("_motionProfileName trägt den Zustand-Vorrang (zustand vor Emotion)", /MO
 probe("updateCreatures stempelt die JAGD (Stempel am Hunt-Drive)", /_kreaturZustandStempel\(creature, "jagd"\)/);
 probe("updateCreatures stempelt die FLUCHT", /_kreaturZustandStempel\(creature, "flucht"\)/);
 probe("der Schwimm-Stempel lebt an der Wasser-Wahrheit", /_motionZustand = "schwimmen"/);
-probe("_animateTierBaum konsumiert bodyX (Rumpf-Neigung reist)", /T\.wolf\.rotation\.x = \(Number\(P\.bodyX\)/);
+probe("_animateTierBaum konsumiert bodyX (Rumpf-Neigung reist)", /T\.wolf\.rotation\.x =\s*\(Number\(P\.bodyX\)/);
 probe("_animateTierBaum trägt den Aktions-Overlay", /_verhaltenAktion/);
 probe("der Verhaltens-Tick würfelt deterministisch (FNV, kein Math.random)", /_verhaltenHash\(/);
 // SPIEGEL-ZENSUS 17.07. — die Seelen-Konsum-Anker:
@@ -160,7 +159,16 @@ probe(
     /_verhaltenGesetzMemo/
 );
 probe("der Gang-Phasen-Seed liest das Gesetz (P.phases statt hartem Trab)", /Array\.isArray\(P\.phases\)/);
-probe("die Gegenwehr schlägt mit der EINEN Biss-Reichweite (jagd.strikeRange)", /< VG\.jagd\.strikeRange/);
+// DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): jeder Biss-Weg setzt den EINEN Biss an, seine Reichweite ist der Weg
+// des Ansprungs; die Gegenwehr springt durch denselben Akt
+probe(
+    "die Gegenwehr ist der EINE Biss (der Ansprung, _kreaturBissAnsatz mit der Quelle gegenwehr)",
+    /_kreaturBissAnsatz\(\s*creature,\s*null,\s*"gegenwehr"/
+);
+probe(
+    "die Reichweite des Bisses ist der Weg des Ansprungs (sein Tempo × die Sprung-Zeit)",
+    /this\._kreaturBissTempo\(creature\) \* this\._kreaturSprungZeit\(creature\)/
+);
 // SCHLUSS-WELLE 17.07. — die Konsum-Anker der neun heimgekehrten Blöcke:
 probe("die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)", /_verhaltenGesetz\(\)\.stimmung\.schwellen/);
 probe("die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)", /_verhaltenGesetz\(\)\.groessen/);
@@ -172,12 +180,12 @@ probe(
 );
 probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
 probe(
-    "der Pirsch-Stopp liest das Gesetz (pirschStoppM im Jagd-Weg _kreaturJagdZug; die Neugier hält am persönlichen Raum)",
-    /J\.pirschStoppM/
+    "die Hetze hält, wo das Maul den Leib erreicht (_kreaturBissRadial im Jagd-Weg _kreaturJagdZug; die Neugier hält am persönlichen Raum)",
+    /const spalt = this\._kreaturBissRadial\(creature, ziel\);/
 );
 probe(
     "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h))",
-    /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* \(froh \? F\.hopHochM : F\.hopBasisM\)\)/
+    /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* this\._kreaturSprungHoehe\(creature\)\)[\s\S]{0,600}return froh \? F\.hopHochM : F\.hopBasisM;/
 );
 probe("eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)", /def\.hop === true\) this\.creatureJump\(/);
 

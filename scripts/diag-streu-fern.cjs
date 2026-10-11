@@ -142,8 +142,9 @@ function check(name, ok, detail) {
             while (performance.now() < dl) {
                 r._tickScatterStreaming(pm);
                 const n = zellen();
-                let offen = false;
-                for (const reg of map.values()) if (reg._cont || reg._deferredFoundry) offen = true;
+                // offen: eine Region in Reichweite steht nicht (die EINE Antwort der Welt, `_streuWartet` — auch eine fehlende),
+                // oder eine Region der Karte wartet noch (`_streuRegionWartet`)
+                const offen = r._streuWartet(pm) > 0 || Array.from(map.keys()).some((k) => r._streuRegionWartet(k));
                 if (n === letzt && !offen) ruhig++;
                 else ruhig = 0;
                 letzt = n;

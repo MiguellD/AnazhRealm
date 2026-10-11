@@ -172,9 +172,21 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         console.log("Lade beide Spielseiten ...");
         await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        // Welt + window.anazhRealm initialisieren lassen.
-        await waitFor(pageA, () => !!window.anazhRealm, 15000, "Seite A initialisiert");
-        await waitFor(pageB, () => !!window.anazhRealm, 15000, "Seite B initialisiert");
+        // Welt + window.anazhRealm initialisieren lassen — bis init durchlief (`_gameLoopTick`): init wartet auf den
+        // IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft; ein Raum-Beitritt davor fiele in
+        // init hinein (die Auto-Verbindung baute ihn neu).
+        await waitFor(
+            pageA,
+            () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
+            120000,
+            "Seite A initialisiert"
+        );
+        await waitFor(
+            pageB,
+            () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
+            120000,
+            "Seite B initialisiert"
+        );
 
         // Beide Seiten in DENSELBEN Raum bringen (worldId unterscheidet sich
         // pro Seite — der roomOverride zwingt sie zusammen).
@@ -411,10 +423,13 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         // B fordert den Welt-Resync an.
         const resync = await pageB.evaluate(() => window.anazhRealm._p2pRequestWorldResync());
         check("B: Welt-Resync angefordert", resync && resync.ok === true, JSON.stringify(resync));
-        // B übernimmt A's Welt → B's worldId wird zu A's worldId.
+        // B übernimmt A's Welt durch die Tür (`_weltBetreten`): sie liegt unter A's worldId im Speicher, der Aktiv-Zeiger
+        // zeigt auf sie (der Reload ist im Test angehalten — die Seite lädt sie nie in sich).
         await waitFor(
             pageB,
-            (wid) => window.anazhRealm.state.worldMeta.worldId === wid,
+            (wid) =>
+                window.anazhRealm.activeWorldGet() === wid &&
+                !!localStorage.getItem(window.anazhRealm.worldStorageKey(wid)),
             15000,
             "B übernimmt A's Welt über den chunked Mesh-Transfer",
             worldIdA

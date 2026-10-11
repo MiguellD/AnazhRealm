@@ -306,6 +306,8 @@ function zielZensus(k) {
                 bytes: (g.__vramH && g.__vramH.b) || 0,
                 // eine Leinwand-Textur legt der Kontext an, nicht das Gerät — der Abgriff kennt sie nicht
                 leinwand: !g.__vramH,
+                // eine Attrappe, deren Kopie der Stamm in einen eigenen Pass umleitet (`__umleitung` = das echte Ziel)
+                umleitung: g.__umleitung || null,
                 ereignisse: (ev.get(g) || []).map((e) =>
                     Object.assign(
                         { s: e.s, f: e.f, art: e.art, pass: e.pass, via: e.via },
@@ -315,7 +317,17 @@ function zielZensus(k) {
                 ),
             };
         });
-        return { frames: frame, n, leinwand: [Math.round(db.x), Math.round(db.y)], blind, pipeBlind, ziele, erst };
+        // DAS GERÄT (0910-1 B): ob es rg11b10ufloat rendert — das Urteil über das Ausgabe-Format liest es.
+        const geraet = {
+            rg11b10: !!(be.device && be.device.features && be.device.features.has("rg11b10ufloat-renderable")),
+            ausgabe: st._ausgabeFormat || null,
+        };
+        // DAS SZENEN-ZIEL, wie der Host es ausweist (das Ziel des Szenen-Passes; der Selbsttest weist für seine Dauer einen
+        // eigenen Täter aus, `window.__zielAusgabe`) — das Urteil über das Ausgabe-Format liest genau dieses Ziel, nie einen Namen
+        const ausT = window.__zielAusgabe || (st.scenePass && st.scenePass.renderTarget && st.scenePass.renderTarget.texture);
+        const ausD = ausT && be.has(ausT) ? be.get(ausT) : null;
+        geraet.ausgabeId = ausD && ausD.texture && idVon.has(ausD.texture) ? idVon.get(ausD.texture) : null;
+        return { frames: frame, n, leinwand: [Math.round(db.x), Math.round(db.y)], blind, pipeBlind, ziele, erst, geraet };
     })();
 }
 
@@ -445,6 +457,7 @@ function zielSchmuggel(an) {
         if (!S) return { ab: false };
         S.ab();
         for (const x of S.weg) x.dispose();
+        delete window.__zielAusgabe;
         window.__zielSchmuggelStand = null;
         return { ab: true };
     }
@@ -467,6 +480,9 @@ function zielSchmuggel(an) {
     const leser = ziel("zensus-selbsttest:leser", 8, 8);
     const paarA = ziel("zensus-selbsttest:paar-a", 128, 128);
     const paarB = ziel("zensus-selbsttest:paar-b", 128, 128);
+    // das ausgewiesene Szenen-Ziel in 64 bit (0910-3 B): für die Dauer des Schmuggels weist es sich als Szenen-Ziel aus
+    // (`__zielAusgabe`), das echte bleibt unberührt (ein Format-Wechsel des echten Ziels zur Laufzeit bricht die Bündel)
+    const ausgabe = ziel("zensus-selbsttest:ausgabe", W, H, { type: T.HalfFloatType });
     const kopie = ziel("zensus-selbsttest:kopie-ziel", 4, 4, { depthBuffer: true });
     kopie.setSize(W, H);
     kopie.depthTexture = new T.DepthTexture(W, H);
@@ -490,6 +506,7 @@ function zielSchmuggel(an) {
     const liesA = stoff(TSL.texture(paarA.texture));
     const liesB = stoff(TSL.texture(paarB.texture));
     const liesF32 = stoff(TSL.texture(f32));
+    const liesAusgabe = stoff(TSL.texture(ausgabe.texture));
     const liesTiefe = stoff(TSL.vec4(TSL.texture(kopie.depthTexture).r, 0, 0, 1));
     const szene = new T.Scene();
     szene.name = "zensus-selbsttest";
@@ -518,6 +535,8 @@ function zielSchmuggel(an) {
             zeichne(paarB, farbe);
             zeichne(leser, liesB);
             zeichne(leser, liesF32);
+            zeichne(ausgabe, farbe);
+            zeichne(leser, liesAusgabe);
             rend.copyTextureToTexture(tiefe, kopie.depthTexture);
             zeichne(leser, liesTiefe);
         } finally {
@@ -525,6 +544,7 @@ function zielSchmuggel(an) {
         }
         return o;
     });
+    window.__zielAusgabe = ausgabe.texture;
     window.__zielSchmuggelStand = { ab, weg };
     return { an: true, leinwand: [W, H] };
 }
@@ -582,6 +602,15 @@ function zielUrteil(z, lesen) {
     for (const x of ziele) {
         if (x.leinwand) continue;
         const e = x.ereignisse || [];
+        // DIE UMLEITUNG (Tiefen-Abbild, 0710-1 P2): r184 kopiert im Pass-Bruch in eine 1×1-Attrappe, der Haken des Stamms
+        // zeichnet statt der Kopie einen Pass ins echte Ziel — die Kopie, die der Zensus hier sieht, findet nie statt.
+        if (x.umleitung) {
+            hinweis.push(
+                `UMLEITUNG: ${x.name || "#" + x.id} (${form(x)}, ${mb(x.bytes)} MB) — die Kopie hinein zeichnet der Stamm als Pass in ` +
+                    `${x.umleitung}; die Textur ist eine Attrappe`
+            );
+            continue;
+        }
         const lesend = e.filter((v) => v.art === "R" || v.art === "L" || v.art === "T");
         const schreibend = e.filter((v) => v.art === "W");
         const name = x.name || `#${x.id}`;
@@ -709,6 +738,30 @@ function zielUrteil(z, lesen) {
                 `KANAL: ${name} (${x.format}) — Kanal ${konst.map((c) => "rgba"[c] + "=" + l.min[c]).join(", ")} an diesem Ort konstant`
             );
     }
+    // DAS AUSGABE-FORMAT (0910-1 B): das Szenen-Ziel `output` (r184 PassNode) trägt lineares Licht ≥ 0 und einen Kanal a, den
+    // kein Leser wertet (TRAA reicht ihn durch, vendor/TRAANode.js clipAABB). Rendert das Gerät rg11b10ufloat, trägt das dieselben
+    // drei Kanäle in der Hälfte — 64 bit dort sind ein Täter (`_ausgabeFormat` griff nicht; r184 `PassNode.setup` stellt den Typ
+    // je Bau zurück). Fehlt das Feature, nennt der Zensus die Adapter-Bedingung LAUT, ohne Rot: dann hält das Gerät die 64 bit.
+    const geraet = z.geraet || null;
+    // das ausgewiesene Szenen-Ziel (`ausgabeId`, Seite); ohne Ausweis der Name des r184-Passes
+    const aus =
+        geraet && geraet.ausgabeId != null && byId.has(geraet.ausgabeId)
+            ? byId.get(geraet.ausgabeId)
+            : ziele.find((x) => x.name === "output" && x.ziel && !x.tiefe);
+    if (geraet && aus) {
+        if (geraet.rg11b10 && aus.format === "rgba16float")
+            nenne(
+                aus,
+                "format",
+                `AUSGABE-FORMAT: ${aus.name || "#" + aus.id} (${form(aus)}, ${mb(aus.bytes)} MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist ` +
+                    `lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−${mb(aus.bytes / 2)} MB; anazhRealm.js \`_ausgabeFormat\`)`
+            );
+        else if (!geraet.rg11b10)
+            hinweis.unshift(
+                `ADAPTER: rg11b10ufloat-renderable fehlt auf diesem Gerät — ${aus.name || "#" + aus.id} bleibt ${form(aus)} (${mb(aus.bytes)} MB, ` +
+                    `+${mb(aus.bytes / 2)} MB gegen ein Gerät mit dem Feature)`
+            );
+    }
     const zeilen = ziele
         .filter((x) => !x.leinwand)
         .map((x) => {
@@ -801,6 +854,19 @@ function selbsttest() {
         }
         if (mit.f32) x.push((T.f32 = tex(10, "x:f32", { format: "rgba32float", w: 64, h: 64, ziel: false, bytes: 65536 })));
         if (mit.ohneErzeuger) x.push((T.anon = tex(11, null, { erzeuger: null, format: "r8unorm", w: 16, h: 16, bytes: 256 })));
+        if (mit.attrappe)
+            x.push(
+                (T.att = tex(12, "x:attrappe", {
+                    format: "depth24plus",
+                    tiefe: true,
+                    w: 1,
+                    h: 1,
+                    bytes: 4,
+                    umleitung: mit.attrappe === "mit" ? "x:abbild" : null,
+                }))
+            );
+        if (mit.ausgabe) Object.assign(szene, { format: mit.ausgabe, bytes: mit.ausgabe === "rg11b10ufloat" ? 8294400 : szene.bytes });
+        if (mit.ausgewiesen) x.push((T.aus = tex(13, "x:ausgabe")));
         for (let f = 1; f <= 4; f++) {
             if (f === 1) auf(gesch, f, "W", "TRAA", "kopie", { von: 2 });
             auf(szene, f, "W", "haupt", "farbe", { pid: 10 * f });
@@ -831,8 +897,14 @@ function selbsttest() {
             }
             if (T.f32) auf(T.f32, f, "R", "post", "zeichnen", { pid: 10 * f + 2 });
             if (T.anon) auf(T.anon, f, "R", "post", "zeichnen", { pid: 10 * f + 2 });
+            if (T.att) auf(T.att, f, "W", "haupt", "kopie", { von: 1 });
+            if (T.aus) {
+                auf(T.aus, f, "W", "probe", "farbe", { pid: 10 * f + 6 });
+                auf(T.aus, f, "R", "post", "zeichnen", { pid: 10 * f + 2 });
+            }
         }
         const z = { frames: mit.frames || 4, n: 4, leinwand: [1920, 1080], blind: mit.blind || 0, pipeBlind: 0, ziele: x };
+        if (mit.geraet) z.geraet = mit.geraet;
         const lesen = T.f32 ? [{ id: 10, gelesen: true, min: [0, 0, 0, 0], max: [1, 1, 1, 1], f16exakt: true }] : [];
         return { z, lesen };
     };
@@ -850,6 +922,18 @@ function selbsttest() {
         { name: "Textur ohne Erzeuger", mit: { ohneErzeuger: true }, muss: /ERZEUGER: #11/ },
         { name: "blindes Bündel", mit: { blind: 3 }, muss: /3 Bündel ohne bekannten Inhalt/ },
         { name: "zu kurzes Fenster", mit: { frames: 2 }, muss: /nur 2 Frames/ },
+        { name: "Attrappe ohne Umleitungs-Marke", mit: { attrappe: "ohne" }, muss: /TIEFE OHNE LESER: x:attrappe .* geschrieben, nie gelesen/ },
+        {
+            name: "Szenen-Ziel in 64 bit auf einem rg11b10-Gerät",
+            mit: { geraet: { rg11b10: true } },
+            muss: /AUSGABE-FORMAT: output \(rgba16float 1920×1080, 15\.82 MB\) .*\(−7\.91 MB/,
+        },
+        {
+            // der Schmuggel des echten Frames: ein eigenes 64-bit-Ziel als Szenen-Ziel ausgewiesen, das echte bleibt rg11b10
+            name: "ausgewiesenes Szenen-Ziel in 64 bit",
+            mit: { geraet: { rg11b10: true, ausgabeId: 13 }, ausgabe: "rg11b10ufloat", ausgewiesen: true },
+            muss: /AUSGABE-FORMAT: x:ausgabe \(rgba16float/,
+        },
     ];
     for (const f of faelle) {
         const b = bau(f.mit);
@@ -857,6 +941,24 @@ function selbsttest() {
         const ok = u.rot.some((x) => f.muss.test(x));
         if (!ok) fehler.push(`${f.name}: der Zensus nennt den Täter nicht (${f.muss})`);
         console.log(`  ${ok ? "✅" : "❌"} ${f.name} → ${u.rot.join(" · ") || "grün"}`);
+    }
+    // Grün mit Hinweis: die markierte Attrappe (die Umleitung), das Szenen-Ziel in rg11b10 auf dem Gerät mit Feature, die
+    // Adapter-Bedingung ohne Feature (64 bit bleiben, der Zensus nennt es).
+    const gruen = [
+        { name: "Attrappe mit Umleitungs-Marke", mit: { attrappe: "mit" }, hinweis: /UMLEITUNG: x:attrappe .* in x:abbild/ },
+        { name: "Szenen-Ziel in rg11b10", mit: { geraet: { rg11b10: true }, ausgabe: "rg11b10ufloat" }, hinweis: null },
+        {
+            name: "Gerät ohne rg11b10ufloat-renderable",
+            mit: { geraet: { rg11b10: false } },
+            hinweis: /ADAPTER: rg11b10ufloat-renderable fehlt .* output bleibt rgba16float/,
+        },
+    ];
+    for (const g of gruen) {
+        const b = bau(g.mit);
+        const u = zielUrteil(b.z, b.lesen);
+        const ok = !u.rot.length && (!g.hinweis || u.hinweis.some((h) => g.hinweis.test(h)));
+        if (!ok) fehler.push(`${g.name}: erwartet grün${g.hinweis ? " mit Hinweis " + g.hinweis : ""}`);
+        console.log(`  ${ok ? "✅" : "❌"} ${g.name} → ${u.rot.join(" · ") || "grün"}${g.hinweis ? " · " + (u.hinweis.find((h) => g.hinweis.test(h)) || "kein Hinweis") : ""}`);
     }
     // Die Klassen schweigen, wo sie nicht gelten: die Geschichte der zeitlichen Auflösung (trägt über den Frame) ist nie
     // teilbar, die Szene und die Auflösung leben im Resolve zugleich.
