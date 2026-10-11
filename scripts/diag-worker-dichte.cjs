@@ -376,7 +376,136 @@ function zeige(rep) {
     );
 }
 
+// ── DIE GELÄNDE-LINSE (K16, `--realismus`): die Wand der Natur-Zahlen am Gelände-Gesetzbuch — ohne Browser, das Gesetz
+// selbst in Node (vendor/simplex-noise.js + gelaende-core.js in einer vm), drei Welt-Saaten, 4 × 4 km im 30-m-Raster
+// (GLO-30), die Statistik ist `__gelaendeCore.statistik` (dieselbe Rechnung wie die Gegenmessung am gebauten Boden und
+// die Zahl-Leiste des Studios). Die Ziele (Nordstern §4.1, Karte K16): Senken > 1 m ≤ 1/km² und < 1 % der Fläche ·
+// Flint θ 0,3–0,7 bei R² ≥ 0,5 · Hammond-Ebenen vorhanden · ≥ 3 Dorfplätze · Schicht-Gesetz am Schicht-Ort (2-m-Raster):
+// Kliff ≥ 60° ≥ 2 %, Schutthang 30–40° ≥ 5 %, Pediment 0,5–7° ≥ 20 %. Der Täter je Ziel steht beim Namen.
+//   --realismus [--json datei] [--selftest]   Selbsttest: eine Eier-Karton-Störung (±3 m, λ 80 m) MUSS die Senken rot färben
+const REALISMUS_SAATEN = ["anazh-realm-seed", "w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"];
+function gelaendeKern(wurzel) {
+    const vm = require("vm");
+    const ctx = { console, Math, Float64Array, Float32Array, Int32Array, Uint8Array, Uint32Array, Map, Set, Object };
+    ctx.self = ctx;
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(wurzel, "vendor", "simplex-noise.js"), "utf8"), ctx);
+    vm.runInContext(fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"), ctx);
+    return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
+}
+function realismusLage(K, saat) {
+    const G = K.G;
+    return {
+        seed: saat,
+        noise: new K.SimplexNoise(saat + ":voxel"),
+        baseHeight: 0,
+        waterLevel: -3,
+        terrainSteepness: 1,
+        erosion: null,
+        erosionTiles: null,
+        tarns: null,
+        macroAnker: typeof G.ankerAusSaat === "function" ? G.ankerAusSaat(saat) : null,
+        erbgut: { terme: G.erbgutNormal(undefined), wildnis: 1 },
+        regionSize: 2048,
+    };
+}
+function realismus() {
+    // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
+    // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
+    const K = gelaendeKern(root);
+    const G = K.G;
+    const Z = gelaendeKern(path.resolve(__dirname, "..")).G;
+    if (typeof Z.statistik !== "function") {
+        console.log("  ⛔ der Kern trägt keine Linse (statistik)");
+        return 1;
+    }
+    const SCHRITT = 30;
+    const HALB = 2000;
+    // Der Rand (2 km je Seite) rechnet mit — Füllung, Abfluss und das WAHRE Einzugsgebiet der Flüsse, die ins Feld treten
+    // (ohne ihn zählte Flint die Ströme ab der Feldkante); gezählt wird das innere Feld.
+    const RAND = Math.round(2000 / SCHRITT);
+    const AUSSEN = HALB + RAND * SCHRITT;
+    const n = Math.floor((2 * AUSSEN) / SCHRITT) + 1;
+    console.log("\n========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) =========");
+    const welten = [];
+    let rot = false;
+    const stoerung = (x, z) => 3 * Math.sin(x / 12.7) * Math.sin(z / 12.7);
+    for (const saat of REALISMUS_SAATEN) {
+        const L = realismusLage(K, saat);
+        const H = new Array(n * n);
+        const t0 = process.hrtime.bigint();
+        for (let j = 0; j < n; j++)
+            for (let i = 0; i < n; i++) H[i + j * n] = G.hoehe(L, -AUSSEN + i * SCHRITT, -AUSSEN + j * SCHRITT, true);
+        const us = Number(process.hrtime.bigint() - t0) / 1000 / (n * n);
+        const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
+        const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
+        // Das Schicht-Gesetz am Schicht-Ort (der Kern nennt ihn; ohne Schicht-Term: der Ursprung) auf 2-m-Raster, 600 m.
+        const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -HALB, -HALB, HALB, HALB) : null;
+        const ox = ort ? ort.x : 0;
+        const oz = ort ? ort.z : 0;
+        const fn = 301;
+        const HF = new Float64Array(fn * fn);
+        // Gezählt wird im Tafelland selbst (Stil ≥ 0,8 der Großform), nicht im Wald daneben.
+        const maske = new Uint8Array(fn * fn);
+        for (let j = 0; j < fn; j++)
+            for (let i = 0; i < fn; i++) {
+                HF[i + j * fn] = G.hoehe(L, ox - 300 + i * 2, oz - 300 + j * 2, true);
+                if (ort && typeof G.grossform === "function")
+                    maske[i + j * fn] = G.grossform(L, ox - 300 + i * 2, oz - 300 + j * 2).stil >= 0.8 ? 1 : 0;
+                else maske[i + j * fn] = 1;
+            }
+        const schicht = Z.hangBaender(HF, fn, 2, maske);
+        const urteil = {
+            senken: st.senken1mJeKm2 <= 1 && st.anteilSenkeTiefer1m < 0.01,
+            flint: st.flint.theta != null && st.flint.theta >= 0.3 && st.flint.theta <= 0.7 && st.flint.r2 >= 0.5,
+            hammond: st.hammond.sanft >= 1,
+            dorfplaetze: st.dorfplaetze >= 3,
+            schicht: !!ort && schicht.kliff >= 0.02 && schicht.schutt >= 0.05 && schicht.pediment >= 0.2,
+        };
+        const taeter = {
+            senken: "geschlossene fBm-Mulden ohne Auslass (wildnisY: Rausch-Summe cont/ranges/ranges2/detail, kein Abfluss-Gesetz)",
+            flint: "der Hang kennt kein Einzugsgebiet (kein Flussnetz; S unabhängig von A)",
+            hammond: "überall dieselbe Rauheit (ridgeAmp ≥ 5 m auch im Tiefland, Detail-Oktave λ 22 m)",
+            dorfplaetze: "kein ebener Talboden (keine Aue: das Tal-Querprofil fehlt außer dem EINEN Anker-Tal)",
+            schicht: ort
+                ? "die Bänder fehlen am Schicht-Ort"
+                : "kein Schicht-Term: die Terrassen-Sperre (flat = 1 − slope/0,35, < ≈19°) verbietet das Kliff",
+        };
+        let stoer = null;
+        if (SELBSTTEST) {
+            const HS = H.map((h, k) => h + stoerung(-AUSSEN + (k % n) * SCHRITT, -AUSSEN + ((k / n) | 0) * SCHRITT));
+            stoer = Z.statistik(HS, n, SCHRITT, L.waterLevel, benannt, RAND);
+        }
+        welten.push({ saat, raster: { halbM: HALB, randM: RAND * SCHRITT, schrittM: SCHRITT, n }, usJeSpalte: +us.toFixed(2), statistik: st, schichtOrt: ort ? { x: ox, z: oz, stil: ort.stil } : null, schicht, urteil, stoerung: stoer && { senken1mJeKm2: stoer.senken1mJeKm2, minimaJeKm2: stoer.minimaJeKm2 } });
+        console.log(
+            `\n  ${saat}: ${us.toFixed(2)} µs/Spalte · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.zellen} Zellen) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
+        );
+        console.log(
+            `    Schicht-Ort ${ort ? `(${Math.round(ox)}, ${Math.round(oz)})` : "— (kein Schicht-Term)"}: Kliff≥60° ${(100 * schicht.kliff).toFixed(1)} % · Schutt 30–40° ${(100 * schicht.schutt).toFixed(1)} % (Ruhewinkel 33–37° ${(100 * schicht.ruhe).toFixed(1)} %) · Pediment 0,5–7° ${(100 * schicht.pediment).toFixed(1)} %`
+        );
+        for (const k of Object.keys(urteil)) {
+            if (urteil[k]) continue;
+            rot = true;
+            console.log(`    ⛔ ${k}: ${taeter[k]}`);
+        }
+        if (stoer) console.log(`    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km²`);
+    }
+    const JSON_ZIEL = JSON_AUS;
+    if (JSON_ZIEL) fs.writeFileSync(JSON_ZIEL, JSON.stringify({ zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten }, null, 1));
+    if (SELBSTTEST) {
+        const blind = welten.some((w) => !(w.stoerung && w.stoerung.senken1mJeKm2 > 1));
+        console.log(
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot"}\n`
+        );
+        return blind ? 1 : 0;
+    }
+    console.log(`\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten"}\n`);
+    return rot ? 1 : 0;
+}
+
 (async () => {
+    if (argv.includes("--realismus")) process.exit(realismus());
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: true,
