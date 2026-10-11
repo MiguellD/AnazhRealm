@@ -833,7 +833,7 @@ ausdauerProS } · parkour { doppelspruenge doppelsprungMul wandsprungMul
 wandAbstoss kletterV kletterAusdauerProS slideTempoMul slideDauerSec
 slideMinTempo kontaktFrischeSec slidePose { lehne beinVor knieKnick
 armStuetz armFrei kopf } } · luft { kAcc kAccLuft kBrake kBrakeLuft } ·
-sprung { coyoteSec bufferSec } · schritt { taktCompound klangTempoMin } · gang { schrittBasis schrittFroude tastgrad tastgradLauf laufFroude maxWinkel hub hubLauf hubForm } · aktionAusdauer }`.
+sprung { coyoteSec bufferSec } · schritt { taktCompound klangTempoMin } · gang { schrittBasis schrittFroude tastgrad tastgradLauf laufFroude maxWinkel hub hubLauf hubForm beckenHub } · aktionAusdauer }`.
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): `luft` = die vier
   C5-Boden-/Luft-Hebel der Beschleunigungs-/Brems-Kurven, `sprung` =
   Coyote-/Jump-Buffer-Fenster, `gang` = die Zweibeiner-Zeile des EINEN

@@ -19,9 +19,10 @@ function ankleYFromAngles(hx,kr){return -(L1+L2*Math.cos(kr))*Math.cos(hx)+L2*Ma
 // (die Buehne kennt keine Lage-Spruenge). Fail-closed: ohne Kern kein Gang (kein Lab-Literal).
 var G_BUEHNE=44;
 var _TC=window.__tetrapodaCore,_GZ0=window.__koerperCore.bewegung&&window.__koerperCore.bewegung.gang;
-if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||!_GZ0)throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss + koerper fx.bewegung.gang');
+// jedes Feld der Zeile ist Pflicht (fehlt eines, faehrt kein stiller Tier-Gang); das Becken traegt tetrapoda gangBecken
+if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken + koerper fx.bewegung.gang');
 var _GZ=Object.assign({},_GZ0,{g:G_BUEHNE,vMax:Infinity});
-function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(2*Math.PI),S:gs.S,tast:gs.tast,hubE:gs.hub*Lg};}
+function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(2*Math.PI),omega:gs.omega,S:gs.S,tast:gs.tast,hubE:gs.hub*Lg};}
 // der Fuss zur Studio-Phase ph (0..1, der Stand zuerst wie anklePhase): die Phase des Gesetzes beginnt mit dem Schwung;
 // cs = die Skala des Leibs (Welt-Einheiten je Gelenk-Einheit)
 function gangFussStudio(ph,gs,sY,cs){var f=_TC.gangFuss(2*Math.PI*((ph+1-gs.tast)%1),gs.S,gs.tast,_GZ);return{y:sY+f.hub*gs.hubE/cs,z:f.dz/cs};}
@@ -1869,8 +1870,11 @@ function playGait(dt,t){
   gs.hubE=gs.hubE/_mix(1,0.66,cb);                     // der Hub misst am gestreckten Bein: die Bodenfreiheit hockt nicht mit
   play.gaitPhase=(play.gaitPhase+gs.cad*dt)%1;var ph=play.gaitPhase,T=Math.PI*2,aS=Math.cos(ph*T);
   var standY=standYBase*(1-g*0.16);
-  standY=_mix(standY,standYBase*0.66,cb)+lk*0.95;                                      // crouch-tiefe + LANDE-KOMPRESSION
-  var zM=gs.S/(2*cs),Lr=(L1+L2)*0.995;standY=Math.max(standY,-Math.sqrt(Math.max(0,Lr*Lr-zM*zM)));
+  standY=_mix(standY,standYBase*0.66,cb);                                               // crouch-tiefe
+  // DAS BECKEN DES GESETZES (K07): tetrapoda gangBecken wie in der Welt -- nur die stehenden Fuesse senken es, an der
+  // Reichweite R der (geduckt gebeugten) Kette; im Lauf federt das Bein, in der Flugphase steigt der Leib ballistisch
+  var Rk=0.995*(L1+L2)*_mix(1,0.66,cb),phG=2*Math.PI*((ph+1-gs.tast)%1);
+  standY=_mix(standY,-(Rk-_TC.gangBecken(phG,gs.S/cs,gs.tast,Rk,gs.omega,G_BUEHNE/cs,_GZ)),moveB)+lk*0.95;   // + LANDE-KOMPRESSION
   var pL=ph,pR=(ph+0.5)%1;
   var fL=gangFussStudio(pL,gs,standY,cs),fR=gangFussStudio(pR,gs,standY,cs);
   // PER-FOOT GROUND-ADAPTIVE IK (Uncharted-stil): jeder fuss sampelt seinen support an seiner geplanten XZ
@@ -1897,13 +1901,9 @@ function playGait(dt,t){
   if(play.cam==='third'){var dh=((play.yaw-yw+Math.PI)%T+T)%T-Math.PI;headGroup.rotation.y+=_clamp(dh,-0.6,0.6)*0.38*(1-g*0.4);}      // HEAD-LOOK zur kamera (TLOU)
   var wS=1-moveB,wR=(pR<duty?1:wS),wL=(pL<duty?1:wS);                                 // stance-gewichteter pelvis-plant: der Schwung-Fuss traegt nie
   var cR=play.fOffR+footBelowAnkle-trochanterY-ankleYFromAngles(hipR,knR),cL=play.fOffL+footBelowAnkle-trochanterY-ankleYFromAngles(hipL,knL);
-  var gY=wR+wL>1e-6?(cR*wR+cL*wL)/(wR+wL):(play.gY!=null?play.gY:(cR+cL)/2);            // Flugphase: die Hoehe des Absprungs
-  play.gY=gY;
-  // der Leib hebt sich nur in der FLUGPHASE des Laufs (Tastgrad < 0,5: beide Fuesse im Schwung), ballistisch unter der
-  // Schwere der Buehne (Scheitel g*tf^2/8) -- ein Hub im Stand hob den stehenden Fuss mit (das Gleiten des Labors)
-  var q=ph%0.5,fl=0.5-duty,tf=fl/Math.max(gs.cad,1e-3);
-  var bob=(fl>0.01&&q>=duty)?G_BUEHNE*tf*tf/8*Math.sin(Math.PI*(q-duty)/fl)*moveB:0;
-  character.position.y=play.posY+gY+bob;
+  // Flugphase (beide Fuesse im Schwung): das Becken des Gesetzes ueber dem gedachten Stand-Fuss (gangBecken steigt dort)
+  var gY=wR+wL>1e-6?(cR*wR+cL*wL)/(wR+wL):footBelowAnkle-trochanterY-(standY+play.susp);
+  character.position.y=play.posY+gY;
   play.prevSp=sp;play.prevFace=play.faceYaw;
 }
 function playPhysics(dt){
@@ -1916,7 +1916,7 @@ function playPhysics(dt){
       var ax=Math.abs(dxl)<Math.abs(dxr)?dxl:dxr,az=Math.abs(dzl)<Math.abs(dzr)?dzl:dzr;
       if(Math.abs(ax)<Math.abs(az)){nx+=ax;play.vx=0;play.wallNX=ax>0?1:-1;play.wallNZ=0;}else{nz+=az;play.vz=0;play.wallNZ=az>0?1:-1;play.wallNX=0;}play.touchWall=true;play.wallT=0.15;}}  // wand-normale + wand-coyote
   character.position.x=nx;character.position.z=nz;
-  play.vy-=44*dt;if(play.vy<-40)play.vy=-40;play.posY+=play.vy*dt;footY=play.posY-FOOT;
+  play.vy-=G_BUEHNE*dt;if(play.vy<-40)play.vy=-40;play.posY+=play.vy*dt;footY=play.posY-FOOT;
   var sup=-1e9;
   for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];
     if(inXZ(character.position.x,character.position.z,b,pr*0.55)&&b.maxY<=footY+1.05&&b.maxY>sup)sup=b.maxY;}

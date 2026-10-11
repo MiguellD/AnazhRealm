@@ -587,8 +587,20 @@ function validateManifest(m) {
             v.push("§8.2+ fx.bewegung.schritt unvollständig (taktCompound/klangTempoMin)");
         // K07: die Zweibeiner-Zeile des EINEN Gang-Gesetzes (tetrapoda gangSchritt/gangFuss)
         const gz = fxB.gang;
-        if (!gz || !["schrittBasis", "schrittFroude", "tastgrad", "maxWinkel", "hub"].every((k) => Number.isFinite(gz[k])))
-            v.push("§8.2+ fx.bewegung.gang unvollständig (schrittBasis/schrittFroude/tastgrad/maxWinkel/hub)");
+        const GANG_FELDER = [
+            "schrittBasis",
+            "schrittFroude",
+            "tastgrad",
+            "tastgradLauf",
+            "laufFroude",
+            "maxWinkel",
+            "hub",
+            "hubLauf",
+            "hubForm",
+            "beckenHub",
+        ];
+        if (!gz || !GANG_FELDER.every((k) => Number.isFinite(gz[k])))
+            v.push(`§8.2+ fx.bewegung.gang unvollständig (${GANG_FELDER.join("/")})`);
         if (!Number.isFinite(fxB.aktionAusdauer)) v.push("§8.2+ fx.bewegung.aktionAusdauer fehlt (Maus-Arm-Aktion)");
     }
     if (m.arena) {

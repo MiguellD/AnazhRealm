@@ -1341,14 +1341,18 @@
         if (!(v > gangZahl(G, "stand")) || !(L > 0)) return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub };
         var vv = Math.min(v, gangZahl(G, "vMax"));
         var vh = vv / Math.sqrt(gangZahl(G, "g") * L);
+        var sMax = 2 * L * Math.tan(gangZahl(G, "maxWinkel"));
+        var lamF = L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh);
         if (G.tastgradLauf > 0 && G.laufFroude > 0) {
             var w = Math.max(0, Math.min(1, (vh * vh - 0.7 * G.laufFroude) / (0.6 * G.laufFroude)));
             w = w * w * (3 - 2 * w);
-            tast += (G.tastgradLauf - tast) * w;
+            // im Lauf fegt das Bein höchstens seinen Winkel: der Fußweg bleibt bei sMax, der Tastgrad fällt mit dem Tempo
+            // (die Kontaktzeit = sMax / v — Weyand 2000), der Schritt wächst weiter mit der Froude-Zahl
+            tast += (Math.min(G.tastgradLauf, sMax / lamF) - tast) * w;
             if (G.hubLauf > 0) hub += (G.hubLauf - hub) * w;
         }
-        var lamMax = (2 * L * Math.tan(gangZahl(G, "maxWinkel"))) / tast;
-        var lam = Math.min(L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh), lamMax);
+        var lamMax = sMax / tast;
+        var lam = Math.min(lamF, lamMax);
         return { omega: (2 * Math.PI * vv) / lam, S: tast * lam, schritt: lam, tast: tast, hub: hub };
     }
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
@@ -1371,6 +1375,51 @@
             dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m,
             hub: Math.pow(Math.sin(halb ? u : (u * Math.PI) / sw), gangZahl(Z, "hubForm")),
         };
+    }
+    // DAS BECKEN DES GESETZES (K07, additiv — die Tiere lesen es nicht): die Senke des Beckens (≥ 0, im Maß von S und R)
+    // zur Phase ph des ersten Beins, das zweite um π versetzt. R = die Reichweite der Bein-Kette (dieselbe Schwelle, an der
+    // die Fuß-IK des Wirts den stehenden Fuß hält), omega der Takt (rad/s), g die Schwere im Maß des Wirts. Nur STEHENDE
+    // Füße tragen das Becken — der Schwung-Fuß faltet sich, er zieht es nie hinab. GEHEN (das umgekehrte Pendel): so tief,
+    // dass jeder stehende Fuß reicht (tief im Doppel-Stand, R − √(R² − (S/2)²)), über der Mitte des Stands höchstens um
+    // beckenHub·R gehoben (das Knie bleibt im Stand leicht gebeugt — Gard 2004: 4–5 cm). LAUFEN (das Feder-Bein, McMahon &
+    // Cheng 1990): beim Aufsetzen dieselbe Tiefe, zur Mitte des Stands federt das Bein um Δy = g·tc·(T/2π − tc/8)
+    // (Kontaktzeit tc, Schritt-Dauer T, die sinusförmige Stand-Kraft trägt im Mittel das Gewicht), in der Flugphase steigt
+    // es ballistisch um g·tf²/8. Der Wechsel folgt dem Tastgrad (tastgrad → tastgradLauf der Zeile Z).
+    function gangBecken(ph, S, tast, R, omega, g, Z) {
+        var TAU = 2 * Math.PI;
+        if (!(S > 0) || !(R > 0)) return 0;
+        var sw = tast > 0 && tast < 1 ? TAU * (1 - tast) : Math.PI;
+        var halbS = Math.min(S / 2, R);
+        var oben = R - Math.sqrt(R * R - halbS * halbS);
+        var A = Z && Z.beckenHub > 0 ? Z.beckenHub * R : 0;
+        var tg = gangZahl(Z, "tastgrad"),
+            tl = Z && Z.tastgradLauf > 0 ? Z.tastgradLauf : tg;
+        var lauf = tg > tl ? Math.max(0, Math.min(1, (tg - tast) / (tg - tl))) : 0;
+        var geh = oben - A,
+            lau = -Infinity,
+            steht = false;
+        var tc = omega > 0 ? (TAU * tast) / omega : 0,
+            T = omega > 0 ? Math.PI / omega : 0;
+        var dy = g > 0 && tc > 0 ? Math.max(0, g * tc * (T / TAU - tc / 8)) : 0;
+        for (var b = 0; b < 2; b++) {
+            var u = (((ph + b * Math.PI) % TAU) + TAU) % TAU;
+            if (u < sw) continue;
+            steht = true;
+            var s = (u - sw) / (TAU - sw);
+            var dz = Math.min(R, Math.abs(S / 2 - S * s));
+            geh = Math.max(geh, R - Math.sqrt(R * R - dz * dz));
+            lau = Math.max(lau, oben + dy * Math.sin(Math.PI * s));
+        }
+        if (!steht) {
+            // die Flugphase: zwischen dem Abheben des einen (u = 0) und dem Aufsetzen des anderen (u = sw − π)
+            var fl = sw - Math.PI,
+                u0 = ((ph % TAU) + TAU) % TAU,
+                u1 = (u0 + Math.PI) % TAU;
+            var q = fl > 0 ? Math.min(u0, u1) / fl : 0;
+            var tf = omega > 0 ? fl / omega : 0;
+            lau = oben - (g > 0 ? (g * tf * tf) / 8 : 0) * Math.sin(Math.PI * Math.max(0, Math.min(1, q)));
+        }
+        return Math.max(0, geh + (lau - geh) * lauf);
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -2855,6 +2904,7 @@
         GANG_GESETZ: GANG_GESETZ,
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
+        gangBecken: gangBecken,
         STEUER_GESETZ: STEUER_GESETZ,
         tempoEinheit: tempoEinheit,
         sprintTempo: sprintTempo,

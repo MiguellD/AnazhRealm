@@ -17510,8 +17510,9 @@ class AnazhRealm {
     // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs.
     _gaitGesetz(rig, speed) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
-        if (!core || typeof core.gangSchritt !== "function") return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
-        const Z = AnazhRealm._bewegungsBlock("gang", ["schrittBasis", "schrittFroude", "tastgrad", "maxWinkel", "hub"]);
+        if (!core || typeof core.gangSchritt !== "function")
+            return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
+        const Z = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         return core.gangSchritt(v, this._gaitBeinMass(rig).L, Z);
     }
@@ -17590,9 +17591,23 @@ class AnazhRealm {
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
         const gs = this._gaitGesetz(rig, v);
+        // DER ANLAUF (K07): der Gang beginnt aus dem Stand — ein Bein mitten in seinem Stand (dz = 0, dort steht der
+        // ruhende Fuß), das andere mitten im Schwung. Vorher lief die Phase vom Halt weiter: der Stand-Fuß lockte unter der
+        // Hüfte, das Gesetz führte ihn um S/2 weiter zurück, als er stand — er lag jenseits der Reichweite, das Becken sank
+        // 9 cm oder der Lock löste (2 der 3 Löser beim Gehen lagen im Anlauf).
+        if (!(halter._gaitW > 0.05) && gs.omega > 0) {
+            const TAU = 2 * Math.PI;
+            const mitte = TAU - Math.PI * gs.tast;
+            const alt = Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0;
+            const basis = Math.floor(alt / TAU) * TAU;
+            const u = alt - basis;
+            const nah = (z) => Math.abs(((u - z + 3 * Math.PI) % TAU) - Math.PI);
+            halter.walkPhase = basis + (nah(mitte) <= nah(mitte - Math.PI) ? mitte : mitte - Math.PI);
+        }
         halter.walkPhase = (halter.walkPhase || 0) + d * gs.omega * emoF;
         halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
-        const g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, L: 0 });
+        const g =
+            halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
         g.w = halter._gaitW;
         // das Fuß-Ziel des Gesetzes: der Fußweg im Stand (die Emotion reist als Kadenz — bei gleichem Weg kürzt sie den
         // Schritt, der Fuß im Stand bleibt stehen), der Tastgrad, die Phase des Aufsetzens (2π·(1 − Tastgrad)), die Beinlänge
@@ -17600,6 +17615,7 @@ class AnazhRealm {
         g.tast = gs.tast;
         g.hub = gs.hub;
         g.auf = 2 * Math.PI * (1 - gs.tast);
+        g.omega = gs.omega * emoF;
         g.L = this._gaitBeinMass(rig).L;
         // ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel — der
         // Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-
@@ -17727,8 +17743,33 @@ class AnazhRealm {
         if (r.spine) r.spine.rotation.x += ik.hang * 0.35;
         // der Stand jedes Beins kommt aus dem Gang-Gesetz (die Pose dieses Takts, _animateHumanoidRig)
         const st = r._gangStand;
-        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, !st || st[0], w);
-        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, !st || st[1], w);
+        const standL = !st || st[0],
+            standR = !st || st[1];
+        // EINE SCHWELLE (K07): R (`_gaitReich`) führt das Becken des Gesetzes und hält den stehenden Fuß. Liegt ein
+        // gelockter Fuß jenseits von R (der Boden der Probe weicht vom Ruhe-Maß der Pose ab — die Verhältnisse 0,9951 bis
+        // 0,9969 lösten 3 von 213 Stand-Takten beim Gehen), senkt sich das Becken um den Fehlbetrag; der Lock löst nur, wo
+        // auch das nicht reicht (vorn/hinten jenseits von R oder mehr als 0,05 Bein — Stufe, Kante: dort tritt der Fuß).
+        if (w >= 0.35 && r.hips && ik.wpl > 0) {
+            let mehr = Math.max(
+                standL && ik.lockL.on ? this._gaitLockBedarf(r.legL, ik, ik.probeL, ik.lockL) : 0,
+                standR && ik.lockR.on ? this._gaitLockBedarf(r.legR, ik, ik.probeR, ik.lockR) : 0
+            );
+            if (mehr > 0 && mehr <= 0.05 * (ik.l1 + ik.l2)) r.hips.position.y -= mehr / ik.wpl;
+        }
+        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, standL, w);
+        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w);
+    }
+    // Der Fehlbetrag eines gelockten Fußes an R: wie weit das Becken sinken muss, damit die Kette ihn erreicht (0 = er
+    // liegt in R; Infinity = er liegt vorn/hinten jenseits von R, kein Senken hilft).
+    _gaitLockBedarf(leg, ik, probe, lock) {
+        const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
+        leg.hip.getWorldPosition(hv);
+        const vor =
+            ((lock.x - hv.x) * Math.sin(ik.yaw) + (lock.z - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl));
+        const unten = hv.y - (probe.g + ik.soleH);
+        const R = AnazhRealm._gaitReich(ik.l1 + ik.l2);
+        if (!Number.isFinite(unten) || Math.abs(vor) >= R) return Infinity;
+        return Math.max(0, unten - Math.sqrt(R * R - vor * vor));
     }
     _gaitLegIK(leg, ik, probe, lock, foot, imStand, w) {
         const av = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
@@ -17763,7 +17804,7 @@ class AnazhRealm {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
         }
-        if (geht && Math.hypot(vor, unten) > (ik.l1 + ik.l2) * 0.995) {
+        if (geht && Math.hypot(vor, unten) > AnazhRealm._gaitReich(ik.l1 + ik.l2) + 1e-6) {
             lock.on = false;
             return; // das Ziel entläuft der Reichweite → Lock löst, die Pose übernimmt
         }
@@ -17874,10 +17915,11 @@ class AnazhRealm {
         }
         // DIE BEINE AUF DAS ZIEL DES GESETZES (K07): jeder Fuß folgt tetrapoda `gangFuss` — im Stand wandert er am Boden
         // mit genau dem Tempo des Leibs zurück (er steht in der Welt), im Schwung kehrt er gehoben nach vorn —, Hüfte, Knie
-        // und Knöchel stellt die Zwei-Knochen-IK auf dieses Ziel (die Sohle bleibt eben). Das Becken sinkt, bis beide Füße
-        // ihr Ziel erreichen (das umgekehrte Pendel: oben in der Mitte des Stands, unten im Doppel-Stand). Derselbe Pfad
-        // trägt den lokalen Avatar, den Peer und jeden Bewohner mit Rig; vorher schwangen die Beine ±0,5 rad als Sinus um
-        // einen 3,4-m-Schritt (der Fuß glitt), und nur der lokale Avatar hielt den Stand-Fuß fest.
+        // und Knöchel stellt die Zwei-Knochen-IK auf dieses Ziel (die Sohle bleibt eben). Das Becken trägt tetrapoda
+        // `gangBecken` (dasselbe im Körper-Studio): nur die STEHENDEN Füße senken es, an der Reichweite R, an der die Fuß-IK
+        // den stehenden Fuß hält (`_gaitReich`, EINE Schwelle); der Schwung-Fuß faltet sich unter R (vorher zog er das
+        // Becken über beide Füße hinab: im Lauf 46 cm, an der Spitze 77 cm). Derselbe Pfad trägt den lokalen Avatar, den
+        // Peer und jeden Bewohner mit Rig; vorher schwangen die Beine ±0,5 rad als Sinus um einen 3,4-m-Schritt.
         const S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
         const M = S > 0 ? this._gaitBeinMass(r) : null;
         let sw = Math.sin(walkPhase);
@@ -17885,26 +17927,26 @@ class AnazhRealm {
         if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true; // ohne Gesetzes-Pose stehen beide Füße
         if (M && M.l1 > 0 && M.l2 > 0) {
             const core = window.__tetrapodaCore;
-            const Z = AnazhRealm._bewegungsBlock("gang", ["schrittBasis", "schrittFroude", "tastgrad", "maxWinkel", "hub"]);
+            const Z = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
             const tast = gait.tast;
             const Sl = S / M.wz; // der Fußweg längs, im Gelenk-Raum
-            const hubL = ((gait.hub > 0 ? gait.hub : Z.hub) * M.L) / M.wpl;
+            const hubL = (gait.hub * M.L) / M.wpl;
             const L12 = M.l1 + M.l2;
-            const reich = 0.995 * L12;
+            const R = AnazhRealm._gaitReich(L12);
             const FL = core.gangFuss(walkPhase, Sl, tast, Z);
             const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z);
-            const hL = FL.hub * hubL;
-            const hR = FR.hub * hubL;
-            const senke = (dz, h) => L12 - h - Math.sqrt(Math.max(0, reich * reich - dz * dz));
-            const tief = Math.max(0.005 * L12, senke(FL.dz, hL), senke(FR.dz, hR));
+            // die Senke im Gelenk-Raum über der gestreckten Kette (die Schwere im lotrechten Gelenk-Maß)
+            const tief = L12 - R + core.gangBecken(walkPhase, Sl, tast, R, gait.omega, 9.81 / M.wpl, Z);
             r._gangSenke = tief;
             const auf = 2 * Math.PI * (1 - tast);
             const u = (p) => ((p % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             r._gangStand = r._gangStand || [false, false];
             r._gangStand[0] = u(walkPhase) >= auf;
             r._gangStand[1] = u(walkPhase + Math.PI) >= auf;
-            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, L12 - tief - hL);
-            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, L12 - tief - hR);
+            // der Fuß unter der Hüfte: gehoben um seinen Hub, nie jenseits von R (der Schwung-Fuß faltet sich)
+            const unten = (F, h) => Math.min(L12 - tief - h, Math.sqrt(Math.max(0, R * R - F.dz * F.dz)));
+            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, unten(FL, FL.hub * hubL));
+            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, unten(FR, FR.hub * hubL));
             add(r.legL.hip, "x", ikL.hip * w);
             add(r.legL.knee, "x", ikL.knee * w);
             add(r.legL.ankle, "x", -(ikL.hip + ikL.knee) * w);
@@ -101946,6 +101988,25 @@ AnazhRealm._parkourGesetz = function () {
         }
     } catch (_e) {}
     return null;
+};
+// Die Zweibeiner-Zeile des EINEN Gang-Gesetzes (fx.bewegung.gang): jedes Feld ist Pflicht — fehlt eines (der Lauf-Wechsel,
+// der Hub des Laufs, das Becken), bricht der Leser, statt still die Tier-Form zu fahren (K07).
+AnazhRealm.GANG_FELDER = Object.freeze([
+    "schrittBasis",
+    "schrittFroude",
+    "tastgrad",
+    "tastgradLauf",
+    "laufFroude",
+    "maxWinkel",
+    "hub",
+    "hubLauf",
+    "hubForm",
+    "beckenHub",
+]);
+// Die Reichweite R der Bein-Kette (K07, EINE Schwelle): an ihr führt tetrapoda gangBecken das Becken, an ihr hält die
+// Fuß-IK den stehenden Fuß (`_gaitLegIK`, `_gaitLockBedarf`) — knapp unter der gestreckten Kette (das Knie schnappt nie durch).
+AnazhRealm._gaitReich = function (kette) {
+    return 0.995 * kette;
 };
 // Der EINE Bewegungs-Block-Leser: luft (Beschleunigungs-/Brems-Kurven), sprung (Coyote-/Buffer-
 // Fenster), schritt (Compound-Takt, Klang-Schwelle), gang (die Zweibeiner-Zeile des Gang-Gesetzes) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder

@@ -9,7 +9,10 @@
 // (_creatureAnimDiv auf 0,8 × Fern-Distanz, mit dem Takt des Gangs) — gemessen wird zwischen zwei Auswertungen (der
 // Leib zieht jeden Frame weiter). Vorher deckelte der Takt seinen Schritt auf 0,1 s (die Phase blieb 25 % hinter dem
 // Weg, Schlupf 0,27) und die Leiter tastete den schnellen Fuchs-Trab unter seinem Takt ab (Schlupf 1,33).
-//   DER SPIELER-LEIB (K07): derselbe Aufsetz-Punkt, dieselbe Schwelle am Menschen (LEIB, unten), dazu Kadenz und Töne.
+//   DER SPIELER-LEIB (K07): derselbe Aufsetz-Punkt, dieselbe Schwelle am Menschen (LEIB, unten), dazu Kadenz und Töne,
+//   das BECKEN (Hub und Tiefe unter der Ruhe, in Beinlängen: Gehen ≤ 0,07 / 0,15, Laufen ≤ 0,12 / 0,25 — Gard 2004,
+//   Cavagna 1976, Lee & Farley 1998) und die LOCK-LÖSER im Stand-Fenster (Soll 0: der stehende Fuß löst nie an der
+//   Reichweite, die das Gesetz ihm selbst gibt).
 //   DAS KÖRPER-STUDIO (K07): derselbe Schlupf am Menschen des Labors im Spiel-Modus (STUDIO, unten) — geduckt, gehen, Sprint.
 //   --selftest: das Gang-Gesetz gestubbt (fester Takt, feste Auslenkung — der Vor-Welle-Gang) → der Schlupf steigt
 //   über die Schwelle, die Linse feuert.
@@ -30,6 +33,9 @@ const NUR_STUDIO = process.env.TIER_GANG_TEIL === "studio";
 const SCHWELLE = 0.05;
 const KADENZ_GEHEN = 1.5; // Schritte/s bei 1,15 m/s (physio-pedia, Weidmann 1993)
 const TON_TOLERANZ = 0.15; // Töne = 2·v·t/Λ ± 15 %
+// das Becken in Beinlängen (Hub = höchste − tiefste Lage, Tiefe = Ruhe − tiefste Lage): Gehen (Gard 2004: 4–5 cm bei
+// 0,9 m Bein) und Laufen (Cavagna 1976, Lee & Farley 1998: Hub 6–10 cm, das Bein federt um 10–15 %)
+const BECKEN = { gehen: { hub: 0.07, tief: 0.15 }, laufen: { hub: 0.12, tief: 0.25 } };
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -211,11 +217,31 @@ const LEIB = (k) => {
             ? r._gaitBeinMass(rig).L
             : (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) *
               (rig.legL.hip.getWorldScale(new T.Vector3()).y || 1);
+    // die LOCK-LÖSER: je Takt und Bein, das im Stand-Fenster des Gesetzes geht (w ≥ 0,35) — trug es den Lock und
+    // trägt es ihn danach nicht mehr, hat die Fuß-IK den stehenden Fuß gelöst
+    const zaehl = { stand: 0, loeser: 0 };
+    const ikAlt = r._gaitLegIK;
+    r._gaitLegIK = function (leg, ik, probe, lock, foot, imStand, w) {
+        const vor = lock && lock.on;
+        const out = ikAlt.apply(this, arguments);
+        if (imStand && w >= 0.35) {
+            zaehl.stand++;
+            if (vor && !lock.on) zaehl.loeser++;
+        }
+        return out;
+    };
+    const hw = new T.Vector3();
+    const huefte = () => (rig.hips.getWorldPosition(hw), hw.y - sohle());
+    const ruheH = huefte();
     const zeilen = [];
     for (const [name, v] of [
         ["gehen (W)", 1.15],
         ["laufen (Shift)", 5.16],
+        ["Spitze", 6.75],
     ]) {
+        zaehl.stand = zaehl.loeser = 0;
+        let hMin = Infinity,
+            hMax = -Infinity;
         vx = v;
         const N = 180;
         const spur = [[], []],
@@ -233,6 +259,11 @@ const LEIB = (k) => {
             }
             leib.push(mesh.position.x);
             knoechel.forEach((a, j) => spur[j].push(a.localToWorld(lokal[j].clone())));
+            if (i >= 30) {
+                const h = huefte();
+                hMin = Math.min(hMin, h);
+                hMax = Math.max(hMax, h);
+            }
         }
         const sek = (N - 1 - 30) * dt;
         const toene = (s._schrittKlang ? s._schrittKlang.schritte : 0) - ton0;
@@ -265,8 +296,13 @@ const LEIB = (k) => {
             schrittM: kadenz > 0 ? +(v / kadenz).toFixed(2) : null,
             toene,
             soll: +soll.toFixed(1),
+            beckenHub: +((hMax - hMin) / beinM).toFixed(3),
+            beckenTief: +((ruheH - hMin) / beinM).toFixed(3),
+            standTakte: zaehl.stand,
+            loeser: zaehl.loeser,
         });
     }
+    r._gaitLegIK = ikAlt;
     if (k.stub) core.gangSchritt = window.__gangEcht;
     s.playerVel = gespeichert.vel;
     s.playerUnderwater = gespeichert.uw;
@@ -278,7 +314,12 @@ const LEIB = (k) => {
     mesh.rotation.y = rot0;
     const taeter =
         typeof r._gaitGesetz === "function" ? "_gaitGesetz (fx.bewegung.gang)" : "_gaitSchrittLen (schritt.kalib)";
-    return { zeilen, taeter };
+    const beckenTaeter =
+        typeof core.gangBecken === "function"
+            ? "tetrapoda gangBecken (das Becken des Gesetzes)"
+            : "_animateHumanoidRig (Becken-Senke über beide Füße, der Schwung-Fuß zieht mit)";
+    const loeserTaeter = "_gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)";
+    return { zeilen, taeter, beckenTaeter, loeserTaeter };
 };
 
 // DAS KÖRPER-STUDIO (K07): derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
@@ -323,7 +364,7 @@ const STUDIO = (k) => {
             parts[n].getWorldPosition(w);
             spur[j].push({ x: w.x, y: w.y, z: w.z });
         });
-        leib.push({ x: character.position.x, z: character.position.z });
+        leib.push({ x: character.position.x, z: character.position.z, y: character.position.y });
         if (i >= EIN) phase += (play.gaitPhase - phPrev + 1) % 1;
         phPrev = play.gaitPhase;
     }
@@ -345,6 +386,12 @@ const STUDIO = (k) => {
             wegLeib += Math.hypot(leib[i].x - leib[i - 1].x, leib[i].z - leib[i - 1].z);
         }
     }
+    let yMin = Infinity,
+        yMax = -Infinity;
+    for (let i = EIN; i < N; i++) {
+        yMin = Math.min(yMin, leib[i].y);
+        yMax = Math.max(yMax, leib[i].y);
+    }
     const zeit = (N - EIN) * dt;
     const v = Math.hypot(leib[N - 1].x - leib[EIN].x, leib[N - 1].z - leib[EIN].z) / zeit;
     return {
@@ -354,6 +401,7 @@ const STUDIO = (k) => {
         standAnteil: +(standTakte / (2 * (N - EIN - 1))).toFixed(2),
         schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
         kadenz: +((2 * phase) / zeit).toFixed(2),
+        beckenHub: +((yMax - yMin) / bein).toFixed(3),
         taeter:
             typeof gangGesetz === "function"
                 ? "gangGesetz (tetrapoda gangSchritt/gangFuss)"
@@ -418,10 +466,19 @@ const STUDIO = (k) => {
                 for (const z of leib.zeilen) {
                     const gleit = z.schlupf !== null && z.schlupf <= SCHWELLE;
                     const kad = z.v > 2 || z.kadenz >= KADENZ_GEHEN;
-                    const ton = z.soll > 0 && Math.abs(z.toene - z.soll) <= TON_TOLERANZ * z.soll;
-                    const ok = gleit && kad && ton;
+                    const spitze = z.name === "Spitze";
+                    const ton = spitze || (z.soll > 0 && Math.abs(z.toene - z.soll) <= TON_TOLERANZ * z.soll);
+                    const B = z.v > 2 ? BECKEN.laufen : BECKEN.gehen;
+                    const becken = z.beckenHub <= B.hub && z.beckenTief <= B.tief;
+                    const lock = z.standTakte > 0 && z.loeser === 0;
+                    const ok = gleit && kad && ton && becken && lock;
+                    const taeter = [
+                        !(gleit && kad && ton) ? leib.taeter : null,
+                        becken ? null : leib.beckenTaeter,
+                        lock ? null : leib.loeserTaeter,
+                    ].filter(Boolean);
                     console.log(
-                        `  ${ok ? "✅" : "❌"} mensch ${z.name} ${z.v.toFixed(2)} m/s · Bein ${z.beinM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${gleit ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s (${z.schrittM} m je Schritt)${kad ? "" : " < " + KADENZ_GEHEN} · Töne ${z.toene} / Soll ${z.soll}${ton ? "" : " (± 15 % verfehlt)"}${ok ? "" : " — Täter: " + leib.taeter}`
+                        `  ${ok ? "✅" : "❌"} mensch ${z.name} ${z.v.toFixed(2)} m/s · Bein ${z.beinM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${gleit ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s (${z.schrittM} m je Schritt)${kad ? "" : " < " + KADENZ_GEHEN} · Töne ${z.toene} / Soll ${z.soll}${ton ? "" : " (± 15 % verfehlt)"} · Becken Hub ${z.beckenHub} L / Tiefe ${z.beckenTief} L${becken ? "" : " (Soll ≤ " + B.hub + " / " + B.tief + ")"} · Lock-Löser ${z.loeser} in ${z.standTakte} Stand-Takten${ok ? "" : " — Täter: " + taeter.join(" · ")}`
                     );
                     if (!ok) rot++;
                 }
@@ -453,9 +510,11 @@ const STUDIO = (k) => {
                 ["sprint", { KeyW: true, ShiftLeft: true }],
             ]) {
                 const z = await sp.evaluate(STUDIO, { name, tasten, stub: SELBST });
-                const ok = z.schlupf !== null && z.schlupf <= SCHWELLE;
+                // dasselbe Becken-Soll wie in der Welt (geduckt geht, gehen und Sprint laufen im Labor)
+                const B = name === "geduckt" ? BECKEN.gehen : BECKEN.laufen;
+                const ok = z.schlupf !== null && z.schlupf <= SCHWELLE && z.beckenHub <= B.hub;
                 console.log(
-                    `  ${ok ? "✅" : "❌"} studio ${z.name} ${z.v} E/s · Bein ${z.beinE} E · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${ok ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s · Täter ${z.taeter}`
+                    `  ${ok ? "✅" : "❌"} studio ${z.name} ${z.v} E/s · Bein ${z.beinE} E · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Kadenz ${z.kadenz} Schritte/s · Becken Hub ${z.beckenHub} L (Soll ≤ ${B.hub}) · Täter ${z.taeter}`
                 );
                 if (!ok) rot++;
             }
@@ -475,7 +534,9 @@ const STUDIO = (k) => {
         process.exit(0);
     }
     if (rot) {
-        console.error(`\n❌ ROT — ${rot} Läufe gleiten (Schlupf > ${SCHWELLE}).`);
+        console.error(
+            `\n❌ ROT — ${rot} Läufe verletzt (Schlupf > ${SCHWELLE}, Kadenz, Töne, Becken oder Lock-Löser).`
+        );
         process.exit(1);
     }
     console.log(

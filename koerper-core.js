@@ -550,21 +550,26 @@
                         // gangFuss, dieselbe Formel wie die Tiere) fuer den Menschen
                         // -- Schrittlaenge je Zyklus L*(schrittBasis + schrittFroude*
                         // v/sqrt(g*L)) mit L = gebaute Beinlaenge, der Tastgrad vom
-                        // Gehen (0.6) zum Laufen (0.35) um Fr = laufFroude (Alexander
-                        // 2004), maxWinkel deckelt den Fussweg, hub*L hebt den Fuss im
-                        // Schwung (laufend hubLauf*L). Geeicht auf 1.34 m/s ~ 1.9 Schritte/s bei 0.7 m und
-                        // 6 m/s ~ 3 Schritte/s (Weidmann 1993). Der Eich-Faktor
-                        // des Schritt-Blocks (Schritt 3.4 m, 0.34 Schritte/s) faellt.
+                        // Gehen (0.6) zum Laufen (0.39) um Fr = laufFroude (Alexander
+                        // 2004), maxWinkel deckelt den Fussweg (2*L*tan: +-29 Grad
+                        // Bein-Winkel; im Lauf faellt der Tastgrad mit dem Tempo,
+                        // Weyand 2000), hub*L hebt den Fuss im Schwung (laufend
+                        // hubLauf*L), beckenHub*L hebt das Becken ueber der Mitte des
+                        // Stands (Gard 2004: 4-5 cm; tetrapoda gangBecken). Geeicht
+                        // auf 1.34 m/s ~ 1.9 Schritte/s bei 0.7 m und 6 m/s ~ 3
+                        // Schritte/s (Weidmann 1993). Der Eich-Faktor des
+                        // Schritt-Blocks (Schritt 3.4 m, 0.34 Schritte/s) faellt.
                         gang: {
                             schrittBasis: 0.78,
                             schrittFroude: 1.89,
                             tastgrad: 0.6,
-                            tastgradLauf: 0.35,
+                            tastgradLauf: 0.39,
                             laufFroude: 0.5,
-                            maxWinkel: 0.72,
+                            maxWinkel: 0.5,
                             hub: 0.12,
                             hubLauf: 0.3,
                             hubForm: 0.5,
+                            beckenHub: 0.05,
                         },
                         // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
                         // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
