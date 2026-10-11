@@ -2712,15 +2712,31 @@ async function WELLE_L() {
             const mitBiss = { spieler: null, tier: null, kitz: null };
             const dpGate = r.damagePlayer;
             const dcGate = r.damageCreature;
+            // WER BEISST (K13): gezählt wird nur der Biss des Tiers der Probe — das Schnappen (_kreaturBissTakt) nennt den
+            // Beißer; ein Wild-Tier der Welt, das den Spieler im selben Takt beißt, ist nicht der Wolf der Probe (vorher in
+            // 1 von 20 Läufen: „jagd beißt ohne Ansprung, Kopf 5,56 m vor dem Leib" — gebissen hatte ein anderes Tier)
+            const btRoh = r._kreaturBissTakt;
+            let beisser = null;
+            if (typeof btRoh === "function")
+                r._kreaturBissTakt = function (c, ...rest) {
+                    const b0 = beisser;
+                    beisser = c;
+                    try {
+                        return btRoh.call(this, c, ...rest);
+                    } finally {
+                        beisser = b0;
+                    }
+                };
+            const istBeisser = (c) => typeof btRoh !== "function" || beisser === c;
             r.damagePlayer = function (amount, source) {
                 const c = mitBiss.spieler;
-                if (c && (source === "jagd" || source === "gegenwehr"))
+                if (c && istBeisser(c) && (source === "jagd" || source === "gegenwehr"))
                     bisse[source].push({ geste: geste(c), spalt: +spaltSpieler(c).toFixed(3), xz: xz(c, pm) });
                 return dpGate.call(this, amount, source);
             };
             r.damageCreature = function (c2, amount, opts) {
                 const j = mitBiss.tier;
-                if (j && c2 === mitBiss.kitz && opts && opts.source === "jagd")
+                if (j && istBeisser(j) && c2 === mitBiss.kitz && opts && opts.source === "jagd")
                     bisse.beute.push({ geste: geste(j), spalt: +spaltTier(j, c2).toFixed(3), xz: xz(j, c2) });
                 return dcGate.call(this, c2, amount, opts);
             };
@@ -3126,6 +3142,7 @@ async function WELLE_L() {
             } finally {
                 r.damagePlayer = dpGate;
                 r.damageCreature = dcGate;
+                if (typeof btRoh === "function") delete r._kreaturBissTakt;
                 halte();
                 pm.position.set(savedT23.ort.x, savedT23.ort.y, savedT23.ort.z);
                 p.hp = savedT23.hp;
