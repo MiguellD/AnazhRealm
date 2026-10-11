@@ -833,10 +833,12 @@ ausdauerProS } · parkour { doppelspruenge doppelsprungMul wandsprungMul
 wandAbstoss kletterV kletterAusdauerProS slideTempoMul slideDauerSec
 slideMinTempo kontaktFrischeSec slidePose { lehne beinVor knieKnick
 armStuetz armFrei kopf } } · luft { kAcc kAccLuft kBrake kBrakeLuft } ·
-sprung { coyoteSec bufferSec } · schritt { kalib } · aktionAusdauer }`.
+sprung { coyoteSec bufferSec } · schritt { taktCompound klangTempoMin } · gang { schrittBasis schrittFroude tastgrad tastgradLauf laufFroude maxWinkel hub hubLauf hubForm } · aktionAusdauer }`.
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): `luft` = die vier
   C5-Boden-/Luft-Hebel der Beschleunigungs-/Brems-Kurven, `sprung` =
-  Coyote-/Jump-Buffer-Fenster, `schritt.kalib` = der Gang-Kalibrierfaktor,
+  Coyote-/Jump-Buffer-Fenster, `gang` = die Zweibeiner-Zeile des EINEN
+  Gang-Gesetzes (tetrapoda `gangSchritt`/`gangFuss`, K07 — der Eich-Faktor
+  des Schritt-Blocks fiel),
   `aktionAusdauer` = die Kosten der Maus-Arm-Aktion (Hieb/Abbau),
   `parkour.kontaktFrischeSec` = das EINE Wandkontakt-Fenster (war der
   divergente Stamm-Zwilling 0.18/0.15). Leser `AnazhRealm._bewegungsBlock`

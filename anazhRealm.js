@@ -18850,7 +18850,19 @@ class AnazhRealm {
                 fz = vHuefte.z + vorZ * vor;
             const u = ((ph % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             const imStand = stand || u >= Math.PI;
-            if (imStand && !L.an && !(L.tritt >= 0)) pfoteHier(K, L, fx, fz, BM);
+            // der WELTFESTE ANKER (K07): ein gehender Fuß setzt auf, wo das Gesetz ihn hinstellt — sein Ziel am Ende des
+            // Schwungs ist in der Welt stetig (die Hermite-Enden laufen mit der Stand-Rate); die Sohle des letzten Takts
+            // lag mit den alten Gelenken am NEUEN Leib, der Anker sprang je Aufsetzen um v·dt nach vorn (am Wolf 1,6 m/s
+            // 2,7 cm bei 60 fps, unter der Raten-Leiter das Vierfache — gate:tier-gang Schlupf 0,07–0,13). Ein stehendes Tier
+            // lässt die Pfote, wo sie steht.
+            if (imStand && !L.an && !(L.tritt >= 0)) {
+                if (stand || !g.legInit) pfoteHier(K, L, fx, fz, BM);
+                else {
+                    L.x = fx;
+                    L.z = fz;
+                    L.an = true;
+                }
+            }
             if (imStand && L.an && !(L.tritt >= 0) && !tritt) {
                 const fern = stand
                     ? Math.hypot(fx - L.x, fz - L.z) > 0.15 * BM.h * skala
@@ -18984,8 +18996,11 @@ class AnazhRealm {
                 z1 = 0;
                 z2 = thK;
                 // die Pfote faltet im Schwung und streckt sich, bevor sie den Boden erreicht (hub²: beim steilen Hub
-                // stünde die gefaltete Sohle sonst noch in den untersten Zentimetern schräg und striche über den Boden)
-                z3 = -(thH + thK) + hub * hub * GG.falte;
+                // stünde die gefaltete Sohle sonst noch in den untersten Zentimetern schräg und striche über den Boden; K07:
+                // hub⁴ — mit hub² drehte die Pfote in den untersten 3 cm noch 0,05–0,09 rad je Takt um die Handwurzel, ihr
+                // Aufsetz-Punkt fegte 0,5–1,4 cm je Takt über den Boden, Schlupf 0,06–0,085 beim Schritt)
+                const h2 = hub * hub;
+                z3 = -(thH + thK) + h2 * h2 * GG.falte;
                 if (stand) {
                     // die Gewichts-Unruhe des Stands (Lab-Mathe, t-Sinus; tension skaliert sie) auf der IK
                     const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
