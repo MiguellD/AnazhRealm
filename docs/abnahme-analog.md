@@ -447,7 +447,7 @@ Bilder und je Bild ein JSON (Pose, Bühnen-Stand, Stufe, Mesh-Zone, Zählung): `
 | --- | --- | --- | --- | --- |
 | Wolf · Armlänge (1,8 m) | L0 nah | 55 422 (Haut 28 710 · Fell 26 712), Schatten-Zwilling 5 756 | 78 / 445 177 | 0 / 217 |
 | Wolf · 50 m | Grobstufe (Grenze 35 m ± 10 %) | 6 026 | 65 / 318 098 | 0 / 330 |
-| Wolf · 80 m | Grobstufe | 6 026 | 58 / 399 268 | 0 / 268 |
+| Wolf · 80 m | im Spiel die Glieder-Kapseln des Feldes: `_tickKreaturZiegel` blendet das Studio-Mesh jenseits `KREATUR_NAH_MESH.aus` (74 m) aus. Der Schuss erzwang die Grobstufe per Sonde (`setze(true)`), er ist KEIN Spiel-Bild und belegt nur die Stufe | (6 026 erzwungen) | 58 / 399 268 | 0 / 268 |
 | Eiche · 2,6 m | L0 | 6 754 | 23 / 213 928 | 0 / 82 |
 | Eiche · 15 m | L0 serviert (d0 12 m, der Abstands-Zuschlag hält sie), L1 im Überblenden | 6 754 + 1 510 | 38 / 250 877 | 0 / 84 |
 | Eiche · 22 m | L1 | 1 510 | 32 / 231 405 | 0 / 57 |
