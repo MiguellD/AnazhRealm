@@ -14,7 +14,7 @@ on:
     pull_request:
         branches: [main]
     schedule:
-        # nachts 02:30 UTC die volle Batterie auf main (vor dem vollen Playtest um 03:30, playtest-full.yml)
+        # nachts 02:30 UTC die volle Batterie auf main (der volle Playtest in ihr, Gruppe 11)
         - cron: "30 2 * * *"
     workflow_dispatch:
 
@@ -221,25 +221,25 @@ jobs:
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
               # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
               # Schliesst zuverlässig in Minuten ab — der reliable per-Push-Gate. Der volle Playtest
-              # läuft in playtest-full.yml.
+              # läuft in der vollen Batterie (Gruppe 11).
               run: npm run playtest:fast
 
     voll:
         # DIE VOLLE BATTERIE — jede Wand, die nicht im Puls steht: die Echt-Renderer-Linsen, die Begehungen, die schweren
-        # Verträge, die Erst-Zeichnungs-Wand, die Tier-Anatomie. WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten
-        # über 242 Bänder brauchen auf einem geteilten Läufer Stunden (gemessen: 3,5 h, dann Fehlschlag, sogar bei einem
-        # reinen Docs-Commit) — sie leben in playtest-full.yml (nachts, zeit-gedeckelt). Vorher trugen drei Gruppen 17,7 /
+        # Verträge, die Erst-Zeichnungs-Wand, die Tier-Anatomie — und der VOLLE PLAYTEST als eigene Gruppe 11 (K18): bis
+        # 11.10. lief er nur nächtlich in playtest-full.yml (blockt keinen Merge; die „3,5 h" von einst waren lange
+        # geheilt, auf main 86–148 s je Lauf), K15 fiel deshalb erst am Merge. Vorher trugen drei Gruppen 17,7 /
         # 26,0 / 19,0 min und zwei eigene Jobs 4,7 und 5,8 min; jetzt 10 Gruppen, verteilt nach dem Median je Schritt
         # (spec/ci/ci-zeiten.json), die größten zuerst in die leichteste Gruppe (`node scripts/ci-zeiten.cjs --verteilen`).
         # Ein neuer Gate-Schritt trägt genau EINE Gruppe und seine Zeit in ci-zeiten.json; gate:ci-deckung fällt rot bei
         # einem Schritt ohne Gruppe, einer Gruppe außerhalb der Matrix, einem doppelten Schritt, einer Gruppe ohne Schritt,
         # einer Gruppe über 11 min und einem Schritt ohne Zeit. fail-fast aus: jede Gruppe meldet ganz.
-        name: voll ${{ matrix.gruppe }}/10
+        name: voll ${{ matrix.gruppe }}/11
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
         strategy:
             fail-fast: false
             matrix:
-                gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         runs-on: ubuntu-latest
         # 30 je Gruppe: eine Gruppe trägt ≤ 11 min Median, ein 2-fach langsamerer Läufer (gemessen: dieselbe Gruppe 12,8
         # bis 26,6 min) bleibt unter dem Deckel.
@@ -266,6 +266,17 @@ jobs:
 
             - name: Dependencies installieren (inkl. puppeteer)
               run: npm ci --no-audit --no-fund
+
+            # DER VOLLE PLAYTEST (K18): die ~5340 Invarianten über 242 Bänder, Null-Renderer, eine eigene Gruppe (er trägt
+            # ihre Wanduhr allein). Die Bedingung ist das VERDIKT, nie der Zähler: tee schreibt das Log, der letzte Befehl
+            # greift „Alle Invarianten OK" (unter PLAYTEST_STRICT=0 endete der Playtest mit 0 trotz verletzter
+            # Invarianten), pipefail trägt den Ausgang des Playtests durch die Pipe. gate:ci-deckung (P) hält die Form.
+            - name: Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")
+              if: matrix.gruppe == 11
+              shell: bash
+              run: |
+                  npm run playtest | tee playtest-voll.log
+                  grep -qx "✅ Alle Invarianten OK" playtest-voll.log
 
             - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
               if: matrix.gruppe == 10
