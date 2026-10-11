@@ -354,8 +354,12 @@ const server = http.createServer((req, res) => {
                 r._koerperBodenUnter = (x, _y, z) => ebene(x, z);
                 // der Ruf liest seinen ersten Grund selbst (Leben-Schau 2) — der gestubbte Boden gilt ab jetzt
                 delete c.userData.cachedGroundY;
+                // gepinnt: Ort UND Gier (bergauf, +z) — der Nick misst den Hang längs des Leibs; die Gier des Wanderns
+                // drehte ihn quer (main 7dd944e6: +34,4°, talwärts; 832b4cf4: −16,2° bei ~60° Gier — kein Hang-Fehler)
                 const tiere = (n) => {
                     for (let k = 0; k < n; k++) {
+                        c.rotation.y = 0;
+                        c.userData._steuer = { gier: 0, v: 0 };
                         r.updateCreatures(0.02);
                         c.position.x = cx;
                         c.position.z = cz; // pinnen (Wander driftet sonst)
