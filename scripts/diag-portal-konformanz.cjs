@@ -387,14 +387,14 @@ async function schleuseAuf(page) {
     const marke = `schleuse-${++schleuseNr}`;
     await page.evaluate(
         (m, frist) => {
-            window.__schleuse = new Promise((fertig) => {
-                const uhr = setTimeout(() => (window.removeEventListener("message", hoer, true), fertig(false)), frist);
+            window.__schleuse = new Promise((ende) => {
+                const uhr = setTimeout(() => (window.removeEventListener("message", hoer, true), ende(false)), frist);
                 function hoer(ev) {
                     if (!ev.data || ev.data.__schleuse !== m) return;
                     ev.stopImmediatePropagation();
                     clearTimeout(uhr);
                     window.removeEventListener("message", hoer, true);
-                    fertig(true);
+                    ende(true);
                 }
                 window.addEventListener("message", hoer, true);
             });
