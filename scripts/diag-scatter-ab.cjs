@@ -95,6 +95,7 @@ const server = http.createServer((req, res) => {
                 let shore = 0,
                     steep = 0,
                     river = 0,
+                    nass = 0,
                     nulls = 0,
                     probes = 0;
                 for (let gz = 8; gz < SC.regionM; gz += 16) {
@@ -109,6 +110,7 @@ const server = http.createServer((req, res) => {
                             continue;
                         }
                         if (Math.abs(sy - (wy + 0.4)) < 3) shore++;
+                        if (!r._landAt(x, z, 0.4)) nass++;
                         const sl = r._slopeAt ? r._slopeAt(x, z) : 0;
                         if (sl > 1.2) steep++;
                         if (typeof r._hydroRiverAt === "function") {
@@ -117,7 +119,7 @@ const server = http.createServer((req, res) => {
                         }
                     }
                 }
-                return { shore, steep, river, nulls, probes };
+                return { shore, steep, river, nass, nulls, probes };
             };
             const candidates = [];
             for (let dz = -2; dz <= 2; dz++)
@@ -209,7 +211,10 @@ const server = http.createServer((req, res) => {
             o.totalCells = o.diffs.reduce((s2, d) => s2 + (d.cellsA || 0), 0);
             // ── (4) SELBST-TEST: injiziert-falsches Verdikt → der Diff MUSS feuern ──
             {
-                const c = corpus.find((cc) => cc.cl.shore >= 8) || corpus[0];
+                // die Region, in der das Wasser-Verdikt am meisten entscheidet (die meisten nassen Proben, `_landAt`): seit K16
+                // trägt die Heimat keinen See, das Ufer liegt am Fluss-Kanal: in (1,0) (9 nasse Proben) traf kein Streu-Wurf
+                // das Wasser, in (0,1) (16) feuert die Störung
+                const c = corpus.reduce((m, cc) => (cc.cl.nass > m.cl.nass ? cc : m), corpus[0]);
                 const a = buildAt(c, true);
                 const orig = r._landAt;
                 r._landAt = () => true; // die Störung: Wasser existiert nicht mehr
@@ -236,7 +241,7 @@ const server = http.createServer((req, res) => {
     );
     for (const c of out.corpus)
         console.log(
-            `    (${c.rx},${c.rz})  shore ${c.shore} · steep ${c.steep} · river ${c.river} · null ${c.nulls}/${c.probes}`
+            `    (${c.rx},${c.rz})  shore ${c.shore} · steep ${c.steep} · river ${c.river} · nass ${c.nass} · null ${c.nulls}/${c.probes}`
         );
     console.log(`  Mess-Bound max|field.height − exakt|: ${out.bound} m über ${out.cellsCompared} Zellen`);
     console.log(
