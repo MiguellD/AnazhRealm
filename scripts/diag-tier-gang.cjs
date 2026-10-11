@@ -219,14 +219,19 @@ const LEIB = (k) => {
               (rig.legL.hip.getWorldScale(new T.Vector3()).y || 1);
     // die LOCK-LÖSER: je Takt und Bein, das im Stand-Fenster des Gesetzes geht (w ≥ 0,35) — trug es den Lock und
     // trägt es ihn danach nicht mehr, hat die Fuß-IK den stehenden Fuß gelöst
-    const zaehl = { stand: 0, loeser: 0 };
+    const zaehl = { stand: 0, loeser: 0, wo: [], takt: 0 };
     const ikAlt = r._gaitLegIK;
     r._gaitLegIK = function (leg, ik, probe, lock, foot, imStand, w) {
         const vor = lock && lock.on;
         const out = ikAlt.apply(this, arguments);
         if (imStand && w >= 0.35) {
             zaehl.stand++;
-            if (vor && !lock.on) zaehl.loeser++;
+            if (vor && !lock.on) {
+                zaehl.loeser++;
+                zaehl.wo.push(
+                    +(window.anazhRealm.state.player.walkPhase % (2 * Math.PI)).toFixed(2) + "@" + zaehl.takt
+                );
+            }
         }
         return out;
     };
@@ -240,6 +245,8 @@ const LEIB = (k) => {
         ["Spitze", 6.75],
     ]) {
         zaehl.stand = zaehl.loeser = 0;
+        zaehl.wo = [];
+        // das Becken im eingeschwungenen Gang (ab Takt 60: der Anlauf-Schritt aus dem Stand liegt davor)
         let hMin = Infinity,
             hMax = -Infinity;
         vx = v;
@@ -251,6 +258,7 @@ const LEIB = (k) => {
             ph0 = null;
         for (let i = 0; i < N; i++) {
             mesh.position.x += v * dt;
+            zaehl.takt = i;
             r.animatePlayerSoul((t += dt));
             mesh.updateMatrixWorld(true);
             if (i === 30) {
@@ -259,7 +267,7 @@ const LEIB = (k) => {
             }
             leib.push(mesh.position.x);
             knoechel.forEach((a, j) => spur[j].push(a.localToWorld(lokal[j].clone())));
-            if (i >= 30) {
+            if (i >= 60) {
                 const h = huefte();
                 hMin = Math.min(hMin, h);
                 hMax = Math.max(hMax, h);
@@ -300,6 +308,7 @@ const LEIB = (k) => {
             beckenTief: +((ruheH - hMin) / beinM).toFixed(3),
             standTakte: zaehl.stand,
             loeser: zaehl.loeser,
+            loeserWo: zaehl.wo.join(" "),
         });
     }
     r._gaitLegIK = ikAlt;
@@ -478,7 +487,7 @@ const STUDIO = (k) => {
                         lock ? null : leib.loeserTaeter,
                     ].filter(Boolean);
                     console.log(
-                        `  ${ok ? "✅" : "❌"} mensch ${z.name} ${z.v.toFixed(2)} m/s · Bein ${z.beinM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${gleit ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s (${z.schrittM} m je Schritt)${kad ? "" : " < " + KADENZ_GEHEN} · Töne ${z.toene} / Soll ${z.soll}${ton ? "" : " (± 15 % verfehlt)"} · Becken Hub ${z.beckenHub} L / Tiefe ${z.beckenTief} L${becken ? "" : " (Soll ≤ " + B.hub + " / " + B.tief + ")"} · Lock-Löser ${z.loeser} in ${z.standTakte} Stand-Takten${ok ? "" : " — Täter: " + taeter.join(" · ")}`
+                        `  ${ok ? "✅" : "❌"} mensch ${z.name} ${z.v.toFixed(2)} m/s · Bein ${z.beinM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf}${gleit ? "" : " (> " + SCHWELLE + ")"} · Kadenz ${z.kadenz} Schritte/s (${z.schrittM} m je Schritt)${kad ? "" : " < " + KADENZ_GEHEN} · Töne ${z.toene} / Soll ${z.soll}${ton ? "" : " (± 15 % verfehlt)"} · Becken Hub ${z.beckenHub} L / Tiefe ${z.beckenTief} L${becken ? "" : " (Soll ≤ " + B.hub + " / " + B.tief + ")"} · Lock-Löser ${z.loeser}${z.loeser ? " (Phase@Takt " + z.loeserWo + ")" : ""} in ${z.standTakte} Stand-Takten${ok ? "" : " — Täter: " + taeter.join(" · ")}`
                     );
                     if (!ok) rot++;
                 }
