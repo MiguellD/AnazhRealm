@@ -42867,11 +42867,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //    sind entfernt; es gibt keinen Body mehr, der „schlafen" könnte. Der Spieler
         //    läuft feld-nativ aus `_stepCharacter`. Die Sleep-Probe ist gestrichen.)
 
-        // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
-        //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
+        // 2. 3rd-Person-Kamera — Kollisions-Wurf in der Kamera-Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera;
+        //    K06: der Wurf ist die Kugel der Kamera (`_fieldRaycast` mit `radius`), nicht mehr der Ammo-Rückruf.
         {
             const src = srcOf("_loopCamera");
-            out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
+            out.cameraRaycast =
+                /cameraMode === "third"/.test(src) &&
+                /this\._fieldRaycast\(tx, ty, tz, camX, camY, camZ, \{[^}]*radius: kr/.test(src);
         }
 
         // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das 3D-Feld kennt keine

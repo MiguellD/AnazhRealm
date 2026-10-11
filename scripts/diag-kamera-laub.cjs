@@ -170,14 +170,23 @@ function wand(quelle, studio) {
 // 40 an der Mess-Wiese (spec/profiband/haushalt.json; Häuser · Fels · Bäume, der Spieler 0,8 m vor der Box, der Rücken zu
 // ihr, jede zweite Pose mit gesenkter Kamera) und 10 am 30°-Hang der Prüfbühne (spec/pruefbuehne/stationen.json s2-hang30,
 // der Blick hangab: die Kamera hangauf hinter ihm) — zu Fuß und im Verfolger-Ritt (der GT 3,2 m vor der Box). Dazu der
-// Rundgang (240 Bilder um das erste Haus: Kamera-Sprünge > 2 m) und der Zähler der Gelände-Strahlen je Frame
-// (`state._kamStrahlen`). NP-03: das Körper-Studio (worlds/koerperstudio), 12 Parcours-Punkte × 4 Blicke, die Strecke
+// Rundgang (240 Bilder um das erste Haus: Kamera-Sprünge > 2 m) und die KOSTEN: die Feld-Proben je 3rd-Bild (jedes gemessene
+// Bild einmal unter dem Zähler auf `_fieldDensityAt`) gegen den Vor-Stand V18.541 (PROBEN_VORSTAND). NP-03: das Körper-Studio (worlds/koerperstudio), 12 Parcours-Punkte × 4 Blicke, die Strecke
 // Blickziel → Kamera gegen die Park-Boxen (Rand 0,3 Lab-Maß, der Boden eingeschlossen); NP-02: der Tunnel bei x > 3 bleibt zu.
 const LEIB_R = 0.25; // die Kugel der Linse (m): 5 cm unter dem Leib der Kamera — die Spiel-Zahl liest sie nie
 const LEIB_WIESE = { haus: 12, fels: 14, baum: 14 }; // 40 Posen
 const LEIB_HANG_N = 10;
 const LEIB_N = LEIB_WIESE.haus + LEIB_WIESE.fels + LEIB_WIESE.baum + LEIB_HANG_N;
-const STRAHLEN_MAX = 5;
+// DIE KOSTEN DER KUGEL: die Feld-Proben je 3rd-Bild (Posen + Rundgang, 341 Bilder) am Vor-Stand V18.541 (2c8deda9, derselbe Lauf mit
+// KAMERA_LAUB_STAMM, der Strahl ohne Kugel). Das Mittel (die Arbeit des Laufs) nie darüber, der Median höchstens um den Ring der Kugel
+// (4 Proben: so viel kostet sie frei), kein Bild über dem Doppelten des teuersten (Prüfung 1: die vier Eckstrahlen marschierten
+// in jedem Bild die volle Armlänge — Median 34 → 151, höchstens 50 → 275).
+const PROBEN_VORSTAND = Object.freeze({ mittel: 35.4, median: 34, hoechstens: 50 });
+const PROBEN_RING = 4;
+const quantil = (a, q) => {
+    const s = [...a].sort((x, y) => x - y);
+    return s[Math.min(s.length - 1, Math.floor(q * s.length))];
+};
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand (gemessen am Kopf d47f4ce9 unter derselben Bedingung)
 const SPRUENGE_MAX = 4;
 const NINJA_WP = [
@@ -225,10 +234,18 @@ function urteilLeib(L) {
                         .join(" · ")
             );
     }
-    if (!(L.strahlenMax > 0 && L.strahlenMax <= STRAHLEN_MAX))
-        out.push(
-            `Leib: ${L.strahlenMax == null ? "kein Zähler (state._kamStrahlen)" : L.strahlenMax} Gelände-Strahlen je Frame (Soll 1–${STRAHLEN_MAX})`
-        );
+    const pr = L.proben;
+    if (!Array.isArray(pr) || pr.length < LEIB_N)
+        out.push(`Leib: ${Array.isArray(pr) ? pr.length : 0} Bilder gezählt (Vorbedingung der Feld-Proben je 3rd-Bild)`);
+    else {
+        const mittel = +(pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1);
+        const med = quantil(pr, 0.5);
+        const hoechstens = Math.max(...pr);
+        if (mittel > PROBEN_VORSTAND.mittel || med > PROBEN_VORSTAND.median + PROBEN_RING || hoechstens > 2 * PROBEN_VORSTAND.hoechstens)
+            out.push(
+                `Leib: Feld-Proben je 3rd-Bild Mittel ${mittel} · Median ${med} · höchstens ${hoechstens} über dem Vor-Stand V18.541 (Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} + ${PROBEN_RING} Ring · höchstens 2 × ${PROBEN_VORSTAND.hoechstens}) — der Wurf der Kugel (_fieldRaycast in _loopCamera)`
+            );
+    }
     if (!(L.spruenge != null && L.spruenge <= SPRUENGE_MAX))
         out.push(`Leib: ${L.spruenge} Kamera-Sprünge > 2 m im Rundgang (Vor-Stand ${SPRUENGE_MAX})`);
     return out;
@@ -262,6 +279,22 @@ function leibInstall(cfg) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const L = (window.__kamLeib = {});
     let T = 5000;
+    // die Kosten: die Feld-Proben eines Aufrufs (der Zähler auf `_fieldDensityAt`, danach fällt er)
+    L.proben = [];
+    L.zaehle = (fn) => {
+        let n = 0;
+        r._fieldDensityAt = function (...a) {
+            n++;
+            return Object.getPrototypeOf(r)._fieldDensityAt.apply(this, a);
+        };
+        try {
+            fn();
+        } finally {
+            delete r._fieldDensityAt;
+        }
+        L.proben.push(n);
+        return n;
+    };
     L.ruhig = (n) => {
         for (let i = 0; i < (n || 10); i++) r._loopCamera((T += 0.1));
     };
@@ -316,6 +349,7 @@ function leibInstall(cfg) {
     L.frei = (x, z, y, rand) => !L.boxen(x, z, 20).some(({ b }) => L.inBox({ x, y: y + 0.9, z }, b, rand));
     // DIE MESSUNG der gesetzten Kamera: die Täter beim Namen
     L.messen = (ritt) => {
+        const proben = L.zaehle(() => r._loopCamera((T += 0.1)));
         const c = st.camera.position;
         const k = st._kamZiel;
         const taeter = [];
@@ -350,9 +384,8 @@ function leibInstall(cfg) {
                 }
             }
         } else taeter.push("kein Blickziel (state._kamZiel)");
-        const strahlen = st._kamStrahlen;
-        if (strahlen != null) L.strahlenMax = Math.max(L.strahlenMax || 0, strahlen);
         return {
+            proben,
             c: [+c.x.toFixed(2), +c.y.toFixed(2), +c.z.toFixed(2)],
             arm: k ? +Math.hypot(c.x - k.x, c.y - k.y, c.z - k.z).toFixed(2) : null,
             taeter: [...new Set(taeter)],
@@ -559,7 +592,7 @@ async function leibWiese(arg) {
                 st._kapselTraegerY = y;
                 st.yaw = th + Math.PI / 2;
                 st.pitch = 0.2;
-                r._loopCamera((tt += 1 / 30));
+                L.zaehle(() => r._loopCamera((tt += 1 / 30)));
                 const c = st.camera.position;
                 if (vor && Math.hypot(c.x - vor.x, c.y - vor.y, c.z - vor.z) > 2) spr++;
                 vor = { x: c.x, y: c.y, z: c.z };
@@ -582,7 +615,7 @@ async function leibWiese(arg) {
     } catch (e) {
         out.err = (e && e.stack) || String(e);
     }
-    out.strahlenMax = L.strahlenMax == null ? null : L.strahlenMax;
+    out.proben = L.proben;
     return out;
 }
 
@@ -619,7 +652,7 @@ async function leibHang(arg) {
     } catch (e) {
         out.err = (e && e.stack) || String(e);
     }
-    out.strahlenMax = L.strahlenMax == null ? null : L.strahlenMax;
+    out.proben = L.proben;
     return out;
 }
 
@@ -1072,7 +1105,7 @@ async function probe(arg) {
         const leibGesund = (kaputtFuss, kaputtRitt) => ({
             wiese: { fuss: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtFuss) }, ritt: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtRitt) } },
             hang: { fuss: { posen: posenN(LEIB_HANG_N) }, ritt: { posen: posenN(LEIB_HANG_N) } },
-            strahlenMax: 5,
+            proben: Array.from({ length: LEIB_N + 241 }, (_, i) => 30 + (i % 9)),
             spruenge: 0,
         });
         check("Selbst-Test K2: gesund == 0 Täter", urteilLeib(leibGesund()).length === 0, urteilLeib(leibGesund()).join(" · "));
@@ -1081,8 +1114,9 @@ async function probe(arg) {
             ["Verfolger im Haus (FZ-07)", leibGesund(null, ["in haus_basis"]), "Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis"],
             ["Fels zwischen Ziel und Linse", leibGesund(["Gelände zwischen Ziel und Linse"]), "Leib fuss: 1 von 50"],
             ["der Hang fehlt", Object.assign(leibGesund(), { hang: null }), "Leib hang: nicht gemessen"],
-            ["kein Strahlen-Zähler", Object.assign(leibGesund(), { strahlenMax: null }), "Leib: kein Zähler"],
-            ["sechs Strahlen je Frame", Object.assign(leibGesund(), { strahlenMax: 6 }), "Leib: 6 Gelände-Strahlen"],
+            ["kein Zähler der Feld-Proben", Object.assign(leibGesund(), { proben: null }), "Leib: 0 Bilder gezählt"],
+            ["die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
+            ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
             ["mehr Sprünge als vorher", Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }), "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
         ];
         for (const [name, bruch, soll] of leibBrueche) {
@@ -1191,8 +1225,7 @@ async function probe(arg) {
             leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
         } else leib.hang = { err: "die Prüfbühne ließ sich nicht importieren" };
         zeiten.hang = Date.now() - tH;
-        const sm = [leib.wiese.strahlenMax, leib.hang.strahlenMax].filter((x) => x != null);
-        leib.strahlenMax = sm.length ? Math.max(...sm) : null;
+        leib.proben = [...(leib.wiese.proben || []), ...(leib.hang.proben || [])];
         leib.spruenge = leib.wiese.spruenge;
     }
     let nin = null;
@@ -1253,9 +1286,10 @@ async function probe(arg) {
                 for (const q of fehl.slice(0, 3)) console.log(`      ${q.id} ${q.anker} @${q.x}/${q.z}: ${q.taeter.join(", ")} · Kamera ${q.c.join("/")} · Arm ${q.arm} m`);
             }
         }
-        console.log(`  Strahlen je Frame höchstens ${leib && leib.strahlenMax} · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
+        const pr = (leib && leib.proben) || [];
+        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
         const v = urteilLeib(leib);
-        check(`K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, ≤ ${STRAHLEN_MAX} Strahlen je Frame, Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check(`K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }
     if (TEILE.includes("ninja")) {
         const posen = (nin && nin.posen) || [];

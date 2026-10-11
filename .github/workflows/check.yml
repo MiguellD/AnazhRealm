@@ -1290,7 +1290,7 @@ jobs:
             - name: Die Kamera-Leib-Linse (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)
               if: matrix.gruppe == 8
               # 50 feste Posen (40 Mess-Wiese, 10 Prüfbühne s2-hang30) zu Fuß und im Verfolger-Ritt gegen die exakte Gestalt,
-              # der Strahlen-Zähler je Frame, die Sprünge im Rundgang; NP-03 48 Posen im Körper-Studio, NP-02 der Tunnel.
+              # die Feld-Proben je 3rd-Bild, die Sprünge im Rundgang; NP-03 48 Posen im Körper-Studio, NP-02 der Tunnel.
               run: npm run gate:kamera-leib
 
             - name: Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)
