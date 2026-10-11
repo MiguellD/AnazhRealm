@@ -607,15 +607,27 @@ async function verdeckungPhase(opts) {
             while (performance.now() - t0 < 300000) {
                 const r = window.anazhRealm;
                 const st = r && r.state;
-                if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && st.playerMesh)
+                // Renderer UND Welt: `init()` wartet nach dem Spieler-Anker auf `_idbPreload` und rechnet erst dann die Welt
+                // (`generateNewWorld` → Hydrosphäre), der Renderer steht parallel — ohne die Hydrosphäre fände der Ablauf
+                // keinen Bach (CI integ-probe d85a4edc, Gruppe 2: Renderer nach 0 s, „kein Bach … (keine Hydrosphäre)").
+                if (
+                    st &&
+                    st.rendererReady &&
+                    st.renderer &&
+                    st.renderer.backend &&
+                    st.camera &&
+                    st.playerMesh &&
+                    st.hydrosphere &&
+                    st.hydrosphere.ready
+                )
                     return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
                 await new Promise((res) => setTimeout(res, 100));
             }
             return { ok: false };
         });
-        if (!bereit.ok) throw new Error("der Renderer stand nach 300 s nicht");
+        if (!bereit.ok) throw new Error("Renderer und Welt (Hydrosphäre) standen nach 300 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — die Linse liest WebGPU-Validierung, sie wäre blind");
-        log(`Renderer bereit nach ${Math.round(bereit.ms / 1000)} s`);
+        log(`Renderer und Welt bereit nach ${Math.round(bereit.ms / 1000)} s`);
         // der Loop gehört der Linse (der echte Spiel-Takt läuft durch `_gameLoopTick`); die Stoffe der Stationen bauen mit
         out.phasen.boot = await page.evaluate(stationenVorbau).then(() =>
             page.evaluate(() => {
