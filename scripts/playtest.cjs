@@ -31140,125 +31140,61 @@ async function checkBandGammaGenese(ctx) {
                 )) || ""
             )
     );
-    // Γ4 (V18.179) — DIE MAKRO-GEOGRAPHIE: Massiv + Tal + Becken.
+    // Γ4 (K16) — DIE GROSSFORM IST DATEN: der Ein-Massiv-Anker (ankerAusSaat · ankerBeitrag · MACRO_ANKER · _macroAnker)
+    // fiel; die Welt liest die Großform des Gelände-Kerns (Splines über Kontinentalität und Erosion, das Flussnetz zuerst).
+    // Der Hang und die Fels-Blöße folgen dem Relief: im Gebirge (Relief-Maximum der 6-km-Probe) steiler und felsiger als in
+    // der Ebene (Relief-Minimum).
     const resG4 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor;
+        const G = window.__gelaendeCore;
         const out = {};
         out.struct =
-            typeof window.__gelaendeCore.ankerAusSaat === "function" &&
-            typeof r._macroAnker === "function" &&
-            typeof window.__gelaendeCore.ankerBeitrag === "function" &&
-            Object.isFrozen(window.__gelaendeCore.MACRO_ANKER) &&
-            !("MACRO_ANKER" in A);
-        const orig = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
-        try {
-            if (!r.state.worldMeta) r.state.worldMeta = {};
-            r.state.worldMeta.genVersion = 3;
-            r._macroAnkerCache = null;
-            const anker = r._macroAnker();
-            out.ankerExists = anker !== null;
-            if (anker) {
-                // A/B Massiv-Zentrum (gen 3 vs gen 1) — der ehrliche Welle-Beweis
-                const mC = anker.massivC;
-                const bC = anker.beckenC;
-                const h3M = r._terrainMacroSurfaceY(mC.x, mC.z, false);
-                const h3B = r._terrainMacroSurfaceY(bC.x, bC.z, false);
-                r.state.worldMeta.genVersion = 1;
-                r._macroAnkerCache = null;
-                out.legacyAnkerNull = r._macroAnker() === null;
-                const h1M = r._terrainMacroSurfaceY(mC.x, mC.z, false);
-                const h1B = r._terrainMacroSurfaceY(bC.x, bC.z, false);
-                out.dHmassiv = h3M - h1M;
-                out.dHbecken = h3B - h1B;
-                // Quick-Abfluss-Probe: der niedrigste Becken-Rand zeigt Richtung Tal-Endpunkt
-                const tEnd = anker.talVertices[anker.talVertices.length - 1];
-                const dirToTal = Math.atan2(tEnd.z - bC.z, tEnd.x - bC.x);
-                let minH = Infinity;
-                let minAng = 0;
-                r.state.worldMeta.genVersion = 3;
-                r._macroAnkerCache = null;
-                for (let i = 0; i < 16; i++) {
-                    const a = (i / 16) * Math.PI * 2;
-                    const sx = bC.x + Math.cos(a) * anker.beckenR;
-                    const sz = bC.z + Math.sin(a) * anker.beckenR;
-                    const sh = r._terrainMacroSurfaceY(sx, sz, false);
-                    if (sh < minH) {
-                        minH = sh;
-                        minAng = a;
-                    }
-                }
-                let dAng = Math.abs(minAng - dirToTal);
-                while (dAng > Math.PI) dAng -= Math.PI * 2;
-                out.spillAngleDeg = (Math.abs(dAng) * 180) / Math.PI;
+            typeof G.grossform === "function" &&
+            Array.isArray(G.LANDFORM_REGLER) &&
+            typeof r._slopeAt === "function" &&
+            typeof r._rockExposureAt === "function";
+        out.ankerTot =
+            typeof r._macroAnker !== "function" &&
+            typeof G.ankerAusSaat !== "function" &&
+            typeof G.ankerBeitrag !== "function" &&
+            !("MACRO_ANKER" in G);
+        if (!out.struct) return out;
+        const L = r._gelaende();
+        const proben = [];
+        for (let j = -6; j <= 6; j++)
+            for (let i = -6; i <= 6; i++) {
+                const x = i * 500 + 37;
+                const z = j * 500 - 41;
+                proben.push({ x, z, rel: G.grossform(L, x, z).rel });
             }
-        } finally {
-            if (r.state.worldMeta) {
-                if (orig === undefined) delete r.state.worldMeta.genVersion;
-                else r.state.worldMeta.genVersion = orig;
-            }
-            r._macroAnkerCache = null;
-        }
+        proben.sort((a, b) => b.rel - a.rel);
+        const mittel = (ps, f) => ps.reduce((s, p) => s + f(p), 0) / ps.length;
+        const hoch = proben.slice(0, 12);
+        const tief = proben.slice(-12);
+        out.relHoch = mittel(hoch, (p) => p.rel);
+        out.relTief = mittel(tief, (p) => p.rel);
+        out.slopeHoch = mittel(hoch, (p) => r._slopeAt(p.x, p.z));
+        out.slopeTief = mittel(tief, (p) => r._slopeAt(p.x, p.z));
+        out.exposureHoch = mittel(hoch, (p) => r._rockExposureAt(p.x, p.z));
+        out.exposureTief = mittel(tief, (p) => r._rockExposureAt(p.x, p.z));
         return out;
     });
+    const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : v);
     check(
-        `Γ4 Struktur: gelaende-core ankerAusSaat/ankerBeitrag + MACRO_ANKER frozen, _macroAnker am Stamm`,
+        `Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER, _slopeAt + _rockExposureAt leben`,
         resG4.struct === true
     );
-    check(`Γ4 _macroAnker() liefert eine Anker-Struktur (gen 3)`, resG4.ankerExists === true);
-    check(`Γ4 Legacy-Tor: _macroAnker() null bei gen 1`, resG4.legacyAnkerNull === true);
     check(
-        `Γ4 A/B: Welle HEBT Massiv-Zentrum (ΔH=${resG4.dHmassiv && resG4.dHmassiv.toFixed ? resG4.dHmassiv.toFixed(1) : resG4.dHmassiv} m)`,
-        Number.isFinite(resG4.dHmassiv) && resG4.dHmassiv > 30
+        `Γ4 (K16) der Ein-Massiv-Anker ist tot (_macroAnker · ankerAusSaat · ankerBeitrag · MACRO_ANKER)`,
+        resG4.ankerTot === true
     );
     check(
-        `Γ4 A/B: Welle SENKT Becken-Zentrum (ΔH=${resG4.dHbecken && resG4.dHbecken.toFixed ? resG4.dHbecken.toFixed(1) : resG4.dHbecken} m)`,
-        Number.isFinite(resG4.dHbecken) && resG4.dHbecken < -5
+        `Γ4 (K16) Hang im Gebirge > Ebene (Relief ${f2(resG4.relHoch)} vs ${f2(resG4.relTief)} m: ${f2(resG4.slopeHoch)} > ${f2(resG4.slopeTief)})`,
+        Number.isFinite(resG4.slopeHoch) && resG4.slopeHoch > resG4.slopeTief
     );
     check(
-        `Γ4 Abfluss-Invariante: Becken-Spill zeigt zum Tal (Δ=${resG4.spillAngleDeg && resG4.spillAngleDeg.toFixed ? resG4.spillAngleDeg.toFixed(1) : resG4.spillAngleDeg}°)`,
-        Number.isFinite(resG4.spillAngleDeg) && resG4.spillAngleDeg < 60
-    );
-    // Γ4½ (V18.181) — SLOPE + ROCK-EXPOSURE als gespeicherte Felder.
-    const resG4h = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        const out = {};
-        out.struct = typeof r._slopeAt === "function" && typeof r._rockExposureAt === "function";
-        const anker = r._macroAnker();
-        if (anker) {
-            const mC = anker.massivC;
-            const R = anker.massivR;
-            const ga = Math.PI * (3 - Math.sqrt(5));
-            let sRand = 0;
-            let sFern = 0;
-            let exRand = 0;
-            let exFern = 0;
-            for (let i = 0; i < 12; i++) {
-                const a = i * ga;
-                const xr = mC.x + Math.cos(a) * R * 0.85;
-                const zr = mC.z + Math.sin(a) * R * 0.85;
-                const xf = mC.x + Math.cos(a) * (R * 2.5 + 200);
-                const zf = mC.z + Math.sin(a) * (R * 2.5 + 200);
-                sRand += r._slopeAt(xr, zr);
-                sFern += r._slopeAt(xf, zf);
-                exRand += r._rockExposureAt(xr, zr);
-                exFern += r._rockExposureAt(xf, zf);
-            }
-            out.slopeRand = sRand / 12;
-            out.slopeFern = sFern / 12;
-            out.exposureRand = exRand / 12;
-            out.exposureFern = exFern / 12;
-        }
-        return out;
-    });
-    check(`Γ4½ Struktur: _slopeAt + _rockExposureAt leben`, resG4h.struct === true);
-    check(
-        `Γ4½ Slope am Massiv-Rand > Slope fern (${resG4h.slopeRand && resG4h.slopeRand.toFixed ? resG4h.slopeRand.toFixed(2) : resG4h.slopeRand} > ${resG4h.slopeFern && resG4h.slopeFern.toFixed ? resG4h.slopeFern.toFixed(2) : resG4h.slopeFern})`,
-        Number.isFinite(resG4h.slopeRand) && resG4h.slopeRand > resG4h.slopeFern
-    );
-    check(
-        `Γ4½ Rock-Exposure am Massiv > fern (Δ ≥ 0.1) ${resG4h.exposureRand && resG4h.exposureRand.toFixed ? resG4h.exposureRand.toFixed(2) : resG4h.exposureRand} vs ${resG4h.exposureFern && resG4h.exposureFern.toFixed ? resG4h.exposureFern.toFixed(2) : resG4h.exposureFern}`,
-        Number.isFinite(resG4h.exposureRand) && resG4h.exposureRand > resG4h.exposureFern + 0.1
+        `Γ4 (K16) Fels-Blöße im Gebirge > Ebene (Δ ≥ 0.1): ${f2(resG4.exposureHoch)} vs ${f2(resG4.exposureTief)}`,
+        Number.isFinite(resG4.exposureHoch) && resG4.exposureHoch > resG4.exposureTief + 0.1
     );
 
     check(
@@ -33009,217 +32945,6 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         "W5 (W13 — R2-DISJUNKTHEIT): KEIN DSL-Op trägt repair_held/set_wear (kein Skript kann die Mühe-Senke umgehen — Ω5 lebt nur durch Spieler-Akte)",
         res.noRepairOp && res.noSetWearOp
     );
-}
-
-// Γ4 Makro-Anker + Erbgut + Abfluss — drei Wände: (a) Erbgut-Persistenz via worldMeta.macro (additiv),
-// (b) Abfluss-Invariante über 10 Seeds (kein endorheisches Becken), (c) der Worker-Spiegel reicht den
-// Erbgut-Anker (Main↔Worker deterministisch auch bei Konstanten-Änderung oder Bündel-Import).
-async function checkBandV18193MakroErbgut(ctx) {
-    const { page, check } = ctx;
-    const SEEDS = ["seed-a", "seed-b", "seed-c", "seed-d", "seed-e", "seed-f", "seed-g", "seed-h", "seed-i", "seed-j"];
-    const res = await safeEvaluate(
-        page,
-        (SEEDS) => {
-            const r = window.anazhRealm;
-            const A = r.constructor;
-            const out = {};
-
-            // (E1) STRUKTUR: die drei neuen Helper leben + Validator als static
-            // an der Klasse (Source of Truth für Welt-Stempel-Form).
-            out.helpersExist =
-                typeof r._macroSpillpointAnalysis === "function" && typeof A._isValidMacroAnker === "function";
-
-            // (E2) VALIDATOR: prüft Form, akzeptiert nur korrekte Struktur.
-            out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
-            out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
-            out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
-            out.validatorAcceptsValid =
-                A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
-            // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
-            const badNaN = window.__gelaendeCore.ankerAusSaat("nan-test");
-            badNaN.massivR = NaN;
-            out.validatorRejectsNaN = A._isValidMacroAnker(badNaN) === false;
-
-            // (E3) DETERMINISMUS: identisches Resultat über 10 Seeds.
-            let allDet = true;
-            for (const seed of SEEDS) {
-                const a = window.__gelaendeCore.ankerAusSaat(seed);
-                const b = window.__gelaendeCore.ankerAusSaat(seed);
-                if (
-                    a.massivC.x !== b.massivC.x ||
-                    a.massivR !== b.massivR ||
-                    a.beckenD !== b.beckenD ||
-                    !a.talVertices.every((v, i) => v.x === b.talVertices[i].x && v.z === b.talVertices[i].z) ||
-                    !a.talFloors.every((f, i) => f === b.talFloors[i])
-                ) {
-                    allDet = false;
-                    break;
-                }
-            }
-            out.determ10Seeds = allDet;
-
-            const origSeed = r.state.worldMeta ? r.state.worldMeta.seed : null;
-            const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
-            const origMacro = r.state.worldMeta ? r.state.worldMeta.macro : undefined;
-            try {
-                if (!r.state.worldMeta) r.state.worldMeta = {};
-
-                // (E4) ERBGUT-PERSISTENZ: erste Lesung schreibt wm.macro.
-                r.state.worldMeta.seed = "erbgut-test";
-                r.state.worldMeta.genVersion = 3;
-                delete r.state.worldMeta.macro;
-                r._macroAnkerCache = null;
-                r._voxelNoise = null;
-                const ank1 = r._macroAnker();
-                out.erbgutWritten = ank1 && r.state.worldMeta.macro === ank1;
-
-                // (E5) ZWEITE Lesung: aus wm.macro statt re-compute (Cache-Reset
-                // → wm.macro ist die Source of Truth).
-                r._macroAnkerCache = null;
-                const ank2 = r._macroAnker();
-                out.erbgutSecondReadSame = ank2 === r.state.worldMeta.macro;
-                out.erbgutValuesIdentical = ank1.massivR === ank2.massivR && ank1.beckenD === ank2.beckenD;
-
-                // (E6) KORRUPT-SCHUTZ: ein manipuliertes wm.macro (must-ignore)
-                // wird verworfen + neu aus Seed gebaut.
-                r.state.worldMeta.macro = { massivC: null, beckenC: null };
-                r._macroAnkerCache = null;
-                const ank3 = r._macroAnker();
-                out.corruptRejected =
-                    ank3 && ank3.massivC && typeof ank3.massivR === "number" && !!r.state.worldMeta.macro;
-
-                // (E7) SNAPSHOT-ROUND-TRIP: macro reist intakt durch
-                // JSON.parse(JSON.stringify(...)) (Mesh-WebSocket-Form).
-                const macroAfterRebuild = r.state.worldMeta.macro;
-                const snap = JSON.parse(JSON.stringify({ macro: macroAfterRebuild }));
-                out.snapshotRoundTrip =
-                    snap.macro &&
-                    A._isValidMacroAnker(snap.macro) &&
-                    snap.macro.massivR === macroAfterRebuild.massivR &&
-                    snap.macro.beckenD === macroAfterRebuild.beckenD;
-
-                // (E8) MIGRATION: Legacy-Welt (gen=1) ohne macro-Feld → null,
-                // KEIN Crash, kein Re-Compute (Drainage-Netz-Gesetz: alte
-                // Welten behalten ihr Gesicht).
-                r.state.worldMeta.genVersion = 1;
-                delete r.state.worldMeta.macro;
-                r._macroAnkerCache = null;
-                out.migrationLegacyNull = r._macroAnker() === null;
-
-                // (E9) MIGRATION: gen=3 OHNE macro-Feld → re-computed aus Seed +
-                // automatisch persistiert (zweite Sitzung profitiert).
-                r.state.worldMeta.genVersion = 3;
-                delete r.state.worldMeta.macro;
-                r._macroAnkerCache = null;
-                const migrA = r._macroAnker();
-                out.migrationGen3Rebuild =
-                    !!migrA && !!r.state.worldMeta.macro && A._isValidMacroAnker(r.state.worldMeta.macro);
-
-                // (E10) ABFLUSS-INVARIANTE: 10/10 Seeds haben span > beckenD*0.5
-                // (kein endorheic Becken — die LAAS-Narbe strukturell tot).
-                let allOutflow = true;
-                const spillSamples = [];
-                for (const seed of SEEDS) {
-                    r.state.worldMeta.seed = seed;
-                    r.state.worldMeta.genVersion = 3;
-                    delete r.state.worldMeta.macro;
-                    r._macroAnkerCache = null;
-                    r._voxelNoise = null;
-                    const anker = r._macroAnker();
-                    const spill = r._macroSpillpointAnalysis(anker);
-                    spillSamples.push({ seed, span: spill.span, beckenD: anker.beckenD, hasOutflow: spill.hasOutflow });
-                    if (!spill.hasOutflow) allOutflow = false;
-                }
-                out.outflowAll10Seeds = allOutflow;
-                out.spillSamples = spillSamples;
-
-                // (E11) Tal-Alignment statistisch: ≥ 6/10 Seeds haben den tiefsten Rim-Punkt < 60° von der
-                // Tal-Eingangs-Richtung (das Tal IST der Spillweg); Ausnahmen haben einen tieferen Pass — auch ein
-                // valider Auslass.
-                let nearTalCount = 0;
-                for (const seed of SEEDS) {
-                    r.state.worldMeta.seed = seed;
-                    delete r.state.worldMeta.macro;
-                    r._macroAnkerCache = null;
-                    r._voxelNoise = null;
-                    const anker = r._macroAnker();
-                    const spill = r._macroSpillpointAnalysis(anker);
-                    if (spill.spillVsTalDeg < 60) nearTalCount++;
-                }
-                out.nearTalCount = nearTalCount;
-
-                // (E12) WORKER-MIRROR: snap.macroAnker reist mit + ist valid.
-                r.state.worldMeta.seed = "worker-mirror-test";
-                r.state.worldMeta.genVersion = 3;
-                delete r.state.worldMeta.macro;
-                r._macroAnkerCache = null;
-                const wsnap = r._voxelWorkerSnapshotState();
-                out.workerSnapHasField = "macroAnker" in wsnap;
-                out.workerSnapValid = wsnap.macroAnker && A._isValidMacroAnker(wsnap.macroAnker);
-                // Determinismus: snap.macroAnker == r._macroAnker() Erbgut-Anker.
-                out.workerSnapMatchesMain = wsnap.macroAnker === r.state.worldMeta.macro;
-
-                // (E13) WORKER-MIRROR Legacy: gen=1 → snap.macroAnker = null
-                // (Worker sieht KEINEN Anker, baut auch keinen → Legacy-Welten
-                // behalten ihr Gesicht im Worker-Spiegel).
-                r.state.worldMeta.genVersion = 1;
-                delete r.state.worldMeta.macro;
-                r._macroAnkerCache = null;
-                const wsnapLegacy = r._voxelWorkerSnapshotState();
-                out.workerSnapLegacyNull = wsnapLegacy.macroAnker === null;
-            } finally {
-                if (r.state.worldMeta) {
-                    if (origSeed === null) delete r.state.worldMeta.seed;
-                    else r.state.worldMeta.seed = origSeed;
-                    if (origGen === undefined) delete r.state.worldMeta.genVersion;
-                    else r.state.worldMeta.genVersion = origGen;
-                    if (origMacro === undefined) delete r.state.worldMeta.macro;
-                    else r.state.worldMeta.macro = origMacro;
-                }
-                r._macroAnkerCache = null;
-                r._voxelNoise = null;
-            }
-            return out;
-        },
-        SEEDS
-    );
-
-    check(
-        "Γ4-Vollendung (E1) Helpers leben (_macroSpillpointAnalysis + static _isValidMacroAnker)",
-        res.helpersExist === true
-    );
-    check(
-        "Γ4-Vollendung (E2a) Validator weist null/{}/partial ab",
-        res.validatorRejectsNull && res.validatorRejectsPlain && res.validatorRejectsPartial
-    );
-    check("Γ4-Vollendung (E2b) Validator akzeptiert echten Anker", res.validatorAcceptsValid === true);
-    check("Γ4-Vollendung (E2c) Validator weist NaN ab (must-ignore Taille-Geist)", res.validatorRejectsNaN === true);
-    check("Γ4-Vollendung (E3) Determinismus über 10 Seeds (Welt-Substanz-Garantie)", res.determ10Seeds === true);
-    check(
-        "Γ4-Vollendung (E4) ERBGUT geschrieben nach erstem _macroAnker() (worldMeta.macro)",
-        res.erbgutWritten === true
-    );
-    check("Γ4-Vollendung (E5a) zweite Lesung kommt aus wm.macro (gleiche Instanz)", res.erbgutSecondReadSame === true);
-    check("Γ4-Vollendung (E5b) Werte identisch über Cache-Reset", res.erbgutValuesIdentical === true);
-    check("Γ4-Vollendung (E6) korrupter macro-Felt verworfen + frisch gebaut", res.corruptRejected === true);
-    check("Γ4-Vollendung (E7) Snapshot-Round-Trip (JSON.parse) erhält macro-Anker", res.snapshotRoundTrip === true);
-    check("Γ4-Vollendung (E8) Legacy gen=1 ohne macro → null (kein Drift)", res.migrationLegacyNull === true);
-    check(
-        "Γ4-Vollendung (E9) Migration gen=3 ohne macro → re-computed + persistiert",
-        res.migrationGen3Rebuild === true
-    );
-    check(
-        `Γ4-Vollendung (E10) ABFLUSS-INVARIANTE: 10/10 Seeds hasOutflow (LAAS-Narbe strukturell tot)`,
-        res.outflowAll10Seeds === true
-    );
-    check(
-        `Γ4-Vollendung (E11) Tal-Eingang ist Spillweg in ≥6/10 Seeds (gemessen ${res.nearTalCount}/10)`,
-        Number.isFinite(res.nearTalCount) && res.nearTalCount >= 6
-    );
-    check("Γ4-Vollendung (E12a) Worker-Snapshot trägt macroAnker-Feld", res.workerSnapHasField === true);
-    check("Γ4-Vollendung (E12b) Worker-Snapshot macroAnker ist valid", res.workerSnapValid === true);
-    check("Γ4-Vollendung (E12c) Worker liest Erbgut-Anker (Main↔Worker Identität)", res.workerSnapMatchesMain === true);
-    check("Γ4-Vollendung (E13) Worker-Legacy gen=1 → snap.macroAnker null", res.workerSnapLegacyNull === true);
 }
 
 // Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
@@ -34978,7 +34703,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.allFoundationsAlive = out.manaDrainExists && out.scentExists && out.growTreeExists && out.r5Exists;
 
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
-        out.gamma4Anker = typeof r._macroAnker === "function";
+        out.gamma4Anker = typeof window.__gelaendeCore.grossform === "function"; // K16: die Großform des Kerns (der Anker fiel)
         out.gamma6Snowband =
             typeof r._attachVoxelFieldColors === "function" &&
             /__gelaendeCore\.schnee\(/.test(window.__codeOf(r._bodenFarbeAt));
@@ -56349,7 +56074,6 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandPhi7PortalHalls, ctx);
             await timed(checkBandPhi6ComputeSpende, ctx);
             await timed(checkBandW5Werkzeugabnutzung, ctx);
-            await timed(checkBandV18193MakroErbgut, ctx);
             await timed(checkBandV18194Gamma6Befoerderung, ctx);
             await timed(checkBandV18195AvatarSizeHp, ctx);
             await timed(checkBandV18196ManaSymmetry, ctx);

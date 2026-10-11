@@ -4,7 +4,7 @@
 // (`_terrainMacroSurfaceY(x,z,false)`) den Horizont als 3 Ring-Schalen.
 // Gesetze:
 //   (1) STRUKTUR — genau 3 Schalen-Meshes, Vertex-Zahlen wie deklariert
-//       (FERN_RING.winkel × reihen je Schale), EIN geteiltes Material.
+//       (FERN_RING.winkel × die Reihen je Schale aus FERN_RING.seite), EIN geteiltes Material.
 //   (2) HÖHEN == GESETZ — 60 deterministische Proben-Vertices: |mesh-Höhe −
 //       _terrainMacroSurfaceY(snapX, snapZ, false)| < 0.01 (bzw. die flache
 //       waterLevel-Klemme; Reihe 0 trägt die Saum-Tauchkante), XZ exakt gesnappt.
@@ -132,10 +132,21 @@ const server = http.createServer((req, res) => {
         res.ready = fr.ready === true;
 
         // ===== (1) STRUKTUR: 3 Schalen, deklarierte Vertex-Zahlen, EIN Material =====
-        const per = F.winkel * F.reihen;
+        // Die Reihen je Schale, unabhängig nachgerechnet: Reihen-Faktor 1 + seite·2π/winkel (die Masche höchstens
+        // seite : 1), geometrisch von inner bis aussen.
+        const qRing = 1 + (F.seite * 2 * Math.PI) / F.winkel;
+        const reihenSoll = fr.schalen.map((sh) => Math.ceil(Math.log(sh.aussen / sh.inner) / Math.log(qRing)) + 1);
+        const offSoll = [];
+        let summeSoll = 0;
+        for (const rr of reihenSoll) {
+            offSoll.push(summeSoll);
+            summeSoll += rr * F.winkel;
+        }
         res.meshCount = fr.meshes.length;
         res.vertCounts = fr.meshes.map((m) => m.geometry.attributes.position.count);
-        res.vertsDeclared = res.vertCounts.every((c) => c === per) && fr.totalVerts === per * 3;
+        res.reihen = reihenSoll;
+        res.vertsDeclared =
+            res.vertCounts.every((c, s) => c === reihenSoll[s] * F.winkel) && fr.totalVerts === summeSoll;
         res.oneMaterial = fr.meshes.every((m) => m.material === fr.material);
         res.sceneMeshes = 0;
         r.state.scene.traverse((n) => {
@@ -158,15 +169,16 @@ const server = http.createServer((req, res) => {
         // + Saum) — das Gesetz selbst kommt aus _terrainMacroSurfaceY (EINE Quelle).
         const probeVertex = (gIdx, fudge, ring) => {
             const fr = ring || frBau;
-            const s = (gIdx / per) | 0;
-            const li = gIdx - s * per;
+            let s = 0;
+            while (s < offSoll.length - 1 && gIdx >= offSoll[s + 1]) s++;
+            const li = gIdx - offSoll[s];
             const row = (li / F.winkel) | 0;
             const ai = li - row * F.winkel;
             const sh = fr.schalen[s];
             // GEOMETRISCHE Reihen + NAHT-VEREDELUNG (20.07.) — die Erwartung
             // spiegelt das LIVE-Layout (nah dicht, fern weit; Innen-Reihen der
             // ersten Schale tragen das volle Gesetz leicht gesenkt).
-            const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (F.reihen - 1));
+            const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (reihenSoll[s] - 1));
             const ang = (ai / F.winkel) * Math.PI * 2;
             const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
             const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;

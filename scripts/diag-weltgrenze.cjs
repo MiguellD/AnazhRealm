@@ -29,7 +29,7 @@
 // Gedächtnisse der Seite (Anker, Ring, Vorschau, Dorf-Zug) und ein Tier. Welt B ist eine Wildnis-Welt ohne all das, mit
 // MARKER-B im Wissen (je Weg auch ohne worldId oder ohne worldMeta). Jede Tür bekommt das RELOAD-FENSTER des Spiels: der
 // Server liefert die neue Seite 1,5 s später, ein Edit-Save steht vor der Tür an, danach ein saveState und ein Edit-Save.
-// Geprüft werden: das worldMeta der Seite, die Leser (`_erbgut`, `_macroAnker`, der Worker-Spiegel), die Gedächtnisse,
+// Geprüft werden: das worldMeta der Seite, die Leser (`_erbgut`, der Worker-Spiegel), die Gedächtnisse,
 // der Snapshot der Seite, der Speicher-Eintrag von B (byte-gleich mit der abgelegten Datei, wenn die neue Seite startet),
 // der Aktiv-Zeiger, MARKER-B in der erwachten Welt und A unter seiner Id (ohne MARKER-B, im Index). Ein Weg, der in der
 // Seite bleibt, bekommt den nächsten Schritt des Spiels (Autosave, Reload).
@@ -220,10 +220,10 @@ function seitenPruefer() {
         pflanzeA(buehneErbgut) {
             const r = window.anazhRealm;
             const wm = r.state.worldMeta;
-            const anker = Object.assign(window.__gelaendeCore.ankerAusSaat("grenze-a-anker"), { herkunft: T });
             Object.assign(wm, A_STUFEN, {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
-                macro: anker,
+                // das Altfeld eines Spielstands von vor K16 (der Ein-Massiv-Anker fiel) — es reist nie in Welt B
+                macro: { herkunft: T },
                 voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, strength: 48, mode: "carve", herkunft: T }],
                 settlementCells: { [T]: { seed: 7, nH: 3, x: 12345, z: 12345 }, start: { herkunft: T } },
                 genesisPortalRing: T,
@@ -242,7 +242,6 @@ function seitenPruefer() {
                 grenzeFremd: T,
             });
             r._erbgutCache = null;
-            r._macroAnkerCache = anker;
             r._genesisRingFertig = true;
             r._portalPreviewFertig = Object.assign(Object.create(null), { fachwerk: true });
             r._autoSettlementRejected = new Set([T]);
@@ -272,12 +271,10 @@ function seitenPruefer() {
             const e = r._erbgut();
             if (!(e.terme.length === 1 && e.terme[0].art === "wildnis"))
                 out.push(`Leser _erbgut() [${e.terme.map((t) => t.art).join(", ")}]`);
-            for (const p of pfade(r._macroAnker(), "Leser _macroAnker()", 1)) out.push(p);
             const ws = r._voxelWorkerSnapshotState();
             for (const p of pfade(ws, "Worker-Spiegel")) out.push(p);
             if (!(ws.erbgut && ws.erbgut.wildnis === 1)) out.push("Worker-Spiegel.erbgut (keine Wildnis)");
             const ged = {
-                _macroAnkerCache: pfade(r._macroAnkerCache, "x").length > 0,
                 _genesisRingFertig: r._genesisRingFertig === true,
                 _portalPreviewFertig: !!(r._portalPreviewFertig && r._portalPreviewFertig.fachwerk),
                 _autoSettlementRejected: !!(r._autoSettlementRejected && r._autoSettlementRejected.has(T)),

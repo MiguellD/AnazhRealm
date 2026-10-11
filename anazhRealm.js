@@ -38186,7 +38186,7 @@ class AnazhRealm {
     // grobes WELT-Gitter gesnappt → beim Re-Zentrieren schwimmen die Höhen nie. Headless AUS; Hook
     // `window.__anazhFernRing` (true/false) für die Linse `diag-fern-ring`.
 
-    // Baut EINMAL die 3 Schalen (96 Winkel × 10 Reihen) + das EINE Material (vertexColors,
+    // Baut EINMAL die 3 Schalen (192 Winkel × `_fernRingReihen` Reihen je Schale) + das EINE Material (vertexColors,
     // Nebel per Default). Die Höhen füllt `_fernRingRefresh` budgetiert über Frames — bis dahin
     // unsichtbar.
     _fernRingEnsure(playerPos) {
@@ -38204,28 +38204,15 @@ class AnazhRealm {
         // Spekular durch); gebaute Chunks decken IHN per Depth. Kein Durchstich: in der Chunk-Ziel-Zone
         // trägt er das VOLLE Gesetz leicht gesenkt (s. _fernRingRefresh, deckZoneRad).
         const innerRand = cfg.span * 0.5;
-        const schalen = F.schalen.map((s, i) =>
-            Object.freeze({
-                inner: i === 0 ? innerRand : F.schalen[i - 1].aussen,
-                aussen: s.aussen,
-                snap: s.snap,
-            })
-        );
         const W = F.winkel;
-        const R = F.reihen;
-        const per = W * R;
-        // EIN Index-Muster für alle Schalen (Wicklung: Normalen zeigen nach +Y).
-        const indices = [];
-        for (let r = 0; r < R - 1; r++) {
-            for (let a = 0; a < W; a++) {
-                const a2 = (a + 1) % W;
-                const v00 = r * W + a;
-                const v01 = r * W + a2;
-                const v10 = (r + 1) * W + a;
-                const v11 = (r + 1) * W + a2;
-                indices.push(v00, v01, v10, v01, v11, v10);
-            }
-        }
+        let off = 0;
+        const schalen = F.schalen.map((s, i) => {
+            const inner = i === 0 ? innerRand : F.schalen[i - 1].aussen;
+            const reihen = AnazhRealm._fernRingReihen(inner, s.aussen);
+            const sh = Object.freeze({ inner, aussen: s.aussen, snap: s.snap, reihen, off, per: W * reihen });
+            off += W * reihen;
+            return sh;
+        });
         // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Standard (rau, nicht-metallisch — es liest den EINEN
         // Himmel wie das nahe Terrain; Lambert ließ jeden sonnenabgewandten Hang schwarz). Die Farbe: der Boden (color)
         // unter dem Kronendach (aKrone.rgb × die EINE Saison-Uniform `uSeasonMul`, wie Laub, Gras und Karte) zur
@@ -38243,6 +38230,19 @@ class AnazhRealm {
         );
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
+            const per = schalen[s].per;
+            // Das Index-Muster der Schale (Wicklung: Normalen zeigen nach +Y).
+            const indices = [];
+            for (let r = 0; r < schalen[s].reihen - 1; r++) {
+                for (let a = 0; a < W; a++) {
+                    const a2 = (a + 1) % W;
+                    const v00 = r * W + a;
+                    const v01 = r * W + a2;
+                    const v10 = (r + 1) * W + a;
+                    const v11 = (r + 1) * W + a2;
+                    indices.push(v00, v01, v10, v01, v11, v10);
+                }
+            }
             const geo = new THREE.BufferGeometry();
             geo.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
@@ -38272,13 +38272,13 @@ class AnazhRealm {
             // leicht gesenkt → wahres Terrain deckt jedes Chunk-Loch (s. _fernRingRefresh).
             deckZoneRad: (targetRing + 0.5) * cfg.span,
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
-            totalVerts: per * schalen.length,
+            totalVerts: off,
             // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
             // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
-            farbOffen: new Uint8Array(per * schalen.length),
-            farbLaw: new Float32Array(per * schalen.length),
+            farbOffen: new Uint8Array(off),
+            farbLaw: new Float32Array(off),
             farbN: 0,
-            farbMin: per * schalen.length,
+            farbMin: off,
             refreshed: 0, // Budget-Zähler (Linse)
             ready: false,
         };
@@ -38294,7 +38294,9 @@ class AnazhRealm {
     // ist die Studio-Laubfarbe der Arten, die der Wald-Generator HIER würfelt (phyto-core `forestNische`: dieselben
     // Nischen-Gewichte wie planForestCell), × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`) — die feste
     // Sommer-Konstante neben dem Studio-Laub (ohne Art, ohne Saison) ist gefallen. Die Saison legt der Leser auf.
-    _fernFarbeTeile(x, y, z, out) {
+    // `fuss` (optional, `_fernFarbeMasche`): die Masche, für die der Punkt steht — dann das Mittel über sie.
+    _fernFarbeTeile(x, y, z, out, fuss) {
+        if (fuss) return this._fernFarbeMasche(x, y, z, out, fuss);
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (!core || typeof core.forestNische !== "function" || typeof core.forestGeburt !== "function")
             throw new Error("Fern-Farbe: phyto-core forestNische/forestGeburt fehlen (KERN-PFLICHT)");
@@ -38349,7 +38351,7 @@ class AnazhRealm {
     // Die zusammengesetzte Fern-Farbe (CPU-Leser, der Feld-Pass): Wasser flach, sonst der Boden unter dem Kronendach ×
     // die Saison (`saison` = `_saisonMul` der laufenden Phase — dieselbe Zahl, die `uSeasonMul` trägt) zur Deckung.
     // `out` = [r, g, b] (linear).
-    _fernFarbeAt(x, y, z, wet, out, saison) {
+    _fernFarbeAt(x, y, z, wet, out, saison, fuss) {
         const K = AnazhRealm.FERN_FARBE;
         if (wet) {
             out[0] = K.wasser[0];
@@ -38357,10 +38359,49 @@ class AnazhRealm {
             out[2] = K.wasser[2];
             return out;
         }
-        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(7)));
+        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(7)), fuss);
         out[0] = t[0] + (t[3] * saison.r - t[0]) * t[6];
         out[1] = t[1] + (t[4] * saison.g - t[1]) * t[6];
         out[2] = t[2] + (t[5] * saison.b - t[2]) * t[6];
+        return out;
+    }
+
+    // DER FUSSABDRUCK DER FERN-FARBE (K16): ein Ring-Punkt oder Feld-Texel steht für eine Masche (`fuss` = { ax, az, ht, hr }:
+    // der Anker, die halbe Breite tangential und die halbe Tiefe radial in Metern) — seine Farbe ist das Mittel der Masche aus
+    // 3 × 3 Abtastungen, nie der Punkt. Befund 11.10. (Makro-Blick, Vorschau): das Bestands-Mosaik des Wald-Generators
+    // (phyto-core `forestNische`, patch λ ≈ 20 m) wechselte unter einer 11 × 34-m-Masche je Punkt die Art (Kronen-Grün
+    // 0,035 … 0,128) — jede Masche zog als radialer Streifen um den Spieler. Das Mittel ist exakt für jede Saison s:
+    // Deckung ā = ⟨a⟩, Krone k' = ⟨k·a⟩/ā, Boden c' = (⟨c⟩ − ⟨c·a⟩)/(1 − ā), also c' + (k'·s − c')·ā = ⟨c + (k·s − c)·a⟩.
+    _fernFarbeMasche(x, y, z, out, fuss) {
+        const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(7));
+        const S = this._fernMascheSumme || (this._fernMascheSumme = new Float64Array(10));
+        S.fill(0);
+        const dx = x - fuss.ax;
+        const dz = z - fuss.az;
+        const d = Math.hypot(dx, dz) || 1;
+        const rx = dx / d;
+        const rz = dz / d;
+        const U = [-2 / 3, 0, 2 / 3];
+        for (let i = 0; i < 3; i++)
+            for (let j = 0; j < 3; j++) {
+                const ur = U[i] * fuss.hr;
+                const ut = U[j] * fuss.ht;
+                this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t);
+                const a = t[6];
+                for (let c = 0; c < 3; c++) {
+                    S[c] += t[c];
+                    S[3 + c] += t[c] * a;
+                    S[6 + c] += t[3 + c] * a;
+                }
+                S[9] += a;
+            }
+        const a = S[9] / 9;
+        const frei = 9 - S[9];
+        for (let c = 0; c < 3; c++) {
+            out[c] = frei > 1e-6 ? (S[c] - S[3 + c]) / frei : S[c] / 9;
+            out[3 + c] = S[9] > 1e-6 ? S[6 + c] / S[9] : 0;
+        }
+        out[6] = a;
         return out;
     }
 
@@ -38373,24 +38414,30 @@ class AnazhRealm {
     // DER EINE Punkt-Helfer (CPU-Schleife UND Feld-Zeichner): globaler Vertex-Index → Schale/Lokal-
     // Index/Reihe + aufs Schalen-Snap-Gitter gerundetes Welt-XZ (Höhen schwimmen beim Re-Zentrieren nie).
     _fernRingPunkt(fr, gIdx) {
-        const F = AnazhRealm.FERN_RING;
-        const W = F.winkel;
-        const R = F.reihen;
-        const per = W * R;
-        const s = (gIdx / per) | 0;
-        const li = gIdx - s * per;
+        const W = AnazhRealm.FERN_RING.winkel;
+        let s = 0;
+        while (s < fr.schalen.length - 1 && gIdx >= fr.schalen[s + 1].off) s++;
+        const sh = fr.schalen[s];
+        const li = gIdx - sh.off;
         const row = (li / W) | 0;
         const ai = li - row * W;
-        const sh = fr.schalen[s];
         // GEOMETRISCHE Reihen-Radien: Auflösung dort, wo das Auge ist (Reihe-0-Tiefe ≈ inner·(q−1)).
         // Lineare Reihen gäben Riesen-Quads an der Innenkante, deren Farb-Interpolation als Streifen liest.
-        const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (R - 1));
+        const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
         const ang = (ai / W) * Math.PI * 2;
         return {
             s,
+            g: gIdx,
             li,
             row,
             rad, // der LOCH-DECKEL liest den Reihen-Radius (Deck-Zonen-Urteil)
+            // die Masche des Punkts (`_fernFarbeMasche`): halbe Breite tangential, halbe Tiefe radial (Reihen-Faktor)
+            fuss: {
+                ax: fr.anchorX,
+                az: fr.anchorZ,
+                ht: (Math.PI * rad) / W,
+                hr: (AnazhRealm.FERN_RING.seite * Math.PI * rad) / W,
+            },
             x: Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap,
             z: Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap,
         };
@@ -38424,9 +38471,9 @@ class AnazhRealm {
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
         // Naht sofort — der Horizont erscheint nie schwarz.
-        const g = p.s * AnazhRealm.FERN_RING.winkel * AnazhRealm.FERN_RING.reihen + p.li;
+        const g = p.g;
         fr.farbLaw[g] = law;
-        const f = this._fernRingTeile(p.x, p.z, law, wet, !fr.ready);
+        const f = this._fernRingTeile(p.x, p.z, law, wet, !fr.ready, p.fuss);
         if (f) {
             AnazhRealm._fernRingSchreibe(geo, p.li, f);
             if (fr.farbOffen[g]) {
@@ -38477,18 +38524,19 @@ class AnazhRealm {
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
     // Deckung 0), trocken aus dem Gedächtnis — oder, mit `rechnen`, frisch und gemerkt. null = offen (das Budget färbt
     // ihn). Die Saison legt der Ring-Stoff auf (`uSeasonMul`), das Gedächtnis bleibt über das Jahr gültig.
-    _fernRingTeile(x, z, law, wet, rechnen) {
+    _fernRingTeile(x, z, law, wet, rechnen, fuss) {
         if (wet) {
             const w = AnazhRealm.FERN_FARBE.wasser;
             return this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0]));
         }
-        const key = x * 4194304 + z; // Schnapp-Punkte sind ganzzahlig, |z| < 2^21 m — eindeutig
+        // Schnapp-Punkte sind ganzzahlig, |x|, |z| < 2^21 m; die Maschen-Breite (Viertel-Oktaven) steht über 2^44 — eindeutig.
+        const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
         const m = this._fernFarbeMemo || (this._fernFarbeMemo = { neu: new Map(), alt: new Map() });
         let f = m.neu.get(key);
         if (f) return f;
         f = m.alt.get(key) || null;
         if (!f && !rechnen) return null;
-        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(7));
+        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(7), fuss);
         // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
         // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
         if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
@@ -38511,7 +38559,7 @@ class AnazhRealm {
             if (!fr.farbOffen[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             const law = fr.farbLaw[g];
-            const f = this._fernRingTeile(p.x, p.z, law, law < wl, true);
+            const f = this._fernRingTeile(p.x, p.z, law, law < wl, true, p.fuss);
             AnazhRealm._fernRingSchreibe(fr.meshes[p.s].geometry, p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
@@ -38529,6 +38577,14 @@ class AnazhRealm {
     }
 
     // Die Teile in die zwei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung).
+    // Die Reihen einer Schale (inner → aussen, geometrisch): der Reihen-Faktor q ist 1 + `seite` × die Winkel-Breite 2π/W —
+    // die Masche ist radial höchstens `seite`-mal so tief wie breit, an jedem Radius.
+    static _fernRingReihen(inner, aussen) {
+        const F = AnazhRealm.FERN_RING;
+        const q = 1 + (F.seite * 2 * Math.PI) / F.winkel;
+        return Math.ceil(Math.log(aussen / inner) / Math.log(q)) + 1;
+    }
+
     static _fernRingSchreibe(geo, li, t) {
         geo.attributes.color.setXYZ(li, t[0], t[1], t[2]);
         geo.attributes.aKrone.setXYZW(li, t[3], t[4], t[5], t[6]);
@@ -38591,7 +38647,7 @@ class AnazhRealm {
             const geo = fr.meshes[s].geometry;
             geo.attributes.position.needsUpdate = true;
             AnazhRealm._fernRingAttributeHoch(geo);
-            geo.computeVertexNormals(); // 3072 Vertices je Schale — das Licht braucht Normalen
+            geo.computeVertexNormals(); // das Licht braucht Normalen
         }
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
@@ -38612,8 +38668,8 @@ class AnazhRealm {
             const sh = fr.schalen[0];
             let rows = 0;
             while (
-                rows < F.reihen &&
-                sh.inner * Math.pow(sh.aussen / sh.inner, rows / (F.reihen - 1)) <= fr.deckZoneRad * 1.35
+                rows < sh.reihen &&
+                sh.inner * Math.pow(sh.aussen / sh.inner, rows / (sh.reihen - 1)) <= fr.deckZoneRad * 1.35
             )
                 rows++;
             fr.zoneVerts = rows * F.winkel;
@@ -39457,7 +39513,15 @@ class AnazhRealm {
             const law = job.werte[k];
             const wet = law < wl;
             const y = wet ? wl : law;
-            this._fernFarbeAt(job.punkte[k * 2], y, job.punkte[k * 2 + 1], wet, f, job.saison);
+            // die Masche des Texels (`_fernFarbeMasche`): Azimut-Breite am Radius, die radiale Zeile des Felds
+            const P = AnazhRealm.FELD_PASS;
+            const px = job.punkte[k * 2];
+            const pz = job.punkte[k * 2 + 1];
+            const fuss = job.fuss || (job.fuss = { ax: job.ankerX, az: job.ankerZ, ht: 0, hr: 0 });
+            fuss.ht = (Math.PI * Math.hypot(px - job.ankerX, pz - job.ankerZ)) / P.az;
+            fuss.hr =
+                (P.rMaxM - AnazhRealm.FERN_RING.schalen[AnazhRealm.FERN_RING.schalen.length - 1].aussen) / (2 * P.rad);
+            this._fernFarbeAt(px, y, pz, wet, f, job.saison, fuss);
             job.daten[k * 4] = y;
             job.daten[k * 4 + 1] = f[0];
             job.daten[k * 4 + 2] = f[1];
@@ -100566,13 +100630,18 @@ AnazhRealm.FELD_PANO = Object.freeze({
     rebakeDist: 60, // m XZ-Drift bis zum Re-Bake (Parallaxe auf 8 km ≈ 0.4° — unter der Wahrnehmung)
     rebakeHoehe: 12, // m Y-Drift bis zum Re-Bake (Horizont-Verschiebung)
 });
+// DIE MASCHE DES FERN-RINGS (K16): je Schale so viele geometrische Reihen, dass eine Masche radial höchstens `seite`-mal so
+// tief ist wie breit (`_fernRingReihen`) — 16 Reihen je Schale gaben Schale 0 Maschen 10 : 1 (Reihen-Faktor 1,32 gegen
+// 2π/192): jeder Makro-Blick zeigte radiale Streifen um den Spieler. Der Snap bleibt unter der Maschen-Breite am
+// sichtbaren Innenrand (Schale 0 ab der Chunk-Kante ~200 m), sonst fallen Punkte zusammen; Schale 0 trägt die
+// Deck-Zone ganz (Ring 12: 729 m).
 AnazhRealm.FERN_RING = Object.freeze({
     winkel: 192,
-    reihen: 16,
+    seite: 3,
     schalen: Object.freeze([
-        Object.freeze({ aussen: 1400, snap: 24 }),
-        Object.freeze({ aussen: 3600, snap: 64 }),
-        Object.freeze({ aussen: 8000, snap: 160 }),
+        Object.freeze({ aussen: 800, snap: 6 }),
+        Object.freeze({ aussen: 3000, snap: 24 }),
+        Object.freeze({ aussen: 8000, snap: 64 }),
     ]),
     randPad: 40,
     saumDrop: 6,
