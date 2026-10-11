@@ -200,10 +200,6 @@ class AnazhRealm {
             // _computeHydrosphere. ALLE Voxel-Chunks teilen es → Cells außerhalb sind deterministisch
             // (above=AIR, below=WATER) ohne Naht-Drift; spart ~60 % Density-Samples auf Wasser-Chunks.
             hydroBand: null,
-            // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
-            // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
-            // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
-            erosion: null,
             keys: {},
             // 0 ist NULL-SENTINEL, kein spielbarer Zwilling: bei kaltem Kern steht der Spieler sichtbar
             // (_kernPflichtWand nennt den Täter), bei warmem Kern setzt die Boot-Gesetz-Eichung (init) die

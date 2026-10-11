@@ -117,9 +117,7 @@ const server = http.createServer((req, res) => {
 
         // (3) Kachel-Determinismus: (1,0) frisch in leere Maps neu rechnen.
         const savedH = r.state.hydroTiles;
-        const savedE = r.state.erosionTiles;
         r.state.hydroTiles = new Map();
-        r.state.erosionTiles = new Map();
         r._ensureHydroTilesAround(2048, 0, 10);
         const tile2 = r.state.hydroTiles.get("1,0");
         const wk1 = tile.water.waterKind;
@@ -141,7 +139,6 @@ const server = http.createServer((req, res) => {
                 }
         out.tileDeterministic = identical && tile2.rivers.length === tile.rivers.length;
         r.state.hydroTiles = savedH;
-        r.state.erosionTiles = savedE;
         // Worker auf den Stand der wiederhergestellten Maps bringen.
         await r._voxelWorkerSyncWorldgenState();
 

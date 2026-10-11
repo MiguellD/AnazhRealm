@@ -15365,10 +15365,12 @@ async function checkBandWelle6APolish(ctx) {
         const savedY = r.state.playerMesh.position.y;
         const savedZ = r.state.playerMesh.position.z;
 
-        // Bau an eindeutiger Position neben dem Spieler, Spawn-y=0 → überlappt das Boden-Niveau (typischer
-        // In-Spiel-Fall).
+        // Bau an eindeutiger Position neben dem Spieler, auf der Höhe des Gelände-Gesetzes → überlappt das Boden-Niveau
+        // (typischer In-Spiel-Fall). Seit K16 liegt der Boden am Spawn nicht mehr bei y = 0: ein Bau auf y = 0 stak im
+        // Hügel, und „50 m über dem Dach“ lag noch im Fels (die Negativ-Kontrolle war geerdet).
         const archX = savedX + 20;
         const archZ = savedZ + 20;
+        const archY = r._terrainMacroSurfaceY(archX, archZ);
         const beforeArchCount = r.state.architectures.length;
         // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE)
         // trägt die Erdungs-Probe als Test-Blueprint (flaches Dach, solide blockerAABBs).
@@ -15378,7 +15380,7 @@ async function checkBandWelle6APolish(ctx) {
             name: "_t_w6a_haus",
             parts: JSON.parse(JSON.stringify(KS6a.haus_basis.parts)),
         };
-        const entry = r.spawnArchitecture("_t_w6a_haus", { x: archX, y: 0, z: archZ }, { seed: 4242 });
+        const entry = r.spawnArchitecture("_t_w6a_haus", { x: archX, y: archY, z: archZ }, { seed: 4242 });
         out.archEntrySpawned = !!entry;
         // DETERMINISMUS-BOGEN P3 — Architektur-Kollision ist feld-nativ via
         // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
@@ -19977,103 +19979,25 @@ async function checkBandHydrosphere(ctx) {
         );
     }
 
-    // ### Fluviale Erosion (Stream-Power-Inzision) ###
-    // `_computeErosion`: je Iteration Priority-Flood → Flow-Accumulation → Inzision `Δh=k·A^m·S^n`
-    // NUR in Kanälen (A ≥ channelMinArea) — Grate bleiben, Täler schneiden ein. Delta fließt in
-    // _terrainMacroSurfaceY.
-    const voxelV947Results = await safeEvaluate(page, () => {
+    // ### Die Kachel-Erosion ist gefallen (K16) ###
+    // Die Täler kommen aus dem Flussnetz des Gelände-Gesetzbuchs (gelaende-core), nicht aus einer nachträglichen
+    // Stream-Power-Inzision je Kachel: kein `_computeErosion`, kein `state.erosion`, kein `erosionDelta` im Kern.
+    const erosionTot = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
-        const out = {};
-        // `_computeErosion` nullt state.erosion beim Start → Worldgen-Stand sichern + am Ende
-        // wiederherstellen, sonst sehen die folgenden Hydrosphäre-Tests kein erodiertes Gelände.
-        const savedEro = r.state.erosion;
-        out.methodsExist =
-            typeof r._computeErosion === "function" &&
-            typeof r._erosionIncisionPass === "function" &&
-            typeof window.__gelaendeCore.erosionDelta === "function";
-        out.stateDeclared = "erosion" in r.state;
-        const e = r.state.erosion;
-        out.wired =
-            !!e &&
-            e.delta instanceof Float32Array &&
-            typeof e.dim === "number" &&
-            typeof e.cell === "number" &&
-            e.delta.length === e.dim * e.dim;
-        if (!out.methodsExist || !out.wired) return out;
-        const E = r.constructor.EROSION;
-        // (1) Inzision (Abtrag, Gipfel/Hänge) + thermische Talus-Erosion (Deposition, Täler): das Delta
-        // ist BEIDSEITIG auf ±maxDelta geklemmt — Deposition im Tal ist legitim (mass-conserving).
-        let minD = 0;
-        let maxD = 0;
-        let sumD = 0;
-        let carved = 0;
-        let deposited = 0;
-        for (let i = 0; i < e.delta.length; i++) {
-            const v = e.delta[i];
-            if (v < minD) minD = v;
-            if (v > maxD) maxD = v;
-            sumD += v;
-            if (v < -3) carved++;
-            if (v > 1) deposited++;
-        }
-        out.boundedByMaxDelta = minD >= -E.maxDelta - 0.01 && maxD <= E.maxDelta + 0.01;
-        out.carvesChannels = minD < -5 && carved > 0;
-        out.hasThermalDeposition = deposited > 0; // der Talus füllt Täler auf
-        // (2) das Relief überlebt die Glättung: der Talus darf flächig glätten,
-        // aber nicht die ganze Welt einebnen — der stark-erodierte Anteil < 60 %.
-        out.reliefSurvives = carved / e.delta.length < 0.6;
-        // (3) Determinismus — zwei Läufe byte-identisch (kein RNG).
-        const t0 = performance.now();
-        const e2 = r._computeErosion();
-        out.recomputeMs = performance.now() - t0;
-        let sum2 = 0;
-        for (let i = 0; i < e2.delta.length; i++) sum2 += e2.delta[i];
-        out.deterministic = Math.abs(sum2 - sumD) < 1e-6;
-        // (4) das Erosions-Delta (gelaende-core `erosionDelta`): 0 weit ausserhalb der Region, im
-        // Inneren ein endlicher Wert; `_terrainMacroSurfaceY` trägt es.
-        out.deltaZeroOutside = window.__gelaendeCore.erosionDelta(r._gelaende(), 99999, 99999) === 0;
-        out.deltaFiniteInside = Number.isFinite(window.__gelaendeCore.erosionDelta(r._gelaende(), 0, 0));
-        out.perfOk = out.recomputeMs < 600;
-        // den Worldgen-Erosions-Stand wiederherstellen (das letzte
-        // `_computeErosion` liess state.erosion null).
-        r.state.erosion = savedEro;
-        return out;
+        return {
+            tot:
+                typeof r._computeErosion === "undefined" &&
+                typeof r._erosionIncisionPass === "undefined" &&
+                !("erosion" in r.state) &&
+                typeof window.__gelaendeCore.erosionDelta === "undefined" &&
+                typeof window.__gelaendeCore.erosionFuer === "undefined",
+        };
     });
-
-    if (voxelV947Results && !voxelV947Results.error) {
-        const ev = voxelV947Results;
-        check(
-            "Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren",
-            ev.methodsExist
-        );
-        check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
-        check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
-        if (ev.methodsExist && ev.wired) {
-            check(
-                "Voxel V14.2: Erosions-Delta beidseitig auf ±maxDelta geklemmt (Inzision + Talus-Deposition)",
-                ev.boundedByMaxDelta
-            );
-            check("Voxel V9.47: die Erosion carvt echte Kanäle (tiefster Schnitt > 5 m)", ev.carvesChannels);
-            check(
-                "Voxel V14.2: die thermische Talus-Erosion deponiert im Tal (positives Delta)",
-                ev.hasThermalDeposition
-            );
-            check("Voxel V14.2: das Relief überlebt die Glättung (stark-erodierter Anteil < 60 %)", ev.reliefSurvives);
-            check("Voxel V9.47: die Erosion ist deterministisch (zwei Läufe identisch, kein RNG)", ev.deterministic);
-            check(
-                "Voxel V9.47: gelaende-core erosionDelta — 0 ausserhalb der Region, endlich im Inneren",
-                ev.deltaZeroOutside && ev.deltaFiniteInside
-            );
-            check(
-                "Voxel V9.47: _computeErosion im Perf-Budget (< 600 ms)",
-                ev.perfOk,
-                `recomputeMs=${Math.round(ev.recomputeMs || 0)} ms`
-            );
-        }
-    } else {
-        check("Voxel V9.47: Erosions-Tests laufen", false, voxelV947Results ? voxelV947Results.error : "no result");
-    }
+    check(
+        "K16: die Kachel-Erosion ist gefallen (kein _computeErosion, kein state.erosion, kein erosionDelta/erosionFuer)",
+        !!(erosionTot && erosionTot.tot)
+    );
 
     // ### Der Hydrosphären-Atlas ###
     // Deterministisches Drainage-Netz aus der Voxel-Surface: Priority-Flood (Senken → Seen) →
@@ -20124,16 +20048,22 @@ async function checkBandHydrosphere(ctx) {
         // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
         // sind keine Mündung mehr — der Fluss fliesst hindurch).
         out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
-        // V9.46 — mindestens ein Fluss fliesst durch einen See
-        // HINDURCH: ein Land-Punkt NACH einer See-Durchquerung.
-        out.riverThroughLake = h1.rivers.some((rv) => {
-            let sawLake = false;
-            for (const p of rv.points) {
-                if (p.inLake) sawLake = true;
-                else if (sawLake) return true;
-            }
-            return false;
-        });
+        // V9.46 — mindestens ein Fluss fliesst durch einen See HINDURCH: ein Land-Punkt NACH einer See-Durchquerung —
+        // gemessen an der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
+        const seeOrt = window.__wasserOrt("see");
+        const meerOrt = window.__wasserOrt("meer");
+        out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
+        out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
+        out.riverThroughLake =
+            !!seeOrt &&
+            seeOrt.hydro.rivers.some((rv) => {
+                let sawLake = false;
+                for (const p of rv.points) {
+                    if (p.inLake) sawLake = true;
+                    else if (sawLake) return true;
+                }
+                return false;
+            });
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -20161,26 +20091,34 @@ async function checkBandHydrosphere(ctx) {
         let finiteOk = true;
         let oceanCells = 0;
         let lakeFieldCells = 0;
-        let oceanY = null;
-        let oceanFlat = true;
         if (out.waterFieldShape) {
             for (let i = 0; i < wf.waterKind.length; i++) {
                 const k = wf.waterKind[i];
                 if (k > 2) kindOk = false;
-                if (k === 1) {
-                    oceanCells++;
-                    // V9.49-e — alle Ozean-Zellen teilen EINEN
-                    // flachen Spiegel (kein per-Zelle-filled mehr).
-                    if (oceanY === null) oceanY = wf.waterY[i];
-                    else if (Math.abs(wf.waterY[i] - oceanY) > 1e-4) oceanFlat = false;
-                } else if (k === 2) lakeFieldCells++;
+                if (k === 1) oceanCells++;
+                else if (k === 2) lakeFieldCells++;
                 if (!Number.isFinite(wf.waterY[i])) finiteOk = false;
             }
         }
         out.waterKindValid = kindOk && finiteOk;
-        out.waterFieldOceanFlat = oceanFlat && oceanCells > 0;
-        out.waterFieldOceanCells = oceanCells;
+        // V9.49-e — alle Ozean-Zellen teilen EINEN flachen Spiegel (kein per-Zelle-filled mehr): gemessen an der Kachel
+        // des Meer-Orts.
+        let meerZellen = 0;
+        let oceanY = null;
+        let oceanFlat = true;
+        const mw = meerOrt && meerOrt.hydro.water;
+        if (mw) {
+            for (let i = 0; i < mw.waterKind.length; i++) {
+                if (mw.waterKind[i] !== 1) continue;
+                meerZellen++;
+                if (oceanY === null) oceanY = mw.waterY[i];
+                else if (Math.abs(mw.waterY[i] - oceanY) > 1e-4) oceanFlat = false;
+            }
+        }
+        out.waterFieldOceanFlat = oceanFlat && meerZellen > 0;
+        out.waterFieldOceanCells = meerZellen;
         out.waterFieldLakeCells = lakeFieldCells;
+        out.waterFieldHomeOceanCells = oceanCells;
         // das Feld IST das Netz: Ozean-/See-Zell-Zahl deckt sich mit
         // den Netz-Extraktions-Zählern (eine Quelle, keine Drift).
         out.waterFieldMatchesNet =
@@ -20190,28 +20128,28 @@ async function checkBandHydrosphere(ctx) {
             !!(h2.water && h2.water.waterKind) &&
             wf.waterKind.length === h2.water.waterKind.length &&
             wf.waterKind.every((v, i) => v === h2.water.waterKind[i]);
-        // V9.50-a — das Wasser-Level-Feld `_waterLevelAt`.
+        // V9.50-a — das Wasser-Level-Feld `_waterLevelAt` an der ersten Ozean-Zelle der Meer-Kachel und der ersten
+        // See-Zelle der See-Kachel (der Leser löst die Kachel selbst auf, `_hydroFor`).
         out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
         out.hasRiverAt = typeof r._hydroRiverAt === "function";
         out.waterLevelOceanOk = false;
         out.waterLevelLakeOk = false;
-        if (out.hasWaterLevelAt && out.waterFieldShape) {
-            const dimH = h1.dim;
+        if (out.hasWaterLevelAt) {
             const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
-            let oceanProbed = false;
-            let lakeProbed = false;
-            for (let i = 0; i < wf.waterKind.length && !(oceanProbed && lakeProbed); i++) {
-                const wx = h1.originX + ((i % dimH) + 0.5) * h1.cell;
-                const wz = h1.originZ + (((i / dimH) | 0) + 0.5) * h1.cell;
-                if (wf.waterKind[i] === 1 && !oceanProbed) {
-                    const lv = r._waterLevelAt(wx, wz);
-                    out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
-                    oceanProbed = true;
-                } else if (wf.waterKind[i] === 2 && !lakeProbed) {
-                    const lv = r._waterLevelAt(wx, wz);
-                    out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
-                    lakeProbed = true;
-                }
+            const erste = (h, kind) => {
+                const q = h.water.waterKind.indexOf(kind);
+                if (q < 0) return null;
+                return [h.originX + ((q % h.dim) + 0.5) * h.cell, h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell];
+            };
+            const m = meerOrt && erste(meerOrt.hydro, 1);
+            if (m) {
+                const lv = r._waterLevelAt(m[0], m[1]);
+                out.waterLevelOceanOk = Number.isFinite(lv) && Math.abs(lv - wl) < 0.01;
+            }
+            const s = seeOrt && erste(seeOrt.hydro, 2);
+            if (s) {
+                const lv = r._waterLevelAt(s[0], s[1]);
+                out.waterLevelLakeOk = Number.isFinite(lv) && lv >= wl;
             }
         }
         // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs); der
@@ -20257,7 +20195,11 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
         check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)", hb.riversDescend);
         check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
-        check("Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)", hb.riverThroughLake);
+        check(
+            "Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)",
+            hb.riverThroughLake,
+            `See-Ort ${hb.seeOrt}`
+        );
         check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
         check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
@@ -20269,9 +20211,13 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-b: state.hydrosphere ist nach Worldgen verdrahtet", hb.wired);
         check("Voxel V9.49-a: das vereinte Wasser-Feld {waterY, waterKind} hat dim²-Form", hb.waterFieldShape);
         check("Voxel V9.49-a: waterKind ∈ {0,1,2}, waterY je Zelle endlich", hb.waterKindValid);
-        check("Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel", hb.waterFieldOceanFlat);
         check(
-            `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
+            "Voxel V9.49-e: alle Ozean-Zellen teilen EINEN flachen Wasser-Spiegel",
+            hb.waterFieldOceanFlat,
+            `Meer-Ort ${hb.meerOrt}, ${hb.waterFieldOceanCells} Ozean-Zellen`
+        );
+        check(
+            `Voxel V9.49-a: das Feld deckt sich mit dem Netz (${hb.waterFieldHomeOceanCells} Ozean- + ${hb.waterFieldLakeCells} See-Zellen = Netz-Zähler)`,
             hb.waterFieldMatchesNet
         );
         check("Voxel V9.49-a: das Wasser-Feld ist deterministisch", hb.waterFieldDeterministic);
@@ -20297,14 +20243,14 @@ async function checkBandHydrosphere(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         out.hasWaterLevelAt = typeof r._waterLevelAt === "function";
-        const hydro = r.state.hydrosphere;
-        out.hydroReady = !!(hydro && hydro.ready);
+        out.hydroReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
         if (!out.hasWaterLevelAt || !out.hydroReady) return out;
-        // _waterLevelAt: über einer GERENDERTEN See-Zelle → der
-        // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
-        // zählen nicht — die Meeres-Plane vertritt sie.
-        out.lakeLevelOk = true;
-        out.ringFollowsPlane = true;
+        // _waterLevelAt: über einer GERENDERTEN See-Zelle → der See-Level, gemessen an der Kachel des See-Orts
+        // (`__wasserOrt`). V9.45-c: absorbierte Seen (level ≤ waterLevel+2) zählen nicht — die Meeres-Plane vertritt sie.
+        const seeOrt = window.__wasserOrt("see");
+        const hydro = seeOrt ? seeOrt.hydro : r.state.hydrosphere;
+        out.lakeLevelOk = false;
+        out.ringFollowsPlane = false;
         const wlT = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
         const renderedLk = hydro.lakes.find((l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0);
         if (renderedLk) {
@@ -20334,23 +20280,6 @@ async function checkBandHydrosphere(ctx) {
         }
         // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
         out.seaFallbackOk = r._waterLevelAt(999999, 999999) === r.state.waterLevel;
-        // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
-        // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
-        r._buildHydrosphereMeshes();
-        const meshes = r.state.hydrosphereMeshes || [];
-        const riverMeshes = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
-        out.mouthReachesSea = true;
-        out.seaMouthChecked = false;
-        for (let i = 0; i < hydro.rivers.length; i++) {
-            if (hydro.rivers[i].mouth !== "sea") continue;
-            const m = riverMeshes[i];
-            if (!m || !m.geometry || !m.geometry.attributes.position) continue;
-            const pos = m.geometry.attributes.position.array;
-            const vc = pos.length / 3;
-            const lastY = pos[(vc - 1) * 3 + 1];
-            out.seaMouthChecked = true;
-            if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
-        }
         // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus der EINEN Wasser-Wahrheit am Körper
         // (`_koerperWasser`, Welle L wasser — vorher `_waterLevelAt`); sie lebt im feld-nativen Controller `_stepCharacter`
         // (`_loopPhysicsSync` dispatcht nur).
@@ -20373,10 +20302,6 @@ async function checkBandHydrosphere(ctx) {
         check(
             "Voxel V9.43-c.2: _waterLevelAt fällt ausserhalb der Region auf den Meeresspiegel zurück",
             h2.seaFallbackOk
-        );
-        check(
-            "Voxel V9.43-c.2: ein Meer-Mündungs-Fluss-Ribbon endet sichtbar auf dem Meeresspiegel",
-            h2.mouthReachesSea
         );
         check(
             "Voxel V9.43-c.2: die Schwimm-Physik speist den effektiven Wasserspiegel (Seen schwimmbar)",
@@ -20405,17 +20330,16 @@ async function checkBandHydrosphere(ctx) {
             hydro.lakeNear instanceof Uint8Array &&
             typeof hydro.bucketSize === "number" &&
             typeof hydro.bucketsDim === "number";
-        // Einen Fluss-Punkt mit echter Flow-Richtung finden — NICHT in einem See (See-Durchquerungen
-        // werden nicht gecarvt) und mit nicht-See-Nachbar, damit das Segment rp→next im Carve-Index liegt.
+        // Den Fluss-Mittelpunkt finden: der BREITESTE Punkt mit echter Flow-Richtung — NICHT in einem See (See-
+        // Durchquerungen werden nicht gecarvt) und mit nicht-See-Nachbar, damit das Segment rp→next im Carve-Index liegt.
+        // Der erste Punkt des ersten Flusses ist eine Quelle (Breite 1,2 m, Tiefe 0,4 m) — kein Fluss-Mittelpunkt.
         let rp = null;
-        for (let ri = 0; ri < hydro.rivers.length && !rp; ri++) {
+        for (let ri = 0; ri < hydro.rivers.length; ri++) {
             const pts = hydro.rivers[ri].points;
             for (let k = 0; k + 1 < pts.length; k++) {
                 if (pts[k].inLake || pts[k + 1].inLake) continue;
-                if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) > 0.5) {
-                    rp = pts[k];
-                    break;
-                }
+                if (Math.hypot(pts[k].flowX || 0, pts[k].flowZ || 0) <= 0.5) continue;
+                if (!rp || (pts[k].width || 0) > (rp.width || 0)) rp = pts[k];
             }
         }
         out.foundRiverPoint = !!rp;
@@ -20475,18 +20399,21 @@ async function checkBandHydrosphere(ctx) {
         // (6+7) Ein See-Becken wird ein flacher, wasserdichter Topf: `_hydrosphereLakeAt` liefert bedY
         // über dem Meeresspiegel (Meeres-Plane verdeckt) und unter dem See-Spiegel; die Voxel-Surface
         // sitzt auf bedY, knapp darunter fester Grund.
+        // Gemessen an der Kachel des See-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
         out.lakeSculpted = false;
         out.lakeBedWatertight = false;
         const wl2 = typeof r.state.waterLevel === "number" ? r.state.waterLevel : -Infinity;
-        for (let li = 0; li < hydro.lakes.length && !out.lakeSculpted; li++) {
-            const lk = hydro.lakes[li];
+        const seeOrt = window.__wasserOrt("see");
+        const seeH = seeOrt ? seeOrt.hydro : hydro;
+        for (let li = 0; li < seeH.lakes.length && !out.lakeSculpted; li++) {
+            const lk = seeH.lakes[li];
             if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
             if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
             const idx = lk.cells[(lk.cells.length / 2) | 0];
-            const ci = idx % hydro.dim;
-            const cj = (idx / hydro.dim) | 0;
-            const wx = hydro.originX + (ci + 0.5) * hydro.cell;
-            const wz = hydro.originZ + (cj + 0.5) * hydro.cell;
+            const ci = idx % seeH.dim;
+            const cj = (idx / seeH.dim) | 0;
+            const wx = seeH.originX + (ci + 0.5) * seeH.cell;
+            const wz = seeH.originZ + (cj + 0.5) * seeH.cell;
             const la = r._hydrosphereLakeAt(wx, wz);
             if (la && la.w > 0.5 && Number.isFinite(la.bedY)) {
                 out.lakeSculpted = true;
@@ -20671,7 +20598,9 @@ async function checkBandWelleC1WaterCells(ctx) {
         if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
             return { ...out, error: "no voxel chunks streamed" };
         }
-        // Den ersten "filled" Chunk wählen (mit Mesh, nicht empty)
+        // Den ersten "filled" Chunk wählen (mit Mesh, nicht empty) — am Wasser-Ort des Gesetzes (`__wasserChunk`: die
+        // Heimat trägt seit K16 keinen See; ohne Wasser-Zelle gibt es kein waterCells-Feld).
+        out.wasserChunk = window.__wasserChunk("see");
         let testKey = null;
         let testEntry = null;
         for (const [key, entry] of r.state.voxelChunks.entries()) {
@@ -23048,24 +22977,22 @@ async function checkBandV17117FarWater(ctx) {
         const WL = typeof s.waterLevel === "number" ? s.waterLevel : 0;
         const WATER = r.constructor.CELL_STATE.WATER;
         const regHalf = (h.dim * h.cell) / 2; // ±1024
-        // Finde je einen beyond-region Ozean- und Land-Chunk (über Chunk-Indizes,
-        // selbst-konsistent: der Klassifikations-Punkt = der Chunk-Mittelpunkt).
-        let oCx = null,
-            oCz = null,
-            lCx = null,
+        // Der Ozean-Chunk liegt am Meer-Ort des Gesetzes (`__wasserOrt`: das Meer liegt seit K16 jenseits des
+        // Kontinents, nicht mehr im Ring um die Heimat); der Land-Chunk jenseits der Heimat über Chunk-Indizes
+        // (selbst-konsistent: der Klassifikations-Punkt = der Chunk-Mittelpunkt).
+        const meerOrt = window.__wasserOrt("meer");
+        const oCx = meerOrt ? Math.floor(meerOrt.x / span) : null;
+        const oCz = meerOrt ? Math.floor(meerOrt.z / span) : null;
+        out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
+        let lCx = null,
             lCz = null;
         const cmax = Math.ceil((regHalf + 1400) / span);
-        for (let cx = -cmax; cx <= cmax && (oCx === null || lCx === null); cx++) {
-            for (let cz = -cmax; cz <= cmax; cz++) {
-                if (oCx !== null && lCx !== null) break;
+        for (let cx = -cmax; cx <= cmax && lCx === null; cx++) {
+            for (let cz = -cmax; cz <= cmax && lCx === null; cz++) {
                 const mx = cx * span + span / 2;
                 const mz = cz * span + span / 2;
                 if (Math.max(Math.abs(mx), Math.abs(mz)) <= regHalf + span) continue; // ganz beyond
-                const macro = r._terrainMacroSurfaceY(mx, mz, true);
-                if (oCx === null && macro < WL - 2) {
-                    oCx = cx;
-                    oCz = cz;
-                } else if (lCx === null && macro > WL + 30) {
+                if (r._terrainMacroSurfaceY(mx, mz, true) > WL + 30) {
                     lCx = cx;
                     lCz = cz;
                 }
@@ -23073,7 +23000,7 @@ async function checkBandV17117FarWater(ctx) {
         }
         out.foundOcean = oCx !== null;
         out.foundLand = lCx !== null;
-        if (oCx === null) return { ...out, error: "kein beyond-region Ozean-Chunk gefunden" };
+        if (oCx === null) return { ...out, error: "kein Meer-Ort im Gesetz gefunden" };
         // (1) Main: Gate + Klassifikator am beyond-region Ozean.
         out.oceanGate = r._voxelChunkHasAnyWater(oCx, oCz);
         const ocCells = r._buildVoxelChunkWaterCells(oCx * span, oy, oCz * span, cfg.step, null, 0);
@@ -23119,7 +23046,11 @@ async function checkBandV17117FarWater(ctx) {
         check("V17.117 H3: Far-Water-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("V17.117 H3: beyond-region Ozean-Chunk gefunden", res.foundOcean);
+    check(
+        "V17.117 H3: beyond-region Ozean-Chunk gefunden (am Meer-Ort des Gesetzes)",
+        res.foundOcean,
+        `Meer-Ort ${res.meerOrt}`
+    );
     check("V17.117 H3: beyond-region Ozean — Gate true", res.oceanGate === true);
     check(
         "V17.117 H3: beyond-region Ozean trägt Wasser-Cells (Heilung)",
@@ -24041,6 +23972,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
         out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632
+        // Ein Wasser-Chunk am Wasser-Ort des Gesetzes (`__wasserChunk`: die Heimat trägt seit K16 keinen See).
+        window.__wasserChunk("see");
         // Empirisch: alle Chunks mit waterCells haben gleiche Länge (133632)
         // egal welcher Terrain-LOD.
         let totalWithCells = 0;
@@ -24297,12 +24230,35 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         let waterSpot = null;
         const SCAN_RANGE = 120;
         const SCAN_STEP = 6;
+        // Die Suche läuft um das Ufer des Sees des Gesetzes (`__wasserOrt`: die Heimat trägt seit K16 keinen See): die
+        // erste See-Zelle mit einem Land-Nachbarn. Ein tiefer Punkt zählt, wenn auf einer Achse binnen 9 m Land über dem
+        // Spiegel steht — die Probe will den Uferweg der Kreatur (der See ist 600 m breit, seine Mitte hat kein Ufer).
+        const seeOrt = window.__wasserOrt("see");
+        let mx = 0;
+        let mz = 0;
+        if (seeOrt) {
+            const h = seeOrt.hydro;
+            const wK = h.water.waterKind;
+            const q = seeOrt.lake.cells.find(
+                (c) => wK[c - 1] === 0 || wK[c + 1] === 0 || wK[c - h.dim] === 0 || wK[c + h.dim] === 0
+            );
+            mx = Math.round(h.originX + ((q % h.dim) + 0.5) * h.cell);
+            mz = Math.round(h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell);
+        }
+        const land = (x, z) => {
+            const ly = r._voxelSurfaceY(x, z);
+            return ly !== null && Number.isFinite(ly) && ly > r._waterLevelAt(x, z) + 0.5;
+        };
         for (let dx = -SCAN_RANGE; dx <= SCAN_RANGE && !waterSpot; dx += SCAN_STEP) {
             for (let dz = -SCAN_RANGE; dz <= SCAN_RANGE && !waterSpot; dz += SCAN_STEP) {
-                const sy = r._voxelSurfaceY(dx, dz);
+                const x = mx + dx;
+                const z = mz + dz;
+                const sy = r._voxelSurfaceY(x, z);
                 if (sy === null || !Number.isFinite(sy)) continue;
-                const wy = r._waterLevelAt(dx, dz);
-                if (wy - sy > 1.5) waterSpot = { x: dx, z: dz, sy, wy };
+                const wy = r._waterLevelAt(x, z);
+                // die Kreatur steht 0,5 m über dem Grund, der Helfer misst ab ihr: der Punkt braucht > 2 m Tiefe
+                if (!(wy - sy > 2.5)) continue;
+                if (land(x + 9, z) || land(x - 9, z) || land(x, z + 9) || land(x, z - 9)) waterSpot = { x, z, sy, wy };
             }
         }
         out.waterSpotFound = waterSpot !== null;
@@ -27950,7 +27906,6 @@ async function checkBandV18132FerneSeen(ctx) {
         const out = {};
         out.machinery =
             typeof r._hydroFor === "function" &&
-            typeof window.__gelaendeCore.erosionFuer === "function" &&
             typeof window.__gelaendeCore.kachelSchluessel === "function" &&
             typeof r._ensureHydroTilesAround === "function";
         // KONSUM (V17.31): ALLE Hydro-Leser laufen durch die Region-Aufloesung.
@@ -27964,10 +27919,7 @@ async function checkBandV18132FerneSeen(ctx) {
             r._hydroRiverAt,
             r._voxelChunkHasAnyWater,
         ];
-        // Das Erosions-Delta liest seine Region im Gelände-Gesetzbuch (gelaende-core `erosionFuer`).
-        out.readersResolved =
-            readers.every((f) => /_hydroFor/.test(window.__codeOf(f))) &&
-            /erosionFuer\(/.test(window.__codeOf(window.__gelaendeCore.erosionDelta));
+        out.readersResolved = readers.every((f) => /_hydroFor/.test(window.__codeOf(f)));
         // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
         out.buildGuarded = /_ensureHydroTilesAround/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
@@ -27976,8 +27928,7 @@ async function checkBandV18132FerneSeen(ctx) {
             out.workerMirror =
                 /function hydroFor\(/.test(src) &&
                 /importScripts\([^\n]*"gelaende-core\.js"/.test(src) &&
-                /snap\.hydroTiles/.test(src) &&
-                /snap\.erosionTiles/.test(src);
+                /snap\.hydroTiles/.test(src);
         } catch (_e) {
             out.workerMirror = "fetch-fail";
         }
@@ -27992,10 +27943,7 @@ async function checkBandV18132FerneSeen(ctx) {
                 for (let j = 0; j < 6; j++) {
                     const x = -900 + i * 360;
                     const z = -900 + j * 360;
-                    v.push(
-                        r._atlasWaterLevelAt(x, z, -Infinity),
-                        window.__gelaendeCore.erosionDelta(r._gelaende(), x, z)
-                    );
+                    v.push(r._atlasWaterLevelAt(x, z, -Infinity));
                 }
             return JSON.stringify(v);
         };
@@ -28020,13 +27968,13 @@ async function checkBandV18132FerneSeen(ctx) {
         return;
     }
     check(
-        "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)",
+        "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core kachelSchluessel/_ensure...)",
         res.machinery
     );
     check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
     check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
     check(
-        "V18.132 Ferne Seen: der Worker-Mirror traegt hydroFor/erosionFor + Kachel-Apply",
+        "V18.132 Ferne Seen: der Worker-Mirror traegt hydroFor + Kachel-Apply",
         res.workerMirror === true,
         String(res.workerMirror)
     );
@@ -31175,11 +31123,24 @@ async function checkBandGammaGenese(ctx) {
         out.relTief = mittel(tief, (p) => p.rel);
         out.slopeHoch = mittel(hoch, (p) => r._slopeAt(p.x, p.z));
         out.slopeTief = mittel(tief, (p) => r._slopeAt(p.x, p.z));
-        out.exposureHoch = mittel(hoch, (p) => r._rockExposureAt(p.x, p.z));
-        out.exposureTief = mittel(tief, (p) => r._rockExposureAt(p.x, p.z));
+        // Die Fels-Blöße ist ein Flächen-Anteil (Kliffe und Flanken), kein Punkt: je Probe das Mittel über 400 × 400 m im
+        // 25-m-Raster — ein Einzelpunkt am Flussufer der Ebene (Blöße 1) überstimmte zwölf Gebirgs-Punkte.
+        const flaeche = (p) => {
+            let sum = 0;
+            let n = 0;
+            for (let dz = -200; dz <= 200; dz += 25)
+                for (let dx = -200; dx <= 200; dx += 25) {
+                    sum += r._rockExposureAt(p.x + dx, p.z + dz);
+                    n++;
+                }
+            return sum / n;
+        };
+        out.exposureHoch = mittel(hoch, flaeche);
+        out.exposureTief = mittel(tief, flaeche);
         return out;
     });
     const f2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : v);
+    const f3 = (v) => (Number.isFinite(v) ? v.toFixed(3) : v);
     check(
         `Γ4 (K16) Struktur: gelaende-core grossform + LANDFORM_REGLER, _slopeAt + _rockExposureAt leben`,
         resG4.struct === true
@@ -31193,8 +31154,8 @@ async function checkBandGammaGenese(ctx) {
         Number.isFinite(resG4.slopeHoch) && resG4.slopeHoch > resG4.slopeTief
     );
     check(
-        `Γ4 (K16) Fels-Blöße im Gebirge > Ebene (Δ ≥ 0.1): ${f2(resG4.exposureHoch)} vs ${f2(resG4.exposureTief)}`,
-        Number.isFinite(resG4.exposureHoch) && resG4.exposureHoch > resG4.exposureTief + 0.1
+        `Γ4 (K16) Fels-Blöße im Gebirge ≥ 1,5 × Ebene (Flächen-Anteil je 400 m): ${f3(resG4.exposureHoch)} vs ${f3(resG4.exposureTief)}`,
+        Number.isFinite(resG4.exposureHoch) && resG4.exposureHoch > 0 && resG4.exposureHoch >= 1.5 * resG4.exposureTief
     );
 
     check(
@@ -33020,6 +32981,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
         if (typeof r._koerperWasser === "function" && typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
+            // Der Höhlen-Chunk unter dem See des Gesetzes (`__wasserChunk("hoehle")`: die Heimat trägt seit K16 keinen See).
+            out.hoehlenChunk = window.__wasserChunk("hoehle");
             const cfg = r._voxelChunkConfig(0);
             const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
             const ZS = r.constructor.CELL_STATE;
@@ -39217,8 +39180,8 @@ async function checkBandV18136Audit(ctx) {
         out.rangeDrives = Math.abs(r.state.csmNode.maxFar - 360) < 1e-9;
         r.state.csmNode = savedCsm;
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
-        // (2) Kachel-Erosion ohne flowTo-Ballast (Source-Probe am Ensure).
-        out.tileLean = /eTile\.flowTo = null/.test(window.__codeOf(r._ensureHydroTilesAround));
+        // (2) die Kachel-Erosion ist gefallen (K16): der Kachel-Eingang baut nur noch die Hydrosphäre.
+        out.tileLean = !/eTile|_computeErosion|erosionTiles/.test(window.__codeOf(r._ensureHydroTilesAround));
         // (3) die Rail liest die Gemeinschafts-Aggregation.
         out.trendsAgg = /_feedRatingAgg/.test(window.__codeOf(r._renderFeedTrends));
         // (4) Γ5: der Wurf-Strom der Nah-Streu hängt nur an Zelle, Art und Welt-Seed (nie Math.random).
@@ -39234,7 +39197,10 @@ async function checkBandV18136Audit(ctx) {
         "V18.136 Audit: der Schatten-Weite-Slider treibt unter CSM maxFar (kein toter Knopf)",
         res.rangeSrc && res.rangeDrives
     );
-    check("V18.136 Audit: Kachel-Erosion ohne flowTo-Ballast (64 KB/Kachel gespart)", res.tileLean);
+    check(
+        "V18.136 Audit: der Kachel-Eingang baut keine Kachel-Erosion mehr (K16: die Täler kommen aus dem Flussnetz)",
+        res.tileLean
+    );
     check("V18.136 Audit: die Bestbewertet-Rail liest die Gemeinschafts-Aggregation", res.trendsAgg);
     check("V18.136 Audit: die Nah-Streu würfelt je Zelle aus dem Welt-Seed (Γ5, kein Math.random)", res.oneRng);
 }
@@ -55552,6 +55518,123 @@ async function checkBandRing6Workshop(ctx) {
         // DIE DOKU-LINSE (bewusst UNGESTRIPPT) für Marker, die per Definition im KOMMENTAR wohnen — nie
         // rohes .toString() (Apparat-Ratchet), nie __codeOf; CODE-Behauptungen gehören in __codeOf/__consumes.
         window.__dokuOf = (fnOrSrc) => String(fnOrSrc);
+        // DER WASSER-ORT (K16): jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
+        // ihn setzt — die Heimat-Kachel trägt keinen (die Seen sind die Senken des Flussnetzes, ≤ 1 je km²; das Meer liegt
+        // jenseits des Kontinents). „see“: die nächste benannte Senke (gelaende-core `benannteSeen`), deren Kachel einen
+        // gerenderten See (Spiegel > Meer + 2 m, ≥ 16 Zellen) trägt; „meer“: der nächste Punkt unter dem Meeresspiegel auf
+        // Ringen um den Ursprung, dort die nächste Ozean-Zelle. Die Kachel wird über den EINEN Kachel-Eingang registriert
+        // (`_ensureHydroTilesAround`), damit jeder Hydro-Leser (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
+        window.__wasserOrt = (art) => {
+            const r = window.anazhRealm;
+            const G = window.__gelaendeCore;
+            window.__wasserOrtCache = window.__wasserOrtCache || {};
+            const c = window.__wasserOrtCache[art];
+            if (c) {
+                r._ensureHydroTilesAround(c.x, c.z, 0);
+                return { ...c, hydro: r._hydroFor(c.x, c.z) };
+            }
+            const L = r._gelaende();
+            const wl = r.state.waterLevel;
+            const zelle = (h, q) => ({
+                x: h.originX + ((q % h.dim) + 0.5) * h.cell,
+                z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell,
+            });
+            let ort = null;
+            if (art === "see") {
+                const step = 64;
+                const n = 375;
+                const kand = G.benannteSeen(L, -12000, -12000, step, n)
+                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
+                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+                for (const k of kand) {
+                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    const h = r._hydroFor(k.x, k.z);
+                    const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+                    if (!lake) continue;
+                    ort = { ...zelle(h, lake.cells[(lake.cells.length / 2) | 0]), lake };
+                    break;
+                }
+            } else if (art === "hoehle") {
+                // eine trockene Höhle unter oder neben einem See des Gesetzes: von seinem Spiegel abwärts erst fester
+                // Grund (die Decke), dann Luft (die Höhle), dann wieder Grund (ihr Boden). Gesucht in den See-Zellen und
+                // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst.
+                const step = 64;
+                const n = 375;
+                const kand = G.benannteSeen(L, -12000, -12000, step, n)
+                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
+                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+                const geprueft = new Set();
+                for (const k of kand.slice(0, 6)) {
+                    if (ort) break;
+                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    const h = r._hydroFor(k.x, k.z);
+                    for (const lake of (h && h.lakes) || []) {
+                        if (ort || !(lake.level > wl + 2) || !lake.cells) break;
+                        const zellen = new Set();
+                        for (const q of lake.cells)
+                            for (let dj = -1; dj <= 1; dj++)
+                                for (let di = -1; di <= 1; di++) zellen.add(q + di + dj * h.dim);
+                        for (const q of zellen) {
+                            const key = h.originX + ":" + h.originZ + ":" + q;
+                            if (ort || geprueft.has(key)) continue;
+                            geprueft.add(key);
+                            const p = zelle(h, q);
+                            for (let sz = -6; sz <= 6 && !ort; sz += 4)
+                                for (let sx = -6; sx <= 6 && !ort; sx += 4) {
+                                    let stufe = 0;
+                                    for (let y = lake.level - 0.5; y > lake.level - 40 && stufe < 3; y -= 1) {
+                                        const fest = r._terrainDensityAt(p.x + sx, y, p.z + sz) > 0;
+                                        if ((stufe === 0 && fest) || (stufe === 1 && !fest) || (stufe === 2 && fest))
+                                            stufe++;
+                                    }
+                                    if (stufe === 3) ort = { x: p.x + sx, z: p.z + sz, lake };
+                                }
+                        }
+                    }
+                }
+            } else if (art === "meer") {
+                for (let R = 512; R <= 40000 && !ort; R += 512)
+                    for (let a = 0; a < 64; a++) {
+                        const x = R * Math.cos((a / 64) * 2 * Math.PI);
+                        const z = R * Math.sin((a / 64) * 2 * Math.PI);
+                        if (!(G.hoehe(L, x, z, false) < wl - 4)) continue;
+                        r._ensureHydroTilesAround(x, z, 0);
+                        const h = r._hydroFor(x, z);
+                        let best = -1;
+                        let bd = Infinity;
+                        for (let q = 0; q < h.water.waterKind.length; q++) {
+                            if (h.water.waterKind[q] !== 1) continue;
+                            const p = zelle(h, q);
+                            const d = (p.x - x) ** 2 + (p.z - z) ** 2;
+                            if (d < bd) [bd, best] = [d, q];
+                        }
+                        if (best >= 0) ort = { ...zelle(h, best), lake: null };
+                        break;
+                    }
+            }
+            if (!ort) return null;
+            window.__wasserOrtCache[art] = ort;
+            return { ...ort, hydro: r._hydroFor(ort.x, ort.z) };
+        };
+        // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
+        // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
+        window.__wasserChunk = (art) => {
+            const r = window.anazhRealm;
+            if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
+            const ort = window.__wasserOrt(art);
+            if (!ort) return null;
+            const { span } = r._voxelChunkConfig(0);
+            const cx = Math.floor(ort.x / span);
+            const cz = Math.floor(ort.z / span);
+            const key = `${cx},${cz}`;
+            const da = r.state.voxelChunks.get(key);
+            if (da && da.mesh && da.waterCells) return key;
+            r._disposeVoxelChunk(key);
+            r.state.voxelChunks.delete(key);
+            const fresh = r._acquireVoxelChunkBuild(cx, cz, 0, { forceSync: true });
+            if (fresh && fresh !== "pending") r._finalizeVoxelChunkBuild(cx, cz, 0, fresh, true);
+            return r.state.voxelChunks.has(key) ? key : null;
+        };
         // KONSUM-Beweis statt Quelltext-Zitat: providerObj[providerKey] wird temporär ein Zähl-Spy (delegiert
         // ans Original), obj[methodName](...args) läuft, dann own-Property-treu restauriert. true = der
         // Konsument hat den Provider WIRKLICH gerufen; wirft nie.
