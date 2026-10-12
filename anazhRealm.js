@@ -32584,7 +32584,12 @@ class AnazhRealm {
             const L = Lv.div(d);
             const nl = N.dot(L).clamp();
             const q = d.div(lage.w).pow2();
-            const abst = q.pow2().oneMinus().clamp().pow2().mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
+            const abst = q
+                .pow2()
+                .oneMinus()
+                .clamp()
+                .pow2()
+                .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
             const beitrag = farbe.rgb
                 .mul(nl.mul(abst).mul(gewicht))
                 .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
@@ -93004,7 +93009,14 @@ class AnazhRealm {
             this._augenLeuchte ||
             (this._augenLeuchte = {
                 quelle: "auge",
-                L: { kelvin: A.kelvin, staerke: 0, reichweiteM: A.reichweiteM, abfall: A.abfall, kernM: A.kernM, ersatz: true },
+                L: {
+                    kelvin: A.kelvin,
+                    staerke: 0,
+                    reichweiteM: A.reichweiteM,
+                    abfall: A.abfall,
+                    kernM: A.kernM,
+                    ersatz: true,
+                },
                 masse: 1,
                 phase: 0,
             });
