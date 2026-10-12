@@ -38368,6 +38368,38 @@ class AnazhRealm {
             dach: (T, boden) => T.mix(boden, krone.rgb.mul(su.uSeasonMul), dach),
         });
         if (!material || !material.colorNode) throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
+        // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um den
+        // SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe weiter
+        // (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
+        const bauZoneRad = Math.min(
+            schalen[0].aussen,
+            ((targetRing + 0.5) * cfg.span * Math.SQRT2 + F.reanchorDist) * (1 + (F.seite * 2 * Math.PI) / W)
+        );
+        // DER RING WEICHT DEM GEBAUTEN (K16, die Naht): wo ein gezeichneter Chunk steht (`_chunkGezeichnet`), verwirft der Ring
+        // sein Fragment (`maskNode`) — die Masken-Karte trägt je Chunk der Bau-Zone ein Texel um den Anker, `_fernRingMaske`
+        // schreibt sie, sobald sich der gezeichnete Bestand ändert. Bis 12.10. tauchte der Ring dort 2 m (an der Naht 0,2 m)
+        // unter das Gesetz, und das Gebaute deckte ihn per Tiefe: über jeder Höhlen-Mündung (der gebaute Boden 10–62 m unter dem
+        // Gesetz) stand er als glatte Platte mit Sägezahn-Kante (Bild platte-ring-an/-aus, K16-nb3), und an der Naht stach
+        // seine Sehne durch den Chunk (gate:fern-ring Band 9, voller 5 × 5-Satz 2,79 %).
+        const maskeN = 2 * Math.ceil(bauZoneRad / cfg.span) + 3;
+        const maskeDaten = new Uint8Array(maskeN * maskeN * 4);
+        const maskeTex = new THREE.DataTexture(maskeDaten, maskeN, maskeN, THREE.RGBAFormat, THREE.UnsignedByteType);
+        maskeTex.name = "fern-ring-maske";
+        maskeTex.magFilter = THREE.NearestFilter;
+        maskeTex.minFilter = THREE.NearestFilter;
+        maskeTex.generateMipmaps = false;
+        maskeTex.needsUpdate = true;
+        const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
+        {
+            const zelle = TSL.floor(TSL.positionWorld.xz.div(cfg.span)).sub(uMaskeZelle0);
+            const drin = zelle.x
+                .greaterThanEqual(0)
+                .and(zelle.y.greaterThanEqual(0))
+                .and(zelle.x.lessThan(maskeN))
+                .and(zelle.y.lessThan(maskeN));
+            const ij = TSL.ivec2(TSL.clamp(zelle, TSL.vec2(0), TSL.vec2(maskeN - 1)));
+            material.maskNode = drin.and(TSL.textureLoad(maskeTex, ij).x.greaterThan(0.5)).not();
+        }
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const per = schalen[s].per;
@@ -38412,13 +38444,9 @@ class AnazhRealm {
             // Bis zu diesem Radius (Chunk-Ziel-Zone + Blende) tragen die Schale-0-Reihen das VOLLE Gesetz
             // leicht gesenkt → wahres Terrain deckt jedes Chunk-Loch (s. _fernRingRefresh).
             deckZoneRad: (targetRing + 0.5) * cfg.span,
-            // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um
-            // den SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe
-            // weiter (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
-            bauZoneRad: Math.min(
-                schalen[0].aussen,
-                ((targetRing + 0.5) * cfg.span * Math.SQRT2 + F.reanchorDist) * (1 + (F.seite * 2 * Math.PI) / W)
-            ),
+            bauZoneRad, // die Bau-Zone (oben)
+            // die Masken-Karte des Gebauten (`maskNode`, `_fernRingMaske`): je Texel 255 = ein gezeichneter Chunk
+            maske: { tex: maskeTex, daten: maskeDaten, n: maskeN, uZelle0: uMaskeZelle0, schluessel: "" },
             vollY: new Float32Array(off).fill(NaN),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
@@ -38667,13 +38695,18 @@ class AnazhRealm {
     }
 
     // Der Ring weicht dem Gebauten: trägt ein GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring
-    // dort nicht (keine zweite Terrain-Wahrheit über/unter Edits). Sichtbar = Mesh + jede Eltern-Stufe
-    // (Region-Bundles blenden als Gruppe).
+    // dort nicht (keine zweite Terrain-Wahrheit über/unter Edits) — die Masken-Karte des Rings (`_fernRingMaske`,
+    // `maskNode`) verwirft dort sein Fragment.
     _chunkDecktRing(x, z) {
         const st = this.state;
         if (!st.voxelChunks || st.voxelChunks.size === 0) return false;
         const { span } = this._voxelChunkConfig();
-        const e = st.voxelChunks.get(`${Math.floor(x / span)},${Math.floor(z / span)}`);
+        return this._chunkGezeichnet(st.voxelChunks.get(`${Math.floor(x / span)},${Math.floor(z / span)}`));
+    }
+
+    // Zeichnet dieser Chunk-Eintrag Boden? Gebaut, nicht leer, sichtbar = Mesh + jede Eltern-Stufe (Region-Bundles blenden
+    // als Gruppe). Leser: `_chunkDecktRing` und die Masken-Karte des Rings.
+    _chunkGezeichnet(e) {
         if (!e || e.empty || !e.mesh) return false;
         let o = e.mesh;
         while (o) {
@@ -38681,6 +38714,41 @@ class AnazhRealm {
             o = o.parent;
         }
         return true;
+    }
+
+    // DIE MASKE DES GEBAUTEN (K16, `maskNode` des Rings): je Chunk der Bau-Zone um den Anker ein Texel, 255 wo ein gezeichneter
+    // Chunk steht (`_chunkGezeichnet`). Neu geschrieben nur, wenn sich die Chunk-Menge regt (`_weltRegt(true)`) oder der Anker
+    // wandert; hochgeladen nur, wenn ein Texel sich ändert.
+    _fernRingMaske(fr) {
+        const M = fr.maske;
+        const st = this.state;
+        const chunks = st.voxelChunks;
+        const schluessel = `${this._bodenRegung | 0}|${chunks ? chunks.size : 0}|${fr.anchorX}|${fr.anchorZ}`;
+        if (M.schluessel === schluessel) return;
+        M.schluessel = schluessel;
+        const { span } = this._voxelChunkConfig();
+        const h = (M.n - 1) / 2;
+        const i0 = Math.floor(fr.anchorX / span) - h;
+        const j0 = Math.floor(fr.anchorZ / span) - h;
+        const neu = M.neu || (M.neu = new Uint8Array(M.n * M.n));
+        neu.fill(0);
+        if (chunks)
+            for (const [key, e] of chunks) {
+                if (!this._chunkGezeichnet(e)) continue;
+                const k = key.indexOf(",");
+                const i = Number(key.slice(0, k)) - i0;
+                const j = Number(key.slice(k + 1)) - j0;
+                if (i >= 0 && j >= 0 && i < M.n && j < M.n) neu[j * M.n + i] = 255;
+            }
+        let anders = M.uZelle0.value.x !== i0 || M.uZelle0.value.y !== j0;
+        for (let q = 0; q < neu.length; q++)
+            if (M.daten[q * 4] !== neu[q]) {
+                M.daten[q * 4] = neu[q];
+                anders = true;
+            }
+        if (!anders) return;
+        M.uZelle0.value.set(i0, j0);
+        M.tex.needsUpdate = true;
     }
 
     // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
@@ -38712,42 +38780,19 @@ class AnazhRealm {
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
     // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingLage`): wo ein gebauter Chunk den Punkt oder einen
-    // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung); unter
-    // dem Gebauten ringsum taucht er `unterGebaut`, an der Naht drinnen nur `unterSaum` (`_fernRingUnterGebaut`). Bis K16 tauchte
-    // jeder gedeckte Punkt 2 m, und die Masche über die Chunk-Kante zog den Ring draußen mit hinab (Stufe p95 2,05 m, gate:fern-
-    // ring Band 9).
+    // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung) —
+    // die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er nicht (die Masken-Karte,
+    // `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte ihn per Tiefe — über jeder
+    // Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
-        const lage = this._fernRingLage(fr, p);
-        if (lage > 0) {
+        if (this._fernRingLage(fr, p) > 0) {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
         let y = law < wl ? wl - F.wasserDrop : law;
         if (p.row === 0) y -= F.saumDrop;
-        if (lage >= 2) y = this._fernRingUnterGebaut(p.x, p.z, y - (lage === 3 ? F.unterGebaut : F.unterSaum));
         return y;
-    }
-
-    // DER RING UNTER DEM GEBAUTEN (K16, der Saum): unter einem gebauten Chunk liegt der Ring `u` (schon gesenkt: `unterGebaut`
-    // ringsum, `unterSaum` an der Naht — das Surface-Nets-Netz weicht ±0,5 m vom Gesetz, das Gebaute deckt ihn per Tiefe) und
-    // unter jeder Grabung, die die Säule senkt (Kugel-Kappe des carve-Edits, 1 m Luft). Bis K16 tauchte er −60 m: jede Ring-
-    // Masche an der Kante des Gebauten fiel als 60-m-Schlitz ab — der gebaute Boden stand als Platte über einer Grube.
-    _fernRingUnterGebaut(x, z, u) {
-        const meta = this.state.worldMeta;
-        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
-        if (!edits) return u;
-        for (let i = 0; i < edits.length; i++) {
-            const e = edits[i];
-            if (!e || e.mode !== "carve") continue;
-            const dx = x - e.x;
-            const dz = z - e.z;
-            const r2 = e.r * e.r - dx * dx - dz * dz;
-            if (r2 <= 0) continue;
-            const boden = e.y - Math.sqrt(r2) - 1;
-            if (boden < u) u = boden;
-        }
-        return u;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -40984,6 +41029,7 @@ class AnazhRealm {
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
         for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
         fr.uDachMitte.value.set(playerPos.x, playerPos.z); // das Dach folgt der Mitte der Bäume (der Spieler, XZ)
+        this._fernRingMaske(fr); // der Ring weicht dem Gebauten (`maskNode`)
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
@@ -41018,6 +41064,7 @@ class AnazhRealm {
             this._queueGeometryDispose(m.geometry);
         }
         if (fr.material && typeof fr.material.dispose === "function") fr.material.dispose();
+        if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
             this.state.camera.far = this._fernRingCamFarAlt;
@@ -100925,8 +100972,8 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // 150–500 m tiefe Dreiecke); `schalen[i].aussen`
 // = Außenradius (Schale 1 ab Voxel-Ring-Kante + `randPad`); `snap` = grobes Welt-Gitter je Schale
 // (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren nie); `saumDrop` = Tauchkante der
-// innersten Reihe; `unterGebaut` / `unterSaum` = die Senkung unter dem Gebauten ringsum / an der Naht drinnen (0: die
-// Masche über die Chunk-Kante liegt auf dem vollen Gesetz, K16); `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
+// innersten Reihe (im Gebauten zeichnet der Ring nicht: die Masken-Karte, `_fernRingMaske`); `wasserDrop` = Wasser-Klemme;
+// `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
 // vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt im
@@ -100958,11 +101005,6 @@ AnazhRealm.FERN_RING = Object.freeze({
     ]),
     randPad: 40,
     saumDrop: 6,
-    unterGebaut: 2,
-    // An der Naht drinnen: tiefer als das Gebaute vom Gesetz weicht (gate:fern-ring Band 9: chunk-eigen-p95 0,108 m nach dem
-    // Fall der Canyon-Maske; 0,15 m stach 2,02 % durch), flacher als die Masche über die Kante draußen trägt (0,3 m: Bias
-    // −0,198 m, 0,2 m: −0,132 m bei 1,76 % Durchstich).
-    unterSaum: 0.2,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,

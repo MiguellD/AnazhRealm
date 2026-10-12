@@ -20,8 +20,9 @@
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
 //   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
-//       Gesetz (Bias ≤ 0,15 m, p95 ≤ Sehne des Rings im Freien + Abweichung des Chunks + 0,1 m), im Gebauten kein Durchstich
-//       (≤ 2 %). Selbsttest: das alte 2-m-Tauchen fällt rot.
+//       Gesetz (Bias ≤ 0,15 m, p95 ≤ Sehne des Rings im Freien + Abweichung des Chunks + 0,1 m), im Gebauten zeichnet er
+//       nicht (die Masken-Karte seines maskNode trägt jeden gezeichneten Chunk, kein gezeichneter Durchstich). Selbsttests: das
+//       alte 2-m-Tauchen fällt rot, ohne die Karte sticht die Sehne durch.
 //   (10) DIE FERN-FARBE OHNE STREIFEN (K16) — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
 //       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
 //   (11) DAS DACH IST DER BESTAND (K16) — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
@@ -226,9 +227,8 @@ const server = http.createServer((req, res) => {
             if (lage > 0) law = r._terrainMacroSurfaceY(sx, sz, true);
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
-            // DER RING UNTER DEM GEBAUTEN (gespiegelt): gebaut ringsum `unterGebaut`, an der Naht drinnen `unterSaum` unter dem
-            // vollen Gesetz (ohne Grabung in der Probe-Welt).
-            if (lage >= 2) expY -= lage === 3 ? F.unterGebaut : F.unterSaum;
+            // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
+            // Masken-Karte, Band 9).
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
@@ -613,6 +613,8 @@ const server = http.createServer((req, res) => {
             let bias = 0;
             const sehne = []; // die mittlere Stufe mit Vorzeichen: eine systematische Kante (der alte Ring tauchte −2 m) // die Abweichung des Chunks selbst vom Gesetz (die Surface-Nets-Klasse)
             const durch = [0, 0];
+            let durchOhne = 0; // SELBSTTEST: dieselben Punkte ohne die Masken-Karte (die Sehne des Rings im Gebauten)
+            const maske9 = [0, 0]; // die Masken-Treue: gezeichnete Chunks mit ihrem Texel / alle
             const seiten = [
                 [1, 0],
                 [-1, 0],
@@ -669,6 +671,16 @@ const server = http.createServer((req, res) => {
                         }
                     }
                 }
+                // DER RING WEICHT DEM GEBAUTEN: die Masken-Karte des Rings (`fr.maske`, die sein `maskNode` liest) trägt jeden
+                // gezeichneten Chunk — ein Raster-Punkt sticht durch, wo der Ring GEZEICHNET wird (Texel frei) und über dem Chunk liegt.
+                // (ohne Karte — der Stand vor K16 — zählt jeder Punkt über dem Chunk: der Ring zeichnet im Gebauten)
+                const M9 = fr9.maske;
+                const ti = M9 ? cx - M9.uZelle0.value.x : -1;
+                const tj = M9 ? cz - M9.uZelle0.value.y : -1;
+                const maskiert =
+                    !!M9 && ti >= 0 && tj >= 0 && ti < M9.n && tj < M9.n && M9.daten[(tj * M9.n + ti) * 4] === 255;
+                maske9[1]++;
+                if (maskiert) maske9[0]++;
                 for (let i = 0; i < 7; i++)
                     for (let j = 0; j < 7; j++) {
                         const x = cx * span9 + 3 + i * 6.2;
@@ -678,7 +690,10 @@ const server = http.createServer((req, res) => {
                         const yr = hoch(ringMesh, x, z);
                         if (yc === null || yr === null) continue;
                         durch[1]++;
-                        if (yr > yc + 0.05) durch[0]++;
+                        if (yr > yc + 0.05) {
+                            durchOhne++;
+                            if (!maskiert) durch[0]++;
+                        }
                     }
             }
             stufen.sort((a, b) => a - b);
@@ -696,6 +711,9 @@ const server = http.createServer((req, res) => {
             res.nahtEigenP95 = eigen.length ? eigen[Math.floor(0.95 * eigen.length)] : NaN;
             res.durchN = durch[1];
             res.durchAnteil = durch[1] ? durch[0] / durch[1] : NaN;
+            res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
+            res.maskeTreue = maske9;
+            res.maskNode = !!(fr9.material && fr9.material.maskNode);
             // ===== (10) DIE FERN-FARBE OHNE STREIFEN =====
             // Längs jeder Ring-Reihe jenseits des Karten-Horizonts (das Kronendach trägt) die gezeichnete Farbe (Boden unter
             // dem Dach zur Deckung, Saison 1): der STREIFEN-INDEX = RMS der Sprünge zum Nachbarpunkt / RMS der Sprünge über
@@ -967,9 +985,15 @@ const server = http.createServer((req, res) => {
         `chunks=${out.nahtChunks} proben=${out.nahtN} chunk-eigen-p95=${(+out.nahtEigenP95).toFixed(3)} ring-sehne-p95=${(+out.nahtSehneP95).toFixed(3)} bias=${(+out.nahtBias).toFixed(3)} p50=${(+out.nahtP50).toFixed(3)} p95=${(+out.nahtP95).toFixed(3)} max=${(+out.nahtMax).toFixed(3)} selbsttest-p95=${(+out.nahtSelbstP95).toFixed(3)}`
     );
     check(
-        "9: DIE NAHT — kein Durchstich: der Ring liegt im Gebauten unter dem Chunk (≤ 2 % der Raster-Punkte darüber)",
-        out.durchN >= 100 && out.durchAnteil <= 0.02,
-        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)}`
+        "9: DIE NAHT — kein Durchstich: im Gebauten zeichnet der Ring nicht (die Masken-Karte seines maskNode trägt jeden gezeichneten Chunk, kein gezeichneter Raster-Punkt über dem Chunk); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %)",
+        out.durchN >= 100 &&
+            out.durchAnteil === 0 &&
+            out.maskNode === true &&
+            !!out.maskeTreue &&
+            out.maskeTreue[1] > 0 &&
+            out.maskeTreue[0] === out.maskeTreue[1] &&
+            out.durchOhne > 0.02,
+        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",
