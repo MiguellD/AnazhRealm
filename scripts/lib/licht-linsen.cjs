@@ -1028,7 +1028,9 @@ function laubGegenlicht(opts) {
         if (window.__buehne) window.__buehne();
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
         const abstand = opts.abstand || 8;
-        const elev = ((opts.sonne || 20) * Math.PI) / 180;
+        // Die Sonne steht HINTER der Krone: ihre Höhe ist die Peilung vom Auge zur Kronen-Mitte (mindestens 5°) — eine feste
+        // Höhe (`sonne` in Grad) stand für den hohen Baum unter der Krone (aus 8 m blickt das Auge 40° hinauf).
+        let elev = opts.sonne > 0 ? (opts.sonne * Math.PI) / 180 : null;
         const W = opts.w || 320,
             H = opts.h || 240;
         const pp = st.playerMesh.position;
@@ -1055,11 +1057,13 @@ function laubGegenlicht(opts) {
                 else m4.identity();
                 m4.premultiply(o.matrixWorld);
                 m4.decompose(p, q, s);
-                // Mit `ziel` (x, z) das Exemplar dort; sonst das nächste zum Spieler ab 6 m (sonst stünde das Auge im Stamm).
+                // Mit `ziel` (x, z) das Exemplar dort; sonst das nächste zum `anker` (der Messort — dasselbe Exemplar in
+                // jedem Lauf, gleich wo der vorige den Spieler ließ) bzw. zum Spieler ab 6 m (sonst stünde das Auge im Stamm).
+                const von = opts.anker || [pp.x, pp.z]; // der Blick kommt aus der Richtung des Ankers
                 const d = opts.ziel
                     ? Math.hypot(p.x - opts.ziel[0], p.z - opts.ziel[1])
-                    : Math.hypot(p.x - pp.x, p.z - pp.z);
-                if ((opts.ziel || d > 6) && (!ziel || d < ziel.d)) {
+                    : Math.hypot(p.x - von[0], p.z - von[1]);
+                if ((opts.ziel || opts.anker || d > 6) && (!ziel || d < ziel.d)) {
                     const box = o.geometry.boundingBox.clone().applyMatrix4(m4);
                     ziel = { d, o, i, box, fuss: p.clone() };
                 }
@@ -1068,7 +1072,8 @@ function laubGegenlicht(opts) {
         if (!ziel) return { fehler: "kein Exemplar der Art" };
         const mitte = ziel.box.getCenter(new T.Vector3());
         const hoehe = ziel.box.max.y - ziel.fuss.y;
-        const dh = new T.Vector3(pp.x - ziel.fuss.x, 0, pp.z - ziel.fuss.z).normalize();
+        const blickVon = opts.anker && !opts.ziel ? opts.anker : [pp.x, pp.z];
+        const dh = new T.Vector3(blickVon[0] - ziel.fuss.x, 0, blickVon[1] - ziel.fuss.z).normalize();
         // Die Stufe folgt dem Spieler: `plan` nennt den Augen-Ort (der Aufrufer stellt den Spieler dorthin und lässt die Stufen
         // einschwingen); mit `ziel` steht das Auge am Spieler.
         const auge = opts.ziel
@@ -1096,10 +1101,15 @@ function laubGegenlicht(opts) {
             sc.traverse((o) => {
                 if (o.isBundleGroup) o.needsUpdate = true;
             });
+        if (elev == null)
+            elev = Math.max(
+                (5 * Math.PI) / 180,
+                Math.atan2(mitte.y - auge.y, Math.hypot(mitte.x - auge.x, mitte.z - auge.z))
+            );
         const out = {
             art: opts.art || "buche",
             abstand: +Math.hypot(auge.x - ziel.fuss.x, auge.z - ziel.fuss.z).toFixed(1),
-            sonneGrad: opts.sonne || 20,
+            sonneGrad: +((elev * 180) / Math.PI).toFixed(1),
             hoehe: +hoehe.toFixed(1),
             d: +ziel.d.toFixed(1),
         };

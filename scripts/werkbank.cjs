@@ -2396,9 +2396,15 @@ async function starte() {
             process.exit(fehl.length ? 1 : 0);
         }
         const welt = {};
+        // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
+        const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "wiese");
         for (const art of String(opt("--laub", "eiche,birke")).split(",")) {
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
-            const plan = (await rufe("/eval", { code: `const __o = { plan: true }; ${c}` })).ergebnis;
+            // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
+            await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
+            const plan = (
+                await rufe("/eval", { code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)} }; ${c}` })
+            ).ergebnis;
             if (!plan || plan.fehler) {
                 welt[art] = plan || { fehler: "kein Plan" };
                 continue;

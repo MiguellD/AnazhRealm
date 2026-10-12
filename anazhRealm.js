@@ -32284,6 +32284,10 @@ class AnazhRealm {
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
                                     // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
                                     _wired = true;
+                                    // DAS LAUB-LICHT DER KARTE (K19): die ferne Stufe lichtet mit dem EINEN Laub-Licht-Term der
+                                    // nahen (phyto-core `laubDurchlass`) über der Normale des Normal-Atlas; die Nadel trägt ihre
+                                    // Schicht (`_karteNadel`). Bis K19 leuchtete die nahe Krone im Gegenlicht, ihre Karte nicht.
+                                    this._laubLichtStoff(mat, () => this._karteNadel(_Ta).element(_schicht.toInt()));
                                 }
                             } catch (_e) {
                                 if (typeof window !== "undefined")
@@ -67194,6 +67198,7 @@ class AnazhRealm {
             _flat: null,
         };
         at.zellen.set(key, z);
+        this._karteNadel(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
         const rend = this.state && this.state.renderer;
         if (rend && !rend._isHeadlessNull) {
@@ -77464,26 +77469,58 @@ class AnazhRealm {
     // das Lichtmodell des Standard-Stoffs (r184 PhysicalLightingModel), dessen `direct` nach der Physik des Stoffs den
     // Durchlass der Rückseite addiert: `lightColor` trägt den Schatten der Kaskade, die Normierung ist die Lambert-Antwort der
     // Vorderseite (diffuseColor/π ausgeschrieben — ein Fn-Aufruf ohne Layout baute seinen Rumpf erst im Compiler). Kein
-    // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `atlasNadel`: die Blatt-Karte erkennt die
-    // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); Klinge und Blatt-Geometrie sind Laub.
-    _laubLichtStoff(mat, atlasNadel) {
+    // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `nadel`: true — die Blatt-Karte erkennt die
+    // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); false — Klinge und Blatt-Geometrie sind Laub; eine Funktion — die
+    // ferne Karte liest die Nadel ihrer Schicht (`_karteNadel`), der Knoten entsteht je Programm-Bau.
+    _laubLichtStoff(mat, nadel) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_laubLichtStoff: kein Knoten-Stoff");
         const T = THREE.TSL;
         const K = AnazhRealm._laubLichtModell();
         const ab = globalThis.__phytoCore.LAUB_LICHT.nadelAbU;
+        const art = typeof nadel === "function" ? "karte" : nadel === true ? "atlas" : "laub";
         mat.setupLightingModel = () =>
             new K(
-                atlasNadel
-                    ? T.select(T.attribute("uv", "vec2").x.greaterThanEqual(ab), T.float(1), T.float(0))
-                    : T.float(0)
+                art === "karte"
+                    ? nadel()
+                    : art === "atlas"
+                      ? T.select(T.attribute("uv", "vec2").x.greaterThanEqual(ab), T.float(1), T.float(0))
+                      : T.float(0)
             );
         const schluessel = mat.customProgramCacheKey;
+        const at = art === "karte" ? this._impostorAtlas() : null;
         mat.customProgramCacheKey = function () {
-            return schluessel.call(this) + (atlasNadel ? "|laubLicht:atlas" : "|laubLicht");
+            return (
+                schluessel.call(this) +
+                (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) +
+                (at && at.nadelU ? ":" + at.nadelU.array.length : "")
+            );
         };
         mat.userData = mat.userData || {};
-        mat.userData.laubLicht = atlasNadel ? "atlas" : "laub";
+        mat.userData.laubLicht = art;
         return mat;
+    }
+
+    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (foundry-core fx.conifer der Zelle), sonst 0 — EINE
+    // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
+    // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
+    _karteNadel(T, z) {
+        const at = this._impostorAtlas();
+        const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
+        if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
+        let n = at.nadelU ? at.nadelU.array.length : 0;
+        if (n < Math.max(at.n, 1)) {
+            const alt = at.nadelU ? at.nadelU.array : [];
+            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
+            const a = new Array(n).fill(0);
+            for (let i = 0; i < alt.length; i++) a[i] = alt[i];
+            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
+            if (at.mat) at.mat.needsUpdate = true;
+        }
+        if (z) {
+            const rec = tab[z.preset];
+            at.nadelU.array[z.idx] = rec && rec.fx && rec.fx.conifer ? 1 : 0;
+        }
+        return at.nadelU;
     }
 
     // Das Lichtmodell des Laubs (K19): die Klasse ist die des Standard-Stoffs selbst (sein `setupLightingModel` liefert sie

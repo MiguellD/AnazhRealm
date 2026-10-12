@@ -4226,7 +4226,9 @@
     var LAUB_LICHT = Object.freeze({
         tauLaub: 1.0,
         tauNadel: 0.5,
-        keule: Object.freeze({ g: 0.7, n: 8 }), // Linse (werkbank licht --laub, aus 8 m, Sonne 20°): Eiche 0,30 → 1,33, Birke 1,19, Fichte 0,69
+        // Linse (werkbank licht --laub, aus 8 m, die Sonne hinter der Kronen-Mitte, je Art das Exemplar am Messort Wiese):
+        // Eiche 1,47 · Birke 1,38 (Nadel: Fichte 1,11)
+        keule: Object.freeze({ g: 0.7, n: 8 }),
         nadelAbU: BLATT_ATLAS_WEDEL.zelle * 0.25,
     });
     // DER EINE TERM über einer Algebra (wie `windAusschlag`): nl = N·L (vorzeichenbehaftet, N die gesehene Seite), vl =
