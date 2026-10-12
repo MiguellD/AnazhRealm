@@ -854,9 +854,51 @@ async function probe(A) {
                 // Strand, kein Steilufer) bis A.ansaugTief steigt
                 if (!A.rampe)
                     throw new Error("keine Rampe in tiefes Wasser am Ufer von See und Fluss (Orte aus der Welt)");
-                const [px, pz, ux, uz] = A.rampe;
+                const [qx, qz] = A.rampe;
                 // die Rampe liegt, wo die Welt sie trägt (am See): dorthin strömen, das Bild zeichnet ihr Wasser
-                await stroemen(px, pz, 120);
+                await stroemen(qx, qz, 120);
+                // DIE RAMPE IM GEZEICHNETEN WASSER: die Suche der Orte las das Gesetz ohne Chunk; das Bild setzt seine Kante
+                // auf dem 1,8-m-Gitter (an der Chunk-Kante endet die Rand-Flut). Um den Ort des Gesetzes (Ringe bis 60 m)
+                // dieselbe Prüfung am Bild: Kante 0–0,3 m, 26 m trocken und eben davor, flach bis A.ansaugTief dahinter.
+                const rampeImBild = (bx, bz, vx, vz) => {
+                    const b0 = sichtbar(bx, bz);
+                    if (!(b0 > 0 && b0 <= 0.3)) return false;
+                    let hv = null;
+                    for (let s = 2; s <= 28; s++) {
+                        const h = hh(bx - vx * s, bz - vz * s);
+                        if (
+                            !Number.isFinite(h) ||
+                            sichtbar(bx - vx * s, bz - vz * s) > -Infinity ||
+                            (hv !== null && Math.abs(h - hv) > 0.35)
+                        )
+                            return false;
+                        hv = h;
+                    }
+                    let bv = b0;
+                    for (let s = 1; s <= 40; s++) {
+                        const t = sichtbar(bx + vx * s, bz + vz * s);
+                        if (!(t > 0) || t - bv > A.rampeStufe) return false;
+                        if (t >= A.ansaugTief) return true;
+                        bv = t;
+                    }
+                    return false;
+                };
+                let bildRampe = null;
+                for (let d = 0; d <= 60 && !bildRampe; d += 2)
+                    for (let k = 0; k < 64 && !bildRampe; k++) {
+                        const bx = Math.round(qx + Math.cos((k * Math.PI) / 32) * d);
+                        const bz = Math.round(qz + Math.sin((k * Math.PI) / 32) * d);
+                        const b0 = sichtbar(bx, bz);
+                        if (!(b0 > 0 && b0 <= 0.3)) continue;
+                        for (let j = 0; j < 16 && !bildRampe; j++) {
+                            const vx = Math.cos((j * Math.PI) / 8);
+                            const vz = Math.sin((j * Math.PI) / 8);
+                            if (rampeImBild(bx, bz, vx, vz)) bildRampe = [bx, bz, vx, vz];
+                        }
+                    }
+                if (!bildRampe)
+                    throw new Error(`keine Rampe im gezeichneten Wasser in 60 m um den Ort des Gesetzes ${qx}/${qz}`);
+                const [px, pz, ux, uz] = bildRampe;
                 const t0 = sichtbar(px, pz);
                 if (!(t0 > 0 && t0 <= 0.3)) throw new Error(`die Rampe beginnt nicht am Wasserrand (${t0} m Wasser)`);
                 let vor = null;
@@ -1421,13 +1463,19 @@ async function probe(A) {
                 let mz = 0;
                 const slots = (plan && plan.slots) || [];
                 // der Anker so, dass das Haus des Plans, das am weitesten zum See weist, am Seeufer steht (das Rand-Haus)
-                const [hx, hz] = A.rand.ufer;
-                const ul = Math.hypot(A.rand.see[0] - hx, A.rand.see[1] - hz) || 1;
-                const ux0 = (A.rand.see[0] - hx) / ul;
-                const uz0 = (A.rand.see[1] - hz) / ul;
+                const [ex0, ez0] = A.rand.ufer;
+                const ul = Math.hypot(A.rand.see[0] - ex0, A.rand.see[1] - ez0) || 1;
+                const ux0 = (A.rand.see[0] - ex0) / ul;
+                const uz0 = (A.rand.see[1] - ez0) / ul;
                 let sRand = null;
                 for (const sl of slots)
                     if (!sRand || sl.x * ux0 + sl.z * uz0 > sRand.x * ux0 + sRand.z * uz0) sRand = sl;
+                // das Rand-Haus steht mit seinem GANZEN Grundriss auf dem Trockenen (die Wasser-Wand jedes Hauses,
+                // `_fundamentLand`): seine Mitte liegt um seine Reichweite + 1 m landein vom Ufer-Punkt — sein Rand am See
+                const oR = sRand && sRand.obb;
+                const reichR = oR && Number.isFinite(oR.ex) && Number.isFinite(oR.ez) ? Math.hypot(oR.ex, oR.ez) : 6;
+                const hx = ex0 - ux0 * (reichR + 1);
+                const hz = ez0 - uz0 * (reichR + 1);
                 const X = hx - (sRand ? sRand.x : 0);
                 const Z = hz - (sRand ? sRand.z : 0);
                 for (const sl of slots) ((mx += sl.x / slots.length), (mz += sl.z / slots.length));
@@ -1443,18 +1491,62 @@ async function probe(A) {
                 const PZ = Z + mz + Math.sin(a) * dSp;
                 await stroemen(PX, PZ, 120);
                 const RR = A.rand.R;
+                // gezählt wird nur über den Chunks, die VOR dem Dorf geladen standen: der Ring wächst während der Takte
+                // weiter (die Mess-Fläche reicht 60 m um das Rand-Haus, über den Ring hinaus) — ein neu geladener Chunk
+                // zeichnet sein Wasser erstmals, das ist kein Werk des Dorfs (ein Lauf: 1684 → 3370 Spalten, 0 Invalidierungen)
+                const spanR = r._voxelChunkConfig(0).span;
+                let geladen = null;
                 const zaehlen = () => {
                     let nass = 0;
                     let bild = 0;
                     for (let i = -RR; i <= RR; i++)
                         for (let j = -RR; j <= RR; j++) {
+                            if (
+                                geladen &&
+                                !geladen.has(Math.floor((hx + i) / spanR) + "," + Math.floor((hz + j) / spanR))
+                            )
+                                continue;
                             if (r._nassAt(hx + i, hz + j)) nass++;
                             const b = r._wasserBildAt(hx + i, hz + j);
                             if (b !== null && b !== undefined && Number.isFinite(b)) bild++;
                         }
                     return { nass, bild };
                 };
-                const vor = zaehlen();
+                // das Bild VOR dem Dorf unter DERSELBEN Bedingung wie danach: die Chunks am Rand entstehen neu, dieselben
+                // Takte laufen (ein Lauf zählte ohne das 1684 statt 3370 gezeichnete Spalten bei 0 Invalidierungen — der Neubau
+                // und der wachsende Ring, nicht das Dorf), dann Takte, bis die Zählung dreimal in Folge steht
+                const neuBauen = async () => {
+                    const hcx0 = Math.floor(hx / spanR);
+                    const hcz0 = Math.floor(hz / spanR);
+                    if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
+                    for (let dz = -2; dz <= 2; dz++)
+                        for (let dx = -2; dx <= 2; dx++) {
+                            const key = hcx0 + dx + "," + (hcz0 + dz);
+                            if (st.voxelChunks.has(key)) st.dirtyVoxelChunks.add(key);
+                        }
+                    for (let d = 0; d < 12 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
+                    for (let i = 0; i < A.rand.takte; i++) {
+                        try {
+                            frame();
+                        } catch (_e) {}
+                        if (i % 20 === 0) await new Promise((res2) => setTimeout(res2, 0));
+                    }
+                };
+                await neuBauen();
+                let vor = zaehlen();
+                for (let n = 0, ruhig = 0; n < 40 && ruhig < 3; n++) {
+                    for (let i = 0; i < 30; i++)
+                        try {
+                            frame();
+                        } catch (_e) {}
+                    await new Promise((res2) => setTimeout(res2, 0));
+                    const z = zaehlen();
+                    ruhig = z.nass === vor.nass && z.bild === vor.bild ? ruhig + 1 : 0;
+                    vor = z;
+                }
+                geladen = new Set();
+                for (const [k, e] of st.voxelChunks) if (e && e.waterCells) geladen.add(k);
+                vor = zaehlen();
                 const inv = { n: 0 };
                 const invAlt = r._invalidateWaterCapsAround;
                 r._invalidateWaterCapsAround = function () {
@@ -1488,23 +1580,8 @@ async function probe(A) {
                         for (const e of haeuser) if (!e._hausHuelle) r._rebuildArchitectureMesh(e);
                         await new Promise((res2) => setTimeout(res2, 50));
                     }
-                    // die Chunks am Rand entstehen neu (wie beim Wieder-Strömen): 5 × 5 um das Haus am Rand
-                    const span = r._voxelChunkConfig(0).span;
-                    const hcx = Math.floor(hx / span);
-                    const hcz = Math.floor(hz / span);
-                    if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
-                    for (let dz = -2; dz <= 2; dz++)
-                        for (let dx = -2; dx <= 2; dx++) {
-                            const key = hcx + dx + "," + (hcz + dz);
-                            if (st.voxelChunks.has(key)) st.dirtyVoxelChunks.add(key);
-                        }
-                    for (let d = 0; d < 12 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
-                    for (let i = 0; i < A.rand.takte; i++) {
-                        try {
-                            frame();
-                        } catch (_e) {}
-                        if (i % 20 === 0) await new Promise((res2) => setTimeout(res2, 0));
-                    }
+                    // die Chunks am Rand entstehen neu (wie beim Wieder-Strömen): 5 × 5 um das Haus am Rand, dann die Takte
+                    await neuBauen();
                 } finally {
                     r._invalidateWaterCapsAround = invAlt;
                 }
