@@ -77214,16 +77214,7 @@ class AnazhRealm {
     // DIE GLIEDER DER GESTALT — EINE Quelle für Fern-Bild UND Treffer (Welle L 06.10.): jedes Mesh gehört seinem
     // nächsten artikulierten Anker (die Gruppen, die _animateTierBaum rotiert; die Tier-Haut zerfällt je dominantem
     // Bone), Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Die Grobstufe (`_gelenk.fern`) zählt NIE
-    // (Doppel-Körper).
-    // DER BIND-RAUM (K13b): jedes Stück trägt die Lage seiner Vertices in der Bind-Pose der Haut (`lage`: die Gestalt, wie
-    // das Studio sie baute — bindMatrix · v im Raum der Vorlage), jede Gruppe die Inverse der Bind-Lage ihres Ankers
-    // (`bindInv`, die Knochen-Inverse der Haut) — die Passung (_gliedKapselMemo) ist eine Funktion der Gattung, nie der Pose,
-    // in der das erste Tier gerade stand. Vorher hing jedes Stück an der LAUFENDEN Pose (Bone · boneInverse · bindMatrix,
-    // gepasst im laufenden Anker): ein Glied, das in seinen Eltern-Anker verschmilzt (Kiefer, Ohren und Lider in den Kopf,
-    // der Schweif in den Rumpf, ein Schenkel ins nächste Glied), ging mit der Haltung des ERSTEN Passens in das Memo der
-    // ganzen Gattung ein — und das erste Passen fällt, wann die Bake-Uhr (Echtzeit) oder der erste Treffer es fällt
-    // (gate:kampf-gefuehl T24 biss-kopf-gestalt: 0,193 m Kapsel-Abweichung aus einer anderen Haltung, der erste Biss-Rest
-    // schwankte je Lauf). Liefert { gruppen: Map(Anker → {meshes, verts, bindInv}), wurzel, gattung } oder null.
+    // (Doppel-Körper). Liefert { gruppen: Map(Anker → {meshes, verts}), wurzel, gattung } oder null.
     _kreaturGliederGruppen(cr) {
         const tb = cr.userData && cr.userData._tierBaum;
         const anker = new Set();
@@ -77238,54 +77229,18 @@ class AnazhRealm {
         };
         const zuGruppe = (schluessel, o, n) => {
             let g = gruppen.get(schluessel);
-            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0, bindInv: null }));
+            if (!g) gruppen.set(schluessel, (g = { meshes: [], verts: 0 }));
             g.meshes.push(o);
             g.verts += n;
         };
         cr.updateMatrixWorld(true);
-        const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
-        const unterGrob = (o) => {
-            for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return true;
-            return false;
-        };
-        // DIE BIND-LAGE (der Raum der Vorlage, in dem die Haut gebunden wurde): ein Knochen der Haut ist die Inverse seiner
-        // boneInverse; was keiner ist, hängt starr an seinem nächsten Knochen (seine Lage zu ihm ist kein Gelenk) oder,
-        // ohne Knochen darüber, an der Vorlage selbst (die Welt-Lage einer Haut · ihre bindMatrix⁻¹ ist der Ursprung).
-        const knochenInv = new Map();
-        let vorlageInv = null;
-        cr.traverse((o) => {
-            if (!o.isSkinnedMesh || !o.skeleton || unterGrob(o)) return;
-            const B = o.skeleton.bones,
-                I = o.skeleton.boneInverses;
-            for (let i = 0; i < B.length; i++) if (B[i] && I[i] && !knochenInv.has(B[i])) knochenInv.set(B[i], I[i]);
-            if (!vorlageInv) vorlageInv = new THREE.Matrix4().copy(o.matrixWorld).invert().premultiply(o.bindMatrix);
-        });
-        const bindLagen = new Map();
-        const bindLage = (o) => {
-            let M = bindLagen.get(o);
-            if (M) return M;
-            const inv = knochenInv.get(o);
-            if (inv) M = new THREE.Matrix4().copy(inv).invert();
-            else {
-                let k = o.parent;
-                while (k && k !== cr && !knochenInv.has(k)) k = k.parent;
-                if (k && knochenInv.has(k))
-                    M = new THREE.Matrix4()
-                        .copy(k.matrixWorld)
-                        .invert()
-                        .premultiply(bindLage(k))
-                        .multiply(o.matrixWorld);
-                else M = new THREE.Matrix4().multiplyMatrices(vorlageInv || new THREE.Matrix4(), o.matrixWorld);
-            }
-            bindLagen.set(o, M);
-            return M;
-        };
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
-            if (unterGrob(o)) return; // die Grobstufe wäre der Doppel-Körper
+            const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
+            for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return; // die Grobstufe wäre der Doppel-Körper
             // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
-            // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke; jedes liegt im Bind-Raum
-            // (bindMatrix), den der Anker seiner Gruppe mit seiner Bind-Inversen in seinen eigenen Raum holt.
+            // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
+            // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
             const si = o.isSkinnedMesh && o.skeleton ? o.geometry.attributes.skinIndex : null;
             if (si) {
                 const pa = o.geometry.attributes.position;
@@ -77318,13 +77273,16 @@ class AnazhRealm {
                     }
                     const attribute = { position: new THREE.BufferAttribute(arr, 3) };
                     if (farr) attribute.color = new THREE.BufferAttribute(farr, 3);
-                    const stueck = { geometry: { attributes: attribute }, material: o.material, lage: o.bindMatrix };
+                    const stueck = {
+                        geometry: { attributes: attribute },
+                        material: o.material,
+                        matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
+                    };
                     zuGruppe(ankerVon(bone), stueck, liste.length);
                 }
                 return;
             }
-            const stueck = { geometry: o.geometry, material: o.material, lage: bindLage(o) };
-            zuGruppe(ankerVon(o.parent), stueck, o.geometry.attributes.position.count);
+            zuGruppe(ankerVon(o.parent), o, o.geometry.attributes.position.count);
         });
         if (gruppen.size === 0) return null;
         const zielVon = (a) => {
@@ -77335,7 +77293,7 @@ class AnazhRealm {
         const merge = (von, nach) => {
             const g = gruppen.get(von);
             let z = gruppen.get(nach);
-            if (!z) gruppen.set(nach, (z = { meshes: [], verts: 0, bindInv: null }));
+            if (!z) gruppen.set(nach, (z = { meshes: [], verts: 0 }));
             z.meshes.push(...g.meshes);
             z.verts += g.verts;
             gruppen.delete(von);
@@ -77348,7 +77306,6 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
-        for (const [a, g] of gruppen) g.bindInv = new THREE.Matrix4().copy(bindLage(a)).invert();
         return { gruppen, wurzel, gattung: this._kreaturGattung(cr) };
     }
 
@@ -77368,12 +77325,12 @@ class AnazhRealm {
     }
 
     // Die Glied-Kapsel im Anker-Raum, EINMAL je Gattung × Glied gepasst (der Schlüssel des Fern-Satzes): das Fern-Bild
-    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung. `gruppe` ist eine Gruppe
-    // aus _kreaturGliederGruppen: ihre Stücke im Bind-Raum, die Bind-Inverse ihres Ankers — die Passung liest keine Pose.
-    _gliedKapselMemo(key, gruppe) {
+    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung.
+    _gliedKapselMemo(key, anker, meshes) {
         const memo = this._gliedKapseln || (this._gliedKapseln = new Map());
         if (memo.has(key)) return memo.get(key);
-        const k = this._gliedKapselFit(gruppe.meshes, gruppe.bindInv);
+        anker.updateMatrixWorld(true);
+        const k = this._gliedKapselFit(meshes, new THREE.Matrix4().copy(anker.matrixWorld).invert());
         memo.set(key, k);
         return k;
     }
@@ -77390,7 +77347,13 @@ class AnazhRealm {
         for (const [a, g] of G.gruppen) {
             a.updateMatrixWorld(true);
             const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapselMemo(key, g), einblenden);
+            const meshes = g.meshes;
+            const handle = this._weltKapselSpawn(
+                key,
+                a.matrixWorld,
+                () => this._gliedKapselMemo(key, a, meshes),
+                einblenden
+            );
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -77426,7 +77389,7 @@ class AnazhRealm {
             for (const [a, g] of G.gruppen) {
                 const name = a === G.wurzel ? "" : a.name;
                 const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-                if (this._gliedKapselMemo(key, g)) namen.push({ name, key });
+                if (this._gliedKapselMemo(key, a, g.meshes)) namen.push({ name, key });
             }
             namenMemo.set(gattung, namen);
         }
@@ -77527,11 +77490,10 @@ class AnazhRealm {
         return best;
     }
 
-    // Kapsel-Fit: Glied-Stücke im Knochen-LOKALEN Raum → EINE Kapsel entlang der größten Ausdehnung
+    // Kapsel-Fit: Glied-Meshes im Knochen-LOKALEN Raum → EINE Kapsel entlang der größten Ausdehnung
     // (Radius = Mittel der Neben-Halbachsen), Farbe = Mittel der Vertex-/Material-Farben je Teil, nach Fläche
-    // gewogen. Mehr Kapseln je Glied wären eine Verfeinerung DERSELBEN Bahn, nie ein neues System. Jedes Stück trägt
-    // seine Bind-Lage (`lage`, _kreaturGliederGruppen), `ankerInv` holt sie in den Raum des Ankers.
-    _gliedKapselFit(meshes, ankerInv) {
+    // gewogen. Mehr Kapseln je Glied wären eine Verfeinerung DERSELBEN Bahn, nie ein neues System.
+    _gliedKapselFit(meshes, wurzelInv) {
         if (!meshes || !meshes.length || typeof THREE === "undefined") return null;
         const v = new THREE.Vector3();
         const mL = new THREE.Matrix4();
@@ -77547,7 +77509,7 @@ class AnazhRealm {
             fb = 0,
             fw = 0;
         for (const o of meshes) {
-            mL.multiplyMatrices(ankerInv, o.lage);
+            mL.multiplyMatrices(wurzelInv, o.matrixWorld);
             const pos = o.geometry.attributes.position;
             const col = o.geometry.attributes.color || null;
             const mc = !col && o.material && o.material.color ? o.material.color : null;
