@@ -27552,8 +27552,9 @@ class AnazhRealm {
     // DIE EINE 2D-HÖHE der Welt: das Gelände-Gesetzbuch (gelaende-core.js `hoehe` — der Term-Auswerter des Erbguts,
     // der Wildnis-Term, der Makro-Anker) an der Lage dieser Welt. Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
     // Fern-Ring, Spawn-Ort, Erosion); der voxel-worker ruft DASSELBE Gesetzbuch mit seinem Zustand (kein Spiegel).
-    _terrainMacroSurfaceY(x, z, includeDetail = true) {
-        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail);
+    // `aus` (optional) trägt den Hang der Fläche (`hang`, tan) — der Spalten-Kontext liest ihn für die Höhlen-Mündung.
+    _terrainMacroSurfaceY(x, z, includeDetail = true, aus) {
+        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail, aus);
     }
 
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
@@ -27665,7 +27666,7 @@ class AnazhRealm {
     // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
 
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
-    // Kosten, eroR, Canyon-Maske, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
+    // Kosten, eroR, Höhlen-Mündung, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
     // `_terrainBaseDensityAtCol` liest sie byte-identisch. Die Basis-Dichte OHNE voxelEdits ist
     // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur das
     // Kugel-Delta drauf. MUSS bit-identisch im Worker (`terrainColumnContext`).
@@ -27679,18 +27680,19 @@ class AnazhRealm {
         const L = this._gelaende();
         const n = L.noise;
         const base = this.state.terrainBaseHeight || 0;
-        const surf = this._terrainMacroSurfaceY(x, z);
+        const mess = this._spaltenHang || (this._spaltenHang = { hang: 0 });
+        const surf = this._terrainMacroSurfaceY(x, z, true, mess);
         // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
         // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
         const wild = (this._erbgutCache || this._erbgut()).wildnis;
         let ceilOffset = -24;
         if (wild > 0) {
-            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss). DIE TÄLER SIND DAS
-            // FLUSSNETZ (K16, gelaende-core T2): die Canyon-Maske (2D, λ 154 m) hob die Decke bis 8 m ÜBER den Boden, die
-            // Höhle brach als Grube ohne Abfluss durch — am gebauten Boden 15,2 Senken > 1 m je km², ohne sie 4,5
-            // (gate:worker-dichte, Band GEBAUTER BODEN).
+            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss): die Höhle bricht
+            // nie als Grube durch die Wiese (die Canyon-Maske fiel, K16). DIE MÜNDUNG ist Gesetz (gelaende-core
+            // `hoehlenMund`): wo die Flanke Fels trägt, hebt ihr Gewicht die Decke über den Boden — der Mund steht im Fels.
             const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-            ceilOffset = surf < waterLevelD + 1 ? -24 : -16;
+            const G = globalThis.__gelaendeCore;
+            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(mess.hang);
         }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;

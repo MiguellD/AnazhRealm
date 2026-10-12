@@ -595,6 +595,15 @@
         if (r < M.wC) return h + r * N.tc;
         return h + M.hc + (r - M.wC) * tb;
     }
+    // Die Neigung der Schicht-Treppe an u (dieselben Abschnitte wie `treppe`): Pediment, Schutthang, Kliff, Bank.
+    function treppeHang(N, u) {
+        if (u <= 140) return N.tp;
+        const M = schichtMass(N);
+        let r = (u - 140) % M.per;
+        if (r < M.wS) return N.ts;
+        r -= M.wS;
+        return r < M.wC ? N.tc : N.tp * 0.5;
+    }
     // DER TALGRUND an (x, z): die Sohlen der Ebene-0-Knoten, stetig gemittelt (Gewicht (1 − d²/R²)², R = 1,6 Kanten) — die
     // Basis der Hülle (Talgrund + Relief): die Gipfel stehen über IHREM Tal, nie über einer erfundenen Ebene.
     function talgrund(N, x, z) {
@@ -625,12 +634,14 @@
         let H = talgrund(N, x, z) + gf.rel;
         let steil = 0;
         let nah = 1;
+        let hang = 0;
         for (let k = 0; k <= kmax; k++) {
             const S = N.S[k];
             const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
             let Hk = H;
             let kSteil = 0;
             let kNah = 1;
+            let kHang = 0;
             for (let q = 0; q < segs.length; q++) {
                 const s = segs[q];
                 const dx = x - s.ax;
@@ -648,6 +659,8 @@
                 let v;
                 let g = 0;
                 let w = 0;
+                // die Neigung des Profils quer zur Rinne (mit der Treppe gemischt) — der Hang der gewählten Fläche
+                let gh = 0;
                 // Die Aue fällt quer 0,6 % zur Rinne (das Wasser sammelt sich im Bett, nie in der Fläche).
                 if (u <= 0) v = bed + AUE_QUER * d;
                 else {
@@ -659,27 +672,32 @@
                         v = sohle + (H - sohle) * (1 - (1 - p) * (1 - p));
                         g = ((H - sohle) * 2 * (1 - p) * s.b * (p / w)) / s.W;
                     }
+                    gh = g;
                     if (s.stil > 0.001) {
                         const tr = treppe(N, u);
                         const vs = sohle + (tr < H - sohle ? tr : H - sohle);
                         v += (vs - v) * s.stil;
+                        gh = g * (1 - s.stil) + (tr < H - sohle ? treppeHang(N, u) : 0) * s.stil;
                     }
                 }
                 if (v < Hk) {
                     Hk = v;
                     kSteil = g;
                     kNah = w < 1 ? w : 1;
+                    kHang = gh;
                 }
             }
             if (Hk < H) {
                 if (kSteil > steil) steil = kSteil;
                 if (kNah < nah) nah = kNah;
+                hang = kHang;
             }
             H = Hk;
         }
         if (aus) {
             aus.steil = steil;
             aus.nah = nah;
+            aus.hang = hang;
         }
         return H;
     }
@@ -728,13 +746,14 @@
         return glatt(SCHNEE.start, SCHNEE.voll, y - wl);
     }
 
-    function wildnisY(L, x, z, mitDetail) {
+    function wildnisY(L, x, z, mitDetail, aus) {
         const N = netzFuer(L);
         const n = L.noise;
         const base = N.base;
         const gf = grossform(N, x, z);
-        const mess = { steil: 0, nah: 1 };
+        const mess = { steil: 0, nah: 1, hang: 0 };
         let h = flaeche(N, N.ebenen - 1, x, z, gf, mess);
+        if (aus) aus.hang = mess.hang;
         // T3 — das hang-begrenzte Detail (λ 38 m und 17 m): Amplitude < ½ Hang × λ/2π, null in Rinne und Aue.
         if (mitDetail && N.P.detail > 0 && mess.steil > 0.02) {
             const amp = N.P.detail * Math.min(3, mess.steil) * glatt(0.05, 0.45, mess.nah);
@@ -820,12 +839,32 @@
     // eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe addiert, die Bucht schneidet (Minimum).
     // Eine Welt ohne Erbgut trägt [wildnis]. Fehlt der Lage ihr Erbgut, wirft der Auswerter (fail-closed, nie still
     // Wildnis). Leser: jeder Leser der Höhe (Dichte, Hydrosphäre, Fern-Ring, Spawn-Ort) in Stamm und Worker.
-    function hoehe(L, x, z, mitDetail = true) {
+    // `aus` (optional) trägt den Hang der Wildnis-Fläche (tan, `flaeche`) — ein Term darüber, der die Höhe ändert, nimmt
+    // ihn (0: kein Hang-Urteil, wo Insel, Rampe oder Bucht formen).
+    function hoehe(L, x, z, mitDetail = true, aus) {
         const T = L.erbgut.terme;
         const t0 = T[0];
-        let h = t0.art === "wildnis" ? wildnisY(L, x, z, mitDetail) : termY(t0, 0, x, z, L);
-        for (let i = 1; i < T.length; i++) h = termY(T[i], h, x, z, L);
+        if (aus) aus.hang = 0;
+        let h = t0.art === "wildnis" ? wildnisY(L, x, z, mitDetail, aus) : termY(t0, 0, x, z, L);
+        for (let i = 1; i < T.length; i++) {
+            const h2 = termY(T[i], h, x, z, L);
+            if (aus && h2 !== h) aus.hang = 0;
+            h = h2;
+        }
         return h;
+    }
+
+    // DIE HÖHLEN-MÜNDUNG (K16): die Höhlen-Decke liegt 16 m unter dem Boden (die Höhle bricht nie als Grube durch die
+    // Wiese); wo die Flanke Fels trägt — der Hang der Profil-Fläche (`flaeche`, ohne das Detail T3, das ihn um bis zur
+    // Hälfte steiler macht) von 40° bis 50° (über dem Geröll ab 33°, die Mündungs-Wand ist Fels) und das Kliff des
+    // Schicht-Gesetzes —, hebt das Gewicht die Decke um `hub` bis über den Boden: das Höhlen-Feld schneidet die Wand, der
+    // Mund steht im Fels. Gemessen (Mündungs-Suche nach dem Kriterium der Höhlen-Sicht, 4 km², drei Saaten): 5 · 1 · 14
+    // Mündungen je km². Leser: der Spalten-Kontext der Dichte in Stamm und Worker (`ceilOffset`), die Höhlen-Sicht.
+    const HOEHLEN_MUND = Object.freeze({ von: 40, bis: 50, hub: 24 });
+    const MUND_TAN_VON = Math.tan((HOEHLEN_MUND.von * Math.PI) / 180);
+    const MUND_TAN_BIS = Math.tan((HOEHLEN_MUND.bis * Math.PI) / 180);
+    function hoehlenMund(hang) {
+        return hang > MUND_TAN_VON ? glatt(MUND_TAN_VON, MUND_TAN_BIS, hang) : 0;
     }
 
     // ── DIE GELÄNDE-LINSE (K16): die Realismus-Statistik eines Höhen-Rasters — EINE Rechnung für die Wand
@@ -1248,6 +1287,8 @@
         RELIEF_KNOTEN: RELIEF_KNOTEN,
         NETZ_KANTE: NETZ_KANTE,
         hoehe: hoehe,
+        HOEHLEN_MUND: HOEHLEN_MUND,
+        hoehlenMund: hoehlenMund,
         erbgutNormal: erbgutNormal,
         wildnisY: wildnisY,
         termY: termY,
