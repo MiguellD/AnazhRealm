@@ -1,0 +1,544 @@
+{
+ "seite": "http://localhost:4312",
+ "start": "2026-10-12T10:46:33.665Z",
+ "ladungen": [
+  {
+   "name": "erst",
+   "lauf": [
+    {
+     "ms": 1464,
+     "fehlt": "die Welt entsteht",
+     "haus": null,
+     "bauten": 0
+    },
+    {
+     "ms": 2628,
+     "fehlt": "der Boden wächst (Ring 0 von 3) · das Buch der Studios öffnet sich",
+     "haus": null,
+     "bauten": 1
+    },
+    {
+     "ms": 5095,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · das Buch der Studios öffnet sich",
+     "haus": null,
+     "bauten": 15
+    },
+    {
+     "ms": 8835,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 37 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 42
+    },
+    {
+     "ms": 9318,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 41 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 46
+    },
+    {
+     "ms": 9584,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 45 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 50
+    },
+    {
+     "ms": 9959,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 49 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 54
+    },
+    {
+     "ms": 10257,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 56 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 61
+    },
+    {
+     "ms": 10700,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 62 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 67
+    },
+    {
+     "ms": 11040,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 73 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 78
+    },
+    {
+     "ms": 11340,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 80 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 85
+    },
+    {
+     "ms": 11919,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 88 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 93
+    },
+    {
+     "ms": 12329,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 90 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 97
+    },
+    {
+     "ms": 12747,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 88 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 101
+    },
+    {
+     "ms": 13796,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 81 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 10 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 112
+    },
+    {
+     "ms": 15278,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 76 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 9 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 112
+    },
+    {
+     "ms": 16611,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 71 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 8 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 112
+    },
+    {
+     "ms": 17214,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 71 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 7 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 112
+    },
+    {
+     "ms": 17491,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 71 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 6 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 112
+    },
+    {
+     "ms": 18101,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 71 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 5 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 112
+    },
+    {
+     "ms": 18450,
+     "fehlt": "die Werkstatt backt vor · 78 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 4 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 127
+    },
+    {
+     "ms": 18760,
+     "fehlt": "die Werkstatt backt vor · 75 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 4 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 127
+    },
+    {
+     "ms": 19018,
+     "fehlt": "die Werkstatt backt vor · 65 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 4 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 128
+    },
+    {
+     "ms": 19647,
+     "fehlt": "die Werkstatt backt vor · 65 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 3 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 129
+    },
+    {
+     "ms": 19972,
+     "fehlt": "die Werkstatt backt vor · 56 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 129
+    },
+    {
+     "ms": 20256,
+     "fehlt": "die Werkstatt backt vor · 36 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt",
+     "haus": null,
+     "bauten": 130
+    },
+    {
+     "ms": 20533,
+     "fehlt": "die Werkstatt backt vor · 14 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": null,
+     "bauten": 130
+    },
+    {
+     "ms": 20824,
+     "fehlt": "die Werkstatt backt vor · 4 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": null,
+     "bauten": 131
+    },
+    {
+     "ms": 21143,
+     "fehlt": "die Werkstatt backt vor · 3 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": null,
+     "bauten": 132
+    },
+    {
+     "ms": 21676,
+     "fehlt": "die Werkstatt backt vor · 1 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": null,
+     "bauten": 132
+    },
+    {
+     "ms": 22582,
+     "fehlt": "die Werkstatt backt vor · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": null,
+     "bauten": 132
+    },
+    {
+     "ms": 23961,
+     "fehlt": "die Werkstatt backt vor · 1 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": null,
+     "bauten": 136
+    },
+    {
+     "ms": 24225,
+     "fehlt": "die Werkstatt backt vor · 2 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 5.6,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 138
+    },
+    {
+     "ms": 24489,
+     "fehlt": "die Werkstatt backt vor · 5 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 24819,
+     "fehlt": "die Werkstatt backt vor · 4 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 26405,
+     "fehlt": "die Werkstatt backt vor · 3 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 26927,
+     "fehlt": "die Werkstatt backt vor · 1 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 27461,
+     "fehlt": "die Werkstatt backt vor · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 27995,
+     "fehlt": "4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 37353,
+     "fehlt": "4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    },
+    {
+     "ms": 37620,
+     "fehlt": "4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    },
+    {
+     "ms": 37944,
+     "fehlt": "4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    },
+    {
+     "ms": 38211,
+     "fehlt": "3 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    },
+    {
+     "ms": 38469,
+     "fehlt": "2 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    },
+    {
+     "ms": 38731,
+     "fehlt": "1 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    },
+    {
+     "ms": 38995,
+     "fehlt": null,
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 180
+    }
+   ],
+   "hausMs": 26927,
+   "daMs": 38961,
+   "ersteMs": 5082,
+   "letzteLuecke": "1 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt",
+   "spieler": [
+    36,
+    0
+   ],
+   "haus": {
+    "d": 0.5,
+    "preset": "schwarzwald",
+    "gezeichnet": true
+   }
+  },
+  {
+   "name": "zweit",
+   "lauf": [
+    {
+     "ms": 719,
+     "fehlt": "die Welt entsteht",
+     "haus": null,
+     "bauten": 0
+    },
+    {
+     "ms": 4048,
+     "fehlt": "der Boden wächst (Ring 0 von 3) · das Buch der Studios öffnet sich",
+     "haus": null,
+     "bauten": 141
+    },
+    {
+     "ms": 4903,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · das Buch der Studios öffnet sich",
+     "haus": null,
+     "bauten": 141
+    },
+    {
+     "ms": 7667,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 113 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 7931,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 89 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 12 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 8205,
+     "fehlt": "der Boden wächst (Ring 1 von 3) · die Werkstatt backt vor · 80 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 12 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 8769,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 80 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 12 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 9320,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 75 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 10 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 9609,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 50 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 5 ferne Bäume werden gemalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 9891,
+     "fehlt": "der Boden wächst (Ring 2 von 3) · die Werkstatt backt vor · 10 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 10201,
+     "fehlt": "die Werkstatt backt vor · 10 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 10775,
+     "fehlt": "die Werkstatt backt vor · 9 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 11061,
+     "fehlt": "die Werkstatt backt vor · 7 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": false
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 11353,
+     "fehlt": "4 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 12525,
+     "fehlt": "3 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 16101,
+     "fehlt": "2 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 16644,
+     "fehlt": "1 Wald-Stücke warten auf ihre Gestalt",
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    },
+    {
+     "ms": 16919,
+     "fehlt": null,
+     "haus": {
+      "d": 0.5,
+      "preset": "schwarzwald",
+      "gezeichnet": true
+     },
+     "bauten": 141
+    }
+   ],
+   "hausMs": 11353,
+   "daMs": 16660,
+   "ersteMs": 4883,
+   "letzteLuecke": "1 Wald-Stücke warten auf ihre Gestalt",
+   "spieler": [
+    36,
+    0
+   ],
+   "haus": {
+    "d": 0.5,
+    "preset": "schwarzwald",
+    "gezeichnet": true
+   }
+  }
+ ],
+ "seitenFehler": [],
+ "version": "18.543.0"
+}

@@ -1,0 +1,14 @@
+12:06:38 SERIE START A=a0a05614 (3960d575e001be8a) B=bb554abf (6922c97486b250bb) Instrument=bb554abf+Genesis-Folge
+12:09:14 w1A exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.7 cmds 82 tris 519k 1736MHz · frei p50/p95 16.6/16.8 CPU p95 5 cmds 68 tris 419k 1710MHz · bank 0: 13.21 1695MHz · bank -0.88: 12.2 1708MHz · band ROT vram 112.4
+12:12:23 w2B exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.5 cmds 78 tris 475k 1735MHz · frei p50/p95 16.6/16.8 CPU p95 5.6 cmds 64 tris 389k 1705MHz · bank 0: 12.36 1721MHz · bank -0.88: 10.45 1696MHz · band ROT vram 111.8
+12:15:31 w3A exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.8 cmds 82 tris 519k 1720MHz · frei p50/p95 16.6/16.8 CPU p95 4.9 cmds 67 tris 417k 1701MHz · bank 0: 12.78 1702MHz · bank -0.88: 12.25 1721MHz · band ROT vram 112.4
+12:18:39 w4B exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.7 cmds 78 tris 477k 1722MHz · frei p50/p95 16.6/16.8 CPU p95 5.2 cmds 64 tris 388k 1703MHz · bank 0: 12.4 1727MHz · bank -0.88: 10.2 1715MHz · band ROT vram 112
+12:21:35 g1A exit=0 urteil "GRUEN" · voll p50/p95 16.7/25.1 CPU p95 7.5 cmds 206 tris 965k 1646MHz · frei p50/p95 16.7/25.1 CPU p95 6.3 cmds 154 tris 703k 1717MHz · bank -1.5707963267948966: 17.31 1712MHz · band ROT vram 122
+12:24:31 g2B exit=0 urteil "GRUEN" · voll p50/p95 16.7/25.1 CPU p95 7.5 cmds 201 tris 946k 1650MHz · frei p50/p95 16.7/25.1 CPU p95 6.3 cmds 146 tris 688k 1718MHz · bank -1.5707963267948966: 17.54 1725MHz · band ROT vram 121.6
+12:27:26 g3A exit=0 urteil "GRUEN" · voll p50/p95 16.7/25.1 CPU p95 7.7 cmds 206 tris 963k 1631MHz · frei p50/p95 16.7/25.1 CPU p95 6.3 cmds 154 tris 702k 1715MHz · bank -1.5707963267948966: 17.21 1733MHz · band ROT vram 122
+12:30:20 g4B exit=0 urteil "GRUEN" · voll p50/p95 16.7/25.1 CPU p95 7.8 cmds 201 tris 946k 1639MHz · frei p50/p95 16.7/25.1 CPU p95 6.3 cmds 146 tris 687k 1717MHz · bank -1.5707963267948966: 17.88 1721MHz · band ROT vram 121.4
+12:32:32 b1A exit=0 urteil "GRUEN" · bank ost: 6.6 1694MHz · bank west: 6.62 1688MHz · bank s4-hindernisse: 6.805 1690MHz · bank s5-bucht: 7.94 1681MHz
+12:34:29 b2B exit=0 urteil "GRUEN" · bank ost: 6.615 1689MHz · bank west: 6.615 1689MHz · bank s4-hindernisse: 6.81 1689MHz · bank s5-bucht: 7.995 1671MHz
+12:36:27 b3A exit=0 urteil "GRUEN" · bank ost: 6.755 1700MHz · bank west: 6.76 1698MHz · bank s4-hindernisse: 6.805 1687MHz · bank s5-bucht: 7.955 1670MHz
+12:38:29 b4B exit=0 urteil "GRUEN" · bank ost: 6.59 1694MHz · bank west: 6.615 1688MHz · bank s4-hindernisse: 6.795 1690MHz · bank s5-bucht: 7.97 1679MHz
+12:38:53 SERIE ENDE
