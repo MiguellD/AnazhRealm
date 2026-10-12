@@ -101,7 +101,6 @@ class AnazhRealm {
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
-            archFundament: null, // der Fundament-Pool (_archFundamentAlloc)
             stlWege: null, // der Wege-Pool der Siedlungen
             _chunkIdbMiss: null, // Set der Chunk-Platten-Fehlgriffe
             _chunkIdbHits: 0,
@@ -10195,15 +10194,15 @@ class AnazhRealm {
     // Leser: die Siedlung (`_spawnSettlementSlot`, Grundriss aus dem Export) und die Wand jedes Werks (`_werkImWasser`).
     // Befund: nur die Siedlung fragte das ganze Fundament — „bau mir ein haus am wasser" stellte an 11 von 11 Uferorten ein
     // Haus, dessen Fundament 6–67 von 81 Raster-Punkten bis 0,92–3,68 m tief im Wasser stand (der Satz fragte die Mitte).
-    _fundamentLand(x, z, ry, fp, tuer, sockel = 0) {
+    _fundamentLand(x, z, ry, fp, tuer, saum = 0) {
         if (!this._landAt(x, z, 0.2)) return false;
         if (!fp) return true;
         const c = Math.cos(ry || 0);
         const s = Math.sin(ry || 0);
-        // DAS FUNDAMENT SAMT SOCKEL (Integration V18.540): trägt das Werk ein Fundament, steht sein Podest `sockel`
-        // (FUNDAMENT_SOCKEL_M) über den Grundriss hinaus (`_archFundamentBox`) — das Land fragt dieselbe Fläche, die der
-        // Zell-Stempel und gate:werk-im-wasser Z messen; ein Werk ohne Fundament (der Satz, der Tempel) trägt keinen Sockel
-        const raster = sockel > 0 ? { ex: fp.ex + sockel, ez: fp.ez + sockel, ox: fp.ox, oz: fp.oz } : fp;
+        // DER GRUND SAMT SAUM (K10): ein Haus eines Orts steht auf der Platte seines Erdbaus — dem Grundriss samt dem Saum des
+        // Orts-Gesetzes (fachwerk `ORT_GESETZ.saumM`, `ortPlan`); das Land fragt dieselbe Fläche, die der Erdbau formt. Ein Werk
+        // ohne Ort (der Satz, der Tempel) trägt keinen Saum. Das Podest fiel mit dem Erdbau.
+        const raster = saum > 0 ? { ex: fp.ex + saum, ez: fp.ez + saum, ox: fp.ox, oz: fp.oz } : fp;
         for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer))
             if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
         return true;
@@ -28007,12 +28006,50 @@ class AnazhRealm {
         const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
         if (ple.has(key)) return ple.get(key);
+        const G = globalThis.__gelaendeCore;
         const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, {
             hoeheAt: (x, z) => this._terrainMacroSurfaceY(x, z, true),
+            flaeche: (splats) => {
+                const E = G.erdbauNormal(splats);
+                return (x, z) => G.erdbauFlaeche(E, x, z);
+            },
         });
         this._erdbauSetzen(key, v2.erdbau);
         ple.set(key, v2);
         return v2;
+    }
+    // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4: „alte Welten ziehen um, ihre Bauten werden auf das neue Gelände
+    // geerdet"): ein Haus eines Orts (`fundament`), das kein Erdbau trägt — ein Save vor dem Plan v2 stellte es auf die höchste
+    // Ecke seines Grunds über ein Podest, das mit dem Erdbau fiel —, erhält die Platte seines Grundrisses samt Saum (fachwerk
+    // `ORT_GESETZ.saumM`) auf seinem Boden (y − 0,5): der Grund steigt zum Haus, das Haus bleibt, wo es stand. Ein Boden-Umzug
+    // (`umzug`, `_bodenUmzug`) verwirft den Erdbau des alten Bodens (seine Höhen standen auf einem Gelände, das es nicht mehr
+    // gibt): die Häuser stehen dann in ihrer Höhe über Grund und legen ihn neu. Gibt die Zahl der geerdeten Häuser.
+    _erdbauAltOrte(umzug) {
+        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        if (umzug && wm.erdbau) {
+            delete wm.erdbau;
+            this._erdbauStand = (this._erdbauStand || 0) + 1;
+        }
+        const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
+        const platten = [];
+        for (const e of this.state.architectures) {
+            const f = e && e.fundament;
+            if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez) || !e.position) continue;
+            if (!Number.isFinite(e.position.y)) continue;
+            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            const c = Math.cos(ry);
+            const s = Math.sin(ry);
+            const lx = Number.isFinite(f.ox) ? f.ox : 0;
+            const lz = Number.isFinite(f.oz) ? f.oz : 0;
+            const cx = e.position.x + lx * c + lz * s;
+            const cz = e.position.z - lx * s + lz * c;
+            if (!this._ortFrei(cx, cz, 0.01)) continue; // ein Erdbau trägt das Haus schon
+            platten.push({ art: "platte", cx, cz, phi: ry, ex: f.ex + saum, ez: f.ez + saum, y: e.position.y - 0.5 });
+        }
+        if (!platten.length) return 0;
+        const p0 = platten[0];
+        this._erdbauSetzen(`alt:${platten.length}:${Math.round(p0.cx)},${Math.round(p0.cz)}`, platten);
+        return platten.length;
     }
     // Trägt der Grund an (x, z) eine Krone vom Radius T, ohne einen Ort zu berühren? (der Erdbau ist der reservierte Grund:
     // Grundrisse, Vorplätze, Platz, Gassen). Leser: der Wald-Plan (phyto `planForestCell`, ctx.ortFrei).
@@ -35448,8 +35485,6 @@ class AnazhRealm {
         // 0,50 m unter der Diele (Leben-Prüfung N-D2 bis N-D4), das Solo-Haus stieß an `haus_basis` (3,09 m in der Wand).
         const hausBoxes = this._hausBlockerBoxen(entry);
         if (hausBoxes) {
-            const fuH = this._archFundamentBox(entry);
-            if (fuH) hausBoxes.push(fuH);
             if (hausBoxes.length) {
                 entry.blockerAABBs = hausBoxes;
                 this._blockerStampReach(entry);
@@ -35522,11 +35557,6 @@ class AnazhRealm {
                 aabb.dick = Math.min(Math.abs(part.size.x) || 0, Math.abs(part.size.z) || 0) * scD;
             solidAABBs.push(aabb);
         }
-        // Das FUNDAMENT ist Blocker-Wahrheit: der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
-        // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Gedreht trägt es seine
-        // `obb` (Kapsel, Strahl und Zellen-Stempel im Rahmen des Podests), die Welt-AABB bleibt Vorfilter.
-        const fu = this._archFundamentBox(entry);
-        if (fu) solidAABBs.push(fu);
         if (solidAABBs.length === 0) return;
         entry.blockerAABBs = solidAABBs;
         this._blockerStampReach(entry);
@@ -35650,66 +35680,6 @@ class AnazhRealm {
             topY: oy + y1 * sc,
             botY: oy + y0 * sc,
             obb: { cx, cz, c, s: sn, hx, hz },
-        };
-    }
-
-    // Die EINE Fundament-Geometrie (Blocker UND Render-Podest): aus entry.fundament {ex,ez} um seine Mitte
-    // {ox,oz} (haus-lokal) + LIVE-Terrain-Ecken. null ohne fundament-Feld oder auf ebenem Land (Podest < 0.25 m).
-    // Tiefe stets aus dem Dichte-Feld, nie persistiert (deterministisch).
-    _archFundamentBox(entry) {
-        const f = entry && entry.fundament;
-        if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez)) return null;
-        if (typeof this.getTerrainHeightAt !== "function") return null;
-        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
-        const rc = Math.cos(ry);
-        const rs = Math.sin(ry);
-        const lox = Number.isFinite(f.ox) ? f.ox : 0;
-        const loz = Number.isFinite(f.oz) ? f.oz : 0;
-        const ox = (entry.position.x || 0) + lox * rc + loz * rs;
-        const oz = (entry.position.z || 0) - lox * rs + loz * rc;
-        // Marge FUNDAMENT_SOCKEL_M: der Sockel steht sichtbar unter der Schwelle hervor
-        // (Sockel-Look) und deckt die Fachwerk-Traufkante; die Wasser-Wand fragt dieselbe Fläche (`_fundamentLand`).
-        const ex = f.ex + AnazhRealm.FUNDAMENT_SOCKEL_M;
-        const ez = f.ez + AnazhRealm.FUNDAMENT_SOCKEL_M;
-        let hMin = Infinity;
-        let halfX = 0;
-        let halfZ = 0;
-        for (let k = 0; k < 4; k++) {
-            const lx = k & 1 ? ex : -ex;
-            const lz = k & 2 ? ez : -ez;
-            const cxw = lx * rc + lz * rs;
-            const czw = -lx * rs + lz * rc;
-            if (Math.abs(cxw) > halfX) halfX = Math.abs(cxw);
-            if (Math.abs(czw) > halfZ) halfZ = Math.abs(czw);
-            const h = this.getTerrainHeightAt(ox + cxw, oz + czw);
-            if (Number.isFinite(h) && h < hMin) hMin = h;
-        }
-        if (!Number.isFinite(hMin)) return null;
-        // Oberkante knapp unter der Haus-Basis (entry.y − 0.5 = Bauplan-Boden,
-        // s. _archEntryWorldMatrix baseY) — 5 cm Überlapp gegen Licht-Spalte;
-        // Unterkante 0.6 m UNTER der tiefsten Ecke (im Fels versiegelt).
-        const top = (Number.isFinite(entry.position.y) ? entry.position.y : 0) - 0.45;
-        const bot = hMin - 0.6;
-        if (!(top - bot > 0.25)) return null; // eben → kein Podest
-        // AABB-Felder = Vorfilter und Spanne des Zell-Stempels (konservativ, rotations-überdeckt);
-        // ex/ez/ry/x/z = Render-Leser (das GEDREHTE dichte Podest), obb = Kapsel, Strahl und die Zellen des Stempels.
-        return {
-            minX: ox - halfX,
-            maxX: ox + halfX,
-            minZ: oz - halfZ,
-            maxZ: oz + halfZ,
-            topY: top,
-            botY: bot,
-            ex,
-            ez,
-            ry,
-            x: ox,
-            z: oz,
-            // DIE GEDREHTE BOX (Welle L, Kollision == Optik): Kapsel und Strahl lösen im Rahmen des gezeichneten Podests
-            // (`_resolveCapsuleVsAABB`, `_segmentAABB`) und der Zell-Stempel stempelt nur die Zellen, die sie berührt (Karte
-            // K02) — die Welt-AABB bleibt ihr Vorfilter. Vorher trug die rotations-überdeckende AABB die Ecken eines gedrehten
-            // Hauses als Podest in der Luft.
-            obb: { cx: ox, cz: oz, c: rc, s: rs, hx: ex, hz: ez },
         };
     }
 
@@ -47183,6 +47153,9 @@ class AnazhRealm {
                 entry.portalMeta = a.portalMeta;
             }
         }
+        // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4): jedes Haus eines Orts steht auf seinem Erdbau
+        const geerdet = this._erdbauAltOrte(umzug);
+        if (geerdet) this.log(`Erdbau: ${geerdet} Häuser eines älteren Stands auf ihren Grund geerdet.`, "INFO");
         // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Natur, die vor dem Dorf in seine Häuser
         // wuchs (der Wurf kam vor dem Haus), und Bäume über der Genesis-Scheibe — jeder Bau mit Grundriss (Haus, Lichtung)
         // räumt nach dem Laden, wie beim Gründen.
@@ -71110,105 +71083,6 @@ class AnazhRealm {
         return c;
     }
 
-    // (_archInstanceAdd, unten:) eine Instanz je Leaf; entry.instSlots merkt (key, slot). `opts.band`
-    // schreibt stattdessen in `entry.instSlotsBand` (+ `entry._lodBandLevel`) — die ZWEITE Stufe im
-    // Dither-Crossfade-Band. Add/Remove NUR durch diese zwei Chokepoints.
-    // ═══ DAS FUNDAMENT-PODEST ═══
-    // EIN InstancedMesh-Pool für ALLE Haus-Sockel (1 Draw-Call, Verdopplung; dicht wie jede Instanz-Senke: Freigeben
-    // zieht den letzten Sockel in die Lücke, `_instanzUmzug` — ein freier Slot zeichnet nie).
-    // Geometrie = die der Blocker (`_archFundamentBox`, Unterkante 0.6 m unter der tiefsten Footprint-
-    // Ecke); Lebenszyklus an den Instanz-Nähten, kein Snapshot-Feld.
-    _archFundamentEnsure(entry) {
-        if (!entry || !entry.fundament || !this.state.scene) return;
-        const st = this.state;
-        let P = st.archFundament;
-        if (P && P.byId.has(entry.id)) return; // idempotent (LOD-Wechsel etc.)
-        const box = this._archFundamentBox(entry);
-        if (!box) return; // ebenes Land → kein Podest
-        if (!P) {
-            const geo =
-                this._archFundGeo ||
-                (this._archFundGeo = (() => {
-                    const g = new THREE.BoxGeometry(1, 1, 1);
-                    g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
-                    return g;
-                })());
-            const mat =
-                this._archFundMat ||
-                (this._archFundMat = this._leuchtStoff(
-                    new THREE.MeshStandardNodeMaterial({
-                        color: 0x7a7168,
-                        roughness: 1,
-                        metalness: 0,
-                    }),
-                    null
-                )); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz), der Licht-Pool (K11) das Feuer
-            const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
-            AnazhRealm._instanzZahl(mesh, 0);
-            mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
-            mesh.receiveShadow = true;
-            st.scene.add(mesh);
-            // byId: Eintrag → Slot; idAt: Slot → Eintrag (der Rückverweis des Umzugs).
-            P = st.archFundament = { mesh, cap: 128, byId: new Map(), idAt: [] };
-        }
-        const slot = P.mesh.count;
-        if (slot >= P.cap) {
-            // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
-            const bigger = AnazhRealm._poolKennung(
-                AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2),
-                "bau-fundament"
-            );
-            bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
-            AnazhRealm._instanzZahl(bigger, P.mesh.count);
-            bigger.frustumCulled = false;
-            bigger.receiveShadow = true;
-            st.scene.add(bigger);
-            st.scene.remove(P.mesh);
-            this._instanzAbschied(P.mesh);
-            P.mesh = bigger;
-            P.cap *= 2;
-        }
-        const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
-        const q = this._archFundTmpQ || (this._archFundTmpQ = new THREE.Quaternion());
-        const v = this._archFundTmpV || (this._archFundTmpV = new THREE.Vector3());
-        const sc = this._archFundTmpS || (this._archFundTmpS = new THREE.Vector3());
-        const ax = this._archFundAxisY || (this._archFundAxisY = new THREE.Vector3(0, 1, 0));
-        q.setFromAxisAngle(ax, box.ry);
-        m.compose(v.set(box.x, box.topY, box.z), q, sc.set(box.ex * 2, box.topY - box.botY, box.ez * 2));
-        P.mesh.setMatrixAt(slot, m);
-        AnazhRealm._instanzZahl(P.mesh, slot + 1);
-        P.mesh.instanceMatrix.needsUpdate = true;
-        P.mesh.boundingSphere = null;
-        P.byId.set(entry.id, slot);
-        P.idAt[slot] = entry.id;
-    }
-    _archFundamentFree(entry) {
-        const P = this.state.archFundament;
-        if (!P || !entry) return;
-        const slot = P.byId.get(entry.id);
-        if (slot === undefined) return;
-        P.byId.delete(entry.id);
-        const letzt = P.mesh.count - 1;
-        if (slot !== letzt) {
-            AnazhRealm._instanzUmzug(P.mesh, letzt, slot);
-            const zieht = P.idAt[letzt];
-            P.idAt[slot] = zieht;
-            P.byId.set(zieht, slot);
-        }
-        P.idAt.length = letzt;
-        AnazhRealm._instanzZahl(P.mesh, letzt);
-        P.mesh.boundingSphere = null;
-    }
-    _archFundamentDisposePool() {
-        const P = this.state.archFundament;
-        if (!P) return;
-        if (P.mesh) {
-            if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            this._instanzAbschied(P.mesh); // die Instanz-Puffer; Geo/Mat sind geteilt (this._archFund*)
-        }
-        this.state.archFundament = null;
-    }
-
     // ═══ DIE WEGE-KARTE (V18.530): Siedlungs-Wege sind BODEN, kein Bauwerk ═══
     // Befund 04.10. (Blick-Tour 1-nord · 3-markt · 4-west, echte GPU): Straßen, Feldwege, Platz und Äcker lagen als
     // flache Box-Streifen (0,14 m) auf der Gesetz-Höhe — der sichtbare Boden (Surface-Nets, ±0,2 m) schnitt sie:
@@ -71812,7 +71686,7 @@ class AnazhRealm {
     }
 
     // ═══ DER ZAUN-POOL ═══
-    // Das _archFundament-Muster: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
+    // Das Muster der Instanz-Pools: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
     // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld: die
     // Streifen entstehen je Session deterministisch aus dem Settlement-Export (`_tickAutoSettlement`).
     _stlZaunEnsurePool() {
@@ -72120,9 +71994,6 @@ class AnazhRealm {
         // Clamp-Kurzschluss in _switchArchitectureLOD liest sie, damit eine Ein-Stufen-Art (fels [0]) beim
         // Schwellen-Übertritt nicht neu alloziert. Transient (nicht im Snapshot).
         entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
-        // DORF-IN-TERRAIN — der Sockel lebt mit dem PRIMÄREN Instanz-Leben des
-        // Eintrags (Band-Adds returnen oben früher); ensure ist idempotent.
-        if (entry.fundament) this._archFundamentEnsure(entry);
         // die Trittfläche der Ausstattung (einmal je Eintrag, idempotent) — der Studio-Platz hat das Buch
         if (entry.instFoundry) this._trittFlaecheSetzen(entry);
     }
@@ -72239,9 +72110,6 @@ class AnazhRealm {
             entry.instSlots = null;
             entry.instanced = false;
             entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
-            // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
-            // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
-            if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of geleerte) {
             // Vollständig leer = liveCount 0 (die EINE Leer-Quelle, count folgt ihr).
@@ -72274,9 +72142,6 @@ class AnazhRealm {
             }
             this.state._regionBundles.clear();
         }
-        // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
-        // die Respawn-Schleife baut ihn lazy neu.
-        this._archFundamentDisposePool();
         // DORF-ERLEBNIS — Zaun-Pool + Wege-Karte fallen mit; der settlementCells-Rebuild
         // (`_tickAutoSettlement`) baut sie lazy + deterministisch neu.
         this._stlWegeDispose();
@@ -74122,8 +73987,7 @@ class AnazhRealm {
             Number.isFinite(s.rarity) &&
             Number.isFinite(s.nHMin) &&
             Number.isFinite(s.nHSpan) &&
-            Number.isFinite(s.slopeMax) &&
-            Number.isFinite(s.fundamentMaxDh)
+            Number.isFinite(s.slopeMax)
         ) {
             AnazhRealm._siedlungGesetzMemo = s;
         }
@@ -74778,7 +74642,7 @@ class AnazhRealm {
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
-        if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? AnazhRealm.FUNDAMENT_SOCKEL_M : 0)) return false;
+        if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0)) return false;
         if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
         const wy = slot.y + 0.5; // der Bauplan-Boden liegt 0,5 m unter dem Ursprung (`_archEntryWorldMatrix` baseY)
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
@@ -75127,11 +74991,11 @@ class AnazhRealm {
             const dKey = "d:" + seed + "@" + Math.round(anchor.x) + "," + Math.round(anchor.z);
             if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
-            // Zwei Kanäle (V-D8): das Log trägt Same, Größe, Slots und Ersatz-Orte; wer das Dorf verlangt hat (`_spielerVerlangt`,
+            // Zwei Kanäle (V-D8): das Log trägt Same, Größe und Slots; wer das Dorf verlangt hat (`_spielerVerlangt`,
             // die Quelle des Akts), hört den Satz der Welt und schaut auf SEIN Dorf — Nexus, Welt-Regeln und Mitspieler handeln
             // für die Welt: kein Satz an den Empfänger, kein Blick.
             this.log(
-                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert (${res.ersatz} am Ersatz-Ort), ${res.skipped} Slots übersprungen; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
+                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
                 "INFO"
             );
             if (this._spielerVerlangt(o.verlangt))
@@ -80422,7 +80286,7 @@ class AnazhRealm {
         const g = this._werkGrundriss(type, opts, seed);
         if (!g) return false;
         const ry = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
-        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.sockel);
+        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.saum);
     }
 
     // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
@@ -80676,7 +80540,7 @@ class AnazhRealm {
             return {
                 fp: { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 },
                 tuer: o.tuer || null,
-                sockel: AnazhRealm.FUNDAMENT_SOCKEL_M, // das Fundament trägt sein Podest (`_archFundamentBox`)
+                saum: globalThis.__fachwerkCore.ORT_GESETZ.saumM, // der Grund des Orts: Grundriss samt Saum (der Erdbau)
             };
         const t = o.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
@@ -97053,7 +96917,7 @@ class AnazhRealm {
     // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
     // den vier Achsen (die zwei der Box, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den
     // Wagen heraus (pos mutiert, der Schub reist in h.schub für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle
-    // und das Podest, `_hausObb`/`_archFundamentBox`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
+    // `_hausObb`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
     // der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand 12 × 0,8 m: der Wagen
     // hielt 2,36 m vor der Wand).
     _resolveHuelleVsAABB(box, pos, h) {
@@ -102380,7 +102244,7 @@ AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1
 // startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf") · perTick Häuser je Idle-Tick ·
 // drosselTakte das Tempo über dem Frame-Budget.
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
-// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax · Klippen-Wand fundamentMaxDh) lebt EINMAL in
+// (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan · Steil-Wand slopeMax) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     nearM: 260,
@@ -106194,12 +106058,6 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
 // −906/−634): eine Kiefer stand 0,5 m neben 2,4 m tiefem Wasser, zwei Hasel 0,23 und 0,52 m im Uferwasser — die Wand fragte
 // nur die Achse.
 AnazhRealm.STAMM_FUSS_M = 0.5;
-// DER SOCKEL EINES FUNDAMENTS (m): so weit steht das Podest über den Grundriss hinaus (`_archFundamentBox`, der Sockel-Look
-// deckt die Fachwerk-Traufkante) — und so weit fragt die Wasser-Wand des Fundaments das Land (`_fundamentLand`). EINE Zahl
-// für Podest und Land (Integration V18.540, K02b × S3-Haus): die Wand fragte den Grundriss ohne Sockel, der Stempel und
-// gate:werk-im-wasser Z messen das Podest — am vereinigten Baum standen drei Dorf-Häuser mit 1 Punkt der Hülle 0,25–0,81 m
-// im Fluss, jeder am Rand des Sockels.
-AnazhRealm.FUNDAMENT_SOCKEL_M = 0.35;
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
 AnazhRealm.STUDIO_SATZ =

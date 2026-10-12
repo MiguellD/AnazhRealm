@@ -2136,8 +2136,8 @@ function selbsttest() {
             "Siedlung fragt die Mitte",
             (s) =>
                 s.replace(
-                    "if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? AnazhRealm.FUNDAMENT_SOCKEL_M : 0)) return null;",
-                    "if (!this._landAt(wx, wz, 0.2)) return null;"
+                    "if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0)) return false;",
+                    "if (!this._landAt(wx, wz, 0.2)) return false;"
                 ),
             /die Siedlung .* fragt nicht das Land des Fundaments/,
         ],

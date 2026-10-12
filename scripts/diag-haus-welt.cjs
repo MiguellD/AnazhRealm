@@ -1056,7 +1056,7 @@ async function proben(phasen) {
                     // die Suche fand (K16: „viktorianisch: Slot fiel", seit das Dorf am Hang und das ferne Dorf im Westen stehen)
                     if (
                         !grund &&
-                        (!r._fundamentLand(cx, cz, gier, fu, tu, A.FUNDAMENT_SOCKEL_M) ||
+                        (!r._fundamentLand(cx, cz, gier, fu, tu, globalThis.__fachwerkCore.ORT_GESETZ.saumM) ||
                             !r._bauFrei(cx, cz, gier, fu, tu, hi))
                     )
                         grund = "wand";

@@ -752,7 +752,7 @@ Split-Parität je Rezept × Stufe hash-bewiesen (buildInstance == die Shell-
 Komposition der Kern-Primitive), Andocken = reine Daten-Zeilen — der
 ε-Beweis, `gate:nervensystem-fachwerk`). Spiegel-Zensus 17.07. (V18.486+,
 rein additiv): **`SIEDLUNG`** = das Siedlungs-Existenz-Gesetz (`cellM rarity
-nHMin nHSpan slopeMax fundamentMaxDh` — WO/WIEVIEL/WIE STEIL Dörfer die Welt
+nHMin nHSpan slopeMax` — WO/WIEVIEL/WIE STEIL Dörfer die Welt
 trägt; Präzedenzfall Wald-Dichte in phyto-core). Es reist im Buch-Umschlag
 (`get-book`-Reply, Feld `siedlung`, M8-generisch: der erste Kern mit
 SIEDLUNG); der Wirt liest `AnazhRealm._siedlungGesetz()` (Ingest validiert

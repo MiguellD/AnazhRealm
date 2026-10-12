@@ -245,7 +245,6 @@ const server = http.createServer((req, res) => {
             "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
             // die Bau-Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln)
             "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
-            "bau-fundament": { b: "substanz", why: "bau-fundament (Fundamente der Häuser, ein Pool)" },
         };
         const chainOf = (node) => {
             const c = [];
@@ -619,7 +618,7 @@ const server = http.createServer((req, res) => {
     // seinen Stempel von Geburt an.
     {
         const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
-        for (const m of ["_stlZaunEnsurePool", "_stlZaunAddStrip", "_archFundamentEnsure"]) {
+        for (const m of ["_stlZaunEnsurePool", "_stlZaunAddStrip"]) {
             const a = stamm.indexOf(`\n    ${m}(`);
             const e = a < 0 ? -1 : stamm.indexOf("\n    }\n", a);
             const body = a < 0 || e < 0 ? "" : stamm.slice(a, e).replace(/\/\/.*$/gm, "");

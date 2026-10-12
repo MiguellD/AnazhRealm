@@ -226,13 +226,6 @@ async function welt() {
                         nenne(ref.key, `Slot ${ref.slot} trägt nicht die Instanz von ${e.type}#${e.id} (Abstand ${d.toFixed(3)})`, g.mesh, 1);
                 }
             }
-            const P = st.archFundament;
-            if (P && P.mesh) {
-                senke("bau-fundament", P.mesh, P.byId.size);
-                let offen = 0;
-                for (const [id, s] of P.byId) if (P.idAt[s] !== id) offen++;
-                if (offen) nenne("bau-fundament", `${offen} Sockel ohne geschlossenen Rückverweis`, P.mesh, 0);
-            }
             const Z = st.stlZaun;
             if (Z && Z.mesh) senke("siedlung-zaun", Z.mesh, Z.top);
             const nw = st.nahWiese;

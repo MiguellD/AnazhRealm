@@ -953,7 +953,10 @@
                 const dx = p.x1 - p.x0;
                 const dz = p.z1 - p.z0;
                 const len2 = dx * dx + dz * dz;
-                s = { platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2 };
+                if (p.weg != null && !Number.isFinite(p.weg))
+                    throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt keinen Weg als Zahl");
+                const weg = p.weg == null ? -1 : p.weg;
+                s = { platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg };
                 const m = p.w / 2 + R;
                 x0 = Math.min(p.x0, p.x1) - m;
                 x1 = Math.max(p.x0, p.x1) + m;
@@ -979,10 +982,13 @@
         const R = ERDBAU.reichweiteM;
         const B = ERDBAU.boeschung;
         let fest = NaN; // die Fläche, auf der der Punkt liegt (der letzte Splat mit d = 0): ihre Höhe ist Gesetz
+        let festWeg = -2; // der Weg der Fläche (die Strecken EINES Wegs folgen einander: unter ihnen gilt die nächste Mitte)
+        let festMitte = Infinity;
         for (let k = 0; k < liste.length; k++) {
             const p = E.splats[liste[k]];
             let d;
             let y;
+            let mitte = 0;
             if (p.platte) {
                 const dx = x - p.cx;
                 const dz = z - p.cz;
@@ -994,13 +1000,25 @@
                 let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
                 if (q < 0) q = 0;
                 else if (q > 1) q = 1;
-                d = Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q)) - p.hw;
+                mitte = Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q));
+                d = mitte - p.hw;
                 if (d < 0) d = 0;
                 y = p.y0 + p.dy * q;
             }
             if (d > R) continue;
             if (d === 0) {
-                fest = y;
+                // auf EINEM Weg (dieselbe Weg-Zahl wie die Fläche davor) trägt die Strecke mit der nächsten Mitte — an den Gelenken
+                // überdecken sich die Strecken, und die spätere trüge sonst die Höhe ihres Anfangs (eine Treppe längs des Wegs)
+                if (!p.platte && p.weg >= 0 && p.weg === festWeg) {
+                    if (mitte < festMitte) {
+                        fest = y;
+                        festMitte = mitte;
+                    }
+                } else {
+                    fest = y;
+                    festWeg = p.platte ? -2 : p.weg;
+                    festMitte = p.platte ? Infinity : mitte;
+                }
                 continue;
             }
             const b = d * B;
@@ -1008,6 +1026,14 @@
             else if (h < y - b) h = y - b;
         }
         return fest === fest ? fest : h;
+    }
+    // Die FLÄCHE des Erdbaus an (x, z): die Höhe der Fläche, auf der der Punkt liegt (dieselbe Regel wie `erdbauY`: die letzte
+    // gewinnt), oder null abseits jeder Fläche. Leser: der Plan v2 (fachwerk `ortPlan` über ctx.flaeche — Haus und Laterne
+    // stehen auf der Höhe, auf die ein Fuß tritt).
+    function erdbauFlaeche(E, x, z) {
+        if (!E) return null;
+        const y = erdbauY(E, x, z, NaN);
+        return y === y ? y : null;
     }
 
     // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres Erbguts: der erste Term setzt den Startwert (die Wildnis oder
@@ -1476,6 +1502,7 @@
         ERDBAU: ERDBAU,
         erdbauNormal: erdbauNormal,
         erdbauY: erdbauY,
+        erdbauFlaeche: erdbauFlaeche,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,
         BODEN_GENERATION: BODEN_GENERATION,

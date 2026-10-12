@@ -2662,14 +2662,12 @@
     // cellM = Welt-Zellen-Raster (m) · rarity = 1 von N Zellen traegt ein Dorf
     // (~7 Doerfer/km² effektiv) · nHMin/nHSpan = Dorf-Groesse nHMin..nHMin+
     // nHSpan-1 Haeuser (deterministisch aus dem Zell-Hash) · slopeMax =
-    // Site-Wand (|grad h| m/m — flach genug zum Siedeln) · fundamentMaxDh =
-    // Klippen-Wand je Haus-Slot (m, max. Hoehendifferenz ueber die vier
-    // obb-Footprint-Ecken; darunter traegt ein Sockel-Podest das Haus in den
-    // Hang). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
+    // Site-Wand (|grad h| m/m — flach genug zum Siedeln); die Klippen-Wand je
+    // Haus-Slot fiel mit dem Erdbau des Orts (K10, ortPlan). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
     // liest memoisiert + fail-soft byte-gleich (_siedlungGesetz). Seine
     // Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM)
     // bleiben ehrlich Wirts-Infrastruktur (AUTO_SETTLEMENT). ──
-    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35, fundamentMaxDh: 9 };
+    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35 };
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -5024,11 +5022,13 @@
     }
 
     // ── DER ORT AUF DEM GELÄNDE (K10, Plan v2) — ortPlan(plan, origin, ctx): der Export (2D, plan-lokal) auf der Gelände-
-    //    Funktion der Welt-Zelle. ctx = { hoeheAt(x, z) } liest die Höhe an einem WELT-Ort (das ctx-Muster von phyto
-    //    `planForestCell`: der Wirt reicht seine Lese-Funktion, der Kern rechnet). Die Reihenfolge ist das Gesetz: der PLATZ
+    //    Funktion der Welt-Zelle. ctx = { hoeheAt(x, z), flaeche(splats) }: hoeheAt liest die Höhe an einem WELT-Ort, flaeche
+    //    reicht zu Erdbau-Splats den Leser (x, z) → Höhe auf einer ihrer Flächen oder null (gelaende-core `erdbauY`) — das
+    //    ctx-Muster von phyto `planForestCell`: der Wirt reicht seine Lese-Funktionen, der Kern rechnet. Die Reihenfolge ist
+    //    das Gesetz: der PLATZ
     //    liegt auf dem Median seines Grunds; jeder WEG trägt ein Höhen-Profil (geglättet über `glaettM`, am Platz und an den
-    //    Knoten der früheren Wege gepinnt, das Gefälle gekappt auf `gefaelle`); jedes HAUS steht auf der Höhe seiner Gasse (der
-    //    Weg-Punkt vor seiner Tür, sonst der Median seines Grundrisses), sein Vorplatz trägt die halbe Diele (zwei Stufen statt
+    //    Knoten der früheren Wege gepinnt, das Gefälle gekappt auf `gefaelle`); jedes HAUS steht auf der Höhe seiner Gasse (die
+    //    Fläche, die der Gang aus der Tür betritt; ein Hof-Haus auf dem Niveau seines Hofs, sonst der Median seines Grundrisses), sein Vorplatz trägt die halbe Diele (zwei Stufen statt
     //    einer Schwelle von 0,55 m). Ausgabe: der Plan mit `version: 2`, `ort` {x, z}, je Slot `y` (der Boden des Hauses,
     //    absolut) und `hang` (plattform · hanghaus · stelzen: die Spanne des Grunds unter dem Grundriss), die Wege mit `ys`, der
     //    Platz und die Laternen mit `y`, und `erdbau[]` — die Splats des ERDBAU-Terms (gelaende-core `erdbauNormal`): `platte`
@@ -5045,8 +5045,15 @@
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
     };
     function ortPlan(plan, origin, ctx) {
-        if (!plan || !Array.isArray(plan.slots) || !origin || !ctx || typeof ctx.hoeheAt !== "function")
-            throw new Error("fachwerk ortPlan: Plan, Ort und ctx.hoeheAt sind Pflicht");
+        if (
+            !plan ||
+            !Array.isArray(plan.slots) ||
+            !origin ||
+            !ctx ||
+            typeof ctx.hoeheAt !== "function" ||
+            typeof ctx.flaeche !== "function"
+        )
+            throw new Error("fachwerk ortPlan: Plan, Ort, ctx.hoeheAt und ctx.flaeche sind Pflicht");
         var O = ORT_GESETZ;
         var ox = Number(origin.x);
         var oz = Number(origin.z);
@@ -5080,6 +5087,8 @@
             return out;
         };
         var erdbau = [];
+        var wegSaeume = [];
+        var wegKerne = [];
         // 1) DER PLATZ
         var pz = plan.platz;
         var platzY = null;
@@ -5152,31 +5161,23 @@
                 ys[k] = r6(ys[k]);
                 profil.push([pts[k].x, pts[k].z, ys[k], hw]);
             }
+            // je Strecke ZWEI Trassen derselben Höhe: der Saum (Weg + saumM je Seite) liegt unter den Grundrissen, der Weg selbst
+            // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand
             for (k = 1; k < n; k++)
-                erdbau.push({
-                    art: "trasse",
-                    x0: r6(ox + pts[k - 1].x),
-                    z0: r6(oz + pts[k - 1].z),
-                    y0: ys[k - 1],
-                    x1: r6(ox + pts[k].x),
-                    z1: r6(oz + pts[k].z),
-                    y1: ys[k],
-                    w: r6(2 * (hw + O.saumM)),
-                });
+                for (var tier = 0; tier < 2; tier++)
+                    (tier ? wegKerne : wegSaeume).push({
+                        art: "trasse",
+                        x0: r6(ox + pts[k - 1].x),
+                        z0: r6(oz + pts[k - 1].z),
+                        y0: ys[k - 1],
+                        x1: r6(ox + pts[k].x),
+                        z1: r6(oz + pts[k].z),
+                        y1: ys[k],
+                        w: r6(2 * (hw + (tier ? 0 : O.saumM))),
+                        weg: 2 * ri + tier, // die Strecken EINES Wegs: unter ihnen trägt die nächste Mitte (gelaende-core erdbauY)
+                    });
             wege.push(Object.assign({}, rd, { ys: ys }));
         }
-        var naechsterWeg = function (x, z, weit) {
-            var y = null;
-            var bd = Infinity;
-            for (var q = 0; q < profil.length; q++) {
-                var d = Math.hypot(x - profil[q][0], z - profil[q][1]);
-                if (d <= profil[q][3] + weit && d < bd) {
-                    bd = d;
-                    y = profil[q][2];
-                }
-            }
-            return y;
-        };
         if (platzY !== null)
             erdbau.push({
                 art: "platte",
@@ -5187,26 +5188,91 @@
                 ez: r6(pz.ez + O.saumM),
                 y: platzY,
             });
-        // 3) DIE HÄUSER
-        var slots = [];
-        for (var si = 0; si < plan.slots.length; si++) {
+        // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
+        // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
+        // tritt, nie eine eigene Rechnung des Erdbaus.
+        var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
+        var hausPlatten = [];
+        var vorplaetze = [];
+        var aufY = function (x, z) {
+            var y = auf(ox + x, oz + z);
+            return y !== null && isFinite(y) ? r6(y) : null;
+        };
+        // 3) DIE HÄUSER: zuerst jedes Haus an seiner Gasse (die Höhe der Fläche, wo der Gang aus der Tür sie betritt); dann die HOF-Häuser (die Scheune hinter
+        //    dem Wohnhaus — vor ihrer Tür liegt kein Weg, sondern der Grund eines Nachbarn): sie stehen auf der Höhe der ersten
+        //    gesetzten Fläche, die ihr Blick aus der Tür trifft (der Hof ist EIN Niveau), bis keines mehr dazukommt; der Rest
+        //    auf dem Median seines Grundrisses.
+        var NS = plan.slots.length;
+        var hy = [];
+        var grunde = [];
+        var vorne = function (sl, lz) {
+            var c = Math.cos(sl.phi || 0);
+            var s = Math.sin(sl.phi || 0);
+            return [sl.x + sl.tuer.x * c + lz * s, sl.z - sl.tuer.x * s + lz * c];
+        };
+        var hatTuer = function (sl) {
+            return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
+        };
+        for (var si = 0; si < NS; si++) {
             var sl = plan.slots[si];
             var ob = sl.obb;
-            var tu = sl.tuer;
-            var c0 = Math.cos(sl.phi || 0);
-            var s0 = Math.sin(sl.phi || 0);
-            var grund = ob ? rechteck(ob.cx, ob.cz, ob.phi || 0, ob.ex, ob.ez) : [H(sl.x, sl.z)];
-            var y = null;
-            if (tu && isFinite(tu.x) && isFinite(tu.z)) {
-                var lz0 = tu.z - O.vorplatzM;
-                y = naechsterWeg(sl.x + tu.x * c0 + lz0 * s0, sl.z - tu.x * s0 + lz0 * c0, O.gasseM);
+            grunde.push(ob ? rechteck(ob.cx, ob.cz, ob.phi || 0, ob.ex, ob.ez) : [H(sl.x, sl.z)]);
+            var y0 = null;
+            if (hatTuer(sl)) {
+                // der erste Meter der Fläche, die der Gang betritt (ihr Median: eine Naht zweier Wege gleich hinter dem Vorplatz
+                // teilt sich in zwei kleine Stufen statt einer großen)
+                var tritt = [];
+                for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM; t0 += 0.25) {
+                    var va = vorne(sl, sl.tuer.z - t0);
+                    var ya = aufY(va[0], va[1]);
+                    if (ya !== null) tritt.push([t0, ya]);
+                    if (tritt.length && t0 >= tritt[0][0] + 1) break;
+                }
+                if (tritt.length)
+                    y0 = r6(
+                        median(
+                            tritt.map(function (p) {
+                                return p[1];
+                            })
+                        )
+                    );
             }
-            if (y === null) y = r6(median(grund));
+            hy.push(y0);
+        }
+        var inPlatte = function (x, z, ob) {
+            var c = Math.cos(ob.phi || 0);
+            var s = Math.sin(ob.phi || 0);
+            var dx = x - ob.cx;
+            var dz = z - ob.cz;
+            return Math.abs(dx * c - dz * s) <= ob.ex + O.saumM && Math.abs(dx * s + dz * c) <= ob.ez + O.saumM;
+        };
+        for (var neu = true; neu; ) {
+            neu = false;
+            for (si = 0; si < NS; si++) {
+                if (hy[si] !== null || !hatTuer(plan.slots[si])) continue;
+                for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM && hy[si] === null; t += 0.5) {
+                    var v1 = vorne(plan.slots[si], plan.slots[si].tuer.z - t);
+                    for (var sj = 0; sj < NS; sj++)
+                        if (sj !== si && hy[sj] !== null && plan.slots[sj].obb && inPlatte(v1[0], v1[1], plan.slots[sj].obb)) {
+                            hy[si] = hy[sj];
+                            neu = true;
+                            break;
+                        }
+                }
+            }
+        }
+        var slots = [];
+        for (si = 0; si < NS; si++) {
+            sl = plan.slots[si];
+            ob = sl.obb;
+            var tu = sl.tuer;
+            var grund = grunde[si];
+            var y = hy[si] !== null ? hy[si] : r6(median(grund));
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
             if (ob)
-                erdbau.push({
+                hausPlatten.push({
                     art: "platte",
                     cx: r6(ox + ob.cx),
                     cz: r6(oz + ob.cz),
@@ -5215,12 +5281,12 @@
                     ez: r6(ob.ez + O.saumM),
                     y: y,
                 });
-            if (tu && isFinite(tu.x) && isFinite(tu.z) && isFinite(tu.w)) {
-                var lzv = tu.z - O.vorplatzM / 2;
-                erdbau.push({
+            if (hatTuer(sl) && isFinite(tu.w)) {
+                var vp = vorne(sl, tu.z - O.vorplatzM / 2);
+                vorplaetze.push({
                     art: "platte",
-                    cx: r6(ox + sl.x + tu.x * c0 + lzv * s0),
-                    cz: r6(oz + sl.z - tu.x * s0 + lzv * c0),
+                    cx: r6(ox + vp[0]),
+                    cz: r6(oz + vp[1]),
                     phi: r6(sl.phi || 0),
                     ex: r6(tu.w / 2 + O.saumM),
                     ez: r6(O.vorplatzM / 2),
@@ -5231,7 +5297,7 @@
         }
         // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund)
         var laternen = (Array.isArray(plan.laternen) ? plan.laternen : []).map(function (l) {
-            var yl = naechsterWeg(l.x, l.z, 2);
+            var yl = aufY(l.x, l.z);
             return Object.assign({}, l, { y: yl === null ? r6(H(l.x, l.z)) : yl });
         });
         return Object.assign({}, plan, {
@@ -5241,7 +5307,10 @@
             roads: wege,
             platz: platzY === null ? plan.platz : Object.assign({}, pz, { y: platzY }),
             laternen: laternen,
-            erdbau: erdbau,
+            // DIE REIHENFOLGE DER FLÄCHEN (die letzte gewinnt, wo sie sich decken): die Säume der Wege, die Grundrisse, die Wege
+            // selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines Nachbarn liegt auf der Gasse), zuletzt die
+            // Vorplätze (die Stufe vor der Tür liegt auf allem)
+            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze),
         });
     }
 

@@ -110,6 +110,159 @@ function fingerprint(plan) {
     return sha(JSON.stringify(plan));
 }
 
+// ===== DAS URTEIL DES ORTS (Teil O, K10 — rein, mit Selbsttest) =====
+// v2 = der Ort, wie die Welt ihn trägt (plan-lokal um `ort` {x, z}): je Haus x · z · phi · y (der Boden, absolut) · tuer
+// (die Tür-Zeile: x, z, y = Diele, W × D = die Wand) · obb (der Grundriss mit Dach); roads (pts, w) und platz (cx, cz, phi, ex,
+// ez). hoehe(x, z) = die Welt-Höhe an einem WELT-Ort. Gemessen:
+//   Sockel je Haus = Boden − tiefster Grund unter dem Grundriss (9 × 9 Punkte), Median und Maximum;
+//   Tür erreichbar = die Schwelle (Boden + Diele) liegt höchstens STUFE über dem Grund 0,3 m vor ihr, die 2 m geradeaus aus
+//   der Tür tragen keine Stufe > STUFE (kein Absatz vor der Schwelle), und ein Gang über ein 0,5-m-Raster (Nachbarn mit
+//   |Δh| ≤ STUFE, nie durch eine Wand) erreicht einen Weg oder den Platz. Das Raster entsteht nur, wo der Gang geht.
+function ortUrteil(v2, hoehe, o) {
+    o = o || {};
+    const STUFE = o.stufeM || 0.4;
+    const G = 0.5;
+    const KAPPE = o.kappe || 60000;
+    const ox = v2.ort.x;
+    const oz = v2.ort.z;
+    const imRecht = (b, x, z, m) => {
+        const c = Math.cos(b.phi || 0);
+        const s = Math.sin(b.phi || 0);
+        const dx = x - b.cx;
+        const dz = z - b.cz;
+        return Math.abs(dx * c - dz * s) <= b.ex + m && Math.abs(dx * s + dz * c) <= b.ez + m;
+    };
+    const sockel = [];
+    for (const sl of v2.slots) {
+        const ob = sl.obb;
+        if (!ob) continue;
+        const c = Math.cos(ob.phi || 0);
+        const s = Math.sin(ob.phi || 0);
+        let mn = Infinity;
+        for (let i = 0; i <= 8; i++)
+            for (let j = 0; j <= 8; j++) {
+                const lx = ob.ex * (i / 4 - 1);
+                const lz = ob.ez * (j / 4 - 1);
+                mn = Math.min(mn, hoehe(ox + ob.cx + lx * c + lz * s, oz + ob.cz - lx * s + lz * c));
+            }
+        sockel.push(Math.max(0, sl.y - mn));
+    }
+    // die WAND je Haus: das Rechteck der Tür-Zeile (W × D um den Slot), sonst der Grundriss (das Dach ragt über die Wand)
+    const waende = v2.slots
+        .map((sl) =>
+            sl.tuer && Number.isFinite(sl.tuer.W) && Number.isFinite(sl.tuer.D)
+                ? { cx: sl.x, cz: sl.z, phi: sl.phi || 0, ex: sl.tuer.W / 2, ez: sl.tuer.D / 2 }
+                : sl.obb
+        )
+        .filter(Boolean);
+    const wege = [];
+    for (const rd of v2.roads || [])
+        for (let k = 1; k < (rd.pts || []).length; k++) wege.push([rd.pts[k - 1], rd.pts[k], (rd.w || 3) / 2]);
+    const hz = new Map();
+    const zelle = (i, j) => {
+        const q = (i + 32768) * 65536 + (j + 32768);
+        let z = hz.get(q);
+        if (z) return z;
+        const x = i * G;
+        const zz = j * G;
+        let zu = false;
+        for (const b of waende)
+            if (imRecht(b, x, zz, -0.1)) {
+                zu = true;
+                break;
+            }
+        let ziel = false;
+        if (!zu && v2.platz && Number.isFinite(v2.platz.ex) && imRecht(v2.platz, x, zz, 0)) ziel = true;
+        if (!zu)
+            for (const [a, b, hw] of wege) {
+                if (ziel) break;
+                const dx = b.x - a.x;
+                const dz = b.z - a.z;
+                const l2 = dx * dx + dz * dz;
+                let t = l2 > 0 ? ((x - a.x) * dx + (zz - a.z) * dz) / l2 : 0;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                if (Math.hypot(x - a.x - dx * t, zz - a.z - dz * t) <= hw) ziel = true;
+            }
+        z = { h: hoehe(ox + x, oz + zz), zu, ziel };
+        hz.set(q, z);
+        return z;
+    };
+    const tueren = [];
+    v2.slots.forEach((sl, si) => {
+        const tu = sl.tuer;
+        if (!tu || !Number.isFinite(tu.x) || !Number.isFinite(tu.z)) return;
+        const c = Math.cos(sl.phi || 0);
+        const s = Math.sin(sl.phi || 0);
+        const vor = (lz) => [sl.x + tu.x * c + lz * s, sl.z - tu.x * s + lz * c];
+        const [vx, vz] = vor(tu.z - 0.3);
+        const schwelle = sl.y + (Number.isFinite(tu.y) ? tu.y : 0) - hoehe(ox + vx, oz + vz);
+        let vorStufe = 0;
+        let hv = hoehe(ox + vx, oz + vz);
+        for (let k = 1; k <= 8; k++) {
+            const [px, pz] = vor(tu.z - 0.3 - 0.25 * k);
+            const hk = hoehe(ox + px, oz + pz);
+            vorStufe = Math.max(vorStufe, Math.abs(hk - hv));
+            hv = hk;
+        }
+        const i0 = Math.round(vx / G);
+        const j0 = Math.round(vz / G);
+        let erreicht = false;
+        if (Math.abs(schwelle) <= STUFE && vorStufe <= STUFE && !zelle(i0, j0).zu) {
+            const seen = new Set([i0 * 131072 + j0]);
+            const st = [[i0, j0]];
+            for (let kopf = 0; kopf < st.length && !erreicht && seen.size < KAPPE; ) {
+                const [i, j] = st[kopf++];
+                const z = zelle(i, j);
+                if (z.ziel) {
+                    erreicht = true;
+                    break;
+                }
+                for (const [a, b] of [
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1],
+                ]) {
+                    const k = (i + a) * 131072 + (j + b);
+                    if (seen.has(k)) continue;
+                    const n = zelle(i + a, j + b);
+                    if (n.zu || Math.abs(n.h - z.h) > STUFE) continue;
+                    seen.add(k);
+                    st.push([i + a, j + b]);
+                }
+            }
+        }
+        tueren.push({
+            si,
+            rolle: sl.rolle || null,
+            ok: erreicht,
+            schwelle: Math.round(schwelle * 1000) / 1000,
+            vorStufe: Math.round(vorStufe * 1000) / 1000,
+        });
+    });
+    sockel.sort((a, b) => a - b);
+    return {
+        sockelMedian: sockel.length ? Math.round(1000 * sockel[sockel.length >> 1]) / 1000 : null,
+        sockelMax: sockel.length ? Math.round(1000 * sockel[sockel.length - 1]) / 1000 : null,
+        tuerenOk: tueren.filter((t) => t.ok).length,
+        tuerenN: tueren.length,
+        tuerenFehl: tueren.filter((t) => !t.ok),
+        zellen: hz.size,
+    };
+}
+// Das Verdikt des Orts (rein): die Zahlen der Abnahme gegen ihr Ziel — die Liste der verfehlten Namen (leer = gehalten).
+function ortVerdikt(m) {
+    const fehl = [];
+    if (!(m.sockelMax === 0)) fehl.push(`Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})`);
+    if (!(m.tuerenN > 0 && m.tuerenOk === m.tuerenN)) fehl.push(`Türen erreichbar ${m.tuerenOk}/${m.tuerenN}`);
+    if (!(m.kronen === 0)) fehl.push(`Kronen in Grundrissen ${m.kronen}`);
+    if (!(m.laternenPlan > 0 && m.laternenWelt === m.laternenPlan))
+        fehl.push(`Laternen Welt ${m.laternenWelt} / Plan ${m.laternenPlan}`);
+    if (!(m.planHashGleich === true)) fehl.push("Plan-Hash Studio ≠ Welt");
+    if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
+    return fehl;
+}
+
 // Die dp-Fixtures der Goldens (klein = schnell; ein Dorf + ein Weiler).
 const FIXTURES = [
     { seed: 7, nH: 12 },
@@ -157,6 +310,55 @@ const FIXTURES = [
         const broken4 = anazhSrcST.replace(/plan\.trees/g, "planXtrees");
         const cs6 = autoStaticLaws(broken4).find((l) => l[0].startsWith("C-S6"));
         check("Selbst-Test 7: plan.trees-Konsum entfernt -> C-S6 feuert", cs6 && cs6[1] === false);
+        // V6 (K10, Teil O): das Urteil des Orts feuert am Täter — ein ebener Ort hält, ein Absatz vor der Tür, ein Haus über
+        // dem Grund und ein Haus ohne Weg fallen beim Namen; das Verdikt nennt jede verfehlte Zahl.
+        const haus = (x, z, y) => ({
+            x,
+            z,
+            phi: 0,
+            y,
+            rolle: "wohnhaus",
+            tuer: { x: 0, z: -2, y: 0, W: 4, D: 4 },
+            obb: { cx: x, cz: z, phi: 0, ex: 2.5, ez: 2.5 },
+        });
+        const ortT = (slots) => ({
+            ort: { x: 100, z: 100 },
+            slots,
+            roads: [{ pts: [{ x: -20, z: 0 }, { x: 20, z: 0 }], w: 3 }],
+            platz: null,
+        });
+        const eben = () => 10;
+        const u0 = ortUrteil(ortT([haus(-8, 8, 10), haus(8, 8, 10)]), eben);
+        check(
+            "Selbst-Test 8: ein ebener Ort hält (Sockel 0, Türen 2/2)",
+            u0.sockelMax === 0 && u0.tuerenOk === 2 && u0.tuerenN === 2,
+            JSON.stringify(u0)
+        );
+        const absatz = (x, z) => (z - 100 < 5 ? 9 : 10);
+        const u1 = ortUrteil(ortT([haus(-8, 8, 10), haus(8, 8, 10)]), absatz);
+        check(
+            "Selbst-Test 9: ein Absatz von 1 m vor den Türen -> 0/2, die Stufe beim Namen",
+            u1.tuerenOk === 0 && u1.tuerenFehl.every((t) => t.vorStufe === 1),
+            JSON.stringify(u1.tuerenFehl)
+        );
+        const u2 = ortUrteil(ortT([haus(-8, 8, 11), haus(8, 8, 10)]), eben);
+        check(
+            "Selbst-Test 10: ein Haus 1 m über dem Grund -> Sockel max 1, seine Schwelle fällt",
+            u2.sockelMax === 1 && u2.tuerenOk === 1 && u2.tuerenFehl[0].si === 0,
+            JSON.stringify(u2)
+        );
+        const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
+        check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
+        const gut = { sockelMax: 0, sockelMedian: 0, tuerenOk: 2, tuerenN: 2, kronen: 0, laternenWelt: 6, laternenPlan: 6 };
+        Object.assign(gut, { planHashGleich: true, fremdBauten: 0 });
+        check("Selbst-Test 12: das Verdikt eines gehaltenen Orts ist leer", ortVerdikt(gut).length === 0);
+        const schlecht = Object.assign({}, gut, { kronen: 3, laternenWelt: 0, planHashGleich: false, sockelMax: 2.72 });
+        const vs = ortVerdikt(schlecht).join(" · ");
+        check(
+            "Selbst-Test 13: das Verdikt nennt Sockel, Kronen, Laternen und Plan-Hash beim Namen",
+            /Sockel max 2.72/.test(vs) && /Kronen in Grundrissen 3/.test(vs) && /Laternen Welt 0/.test(vs) && /Plan-Hash/.test(vs),
+            vs
+        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -283,22 +485,23 @@ const FIXTURES = [
         // SCHICHT-VOLLENDUNG (18.07.): der Export trägt NUR gelebte Schichten —
         // trees/fences/felder/staende reisen (Hof-Bäume + Zäune + Äcker +
         // Marktstände haben Konsumenten); fluss/bruecken/graph (keine Welt-
-        // Wahrheit) und mauer/laternen sind GESTRICHEN (kein toter Passagier,
-        // Vertrags-Akt). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
+        // Wahrheit) und die mauer sind GESTRICHEN (kein toter Passagier,
+        // Vertrags-Akt); die LATERNEN reisen seit K10 (ihr Leser ist das
+        // Leuchtquellen-Gesetz der Welt, `_laternenLesen`, K11). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
         // Welt ist neues Verhalten hinter dem Feature-Stopp bis v1.0
         // (docs/roadmap.md §0.v1, Leben-Synthese §5.3) — offen, benannt.
         check(
-            "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende, aber fluss/bruecken/graph/mauer/laternen sind gestrichen",
+            "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende/laternen, aber fluss/bruecken/graph/mauer sind gestrichen",
             Array.isArray(stadt.trees) &&
                 Array.isArray(stadt.fences) &&
                 Array.isArray(stadt.felder) &&
                 Array.isArray(stadt.staende) &&
                 stadt.mauer === undefined &&
-                stadt.laternen === undefined &&
+                Array.isArray(stadt.laternen) &&
                 stadt.fluss === undefined &&
                 stadt.bruecken === undefined &&
                 stadt.graph === undefined,
-            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"}`
+            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
         );
     }
 
@@ -394,29 +597,23 @@ const FIXTURES = [
         const off = (list, o) => list.map((e) => [e[0], e[1] - o.x, e[2] - o.z, e[3], e[4]]);
         res.offsetsDeterministic =
             r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(e1), o1));
-        // Slot-Anker == Export-Slot: JEDER platzierte Eintrag trägt exakt slot.x/z + phi seines Slots (per seed zugeordnet). Die
-        // Wände der Slot-Quelle (Wasser, Klippe über dem Footprint-Raster, Bau) rechnet die Probe nicht nach — sie liest, was
-        // stand (die gespiegelte Vier-Ecken-Klippe fiel mit dem Raster, Integration Welle L).
-        // Fällt der Slot-Ort, steht das Haus an einem SEINER Ersatz-Orte (`_slotErsatzVersaetze`, im Rahmen des Hauses, Gier
-        // phi — Leben-Schau 07.10.: die Slot-Quelle sucht je Slot einen Ersatz-Ort statt zu überspringen); nie anderswo.
-        let ersatzOrte = 0;
+        // Slot-Anker == Plan-Slot (K10): JEDER platzierte Eintrag trägt exakt anker + slot.x/z, phi und seed seines Slots und
+        // steht auf dem Boden des Plans v2 (y = slot.y + 0,5, `_ortPlanSetzen` — derselbe Plan am selben Anker). Die Welt rückt
+        // kein Haus: die Ersatz-Orte und die hMax-Suche fielen mit dem Erdbau des Orts.
+        const v2 = typeof r._ortPlanSetzen === "function" ? r._ortPlanSetzen(plan, o1) : null;
+        res.planV2 = !!(v2 && v2.version === 2);
         res.slotAnchorExact =
+            !!v2 &&
             e1.length > 0 &&
             e1.every((e) => {
-                const sl = plan.slots.find((x) => x.seed >>> 0 === e.seed);
+                const sl = v2.slots.find((x) => x.seed >>> 0 === e.seed);
                 if (!sl || e.rotationY !== (sl.phi || 0)) return false;
-                const c = Math.cos(sl.phi || 0);
-                const s = Math.sin(sl.phi || 0);
-                const orte = [[0, 0]].concat(r.constructor._slotErsatzVersaetze(sl));
-                const k = orte.findIndex(
-                    ([lx, lz]) =>
-                        Math.abs(e.position.x - (o1.x + sl.x + lx * c + lz * s)) < 1e-9 &&
-                        Math.abs(e.position.z - (o1.z + sl.z - lx * s + lz * c)) < 1e-9
+                return (
+                    Math.abs(e.position.x - (o1.x + sl.x)) < 1e-9 &&
+                    Math.abs(e.position.z - (o1.z + sl.z)) < 1e-9 &&
+                    Math.abs(e.position.y - (sl.y + 0.5)) < 1e-9
                 );
-                if (k > 0) ersatzOrte++;
-                return k >= 0;
             });
-        res.ersatzOrte = ersatzOrte;
         // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — der KONSUM-Beweis lebt:
         // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
         //     byte-gleich, per seed dem Export-Slot zugeordnet),
@@ -435,18 +632,10 @@ const FIXTURES = [
         const eB = e1.find((e) => e.studioOv && ovA && e.studioOv.rolle !== ovA.rolle);
         const ovB = eB ? r._artifactStudioOv(eB) : null;
         res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
-        // DORF-IN-TERRAIN — der Footprint reist als entry.fundament, und die EINE
-        // Fundament-Wahrheit (_archFundamentBox) liefert am Berg-Anker ein Podest
-        // (topY > botY; das Gate-Terrain ist GEMESSEN geneigt, Δh >= 4.8 m).
-        const eF = e1.find((e) => e.fundament && Number.isFinite(e.fundament.ex));
+        // DORF-IN-TERRAIN — der Footprint reist als entry.fundament (der Grundriss der Wände und des Erdbaus eines Altstands);
+        // das Podest fiel mit dem Erdbau (K10): keine Fundament-Box, kein Sockel-Pool.
         res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
-        res.fundamentBox = !!(
-            eF &&
-            (() => {
-                const b = r._archFundamentBox(eF);
-                return b && b.topY > b.botY && b.minX < b.maxX;
-            })()
-        );
+        res.podestAbsent = typeof r._archFundamentBox === "undefined" && !("archFundament" in r.state);
         // 3) fail-closed: ein Slot mit unbekannter Kultur faellt (kein Spawn, kein Crash).
         const fake = JSON.parse(JSON.stringify(plan));
         fake.slots = [Object.assign({}, fake.slots[0], { kultur: "gibtsnicht" })];
@@ -777,6 +966,123 @@ const FIXTURES = [
         return res;
     });
 
+    // ===== TEIL O: DER ORT AUF DEM GELÄNDE (K10) — das Dorf 7/18 der Gründerzeit an einem Hang, gemessen an der Welt =====
+    // Der Akt `spawnSettlement` an einem Hang (Gefälle 0,12–0,25 über 16 m, fern der Orte der Teile B und C); gemessen wird,
+    // was die Welt trägt: die Häuser (Eintrag: Ort, Gier, Boden y − 0,5), der Grund unter und vor ihnen (`getTerrainHeightAt`,
+    // der Boden der Körper), der Wald-Plan (`_forestCellDarts`), die Laternen (`_laternen`) und der Plan v2 (`_ortPlaene`).
+    const dpO = { seed: 7, nH: 18, epoche: "gruenderzeit" };
+    const outO = await page.evaluate(
+        async (urteilSrc, dp) => {
+            const r = window.anazhRealm;
+            const ortUrteil = new Function("return (" + urteilSrc + ")")();
+            const res = {};
+            try {
+                const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+                const L = r._gelaende();
+                let ort = null;
+                for (let rr = 1500; rr < 4000 && !ort; rr += 40)
+                    for (let k = 0; k < 48 && !ort; k++) {
+                        const x = Math.cos((k / 48) * 2 * Math.PI) * rr;
+                        const z = Math.sin((k / 48) * 2 * Math.PI) * rr;
+                        const g = Math.hypot(H(x + 8, z) - H(x - 8, z), H(x, z + 8) - H(x, z - 8)) / 16;
+                        if (!(g >= 0.12 && g <= 0.25) || !(H(x, z) > L.waterLevel + 3)) continue;
+                        let land = 0;
+                        for (let a = 0; a < 8; a++)
+                            if (r._landAt(x + 40 * Math.cos(a * 0.785), z + 40 * Math.sin(a * 0.785), 0.2)) land++;
+                        if (land === 8) ort = { x, z, g };
+                    }
+                res.hang = ort;
+                if (!ort) return res;
+                const plan = await r._foundryRequestSettlement(dp);
+                const vorher = r.state.architectures.length;
+                const zellenVor = new Set(Object.keys((r.state.worldMeta && r.state.worldMeta.settlementCells) || {}));
+                await r.spawnSettlement(Object.assign({}, dp, { position: { x: ort.x, y: H(ort.x, ort.z), z: ort.z } }));
+                const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
+                const neuKey = Object.keys(sc).find((k) => !zellenVor.has(k));
+                const anker = neuKey ? { x: sc[neuKey].x, z: sc[neuKey].z } : null;
+                const v2 = r._ortPlaene ? [...r._ortPlaene.values()].pop() : null;
+                const P = v2 || plan;
+                res.anker = anker;
+                res.planV2 = !!v2;
+                const neu = r.state.architectures.slice(vorher);
+                const haeuser = neu.filter((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+                res.haeuser = haeuser.length;
+                res.slots = P.slots.length;
+                const slots = [];
+                for (const e of haeuser) {
+                    const sl = P.slots.find((s) => s.seed >>> 0 === e.seed);
+                    if (!sl || !anker) continue;
+                    const lx = e.position.x - anker.x;
+                    const lz = e.position.z - anker.z;
+                    const ob = sl.obb ? Object.assign({}, sl.obb, { cx: sl.obb.cx + lx - sl.x, cz: sl.obb.cz + lz - sl.z }) : null;
+                    slots.push({ x: lx, z: lz, phi: e.rotationY || 0, y: e.position.y - 0.5, rolle: sl.rolle, tuer: sl.tuer, obb: ob });
+                }
+                const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
+                res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
+                // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
+                const F = r.constructor.FOREST;
+                const seedInt = r._forestSeedInt();
+                let x0 = Infinity;
+                let x1 = -Infinity;
+                let z0 = Infinity;
+                let z1 = -Infinity;
+                const dachW = [];
+                for (const sl of slots) {
+                    if (!sl.obb) continue;
+                    const ob = Object.assign({}, sl.obb, { cx: sl.obb.cx + anker.x, cz: sl.obb.cz + anker.z });
+                    dachW.push(ob);
+                    const rr = Math.hypot(ob.ex, ob.ez);
+                    x0 = Math.min(x0, ob.cx - rr);
+                    x1 = Math.max(x1, ob.cx + rr);
+                    z0 = Math.min(z0, ob.cz - rr);
+                    z1 = Math.max(z1, ob.cz + rr);
+                }
+                let kronen = 0;
+                for (let gx = Math.floor((x0 - 20) / F.cell); gx <= Math.floor((x1 + 20) / F.cell); gx++)
+                    for (let gz = Math.floor((z0 - 20) / F.cell); gz <= Math.floor((z1 + 20) / F.cell); gz++)
+                        for (const d of r._forestCellDarts(gx, gz, seedInt) || []) {
+                            for (const ob of dachW) {
+                                const c = Math.cos(ob.phi || 0);
+                                const s = Math.sin(ob.phi || 0);
+                                const dx = d.x - ob.cx;
+                                const dz = d.z - ob.cz;
+                                const u = Math.max(0, Math.abs(dx * c - dz * s) - ob.ex);
+                                const v = Math.max(0, Math.abs(dx * s + dz * c) - ob.ez);
+                                if (Math.hypot(u, v) < (d.T || 0)) {
+                                    kronen++;
+                                    break;
+                                }
+                            }
+                        }
+                res.kronen = kronen;
+                // die Laternen der Welt um den Ort gegen die des Plans
+                let lw = 0;
+                if (r._laternen && anker)
+                    for (const liste of r._laternen.zellen.values())
+                        for (const l of liste) if (Math.hypot(l.x - anker.x, l.z - anker.z) < 250) lw++;
+                res.laternenWelt = lw;
+                res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
+                // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
+                // marktstand_dorf), auf dem Erdbau eines Orts
+                let fremd = 0;
+                if (typeof r._ortFrei === "function")
+                    for (const e of r.state.architectures)
+                        if (!e.fundament && !/_dorf$/.test(e.type) && !r._ortFrei(e.position.x, e.position.z, 0.01)) {
+                            fremd++;
+                            (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
+                        }
+                res.fremdBauten = fremd;
+                res.v2Json = v2 ? JSON.stringify(v2) : null;
+                res.lage = { seed: L.seed, baseHeight: L.baseHeight, waterLevel: L.waterLevel, erbgut: L.erbgut, regionSize: L.regionSize };
+            } catch (e) {
+                res.err = (e && e.stack) || String(e);
+            }
+            return res;
+        },
+        ortUrteil.toString(),
+        dpO
+    );
+
     await browser.close();
     server.close();
 
@@ -798,17 +1104,17 @@ const FIXTURES = [
         `placed1=${out.placed1} placed2=${out.placed2}`
     );
     check(
-        "B: der Slot-Anker sitzt EXAKT (entry == anker + slot.x/z oder einer seiner Ersatz-Orte, phi, seed)",
-        out.slotAnchorExact === true,
-        `${out.ersatzOrte} am Ersatz-Ort`
+        "B: der Slot-Anker sitzt EXAKT auf dem Plan v2 (entry == anker + slot.x/z, y == slot.y + 0,5, phi, seed)",
+        out.planV2 === true && out.slotAnchorExact === true,
+        `v2=${out.planV2}`
     );
     check(
         "B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}",
         out.fundamentTravels === true
     );
     check(
-        "B: DORF-IN-TERRAIN — die EINE Fundament-Wahrheit liefert das Hang-Podest (topY > botY)",
-        out.fundamentBox === true
+        "B: DORF-IN-TERRAIN — das Podest ist gefallen (keine _archFundamentBox, kein Sockel-Pool)",
+        out.podestAbsent === true
     );
     check(
         "B: HAUS-DOPPELBAU — der Slot-ov reist als studioOv an JEDEM Eintrag (rolle == Export)",
@@ -832,6 +1138,51 @@ const FIXTURES = [
         out.waterWall === true
     );
     check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
+    console.log("\n=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, Dorf 7/18 Gründerzeit am Hang) ===");
+    if (outO.err) console.log("  Fehler im Akt: " + outO.err.split("\n").slice(0, 3).join(" | "));
+    check(
+        "O: ein Hang trägt den Akt (Gefälle 0,12–0,25 über 16 m, trocken)",
+        !!outO.hang,
+        outO.hang ? `${outO.hang.x.toFixed(1)}/${outO.hang.z.toFixed(1)} Gefälle ${outO.hang.g.toFixed(3)}` : "kein Hang"
+    );
+    // DER PLAN-HASH STUDIO = WELT: derselbe Export, derselbe Ort, dieselbe Gelände-Funktion (gelaende-core mit der Lage der
+    // Welt) — der Kern rechnet in Node den Plan v2, den die Welt trägt, byte-gleich.
+    let planHashGleich = false;
+    if (outO.v2Json && outO.anker) {
+        global.THREE = global.THREE || require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
+        require(path.join(root, "gelaende-core.js"));
+        const Gk = globalThis.__gelaendeCore;
+        const SimplexNoise = require(path.join(root, "vendor/simplex-noise.js"));
+        const Lw = Object.assign({}, outO.lage, { noise: new SimplexNoise(outO.lage.seed + ":voxel"), erdbau: null });
+        const studio = FC.ortPlan(FC.exportSettlement(dpO), outO.anker, {
+            hoeheAt: (x, z) => Gk.hoehe(Lw, x, z, true),
+            flaeche: (splats) => {
+                const E = Gk.erdbauNormal(splats);
+                return (x, z) => Gk.erdbauFlaeche(E, x, z);
+            },
+        });
+        planHashGleich = sha(JSON.stringify(studio)) === sha(outO.v2Json);
+    }
+    const u = outO.urteil || {};
+    const m = {
+        sockelMedian: u.sockelMedian,
+        sockelMax: u.sockelMax,
+        tuerenOk: u.tuerenOk,
+        tuerenN: u.tuerenN,
+        kronen: outO.kronen,
+        laternenWelt: outO.laternenWelt,
+        laternenPlan: outO.laternenPlan,
+        planHashGleich,
+        fremdBauten: outO.fremdBauten,
+    };
+    console.log(
+        "  ORT-ZAHLEN " +
+            JSON.stringify(Object.assign({ haeuser: outO.haeuser, slots: outO.slots, planV2: outO.planV2, zellen: u.zellen, fremdArten: outO.fremdArten || {} }, m))
+    );
+    if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
+    const fehlO = ortVerdikt(m);
+    check("O: das Dorf trägt jedes Haus (alle Slots stehen)", outO.haeuser > 0 && outO.haeuser === outO.slots, `${outO.haeuser}/${outO.slots}`);
+    check("O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0)", fehlO.length === 0, fehlO.join(" · ") || "gehalten");
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
     const c = out.c || {};

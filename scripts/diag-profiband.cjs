@@ -640,7 +640,7 @@ function selbsttest() {
     // S16 — H5: ein Muster mit einem Namen, den der Stamm nicht mehr vergibt, wird rot; der echte Haushalt nicht, ein Name
     // mit Namens-Schwanz (`"voxelChunk:" + key`) lebt.
     const h16 = JSON.parse(JSON.stringify(haushalt));
-    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(bau-fundament|siedlung-wege)$" });
+    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(siedlung-zaun|siedlung-wege)$" });
     const n16 = namenLeben(h16, stamm);
     t(
         "H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt",

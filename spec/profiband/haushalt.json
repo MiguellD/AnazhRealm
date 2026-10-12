@@ -407,7 +407,7 @@
                     "muster": "^bau:"
                 },
                 {
-                    "muster": "^(bau-fundament|siedlung-zaun)$"
+                    "muster": "^siedlung-zaun$"
                 },
                 {
                     "muster": "^bauSatz$"
