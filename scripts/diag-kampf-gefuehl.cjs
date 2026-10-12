@@ -462,6 +462,10 @@ function wundeVerdict(W) {
 // nur, wenn der erste Rest ≥ 0,05 rad ist). Vorher summierte sich der Rest je Takt auf das Ziel des Vor-Takts und lief an die
 // Klemme (BISS.kopfNeigung). Die Klemmen-Takte im Spiel-Takt (Bericht, kein Urteil — sie streuen je Lauf: vorher 12–18 von 60,
 // danach 2–8 von 42–84) stehen in der Zeile daneben.
+// Die Gestalt der Gattung hängt nie an der Pose ihres ersten Passens (K13b, die Wand): die Glied-Kapseln von Wolf und Reh,
+// vergessen und in einer anderen Haltung neu gepasst, weichen höchstens 1e-6 m ab, der erste Rest höchstens 1e-6 rad. Vorher
+// passte _gliedKapselMemo im laufenden Anker (0,193 m Abweichung, 0,5871 → 0,5822 rad), und der erste Rest der Probe schwankte
+// je Lauf mit der Gier des Rehs (0,5871 · 0,8068–0,8078 · 1,0 an der Klemme) — die Probe hält Ort, Gier und Haltung fest.
 const REH_SOLL = { bisse: 5, kopfDrift: 1e-6, kopfRest: 0.05 };
 function bissReichVerdict(R, reh) {
     if (!R) return ["biss-reich keine Probe"];
@@ -485,6 +489,13 @@ function bissReichVerdict(R, reh) {
     else if (!(K.drift <= REH_SOLL.kopfDrift))
         v.push(
             `biss-kopf: ohne Pose-Fortschritt wandert das Ziel der Kopf-Neigung in ${K.takte} Takten ${K.drift} rad (${K.reihe.join(" → ")}) — der Rest summiert sich auf das Ziel des Vor-Takts`
+        );
+    const KG = K && K.gestalt;
+    if (K && !(KG && KG.kapseln > 0 && KG.restAbw !== null))
+        v.push("biss-kopf-gestalt keine Probe (die Gestalt in einer anderen Haltung neu gepasst)");
+    else if (K && !(KG.kapselAbw <= REH_SOLL.kopfDrift && KG.restAbw <= REH_SOLL.kopfDrift))
+        v.push(
+            `biss-kopf-gestalt: in einer anderen Haltung gepasst weichen die Glied-Kapseln von Wolf und Reh um ${KG.kapselAbw} m ab, der erste Rest wird ${KG.rest} statt ${K.rest} rad — die Gestalt der Gattung hängt an der Pose ihres ersten Passens (_gliedKapselMemo)`
         );
     if (R.kaltZerlegt === null) v.push("biss-kalt keine Probe (Wolf und Fuchs, 35 m, kalt)");
     else if (R.kaltZerlegt > 0)
@@ -3107,9 +3118,16 @@ async function WELLE_L() {
                     // Beide Leiber stehen in der STAND-POSE des Kerns (_tierBaumNeutralStance, Nachbesserung 4): vorher trug der Wolf
                     // die Haltung seines letzten Ansprungs — der erste Rest schwankte je Lauf 0,31–1,0 rad und stand oft an der
                     // Klemme (BISS.kopfNeigung), wo eine Summe sich nie zeigt (die Wand war dort vakuös).
-                    if (j2 && r2 && ortR && j2.userData._tierBaum) {
-                        const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
+                    // Die LAGE hält die Probe fest (K13b): das Reh steht schräg, die Schulter zum Wolf (Gier π/2 − 0,4) — vorher stand
+                    // es in der Gier, in die es sich unter den sechs Ansprüngen gedreht hatte, und das Glied seiner Gestalt, das
+                    // dem Kopf des Wolfs am nächsten liegt, wechselte je Lauf (ein Vorderbein bei −1,47 rad: 0,5871; ein Hinterbein
+                    // bei −1,61: 0,8079; zwischen −0,69 und 0,71 die Klemme 1,0 — 20 Läufe am Stand a5f05612: 16 × 0,5871,
+                    // 0,8068 · 0,8076 · 0,8078, einmal 1,0 rot). Breitseits (π/2) liegen Vorder- und Hinterbein gleich weit: die
+                    // Probe stünde auf der Kante (π/2 − 0,01: 0,5871; π/2: 0,7982); schräg bleibt das Vorderbein das nächste Glied
+                    // von −0,40 bis +0,35 rad um die gehaltene Gier.
+                    const kopfReihe = (R0) => {
                         r2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z), R0.z);
+                        r2.rotation.set(0, Math.PI / 2 - 0.4, 0);
                         j2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z - 1.3), R0.z - 1.3);
                         j2.rotation.set(0, 0, 0);
                         r._tierBaumNeutralStance(j2);
@@ -3125,16 +3143,90 @@ async function WELLE_L() {
                         if (m)
                             for (let k = 0; k < 10; k++) {
                                 r._kreaturBissKopf(j2, VA, m, r2);
-                                reihe.push(+VA.kopfZiel.toFixed(4));
+                                reihe.push(VA.kopfZiel);
                             }
-                        if (reihe.length)
+                        return reihe;
+                    };
+                    // DIE GESTALT DER GATTUNG HÄNGT NIE AN DER POSE IHRES ERSTEN PASSENS (K13b): die Glied-Kapseln entstehen
+                    // EINMAL je Gattung × Glied (_gliedKapselMemo) — beim ersten Treffer, Biss oder Vorbacken (die Bake-Uhr läuft
+                    // in Echtzeit), in der Pose, in der das Tier gerade steht. Die Probe vergisst die Gestalt beider Gattungen,
+                    // passt sie in einer anderen Haltung (jedes Gelenk gedreht: Kiefer, Ohren, Schweif, Beine) neu, stellt die
+                    // Haltung zurück und rechnet den ersten Rest noch einmal; danach steht das alte Memo wieder.
+                    const gestaltProbe = (R0) => {
+                        const kapsel = (cr) =>
+                            (r._kreaturTrefferGlieder(cr) || []).map((g) => [
+                                g.a.x,
+                                g.a.y,
+                                g.a.z,
+                                g.b.x,
+                                g.b.y,
+                                g.b.z,
+                                g.r,
+                            ]);
+                        const vorher = [...kapsel(j2), ...kapsel(r2)];
+                        const namen = r._trefferGliedNamen;
+                        const kaps = r._gliedKapseln;
+                        const gatt = [r._kreaturGattung(j2), r._kreaturGattung(r2)];
+                        const altN = gatt.map((g) => [g, namen && namen.get(g)]);
+                        const altK = [...(kaps || new Map())].filter(([k]) =>
+                            gatt.some((g) => k.startsWith(`kapsel:${g}:`))
+                        );
+                        const altT = [j2.userData._trefferGlieder, r2.userData._trefferGlieder];
+                        const lagen = [];
+                        try {
+                            for (const g of gatt) if (namen) namen.delete(g);
+                            for (const [k] of altK) kaps.delete(k);
+                            for (const cr of [j2, r2]) {
+                                cr.userData._trefferGlieder = undefined;
+                                const T = cr.userData._tierBaum.teile;
+                                Object.keys(T)
+                                    .sort()
+                                    .forEach((nm, i) => {
+                                        const k = T[nm];
+                                        if (!k || !k.isObject3D) return;
+                                        lagen.push([k, k.position.clone(), k.quaternion.clone()]);
+                                        k.rotation.x += 0.35 * ((i % 3) - 1);
+                                        k.rotation.z += i % 2 ? 0.2 : -0.2;
+                                    });
+                                cr.updateMatrixWorld(true);
+                                r._kreaturTrefferGlieder(cr);
+                            }
+                        } finally {
+                            for (const [k, p, q] of lagen) {
+                                k.position.copy(p);
+                                k.quaternion.copy(q);
+                            }
+                        }
+                        const nachher = [...kapsel(j2), ...kapsel(r2)];
+                        const reihe = kopfReihe(R0);
+                        for (const [g, n] of altN) if (n && namen) namen.set(g, n);
+                        for (const [k, v] of altK) kaps.set(k, v);
+                        j2.userData._trefferGlieder = altT[0];
+                        r2.userData._trefferGlieder = altT[1];
+                        let abw = vorher.length === nachher.length ? 0 : Infinity;
+                        for (let i = 0; i < vorher.length && abw < Infinity; i++)
+                            for (let q = 0; q < 7; q++) abw = Math.max(abw, Math.abs(vorher[i][q] - nachher[i][q]));
+                        return { rest: reihe.length ? reihe[0] : null, kapselAbw: abw, kapseln: vorher.length };
+                    };
+                    if (j2 && r2 && ortR && j2.userData._tierBaum) {
+                        const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
+                        const reihe = kopfReihe(R0);
+                        if (reihe.length) {
+                            const G = gestaltProbe(R0);
                             reh.kopfSumme = {
                                 takte: reihe.length,
-                                rest: reihe[0],
+                                rest: +reihe[0].toFixed(4),
                                 drift: +(Math.max(...reihe) - Math.min(...reihe)).toFixed(6),
-                                reihe: reihe.slice(0, 4),
+                                reihe: reihe.slice(0, 4).map((x) => +x.toFixed(4)),
                                 klemme: A._bissGesetz().kopfNeigung.slice(),
+                                gestalt: {
+                                    rest: G.rest === null ? null : +G.rest.toFixed(4),
+                                    restAbw: G.rest === null ? null : +Math.abs(G.rest - reihe[0]).toExponential(2),
+                                    kapselAbw: +G.kapselAbw.toExponential(2),
+                                    kapseln: G.kapseln,
+                                },
                             };
+                        }
                     }
                     if (j2) r.removeCreature(j2);
                     if (r2) r.removeCreature(r2);
@@ -4576,7 +4668,14 @@ async function WELLE_L() {
                 bisse: 0,
                 takte: 61,
                 klemme: 14,
-                kopfSumme: { takte: 10, rest: 0.31, drift: 0.69, reihe: [0.31, 0.62, 0.93, 1], klemme: [-0.6, 1] },
+                kopfSumme: {
+                    takte: 10,
+                    rest: 0.31,
+                    drift: 0.69,
+                    reihe: [0.31, 0.62, 0.93, 1],
+                    klemme: [-0.6, 1],
+                    gestalt: { rest: 0.5822, restAbw: 0.00487, kapselAbw: 0.193, kapseln: 24 },
+                },
                 boden: {},
                 je: { 1.3: { anspruenge: 3, bisse: 0 } },
             }
@@ -4599,7 +4698,14 @@ async function WELLE_L() {
                 bisse: 6,
                 takte: 70,
                 klemme: 8,
-                kopfSumme: { takte: 10, rest: 0.31, drift: 0, reihe: [0.31, 0.31, 0.31, 0.31], klemme: [-0.6, 1] },
+                kopfSumme: {
+                    takte: 10,
+                    rest: 0.31,
+                    drift: 0,
+                    reihe: [0.31, 0.31, 0.31, 0.31],
+                    klemme: [-0.6, 1],
+                    gestalt: { rest: 0.31, restAbw: 0, kapselAbw: 0, kapseln: 24 },
+                },
                 boden: {},
                 je: {},
             }
@@ -4619,10 +4725,10 @@ async function WELLE_L() {
         check(
             brvGut.length === 0 &&
                 brvKlemme.some((x) => x.startsWith("biss-kopf-probe:") && /Klemme/.test(x)) &&
-                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:", "biss-kalt:"].every((t) =>
-                    brvAlt.some((x) => x.startsWith(t))
+                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:", "biss-kopf-gestalt:", "biss-kalt:"].every(
+                    (t) => brvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
+            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, Glied-Kapseln, die in einer anderen Haltung gepasst 0,193 m abweichen, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf, Gestalt und Kälte; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
             c.bogenVerschleiss,
