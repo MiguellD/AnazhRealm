@@ -296,13 +296,15 @@
     function hRoehrenKette(H, roehre, r, m, dz) {
         var P = roehre.parameters.path, n = roehre.parameters.tubularSegments, pts = [], i;
         for (i = 0; i <= n; i++) pts.push(P.getPointAt(i / n));
-        var tol = Math.min(HUELLE_GESETZ.sehneM, HUELLE_GESETZ.roehreR * r), halte = [0, n], stapel = [[0, n]];
+        // Die Abstände auf dem Raster 2^-20 m, bei Gleichstand gewinnt der erste: ein symmetrischer Bogen trägt zwei gleich ferne
+        // Punkte, und ±1 ULP einer Transzendenten (pow der Kurve, hypot der Normalen) wählte den anderen (Plattform-Probe v4: maschine).
+        var Q = 1048576, tol = Math.round(Math.min(HUELLE_GESETZ.sehneM, HUELLE_GESETZ.roehreR * r) * Q), halte = [0, n], stapel = [[0, n]];
         while (stapel.length) {
             var ab = stapel.pop(), a = pts[ab[0]], b = pts[ab[1]], best = -1, wo = -1;
             var ba = new THREE.Vector3().subVectors(b, a), l2 = Math.max(1e-12, ba.lengthSq());
             for (i = ab[0] + 1; i < ab[1]; i++) {
                 var t = Math.max(0, Math.min(1, new THREE.Vector3().subVectors(pts[i], a).dot(ba) / l2));
-                var dd = pts[i].distanceTo(new THREE.Vector3().copy(a).addScaledVector(ba, t));
+                var dd = Math.round(pts[i].distanceTo(new THREE.Vector3().copy(a).addScaledVector(ba, t)) * Q);
                 if (dd > best) { best = dd; wo = i; }
             }
             if (wo >= 0 && best > tol) { halte.push(wo); stapel.push([ab[0], wo], [wo, ab[1]]); }
