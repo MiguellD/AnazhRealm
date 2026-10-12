@@ -83,8 +83,16 @@
         // Teilung der Konifere liest sie —, alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und
         // der Zufalls-Strom bleiben gleich, jeder Ast wird mit dem Stamm schlanker. Ohne Welt-Maß (der Bauplan-Baum
         // der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach der Formel oben.
+        // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone, wie sie wuchs — kein
+        // Schaft hebt sie (tiefer Kronenansatz, die Höhe seines Wuchses), sein Stamm misst diese Höhe durch die gedrungene
+        // Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
-        const trunkR = weltMass ? (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1) : trunkForm;
+        const frei = weltMass && P.freistand === 1;
+        const trunkR = !weltMass
+            ? trunkForm
+            : frei
+              ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
+              : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
 
         const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
             if (count > countCap) return;
@@ -338,7 +346,7 @@
         }
         // DER HUB DES SCHAFTS reist mit (K20, das Welt-Maß): die Krone wuchs in der Form-Höhe, der Schaft trägt sie um `schaftHub`
         // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
-        const schaft = weltMass ? schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala) : 0;
+        const schaft = weltMass && !frei ? schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala) : 0;
         // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -1995,6 +2003,11 @@
         lab: { contrast: 1.9, mid: 0.5 },
         host: { contrast: 1.35, mid: 0.72 },
     };
+    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): die Schlankheit eines frei stehenden
+    // Baums ist hd · FREISTAND.hd seiner Art im Bestand (Eiche 60 → 27; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
+    // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
+    // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
+    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2 });
     function forestStandDensity(fbm, x, z, opt) {
         const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
         let contrast = FOREST_STAND.host.contrast,
@@ -4330,6 +4343,7 @@
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
+        FREISTAND: FREISTAND,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
         forestNicheWeights: forestNicheWeights,

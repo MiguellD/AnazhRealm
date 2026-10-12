@@ -58498,7 +58498,7 @@ class AnazhRealm {
                 const variantIndex = h % N;
                 // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
                 // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
-                const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf.scale);
+                const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
                 if (visH === null) {
                     // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
                     region._deferredFoundry = true;
@@ -58553,23 +58553,47 @@ class AnazhRealm {
     // Der EINE Foundry-Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall): die Materialisierung
     // (Primär-Stufe · Gesetz-Bahn · Band-Partner), die Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag
     // lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
-    _scatterFoundrySeed(cellX, cellZ, variantIndex) {
-        return ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+    // Die Gestalt folgt dem Ort (K20): der Streu-Baum am Ort tf (x, z, scale) fragt dasselbe Wald-Gesetz wie der gepflanzte
+    // (`_forestStehtFrei` gegen die stehenden Bäume des Bestands, die eigene Krone FOREST.crown × Größe) — Primär-Stufe,
+    // Sichthöhe und Promotion lesen denselben Samen, dieselbe Gestalt am Promotions-Ring.
+    _scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) {
+        const roh = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+        const preset = this._foundryPresetFor(species);
+        if (!preset) return roh;
+        const krone = AnazhRealm.FOREST.crown[species];
+        const seedInt = this._forestSeedInt();
+        // Gedächtnis je Zelle (rein in Welt-Same, Zelle, Art, Größe): der Stufen-Takt fragt jede Zelle je Takt.
+        if (this._streuSameSeed !== seedInt || !this._streuSame || this._streuSame.size > 16384) {
+            this._streuSame = new Map();
+            this._streuSameSeed = seedInt;
+        }
+        const mk = cellX + "," + cellZ + "," + variantIndex + "," + species + "," + tf.scale;
+        const hat = this._streuSame.get(mk);
+        if (hat !== undefined) return hat;
+        const same = this._foundryGestaltSame(
+            roh,
+            preset,
+            () =>
+                krone > 0 &&
+                this._forestStehtFrei(tf.x, tf.z, krone * tf.scale, (gx, gz) => this._forestCellDarts(gx, gz, seedInt))
+        );
+        this._streuSame.set(mk, same);
+        return same;
     }
 
     // Die Sichthöhe einer Streu-Zelle für die Stufenwahl: Fels 0 (roh), ein Foundry-Baum der Stempel seines Assets
     // (_foundrySichtHoehe — dieselbe Zahl, die seine Masken lesen; null = die Höhen-Stufe lädt, die Zelle wartet),
     // sonst der Grammatik-Bauplan.
-    _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, scale) {
+    _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf) {
         if (layer.kind === "rock") return 0;
         const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
         if (preset && this._foundryPresetIsTree(preset))
             return this._foundrySichtHoehe(
                 preset,
-                { seed: this._scatterFoundrySeed(cellX, cellZ, variantIndex) },
-                scale
+                { seed: this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) },
+                tf.scale
             );
-        return this._lodTreeVisHeightFor(species, variantIndex, scale);
+        return this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
     }
 
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
@@ -58603,7 +58627,7 @@ class AnazhRealm {
         const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
         // Der EINE Streu-Same der Zelle (`_scatterFoundrySeed`): Primär-Stufe, Gesetz-Bahn, Band-Partner und die
         // Promotion lesen ihn — dieselbe Gestalt auf jeder Bahn.
-        const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex) : 0;
+        const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) : 0;
         const gestalt = foundryPreset ? this._foundryVariantFor(fseed, foundryPreset) : null;
         if (foundryPreset && gestalt == null) {
             if (!ctxNoDefer) region._deferredFoundry = true; // Buch kalt → deferrieren wie ein ladendes Asset
@@ -58869,14 +58893,7 @@ class AnazhRealm {
             const dist = Math.sqrt(dx * dx + dz * dz);
             if (dist > SC.outerM + 96) continue; // jenseits räumt der Region-Ring selbst
             const tf = this._scatterCellTransform(cell.cellX, cell.cellZ, cell.cellM, layer.scaleBase, layer.scaleVar);
-            const visH = this._scatterSichtHoehe(
-                layer,
-                cell.species,
-                cell.cellX,
-                cell.cellZ,
-                cell.variantIndex,
-                tf.scale
-            );
+            const visH = this._scatterSichtHoehe(layer, cell.species, cell.cellX, cell.cellZ, cell.variantIndex, tf);
             if (visH === null) {
                 offen++;
                 continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
@@ -59102,7 +59119,13 @@ class AnazhRealm {
                 precise: true,
                 scale: tf.scale,
                 rotationY: tf.yaw,
-                seed: this._scatterFoundrySeed(cellEntry.cellX, cellEntry.cellZ, cellEntry.variantIndex),
+                seed: this._scatterFoundrySeed(
+                    cellEntry.cellX,
+                    cellEntry.cellZ,
+                    cellEntry.variantIndex,
+                    cellEntry.species,
+                    tf
+                ),
             }
         );
         if (entry) {
@@ -59428,7 +59451,7 @@ class AnazhRealm {
     // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT.
     _foundryBaumHoehe(preset, entry) {
         const f = this._foundry;
-        const gestalt = f ? this._foundryVariantFor(entry.seed, preset) : null;
+        const gestalt = f ? this._foundryGestaltFor(entry, preset) : null;
         if (gestalt == null) return null; // Buch kalt
         const stufe = this._foundryHoehenStufe(preset);
         const key = this._foundryKoerperKey(preset, gestalt, stufe, this._artifactStudioOv(entry));
@@ -75871,6 +75894,8 @@ class AnazhRealm {
     _foundryRequest(presetId, seed, lod, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
+        // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
+        if (!(ov && typeof ov === "object" && Object.keys(ov).length)) ov = this._foundryGestaltOv(presetId, seed);
         // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
         // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
@@ -76139,6 +76164,7 @@ class AnazhRealm {
     _foundryBakeImpostorRequest(presetId, seed, ov, fmt, bedarfD2) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker || !fmt) return Promise.resolve(null);
+        if (!(ov && typeof ov === "object")) ov = this._foundryGestaltOv(presetId, seed); // die Gestalt des Orts (K20)
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
         // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
         // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
@@ -76716,7 +76742,7 @@ class AnazhRealm {
     // Rahmen der Zelle reisen je Instanz. Gecacht auf der Zelle. null solange der Rahmen lädt, false bei Fehler oder —
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
     _foundryBuildImpostorFlat(entry, preset) {
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
         // Ein geprägtes Entry zieht seine ov-Zelle; ist sie noch nicht da (null), fällt der Pfad auf GEOMETRIE (nie
         // kalt, nie die ungeprägte Karte). Ungeprägt: ovE null.
@@ -77113,7 +77139,7 @@ class AnazhRealm {
     _archFoundryZiegel(entry, preset, ovH) {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
         const huelle = this._foundryFernForm(preset) === "huelle";
         const stufe = huelle ? this._foundryFernStufe(preset) : 1;
@@ -78474,7 +78500,7 @@ class AnazhRealm {
     _foundryStufeBereit(entry, preset, lod) {
         const f = this._foundry;
         if (!f || !preset) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return false;
         if (!Number.isFinite(lod) || lod < 0) lod = 0;
         if (lod > 2) lod = 2;
@@ -78597,6 +78623,54 @@ class AnazhRealm {
         if (!V) return null;
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
+    }
+    // DIE GESTALT DES ORTS (K20, nordstern §4.5: „die Gestalt folgt dem Ort, nicht der Art allein"): eine Baum-Art mit V ≥ 2
+    // Gestalten trägt ihren Solitär als Gestalt V (gebaut mit FREISTAND_OV — phyto-core growSkeleton: kein Schaft-Hub, der
+    // gedrungene Stamm), ihren Bestand in 1..V−1. Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`):
+    // jeder Körper und jede Karte der Gestalt V ist der Solitär — Gestalten-Zahl, Befehle und Atlas-Schichten bleiben.
+    _foundryGestaltOv(preset, gestalt) {
+        if (gestalt < 2 || !this._foundryPresetIsTree(preset)) return null;
+        return gestalt === this._foundryGestalten(preset) ? AnazhRealm.FREISTAND_OV : null;
+    }
+    // Der Same, dessen Gestalt der Ort wählt (K20): `_foundryVariantFor` liest h = Same × 2654435761 in V Eimern; der Ort
+    // legt den Eimer fest (frei: V, Bestand: 1..V−1 nach dem eigenen Wurf), die Lage im Eimer bleibt die des Samens, und
+    // das Inverse des Knuth-Faktors gibt den Samen zurück. Synchron am Spawn aus dem Kern (der Bestand pflanzt vor dem Buch).
+    // Eine Art mit einer Gestalt oder ohne Baum-Rezept behält ihren Samen; `stehtFrei` (Funktion) fragt den Ort nur dann.
+    _foundryGestaltSame(seed, preset, stehtFrei) {
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const rec = tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
+        if (!rec || rec.kind !== "tree") return seed >>> 0;
+        const V = AnazhRealm._studioGestaltenKern(preset);
+        if (!(V >= 2)) return seed >>> 0;
+        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0;
+        const lage = h / 4294967296;
+        const eimer = stehtFrei() ? V - 1 : Math.floor(lage * (V - 1));
+        const h2 = Math.ceil((eimer * 4294967296) / V) + Math.floor(lage * (Math.floor(4294967296 / V) - 1));
+        return Math.imul(h2 >>> 0, AnazhRealm.KNUTH_INVERS) >>> 0;
+    }
+    // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt das Wald-Gesetz an seinem Ort
+    // (`_forestStehtFrei`, die eigene Krone FOREST.crown × Größe) — auch der aus dem Speicher geladene und der gesetzte, sein
+    // Same bleibt; gemerkt am Eintrag (flüchtig, nie im Snapshot), solange Lage, Same und Art bleiben. Ein Datensatz ohne Lage
+    // (die Streu-Zelle) trägt den Samen seines Orts schon (`_scatterFoundrySeed`).
+    _foundryGestaltFor(entry, preset) {
+        const p = entry && entry.position;
+        if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);
+        let m = entry._ortSame;
+        if (!(m && m.x === p.x && m.z === p.z && m.seed === entry.seed && m.preset === preset)) {
+            const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
+            const seedInt = this._forestSeedInt();
+            const same = this._foundryGestaltSame(
+                entry.seed,
+                preset,
+                () =>
+                    krone > 0 &&
+                    this._forestStehtFrei(p.x, p.z, krone * (entry.scale || 1), (gx, gz) =>
+                        this._forestCellDarts(gx, gz, seedInt)
+                    )
+            );
+            m = entry._ortSame = { x: p.x, z: p.z, seed: entry.seed, preset, same };
+        }
+        return this._foundryVariantFor(m.same, preset);
     }
     // Die Gestalten-Zahl einer Art (die Budget-Zeile, sonst '*'); 0 = Buch kalt. Der Vorrat wärmt 1..V.
     _foundryGestalten(preset) {
@@ -78761,7 +78835,7 @@ class AnazhRealm {
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return null; // Buch kalt: wie ein ladendes Asset (der Tick baut nach)
         // DIE EINE LOD-AUTORITÄT: die Distanz-LOD (`_tickArchitectureLOD` → `entry._lodLevel`) FÜHRT, die
         // Foundry serviert genau diese Stufe; `lodOverride` reicht sie herein (sonst Distanz-Schätzung).
@@ -79687,6 +79761,34 @@ class AnazhRealm {
                         ? prioWins(o, d)
                         : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
                     if (better) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (`_forestDartSteht`) näher als phyto-core
+    // FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er selbst). Die Nachbarn reichen
+    // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
+    // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum.
+    _forestStehtFrei(x, z, T, cellDarts) {
+        const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
+        const FS = core && core.FREISTAND;
+        if (!FS || !(FS.abstand > 0)) return AnazhRealm._kernPflichtBruch("phyto:FREISTAND.abstand");
+        const CELL = AnazhRealm.FOREST.cell;
+        const gx = Math.floor(x / CELL);
+        const gz = Math.floor(z / CELL);
+        for (let ax = -4; ax <= 4; ax++) {
+            for (let az = -4; az <= 4; az++) {
+                const nb = cellDarts(gx + ax, gz + az);
+                for (let k = 0; k < nb.length; k++) {
+                    const o = nb[k];
+                    const r = FS.abstand * (T + o.T);
+                    const dx = o.x - x;
+                    const dz = o.z - z;
+                    const d2 = dx * dx + dz * dz;
+                    if (d2 < 1e-6 || d2 >= r * r) continue;
+                    if (this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) return false;
                 }
             }
         }
@@ -104886,6 +104988,10 @@ AnazhRealm._studioGestaltenKern = function (preset) {
     if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
     return V;
 };
+// DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
+// `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
+AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });
+AnazhRealm.KNUTH_INVERS = 244002641;
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit
 // Kronen-Schüchternheit + Arten-Nische. `crown` = Beästungsradius (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.

@@ -580,6 +580,45 @@ function stammDurchmesser(T, yWelt, skala) {
     const r = pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort((p, q) => p - q)[pts.length >> 1];
     return 2 * r * skala;
 }
+// DER SOLITÄR (K20, nordstern §4.5 „Solitär gedrungener", Soll-Bild Solitäreiche Marbach: tiefer Kronenansatz, kurzer dicker
+// Stamm): die Gestalt mit FREISTAND (ov freistand, die Gestalt V der Welt) trägt höchstens SOLITAER_HD × das H/D ihres Bestands,
+// und wo der Bestand seine Krone hebt (Kronenansatz ≥ 0,1 — der tiefste Nicht-Rinden-Punkt je Höhe), setzt ihre Krone
+// mindestens 0,05 tiefer an (die Birke trägt schon im Bestand Zweige am Fuß).
+const SOLITAER_HD = 0.6;
+function kronenAnsatz(T) {
+    let lo = Infinity;
+    for (const t of T) if (t.kind !== "bark") for (let i = 1; i < t.pos.length; i += 3) lo = Math.min(lo, t.pos[i]);
+    return lo;
+}
+function solitaerUrteil(roh, skala) {
+    const v = [],
+        m = {};
+    for (const art of Object.keys(HOEHE_SPANNE)) {
+        const b = roh[`${art}-s1-L0`],
+            f = roh[`${art}-s1-L0-frei`];
+        if (!b || !f) {
+            v.push(`Solitär ${art}: nicht gebaut`);
+            continue;
+        }
+        const hB = hoehe(b.T) * skala(art),
+            hF = hoehe(f.T) * skala(art);
+        const dB = stammDurchmesser(b.T, 1.3, skala(art)),
+            dF = stammDurchmesser(f.T, 1.3, skala(art));
+        const hdB = dB > 0 ? hB / dB : 0,
+            hdF = dF > 0 ? hF / dF : Infinity;
+        const kaB = kronenAnsatz(b.T) / hoehe(b.T),
+            kaF = kronenAnsatz(f.T) / hoehe(f.T);
+        m[art] =
+            `${hF.toFixed(1)} m · H/D ${hdF.toFixed(0)} (Bestand ${hdB.toFixed(0)}) · Kronenansatz ${kaF.toFixed(2)} (Bestand ${kaB.toFixed(2)})`;
+        if (!(hdF <= SOLITAER_HD * hdB))
+            v.push(
+                `Solitär ${art}: H/D ${hdF.toFixed(0)} nicht gedrungen (Bestand ${hdB.toFixed(0)}, Soll ≤ ${(SOLITAER_HD * hdB).toFixed(0)})`
+            );
+        if (kaB >= 0.1 && !(kaF < kaB - 0.05))
+            v.push(`Solitär ${art}: Kronenansatz ${kaF.toFixed(2)} nicht tiefer als im Bestand ${kaB.toFixed(2)}`);
+    }
+    return { v, m };
+}
 function hoehenUrteil(roh, skala) {
     const v = [],
         m = {};
@@ -646,11 +685,14 @@ function leserUrteil(quelle) {
         rc = b.renderConfig || {};
         const art = (p) => buch[p] && buch[p].kind;
         const baeume = Object.keys(buch).filter((p) => art(p) === "tree");
-        const fall = async (presetId, lod, seed) => {
-            const k = `${presetId}-s${seed}-L${lod}`;
-            roh[k] = { presetId, lod, seed, T: teile((await build({ presetId, lod, seed, season: "summer" })).meshes) };
+        const fall = async (presetId, lod, seed, ov) => {
+            const k = `${presetId}-s${seed}-L${lod}${ov ? "-frei" : ""}`;
+            const msg = { presetId, lod, seed, season: "summer" };
+            if (ov) msg.ov = ov;
+            roh[k] = { presetId, lod, seed, T: teile((await build(msg)).meshes) };
         };
         for (const p of baeume) await fall(p, 0, 1);
+        for (const p of Object.keys(HOEHE_SPANNE)) await fall(p, 0, 1, { freistand: 1 });
         for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
         for (const p of Object.keys(buch).filter((x) => art(x) === "shrub"))
@@ -743,6 +785,14 @@ function leserUrteil(quelle) {
     // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
     const hz = hoehenUrteil(roh, skala);
     fails.push(...hz.v);
+    const so = solitaerUrteil(roh, skala);
+    fails.push(...so.v);
+    console.log(
+        "Solitär (FREISTAND, Größe 1):\n" +
+            Object.keys(HOEHE_SPANNE)
+                .map((a) => `  ${a}: ${so.m[a] || "—"}`)
+                .join("\n")
+    );
     console.log(
         `Höhen (Altbestand, Größe ${hz.m.groesse}):\n` +
             Object.keys(HOEHE_SPANNE)
@@ -868,11 +918,18 @@ function leserUrteil(quelle) {
             });
         const krank = (ky, kxz) => {
             const r2 = Object.assign({}, roh);
-            if (roh["buche-s1-L0"]) r2["buche-s1-L0"] = Object.assign({}, roh["buche-s1-L0"], { T: verzerrt(roh["buche-s1-L0"].T, ky, kxz) });
+            if (roh["buche-s1-L0"])
+                r2["buche-s1-L0"] = Object.assign({}, roh["buche-s1-L0"], {
+                    T: verzerrt(roh["buche-s1-L0"].T, ky, kxz),
+                });
             return hoehenUrteil(r2, skala).v;
         };
         st.push(["Höhe gestaucht (Buche × 0,6)", krank(0.6, 1).some((x) => /^Höhe buche:/.test(x))]);
         st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
+        // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
+        const r3 = Object.assign({}, roh);
+        if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
+        st.push(["Solitär = Bestand (Eiche)", solitaerUrteil(r3, skala).v.some((x) => /^Solitär eiche:/.test(x))]);
     }
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
