@@ -2892,6 +2892,63 @@
     //   glatt    die Alpha jeder tieferen Stufe ist die skalierte Deckung (Castaño): genau die gewählten Texel tragen
     //            die Schwelle, der Rest fällt stetig — die Kante liegt zwischen den Texeln (K20; braucht blut).
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
+    // DAS σ DER GLATTEN STUFE (K20): die Skala der Alpha (Deckung des Texels × σ, gerundet, bei 255 gekappt), unter der
+    // die Zelle nw × nh, bilinear in S × S Unterproben je Texel gelesen (in der Zelle geklemmt), an der Schwelle `thr`
+    // (Byte) den Anteil `ziel` deckt — die Deckung, die der Filter der GPU sieht. Die Deckung steigt monoton mit σ:
+    // Klammer um den Startwert, dann Bisektion im Logarithmus.
+    function glattSigma(schl, nw, nh, sigma0, thr, ziel) {
+        const S = nw >= 128 ? 2 : 4,
+            W = nw * S,
+            H = nh * S;
+        const tafel = (n, m) => {
+            const i0 = new Int32Array(n),
+                i1 = new Int32Array(n),
+                f = new Float32Array(n);
+            for (let j = 0; j < n; j++) {
+                const x = (j + 0.5) / S - 0.5,
+                    x0 = Math.floor(x);
+                f[j] = x - x0;
+                i0[j] = Math.min(m - 1, Math.max(0, x0));
+                i1[j] = Math.min(m - 1, Math.max(0, x0 + 1));
+            }
+            return { i0, i1, f };
+        };
+        const tx = tafel(W, nw),
+            ty = tafel(H, nh);
+        const A = new Float32Array(nw * nh);
+        const deck = (s) => {
+            for (let i = 0; i < A.length; i++) A[i] = schl[i] > 0 ? Math.min(255, Math.round(schl[i] * s * 255)) : 0;
+            let k = 0;
+            for (let y = 0; y < H; y++) {
+                const r0 = ty.i0[y] * nw,
+                    r1 = ty.i1[y] * nw,
+                    fy = ty.f[y];
+                for (let x = 0; x < W; x++) {
+                    const x0 = tx.i0[x],
+                        x1 = tx.i1[x],
+                        fx = tx.f[x];
+                    const a0 = A[r0 + x0] + (A[r0 + x1] - A[r0 + x0]) * fx,
+                        a1 = A[r1 + x0] + (A[r1 + x1] - A[r1 + x0]) * fx;
+                    if (a0 + (a1 - a0) * fy >= thr) k++;
+                }
+            }
+            return k / (W * H);
+        };
+        // Trifft der Startwert die Deckung auf 1 % (die großen Stufen, wo ein Rand-Texel wenig wiegt), bleibt er.
+        if (Math.abs(deck(sigma0) - ziel) <= 0.01 * ziel) return sigma0;
+        let lo = sigma0,
+            hi = sigma0;
+        while (deck(hi) < ziel && hi < sigma0 * 64) hi *= 2;
+        while (deck(lo) > ziel && lo > sigma0 / 64) lo /= 2;
+        if (hi <= lo) return sigma0;
+        for (let it = 0; it < 14; it++) {
+            const mid = Math.sqrt(lo * hi);
+            if (deck(mid) < ziel) lo = mid;
+            else hi = mid;
+        }
+        return Math.abs(deck(lo) - ziel) < Math.abs(deck(hi) - ziel) ? lo : hi;
+    }
+
     function impostorMips(rgba, w, h, V, schwelle, nStufen, opt) {
         const thr = (schwelle == null ? KARTEN_GESETZ.schwelle : schwelle) * 255;
         const quer = !!(opt && opt.quer),
@@ -3021,15 +3078,21 @@
                 sortiert.set(schluessel);
                 sortiert.sort();
                 const grenze = sortiert[nA - M];
-                // GLATT (Castaño 2010, Mip-Wahl mit Erhalt der Deckung): die Alpha ist die Deckung des Texels, so skaliert,
-                // dass genau die M gewählten Texel die Schwelle tragen — der Filter liest eine stetige Kante (der Umriss
-                // liegt zwischen den Texeln, nicht auf ihrem Raster), und die Deckung an der Schwelle ist die der Stufe 0.
-                const sigma = grenze > 0 ? thr / 255 / grenze : 0;
+                // GLATT (Castaño 2010, Mip-Wahl mit Erhalt der Deckung): die Alpha ist die Deckung des Texels, skaliert mit
+                // σ — der Filter liest eine stetige Kante (der Umriss liegt zwischen den Texeln, nicht auf ihrem Raster).
+                // σ hält die Deckung, die der FILTER sieht: bilinear abgetastet (S × S Unterproben je Texel, in der Zelle
+                // geklemmt, die Alpha wie geschrieben — gerundet, bei 255 gekappt) deckt die Stufe an der Schwelle, was
+                // Stufe 0 deckt. Der Startwert — genau die M gewählten Texel tragen die Schwelle — zählt Texel-Mitten: der
+                // Umriss einer stetigen Alpha läuft durch die Mitten der Rand-Texel, die Stufe verlor einen halben Rand-
+                // Texel je Büschel (16er-Zelle 0,160 statt 0,182; die Karte der Buche, die der Bäcker aus diesen Stufen
+                // rastert, deckte 0,914 ihres Bilds — gate:asset-contract D).
+                let sigma = grenze > 0 ? thr / 255 / grenze : 0;
+                if (glatt && sigma > 0) sigma = glattSigma(schluessel, nwA, nhA, sigma, thr, cov0[v]);
                 for (let i = 0; i < nA; i++) {
                     const o = tex(v, i);
                     if (glatt) {
                         if (schluessel[i] > 0) data[o * 4 + 3] = Math.min(255, Math.round(schluessel[i] * sigma * 255));
-                        if (schluessel[i] >= grenze && schluessel[i] > 0) opakK++;
+                        if (data[o * 4 + 3] >= thr) opakK++;
                         continue;
                     }
                     if (schluessel[i] >= grenze && ta[o] > 0) {
