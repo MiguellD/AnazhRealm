@@ -36,6 +36,20 @@
 //   (7) DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): eine Karten-Art, die nur die L0 deklariert (Wagen, Tor), blendet nie
 //       aus — dieselbe Loch-Probe wie die Stufen-Wahrheit (Teil b), über den Sweep 4–55 m, voll und unter Last. Bis 06.10.
 //       stempelte der Gruppen-Bau ihre L0 als „L0 vor einer L1" (1): ab 8 m × Perf fiel die ganze Gestalt aus.
+//   (8) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das Maß der Blende ist die INSTANZ (Studio foundry-core
+//       `_iw = instanceMatrix[3].xz`) — Maske, Karte und das Fenster der Instanz-Wahl messen vom Auge zum Ursprung der
+//       Instanz, nie zum Fragment. Statisch: keine Maske misst von positionWorld, die Karte von ihrem Anker (`_dA`), das
+//       Fenster ohne die Weite der Gestalt, der Haken legt die Matrix der Instanz am Builder ab. Node-pur: `_instanzFenster`
+//       aus dem Stamm über eine Birke (Sichthöhe 15,19 m, Skala 0,928, Perf 1,21) und eine Eiche, 0–60 m, je Stufe — keine
+//       Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält („doppelt außerhalb des Fade-Fensters"),
+//       und keine fehlt, die es behält. --selftest: die Weite der Gestalt kehrt ins Fenster zurück (Krone 10 m) → die L1 der
+//       Birke in 5 m wird gezeichnet und genannt.
+//   (9) DIE LAUTE BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied, bricht der Bau des Stoffs laut beim Namen
+//       (`_blendeBruch`, ERROR) — nie ein stilles null, kein schluckender catch, kein Stoff ohne Maske. Statisch: die Maske gibt
+//       nie null zurück und ihr catch bricht, Baum-Stoff und Karte setzen die Maske ohne Wenn, ein Stoff ohne Kanal bricht,
+//       der catch der Karten-Verdrahtung reicht den Bruch weiter, die Blatt-Karte bricht. In der Seite (Teil b): der
+//       Uniform-Satz verliert uLodD0, ein Baum-Stoff wird gebaut — er bricht mit dem Namen des fehlenden Glieds, statt still
+//       ohne Maske zu zeichnen. --selftest: jede stille Stelle zurück in die Quelle wird genannt.
 // Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
 // CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
@@ -351,6 +365,128 @@ function fensterLinse(core, cfgs, verschiebe) {
         if (!behaelt(K, "karte", 0, 0, 0, 0, true)) out.loecher++;
     }
     return out;
+}
+
+// ===== (8) DIE STUFE OHNE BILD — das Fenster der Instanz-Wahl gegen das Gesetz an der Instanz-Distanz =====
+// `_instanzFenster(g, i, L)` aus dem Stamm (`quelle` = die kommentar-gestrippte Quelle, im Selbsttest verfälscht); `this`
+// trägt nur, was eine alte Fassung las (die Weite der Gestalt, die Krone der Birke 10 m), `AnazhRealm` die reinen Methoden.
+function stufeOhneBildLinse(core, cfg, quelle) {
+    const body = (re) => {
+        const b = fnBody(quelle, re);
+        if (!b) throw new Error("Methode nicht gefunden: " + re);
+        return b.slice(1, -1);
+    };
+    const kanten = new Function("gesetz", "d0", "d1", "fade", "fade0", body(/static _blendeKanten\(gesetz, d0, d1, fade, fade0\)\s*/));
+    const behaelt = new Function(
+        "K",
+        "stufe",
+        "dSmin",
+        "dSmax",
+        "dLmin",
+        "dLmax",
+        "verdeckt",
+        body(/static _blendeBehaelt\(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt\)\s*/)
+    );
+    const AR = { _blendeBehaelt: behaelt, PASS_WAHL: { pflanzeRandM: 2 } };
+    const fenster = new Function("AnazhRealm", "g", "i", "L", body(/^ {4}_instanzFenster\(g, i, L\) \{/m));
+    const gesetz = core.lodCrossfadeMask;
+    const K = kanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
+    const perf = 1.21,
+        ref = 12;
+    const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
+    const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
+    // die Wahrheit an der Instanz-Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
+    const zeigt = (stufe, dS, dL) => {
+        for (let k = 0; k < 256; k++) {
+            const dh = (k + 0.5) / 256;
+            if (stufe === 3) {
+                if (gesetz(dS, dh, cfg, 1, true, dL).f1o < dh) return true;
+            } else if (gesetz(dS, dh, cfg, stufe === "karte" ? 2 : stufe - 1, true, dL).keep) return true;
+        }
+        return false;
+    };
+    const out = { proben: 0, ohneBild: 0, loecher: 0, beispiel: null, loch: null, jeStufe: {} };
+    for (const art of [
+        { name: "birke", h: 15.19, s: 0.928 },
+        { name: "eiche", h: 18.64, s: 1.147 },
+    ])
+        for (const stufe of [1, 2, 3, "karte"])
+            for (let d = 0; d <= 60; d += 0.1) {
+                const s = art.s;
+                const hL = Math.min(art.h / s, 24) * s;
+                const g = {
+                    wahlStufe: stufe,
+                    mesh: {
+                        instanceMatrix: { array: [s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, d, 1] },
+                        matrixWorld: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
+                        geometry: {
+                            attributes: { aH0: { array: [art.h] }, aH0L: { array: [hL] }, aKarte: { array: [0, 1.2, 4, art.h] } },
+                        },
+                    },
+                };
+                const dS = d * perf * Math.min(ref / art.h, 1),
+                    dL = d * perf * Math.min(ref / hL, 1);
+                const zeichnet = fenster.call(stumpf, AR, g, 0, L);
+                const wahr = zeigt(stufe, dS, dL);
+                // die Kanten stehen per Bisektion auf 1 mm an der äußeren Grenze (`_blendeKanten`): 1 cm Wahrnehmungs-Distanz
+                // um die Instanz ist die Toleranz des Gesetzes, kein Bild ohne Stufe
+                const wahrNah = wahr || zeigt(stufe, dS - 0.01, dL - 0.01) || zeigt(stufe, dS + 0.01, dL + 0.01);
+                out.proben++;
+                if (zeichnet && !wahrNah) {
+                    out.ohneBild++;
+                    const b = { art: art.name, stufe, d: +d.toFixed(1), dL: +dL.toFixed(2) };
+                    if (!out.beispiel) out.beispiel = b;
+                    if (!out.jeStufe[stufe]) out.jeStufe[stufe] = b;
+                }
+                if (!zeichnet && wahr) {
+                    out.loecher++;
+                    if (!out.loch) out.loch = { art: art.name, stufe, d: +d.toFixed(1) };
+                }
+            }
+    return out;
+}
+
+// DAS MASS DER BLENDE (statisch, kommentar-gestrippt): die Instanz, nie das Fragment → Verstöße mit Namen.
+function massDerBlende(srcNC) {
+    const v = [];
+    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
+    if (/positionWorld\.[xz]/.test(maske)) v.push("die Foundry-Maske misst zum Fragment (positionWorld)");
+    if (!/const _mitte = this\._instanzMitteNode\(T\);/.test(maske)) v.push("die Foundry-Maske liest den Ursprung der Instanz nicht");
+    if (!/const _mitte = this\._instanzMitteNode\(_Tl\);/.test(srcNC) || /_cam\.x\.sub\(_pw\.x\)/.test(srcNC))
+        v.push("die Grammatik-Blattmaske misst zum Vertex statt zur Instanz");
+    if (!/impostor: true,\s*distNode: _dA,/.test(srcNC)) v.push("die Karte misst zum Fragment ihres Quads statt zu ihrem Anker");
+    const fen = fnBody(srcNC, /^ {4}_instanzFenster\(g, i, L\) \{/m) || "";
+    if (!fen) v.push("_instanzFenster fehlt");
+    else if (/weite|_instanzWeite|pflanzeRandM|ak\[i \* 4 \+ 1\]/.test(fen)) v.push("das Fenster der Instanz-Wahl misst die Weite der Gestalt");
+    if (!/if \(assignBuffer && builder\) builder\.__anazhInstanzMatrix = n;/.test(srcNC))
+        v.push("der Haken legt die Matrix der Instanz nicht am Builder ab");
+    const mitte = fnBody(srcNC, /_instanzMitteNode\(T\)\s*/) || "";
+    if (!/builder\.__anazhInstanzMatrix/.test(mitte) || !/m\.element\(3\)/.test(mitte) || !/modelWorldMatrix/.test(mitte))
+        v.push("der Ursprung der Instanz liest nicht die Instanz-Matrix (Spalte 3) in der Welt");
+    return v;
+}
+
+// DIE LAUTE BLENDE (statisch, kommentar-gestrippt): wer im Fehlerfall still weiterzeichnet → Verstöße mit Namen.
+function stilleBlende(srcNC) {
+    const v = [];
+    const maske = fnBody(srcNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
+    if (!maske) v.push("_lodCrossfadeMaskNode fehlt");
+    else {
+        if (/return null/.test(maske)) v.push("die Maske gibt still null zurück (der Stoff zeichnet ohne Maske)");
+        const fang = maske.slice(maske.lastIndexOf("catch ("));
+        if (!/catch \(/.test(maske) || !/throw /.test(fang)) v.push("der catch der Maske schluckt den Fehler");
+    }
+    if (/__foundryCrossfadeError|__lodCrossfadeError/.test(srcNC)) v.push("ein Fehler der Blende landet still in einer Fenster-Variable");
+    const bruch = fnBody(srcNC, /_blendeBruch\(was\)\s*/) || "";
+    if (!/this\.log\(text, "ERROR"\)/.test(bruch) || !/e\.blende = true/.test(bruch)) v.push("_blendeBruch meldet nicht laut beim Namen");
+    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
+    if (/if \(_keepX\)/.test(stoff)) v.push("der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX))");
+    if (!/else\s+throw this\._blendeBruch\(/.test(stoff) || /if \(kanal\)/.test(stoff)) v.push("der Baum-Stoff ohne Kanal verliert die Maske still");
+    if (/if \(_keepFin\)/.test(srcNC)) v.push("die Karte zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepFin))");
+    if (!/if \(_e && _e\.blende === true\) throw _e;/.test(srcNC)) v.push("der catch der Karten-Verdrahtung schluckt den Bruch der Blende");
+    if (!/throw this\._blendeBruch\("die Blatt-Karte: es fehlt "/.test(srcNC)) v.push("die Blatt-Karte überspringt die Blende still");
+    return v;
 }
 
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
@@ -862,9 +998,33 @@ async function runPartB() {
         };
     });
 
+    // (9) DIE LAUTE BLENDE in der Seite: der Uniform-Satz verliert uLodD0, ein Baum-Stoff wird frisch gebaut (der Cache der
+    // Stoffe leer) — bricht er beim Namen, oder zeichnet er still ohne Maske? Danach steht alles wie vorher.
+    const laut = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const res = {};
+        const lu = r._ensureLodUniforms();
+        const alt = st.lodUniforms;
+        const mats = r._foundryMats;
+        st.lodUniforms = Object.assign({}, lu, { uLodD0: null });
+        r._foundryMats = {};
+        try {
+            const m = r._foundryTreeMaterial("bark", null);
+            res.still = !!m;
+            res.maske = !!(m && m.userData && m.userData.foundryCrossfade === true);
+        } catch (e) {
+            res.bruch = String((e && e.message) || e);
+            res.blende = !!(e && e.blende === true);
+        }
+        st.lodUniforms = alt;
+        r._foundryMats = mats;
+        return res;
+    });
+
     await browser.close();
     server.close();
-    return { out, pageErrors, attrWand, gnade, kehraus };
+    return { out, pageErrors, attrWand, gnade, kehraus, laut };
 }
 
 // DIE SCHATTEN-WAHRHEIT (statisch, auf der kommentar-gestrippten Quelle) → Liste der Verstöße mit Namen.
@@ -1126,6 +1286,50 @@ async function main() {
                 check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
             }
         }
+        // V(8): die Weite der Gestalt kehrt ins Fenster zurück, die Maske misst zum Fragment, die Karte zum Quad, der Haken legt
+        // die Matrix nicht ab — die Linse MUSS die Stufe ohne Bild bzw. das Maß nennen.
+        {
+            const nc = stripComments(anazhSrc);
+            const alt = nc.replace(
+                /const dMin = Math\.max\(0, d - halt\) \* L\.perf,\s*dMax = \(d \+ halt\) \* L\.perf;/,
+                "const w = this._instanzWeite(geo).r; const dMin = Math.max(0, d - w - halt) * L.perf, dMax = (d + w + halt) * L.perf;"
+            );
+            const S8 = stufeOhneBildLinse(loadCore(coreSrcRaw, "phyto-core"), P.cfg, alt);
+            check(
+                "Selbst-Test Stufe ohne Bild: die Weite der Gestalt (Krone 10 m) im Fenster → die L1 der nahen Birke wird genannt",
+                alt !== nc && !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
+                `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
+            );
+            for (const [name, src] of [
+                [
+                    "Maske zum Fragment",
+                    nc.replace(
+                        "const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y)))",
+                        "const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z)))"
+                    ),
+                ],
+                ["Karte zum Quad", nc.replace("distNode: _dA,", "distNode: _Ta.sqrt(_hl2),")],
+                ["Haken ohne Matrix", nc.replace("if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;", "")],
+            ]) {
+                const v = massDerBlende(src);
+                check(`Selbst-Test Maß: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+            }
+        }
+        // V(9): jede stille Stelle zurück in die Quelle — die Linse MUSS sie nennen.
+        {
+            const nc = stripComments(anazhSrc);
+            for (const [name, src] of [
+                ["Maske gibt null", nc.replace('if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");', "if (!_dist) return null;")],
+                ["catch schluckt", nc.replace(/throw _e && _e\.blende === true\s*\?\s*_e\s*:\s*this\._blendeBruch\("der Bau der Maske scheiterte: "/, 'return null; ("')],
+                ["Baum-Stoff unter Wenn", nc.replace(/(const _keepX = this\._lodCrossfadeMaskNode\(TSL, \{[^}]*\}\);\s*)\{/, "$1if (_keepX) {")],
+                ["Karte unter Wenn", nc.replace(/(const _keepFin = this\._lodCrossfadeMaskNode\(_Ta, \{[\s\S]*?\}\);\s*)\{/, "$1if (_keepFin) {")],
+                ["Karte schluckt den Bruch", nc.replace("if (_e && _e.blende === true) throw _e;", "")],
+                ["Blatt-Karte springt still", nc.replace('throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
+            ]) {
+                const v = stilleBlende(src);
+                check(`Selbst-Test laute Blende: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
+            }
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1275,6 +1479,20 @@ async function main() {
             )
         );
     }
+    {
+        const md = massDerBlende(anazhNC);
+        check("MASS DER BLENDE: Maske · Blattmaske · Karte · Fenster messen die Instanz, nie das Fragment", md.length === 0, md.join(" · "));
+        const S8 = stufeOhneBildLinse(loadCore(coreSrcRaw, "phyto-core"), P.cfg, anazhNC);
+        check(
+            "STUFE OHNE BILD: keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält (doppelt außerhalb des Fade-Fensters)",
+            S8.proben > 4000 && S8.ohneBild === 0 && S8.loecher === 0,
+            `${S8.proben} Proben · ohne Bild ${S8.ohneBild}${S8.beispiel ? " (z. B. " + JSON.stringify(S8.beispiel) + ")" : ""} · Löcher ${S8.loecher}${S8.loch ? " (" + JSON.stringify(S8.loch) + ")" : ""}`
+        );
+    }
+    {
+        const sb = stilleBlende(anazhNC);
+        check("DIE LAUTE BLENDE (statisch): kein null, kein schluckender catch, keine Maske unter Wenn", sb.length === 0, sb.join(" · "));
+    }
     // Statische Scope-Wand der CPU-Hälfte: Band nur für Foundry-BAUM-Einträge (dieselbe
     // Wand wie der aLodLevel-Stempel), Add/Remove nur durch die Slot-Chokepoints.
     const bandBody = fnBody(anazhNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
@@ -1287,7 +1505,7 @@ async function main() {
     );
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
-    const { out, pageErrors, attrWand, gnade, kehraus } = await runPartB();
+    const { out, pageErrors, attrWand, gnade, kehraus, laut } = await runPartB();
     check(
         "KEHRAUS DES WURFS: die L0 trägt die Zwillings-Leaves ihrer L1 · ihr Räumen lässt die Wurf-Gestalt der lebenden L1 stehen · das Räumen der L1 gibt jede genau einmal frei",
         kehraus &&
@@ -1362,6 +1580,11 @@ async function main() {
         }
     }
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
+    check(
+        "DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen",
+        !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
+        laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
+    );
 
     if (out && Array.isArray(out.zensus)) {
         const bad = out.zensus.filter((z) => !z.ok);
