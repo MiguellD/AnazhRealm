@@ -1294,7 +1294,8 @@ jobs:
               run: npm run gate:kopplung
 
             - name: Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)
-              if: matrix.gruppe == 4
+              # Gruppe 9 (die leichteste, 8,9 min Median): in Gruppe 4 trug sie nach main bb554abf 11,6 min (Waage 11).
+              if: matrix.gruppe == 9
               run: npm run gate:tor-fern
 
             - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
