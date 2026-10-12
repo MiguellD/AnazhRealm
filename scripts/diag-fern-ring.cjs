@@ -544,6 +544,7 @@ const server = http.createServer((req, res) => {
             // Ring steht oder der Bestand 3 s ruht. RING 3 (7 × 7, gehalten gegen den Boot-Ramp, das diag-chunk-seam-Muster):
             // die äußere Reihe trägt Stufe 1 (DETAIL_CASCADE, Band 0 bis Ring 2) — die Bau-Kante des Spiels und die
             // Stufen-Naht 0 ↔ 1 stehen im Satz (mit dem 5 × 5-Satz sah die Linse nur Stufe 0).
+            const t09 = performance.now();
             const ziel9 = 3;
             r.state.chunkRingRadius = ziel9;
             r.state._activeRingRadius = ziel9;
@@ -568,6 +569,7 @@ const server = http.createServer((req, res) => {
                 if (e && !e.empty && e.mesh) a[e.lod || 0] = (a[e.lod || 0] || 0) + 1;
                 return a;
             }, {});
+            const tPump9 = performance.now();
             res.nahtChunks = n9;
             const spion = { geo: 0, wege: 0 };
             const tga = r._terrainGeologyAlbedo;
@@ -610,6 +612,52 @@ const server = http.createServer((req, res) => {
             const span9 = r._voxelChunkConfig().span;
             const wl9 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
             const ringMesh = fr9.meshes[0];
+            // DIE RING-HÖHE ÜBER EIN FACH-RASTER (8 m): der Strahl prüft nur die Dreiecke der Schale 0, deren Kasten den Punkt
+            // trägt — der Strahl gegen die ganze Schale (15 000 Dreiecke je Probe) trug den Großteil der Linsen-Zeit.
+            const ringFach = new Map();
+            {
+                const P = ringMesh.geometry.attributes.position;
+                const I = ringMesh.geometry.index.array;
+                for (let t = 0; t < I.length; t += 3) {
+                    let x0 = Infinity;
+                    let x1 = -Infinity;
+                    let z0 = Infinity;
+                    let z1 = -Infinity;
+                    for (let e = 0; e < 3; e++) {
+                        x0 = Math.min(x0, P.getX(I[t + e]));
+                        x1 = Math.max(x1, P.getX(I[t + e]));
+                        z0 = Math.min(z0, P.getZ(I[t + e]));
+                        z1 = Math.max(z1, P.getZ(I[t + e]));
+                    }
+                    if (x1 - x0 > 400) continue; // nur die nahe Schale (die Bau-Zone)
+                    for (let a = Math.floor(x0 / 8); a <= Math.floor(x1 / 8); a++)
+                        for (let b = Math.floor(z0 / 8); b <= Math.floor(z1 / 8); b++) {
+                            const k = a * 65536 + b;
+                            if (!ringFach.has(k)) ringFach.set(k, []);
+                            ringFach.get(k).push(t);
+                        }
+                }
+            }
+            const rA = new T9.Vector3();
+            const rB = new T9.Vector3();
+            const rC = new T9.Vector3();
+            const rT = new T9.Vector3();
+            const ringY = (x, z) => {
+                const liste = ringFach.get(Math.floor(x / 8) * 65536 + Math.floor(z / 8));
+                if (!liste) return null;
+                const P = ringMesh.geometry.attributes.position;
+                const I = ringMesh.geometry.index.array;
+                o9.set(x, 4000, z);
+                ray.set(o9, ab);
+                let best = null;
+                for (const t of liste) {
+                    rA.fromBufferAttribute(P, I[t]);
+                    rB.fromBufferAttribute(P, I[t + 1]);
+                    rC.fromBufferAttribute(P, I[t + 2]);
+                    if (ray.ray.intersectTriangle(rA, rB, rC, false, rT) && (best === null || rT.y > best)) best = rT.y;
+                }
+                return best;
+            };
             const stufen = [];
             const eigen = [];
             const selbst = []; // SELBSTTEST: dieselben Proben mit dem alten 2-m-Tauchen müssen rot fallen
@@ -623,7 +671,7 @@ const server = http.createServer((req, res) => {
             const lochSeite = {}; // der Täter beim Namen: wo die Löcher liegen (Kante −X/+X/−Z/+Z oder innen)
             const lochOrte = []; // die ersten Löcher beim Ort (Punkt, Chunk, Stufe)
             const durchSeite = {}; // ebenso der Durchstich: je Kante:Regel [Zahl, größte Höhe über dem Deck]
-            const muendung9 = [0, 0]; // die Mündung an der Bau-Kante: [Punkte, größte Höhe des Rings über dem Höhlen-Deck]
+            const muendung9 = [0, 0]; // der Einschnitt am Saum (Höhle, Kanal): [Punkte, größte Höhe des Rings über dem Deck]
             const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
             const morphF = r.state.atmoUniforms && r.state.atmoUniforms.geomorph ? r.state.atmoUniforms.geomorph.value : 0;
             const morphMemo = new Map();
@@ -748,7 +796,10 @@ const server = http.createServer((req, res) => {
                 const punkte = [];
                 for (let i = 0; i < 7; i++)
                     for (let j = 0; j < 7; j++) punkte.push([cx * span9 + 3 + i * 6.2, cz * span9 + 3 + j * 6.2, "innen"]);
-                for (const d of [0.05, 0.3, 0.6, 0.9, 1.5, -0.05, -0.3, -0.6, -0.9, -1.5])
+                // je Kante in Voxel-Kanten der Stufe (0,03 … 1,6 s, innen und außen): die erste Vertex-Spalte liegt in der ersten
+                // Voxel-Spalte, die Glättung schiebt sie bis über deren Rand
+                const s9 = r._voxelChunkConfig(e.lod || 0).step;
+                for (const d of [0.03, 0.17, 0.33, 0.5, 0.83, 1.05, 1.25, 1.6].flatMap((f) => [f * s9, -f * s9]))
                     for (let k = 1; k < 8; k++) {
                         const u = (k / 8) * span9;
                         punkte.push([cx * span9 + d, cz * span9 + u, "-X"]);
@@ -772,14 +823,15 @@ const server = http.createServer((req, res) => {
                         if (yc === null) lochZelle[0]++;
                     }
                     if (yc === null || r._terrainMacroSurfaceY(x, z, true) < wl9 + 0.5) continue;
-                    const yr = hoch(ringMesh, x, z);
+                    const yr = ringY(x, z);
                     if (yr === null) continue;
                     durch[1]++;
                     if (yr > yc + 0.05) durchOhne++;
                     const ueber = yr - (regel === 1 ? weiche9 : 0) - yc;
-                    if (regel !== 2 && ueber > 0.05 && yc < r._terrainMacroSurfaceY(x, z, true) - weiche9 - 2) {
-                        // DIE MÜNDUNG AN DER BAU-KANTE: das Deck liegt in einer Höhle weit unter dem Gesetz, der Ring trägt das
-                        // Gesetz (er kennt keine Höhle) — benannt und gezählt, nicht die Sehne der Naht
+                    if (regel !== 2 && ueber > 0.05 && yc < r._terrainMacroSurfaceY(x, z, true) - 2) {
+                        // DER EINSCHNITT AM SAUM: das Deck liegt mehr als 2 m unter dem Gesetz (Höhlen-Mündung, Kanal — die
+                        // Surface-Nets-Abweichung ist ±0,45 m), der Ring trägt das Gesetz (er kennt keinen Einschnitt) — benannt und
+                        // gezählt, nicht die Sehne der Naht
                         muendung9[0]++;
                         muendung9[1] = Math.max(muendung9[1], +ueber.toFixed(1));
                     } else if (regel !== 2 && ueber > 0.05) {
@@ -791,6 +843,7 @@ const server = http.createServer((req, res) => {
                     }
                 }
             }
+            res.zeit9 = [Math.round(tPump9 - t09), Math.round(performance.now() - tPump9)]; // ms: Ring bauen · Proben
             stufen.sort((a, b) => a - b);
             const q = (p) => (stufen.length ? stufen[Math.min(stufen.length - 1, Math.floor(p * stufen.length))] : NaN);
             res.nahtN = stufen.length;
@@ -1108,7 +1161,7 @@ const server = http.createServer((req, res) => {
             out.maskeTreue[1] > 0 &&
             out.maskeTreue[0] === out.maskeTreue[1] &&
             out.durchOhne > 0.02,
-        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} seiten=${JSON.stringify(out.durchSeite || {})} weiche=${out.weiche} muendung=${(out.muendung || []).join("/")} stufen=${JSON.stringify(out.nahtStufen || {})} maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
+        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} seiten=${JSON.stringify(out.durchSeite || {})} weiche=${out.weiche} einschnitt=${(out.muendung || []).join("/")} stufen=${JSON.stringify(out.nahtStufen || {})} zeit=${(out.zeit9 || []).join("+")}ms maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",

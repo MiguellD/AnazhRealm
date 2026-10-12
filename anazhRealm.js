@@ -38402,16 +38402,17 @@ class AnazhRealm {
         maskeTex.needsUpdate = true;
         const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
-        // deckt nicht seine Zelle, sondern liegt eine halbe Voxel-Kante versetzt — der Pad-Aufruf (`ox − step`, `dim + 3`,
-        // crop 1) behält die Zellen 1 … dim + 1, die erste Vertex-Spalte steht IN der ersten Voxel-Spalte der Zelle, die letzte
-        // in der des +Nachbarn. Sicher getragen ist also die Zelle ohne ihre erste Voxel-Spalte (je Achse), und die erste
-        // Spalte nur, wenn der −Nachbar gebaut ist (über die Stufen-Grenze schließt das Stich-Band die Naht).
-        // Dort verwirft der Ring (2). Im SAUM — der ersten Voxel-Spalte am Rand des Gebauten, innen wie außen (der Überhang
-        // des Decks in die freie Nachbar-Zelle) — zeichnet er und WEICHT dem Chunk in die Tiefe (`nahtWeiche`, senkrecht über
-        // die Ring-Normale auf den Strahl, gekappt `nahtWeicheMax`): wo das Deck fehlt, trägt der Ring, wo es steht, gewinnt
-        // es (1). Die Breite der Spalte ist die Voxel-Kante der Stufe (die Karte trägt sie im Grün-Kanal, Kante × 10).
+        // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
+        // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
+        // Laplace-Runde, λ 0,5) schiebt jeden Vertex um höchstens eine halbe Kante über seine Voxel-Spalte hinaus. Das Deck
+        // beginnt also zwischen ox − ½ s und ox + 1½ s und endet zwischen ox + span − ½ s und ox + span + 1½ s. Sicher getragen
+        // ist die Zelle ohne diese Bänder; ein Band nur, wenn der Nachbar dort gebaut ist und dieselbe Stufe trägt (dann
+        // teilen beide die Vertex-Spalte; über die Stufen-Grenze trägt das Deck nicht sicher — Morph-Kappe, Höhlen-Zweige).
+        // Dort verwirft der Ring (2). Im SAUM — den Bändern am Rand des Gebauten, innen wie außen — zeichnet er und WEICHT dem
+        // Chunk in die Tiefe (`nahtWeiche`, senkrecht über die Ring-Normale auf den Strahl, gekappt `nahtWeicheMax`): wo das
+        // Deck fehlt, trägt der Ring, wo es steht, gewinnt es (1). Die Kante s der Stufe trägt die Karte im Grün-Kanal (× 10).
         // Bis 12.10. verwarf die ganze Zelle: an der −X- und −Z-Kante des Gebauten zeichnete niemand (Prüfung: 47 von 52
-        // Punkten 5 cm innen ohne Deck, im Bild eine blaue Linie über die Bau-Kante).
+        // Punkten 5 cm innen ohne Deck, im Bild eine blaue Linie über die Bau-Kante; die Glättung trug Reste bis 1,9 m innen).
         {
             const zelleF = TSL.floor(TSL.positionWorld.xz.div(cfg.span));
             const lokal = TSL.positionWorld.xz.sub(zelleF.mul(cfg.span));
@@ -38427,21 +38428,31 @@ class AnazhRealm {
                 const b = drin.and(t.x.greaterThan(0.5));
                 return { b, s: TSL.select(b, t.y.mul(25.5), TSL.float(0)) };
             };
-            const T00 = lies(0, 0);
-            const T10 = lies(-1, 0);
-            const T01 = lies(0, -1);
-            const T11 = lies(-1, -1);
-            const w = TSL.max(TSL.max(T00.s, T10.s), TSL.max(T01.s, T11.s));
-            const nahX = lokal.x.lessThan(w);
-            const nahZ = lokal.y.lessThan(w);
-            const traegt = (T) => T.b.and(T.s.equal(T00.s)); // über die Stufen-Grenze trägt das Deck nicht sicher: Saum
+            const N = {};
+            let w = TSL.float(0);
+            for (let dx = -1; dx <= 1; dx++)
+                for (let dz = -1; dz <= 1; dz++) {
+                    N[`${dx},${dz}`] = lies(dx, dz);
+                    w = TSL.max(w, N[`${dx},${dz}`].s);
+                }
+            const T00 = N["0,0"];
+            // je Achse das untere Band (bis 1½ s) und das obere (ab span − ½ s)
+            const untenX = lokal.x.lessThan(w.mul(1.5));
+            const untenZ = lokal.y.lessThan(w.mul(1.5));
+            const nahX = untenX.or(lokal.x.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
+            const nahZ = untenZ.or(lokal.y.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
+            const wahl = (a, b, c) => ({ b: TSL.select(a, b.b, c.b), s: TSL.select(a, b.s, c.s) });
+            const TX = wahl(untenX, N["-1,0"], N["1,0"]);
+            const TZ = wahl(untenZ, N["0,-1"], N["0,1"]);
+            const TXZ = wahl(untenX, wahl(untenZ, N["-1,-1"], N["-1,1"]), wahl(untenZ, N["1,-1"], N["1,1"]));
+            const traegt = (T) => T.b.and(T.s.equal(T00.s));
             const sicher = T00.b
-                .and(nahX.not().or(traegt(T10)))
-                .and(nahZ.not().or(traegt(T01)))
-                .and(nahX.and(nahZ).not().or(traegt(T11)));
+                .and(nahX.not().or(traegt(TX)))
+                .and(nahZ.not().or(traegt(TZ)))
+                .and(nahX.and(nahZ).not().or(traegt(TXZ)));
             const saum = sicher
                 .not()
-                .and(T00.b.or(nahX.and(T10.b)).or(nahZ.and(T01.b)).or(nahX.and(nahZ).and(T11.b)));
+                .and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
             material.maskNode = sicher.not();
             // die Weiche: der Strahl bis zur um `nahtWeiche` gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|)
             const pv = TSL.positionView;
@@ -38761,18 +38772,22 @@ class AnazhRealm {
             const g = drin && M.daten[k] / 255 > 0.5;
             return { b: g, s: g ? (M.daten[k + 1] / 255) * 25.5 : 0 };
         };
+        let w = 0;
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) w = Math.max(w, T(i + dx, j + dz).s);
         const T00 = T(i, j);
-        const T10 = T(i - 1, j);
-        const T01 = T(i, j - 1);
-        const T11 = T(i - 1, j - 1);
-        const w = Math.max(T00.s, T10.s, T01.s, T11.s);
-        const nahX = lx < w;
-        const nahZ = lz < w;
+        const untenX = lx < w * 1.5;
+        const untenZ = lz < w * 1.5;
+        const nahX = untenX || lx > span - w * 0.5;
+        const nahZ = untenZ || lz > span - w * 0.5;
+        const ix = untenX ? -1 : 1;
+        const jz = untenZ ? -1 : 1;
+        const TX = T(i + ix, j);
+        const TZ = T(i, j + jz);
+        const TXZ = T(i + ix, j + jz);
         const traegt = (t) => t.b && t.s === T00.s;
-        const sicher =
-            T00.b && (!nahX || traegt(T10)) && (!nahZ || traegt(T01)) && (!(nahX && nahZ) || traegt(T11));
+        const sicher = T00.b && (!nahX || traegt(TX)) && (!nahZ || traegt(TZ)) && (!(nahX && nahZ) || traegt(TXZ));
         if (sicher) return 2;
-        return T00.b || (nahX && T10.b) || (nahZ && T01.b) || (nahX && nahZ && T11.b) ? 1 : 0;
+        return T00.b || (nahX && TX.b) || (nahZ && TZ.b) || (nahX && nahZ && TXZ.b) ? 1 : 0;
     }
 
     // Der Ring weicht dem Gebauten: trägt ein GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring
