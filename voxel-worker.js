@@ -262,8 +262,9 @@ function applyStateDelta(delta) {
 
 // DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` in anazhRealm.js, K23): je Chunk die Edits, deren Kugel ihn samt einem
 // Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in Setz-Reihenfolge.
-// Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird nachgetragen, ein Snapshot baut neu). Die
-// Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch zur Main (gate:worker-dichte, 300 Edits).
+// Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird
+// nachgetragen, ein Snapshot baut neu). Die Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch
+// zur Main (gate:worker-dichte, 300 Edits).
 const KEINE_EDITS = Object.freeze([]);
 let editKarte = null;
 function editKarteFrisch() {

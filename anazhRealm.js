@@ -28713,11 +28713,11 @@ class AnazhRealm {
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
     // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Kugel
     // samt einem Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in
-    // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits zu summieren, und die Summe bleibt Bit für
-    // Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk eine Generation aus EINEM steigenden Zähler
-    // (nie wiederholt) — der Stale-Filter der Worker-Antworten (`_voxelStand`). Identität und Länge der Liste halten die
-    // Karte frisch: ein Push wird nachgetragen, ein Tausch oder Kürzen baut sie neu. Der Worker spiegelt sie byte-gleich
-    // (`editKarte`, voxel-worker.js).
+    // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits
+    // zu summieren, und die Summe bleibt Bit für Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk
+    // eine Generation aus EINEM steigenden Zähler (nie wiederholt) — der Stale-Filter der Worker-Antworten
+    // (`_voxelStand`). Identität und Länge der Liste halten die Karte frisch: ein Push wird nachgetragen, ein Tausch oder
+    // Kürzen baut sie neu. Der Worker spiegelt sie byte-gleich (`editKarte`, voxel-worker.js).
     _voxelEditKarte() {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;

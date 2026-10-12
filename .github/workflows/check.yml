@@ -378,6 +378,9 @@ jobs:
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
               # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
+              # K23: (L) 300 Löcher über den Spielpfad stehen nach dem Reload alle (vorher 256/300, FIFO-Deckel), (S) der
+              # save-server stirbt an jedem Schreib-Punkt und lässt den alten oder neuen Stand ganz, der .bak hält den
+              # vorigen; der Selbsttest setzt das direkte fs.writeFile ein und sieht ROT. Lokal 16 → 30 s.
               run: npm run gate:persistence
 
             - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
