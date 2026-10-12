@@ -892,13 +892,18 @@ function wasserBild(opts) {
         // und verschluckte jede Strähne): Licht des Orts 1 (Schaum 0,93 · Deckung 0,7 bleibt unter 1), kein Sonnen-Glanz.
         // Der Spiel-Loop ruht während der Probe (Lehre 17): zwischen den beiden Uhren schrieb der Tag-Nacht-Takt Licht
         // und Himmel neu (06.10.: die Stromschnelle bei Uhr 3600 2,5× heller als bei 60 — das Licht, nicht das Wasser).
+        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum
+        // über JEDEM Wasser, ohne Ort und ohne Gesetz-Grund; die Stimmung driftet mit der Boot-Zeit (lokal 0,06, in der CI
+        // ≈ 0,17: 5,4 % des ruhigen Flusses über der Hell-Schwelle). B1 misst den Schaum des Gesetzes, nicht die Laune.
         renderer.setAnimationLoop(null);
         const irrAlt = U.irr.value.clone();
         const lichtAlt = U.light.value;
+        const stimmungAlt = U.emotion.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
             U.irr.value.setRGB(1, 1, 1);
             U.light.value = 0;
+            U.emotion.value = 0;
             const px = await lese();
             const L = new Float32Array(W * H);
             for (let p = 0; p < W * H; p++) L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
@@ -961,6 +966,7 @@ function wasserBild(opts) {
             U.time.value = zeitAlt;
             U.irr.value.copy(irrAlt);
             U.light.value = lichtAlt;
+            U.emotion.value = stimmungAlt;
             geom.dispose();
             maskMat.dispose();
             rt.dispose();
