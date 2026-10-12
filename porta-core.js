@@ -265,7 +265,7 @@
     // Texel der nahen Kaskade, zusammen werfen sie EIN Band; die Enden, wo die Stränge über 12 % auf × 1,7 spreizen, in vier
     // Stücken je mit dem Radius ihres Abschnitts — drachentor Wurf-IoU 0,841 → 0,864), Monolith und Wurzeln als Ketten auf
     // dem Polygonzug ihrer Röhre mit ihrem Röhren-Radius (`hRoehrenKette`, Sehne ≤ `roehreR` × r neben dem Gezeichneten —
-    // geisttor 0,767 → 0,892), die
+    // geisttor 0,767 → 0,887; r/4 kostete die kathedrale +216 Dreiecke ohne Gewinn, r riss geisttor 0,837), die
     // Scharniere als Kapsel, Stufen und Podest als Kasten, die gedrehten Steine (Bogen, Schutt) als einbeschriebene Kapseln. Teile dünner als `dickeM` fallen (der Texel der nahen Kaskade
     // am Genesis-Ring: 6,4 × 17 cm, OMEN 12.10.). Jede Zahl liegt auf dem Raster 2^-12; Kapsel und Kasten sitzen `einzugM`
     // innerhalb des Gezeichneten (der Werfer bleibt unter der Haut: keine Akne, kein Peter-Panning). Die Stufe 3 IST diese
@@ -275,7 +275,7 @@
     // Stoffs (Mauer, Geflecht-Hülle oder Monolith — im werfenden Körper; höchstens `sichtGlieder` Kapseln) und der
     // Sockel, EINBESCHRIEBEN: die kleinste Standfläche aus Stufen und Podest über ihre größte Tiefe (die Hüllbox der Stufen
     // lag über den unteren Tritten und beschattete sie — in EINER Welt auf 2,6 m 26k → 69k px Schatten) — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
-    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03, kastenM: 0.032, roehreR: 0.25 };
+    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03, kastenM: 0.032, roehreR: 0.75 };
     function hRaster(v) {
         return Math.round(v * 4096) / 4096 + 0;
     }
