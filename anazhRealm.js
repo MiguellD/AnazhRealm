@@ -24977,6 +24977,9 @@ class AnazhRealm {
                 const puffer = n && n.node;
                 if (puffer && puffer.isBufferNode && typeof puffer.setName === "function")
                     puffer.setName(assignBuffer ? "instanzMatrix" : "instanzMatrixVor");
+                // DER URSPRUNG DER INSTANZ (`_instanzMitteNode`, das Maß der Blende): r184 legt den InstancedMeshNode je
+                // Bau neu an (`setupPosition`, auch im Schattenpass) und baut die Matrix dort VOR jedem Fragment-Knoten
+                if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;
                 return n;
             };
             IN.__anazhName = true;
@@ -32192,7 +32195,9 @@ class AnazhRealm {
                                         // des gesetzten Waldes lebt auf der CPU (`_archKartenHorizont`).
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
-                                            distNode: _Ta.sqrt(_hl2),
+                                            // die Distanz zur ACHSE der Instanz (der Anker, `_dA`), wie das Studio-
+                                            // Billboard (`vCD` aus `instanceMatrix[3]`), nie zum Fragment des Quads
+                                            distNode: _dA,
                                             visHeightNode: _karte.w.abs(),
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
@@ -33104,6 +33109,36 @@ class AnazhRealm {
         return u;
     }
 
+    // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
+    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus ihrer Instanz-
+    // Matrix (der Haken an `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen der Ursprung des
+    // Objekts. Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
+    // gemessen löste sich die ferne Krone eines nahen Baums auf, und die Stufen-Wahl musste dafür die zweite Stufe
+    // zeichnen (1110-11: die Birke in 5 m stand doppelt, 0,6–2,7 ms GPU an der Mess-Wiese).
+    _instanzMitteNode(T) {
+        if (this._instanzMitteKnoten) return this._instanzMitteKnoten;
+        // die Knoten-Basis exportiert window.THREE nicht — sie ist die Oberklasse des InstanceNode (r184 `class … extends Node`)
+        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
+        if (!N || N.type !== "Node" || !T.varying || !T.modelWorldMatrix || !T.vec4) {
+            const text =
+                "URSPRUNG DER INSTANZ: r184 Node (über InstanceNode) · varying · modelWorldMatrix fehlen (Vendor-Drift)";
+            this.log(text, "ERROR");
+            throw new Error(text);
+        }
+        class InstanzMitte extends N {
+            constructor() {
+                super("vec2");
+            }
+            setup(builder) {
+                const m = builder.__anazhInstanzMatrix;
+                const lokal = m ? T.vec4(m.element(3).xyz, 1.0) : T.vec4(0.0, 0.0, 0.0, 1.0);
+                return T.modelWorldMatrix.mul(lokal).xz;
+            }
+        }
+        this._instanzMitteKnoten = T.varying(new InstanzMitte(), "vInstanzMitte");
+        return this._instanzMitteKnoten;
+    }
+
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
     // ihr entsprechen (Linse `gate:foundry-crossfade`); Zahlen aus uLodD0/uLodD1/uLodFade/uLodFade0 +
     // `_ensureLodUniforms`. opts.impostor → fin-Einblendung (lod=2) aus opts.distNode × Wahrnehmungs-k;
@@ -33171,10 +33206,10 @@ class AnazhRealm {
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (_lodPerfMul).
-            const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z))).mul(
-                _lu.uLodPerf
-            );
+            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (_lodPerfMul) — vom Auge zum
+            // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
+            const _mitte = this._instanzMitteNode(T);
+            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
@@ -33438,8 +33473,8 @@ class AnazhRealm {
         }
         // SSE-Metrik + Dither-Crossfade NUR für Laub-Karten (`opts.foliageLeaf` trägt aH0/aH0L aus
         // `_buildTreeFoliageCardGeometry`; sonst attribute()-Crash). Dieselbe `uLodRef`-Quelle wie die CPU:
-        //   vLodD  = |cam.xz − posWorld.xz| · min(uLodRef/aH0, 1) (großer Baum behält Detail länger;
-        //            posWorld enthält die Instanz-Transform); vLodDL = dasselbe mit aH0L (Blatt-Sichthöhe).
+        //   vLodD  = |Auge.xz − Ursprung der Instanz.xz| · min(uLodRef/aH0, 1) (großer Baum behält Detail länger;
+        //            `_instanzMitteNode`, Studio `_iw`); vLodDL = dasselbe mit aH0L (Blatt-Sichthöhe).
         // Der Discard faltet in die Alpha (alphaTest cullt); uLodMaskOn=0 oder NAH-Band → keep=1, byte-gleich.
         if (opts.foliageLeaf === true) {
             try {
@@ -33466,11 +33501,10 @@ class AnazhRealm {
                 ) {
                     const _aH0 = _Tl.attribute("aH0", "float");
                     const _aH0L = _Tl.attribute("aH0L", "float");
-                    const _pw = _Tl.positionWorld;
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
-                    // xz-Distanz Kamera → Vertex-Weltposition (die Instanz-Transform steckt in
-                    // positionWorld → per-Instanz korrekt, ohne den modelWorldMatrix-Ursprung).
-                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z))).mul(_lu.uLodPerf);
+                    // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
+                    const _mitte = this._instanzMitteNode(_Tl);
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y))).mul(_lu.uLodPerf);
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
                     const _lkL = _ref.div(_aH0L.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
@@ -100877,12 +100911,12 @@ class AnazhRealm {
         return !fenster || this._instanzFenster(g, i, L);
     }
 
-    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge irgendwo auf der Instanz etwas? Die Maske misst je Fragment die
-    // Distanz vom Auge in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (Stufen: je Vertex, Skelett-Metrik aH0, Blatt-Metrik aH0L;
-    // die Karte: vom Kamera-Ort zum Fragment ihres Quads, Sichthöhe |aKarte.w|, ein negativer Stempel = verdeckt, sie
-    // blendet voll). Die Vertices einer Instanz liegen in XZ höchstens `w` um ihre Achse (die Weite der Gestalt × die Norm
-    // des XZ-Blocks der Matrix + was eine Schräglage aus der Höhe trägt + der Wind-Saum; die Karte: ihre Halbbreite ×
-    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Das Auge der
+    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge auf der Instanz etwas? Die Maske misst je INSTANZ die Distanz vom
+    // Auge zu ihrem Ursprung in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (`_instanzMitteNode`, Studio `_iw`; Stufen:
+    // Skelett-Metrik aH0, Blatt-Metrik aH0L; die Karte: zu ihrem Anker, Sichthöhe |aKarte.w|, ein negativer Stempel =
+    // verdeckt, sie blendet voll) — das Intervall ist der Punkt der Instanz, nur der Halt macht es breit; das Urteil fällt
+    // `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Bis 1110-11 maß die Maske je Fragment und das Fenster über die
+    // Weite der Gestalt: die L1 einer Birke in 5 m (Krone 10 m) behielt ihre fernen Äste und wurde ganz gezeichnet. Das Auge der
     // Maske hält wie jeder Ort der Lage um den halben Halt (`_blendeHaelt`) — die Distanz trägt den Halt als Rand (`L.halt`,
     // wie `_passTrifft`): eine gehaltene Wahl verliert nichts, solange das Auge atmet.
     _instanzFenster(g, i, L) {
@@ -100898,26 +100932,13 @@ class AnazhRealm {
         if (g.wahlStufe === "karte") {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];
-            const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
             const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
-            const dSmin = (Math.max(0, d - halt) + s * ak[i * 4 + 1]) * L.perf * k,
-                dSmax = (d + halt + s * ak[i * 4 + 1]) * L.perf * k;
+            const dSmin = Math.max(0, d - halt) * L.perf * k,
+                dSmax = (d + halt) * L.perf * k;
             return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
         }
-        const weite = this._instanzWeite(geo);
-        const p = a[o],
-            q = a[o + 8],
-            r = a[o + 2],
-            s = a[o + 10];
-        const F = p * p + q * q + r * r + s * s;
-        const det = p * s - q * r;
-        const norm = Math.sqrt(0.5 * (F + Math.sqrt(Math.max(0, F * F - 4 * det * det))));
-        const w =
-            weite.r * norm +
-            weite.y * Math.sqrt(a[o + 4] * a[o + 4] + a[o + 6] * a[o + 6]) +
-            AnazhRealm.PASS_WAHL.pflanzeRandM;
-        const dMin = Math.max(0, d - w - halt) * L.perf,
-            dMax = (d + w + halt) * L.perf;
+        const dMin = Math.max(0, d - halt) * L.perf,
+            dMax = (d + halt) * L.perf;
         const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
         const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, false);
@@ -100965,29 +100986,6 @@ class AnazhRealm {
         if (stufe === 3) return dSmin < K.l1Aus;
         if (stufe === "karte") return verdeckt === true || dSmax > K.karteEin;
         return true;
-    }
-
-    // Die Weite einer Gestalt um ihre Achse (größter XZ-Abstand eines Vertex) und ihre größte Höhe |y|, je Positions-Puffer
-    // einmal gerechnet (die Fassaden einer Gestalt teilen ihn).
-    _instanzWeite(geo) {
-        const pos = geo.attributes.position;
-        const W = this._wahlWeiten || (this._wahlWeiten = new WeakMap());
-        let w = W.get(pos);
-        if (!w) {
-            let r2 = 0,
-                y = 0;
-            for (let j = 0; j < pos.count; j++) {
-                const px = pos.getX(j),
-                    pz = pos.getZ(j);
-                const v = px * px + pz * pz;
-                if (v > r2) r2 = v;
-                const ay = Math.abs(pos.getY(j));
-                if (ay > y) y = ay;
-            }
-            w = { r: Math.sqrt(r2), y };
-            W.set(pos, w);
-        }
-        return w;
     }
 
     // Kaskaden-Index einer Schatten-Kamera (die EINE Map ohne CSM = 0), sonst −1.
