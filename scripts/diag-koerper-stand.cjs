@@ -18,7 +18,19 @@
 //       Welle LF finden die Sohlen die Karte selbst, gleich wo der Leib steht: der Leib ist der Zeuge der Sicht); entlang
 //       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe)
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
-//       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter
+//       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
+//       steht dort; die flachste Stelle war ein Seegrund, der Wolf schwamm 16 cm über ihm, und der Selbsttest las nur die
+//       Beine, die ein Ruf 20 m weit am alten Ort verankert ließ: blind, sobald der Gang sie am neuen Ort setzte, K07)
+//   K6  TIER AM CHUNK-RAND (K07): am unteren Rand jedes Chunks (0,9 m je Achse) zeichnet das Mesh des Nachbarn, die Karte
+//       des Eigners ist leer oder trägt nur, was darunter liegt — (a) der Stand-Leser quer durch die Rand-Streifen um den
+//       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm, (b) ein
+//       stehender Wolf hangauf an der Streifen-Stelle mit dem größten Träger-Fehler (12–30°): jede Sohle (Median je Pfote)
+//       und der Leib ≤ 6 cm. Vorher las der Stand-Leser dort den Träger: 527 von 582 Punkten daneben, die Hinterpfoten
+//       62–71 cm über dem Boden (Konsum-Leser: Pfoten-IK `_kreaturFussBoden`, Tier-Lage, Fuß-IK des Menschen `_gaitBodenY`)
+//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (LOD-0-Chunks im
+//       Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (0,9–2,7 m):
+//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
+//       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -43,9 +55,17 @@ const MIME = {
 
 // DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const BASIS = {
-    traeger: [["return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);", "return this.getTerrainHeightAt(x, z);"]],
+    traeger: [
+        [
+            "return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);",
+            "return this.getTerrainHeightAt(x, z);",
+        ],
+    ],
     luft: [
-        ["return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);", "return this.getTerrainHeightAt(x, z);"],
+        [
+            "return this._standSicht(x, z, s._kapselTraegerY, s._kapselStruktur);",
+            "return this.getTerrainHeightAt(x, z);",
+        ],
         ["ik: this.state.isInAir !== true,", "ik: true,"],
     ],
     hoehle: [["const g = this._fieldSurfaceBelow(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);", "const g = null;"]],
@@ -54,9 +74,31 @@ const BASIS = {
             "const v = this._standSicht(px, pz, Number.isFinite(P[k].g) ? P[k].g : centerG, false);",
             "const v = Number.isFinite(P[k].g) ? P[k].g : centerG;",
         ],
-        ["baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);", "baseY = terrainHeight;"],
+        [
+            "baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);",
+            "baseY = terrainHeight;",
+        ],
     ],
     tod: [["creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);", "void 0;"]],
+    // K07: der Stand-Leser liest nur die Karte des Eigners — im Rand-Streifen trägt der Träger
+    rand: [
+        [
+            "const k = this._bodenSichtAt(x, z);",
+            // die Karte des Eigners allein (der Leser vor K07, bilinear, null an einer leeren Ecke)
+            "const k = (() => { const S = this._voxelChunkConfig(0).span, ax = Math.floor(x / S), az = Math.floor(z / S), e = this.state.voxelChunks ? this.state.voxelChunks.get(`${ax},${az}`) : null, m = e && e.surfMap; if (!m) return null; const C = this._voxelChunkConfig(e.lod || 0), T = AnazhRealm.BODEN_KARTE_TEILUNG, h = C.step / T, M = T * (C.dim + 3) + 1, u = (x - (ax * C.span - C.step)) / h, v = (z - (az * C.span - C.step)) / h, i = Math.floor(u), j = Math.floor(v); if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null; const a = m[i + j * M], b = m[i + 1 + j * M], c = m[i + (j + 1) * M], d = m[i + 1 + (j + 1) * M]; if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null; const fu = u - i, fv = v - j; return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv; })();",
+        ],
+    ],
+    // K21: Nah-Wiese und Nah-Streu lesen nur die Karte des Eigners — im Rand-Streifen ist sie leer (der Leser vor K21)
+    wiese: [
+        [
+            "const y = this._bodenSichtAt(x, z, grund);",
+            "const y = (() => { const C = this._voxelChunkConfig(0), lx = x - Math.floor(x / C.span) * C.span, lz = z - Math.floor(z / C.span) * C.span; return lx < C.step / 2 || lz < C.step / 2 ? null : this._bodenSichtAt(x, z, grund); })();",
+        ],
+        [
+            "const py = this._bodenSichtAt(px, pz);",
+            "const py = (() => { const C = this._voxelChunkConfig(0), lx = px - Math.floor(px / C.span) * C.span, lz = pz - Math.floor(pz / C.span) * C.span; return lx < C.step / 2 || lz < C.step / 2 ? null : this._bodenSichtAt(px, pz); })();",
+        ],
+    ],
 };
 let patch = null;
 let patchFehler = [];
@@ -82,7 +124,7 @@ const server = http.createServer((req, res) => {
 });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
-async function proben() {
+async function proben(mitWiese) {
     const r = window.anazhRealm;
     const s = r.state;
     const T = window.THREE;
@@ -92,14 +134,33 @@ async function proben() {
     const p = s.player;
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
-    // die Boden-Karte selbst (das gezeichnete Mesh des Chunks, bilinear) — die Linse misst gegen sie, nie durch den Schnitt
+    // die Boden-Karte des EIGNERS selbst (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke) — die Linse
+    // misst gegen sie, nie durch den Schnitt; K6 sucht mit ihr das Rand-Loch (dort ist sie leer, der Strahl richtet). Seit
+    // K21 liest das Spiel nur `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst.
     const span = r._voxelChunkConfig(0).span;
     const karte = (x, z) => {
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
         const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
-        const v = e && e.surfMap ? r._chunkSurfaceAt(e, cx, cz, x, z) : null;
-        return Number.isFinite(v) ? v : null;
+        const m = e && e.surfMap;
+        if (!m) return null;
+        const C = r._voxelChunkConfig(e.lod || 0);
+        const T = A.BODEN_KARTE_TEILUNG;
+        const h = C.step / T;
+        const M = T * (C.dim + 3) + 1;
+        const u = (x - (cx * C.span - C.step)) / h;
+        const v = (z - (cz * C.span - C.step)) / h;
+        const i = Math.floor(u);
+        const j = Math.floor(v);
+        if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
+        const ka = m[i + j * M];
+        const kb = m[i + 1 + j * M];
+        const kc = m[i + (j + 1) * M];
+        const kd = m[i + 1 + (j + 1) * M];
+        if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
+        const fu = u - i;
+        const fv = v - j;
+        return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
     };
     // die Kapsel ruhen lassen (Fuß-Tempo 0) und n feste Sim-Schritte gehen
     const savedVel = s.playerVel;
@@ -196,7 +257,8 @@ async function proben() {
                 if (sol && inLuft) {
                     if (luftOben - y >= 3.0) {
                         const boden = r._fieldSurfaceBelow(x, y + 0.5, z, 2);
-                        if (Number.isFinite(boden) && top - boden > 6 && passt(x, z, boden, 2.4)) hoehle = { x, z, top, boden };
+                        if (Number.isFinite(boden) && top - boden > 6 && passt(x, z, boden, 2.4))
+                            hoehle = { x, z, top, boden };
                     }
                     break;
                 }
@@ -215,11 +277,16 @@ async function proben() {
             kapselFussY: pm.position.y - A.PLAYER_FOOT_OFFSET,
             probe: ik ? Math.min(ik.probeL.g, ik.probeR.g) : null,
         };
-        o.k2.abstandCm = Number.isFinite(o.k2.probe) ? Math.round(Math.abs(o.k2.probe - o.k2.kapselFussY) * 1000) / 10 : null;
+        o.k2.abstandCm = Number.isFinite(o.k2.probe)
+            ? Math.round(Math.abs(o.k2.probe - o.k2.kapselFussY) * 1000) / 10
+            : null;
         // ── K3 TIER IN DER HÖHLE ──
         const saveMax = s.maxCreatures;
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
-        const w = r.spawnCreatureAt(hoehle.x + 1.5, hoehle.boden + 0.3, hoehle.z, "happy", "wolf", { precise: true, bodySize: 1 });
+        const w = r.spawnCreatureAt(hoehle.x + 1.5, hoehle.boden + 0.3, hoehle.z, "happy", "wolf", {
+            precise: true,
+            bodySize: 1,
+        });
         if (w) {
             const hs = [];
             for (let k = 0; k < 40; k++) {
@@ -241,14 +308,19 @@ async function proben() {
     s._fieldVy = 0;
     kapsel(30);
     // ── K4 TIER AM HANG: die Hang-Stelle (12–30°, die Karte geschlossen im 2-m-Umkreis) mit dem größten Abstand Gesetz ↔
-    // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene Stelle (≤ 3°) für die Tod-Lage ──
+    // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene trockene Stelle (≤ 3°, über dem Wasser) für die Tod-Lage ──
     // K16 (das Flussnetz-Gelände): um die Plattform trägt der Hang das Gesetz glatt (Gesetz ↔ Karte höchstens 10 cm im
     // 120-m-Quadrat) — der Ort kommt aus der Welt: das Quadrat um den Start, dann um die Orte 150 m und 300 m weit
     // (die Welt schwingt dort ein), der erste mit einer Hang-Stelle im Band.
     let hang = null;
     let eben = null;
     const orte = [[0, 0]];
-    for (const d of [150, 300]) for (let a = 0; a < 8; a++) orte.push([Math.round(Math.cos((a / 8) * Math.PI * 2) * d), Math.round(Math.sin((a / 8) * Math.PI * 2) * d)]);
+    for (const d of [150, 300])
+        for (let a = 0; a < 8; a++)
+            orte.push([
+                Math.round(Math.cos((a / 8) * Math.PI * 2) * d),
+                Math.round(Math.sin((a / 8) * Math.PI * 2) * d),
+            ]);
     for (const [ox, oz] of orte) {
         if (hang) break;
         eben = null;
@@ -275,24 +347,27 @@ async function proben() {
             }
             s.playerVel = vel;
         }
-    for (let dx = -60; dx <= 60; dx += 2)
-        for (let dz = -60; dz <= 60; dz += 2) {
-            const x = start.x + ox + dx;
-            const z = start.z + oz + dz;
-            const k = karte(x, z);
-            if (k === null) continue;
-            const g = r._voxelSurfaceY(x, z);
-            if (!Number.isFinite(g)) continue;
-            const kx = karte(x + 1, z);
-            const kz = karte(x, z + 1);
-            if (kx === null || kz === null) continue;
-            if ([karte(x + 2, z + 2), karte(x - 2, z + 2), karte(x + 2, z - 2), karte(x - 2, z - 2)].includes(null)) continue;
-            const neig = Math.atan(Math.hypot(kx - k, kz - k)) * (180 / Math.PI);
-            const ab = Math.abs(g - k);
-            if (neig <= 3 && ab < 0.1 && (!eben || neig < eben.neig)) eben = { x, z, karte: k, gesetz: g, neig };
-            if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
-            if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
-        }
+        for (let dx = -60; dx <= 60; dx += 2)
+            for (let dz = -60; dz <= 60; dz += 2) {
+                const x = start.x + ox + dx;
+                const z = start.z + oz + dz;
+                const k = karte(x, z);
+                if (k === null) continue;
+                const g = r._voxelSurfaceY(x, z);
+                if (!Number.isFinite(g)) continue;
+                const kx = karte(x + 1, z);
+                const kz = karte(x, z + 1);
+                if (kx === null || kz === null) continue;
+                if ([karte(x + 2, z + 2), karte(x - 2, z + 2), karte(x + 2, z - 2), karte(x - 2, z - 2)].includes(null))
+                    continue;
+                const neig = Math.atan(Math.hypot(kx - k, kz - k)) * (180 / Math.PI);
+                const ab = Math.abs(g - k);
+                const trocken = !(r._koerperWasser(x, z, k) > k);
+                if (neig <= 3 && ab < 0.1 && trocken && (!eben || neig < eben.neig))
+                    eben = { x, z, karte: k, gesetz: g, neig };
+                if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
+                if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
+            }
     }
     o.hang = hang;
     o.eben = eben;
@@ -300,7 +375,10 @@ async function proben() {
         const saveMax = s.maxCreatures;
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
         pm.position.set(hang.x + 6, r._voxelSurfaceY(hang.x + 6, hang.z + 6) + 1.7, hang.z + 6); // nah genug für die Voll-Gestalt und die Hang-Proben
-        const c = r.spawnCreatureAt(hang.x, hang.gesetz + 0.3, hang.z, "happy", "wesen", { precise: true, bodySize: 1 });
+        const c = r.spawnCreatureAt(hang.x, hang.gesetz + 0.3, hang.z, "happy", "wesen", {
+            precise: true,
+            bodySize: 1,
+        });
         if (c) {
             const tiere = (n, fn) => {
                 for (let k = 0; k < n; k++) {
@@ -433,9 +511,328 @@ async function proben() {
         }
         s.maxCreatures = saveMax;
     }
+    // ── K6 TIER AM CHUNK-RAND (K07, der Fuß steht in der Standphase): am unteren Rand jedes Chunks (je Achse ein halber
+    // Zellen-Schritt) zeichnet das Mesh des NACHBARN, die Karte des Eigners ist dort leer. Die Streifen-Stelle (0,45 m im
+    // Chunk, x-Rand) mit dem größten Fehler eines Lesers, der dort den Träger nimmt (Gesetz der Mitte gegen den gezeichneten
+    // Boden 0,7 m hangab, 10–60 cm): ein stehender Wolf, Blick hangauf, Sohlen und Leib gegen die GEZEICHNETEN Dreiecke (ein
+    // Strahl lotrecht auf das Mesh des Eigners und seiner unteren Nachbarn — nie durch den Leser, den der Schnitt heilt) ──
+    {
+        const strahl = new T.Raycaster();
+        const ab = new T.Vector3(0, -1, 0);
+        const von = new T.Vector3();
+        let meshe = 0;
+        // die oberste Fläche des letzten Strahls jeder Art: ist sie steil, steht der Punkt unter einem Überhang (die Karte
+        // trägt dort die Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter — keine Frage des Rand-Streifens)
+        let obenY = -Infinity;
+        let obenSteil = false;
+        const gezeichnet = (x, z) => {
+            obenY = -Infinity;
+            obenSteil = false;
+            const cx = Math.floor(x / span);
+            const cz = Math.floor(z / span);
+            let best = null;
+            for (const [a, b] of [
+                [0, 0],
+                [-1, 0],
+                [0, -1],
+                [-1, -1],
+            ]) {
+                const e = s.voxelChunks ? s.voxelChunks.get(`${cx + a},${cz + b}`) : null;
+                if (!e || !e.mesh || !e.mesh.geometry) continue;
+                meshe++;
+                e.mesh.updateMatrixWorld(true);
+                strahl.set(von.set(x, 400, z), ab);
+                // die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts)
+                const alle = strahl.intersectObject(e.mesh, false);
+                const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
+                if (h && (best === null || h.point.y > best)) best = h.point.y;
+                if (alle.length && alle[0].point.y > obenY) {
+                    obenY = alle[0].point.y;
+                    obenSteil = !(alle[0].face && Math.abs(alle[0].face.normal.y) >= 0.3);
+                }
+            }
+            return best;
+        };
+        const cx0 = Math.floor(start.x / span);
+        const cz0 = Math.floor(start.z / span);
+        // DER LESER QUER DURCH DEN STREIFEN: je Rand-Streifen der Chunks um den Start (x- und z-Rand, alle 8 m) Punkte im Abstand
+        // 0,1 m über die ganze Breite (0,05–0,85 m) — der Stand-Leser mit einem Träger 0,5 m über dem gezeichneten Boden (eine
+        // Pfote hangab ihres Leibs) trifft den gezeichneten Boden; wer auf den Träger fällt, verfehlt ihn um 0,5 m (die Wache
+        // 0,25 m trennt das von der Auflösung der Karte). Nicht gezählt: Punkte unter einem Überhang und Raster-Zellen über
+        // einer Kante (eine Ecke unter steiler Fläche oder > 0,6 m Höhen-Spanne der fünf Säulen auf 0,45 m, steiler als 53°: dort
+        // mittelt jede Karte Schichten und Knicke — eine Frage ihrer Auflösung, nicht des Rand-Streifens)
+        const hR = r._voxelChunkConfig(0).step / A.BODEN_KARTE_TEILUNG;
+        const verwickelt = (x, z, g) => {
+            const x0 = Math.floor(x / hR) * hR;
+            const z0 = Math.floor(z / hR) * hR;
+            let lo = g;
+            let hi = g;
+            for (const [px, pz] of [
+                [x0, z0],
+                [x0 + hR, z0],
+                [x0, z0 + hR],
+                [x0 + hR, z0 + hR],
+            ]) {
+                const y = gezeichnet(px, pz);
+                if (y === null || obenSteil) return true;
+                lo = Math.min(lo, y);
+                hi = Math.max(hi, y);
+            }
+            return hi - lo > 0.6;
+        };
+        const leser = { n: 0, fehl: 0, ueberhang: 0, kante: 0, max: 0, wo: null };
+        for (let q = -1; q <= 2; q++)
+            for (let dl = -40; dl <= 40; dl += 8)
+                for (let f = 0.05; f < 0.9; f += 0.1)
+                    for (const [x, z] of [
+                        [(cx0 + q) * span + f, start.z + dl],
+                        [start.x + dl, (cz0 + q) * span + f],
+                    ]) {
+                        const g = gezeichnet(x, z);
+                        if (g === null || r._koerperWasser(x, z, g) > g) continue;
+                        if (obenSteil) {
+                            leser.ueberhang++;
+                            continue;
+                        }
+                        const d = Math.abs(r._standSicht(x, z, g + 0.5, false) - g);
+                        if (!(d <= 0.25) && verwickelt(x, z, g)) {
+                            leser.kante++;
+                            continue;
+                        }
+                        leser.n++;
+                        if (!(d <= 0.25)) leser.fehl++;
+                        if (d > leser.max) {
+                            leser.max = d;
+                            leser.wo = [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
+                        }
+                    }
+        o.k6leser = {
+            n: leser.n,
+            fehl: leser.fehl,
+            ueberhang: leser.ueberhang,
+            kante: leser.kante,
+            maxCm: Math.round(leser.max * 1000) / 10,
+            wo: leser.wo,
+        };
+        let rand = null;
+        for (let ax = cx0 - 1; ax <= cx0 + 2; ax++) {
+            const x = ax * span + 0.45;
+            for (let dz = -60; dz <= 60; dz += 1) {
+                const z = start.z + dz;
+                if (karte(x, z) !== null) continue; // die Karte des Eigners trägt hier: kein Rand-Loch
+                const g = gezeichnet(x, z);
+                const gv = gezeichnet(x, z + 0.7);
+                const gh = gezeichnet(x, z - 0.7);
+                if (g === null || gv === null || gh === null) continue;
+                if (r._koerperWasser(x, z, g) > g) continue;
+                // das Hang-Band von K4 (12–30°): steiler misst die Auflösung der Karte und die Reichweite der Beine
+                const neig = Math.atan(Math.abs(gv - gh) / 1.4) * (180 / Math.PI);
+                if (neig < 12 || neig > 30) continue;
+                const hangauf = gv >= gh ? 1 : -1;
+                const fehler = Math.abs(r.getTerrainHeightAt(x, z) - (hangauf > 0 ? gh : gv));
+                if (fehler < 0.1 || fehler > 0.6) continue;
+                if (!rand || fehler > rand.fehler) rand = { x, z, fehler, hangauf, boden: g, neig };
+            }
+        }
+        o.rand = rand
+            ? {
+                  x: rand.x,
+                  z: rand.z,
+                  fehlerCm: Math.round(rand.fehler * 1000) / 10,
+                  neigGrad: Math.round(rand.neig * 10) / 10,
+                  meshe,
+              }
+            : { meshe };
+        if (rand) {
+            const saveMax = s.maxCreatures;
+            s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
+            pm.position.set(rand.x + 6, start.y, rand.z + 6);
+            const c = r.spawnCreatureAt(rand.x, rand.boden + 0.3, rand.z, "happy", "wolf", {
+                precise: true,
+                bodySize: 1,
+            });
+            s.maxCreatures = saveMax;
+            const tb = c && c.userData._tierBaum;
+            const Tt = tb && tb.teile;
+            const pf = Tt ? [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP] : [];
+            if (c && pf.length === 4 && pf.every(Boolean)) {
+                c.userData.task = { name: "wait", args: {}, since: 0 };
+                const gier = rand.hangauf > 0 ? 0 : Math.PI;
+                c.rotation.y = gier; // die Gier VOR dem ersten Takt: die Pfoten setzen unter dem Leib in seiner Richtung
+                const halte = (n) => {
+                    for (let k = 0; k < n; k++) {
+                        r.updateCreatures(0.02);
+                        c.userData._hopV = 0;
+                        c.userData._hopH = 0;
+                        c.position.x = rand.x;
+                        c.position.z = rand.z;
+                        c.rotation.y = gier;
+                    }
+                };
+                halte(80);
+                // die Sohlen: der Boden-Punkt unter der Handwurzel in der Ruhe-Pose, im Pfoten-Raum (die Methode von K4)
+                const rx = c.rotation.x;
+                const rz = c.rotation.z;
+                c.rotation.x = 0;
+                c.rotation.z = 0;
+                r._tierBaumNeutralStance(c);
+                c.updateMatrixWorld(true);
+                const y0 = c.position.y;
+                const lokal = pf.map((q) => {
+                    const w = new T.Vector3().setFromMatrixPosition(q.matrixWorld);
+                    w.y = y0;
+                    return q.worldToLocal(w.clone());
+                });
+                c.rotation.x = rx;
+                c.rotation.z = rz;
+                const jePfote = pf.map(() => []);
+                const leib = [];
+                // die Zerlegung je Pfote (der Täter beim Namen): Ziel des Gangs gegen den Boden (der Leser) und die Sohle
+                // gegen ihr Ziel (die Reichweite)
+                const zielFehler = pf.map(() => []);
+                const karteFehler = pf.map(() => []);
+                const zielOrt = [];
+                for (let k = 0; k < 30; k++) {
+                    halte(1);
+                    c.updateMatrixWorld(true);
+                    const gL = gezeichnet(c.position.x, c.position.z);
+                    if (gL !== null) leib.push(Math.abs(c.position.y - gL));
+                    const Zg = tb._gang && tb._gang.ziele;
+                    for (let i = 0; i < 4; i++) {
+                        const w = pf[i].localToWorld(lokal[i].clone());
+                        const g = gezeichnet(w.x, w.z);
+                        if (g !== null) jePfote[i].push(Math.abs(w.y - g));
+                        const gZ = Zg ? gezeichnet(Zg[i][0], Zg[i][2]) : null;
+                        if (gZ !== null) zielFehler[i].push(Zg[i][1] - gZ);
+                        const kZ = typeof r._bodenSichtAt === "function" ? r._bodenSichtAt(Zg[i][0], Zg[i][2]) : null;
+                        if (gZ !== null && Number.isFinite(kZ)) karteFehler[i].push(kZ - gZ);
+                        if (k === 29)
+                            zielOrt[i] = [
+                                Math.round(Zg[i][0] * 100) / 100,
+                                Math.round(Zg[i][2] * 100) / 100,
+                                Math.round(Zg[i][1] * 100) / 100,
+                            ];
+                    }
+                }
+                const med = (a) => (a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : null);
+                const meds = jePfote.map(med);
+                const schlecht = meds.every((m) => m !== null) ? Math.max(...meds) : null;
+                leib.sort((p, q) => p - q);
+                o.k6 = {
+                    sohlen: jePfote.reduce((n, a) => n + a.length, 0),
+                    jePfoteCm: meds.map((m) => (m === null ? null : Math.round(m * 1000) / 10)),
+                    schlechtCm: schlecht === null ? null : Math.round(schlecht * 1000) / 10,
+                    leibMedianCm: leib.length ? Math.round(leib[leib.length >> 1] * 1000) / 10 : null,
+                    karteCm: karteFehler.map((a) => (a.length ? Math.round(med(a) * 1000) / 10 : null)),
+                    zielOrt,
+                    leibY: Math.round(c.position.y * 100) / 100,
+                    traegerY: Math.round((c.userData._traegerY || 0) * 100) / 100,
+                    zielCm: zielFehler.map((a) => (a.length ? Math.round(med(a) * 1000) / 10 : null)),
+                    neigGrad:
+                        Math.round(
+                            (Math.atan(
+                                Math.abs(gezeichnet(rand.x, rand.z + 0.7) - gezeichnet(rand.x, rand.z - 0.7)) / 1.4
+                            ) *
+                                1800) /
+                                Math.PI
+                        ) / 10,
+                    gierZiel: gier,
+                    gier: Math.round(c.rotation.y * 100) / 100,
+                };
+            } else o.k6 = { fehler: "kein Wolf mit Pfoten-Gestalt" };
+            if (c && c.parent) r.removeCreature(c);
+        }
+    }
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
     s.playerVel = savedVel;
+    // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
+    // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
+    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (−900/−850, dicht) die Kacheln der LOD-0-Chunks im Umkreis
+    // 120 m (der Nah-Ring liegt ganz in LOD 0): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m:
+    // dieselben Nähte, dieselben Felder — die ganze Mitte läge auf anderen Wiesen). Läuft im Lauf ohne Defekt und im Defekt
+    // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
+    if (mitWiese) {
+        const X = -900;
+        const Z = -850;
+        const setz = () => {
+            pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
+            s._fixedSimPos = null;
+        };
+        let last = -1;
+        let stabil = 0;
+        for (let t = 0; t < 200 && stabil < 8; t++) {
+            setz();
+            for (let i = 0; i < 30; i++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                if (i % 10 === 0) await new Promise((res) => setTimeout(res, 0));
+            }
+            const n = [...s.voxelChunks.values()].filter((e) => e && e.surfMap).length;
+            if (n === last) stabil++;
+            else {
+                stabil = 0;
+                last = n;
+            }
+        }
+        const C = r._voxelChunkConfig(0);
+        const halb = C.step / 2;
+        const fach = (x, z) => {
+            const lx = x - Math.floor(x / C.span) * C.span;
+            const lz = z - Math.floor(z / C.span) * C.span;
+            if (lx < halb || lz < halb) return 0; // der Rand-Streifen
+            if (lx < 3 * halb || lz < 3 * halb) return 1; // die Mitte daneben
+            return 2;
+        };
+        // jeder Chunk der Kachel und seine unteren Nachbarn gebaut und in LOD 0 (die Linse rechnet das selbst, nie über den Leser)
+        const lod0 = (x0, z0, x1, z1) => {
+            for (let cz = Math.floor(z0 / C.span) - 1; cz <= Math.floor(z1 / C.span); cz++)
+                for (let cx = Math.floor(x0 / C.span) - 1; cx <= Math.floor(x1 / C.span); cx++) {
+                    const e = s.voxelChunks.get(`${cx},${cz}`);
+                    if (!e || (e.lod || 0) !== 0) return false;
+                }
+            return true;
+        };
+        const R = 120;
+        const zaehle = (K, rand, bau) => {
+            const zahl = [0, 0, 0];
+            const flaeche = [0, 0, 0];
+            let kacheln = 0;
+            for (let tz = Math.floor((Z - R) / K); tz <= Math.floor((Z + R) / K); tz++)
+                for (let tx = Math.floor((X - R) / K); tx <= Math.floor((X + R) / K); tx++) {
+                    if (!lod0(tx * K - rand, tz * K - rand, (tx + 1) * K + rand, (tz + 1) * K + rand)) continue;
+                    const liste = bau(tx, tz);
+                    if (!liste) continue;
+                    kacheln++;
+                    for (let a = 0.05; a < K; a += 0.1)
+                        for (let b = 0.05; b < K; b += 0.1) flaeche[fach(tx * K + a, tz * K + b)] += 0.01;
+                    for (const q of liste) zahl[fach(q.x, q.z)]++;
+                }
+            const d = zahl.map((n, i) => (flaeche[i] > 0 ? n / flaeche[i] : 0));
+            const verh = d[1] > 0 ? d[0] / d[1] : 0;
+            // die Unschärfe des Verhältnisses unter gleicher Dichte (Poisson: die im Streifen erwartete Zahl und die daneben)
+            const erwartet = d[1] * flaeche[0];
+            const sigma = erwartet > 0 && zahl[1] > 0 ? Math.sqrt(1 / erwartet + 1 / zahl[1]) : 1;
+            return {
+                kacheln,
+                streifen: zahl[0],
+                daneben: zahl[1],
+                mitte: zahl[2],
+                dichte: d.map((v) => Math.round(v * 1000) / 1000),
+                verh: Math.round(verh * 1000) / 1000,
+                sigma: Math.round(sigma * 1000) / 1000,
+            };
+        };
+        const NW = A.NAH_WIESE;
+        const NS = A.NAH_STREU;
+        o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
+        const arten = r._nahStreuArten();
+        o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
+            const satz = r._nahStreuKachel(tx, tz, arten);
+            return satz ? satz.items : null;
+        });
+    }
     return o;
 }
 
@@ -443,30 +840,67 @@ function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
     if (!o.k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${o.k1.traeger})`);
-    if (!(Math.abs(o.k1.beckenCm) <= 1)) f.push(`K1 Becken auf dem Träger: ${o.k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
+    if (!(Math.abs(o.k1.beckenCm) <= 1))
+        f.push(`K1 Becken auf dem Träger: ${o.k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);
     if (!o.k1.sprungLuft) f.push("K1 Aufbau: der Sprung hebt die Kapsel nicht in die Luft");
-    else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1)) f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
+    else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1))
+        f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
     if (!o.hoehle) f.push("K2 Aufbau: keine Höhle im Raster");
     else {
         // ein fehlender Wert ist nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
         if (!o.k2 || o.k2.abstandCm == null || !(o.k2.abstandCm <= 10))
-            f.push(`K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
+            f.push(
+                `K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`
+            );
         if (!o.k3 || o.k3.abstandM == null || !(o.k3.abstandM <= 0.15))
             f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
     }
     if (!o.hang) f.push("K4 Aufbau: keine Hang-Stelle im Raster");
     else {
         if (!o.k4 || !(o.k4.sohlen >= 40) || !(o.k4.medianCm <= 6))
-            f.push(`K4 Sohlen gegen die Karte: Median ${o.k4 ? o.k4.medianCm : "?"} cm, p90 ${o.k4 ? o.k4.p90Cm : "?"} cm (die Sicht steht auf dem Gesetz)`);
+            f.push(
+                `K4 Sohlen gegen die Karte: Median ${o.k4 ? o.k4.medianCm : "?"} cm, p90 ${o.k4 ? o.k4.p90Cm : "?"} cm (die Sicht steht auf dem Gesetz)`
+            );
         if (!o.k4 || !(o.k4.leibMedianCm <= 6))
-            f.push(`K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`);
-        if (!o.k4b || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
+            f.push(
+                `K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`
+            );
+        if (!o.k4b || !(o.k4b.treppeCm <= 8))
+            f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
             f.push(
                 `K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.gegenStandCm : "?"} cm über ihrem Stand-Kontakt, auf dem Weg ${o.k5 ? o.k5.wegMinCm + " … " + o.k5.wegMaxCm : "?"} cm (Soll ± 3, Weg ≥ −5)`
             );
     }
+    if (!o.k6leser || !(o.k6leser.n >= 300) || o.k6leser.fehl > 0)
+        f.push(
+            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
+        );
+    if (!o.rand || !(o.rand.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
+    else if (!Number.isFinite(o.rand.fehlerCm)) f.push("K6 Aufbau: keine Hang-Stelle im Rand-Streifen");
+    else {
+        if (!o.k6 || !(o.k6.sohlen >= 100) || !(o.k6.schlechtCm <= 6))
+            f.push(
+                `K6 Sohlen am Chunk-Rand: schlechteste Pfote ${o.k6 ? o.k6.schlechtCm : "?"} cm über/unter dem gezeichneten Boden (Soll ≤ 6; je Pfote ${o.k6 && o.k6.jePfoteCm ? o.k6.jePfoteCm.join("/") : "?"}) — Täter _standSicht: im Rand-Streifen liest er den Träger, nie die Karte des Nachbarn`
+            );
+        if (!o.k6 || !(o.k6.leibMedianCm <= 6))
+            f.push(
+                `K6 Leib am Chunk-Rand: Median ${o.k6 ? o.k6.leibMedianCm : "?"} cm gegen den gezeichneten Boden (Soll ≤ 6)`
+            );
+    }
+    // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): die Wiese auf ±10 % (≥ 1 000 Büschel daneben: die
+    // Unschärfe ≈ 3 %), die dünne Streu (≈ 0,1 je m²) im Band ±10 % oder drei Unschärfen, was weiter ist
+    const k7 = (w, name, n, toleranz) => {
+        if (!w) return;
+        if (!(w.daneben >= n)) f.push(`K7 Aufbau: ${w.daneben} ${name} neben dem Rand-Streifen (Soll ≥ ${n})`);
+        else if (!(Math.abs(w.verh - 1) <= toleranz(w)))
+            f.push(
+                `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
+            );
+    };
+    k7(o.k7wiese, "Büschel", 1000, () => 0.1);
+    k7(o.k7streu, "Pflanzen", 100, (w) => Math.max(0.1, 3 * w.sigma));
     return f;
 }
 
@@ -478,6 +912,17 @@ function zeile(o) {
         ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
         ` · K4 Leib−Karte Median ${o.k4 ? v(o.k4.leibMedianCm) : "?"} cm · Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
         ` · K5 Tod ${o.k5 ? v(o.k5.gegenStandCm) : "?"} cm gegen den Stand (Weg ${o.k5 ? v(o.k5.wegMinCm) + "…" + v(o.k5.wegMaxCm) : "?"})` +
+        ` · K6 Leser ${o.k6leser ? v(o.k6leser.fehl) + "/" + v(o.k6leser.n) + " (max " + v(o.k6leser.maxCm) + " cm)" : "?"}` +
+        ` · K6 Rand schlechteste Pfote ${o.k6 ? v(o.k6.schlechtCm) : "?"} cm (je Pfote ${o.k6 && o.k6.jePfoteCm ? o.k6.jePfoteCm.join("/") : "?"}) · Leib ${o.k6 ? v(o.k6.leibMedianCm) : "?"} cm` +
+        (o.rand && Number.isFinite(o.rand.fehlerCm)
+            ? ` · Rand-Stelle ${o.rand.x.toFixed(2)}/${o.rand.z} Träger-Fehler ${o.rand.fehlerCm} cm`
+            : "") +
+        (o.k7wiese
+            ? ` · K7 Wiese Streifen/daneben ${v(o.k7wiese.verh)} ± ${v(o.k7wiese.sigma)} (${v(o.k7wiese.streifen)}/${v(o.k7wiese.daneben)} Büschel, ${v(o.k7wiese.dichte[0])}/${v(o.k7wiese.dichte[1])}/${v(o.k7wiese.dichte[2])} je m² Streifen/daneben/Mitte)`
+            : "") +
+        (o.k7streu
+            ? ` · K7 Streu ${v(o.k7streu.verh)} ± ${v(o.k7streu.sigma)} (${v(o.k7streu.streifen)}/${v(o.k7streu.daneben)} Pflanzen)`
+            : "") +
         (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
         (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")
     );
@@ -485,7 +930,11 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: "new", protocolTimeout: 900000, args: ["--no-sandbox", "--disable-gpu"] });
+    const browser = await puppeteer.launch({
+        headless: "new",
+        protocolTimeout: 900000,
+        args: ["--no-sandbox", "--disable-gpu"],
+    });
     let rot = 0;
     try {
         const lauf = async (inj) => {
@@ -502,9 +951,12 @@ function zeile(o) {
                 window.__anazhHeadlessNullRenderer = true;
             });
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
-            await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-                timeout: 180000,
-            });
+            await page.waitForFunction(
+                () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
+                {
+                    timeout: 180000,
+                }
+            );
             // die Welt einschwingen (plateau-basiert, das Muster von gate:koerper-bewegung)
             await page.evaluate(async () => {
                 const r = window.anazhRealm;
@@ -524,7 +976,7 @@ function zeile(o) {
                     if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
                 }
             });
-            const o = await page.evaluate(proben);
+            const o = await page.evaluate(proben, inj == null || inj === "wiese");
             await kontext.close();
             patch = null;
             return { o, errs, pf: patchFehler.slice() };
@@ -536,6 +988,8 @@ function zeile(o) {
                 hoehle: ["K3 Tier in der Höhle"],
                 sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
+                rand: ["K6 Leser im Rand-Streifen", "K6 Sohlen am Chunk-Rand"],
+                wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o, pf } = await lauf(inj);
@@ -543,7 +997,9 @@ function zeile(o) {
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
                 const ok = pf.length === 0 && fehlt.length === 0;
                 const beleg = soll[inj].map((x) => f.find((y) => y.startsWith(x)) || `${x}: grün (blind!)`).join(" | ");
-                console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`);
+                console.log(
+                    `  ${ok ? "✅" : "❌"} Selbsttest „${inj}" macht ${soll[inj].join(" + ")} rot — ${pf.length ? pf.join("; ") : beleg}`
+                );
                 if (!ok) rot++;
             }
         }
@@ -553,7 +1009,8 @@ function zeile(o) {
         for (const x of f) console.log("  ❌ " + x);
         if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
         rot += f.length + (errs.length ? 1 : 0);
-        if (process.env.KOERPER_STAND_JSON) fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify(o, null, 1));
+        if (process.env.KOERPER_STAND_JSON)
+            fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify(o, null, 1));
     } finally {
         await browser.close();
         server.close();

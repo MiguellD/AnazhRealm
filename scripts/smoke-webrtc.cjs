@@ -194,7 +194,6 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             const r = window.anazhRealm;
             r.state.p2p.url = wsUrl;
             r.state.p2p.roomOverride = room;
-            r.state.p2p.enabled = true;
             r.initP2PSync(null);
             return r.state.p2p.peerId;
         };

@@ -939,6 +939,12 @@ const FORBIDDEN = [
     { token: "mEffDmgMax", fiel: "Welle L Q8" },
     { token: "mEffRefKg", fiel: "Welle L Q8 — die Wirkung ist Energie gegen keRefJ" },
     { token: "zugJouleRef", fiel: "Welle L Q8 — E = ableitenBogen(task).energie (die Studio-Energie)" },
+    // DER WIND LEBT IM STOFF (K19-N2): die Werkstatt-Formel las Schwung und Phase je Vertex; sie fiel, und mit ihr ihre
+    // Daten — der EINE Wind-Term liest die Gestalt (positionGeometry) und den Stempel aH0 (gate:pflanzen-nah WD).
+    { token: "aFlex", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
+    { token: "aPhase", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
+    { token: "_mergeAttributedGeometries", fiel: "K19 — ohne Wind-Attribute ein Zwilling von `_mergeGeometries`" },
+    { token: "useFlexAttr", fiel: "K19 — der Pflanzen-Stoff heißt `pflanzenStoff` (er liest kein aFlex)" },
     // KEIN DRITTER LEIB (Integration Welle L, Stufe kampf-maus, Gesetz #0): Klinge und Pfeil schätzten den Leib des Tiers je
     // selbst als 2 × Skala; das Grob-Tor liest den EINEN Leib (_kreaturLeib.reichweite, _trefferErreichbar). Die Gattung
     // eines Tiers liest jeder Leser aus _kreaturGattung (Herden-Zug, Analog-Zensus), nie aus einer eigenen Kette.
@@ -1102,6 +1108,39 @@ const FORBIDDEN = [
         ["kontinentBasis", "die Prominenz-Basis der Schneegrenze"],
         ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
     ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
+    // DAS LICHT DES AUGES OHNE SZENEN-LICHT (K15, OMEN 1110-3): das Punkt-Licht am Auge stand ab Boot in der Szene und im
+    // Licht-Hash jedes beleuchteten Stoffs — 0,48 ms je Frame auch unter dem Himmel (Stärke 0, der TSL.If-Knoten sparte den
+    // Term nicht). Es ist ein Term des Boden-Stoffs unter Fels (`atmoUniforms.augenLicht`, 1 − aHimmel).
+    { token: "_augenLichtKlasse", fiel: "K15 — die Licht-Klasse des Auges (der Boden-Stoff trägt den Term)" },
+    { token: "_augenLichtRegistrieren", fiel: "K15 — der eigene Licht-Knoten in der r184-Bibliothek" },
+    { token: "AugenLichtNode", fiel: "K15 — der Punkt-Licht-Knoten hinter TSL.If" },
+    { token: "_AugenLicht", fiel: "K15 — die Licht-Klasse des Auges" },
+    { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
+    {
+        token: "_anazhAtlasTexe",
+        fiel: "V18.542 — die Erklärung der Atlanten an die Diät: der Textur-Wächter (`_diaetVorTextur`) sieht jede Textur des Programms",
+    },
+    // DAS EINE LEUCHTQUELLEN-GESETZ (K11 Runde 2): das Licht des Auges ist ein Platz des Licht-Pools (`_augenLeuchte`, mit
+    // Himmels-Ersatz), sein eigener Term mit r184-Abfall stand als zweites Punktlicht-Gesetz neben dem Pool; der Glut-Umlauf des
+    // Klangs und das Szenen-Licht des Tors fielen (das Verzeichnis „glut“, der Pool).
+    {
+        token: "atmoUniforms.augenLicht",
+        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+    },
+    {
+        token: "augenLicht: TSL.uniform",
+        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+    },
+    { token: "_umweltGlutSweep", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
+    { token: "bautenJeFrame", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
+    { token: "this._portalLicht ", fiel: "K11 — das Szenen-Licht des Tors (ein Bürger des Licht-Pools)" },
+    { token: "new THREE.PointLight(", fiel: "K11 — jedes Punktlicht ist ein Platz des Licht-Pools (`_lichtPoolTerm`)" },
+    // DER BODEN HAT EINEN LESER (K21): Nah-Wiese und Nah-Streu lasen die Karte nur beim Eigner — im 0,9-m-Rand-Streifen
+    // jedes Chunks fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). Fuß, Hang und Grün liest
+    // jeder Leser über `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn); der Eigner-Leser kehrt nicht zurück.
+    { token: "_chunkSurfaceAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
+    { token: "_chunkGruenAt", fiel: "K21 — `_bodenSichtAt(x, z, aus)` trägt den Grün-Kanal der gewinnenden Karte" },
+    { token: "_chunkKarteAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1412,9 +1451,7 @@ const ZWILLINGE = [
 // selbst als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
-    const wurzel = fs
-        .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
+    const wurzel = fs.readdirSync(root).filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))
@@ -1576,10 +1613,9 @@ const ENTSORGUNG_BESITZER = {
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
         arten: ["material"],
-        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — im Fall und im Abschied",
+        // K13: auch am Ende von Auftrag und Last — die EINE Räum-Methode
+        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — Fall, Abschied, Ende von Auftrag und Last",
     },
-    _refreshCreatureTaskAura: { arten: ["material"], grund: "die Aufgaben-Aura (je Aufgabe frisch)" },
-    _refreshCreatureCarryingVisual: { arten: ["material"], grund: "das Trage-Sprite (je Last frisch)" },
     _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },
     _disposeVoxelChunkWaterIso: { arten: ["geometry"], grund: "das Wasser-Iso-Mesh des Chunks" },
     _rebuildLodStitchBand: { arten: ["geometry"], grund: "das LOD-Naht-Band des Chunks" },

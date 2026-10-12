@@ -1710,7 +1710,8 @@
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
-      M.feuer.userData.__leucht=LEUCHT_FEUER;                                                   // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
+      M.glas.userData.__licht=M.glasfern.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
+      M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
       return M; }
     // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × 2,5 (die Flammen-Wurzel 0,55/0,30/0,08 leuchtet
     // 1,4/0,75/0,2, die Glut-Mitte 0,75/0,25/0,08, ihr Rand 0,15/0,10/0,08). Bis 05.10. leuchtete jede Glut-Fläche gleich
@@ -3556,8 +3557,70 @@
     // Wirt setzt sie über seine Schichten: Glut-Feld · Dorfplatz).
     // DIE TRITTFLÄCHE (`tritt`, Asset-Raum, reist als fx-Daten): um eine Feuerstelle, einen Brunnen, einen Stand ist der
     // Boden getreten — der Wirt malt sie in seine Wege-Karte (Erde statt Wiese, kein Halm durch Glut und Kranz).
+    // DAS LEUCHTQUELLEN-GESETZ (K11, rein additiv): EIN Emitter-Datum je Quelle — `kelvin` die Farbtemperatur (die EINE Größe
+    // der Lichtfarbe, K11b: `lichtFarbe` rechnet sie über den Planck-Ort in lineares sRGB; bis K11b trug das Datum die
+    // Glut-Palette 0xff7a35 als Lichtfarbe, die Welt las sie linear (1, 0,195, 0,036) und der Boden glühte lava-rot), der
+    // Lichtstrom `staerke` × `zeit` (der Zeitplan je Tageszeit; fehlt er, brennt die Quelle immer) als Bestrahlung in 1 m
+    // in der Zahl des Labors, `reichweiteM`, `abfall` und `kernM` des Punktlichts (K11b, `lichtAbfall`: 1/d^abfall mit dem
+    // Kern der Quelle — eine Flamme ist keine Punkt-Singularität — und weichem Saum an der Reichweite), `flacker` das Atmen
+    // der Flamme (relativ, zwei Sinus in 6–10 Hz, `lichtFlackern`), `hoeheM` die Höhe des Licht-Mittelpunkts über dem
+    // Boden. `feuer` ist das Herdfeuer (ein Holzfeuer, 1 800–2 000 K: die gelben Flammen tragen das Licht, 2 000 K; der
+    // Kern die Ausdehnung des Glutbetts, Ø 0,76 m wie klang bettRefM — nah an der Glut sieht ein Stein das ganze Bett, keinen
+    // Punkt; 0,35 m über dem Bett; sein Tageszeit-Satz .228 mittag/morgen 1,6 · abend 2,2); die NACHT trägt das Feuer nach
+    // dem Nordstern-Soll Fachwerk (nachts hebt warmes Licht den Platz auf 2–5 lx, der Rest im Mondlicht 0,1–0,3 lx; Vollmond
+    // 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224; ein echtes Lagerfeuer trägt in 2 m das Hundertfache): mit nacht 45
+    // trägt es in 2 m das ≈ 80-Fache, der Boden 1–3 m um das Bett steht orange (K11b, echte GPU, Ausgabe-Pfad: Farbton
+    // 29°; gate:pruefbuehne-licht) — bis K11b trug nacht 12 unter dem Legacy-Abfall das 33-Fache, schwach über mehrere Meter,
+    // und der Fuß der ACES-Kurve kippt ein schwach beleuchtetes Orange ins Rot (Farbton 14,5°, lava-rot);
+    // `fenster` das Nachtlicht der Glas-Stoffe (die Glut je Tageszeit; 2 800 K, der
+    // Farbort, den das Auge V18.542 an den Fenstern richtig fand), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern
+    // Fachwerk-Soll: der Kopf auf der Lichthöhe des Labors bei 3,7 m Straße; unter ihr dieselbe Bestrahlung wie bis K11b,
+    // zwischen zwei Laternen im Abstand 9 m 0,44 davon — das Band 2–5 lx). Leser: das Labor (Herdfeuer, Fenster) und die
+    // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
+    // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
+    // Szene (physicallyCorrectLights).
+    var LICHT_GESETZ = {
+        feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
+        laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+    };
+    // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
+    // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
+    // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
+    // (1, 0,232, 0), sRGB #ff8400. Leser: der Licht-Takt der Welt (`_leuchtTakt`) und das Labor (Herdfeuer, Fenster).
+    function lichtFarbe(kelvin) {
+        var T = Math.min(25000, Math.max(1667, +kelvin)), T2 = T * T, T3 = T2 * T;
+        var x = T <= 4000 ? -0.2661239e9 / T3 - 0.2343589e6 / T2 + 0.8776956e3 / T + 0.17991 : -3.0258469e9 / T3 + 2.1070379e6 / T2 + 0.2226347e3 / T + 0.24039;
+        var x2 = x * x, x3 = x2 * x;
+        var y = T <= 2222 ? -1.1063814 * x3 - 1.3481102 * x2 + 2.18555832 * x - 0.20219683 : T <= 4000 ? -0.9549476 * x3 - 1.37418593 * x2 + 2.09137015 * x - 0.16748867 : 3.081758 * x3 - 5.8733867 * x2 + 3.75112997 * x - 0.37001483;
+        var X = x / y, Z = (1 - x - y) / y;
+        var r = Math.max(0, 3.2404542 * X - 1.5371385 - 0.4985314 * Z);
+        var g = Math.max(0, -0.969266 * X + 1.8760108 + 0.041556 * Z);
+        var b = Math.max(0, 0.0556434 * X - 0.2040259 + 1.0572252 * Z);
+        var m = Math.max(r, g, b);
+        return [r / m, g / m, b / m];
+    }
+    // DER ABFALL eines Punktlichts im Abstand d (K11b, das EINE Punktlicht-Gesetz der Welt — `_lichtPoolTerm` rechnet es je
+    // Fragment): 1/d^abfall mit dem Kern `kernM` der Quelle (die Fläche einer Flamme, eines Bogens: (1 + k²)/(d² + k²) — in
+    // 1 m gilt die Stärke des Datums, weit draußen 1/d²) und dem weichen Saum an der Reichweite R ((1 − (d/R)⁴)², der Saum
+    // von r184s Punktlicht). Bis K11b trug die Welt den Legacy-Abfall des r128-Labors (1 − d/R)^abfall: das Feuer trug in
+    // 4 m noch 31 % seiner Stärke in 1 m (1/d²: 7 %) — der Boden glühte über mehrere Meter.
+    function lichtAbfall(L, d) {
+        var R = L.reichweiteM, k2 = L.kernM * L.kernM;
+        if (!(d < R)) return 0;
+        var q = (d / R) * (d / R), saum = (1 - q * q) * (1 - q * q);
+        return saum * Math.pow((1 + k2) / (d * d + k2), (L.abfall || 0) / 2);
+    }
+    // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet
+    // in 6–10 Hz; die Schwebung beider bricht die Periode). Ohne `flacker` 0.
+    function lichtFlackern(L, t, phase) {
+        var F = L && L.flacker;
+        if (!F || !F.hz) return 0;
+        var p = phase || 0;
+        return 0.6 * Math.sin(2 * Math.PI * F.hz[0] * t + p) + 0.4 * Math.sin(2 * Math.PI * F.hz[1] * t + 2.1 * p + 1.3);
+    }
     var AUSSTATTUNG = {
-        feuerstelle: { lab: "Feuerstelle · Steinring, Scheite, Glut", gestalten: 2, siteTag: "glut", salz: 0x1f3a, tritt: { typ: "kreis", r: 1.05 } },
+        feuerstelle: { lab: "Feuerstelle · Steinring, Scheite, Glut", gestalten: 2, siteTag: "glut", salz: 0x1f3a, tritt: { typ: "kreis", r: 1.05 }, licht: "feuer" },
         marktstand: { lab: "Marktstand · Plane und Waren", gestalten: 3, siteTag: "platz", salz: 0x2b51, tritt: { typ: "kasten", ex: 1.45, ez: 1.05 } },
         brunnen: { lab: "Ziehbrunnen · Steinkranz, Haspel, Schindeldach", gestalten: 2, siteTag: "platz", salz: 0x3c77, tritt: { typ: "kreis", r: 1.75 } },
     };
@@ -3577,6 +3640,8 @@
                 tritt: Object.assign({}, AUSSTATTUNG[_aus].tritt),
             },
         };
+        // das Emitter-Datum der Quelle reist als fx-Daten (JSON-klonbar, must-ignore; K11)
+        if (AUSSTATTUNG[_aus].licht) PRESETS[_aus].fx.licht = JSON.parse(JSON.stringify(LICHT_GESETZ[AUSSTATTUNG[_aus].licht]));
     }
 
     // Die Stoffe, die das Haus nicht trägt (rein additiv, der Lab-Block oben bleibt wörtlich): die Plane (Tuch,
@@ -5009,9 +5074,10 @@
         nacht:  { p: [-16, 22, -10], c: 0x9fb6e0, i: 0.32, h: 0.16, a: 0.12, bg: 0x161d2c },
     };
 
-    // ZEIT_VIS — intentional Lab dayparts (Feel-Entscheid .228). Host none.
-    // lab:"dayparts-4" = ZEIT_GESETZ mittag/morgen/abend/nacht. fire + glas glut stay Lab-local.
-    var ZEIT_VIS = { lab: "dayparts-4", host: "none" };
+    // ZEIT_VIS — intentional Lab dayparts (Feel-Entscheid .228). Host: das Licht (K11).
+    // lab:"dayparts-4" = ZEIT_GESETZ mittag/morgen/abend/nacht (Sonne, Himmel, Nebel bleiben Lab-lokal). Herdfeuer und
+    // Fenster-Glut liest der Wirt aus LICHT_GESETZ (Zeitplan `zeit` auf der Tag-Achse der Welt, `_lichtZeitplan`).
+    var ZEIT_VIS = { lab: "dayparts-4", host: "licht" };
 
     // ── EXPLODE-Y (.229) — Lab Fachwerk subsystem explode Y offsets als DATEN.
     // V18.491.229 Lab Fachwerk explode-Y offsets; Host none (EXPL_VIS).
@@ -5078,6 +5144,12 @@
         BEGEH_VIS: BEGEH_VIS,
         ZEIT_GESETZ: ZEIT_GESETZ,
         ZEIT_VIS: ZEIT_VIS,
+        // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
+        LICHT_GESETZ: LICHT_GESETZ,
+        lichtFlackern: lichtFlackern,
+        // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
+        lichtFarbe: lichtFarbe,
+        lichtAbfall: lichtAbfall,
         EXPL_GESETZ: EXPL_GESETZ,
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
