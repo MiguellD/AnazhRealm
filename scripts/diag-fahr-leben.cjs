@@ -2548,13 +2548,17 @@ async function probeLeben(expected) {
         // (`updateCreatures`), wie sein Steuer-Schritt, den die Probe stillstellt — sie prüft den Stoß, nicht die Drift. Seit
         // K16 liegt im 240-m-Kreis nur ein Fluss (−686,7/−796,1, die Drift quer 0,12 m in 20 Schritten): L8 las dort
         // 1,9 mm je Bildrate, am stillen Wasser 368 m weiter 0 m.
+        // Der Ort: der See AUS DER WELT (`__wasserOrte`, K16) — die Flüsse des Gelände-Netzes tragen höchstens 0,8 m Kanal,
+        // im 480-m-Kreis um den Messort stand kein tiefes Wasser mehr; gesucht wird um die tiefste Stelle des Sees.
         {
             let ort = null;
-            for (let ring = 0; ring <= 120 && !ort; ring++)
+            const seeO = window.__wasserOrte({ mess: mo }).see;
+            const mitte = seeO ? [seeO.x, seeO.z] : null;
+            for (let ring = 0; mitte && ring <= 120 && !ort; ring++)
                 for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
                     const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
-                    const x = mo[0] + Math.cos(w) * ring * 4;
-                    const zz = mo[1] + Math.sin(w) * ring * 4;
+                    const x = mitte[0] + Math.cos(w) * ring * 4;
+                    const zz = mitte[1] + Math.sin(w) * ring * 4;
                     const boden = hh(x, zz);
                     const sp = Number.isFinite(boden) ? r._koerperWasser(x, zz, boden) : -Infinity;
                     if (Number.isFinite(sp) && Number.isFinite(boden) && sp - boden > 1.2) {
@@ -2660,7 +2664,12 @@ async function probeLeben(expected) {
                     A._steuerGesetz = steuerRoh;
                     st.maxCreatures = kappeS;
                 }
-            } else S.schwimmer = { fehler: "kein tiefes, stilles Wasser im Umkreis 480 m" };
+            } else
+                S.schwimmer = {
+                    fehler: mitte
+                        ? `kein tiefes, stilles Wasser im Umkreis 480 m um den See ${mitte.join("/")}`
+                        : "kein See in der Welt (`__wasserOrte`)",
+                };
         }
         // L9 DER REITER IM WAGEN (0710-4 Klasse 4): je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
         // quer zur Fahrt (die Maus ist nicht der Wagen), einschwingen — dann die HAUT des Reiters: jede Ecke jedes sichtbaren
@@ -3510,6 +3519,8 @@ async function probeLeben(expected) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
+    // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
+    await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     const out = await page.evaluate(probeLeben, { messort, randM: STATION.randM });
     await browser.close();
     server.close();
