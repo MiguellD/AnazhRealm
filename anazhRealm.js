@@ -32178,7 +32178,72 @@ class AnazhRealm {
                                     const _gX = _uvStetig.dFdx();
                                     const _gY = _uvStetig.dFdy();
                                     const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
-                                    const _samp = _Ta.mix(_probeA(_at.mapNode, _uvA), _probeA(_at.mapNode, _uvB), _fb);
+                                    // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
+                                    // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
+                                    // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
+                                    // jede Krone in Texel-Treppen — Blöcke von 3–10 px mit rechteckigen Löchern zwischen 30 und 60 m
+                                    // (Werkbank, Radeon: Texel bis 3,3 px). Die geglättete Deckung trägt die Kante zwischen den
+                                    // Texeln; unter einem Pixel je Texel bleibt die deckungstreue Mip-Wahl allein (Gewicht `_kubW`).
+                                    const _kubX = _Ta.float(_at.cw),
+                                        _kubY = _Ta.float(_at.ch);
+                                    const _gpX = _Ta.vec2(_gX.x.mul(_kubX), _gX.y.mul(_V).mul(_kubY)).length();
+                                    const _gpY = _Ta.vec2(_gY.x.mul(_kubX), _gY.y.mul(_V).mul(_kubY)).length();
+                                    const _kubW = _Ta
+                                        .float(1.0)
+                                        .div(_gpX.max(_gpY).max(_Ta.float(1e-4)))
+                                        .sub(_Ta.float(1.0))
+                                        .clamp(0.0, 1.0);
+                                    const _kubisch = (tex, vAns) => {
+                                        const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
+                                        const cy = _vIn.mul(_kubY).sub(_Ta.float(0.5));
+                                        const ix = _Ta.floor(cx),
+                                            iy = _Ta.floor(cy);
+                                        const fx = cx.sub(ix),
+                                            fy = cy.sub(iy);
+                                        const gew = (f) => {
+                                            const e = _Ta.float(1.0).sub(f);
+                                            const w0 = e.mul(e).mul(e).div(6.0);
+                                            const w1 = _Ta
+                                                .float(2.0 / 3.0)
+                                                .sub(f.mul(f).mul(_Ta.float(2.0).sub(f)).mul(0.5));
+                                            const w2 = _Ta
+                                                .float(2.0 / 3.0)
+                                                .sub(e.mul(e).mul(_Ta.float(2.0).sub(e)).mul(0.5));
+                                            const w3 = f.mul(f).mul(f).div(6.0);
+                                            return {
+                                                g0: w0.add(w1),
+                                                g1: w2.add(w3),
+                                                h0: w1.div(w0.add(w1)).sub(0.5),
+                                                h1: w3.div(w2.add(w3)).add(1.5),
+                                            };
+                                        };
+                                        const wx = gew(fx),
+                                            wy = gew(fy);
+                                        // in der eigenen Ansicht: die Abgriffe bleiben einen Texel vor ihrer Kante
+                                        const ziel = (hx, hy) => {
+                                            const y = iy.add(hy).clamp(_Ta.float(1.0), _kubY.sub(1.0));
+                                            return _Ta.vec2(ix.add(hx).div(_kubX), y.div(_kubY).add(vAns).div(_V));
+                                        };
+                                        const lies = (hx, hy) =>
+                                            tex.sample(ziel(hx, hy)).depth(_schicht).level(_Ta.float(0.0));
+                                        return lies(wx.h0, wy.h0)
+                                            .mul(wx.g0)
+                                            .add(lies(wx.h1, wy.h0).mul(wx.g1))
+                                            .mul(wy.g0)
+                                            .add(
+                                                lies(wx.h0, wy.h1)
+                                                    .mul(wx.g0)
+                                                    .add(lies(wx.h1, wy.h1).mul(wx.g1))
+                                                    .mul(wy.g1)
+                                            );
+                                    };
+                                    const _liesA = (tex, uv, vAns) =>
+                                        _Ta.mix(_probeA(tex, uv), _kubisch(tex, vAns), _kubW);
+                                    const _samp = _Ta.mix(
+                                        _liesA(_at.mapNode, _uvA, _v0),
+                                        _liesA(_at.mapNode, _uvB, _v1),
+                                        _fb
+                                    );
                                     _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
