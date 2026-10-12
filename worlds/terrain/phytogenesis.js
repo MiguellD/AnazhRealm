@@ -542,6 +542,35 @@ function studioBillboard() {
         _inBB = false;
     }
 }
+// DER WIND-STEMPEL (K19): Vorlagen-Höhe und Schlankheit δ = D(Brusthöhe) / H einer Gestalt (phyto-core `windSchlankheit`,
+// derselbe Leser, mit dem die Welt die gelieferte Gestalt misst) — der Baum-Wind des Labors (foundry-core `baumWindGlsl`)
+// liest sie: im Bestand je Klon als aWindB, in der Einzel-Ansicht als uWindBaum. S = die Welt-Skala der Gestalt.
+const _windStempelJe = new WeakMap();
+function windDaten(tmpl, S) {
+    let w = _windStempelJe.get(tmpl);
+    if (w) return w;
+    let top = 0,
+        rinde = null;
+    tmpl.traverse((o) => {
+        if (!o.isMesh) return;
+        const pa = o.geometry.attributes.position.array;
+        if (!rinde && (o.material === barkMat || o.material === barkMatBirch)) rinde = pa;
+        for (let i = 1; i < pa.length; i += 3) if (pa[i] > top) top = pa[i];
+    });
+    const d = top > 0 ? self.__phytoCore.windSchlankheit(rinde, top, S) : null;
+    w = { ht: top, delta: d > 0 ? d : 0 };
+    _windStempelJe.set(tmpl, w);
+    return w;
+}
+function windStempel(geo, tmpl, S) {
+    const w = windDaten(tmpl, S);
+    const a = new Float32Array(geo.attributes.position.count * 2);
+    for (let i = 0; i < a.length; i += 2) {
+        a[i] = w.ht;
+        a[i + 1] = w.delta;
+    }
+    geo.setAttribute("aWindB", new THREE.Float32BufferAttribute(a, 2));
+}
 function build() {
     RNG = mulberry32(Math.floor(SEED));
     disposeSubject();
@@ -559,6 +588,10 @@ function build() {
         else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P); // der Waldboden: dieselbe Tafel wie buildInstance
         else {
             const nodes = emitTree(P);
+            const _pl = PORTAL_RENDER_CONFIG.placement || {},
+                _S = ((_pl.scale && _pl.scale[CURRENT]) || 1) * (P.kind === "tree" ? _pl.treeScaleMul || 1 : 1),
+                _w = windDaten(subject, _S);
+            WIND.uWindBaum.value.set(_w.ht, _w.delta, _S); // der Wind der Einzel-Ansicht (K19)
             console.log(
                 "[BEWEIS] McMahon: H=" +
                     P.height.toFixed(2) +
@@ -2426,6 +2459,7 @@ function buildForest() {
                 if (o.isMesh) {
                     const geo = o.geometry.clone();
                     if (dy) geo.translate(0, dy, 0);
+                    windStempel(geo, variants[v], pls[0].s || 1);
                     const im = new THREE.InstancedMesh(geo, o.material, pls.length);
                     for (let j = 0; j < pls.length; j++) {
                         const p = pls[j];
@@ -2493,6 +2527,7 @@ function buildForest() {
                 for (const o of subs) {
                     const geo = o.geometry.clone();
                     if (dy) geo.translate(0, dy, 0);
+                    windStempel(geo, variants[v], b.it[0].s || 1);
                     geo.boundingSphere = bs.clone();
                     const im = new THREE.InstancedMesh(geo, o.material, b.it.length);
                     const isGrassSub = o.material === grassMat,
@@ -2607,6 +2642,7 @@ function buildForest() {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
                         const isFol = o.material === foliageMat || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
+                        windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL);
                         geo.setAttribute(
                             "aLodLevel",
                             new THREE.Float32BufferAttribute(
@@ -2649,6 +2685,7 @@ function buildForest() {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
+                        windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL); // der Zwilling schwingt mit
                         const im = new THREE.InstancedMesh(geo, o.material, placements.length);
                         for (let j = 0; j < placements.length; j++) im.setMatrixAt(j, placements[j].m);
                         im.instanceMatrix.needsUpdate = true;

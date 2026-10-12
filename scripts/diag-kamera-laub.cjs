@@ -170,7 +170,7 @@ function wand(quelle, studio) {
 // einer Box, und zwischen Blickziel und Linse steht kein Bau und kein Gelände. Gemessen gegen die exakte Gestalt: die
 // gedrehte Box wie `_segmentAABB`, ohne Pflanzen-Box (der Wurf geht `durchPflanzen` wie im Spiel, eine Pflanze wird
 // durchsichtig), Ursprung das Blickziel T (`state._kamZiel`, der EINE Schreiber `_kamZielSetzen`), der Boden die Boden-Karte
-// des gezeichneten Mesh (`_chunkSurfaceAt`), der Fels das Gesetz (`_fieldSolid`, eigener Marsch der Linse). 50 feste Posen:
+// des gezeichneten Mesh (`_bodenSichtAt`), der Fels das Gesetz (`_fieldSolid`, eigener Marsch der Linse). 50 feste Posen:
 // 40 an der Mess-Wiese (spec/profiband/haushalt.json; Häuser · Fels · Bäume, der Spieler 0,8 m vor der Box, der Rücken zu
 // ihr, jede zweite Pose mit gesenkter Kamera) und 10 am 30°-Hang der Prüfbühne (spec/pruefbuehne/stationen.json s2-hang30,
 // der Blick hangab: die Kamera hangauf hinter ihm) — zu Fuß und im Verfolger-Ritt (der GT 3,2 m vor der Box). Dazu der
@@ -322,11 +322,7 @@ function leibInstall(cfg) {
     };
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
     L.sichtbar = (x, z) => {
-        const span = r._voxelChunkConfig(0).span;
-        const cx = Math.floor(x / span);
-        const cz = Math.floor(z / span);
-        const e = st.voxelChunks ? st.voxelChunks.get(`${cx},${cz}`) : null;
-        const k = e && e.surfMap ? r._chunkSurfaceAt(e, cx, cz, x, z) : null;
+        const k = r._bodenSichtAt(x, z);
         return Number.isFinite(k) ? k : null;
     };
     L.inBox = (p, b, m) => {

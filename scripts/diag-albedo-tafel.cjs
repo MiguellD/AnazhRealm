@@ -154,7 +154,10 @@ async function messeLabor({ echt, nur, tafel }) {
                 const ordner = opt("--bilder");
                 if (ordner && e.png) {
                     fs.mkdirSync(ordner, { recursive: true });
-                    fs.writeFileSync(path.join(ordner, `labor-${z.id}.png`), Buffer.from(e.png.split(",")[1], "base64"));
+                    fs.writeFileSync(
+                        path.join(ordner, `labor-${z.id}.png`),
+                        Buffer.from(e.png.split(",")[1], "base64")
+                    );
                 }
                 out.labor[z.id] = e.gesamt
                     ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe }
@@ -169,6 +172,62 @@ async function messeLabor({ echt, nur, tafel }) {
         server.close();
     }
     return out;
+}
+
+// ── Die Labor-Seite der Laub-Licht-Linse (K19) ──────────────────────────────────────────────────────────────────────────
+// `--laub [eiche,birke] [--welt w.json] [--echt]`: je Art die Vorlage im Phytogenesis-Labor, der Key allein hinter bzw. vor
+// der Krone (`__laborLaub`); mit `--welt` (die Ausgabe von `werkbank licht --laub --datei`) das Urteil der EINEN Linse
+// (`laubLichtUrteil`: Welt ≥ 1,3, Labor = Welt nur unter der Sonne ± 10 %).
+async function laborLaub() {
+    const LL = require("./lib/licht-linsen.cjs");
+    const S = AT.STUDIOS.terrain;
+    const server = statisch();
+    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    const b = await browser(argv.includes("--echt"));
+    const labor = {};
+    const welt = opt("--welt") ? JSON.parse(fs.readFileSync(path.resolve(opt("--welt")), "utf8")).welt : null;
+    try {
+        const page = await b.newPage();
+        await page.goto(`http://127.0.0.1:${PORT}/${S.pfad}`, { waitUntil: "load", timeout: 120000 });
+        await page.evaluate(AT.LABOR_INSTALL);
+        for (const art of String(opt("--laub", "eiche,birke") || "eiche,birke").split(",")) {
+            await aktion(page, { klick: `#ui [data-p="${art}"]` });
+            await page.waitForFunction(
+                (S) => {
+                    const w = new Function(`return typeof ${S.wurzel} !== "undefined" ? ${S.wurzel} : undefined;`)();
+                    let n = 0;
+                    if (w) w.traverse((x) => (n += x.isMesh ? 1 : 0));
+                    return n > 0;
+                },
+                { timeout: 180000, polling: 300 },
+                S
+            );
+            labor[art] = await page.evaluate((o) => window.__laborLaub(o), {
+                studio: S,
+                weltHoehe: welt && welt[art] ? welt[art].hoehe : null,
+                bilder: !!opt("--bilder"),
+            });
+        }
+    } finally {
+        await b.close();
+        server.close();
+    }
+
+    for (const [art, l] of Object.entries(labor))
+        if (l.bilder) {
+            for (const k of ["gegen", "auf"])
+                fs.writeFileSync(
+                    path.join(opt("--bilder"), `labor-laub-${art}-${k}.png`),
+                    Buffer.from(l.bilder[k].split(",")[1], "base64")
+                );
+            delete l.bilder;
+        }
+    console.log(JSON.stringify({ labor }, null, 1));
+    if (!welt) process.exit(Object.values(labor).every((l) => l.verhaeltnis > 0) ? 0 : 1);
+    const u = LL.laubLichtUrteil({ welt, labor });
+    console.log(JSON.stringify(u.zeilen));
+    console.log(`LAUB-LICHT ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+    process.exit(u.urteil === "GRUEN" ? 0 : 1);
 }
 
 // ── Der Selbsttest ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -199,7 +258,10 @@ async function selbsttest() {
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
     // S1 — gleich auf beiden Seiten: GRÜN, alle Zeilen im Soll.
     const u1 = AT.tafelUrteil(T0, messungZumTest(T0));
-    t("Labor = Welt auf jeder Zeile → GRÜN, jede Zeile und Karte im Soll", u1.urteil === "GRUEN" && u1.zeilen.every((z) => z.imSoll));
+    t(
+        "Labor = Welt auf jeder Zeile → GRÜN, jede Zeile und Karte im Soll",
+        u1.urteil === "GRUEN" && u1.zeilen.every((z) => z.imSoll)
+    );
     // S2 — das Labor liest das Hex roh (Faktor 2,3 auf einer Zeile): über der Ratsche ROT und außerhalb des Solls; ein
     // Schritt Richtung 1 innerhalb von Ratsche + Rand bleibt grün.
     const u2 = AT.tafelUrteil(T0, messungZumTest(T0, { [T0.zeilen[0].id]: 2.3 }));
@@ -280,16 +342,13 @@ window.__bereit = true;
         await page.waitForFunction(() => window.__bereit === true, { timeout: 30000 });
         await page.evaluate(AT.LABOR_INSTALL);
         const S = { szene: "scene", renderer: "renderer", wurzel: "subject", ausgabe: null };
-        const res = await page.evaluate(
-            (o) => window.__laborAlbedo(o),
-            {
-                studio: S,
-                zeilen: [
-                    { id: "roh", labor: { stoff: { seh: "roh" } } },
-                    { id: "gesetz", labor: { stoff: { seh: "gesetz" } } },
-                ],
-            }
-        );
+        const res = await page.evaluate((o) => window.__laborAlbedo(o), {
+            studio: S,
+            zeilen: [
+                { id: "roh", labor: { stoff: { seh: "roh" } } },
+                { id: "gesetz", labor: { stoff: { seh: "gesetz" } } },
+            ],
+        });
         const y = (id) => (res.find((x) => x.name === id || x.id === id) || {}).gesamt;
         const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
         const weltY = 0.2126 * lin(0x8e / 255) + 0.7152 * lin(0x93 / 255) + 0.0722 * lin(0x9a / 255);
@@ -311,7 +370,10 @@ window.__bereit = true;
             `   Labor-Probe (r128): Karte ${karteY} · Granit roh Y ${y("roh") && y("roh").Y} (Labor/Welt ${vRoh && vRoh.toFixed(3)}) · ` +
                 `nach dem Gesetz Y ${y("gesetz") && y("gesetz").Y} (${vGes && vGes.toFixed(3)}) · Welt-Y ${weltY.toFixed(4)}`
         );
-        t("Labor-Linse: die 18-%-Karte liest 0,180 ± 0,002 unter Fremd-Licht, Nebel, ACES und Belichtung 1,3", Math.abs(karteY - 0.18) <= 0.002);
+        t(
+            "Labor-Linse: die 18-%-Karte liest 0,180 ± 0,002 unter Fremd-Licht, Nebel, ACES und Belichtung 1,3",
+            Math.abs(karteY - 0.18) <= 0.002
+        );
         t(
             "Täter roh gelesenes Hex 0x8e939a: Labor/Welt ≈ 2 (> 1,5) → ROT gegen die geheilte Ratsche; nach dem FARB-GESETZ 1 ± 1 % → GRÜN",
             vRoh > 1.5 && hatRot(u8roh, "ratsche") && Math.abs(vGes - 1) <= 0.01 && u8ges.urteil === "GRUEN"
@@ -319,7 +381,10 @@ window.__bereit = true;
         // S9 — die Karte im Labor: k·L = Belichtung × Leuchtdichte (der Probe-Aufbau: Belichtung 1,3, Key 3 + Hemi).
         const k = await page.evaluate((o) => window.__laborKarte(o), { studio: S, studioId: "probe" });
         console.log(`   Labor-Karte der Probe: k·L ${k.kL} (Belichtung ${k.belichtung}), Ausgabe ${k.ausgabe}`);
-        t("Labor-Karte: k·L > 0 und die Belichtung 1,3 steht im Ergebnis, der Ausgabe-Pixel ist gelesen", k.kL > 0 && k.belichtung === 1.3 && Array.isArray(k.ausgabe));
+        t(
+            "Labor-Karte: k·L > 0 und die Belichtung 1,3 steht im Ergebnis, der Ausgabe-Pixel ist gelesen",
+            k.kL > 0 && k.belichtung === 1.3 && Array.isArray(k.ausgabe)
+        );
     } finally {
         await b.close();
         server.close();
@@ -350,6 +415,7 @@ function gespeichert(t) {
 
 async function main() {
     if (argv.includes("--selftest")) return selbsttest();
+    if (argv.includes("--laub")) return laborLaub();
     const t = AT.ladeTafel();
     const schema = AT.tafelPruefen(t);
     if (schema.length) {
@@ -365,10 +431,12 @@ async function main() {
         if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
         // Gegen das gespeicherte Welt-Ist: die Labor-Seite lebt, die Welt-Seite steht in der Tafel.
         const g = gespeichert(t);
-        const mm = Object.assign({}, g, { labor: m.labor, karten: m.karten, eichung: { welt: g.eichung.welt, labor: m.eichung.labor } });
-        if (nur)
-            for (const z of t.zeilen)
-                if (!nur.includes(z.labor.studio)) mm.labor[z.id] = g.labor[z.id];
+        const mm = Object.assign({}, g, {
+            labor: m.labor,
+            karten: m.karten,
+            eichung: { welt: g.eichung.welt, labor: m.eichung.labor },
+        });
+        if (nur) for (const z of t.zeilen) if (!nur.includes(z.labor.studio)) mm.labor[z.id] = g.labor[z.id];
         const u = AT.tafelUrteil(t, mm);
         if (nur) {
             u.karten = u.karten.filter((k) => nur.includes(k.studio));
@@ -383,7 +451,12 @@ async function main() {
         const i = argv.indexOf("--nachziehen");
         const welt = JSON.parse(fs.readFileSync(path.resolve(argv[i + 1]), "utf8"));
         const labor = JSON.parse(fs.readFileSync(path.resolve(argv[i + 2]), "utf8"));
-        const m = { labor: labor.labor, karten: labor.karten, welt: welt.welt, eichung: { welt: welt.eichung, labor: labor.eichung.labor } };
+        const m = {
+            labor: labor.labor,
+            karten: labor.karten,
+            welt: welt.welt,
+            eichung: { welt: welt.eichung, labor: labor.eichung.labor },
+        };
         const r = AT.tafelNachziehen(t, m, {
             labor: { datum: labor.datum, geraet: labor.geraet, echt: labor.echt },
             welt: { datum: welt.datum, geraet: welt.geraet, ort: welt.ort, spieler: welt.spieler, echt: welt.echt },
@@ -401,7 +474,8 @@ async function main() {
     const errs = [];
     if (!t.gemessen) errs.push("die Tafel ist ungemessen (gemessen = null)");
     for (const z of t.zeilen) if (!z.ist || z.ratsche == null) errs.push(`${z.id}: ohne Ist oder Ratsche`);
-    for (const [s, k] of Object.entries(t.karten)) if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
+    for (const [s, k] of Object.entries(t.karten))
+        if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
     if (errs.length) {

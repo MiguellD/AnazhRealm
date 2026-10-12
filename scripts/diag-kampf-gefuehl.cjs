@@ -461,7 +461,8 @@ function wundeVerdict(W) {
 // Kopf-Neigung still — zehn Takte _kreaturBissKopf ohne Pose-Fortschritt, das Ziel wandert höchstens 1e-6 rad (die Probe trägt
 // nur, wenn der erste Rest ≥ 0,05 rad ist). Vorher summierte sich der Rest je Takt auf das Ziel des Vor-Takts und lief an die
 // Klemme (BISS.kopfNeigung). Die Klemmen-Takte im Spiel-Takt (Bericht, kein Urteil — sie streuen je Lauf: vorher 12–18 von 60,
-// danach 2–8 von 42–84) stehen in der Zeile daneben.
+// danach 2–8 von 42–84) stehen in der Zeile daneben. Die Probe hält Ort, Haltung und die Gier des Rehs fest (K13b): ihr erster
+// Rest hing an der Gier, in die das Reh sich unter den Ansprüngen gedreht hatte (20 Läufe: 18 × 0,5871, 2 × 1,0 an der Klemme).
 const REH_SOLL = { bisse: 5, kopfDrift: 1e-6, kopfRest: 0.05 };
 function bissReichVerdict(R, reh) {
     if (!R) return ["biss-reich keine Probe"];
@@ -3107,9 +3108,17 @@ async function WELLE_L() {
                     // Beide Leiber stehen in der STAND-POSE des Kerns (_tierBaumNeutralStance, Nachbesserung 4): vorher trug der Wolf
                     // die Haltung seines letzten Ansprungs — der erste Rest schwankte je Lauf 0,31–1,0 rad und stand oft an der
                     // Klemme (BISS.kopfNeigung), wo eine Summe sich nie zeigt (die Wand war dort vakuös).
+                    // DIE GIER DES REHS hält die Probe fest (K13b): unter den sechs Ansprüngen dreht der Steuer-Schritt das Reh nach
+                    // dem Wunsch seines Takts (rotation.y = _steuer.gier), je Lauf anders — und das Glied, das dem Kopf des Wolfs
+                    // am nächsten liegt, wechselt mit der Gier: Hinterschenkel (hlT/hrT, Gier ±0,72…±1,56) 0,5871, Vorderlauf
+                    // (flL/frL) 0,81–0,92, Unterschenkel (hlC/hrC, |Gier| ≤ 0,71) die Klemme 1,0, Rumpf −0,02…−0,23. Am Stand
+                    // a5f05612 + gang-gesetz 48e7b013 (Gestalt aus der Ruhe, Pose und Kapseln in 20 Läufen gleich): 18 × 0,5871 bei
+                    // Gier −1,55…−1,01, 2 × 1,0 bei Gier 0,05 (rot). Breitseits (π/2) stünde die Probe auf der Kante zwischen
+                    // Hinterschenkel und Vorderlauf; π/2 − 0,4 liegt mitten im Band des Hinterschenkels (0,45 / 0,40 rad Rand).
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
                         r2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z), R0.z);
+                        r2.rotation.set(0, Math.PI / 2 - 0.4, 0);
                         j2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z - 1.3), R0.z - 1.3);
                         j2.rotation.set(0, 0, 0);
                         r._tierBaumNeutralStance(j2);
