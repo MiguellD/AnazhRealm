@@ -585,6 +585,9 @@ function stammDurchmesser(T, yWelt, skala) {
 // und wo der Bestand seine Krone hebt (Kronenansatz ≥ 0,1 — der tiefste Nicht-Rinden-Punkt je Höhe), setzt ihre Krone
 // mindestens 0,05 tiefer an (die Birke trägt schon im Bestand Zweige am Fuß).
 const SOLITAER_HD = 0.6;
+// Der Kronenansatz des Solitärs (tiefstes Blatt ÷ Höhe, Solitäreiche Marbach): tief, aber über einem kurzen Stamm —
+// unter 0,08 steht die Krone als Busch auf dem Boden (Blick-Sonde 12.10.), über 0,35 trägt er den Bestands-Schaft.
+const SOLITAER_ANSATZ = [0.08, 0.35];
 function kronenAnsatz(T) {
     let lo = Infinity;
     for (const t of T) if (t.kind !== "bark") for (let i = 1; i < t.pos.length; i += 3) lo = Math.min(lo, t.pos[i]);
@@ -614,8 +617,10 @@ function solitaerUrteil(roh, skala) {
             v.push(
                 `Solitär ${art}: H/D ${hdF.toFixed(0)} nicht gedrungen (Bestand ${hdB.toFixed(0)}, Soll ≤ ${(SOLITAER_HD * hdB).toFixed(0)})`
             );
-        if (kaB >= 0.1 && !(kaF < kaB - 0.05))
-            v.push(`Solitär ${art}: Kronenansatz ${kaF.toFixed(2)} nicht tiefer als im Bestand ${kaB.toFixed(2)}`);
+        if (!(kaF >= SOLITAER_ANSATZ[0] && kaF <= SOLITAER_ANSATZ[1]))
+            v.push(
+                `Solitär ${art}: Kronenansatz ${kaF.toFixed(2)} ausserhalb ${SOLITAER_ANSATZ.join("–")} (${kaF < SOLITAER_ANSATZ[0] ? "kein Stamm unter der Krone" : "die Krone sitzt hoch"})`
+            );
     }
     return { v, m };
 }
@@ -930,6 +935,21 @@ function leserUrteil(quelle) {
         const r3 = Object.assign({}, roh);
         if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
         st.push(["Solitär = Bestand (Eiche)", solitaerUrteil(r3, skala).v.some((x) => /^Solitär eiche:/.test(x))]);
+        // der Busch-Solitär: die Krone des Solitärs auf den Boden gesenkt (kein Stamm unter ihr) muss beim Namen feuern
+        const fr = roh["eiche-s1-L0-frei"];
+        if (fr) {
+            const lo = kronenAnsatz(fr.T);
+            const T = fr.T.map((t) =>
+                t.kind === "bark"
+                    ? t
+                    : Object.assign({}, t, { pos: Array.from(t.pos, (v, i) => (i % 3 === 1 ? v - lo : v)) })
+            );
+            const r4 = Object.assign({}, roh, { "eiche-s1-L0-frei": Object.assign({}, fr, { T }) });
+            st.push([
+                "Busch-Solitär (Eiche)",
+                solitaerUrteil(r4, skala).v.some((x) => /^Solitär eiche: Kronenansatz .*kein Stamm/.test(x)),
+            ]);
+        }
     }
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");

@@ -83,9 +83,9 @@
         // Teilung der Konifere liest sie —, alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und
         // der Zufalls-Strom bleiben gleich, jeder Ast wird mit dem Stamm schlanker. Ohne Welt-Maß (der Bauplan-Baum
         // der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach der Formel oben.
-        // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone, wie sie wuchs — kein
-        // Schaft hebt sie (tiefer Kronenansatz, die Höhe seines Wuchses), sein Stamm misst diese Höhe durch die gedrungene
-        // Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
+        // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone tief — der Schaft hebt sie
+        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe), sein Stamm misst die Höhe durch die
+        // gedrungene Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
         const frei = weltMass && P.freistand === 1;
         const trunkR = !weltMass
@@ -346,7 +346,13 @@
         }
         // DER HUB DES SCHAFTS reist mit (K20, das Welt-Maß): die Krone wuchs in der Form-Höhe, der Schaft trägt sie um `schaftHub`
         // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
-        const schaft = weltMass && !frei ? schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala) : 0;
+        // Der Solitär trägt seinen kurzen Stamm (FREISTAND.ansatz): der Schaft hebt die Krone, bis ihr tiefster Blatt-Anker
+        // bei ansatz × Höhe steht (der Stamm misst die Höhe seines Wuchses, H/D bleibt unter dem Bestand).
+        const schaft = !weltMass
+            ? 0
+            : frei
+              ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz)
+              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala);
         // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -1773,7 +1779,9 @@
     // wächst nur: ein Baum, dessen Wipfel schon höher steht, bleibt, wie er wuchs (ein gestauchter Schaft zog die Krone
     // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal. Rückgabe: der Hub ziel − h0
     // (Vorlagen-Einheiten; 0, wo der Schaft nicht wächst).
-    function schaftHub(segs, leaves, runMeta, ziel) {
+    // Mit `ansatz` (der Solitär, FREISTAND.ansatz) zielt der Hub statt auf eine Höhe auf den Kronenansatz: der tiefste
+    // Punkt der Krone (Ast-Ansatz oder hängendes Blatt, yk) steht danach bei ansatz × Höhe, (yk + dh) / (h0 + dh) = ansatz.
+    function schaftHub(segs, leaves, runMeta, ziel, ansatz) {
         let h0 = 0,
             yb = Infinity;
         const erst = new Set();
@@ -1785,7 +1793,9 @@
             if (m && m.parentRun === 0) yb = Math.min(yb, s.p0[1]);
         }
         if (!(yb > 1e-6) || !(h0 > yb)) return 0;
-        const dh = ziel - h0;
+        let yk = yb;
+        if (ansatz > 0) for (const l of leaves) yk = Math.min(yk, l.pos[1]);
+        const dh = ansatz > 0 && ansatz < 1 ? (ansatz * h0 - yk) / (1 - ansatz) : ziel - h0;
         if (!(dh > 0)) return 0;
         const streck = (yb + dh) / yb;
         const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
@@ -2007,7 +2017,10 @@
     // Baums ist hd · FREISTAND.hd seiner Art im Bestand (Eiche 60 → 27; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
     // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
     // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2 });
+    // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
+    // bei 0,15–0,2 der Höhe (Marbach: kurzer dicker Stamm unter der Krone — ohne ihn
+    // stand die Krone als Busch auf dem Boden, Blick-Sonde 12.10.).
+    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3 });
     function forestStandDensity(fbm, x, z, opt) {
         const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
         let contrast = FOREST_STAND.host.contrast,
