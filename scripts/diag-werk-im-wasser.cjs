@@ -249,7 +249,9 @@ function urteil(b) {
     if (!RD || RD.fehler) v.push(`R: ${RD ? RD.fehler : "die Seerand-Probe lief nicht"}`);
     else {
         if (!(RD.haeuser >= 1) || !RD.randHaus)
-            v.push(`R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus})`);
+            v.push(
+                `R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus}; geräumte Reste früherer Proben: ${(RD.reste || []).join(", ") || "keine"})`
+            );
         if (RD.invalidierungen > 0)
             v.push(
                 `R: das Dorf am Seerand weckt den Wasser-Automaten, ohne Wasser der Zellen zu verdrängen — ${RD.invalidierungen} Invalidierungen, ${RD.ca} Chunks wach nach ${RD.takte} Takten (${RD.randHaus})`
@@ -612,6 +614,7 @@ async function probe(A) {
         return G.t[i * G.n + j];
     };
     const spawnAlt = r.spawnArchitecture;
+    const probeWerke = new Set();
     r.spawnArchitecture = function (type, position, opts) {
         const natur = r._istNatur({ type });
         const werk = !natur && !/^fahrzeug_/.test(String(type));
@@ -622,6 +625,10 @@ async function probe(A) {
             if (Number.isFinite(g)) fussT = stammTiefe(position.x, position.z, g, 0.5, true);
         } else if (position && werk) G = gitter(position.x, position.z);
         const e = spawnAlt.apply(this, arguments);
+        // was eine Probe selbst setzt (ein Satz, die Bau-Eiche, ein Wagen) — nie, was die Welt beim Strömen und in den
+        // Spiel-Takten wachsen lässt; R räumt nur das
+        if (e && (/^fahrzeug_/.test(String(type)) || !/^(strom|Spiel-Takt|Nexus-Dorf)$/.test(zensus.quelle)))
+            probeWerke.add(e);
         if (e && (fussT !== null || G)) {
             zensus.werke++;
             if (natur) zensus.baeume++;
@@ -1485,6 +1492,20 @@ async function probe(A) {
                     const reich = o && Number.isFinite(o.ex) && Number.isFinite(o.ez) ? Math.hypot(o.ex, o.ez) : 6;
                     planR = Math.max(planR, Math.hypot(sl.x - mx, sl.z - mz) + reich);
                 }
+                // die Reste früherer Proben im Plan-Kreis fallen vor dem Dorf (der Haus-Satz am Seeufer ließ seine Häuser
+                // stehen — eins 8,6 m neben dem Rand-Haus, das Blocker-Netz nahm ihm den Platz: 13 Häuser, keins am Rand);
+                // R misst die Welt, wie der Spieler sie vorfindet, und nennt jeden geräumten Rest beim Namen
+                const reste = [];
+                for (const e of st.architectures.slice())
+                    if (
+                        e &&
+                        probeWerke.has(e) &&
+                        e.position &&
+                        Math.hypot(e.position.x - (X + mx), e.position.z - (Z + mz)) < planR + 12
+                    ) {
+                        reste.push(`${e.type} #${e.id}`);
+                        r.removeArchitecture(e);
+                    }
                 const a = (A.rand.winkel * Math.PI) / 180;
                 const dSp = planR + r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN + 1.5;
                 const PX = X + mx + Math.cos(a) * dSp;
@@ -1590,6 +1611,7 @@ async function probe(A) {
                     (e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - hx, e.position.z - hz) < 6
                 );
                 out.rand = {
+                    reste,
                     haeuser: res ? res.placed : 0,
                     spieler: [+PX.toFixed(1), +PZ.toFixed(1)],
                     randHaus: randHaus
