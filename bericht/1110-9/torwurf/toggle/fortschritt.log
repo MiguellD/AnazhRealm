@@ -1,0 +1,32 @@
+13:52:08 START WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489 · porta-core ed28b324e1f9d482
+13:53:10 eingeschwungen fps": 48.4,
+13:53:20 grund-s1 GPU ms/Frame 20.28 · Befehle 172/
+13:53:20   {"ergebnis":{"schalter":"zwilling-stoff","an":true,"betroffen":5},"ms":2}
+13:53:30 stoff1 GPU ms/Frame 21.35 · Befehle 172/
+13:53:30   {"ergebnis":{"schalter":"zwilling-stoff","an":false,"betroffen":5},"ms":3}
+13:53:40 grund-s2 GPU ms/Frame 20.37 · Befehle 172/
+13:53:40   {"ergebnis":{"schalter":"zwilling-stoff","an":true,"betroffen":5},"ms":3}
+13:53:50 stoff2 GPU ms/Frame 21.26 · Befehle 172/
+13:53:50   {"ergebnis":{"schalter":"zwilling-stoff","an":false,"betroffen":5},"ms":2}
+13:54:00 grund-s3 GPU ms/Frame 20.3 · Befehle 172/
+13:54:00   {"ergebnis":{"schalter":"zwilling-stoff","an":true,"betroffen":5},"ms":2}
+13:54:10 stoff3 GPU ms/Frame 21.42 · Befehle 172/
+13:54:10   {"ergebnis":{"schalter":"zwilling-stoff","an":false,"betroffen":5},"ms":2}
+13:54:20 grund-m1 GPU ms/Frame 20.53 · Befehle 172/
+13:54:20   {"ergebnis":{"schalter":"fern-march","an":true,"betroffen":7},"ms":2}
+13:54:30 march1 GPU ms/Frame 20.97 · Befehle 172/
+13:54:30   {"ergebnis":{"schalter":"fern-march","an":false,"betroffen":7},"ms":2}
+13:54:40 grund-m2 GPU ms/Frame 19.87 · Befehle 172/
+13:54:40   {"ergebnis":{"schalter":"fern-march","an":true,"betroffen":7},"ms":3}
+13:54:50 march2 GPU ms/Frame 21.28 · Befehle 172/
+13:54:50   {"ergebnis":{"schalter":"fern-march","an":false,"betroffen":7},"ms":2}
+13:55:00 grund-m3 GPU ms/Frame 20.47 · Befehle 172/
+13:55:00   {"ergebnis":{"schalter":"fern-march","an":true,"betroffen":7},"ms":3}
+13:55:10 march3 GPU ms/Frame 20.89 · Befehle 172/
+13:55:10   {"ergebnis":{"schalter":"fern-march","an":false,"betroffen":7},"ms":2}
+13:55:20 grund-w1 GPU ms/Frame 20.13 · Befehle 172/
+13:55:20   {"ergebnis":{"schalter":"zwilling-weg","an":true,"betroffen":5},"ms":3}
+13:55:30 weg1 GPU ms/Frame 21.36 · Befehle 167/
+13:55:30   {"ergebnis":{"schalter":"zwilling-weg","an":false,"betroffen":5},"ms":3}
+13:55:40 grund-w2 GPU ms/Frame 20.33 · Befehle 172/
+13:55:45 TOGGLE ENDE
