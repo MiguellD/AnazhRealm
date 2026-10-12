@@ -536,7 +536,7 @@
             b,
             stil,
             reach,
-            von: kn, // der Knoten des Segments (die Mündung eines Zuflusses folgt ihm stromab: `flussLaeufe`)
+            von: kn, // der Knoten des Segments (eine Mündung darauf ist ein Zufluss, keine Senke: `flussLaeufe`)
         };
     }
     function zelle(N, k, ci, cj) {
@@ -720,7 +720,7 @@
             const v = bed + d * 0.05;
             if (v < bv) {
                 bv = v;
-                best = { x: s.ax + s.ex * t, z: s.az + s.ez * t, bed, von: s.von, t };
+                best = { x: s.ax + s.ex * t, z: s.az + s.ez * t, bed, von: s.von };
             }
         }
         if (best) return best;
@@ -809,10 +809,10 @@
     // DAS WASSER LIEST DAS NETZ (K16): die Fluss-Läufe der Ebenen 0 und 1, die das Rechteck [x0, x1) × [z0, z1) berühren —
     // dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites. Ein Lauf beginnt an einer Quelle (ein
     // Knoten ohne Oberlieger seiner Ebene: `quelle`) oder, liegen alle Oberlieger jenseits der Reichweite, an ihrem Rand,
-    // und folgt dem Unterlieger; ein Zufluss (Ebene 1) mündet ins Netz der Ebene 0 und folgt ihm weiter (das Glied ab der
-    // Mündung trägt das Segment des Hauptlaufs mit `t0`, so trägt der geteilte Unterlauf dieselben Punkte). Er endet an
-    // der Senke (`ende` "see" ein benannter See, "meer") oder jenseits der Reichweite ("rand"). Je Glied die Enden, die
-    // Sohlen (`knotenSohle`, stromab streng fallend) und das Einzugsgebiet A in m². Ohne Wildnis-Term (eine Bühne): [].
+    // und folgt dem Unterlieger bis zur Mündung ins Netz der Ebene 0 (`ende` "muendung": ein Zufluss endet auf der Rinne des
+    // Hauptlaufs, jedes Glied gehört EINEM Lauf), zur Senke ("see" ein benannter See, "meer") oder jenseits der Reichweite
+    // ("rand"). Je Glied die Enden, die Sohlen (`knotenSohle`, stromab streng fallend) und das Einzugsgebiet A in m². Ohne
+    // Wildnis-Term (eine Bühne): [].
     function flussLaeufe(L, x0, z0, x1, z1) {
         const T = L.erbgut && L.erbgut.terme;
         if (!T || !T.length || T[0].art !== "wildnis") return [];
@@ -821,7 +821,7 @@
             const S = 2 * N.S[kn.k];
             return kn.x >= x0 - S && kn.x < x1 + S && kn.z >= z0 - S && kn.z < z1 + S;
         };
-        const glied = (kn, t0) => {
+        const glied = (kn) => {
             const f = knotenFluss(N, kn);
             const t = f || kn.aus;
             return {
@@ -832,7 +832,6 @@
                 ba: knotenSohle(N, kn),
                 bb: f ? knotenSohle(N, f) : t.bed,
                 A: knotenA(N, kn) * N.S[kn.k] * N.S[kn.k],
-                t0,
             };
         };
         const laeufe = [];
@@ -857,21 +856,16 @@
                     let ende = "rand";
                     let c = kn;
                     for (let g = 0; g < 256; g++) {
-                        let f = knotenFluss(N, c);
+                        const f = knotenFluss(N, c);
                         if (!f && c.k === 0) {
                             ende = c.senke === 2 ? "meer" : "see";
                             break;
                         }
-                        glieder.push(glied(c, 0));
+                        glieder.push(glied(c));
                         if (!f) {
-                            // die Mündung des Zuflusses: weiter auf dem Segment des Hauptlaufs ab ihrem Punkt
-                            const a = c.aus;
-                            if (!a.von) {
-                                ende = "see";
-                                break;
-                            }
-                            glieder.push(glied(a.von, a.t));
-                            f = knotenFluss(N, a.von);
+                            // die Mündung des Zuflusses auf der Rinne der Ebene 0 — oder die Senke selbst (keine Rinne in Reichweite)
+                            ende = c.aus.von ? "muendung" : "see";
+                            break;
                         }
                         if (!drin(f)) break;
                         c = f;

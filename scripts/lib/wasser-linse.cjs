@@ -1848,14 +1848,15 @@ function wasserQuelle(opts) {
             // Körper-Wasser am Ursprung über dem höchsten Spiegel der deckenden Segmente (vor K16 hob ein Zufluss, der in der Aue
             // des Stamms begann, den Stamm mit dem Spiegel seiner ungefrästen Ufer, bis 1,36 m). Gedeckt heißt wie in
             // `_hydroRiverAt`: der Abstand zum SEGMENT bis zu seiner Krone, Breite und Spiegel längs des Segments.
-            const eigenePunkte = new Set(P.slice(0, 4).map((p) => p.x + "," + p.z));
             let kanalS = -Infinity;
             for (const rw of h.rivers)
                 for (let i = 0; i + 1 < rw.points.length; i++) {
                     const a = rw.points[i],
                         b = rw.points[i + 1];
                     if (a.inLake || b.inLake || !Number.isFinite(a.S) || !Number.isFinite(b.S)) continue;
-                    if (eigenePunkte.has(a.x + "," + a.z) || eigenePunkte.has(b.x + "," + b.z)) continue;
+                    // nie der eigene Lauf (K16: jedes Glied des Netzes gehört EINEM Lauf; ein Zufluss, der am Kopf der Quelle
+                    // endet, teilt ihren ersten Punkt und speist sie)
+                    if (rw === rv) continue;
                     const ex = b.x - a.x,
                         ez = b.z - a.z,
                         l2 = ex * ex + ez * ez || 1;

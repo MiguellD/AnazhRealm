@@ -35725,7 +35725,8 @@ class AnazhRealm {
     // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied Punkte im Zell-Abstand, gleich verteilt auf
     // dem Segment (ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des Gesetzes (stromab streng fallend), die
     // Breite aus dem Einzugsgebiet (`_flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter
-    // Lauf). Ein Lauf endet am Meer, am See (`mouth` "see", `seeY` sein Spiegel) oder am Rand der Kachel.
+    // Lauf). Ein Lauf endet am Meer, am See (`mouth` "see", `seeY` sein Spiegel), als Zufluss auf der Rinne seines
+    // Hauptlaufs ("zufluss") oder am Rand der Kachel.
     _hydroNetzFluesse(ctx) {
         const { dim, cell, originX, originZ, size, filled, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
@@ -35762,11 +35763,9 @@ class AnazhRealm {
                 const len = Math.hypot(ex, ez) || 1;
                 const n = Math.max(1, Math.ceil(len / cell));
                 const voll = AnazhRealm._flussBreite(gl.A);
-                // die Mündung eines Zuflusses (t0 > 0): ihr Punkt, dann die Punkte des Hauptlaufs stromab von ihr
-                const m0 = gl.t0 > 0 ? Math.floor(gl.t0 * n) + 1 : 0;
                 const bis = g === lf.glieder.length - 1 ? n : n - 1;
-                for (let m = gl.t0 > 0 ? m0 - 1 : 0; m <= bis; m++) {
-                    const t = gl.t0 > 0 && m === m0 - 1 ? gl.t0 : m / n;
+                for (let m = 0; m <= bis; m++) {
+                    const t = m / n;
                     const x = gl.ax + ex * t;
                     const z = gl.az + ez * t;
                     const idx = zelle(x, z);
@@ -35783,7 +35782,7 @@ class AnazhRealm {
                         seeY = filled[idx];
                         break;
                     }
-                    const s = lauf + len * (t - (gl.t0 > 0 ? gl.t0 : 0));
+                    const s = lauf + len * t;
                     const quelle = Math.min(1, (HC.quellBett + HC.quellWeitung * s) / voll);
                     points.push({
                         x,
@@ -35796,9 +35795,10 @@ class AnazhRealm {
                         inLake: false,
                     });
                 }
-                lauf += len * (1 - (gl.t0 > 0 ? gl.t0 : 0));
+                lauf += len;
             }
-            abschluss(mouth || (lf.ende === "meer" ? "sea" : lf.ende === "see" ? "see" : "border"));
+            const ende = { meer: "sea", see: "see", muendung: "zufluss" };
+            abschluss(mouth || ende[lf.ende] || "border");
         }
         return rivers;
     }

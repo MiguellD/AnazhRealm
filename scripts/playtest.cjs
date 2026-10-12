@@ -20046,8 +20046,9 @@ async function checkBandHydrosphere(ctx) {
             }
             return true;
         });
-        // Jeder Fluss endet am Meer, am Rand der Kachel oder in einem See (K16: die Senke des Netzes ist ein benannter See).
-        out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border" || rv.mouth === "see");
+        // Jeder Fluss endet am Meer, am Rand der Kachel, in einem See (K16: die Senke des Netzes ist ein benannter See) oder als
+        // Zufluss auf der Rinne seines Hauptlaufs.
+        out.riverMouths = h1.rivers.every((rv) => ["sea", "border", "see", "zufluss"].includes(rv.mouth));
         // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
         // der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
         const seeOrt = window.__wasserOrt("see");
@@ -20183,8 +20184,11 @@ async function checkBandHydrosphere(ctx) {
             hb.riverCount > 0
         );
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-        check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)", hb.riversDescend);
-        check("Voxel V9.43-b: jeder Fluss endet an Meer, See oder Region-Rand", hb.riverMouths);
+        check(
+            "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)",
+            hb.riversDescend
+        );
+        check("Voxel V9.43-b: jeder Fluss endet an Meer, See, Hauptlauf oder Region-Rand", hb.riverMouths);
         check(
             "K16: ein Fluss des Netzes mündet in einen See (Land → See)",
             hb.riverThroughLake,
