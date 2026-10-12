@@ -921,6 +921,12 @@ const FORBIDDEN = [
     { token: "mEffDmgMax", fiel: "Welle L Q8" },
     { token: "mEffRefKg", fiel: "Welle L Q8 — die Wirkung ist Energie gegen keRefJ" },
     { token: "zugJouleRef", fiel: "Welle L Q8 — E = ableitenBogen(task).energie (die Studio-Energie)" },
+    // DER WIND LEBT IM STOFF (K19-N2): die Werkstatt-Formel las Schwung und Phase je Vertex; sie fiel, und mit ihr ihre
+    // Daten — der EINE Wind-Term liest die Gestalt (positionGeometry) und den Stempel aH0 (gate:pflanzen-nah WD).
+    { token: "aFlex", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
+    { token: "aPhase", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
+    { token: "_mergeAttributedGeometries", fiel: "K19 — ohne Wind-Attribute ein Zwilling von `_mergeGeometries`" },
+    { token: "useFlexAttr", fiel: "K19 — der Pflanzen-Stoff heißt `pflanzenStoff` (er liest kein aFlex)" },
     // KEIN DRITTER LEIB (Integration Welle L, Stufe kampf-maus, Gesetz #0): Klinge und Pfeil schätzten den Leib des Tiers je
     // selbst als 2 × Skala; das Grob-Tor liest den EINEN Leib (_kreaturLeib.reichweite, _trefferErreichbar). Die Gattung
     // eines Tiers liest jeder Leser aus _kreaturGattung (Herden-Zug, Analog-Zensus), nie aus einer eigenen Kette.
