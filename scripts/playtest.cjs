@@ -33722,13 +33722,16 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         let pt = { x: 0, z: 0 };
-        // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark)
+        // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
+        // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
+        // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
         let erdePt = null;
         for (let i = 0; i < 200 && !erdePt; i++) {
             const x = (Math.random() - 0.5) * 600;
             const z = (Math.random() - 0.5) * 600;
             const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
             if (!Number.isFinite(surfY)) continue;
+            if (surfY - (surfY - A.STRATA_STEIN_DEPTH) !== A.STRATA_STEIN_DEPTH) continue;
             const mat = r._terrainMaterialAt(x, z); // 2-arg, kein y
             if (mat === "erde") {
                 erdePt = { x, z, surfY };
