@@ -28713,7 +28713,7 @@ class AnazhRealm {
     // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
     // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Kugel
     // samt einem Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in
-    // derselben Reihenfolge. Ein Leser fragt nur seinen Chunk statt alle Edits zu summieren, und die Summe bleibt Bit für
+    // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits zu summieren, und die Summe bleibt Bit für
     // Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk eine Generation aus EINEM steigenden Zähler
     // (nie wiederholt) — der Stale-Filter der Worker-Antworten (`_voxelStand`). Identität und Länge der Liste halten die
     // Karte frisch: ein Push wird nachgetragen, ein Tausch oder Kürzen baut sie neu. Der Worker spiegelt sie byte-gleich
@@ -28723,7 +28723,14 @@ class AnazhRealm {
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
         let k = this._editKarte;
         if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0)) {
-            k = this._editKarte = { edits, n: 0, span: this._voxelChunkConfig().span, je: new Map(), gen: new Map() };
+            k = this._editKarte = {
+                edits,
+                n: 0,
+                span: this._voxelChunkConfig().span,
+                je: new Map(),
+                kern: new Map(),
+                gen: new Map(),
+            };
         }
         if (edits && k.n < edits.length) {
             const span = k.span;
@@ -28733,16 +28740,24 @@ class AnazhRealm {
                 const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
                 this._editGenZaehler = (this._editGenZaehler || 0) + 1;
                 const g = this._editGenZaehler;
-                const cx1 = Math.floor((ed.x + r) / span) + 1;
-                const cz0 = Math.floor((ed.z - r) / span) - 1;
-                const cz1 = Math.floor((ed.z + r) / span) + 1;
-                for (let cx = Math.floor((ed.x - r) / span) - 1; cx <= cx1; cx++) {
-                    for (let cz = cz0; cz <= cz1; cz++) {
+                // Der Kasten der Kugel in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
+                const kax = Math.floor((ed.x - r) / span);
+                const kbx = Math.floor((ed.x + r) / span);
+                const kaz = Math.floor((ed.z - r) / span);
+                const kbz = Math.floor((ed.z + r) / span);
+                for (let cx = kax - 1; cx <= kbx + 1; cx++) {
+                    for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
                         const key = (cx + 32768) * 65536 + (cz + 32768);
                         const liste = k.je.get(key);
                         if (liste) liste.push(ed);
                         else k.je.set(key, [ed]);
                         k.gen.set(key, g);
+                        // DER KERN (ohne Rand): die Punkt-Probe fragt nur die Edits, deren Kasten ihren Chunk berührt.
+                        if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
+                            const kern = k.kern.get(key);
+                            if (kern) kern.push(ed);
+                            else k.kern.set(key, [ed]);
+                        }
                     }
                 }
             }
@@ -28790,12 +28805,13 @@ class AnazhRealm {
 
     // Voxel-Edit-Deltas (EINE Quelle): jede Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf
     // (fill). Edits leben in worldMeta.voxelEdits (persistiert) und gelten ZULETZT — der Spieler-Wille
-    // überschreibt Terrain UND Hydrosphäre-Sculpting. Summiert werden nur die Edits des Chunks (die Karte).
+    // überschreibt Terrain UND Hydrosphäre-Sculpting. Summiert werden nur die Edits, deren Kasten den Chunk der Probe
+    // berührt (der Kern der Karte).
     _voxelEditDeltaAt(x, y, z) {
         const meta = this.state.worldMeta;
         if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return 0;
         const k = this._voxelEditKarte();
-        const edits = k.je.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
+        const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
         if (!edits) return 0;
         let d = 0;
         for (let e = 0; e < edits.length; e++) {

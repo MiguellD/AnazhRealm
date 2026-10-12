@@ -262,7 +262,7 @@ function applyStateDelta(delta) {
 
 // DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` in anazhRealm.js, K23): je Chunk die Edits, deren Kugel ihn samt einem
 // Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in Setz-Reihenfolge.
-// Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird nachgetragen, ein Snapshot baut neu). Die
+// Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird nachgetragen, ein Snapshot baut neu). Die
 // Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch zur Main (gate:worker-dichte, 300 Edits).
 const KEINE_EDITS = Object.freeze([]);
 let editKarte = null;
@@ -270,7 +270,7 @@ function editKarteFrisch() {
     const edits = Array.isArray(state.voxelEdits) ? state.voxelEdits : null;
     let k = editKarte;
     if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0)) {
-        k = editKarte = { edits, n: 0, span: voxelChunkConfig(0).span, je: new Map() };
+        k = editKarte = { edits, n: 0, span: voxelChunkConfig(0).span, je: new Map(), kern: new Map() };
     }
     if (edits && k.n < edits.length) {
         const span = k.span;
@@ -278,15 +278,22 @@ function editKarteFrisch() {
             const ed = edits[k.n++];
             if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
             const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
-            const cx1 = Math.floor((ed.x + r) / span) + 1;
-            const cz0 = Math.floor((ed.z - r) / span) - 1;
-            const cz1 = Math.floor((ed.z + r) / span) + 1;
-            for (let cx = Math.floor((ed.x - r) / span) - 1; cx <= cx1; cx++) {
-                for (let cz = cz0; cz <= cz1; cz++) {
+            const kax = Math.floor((ed.x - r) / span);
+            const kbx = Math.floor((ed.x + r) / span);
+            const kaz = Math.floor((ed.z - r) / span);
+            const kbz = Math.floor((ed.z + r) / span);
+            for (let cx = kax - 1; cx <= kbx + 1; cx++) {
+                for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
                     const key = (cx + 32768) * 65536 + (cz + 32768);
                     const liste = k.je.get(key);
                     if (liste) liste.push(ed);
                     else k.je.set(key, [ed]);
+                    // der Kern ohne Rand (die Punkt-Probe)
+                    if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
+                        const kern = k.kern.get(key);
+                        if (kern) kern.push(ed);
+                        else k.kern.set(key, [ed]);
+                    }
                 }
             }
         }
@@ -483,7 +490,7 @@ function terrainBaseDensityCol(x, y, z, ctx) {
 // `_voxelEditDeltaAt`).
 function applyVoxelEdits(d, x, y, z) {
     const k = state.voxelEdits && state.voxelEdits.length ? editKarteFrisch() : null;
-    const edits = k ? k.je.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768)) : null;
+    const edits = k ? k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768)) : null;
     if (edits) {
         for (let e = 0; e < edits.length; e++) {
             const ed = edits[e];
