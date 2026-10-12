@@ -580,6 +580,15 @@
                         // die Auge-folgt-Koerper-Glaettung. Byte-gleich
                         // (0.022 / 0.32 / 2.5 / 8 / 14).
                         landung: { dipProV: 0.022, dipMax: 0.32, minTempo: 2.5, erholK: 8, kameraK: 14 },
+                        // DER LEIB DER KAMERA (K06, rein additiv): die 3rd-Kamera ist
+                        // eine Kugel vom Radius armRadiusM (m) -- sie haelt absolut so
+                        // weit vor jeder Flaeche und ueber dem sichtbaren Boden (Wirt:
+                        // _loopCamera, der Wurf _fieldRaycast radius; Lab: die Strecke
+                        // Blickziel -> Kamera gegen die Park-Boxen, in Lab-Massen);
+                        // armRuhe der Rest je Sekunde, den der Arm frei noch vor sich
+                        // hat (Wirt: der gleitende Arm; Lab: die Kamera-Glaettung).
+                        // Byte-gleich zum Wirt-Literal KAMERA_ARM_RUHE (0.0016).
+                        kamera: { armRadiusM: 0.3, armRuhe: 0.0016 },
                     },
                     // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
                     // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE

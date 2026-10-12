@@ -2281,9 +2281,15 @@
         //    die Lab-Literale des alten updateVehicle (byte-gleich umgezogen: Brems-Schwelle, Rueckwaerts-Antrieb und
         //    -Deckel, Halt am Stand, Gier-Daempfung beim Halt), die Waende des Welt-Ritts (Ebenen-Klammer 0,7 rad = 40°,
         //    Feder-Anschlaege) und der Abhebe-Abstand der Vertikale. EINE Quelle fuer Probefahrt UND Welt-Ritt. ──
+        // ── SCHAU 2 (10.10., fahr-bahn) — DER RUECKWAERTSGANG: rueckAntrieb 0,4 → 1. Der Rueckwaertsgang uebersetzt wie der
+        //    erste Gang (Uebersetzung R ≈ 1. Gang), die Kraft am Rad ist dieselbe, begrenzt am Reibkreis; nur sein Deckel
+        //    (rueckVmax) ist kleiner. Mit 0,4 × aEngine stand der GT rueckwaerts schon am 15°-Hang (3,6 m/s² gegen g·sin 15° +
+        //    Rollwiderstand), und mit eingeschlagener Lenkung frass die Seitenkraft des Vorderrads unter Schritttempo den
+        //    Rest: die Befreiung der Leben-Schau 2 (S + Gegenlenkung 1,3 s) brachte 0,24–0,40 m bei −0,7 bis −1,5 km/h, 13
+        //    Versuche auf 67 m. Vorwaerts liest den Wert nie (nur der Zweig brk > 0 unter bremsV). ──
         schritt: {
             bremsV: 0.3, // m/s: darueber bremst die Bremse, darunter faehrt sie rueckwaerts
-            rueckAntrieb: 0.4, // Anteil aEngine rueckwaerts
+            rueckAntrieb: 1, // Anteil aEngine rueckwaerts (Rueckwaertsgang ≈ 1. Gang)
             rueckVmax: 0.32, // Anteil vmax rueckwaerts
             haltV: 0.08, // m/s: darunter haelt der Wagen ohne Eingabe (bis zum Reibkreis)
             haltGier: 0.5, // Gier-Rate-Rest je Halt-Schritt
@@ -2294,6 +2300,21 @@
             luftEps: 0.02, // m: so weit unter der Fallkurve verliert das Rad den Griff (darunter haftet es)
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
+        },
+        // ── SCHAU 2 (10.10., fahr-bahn; rein additive DATEN-Zeile — Praezedenz: schritt) — DER PLATZ EINES WAGENS, den die
+        //    Welt hinstellt (die Vorschau am Garage-Tor, „bau mir einen gt"): er steht auf der Ebene seiner vier Raeder und
+        //    faehrt von dort an — bergauf (die Fallinie der Ebene) mit mindestens anfahrAnteil seiner Anfahrt in der Ebene,
+        //    vorwaerts wie rueckwaerts (fahrPlatz unten), und vor wie hinter ihm liegt je bahnLaengen Wagenlaengen derselbe
+        //    Grund (er faehrt los, ohne sofort anzustossen). Die Welt sucht den naechsten solchen Platz in Ringen (suchSchrittM)
+        //    bis suchRadiusM um den gewuenschten Ort, je Ort in richtungen Fahrt-Richtungen; die Wand im Umriss und die Blocker
+        //    im Band misst der Wirt (Feld und Bauten sind seine Welt). Befund: die Vorschau stand 38° steil, 40° gewankt auf dem
+        //    Felsblock (W 3 s 0,08 m). ──
+        platz: {
+            anfahrAnteil: 0.7, // die Anfahrt bergauf ≥ 70 % der Anfahrt in der Ebene (GT bis 14,2°, SUV bis 9,8°)
+            bahnLaengen: 1, // DIE BAHN: vor und hinter dem Wagen je so viele Wagenlaengen derselbe fahrbare Grund
+            suchRadiusM: 64, // um den Genesis-Ring liegt der naechste fahrbare Grund bis ~60 m weiter (Garage-Tor 58 m)
+            suchSchrittM: 2,
+            richtungen: 4, // je Ort die Fahrt-Richtung des Wagens, dann um je 360°/richtungen gedreht
         },
         // ── SCHAU-2 (09.10., rein additive DATEN-Zeile — Praezedenz: schritt) — DER WAGEN IM WASSER: das Lab kennt kein
         //    Wasser, der Welt-Ritt reicht die Tiefe der EINEN Wasser-Wahrheit am Wagen (fahrKraefte e.tiefe). Die KRAFT
@@ -2886,7 +2907,13 @@
             Fr = Math.max(-capL, Math.min(capL, Fr));
             let Fx = Fr - G.dragK * m * vL * Math.abs(vL); // Luftwiderstand (quadratisch)
             if (Math.abs(vL) > 0.02) Fx -= FAHR.rollDecel * m * sgn; // Rollwiderstand
-            Fx -= FlatF * Math.sin(z.steer);
+            // SCHAU 2 (10.10., fahr-bahn) — UNTER SCHRITTTEMPO ROLLT DAS GELENKTE RAD KINEMATISCH: die Gier ist dort
+            // kinematisch geblendet (lowBlendV, unten), der Schlupf im Nenner gedaempft (slipEps) — er meldet am Stand den
+            // vollen Einschlag als Schlupf, und die gesaettigte Seitenkraft des Vorderrads bremste mit ihrem Laengsanteil
+            // die Fahrt, die es nicht gibt: rueckwaerts mit Gegenlenkung stand jeder Wagen (GT eben 0,40 m in 1,3 s). Der
+            // Laengsanteil folgt derselben Blende; geradeaus (Einschlag 0) und ueber Schritttempo byte-gleich.
+            const lowF = Math.max(0, Math.min(1, 1 - Math.hypot(z.vlong, z.vlat) / G.lowBlendV));
+            Fx -= FlatF * Math.sin(z.steer) * (1 - lowF);
             const Fy = FlatF * Math.cos(z.steer) + FlatR;
             // ── Newton-Euler im Koerperframe (mit Rotationskopplung vlat·ω / vlong·ω) ──
             const aLongB = Fx / m,
@@ -2955,6 +2982,42 @@
     function fahrSchritt(z, e, G, boden, dt) {
         fahrKraefte(z, e, G, dt);
         return fahrStand(z, G, boden, dt);
+    }
+    // SCHAU 2 (rein additiv) — DER PLATZ (FAHR.platz): traegt die Ebene der vier Raeder den Wagen bei (x, z, yaw), und
+    // faehrt er von dort an? Die Anfahrt ist die Laengskraft am Reibkreis (Antrieb min(aEngine · Gang, μ·g·cos θ)) gegen
+    // Rollwiderstand und Hangabtrieb g·sin θ, θ die Fallinie der Ebene (steig und wank zusammen); der schwaechere Gang
+    // (vorwaerts 1, rueckwaerts rueckAntrieb) zaehlt — der Wagen muss in jede Richtung loskommen. Quer haelt ihn die
+    // Haftung, solange die Anfahrt bergauf positiv ist (tan θ < μ). Die Anfahrt faellt mit θ: die GRENZE (fahrPlatzGrenze) ist
+    // die Neigung, bei der sie anfahrAnteil der Anfahrt in der Ebene erreicht (Bisektion) — der Platz traegt bis zu ihr, und
+    // die Suche des Wirts filtert mit ihr. → { ok, grund, eb, neigung (rad), grenze (rad) }.
+    function fahrPlatzAnfahrt(G) {
+        const mu = G.maxGrip * G.grip;
+        const antrieb = G.aEngine * Math.min(1, FAHR.schritt.rueckAntrieb);
+        return function (t) {
+            return Math.min(antrieb, mu * G.g * Math.cos(t)) - FAHR.rollDecel - G.g * Math.sin(t);
+        };
+    }
+    function fahrPlatzGrenze(G) {
+        const anfahrt = fahrPlatzAnfahrt(G);
+        const soll = FAHR.platz.anfahrAnteil * anfahrt(0);
+        if (!(soll > 0)) return 0;
+        let lo = 0;
+        let hi = Math.PI / 2;
+        for (let i = 0; i < 40; i++) {
+            const m = (lo + hi) / 2;
+            if (anfahrt(m) >= soll) lo = m;
+            else hi = m;
+        }
+        return lo;
+    }
+    function fahrPlatz(G, boden, x, z, yaw) {
+        const eb = fahrEbene(G, boden, x, z, yaw);
+        if (!eb) return { ok: false, grund: "ungebaut", eb: null };
+        if (!eb.traegt) return { ok: false, grund: "kante", eb: eb };
+        const neigung = Math.atan(Math.hypot(Math.tan(eb.steig), Math.tan(eb.wank)));
+        const grenze = fahrPlatzGrenze(G);
+        const ok = grenze > 0 && neigung <= grenze;
+        return { ok: ok, grund: ok ? null : "steil", eb: eb, neigung: neigung, grenze: grenze };
     }
 
     const PARAMS = [
@@ -3372,6 +3435,9 @@
         fahrStand: fahrStand,
         fahrKraefte: fahrKraefte,
         fahrSchritt: fahrSchritt,
+        // SCHAU 2 (rein additiv) — der Platz eines Wagens, den die Welt hinstellt (FAHR.platz)
+        fahrPlatz: fahrPlatz,
+        fahrPlatzGrenze: fahrPlatzGrenze,
         A_PITCH_MAX: A_PITCH_MAX,
         A_LAT_MAX: A_LAT_MAX,
         // Bau-Fläche (die Shell baut ihre Ebenen aus DIESER Quelle)

@@ -42899,11 +42899,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //    sind entfernt; es gibt keinen Body mehr, der „schlafen" könnte. Der Spieler
         //    läuft feld-nativ aus `_stepCharacter`. Die Sleep-Probe ist gestrichen.)
 
-        // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
-        //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
+        // 2. 3rd-Person-Kamera — Kollisions-Wurf in der Kamera-Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera;
+        //    K06: der Wurf ist die Kugel der Kamera (`_fieldRaycast` mit `radius`), nicht mehr der Ammo-Rückruf.
         {
             const src = srcOf("_loopCamera");
-            out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
+            out.cameraRaycast =
+                /cameraMode === "third"/.test(src) &&
+                /this\._fieldRaycast\(tx, ty, tz, camX, camY, camZ, \{[^}]*radius: kr/.test(src);
         }
 
         // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das 3D-Feld kennt keine
@@ -54683,8 +54685,9 @@ async function checkBandRing5Soul(ctx) {
 
     // Pitch-Inversion + Boden-Clamp im 3rd-Modus: Maus hoch (pitch positiv) SENKT die Kamera; bei
     // extremem Pitch taucht sie nie unter den Boden. Loop synchron treiben (Headless-rAF ~1 Hz).
-    // Gelesen wird `_cameraDesiredY` (reine Pitch-Mathematik inkl. Boden-Clamp), NICHT camera.position.y
-    // — die Kamera-Kollision zieht je nach Umgebung ein (eigenes Feature, nicht deterministisch).
+    // Gelesen wird `_cameraDesiredY` (reine Pitch-Mathematik inkl. Boden-Deckel), NICHT camera.position.y
+    // — die Kamera-Kollision zieht je nach Umgebung ein (eigenes Feature, nicht deterministisch). Der Deckel ist der
+    // SICHTBARE Boden + der Radius der Kamera-Kugel (`_kamBodenY`, K06), nicht mehr die Füße − 0,2 m.
     const setPitchAndRead = async (pitch) => {
         return await page.evaluate((p) => {
             const r = window.anazhRealm;
@@ -54698,13 +54701,18 @@ async function checkBandRing5Soul(ctx) {
                 r.state._fieldVy = 0;
             }
             if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-            return r.state._cameraDesiredY - r.state.playerMesh.position.y;
+            const st = r.state;
+            return {
+                d: st._cameraDesiredY - st.playerMesh.position.y,
+                boden: st._cameraDesiredY - st._kamBodenY,
+                bodenUeberFuss: st._kamBodenY - (st.playerMesh.position.y - 0.5),
+            };
         }, pitch);
     };
-    const upDelta = await setPitchAndRead(Math.PI / 6);
-    const clampedDelta = await setPitchAndRead(Math.PI / 2 - 0.1);
-    const downDelta = await setPitchAndRead(-Math.PI / 6);
-    const cameraPitch = { upDelta, clampedDelta, downDelta };
+    const upDelta = (await setPitchAndRead(Math.PI / 6)).d;
+    const geklemmt = await setPitchAndRead(Math.PI / 2 - 0.1);
+    const downDelta = (await setPitchAndRead(-Math.PI / 6)).d;
+    const cameraPitch = { upDelta, geklemmt, downDelta };
     await page.evaluate(() => {
         const r = window.anazhRealm;
         r.setCameraMode("first");
@@ -54741,7 +54749,7 @@ async function checkBandRing5Soul(ctx) {
     }
     if (cameraPitch) {
         // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
-        // pitch=-30° → cam-player = 2+3 = 5. clamp greift bei -0.2.
+        // pitch=-30° → cam-player = 2+3 = 5. Der Deckel greift am sichtbaren Boden + r (K06).
         check(
             "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
             cameraPitch.upDelta < 2,
@@ -54753,9 +54761,11 @@ async function checkBandRing5Soul(ctx) {
             `cam-player=${cameraPitch.downDelta.toFixed(2)} (Erwartung > 2)`
         );
         check(
-            "Ring 5 V2-Prep: Boden-Clamp greift bei extremem Pitch",
-            cameraPitch.clampedDelta >= -0.21,
-            `cam-player=${cameraPitch.clampedDelta.toFixed(2)} (≥ -0.2 erwartet)`
+            "Ring 5 V2-Prep: Boden-Deckel greift bei extremem Pitch (sichtbarer Boden + Kugel-Radius)",
+            Math.abs(cameraPitch.geklemmt.boden) < 0.001 &&
+                cameraPitch.geklemmt.bodenUeberFuss > -1.2 &&
+                cameraPitch.geklemmt.bodenUeberFuss < 1.2,
+            `Wunsch − Deckel = ${Number(cameraPitch.geklemmt.boden).toFixed(3)} (0 erwartet), Deckel über den Füßen ${Number(cameraPitch.geklemmt.bodenUeberFuss).toFixed(2)} m (±1,2)`
         );
     }
 }

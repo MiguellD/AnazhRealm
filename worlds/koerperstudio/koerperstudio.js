@@ -1709,6 +1709,11 @@ var _NF0={sprungVy:15.5,wandVy:14.5,wandKick:11,doppelVy:13.8,kletterVy:8.5,spri
 var _NFc=(window.__koerperCore&&window.__koerperCore.NINJA_FEEL)||null;
 var NINJA_FEEL={sprungVy:(_NFc&&Number.isFinite(_NFc.sprungVy))?_NFc.sprungVy:_NF0.sprungVy,wandVy:(_NFc&&Number.isFinite(_NFc.wandVy))?_NFc.wandVy:_NF0.wandVy,wandKick:(_NFc&&Number.isFinite(_NFc.wandKick))?_NFc.wandKick:_NF0.wandKick,doppelVy:(_NFc&&Number.isFinite(_NFc.doppelVy))?_NFc.doppelVy:_NF0.doppelVy,kletterVy:(_NFc&&Number.isFinite(_NFc.kletterVy))?_NFc.kletterVy:_NF0.kletterVy,sprintSpd:(_NFc&&Number.isFinite(_NFc.sprintSpd))?_NFc.sprintSpd:_NF0.sprintSpd,walkSpd:(_NFc&&Number.isFinite(_NFc.walkSpd))?_NFc.walkSpd:_NF0.walkSpd,crouchSpd:(_NFc&&Number.isFinite(_NFc.crouchSpd))?_NFc.crouchSpd:_NF0.crouchSpd,ctrlWalk:(_NFc&&Number.isFinite(_NFc.ctrlWalk))?_NFc.ctrlWalk:_NF0.ctrlWalk};
 var _bew=(window.__koerperCore&&window.__koerperCore.bewegung)||null;
+var _KAM=window.__koerperCore.bewegung.kamera;   // K06 — DER LEIB DER KAMERA: armRadiusM (die Kugel) + armRuhe (die Glaettung) aus fx.bewegung.kamera, fail-closed (kein Lab-Literal)
+// die Strecke p + d*t (t 0..1) gegen die Park-Box b, um r aufgeblasen: der Eintritt t, Infinity ohne Schnitt (Slab)
+function _kamSeg(px,py,pz,dx,dy,dz,b,r){var P=[px,py,pz],D=[dx,dy,dz],lo=[b.cx-b.sx/2-r,b.minY-r,b.cz-b.sz/2-r],hi=[b.cx+b.sx/2+r,b.maxY+r,b.cz+b.sz/2+r],t0=0,t1=1;for(var a=0;a<3;a++){if(Math.abs(D[a])<1e-9){if(P[a]<lo[a]||P[a]>hi[a])return Infinity;continue;}var u=(lo[a]-P[a])/D[a],v=(hi[a]-P[a])/D[a];if(u>v){var q=u;u=v;v=q;}if(u>t0)t0=u;if(v<t1)t1=v;if(t0>t1)return Infinity;}return t0;}
+// der Punkt steht frei: in keiner Park-Box, um r aufgeblasen
+function _kamFrei(x,y,z,r){for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];if(x>b.cx-b.sx/2-r&&x<b.cx+b.sx/2+r&&y>b.minY-r&&y<b.maxY+r&&z>b.cz-b.sz/2-r&&z<b.cz+b.sz/2+r)return false;}return true;}
 var _coy=(_bew&&_bew.sprung&&Number.isFinite(_bew.sprung.coyoteSec))?_bew.sprung.coyoteSec:0.3;  // V18.491.164 — coyote cold was buffer twin; now matches fx.bewegung.sprung.coyoteSec
 var _jbuf0=(_bew&&_bew.sprung&&Number.isFinite(_bew.sprung.bufferSec))?_bew.sprung.bufferSec:0.12;
 var keys={};
@@ -1919,13 +1924,19 @@ function playPhysics(dt){
     var shX=-Math.cos(play.yaw)*1.75,shZ=Math.sin(play.yaw)*1.75;                     // OVER-SHOULDER: kamera bildschirm-rechts, figur links im frame
     var icx=character.position.x-ldx*dist+shX, icy=character.position.y+3.85-ldy*dist, icz=character.position.z-ldz*dist+shZ;
     // critically-damped smoothing of camera + look target
-    var ks=1-Math.pow(0.0016,dt);
+    var ks=1-Math.pow(_KAM.armRuhe,dt);
     play.camX=_mix(play.camX,icx,ks);play.camY=_mix(play.camY,icy,ks);play.camZ=_mix(play.camZ,icz,ks);
     play.lookX=_mix(play.lookX,ltx,ks*1.4);play.lookY=_mix(play.lookY,lty,ks*1.4);play.lookZ=_mix(play.lookZ,ltz,ks*1.4);
-    // keep camera above ground / out of platforms
-    var camG=0;for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];if(inXZ(play.camX,play.camZ,b,0.3)&&b.maxY<character.position.y+6&&b.maxY+0.8>camG)camG=b.maxY+0.8;}
-    if(play.camY<camG)play.camY=camG;
-    camera.position.set(play.camX,play.camY,play.camZ);camera.lookAt(play.lookX,play.lookY,play.lookZ);
+    // K06 DIE KAMERA HAT EINEN LEIB (NP-03): die Strecke Blickziel -> Kamera gegen JEDE Park-Box (der Boden zuerst), um armRadiusM aufgeblasen (in Lab-Massen: die Kugel deckt die Nah-Ebene 0,1); die Kamera haelt vor dem ersten Eintritt. Beginnt die Strecke in der aufgeblasenen Box, haelt die Kamera armRadiusM vor der Box selbst (entlang der Strecke); beginnt sie in ihr, sagt die Box nichts. camG fiel: der Hoehen-Deckel hob die Kamera nur ueber Boxen unter ihr -- Wand, Tunnel und Kante standen zwischen Blickziel und Linse (9 von 48 Posen).
+    // das Blickziel haelt die Kugel selbst frei (wie die Schulter des Wirts): seine Versetzung von der Brust (Schulter + Vorlauf) rueckt vor jeder aufgeblasenen Box ein -- die Figur am Tunnel-Dach trug das Ziel 0,1 vor die Kante
+    var kbx=character.position.x,kbz=character.position.z,klx=play.lookX-kbx,klz=play.lookZ-kbz,ks2=1;
+    for(var i=0;i<parkBoxes.length;i++){var h0=_kamSeg(kbx,play.lookY,kbz,klx,0,klz,parkBoxes[i],_KAM.armRadiusM+0.01);if(h0>0&&h0<ks2)ks2=h0;}
+    var LX=kbx+klx*ks2,LY=play.lookY,LZ=kbz+klz*ks2;
+    var kdx=play.camX-LX,kdy=play.camY-LY,kdz=play.camZ-LZ,kt=1;
+    for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i],h=_kamSeg(LX,LY,LZ,kdx,kdy,kdz,b,_KAM.armRadiusM);if(h===0){h=_kamSeg(LX,LY,LZ,kdx,kdy,kdz,b,0);h=h===0?Infinity:Math.max(0,h-_KAM.armRadiusM/Math.hypot(kdx,kdy,kdz));}if(h<kt)kt=h;}
+    // streift die Strecke eine Box, an der sie beginnt (das Ziel an ihrer Kante), endet die Kamera nie in deren Kugel-Hülle: zurück zum Ziel, bis sie frei steht (Bisektion)
+    if(!_kamFrei(LX+kdx*kt,LY+kdy*kt,LZ+kdz*kt,_KAM.armRadiusM)){var klo=0,khi=kt;for(var j=0;j<10;j++){var km=(klo+khi)/2;if(_kamFrei(LX+kdx*km,LY+kdy*km,LZ+kdz*km,_KAM.armRadiusM))klo=km;else khi=km;}kt=klo;}
+    camera.position.set(LX+kdx*kt,LY+kdy*kt,LZ+kdz*kt);camera.lookAt(LX,LY,LZ);
   }else{
     if(headGroup)headGroup.visible=false;if(typeof hairGroup!=='undefined'&&hairGroup)hairGroup.visible=false;
     var hp=new THREE.Vector3();if(headGroup)headGroup.getWorldPosition(hp);else hp.set(character.position.x,character.position.y+5,character.position.z);
