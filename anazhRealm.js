@@ -39366,14 +39366,53 @@ class AnazhRealm {
         }
     }
 
-    // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
-    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, weicht der Ring (−60 m).
+    // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach unter dem Spiegel (`_fernRingWasserTiefe`), die
+    // innerste Reihe jeder Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, weicht
+    // der Ring (−60 m).
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
-        let y = law < wl ? wl - F.wasserDrop : law;
+        let y = law < wl ? wl - this._fernRingWasserTiefe() : law;
         if (p.row === 0) y -= F.saumDrop;
         if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60;
         return y;
+    }
+
+    // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
+    // Fern-Wasser (`_ensureFarWaterSheet`), liegt der Spiegel des Rings unter dessen tiefstem Tal — der Spiegel − `drop` −
+    // der Hub (`_wasserHubM`) —, und jenseits davon ist er der Ozean; ohne Fern-Wasser (Holz nah, kienspan) ist er die
+    // Fläche (− `wasserDrop`). Bis hier lag er immer 0,4 m unter dem Spiegel: das Fern-Wasser (− 0,35 m, Hub bis 4,42 m)
+    // zeigte in jedem tiefen Tal die flache Ring-Fläche im dunklen Fern-Blau (die Meeres-Station: die dunklen Klumpen).
+    _fernRingWasserTiefe() {
+        const fw = this.state.farWater;
+        if (!fw || !fw.mesh) return AnazhRealm.FERN_RING.wasserDrop;
+        return AnazhRealm.FAR_WATER.drop + AnazhRealm._wasserHubM() + 0.1;
+    }
+
+    // Wechselt die Tiefe des Ring-Wassers (das Fern-Wasser kommt oder geht), setzt der Ring jeden nassen Punkt neu — durch
+    // die EINE Setz-Naht, mit dem Gesetz, das er dem Punkt zuletzt gab (`farbLaw`, kein neues Gesetz).
+    _fernRingWasserNeu(fr) {
+        const tiefe = this._fernRingWasserTiefe();
+        if (fr.wasserTiefe === tiefe) return 0;
+        fr.wasserTiefe = tiefe;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        const dirty = [false, false, false];
+        let n = 0;
+        const bis = Math.min(fr.totalVerts, fr.cursor);
+        for (let g = 0; g < bis; g++) {
+            if (!(fr.farbLaw[g] < wl)) continue;
+            const p = this._fernRingPunkt(fr, g);
+            this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl);
+            dirty[p.s] = true;
+            n++;
+        }
+        for (let s = 0; s < fr.meshes.length; s++) {
+            if (!dirty[s]) continue;
+            const geo = fr.meshes[s].geometry;
+            geo.attributes.position.needsUpdate = true;
+            AnazhRealm._fernRingAttributeHoch(geo);
+            geo.computeVertexNormals();
+        }
+        return n;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -41800,6 +41839,8 @@ class AnazhRealm {
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
         if (fr.cursor === 0) this._fernRingGpuMal(fr);
         this._fernRingRefresh(F.refreshVertsProTick);
+        // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
+        this._fernRingWasserNeu(fr);
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
@@ -105930,9 +105971,10 @@ AnazhRealm.PASS_WAHL = Object.freeze({
 });
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
-// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
-// hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()` (2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt
-// ihn (vorher nur der Saum 2 m: am Bildrand fehlte ein gehobenes Viertel).
+// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`), beides × die
+// Wind-Zeile des Gesetzes (w0 + w1 · Wind). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
+// (4,42 m im Sturm; ohne den Wind rechnete er 2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt ihn (vorher nur der
+// Saum 2 m: am Bildrand fehlte ein gehobenes Viertel), das Wasser des Fern-Rings liegt darunter (`_fernRingWasserTiefe`).
 AnazhRealm.WASSER_WELLE = Object.freeze({
     duenung: Object.freeze([1.4, 0.7, 0.34]),
     oktave: 0.4,
@@ -105947,7 +105989,10 @@ AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;
     const duenung = 0.5 * (W.duenung[0] + W.duenung[1] + W.duenung[2]);
     const kraeusel = W.kraeusel * Math.max(1 + W.oktave - W.mitte, W.mitte) * W.kraeuselDecke;
-    return duenung + kraeusel;
+    // der Wind des Gesetzes skaliert beides (Amplitude × (w0 + w1 · Wind), Wind 0 ruhig … 1 Sturm)
+    const WG =
+        AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+    return (duenung + kraeusel) * (WG.wind[0] + WG.wind[1]);
 };
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.
 AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);
