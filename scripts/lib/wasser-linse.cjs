@@ -2451,7 +2451,7 @@ function wasserOrte(opts) {
                 if (d < bd) ((bd = d), (aus.bach = { x: R1(P[0].x), z: R1(P[0].z) }));
             }
         }
-    // 3) die Küste: die nächste Ozean-Zelle (waterKind 1) neben Land, die Land-Seite — liegt das Meer jenseits der geladenen
+    // 3) die Küste: die nächste Ozean-Zelle (waterKind 1) neben Land mit Boden unter dem Meer, die Land-Seite — liegt das Meer jenseits der geladenen
     //    Kacheln, zuerst am Gesetz (Ringe zu 64 m bis 12 km) der erste Grund unter dem Meer, dort die Kachel
     if (!regionen.some((h) => h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0))
         for (let R = 64, da = false; R <= 12000 && !da; R += 64) {
@@ -2485,7 +2485,11 @@ function wasserOrte(opts) {
                 const x = h.originX + (ci + 0.5) * h.cell;
                 const z = h.originZ + (cj + 0.5) * h.cell;
                 const d = Math.hypot(x - MX, z - MZ);
-                if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]));
+                // den Vorzug hat die Land-Spalte, deren Boden (das Gesetz der Dichte) unter dem Meer liegt — dort trägt der
+                // Küsten-Aquifer Wasser über Atlas-Land (die Probe K12 misst ihn); sonst die nächste Küste
+                const tief = r._voxelSurfaceY(x, z) < wl - 1.2;
+                const dw = tief ? d : d + 1e6;
+                if (dw < kd) ((kd = dw), (aus.kueste = [R1(x), R1(z)]));
             }
     }
     return aus;
