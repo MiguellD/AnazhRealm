@@ -110,7 +110,8 @@ braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
   Bäcker-Faden `_foundryBaecker`, nie zwischen den Körpern — T7).
 - **Render:** PBR (`_buildToonNodeMaterial` — Name ist Umbenennungs-Schuld, baut IMMER PBR) ·
   Frequenzband (`_applySubstanceResponse`) · Schatten (2 CSM-Kaskaden; jede LOD-Maske misst vom Auge
-  `uLodAuge`, ein L0-Baum wirft seine L1 — `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·
+  `uLodAuge` zum Ursprung der Instanz wie das Studio (`_iw`, nie zum Fragment — 1110-11), ein L0-Baum wirft seine L1 —
+  `gate:foundry-crossfade`) · LOD-Kaskade (`DETAIL_CASCADE`) ·
   Vegetation (Gras-HISM + Scatter + Impostor-Bäckerei + die Nah-Streu: die Studio-Bodenarten im Kachel-Ring
   um die Kamera, gesetzt nach dem Boden-Gesetz `placement.boden` / `bodenGewicht`).
 - **Welt/Sozial:** Portal/Sub-Welten · Vibe-Pass (ed25519) · Bibliothek/Feed · Mesh (signaling +
