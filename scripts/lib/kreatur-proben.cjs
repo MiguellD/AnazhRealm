@@ -105,6 +105,22 @@ async function kreaturProben(r, T, opts) {
     // (`_creatureWaterContextAt`, vier Richtungen) — beides misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der
     // Jagd. Seit Schau-2 nennt das Land (`_landAt`) das Ufer eines Sees genau (die Zwillings-Probe dehnte jeden See um
     // eine 16-m-Zelle): ohne die Wasser-Wand wählte die Probe ein Feld am Ufer, und die Jagd lief ins Wasser.
+    // DIE HÜLLE IM WEG (K16, die Klasse der Ortssuche): eine Hülle des Bestands, die den Leib-Raum über dem Grund h (von der
+    // Stufen-Höhe bis 2 m) näher als R an (x, z) schneidet — dieselbe Nachbarschaft und Box-Probe wie der Leib
+    // (`_blockerUmPlatz` + `_boxAbstand2`, `_kreaturHuellenKontakt`). Jede Ortssuche der Proben liest sie; vorher lasen
+    // frei() und der Querhang nur die Positionen von `architectures` (± 4 m) und sahen keinen Stamm des Bestands: am Querhang
+    // stand die Eiche baum_eiche@-66,-37 in der Gasse, der Wolf schlupfte 0,365 statt 0,19.
+    const huelleKand = [];
+    const huelleNah = (x, z, h, R) => {
+        huelleKand.length = 0;
+        r._blockerUmPlatz(x, z, R + 8, huelleKand);
+        for (const e of huelleKand)
+            for (const b of e.blockerAABBs || []) {
+                if (b.topY <= h + A.PLAYER_STEP_UP || b.botY >= h + 2) continue;
+                if (r._boxAbstand2(b, x, z) < R * R) return true;
+            }
+        return false;
+    };
     const imUmkreisLand = (x, z, R) => {
         for (const f of [0.5, 1])
             for (let q = 0; q < 8; q++) {
@@ -114,7 +130,6 @@ async function kreaturProben(r, T, opts) {
         return true;
     };
     const frei = (dx, dz, R) => {
-        const arches = s.architectures || [];
         for (let ring = 0; ring < 40; ring++) {
             const n = Math.max(1, ring * 6);
             for (let q = 0; q < n; q++) {
@@ -122,19 +137,9 @@ async function kreaturProben(r, T, opts) {
                 const x = P0.x + dx + Math.cos(a) * ring * 8,
                     z = P0.z + dz + Math.sin(a) * ring * 8;
                 if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) continue;
-                let ok = true;
-                for (const e of arches) {
-                    if (!e || !e.blockerAABBs || !e.position) continue;
-                    const rr = R + (e._blockerReach || 0);
-                    if (Math.abs(e.position.x - x) < rr && Math.abs(e.position.z - z) < rr) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (ok) {
-                    const h = r.getTerrainHeightAt(x, z);
-                    return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
-                }
+                const h = r.getTerrainHeightAt(x, z);
+                if (!Number.isFinite(h) || huelleNah(x, z, h, R)) continue;
+                return { x, y: h + 0.5, z };
             }
         }
         return null;
@@ -146,9 +151,7 @@ async function kreaturProben(r, T, opts) {
     // `_kreaturHuellenKontakt`). Vorher stand der Ort als Versatz der alten Welt (frei(-50, 60, 30): 30 m Umkreis um den
     // Start, die Bahn 43 m lang): im neuen Gelände lag eine Tanne in der Gasse, der Wolf hielt am Stamm, der Sprinter entkam.
     const freieBahn = (dx, dz, laenge, vor) => {
-        const kand = [];
         const gasse = 1.5; // halbe Breite der Gasse: Radius und halbe Länge des Wolf-Leibs mit Rand
-        const stufe = A.PLAYER_STEP_UP;
         const bahnFrei = (x0, z0) => {
             let lo = Infinity,
                 hi = -Infinity;
@@ -159,14 +162,7 @@ async function kreaturProben(r, T, opts) {
                 if (!Number.isFinite(h)) return false;
                 lo = Math.min(lo, h);
                 hi = Math.max(hi, h);
-                if (hi - lo > 3 || r._kreaturUnterFels(x, h, z0)) return false;
-                kand.length = 0;
-                r._blockerUmPlatz(x, z0, 8, kand);
-                for (const e of kand)
-                    for (const b of e.blockerAABBs || []) {
-                        if (b.topY <= h + stufe || b.botY >= h + 2) continue;
-                        if (r._boxAbstand2(b, x, z0) < gasse * gasse) return false;
-                    }
+                if (hi - lo > 3 || r._kreaturUnterFels(x, h, z0) || huelleNah(x, z0, h, gasse)) return false;
             }
             return true;
         };
@@ -2356,17 +2352,16 @@ async function kreaturProben(r, T, opts) {
                         if (Math.abs(h(px, pz) - (h(x, z) + g * t)) > 0.5) eben = false;
                     }
                 if (!eben) continue;
-                if (
-                    (s.architectures || []).some(
-                        (e) =>
-                            e &&
-                            e.blockerAABBs &&
-                            e.position &&
-                            Math.abs(e.position.x - x) < 4 &&
-                            Math.abs(e.position.z - z) < 4
-                    )
-                )
-                    continue;
+                // die Gasse des Laufs: längs der Höhenlinie −4 … +10 m (Stand ±1,6 m, der Spieler geht 7 m und zurück, die
+                // Folger hinter ihm), quer von 2 m talab bis 6 m bergauf (der Spieler geht 4 m über dem Hang-Punkt)
+                let gasseFrei = true;
+                for (let l = -4; l <= 10 && gasseFrei; l += 1.5)
+                    for (let o = -2; o <= 6 && gasseFrei; o += 2) {
+                        const px = x - uz * l + ux * o,
+                            pz = z + ux * l + uz * o;
+                        if (!r._landAt(px, pz) || huelleNah(px, pz, h(px, pz), 1.5)) gasseFrei = false;
+                    }
+                if (!gasseFrei) continue;
                 hang = { x, z, ux, uz, grad: grad0 };
             }
         }

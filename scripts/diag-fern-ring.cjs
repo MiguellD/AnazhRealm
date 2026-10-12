@@ -381,7 +381,7 @@ const server = http.createServer((req, res) => {
 
         // ===== (7) DER FELD-ZEICHNER (Stufe-2-Vollausbau): das Feld malt =====
         // Neubau nach dem Dispose: Tick 1 baut den Ring, startet den EINEN
-        // GPU-Feld-Flug (feld-wgsl durch _feldZeichnerHoehen) UND läuft die
+        // Feld-Flug (das Gelände-Gesetzbuch durch _feldZeichnerHoehen) UND läuft die
         // erste CPU-Scheibe. Dann OHNE weitere Ticks auf den Flug warten:
         // malt das Feld, ist der Ring BEREIT obwohl der CPU-Cursor noch vorn
         // steht — der Horizont steht vor der CPU. Proben: |GPU-Höhe − f64-
@@ -422,7 +422,7 @@ const server = http.createServer((req, res) => {
 
         // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
         // Der Pass ist Ring-Besitz (_tickFeldPass aus _tickFernRing): warte auf
-        // den EINEN Mal-Flug (Compute durch feld-wgsl), prüfe Struktur + Daten-
+        // den EINEN Mal-Flug (die Höhen aus gelaende-core), prüfe Struktur + Daten-
         // Parität (Texel-Höhe == f64-Gesetz im Seh-Band), dann die ECHTE
         // Render-Probe: ein WebGPURenderer zeichnet den Fullscreen-Raymarch —
         // der Horizont MUSS Pixel treffen (Kompilat + Lauf + Treffer bewiesen).
@@ -907,7 +907,7 @@ const server = http.createServer((req, res) => {
     );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
     check(
-        "7: DER FELD-ZEICHNER startet den GPU-Flug beim vollen Refresh (feld-wgsl im SPIEL konsumiert)",
+        "7: DER FELD-ZEICHNER startet den Feld-Flug beim vollen Refresh (gelaende-core hoehe im SPIEL konsumiert)",
         out.fzStart === true && out.fzLaeufe >= 1,
         `laeufe=${out.fzLaeufe}`
     );
@@ -999,7 +999,7 @@ const server = http.createServer((req, res) => {
     console.log(
         "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
             "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Feld-Zeichner malt den vollen " +
-            "Refresh per GPU durch feld-wgsl (die CPU verfeinert aufs f64-Gesetz), budgetierter Refresh, " +
+            "Refresh aus dem Gelände-Gesetzbuch in Takt-Scheiben (die CPU verfeinert aufs f64-Gesetz), budgetierter Refresh, " +
             "quantisiertes Re-Zentrieren, headless-default ruhig."
     );
     process.exit(0);

@@ -1351,7 +1351,7 @@ const ZWILLINGE = [
     // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
     // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
     // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
-    // (`gelaendeLeser`); feld-wgsl.js bleibt der Seh-Spiegel (f32-WGSL), das Terrain-Studio liest den Kern mit G2 (K09b).
+    // (`gelaendeLeser`); der WGSL-Seh-Spiegel fiel (K16, der Feld-Zeichner liest den Kern), das Terrain-Studio liest ihn mit G2 (K09b).
     ...[
         [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
         [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
@@ -1414,7 +1414,7 @@ function gelaendeLeser() {
     const root = path.join(__dirname, "..");
     const wurzel = fs
         .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && f !== "feld-wgsl.js");
+        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))
@@ -1931,9 +1931,8 @@ function linsenDateien(root) {
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
-    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. feld-wgsl.js (der Welt-March im WGSL) steht
-    // mit drin: der trilineare Brick-March (feldTriAbtast/feldTriGrad, V18.528) fiel dort (Integration W0 — die
-    // Band-Wand trug dieselbe Liste ein zweites Mal, die Rückkehr-Wand ist die EINE).
+    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. Der Welt-March im WGSL (feld-wgsl.js) fiel
+    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad, V18.528; die Rückkehr-Wand ist die EINE).
     const files = ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));

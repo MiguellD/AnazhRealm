@@ -38931,26 +38931,30 @@ class AnazhRealm {
     // ===== DER FELD-ZEICHNER =====
     // Ein voller Fern-Ring-Refresh (Boot + Re-Anker) und der Feld-Pass lesen die Höhen der Ferne aus dem EINEN Gelände-
     // Gesetzbuch (gelaende-core `hoehe`, K16: das Flussnetz ist memoisierter Zustand je Saat — ein WGSL-Spiegel des
-    // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task höchstens
-    // `FELD_SCHEIBE` Punkte, der Spiel-Takt läuft dazwischen weiter (Streaming ist heilig).
+    // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task so viele Punkte, wie das
+    // Takt-Budget des Streamings trägt (`_voxelStreamBudgetMs`, der Regler atmet es), mindestens 16 — nie eine feste Zahl
+    // (bis K16 fest 1 500 je Task: bei 25 µs je Spalte 37 ms am Stück auf dem Haupt-Thread, Lehre 14).
     _feldZeichnerHoehen(punkte, includeDetail) {
         const n = (punkte.length / 2) | 0;
         const werte = new Float32Array(n);
-        const SCHEIBE = AnazhRealm.FELD_SCHEIBE;
         let k = 0;
         return new Promise((fertig) => {
             const scheibe = () => {
-                const ende = Math.min(n, k + SCHEIBE);
-                for (; k < ende; k++)
+                const budget = this.state._voxelStreamBudgetMs;
+                const frist = performance.now() + (Number.isFinite(budget) && budget > 0 ? budget : 4);
+                const mindest = k + 16;
+                for (; k < n; k++) {
                     werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail);
+                    if (k >= mindest && (k & 15) === 0 && performance.now() > frist) {
+                        k++;
+                        break;
+                    }
+                }
                 if (k < n) setTimeout(scheibe, 0);
                 else fertig(werte);
             };
             scheibe();
         });
-    }
-    static get FELD_SCHEIBE() {
-        return 1500;
     }
 
     // Zeichen-Device des Feld-Panoramas: ZUERST das des Renderers (r184 WebGPUBackend, geteilt), sonst lazy ein eigenes
