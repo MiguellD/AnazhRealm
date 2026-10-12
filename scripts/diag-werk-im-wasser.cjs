@@ -250,7 +250,7 @@ function urteil(b) {
     else {
         if (!(RD.haeuser >= 1) || !RD.randHaus)
             v.push(
-                `R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus}; geräumte Reste früherer Proben: ${(RD.reste || []).join(", ") || "keine"})`
+                `R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus}; geräumte Reste früherer Proben: ${(RD.reste || []).join(", ") || "keine"}; Nexus-Deckel ${RD.deckel ? `${RD.deckel.max}, autonome Bauten ${RD.deckel.autosVor} → ${RD.deckel.autosNach}` : "ungemessen"})`
             );
         if (RD.invalidierungen > 0)
             v.push(
@@ -1576,6 +1576,15 @@ async function probe(A) {
                 };
                 let res = null;
                 const v0 = new Set(st.architectures);
+                // der Nexus-Deckel ruht, solange R misst: über dem Deckel fällt der fernste autonome Bau (`_capNexusStructures`),
+                // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht. K16: die Welt trägt
+                // nach den früheren Proben ein Nexus-Dorf 80 m vom Spieler (27 autonome Bauten vor dem Dorf, vorher 19 in 600 m),
+                // der Deckel 48 nahm dem Dorf 9 Bauten, zuerst das Haus am Seerand (131,7 m) — R prüft das Wasser, nicht den Deckel
+                const Klasse = r.constructor;
+                const deckel = Klasse.MAX_NEXUS_STRUCTURES;
+                const autos = () => st.architectures.filter((e) => e && e.autonomous).length;
+                const autosVor = autos();
+                Klasse.MAX_NEXUS_STRUCTURES = Infinity;
                 try {
                     zensus.quelle = "Nexus-Dorf";
                     res = await r.spawnSettlement({
@@ -1605,7 +1614,9 @@ async function probe(A) {
                     await neuBauen();
                 } finally {
                     r._invalidateWaterCapsAround = invAlt;
+                    Klasse.MAX_NEXUS_STRUCTURES = deckel;
                 }
+                const autosNach = autos();
                 const nach = zaehlen();
                 const randHaus = st.architectures.find(
                     (e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - hx, e.position.z - hz) < 6
@@ -1618,6 +1629,8 @@ async function probe(A) {
                         ? `${randHaus.type} #${randHaus.id} (${randHaus.position.x.toFixed(1)}/${randHaus.position.z.toFixed(1)})`
                         : null,
                     huelle: !!(randHaus && randHaus._hausHuelle),
+                    // der Nexus-Deckel: so viele autonome Bauten vor und nach dem Dorf — über dem Deckel fiele das Fernste
+                    deckel: { max: deckel, autosVor, autosNach, ueber: Math.max(0, autosNach - deckel) },
                     invalidierungen: inv.n,
                     ca: st.waterCAActive ? st.waterCAActive.size : 0,
                     nass0: vor.nass,
