@@ -911,7 +911,7 @@ function validateManifest(m) {
         // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
         // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
         // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
-        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m\) \{[\s\S]*?\n {4}\}/);
+        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m, baum\) \{[\s\S]*?\n {4}\}/);
         if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm[0]))
             f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
         if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))

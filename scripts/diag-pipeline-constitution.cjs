@@ -395,7 +395,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     law(
         "N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp",
         true,
-        /_foundryTreeMaterial\(kind, mp, wiegen\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
+        /_foundryTreeMaterial\(kind, mp, wiegen, baum\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
             anazhNC
         ) &&
             /rough = R\.r,\s*metal = R\.mt,[\s\S]{0,40}?env = R\.env\b/.test(anazhNC) &&

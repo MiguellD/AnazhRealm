@@ -879,8 +879,8 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     if (!/const _cam = _lu\.uLodAuge;/.test(srcNC)) v.push("die Grammatik-Blattmaske misst nicht vom Auge");
     if (!/uLodAuge: _T\.uniform\(/.test(srcNC) || !/camera\.getWorldPosition\(_lu\.uLodAuge\.value\)/.test(srcNC))
         v.push("uLodAuge fehlt im Uniform-Satz oder im Frame-Spiegel aus der Haupt-Kamera");
-    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen\)\s*/) || "";
-    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen) fehlt");
+    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     else {
         const erlaubt = new Set(["TSL.max(haar, wolle)", "mat.opacityNode.mul(_keepX)"]); // Fell-Schale wirft nicht
         for (const m of stoff.matchAll(/mat\.opacityNode = ([^;]+);/g))
@@ -916,7 +916,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         v.push("eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT");
     if (/lf\.wurf|__wurf/.test(flat + gestalt))
         v.push("der drawRange-Vorsatz (lf.wurf/__wurf) lebt noch — der Zwilling würfe einen Index-Vorsatz");
-    const stoffS = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen\)\s*/) || "";
+    const stoffS = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
     if (!/kind === "schatten"[\s\S]*?mat\.colorNode = TSL\.vec4\(TSL\.vec3\(0\.0\), atl \? TSL\.max\(deckt, atl\.a\) : deckt\);/.test(stoffS))
         v.push("der Schatten-Stoff schneidet nicht über colorNode.a = max(aDeckt, Atlas-Alpha) aus");
     const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\(srcGeom, capacity\)\s*\{/) || "";

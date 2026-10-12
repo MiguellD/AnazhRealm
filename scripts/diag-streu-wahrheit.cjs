@@ -234,8 +234,8 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     if (!senke) fehler.push("_streuNahSenke(art, v, stufe, p, lf, wiegt) nicht gefunden");
     else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true\) : lf\.mat,/.test(senke))
         fehler.push("_streuNahSenke: der Senken-Stoff ist nicht der Studio-Stoff (lf.mat bzw. _foundryTreeMaterial wiegend)");
-    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen\)\s*\{/) || "";
-    if (!stoff) fehler.push("_foundryTreeMaterial(kind, mp, wiegen) nicht gefunden");
+    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*\{/) || "";
+    if (!stoff) fehler.push("_foundryTreeMaterial(kind, mp, wiegen, baum) nicht gefunden");
     else {
         if (!/: T\.MeshStandardNodeMaterial;/.test(stoff))
             fehler.push("_foundryTreeMaterial: der Studio-Stoff ist nicht MeshStandardNodeMaterial (bzw. Physical für die Haut)");

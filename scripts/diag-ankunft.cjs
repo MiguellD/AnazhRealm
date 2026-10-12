@@ -293,7 +293,7 @@ function wand(src, html) {
     const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
     const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\(cx, cz, info\) \{/) || "";
     const kamera = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
-    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen\) \{/) || "";
+    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen, baum\) \{/) || "";
     const ladeIdx = html.indexOf('id="ladeschirm"');
     const ladeTag = ladeIdx >= 0 ? html.slice(html.lastIndexOf("<", ladeIdx), html.indexOf(">", ladeIdx) + 1) : "";
     // die Proben durch die Bildmitte (Gegenprüfung Runde 2): jede nimmt den EINEN Strahl
