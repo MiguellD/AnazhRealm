@@ -578,6 +578,42 @@ function laubLichtLeserUrteil(quellen) {
         v.push("foundry-core.js: die Fresnel-Aufhellung lebt außerhalb des Grases");
     return v;
 }
+// (WD) DIE WIND-DATEN HABEN IHREN LESER (K19): jedes Attribut-Schema (a + Großbuchstabe), das der Werkstatt-Baum in seine
+// Geometrie setzt (`_buildTree*`, `_stampFoliage*`) oder das ein Geometrie-Bauer des Kerns liefert (phyto-core
+// buildFoliageQuads · buildLeafBlades · buildBarkTubeArrays), liest ein Stoff — ein TSL-`attribute("aX")` der Welt oder ein
+// GLSL-`attribute … aX;` des Labors. Der Wind liest positionGeometry und aH0; bis K19-N2 erzeugten vier Bauer der Welt und
+// drei des Kerns aFlex/aPhase der gefallenen Werkstatt-Formel, und der Playtest prüfte nur, dass es sie gibt.
+const KERN_GEOMETRIE_BAUER = ["buildFoliageQuads", "buildLeafBlades", "buildBarkTubeArrays"];
+function windDatenUrteil(quellen) {
+    const v = [];
+    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const welt = code(quellen["anazhRealm.js"]);
+    const labor = code(quellen["foundry-core.js"]);
+    const kern = code(quellen["phyto-core.js"]);
+    // die Geometrie der Welt liest ein Stoff der Welt; was der Kern liefert, liest die Welt oder das Labor
+    const inWelt = (a) => new RegExp('attribute\\(\\s*"' + a + '"').test(welt);
+    const imLabor = (a) => new RegExp("attribute\\s+\\w+\\s+" + a + "\\s*;").test(labor);
+    const urteil = (wo, name, namen, gelesen) => {
+        const ohne = [...new Set(namen)].filter((a) => !gelesen(a));
+        if (ohne.length) v.push(`${wo}: ${name} erzeugt ${ohne.join(" · ")} — kein Stoff liest es`);
+    };
+    for (const m of welt.matchAll(/\n    (_buildTree\w*|_stampFoliage\w*)\(/g)) {
+        const rumpf = welt.slice(m.index, welt.indexOf("\n    }\n", m.index));
+        const namen = [...rumpf.matchAll(/setAttribute\(\s*"(a[A-Z]\w*)"/g)].map((x) => x[1]);
+        urteil("anazhRealm.js", m[1], namen, inWelt);
+    }
+    for (const f of KERN_GEOMETRIE_BAUER) {
+        const k = kern.indexOf("\n    function " + f + "(");
+        if (k < 0) {
+            v.push(`phyto-core.js: ${f} fehlt`);
+            continue;
+        }
+        const rumpf = kern.slice(k, kern.indexOf("\n    }\n", k));
+        const namen = [...rumpf.matchAll(/[{,]\s*(a[A-Z]\w*)\s*(?=[,}:])/g)].map((x) => x[1]);
+        urteil("phyto-core.js", f, namen, (a) => inWelt(a) || imLabor(a));
+    }
+    return v;
+}
 
 (async () => {
     const fails = [];
@@ -661,11 +697,13 @@ function laubLichtLeserUrteil(quellen) {
         "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
         "anazhRealm.js": fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8"),
     };
-    // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle)
+    // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle), der Kern nur die Wind-Daten
     const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");
+    const kernQuelle = fs.readFileSync(path.join(ROOT, "phyto-core.js"), "utf8");
     fails.push(
         ...unterseiteUrteil(quellen),
         ...windLeserUrteil(Object.assign({ "worlds/terrain/phytogenesis.js": laborBestand }, quellen)),
+        ...windDatenUrteil(Object.assign({ "phyto-core.js": kernQuelle }, quellen)),
         ...laubLichtLeserUrteil(quellen)
     );
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
@@ -791,6 +829,23 @@ function laubLichtLeserUrteil(quellen) {
     st.push([
         "Wurf-Teil ohne Wind",
         windMit(/(\n    _foundryTreeMaterial\([\s\S]*?)\|\| kind === "schatten"/, "$1"),
+    ]);
+    const datenMit = (welt, kern) =>
+        windDatenUrteil({
+            "anazhRealm.js": welt,
+            "foundry-core.js": quellen["foundry-core.js"],
+            "phyto-core.js": kern,
+        }).length >= 1;
+    st.push([
+        "Stempel aH0 ohne Leser",
+        datenMit(quellen["anazhRealm.js"].replace(/attribute\("aH0"/g, 'attribute("aX0"'), kernQuelle),
+    ]);
+    st.push([
+        "Kern liefert Wind-Daten ohne Leser",
+        datenMit(
+            quellen["anazhRealm.js"],
+            kernQuelle.replace(/(\n    function buildFoliageQuads\([\s\S]*?return \{ positions,)/, "$1 aSchwung,")
+        ),
     ]);
     st.push([
         "Laub-Licht-Leser entfernt",

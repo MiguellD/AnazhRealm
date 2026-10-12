@@ -1034,15 +1034,15 @@ function pushSegment(arr, p0, p1, r0, r1, radial, sway0, sway1, phase, omega, co
 function pushLeaf(arr, center, dirOut, up, scale, lp, color, type, sway, phase, omega, cup, bluete) {
     // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
     // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
-    // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Divergenzen: das
-    // Wind-Attribut-Schema (AnazhRealm aFlex/aPhase — Vorlage aWind/aCenter/aType, HIER angehängt)
-    // und eine sub-mikron Float-Noise (≤1 ULP, ~1e-6 m; buildLeafBlades' Additions-Reihenfolge +
-    // Math.hypot = AnazhRealms eingefrorene Arithmetik) → pixel-identisch, kein Look-Change. Alle
-    // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op.
+    // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Der Kern liefert nur
+    // Geometrie (die Welt trägt kein Wind-Attribut — ihr Wind liest die Gestalt); die Vorlagen-Attribute
+    // aWind/aCenter/aType hängt der Wrapper HIER an. Dazu eine sub-mikron Float-Noise (≤1 ULP, ~1e-6 m;
+    // buildLeafBlades' Additions-Reihenfolge + Math.hypot = AnazhRealms eingefrorene Arithmetik) →
+    // pixel-identisch, kein Look-Change. Alle gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op.
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildLeafBlades === "function") {
         const _r = __core.buildLeafBlades(
-            [{ pos: center, dir: dirOut, up: up, scale: scale, needle: false, sway: sway, phase: phase }],
+            [{ pos: center, dir: dirOut, up: up, scale: scale, needle: false }],
             bluete
                 ? {
                       leafColor: [color.r, color.g, color.b],
@@ -1276,15 +1276,15 @@ function bakeLeafAtlas() {
 function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega, cell, nadel) {
     // DER GETEILTE SAMEN: die Blatt-Karten-GEOMETRIE (Quad + UV/Normale) lebt in phyto-core.js
     // (buildFoliageQuads) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie ist byte-
-    // identisch; nur das WIND-Attribut-Schema divergiert (AnazhRealm: aFlex/aPhase — die Vorlage:
-    // aWind/aCenter/aType), darum hängt der Wrapper die Vorlagen-Attribute HIER an (der Kern bleibt
+    // identisch; der Kern liefert nur Geometrie (phase dreht das Quad), die Vorlagen-Attribute
+    // aWind/aCenter/aType hängt der Wrapper HIER an (der Kern bleibt
     // rein). opts.cell routet die exakte Atlas-Zelle. Die Laub-Karte schneidet der Kern auf den Breitblatt-Kern
     // (BLATT_ATLAS_BREIT); die Nadel-Karte (nadel = true) traegt die ganze Nadel-Zelle (BLATT_ATLAS_NADEL), ihre
     // Kante kommt fertig in scale. Ohne Samen kein stiller Inline-Zwilling: lauter Bruch.
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.buildFoliageQuads === "function") {
         const _r = __core.buildFoliageQuads(
-            [{ pos: pos, dir: dir, up: up, scale: scale, sway: sway, phase: phase, needle: !!nadel }],
+            [{ pos: pos, dir: dir, up: up, scale: scale, phase: phase, needle: !!nadel }],
             {
                 leafColor: [color.r, color.g, color.b],
                 scale: 1,

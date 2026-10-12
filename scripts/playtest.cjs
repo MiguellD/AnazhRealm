@@ -36028,8 +36028,8 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
-// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) +
-// per-Vertex Wind-flex/phase + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
+// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
+// Wind-Term im Stoff (K19) + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh(ctx) {
     const { page, check } = ctx;
@@ -36042,7 +36042,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.tubeBuilderExists = typeof r._buildTreeTubeGeometry === "function";
         out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
-        out.mergeAttrExists = typeof r._mergeAttributedGeometries === "function";
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         out.defaultFlareExists =
@@ -36065,7 +36064,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
 
         // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
         const skelSrc = window.__codeOf(r._buildTreeSkeletonLeaves);
-        out.swayReadsFlexAttr = /_skelettWindDaten\(/.test(skelSrc) && /baumWind/.test(skelSrc);
+        out.skelettWindDaten = /_skelettWindDaten\(/.test(skelSrc) && /baumWind/.test(skelSrc);
 
         // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
@@ -36122,18 +36121,18 @@ async function checkBandV18214SkeletonMesh(ctx) {
             // 2 leaves erwartet (bark + foliage), max 4 als Toleranz.
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
             if (flat && flat.leaves.length > 0) {
-                // T6: bark-Geometrie trägt aFlex + aPhase + color + viele Vertices
+                // T6: bark-Geometrie trägt color + viele Vertices; der Wind lebt im Stoff (K19: `_baumWindStoff` liest
+                // positionGeometry und den Stempel aH0) — die Geometrie trägt nur, was ein Stoff liest.
+                const ungelesen = (lf, gelesen) => Object.keys(lf.geom.attributes).filter((k) => !gelesen.includes(k));
+                const imWind = (lf) =>
+                    !!(lf.mat && lf.mat.positionNode && lf.mat.userData.baumWind && lf.mat.userData.baumWind.ht > 0);
                 const bark = flat.leaves[0];
                 out.barkVerts = bark.geom.attributes.position.count;
-                out.barkHasFlex = !!bark.geom.attributes.aFlex;
-                out.barkHasPhase = !!bark.geom.attributes.aPhase;
+                out.barkUngelesen = ungelesen(bark, ["position", "normal", "color", "aH0", "aH0L"]);
+                out.barkImWind = imWind(bark);
                 out.barkHasColor = !!bark.geom.attributes.color;
                 out.barkHasNormal = !!bark.geom.attributes.normal;
                 out.barkManyVerts = bark.geom.attributes.position.count >= 100;
-                out.barkMatUseFlex =
-                    bark.mat && bark.mat.userData && bark.mat.userData.useFlexAttr !== undefined
-                        ? bark.mat.userData.useFlexAttr === true
-                        : true; // useFlexAttr ist opts-only, nicht userData-propagiert; akzeptiere
                 // T7: localMatrix Identity
                 const elems = bark.localMatrix.elements;
                 out.barkIdentity =
@@ -36141,7 +36140,8 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 // T8: foliage falls vorhanden
                 if (flat.leaves.length > 1) {
                     const fol = flat.leaves[1];
-                    out.foliageHasFlex = !!fol.geom.attributes.aFlex;
+                    out.foliageUngelesen = ungelesen(fol, ["position", "normal", "color", "uv", "aH0", "aH0L"]);
+                    out.foliageImWind = imWind(fol);
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
                     // Die Krone ist Vorlagen-Geometrie aus der EINEN phyto-core-Quelle: EIN Element je Phyto-Blatt, die
@@ -36187,7 +36187,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check("V18.214 (T1a) _buildTreeTubeGeometry existiert", res.tubeBuilderExists === true);
     check("V18.214 (T1b) _buildTreeFoliageCardGeometry existiert", res.cardBuilderExists === true);
     check("V18.214 (T1c) _buildTreeSkeletonLeaves existiert", res.skelLeavesExists === true);
-    check("V18.214 (T1d) _mergeAttributedGeometries existiert", res.mergeAttrExists === true);
     check(
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
@@ -36199,7 +36198,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
-    check("K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)", res.swayReadsFlexAttr === true);
+    check("K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)", res.skelettWindDaten === true);
     check(
         "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
         res.spawnReadsSlopeHeight === true
@@ -36222,13 +36221,18 @@ async function checkBandV18214SkeletonMesh(ctx) {
         `V18.214 (T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
         res.flatLeavesFew === true
     );
-    check(`V18.214 (T6a) bark-Geom trägt aFlex (gemessen ${res.barkVerts} verts)`, res.barkHasFlex === true);
-    check("V18.214 (T6b) bark-Geom trägt aPhase", res.barkHasPhase === true);
+    check(
+        `K19 (T6a) die Rinde schwingt im Wind-Term ihres Stoffs, die Geometrie trägt nur Gelesenes (${res.barkVerts} verts, ungelesen: ${(res.barkUngelesen || []).join(" · ") || "—"})`,
+        res.barkImWind === true && Array.isArray(res.barkUngelesen) && res.barkUngelesen.length === 0
+    );
     check("V18.214 (T6c) bark-Geom trägt color", res.barkHasColor === true);
     check("V18.214 (T6d) bark-Geom trägt normal", res.barkHasNormal === true);
     check("V18.214 (T6e) bark-Geom hat ≥100 Vertices (Ring-of-6 pro Punkt)", res.barkManyVerts === true);
     check("V18.214 (T7) bark-Leaf localMatrix ist Identity", res.barkIdentity === true);
-    check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
+    check(
+        `K19 (T8a) das Laub schwingt im Wind-Term seines Stoffs, die Geometrie trägt nur Gelesenes (${res.foliageVerts} verts, ungelesen: ${(res.foliageUngelesen || []).join(" · ") || "—"})`,
+        res.foliageImWind === true && Array.isArray(res.foliageUngelesen) && res.foliageUngelesen.length === 0
+    );
     check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
         `V18.386/.390 Neues Kleid/Eins W4: foliage-Vertex-Count = anchors·4 (Quad) oder anchors·30 (L0-Klinge): ${res.foliageVerts}/${res.skelAnchorCount}`,
@@ -37804,23 +37808,23 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const sigs = {
             boden: { vertexColors: true, side: THREE.DoubleSide },
             fels: { vertexColors: true, vertexColorAlbedo: true, color: 0x8a8a8a },
-            rinde: { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide },
+            rinde: { vertexColors: true, pflanzenStoff: true, bark: true, side: THREE.DoubleSide },
             laub: {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true,
                 side: THREE.DoubleSide,
             },
             klinge: {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true,
                 foliageBlade: true,
                 side: THREE.DoubleSide,
             },
-            kern: { vertexColors: true, useInstanceTint: true, useFlexAttr: true },
+            kern: { vertexColors: true, useInstanceTint: true, pflanzenStoff: true },
         };
         out.farbeQuadrat = [];
         out.farbeOhneNode = [];
@@ -37948,11 +37952,11 @@ async function checkBandWahrerAnblickFels(ctx) {
             layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false)
         );
 
-        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
+        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !pflanzenStoff)
         // V18.236 (§2): der EINE Builder ist PBR; die Gate-Probe liest ihn.
         const pbrSrc = window.__codeOf(r._buildPbrNodeMaterial);
-        out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(pbrSrc);
-        out.pbrGeologyGated = /!opts\.useFlexAttr/.test(pbrSrc);
+        out.geologyGated = /!opts\.pflanzenStoff.*_terrainGeologyAlbedo/s.test(pbrSrc);
+        out.pbrGeologyGated = /!opts\.pflanzenStoff/.test(pbrSrc);
 
         // (F) Version
         out.versionStr = A.VERSION;
@@ -37981,10 +37985,10 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
     check(
-        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !useFlexAttr (Toon, kein Fels auf Rinde)",
+        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !pflanzenStoff (Toon, kein Fels auf Rinde)",
         res.geologyGated === true
     );
-    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !useFlexAttr (PBR)", res.pbrGeologyGated === true);
+    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !pflanzenStoff (PBR)", res.pbrGeologyGated === true);
 
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }

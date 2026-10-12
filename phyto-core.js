@@ -326,7 +326,7 @@
         } else {
             grow([0, 0, 0], [0, 1, 0], trunkR, P.height * (P.conifer ? 0.2 : 0.3), 0, 0, -1, false);
         }
-        // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
+        // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
             s.sway0 = (s.sway0 / maxSway) * gain;
@@ -892,8 +892,8 @@
     // treu): ein Quad je Blatt (2 Dreiecke), die Achsen aus dir/up + Roll aus phase, die UV in
     // die Atlas-Zelle geroutet. REIN (plain Arrays raus) — der Aufrufer (Main + Portal) wickelt
     // sie in eine BufferGeometry + hängt sein Material an (das dieselben Attribute liest). Die
-    // Attribut-Namen matchen AnazhRealms Laub-Material: position/normal/color/aFlex/aPhase/uv.
-    // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, sway, phase}] (aus growSkeleton).
+    // Attribute: position/normal/color/uv — der Wind liest die Gestalt selbst (`windAusschlag`), kein Schwung-Attribut.
+    // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, phase}] (aus growSkeleton; phase dreht das Quad).
     // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3), cell (erzwingt die Zelle),
     //          kern (Atlas-Kern der Breitblatt-Zellen, `BLATT_ATLAS_BREIT.kern`; ohne = 1, die ganze Zelle) }.
     // Der Kern schneidet Quad UND UV um die Zellmitte gleich zu: jeder verbleibende Punkt liest dasselbe
@@ -910,8 +910,6 @@
         const positions = new Float32Array(M * 4 * 3);
         const normals = new Float32Array(M * 4 * 3);
         const colors = new Float32Array(M * 4 * 3);
-        const aFlex = new Float32Array(M * 4);
-        const aPhase = new Float32Array(M * 4);
         const uvs = new Float32Array(M * 4 * 2);
         const indices = new Uint32Array(M * 6);
         const corner = [
@@ -959,7 +957,6 @@
                 u1 = u0 + 0.25 * k,
                 v0 = 0.5 * (1 - k),
                 v1 = v0 + k;
-            const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
             const base = qi * 4;
             for (let i = 0; i < 4; i++) {
                 const cx = corner[i][0] * s,
@@ -974,8 +971,6 @@
                 colors[v3] = col[0];
                 colors[v3 + 1] = col[1];
                 colors[v3 + 2] = col[2];
-                aFlex[vw] = fx;
-                aPhase[vw] = ph + i * 0.3;
                 uvs[vw * 2] = i === 0 || i === 3 ? u0 : u1;
                 uvs[vw * 2 + 1] = i < 2 ? v0 : v1;
                 vw++;
@@ -988,7 +983,7 @@
             indices[iw++] = base + 3;
             qi++;
         }
-        return { positions, normals, colors, aFlex, aPhase, uvs, indices, count: qi };
+        return { positions, normals, colors, uvs, indices, count: qi };
     }
 
     // DIE LAGEN EINER KRONE (S3, 09.10.) — der Bau-Regler der Karten-Wahl: wie viele Karten-Lagen ein Kronen-Pixel trägt,
@@ -1113,10 +1108,10 @@
     // Licht als gekrümmte Fläche, nicht als bemalte Karte. Die Vorlage nimmt Karten NUR für
     // L1 (`useTexL = __lod===1`, Z.647); L0 sind Klingen — exakt diese Teilung stellt W4 her.
     // REIN (plain Arrays raus, kein THREE); die Attribute im SELBEN Layout wie
-    // `buildFoliageQuads` (position/normal/color/aFlex/aPhase/uv + indices — die Float32-Naht,
+    // `buildFoliageQuads` (position/normal/color/uv + indices — die Float32-Naht,
     // der Aufrufer wickelt sie identisch in eine BufferGeometry). Normalen = Face-Akkumulation
     // pro Blatt (das THREE-`computeVertexNormals`-Gesetz, ohne THREE).
-    // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
+    // `leaves`: [{pos, dir, up, scale, needle}] (aus growSkeleton).
     // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc},
     //           grund ([r,g,b] am Klingen-Grund — die Farbe läuft bis `grundBis` (Anteil der Länge) in leafColor; die
@@ -1140,8 +1135,6 @@
         const positions = new Float32Array(M * VPL * 3);
         const normals = new Float32Array(M * VPL * 3);
         const colors = new Float32Array(M * VPL * 3);
-        const aFlex = new Float32Array(M * VPL);
-        const aPhase = new Float32Array(M * VPL);
         const uvs = new Float32Array(M * VPL * 2);
         const indices = new Uint32Array(M * IPL);
         let vw = 0,
@@ -1165,8 +1158,6 @@
             const cx = l.pos[0],
                 cy = l.pos[1],
                 cz = l.pos[2];
-            const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
-            const ph = l.phase || 0;
             const base = vw;
             for (let i = 0; i <= SEG; i++) {
                 const s = i / SEG;
@@ -1200,8 +1191,6 @@
                 colors[v3] = cr[0];
                 colors[v3 + 1] = cr[1];
                 colors[v3 + 2] = cr[2];
-                aFlex[vw] = fx;
-                aPhase[vw] = ph;
                 uvs[vw * 2] = 0;
                 uvs[vw * 2 + 1] = s;
                 vw++;
@@ -1212,8 +1201,6 @@
                 colors[v3] = cr[0];
                 colors[v3 + 1] = cr[1];
                 colors[v3 + 2] = cr[2];
-                aFlex[vw] = fx;
-                aPhase[vw] = ph;
                 uvs[vw * 2] = 1;
                 uvs[vw * 2 + 1] = s;
                 vw++;
@@ -1267,13 +1254,11 @@
         // kompaktieren, falls Blätter übersprungen wurden (leere pos/dir)
         const out =
             bladeCount === M
-                ? { positions, normals, colors, aFlex, aPhase, uvs, indices }
+                ? { positions, normals, colors, uvs, indices }
                 : {
                       positions: positions.subarray(0, vw * 3).slice(),
                       normals: normals.subarray(0, vw * 3).slice(),
                       colors: colors.subarray(0, vw * 3).slice(),
-                      aFlex: aFlex.subarray(0, vw).slice(),
-                      aPhase: aPhase.subarray(0, vw).slice(),
                       uvs: uvs.subarray(0, vw * 2).slice(),
                       indices: indices.subarray(0, iw).slice(),
                   };
@@ -1489,17 +1474,12 @@
     // (Strebepfeiler), axiale Borke-Maserung (grain) + der barkA→barkB-Höhen-Gradient
     // (Fuß-dunkel → Wipfel-hell, wie die Vorlage `col=barkBase.lerp(barkTip, sun*..)`).
     // REIN + THREE-FREI: gibt pro Branch plain-Arrays zurück (der Consumer wickelt sie in
-    // BufferGeometry + merged). ATTRIBUT-VERTRAG des Consumers EXAKT: position/normal/color/
-    // aFlex/aPhase + index (kein uv — das Rinden-Material liest keins). Der Part bleibt
+    // BufferGeometry + merged). ATTRIBUT-VERTRAG des Consumers EXAKT: position/normal/color
+    // + index (kein uv — das Rinden-Material liest keins; der Wind liest die Gestalt selbst). Der Part bleibt
     // holz/cylinder → Tags unberührt (nur Vertex-Positionen/Farben ändern sich).
     // `branches`: [{ points:[{x,y,z,r}], isTrunk }]. `opts`: { radialSegs=6, totalH,
     //   barkColorA:[r,g,b] 0..1 (Fuß), barkColorB:[r,g,b] (Wipfel), flareAmp=0.45,
-    //   flareLobes=5 }. Rückgabe: [{ positions,normals,colors,aFlex,aPhase,indices }, ...].
-    function _barkHashPhase(a, b, c) {
-        let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
-        h = (h ^ (h >>> 13)) >>> 0;
-        return ((h * 0.00000000023283) % 1) * Math.PI * 2;
-    }
+    //   flareLobes=5 }. Rückgabe: [{ positions,normals,colors,indices }, ...].
     function buildBarkTubeArrays(branches, opts) {
         opts = opts || {};
         const radialSegs = opts.radialSegs || 6;
@@ -1526,8 +1506,6 @@
             const positions = new Float32Array(nV * 3);
             const normals = new Float32Array(nV * 3);
             const colors = new Float32Array(nV * 3);
-            const flex = new Float32Array(nV);
-            const phase = new Float32Array(nV);
             const indices = new Uint32Array((nP - 1) * radialSegs * 6);
             for (let i = 0; i < nP; i++) {
                 const p = pts[i];
@@ -1578,7 +1556,6 @@
                 const flareT = flareActive ? 1 - i / Math.max(1, Math.floor(nP * 0.18)) : 0;
                 const flareEase = flareT * flareT * (3 - 2 * flareT);
                 const flareAmp = dFlareAmp * flareEase;
-                const flexVal = Math.max(0, Math.min(1, p.y / totalH));
                 for (let j = 0; j < radialSegs; j++) {
                     const a = (j / radialSegs) * Math.PI * 2;
                     const ca = Math.cos(a);
@@ -1607,9 +1584,6 @@
                     colors[vIdx] = (bAr + (bBr - bAr) * hMix) * grain;
                     colors[vIdx + 1] = (bAg + (bBg - bAg) * hMix) * grain;
                     colors[vIdx + 2] = (bAb + (bBb - bAb) * hMix) * grain;
-                    const vF = i * radialSegs + j;
-                    flex[vF] = flexVal * (isTrunk ? 0.45 : 0.85);
-                    phase[vF] = _barkHashPhase(bi, i, j);
                 }
             }
             let triIdx = 0;
@@ -1628,7 +1602,7 @@
                     indices[triIdx++] = d;
                 }
             }
-            out.push({ positions, normals, colors, aFlex: flex, aPhase: phase, indices });
+            out.push({ positions, normals, colors, indices });
         }
         return out;
     }
