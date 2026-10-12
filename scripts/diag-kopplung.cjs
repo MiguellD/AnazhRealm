@@ -451,7 +451,7 @@ const server = http.createServer((req, res) => {
                 if (!String(r._rittSchritt).includes("_afloat"))
                     fail("KONSUM: `_rittSchritt` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
                 if (!(count("._ensureWindCoupling(") >= 3))
-                    fail(`KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_applyVegetationResponse + Impostor sollen DIESELBE Quelle lesen)`);
+                    fail(`KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_baumWindStoff + Karte sollen DIESELBE Quelle lesen)`);
                 if (!(count("_tickGrasBend()") >= 1) || !src.includes("_windDirAt(currentTime)"))
                     fail("KONSUM: der Frame-Tick speist uWindDir/uBend nicht (`_loopRender`)");
             }

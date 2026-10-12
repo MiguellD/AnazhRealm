@@ -8,8 +8,10 @@
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan]
 //                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
-//   node scripts/werkbank.cjs umstellen --ort <id>         an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
-//                                                           genesis · dorf): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
+//   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
+//                                                           genesis · dorf · buehne): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts;
+//                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
+//                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
@@ -26,6 +28,8 @@
 //                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
+//                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
 //                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
@@ -706,7 +710,8 @@ function bandEinschwingen(k) {
                 if (dx * dx + dz * dz <= rad2 && !r._archIsRendered(e)) ungebaut++;
             }
             let instanzen = 0;
-            if (st.archInstanceGroups) for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
+            if (st.archInstanceGroups)
+                for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
             const ls = st.perfSense ? +st.perfSense.loadScale.toFixed(3) : 1;
             return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut, loadScale: ls };
         };
@@ -893,6 +898,33 @@ async function starte() {
     // der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
+    // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`, 1110-6): die Prüfbühne ist eine geborene Welt — sie betritt die
+    // Seite wie im Spiel durch das Welt-Tor (importWorldBeside + aktiv + Neuladen). Steht die Seite schon in ihr (derselbe
+    // slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
+    const weltDesOrts = async (ort) => {
+        const json = JSON.parse(fs.readFileSync(path.join(root, "spec", ort.welt), "utf8"));
+        const slug = json.worldMeta && json.worldMeta.slug;
+        if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
+        const steht = () =>
+            page.evaluate((s) => {
+                const m = window.anazhRealm.state.worldMeta;
+                return !!(m && m.slug === s);
+            }, slug);
+        if (await steht()) return { slug, neu: false };
+        const res = await page.evaluate((j) => {
+            const r = window.anazhRealm;
+            const x = r.importWorldBeside(j);
+            if (!x || !x.ok) return { fehler: JSON.stringify(x).slice(0, 200) };
+            r.activeWorldSet(x.worldId);
+            return { id: x.worldId };
+        }, json);
+        if (res.fehler)
+            throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
+        await lade();
+        await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+        if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
+        return { slug, neu: true, id: res.id };
+    };
     const umstellen = (x, z, o) =>
         page.evaluate(
             async (x, z, o) => {
@@ -910,10 +942,35 @@ async function starte() {
                         );
                 }
                 window.__ortTakt = (o && o.takt) || [];
+                // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — an der
+                // Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, die GPU-Bank derselben Seite um 0,2 ms; an der Bühne
+                // stand der Lade-Ring je Sitzung bei 25 oder 81–93 Chunks (der Ring wächst nur bei Kopfraum und vollem
+                // Ring, `_activeRingRadius`), die Bank derselben Pose um 0,8–1,0 ms (1110-6). `ring` setzt Ziel UND aktiven
+                // Ring, wie der Null-Renderer es tut.
+                const FELD = {
+                    foliageRadius: ["foliageRadius"],
+                    architectureCullingRadius: ["architectureCullingRadius"],
+                    dichte: ["_foliageDensityScale"],
+                    perfTargetMs: ["perfTargetMs"],
+                    ring: ["chunkRingRadius", "_activeRingRadius"],
+                };
+                const stell = (o && o.stell) || null;
+                for (const k of Object.keys(stell || {}))
+                    if (!FELD[k])
+                        throw new Error(
+                            `Messort ${o.ort}: unbekannte Stellgröße „${k}" (${Object.keys(FELD).join(", ")})`
+                        );
+                window.__ortStell = stell
+                    ? () => {
+                          for (const [k, v] of Object.entries(stell)) for (const f of FELD[k]) r.state[f] = v;
+                      }
+                    : null;
                 window.__ortSchritt = () => {
+                    if (window.__ortStell) window.__ortStell();
                     const pm = r.state.playerMesh.position;
                     for (const m of window.__ortTakt) r[m](pm);
                 };
+                if (window.__ortStell) window.__ortStell();
                 if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
                 else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
                 if (o && Number.isFinite(o.gier)) {
@@ -938,9 +995,18 @@ async function starte() {
                         stabil = 0;
                         last = sz;
                     }
-                    if (takte >= 40 && stabil >= 15) break;
+                    // Ein Toggle-Ort ruht erst, wenn der gebaute Ring sein Ziel erreicht und kein Chunk mehr im Bau ist.
+                    const ruht =
+                        !stell ||
+                        ((!stell.ring || r._builtRingRadius() >= stell.ring) &&
+                            !(r.state.voxelMeshPending && r.state.voxelMeshPending.size > 0));
+                    if (takte >= 40 && stabil >= 15 && ruht) break;
                     await sleep(50);
                 }
+                if (stell && stell.ring && r._builtRingRadius() < stell.ring)
+                    throw new Error(
+                        `Messort ${o.ort}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${stell.ring}`
+                    );
                 return {
                     takte,
                     chunks: last,
@@ -1148,14 +1214,31 @@ async function starte() {
                     if (b.ort) {
                         const ort = BAND.ladeSpec(b.ort).ort;
                         aktOrt = ort.id;
-                        const o = await umstellen(ort.spieler[0], ort.spieler[1], {
+                        const welt = ort.welt ? await weltDesOrts(ort) : null;
+                        // DIE POSE (Toggle-Ort): eine Station des Orts mit eigenem Spieler-Platz und Blick
+                        const pose = b.pose ? (ort.posen || []).find((p) => p.id === b.pose) : null;
+                        if (b.pose && !pose)
+                            throw new Error(
+                                `Messort ${ort.id}: keine Pose „${b.pose}" (posen: ${(ort.posen || []).map((p) => p.id).join(", ")})`
+                            );
+                        const stelle = pose || ort;
+                        const o = await umstellen(stelle.spieler[0], stelle.spieler[1], {
                             ort: ort.id,
                             anker: ort.anker || null,
-                            gier: BAND.ortGier(ort),
+                            gier: BAND.ortGier(stelle),
                             dorfZug: ort.dorfZug,
                             takt: ort.ortTakt,
+                            stell: ort.stell || null,
                         });
-                        return send(Object.assign({ ort: ort.id, spieler: ort.spieler }, o, { ms: Date.now() - t0 }));
+                        return send(
+                            Object.assign(
+                                { ort: ort.id, pose: pose ? pose.id : null, welt, spieler: stelle.spieler },
+                                o,
+                                {
+                                    ms: Date.now() - t0,
+                                }
+                            )
+                        );
                     }
                     aktOrt = null;
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
@@ -1216,10 +1299,168 @@ async function starte() {
                     );
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
+                if (req.url === "/albedo" && b.nahFern) {
+                    // DIE ALBEDO NAH GEGEN FERN (0910-8): Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
+                    // Vorher steht die Welt: der Ring der Chunks trägt das Quadrat der Linse (≥ 2, Ziel und aktiv wie `stell.ring`
+                    // der Bühne — im Software-Holz wählte der Regler je Sitzung Ring 1 oder 2), kein Chunk ist im Bau, und die
+                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen: nach dem Umstellen hielt die Karte
+                    // bereit 1 mit der Mitte am Spawn, am Messort mischte nichts — nah Y 0,13 wie main). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
+                    // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
+                    // trotzdem und urteilt laut — mit dem Zustand der Welt (`welt`) beim Namen.
+                    // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
+                    // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
+                    // einem von acht frischen Läufen (Integration V18.542, Software-Holz unter Last) fehlte der Linse die
+                    // Nord-Reihe des Quadrats, die Wiese hatte 1 statt 3 Orte (ROT „wiese: 1 Orte“ ohne Grund).
+                    const welt = await page.evaluate(async () => {
+                        const r = window.anazhRealm;
+                        const st = r.state;
+                        const t0 = performance.now();
+                        const frist = t0 + 120000;
+                        const quadrat = () => {
+                            const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
+                            const span = r._voxelChunkConfig().span;
+                            const pp = st.playerMesh.position;
+                            const cx = Math.floor(pp.x / span),
+                                cz = Math.floor(pp.z / span);
+                            const fehlt = [];
+                            for (let dx = -2; dx <= 2; dx++)
+                                for (let dz = -2; dz <= 2; dz++) {
+                                    const key = `${cx + dx},${cz + dz}`;
+                                    const e = st.voxelChunks ? st.voxelChunks.get(key) : null;
+                                    if (!(e && e.empty) && !(satz && satz.bloecke.has(key))) fehlt.push(key);
+                                }
+                            return { chunk: `${cx},${cz}`, fehlt };
+                        };
+                        let q = quadrat(),
+                            takte = 0;
+                        const zustand = (gestanden) => {
+                            const k = st.fernKroneNah;
+                            return {
+                                gestanden,
+                                ms: Math.round(performance.now() - t0),
+                                takte,
+                                chunk: q.chunk,
+                                fehlt: q.fehlt,
+                                gebaut: r._builtRingRadius(),
+                                ring: st.chunkRingRadius,
+                                imBau: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
+                                karte: k ? (k.U.bereit.value === 1 && !k.job ? 1 : 0) : null,
+                            };
+                        };
+                        while (performance.now() < frist) {
+                            if (!(st.chunkRingRadius >= 2)) st.chunkRingRadius = 2;
+                            if (!(st._activeRingRadius >= 2)) st._activeRingRadius = 2;
+                            const k = st.fernKroneNah;
+                            const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
+                            q = quadrat();
+                            if (q.fehlt.length === 0 && !baut && (!k || (k.U.bereit.value === 1 && !k.job)))
+                                return zustand(true);
+                            try {
+                                if (window.__buehne) window.__buehne();
+                                if (window.__ortSchritt) window.__ortSchritt();
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {}
+                            takte++;
+                            await new Promise((w) => setTimeout(w, 50));
+                        }
+                        q = quadrat();
+                        return zustand(false);
+                    });
+                    // DER UPLOAD IM HAUPTBILD (Integration V18.542), VOR der Linse in der stehenden Welt: die Linse schießt in
+                    // einem eigenen Pass — dort baut jedes Render-Objekt neu und lädt jede Textur frisch, das Hauptbild nicht
+                    // (die Observer-Diät refresht nur, was sich ändert). Die Daten-Bilder des Boden-Stoffs (Fern-Krone,
+                    // Wege-Karte, Kronen-Streu) heben ihre Version, dann laufen drei Takte der Welt: jede muss die GPU erreichen
+                    // (r184 `_textures`), sonst zeichnet der Boden im Spiel ein altes Bild. Vor dem Textur-Wächter der Diät
+                    // hielt die GPU 20 Takte lang die alte.
+                    const upload = await page.evaluate(async () => {
+                        const r = window.anazhRealm;
+                        const st = r.state;
+                        const rend = st.renderer;
+                        const texe = [];
+                        if (st.fernKroneNah) texe.push(st.fernKroneNah.tex);
+                        if (st.wegeKarte) for (const s of st.wegeKarte.stufen) texe.push(s.tex, s.kronen.tex);
+                        const gpu = (t) => {
+                            const d = rend._textures.get(t);
+                            return d && Number.isFinite(d.version) ? d.version : -1;
+                        };
+                        // DIE BILDER: ein Takt zeichnet nur, wenn die GPU-Leine frei ist (`_gpuLeineFrei`) — im Software-Holz
+                        // zeichneten drei Takte hintereinander kein Bild (die Probe war blind). Gezählt wird `_loopRender`.
+                        let gezeichnet = 0;
+                        const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
+                        const altRender = r._loopRender;
+                        r._loopRender = function (...a) {
+                            gezeichnet++;
+                            return altRender.apply(this, a);
+                        };
+                        const bilder = async (n) => {
+                            const ziel = gezeichnet + n;
+                            const frist = performance.now() + 30000;
+                            while (gezeichnet < ziel && performance.now() < frist) {
+                                try {
+                                    if (window.__buehne) window.__buehne();
+                                    r._gameLoopTick(performance.now());
+                                } catch (_e) {}
+                                await new Promise((w) => setTimeout(w, 50));
+                            }
+                            return n - Math.max(0, ziel - gezeichnet);
+                        };
+                        // DIE RUHE: jede Änderung am Boden-Satz (ein Chunk tritt ein, der Geomorph schreibt) refresht sein
+                        // Render-Objekt und lädt dabei jede Textur mit — die Probe gilt nur in drei Bildern, in denen der Satz
+                        // ruht (nach der Linse lud das Neu-Aufnehmen der Bündel jede Textur ohnehin: blind). Ruht er in fünf
+                        // Versuchen nie, urteilt die Probe laut.
+                        const satzV = () => {
+                            const s = st.chunkSaetze && st.chunkSaetze.get("boden");
+                            const g = s && s.geom;
+                            if (!g) return "leer";
+                            let v = g.id + ":" + (g.index ? g.index.version : -1);
+                            for (const k in g.attributes) v += ":" + g.attributes[k].version;
+                            return v;
+                        };
+                        let versuche = 0,
+                            ruhig = false,
+                            soll = null,
+                            danach = 0;
+                        try {
+                            while (versuche < 5 && !ruhig) {
+                                versuche++;
+                                await bilder(versuche === 1 ? 10 : 5);
+                                const v0 = satzV();
+                                soll = texe.map((t) => {
+                                    t.needsUpdate = true;
+                                    return t.version;
+                                });
+                                danach = await bilder(3);
+                                ruhig = satzV() === v0;
+                            }
+                        } finally {
+                            if (eigen) r._loopRender = altRender;
+                            else delete r._loopRender;
+                        }
+                        return {
+                            ruhig,
+                            versuche,
+                            bilder: danach,
+                            texe: texe.map((t, i) => ({ name: t.name, soll: soll[i], gpu: gpu(t) })),
+                        };
+                    });
+                    const m = await page.evaluate(() => window.__nahFernSicht({}));
+                    m.welt = welt;
+                    m.upload = upload;
+                    const u = require("./lib/licht-linsen.cjs").nahFernUrteil(m);
+                    const aus = Object.assign({ messung: m }, u);
+                    if (b.datei) fs.writeFileSync(path.resolve(b.datei), JSON.stringify(aus, null, 1));
+                    return send(
+                        Object.assign(aus, { datei: b.datei ? path.resolve(b.datei) : null, ms: Date.now() - t0 })
+                    );
+                }
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
-                    const liste = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: t.zeilen, w: 640, h: 400 });
+                    const liste = await page.evaluate((o) => window.__albedoSicht(o), {
+                        zeilen: t.zeilen,
+                        w: 640,
+                        h: 400,
+                    });
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
@@ -1227,7 +1468,10 @@ async function starte() {
                     for (const e of liste) {
                         if (e.png) {
                             fs.writeFileSync(
-                                path.join(ordner, "welt-" + String(e.id || e.name).replace(/[^a-z0-9_-]+/gi, "_") + ".png"),
+                                path.join(
+                                    ordner,
+                                    "welt-" + String(e.id || e.name).replace(/[^a-z0-9_-]+/gi, "_") + ".png"
+                                ),
                                 Buffer.from(e.png.split(",")[1], "base64")
                             );
                             delete e.png;
@@ -1235,7 +1479,14 @@ async function starte() {
                         if (e.name === "graukarte") eichung = e.gesamt ? e.gesamt.Y : null;
                         else
                             welt[e.id] = e.gesamt
-                                ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe, gesetzt: e.gesetzt }
+                                ? {
+                                      Y: e.gesamt.Y,
+                                      rgb: e.gesamt.rgb,
+                                      pixel: e.pixel,
+                                      zuege: e.zuege,
+                                      stoffe: e.stoffe,
+                                      gesetzt: e.gesetzt,
+                                  }
                                 : { Y: null, fehler: e.fehler || "kein Pixel" };
                     }
                     const geraet = await page.evaluate(async () => {
@@ -1247,7 +1498,15 @@ async function starte() {
                         const p = window.anazhRealm.state.playerMesh.position;
                         return [p.x, p.z].map((v) => +v.toFixed(1));
                     });
-                    const messung = { datum: new Date().toISOString(), echt: ECHT, geraet, ort: aktOrt, spieler, eichung, welt };
+                    const messung = {
+                        datum: new Date().toISOString(),
+                        echt: ECHT,
+                        geraet,
+                        ort: aktOrt,
+                        spieler,
+                        eichung,
+                        welt,
+                    };
                     const datei = path.resolve(b.datei || path.join(ordner, `welt-${Date.now()}.json`));
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, JSON.stringify(messung, null, 1));
@@ -1281,9 +1540,13 @@ async function starte() {
                 if (req.url === "/shader") {
                     const stoff = b.stoff ? SK.STOFFE[b.stoff] : null;
                     if (b.stoff && !stoff)
-                        return send({ fehler: `unbekannter Stoff „${b.stoff}" (STOFFE: ${Object.keys(SK.STOFFE).join(", ")})` });
+                        return send({
+                            fehler: `unbekannter Stoff „${b.stoff}" (STOFFE: ${Object.keys(SK.STOFFE).join(", ")})`,
+                        });
                     if ((b.gegen || b.datei) && !stoff)
-                        return send({ fehler: "--gegen und --datei gelten den Programmen eines Stoffs (--stoff <name>)" });
+                        return send({
+                            fehler: "--gegen und --datei gelten den Programmen eines Stoffs (--stoff <name>)",
+                        });
                     const rot = [];
                     const zustand = {};
                     for (const [n, s] of Object.entries(SK.STOFFE)) zustand[n] = s.zustand;
@@ -1295,18 +1558,32 @@ async function starte() {
                     const alle = liste
                         .map((p) =>
                             Object.assign(
-                                { programm: p.programm, objekte: p.objekte, klassen: p.klassen, stoffe: p.stoffe, wgsl: p.fragment },
+                                {
+                                    programm: p.programm,
+                                    objekte: p.objekte,
+                                    klassen: p.klassen,
+                                    stoffe: p.stoffe,
+                                    wgsl: p.fragment,
+                                },
                                 SK.wgslKosten(p.fragment)
                             )
                         )
                         .sort((x, y) => y.abtastungen.unbedingt - x.abtastungen.unbedingt || y.ops - x.ops);
                     const nur = b.nur ? new RegExp(b.nur) : null;
-                    const zeilen = alle.filter((p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k)));
+                    const zeilen = alle.filter(
+                        (p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k))
+                    );
                     if (b.ordner) {
                         const ordner = path.resolve(b.ordner);
                         fs.mkdirSync(ordner, { recursive: true });
                         zeilen.forEach((z, i) =>
-                            fs.writeFileSync(path.join(ordner, `${String(i).padStart(3, "0")}-${z.programm.replace(/[^a-z0-9._-]+/gi, "_")}.wgsl`), z.wgsl)
+                            fs.writeFileSync(
+                                path.join(
+                                    ordner,
+                                    `${String(i).padStart(3, "0")}-${z.programm.replace(/[^a-z0-9._-]+/gi, "_")}.wgsl`
+                                ),
+                                z.wgsl
+                            )
                         );
                     }
                     const top = Math.max(1, Number(b.top) || 30);
@@ -1320,33 +1597,47 @@ async function starte() {
                                 (z) =>
                                     `${pad(z.abtastungen.gesamt, 4)} ${pad(z.abtastungen.unbedingt, 4)} ${pad(z.abtastungen.zweig, 4)} ${pad(z.abtastungen.schleife, 4)} | ${pad(z.ladungen, 4)} | ${pad(z.schleifen, 3)} | ${pad(z.rauschen, 3)} | ${pad(z.ops, 5)} | ${pad(z.objekte, 4)} | ${z.programm}` +
                                     (z.stoffe.length ? " [" + z.stoffe.join(", ") + "]" : "") +
-                                    (z.klassen.length > 1 ? " (" + z.klassen.map(([k, n]) => k + " ×" + n).join(", ") + ")" : "")
+                                    (z.klassen.length > 1
+                                        ? " (" + z.klassen.map(([k, n]) => k + " ×" + n).join(", ") + ")"
+                                        : "")
                             ),
                     ].join("\n");
                     let stoffBericht = null;
                     if (stoff) {
                         const progs = alle.filter((z) => z.stoffe.includes(b.stoff));
                         if (!progs.length)
-                            rot.push(`der Stoff ${b.stoff} (state.${stoff.zustand}) zeichnet in diesem Frame kein Programm (die Linse ist blind)`);
+                            rot.push(
+                                `der Stoff ${b.stoff} (state.${stoff.zustand}) zeichnet in diesem Frame kein Programm (die Linse ist blind)`
+                            );
                         const vor = b.gegen ? SK.wgslKosten(fs.readFileSync(path.resolve(b.gegen), "utf8")) : null;
-                        if (vor && !vor.einstieg) rot.push(`--gegen ${b.gegen}: kein Fragment-Einstieg (die Linse ist blind)`);
+                        if (vor && !vor.einstieg)
+                            rot.push(`--gegen ${b.gegen}: kein Fragment-Einstieg (die Linse ist blind)`);
                         if (b.datei)
                             progs.forEach((z, i) => {
                                 const d = path.resolve(i ? b.datei.replace(/(\.wgsl)?$/, `-${i + 1}.wgsl`) : b.datei);
                                 fs.mkdirSync(path.dirname(d), { recursive: true });
                                 fs.writeFileSync(d, z.wgsl);
                             });
-                        for (const z of progs) rot.push(...SK.kostenUrteil(z, stoff.budget, `${b.stoff} (${z.programm})`));
+                        for (const z of progs)
+                            rot.push(...SK.kostenUrteil(z, stoff.budget, `${b.stoff} (${z.programm})`));
                         const namen = (z) =>
                             Object.keys(z.rauschNamen).length
-                                ? "\nRausch-Aufrufe: " + Object.entries(z.rauschNamen).map(([f, c]) => f + " ×" + c).join(" · ")
+                                ? "\nRausch-Aufrufe: " +
+                                  Object.entries(z.rauschNamen)
+                                      .map(([f, c]) => f + " ×" + c)
+                                      .join(" · ")
                                 : "";
                         stoffBericht = {
                             name: b.stoff,
                             budget: stoff.budget,
                             programme: progs.length,
                             tabelle: progs
-                                .map((z, i) => `STOFF ${b.stoff} — Programm ${i + 1}/${progs.length}: ${z.programm} (${z.objekte} Objekte)\n` + SK.kostenTabelle(z, vor) + namen(z))
+                                .map(
+                                    (z, i) =>
+                                        `STOFF ${b.stoff} — Programm ${i + 1}/${progs.length}: ${z.programm} (${z.objekte} Objekte)\n` +
+                                        SK.kostenTabelle(z, vor) +
+                                        namen(z)
+                                )
                                 .join("\n\n"),
                         };
                     }
@@ -1355,7 +1646,15 @@ async function starte() {
                         probe = await page.evaluate(() => window.__rauschProbe());
                         rot.push(...SK.probeUrteil(probe));
                     }
-                    return send({ programme: zeilen.length, tabelle, stoff: stoffBericht, probe, rot, ordner: b.ordner || null, ms: Date.now() - t0 });
+                    return send({
+                        programme: zeilen.length,
+                        tabelle,
+                        stoff: stoffBericht,
+                        probe,
+                        rot,
+                        ordner: b.ordner || null,
+                        ms: Date.now() - t0,
+                    });
                 }
                 if (req.url === "/diaet") {
                     const o = await page.evaluate((k) => window.__diaetLauf(k), {
@@ -1382,7 +1681,11 @@ async function starte() {
                         tiere: b.tiere || "frei",
                     });
                     return send(
-                        Object.assign(o, { urteil: STAND.standUrteil(o), fehler: fehler.slice(-5), ms: Date.now() - t0 })
+                        Object.assign(o, {
+                            urteil: STAND.standUrteil(o),
+                            fehler: fehler.slice(-5),
+                            ms: Date.now() - t0,
+                        })
                     );
                 }
                 if (req.url === "/sicht") {
@@ -1411,25 +1714,28 @@ async function starte() {
                     const cdp = await page.target().createCDPSession();
                     await cdp.send("HeapProfiler.collectGarbage");
                     await cdp.detach();
-                    const o = await page.evaluate(async (top) => {
-                        for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
-                        // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
-                        window.__buehne();
-                        await window.__drawZensus({ top: 1 });
-                        window.__kehrausJetzt();
-                        window.__texturZensus();
-                        const puffer = window.__pufferZensus();
-                        const v = window.__vram || {};
-                        const mb = (x) => +(x / 1048576).toFixed(1);
-                        return {
-                            vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
-                            pufferMB: mb(v.puffer || 0),
-                            texturenMB: mb(v.texturen || 0),
-                            gcMB: mb(v.gc || 0),
-                            puffer,
-                            gross: window.__vramBericht ? window.__vramBericht(top) : null,
-                        };
-                    }, Number(b.top) || 30);
+                    const o = await page.evaluate(
+                        async (top) => {
+                            for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
+                            // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
+                            window.__buehne();
+                            await window.__drawZensus({ top: 1 });
+                            window.__kehrausJetzt();
+                            window.__texturZensus();
+                            const puffer = window.__pufferZensus();
+                            const v = window.__vram || {};
+                            const mb = (x) => +(x / 1048576).toFixed(1);
+                            return {
+                                vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
+                                pufferMB: mb(v.puffer || 0),
+                                texturenMB: mb(v.texturen || 0),
+                                gcMB: mb(v.gc || 0),
+                                puffer,
+                                gross: window.__vramBericht ? window.__vramBericht(top) : null,
+                            };
+                        },
+                        Number(b.top) || 30
+                    );
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/zaehlen") {
@@ -1459,6 +1765,9 @@ async function starte() {
                     // DIE BAND-MESSUNG: einschwingen (bis der Bau ruht), Proben (das Maximum je Klasse × Pass), dann der
                     // VRAM je Erzeuger, die Szenen-Puffer je Klasse, der Fluss und die GPU-Bank — geurteilt gegen Haushalt
                     // und Ratsche (spec/profiband).
+                    // Ein Toggle-Ort (bank, 1110-6) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
+                    const bandSpec = BAND.ladeSpec(b.ort);
+                    BAND.ratscheVon(bandSpec);
                     // DIE STEMPEL-WACHE je Phase: welche Frames den Pool füllen, ohne ihn aufzulösen, steht beim Namen.
                     const w0 = await stempel();
                     const messung = await page.evaluate(bandEinschwingen, {
@@ -1509,7 +1818,8 @@ async function starte() {
                     });
                     const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
                     const w3 = await stempel();
-                    const ue = (a, c) => (a && c && Number.isFinite(c.ueberlauf) ? c.ueberlauf - (a.ueberlauf || 0) : null);
+                    const ue = (a, c) =>
+                        a && c && Number.isFinite(c.ueberlauf) ? c.ueberlauf - (a.ueberlauf || 0) : null;
                     const stempelBand = w3
                         ? {
                               einschwingen: ue(w0, w1),
@@ -1523,7 +1833,8 @@ async function starte() {
                               urteil: w3.ueberlauf === 0 && w3.warnung === 0 ? "GRUEN" : "ROT",
                           }
                         : null;
-                    const { haushalt, ratsche, ort } = BAND.ladeSpec(b.ort);
+                    const { haushalt, ort } = bandSpec;
+                    const ratsche = BAND.ratscheVon(bandSpec);
                     const zensus = BAND.zensusMax(proben);
                     const u = BAND.bandUrteil({
                         zensus,
@@ -1617,7 +1928,13 @@ async function starte() {
                         const z = await page.evaluate((k) => window.__zielZensus(k), { n });
                         if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
                         const ids = z.ziele
-                            .filter((x) => !x.leinwand && !x.tiefe && x.kopierbar && /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format))
+                            .filter(
+                                (x) =>
+                                    !x.leinwand &&
+                                    !x.tiefe &&
+                                    x.kopierbar &&
+                                    /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format)
+                            )
                             .map((x) => x.id);
                         const lesen = await page.evaluate((k) => window.__zielLesen(k), { ids });
                         return { z, lesen, u: ZZ.zielUrteil(z, lesen) };
@@ -1625,7 +1942,8 @@ async function starte() {
                     let selbst = null;
                     if (b.selbsttest) {
                         const s = await page.evaluate(() => window.__zielSchmuggel(true));
-                        if (!s || s.fehler) return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
+                        if (!s || s.fehler)
+                            return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
                         let mit;
                         try {
                             mit = await zensus();
@@ -1643,7 +1961,9 @@ async function starte() {
                     }
                     const { z, lesen, u } = await zensus();
                     if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
-                    const rest = selbst ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name) : [];
+                    const rest = selbst
+                        ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name)
+                        : [];
                     const selbstOk = selbst ? selbst.every((x) => x.ok) && !rest.length : null;
                     const datei = path.resolve(
                         b.json || path.join(root, "artifacts", "werkbank", `ziele-${Date.now()}.json`)
@@ -1658,9 +1978,15 @@ async function starte() {
                             ? (selbstOk ? "SELBSTTEST GRÜN" : "SELBSTTEST ROT") +
                               ` — ${selbst.filter((x) => x.ok).length} von ${selbst.length} Tätern beim Namen` +
                               (selbst.some((x) => !x.ok)
-                                  ? "; blind für: " + selbst.filter((x) => !x.ok).map((x) => x.muss).join(" · ")
+                                  ? "; blind für: " +
+                                    selbst
+                                        .filter((x) => !x.ok)
+                                        .map((x) => x.muss)
+                                        .join(" · ")
                                   : "") +
-                              (rest.length ? "; nach dem Abbau noch im Zensus: " + rest.join(", ") : "; danach restlos fort")
+                              (rest.length
+                                  ? "; nach dem Abbau noch im Zensus: " + rest.join(", ")
+                                  : "; danach restlos fort")
                             : null,
                         datei,
                         ms: Date.now() - t0,
@@ -1894,19 +2220,30 @@ async function starte() {
                     }
                     const a = HL.haengerAuswerten(roh, profile, { schwelle: Number(b.schwelle) || 100 });
                     const befunde = HL.haengerLinsenBefunde(a);
-                    const datei = path.resolve(b.json || path.join(root, "artifacts", "werkbank", `haenger-${Date.now()}.json`));
+                    const datei = path.resolve(
+                        b.json || path.join(root, "artifacts", "werkbank", `haenger-${Date.now()}.json`)
+                    );
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     // Das ROHE (Takte + Profil) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, profile }));
                     fs.writeFileSync(
                         datei,
                         JSON.stringify(
-                            Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen }, befunde }, a),
+                            Object.assign(
+                                { echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen }, befunde },
+                                a
+                            ),
                             null,
                             1
                         )
                     );
-                    return send({ tabelle: HL.haengerTabelle(a), befunde, haenger: a.haengerN, datei, ms: Date.now() - t0 });
+                    return send({
+                        tabelle: HL.haengerTabelle(a),
+                        befunde,
+                        haenger: a.haengerN,
+                        datei,
+                        ms: Date.now() - t0,
+                    });
                 }
                 if (req.url === "/licht")
                     return send(
@@ -1961,7 +2298,8 @@ async function starte() {
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
     let o;
     if (cmd === "status") o = await rufe("/status");
-    else if (cmd === "umstellen") o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort") });
+    else if (cmd === "umstellen")
+        o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose") });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -1977,8 +2315,194 @@ async function starte() {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
-    else if (cmd === "albedo") {
-        o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner"), tafel: argv.includes("--tafel"), datei: opt("--datei") });
+    else if (cmd === "albedo" && argv.includes("--nah-fern")) {
+        // DIE ALBEDO NAH GEGEN FERN (0910-8): je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
+        // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
+        // rauscht), der Boden-Satz doppelt so hell rot mit dem Täter Boden-Satz, ein Ring neben dem Gesetz mit dem Täter
+        // Fern-Ring, zu wenige Orte, ein leerer Schuss, ein fehlendes Gesetz und eine Karte, die nicht steht, laut.
+        if (argv.includes("--selbsttest")) {
+            const LL = require("./lib/licht-linsen.cjs");
+            const ort = (klasse, x, nY, fY, nG, gY) => ({
+                klasse,
+                ort: [x, 0],
+                deckung: klasse === "wald" ? 0.9 : 0.3,
+                nah: { n: 4096, Y: nY, rgb: [nY * 0.8, nY * (nG || 1.1), nY * 0.5] },
+                fern: { n: 4096, Y: fY, rgb: [fY * 0.8, fY * 1.1, fY * 0.5] },
+                gesetz: { Y: gY || fY },
+            });
+            const ruhig = ["wald", "wald", "wald", "wiese", "wiese", "wiese"].map((k, i) =>
+                ort(k, i * 50, 0.06, 0.058)
+            );
+            const f = [];
+            const pruefe = (name, u, muss) => {
+                const ok = muss ? u.befunde.some((b) => muss.test(b)) : u.befunde.length === 0;
+                if (!ok) f.push(`${name}: ${u.befunde.join(" · ") || "(grün)"}`);
+            };
+            pruefe("im Band", LL.nahFernUrteil({ orte: ruhig }), null);
+            pruefe(
+                "main (Boden doppelt so hell)",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.115, 0.056))) }),
+                /^NAH-FERN wald 0\/0 .*Y 0.115 gegen Fern-Ring Y 0.056 \(\+105 %\).*Täter Boden-Satz \+105 %/
+            );
+            pruefe(
+                "der Ring neben dem Gesetz",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.055, 0.075, 1.1, 0.056))) }),
+                /Täter Fern-Ring \+34 %/
+            );
+            pruefe(
+                "das Rauschen des Rings im Band",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.055, 0.066, 1.1, 0.056))) }),
+                null
+            );
+            pruefe(
+                "ohne Gesetz",
+                LL.nahFernUrteil({
+                    orte: ruhig.map((o, i) => (i ? o : Object.assign(ort("wald", 0, 0.06, 0.06), { gesetz: null }))),
+                }),
+                /ohne das Gesetz an der Stelle/
+            );
+            pruefe("zu wenige Wiesen-Orte", LL.nahFernUrteil({ orte: ruhig.slice(0, 4) }), /NAH-FERN wiese: 1 Orte/);
+            pruefe(
+                "leerer Schuss",
+                LL.nahFernUrteil({
+                    orte: ruhig.concat([Object.assign(ort("wiese", 400, 0.06, 0.06), { nah: { n: 0 } })]),
+                }),
+                /leerer Schuss/
+            );
+            pruefe("Karte steht nicht", LL.nahFernUrteil({ orte: ruhig, nahKarte: 0 }), /NAH-FERN Karte: .*bereit 0/);
+            const frisch = [
+                { name: "fern-krone-nah", soll: 4, gpu: 4 },
+                { name: "wege-karte:nah", soll: 21, gpu: 21 },
+            ];
+            const hoch = (texe, ruhigOk, bilder) => ({
+                ruhig: ruhigOk !== false,
+                versuche: 1,
+                bilder: bilder == null ? 3 : bilder,
+                texe,
+            });
+            pruefe(
+                "das Hauptbild lädt jedes Daten-Bild",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch) }),
+                null
+            );
+            pruefe(
+                "ein Daten-Bild bleibt alt",
+                LL.nahFernUrteil({
+                    orte: ruhig,
+                    upload: hoch([frisch[0], { name: "kronen-streu:nah", soll: 18, gpu: 17 }]),
+                }),
+                /NAH-FERN Upload: kronen-streu:nah — die GPU hält Version 17, der Schreiber hob sie auf 18/
+            );
+            pruefe(
+                "die Upload-Probe ohne Bild",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch([]) }),
+                /die Probe ist blind/
+            );
+            pruefe(
+                "die Upload-Probe ohne gezeichnetes Bild",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch, true, 0) }),
+                /NAH-FERN Upload: 0 von 3 Bildern gezeichnet/
+            );
+            pruefe(
+                "die Upload-Probe in einer Welt, die nie ruht",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch, false) }),
+                /NAH-FERN Upload: der Boden-Satz ruhte in 1 Versuchen nie drei Takte/
+            );
+            pruefe(
+                "die Welt steht",
+                LL.nahFernUrteil({ orte: ruhig, welt: { gestanden: true, ms: 900, chunk: "-21,-20", fehlt: [] } }),
+                null
+            );
+            pruefe(
+                "die Welt stand nicht",
+                LL.nahFernUrteil({
+                    orte: ruhig,
+                    welt: {
+                        gestanden: false,
+                        ms: 120000,
+                        chunk: "-21,-20",
+                        fehlt: ["-19,-18"],
+                        gebaut: 1,
+                        ring: 2,
+                        imBau: 3,
+                        karte: 1,
+                    },
+                }),
+                /NAH-FERN Welt: das Quadrat der Linse stand nach 120 s nicht \(Chunk -21,-20, fehlt 1: -19,-18/
+            );
+            pruefe(
+                "ein Schuss, der nicht stillsteht",
+                LL.nahFernUrteil({
+                    orte: ruhig.map((o, i) =>
+                        i
+                            ? o
+                            : Object.assign(ort("wald", 0, 0.06, 0.058), {
+                                  nah: {
+                                      n: 4096,
+                                      Y: 0.6,
+                                      rgb: [0.6, 0.6, 0.6],
+                                      still: false,
+                                      spur: { hell: [[4096, 0.69]] },
+                                  },
+                              })
+                    ),
+                }),
+                /NAH-FERN wald 0\/0: der Schuss nah stand nicht still oder wiederholte sich nicht/
+            );
+            pruefe(
+                "ein Paar, das sich in vier Runden nicht wiederholt",
+                LL.nahFernUrteil({
+                    orte: ruhig.map((o, i) => {
+                        if (i) return o;
+                        const w = ort("wald", 0, 0.06, 0.058);
+                        w.fern.wiederholt = false;
+                        return Object.assign(w, { runden: 4, verworfen: [[0.06, 0.15]] });
+                    }),
+                }),
+                /NAH-FERN wald 0\/0: der Schuss fern stand nicht still oder wiederholte sich nicht \(Runden 4/
+            );
+            console.log(
+                f.length
+                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
+                    : "SELBSTTEST GRÜN: das Nah-Fern-Urteil nennt die zwei Farben derselben Stelle beim Namen"
+            );
+            process.exit(f.length ? 1 : 0);
+        }
+        o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
+        if (o && o.zeilen) {
+            const w = o.messung && o.messung.welt;
+            if (w)
+                console.log(
+                    `  Welt ${w.gestanden ? "steht" : "STAND NICHT"} nach ${w.ms} ms (${w.takte} Takte): Chunk ${w.chunk}, ` +
+                        `fehlt ${w.fehlt.length}, gebaut ${w.gebaut}, Ring ${w.ring}, im Bau ${w.imBau}, Karte ${w.karte}`
+                );
+            for (const z of o.zeilen)
+                console.log(
+                    `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
+                        `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern}) · Runden ${z.runden}`
+                );
+            const up = o.messung && o.messung.upload;
+            if (up)
+                console.log(
+                    `  Upload im Hauptbild (${up.ruhig ? "ruhig" : "UNRUHIG"}, Versuch ${up.versuche}, ${up.bilder} Bilder): ` +
+                        (up.texe || []).map((u) => `${u.name} GPU ${u.gpu}/${u.soll}`).join(" · ")
+                );
+            for (const b of o.befunde) console.log("  ROT " + b);
+            console.log(
+                o.befunde.length
+                    ? "\n❌ NAH-FERN ROT — zwei Farben derselben Stelle"
+                    : "\n✅ NAH-FERN GRÜN — EINE Boden-Farbe je Ort"
+            );
+            if (o.datei) console.log(o.datei);
+            process.exit(o.befunde.length ? 1 : 0);
+        }
+    } else if (cmd === "albedo") {
+        o = await rufe("/albedo", {
+            nur: opt("--nur"),
+            ordner: opt("--ordner"),
+            tafel: argv.includes("--tafel"),
+            datei: opt("--datei"),
+        });
         if (o && o.tabelle) {
             console.log(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner);
             process.exit(o.urteil === "GRUEN" ? 0 : 1);
@@ -1988,8 +2512,76 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
         }
-    }
-    else if (cmd === "licht") o = await rufe("/licht");
+    } else if (cmd === "licht" && argv.includes("--laub")) {
+        // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
+        // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
+        const LL = require("./lib/licht-linsen.cjs");
+        if (argv.includes("--selbsttest")) {
+            const m = (v) => ({ verhaeltnis: v, gegen: { Y: v }, auf: { Y: 1 }, stoffe: "laub" });
+            const f = [
+                [LL.laubLichtUrteil({ welt: { eiche: m(1.4) } }).urteil, "GRUEN"],
+                [
+                    LL.laubLichtUrteil({ welt: { eiche: m(0.3) } }).befunde.join(),
+                    /eiche: Gegenlicht\/Auflicht 0\.3 < 1\.3/,
+                ],
+                [LL.laubLichtUrteil({ welt: { eiche: m(1.4) }, labor: { eiche: { verhaeltnis: 1.0 } } }).urteil, "ROT"],
+                [
+                    LL.laubLichtUrteil({ welt: { eiche: m(1.4) }, labor: { eiche: { verhaeltnis: 1.35 } } }).urteil,
+                    "GRUEN",
+                ],
+                // das Labor misst unter EINEM Licht: gegen die Welt-Seite `sonne`, nie gegen die volle Licht-Kette
+                [
+                    LL.laubLichtUrteil({
+                        welt: { eiche: Object.assign(m(1.4), { sonne: { verhaeltnis: 1.0 } }) },
+                        labor: { eiche: { verhaeltnis: 1.4 } },
+                    }).befunde.join(),
+                    /Welt 1 gegen Labor 1\.4 \(nur Sonne\)/,
+                ],
+                [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
+                [LL.laubLichtUrteil({}).urteil, "ROT"],
+            ];
+            const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+            console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);
+            process.exit(fehl.length ? 1 : 0);
+        }
+        const welt = {};
+        // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
+        const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "wiese");
+        for (const art of String(opt("--laub", "eiche,birke")).split(",")) {
+            const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
+            // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
+            await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
+            const plan = (
+                await rufe("/eval", {
+                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)} }; ${c}`,
+                })
+            ).ergebnis;
+            if (!plan || plan.fehler) {
+                welt[art] = plan || { fehler: "kein Plan" };
+                continue;
+            }
+            await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
+            const w = (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)} }; ${c}` }))
+                .ergebnis;
+            const ordner = opt("--ordner");
+            if (w && w.gegen)
+                for (const k of ["gegen", "auf"]) {
+                    if (ordner)
+                        fs.writeFileSync(
+                            path.join(ordner, `laub-${art}-${k}.png`),
+                            Buffer.from(w[k].png.split(",")[1], "base64")
+                        );
+                    delete w[k].png;
+                }
+            welt[art] = w;
+        }
+        const u = LL.laubLichtUrteil({ welt });
+        // `--datei`: die Welt-Seite für das Labor-Urteil (diag-albedo-tafel.cjs --laub --welt <datei>)
+        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify({ welt }, null, 1));
+        console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+        console.log(`LAUB-LICHT ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
+    } else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
@@ -2004,13 +2596,17 @@ async function starte() {
             );
             process.exit(f.length ? 1 : 0);
         }
-        o = await rufe("/diaet", { frames: a[0], modus: opt("--modus", "ruhe"), grad: opt("--grad"), tiere: opt("--tiere", "halten") });
+        o = await rufe("/diaet", {
+            frames: a[0],
+            modus: opt("--modus", "ruhe"),
+            grad: opt("--grad"),
+            tiere: opt("--tiere", "halten"),
+        });
         if (o && o.urteil) {
             console.log(JSON.stringify(o, null, 1));
             process.exit(o.urteil.length ? 1 : 0);
         }
-    }
-    else if (cmd === "stand")
+    } else if (cmd === "stand")
         o = await rufe("/stand", {
             n: a[0],
             ein: opt("--ein"),
@@ -2055,17 +2651,21 @@ async function starte() {
         // sie nach (setzt ungemessene Felder, senkt gemessene, hebt nie).
         const dateien = a.map((f) => path.resolve(f));
         const laeufe = dateien.map((f) => JSON.parse(fs.readFileSync(f, "utf8")));
-        const { haushalt, ratsche, ort } = BAND.ladeSpec(opt("--ort"));
+        const ratscheSpec = BAND.ladeSpec(opt("--ort"));
+        const { haushalt, ort } = ratscheSpec;
+        const ratsche = BAND.ratscheVon(ratscheSpec);
         const fehler = [];
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
         const boots = new Set(laeufe.map((u) => u.boot && u.boot.art));
-        if (!boots.has("erst") || !boots.has("zweit")) fehler.push(`Boot-Arten ${[...boots].join("/")} — Erst- UND Zweit-Boot`);
+        if (!boots.has("erst") || !boots.has("zweit"))
+            fehler.push(`Boot-Arten ${[...boots].join("/")} — Erst- UND Zweit-Boot`);
         laeufe.forEach((u, i) => {
             const n = path.basename(dateien[i]);
             if (!u.roh) fehler.push(`${n}: kein Rohes (eine Messung vor der Serien-Ratsche)`);
             if (u.echt !== true) fehler.push(`${n}: nicht die echte GPU (start --echt)`);
             // Ein Lauf ohne Ort-Feld stammt von vor den Messorten (S1): er stand an der Mess-Wiese.
-            if ((u.ort || "wiese") !== ort.id) fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
+            if ((u.ort || "wiese") !== ort.id)
+                fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
             if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
             // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick).
             for (const f of BAND.ortGestellt(ort, u.zustand)) fehler.push(`${n}: ${f}`);
@@ -2185,8 +2785,7 @@ async function starte() {
         }
         console.log(JSON.stringify(o, null, 1));
         process.exit(1);
-    }
-    else if (cmd === "zerlegen") {
+    } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");
         o = await rufe("/zerlegen", {
             runden: opt("--runden"),
@@ -2205,8 +2804,7 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
         }
-    }
-    else if (cmd === "shader") {
+    } else if (cmd === "shader") {
         if (argv.includes("--selbsttest")) {
             const f = SK.selbsttest();
             console.log(
@@ -2231,12 +2829,12 @@ async function starte() {
             process.exit(1);
         }
         console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
-        if (o.stoff) console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
+        if (o.stoff)
+            console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
         if (o.probe) console.log("\nRausch-Probe (max |GPU − CPU| je Probe, Grenze 1e-4) " + JSON.stringify(o.probe));
         console.log(o.rot.length ? "\nROT:\n  " + o.rot.join("\n  ") : "\nGRÜN");
         process.exit(o.rot.length ? 1 : 0);
-    }
-    else if (cmd === "reload") o = await rufe("/reload");
+    } else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
         console.log(fs.readFileSync(__filename, "utf8").split('"use strict"')[0].trimEnd());

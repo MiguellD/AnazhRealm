@@ -95,6 +95,10 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang)" },
+    // JEDE TEXTUR DES PROGRAMMS (Integration V18.542): die Bindung einer Textur trägt ihren Knoten, und r184 lädt die Textur
+    // nur im Binde-Gang eines Render-Objekts hoch — den fährt nur ein Refresh (der Textur-Wächter der Diät).
+    { file: "vendor/three.webgpu.min.js", sub: "textureNode=t,this.groupNode=r,this.access=s}update(){const{textureNode:e}=this;return this.texture!==e.value?(this.texture=e.value,!0):super.update()}", organ: "AnazhRealm._diaetGang (die Textur-Bindung trägt ihren Knoten: jede Textur des Programms)" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(t.isSampledTexture){const o=t.update(),u=t.texture,l=this.textures.get(u);o&&(this.textures.updateTexture(u)", organ: "AnazhRealm._diaetVorTextur (r184 lädt eine Textur nur im Binde-Gang hoch)" },
     // DER RENDER-ABSCHNITT (Gegenprüfung 07.10.): der Stempel des Gangs ist (Render-Id, info.calls) — jeder betretene
     // Render zählt info.calls hoch und nimmt ihn als Render-Id, das Verlassen gibt die äußere Id zurück (Anker der
     // Bundle-Wahrheit), info.reset lässt info.calls stehen. So wechselt das Paar beim Betreten UND Verlassen.

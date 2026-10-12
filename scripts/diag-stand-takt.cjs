@@ -723,10 +723,10 @@ const server = http.createServer((req, res) => {
                     }
                     // der Saum (`_fernRingDeckWache`: Punkte ab `deckCursor`): der letzte Punkt der Runde steht still 1,5 m zu hoch
                     const fr = st.fernRing;
-                    if (fr && fr.zoneVerts && fr.meshes && fr.meshes[0]) {
+                    if (fr && fr.zoneVerts && fr.geos && fr.geos[0]) {
                         const o = fr.zoneVerts - 1;
                         const p = r._fernRingPunkt(fr, ((fr.deckCursor || 0) + o) % fr.zoneVerts);
-                        const pos = fr.meshes[0].geometry.attributes.position;
+                        const pos = fr.geos[0].attributes.position;
                         pos.setY(p.li, pos.getY(p.li) + 1.5); // still verstellt: kein Weckruf
                         je.deckWache = { stelle: o, runde: fr.zoneVerts };
                     }

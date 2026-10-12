@@ -11583,10 +11583,36 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "self-test", x: 1, y: 1, z: 1, yaw: 0 }));
         out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
 
-        // Invalid pos (NaN) wird verworfen
+        // Invalid pos (NaN) wird verworfen — über den Draht reist NaN als null (JSON.stringify), und Number(null) === 0
+        // (Lehre 17): der ortlos geborene peerB darf davon nicht in den Ursprung springen, er bleibt ohne Ort. Bis K04
+        // war die Probe vakuös (`peerB.x === 0` hielt geboren bei 0 UND nach dem Sprung in den Ursprung).
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 }));
+        r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: null, z: 2, yaw: 0 }));
+        r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: 1, z: "", yaw: 0 }));
         const peerB = r.state.p2p.peers.get("peerB");
-        out.nanPosNotApplied = peerB && peerB.x === 0;
+        out.nanPosNotApplied =
+            !!peerB &&
+            ![peerB.x, peerB.y, peerB.z].some(Number.isFinite) &&
+            !(peerB.snapBuf && peerB.snapBuf.length) &&
+            !!peerB.mesh &&
+            peerB.mesh.visible === false;
+        // DIE KLASSE (Lehre 17): jeder Leser einer Zahl aus dem Draht — null (das JSON-Bild von NaN) ist kein Ort und
+        // keine Zahl. Je Leser ein Fall über den echten JSON-Weg; jeder Name in der Liste las null als 0.
+        const draht = (o) => JSON.parse(JSON.stringify(o));
+        const nullAlsNull = [];
+        if (r._sanitizePose(draht({ x: NaN, y: 0, z: 0, yaw: 0 })) !== null) nullAlsNull.push("subworld-pose");
+        r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen" }] }));
+        if (r.state.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
+        r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
+        const lsB = r.state.p2p.peers.get("peerB").lockstep;
+        if (lsB && lsB.anchor) nullAlsNull.push("lockstep-anker");
+        const statsVorher = r.state.p2p.brokerStats;
+        r.state.p2p.brokerStats = null;
+        r._p2pMsgStats(draht({ rooms: NaN, peers: 3 }), r.state.p2p);
+        if (r.state.p2p.brokerStats) nullAlsNull.push("stats");
+        r.state.p2p.brokerStats = statsVorher;
+        if (!out.nanPosNotApplied) nullAlsNull.unshift("pos");
+        out.drahtNullAlsNull = nullAlsNull;
 
         // p2pSend ohne open WS liefert false
         r.state.p2p.ws = null;
@@ -11658,7 +11684,15 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: peer-leave entfernt peer aus state.p2p.peers", ring11Results.peerLeaveRemoves);
         check("Ring 11 V1: peer-leave entfernt mesh aus der Szene", ring11Results.peerLeaveDisposesMesh);
         check("Ring 11 V1: eigene peerId wird in pos-Nachrichten ignoriert", ring11Results.ownPeerIgnored);
-        check("Ring 11 V1: NaN-Koordinate in pos wird verworfen", ring11Results.nanPosNotApplied);
+        check(
+            "Ring 11 V1: NaN-Koordinate in pos wird verworfen (der null-Fall über den Draht, der Peer bleibt ohne Ort)",
+            ring11Results.nanPosNotApplied
+        );
+        check(
+            "Ring 11 V1: kein Leser einer Draht-Zahl liest null als 0 (pos · subworld-pose · creature-pos · Lockstep-Anker · stats)",
+            Array.isArray(ring11Results.drahtNullAlsNull) && ring11Results.drahtNullAlsNull.length === 0,
+            `${(ring11Results.drahtNullAlsNull || []).length} lasen null als 0: ${(ring11Results.drahtNullAlsNull || []).join(" · ")}`
+        );
         check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
         check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
         check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);
@@ -19666,11 +19700,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
                 // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
                 // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
-                const span = r._voxelChunkConfig(0).span;
-                const kcx = Math.floor(testX / span);
-                const kcz = Math.floor(testZ / span);
-                const ke = r.state.voxelChunks ? r.state.voxelChunks.get(`${kcx},${kcz}`) : null;
-                const karte = ke && ke.surfMap ? r._chunkSurfaceAt(ke, kcx, kcz, testX, testZ) : null;
+                const karte = r._bodenSichtAt(testX, testZ);
                 const expected =
                     Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND
                         ? karte
@@ -28811,10 +28841,8 @@ async function checkBandPhaseEThreat(ctx) {
             // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
             // den Leib berührt — der Kreatur-Takt läuft, bis der Ansprung schnappt oder endet (höchstens 1,5 s). Ein
             // voriger Ansprung landet erst (die Biss-Uhr ruht so lange: kein Biss, den die Probe nicht setzt).
-            const bissOffen = (c) => {
-                const A0 = c.userData._verhaltenAktion;
-                return A0 && A0.bissAkt && r.state.creatureAnimationTime < A0.bis ? A0 : null;
-            };
+            // (die EINE Frage des Spiels, _kreaturAnsprungOffen: die Landung gehört zum Sprung — K13)
+            const bissOffen = (c) => (r._kreaturAnsprungOffen(c) ? c.userData._verhaltenAktion : null);
             // der Takt des Spiels: der Kreatur-Takt, dann der feste Sim-Schritt der Leiber (getragener Stoß, Leib an Leib)
             const takt = () => {
                 r.updateCreatures(1 / 60);
@@ -30778,25 +30806,19 @@ async function checkBandLambda3Wind(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // Profil-Werte: laub (hoch wiegen), stein (=0).
+        // K19: den Wind trägt kein Substanz-Tag — die Achse `wiegen` ist fort, Holz und Stein stehen.
         const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
-        const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
-        out.laubWiegt = laubProfile.wiegen;
-        out.steinWiegtNull = steinProfile.wiegen;
-        // Source-Probe: V18.234 — der Wind-Sway lebt im GETEILTEN _applyVegetationResponse
-        // (Toon + PBR rufen ihn).
+        out.wiegenFort = !("wiegen" in laubProfile);
+        // Source-Probe: der Werkstatt-Baum (die geteilte Vegetations-Antwort) reicht den Wind an den EINEN Term
+        // (`_baumWindStoff`), keine eigene Formel über die Wind-Uhr.
         const src = window.__codeOf(r._applyVegetationResponse);
-        out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
+        out.windEinTerm = /this\._baumWindStoff\(/.test(src) && !/uWindTime/.test(src);
         return out;
     });
+    check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
     check(
-        `Λ.3 Wind: holz-Profil.wiegen > 0.2 (GEMESSEN ${res.laubWiegt && res.laubWiegt.toFixed(3)})`,
-        Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2
-    );
-    check("Λ.3 Wind: stein-Profil.wiegen === 0 (kein Sway auf Stein)", res.steinWiegtNull === 0);
-    check(
-        "Λ.3 Wind: _applyVegetationResponse setzt positionNode für wiegen > 0.05 (geteilt Toon+PBR)",
-        res.windSwayCode === true
+        "Λ.3 Wind: _applyVegetationResponse reicht den Werkstatt-Baum an den EINEN Wind-Term (_baumWindStoff)",
+        res.windEinTerm === true
     );
 }
 
@@ -33408,13 +33430,16 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
         let pt = { x: 0, z: 0 };
-        // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark)
+        // Finde einen Punkt, wo erde gewinnt (Vegetation-Achse stark) — und dessen Schwelle (S6) in Gleitkomma GENAU
+        // auf STRATA_STEIN_DEPTH liegt: der Stamm rechnet die Tiefe als surfY − y, und surfY − (surfY − D) trifft D
+        // nicht für jede Höhe (eine Zufalls-Höhe lag 1 ulp über D → „stein", CI 38211283065 voll 11/11; ≈ 1 % der Höhen).
         let erdePt = null;
         for (let i = 0; i < 200 && !erdePt; i++) {
             const x = (Math.random() - 0.5) * 600;
             const z = (Math.random() - 0.5) * 600;
             const surfY = r._voxelSurfaceY ? r._voxelSurfaceY(x, z) : null;
             if (!Number.isFinite(surfY)) continue;
+            if (surfY - (surfY - A.STRATA_STEIN_DEPTH) !== A.STRATA_STEIN_DEPTH) continue;
             const mat = r._terrainMaterialAt(x, z); // 2-arg, kein y
             if (mat === "erde") {
                 erdePt = { x, z, surfY };
@@ -35422,14 +35447,22 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-W VERTIEFTES WIND ───
-        // Source-Probe: das Wind-Sway (_applyVegetationResponse) trägt (1) quadratischen crownFactor UND
-        // (2) ein aperiodisches Flatter (flutter mit höherer Frequenz).
-        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
-        out.wQuadraticCrown =
-            /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
-        out.wHasFlutter = /_flutter\b/.test(swaySrc) && /flutterPhase/.test(swaySrc);
-        // Stronger sway magnitude (V18.211 war 0.25, V18.212 ist 0.32).
-        out.wStrongerSway = /float\(_sway\s*\*\s*0\.32\)/.test(swaySrc);
+        // K19: der Wind des Werkstatt-Baums ist der EINE Term des Kerns (phyto-core `windAusschlag`) — die Spitze
+        // biegt quadratisch (ζ²), das Blatt flattert schneller als sein Ast, der Sturm biegt ≥ 3× die Brise.
+        {
+            const PC = window.__phytoCore,
+                Z = PC.WIND_ZAHLEN,
+                W = PC.WIND_GESETZ;
+            const e = (U, zeta, t) => ({ t, U, g: 1, f0: 0.4, H: 20, zeta, rho: 0, phi: 0, psi: 1 });
+            const spitze = (U, zeta) => {
+                let m = 0;
+                for (let t = 0; t < 10; t += 0.01) m = Math.max(m, Math.abs(PC.windAusschlag(Z, e(U, zeta, t), true).quer));
+                return m;
+            };
+            out.wQuadraticCrown = Math.abs(spitze(1, 1) / spitze(1, 0.5) - 4) < 0.2;
+            out.wHasFlutter = Math.max(W.blatt.f, W.blatt.ueberAst * W.ast.faktor * 0.4) > W.ast.faktor * 0.4;
+            out.wStrongerSway = spitze(1, 1) >= 3 * spitze(0.06, 1);
+        }
 
         // ─── Ω-H PROVENIENZ BEIM ERNTEN (§2 Plan SEELEN-Band) ─────────
         // Source-Probe: harvestArchitecture liest _isGrown + _grownSpecies +
@@ -35482,9 +35515,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("V18.212 (K2b) Flare am Stamm-Ursprung (|x|, |z| < 0.5m)", res.k2FlareAtTrunkBase === true);
 
     // Ω-W
-    check("V18.212 (W1) Wind: quadratischer crownFactor (Spitzen flexen stärker)", res.wQuadraticCrown === true);
-    check("V18.212 (W2) Wind: aperiodisches Flattern (flutter mit höherer Frequenz)", res.wHasFlutter === true);
-    check("V18.212 (W3) Wind: stärkerer Sway (0.32 statt 0.25)", res.wStrongerSway === true);
+    check("K19 (W1) Wind: die Spitze biegt quadratisch (ζ², der EINE Term)", res.wQuadraticCrown === true);
+    check("K19 (W2) Wind: das Blatt flattert schneller als sein Ast", res.wHasFlutter === true);
+    check("K19 (W3) Wind: der Sturm biegt ≥ 3× die Brise (Wind-Zeile)", res.wStrongerSway === true);
 
     // Ω-H
     check("V18.212 (H1) harvestArchitecture liest _isGrown + _grownSpecies (Source)", res.hReadsGrown === true);
@@ -35707,8 +35740,8 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
-// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) +
-// per-Vertex Wind-flex/phase + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
+// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
+// Wind-Term im Stoff (K19) + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh(ctx) {
     const { page, check } = ctx;
@@ -35721,7 +35754,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.tubeBuilderExists = typeof r._buildTreeTubeGeometry === "function";
         out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
-        out.mergeAttrExists = typeof r._mergeAttributedGeometries === "function";
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         out.defaultFlareExists =
@@ -35742,9 +35774,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
             ].every((k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp));
         }
 
-        // ─── (T2) Wind: useFlexAttr-Pfad existiert in _buildToonNodeMaterial ─
-        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
-        out.swayReadsFlexAttr = /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
+        // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
+        const skelSrc = window.__codeOf(r._buildTreeSkeletonLeaves);
+        out.skelettWindDaten = /_skelettWindDaten\(/.test(skelSrc) && /baumWind/.test(skelSrc);
 
         // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
@@ -35801,18 +35833,18 @@ async function checkBandV18214SkeletonMesh(ctx) {
             // 2 leaves erwartet (bark + foliage), max 4 als Toleranz.
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
             if (flat && flat.leaves.length > 0) {
-                // T6: bark-Geometrie trägt aFlex + aPhase + color + viele Vertices
+                // T6: bark-Geometrie trägt color + viele Vertices; der Wind lebt im Stoff (K19: `_baumWindStoff` liest
+                // positionGeometry und den Stempel aH0) — die Geometrie trägt nur, was ein Stoff liest.
+                const ungelesen = (lf, gelesen) => Object.keys(lf.geom.attributes).filter((k) => !gelesen.includes(k));
+                const imWind = (lf) =>
+                    !!(lf.mat && lf.mat.positionNode && lf.mat.userData.baumWind && lf.mat.userData.baumWind.ht > 0);
                 const bark = flat.leaves[0];
                 out.barkVerts = bark.geom.attributes.position.count;
-                out.barkHasFlex = !!bark.geom.attributes.aFlex;
-                out.barkHasPhase = !!bark.geom.attributes.aPhase;
+                out.barkUngelesen = ungelesen(bark, ["position", "normal", "color", "aH0", "aH0L"]);
+                out.barkImWind = imWind(bark);
                 out.barkHasColor = !!bark.geom.attributes.color;
                 out.barkHasNormal = !!bark.geom.attributes.normal;
                 out.barkManyVerts = bark.geom.attributes.position.count >= 100;
-                out.barkMatUseFlex =
-                    bark.mat && bark.mat.userData && bark.mat.userData.useFlexAttr !== undefined
-                        ? bark.mat.userData.useFlexAttr === true
-                        : true; // useFlexAttr ist opts-only, nicht userData-propagiert; akzeptiere
                 // T7: localMatrix Identity
                 const elems = bark.localMatrix.elements;
                 out.barkIdentity =
@@ -35820,7 +35852,8 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 // T8: foliage falls vorhanden
                 if (flat.leaves.length > 1) {
                     const fol = flat.leaves[1];
-                    out.foliageHasFlex = !!fol.geom.attributes.aFlex;
+                    out.foliageUngelesen = ungelesen(fol, ["position", "normal", "color", "uv", "aH0", "aH0L"]);
+                    out.foliageImWind = imWind(fol);
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
                     // Die Krone ist Vorlagen-Geometrie aus der EINEN phyto-core-Quelle: EIN Element je Phyto-Blatt, die
@@ -35866,7 +35899,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check("V18.214 (T1a) _buildTreeTubeGeometry existiert", res.tubeBuilderExists === true);
     check("V18.214 (T1b) _buildTreeFoliageCardGeometry existiert", res.cardBuilderExists === true);
     check("V18.214 (T1c) _buildTreeSkeletonLeaves existiert", res.skelLeavesExists === true);
-    check("V18.214 (T1d) _mergeAttributedGeometries existiert", res.mergeAttrExists === true);
     check(
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
@@ -35878,7 +35910,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
-    check("V18.214 (T2) _buildToonNodeMaterial liest aFlex Attribut bei useFlexAttr", res.swayReadsFlexAttr === true);
+    check("K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)", res.skelettWindDaten === true);
     check(
         "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
         res.spawnReadsSlopeHeight === true
@@ -35901,13 +35933,18 @@ async function checkBandV18214SkeletonMesh(ctx) {
         `V18.214 (T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
         res.flatLeavesFew === true
     );
-    check(`V18.214 (T6a) bark-Geom trägt aFlex (gemessen ${res.barkVerts} verts)`, res.barkHasFlex === true);
-    check("V18.214 (T6b) bark-Geom trägt aPhase", res.barkHasPhase === true);
+    check(
+        `K19 (T6a) die Rinde schwingt im Wind-Term ihres Stoffs, die Geometrie trägt nur Gelesenes (${res.barkVerts} verts, ungelesen: ${(res.barkUngelesen || []).join(" · ") || "—"})`,
+        res.barkImWind === true && Array.isArray(res.barkUngelesen) && res.barkUngelesen.length === 0
+    );
     check("V18.214 (T6c) bark-Geom trägt color", res.barkHasColor === true);
     check("V18.214 (T6d) bark-Geom trägt normal", res.barkHasNormal === true);
     check("V18.214 (T6e) bark-Geom hat ≥100 Vertices (Ring-of-6 pro Punkt)", res.barkManyVerts === true);
     check("V18.214 (T7) bark-Leaf localMatrix ist Identity", res.barkIdentity === true);
-    check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
+    check(
+        `K19 (T8a) das Laub schwingt im Wind-Term seines Stoffs, die Geometrie trägt nur Gelesenes (${res.foliageVerts} verts, ungelesen: ${(res.foliageUngelesen || []).join(" · ") || "—"})`,
+        res.foliageImWind === true && Array.isArray(res.foliageUngelesen) && res.foliageUngelesen.length === 0
+    );
     check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
         `V18.386/.390 Neues Kleid/Eins W4: foliage-Vertex-Count = anchors·4 (Quad) oder anchors·30 (L0-Klinge): ${res.foliageVerts}/${res.skelAnchorCount}`,
@@ -37489,23 +37526,23 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const sigs = {
             boden: { vertexColors: true, side: THREE.DoubleSide },
             fels: { vertexColors: true, vertexColorAlbedo: true, color: 0x8a8a8a },
-            rinde: { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide },
+            rinde: { vertexColors: true, pflanzenStoff: true, bark: true, side: THREE.DoubleSide },
             laub: {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true,
                 side: THREE.DoubleSide,
             },
             klinge: {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true,
                 foliageBlade: true,
                 side: THREE.DoubleSide,
             },
-            kern: { vertexColors: true, useInstanceTint: true, useFlexAttr: true },
+            kern: { vertexColors: true, useInstanceTint: true, pflanzenStoff: true },
         };
         out.farbeQuadrat = [];
         out.farbeOhneNode = [];
@@ -37636,11 +37673,11 @@ async function checkBandWahrerAnblickFels(ctx) {
             layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false)
         );
 
-        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
+        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !pflanzenStoff)
         // V18.236 (§2): der EINE Builder ist PBR; die Gate-Probe liest ihn.
         const pbrSrc = window.__codeOf(r._buildPbrNodeMaterial);
-        out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(pbrSrc);
-        out.pbrGeologyGated = /!opts\.useFlexAttr/.test(pbrSrc);
+        out.geologyGated = /!opts\.pflanzenStoff.*_terrainGeologyAlbedo/s.test(pbrSrc);
+        out.pbrGeologyGated = /!opts\.pflanzenStoff/.test(pbrSrc);
 
         // (F) Version
         out.versionStr = A.VERSION;
@@ -37669,10 +37706,10 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
     check(
-        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !useFlexAttr (Toon, kein Fels auf Rinde)",
+        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !pflanzenStoff (Toon, kein Fels auf Rinde)",
         res.geologyGated === true
     );
-    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !useFlexAttr (PBR)", res.pbrGeologyGated === true);
+    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !pflanzenStoff (PBR)", res.pbrGeologyGated === true);
 
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
@@ -37872,8 +37909,14 @@ async function checkBandWahrerAnblickLaub(ctx) {
         const out = {};
 
         // (A) CONSUM Source-Probes
+        // Die Maserung lebt im Kern (phyto-core buildBarkTubeArrays); die Welt-Tube ruft ihn (K19: der Inline-Zwilling fiel).
         const tubeSrc = window.__codeOf(r._buildTreeTubeGeometry);
-        out.barkGrain = /grainFreq/.test(tubeSrc) && /Math\.sin\(i \* grainFreq\)/.test(tubeSrc);
+        const kernTube = globalThis.__phytoCore && globalThis.__phytoCore.buildBarkTubeArrays;
+        const kernSrc = typeof kernTube === "function" ? window.__codeOf(kernTube) : "";
+        out.barkGrain =
+            /_core\.buildBarkTubeArrays\(/.test(tubeSrc) &&
+            /grainFreq/.test(kernSrc) &&
+            /Math\.sin\(i \* grainFreq\)/.test(kernSrc);
         const cardSrc = window.__codeOf(r._buildTreeFoliageCardGeometry);
         out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
         out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
@@ -38551,21 +38594,27 @@ async function checkBandKonvergenzTierBaum(ctx) {
             }
             out.arten[art] = a;
         }
-        // (3) CONSUM — der Chokepoint geht den CPG-Gang: das KNIE faltet (die
-        // Lab-Mathe legt das Leben in die Unter-Gelenke, die Wurzel schwingt
-        // subtil), das diagonale Gegenbein zieht negativ. Das Gang-Gesetz (Welle 5)
-        // misst die Geschwindigkeit aus dem WEG des Leibs: der Leib läuft wie im
-        // Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s), gewertet wird die zweite
-        // Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet nicht.
+        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die
+        // Lab-Mathe legt das Leben in die Unter-Gelenke) und das Gegenbein schwingt.
+        // Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG des Leibs:
+        // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
+        // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
+        // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
+        // schwingt nicht. Bis K07 lief der Leib quer zu seinem Blick, und das Gegenbein
+        // musste beim Knie-Maximum negativ stehen — ein Zeichen des Querlaufs: längs
+        // des Blicks stand es schon vor K07 bei +0,05, seit dem weltfesten Anker (K07)
+        // bei +0,97 rad. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
         const trabLauf = (v) => {
             const g2 = r._buildCreatureGroup("wolf");
             if (!g2 || !g2.userData._tierBaum) return null;
             const T = g2.userData._tierBaum.teile;
             if (!T.flL || !T.legFR) return (r._disposeSoulGroup(g2), null);
+            g2.rotation.y = Math.PI / 2;
             let t = 0.5,
                 knieMin = Infinity,
                 knieMax = -Infinity,
-                gegenBeiKnieMax = 0;
+                gegenMin = Infinity,
+                gegenMax = -Infinity;
             for (let i = 0; i < 60; i++) {
                 g2.position.x += v / 60;
                 t += 1 / 60;
@@ -38573,18 +38622,17 @@ async function checkBandKonvergenzTierBaum(ctx) {
                 if (i < 30) continue;
                 const k = T.flL.rotation.x;
                 knieMin = Math.min(knieMin, k);
-                if (k > knieMax) {
-                    knieMax = k;
-                    gegenBeiKnieMax = T.legFR.rotation.x;
-                }
+                knieMax = Math.max(knieMax, k);
+                gegenMin = Math.min(gegenMin, T.legFR.rotation.x);
+                gegenMax = Math.max(gegenMax, T.legFR.rotation.x);
             }
             r._disposeSoulGroup(g2);
-            return { falte: knieMax - knieMin, gegen: gegenBeiKnieMax };
+            return { falte: knieMax - knieMin, gegen: gegenMax - gegenMin };
         };
         const lauf = trabLauf(1.6);
         const stand = trabLauf(0);
         out.trabZahlen = { lauf, stand };
-        out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen < 0 && stand.falte < 0.05);
+        out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen > 0.3 && stand.falte < 0.05 && stand.gegen < 0.05);
         // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
         // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
         // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
@@ -38641,8 +38689,9 @@ async function checkBandKonvergenzTierBaum(ctx) {
     }
     const tz = res && res.trabZahlen;
     const f3 = (x) => (x && Number.isFinite(x.falte) ? x.falte.toFixed(2) : "?");
+    const g3 = (x) => (x && Number.isFinite(x.gegen) ? x.gegen.toFixed(2) : "?");
     check(
-        `KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal; Knie-Falte Lauf ${f3(tz && tz.lauf)} > 0,3, Stand ${f3(tz && tz.stand)} < 0,05)`,
+        `KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (Knie-Falte Lauf ${f3(tz && tz.lauf)} > 0,3, Stand ${f3(tz && tz.stand)} < 0,05; Gegenbein-Schwung Lauf ${g3(tz && tz.lauf)} > 0,3, Stand ${g3(tz && tz.stand)} < 0,05)`,
         res && res.trab === true
     );
     check(
@@ -41680,7 +41729,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
         // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft
-        // `_chunkSurfaceAt` die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
+        // `_bodenSichtAt` (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
         // zeigt oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben (gemessen 01.10.: Spawn-Chunk
         // Median 45 cm, 8 % ≤ 5 cm; Mess-Wiese ±0,22 m) — Gras und Streu darauf steckten im Boden.
         // DIE NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
@@ -41699,7 +41748,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 for (let i = 0; i < 256; i++) {
                     const x = (lpc.cx + 0.05 + 0.9 * ((i * 0.618034) % 1)) * cfg.span;
                     const z = (lpc.cz + 0.05 + 0.9 * ((i * 0.381966 + 0.17) % 1)) * cfg.span;
-                    const y = r._chunkSurfaceAt(e, lpc.cx, lpc.cz, x, z);
+                    const y = r._bodenSichtAt(x, z);
                     if (y === null) continue;
                     rc.set(new THREE.Vector3(x, y + 50, z), new THREE.Vector3(0, -1, 0));
                     const h = rc.intersectObject(m, false);
@@ -41735,9 +41784,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const b1 = r._nahWieseKachelBueschel(tx, tz);
             const b2 = r._nahWieseKachelBueschel(tx, tz);
             const fuss = (b) => {
-                const cx = Math.floor(b.x / cfg.span);
-                const cz = Math.floor(b.z / cfg.span);
-                const y = r._chunkSurfaceAt(r.state.voxelChunks.get(cx + "," + cz), cx, cz, b.x, b.z);
+                const y = r._bodenSichtAt(b.x, b.z);
                 return y !== null && Math.abs(y - b.y) < 1e-6;
             };
             out.nahWieseStabil =
@@ -42597,11 +42644,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //    sind entfernt; es gibt keinen Body mehr, der „schlafen" könnte. Der Spieler
         //    läuft feld-nativ aus `_stepCharacter`. Die Sleep-Probe ist gestrichen.)
 
-        // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
-        //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
+        // 2. 3rd-Person-Kamera — Kollisions-Wurf in der Kamera-Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera;
+        //    K06: der Wurf ist die Kugel der Kamera (`_fieldRaycast` mit `radius`), nicht mehr der Ammo-Rückruf.
         {
             const src = srcOf("_loopCamera");
-            out.cameraRaycast = /cameraMode === "third"/.test(src) && /get_m_hitPointWorld/.test(src);
+            out.cameraRaycast =
+                /cameraMode === "third"/.test(src) &&
+                /this\._fieldRaycast\(tx, ty, tz, camX, camY, camZ, \{[^}]*radius: kr/.test(src);
         }
 
         // 3. Loch-Durchfall: `carveVoxelSphere` braucht keinen Höhen-Clamp (das 3D-Feld kennt keine
@@ -54179,18 +54228,25 @@ async function checkBandRing5Soul(ctx) {
         const statusEl = document.getElementById("status-soul");
         out.statusBarShowsLabel = statusEl && /Wolf/.test(statusEl.textContent || "");
 
-        // V2-Animation: Beine/Flügel reagieren auf walkPhase + isMoving.
-        // Wir lassen walkPhase manuell vorrücken und prüfen, dass
-        // Mensch-Beine ihre rotation.x ändern.
+        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz (K07). Der Schritt kommt aus dem EINEN
+        // Gang-Tick (`_gaitTick`, derselbe Chokepoint wie Peer und Bewohner): 1 s Gehen mit 1,15 m/s, die Beine müssen
+        // ihre rotation.x ändern. Ohne Schritt (kein gait) schwingt seit K07 kein Bein mehr — der Sinus um einen 3,4-m-
+        // Schritt fiel; der direkte Aufruf ohne gait maß diesen Zwilling.
         r.applyPlayerSoul("human");
         const humanGroup = currentMesh();
         const leftLegRotInitial = humanGroup.userData.parts.leftLeg.rotation.x;
-        // Direkter Aufruf der Animations-Funktion mit isMoving=true
-        // umgeht die isMoving-Detection (player ruht im Test).
         const def = r.playerSoulDefs.human;
-        def.animate(humanGroup, 0, Math.PI / 2, true);
-        const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
-        out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
+        const gangHalter = { walkPhase: 0 };
+        let leftLegAusschlag = 0;
+        for (let i = 0; i < 60; i++) {
+            const gait = r._gaitTick(humanGroup, gangHalter, 1.15, 1 / 60, null);
+            def.animate(humanGroup, i / 60, gangHalter.walkPhase, true, false, undefined, gait);
+            leftLegAusschlag = Math.max(
+                leftLegAusschlag,
+                Math.abs(humanGroup.userData.parts.leftLeg.rotation.x - leftLegRotInitial)
+            );
+        }
+        out.humanWalkAnimationMoves = leftLegAusschlag > 0.1;
 
         // Die FLÜGEL-Rolle flattert im Idle durch den EINEN Kern (_animateCompoundMotion) über den echten
         // Spieler-Pfad (geflügelte Custom-Seele als Literal-Fixture). Emotionen NEUTRALISIEREN — Warmup-
@@ -54381,8 +54437,9 @@ async function checkBandRing5Soul(ctx) {
 
     // Pitch-Inversion + Boden-Clamp im 3rd-Modus: Maus hoch (pitch positiv) SENKT die Kamera; bei
     // extremem Pitch taucht sie nie unter den Boden. Loop synchron treiben (Headless-rAF ~1 Hz).
-    // Gelesen wird `_cameraDesiredY` (reine Pitch-Mathematik inkl. Boden-Clamp), NICHT camera.position.y
-    // — die Kamera-Kollision zieht je nach Umgebung ein (eigenes Feature, nicht deterministisch).
+    // Gelesen wird `_cameraDesiredY` (reine Pitch-Mathematik inkl. Boden-Deckel), NICHT camera.position.y
+    // — die Kamera-Kollision zieht je nach Umgebung ein (eigenes Feature, nicht deterministisch). Der Deckel ist der
+    // SICHTBARE Boden + der Radius der Kamera-Kugel (`_kamBodenY`, K06), nicht mehr die Füße − 0,2 m.
     const setPitchAndRead = async (pitch) => {
         return await page.evaluate((p) => {
             const r = window.anazhRealm;
@@ -54396,13 +54453,18 @@ async function checkBandRing5Soul(ctx) {
                 r.state._fieldVy = 0;
             }
             if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
-            return r.state._cameraDesiredY - r.state.playerMesh.position.y;
+            const st = r.state;
+            return {
+                d: st._cameraDesiredY - st.playerMesh.position.y,
+                boden: st._cameraDesiredY - st._kamBodenY,
+                bodenUeberFuss: st._kamBodenY - (st.playerMesh.position.y - 0.5),
+            };
         }, pitch);
     };
-    const upDelta = await setPitchAndRead(Math.PI / 6);
-    const clampedDelta = await setPitchAndRead(Math.PI / 2 - 0.1);
-    const downDelta = await setPitchAndRead(-Math.PI / 6);
-    const cameraPitch = { upDelta, clampedDelta, downDelta };
+    const upDelta = (await setPitchAndRead(Math.PI / 6)).d;
+    const geklemmt = await setPitchAndRead(Math.PI / 2 - 0.1);
+    const downDelta = (await setPitchAndRead(-Math.PI / 6)).d;
+    const cameraPitch = { upDelta, geklemmt, downDelta };
     await page.evaluate(() => {
         const r = window.anazhRealm;
         r.setCameraMode("first");
@@ -54439,7 +54501,7 @@ async function checkBandRing5Soul(ctx) {
     }
     if (cameraPitch) {
         // Mit height=2.0 und dist=6: pitch=+30° → cam-player = 2-3 = -1.
-        // pitch=-30° → cam-player = 2+3 = 5. clamp greift bei -0.2.
+        // pitch=-30° → cam-player = 2+3 = 5. Der Deckel greift am sichtbaren Boden + r (K06).
         check(
             "Ring 5 V2-Prep: Pitch invertiert — Maus hoch senkt Kamera (3rd)",
             cameraPitch.upDelta < 2,
@@ -54451,9 +54513,11 @@ async function checkBandRing5Soul(ctx) {
             `cam-player=${cameraPitch.downDelta.toFixed(2)} (Erwartung > 2)`
         );
         check(
-            "Ring 5 V2-Prep: Boden-Clamp greift bei extremem Pitch",
-            cameraPitch.clampedDelta >= -0.21,
-            `cam-player=${cameraPitch.clampedDelta.toFixed(2)} (≥ -0.2 erwartet)`
+            "Ring 5 V2-Prep: Boden-Deckel greift bei extremem Pitch (sichtbarer Boden + Kugel-Radius)",
+            Math.abs(cameraPitch.geklemmt.boden) < 0.001 &&
+                cameraPitch.geklemmt.bodenUeberFuss > -1.2 &&
+                cameraPitch.geklemmt.bodenUeberFuss < 1.2,
+            `Wunsch − Deckel = ${Number(cameraPitch.geklemmt.boden).toFixed(3)} (0 erwartet), Deckel über den Füßen ${Number(cameraPitch.geklemmt.bodenUeberFuss).toFixed(2)} m (±1,2)`
         );
     }
 }

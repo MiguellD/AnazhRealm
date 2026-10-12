@@ -22,6 +22,10 @@
 //   schwebt    er liegt, wo sein Leib stand: die Wurzel der Tod-Lage höchstens 0,1 m über dem Stand-Boden (ein Tod im
 //              Sprung legte ihn auf die Höhe des Hüpfers)
 //   abschied   nach der Frist ist er fort (nicht in state.leichname, nicht in der Szene)
+//   last       die Traglast fällt an den Schöpfer zurück (K13): je Gefallenem mit Last ihr Holz im Inventar des Spielers und
+//              EIN Eintrag im Journal — vorher stand der Satz im Code, gemessen war er nie
+//   raeumen    EINE Räum-Methode der Zeichen (K13): nur _leibZeichenFrei nimmt Aura und Traglast-Sprite aus der Szene und gibt
+//              ihr Material frei — vorher räumten _refreshCreatureTaskAura und _refreshCreatureCarryingVisual in eigenen Kopien
 // SELBST-TEST (im selben Boot): je Täter der alte Defekt eingespielt — jede Probe muss ROT lesen, aus ihrem Grund.
 //   node scripts/diag-tod-zensus.cjs [--ohne-selbsttest]
 "use strict";
@@ -63,11 +67,15 @@ function todZensus(r, T, taeter) {
     const o = { taeter: taeter || null };
     try {
         // der Ort: Spieler P, Tier A 2 m vor ihm, Tier B 40 m — dieselbe Linie, damit ein Blick beide fasst; nach dem Wechsel
-        // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben.
+        // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben: die gezeichnete
+        // Boden-Karte (`_bodenSichtAt`) liegt dort, höchstens 0,3 m neben dem Gesetz. Vor K07 las der Stand-Leser im Rand-Streifen
+        // der Chunk-Zeile z = 0 (der Start) und ohne Karte den Träger — |Sicht − Gesetz| = 0 war dort geschenkt; ehrlich gelesen
+        // liegt die beste 42-m-Linie um den Start bei 0,23 m.
         const trocken = (x, z) => {
             if (!r._landAt(x, z)) return false;
             const gy = r.getTerrainHeightAt(x, z);
-            return Number.isFinite(gy) && Math.abs(r._standSicht(x, z, gy, false) - gy) < 0.15;
+            const k = r._bodenSichtAt(x, z);
+            return Number.isFinite(gy) && Number.isFinite(k) && Math.abs(k - gy) < 0.3;
         };
         let ort = null;
         for (let ring = 0; ring < 12 && !ort; ring++)
@@ -221,6 +229,33 @@ function todZensus(r, T, taeter) {
                         return alt.call(this, c, ...rest);
                     }
             );
+        if (taeter === "last")
+            // der Fall, in dem die Last verfällt (vorher: der Satz ohne Messung — ein Fall ohne Rückgabe sähe niemand)
+            decke(
+                "_kreaturFaellt",
+                (alt) =>
+                    function (c, ...rest) {
+                        if (c && c.userData) c.userData.carrying = null;
+                        return alt.call(this, c, ...rest);
+                    }
+            );
+        if (taeter === "raeumen")
+            // die Aura räumt wieder in ihrer eigenen Kopie (vorher: _refreshCreatureTaskAura neben _leibZeichenFrei)
+            decke(
+                "_refreshCreatureTaskAura",
+                (alt) =>
+                    function (c) {
+                        const ud = c && c.userData;
+                        const aura = ud && ud.taskAura;
+                        if (aura && !this._getCreatureTask(c)) {
+                            if (this.state.scene) this.state.scene.remove(aura);
+                            if (aura.material) this._queueDispose(aura.material);
+                            ud.taskAura = null;
+                            return;
+                        }
+                        return alt.call(this, c);
+                    }
+            );
         if (taeter === "kopie")
             // die Kopie beim Mitspieler ohne die Sicht des Leibs (vorher: jede Kopie in jeder Ferne die volle Gestalt)
             decke(
@@ -308,10 +343,63 @@ function todZensus(r, T, taeter) {
         for (let k = 0; k < 60 && !(tB.userData._hopH > 0.3 && !(tB.userData._hopV > 0)); k++) takt(); // im Scheitel
         hop = tB.userData._hopH || 0;
         o.hopBeimTod = +hop.toFixed(3);
+        // DIE LAST FÄLLT ZURÜCK (K13): das Holz, das der Fall selbst (_kreaturFaellt — die Beute des Kampfs kommt davor) ins
+        // Inventar des Spielers legt, und die Einträge im Journal
+        const holz = () =>
+            (s.player.inventory || []).reduce(
+                (a, sl) => a + (sl && sl.kind === "material" && sl.material === "holz" ? sl.count || 0 : 0),
+                0
+            );
+        let lastJournal = 0;
+        decke(
+            "journalAppend",
+            (alt) =>
+                function (typ, text, ...rest) {
+                    if (/fällt an dich zurück/.test(String(text))) lastJournal++;
+                    return alt.call(this, typ, text, ...rest);
+                }
+        );
+        let holzZurueck = 0;
+        decke(
+            "_kreaturFaellt",
+            (alt) =>
+                function (c, ...rest) {
+                    const vor = holz();
+                    try {
+                        return alt.call(this, c, ...rest);
+                    } finally {
+                        holzZurueck += holz() - vor;
+                    }
+                }
+        );
+        const lastSoll = ALLE.reduce(
+            (a, [, c]) => a + ((c.userData.carrying && c.userData.carrying.materials.holz) || 0),
+            0
+        );
         r._creatureNaturalDeath(tA);
         const kill = r.damageCreature(tB, 1e9, { source: "player" });
         tC.visible = false;
         r._creatureNaturalDeath(tC);
+        o.last = { soll: lastSoll, zurueck: holzZurueck, journal: lastJournal };
+        // EINE RÄUM-METHODE (K13): welche Methode der Welt nimmt ein Zeichen über dem Leib aus der Szene und gibt sein
+        // Material frei (der Code ohne Kommentare: _queueDispose und das Feld taskAura | carryingSprite)?
+        const namen = new Set([...Object.getOwnPropertyNames(A.prototype), ...Object.keys(r)]);
+        namen.delete("constructor"); // die Klasse selbst trägt jede Methode
+        o.raeumer = [...namen]
+            .filter((nm) => {
+                let f;
+                try {
+                    f = r[nm];
+                } catch (_e) {
+                    return false;
+                }
+                if (typeof f !== "function") return false;
+                const code = String(f)
+                    .replace(/\/\*[\s\S]*?\*\//g, "")
+                    .replace(/\/\/[^\n]*/g, "");
+                return /_queueDispose\(/.test(code) && /taskAura|carryingSprite/.test(code);
+            })
+            .sort();
         o.tot = { A: istTot(tA), B: istTot(tB) && !!(kill && kill.killed), C: istTot(tC) };
         // DIE TOD-LAGE: jeder Gefallene trägt seine Hebe-Tafel (die Flanke legt sich auf den Hang, nie in ihn)
         o.lage = {};
@@ -501,6 +589,8 @@ function todZensus(r, T, taeter) {
 
 // ═══ DAS URTEIL (pure Funktion) ═══
 const KLASSEN = [
+    "last",
+    "raeumen",
     "stufe",
     "schatten",
     "kopie",
@@ -527,6 +617,14 @@ function urteil(z) {
     const kg = z.kopieGeprueft || { nah: 0, fern: 0 };
     if (!(kg.nah >= 300 && kg.fern >= 300))
         v.push(`vakuös: ${kg.nah} nahe und ${kg.fern} ferne Takte der Kopie geprüft (Soll je ≥ 300)`);
+    if (!z.last || !(z.last.soll >= 9))
+        v.push(`vakuös: die Gefallenen trugen ${z.last ? z.last.soll : "–"} Holz (Soll 9)`);
+    else if (z.last.zurueck !== z.last.soll || z.last.journal !== 3)
+        v.push(
+            `last: von ${z.last.soll} Holz der Gefallenen fielen ${z.last.zurueck} an den Spieler zurück, ${z.last.journal} von 3 Journal-Einträgen`
+        );
+    if (!Array.isArray(z.raeumer) || z.raeumer.join() !== "_leibZeichenFrei")
+        v.push(`raeumen: die Zeichen räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode (_leibZeichenFrei)`);
     for (const k of KLASSEN) if (z.verstoss && z.verstoss[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
     return { ok: v.length === 0, grund: v.join(" · ") };
 }
@@ -539,6 +637,8 @@ const TAETER = [
     ["sprung", /schwebt/],
     ["wesen", /wesen:/],
     ["stimme", /stimme:/],
+    ["last", /last:/],
+    ["raeumen", /raeumen:/],
 ];
 
 const mime = {

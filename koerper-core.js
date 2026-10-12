@@ -545,10 +545,43 @@
                         // gemerkt, feuert beim Aufsetzen). Byte-gleich zum
                         // historischen Host-Satz (0.3 / 0.12).
                         sprung: { coyoteSec: 0.3, bufferSec: 0.12 },
-                        // GANG-KALIBRIERUNG (Zensus 17.07., rein additiv): der
-                        // Schrittlaengen-Faktor der distance-matched Phase
-                        // (Schritt = kalib * gebaute Beinlaenge) -- eicht die
-                        // Welt-Optik auf ~5.5 rad/s beim Basistempo. Byte-gleich 4.0.
+                        // DIE GANG-ZEILE DES ZWEIBEINERS (K07, Vertrags-Akt): die
+                        // Zahlen des EINEN Gang-Gesetzes (tetrapoda gangSchritt/
+                        // gangFuss, dieselbe Formel wie die Tiere) fuer den Menschen
+                        // -- Schrittlaenge je Zyklus L*(schrittBasis + schrittFroude*
+                        // v/sqrt(g*L)) mit L = gebaute Beinlaenge, der Tastgrad vom
+                        // Gehen (0.6) zum Laufen (0.39) um Fr = laufFroude (Alexander
+                        // 2004), maxWinkel deckelt den Fussweg (2*L*tan: +-27 Grad
+                        // Bein-Winkel: die Huefte sinkt im Lauf <= 0.25 L; im Lauf
+                        // faellt der Tastgrad mit dem Tempo, Weyand 2000), hub*L hebt den Fuss im Schwung (laufend
+                        // hubLauf*L), beckenHub*L hebt das Becken ueber der Mitte des
+                        // Stands (Gard 2004: 4-5 cm; tetrapoda gangBecken). Geeicht
+                        // auf 1.34 m/s ~ 1.9 Schritte/s bei 0.7 m und 6 m/s ~ 3
+                        // Schritte/s (Weidmann 1993). Der Eich-Faktor des
+                        // Schritt-Blocks (Schritt 3.4 m, 0.34 Schritte/s) faellt.
+                        gang: {
+                            schrittBasis: 0.78,
+                            schrittFroude: 1.89,
+                            tastgrad: 0.6,
+                            tastgradLauf: 0.39,
+                            laufFroude: 0.5,
+                            maxWinkel: 0.47,
+                            hub: 0.12,
+                            hubLauf: 0.3,
+                            hubForm: 0.5,
+                            beckenHub: 0.05,
+                            // DAS ABROLLEN (tetrapoda gangRolle/gangVersatz): ab
+                            // der Mitte des Stands hebt die Ferse, der Fuss rollt
+                            // bis 0.7 rad (40 Grad) ueber den Ballen; ballen und
+                            // knoechel sind der gebaute Fuss je Reichweite der
+                            // Kette (Ballen 0.46 E vor, Sohle 0.30 E unter dem
+                            // Knoechel bei 2.946 E Bein). Die Senke des Gehens
+                            // faellt so von 0.105 auf 0.047 R (Gard 2004: 4-5 cm).
+                            rollWinkel: 0.7,
+                            fersenAb: 0.5,
+                            ballen: 0.16,
+                            knoechel: 0.1,
+                        },
                         // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
                         // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
                         // Rig-Gaenge (rad/s; war der divergente Stamm-Zwilling
@@ -557,7 +590,7 @@
                         // klangTempoMin = die Schritt-Klang-Schwelle (m/s --
                         // darunter feuert kein Schritt-Burst; die Timbre-Tabelle
                         // wohnt im klang-Gesetzbuch SCHRITT_TIMBRE).
-                        schritt: { kalib: 4.0, taktCompound: 5.5, klangTempoMin: 0.9 },
+                        schritt: { taktCompound: 5.5, klangTempoMin: 0.9 },
                         // AKTIONS-AUSDAUER (Zensus 17.07., rein additiv): die
                         // Ausdauer-Kosten EINER Maus-Arm-Aktion (Hieb/Abbau/
                         // Platzieren) im Pfad-Modus -- reist wie ausdauerProS/
@@ -580,6 +613,15 @@
                         // die Auge-folgt-Koerper-Glaettung. Byte-gleich
                         // (0.022 / 0.32 / 2.5 / 8 / 14).
                         landung: { dipProV: 0.022, dipMax: 0.32, minTempo: 2.5, erholK: 8, kameraK: 14 },
+                        // DER LEIB DER KAMERA (K06, rein additiv): die 3rd-Kamera ist
+                        // eine Kugel vom Radius armRadiusM (m) -- sie haelt absolut so
+                        // weit vor jeder Flaeche und ueber dem sichtbaren Boden (Wirt:
+                        // _loopCamera, der Wurf _fieldRaycast radius; Lab: die Strecke
+                        // Blickziel -> Kamera gegen die Park-Boxen, in Lab-Massen);
+                        // armRuhe der Rest je Sekunde, den der Arm frei noch vor sich
+                        // hat (Wirt: der gleitende Arm; Lab: die Kamera-Glaettung).
+                        // Byte-gleich zum Wirt-Literal KAMERA_ARM_RUHE (0.0016).
+                        kamera: { armRadiusM: 0.3, armRuhe: 0.0016 },
                     },
                     // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
                     // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE

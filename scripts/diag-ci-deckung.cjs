@@ -47,6 +47,14 @@
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
 // integ-probe, Merge-Regel entscheidung.md §2.8) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
 //
+// DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10. nachts). Befund: K15 kam mit grüner Zweig-CI an und fiel erst am
+// Merge im vollen playtest (RAUSCH-GESETZ (B), ein verborgener Fn-Rumpf) — `npm run playtest` lief in keiner Gruppe, nur
+// nächtlich in playtest-full.yml (blockt keinen Merge, auf main 86–112 s je Lauf). (W) sah ihn nie: er ist kein gate:*.
+//   (P) PLAYTEST  der volle Playtest (`npm run playtest`) läuft in GENAU einem Schritt aller Workflows, in einer EIGENEN
+//                Gruppe der vollen Batterie, sein Rot hält den Merge, und das Verdikt ist die Bedingung: der letzte Befehl
+//                des Schritts greift „Alle Invarianten OK" aus dem Log, das `tee` aus dem Playtest schrieb (ein grüner
+//                Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet der Playtest mit 0 trotz verletzter Invarianten).
+//
 //   node scripts/diag-ci-deckung.cjs [--selftest] [--gegen <git-ref>]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
 const fs = require("fs");
@@ -287,7 +295,7 @@ function ciSchritte(docs, skripte) {
                     (j.defaults && j.defaults.run && j.defaults.run.shell) ||
                     (doc.defaults && doc.defaults.run && doc.defaults.run.shell);
                 const teile = aufloesen(s.run, skripte, erreicht, 0, shellArt(shell), schrittStumm(datei, doc, job, j, s));
-                out.push({ datei, job, name: name(s), teile, erreicht });
+                out.push({ datei, job, name: name(s), teile, erreicht, schritt: s, jobDef: j, shell: shellArt(shell) });
             }
     return out;
 }
@@ -362,6 +370,61 @@ function deckung(skripte, docs, ausnahmen) {
     }
     return { v, zahl };
 }
+// (P) DER VOLLE PLAYTEST: genau ein Träger in allen Workflows, eine eigene Gruppe der vollen Batterie, sein Rot hält den
+// Merge, das Verdikt ist die Bedingung (der letzte Befehl greift es aus dem Log, das tee aus dem Playtest schreibt).
+const PLAYTEST = "playtest";
+const VERDIKT = "Alle Invarianten OK";
+const gruppeVon = (s) => {
+    const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
+    return m ? Number(m[1]) : null;
+};
+function playtestUrteil(docs, skripte) {
+    const v = [];
+    const ziel = aufloesen(`npm run ${PLAYTEST}`, skripte).map((t) => t.t);
+    const traeger = ciSchritte(docs, skripte).filter(
+        (s) => s.erreicht.has(PLAYTEST) || (ziel.length > 0 && ziel.every((t) => s.teile.some((x) => x.t === t)))
+    );
+    const wo = (s) =>
+        `„${s.name}" (${s.datei}/${s.job}${gruppeVon(s.schritt) ? " Gruppe " + gruppeVon(s.schritt) : ""})`;
+    // warum ein Träger sein Rot nicht hält — null: er hält es
+    const stumm = (s) =>
+        s.erreicht.get(PLAYTEST) || (s.teile.find((x) => ziel.includes(x.t) && x.stumm) || {}).stumm || null;
+    const imVoll = traeger.filter((s) => s.datei === path.basename(DATEI) && s.job === VOLL_JOB);
+    if (!imVoll.length)
+        v.push(
+            `(P) PLAYTEST: der volle Playtest („npm run ${PLAYTEST}") läuft in keiner Gruppe der vollen Batterie — erst der ` +
+                "Integrator sähe sein Rot" +
+                (traeger.length ? ` (nur ${traeger.map((s) => wo(s) + (stumm(s) ? ": " + stumm(s) : "")).join(" · ")})` : "")
+        );
+    if (traeger.length > 1)
+        v.push(`(P) ZWILLING: der volle Playtest läuft ${traeger.length}× (${traeger.map(wo).join(" · ")}) — EIN Schritt trägt ihn`);
+    for (const s of imVoll) {
+        const g = stumm(s);
+        if (g) v.push(`(P) STUMM: ${wo(s)} fährt den vollen Playtest abgeschaltet — ${g}`);
+        const meine = gruppeVon(s.schritt);
+        const neben = (s.jobDef.steps || []).filter(
+            (x) => x !== s.schritt && x.run && !IST_VORBEREITUNG(x) && meine !== null && gruppeVon(x) === meine
+        );
+        if (neben.length)
+            v.push(
+                `(P) EIGEN: der volle Playtest teilt Gruppe ${meine} mit ${neben.map((x) => `„${name(x)}"`).join(" · ")} — er ` +
+                    "trägt eine eigene Gruppe"
+            );
+        const b = befehle(s.schritt.run, s.shell);
+        const letzter = b[b.length - 1];
+        const log =
+            letzter && !letzter.stumm && /^grep\s/.test(letzter.t) && letzter.t.includes(VERDIKT)
+                ? letzter.t.split(" ").pop()
+                : null;
+        if (!log || !b.some((x) => !x.stumm && x.t === `tee ${log}`))
+            v.push(
+                `(P) VERDIKT: ${wo(s)} urteilt ohne das Verdikt „${VERDIKT}" — ein grüner Zähler reicht nicht (der letzte ` +
+                    "Befehl greift es aus dem Log, das tee aus dem Playtest schreibt)"
+            );
+    }
+    return v;
+}
+
 function workflowsLesen() {
     const docs = {};
     for (const f of fs.readdirSync(path.join(root, WORKFLOWS)).sort())
@@ -667,7 +730,7 @@ function selbsttest() {
         `  ${ok3 ? "✅" : "❌"} Selbsttest „in npm run check gewandert" → verloren ${JSON.stringify(z3.verloren)}`
     );
     if (!ok3) f.push("(Z) ein Schritt, dessen Befehle ein anderer Schritt fährt, zählt als verloren");
-    return f.concat(selbsttestWaage(), selbsttestGegenrichtung());
+    return f.concat(selbsttestWaage(), selbsttestGegenrichtung(), selbsttestPlaytest());
 }
 
 // (T) Die Waage gegen ein Fixture — und gegen das heutige check.yml (b5eb02e9, das eingefrorene `vorher` in ci-zeiten.json):
@@ -909,6 +972,110 @@ function selbsttestGegenrichtung() {
     return f;
 }
 
+// (P) Der volle Playtest gegen ein Fixture: die gute check.yml trägt ihn allein in Gruppe 2 der vollen Batterie, mit
+// pipefail, tee und dem Verdikt als letztem Befehl.
+function selbsttestPlaytest() {
+    const skripte = {
+        playtest: "node scripts/playtest.cjs",
+        "playtest:fast": "node scripts/playtest-fast.cjs",
+        "gate:a": "node scripts/a.cjs",
+    };
+    const prep = () => [
+        { uses: "actions/checkout@v4" },
+        { uses: "actions/setup-node@v4" },
+        { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
+        { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
+    ];
+    const traeger = () => ({
+        name: "Voller Playtest",
+        if: "matrix.gruppe == 2",
+        shell: "bash",
+        run: 'npm run playtest | tee playtest-voll.log\ngrep -qx "✅ Alle Invarianten OK" playtest-voll.log\n',
+    });
+    const docs = () => ({
+        "check.yml": {
+            on: { push: {} },
+            jobs: {
+                puls: {
+                    strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
+                    "timeout-minutes": 10,
+                    steps: prep().concat([{ name: "Schnell", if: "matrix.gruppe == 1", run: "npm run playtest:fast" }]),
+                },
+                voll: {
+                    if: VOLL_WENN,
+                    strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
+                    "timeout-minutes": 30,
+                    steps: prep().concat([{ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, traeger()]),
+                },
+            },
+        },
+    });
+    const nacht = () => ({
+        on: { schedule: [{ cron: "30 3 * * *" }] },
+        jobs: { nacht: { steps: prep().concat([{ name: "Nacht-Playtest", run: "npm run playtest" }]) } },
+    });
+    const V = (d) => d["check.yml"].jobs.voll;
+    const T = (d) => V(d).steps[V(d).steps.length - 1];
+    const ohne = (d) => {
+        V(d).steps.pop();
+        V(d).strategy.matrix.gruppe = [1];
+    };
+    const faelle = [
+        ["der gute Stand", () => {}, null],
+        ["eine check.yml ohne die Gruppe", ohne, /\(P\) PLAYTEST: der volle Playtest .* läuft in keiner Gruppe/],
+        [
+            "nur nächtlich (blockt keinen Merge)",
+            (d) => {
+                ohne(d);
+                d["nacht.yml"] = nacht();
+            },
+            /\(P\) PLAYTEST: .*keiner Gruppe .*nur „Nacht-Playtest" \(nacht\.yml\/nacht\): nacht\.yml läuft nicht auf push/,
+        ],
+        [
+            "nur im Puls",
+            (d) => {
+                ohne(d);
+                d["check.yml"].jobs.puls.steps.push({ ...traeger(), if: "matrix.gruppe == 1" });
+            },
+            /\(P\) PLAYTEST: .*keiner Gruppe .*nur „Voller Playtest" \(check\.yml\/puls Gruppe 1\)/,
+        ],
+        [
+            "nur der Schnell-Playtest",
+            (d) => (T(d).run = T(d).run.replace("npm run playtest |", "npm run playtest:fast |")),
+            /\(P\) PLAYTEST: .*keiner Gruppe/,
+        ],
+        ["ein nächtlicher Zwilling", (d) => (d["nacht.yml"] = nacht()), /\(P\) ZWILLING: der volle Playtest läuft 2×/],
+        ["nur der Zähler (kein Verdikt)", (d) => (T(d).run = "npm run playtest"), /\(P\) VERDIKT: „Voller Playtest"/],
+        [
+            "das Verdikt aus einem fremden Log",
+            (d) => (T(d).run = T(d).run.replace(/OK" playtest-voll\.log/, 'OK" alt.log')),
+            /\(P\) VERDIKT: „Voller Playtest"/,
+        ],
+        ["ohne pipefail", (d) => delete T(d).shell, /\(P\) STUMM: .*vor einer Pipe ohne pipefail/],
+        [
+            "der Playtest mit || true",
+            (d) => (T(d).run = T(d).run.replace("tee playtest-voll.log\n", "tee playtest-voll.log || true\n")),
+            /\(P\) STUMM: .*„\|\| true" schluckt sein Rot/,
+        ],
+        ["continue-on-error am Schritt", (d) => (T(d)["continue-on-error"] = true), /\(P\) STUMM: .*continue-on-error/],
+        [
+            "eine geteilte Gruppe",
+            (d) => (T(d).if = "matrix.gruppe == 1"),
+            /\(P\) EIGEN: der volle Playtest teilt Gruppe 1 mit „A"/,
+        ],
+    ];
+    const f = [];
+    for (const [n, tat, soll] of faelle) {
+        const d = docs();
+        tat(d);
+        const u = playtestUrteil(d, skripte);
+        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
+        if (!ok) f.push(`(P) „${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
+    }
+    return f;
+}
+
 if (process.argv.includes("--selftest")) {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");
     const f = selbsttest();
@@ -932,8 +1099,10 @@ if (i > 0) {
     for (const r of z.verloren) v.push(`(Z) VERLOREN gegen ${ref}: „${r.split("\n")[0]}"`);
     for (const r of z.doppelt) v.push(`(Z) DOPPELT gegen ${ref}: „${r.split("\n")[0]}"`);
 }
-const g = deckung(skripte, workflowsLesen(), AUSNAHMEN);
+const alleWorkflows = workflowsLesen();
+const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
 v.push(...g.v);
+v.push(...playtestUrteil(alleWorkflows, skripte));
 const zeitenDatei = path.join(root, ZEITEN);
 const w = fs.existsSync(zeitenDatei)
     ? waage(doc, JSON.parse(fs.readFileSync(zeitenDatei, "utf8")))
@@ -961,5 +1130,5 @@ if (v.length) {
     process.exit(1);
 }
 console.log(
-    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 11 min); jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste."
+    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 11 min); jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt."
 );

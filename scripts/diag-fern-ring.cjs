@@ -104,6 +104,8 @@ const server = http.createServer((req, res) => {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.scene) return { fatal: "anazhRealm/scene kam nie" };
         const F = r.constructor.FERN_RING;
+        // je Schale ihre volle Geometrie (der Träger: das ganze Index-Muster); vor der Teilung (K16 Runde 3) je Schale ein Mesh
+        const geosVon = (f) => f.geos || f.meshes.map((m) => m.geometry);
         const p0 = { x: r.state.playerMesh.position.x, z: r.state.playerMesh.position.z };
 
         // ===== (4) HEADLESS-DEFAULT: ohne Hook entsteht KEIN Ring =====
@@ -155,11 +157,24 @@ const server = http.createServer((req, res) => {
             summeSoll += rr * F.winkel;
         }
         res.meshCount = fr.meshes.length;
-        res.vertCounts = fr.meshes.map((m) => m.geometry.attributes.position.count);
+        res.vertCounts = geosVon(fr).map((g) => g.attributes.position.count);
         res.reihen = reihenSoll;
         res.vertsDeclared =
-            res.vertCounts.every((c, s) => c === reihenSoll[s] * F.winkel) && fr.totalVerts === summeSoll;
-        res.oneMaterial = fr.meshes.every((m) => m.material === fr.material);
+            res.vertCounts.length === reihenSoll.length &&
+            res.vertCounts.every((c, s) => c === reihenSoll[s] * F.winkel) &&
+            fr.totalVerts === summeSoll;
+        // ZWEI STOFFE (K16, die Kosten an der Naht): der freie (ohne Maske und Weiche) trägt die Schalen 1, 2 und die freien
+        // Dreiecke der Schale 0, der Naht-Stoff (maskNode + depthNode) nur das Naht-Mesh der Schale 0
+        const stoffe = fr.stoffe || {};
+        res.zweiStoffe =
+            !!stoffe.frei &&
+            !!stoffe.naht &&
+            !stoffe.frei.maskNode &&
+            !stoffe.frei.depthNode &&
+            !!stoffe.naht.maskNode &&
+            !!stoffe.naht.depthNode &&
+            fr.meshes.filter((m) => m.material === stoffe.naht).length === 1 &&
+            fr.meshes.every((m) => m.material === stoffe.frei || m.material === stoffe.naht);
         res.sceneMeshes = 0;
         r.state.scene.traverse((n) => {
             if (n.isMesh && n.userData && n.userData.inventar === "fern-ring") res.sceneMeshes++;
@@ -222,14 +237,14 @@ const server = http.createServer((req, res) => {
                 law = law + (voll - law) * w - 0.3 * w;
             }
             if (naht) law = r._terrainMacroSurfaceY(sx, sz, true);
-            let expY = law < wl ? wl - F.wasserDrop : law;
+            let expY = law < wl ? wl - r._fernRingWasserTiefe() : law;
             if (row === 0) expY -= F.saumDrop;
             // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
             // Masken-Karte, Band 9).
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
-            const pos = fr.meshes[s].geometry.attributes.position;
+            const pos = geosVon(fr)[s].attributes.position;
             const okXZ = pos.getX(li) === sx && pos.getZ(li) === sz;
             const okY = Math.abs(pos.getY(li) - expY) < 0.01;
             return { ok: okXZ && okY, okXZ, okY, dy: Math.abs(pos.getY(li) - expY) };
@@ -252,6 +267,96 @@ const server = http.createServer((req, res) => {
         // SELBSTTEST: die verfälschte Erwartung (law + 0.5) MUSS rot fallen.
         const pf = probeAll(0.5);
         res.selftestRed = pf.bad === 60;
+
+        // ===== (2c) DAS EINE WASSER (1110-2, die Ufer-Klumpen): unter dem Fern-Wasser trägt der Ring kein zweites =====
+        // Lebt das Fern-Wasser, liegt jeder nasse Ring-Punkt unter dessen tiefstem Tal (Spiegel − FAR_WATER.drop − Hub);
+        // ein Punkt darüber zeigt sich in jedem tiefen Tal als dunkler Klumpen. Der Ring dieser Probe trägt ein Fern-Wasser
+        // als Stellvertreter, wenn die Seite keins gebaut hat (der Null-Renderer streamt nicht); die nassen Punkte setzt die
+        // EINE Naht (`_fernRingWasserNeu`). Der Hub liest die Wind-Zeile des Gesetzes (Konsum: ein anderer Wind im Gesetz
+        // ändert ihn im Verhältnis). Selbsttest: die alte Regel (Spiegel − wasserDrop) MUSS rot fallen.
+        {
+            // DER SPIEGEL DER PROBE AUS DER WELT (K16): trägt der Ring um den Start kein Meer (das Flussnetz-Gelände liegt dort
+            // über dem Spiegel — die Probe war leer), hebt die Probe den Spiegel auf das 10-%-Quantil seiner Höhen (die Regel ist
+            // eine Funktion des Spiegels) und legt danach jeden so genässten Punkt mit dem alten Spiegel zurück.
+            const wl0 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            let wlW = wl0;
+            {
+                const bis = Math.min(fr.totalVerts, fr.cursor);
+                const hs = [];
+                let nass0 = 0;
+                for (let g = 0; g < bis; g++) {
+                    const h = fr.farbLaw[g];
+                    if (h < wl0) nass0++;
+                    if (h === h) hs.push(h);
+                }
+                if (nass0 < 50 && hs.length) {
+                    hs.sort((a, b) => a - b);
+                    wlW = hs[Math.floor(hs.length * 0.1)];
+                }
+            }
+            res.wasserSpiegel = { welt: +wl0.toFixed(2), probe: +wlW.toFixed(2) };
+            r.state.waterLevel = wlW;
+            const FW = r.constructor.FAR_WATER;
+            const fwAlt = r.state.farWater;
+            const zaehlen = () => {
+                const tal = wlW - FW.drop - r.constructor._wasserHubM();
+                let nass = 0,
+                    klumpen = 0,
+                    hoechster = -Infinity;
+                for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++) {
+                    if (!(fr.farbLaw[g] < wlW)) continue;
+                    const pp = r._fernRingPunkt(fr, g);
+                    if (pp.s === 0 && pp.row === 0) continue; // die Saum-Tauchkante liegt ohnehin tiefer
+                    const y = geosVon(fr)[pp.s].attributes.position.getY(pp.li);
+                    nass++;
+                    if (y > tal + 1e-3) klumpen++;
+                    if (y > hoechster) hoechster = y;
+                }
+                return { nass, klumpen, tal: +tal.toFixed(2), hoechster: +hoechster.toFixed(2) };
+            };
+            const tiefe0 = Object.getPrototypeOf(r)._fernRingWasserTiefe;
+            try {
+                if (!fwAlt || !fwAlt.mesh) r.state.farWater = { mesh: { stellvertreter: true } };
+                fr.wasserTiefe = undefined;
+                r._fernRingWasserNeu(fr);
+                res.wasser = zaehlen();
+                // der eingespielte Täter: der Ring trägt sein eigenes Wasser 0,4 m unter dem Spiegel
+                r._fernRingWasserTiefe = () => F.wasserDrop;
+                fr.wasserTiefe = undefined;
+                r._fernRingWasserNeu(fr);
+                res.wasserAlt = zaehlen();
+            } finally {
+                if (r._fernRingWasserTiefe !== tiefe0) delete r._fernRingWasserTiefe;
+                r.state.farWater = fwAlt;
+                r.state.waterLevel = wl0;
+                // die Punkte, die nur der Spiegel der Probe nässte, liegen wieder auf ihrem Gesetz
+                if (wlW !== wl0)
+                    for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
+                        if (fr.farbLaw[g] < wlW && !(fr.farbLaw[g] < wl0))
+                            r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wl0);
+                fr.wasserTiefe = undefined;
+                r._fernRingWasserNeu(fr);
+            }
+            // der Hub liest den Wind: das Gesetz mit doppelter Wind-Zeile hebt ihn im Verhältnis
+            const G0 = r.constructor.Gesetz;
+            const hub0 = r.constructor._wasserHubM();
+            const WG = G0("terrain:WASSER_GESETZ", null);
+            let hubW = null;
+            try {
+                r.constructor.Gesetz = (pfad, fb) =>
+                    pfad === "terrain:WASSER_GESETZ"
+                        ? Object.assign({}, WG, { wind: [WG.wind[0] * 2, WG.wind[1] * 2] })
+                        : G0(pfad, fb);
+                hubW = r.constructor._wasserHubM();
+            } finally {
+                r.constructor.Gesetz = G0;
+            }
+            res.hub = {
+                hub: +hub0.toFixed(3),
+                wind: WG.wind,
+                hubDoppelterWind: hubW == null ? null : +hubW.toFixed(3),
+            };
+        }
 
         // ===== (3) RE-ZENTRIEREN: 400 m Teleport + Ticks pumpen =====
         const oldAnchorX = fr.anchorX;
@@ -600,7 +705,8 @@ const server = http.createServer((req, res) => {
             const cm = r.state.voxelChunkMaterial;
             const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m && m[k]);
             res.nahtSlotsChunk = slots(cm).join(",");
-            res.nahtSlotsRing = slots(fr9 && fr9.material).join(",");
+            const stoffNaht9 = fr9 && (fr9.stoffe ? fr9.stoffe.naht : fr9.material);
+            res.nahtSlotsRing = slots(stoffNaht9).join(",");
             r.state.scene.updateMatrixWorld(true);
             const ray = new T9.Raycaster();
             const ab = new T9.Vector3(0, -1, 0);
@@ -614,7 +720,8 @@ const server = http.createServer((req, res) => {
             };
             const span9 = r._voxelChunkConfig().span;
             const wl9 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
-            const ringMesh = fr9.meshes[0];
+            // die volle Schale 0 (der Träger, das ganze Index-Muster) — der Strahl trifft jedes ihrer Dreiecke, ob frei oder Naht
+            const ringMesh = new T9.Mesh(geosVon(fr9)[0], new T9.MeshBasicMaterial({ side: T9.DoubleSide }));
             // DIE RING-HÖHE ÜBER EIN FACH-RASTER (8 m): der Strahl prüft nur die Dreiecke der Schale 0, deren Kasten den Punkt
             // trägt — der Strahl gegen die ganze Schale (15 000 Dreiecke je Probe) trug den Großteil der Linsen-Zeit.
             const ringFach = new Map();
@@ -675,6 +782,7 @@ const server = http.createServer((req, res) => {
             const lochOrte = []; // die ersten Löcher beim Ort (Punkt, Chunk, Stufe)
             const durchSeite = {}; // ebenso der Durchstich: je Kante:Regel [Zahl, größte Höhe über dem Deck]
             const muendung9 = [0, 0]; // der Einschnitt am Saum (Höhle, Kanal): [Punkte, größte Höhe des Rings über dem Deck]
+            const proben13 = []; // die Punkte der Loch-Probe für die Treue der Teilung (Band 13)
             const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
             const morphF =
                 r.state.atmoUniforms && r.state.atmoUniforms.geomorph ? r.state.atmoUniforms.geomorph.value : 0;
@@ -814,6 +922,7 @@ const server = http.createServer((req, res) => {
                     }
                 for (const [x, z, seite] of punkte) {
                     const regel = typeof r._fernRingRegel === "function" ? r._fernRingRegel(fr9, x, z) : -1;
+                    proben13.push(x, z);
                     const yc = deckY(x, z);
                     if (regel === 2) {
                         loch9[1]++;
@@ -867,7 +976,7 @@ const server = http.createServer((req, res) => {
             res.durchAnteil = durch[1] ? durch[0] / durch[1] : NaN;
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
             res.maskeTreue = maske9;
-            res.maskNode = !!(fr9.material && fr9.material.maskNode);
+            res.maskNode = !!(stoffNaht9 && stoffNaht9.maskNode);
             res.regel = typeof r._fernRingRegel === "function";
             res.loch = loch9;
             res.lochZelle = lochZelle;
@@ -877,6 +986,140 @@ const server = http.createServer((req, res) => {
             res.durchSeite = durchSeite;
             res.muendung = muendung9;
             res.weiche = weiche9;
+            // ===== (12) DIE WEICHE KOSTET NUR AN DER NAHT (K16, Prüfung Runde 3) =====
+            // Die Tiefe aus dem Fragment (`depthNode`) kostet jedes Fragment, das sie schreibt, den frühen Tiefentest und die
+            // Tiefen-Kompression (Radeon 890M gpu-bank ABAB +1,28 ms je Frame, solange der EINE Ring-Stoff sie für alle drei
+            // Schalen trug). Gezählt wird je gezeichnetes Dreieck eines Stoffs mit depthNode (nicht entartet), ob in seinem
+            // Kasten ± (1½ s_max + 5 cm) eine RAND-ZELLE liegt: ein gezeichneter Chunk, dessen acht Nachbarn ihn nicht alle
+            // tragen (nicht gezeichnet oder eine andere Stufe) — nur an ihr hat der Saum (`_fernRingRegel` 1) seinen Ort. Ohne
+            // Rand-Zelle schreibt das Dreieck seine Tiefe umsonst; der Täter beim Namen: Schale und Zahl.
+            // Selbsttest: dieselbe Zählung über ALLE Ring-Dreiecke (die Weiche überall) findet Dreiecke ohne Naht.
+            {
+                const M = fr9.maske;
+                const n = M.n;
+                const i0 = M.uZelle0.value.x;
+                const j0 = M.uZelle0.value.y;
+                const B = (a, b) => a >= 0 && b >= 0 && a < n && b < n && M.daten[(b * n + a) * 4] === 255;
+                const S = (a, b) => M.daten[(b * n + a) * 4 + 1];
+                const rand = new Uint8Array(n * n);
+                let sMax = 0;
+                for (let a = 0; a < n; a++)
+                    for (let b = 0; b < n; b++) {
+                        if (!B(a, b)) continue;
+                        sMax = Math.max(sMax, S(a, b) / 10);
+                        for (let da = -1; da <= 1; da++)
+                            for (let db = -1; db <= 1; db++)
+                                if (!B(a + da, b + db) || S(a + da, b + db) !== S(a, b)) rand[b * n + a] = 1;
+                    }
+                const reich = 1.5 * sMax + 0.06; // die Teilung rechnet mit 5 cm: die Linse greift weiter
+                const amRand = (x0, x1, z0, z1) => {
+                    for (let a = Math.floor((x0 - reich) / span9) - i0; a <= Math.floor((x1 + reich) / span9) - i0; a++)
+                        for (
+                            let b = Math.floor((z0 - reich) / span9) - j0;
+                            b <= Math.floor((z1 + reich) / span9) - j0;
+                            b++
+                        )
+                            if (a >= 0 && b >= 0 && a < n && b < n && rand[b * n + a]) return true;
+                    return false;
+                };
+                const schaleVon = (g) => fr9.schalen.findIndex((sh) => sh.per === g.attributes.position.count);
+                const zaehle = (alle) => {
+                    const z = { dreiecke: 0, ohne: 0, je: {} };
+                    for (const m of fr9.meshes) {
+                        if (!alle && !(m.visible && m.material && m.material.depthNode)) continue;
+                        const g = m.geometry;
+                        const I = g.index.array;
+                        const P = g.attributes.position.array;
+                        const s = schaleVon(g);
+                        for (let t = 0; t < I.length; t += 3) {
+                            const a = I[t];
+                            const b = I[t + 1];
+                            const c = I[t + 2];
+                            if (a === b || b === c || a === c) continue;
+                            z.dreiecke++;
+                            const x0 = Math.min(P[a * 3], P[b * 3], P[c * 3]);
+                            const x1 = Math.max(P[a * 3], P[b * 3], P[c * 3]);
+                            const z0 = Math.min(P[a * 3 + 2], P[b * 3 + 2], P[c * 3 + 2]);
+                            const z1 = Math.max(P[a * 3 + 2], P[b * 3 + 2], P[c * 3 + 2]);
+                            if (amRand(x0, x1, z0, z1)) continue;
+                            z.ohne++;
+                            z.je[`Schale ${s}`] = (z.je[`Schale ${s}`] || 0) + 1;
+                        }
+                    }
+                    return z;
+                };
+                const ring = zaehle(true);
+                res.weicheKosten = zaehle(false);
+                res.weicheRing = ring.dreiecke;
+                res.weicheSelbst = ring.ohne;
+                res.weicheRandZellen = rand.reduce((s, v) => s + v, 0);
+            }
+            // ===== (13) DIE TEILUNG IST TREU (K16, die Kosten an der Naht) =====
+            // Die CPU teilt die Dreiecke der Schale 0 (`fr.teilung.klasse`): frei (0, ohne Maske und Weiche), Naht (1, die Regel des
+            // maskNode), sicher getragen (2, gar nicht gezeichnet). Treu ist sie, wenn die Regel (`_fernRingRegel`) an jedem Punkt
+            // eines freien Dreiecks 0 und eines getragenen 2 sagt — sonst stünde der Ring frei über dem Deck (der Stich) oder fehlte
+            // ohne Deck (das Loch). Geprüft an den Punkten der Loch-Probe (Kanten in Voxel-Kanten, innen) und an Ecken,
+            // Kanten-Mitten und Schwerpunkt jedes freien und getragenen Dreiecks der Bau-Zone. Selbsttest: die Naht als frei
+            // gezeichnet zeigt Stiche, die Naht verworfen zeigt Löcher.
+            {
+                const T = fr9.teilung;
+                const geo0 = geosVon(fr9)[0];
+                const I = geo0.index.array;
+                const P = geo0.attributes.position.array;
+                const treu = { proben: 0, stich: 0, loch: 0, selbstStich: 0, selbstLoch: 0, orte: [] };
+                const pruefe = (t, x, z) => {
+                    const k = T.klasse[t / 3];
+                    const regel = r._fernRingRegel(fr9, x, z);
+                    treu.proben++;
+                    if (k === 0 && regel !== 0) treu.stich++;
+                    if (k === 2 && regel !== 2) treu.loch++;
+                    if (k === 1 && regel !== 0) treu.selbstStich++;
+                    if (k === 1 && regel !== 2) treu.selbstLoch++;
+                    if (((k === 0 && regel !== 0) || (k === 2 && regel !== 2)) && treu.orte.length < 6)
+                        treu.orte.push(`(${x.toFixed(2)}|${z.toFixed(2)}) Klasse ${k} Regel ${regel}`);
+                };
+                const drin = (t, x, z) => {
+                    const ax = P[I[t] * 3];
+                    const az = P[I[t] * 3 + 2];
+                    const bx = P[I[t + 1] * 3];
+                    const bz = P[I[t + 1] * 3 + 2];
+                    const cx = P[I[t + 2] * 3];
+                    const cz = P[I[t + 2] * 3 + 2];
+                    // ein entartetes Dreieck (der Snap legt Ecken der inneren Reihen zusammen) trägt keinen Punkt
+                    if (Math.abs((bx - ax) * (cz - az) - (cx - ax) * (bz - az)) < 1e-9) return false;
+                    const d1 = (x - bx) * (az - bz) - (ax - bx) * (z - bz);
+                    const d2 = (x - cx) * (bz - cz) - (bx - cx) * (z - cz);
+                    const d3 = (x - ax) * (cz - az) - (cx - ax) * (z - az);
+                    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+                };
+                if (T && T.klasse && T.klasse.length * 3 === I.length) {
+                    for (let p = 0; p < proben13.length; p += 2) {
+                        const x = proben13[p];
+                        const z = proben13[p + 1];
+                        const liste = ringFach.get(Math.floor(x / 8) * 65536 + Math.floor(z / 8)) || [];
+                        for (const t of liste)
+                            if (drin(t, x, z)) {
+                                pruefe(t, x, z);
+                                break;
+                            }
+                    }
+                    for (let t = 0; t < I.length; t += 3) {
+                        const k = T.klasse[t / 3];
+                        if (k === 1) continue;
+                        const e = [0, 1, 2].map((q) => [P[I[t + q] * 3], P[I[t + q] * 3 + 2]]);
+                        if (Math.hypot(e[0][0] - fr9.anchorX, e[0][1] - fr9.anchorZ) > fr9.bauZoneRad) continue;
+                        for (let q = 0; q < 3; q++) {
+                            const [x, z] = e[q];
+                            const [x2, z2] = e[(q + 1) % 3];
+                            pruefe(t, x, z);
+                            pruefe(t, (x + x2) / 2, (z + z2) / 2);
+                        }
+                        pruefe(t, (e[0][0] + e[1][0] + e[2][0]) / 3, (e[0][1] + e[1][1] + e[2][1]) / 3);
+                    }
+                    treu.n = T.n;
+                }
+                res.teilung = treu;
+            }
             // ===== (10) DIE FERN-FARBE OHNE STREIFEN =====
             // Längs jeder Ring-Reihe jenseits des Karten-Horizonts (das Kronendach trägt) die gezeichnete Farbe (Boden unter
             // dem Dach zur Deckung, Saison 1): der STREIFEN-INDEX = RMS der Sprünge zum Nachbarpunkt / RMS der Sprünge über
@@ -887,7 +1130,7 @@ const server = http.createServer((req, res) => {
             const indizes = [];
             for (let s = 0; s < 2; s++) {
                 const sh = fr9.schalen[s];
-                const geo = fr9.meshes[s].geometry;
+                const geo = geosVon(fr9)[s];
                 const C = geo.attributes.color.array;
                 const K = geo.attributes.aKrone.array;
                 for (let row = 0; row < sh.reihen; row++) {
@@ -1043,8 +1286,8 @@ const server = http.createServer((req, res) => {
     }
     check("4: HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht)", out.headlessQuiet === true);
     check(
-        "1: genau 3 Schalen-Meshes in der Szene (Draw-Calls gedeckelt)",
-        out.meshCount === 3 && out.sceneMeshes === 3,
+        "1: genau 4 Ring-Meshes in der Szene — 3 Schalen und die Naht der Schale 0 (Draw-Calls gedeckelt)",
+        out.meshCount === 4 && out.sceneMeshes === 4,
         `meshes=${out.meshCount} szene=${out.sceneMeshes}`
     );
     check(
@@ -1052,7 +1295,10 @@ const server = http.createServer((req, res) => {
         out.vertsDeclared === true,
         `counts=${out.vertCounts && out.vertCounts.join("/")}`
     );
-    check("1: EIN geteiltes Material für alle Schalen", out.oneMaterial === true);
+    check(
+        "1: ZWEI Stoffe — frei (ohne Maske und Weiche) für die Schalen und Schale 0 frei, Maske + Weiche nur auf dem Naht-Mesh",
+        out.zweiStoffe === true
+    );
     check("1: sichtbar erst nach vollem Refresh + frustumCulled/Schatten aus", out.ready && out.visible && out.flags);
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
@@ -1066,6 +1312,26 @@ const server = http.createServer((req, res) => {
         `bad=${out.probesBad} worst=${out.probesWorst && out.probesWorst.toFixed(4)}`
     );
     check("SELBSTTEST: die verfälschte Erwartung (law + 0.5) fällt rot (60/60)", out.selftestRed === true);
+    const ww = out.wasser || {};
+    const wa = out.wasserAlt || {};
+    check(
+        "2c: DAS EINE WASSER — unter dem Fern-Wasser liegt jeder nasse Ring-Punkt unter dessen tiefstem Tal (keine Klumpen)",
+        ww.nass > 0 && ww.klumpen === 0,
+        `${ww.nass} nasse Punkte, Klumpen ${ww.klumpen}, tiefstes Tal ${ww.tal} m, höchster Ring-Punkt ${ww.hoechster} m, Spiegel Welt ${(out.wasserSpiegel || {}).welt} m / Probe ${(out.wasserSpiegel || {}).probe} m` +
+            (ww.klumpen ? " — TÄTER: der Ring trägt ein zweites Wasser über dem Tal des Fern-Wassers" : "") +
+            (ww.nass > 0 ? "" : " — keine nassen Punkte: die Probe wäre leer")
+    );
+    check(
+        "2c SELBSTTEST: die alte Regel (Spiegel − wasserDrop) fällt rot beim Namen",
+        wa.klumpen > 0,
+        `alt: ${wa.klumpen} von ${wa.nass} nassen Punkten über dem tiefsten Tal (${wa.tal} m), höchster ${wa.hoechster} m`
+    );
+    const hb = out.hub || {};
+    check(
+        "2c: DER HUB liest die Wind-Zeile des Gesetzes (doppelter Wind, doppelter Hub)",
+        hb.hub > 0 && hb.hubDoppelterWind != null && Math.abs(hb.hubDoppelterWind / hb.hub - 2) < 1e-6,
+        `Hub ${hb.hub} m bei Wind ${JSON.stringify(hb.wind)}, mit doppeltem Wind ${hb.hubDoppelterWind} m`
+    );
     check(
         "3: RE-ZENTRIEREN — der Anker wandert QUANTISIERT nach 400-m-Teleport",
         out.anchorMoved === true && out.anchorQuantized === true
@@ -1197,6 +1463,24 @@ const server = http.createServer((req, res) => {
             out.dachKacheln >= 8 && q >= 0.8 && q <= 1.25 && !(qAlt >= 0.8 && qAlt <= 1.25),
             `kacheln=${out.dachKacheln} gepflanzt=${(+out.dachGemessen).toFixed(3)} dach=${(+out.dachDeckung).toFixed(3)} verhaeltnis=${q.toFixed(3)} selbsttest-alt=${(+out.dachAlt).toFixed(3)} (${qAlt.toFixed(3)})` +
                 (out.dachErr ? ` err=${out.dachErr}` : "")
+        );
+    }
+    {
+        const wk = out.weicheKosten || {};
+        check(
+            "12: DIE WEICHE KOSTET NUR AN DER NAHT — kein gezeichnetes Dreieck mit depthNode ohne Rand-Zelle des Gebauten in Reichweite (1½ s_max); Selbsttest: die Weiche über den ganzen Ring findet Dreiecke ohne Naht",
+            wk.dreiecke > 0 && wk.ohne === 0 && out.weicheSelbst > 0 && out.weicheRandZellen > 0,
+            `weiche=${wk.dreiecke} ohne-naht=${wk.ohne} ${JSON.stringify(wk.je || {})} ring=${out.weicheRing} rand-zellen=${out.weicheRandZellen} selbsttest-weiche-überall=${out.weicheSelbst}` +
+                (wk.ohne > 0
+                    ? ` — TÄTER: der Ring-Stoff mit depthNode (\`_fernRingEnsure\`) schreibt die Tiefe auf ${wk.ohne} Dreiecken ohne Naht (${Object.keys(wk.je || {}).join(", ")})`
+                    : "")
+        );
+        const tt = out.teilung || {};
+        check(
+            "13: DIE TEILUNG IST TREU — ein freies Dreieck trägt nur Regel 0, ein getragenes nur Regel 2 (die Punkte der Loch-Probe und Ecken, Kanten-Mitten, Schwerpunkte); Selbsttest: die Naht als frei zeigt Stiche, verworfen Löcher",
+            tt.proben >= 1000 && tt.stich === 0 && tt.loch === 0 && tt.selbstStich > 0 && tt.selbstLoch > 0,
+            `proben=${tt.proben} stich=${tt.stich} loch=${tt.loch} klassen(frei/naht/getragen)=${JSON.stringify(tt.n || null)} orte=${JSON.stringify(tt.orte || [])} selbsttest stich=${tt.selbstStich} loch=${tt.selbstLoch}` +
+                (tt.proben ? "" : " — TÄTER: die Schale 0 hat keine Teilung (`fr.teilung`, `_fernRingTeilung`)")
         );
     }
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");

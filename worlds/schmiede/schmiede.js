@@ -1366,7 +1366,14 @@ function updateMovement(dt){const k=arena.keys,B=camBasis();let f=0,r=0;
   arena.bob=Math.min(1,arena.bob+dt*4*(arena._sprinting?1.6:1)*(k.ctrl?0.6:1));}
 
 // — NAHKAMPF: Schwung (links, Maus führt) ODER Stich (rechts, Arm stößt vor) —
-function aimDummy(){if(!arena.dummy)return null;_RC.setFromCamera({x:0,y:0},cam);const hits=_RC.intersectObject(arena.dummy,true);
+// DER SCHWUNG-KEGEL (K13): trifft der Strahl des Fadenkreuzes die Puppe nicht, waehlt der Hieb sie im Sektor der Klinge —
+// Gier +-arcHalfRad um den Blick, Neigung bis zielKegelUntenRad UNTER dem Fadenkreuz (SC.ARENA.schwung: dieselbe Zeile, die die Welt liest).
+function kegelZiel(obj){const K=SC.ARENA.schwung,bb=new THREE.Box3().setFromObject(obj),c=bb.getCenter(new THREE.Vector3()),d=cam.getWorldDirection(new THREE.Vector3()),o=cam.position;
+  const nF=Math.asin(clamp(d.y,-1,1));let dg=Math.atan2(c.x-o.x,c.z-o.z)-Math.atan2(d.x,d.z);dg=Math.atan2(Math.sin(dg),Math.cos(dg));if(Math.abs(dg)>K.arcHalfRad)return null;
+  const h=Math.hypot(c.x-o.x,c.z-o.z),yS=o.y+Math.tan(nF)*h,yLo=o.y+Math.tan(nF-K.zielKegelUntenRad)*h,y=Math.min(bb.max.y,yS);   // der Punkt der Puppe am naechsten unter dem Fadenkreuz
+  return (y<yLo||y<bb.min.y)?null:new THREE.Vector3(c.x,y,c.z);}
+function aimDummy(){if(!arena.dummy)return null;_RC.setFromCamera({x:0,y:0},cam);let hits=_RC.intersectObject(arena.dummy,true);
+  if(!hits.length){const P=kegelZiel(arena.dummy);if(P){_RC.set(cam.position,P.sub(cam.position).normalize());hits=_RC.intersectObject(arena.dummy,true);}}
   if(!hits.length)return null;const d=hits[0].distance;if(d>1.9)return null;const y=hits[0].point.y;
   const ZN=SC.ARENA.zonen,zk=y>1.52?'kopf':y>1.16?'brust':y>0.82?'bauch':y>0.40?'bein':'fuss',z={n:ZN[zk].n,m:ZN[zk].mul,k:zk};   // die Zonen-Tafel lebt im Kern (Welle L: Puppe UND Welt-Tier)
   const nrm=hits[0].face?hits[0].face.normal.clone().transformDirection(hits[0].object.matrixWorld).normalize():new THREE.Vector3(1,0,0);

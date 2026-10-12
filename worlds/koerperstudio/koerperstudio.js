@@ -11,18 +11,31 @@ var bodyPhys={y:0,vy:0};var fistState={l:0,r:0};var palmState={l:0,r:0};var grou
 const _LP=(window.__koerperCore&&typeof window.__koerperCore.labProportionen==='function'&&window.__koerperCore.labProportionen())||{};
 const _H=_LP.H||6,L1=_LP.thighLen||0.245*_H,L2=_LP.calfLen||0.246*_H,footBelowAnkle=isFinite(_LP.footBelowAnkle)?_LP.footBelowAnkle:0.30,standYBase=-((_LP.trochanterY!=null?_LP.trochanterY:0.530*_H)-footBelowAnkle),standYWalk=standYBase*(isFinite(_LP.standYWalkMul)?_LP.standYWalkMul:0.997),standYRun=standYBase*(isFinite(_LP.standYRunMul)?_LP.standYRunMul:0.83);
 function solveIK(ty,tz,l1,l2){var d=Math.sqrt(ty*ty+tz*tz);d=Math.max(Math.abs(l1-l2)+0.001,Math.min(d,l1+l2-0.001));var c=(d*d-l1*l1-l2*l2)/(2*l1*l2);c=Math.max(-1,Math.min(1,c));var kr=Math.acos(c);var hb=-Math.atan2(tz,-ty);var g=Math.atan2(l2*Math.sin(kr),l1+l2*Math.cos(kr));return{hip:hb-g,knee:kr};}
-function footPath(ph,stride,lift,sY,duty){var y,z;if(ph<duty){var sp=ph/duty;z=stride*(0.5-sp);y=sY+Math.sin(sp*Math.PI)*0.015;}else{var sw=(ph-duty)/(1-duty);z=stride*(-0.5+sw);y=sY+Math.sin(sw*Math.PI)*lift;}return{y:y,z:z};}
-function anklePhase(ph,duty){if(ph<duty){var sp=ph/duty;if(sp<0.1)return -0.12*(1-sp/0.1);if(sp<0.7)return 0;return 0.35*(sp-0.7)/0.3;}var sw=(ph-duty)/(1-duty);return -0.1+0.03*Math.sin(sw*Math.PI);}
 function ankleYFromAngles(hx,kr){return -(L1+L2*Math.cos(kr))*Math.cos(hx)+L2*Math.sin(kr)*Math.sin(hx);}
+// DAS EINE GANG-GESETZ (K07): Takt, Fussweg, Tastgrad und Hub aus tetrapoda gangSchritt/gangFuss mit der Zweibeiner-Zeile
+// koerper-core fx.bewegung.gang -- dieselbe Formel, nach der Spieler, Peer, Bewohner und die Tiere gehen. Die Buehne traegt
+// ihre eigene Schwere (G_BUEHNE, Einheiten/s^2): die Froude-Zahl misst v gegen sie und die gebaute Beinlaenge; vMax faellt
+// (die Buehne kennt keine Lage-Spruenge). Fail-closed: ohne Kern kein Gang (kein Lab-Literal).
+var G_BUEHNE=44;
+var _TC=window.__tetrapodaCore,_GZ0=window.__koerperCore.bewegung&&window.__koerperCore.bewegung.gang;
+// jedes Feld der Zeile ist Pflicht (fehlt eines, faehrt kein stiller Tier-Gang); das Becken traegt tetrapoda gangBecken
+if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangReich!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub','rollWinkel','fersenAb','ballen','knoechel'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangReich/gangPhaseHaelt + koerper fx.bewegung.gang');
+var _GZ=Object.assign({},_GZ0,{g:G_BUEHNE,vMax:Infinity});
+function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(2*Math.PI),omega:gs.omega,S:gs.S,tast:gs.tast,hubE:gs.hub*Lg};}
+// der Fuss zur Studio-Phase ph (0..1, der Stand zuerst): die Phase des Gesetzes beginnt mit dem Schwung; cs = die Skala
+// des Leibs (Welt-Einheiten je Gelenk-Einheit), Rk = die Reichweite der Kette (gangReich) im Gelenk-Mass. Der Fuss rollt
+// im spaeten Stand ueber den Ballen (tetrapoda gangRolle wie in der Welt): heb hebt den Knoechel, roll kippt die Sohle --
+// vorher drehte ein zweites Modell (anklePhase) den Knoechel nach eigener Kurve, ohne dass das Becken davon wusste.
+function gangFussStudio(ph,gs,sY,cs,Rk){var f=_TC.gangFuss(2*Math.PI*((ph+1-gs.tast)%1),gs.S,gs.tast,_GZ,Rk*cs,_TC.gangReich(L1+L2)*cs);return{y:sY+f.hub*gs.hubE/cs+f.heb/cs,z:f.dz/cs,heb:f.heb/cs,roll:f.roll};}
 // V18.491.157 — Lab emo.cur idle seed ← MOTION.idle (EINE Quelle; cold-core byte-alt fallback = core idle numbers)
 var emo={cur:Object.assign({},(window.__koerperCore&&window.__koerperCore.MOTION&&window.__koerperCore.MOTION.idle)||{headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0.14,elbowR:0.14,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,breath:0.042,sway:0.022,freq:1.25,kpMul:1.0,irisSpeed:0.3,blinkRate:0.5}),tgt:null,name:'idle',behTimer:0,behType:null,behStart:0,
 presets:window.__koerperCore.MOTION,   // BEWEGUNGS-PROFILE — das motion-Feld lebt im Kern (W-A6, EINE Quelle; emo.set kopiert je Wahl)
 set:function(name){this.tgt=Object.assign({},this.presets[name]);this.name=name;this.behTimer=0;this.behType=null;var sY=standYBase;if(name==='run')sY=standYRun;if(name==='fear')sY=standYBase*0.96;if(name==='sad')sY=standYBase*0.99;if(name!=='run'&&name!=='fight'&&name!=='pwalk'&&name!=='slide'){var zL=0,zR=0;var ikL=solveIK(sY,zL,L1,L2),ikR=solveIK(sY,zR,L1,L2);this.tgt.hipLX=ikL.hip;this.tgt.hipRX=ikR.hip;this.tgt.kneeL=ikL.knee;this.tgt.kneeR=ikR.knee;}},
 update:function(dt,t){if(!this.tgt)return;var c=this.cur,g=this.tgt,l=1-Math.exp(-3.1*dt);var keys=['headY','headX','headZ','spineY','spineX','spineZ','bodyX','bodyZ','armL','armR','armLX','armRX','elbowL','elbowR','hipLX','hipRX','hipLZ','hipRZ','kneeL','kneeR','breath','sway','freq','kpMul','irisSpeed','blinkRate'];for(var i=0;i<keys.length;i++)c[keys[i]]+=(g[keys[i]]-c[keys[i]])*l;this.behTimer+=dt;if(this.name==='idle'){var ib=['walk','walk','walk','lookaround','shift','breathe','glance','headtilt'];if(this.behTimer>2.5+Math.random()*3){this.behTimer=0;this.behType=ib[Math.floor(Math.random()*ib.length)];this.behStart=t;}}else if(this.name==='joy'){var jb=['dance','dance','jump','wave','spin','bounce','clap'];if(this.behTimer>2+Math.random()*2.5){this.behTimer=0;this.behType=jb[Math.floor(Math.random()*jb.length)];this.behStart=t;}}else if(this.name==='sad'){var sb=['wipetear','sigh','lookdown','droop','wilt'];if(this.behTimer>4+Math.random()*3){this.behTimer=0;this.behType=sb[Math.floor(Math.random()*sb.length)];this.behStart=t;}}else if(this.name==='angry'){var ab=['shout','clench','lunge','stomp','pound','glare'];if(this.behTimer>1.5+Math.random()*2){this.behTimer=0;this.behType=ab[Math.floor(Math.random()*ab.length)];this.behStart=t;}}else if(this.name==='fear'){var fb=['shrink','tremble','cower','flinch','cringe'];if(this.behTimer>1.2+Math.random()*1.5){this.behTimer=0;this.behType=fb[Math.floor(Math.random()*fb.length)];this.behStart=t;}}else if(this.name==='run'){this.behType='running';}else if(this.name==='pwalk'){this.behType='pwalking';}else if(this.name==='slide'){this.behType='sliding';}else if(this.name==='fight'){var fb2=['jab','cross','hook','guard','dodge','kick','combo'];if(this.behTimer>0.5+Math.random()*1.0){this.behTimer=0;this.behType=fb2[Math.floor(Math.random()*fb2.length)];this.behStart=t;}}else if(this.name==='showcase'){this.behType='showcase';}},
 getBeh:function(t){var m={headY:0,headX:0,headZ:0,spineY:0,spineX:0,spineZ:0,bodyX:0,bodyZ:0,armL:0,armR:0,armLX:0,armRX:0,elbowL:0,elbowR:0,hipLX:0,hipRX:0,hipLZ:0,hipRZ:0,kneeL:0,kneeR:0,ankleL:0,ankleR:0,breathBoost:1,jumpY:0,tensionBoost:0,mouthBoost:0,browBoost:0};var pt;function guardBase(m){var ikL=solveIK(standYBase,0.2,L1,L2),ikR=solveIK(standYBase,-0.2,L1,L2);m.armRZ=0.1;m.armLZ=0.1;m.armRX=-0.45;m.armLX=-0.45;m.elbowR=1.35;m.elbowL=1.35;m.hipLX=ikL.hip;m.hipRX=ikR.hip;m.hipLZ=-0.12;m.hipRZ=0.12;m.kneeR=ikR.knee;m.kneeL=ikL.knee;m.ankleR=0.05;m.ankleL=0.05;}
-if(this.behType==='walk'){var ph=(t*1.0)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=footPath(pL,0.5,0.12,standYWalk,0.6),fR=footPath(pR,0.5,0.12,standYWalk,0.6);var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=anklePhase(pL,0.6);m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=anklePhase(pR,0.6);m.armLX=Math.cos(ph*2*Math.PI)*0.3;m.armRX=-Math.cos(ph*2*Math.PI)*0.3;m.elbowL=0.15+Math.abs(Math.cos(ph*2*Math.PI))*0.1;m.elbowR=0.15+Math.abs(Math.cos(ph*2*Math.PI+Math.PI))*0.1;m.spineY=Math.cos(ph*2*Math.PI)*0.05;m.bodyZ=Math.cos(ph*2*Math.PI+Math.PI/2)*0.02;m.jumpY=Math.abs(Math.sin(ph*2*Math.PI))*0.02;m.breathBoost=1.3;m.headY=Math.sin(ph*Math.PI)*0.04;m.tensionBoost=0.15;return m;}
-if(this.behType==='running'){var ph=(t*2.85)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=footPath(pL,2.85,1.55,standYRun,0.35),fR=footPath(pR,2.85,1.55,standYRun,0.35);var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=anklePhase(pL,0.35);m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=anklePhase(pR,0.35);var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*1.25;m.armRX=-aS*1.25;m.armR=0.12;m.armL=0.12;m.elbowL=1.4+Math.max(0,aS)*0.55;m.elbowR=1.4+Math.max(0,-aS)*0.55;m.spineY=aS*0.26;m.headY=-aS*0.14;m.spineX=0.30;m.spineZ=aS*0.05;m.bodyX=0.18;m.bodyZ=-aS*0.06;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.65)*0.30;m.breathBoost=2.0;m.headX=-0.08;m.tensionBoost=0.55;return m;}
-if(this.behType==='pwalking'){var ph=(t*1.78)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=footPath(pL,1.2,0.42,standYBase,0.62),fR=footPath(pR,1.2,0.42,standYBase,0.62);var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=anklePhase(pL,0.62);m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=anklePhase(pR,0.62);var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*0.42;m.armRX=-aS*0.42;m.armR=0.04;m.armL=0.04;m.elbowL=0.32+Math.max(0,aS)*0.15;m.elbowR=0.32+Math.max(0,-aS)*0.15;m.spineY=aS*0.09;m.headY=-aS*0.05;m.spineZ=aS*0.035;m.spineX=0.05;m.bodyX=0.04;m.bodyZ=-aS*0.035;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.8)*0.055;m.breathBoost=1.3;m.headX=-0.03;m.tensionBoost=0.12;return m;}
+if(this.behType==='walk'){var gs=gangGesetz(NINJA_FEEL.ctrlWalk,L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYWalk,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYWalk,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;m.armLX=Math.cos(ph*2*Math.PI)*0.3;m.armRX=-Math.cos(ph*2*Math.PI)*0.3;m.elbowL=0.15+Math.abs(Math.cos(ph*2*Math.PI))*0.1;m.elbowR=0.15+Math.abs(Math.cos(ph*2*Math.PI+Math.PI))*0.1;m.spineY=Math.cos(ph*2*Math.PI)*0.05;m.bodyZ=Math.cos(ph*2*Math.PI+Math.PI/2)*0.02;m.jumpY=Math.abs(Math.sin(ph*2*Math.PI))*0.02;m.breathBoost=1.3;m.headY=Math.sin(ph*Math.PI)*0.04;m.tensionBoost=0.15;return m;}
+if(this.behType==='running'){var gs=gangGesetz(NINJA_FEEL.sprintSpd,L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYRun,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYRun,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*1.25;m.armRX=-aS*1.25;m.armR=0.12;m.armL=0.12;m.elbowL=1.4+Math.max(0,aS)*0.55;m.elbowR=1.4+Math.max(0,-aS)*0.55;m.spineY=aS*0.26;m.headY=-aS*0.14;m.spineX=0.30;m.spineZ=aS*0.05;m.bodyX=0.18;m.bodyZ=-aS*0.06;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.65)*0.30;m.breathBoost=2.0;m.headX=-0.08;m.tensionBoost=0.55;return m;}
+if(this.behType==='pwalking'){var gs=gangGesetz(NINJA_FEEL.walkSpd,L1+L2),ph=(t*gs.cad)%1.0,pL=ph,pR=(ph+0.5)%1.0;var fL=gangFussStudio(pL,gs,standYBase,1,_TC.gangReich(L1+L2)),fR=gangFussStudio(pR,gs,standYBase,1,_TC.gangReich(L1+L2));var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);m.hipLX=ikL.hip;m.kneeL=ikL.knee;m.ankleL=fL.roll;m.hipRX=ikR.hip;m.kneeR=ikR.knee;m.ankleR=fR.roll;var aS=Math.cos(ph*2*Math.PI);m.armLX=aS*0.42;m.armRX=-aS*0.42;m.armR=0.04;m.armL=0.04;m.elbowL=0.32+Math.max(0,aS)*0.15;m.elbowR=0.32+Math.max(0,-aS)*0.15;m.spineY=aS*0.09;m.headY=-aS*0.05;m.spineZ=aS*0.035;m.spineX=0.05;m.bodyX=0.04;m.bodyZ=-aS*0.035;m.jumpY=Math.pow(Math.abs(Math.sin(ph*2*Math.PI)),0.8)*0.055;m.breathBoost=1.3;m.headX=-0.03;m.tensionBoost=0.12;return m;}
 if(this.behType==='sliding'){m.hipRX=-0.55;m.kneeR=0.35;m.ankleR=0.18;m.hipLX=0.15;m.kneeL=1.75;m.ankleL=0.1;m.spineX=0.34;m.bodyX=0.20;m.spineY=0.12;m.spineZ=0.06;m.armRX=0.55;m.armLX=-0.30;m.armR=0.22;m.armL=0.16;m.elbowR=0.85;m.elbowL=0.55;m.headX=-0.30;m.headY=-0.06;m.breathBoost=1.5;m.tensionBoost=0.6;return m;}
 if(this.behType==='dance'){pt=t-this.behStart;if(pt>5){this.behType=null;return m;}var dT=pt*2.8;m.hipLZ=Math.sin(dT)*0.1;m.hipRZ=-Math.sin(dT)*0.1;m.bodyZ=Math.sin(dT)*0.08;m.spineY=Math.sin(dT*0.5)*0.1;m.spineZ=Math.sin(dT)*0.04;m.armL=0.3+Math.sin(dT)*0.2;m.armR=0.3-Math.sin(dT)*0.2;m.armLX=-0.2+Math.sin(dT*0.7)*0.15;m.armRX=-0.2+Math.sin(dT*0.7+Math.PI)*0.15;m.elbowL=0.4+Math.sin(dT*1.3)*0.2;m.elbowR=0.4+Math.sin(dT*1.3+Math.PI)*0.2;m.kneeL=0.1+Math.abs(Math.sin(dT))*0.1;m.kneeR=0.1+Math.abs(Math.sin(dT+Math.PI))*0.1;m.jumpY=Math.abs(Math.sin(dT*2))*0.03;m.mouthBoost=0.1;m.headY=Math.sin(dT*0.7)*0.1;m.headZ=Math.sin(dT)*0.04;return m;}
 if(this.behType==='wipetear'){pt=(t-this.behStart)/4;if(pt>=1){this.behType=null;return m;}if(pt<0.2){var i=pt/0.2;m.armR=0.35*i;m.armRX=-0.45*i;m.elbowR=1.0*i;m.headX=0.15+0.02*i;m.headY=0.02*i;}else if(pt<0.45){var i=(pt-0.2)/0.25;m.armR=0.35;m.armRX=-0.45;m.elbowR=1.0;m.headY=0.02+0.08*i;m.headX=0.17+0.03*i;}else if(pt<0.7){var i=(pt-0.45)/0.25;m.armR=0.35*(1-i);m.armRX=-0.45*(1-i);m.elbowR=1.0*(1-i);m.headY=0.1-0.1*i;m.headX=0.2-0.05*i;}return m;}
@@ -1709,6 +1722,11 @@ var _NF0={sprungVy:15.5,wandVy:14.5,wandKick:11,doppelVy:13.8,kletterVy:8.5,spri
 var _NFc=(window.__koerperCore&&window.__koerperCore.NINJA_FEEL)||null;
 var NINJA_FEEL={sprungVy:(_NFc&&Number.isFinite(_NFc.sprungVy))?_NFc.sprungVy:_NF0.sprungVy,wandVy:(_NFc&&Number.isFinite(_NFc.wandVy))?_NFc.wandVy:_NF0.wandVy,wandKick:(_NFc&&Number.isFinite(_NFc.wandKick))?_NFc.wandKick:_NF0.wandKick,doppelVy:(_NFc&&Number.isFinite(_NFc.doppelVy))?_NFc.doppelVy:_NF0.doppelVy,kletterVy:(_NFc&&Number.isFinite(_NFc.kletterVy))?_NFc.kletterVy:_NF0.kletterVy,sprintSpd:(_NFc&&Number.isFinite(_NFc.sprintSpd))?_NFc.sprintSpd:_NF0.sprintSpd,walkSpd:(_NFc&&Number.isFinite(_NFc.walkSpd))?_NFc.walkSpd:_NF0.walkSpd,crouchSpd:(_NFc&&Number.isFinite(_NFc.crouchSpd))?_NFc.crouchSpd:_NF0.crouchSpd,ctrlWalk:(_NFc&&Number.isFinite(_NFc.ctrlWalk))?_NFc.ctrlWalk:_NF0.ctrlWalk};
 var _bew=(window.__koerperCore&&window.__koerperCore.bewegung)||null;
+var _KAM=window.__koerperCore.bewegung.kamera;   // K06 — DER LEIB DER KAMERA: armRadiusM (die Kugel) + armRuhe (die Glaettung) aus fx.bewegung.kamera, fail-closed (kein Lab-Literal)
+// die Strecke p + d*t (t 0..1) gegen die Park-Box b, um r aufgeblasen: der Eintritt t, Infinity ohne Schnitt (Slab)
+function _kamSeg(px,py,pz,dx,dy,dz,b,r){var P=[px,py,pz],D=[dx,dy,dz],lo=[b.cx-b.sx/2-r,b.minY-r,b.cz-b.sz/2-r],hi=[b.cx+b.sx/2+r,b.maxY+r,b.cz+b.sz/2+r],t0=0,t1=1;for(var a=0;a<3;a++){if(Math.abs(D[a])<1e-9){if(P[a]<lo[a]||P[a]>hi[a])return Infinity;continue;}var u=(lo[a]-P[a])/D[a],v=(hi[a]-P[a])/D[a];if(u>v){var q=u;u=v;v=q;}if(u>t0)t0=u;if(v<t1)t1=v;if(t0>t1)return Infinity;}return t0;}
+// der Punkt steht frei: in keiner Park-Box, um r aufgeblasen
+function _kamFrei(x,y,z,r){for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];if(x>b.cx-b.sx/2-r&&x<b.cx+b.sx/2+r&&y>b.minY-r&&y<b.maxY+r&&z>b.cz-b.sz/2-r&&z<b.cz+b.sz/2+r)return false;}return true;}
 var _coy=(_bew&&_bew.sprung&&Number.isFinite(_bew.sprung.coyoteSec))?_bew.sprung.coyoteSec:0.3;  // V18.491.164 — coyote cold was buffer twin; now matches fx.bewegung.sprung.coyoteSec
 var _jbuf0=(_bew&&_bew.sprung&&Number.isFinite(_bew.sprung.bufferSec))?_bew.sprung.bufferSec:0.12;
 var keys={};
@@ -1845,14 +1863,26 @@ function playGait(dt,t){
   // CONTINUOUS GAIT — one system, walk<->run by speed (no discrete states)
   var ga=_clamp(sp/16,0,1);play.gaitAmt+=(ga-play.gaitAmt)*(1-Math.pow(0.0018,dt));var g=play.gaitAmt;
   var moveB=_clamp(sp/2.2,0,1);                        // 0 idle -> 1 striding
-  var cad=sp*0.155+moveB*0.45;                         // cadence ~ speed (limits foot-slip)
-  play.gaitPhase=(play.gaitPhase+cad*dt)%1;var ph=play.gaitPhase,T=Math.PI*2,aS=Math.cos(ph*T);
   var cb=play.crB=play.crB+((play.crouch?1:0)-play.crB)*(1-Math.pow(0.0008,dt));      // crouch-blend
-  var lk=play.landK;
-  var stride=(0.5+g*2.4)*(1-cb*0.45),lift=(0.28+g*1.30)*(1-cb*0.5),duty=0.64-g*0.30,standY=standYBase*(1-g*0.16);
-  standY=_mix(standY,standYBase*0.66,cb)+lk*0.95;                                      // crouch-tiefe + LANDE-KOMPRESSION
+  var lk=play.landK,cs=character.scale.x||1;
+  // DAS GANG-GESETZ (K07): Takt, Fussweg, Tastgrad und Hub aus der gebauten Beinlaenge (geduckt die gebeugte: der Schritt
+  // wird kuerzer und schneller, statt zu gleiten); die Huefte sinkt, wo der Fussweg sonst die Reichweite des Beins sprengt
+  var gs=gangGesetz(sp,(L1+L2)*cs*_mix(1,0.66,cb)),duty=gs.tast;
+  gs.hubE=gs.hubE/_mix(1,0.66,cb);                     // der Hub misst am gestreckten Bein: die Bodenfreiheit hockt nicht mit
+  // DER STEHENDE FUSS HAELT (K07, tetrapoda gangPhaseHaelt wie in der Welt): aendert sich die Zeile, behaelt das stehende
+  // Bein sein Fuss-Ziel; aus dem Stand setzt das naehere Bein in der Mitte seines Stands ein (die Phase zaehlt ab dem Aufsetzen)
+  var g0=play._gs,S0=g0&&g0.S>0?g0.S:0,t0=g0?g0.tast:gs.tast;
+  if(gs.omega>0&&(!S0||Math.abs(S0-gs.S)>1e-9||t0!==gs.tast)){var u1=_TC.gangPhaseHaelt(2*Math.PI*(play.gaitPhase+1-t0),S0,t0,gs.S,gs.tast);play.gaitPhase=((u1/(2*Math.PI)-1+gs.tast)%1+1)%1;}
+  play._gs=gs.omega>0?gs:null;
+  play.gaitPhase=(play.gaitPhase+gs.cad*dt)%1;var ph=play.gaitPhase,T=Math.PI*2,aS=Math.cos(ph*T);
+  var standY=standYBase*(1-g*0.16);
+  standY=_mix(standY,standYBase*0.66,cb);                                               // crouch-tiefe
+  // DAS BECKEN DES GESETZES (K07): tetrapoda gangBecken wie in der Welt -- nur die stehenden Fuesse senken es, an der
+  // Reichweite R der (geduckt gebeugten) Kette; im Lauf federt das Bein, in der Flugphase steigt der Leib ballistisch
+  var Rk=_TC.gangReich((L1+L2)*_mix(1,0.66,cb)),phG=2*Math.PI*((ph+1-gs.tast)%1);
+  standY=_mix(standY,-(Rk-_TC.gangBecken(phG,gs.S/cs,gs.tast,Rk,gs.omega,_GZ,cs,_TC.gangReich(L1+L2))),moveB)+lk*0.95;   // + LANDE-KOMPRESSION
   var pL=ph,pR=(ph+0.5)%1;
-  var fL=footPath(pL,stride,lift,standY,duty),fR=footPath(pR,stride,lift,standY,duty);
+  var fL=gangFussStudio(pL,gs,standY,cs,Rk),fR=gangFussStudio(pR,gs,standY,cs,Rk);
   // PER-FOOT GROUND-ADAPTIVE IK (Uncharted-stil): jeder fuss sampelt seinen support an seiner geplanten XZ
   var yw=character.rotation.y,sYw=Math.sin(yw),cYw=Math.cos(yw),ppx=character.position.x,ppz=character.position.z,cSup=play.posY-FOOT;
   var dfL=footSupOff(ppx+(-0.52)*cYw+fL.z*sYw,ppz-(-0.52)*sYw+fL.z*cYw,cSup),dfR=footSupOff(ppx+(0.52)*cYw+fR.z*sYw,ppz-(0.52)*sYw+fR.z*cYw,cSup);
@@ -1860,25 +1890,26 @@ function playGait(dt,t){
   fL.y+=play.fOffL+play.susp;fR.y+=play.fOffR+play.susp;                              // feder von den BEINEN geschluckt: koerper=smY, sohlen=support
   var ikL=solveIK(fL.y,fL.z,L1,L2),ikR=solveIK(fR.y,fR.z,L1,L2);
   var stL=solveIK(standY+play.fOffL+play.susp,0,L1,L2),stR=solveIK(standY+play.fOffR+play.susp,0,L1,L2);   // auch im STAND per-fuss (idle auf treppe)
-  var hipR=_mix(stR.hip,ikR.hip,moveB),knR=_mix(stR.knee,ikR.knee,moveB),ankR=-(hipR+knR)+_mix(0,anklePhase(pR,duty),moveB);  // ankle WELT-referenziert: sohle flach + rollkurve
-  var hipL=_mix(stL.hip,ikL.hip,moveB),knL=_mix(stL.knee,ikL.knee,moveB),ankL=-(hipL+knL)+_mix(0,anklePhase(pL,duty),moveB);
-  P['hip1'].rotation.set(hipR,0,0.05);P['knee1'].rotation.x=knR;P['ankle1'].rotation.x=ankR;
-  P['hip-1'].rotation.set(hipL,0,-0.05);P['knee-1'].rotation.x=knL;P['ankle-1'].rotation.x=ankL;
+  var hipR=_mix(stR.hip,ikR.hip,moveB),knR=_mix(stR.knee,ikR.knee,moveB),ankR=-(hipR+knR)+_mix(0,fR.roll,moveB);  // ankle WELT-referenziert: sohle flach + Abrollen des Gesetzes
+  var hipL=_mix(stL.hip,ikL.hip,moveB),knL=_mix(stL.knee,ikL.knee,moveB),ankL=-(hipL+knL)+_mix(0,fL.roll,moveB);
+  // die Beine haengen lotrecht unter dem geneigten Leib (die Neigung nick dreht sonst den Fussweg: der Stand-Fuss stieg 0,24 E)
+  var accel=_clamp((sp-play.prevSp)/Math.max(dt,1e-3)*0.010,-0.10,0.16),nick=g*0.16+accel;
+  P['hip1'].rotation.set(hipR-nick,0,0.05);P['knee1'].rotation.x=knR;P['ankle1'].rotation.x=ankR;
+  P['hip-1'].rotation.set(hipL-nick,0,-0.05);P['knee-1'].rotation.x=knL;P['ankle-1'].rotation.x=ankL;
   var armAmp=(0.12+g*1.15)*moveB;
   _setArm('1',-aS*armAmp,(0.05+g*0.10)*moveB,0.15+moveB*(g*0.9+Math.max(0,-aS)*0.45*g));
   _setArm('-1', aS*armAmp,(0.05+g*0.10)*moveB,0.15+moveB*(g*0.9+Math.max(0, aS)*0.45*g));
-  var accel=_clamp((sp-play.prevSp)/Math.max(dt,1e-3)*0.010,-0.10,0.16);
   var turn=_clamp(((((play.faceYaw-play.prevFace+Math.PI)%T)+T)%T-Math.PI)/Math.max(dt,1e-3)*0.05,-0.22,0.22);
   if(lk>0.25){_setArm('1',-0.7*lk,0.3*lk+0.05,0.9*lk+0.2);_setArm('-1',-0.7*lk,0.3*lk+0.05,0.9*lk+0.2);}   // arme fangen den aufprall
   parts.torso.rotation.set(g*0.30+cb*0.24+lk*0.35+play.susp*0.30, aS*g*0.22*moveB, aS*(0.03+g*0.04)*moveB + Math.sin(t*0.8)*0.01*(1-moveB));
-  character.rotation.x=g*0.16+accel; character.rotation.z=-turn*moveB;
+  character.rotation.x=nick; character.rotation.z=-turn*moveB;
   headGroup.rotation.set(-0.03-g*0.07-cb*0.10-lk*0.18-play.susp*0.12, -aS*g*0.13*moveB, 0);
   if(play.cam==='third'){var dh=((play.yaw-yw+Math.PI)%T+T)%T-Math.PI;headGroup.rotation.y+=_clamp(dh,-0.6,0.6)*0.38*(1-g*0.4);}      // HEAD-LOOK zur kamera (TLOU)
-  var wS=Math.max(0.12,1-moveB),wR=(pR<duty?1:wS),wL=(pL<duty?1:wS);                  // stance-gewichteter pelvis-plant
-  var cR=play.fOffR+footBelowAnkle-trochanterY-ankleYFromAngles(hipR,knR),cL=play.fOffL+footBelowAnkle-trochanterY-ankleYFromAngles(hipL,knL);
-  var gY=(cR*wR+cL*wL)/(wR+wL);
-  var bob=Math.pow(Math.abs(Math.sin(ph*T)),0.6)*(g*0.30)*moveB;
-  character.position.y=play.posY+gY+bob;
+  var wS=1-moveB,wR=(pR<duty?1:wS),wL=(pL<duty?1:wS);                                 // stance-gewichteter pelvis-plant: der Schwung-Fuss traegt nie
+  var cR=play.fOffR+footBelowAnkle+fR.heb*moveB-trochanterY-ankleYFromAngles(hipR,knR),cL=play.fOffL+footBelowAnkle+fL.heb*moveB-trochanterY-ankleYFromAngles(hipL,knL);   // der rollende Knoechel steht um heb ueber der Sohle
+  // Flugphase (beide Fuesse im Schwung): das Becken des Gesetzes ueber dem gedachten Stand-Fuss (gangBecken steigt dort)
+  var gY=wR+wL>1e-6?(cR*wR+cL*wL)/(wR+wL):footBelowAnkle-trochanterY-(standY+play.susp);
+  character.position.y=play.posY+gY;
   play.prevSp=sp;play.prevFace=play.faceYaw;
 }
 function playPhysics(dt){
@@ -1891,7 +1922,7 @@ function playPhysics(dt){
       var ax=Math.abs(dxl)<Math.abs(dxr)?dxl:dxr,az=Math.abs(dzl)<Math.abs(dzr)?dzl:dzr;
       if(Math.abs(ax)<Math.abs(az)){nx+=ax;play.vx=0;play.wallNX=ax>0?1:-1;play.wallNZ=0;}else{nz+=az;play.vz=0;play.wallNZ=az>0?1:-1;play.wallNX=0;}play.touchWall=true;play.wallT=0.15;}}  // wand-normale + wand-coyote
   character.position.x=nx;character.position.z=nz;
-  play.vy-=44*dt;if(play.vy<-40)play.vy=-40;play.posY+=play.vy*dt;footY=play.posY-FOOT;
+  play.vy-=G_BUEHNE*dt;if(play.vy<-40)play.vy=-40;play.posY+=play.vy*dt;footY=play.posY-FOOT;
   var sup=-1e9;
   for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];
     if(inXZ(character.position.x,character.position.z,b,pr*0.55)&&b.maxY<=footY+1.05&&b.maxY>sup)sup=b.maxY;}
@@ -1919,13 +1950,19 @@ function playPhysics(dt){
     var shX=-Math.cos(play.yaw)*1.75,shZ=Math.sin(play.yaw)*1.75;                     // OVER-SHOULDER: kamera bildschirm-rechts, figur links im frame
     var icx=character.position.x-ldx*dist+shX, icy=character.position.y+3.85-ldy*dist, icz=character.position.z-ldz*dist+shZ;
     // critically-damped smoothing of camera + look target
-    var ks=1-Math.pow(0.0016,dt);
+    var ks=1-Math.pow(_KAM.armRuhe,dt);
     play.camX=_mix(play.camX,icx,ks);play.camY=_mix(play.camY,icy,ks);play.camZ=_mix(play.camZ,icz,ks);
     play.lookX=_mix(play.lookX,ltx,ks*1.4);play.lookY=_mix(play.lookY,lty,ks*1.4);play.lookZ=_mix(play.lookZ,ltz,ks*1.4);
-    // keep camera above ground / out of platforms
-    var camG=0;for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i];if(inXZ(play.camX,play.camZ,b,0.3)&&b.maxY<character.position.y+6&&b.maxY+0.8>camG)camG=b.maxY+0.8;}
-    if(play.camY<camG)play.camY=camG;
-    camera.position.set(play.camX,play.camY,play.camZ);camera.lookAt(play.lookX,play.lookY,play.lookZ);
+    // K06 DIE KAMERA HAT EINEN LEIB (NP-03): die Strecke Blickziel -> Kamera gegen JEDE Park-Box (der Boden zuerst), um armRadiusM aufgeblasen (in Lab-Massen: die Kugel deckt die Nah-Ebene 0,1); die Kamera haelt vor dem ersten Eintritt. Beginnt die Strecke in der aufgeblasenen Box, haelt die Kamera armRadiusM vor der Box selbst (entlang der Strecke); beginnt sie in ihr, sagt die Box nichts. camG fiel: der Hoehen-Deckel hob die Kamera nur ueber Boxen unter ihr -- Wand, Tunnel und Kante standen zwischen Blickziel und Linse (9 von 48 Posen).
+    // das Blickziel haelt die Kugel selbst frei (wie die Schulter des Wirts): seine Versetzung von der Brust (Schulter + Vorlauf) rueckt vor jeder aufgeblasenen Box ein -- die Figur am Tunnel-Dach trug das Ziel 0,1 vor die Kante
+    var kbx=character.position.x,kbz=character.position.z,klx=play.lookX-kbx,klz=play.lookZ-kbz,ks2=1;
+    for(var i=0;i<parkBoxes.length;i++){var h0=_kamSeg(kbx,play.lookY,kbz,klx,0,klz,parkBoxes[i],_KAM.armRadiusM+0.01);if(h0>0&&h0<ks2)ks2=h0;}
+    var LX=kbx+klx*ks2,LY=play.lookY,LZ=kbz+klz*ks2;
+    var kdx=play.camX-LX,kdy=play.camY-LY,kdz=play.camZ-LZ,kt=1;
+    for(var i=0;i<parkBoxes.length;i++){var b=parkBoxes[i],h=_kamSeg(LX,LY,LZ,kdx,kdy,kdz,b,_KAM.armRadiusM);if(h===0){h=_kamSeg(LX,LY,LZ,kdx,kdy,kdz,b,0);h=h===0?Infinity:Math.max(0,h-_KAM.armRadiusM/Math.hypot(kdx,kdy,kdz));}if(h<kt)kt=h;}
+    // streift die Strecke eine Box, an der sie beginnt (das Ziel an ihrer Kante), endet die Kamera nie in deren Kugel-Hülle: zurück zum Ziel, bis sie frei steht (Bisektion)
+    if(!_kamFrei(LX+kdx*kt,LY+kdy*kt,LZ+kdz*kt,_KAM.armRadiusM)){var klo=0,khi=kt;for(var j=0;j<10;j++){var km=(klo+khi)/2;if(_kamFrei(LX+kdx*km,LY+kdy*km,LZ+kdz*km,_KAM.armRadiusM))klo=km;else khi=km;}kt=klo;}
+    camera.position.set(LX+kdx*kt,LY+kdy*kt,LZ+kdz*kt);camera.lookAt(LX,LY,LZ);
   }else{
     if(headGroup)headGroup.visible=false;if(typeof hairGroup!=='undefined'&&hairGroup)hairGroup.visible=false;
     var hp=new THREE.Vector3();if(headGroup)headGroup.getWorldPosition(hp);else hp.set(character.position.x,character.position.y+5,character.position.z);

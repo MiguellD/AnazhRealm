@@ -3077,6 +3077,12 @@
             reachBaseM: 0.9,
             reachMaxM: 6,
             shoulderH: 1.2,
+            // VERTRAGS-AKT K13 11.10. (rein additiv): DER SCHWUNG-KEGEL der Ziel-Wahl. Liegt kein Leib unter dem
+            // Fadenkreuz, waehlt der Hieb das Ziel im Sektor, den die Klinge fegt: Gier +-arcHalfRad um den Blick,
+            // Neigung bis zielKegelUntenRad (35 Grad) unter dem Fadenkreuz, in der Reichweite der Klinge. Wer
+            // waagrecht ueber den Wolf blickt, trifft den Wolf (vorher 0 von 48 Horizont-Faellen); ueber dem
+            // Fadenkreuz und hinter dem Ruecken waehlt er nie. Welt (Wirt) und Arena-Lab lesen DIESE Zeile.
+            zielKegelUntenRad: 0.61,
         },
         gefuehl: {
             freezeMinSec: 0.04,

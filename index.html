@@ -1423,6 +1423,55 @@
                 z-index: 5;
                 box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
             }
+            /* DER TACHO (Leben-Schau 2, fahr-bahn) — rechts über der Hotbar-Höhe (auf 958 px Breite deckt er die
+               Hotbar nicht), im Messing-Rahmen des Stats-HUD; er bleibt auch bei ausgeblendetem HUD (H) das Instrument
+               der Fahrt und fängt keine Maus. */
+            #fahr-tacho {
+                position: absolute;
+                right: 18px;
+                bottom: 150px;
+                z-index: 6;
+                min-width: 136px;
+                max-width: min(240px, calc(100vw - 36px));
+                padding: 8px 14px 9px;
+                box-sizing: border-box;
+                background: linear-gradient(180deg, rgba(28, 20, 12, 0.88) 0%, rgba(20, 14, 8, 0.92) 100%);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 6px;
+                box-shadow:
+                    inset 0 0 0 1px rgba(198, 154, 74, 0.25),
+                    0 3px 14px rgba(0, 0, 0, 0.6);
+                color: #e9d49e;
+                pointer-events: none;
+            }
+            #fahr-tacho[hidden] {
+                display: none;
+            }
+            #fahr-tacho .fahr-tacho-anzeige {
+                text-align: right;
+                white-space: nowrap;
+            }
+            #fahr-tacho .fahr-tacho-zahl {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 34px;
+                line-height: 1;
+                font-variant-numeric: tabular-nums;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #fahr-tacho .fahr-tacho-einheit {
+                margin-left: 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.12em;
+                opacity: 0.8;
+            }
+            #fahr-tacho .fahr-tacho-tasten {
+                margin-top: 6px;
+                font-family: Georgia, serif;
+                font-size: 10px;
+                line-height: 1.4;
+                opacity: 0.78;
+            }
             /* Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
                Painterly Pergament + Kupfer. HP/Stamina als zwei SVG-Bars,
                schmaler als die Hotbar (etwa 80% Breite, zentriert). Hover
@@ -8080,6 +8129,15 @@
             <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
         </div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
+        <!-- DER TACHO (Leben-Schau 2, fahr-bahn): im Sattel eines Gesetz-Wagens die km/h seines Fahr-Zustands
+             (|vlong| × vehicle:FAHR.kmh, dieselbe Zahl wie die Probefahrt) und die Fahr-Tasten (AnazhRealm.FAHR_TASTEN).
+             Schreiber: `_fahrAnzeige` (anazhRealm.js); ohne Ritt verborgen. -->
+        <div id="fahr-tacho" role="status" aria-label="Tacho" hidden>
+            <div class="fahr-tacho-anzeige">
+                <span class="fahr-tacho-zahl" data-kmh>0</span><span class="fahr-tacho-einheit">km/h</span>
+            </div>
+            <div class="fahr-tacho-tasten"></div>
+        </div>
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>
@@ -9648,7 +9706,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.540.0"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.543.0"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9662,39 +9720,39 @@
         <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Baum-Bau liest das globale
              __phytoCore.growSkeleton. Derselbe Code läuft im voxel-worker + im Terrain-Portal. -->
-        <script src="phyto-core.js?v=18.540.0" defer></script>
+        <script src="phyto-core.js?v=18.543.0" defer></script>
         <!-- K09a — DAS GELÄNDE-GESETZBUCH: die EINE 2D-Höhe (Erbgut-Terme, Wildnis-Term, Makro-Anker, Rauheit) als
              reine Funktion der Lage; Stamm, voxel-worker (importScripts) und Foundry-Worker (Manifest) lesen DIESE
              Datei. MUSS vor anazhRealm.js laden (defer bewahrt die Reihenfolge). -->
-        <script src="gelaende-core.js?v=18.540.0" defer></script>
+        <script src="gelaende-core.js?v=18.543.0" defer></script>
         <!-- DIE EINE PIPE (V18.458): das Bake-Gesetzbuch der Pipe (Gattungs-Bäcker-
              Tisch BAKERS_BY_KIND) lädt auch auf dem Stamm — der Kalt-/Headless-Pfad
              bäckt Kreaturen main-thread durch DENSELBEN Bäcker wie der Worker
              (ein Gesetz, zwei Scheduler). THREE steht (Module vor defer). -->
-        <script src="foundry-core.js?v=18.540.0" defer></script>
+        <script src="foundry-core.js?v=18.543.0" defer></script>
         <!-- ALTLASTEN-NULL HERZ: die Anatomie-Gesetzbücher (MESHFREI, reine
              Daten+Mathe) laden VOR dem Stamm — er delegiert Skelett/Landmarken
              an die EINE Quelle (dieselben Kerne trägt der Foundry-Worker). -->
-        <script src="koerper-core.js?v=18.540.0" defer></script>
+        <script src="koerper-core.js?v=18.543.0" defer></script>
         <!-- KERN-PFLICHT 17.07. — fachwerk+klang fehlten als Main-Thread-Tags:
              ihre Gesetze (SIEDLUNG · fx.klang) existierten im echten Spiel NUR
              als Fallback-Fiktion. Jetzt laden ALLE Gesetzbuecher, die Boot-Wand
              (_kernPflichtWand) schreit sichtbar, wenn eines fehlt. -->
-        <script src="fachwerk-core.js?v=18.540.0" defer></script>
-        <script src="klang-core.js?v=18.540.0" defer></script>
-        <script src="tetrapoda-core.js?v=18.540.0" defer></script>
+        <script src="fachwerk-core.js?v=18.543.0" defer></script>
+        <script src="klang-core.js?v=18.543.0" defer></script>
+        <script src="tetrapoda-core.js?v=18.543.0" defer></script>
         <!-- V18.464 — porta-core main-seitig: der Stamm liest das Tor-GESETZ synchron
              (Kollisions-Hülle deterministisch am Spawn [Lockstep] + Membran-Zahlen);
              namespaced IIFE (__portaCore), THREE-frei auf Top-Level. -->
-        <script src="porta-core.js?v=18.540.0" defer></script>
+        <script src="porta-core.js?v=18.543.0" defer></script>
         <!-- V18.466 — vehicle-core main-seitig: das präge-Verb liest die KULTUREN-
              Tabelle (Charakter-Achse der Garage) synchron; namespaced IIFE
              (__vehicleCore), dasselbe porta-Muster. -->
-        <script src="vehicle-core.js?v=18.540.0" defer></script>
+        <script src="vehicle-core.js?v=18.543.0" defer></script>
         <!-- ULTRAGUSS U6d: das Klingen-Gesetzbuch (Top-Level THREE-frei, reine
              Daten+Mathe) lädt VOR dem Stamm — der bladeProfile-Bau (Werkstatt/DSL)
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
-        <script src="schmiede-core.js?v=18.540.0" defer></script>
-        <script src="anazhRealm.js?v=18.540.0" defer></script>
+        <script src="schmiede-core.js?v=18.543.0" defer></script>
+        <script src="anazhRealm.js?v=18.543.0" defer></script>
     </body>
 </html>
