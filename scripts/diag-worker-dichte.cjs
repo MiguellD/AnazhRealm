@@ -696,6 +696,20 @@ function presetBefunde(liste) {
         b.push("kein Preset trägt das Schicht-Gesetz (Kliff über Schutthang über Pediment)");
     return b;
 }
+// Die Befunde der Start-Wand (rein — der Selbsttest füttert sie mit einem Täter): das Studio öffnet über der Welt, wie sie
+// steht (A), nie über dem Entwurf (B ist die Projektion der Welt auf einen Plan); und der Entwurf nennt sichtbar, was die Welt
+// trägt und kein Plan (`soll`: Wörter, die in der Abweichung stehen müssen) — „Welt bauen" legt die Welt ohne es.
+function startBefunde(z, soll) {
+    const b = [];
+    if (z.zeigt !== "A")
+        b.push(`der Start zeigt ${z.zeigt} (den Entwurf, die Projektion der Welt auf einen Plan) statt A, der gebauten Welt`);
+    const ab = Array.isArray(z.abweichung) ? z.abweichung.join(" · ") : "";
+    for (const w of soll)
+        if (!ab.includes(w))
+            b.push(`der Entwurf verschweigt, was die Welt trägt und kein Plan: „${w}" fehlt in der Abweichung (${ab || "keine"})`);
+    if (soll.length && !z.sichtbar) b.push("die Abweichung steht nicht sichtbar im Panel (.abweichung)");
+    return b;
+}
 // Die Welt in der Seite gemessen, unabhängig vom Studio: der Makro-Abdruck (64×64, ±852 m, mit und ohne Detail) und die
 // Statistik auf dem Raster des Studios — beides über `_terrainMacroSurfaceY`, die Höhe, die die Welt baut.
 function weltMessen(page, raster) {
@@ -815,6 +829,25 @@ async function studioProbe() {
             );
             throw new Error("kein Studio");
         }
+        // DER START: das Studio öffnet auf A, und der Entwurf nennt, was die fremde Welt trägt und kein Plan (die Rampe, die
+        // Basis 7 m) — vorher öffnete es auf B, der Projektion, und schwieg.
+        const zS = await page.evaluate(async () => {
+            const S = window.__gelaendeStudio;
+            await S.ruhig();
+            const z = S.zustand();
+            const w = document.querySelector("#gelaende-studio .abweichung");
+            return {
+                zeigt: z.zeigt,
+                abweichung: z.abweichung,
+                sichtbar: !!(w && w.offsetParent !== null && w.textContent.trim()),
+                text: w ? w.textContent.trim() : null,
+            };
+        });
+        out.start0 = zS;
+        console.log(
+            `  Start über der fremden Welt: zeigt ${zS.zeigt} · Abweichung ${zS.sichtbar ? `„${zS.text}"` : "— (keine sichtbar)"}`
+        );
+        for (const f of startBefunde(zS, ["rampe", "Basis"])) befunde.push(f);
         // A = DIE GEBAUTE WELT: das Studio zeigt unter A die Welt, die steht — gemessen an der Welt selbst.
         const zA = await page.evaluate(async () => {
             const S = window.__gelaendeStudio;
@@ -986,6 +1019,18 @@ async function studioProbe() {
                 `  SELBSTTEST: ein Schritt am Regler „hoehe" ${sieht ? "ändert den Abdruck (die Linse sieht ihn)" : "BLIEB UNSICHTBAR"}`
             );
             if (!sieht) befunde.push("SELBSTTEST: der Abdruck sieht einen Regler-Schritt nicht");
+            // die Start-Wand mit dem Täter von vorher: der Start auf B, keine Abweichung genannt
+            const startNennt = startBefunde({ zeigt: "B", abweichung: undefined, sichtbar: false }, ["rampe", "Basis"]);
+            const startStill = startBefunde({ zeigt: "A", abweichung: ["rampe", "Basis 7 m → 0 m"], sichtbar: true }, [
+                "rampe",
+                "Basis",
+            ]);
+            const startSieht = startNennt.length === 4 && startStill.length === 0;
+            out.selbsttest.startSieht = startSieht;
+            console.log(
+                `  SELBSTTEST: die Start-Wand ${startSieht ? "nennt den Täter (Start auf B, Rampe und Basis verschwiegen, nichts sichtbar)" : "BLIEB BLIND"}`
+            );
+            if (!startSieht) befunde.push("SELBSTTEST: die Start-Wand sieht den Start auf B oder die verschwiegene Abweichung nicht");
             // die Preset-Wand mit Tätern: ein Ziel außerhalb des Korridors, und keine Landschaft mit Schicht-Gesetz
             const nennt = presetBefunde([
                 {

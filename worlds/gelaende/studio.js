@@ -78,6 +78,8 @@
 #gelaende-studio details>summary{cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--mut);margin:10px 2px 2px;list-style:none}
 #gelaende-studio details>summary::before{content:"▸ ";} #gelaende-studio details[open]>summary::before{content:"▾ ";}
 #gelaende-studio .law{font-family:var(--mono);font-size:8.5px;color:var(--mut);opacity:.8;line-height:1.3}
+#gelaende-studio .abweichung{font-size:10px;line-height:1.45;color:#ffb4a8;border-left:2px solid #ff6e5a;padding:3px 0 3px 7px;margin:5px 0}
+#gelaende-studio .abweichung:empty{display:none}
 #gelaende-studio .hinweis{font-size:9.5px;color:var(--mut);margin-top:6px;line-height:1.45}
 body.gelaende-studio-an #fadenkreuz,body.gelaende-studio-an #stats-hud,body.gelaende-studio-an #hotbar,
 body.gelaende-studio-an #dialogue-box,body.gelaende-studio-an #console,body.gelaende-studio-an #topbar,
@@ -89,7 +91,8 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         G: null,
         lageA: null, // A: das Abbild der gebauten Welt (`lageAbbild` ihrer Lage — jede Welt, wie sie steht)
         planB: null, // B: der Entwurf (der Plan, den „Welt bauen" in die Welt legt)
-        zeige: "B",
+        zeige: "A", // das Studio öffnet über der Welt, wie sie steht
+        abweichung: [], // was die Welt trägt und kein Plan (`abweichungDerWelt`) — „Welt bauen" legt die Welt ohne es
         kamera: "makro",
         worker: null,
         naechsteId: 1,
@@ -122,7 +125,11 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             const e = st.erg[welcher];
             if (!e || e.id !== m.id) return;
             if (m.stufe === "fehler") {
+                // EIN BRUCH IST LAUT: die Spur zeigt kein Bild mehr, sondern ihren Grund (`zeichne`), und die Konsole nennt ihn
                 e.fehler = m.grund;
+                console.error(`[Gelände-Studio] ${welcher} bricht: ${m.grund}`);
+                if (st.realm && typeof st.realm.log === "function")
+                    st.realm.log(`Gelände-Studio: ${welcher} bricht — ${m.grund}`, "ERROR");
                 e.schicht = { ort: null, baender: null, urteil: null };
             } else e[m.stufe] = m;
             if (m.stufe === "voll" && !m.statistik) e.schicht = { ort: null };
@@ -172,6 +179,30 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         const e = st.erg[st.zeige];
         const bild = e && (e.voll || e.grob);
         const cv = $("canvas.relief");
+        // Unter A steht nur das Bild der gebauten Welt, unter B nur das des Entwurfs: rechnet die Spur noch, bleibt das Feld
+        // leer (nie das Bild der anderen Spur unter diesem Namen); bricht sie, steht ihr Grund im Feld.
+        if (cv && !bild) {
+            const ctx = cv.getContext("2d");
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            if (e && e.fehler) {
+                ctx.fillStyle = "rgba(60,12,10,.92)";
+                ctx.fillRect(0, 0, cv.width, cv.height);
+                ctx.fillStyle = "#ffb4a8";
+                ctx.font = "15px ui-monospace, monospace";
+                const worte = `${st.zeige} BRICHT: ${e.fehler}`.split(" ");
+                let zeile = "";
+                let y = 40;
+                for (const w of worte) {
+                    if (ctx.measureText(zeile + w).width > cv.width - 40) {
+                        ctx.fillText(zeile, 20, y);
+                        zeile = "";
+                        y += 22;
+                    }
+                    zeile += w + " ";
+                }
+                ctx.fillText(zeile, 20, y);
+            }
+        }
         if (bild && cv) {
             if (!bildCanvas || bildCanvas.width !== bild.n) {
                 bildCanvas = document.createElement("canvas");
@@ -186,7 +217,9 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             ctx.drawImage(bildCanvas, 0, 0, cv.width, cv.height);
         }
         const marke = $(".makro .marke");
-        if (marke) marke.textContent = st.zeige === "A" ? "A · GEBAUT" : "B · ENTWURF";
+        if (marke)
+            marke.textContent =
+                (st.zeige === "A" ? "A · GEBAUT" : "B · ENTWURF") + (e && e.fehler ? " — BRUCH" : "");
         leiste();
     }
     // Der Ort des Spielers und der Blick der Kamera über dem Relief.
@@ -401,7 +434,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         p.setAttribute("aria-label", "Gelände-Studio");
         p.innerHTML = `<div class="kopf"><span class="eb">GELÄNDE-STUDIO</span><span class="saat"></span><button type="button" class="zu-knopf" title="einklappen">–</button></div>
 <div class="leib"><div class="makro"><canvas class="relief" width="536" height="536"></canvas><canvas class="ort" width="274" height="274"></canvas><span class="marke"></span><span class="rechnet"></span></div>
-<div class="reihe ab"></div><div class="leiste"></div><div class="sec">LANDSCHAFT</div><div class="reihe presets"></div><div class="gruppen"></div>
+<div class="reihe ab"></div><div class="abweichung" role="status"></div><div class="leiste"></div><div class="sec">LANDSCHAFT</div><div class="reihe presets"></div><div class="gruppen"></div>
 <details class="mehr"><summary>MEHR</summary><div class="mehr-leib"></div></details>
 <div class="sec">KAMERA</div><div class="reihe kamera"></div><div class="reihe bauen"></div><div class="reihe datei"></div>
 <div class="hinweis">Der Entwurf rechnet sofort im Kern; „Welt bauen" legt ihn durch die Welt-Tür — die Welt erwacht neu auf ihm. Doppelklick auf einen Regler: Standard.</div></div>`;
@@ -624,6 +657,28 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         const L = r._gelaende();
         return G.planNormal({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: String(L.seed), regler: G.landformRegler(L) });
     }
+    // WAS DIE WELT TRÄGT UND KEIN PLAN: der Entwurf beginnt bei ihrer Saat und den Reglern ihres Wildnis-Terms; jeder andere
+    // Term, eine Basis, ein Meer oder eine Kachel neben dem Grund des Kerns fällt, wenn „Welt bauen" den Entwurf legt. Das
+    // Studio nennt es (`.abweichung`), nie still — Leser: das Panel und die Studio-Probe (gate:gelaende-studio, Start-Wand).
+    function abweichungDerWelt(lageA, plan) {
+        const p = st.G.planAbbild(plan);
+        const ab = [];
+        (lageA.erbgut.terme || []).forEach((t, i) => {
+            if (!(i === 0 && t.art === "wildnis")) ab.push(String(t.art));
+        });
+        const kz = (x) => String(Math.round(x * 10) / 10).replace(".", ",");
+        if (lageA.baseHeight !== p.baseHeight) ab.push(`Basis ${kz(lageA.baseHeight)} m → ${kz(p.baseHeight)} m`);
+        if (lageA.waterLevel !== p.waterLevel) ab.push(`Meer ${kz(lageA.waterLevel)} m → ${kz(p.waterLevel)} m`);
+        if (lageA.regionSize !== p.regionSize) ab.push(`Kachel ${kz(lageA.regionSize)} m → ${kz(p.regionSize)} m`);
+        return ab;
+    }
+    function zeigeAbweichung() {
+        const el = $(".abweichung");
+        if (!el) return;
+        el.textContent = st.abweichung.length
+            ? `Die Welt trägt, was kein Plan trägt: ${st.abweichung.join(" · ")} — „Welt bauen" legt sie ohne es.`
+            : "";
+    }
     function start() {
         const r = window.anazhRealm;
         const G = window.__gelaendeCore;
@@ -637,8 +692,10 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         st.G = G;
         st.lageA = G.lageAbbild(r._gelaende());
         st.planB = entwurfDerWelt(r);
+        st.abweichung = abweichungDerWelt(st.lageA, st.planB);
         workerStart();
         baue();
+        zeigeAbweichung();
         rechne("A");
         rechne("B");
         kamera(st.kamera);
@@ -658,6 +715,8 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                     urteil: (e.schicht && e.schicht.urteil) || v.urteil || null,
                     schicht: (e.schicht && e.schicht.baender) || null,
                     raster: v.raster || null,
+                    abweichung: st.abweichung.slice(),
+                    fehler: e.fehler || null,
                 };
             },
             exportPlan,
