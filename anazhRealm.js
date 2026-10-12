@@ -82930,7 +82930,10 @@ class AnazhRealm {
         const p = this.state.player;
         const sw = p && p._swing;
         if (!sw) return;
-        const rawDt = Math.min(0.1, Math.max(0, currentTime - (Number.isFinite(sw.lastT) ? sw.lastT : currentTime)));
+        const rawDt = Math.min(
+            AnazhRealm.TAKT_DECKEL_S,
+            Math.max(0, currentTime - (Number.isFinite(sw.lastT) ? sw.lastT : currentTime))
+        );
         sw.lastT = currentTime;
         const tVor = sw.t;
         sw.t += rawDt * this._hitStopFactor(currentTime);
@@ -83858,7 +83861,10 @@ class AnazhRealm {
         const creatures = this.state.creatures || [];
         for (let i = list.length - 1; i >= 0; i--) {
             const pf = list[i];
-            const dt = Math.min(0.1, Math.max(0, nowSec - (Number.isFinite(pf.lastT) ? pf.lastT : nowSec)));
+            const dt = Math.min(
+                AnazhRealm.TAKT_DECKEL_S,
+                Math.max(0, nowSec - (Number.isFinite(pf.lastT) ? pf.lastT : nowSec))
+            );
             pf.lastT = nowSec;
             if (nowSec - pf.born > B.maxFlugSec) {
                 this._pfeilDespawn(pf);
@@ -95570,7 +95576,15 @@ class AnazhRealm {
             // undefined → NaN in delta/frameMs vergiftet die frameMs-EWMA für immer (der Regler säße still im
             // Totband). Bewacht von `gate:regler-sim`.
             const t = Number.isFinite(time) ? time : performance.now();
-            const delta = Math.max(0.001, (t - lastTime) / 1000);
+            // DIE WANDUHR UND DER SPIEL-TAKT (K21, Lehre 13): EINE Obergrenze des Takts, HIER an der Wurzel. Eine Pause
+            // (versteckter Tab, Debugger, Lade-Stau) ist eine Pause — die Welt läuft danach mit höchstens EINEM Schritt
+            // von `TAKT_DECKEL_S` weiter (vorher trug der ungedeckelte Takt jedes laufende Tier um Tempo × Pause: 73 m bis
+            // 5 km, `gate:move-under-load` (d)). `delta` (der Spiel-Takt) liest jede Bewegung: Fix-Schritt, Tiere, Ritt,
+            // Rauch, Wetter-Zug. Die Wanduhr lesen nur, die sie benannt brauchen: `wandDelta` das Mess-Instrument
+            // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange) und das Foundry-Laden (die Welt lädt mit der
+            // Wanduhr); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
+            const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
+            const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const currentTime = t / 1000;
 
@@ -95800,13 +95814,13 @@ class AnazhRealm {
                 this._loopErrorBoundary(err);
             }
 
-            // Frame-Ende: Perf-Sense falten (EWMA) + PID-Regler treiben; frameMs = delta·1000 (fängt auch den
+            // Frame-Ende: Perf-Sense falten (EWMA) + PID-Regler treiben; frameMs = wandDelta·1000 (fängt auch den
             // Block-Spike eines Sync-Builds). LÄUFT IMMER, auch nach einem abgefangenen Frame-Fehler.
             // Unter der GPU-Leine zählt der Abstand zwischen GERENDERTEN Frames — der Regler, das HUD und der Flugschreiber
             // sähen sonst den 60-Hz-Takt der Simulation, wo die GPU weniger Bilder schafft.
             // Die Faltung steht unter derselben Fehler-Grenze wie der Frame (V18.278: ein werfender Frame-Schritt —
             // auch updateFps — erstarrt den Loop nicht, er wird gezählt).
-            const _fms = this._gpuLeineFrameMs(delta * 1000);
+            const _fms = this._gpuLeineFrameMs(wandDelta * 1000);
             if (_fms != null) {
                 try {
                     this.updateFps(_fms / 1000);
@@ -95816,9 +95830,9 @@ class AnazhRealm {
                 }
             }
             // Ingest-Takt ebenfalls auf der LÄUFT-IMMER-Seite: im try-Block hungerte ein persistenter
-            // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `delta` (s) treibt eine
+            // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `wandDelta` (s) treibt eine
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
-            this._tickFoundryIngest(delta);
+            this._tickFoundryIngest(wandDelta);
 
             // Deferierter Avatar-Bau: nach ein paar gerenderten Frames EINMAL bauen — der ~1.9-s-Skin-Bau hängt
             // einen Frame, nicht den Boot. Eigenes try/catch (darf den Loop nicht reißen); headless setzt
@@ -96136,7 +96150,7 @@ class AnazhRealm {
     }
 
     // Der AKKUMULATOR (Fiedler): sammelt die echte Frame-Zeit, steppt die Sim in FIXED_DT-Häppchen,
-    // geklemmt gegen den Spiral-of-Death (FIXED_MAX_ACCUM pro Frame + FIXED_MAX_STEPS hart). Die
+    // geklemmt gegen den Spiral-of-Death (der Takt kommt gedeckelt aus dem Loop, `TAKT_DECKEL_S`, + FIXED_MAX_STEPS hart). Die
     // Sim-Position wird VOR den Schritten wiederhergestellt (der Render setzte mesh evtl. auf die
     // interpolierte) + `_fixedPrevPos` für die Interpolation gemerkt. Gibt die Schritt-Zahl zurück.
     _loopFixedStep(realDt, currentTime) {
@@ -96159,8 +96173,8 @@ class AnazhRealm {
         // prev = die Sim-Position VOR diesem Frame (für die Render-Interpolation)
         if (!st._fixedPrevPos) st._fixedPrevPos = mesh.position.clone();
         else st._fixedPrevPos.copy(mesh.position);
-        // den Akkumulator füllen — die per-Frame-Zeit gegen einen Hitch geklemmt (kein Spiral-of-Death)
-        st._fixedAccumulator = (st._fixedAccumulator || 0) + Math.min(realDt, AnazhRealm.FIXED_MAX_ACCUM);
+        // den Akkumulator füllen — der Takt ist an der Wurzel gedeckelt (`TAKT_DECKEL_S` in startEternalLoop, kein Spiral-of-Death)
+        st._fixedAccumulator = (st._fixedAccumulator || 0) + realDt;
         let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : currentTime;
         let steps = 0;
         while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
@@ -105370,11 +105384,13 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
-// V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). FIXED_MAX_ACCUM
-// klemmt die per-Frame-Zeit gegen den Spiral-of-Death (ein 2-s-Hitch akkumuliert nicht 120 Steps);
+// V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
+// die EINE Obergrenze des Spiel-Takts, an der Wurzel in startEternalLoop: ein 2-s-Hitch akkumuliert nicht
+// 120 Steps, eine 10-s-Pause trägt kein Tier 40 m weit (jede Bewegung liest den gedeckelten Takt, nie die
+// Wanduhr; die Anzeige-Uhren von Schwung und Pfeil deckeln ihren Stempel-Abstand mit derselben Zahl);
 // FIXED_MAX_STEPS ist die harte Obergrenze pro Frame (überschüssige Zeit fällt weg → kein Einhol-Sturm).
 AnazhRealm.FIXED_DT = 1 / 60;
-AnazhRealm.FIXED_MAX_ACCUM = 0.1;
+AnazhRealm.TAKT_DECKEL_S = 0.1;
 AnazhRealm.FIXED_MAX_STEPS = 8;
 // Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock): Tag-Nacht-Uhr und
 // Emotions-Cross-Fade driften die Himmelsfarbe, jede Regeneration rendert einen PMREM-Pass (teuer
