@@ -252,9 +252,26 @@ function seitenPruefer() {
             const pm = r.state.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
+            // DIE LICHT-GEDÄCHTNISSE (K11) über ihre echten Schreiber: die Laterne eines Plans (`_laternenLesen`, Marke im
+            // Schlüssel), das wache Tor (`_tickPortalLicht`) und der Licht-Pool, der es hält (`_leuchtTakt`)
+            r._laternenLesen({ laternen: [{ x: 0, z: 0 }] }, { x: 12345, z: 12345 }, T);
+            r._tickPortalLicht({
+                entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },
+                tor: { mu: { springY: 1 } },
+                _act: 1,
+                u: null,
+            });
+            r._portalLeuchte.herkunft = T;
+            r._ensureAtmoUniforms();
+            r._leuchtTakt();
             const tier = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 1, z, "happy", null, { precise: true });
             if (tier && tier.userData) tier.userData.name = T;
-            return { erbgut: r._erbgut().terme.map((t) => t.art), tier: !!tier };
+            const licht = [
+                r._laternen && r._laternen.schluessel.has(T) ? null : "_laternen",
+                r._portalLeuchte && r._portalLeuchte.herkunft === T ? null : "_portalLeuchte",
+                r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T) ? null : "_leuchtPool",
+            ].filter(Boolean);
+            return { erbgut: r._erbgut().terme.map((t) => t.art), tier: !!tier, lichtBlind: licht };
         },
         // Die lebende Seite in Welt B: jedes Feld von A beim Namen. `ganz` = auch der volle Snapshot der Seite (nach einem
         // Reload; in der Seite trägt das Leben der alten Welt nur der Reload fort, die Türen laden neu).
@@ -284,6 +301,9 @@ function seitenPruefer() {
                 _autoSettlementStartHopeless: r._autoSettlementStartHopeless === true,
                 _autoSettlementQueue: !!(r._autoSettlementQueue && r._autoSettlementQueue.cellKey === T),
                 _stlWegeKeys: !!(r._stlWegeKeys && r._stlWegeKeys.has(T)),
+                _laternen: !!(r._laternen && r._laternen.schluessel.has(T)),
+                _portalLeuchte: !!(r._portalLeuchte && r._portalLeuchte.herkunft === T),
+                _leuchtPool: !!(r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T)),
             };
             for (const k of Object.keys(ged)) if (ged[k]) out.push(`Gedächtnis this.${k}`);
             if (ganz) {
@@ -406,6 +426,8 @@ async function fahreWeg(browser, weg, schein) {
         });
         const B = await page.evaluate((f) => window.__grenze.bauB("grenze-b", f), form);
         rep.pflanzung = await page.evaluate((e) => window.__grenze.pflanzeA(e), BUEHNE.worldMeta.erbgut);
+        // die Licht-Gedächtnisse tragen das Zeichen, ehe die Tür sie prüft (sonst sähe die Linse nichts)
+        for (const k of rep.pflanzung.lichtBlind) rep.befunde.push(`die Pflanzung ist blind: this.${k} trägt das Zeichen von A nicht`);
         // A's Fortschritt nach dem letzten Autosave: er muss die Tür überleben (auf A's Platz)
         await page.evaluate(() => {
             const r = window.anazhRealm;

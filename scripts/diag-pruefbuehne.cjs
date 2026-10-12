@@ -19,6 +19,11 @@
 //   (5) DIE S4-PROBE: die Hindernis-Station (`s4-hindernisse` in spec/pruefbuehne/stationen.json — Würfel, Säule, Mauer,
 //       Gasse, Hausrumpf 45°, Engpass) steht, gesät über die Snapshot-Tür: je Körper die Blocker-Boxen ≤ 0,1 m an der
 //       Spec und im Blocker-Netz. Der Selbsttest rückt die Mauer 0,5 m — die Probe nennt sie, und nur sie.
+//   (6) DIE S0-PROBE (K11): die Feuerstelle, die der Mensch im Atrium setzt, leuchtet nachts — mit und ohne Klang
+//       ≥ 1 Licht ≤ 10 m (ein Platz des Licht-Pools), Bestrahlung in 2 m ≥ 2× die Nacht; die Laterne eines Plans nachts an,
+//       mittags aus; die Fenster-Glut nachts an, mittags aus; JEDER beleuchtete Stoff trägt den Pool (Bauer im Stamm und
+//       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
+//       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -43,9 +48,11 @@ const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
-const S4 = JSON.parse(
+const STATIONEN = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
-).stationen.find((st) => st.id === "s4-hindernisse");
+).stationen;
+const S4 = STATIONEN.find((st) => st.id === "s4-hindernisse");
+const S0 = STATIONEN.find((st) => st.id === "s0-atrium");
 const S4_SCHEIN = { bauplan: "pruef_mauer", dx: 0.5 }; // der Selbsttest: die Mauer rückt 0,5 m
 
 const mime = {
@@ -209,6 +216,269 @@ async function s4Probe(page, station, schein) {
         station,
         S4_TOLERANZ,
         schein || null
+    );
+}
+
+// (6) DIE S0-PROBE (K11, das Leuchtquellen-Gesetz): im Atrium (`s0-atrium`) setzt der Mensch über den Spiel-Pfad eine
+// Feuerstelle (der Satz `spawn_studio feuerstelle`), die Nacht steht still (Mitternacht, Sonne, das Wetter gehalten — Lehre 17),
+// das Auge 2 m vor dem Feuer. Gezählt wird jedes Licht ≤ 10 m um das Feuer, das ein Stoff liest — ein Punktlicht der Szene mit
+// Stärke oder ein Platz des Licht-Pools mit Stärke (`_leuchtPool`) —, einmal mit „Klang: AUS" (der Standard), einmal mit Klang;
+// dazu die Bestrahlung des Pools in 2 m (das EINE Gesetz (1 − d/R)^abfall, lineare Farbe nach Luminanz) gegen die der Nacht
+// selbst (`_waagrechtIrradianz`, dieselbe, die die Belichtung liest) und die Fenster-Glut des Zeitplans um Mitternacht und
+// Mittag (`atmoUniforms.fensterGlut`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
+// im Stamm (jede Methode, die einen beleuchteten Stoff baut, ruft `_leuchtStoff`) UND jedes beleuchteten Stoffs der Szene
+// (`userData.lichtPool`); EIN Punktlicht-Gesetz (nur `_lichtPoolTerm` ruft `_punktLichtBrdf`, kein Szenen-Licht im Stamm); die
+// Laterne eines Plans (`laternen[]`, der Leser `_laternenLesen` im Hebe-Chokepoint `_spawnSettlementErlebnis`) leuchtet nachts
+// und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
+// `schein` (der Selbsttest): die Feuerstelle trägt kein Emitter-Datum (`_lichtDatum`), der Laternen-Leser liest nichts, ein
+// Bauer `_scheinStoff` baut einen Stoff ohne Pool, und ein Stoff ohne Pool steht als `pruef-schein` in der Szene — die Probe
+// MUSS jeden beim Namen nennen.
+const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
+// das Feuer trägt in 2 m mindestens dieses Vielfache der waagrechten Bestrahlung der Nacht — der Nordstern Fachwerk: nachts hebt
+// warmes Licht den Platz auf 2–5 lx, der Rest bleibt im Mondlicht bei 0,1–0,3 lx (2 lx gegen 0,2 lx)
+const S0_E2_NACHT = 10;
+async function s0Probe(page, station, schein) {
+    return page.evaluate(
+        async (st, umkreis, e2min, schein) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const T = window.THREE;
+            const out = {
+                station: st.id,
+                befunde: [],
+                nacht: {},
+                fenster: null,
+                laterne: null,
+                bauer: [],
+                ohnePool: [],
+                brdf: [],
+                stoffe: null,
+                code: {},
+            };
+            const takt = async (n) => {
+                for (let i = 0; i < n; i++) {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {
+                        /* ein Takt-Fehler zählt der Page-Error */
+                    }
+                    await new Promise((res) => setTimeout(res, 16));
+                }
+            };
+            const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
+            const P = Object.getPrototypeOf(r);
+            if (schein) {
+                r._lichtDatum = () => null;
+                r._laternenLesen = () => 0;
+                P._scheinStoff = function () {
+                    return new THREE.MeshStandardNodeMaterial({ color: 0xffffff });
+                };
+                // der stille Rückfall unter fremdem Namen: ein Bauer mit Pool, dessen Fang einen Stoff ohne Pool baut
+                P._scheinRueckfall = function () {
+                    const T3 = THREE;
+                    try {
+                        return this._leuchtStoff(new T3.MeshStandardNodeMaterial({ color: 0xffffff }), null);
+                    } catch (_e) {
+                        return new T3.MeshStandardMaterial({ color: 0xffffff });
+                    }
+                };
+                const m = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshStandardNodeMaterial({ color: 0x808080 }));
+                m.name = "pruef-schein";
+                s.scene.add(m);
+            }
+            // der Zensus der Bauer im Stamm: Punktlichter (die Täter-Klasse von K11 Runde 1), beleuchtete Stoffe ohne Pool,
+            // Rufer der BRDF eines Punktlichts (das EINE Gesetz)
+            // je Bau eines beleuchteten Stoffs, unter jedem Namen der Bibliothek (`THREE`, `T` …): ein Stoff ohne Knoten trägt
+            // den Pool nie (`_leuchtStoff` wirft), ein Knoten-Stoff nur, wo die Methode ihn in den Pool legt
+            const LIT = /new\s+[A-Za-z_$][\w$]*\.Mesh(Standard|Physical|Lambert|Phong|Toon)(Node)?Material\(/g;
+            for (const n of Object.getOwnPropertyNames(P)) {
+                if (n === "constructor" || typeof P[n] !== "function") continue;
+                const c = code(P[n]);
+                if (/new THREE\.PointLight\(/.test(c)) out.bauer.push(n);
+                const bau = [...c.matchAll(LIT)];
+                if (bau.some((b) => !b[2]) || (bau.length && !/this\._leuchtStoff\(/.test(c))) out.ohnePool.push(n);
+                if (/this\._punktLichtBrdf\(/.test(c)) out.brdf.push(n);
+            }
+            if (schein) {
+                delete P._scheinStoff;
+                delete P._scheinRueckfall;
+            }
+            r._setWeather("sunny", "human");
+            s.weatherTransition = null;
+            // die Uhr steht, und mit ihr die Himmels-Umgebung (der Loop malt sie nur bei Drift und gedrosselt — ohne den
+            // Neu-Anstrich trüge die Nacht die Bestrahlung des Mittags)
+            const uhr = (t) => {
+                r._uhrSetzen(t, "human");
+                r._applyDayNightToScene();
+                if (typeof r._ensureSkyEnvironment === "function") {
+                    s._skyEnvLastRegenMs = -Infinity;
+                    r._ensureSkyEnvironment(false);
+                }
+                r._applyDayNightToScene();
+            };
+            uhr(0);
+            const y0 = r.getTerrainHeightAt(st.x, st.z);
+            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+            const vor = new Set(s.architectures || []);
+            r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
+            await takt(20);
+            const feuer = (s.architectures || []).find((e) => e && e.position && !vor.has(e));
+            if (!feuer) {
+                out.befunde.push("S0: die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)");
+                return out;
+            }
+            const f = feuer.position;
+            out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
+            out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
+            // die Laterne eines Plans 6 m neben dem Feuer (der Leser im Hebe-Chokepoint, nur die Wege-Schicht: der Plan trägt
+            // keine Wege)
+            r._spawnSettlementErlebnis({ laternen: [{ x: 0, z: 6 }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne", nurWege: true });
+            const cam = s.camera;
+            const zaehle = (um) => {
+                const lichter = [];
+                const v = new T.Vector3();
+                s.scene.traverse((o) => {
+                    if (!o.isPointLight || !(o.intensity > 0)) return;
+                    o.getWorldPosition(v);
+                    if (v.distanceTo(um) <= umkreis) lichter.push({ art: "szene", I: +o.intensity.toFixed(3) });
+                });
+                let e2 = 0;
+                const pool = r._leuchtPool;
+                for (const p of (pool && pool.plaetze) || []) {
+                    if (!(p.staerke > 0) || Math.hypot(p.x - um.x, p.y - um.y, p.z - um.z) > umkreis) continue;
+                    // das Licht DIESER Feuerstelle steht über ihrem Bett (≤ 1,5 m waagrecht); jedes andere zählt nur als Licht
+                    const eigen = Math.hypot(p.x - um.x, p.z - um.z) <= 1.5;
+                    lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3), eigen });
+                    if (!eigen) continue;
+                    // der Pool in 2 m: das EINE Gesetz (1 − d/R)^abfall, die Farbe nach Luminanz
+                    const ab = Math.pow(Math.max(0, 1 - 2 / p.reichweite), p.abfall);
+                    const lum = 0.2126 * p.farbe[0] + 0.7152 * p.farbe[1] + 0.0722 * p.farbe[2];
+                    e2 += p.staerke * ab * lum;
+                }
+                const en = r._waagrechtIrradianz([0, 0, 0]);
+                const nacht = 0.2126 * en[0] + 0.7152 * en[1] + 0.0722 * en[2];
+                return { n: lichter.length, lichter, e2: +e2.toFixed(3), nacht: +nacht.toFixed(3) };
+            };
+            for (const klang of [false, true]) {
+                if (s.symphony) s.symphony.enabled = klang;
+                uhr(0);
+                cam.position.set(f.x - 2, f.y + 1.2, f.z);
+                cam.lookAt(f.x, f.y, f.z);
+                cam.updateMatrixWorld(true);
+                await takt(45); // die Plätze blenden ein (LICHT_POOL.blendeS)
+                const z = zaehle(f);
+                out.nacht[klang ? "klang" : "still"] = z;
+                const wie = klang ? "Klang an" : "Klang aus";
+                const amFeuer = z.lichter.filter((l) => l.eigen);
+                if (amFeuer.length < 1) {
+                    const taeter = !out.verzeichnis
+                        ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
+                        : typeof r._leuchtTakt !== "function"
+                          ? "kein Licht-Leser der Glut (`_leuchtTakt` fehlt)"
+                          : "der Licht-Takt setzt keinen Platz an die Glut";
+                    out.befunde.push(
+                        `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
+                            (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
+                    );
+                } else if (!(z.e2 >= e2min * z.nacht))
+                    out.befunde.push(
+                        `S0 Nacht (${wie}): die Bestrahlung in 2 m ist ${z.e2}, die Nacht trägt ${z.nacht} — ${(z.e2 / z.nacht).toFixed(1)}× ` +
+                            `(Soll ≥ ${e2min}×: Nordstern Fachwerk, warmes Licht 2–5 lx gegen den Mond 0,1–0,3 lx); das Datum des Feuers ` +
+                            "(fachwerk LICHT_GESETZ.feuer, Zeitplan nacht) über `_leuchtStaerke`"
+                    );
+            }
+            if (s.symphony) s.symphony.enabled = false;
+            // die Laterne: nachts ein Platz, mittags keiner
+            const lp = { x: f.x, y: f.y + 3, z: f.z + 6 };
+            const laterneAn = () =>
+                ((r._leuchtPool && r._leuchtPool.plaetze) || []).filter(
+                    (p) => p.quelle === "laterne" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1
+                ).length;
+            cam.position.set(lp.x - 2, lp.y - 1.5, lp.z);
+            cam.updateMatrixWorld(true);
+            uhr(0);
+            await takt(45);
+            const nachtL = laterneAn();
+            uhr(0.5);
+            await takt(45);
+            const mittagL = laterneAn();
+            out.laterne = { nachts: nachtL, mittags: mittagL };
+            if (nachtL !== 1 || mittagL !== 0)
+                out.befunde.push(
+                    `S0 Laterne: die Laterne des Plans trägt nachts ${nachtL} und mittags ${mittagL} Plätze (Soll 1 und 0) — ` +
+                        "der Leser `_laternenLesen` (laternen[] im Hebe-Chokepoint `_spawnSettlementErlebnis`)"
+                );
+            // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
+            const glut = () => {
+                const u = s.atmoUniforms && s.atmoUniforms.fensterGlut;
+                const c = u && u.value;
+                return c ? +(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b).toFixed(4) : null;
+            };
+            uhr(0);
+            await takt(2);
+            const nachts = glut();
+            uhr(0.5);
+            await takt(2);
+            const mittags = glut();
+            out.fenster = { nachts, mittags };
+            if (!(nachts > 0) || mittags !== 0)
+                out.befunde.push(
+                    `S0 Fenster: die Glut des Zeitplans ist nachts ${nachts} und mittags ${mittags} (Soll > 0 und 0; ` +
+                        "fachwerk ZEIT_VIS host)"
+                );
+            // der Zensus jedes beleuchteten Stoffs der Szene: er trägt den Pool (oder ist selbst Quelle)
+            out.stoffe = window.__stoffZensus();
+            const lit = out.stoffe.beleuchtet;
+            if (out.stoffe.ohnePool.length)
+                out.befunde.push(
+                    `S0 Stoff ohne Pool: ${out.stoffe.ohnePool.length} von ${lit} beleuchteten Stoffen der Szene tragen den ` +
+                        `Licht-Pool nicht (${out.stoffe.ohnePool.slice(0, 8).join(", ")}) — nachts bleiben sie neben dem Feuer dunkel`
+                );
+            if (out.ohnePool.length)
+                out.befunde.push(
+                    `S0 Bauer ohne Pool: ${out.ohnePool.map((b) => "`" + b + "`").join(", ")} bauen einen beleuchteten Stoff ` +
+                        "ohne `_leuchtStoff`"
+                );
+            if (out.brdf.length !== 1 || out.brdf[0] !== "_lichtPoolTerm")
+                out.befunde.push(
+                    `S0 Punktlicht-Gesetz: die BRDF eines Punktlichts rufen ${out.brdf.map((b) => "`" + b + "`").join(", ") || "niemand"} ` +
+                        "(Soll: nur `_lichtPoolTerm`, das EINE Gesetz)"
+                );
+            if (out.bauer.length)
+                out.befunde.push(
+                    `S0 Punktlicht: ${out.bauer.length} Stamm-Methode(n) bauen ein Szenen-Licht (${out.bauer.join(", ")}) — ` +
+                        "jedes Szenen-Licht kostet jeden beleuchteten Stoff, auch auf 0"
+                );
+            uhr(0.5);
+            return out;
+        },
+        station,
+        S0_LICHT_M,
+        S0_E2_NACHT,
+        !!schein
+    );
+}
+
+function zeigeS0(rep, schein) {
+    console.log(`\n  ── S0-PROBE ${rep.station}${schein ? " · SCHEIN (Feuer ohne Datum, Laterne ungelesen, Stoff und Bauer ohne Pool)" : ""}`);
+    if (rep.feuer)
+        console.log(
+            `    Feuerstelle ${rep.feuer.typ} bei ${rep.feuer.x}|${rep.feuer.z}, Glut-Fläche ${rep.feuer.flaeche} m², Verzeichnis ${rep.verzeichnis ? "ja" : "NEIN"}`
+        );
+    for (const k of Object.keys(rep.nacht || {})) {
+        const z = rep.nacht[k];
+        console.log(
+            `    Nacht ${k === "klang" ? "Klang an " : "Klang aus"}: ${z.n} Lichter ≤ ${S0_LICHT_M} m, Bestrahlung in 2 m ${z.e2} (die Nacht ${z.nacht}) ${JSON.stringify(z.lichter)}`
+        );
+    }
+    if (rep.laterne) console.log(`    Laterne des Plans: nachts ${rep.laterne.nachts} · mittags ${rep.laterne.mittags} Plätze`);
+    if (rep.fenster) console.log(`    Fenster-Glut: nachts ${rep.fenster.nachts} · mittags ${rep.fenster.mittags}`);
+    if (rep.stoffe)
+        console.log(
+            `    Stoffe der Szene: ${rep.stoffe.beleuchtet} beleuchtet, ohne Pool ${rep.stoffe.ohnePool.length ? rep.stoffe.ohnePool.join(", ") : "keiner"}`
+        );
+    console.log(
+        `    Bauer im Stamm: Punktlicht ${rep.bauer.length ? rep.bauer.join(", ") : "keiner"} · Stoff ohne Pool ${rep.ohnePool.length ? rep.ohnePool.join(", ") : "keiner"} · BRDF-Rufer ${rep.brdf.join(", ") || "keiner"}`
     );
 }
 
@@ -383,6 +653,451 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
     );
 }
 
+// (7) DAS BILD DER S0-PROBE (`--licht`, K11 Abnahme): ECHTER Renderer (swiftshader und das Holz kienspan; `--echt` die
+// Hardware-GPU im Fenster), dieselbe Bühne, dieselbe Feuerstelle über den Satz des Menschen, die Nacht still (Mitternacht,
+// Sonne, Sommer — `__buehne`, Lehre 17), das Auge 2 m vor dem Feuer in Augenhöhe, Blick auf das Bett; aufgenommen über den
+// AUSGABE-PFAD (`__ausgabeAufnahme`: ACES + sRGB + Post, was der Spieler sieht). Gemessen wird der FEUERKREIS: der Boden in
+// 0,75 / 1,25 / 1,75 m um die Feuerstelle (je 24 Winkel, auf den Schirm projiziert, 3×3 gemittelt), Luma der Ausgabe. Die
+// Abnahme der Karte: Luma ≥ 0,15. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und der Licht-Pool in jedem Stoff
+// (`_lichtPoolTerm`). Der Selbsttest leert den Pool (jeder Platz ohne Reichweite) — der Kreis MUSS unter die Schwelle fallen
+// und den Pool beim Namen nennen.
+// DIE FRIST (Kartenkopf: eine Linse ≤ 3 min CI): der ganze Lauf steht unter EINER Uhr (`S0_FRIST_S`), jede Phase (Laden,
+// Boot, Satz, Gestalt, Schuss, Schein) läuft gegen ihren Rest — reißt sie, endet die Linse ROT beim Namen der Phase (bis
+// 12.10. hielt nur die Protokoll-Grenze von 900 s: die Zweig-CI brach nach 15 min ohne Namen ab, die Schleifen zählten nur
+// Versuche). Und DIE STILLE BIS ZUM SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet
+// auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
+// Warte-Takten (gemessen 12.10., 24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
+// die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
+// DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Schuss zeichnet über den
+// Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) nur die Nähe des Feuers — jedes Objekt der Welt-Szene,
+// dessen Hülle (Kugel in Welt-Lage, Instanz- und Batch-Hülle eingeschlossen) die Kugel um das Feuer schneidet. Die Sätze
+// (`bodenSatz`, `bauSatz`: Boden und Bauten je Stoff in EINEM Mesh) tragen die Überall-Hülle (1e9) und zeichnen; eine
+// Hülle ≥ 1 km ist die Ferne (Panorama, Fern-Ring) und fällt. Fremde Szenen (Post, PMREM) und die Lichter bleiben. Gemessen 12.10. (24 Kerne):
+// die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
+// mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
+const S0_NAH_INSTALL = () => {
+    window.__s0Nah = (mitte, radius) => {
+        const st = window.anazhRealm.state;
+        const rend = st.renderer;
+        const welt = st.scene;
+        const kugel = new window.THREE.Sphere();
+        const urteil = new WeakMap();
+        const zaehl = { nah: 0, fern: 0 };
+        const nah = (o) => {
+            let u = urteil.get(o);
+            if (u !== undefined) return u;
+            let wurzel = o;
+            while (wurzel.parent) wurzel = wurzel.parent;
+            let k = null;
+            if ((o.isInstancedMesh || o.isBatchedMesh) && typeof o.computeBoundingSphere === "function") {
+                if (!o.boundingSphere) o.computeBoundingSphere();
+                k = o.boundingSphere;
+            } else if (o.geometry) {
+                if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+                k = o.geometry.boundingSphere;
+            }
+            if (wurzel !== welt || !k) u = true;
+            else {
+                kugel.copy(k).applyMatrix4(o.matrixWorld);
+                u =
+                    kugel.radius >= 1e8 ||
+                    (kugel.radius < 1000 && kugel.center.distanceTo(mitte) - kugel.radius < radius);
+            }
+            urteil.set(o, u);
+            zaehl[u ? "nah" : "fern"]++;
+            return u;
+        };
+        rend._projectObject = function (o, ...rest) {
+            if (o.visible !== false && (o.isMesh || o.isLine || o.isPoints || o.isSprite) && !nah(o)) {
+                for (const c of o.children) this._projectObject(c, ...rest);
+                return undefined;
+            }
+            return Object.getPrototypeOf(this)._projectObject.call(this, o, ...rest);
+        };
+        return () => {
+            delete rend._projectObject;
+            return zaehl;
+        };
+    };
+};
+const S0_NAH_M = 4;
+const S0_LUMA_2M = 0.15;
+const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
+async function lichtLauf() {
+    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+    const ECHT = argv.includes("--echt");
+    const HOLZ = opt("--holz", "kienspan");
+    const BILD = opt("--bild", null);
+    const t0 = Date.now();
+    const bis = t0 + S0_FRIST_S * 1000;
+    const zeit = (was) => console.log(`    · ${was} nach ${Math.round((Date.now() - t0) / 1000)} s`);
+    // je Phase der Rest der EINEN Uhr: die Seite bekommt ihn mit (`rest`), der Lauf wartet höchstens so lange
+    let phaseJetzt = "Start";
+    const phase = async (name, fn) => {
+        phaseJetzt = name;
+        const rest = bis - Date.now();
+        let uhrwerk = null;
+        try {
+            return await Promise.race([
+                fn(Math.max(0, rest)),
+                new Promise((_, nein) => {
+                    uhrwerk = setTimeout(() => nein(new Error("FRIST")), Math.max(0, rest));
+                }),
+            ]);
+        } finally {
+            clearTimeout(uhrwerk);
+        }
+    };
+    await new Promise((r) => server.listen(PORT, r));
+    const browser = await puppeteer.launch({
+        headless: !ECHT,
+        protocolTimeout: (S0_FRIST_S + 60) * 1000,
+        defaultViewport: ECHT ? null : { width: 640, height: 360 },
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : softwareWebGpuArgs(),
+    });
+    const ende = async (befund) => {
+        console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(1);
+    };
+    const page = await browser.newPage();
+    let pageErr = null;
+    page.on("pageerror", (err) => {
+        pageErr = (err.stack || err.message).split("\n")[0];
+        console.log("[PAGE-ERROR]", pageErr);
+    });
+    await page.evaluateOnNewDocument(() => {
+        window.__codeOf = (fnOrSrc) =>
+            String(fnOrSrc)
+                .replace(/\/\/.*$/gm, "")
+                .replace(/\/\*[\s\S]*?\*\//g, "");
+    });
+    // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
+    await page.evaluateOnNewDocument(() => {
+        try {
+            if (!sessionStorage.getItem("__s0Leer")) {
+                localStorage.clear();
+                sessionStorage.setItem("__s0Leer", "1");
+            }
+        } catch (_e) {
+            /* */
+        }
+    });
+    // die Stille bis zum Schuss (oben): `_loopRender` ruht, solange `__s0Still` steht — in jedem Laden ab dem ersten Skript
+    await page.evaluateOnNewDocument(() => {
+        window.__s0Still = true;
+        const warte = setInterval(() => {
+            // eslint-disable-next-line no-undef
+            const K = typeof AnazhRealm === "function" ? AnazhRealm : null;
+            if (!K) return;
+            clearInterval(warte);
+            const zeichne = K.prototype._loopRender;
+            K.prototype._loopRender = function (t) {
+                if (window.__s0Still) return undefined;
+                return zeichne.call(this, t);
+            };
+        }, 1);
+    });
+    const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
+    const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+    const ergebnis = {};
+    try {
+        await phase("Laden", async (rest) => {
+            await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
+            const id = await page.evaluate(
+                async (json, rest) => {
+                    const t = performance.now();
+                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t < rest)
+                        await new Promise((r) => setTimeout(r, 50));
+                    const r = window.anazhRealm;
+                    if (!r || !r.importWorldBeside) return null;
+                    const res = r.importWorldBeside(json);
+                    if (!res.ok) return null;
+                    r.activeWorldSet(res.worldId);
+                    return res.worldId;
+                },
+                json,
+                rest
+            );
+            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
+            zeit("die Bühne importiert");
+            await page.reload({ waitUntil: "domcontentloaded", timeout: Math.max(1, bis - Date.now()) });
+        });
+        await phase("Boot", async () => {
+            const b = await boote(page);
+            if (!b.ok) throw new Error("Boot nicht bereit nach 120 s");
+            zeit("die Bühne gebootet");
+            await page.evaluate(AUSGABE_INSTALL);
+            await page.evaluate(S0_NAH_INSTALL);
+        });
+        // der Satz des Menschen, bis die Welt ihn trägt (direkt nach dem Boot lädt das Gesetzbuch noch) — und die Gestalt
+        // der Feuerstelle (der Bau der Foundry), ehe der Schuss misst
+        for (const [name, gestalt] of [
+            ["Satz", false],
+            ["Gestalt", true],
+        ]) {
+            const fehler = await phase(name, (rest) =>
+                page.evaluate(
+                    async (st, gestalt, rest) => {
+                        const r = window.anazhRealm;
+                        const s = r.state;
+                        const fristEnde = performance.now() + rest - 5000; // die Seite nennt, was fehlt, ehe die Uhr reißt
+                        s.renderer.setAnimationLoop(null);
+                        const takt = async (n) => {
+                            for (let i = 0; i < n; i++) {
+                                try {
+                                    r._gameLoopTick(performance.now());
+                                } catch (_e) {
+                                    /* ein Takt-Fehler zählt der Page-Error */
+                                }
+                                await new Promise((res) => setTimeout(res, 16));
+                            }
+                        };
+                        if (!gestalt) {
+                            window.__buehne();
+                            const y0 = r.getTerrainHeightAt(st.x, st.z);
+                            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+                            const vor = new Set(s.architectures);
+                            const pm = s.playerMesh.position;
+                            let feuer = null;
+                            while (!feuer && performance.now() < fristEnde) {
+                                const halt = s.weatherEffectTime;
+                                s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
+                                try {
+                                    r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
+                                } finally {
+                                    s.weatherEffectTime = halt;
+                                }
+                                await takt(20);
+                                feuer = s.architectures.find(
+                                    (e) =>
+                                        !vor.has(e) &&
+                                        e.position &&
+                                        r._glutFlaeche(e) > 0 &&
+                                        Math.hypot(e.position.x - pm.x, e.position.z - pm.z) < 8
+                                );
+                            }
+                            window.__s0Feuer = feuer;
+                            return feuer ? null : "die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)";
+                        }
+                        // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im Instanz-Pool,
+                        // `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN Weltbild-Urteils `_weltbildFehlt`:
+                        // der Ring bis `RING_EXIST_FLOOR`). Bis 12.10. wartete die Linse auf das ganze Urteil — dessen
+                        // Streu-Regionen der Bühne warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden
+                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle
+                        const feuer = window.__s0Feuer;
+                        const K = r.constructor;
+                        let fehlt = [];
+                        while (performance.now() < fristEnde) {
+                            fehlt = [];
+                            if (!r._archIsRendered(feuer)) fehlt.push("die Feuerstelle wächst");
+                            const ring = r._builtRingRadius();
+                            if (!(ring != null && ring >= K.RING_EXIST_FLOOR))
+                                fehlt.push(`der Boden wächst (Ring ${ring} von ${K.RING_EXIST_FLOOR})`);
+                            if (!fehlt.length) return null;
+                            await takt(5);
+                        }
+                        return `die Feuerstelle und ihr Boden standen nicht in der Frist (${fehlt.join(" · ")})`;
+                    },
+                    S0,
+                    gestalt,
+                    rest
+                )
+            );
+            if (fehler) {
+                ergebnis.sauber = { fehler };
+                break;
+            }
+            zeit(gestalt ? "die Gestalt steht" : "der Satz steht");
+        }
+        for (const schein of SELBSTTEST && !ergebnis.sauber ? [false, true] : ergebnis.sauber ? [] : [false]) {
+            ergebnis[schein ? "schein" : "sauber"] = await phase(schein ? "Schein" : "Schuss", () =>
+                page.evaluate(async (schein, nahM) => {
+                    const r = window.anazhRealm;
+                    const s = r.state;
+                    const T = window.THREE;
+                    const rend = s.renderer;
+                    const uhr = (t) => {
+                        r._uhrSetzen(t, "human");
+                        r._applyDayNightToScene();
+                        s._skyEnvLastRegenMs = -Infinity;
+                        r._ensureSkyEnvironment(false);
+                        r._applyDayNightToScene();
+                    };
+                    const feuer = window.__s0Feuer;
+                    const f = feuer.position;
+                    const g = r._voxelSurfaceY(f.x, f.z);
+                    const w = 640;
+                    const h = 360;
+                    const alt = r._leuchtTakt;
+                    if (schein)
+                        r._leuchtTakt = function () {
+                            alt.call(this);
+                            for (const u of this.state.atmoUniforms.lichtLage) u.value.w = 0;
+                        };
+                    const FC = window.__fachwerkCore;
+                    const flAlt = FC.lichtFlackern;
+                    FC.lichtFlackern = () => 0; // die Flamme steht still (der Schuss misst das Gesetz, nicht den Atem)
+                    const cam = s.camera;
+                    let auf = null;
+                    window.__s0Still = false; // der Schuss zeichnet
+                    // die Nah-Bühne (oben): auf swiftshader zeichnet der Schuss die Nähe des Feuers
+                    const nahLos = nahM ? window.__s0Nah(new T.Vector3(f.x, g, f.z), nahM) : null;
+                    let nahZahl = null;
+                    try {
+                        window.__buehne();
+                        uhr(0);
+                        cam.position.set(f.x - 2, g + 1.6, f.z);
+                        cam.lookAt(f.x, g + 0.2, f.z + 1e-4);
+                        cam.updateMatrixWorld(true);
+                        // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
+                        await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
+                        for (let i = 0; i < 2; i++) {
+                            r._schattenAlleNeu();
+                            auf = await window.__ausgabeAufnahme(w, h, 1);
+                        }
+                    } finally {
+                        r._leuchtTakt = alt;
+                        FC.lichtFlackern = flAlt;
+                        if (nahLos) nahZahl = nahLos();
+                    }
+                    const u8 = auf.u8;
+                    const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
+                    const v = new T.Vector3();
+                    let lk = 0;
+                    let nk = 0;
+                    for (const rr of [0.75, 1.25, 1.75])
+                        for (let a = 0; a < 24; a++) {
+                            const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
+                            const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
+                            v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
+                            if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
+                            const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
+                            const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
+                            for (let dy = -1; dy <= 1; dy++)
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    lk += lum(((sy + dy) * w + sx + dx) * 4);
+                                    nk++;
+                                }
+                        }
+                    const pool = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                    // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
+                    const PL = rend._pipelines;
+                    const zaehl =
+                        PL && PL.programs
+                            ? [PL.programs.vertex.size, PL.programs.fragment.size, PL.caches ? PL.caches.size : null]
+                            : null;
+                    const cv = document.createElement("canvas");
+                    cv.width = w;
+                    cv.height = h;
+                    const ctx = cv.getContext("2d");
+                    const img = ctx.createImageData(w, h);
+                    img.data.set(u8.subarray(0, w * h * 4));
+                    ctx.putImageData(img, 0, 0);
+                    return {
+                        kreis: nk ? +(lk / nk).toFixed(4) : null,
+                        punkte: nk / 9,
+                        belichtung: +rend.toneMappingExposure.toFixed(3),
+                        pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
+                        feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
+                        dc: auf.info && auf.info.drawCalls,
+                        nah: nahZahl,
+                        zaehl,
+                        png: cv.toDataURL("image/png"),
+                    };
+                }, schein, ECHT ? 0 : S0_NAH_M)
+            );
+            zeit(schein ? "der Schein aufgenommen" : "das Feuer aufgenommen");
+        }
+    } catch (e) {
+        if (e && e.message === "FRIST")
+            await ende(
+                `die Frist von ${S0_FRIST_S} s riss in der Phase „${phaseJetzt}" — der Deckel der Linse (≤ 3 min CI) hält nicht`
+            );
+        throw e;
+    }
+    // das Beweisbild der Figur (nur mit `--bild`, kein Urteil): ein Wolf 2,3 m neben dem Feuer, der Spieler gegenüber, das Auge
+    // 5 m zurück — die Figur im Licht des Pools
+    if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
+        const png = await page.evaluate(async (nahM) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const f = window.__s0Feuer.position;
+            const g = (x, z) => r._voxelSurfaceY(x, z);
+            const wolf = r.spawnCreatureAt(f.x, g(f.x, f.z - 2.3) + 0.5, f.z - 2.3, "calm", "wolf", { precise: true, bodySize: 1 });
+            if (window.__tiereHalten) window.__tiereHalten();
+            s.playerMesh.position.set(f.x + 2.3, g(f.x + 2.3, f.z) + 1, f.z);
+            const cam = s.camera;
+            window.__buehne();
+            r._uhrSetzen(0, "human");
+            r._applyDayNightToScene();
+            s._skyEnvLastRegenMs = -Infinity;
+            r._ensureSkyEnvironment(false);
+            r._applyDayNightToScene();
+            cam.position.set(f.x - 3.6, g(f.x, f.z) + 1.8, f.z - 3.8);
+            cam.lookAt(f.x + 0.6, g(f.x, f.z) + 0.6, f.z - 0.6);
+            cam.updateMatrixWorld(true);
+            await new Promise((res) => setTimeout(res, 700));
+            let auf = null;
+            const nahLos = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM) : null;
+            try {
+                for (let i = 0; i < 2; i++) {
+                    r._schattenAlleNeu();
+                    auf = await window.__ausgabeAufnahme(960, 540, 1);
+                }
+            } finally {
+                if (nahLos) nahLos();
+            }
+            const cv = document.createElement("canvas");
+            cv.width = 960;
+            cv.height = 540;
+            const ctx = cv.getContext("2d");
+            const img = ctx.createImageData(960, 540);
+            img.data.set(auf.u8.subarray(0, 960 * 540 * 4));
+            ctx.putImageData(img, 0, 0);
+            if (wolf) r.removeCreature(wolf);
+            return cv.toDataURL("image/png");
+        }, ECHT ? 0 : S0_NAH_M);
+        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-figur.png", Buffer.from(png.split(",")[1], "base64"));
+    }
+    await browser.close();
+    server.close();
+    const befunde = [];
+    const sauber = ergebnis.sauber;
+    for (const [k, e] of Object.entries(ergebnis)) {
+        if (e.fehler) {
+            befunde.push(`S0 Bild (${k}): ${e.fehler}`);
+            continue;
+        }
+        if (BILD) fs.writeFileSync(BILD.replace(/\.png$/, "") + (k === "schein" ? "-schein" : "") + ".png", Buffer.from(e.png.split(",")[1], "base64"));
+        delete e.png;
+        console.log(
+            `  S0 BILD ${k === "schein" ? "SCHEIN (der Pool leer)" : "      "}: Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+        );
+    }
+    if (sauber && !sauber.fehler && !(sauber.kreis >= S0_LUMA_2M))
+        befunde.push(
+            `S0 Bild: der Feuerkreis aus 2 m trägt Luma ${sauber.kreis} (Soll ≥ ${S0_LUMA_2M}) — das Licht der Feuerstelle ` +
+                "(fachwerk LICHT_GESETZ.feuer über `_leuchtStaerke` in den Licht-Pool `_lichtPoolTerm`) trägt den Boden nicht"
+        );
+    let pass = befunde.length === 0 && !pageErr;
+    for (const bf of befunde) console.log(`    ⛔ ${bf}`);
+    if (SELBSTTEST) {
+        const sc = ergebnis.schein;
+        const getroffen = sc && !sc.fehler && sc.kreis < S0_LUMA_2M && sauber && sc.kreis < sauber.kreis;
+        console.log(
+            `  SELBSTTEST S0 BILD (der Pool leer): ${getroffen ? `getroffen — der Kreis fällt ${sauber.kreis} → ${sc.kreis} (unter ${S0_LUMA_2M}): der Licht-Pool trägt ihn` : "BLIND"}`
+        );
+        pass = pass && getroffen;
+    }
+    console.log(
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : "swiftshader"} · Holz ${HOLZ})\n`
+    );
+    process.exit(pass ? 0 : 1);
+}
+
 function zeige(rep) {
     console.log(`\n  ── ${rep.welt.toUpperCase()} · Erbgut [${rep.erbgut.join(", ")}]${rep.schein ? " · SCHEIN" : ""}`);
     for (const w of rep.wuerfe)
@@ -402,6 +1117,7 @@ function zeige(rep) {
 }
 
 (async () => {
+    if (argv.includes("--licht")) return lichtLauf();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: true,
@@ -416,6 +1132,35 @@ function zeige(rep) {
     });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
+        // DER STOFF-ZENSUS (K11): jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
+        // trägt in r184 nur das indirekte Licht) trägt den Licht-Pool (`userData.lichtPool`, `_leuchtStoff`) oder ist Quelle
+        window.__stoffZensus = () => {
+            const s = window.anazhRealm.state;
+            const gesehen = new Set();
+            const ohne = new Map();
+            let lit = 0;
+            s.scene.traverse((o) => {
+                if (!o.isMesh) return;
+                for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+                    if (!m || gesehen.has(m)) continue;
+                    gesehen.add(m);
+                    if (!/^Mesh(Standard|Physical|Lambert|Phong|Toon|SSS)(Node)?Material$/.test(m.type)) continue;
+                    lit++;
+                    if (m.userData && m.userData.lichtPool) continue;
+                    const name =
+                        o.name ||
+                        (o.userData && (o.userData.inventar || o.userData.poolKennung)) ||
+                        m.type + (m.userData ? "{" + Object.keys(m.userData).slice(0, 3).join(",") + "}" : "");
+                    ohne.set(name, (ohne.get(name) || 0) + 1);
+                }
+            });
+            return { beleuchtet: lit, ohnePool: [...ohne.entries()].map(([n, k]) => n + (k > 1 ? " ×" + k : "")) };
+        };
+        // dieselbe „Code ohne Kommentare“-Quelle wie der Playtest (die S0-Probe nennt Punktlicht-Bauer, nie Zitate)
+        window.__codeOf = (fnOrSrc) =>
+            String(fnOrSrc)
+                .replace(/\/\/.*$/gm, "")
+                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     const url = `http://127.0.0.1:${PORT}/index.html`;
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -472,6 +1217,14 @@ function zeige(rep) {
         berichte[welt + (schein ? "-schein" : "")] = rep;
         const wurfe = rep.wuerfe.filter((w) => w.zuwachs > 0);
         if (welt === "standard") {
+            // DER STOFF-ZENSUS der Wildnis (K11): jeder beleuchtete Stoff ihrer Häuser, Tiere, Bäume und Wasser trägt den Pool
+            const z = await page.evaluate(() => window.__stoffZensus());
+            console.log(`    Stoffe der Wildnis: ${z.beleuchtet} beleuchtet, ohne Pool ${z.ohnePool.length ? z.ohnePool.join(", ") : "keiner"}`);
+            if (z.ohnePool.length)
+                rep.befunde.push(
+                    `S0 Stoff ohne Pool (Wildnis): ${z.ohnePool.length} von ${z.beleuchtet} beleuchteten Stoffen tragen den Licht-Pool ` +
+                        `nicht (${z.ohnePool.slice(0, 8).join(", ")})`
+                );
             // DIE FELD-KONTROLLE: in der Wildnis wirft das Feld — sonst ist die Linse blind
             const bau = wurfe.some((w) => (w.was.bauten || 0) > 0);
             const tier = wurfe.some((w) => (w.was.tiere || 0) > 0);
@@ -501,9 +1254,15 @@ function zeige(rep) {
             rep.s4 = await s4Probe(page, S4, null);
             zeigeS4(rep.s4, null);
             for (const f of rep.s4.befunde) rep.befunde.push(`S4 ${f}`);
+            // (6) die Feuerstelle im Atrium leuchtet nachts
+            rep.s0 = await s0Probe(page, S0, null);
+            zeigeS0(rep.s0, null);
+            for (const f of rep.s0.befunde) rep.befunde.push(f);
         } else {
             rep.s4 = await s4Probe(page, S4, S4_SCHEIN);
             zeigeS4(rep.s4, S4_SCHEIN);
+            rep.s0 = await s0Probe(page, S0, true);
+            zeigeS0(rep.s0, true);
         }
         if (!schein) {
             for (const f of rep.befunde) console.log(`    ⛔ ${f}`);
@@ -517,7 +1276,27 @@ function zeige(rep) {
         // die S4-Probe nennt den abgerückten Körper, und nur ihn
         const s4Namen = (s.s4 ? s.s4.befunde : []).map((b) => b.split(":")[0]);
         const s4Soll = S4.koerper.find((k) => k.bauplan === S4_SCHEIN.bauplan).id;
-        selbst = { benannt: namen, s4: s4Namen, s4Treffer: s4Namen.length === 1 && s4Namen[0] === s4Soll };
+        // die S0-Probe nennt die Glut ohne Datum beim Verzeichnis, den ungelesenen Plan beim Laternen-Leser, den Stoff und den
+        // Bauer ohne Pool beim Namen
+        const s0B = s.s0 ? s.s0.befunde : [];
+        const s0Namen = s0B.filter((b) => /^S0 Nacht/.test(b));
+        const s0Rest = {
+            laterne: s0B.some((b) => /^S0 Laterne: .*`_laternenLesen`/.test(b)),
+            stoff: s0B.some((b) => /^S0 Stoff ohne Pool: .*pruef-schein/.test(b)),
+            bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinStoff`/.test(b) && /`_scheinRueckfall`/.test(b)),
+        };
+        selbst = {
+            benannt: namen,
+            s4: s4Namen,
+            s4Treffer: s4Namen.length === 1 && s4Namen[0] === s4Soll,
+            s0Treffer:
+                s0Namen.length === 2 &&
+                s0Namen.every((b) => /das Verzeichnis nennt die Feuerstelle nicht/.test(b)) &&
+                s0Rest.laterne &&
+                s0Rest.stoff &&
+                s0Rest.bauer,
+            s0Rest,
+        };
         console.log(
             `\n  SELBSTTEST (die Wildnis trägt zum Schein überall): ${namen.length} Würfe beim Namen — ${namen.join(", ")}`
         );
@@ -526,19 +1305,22 @@ function zeige(rep) {
                 selbst.s4Treffer ? "getroffen" : "BLIND"
             }`
         );
+        console.log(
+            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : "BLIND " + JSON.stringify(selbst.s0Rest)}`
+        );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer;
+        pass = !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer && selbst.s0Treffer;
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf der Bühne wirft das Feld nichts, der Akt setzt, die Wildnis wirft — und der Schein fällt rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "der Schein blieb unentdeckt (die Linse ist blind)")}\n`
         );
     } else {
         pass = !rot;
         console.log(
-            `\n${pass ? "✅" : "⛔"} ${pass ? "Auf der Bühne wirft das Feld nichts (Würfe 0, Nexus 0, Zensus 0); der Akt setzt, die Wildnis wirft" : "DAS FELD WIRFT AUF DER BÜHNE"}\n`
+            `\n${pass ? "✅" : "⛔"} ${pass ? "Auf der Bühne wirft das Feld nichts (Würfe 0, Nexus 0, Zensus 0); der Akt setzt, die Wildnis wirft; die Stationen stehen" : "DIE BÜHNE HÄLT IHR GESETZ NICHT (Befunde oben)"}\n`
         );
     }
     await browser.close();

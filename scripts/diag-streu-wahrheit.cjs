@@ -239,15 +239,17 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     else {
         if (!/: T\.MeshStandardNodeMaterial;/.test(stoff))
             fehler.push("_foundryTreeMaterial: der Studio-Stoff ist nicht MeshStandardNodeMaterial (bzw. Physical für die Haut)");
-        const ast = /\} else if \(wiegen === true\) \{([\s\S]*?)\n {12}\}/.exec(stoff);
-        if (!ast || !/this\._windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.attribute\("aWiege", "float"\) \}\)/.test(ast[1]))
+        // der Zweig endet an der Klammer seiner eigenen Einrückung (kein fester Rand: der Stoff-Bau verlor K11 seinen Fang)
+        const ast = /\n( *)\} else if \(wiegen === true\) \{([\s\S]*?)\n\1\}/.exec(stoff);
+        if (!ast || !/this\._windSwayOffset\(TSL, \{ ampX: 1\.2, hoehe: TSL\.attribute\("aWiege", "float"\) \}\)/.test(ast[2]))
             fehler.push("_foundryTreeMaterial: die weiche Nah-Streu wiegt nicht im EINEN Wind (_windSwayOffset, Höhe über der Wurzel in Metern: aWiege)");
     }
     // (4) DIE LAMBERT-WAND: kein Stoff der Welt ist Lambert (der ganze kommentar-freie Stamm).
     const lambert = [...nc.matchAll(/MeshLambert\w*/g)].length;
     if (lambert) fehler.push(`${lambert} Lambert-Stoff(e) im Stamm — r184-Lambert liest den EINEN Himmel (scene.environment) nie diffus`);
-    if (!/\(this\._archFundMat = new THREE\.MeshStandardNodeMaterial\(/.test(nc))
-        fehler.push("_archFundMat (das Fundament) baut nicht MeshStandardNodeMaterial");
+    // das Fundament ist ein Standard-Stoff im Licht-Pool (K11: `_leuchtStoff` trägt jedem beleuchteten Stoff das Feuer)
+    if (!/\(this\._archFundMat = this\._leuchtStoff\(\s*new THREE\.MeshStandardNodeMaterial\(/.test(nc))
+        fehler.push("_archFundMat (das Fundament) baut nicht MeshStandardNodeMaterial im Licht-Pool (`_leuchtStoff`)");
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
     for (const f of kartenFarbe(phytoSrc)) fehler.push(f);
     const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\(at, bedarf\)\s*\{/) || "";
@@ -298,8 +300,16 @@ function main() {
             ],
             [
                 "Lambert-Fundament",
-                QUELLE.replace("(this._archFundMat = new THREE.MeshStandardNodeMaterial({", "(this._archFundMat = new THREE.MeshLambertMaterial({"),
+                QUELLE.replace(
+                    /(\(this\._archFundMat = this\._leuchtStoff\(\s*)new THREE\.MeshStandardNodeMaterial\(/,
+                    "$1new THREE.MeshLambertMaterial("
+                ),
                 /_archFundMat/,
+            ],
+            [
+                "Fundament ohne Licht-Pool",
+                QUELLE.replace("(this._archFundMat = this._leuchtStoff(", "(this._archFundMat = ("),
+                /_archFundMat \(das Fundament\) baut nicht MeshStandardNodeMaterial im Licht-Pool/,
             ],
             [
                 "Karte ohne Kodierung",
