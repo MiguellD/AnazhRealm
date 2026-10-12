@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.542.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.543.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -81,33 +81,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.542 — DAS EINE LICHT, DIE KAMERA ALS KUGEL, DAS TOR AUF SEINER ZEILE:** am Pfad ohne Bruch (B) gemessen: die 3rd-Kamera
-ist eine Kugel r 0,3 m aus koerper-core (unter dem Boden zu Fuß 25/50 → 0/50), der Hieb wählt im Schwung-Kegel (`_kampfKegelZiel`,
-Horizont 0/48 → 48/48), EIN Leuchtquellen-Gesetz im fachwerk-Kern speist den Licht-Pool jedes Stoffs (Feuerkreis-Luma 0,26, Pool
-leer 0,0036; Lichter 4 → 3), der Mitspieler wird ohne Ort geboren und `_fremdeZahl` liest null nie als 0 (Takte im Ursprung 531 → 0);
-der Wagen-Platz ist EIN Gesetz (10/10 Tore ≤ 12,9°); der Fern-Ring trägt kein zweites Wasser (236 → 0 Klumpen) und jenseits des
-Waldes Krone × Deckung (gate:nah-fern 8/8); der Hang-Schatten trägt die Zuwendung (30°-Rampe fleckig 11,6 → 0 %); EIN Detail-Gesetz
-für Röhren und Ringe (Genesis 2 276k → 977k Dreiecke, 141,6 → 121,6 MB); der volle Playtest ist Gruppe 11 der vollen Batterie.
+**V18.543 — DER PFAD OHNE BRUCH, DER FUSS ROLLT, DAS LICHT HAT SEINE TEMPERATUR, DIE BLENDE MISST DIE INSTANZ:** Pflicht-OFFEN B
+fällt (jede der sieben Zahlen an ihrem Ziel, je Zahl ihr Gate); der Fuß rollt über den Ballen (tetrapoda `gangRolle`, Kadenz 0,34 → 1,79
+Schritte/s, Schlupf 0,015), `_bodenSichtAt` ist der EINE Boden-Leser von Stand, Nah-Wiese und Nah-Streu (koerper-stand K6 527/582 → 0/666,
+Rand-Streifen Wiese 0,089 → 0,948), der Spiel-Takt ist an der Wurzel gedeckelt (`TAKT_DECKEL_S` 0,1 s: Weg nach 10 s Pause 40,00 → 0,37 m);
+die Lichtfarbe jeder Wärmequelle aus EINER Größe `kelvin` (Feuerkreis-Luma 0,26 → 0,64, Farbton 14,2° → 28,9°); der Baum schwingt im EINEN
+Wind-Term, die Wind-Daten ohne Leser fallen (Werkstatt-Buche −13,7 %); die LOD-Blende misst je Instanz wie das Studio und bricht laut
+(`_blendeBruch`; OMEN Wiese gpu-bank 13,20 → 11,99 ms, baum 3,40 → 2,53 ms); die Biss-Kopf-Probe hält die Gier des Rehs (Drift 0).
 
-**V18.496–541 — AAA NAH, KOSTEN-MECHANIK, NACHBARSCHAFT, STUDIO-ZEILE, TOD, PRÜF-WELT, GELÄNDE-KERN:** Studio-Mesh mit LOD-Kette,
+**V18.496–542 — AAA NAH, KOSTEN-MECHANIK, NACHBARSCHAFT, STUDIO-ZEILE, TOD, PRÜF-WELT, GELÄNDE-KERN, DAS EINE LICHT:** Studio-Mesh mit LOD-Kette,
 EINE geskinnte Haut, FARB-GESETZ, EIN Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft; die GPU-Kette
 (gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (`_erstWartet`, Diät, host-vram) und L (Wasser, Backend-Gesetz);
 V18.536–537 EIN Impuls-Gesetz, `_setzUrteil`, das Blocker-Netz, EIN Leib-Löser; V18.538 Baum- und Gras-Zeile im Studio,
 `_schattenBias`; V18.539 der Tod an EINER Stelle (`_kreaturFaellt`, `_leibSicht`), `_nexusPerfActuate` (CPU p95 10,8 → 5,6 ms),
 die CI in zwei Stufen; V18.540 die Prüf-Welt (`_weltBetreten`), das Haus fern NUR-WURF, EINE Wasser-Wahrheit (`_werkBoden`);
 V18.541 EIN Gelände-Kern (`gelaende-core.js`, 44/44 Dichte-Gitter maxDiff 0), das Licht des Auges ein Term unter Fels, die
-Prüfbühne als GPU-Messort (2σ ≤ 0,064 ms). Werkbank: `albedo` · `licht` · `zaehlen` · `band`.
+Prüfbühne als GPU-Messort (2σ ≤ 0,064 ms); V18.542 die Kamera als Kugel (25/50 → 0/50), der Hieb im Schwung-Kegel (0/48 → 48/48), EIN Leuchtquellen-Gesetz und der Licht-Pool jedes Stoffs, EIN Detail-Gesetz der Tore (Genesis 2 276k → 977k Dreiecke). Werkbank: `albedo` · `licht` · `zaehlen` · `band`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE; die Höhe = EIN Gelände-Kern `gelaende-core.js` für Stamm, Worker und Playtest, die Terme des Erbguts, Wildnis = EIN Term, die Prüfbühne `spec/pruefbuehne`) · WELT-MARCH: EIN Pass, je Satz ein
 Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
-Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz, das Licht des Auges ein Term unter Fels, fern Krone × Deckung aus EINER Karte · WALD-ORT = die Kronen-Karte
-· GRAS = nah Nah-Wiese, fern Boden-Funktion · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
+Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m), EIN Wind-Term, die LOD-Blende misst je Instanz und bricht laut · BODEN-STOFF = das Rausch-Gesetz, das Licht des Auges ein Term unter Fels, fern Krone × Deckung aus EINER Karte · WALD-ORT = die Kronen-Karte
+· GRAS = nah Nah-Wiese, fern Boden-Funktion · BODEN-LESER = EINER (`_bodenSichtAt`) für Stand, Nah-Wiese und Streu · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
 Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, der Bias je Kaskade aus der Texel-Kante, EIN Werfer je Gestalt, der Boden empfängt ihn nach Zuwendung, in der
 Ego-Sicht der ganze Leib, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz (`_passTrifft`), jede Wahl hält nach `_wahlHaelt`
 · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6
 Golden-Sätze + Ofen in der CI, der Bau folgt seiner Budget-Zeile, das Haus fern seiner NUR-WURF-Stufe · MESSORTE = Wiese,
-Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz · LEIB = EIN Leib-Löser · KAMERA = EINE Kugel · TOD =
-EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff · WASSER = EINE Wahrheit, jedes Werk (der Wagen nach EINEM Platz-Gesetz) fragt das Land samt Sockel, der Fern-Ring kein zweites Wasser · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie (der volle Playtest ist Gruppe 11) auf integ-probe, main und nachts.
+Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz · LEIB = EIN Leib-Löser, der Gang EIN Gesetz (der Fuß rollt über den Ballen) · KAMERA = EINE Kugel · TOD =
+EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff, die Farbe aus `kelvin` · WASSER = EINE Wahrheit, jedes Werk (der Wagen nach EINEM Platz-Gesetz) fragt das Land samt Sockel, der Fern-Ring kein zweites Wasser · TAKT = an der Wurzel gedeckelt (`TAKT_DECKEL_S`) · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie (der volle Playtest ist Gruppe 11) auf integ-probe, main und nachts.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes (5,79 px je Strähne an
@@ -198,7 +198,7 @@ Armlänge, A1 11.10.) · C Ort auf dem Gelände · E Profi-Band (Radeon + GTX 10
     albedo` / `diag-albedo-zensus` (Karte 0,180), Licht-Verhältnisse `werkbank licht` — nie das Auge.
 22. **Der sichtbare Boden ist das Mesh, nicht das Gesetz:** Surface-Nets auf 1,8 m trägt die Feinform der
     Funktion nicht (±0,2 m, Spawn-Chunk Median 46 cm). Was AUF dem Boden steht (Gras, Streu, Deko), liest die
-    Boden-Karte (`_chunkSurfaceAt`, aus dem fertigen Mesh); Körper stehen auf dem Gesetz (Lockstep). Und im
+    Boden-Karte (`_bodenSichtAt`, aus dem gebauten Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn); Körper stehen auf dem Gesetz (Lockstep). Und im
     positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
 23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
     Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
