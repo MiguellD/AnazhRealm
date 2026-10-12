@@ -1054,6 +1054,12 @@ const FORBIDDEN = [
     { token: "AugenLichtNode", fiel: "K15 — der Punkt-Licht-Knoten hinter TSL.If" },
     { token: "_AugenLicht", fiel: "K15 — die Licht-Klasse des Auges" },
     { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
+    // DER BODEN HAT EINEN LESER (K21): Nah-Wiese und Nah-Streu lasen die Karte nur beim Eigner — im 0,9-m-Rand-Streifen
+    // jedes Chunks fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). Fuß, Hang und Grün liest
+    // jeder Leser über `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn); der Eigner-Leser kehrt nicht zurück.
+    { token: "_chunkSurfaceAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
+    { token: "_chunkGruenAt", fiel: "K21 — `_bodenSichtAt(x, z, aus)` trägt den Grün-Kanal der gewinnenden Karte" },
+    { token: "_chunkKarteAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

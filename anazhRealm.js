@@ -17657,8 +17657,11 @@ class AnazhRealm {
     // herüber. Vorher las der Stand-Leser nur die Karte des Eigners und fiel im Streifen auf den Träger: 4,9 % der Fläche, ein
     // Netz aus 0,9-m-Streifen, auf dem Pfoten und Füße auf der Höhe des Leibs standen (am 30°-Hang 86 von 869 Stand-Pfoten im
     // Trab 12–22 cm über dem Boden, ein stehender Wolf hangauf mit den Hinterpfoten 0,40 m — gate:koerper-stand K6). null ohne
-    // Karte (fern, ungebaut) oder ohne Boden an einer Ecke.
-    _bodenSichtAt(x, z) {
+    // Karte (fern, ungebaut) oder ohne Boden an einer Ecke. DER EINE LESER DES GEZEICHNETEN BODENS (K21): Stand-Leser, Nah-Wiese
+    // (Fuß, Hang, Grün) und Nah-Streu (Fuß, Hang) lesen nur ihn — bis K21 lasen Wiese und Streu nur die Karte des Eigners, im
+    // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt den
+    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt; welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
+    _bodenSichtAt(x, z, aus) {
         const vc = this.state.voxelChunks;
         if (!vc) return null;
         const span = this._voxelChunkConfig(0).span;
@@ -17677,6 +17680,10 @@ class AnazhRealm {
             b = -Infinity,
             c = -Infinity,
             d = -Infinity;
+        let ga = 0,
+            gb = 0,
+            gc = 0,
+            gd = 0;
         for (let q = 0; q < 4; q++) {
             const ax = cx - (q & 1);
             const az = cz - (q >> 1);
@@ -17687,19 +17694,52 @@ class AnazhRealm {
             const j = gz - az * n + T;
             if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) continue;
             const o = i + j * M;
-            if (m[o] > a) a = m[o];
-            if (m[o + 1] > b) b = m[o + 1];
-            if (m[o + M] > c) c = m[o + M];
-            if (m[o + M + 1] > d) d = m[o + M + 1];
+            const g = aus ? E.gruenMap : null;
+            if (m[o] > a) {
+                a = m[o];
+                ga = g ? g[o] : 0;
+            }
+            if (m[o + 1] > b) {
+                b = m[o + 1];
+                gb = g ? g[o + 1] : 0;
+            }
+            if (m[o + M] > c) {
+                c = m[o + M];
+                gc = g ? g[o + M] : 0;
+            }
+            if (m[o + M + 1] > d) {
+                d = m[o + M + 1];
+                gd = g ? g[o + M + 1] : 0;
+            }
         }
         if (!(a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity)) return null;
         const fu = x / h - gx;
         const fv = z / h - gz;
+        if (aus) aus.gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
         return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
+    }
+    // DIE KARTEN DES BODEN-LESERS über einem Rechteck (Welt-XZ): jeder Chunk, dessen Karte `_bodenSichtAt` dort liest — der
+    // Eigner und, in den ersten zwei Zellen-Schritten des Chunks (so weit reicht der Saum einer Karte herüber), seine unteren
+    // Nachbarn. Map Schlüssel → Karte (ein leerer Chunk mit undefined: baut er später Boden, ist das ein Neubau); null,
+    // solange einer davon noch keine Karte hat — die Kachel wartet auf ihren GANZEN Boden, nie nach Streaming-Reihenfolge.
+    _bodenSichtChunks(x0, z0, x1, z1) {
+        const vc = this.state.voxelChunks;
+        if (!vc) return null;
+        const cfg = this._voxelChunkConfig(0);
+        const out = new Map();
+        for (let cz = Math.floor((z0 - 2 * cfg.step) / cfg.span); cz <= Math.floor(z1 / cfg.span); cz++) {
+            for (let cx = Math.floor((x0 - 2 * cfg.step) / cfg.span); cx <= Math.floor(x1 / cfg.span); cx++) {
+                const k = `${cx},${cz}`;
+                const e = vc.get(k);
+                if (!e || !(e.surfMap || e.empty)) return null;
+                out.set(k, e.surfMap);
+            }
+        }
+        return out;
     }
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
     // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
-    // Definition); sonst die Boden-Karte des Chunks (`_chunkSurfaceAt`, bilinear, das gezeichnete Mesh) — solange sie im
+    // Definition); sonst die Boden-Karte (`_bodenSichtAt`, bilinear, das gezeichnete Mesh) — solange sie im
     // STAND_SICHT_BAND um den Träger liegt. Außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) liest er das
     // GESETZ AM PUNKT — den Boden unter dem Körper ab dem Träger (`_koerperBodenUnter`: abwärts, der Hang zwei Meter hinauf),
     // im selben Band. Prüfung 2 K02a: dort trug der Träger JEDEN Punkt — die Pfoten des Wolfs am Wandfuß standen auf der
@@ -29056,39 +29096,6 @@ class AnazhRealm {
         return { hoehe: map, gruen };
     }
 
-    // Bilineare Höhe des gerenderten Bodens aus der Boden-Karte (`entry.surfMap`, s. `_bodenKarteAusMesh`).
-    // null bei fehlender Karte / NaN-Ecke (kein Boden: Wand, Höhle, außerhalb) — der Aufrufer entscheidet.
-    _chunkSurfaceAt(entry, cx, cz, x, z) {
-        return this._chunkKarteAt(entry, entry && entry.surfMap, cx, cz, x, z);
-    }
-
-    // Der Grün-Kanal der Boden-Karte (0 = kein Wiesen-Boden, 1 = Wiese) am Ort, bilinear; null ohne Karte.
-    _chunkGruenAt(entry, cx, cz, x, z) {
-        const g = this._chunkKarteAt(entry, entry && entry.gruenMap, cx, cz, x, z);
-        return g === null ? null : g / 255;
-    }
-
-    _chunkKarteAt(entry, m, cx, cz, x, z) {
-        if (!m) return null;
-        const cfg = this._voxelChunkConfig(entry.lod || 0);
-        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
-        const h = cfg.step / T;
-        const M = T * (cfg.dim + 3) + 1;
-        const u = (x - (cx * cfg.span - cfg.step)) / h;
-        const v = (z - (cz * cfg.span - cfg.step)) / h;
-        const i0 = Math.floor(u);
-        const k0 = Math.floor(v);
-        if (i0 < 0 || k0 < 0 || i0 >= M - 1 || k0 >= M - 1) return null;
-        const a = m[i0 + k0 * M];
-        const b = m[i0 + 1 + k0 * M];
-        const c = m[i0 + (k0 + 1) * M];
-        const d = m[i0 + 1 + (k0 + 1) * M];
-        if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null;
-        const fu = u - i0;
-        const fv = v - k0;
-        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
-    }
-
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
     // Indizierung gi = i + j*Nx + k*Nx*Ny.
     // DAS BAND IST DAS DES BODENS (`boden`): ein Feld in eigenen Koordinaten (die Schwebe-Insel, `_voxelChunkGeometry` mit
@@ -33824,8 +33831,8 @@ class AnazhRealm {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
-            // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Gras/Streu/Deko
-            // lesen sie via `_chunkSurfaceAt`.
+            // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Stand, Gras und Streu
+            // lesen sie über den EINEN Leser `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn).
             surfMap: fresh.surfMap || null,
             gruenMap: fresh.gruenMap || null,
             lod,
@@ -38011,19 +38018,25 @@ class AnazhRealm {
     // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (Kronen-Licht,
     // Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
     // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
-    // Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe
-    // Wiese bei jedem Besuch. Gibt die Büschel-Liste zurück oder null, solange ein Chunk unter der Kachel
-    // noch keine Boden-Karte hat.
+    // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
+    // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
+    // zurück oder null, solange ein Chunk, den die Kachel liest (`_bodenSichtChunks`), noch keine Boden-Karte hat.
     _nahWieseKachelBueschel(tx, tz) {
         const NW = AnazhRealm.NAH_WIESE;
         const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
         const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
         const GS = AnazhRealm.GRASS_SLOPE;
-        const cfg = this._voxelChunkConfig(0);
         const seedInt = this._forestSeedInt();
         const x0 = tx * NW.kachel;
         const z0 = tz * NW.kachel;
+        // der Jitter trägt einen Büschel 0,34 m über die Kachel hinaus
+        if (!this._bodenSichtChunks(x0 - 0.34, z0 - 0.34, x0 + NW.kachel + 0.34, z0 + NW.kachel + 0.34)) return null;
         const cl = (v) => Math.max(0, Math.min(1, v));
+        const boden = (px, pz) => {
+            const v = this._bodenSichtAt(px, pz);
+            return v === null ? NaN : v;
+        };
+        const grund = {};
         const out = [];
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
@@ -38042,24 +38055,14 @@ class AnazhRealm {
                 const sk = 0.7 + w() * 0.7;
                 const rot = w() * Math.PI * 2;
                 const ordnung = w();
-                const cx = Math.floor(x / cfg.span);
-                const cz = Math.floor(z / cfg.span);
-                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
-                if (!entry || !entry.surfMap) {
-                    if (entry && entry.empty) continue;
-                    return null; // der Boden steht noch nicht — die Kachel wartet
-                }
-                const y = this._chunkSurfaceAt(entry, cx, cz, x, z);
+                const y = this._bodenSichtAt(x, z, grund);
                 if (y === null) continue;
-                const gruen = this._chunkGruenAt(entry, cx, cz, x, z) || 0;
-                if (gruen <= 0) continue;
+                const gruen = grund.gruen;
+                if (!(gruen > 0)) continue;
                 if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 const L = this._canopyLightAt(x, z, y, m);
-                const hang = this._slopeAt(x, z, (px, pz) => {
-                    const v = this._chunkSurfaceAt(entry, cx, cz, px, pz);
-                    return v === null ? NaN : v;
-                });
+                const hang = this._slopeAt(x, z, boden);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
                 // Unter einer echten Krone liegt Laub, kaum ein Halm (15 %) — dieselbe Kronen-Karte wie der Boden.
@@ -38156,7 +38159,6 @@ class AnazhRealm {
                 this._nahWieseSenken(v, stufe, fl);
             }
         }
-        const cfg = this._voxelChunkConfig(0);
         let gebaut = 0;
         for (const w of wunsch) {
             if (nw.kacheln.has(w.key)) continue;
@@ -38169,25 +38171,12 @@ class AnazhRealm {
                 nw.offen++;
                 continue;
             }
-            const chunks = new Set();
-            for (const [ex, ez] of [
-                [0, 0],
-                [1, 0],
-                [0, 1],
-                [1, 1],
-            ]) {
-                const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
-                const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
-                chunks.add(`${cx},${cz}`);
-            }
-            const chunkKarten = new Map();
-            for (const ck of chunks) {
-                const e = st.voxelChunks.get(ck);
-                chunkKarten.set(ck, e ? e.surfMap : undefined);
-            }
-            // die Kennungen des gezeichneten Wassers, das die Büschel lasen (ihr Jitter reicht 0,34 m über die Kachel)
+            // die Karten und die Kennungen des gezeichneten Wassers, die die Büschel lasen (ihr Jitter reicht 0,34 m über die
+            // Kachel): dasselbe Rechteck wie im Bau der Büschel
             const x0 = w.tx * NW.kachel - 0.34;
             const z0 = w.tz * NW.kachel - 0.34;
+            const chunkKarten = this._bodenSichtChunks(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
+            const chunks = new Set(chunkKarten.keys());
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
@@ -38433,10 +38422,11 @@ class AnazhRealm {
     // · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
-    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei, kein
-    // Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band stehen im Wasser — im GEZEICHNETEN (`_koerperWasser`).
-    // Rückgabe { items, chunks, wasser } (`wasser`: die Kennungen des gezeichneten Wassers, das die Kachel las,
-    // `_wasserKennungen`) oder null, solange ein Chunk unter der Kachel noch keine Boden-Karte hat.
+    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß und Hang auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am
+    // Chunk-Rand die Karte des Nachbarn), Pfade bleiben frei, kein Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band
+    // stehen im Wasser — im GEZEICHNETEN (`_koerperWasser`). Rückgabe { items, chunks, wasser } (`chunks`: die Karten, die
+    // die Kachel las, `_bodenSichtChunks`; `wasser`: die Kennungen des gezeichneten Wassers, `_wasserKennungen`) oder null,
+    // solange einer dieser Chunks noch keine Boden-Karte hat.
     _nahStreuKachel(tx, tz, arten) {
         const NS = AnazhRealm.NAH_STREU;
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
@@ -38445,30 +38435,24 @@ class AnazhRealm {
         // Die Nah-Streu ist ein Wurf des Feldes: trägt die Wildnis die Kachel nicht, bleibt sie leer (und liest kein Wasser).
         if (!this._wildnisTraegt((tx + 0.5) * NS.kachel, (tz + 0.5) * NS.kachel))
             return { items: [], chunks: new Map(), wasser: [] };
-        const span = this._voxelChunkConfig(0).span;
         const seedInt = this._forestSeedInt();
         const last = this._effectiveFoliageDensity();
         const Z = NS.zelle;
         const n = Math.round(NS.kachel / Z);
-        const items = [];
-        const chunks = new Map();
-        const ort = (x, z) => {
-            const cx = Math.floor(x / span);
-            const cz = Math.floor(z / span);
-            const ck = `${cx},${cz}`;
-            return { e: this.state.voxelChunks ? this.state.voxelChunks.get(ck) : null, cx, cz, ck };
+        const K = NS.kachel;
+        // jede Pflanze steht in der Kachel (Zell-Mitte ± halbe Zelle): ihr Boden sind die Karten dieses Rechtecks
+        const chunks = this._bodenSichtChunks(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
+        if (!chunks) return null; // der Boden steht noch nicht — die Kachel wartet
+        const boden = (px, pz) => {
+            const v = this._bodenSichtAt(px, pz);
+            return v === null ? NaN : v;
         };
+        const items = [];
         for (let gj = tz * n; gj < tz * n + n; gj++) {
             for (let gi = tx * n; gi < tx * n + n; gi++) {
                 const x = (gi + 0.5) * Z;
                 const z = (gj + 0.5) * Z;
-                const o = ort(x, z);
-                if (!o.e || !o.e.surfMap) {
-                    if (o.e && o.e.empty) continue;
-                    return null; // der Boden steht noch nicht — die Kachel wartet
-                }
-                chunks.set(o.ck, o.e.surfMap);
-                const y = this._chunkSurfaceAt(o.e, o.cx, o.cz, x, z);
+                const y = this._bodenSichtAt(x, z);
                 if (y === null) continue;
                 if (this._pfadFeldAt(x, z, y) > 0.5) continue; // Ufer-Pfad und Siedlungs-Weg bleiben frei (Labor: trailAt < 3 m)
                 const feucht = this._feuchteAt(x, z, y);
@@ -38485,10 +38469,7 @@ class AnazhRealm {
                     feucht,
                     ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,
-                    hang: this._slopeAt(x, z, (px, pz) => {
-                        const v = this._chunkSurfaceAt(o.e, o.cx, o.cz, px, pz);
-                        return v === null ? NaN : v;
-                    }),
+                    hang: this._slopeAt(x, z, boden),
                 };
                 for (let a = 0; a < arten.length; a++) {
                     const A = arten[a];
@@ -38512,22 +38493,15 @@ class AnazhRealm {
                         const rot = w() * Math.PI * 2;
                         const same = (w() * 4294967296) >>> 0;
                         const ordnung = w();
-                        const op = ort(px, pz);
-                        if (!op.e || !op.e.surfMap) {
-                            if (op.e && op.e.empty) continue; // ein leerer Chunk trägt keine Fläche
-                            return null; // der Nachbar-Boden steht noch nicht — die Kachel wartet (nie nach Streaming-Reihenfolge)
-                        }
-                        const py = this._chunkSurfaceAt(op.e, op.cx, op.cz, px, pz);
+                        const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
                         if (!A.zeile.ufer && py < this._koerperWasser(px, pz, py) + 0.1) continue;
-                        chunks.set(op.ck, op.e.surfMap);
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
                         this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
                     }
                 }
             }
         }
-        const K = NS.kachel;
         return { items, chunks, wasser: this._wasserKennungen(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K) };
     }
 
