@@ -33339,7 +33339,7 @@ class AnazhRealm {
 
     // DER BRUCH DES STOFFS (K22): fehlt einem Stoff oder dem Render-Graphen ein Glied — ein Uniform-Satz, ein Knoten, eine
     // Karte, ein Bau-Schritt wirft —, bricht der Bau LAUT beim Namen: ERROR ins Log, ein Fehler mit der Marke `stoff`. Bis
-    // hierher fingen 92 Stellen den Fehler still (ein catch ohne Wurf, eine Fenster-Variable ohne Leser, ein Wenn um ein
+    // hierher fingen 95 Stellen den Fehler still (ein catch ohne Wurf, eine Fenster-Variable ohne Leser, ein Wenn um ein
     // TSL-Glied, ein Knoten-Bauer, der null gab), und der Stoff zeichnete byte-alt ohne sein Glied weiter — gate:altlasten
     // DIE STOFF-WAND. `ursache`: ein fremder Fehler wird einmal mit dem Ort eingewickelt, ein Bruch reist unverändert weiter.
     _stoffBruch(was, ursache) {

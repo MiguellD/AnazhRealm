@@ -1776,6 +1776,18 @@ function scanNormalWand(srcRoh) {
 // Render-Bau = jeder try, der den Render-Graphen baut (CSM, Post, TRAA, ein Renderer, ein NodeMaterial). Laut ist ein Fang,
 // der wirft (`_stoffBruch`, ERROR mit dem Glied beim Namen) — ein bewusster Zweig steht mit Grund und Bild-Leser in
 // STOFF_ZWEIGE (eine tote Zeile ist rot).
+// DIE LISTE (an integ-probe bb554abf ROT mit 95 Fängen: F catch · V Fehler-Variable · W Ausstattungs-Wenn · N Null-Knoten):
+//   _buildPbrNodeMaterial F4 N2 V2 W14 · _foundryTreeMaterial F1 N3 W6 · _substanceCharacter F1 V1 W5 · _grassInstanceMat
+//   F2 N1 W4 · _applySubstanceResponse F1 V1 W4 · _applyVegetationResponse F1 V1 W2 · _terrainGeologyAlbedo F1 V1 W2 ·
+//   _membranBauFor F2 W1 · _ensureLodUniforms F1 W1 · _ensurePostProcessing F1 W1 · init (CSM) F1 · _kameraDurchsichtNode
+//   N1 W1 · _ensureAtmoUniforms N1 W1 · _ensureSeasonUniforms N1 W1 · _windSwayOffset N1 · _impostorAtlas N1 ·
+//   _weltMarchEnsure N1 · createGalaxySkybox W2 · je W1 _buildStarField _configureRenderer _uniformHeimatTeilen
+//   _materialObserverDiaet _ensureWindCoupling _ensureHydroSurfaceMaterial _fernKroneNahEnsure _feldPassEnsure
+//   _tickPortalMembranes _ensureRainSystem _phantomTint _wegeKarteEnsure _blattAtlasProbe · je V1 _uiDirty (UI-Puls: ERROR
+//   beim Namen des Raums) _addConnectionLines _tickImpostorBake (nach dem dritten Versuch: `_stoffBruch`).
+// Jeder catch wirft über `_stoffBruch` (die Post-Kette meldet ihn und zeichnet direkt), jede Fenster-Variable fiel, jedes
+// Wenn um ein TSL-Glied fiel (der Uniform-Satz kommt aus seinem ensure), jeder Knoten-Bauer liefert oder bricht. Bewusst
+// bleiben die zwei Zweige ohne Seite (STOFF_ZWEIGE).
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
