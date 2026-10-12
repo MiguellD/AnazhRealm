@@ -310,7 +310,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
     seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 886–7 526,
     Koniferen 5 188–6 412, Weide 6 474–8 842), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 690–2 782, der
     Mammut 2 308–2 448; jede andere Art ≤ 2 034), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
-  - DAS BILD VON V18.536 (Wand D, Gegenprüfung R1): `spec/asset-contract/v1/bild-v18536.json` trägt je Baum-Art × Same
+  - DIE BILD-TAFEL (Wand D, Gegenprüfung R1; gemünzt V18.536, neu im Vertrags-Akt K20 — die Bäume tragen ihr Welt-Maß):
+    `spec/asset-contract/v1/bild-tafel.json` trägt je Baum-Art × Same
     L0 und L1 je Blick-Hebung (0°/30°/60° von unten, je acht Azimute; das Bild über dem Boden der Vorlage — die Wurzeln
     im Boden sieht kein Spieler) und die Studio-Karte (Deckung, Kronenfarbe). Je Art hält das Mittel der Gestalten je
     Stufe und Hebung und die Deckung der Karten 0,92–1,08, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im
