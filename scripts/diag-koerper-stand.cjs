@@ -427,7 +427,13 @@ async function proben() {
         const ab = new T.Vector3(0, -1, 0);
         const von = new T.Vector3();
         let meshe = 0;
+        // die oberste Fläche des letzten Strahls jeder Art: ist sie steil, steht der Punkt unter einem Überhang (die Karte
+        // trägt dort die Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter — keine Frage des Rand-Streifens)
+        let obenY = -Infinity;
+        let obenSteil = false;
         const gezeichnet = (x, z) => {
+            obenY = -Infinity;
+            obenSteil = false;
             const cx = Math.floor(x / span);
             const cz = Math.floor(z / span);
             let best = null;
@@ -442,13 +448,79 @@ async function proben() {
                 meshe++;
                 e.mesh.updateMatrixWorld(true);
                 strahl.set(von.set(x, 400, z), ab);
-                const h = strahl.intersectObject(e.mesh, false);
-                if (h.length && (best === null || h[0].point.y > best)) best = h[0].point.y;
+                // die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts)
+                const alle = strahl.intersectObject(e.mesh, false);
+                const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
+                if (h && (best === null || h.point.y > best)) best = h.point.y;
+                if (alle.length && alle[0].point.y > obenY) {
+                    obenY = alle[0].point.y;
+                    obenSteil = !(alle[0].face && Math.abs(alle[0].face.normal.y) >= 0.3);
+                }
             }
             return best;
         };
-        let rand = null;
         const cx0 = Math.floor(start.x / span);
+        const cz0 = Math.floor(start.z / span);
+        // DER LESER QUER DURCH DEN STREIFEN: je Rand-Streifen der Chunks um den Start (x- und z-Rand, alle 8 m) Punkte im Abstand
+        // 0,1 m über die ganze Breite (0,05–0,85 m) — der Stand-Leser mit einem Träger 0,5 m über dem gezeichneten Boden (eine
+        // Pfote hangab ihres Leibs) trifft den gezeichneten Boden; wer auf den Träger fällt, verfehlt ihn um 0,5 m (die Wache
+        // 0,25 m trennt das von der Auflösung der Karte). Nicht gezählt: Punkte unter einem Überhang und Raster-Zellen über
+        // einer Kante (eine Ecke unter steiler Fläche oder > 0,6 m Höhen-Spanne der fünf Säulen auf 0,45 m, steiler als 53°: dort
+        // mittelt jede Karte Schichten und Knicke — eine Frage ihrer Auflösung, nicht des Rand-Streifens)
+        const hR = r._voxelChunkConfig(0).step / A.BODEN_KARTE_TEILUNG;
+        const verwickelt = (x, z, g) => {
+            const x0 = Math.floor(x / hR) * hR;
+            const z0 = Math.floor(z / hR) * hR;
+            let lo = g;
+            let hi = g;
+            for (const [px, pz] of [
+                [x0, z0],
+                [x0 + hR, z0],
+                [x0, z0 + hR],
+                [x0 + hR, z0 + hR],
+            ]) {
+                const y = gezeichnet(px, pz);
+                if (y === null || obenSteil) return true;
+                lo = Math.min(lo, y);
+                hi = Math.max(hi, y);
+            }
+            return hi - lo > 0.6;
+        };
+        const leser = { n: 0, fehl: 0, ueberhang: 0, kante: 0, max: 0, wo: null };
+        for (let q = -1; q <= 2; q++)
+            for (let dl = -40; dl <= 40; dl += 8)
+                for (let f = 0.05; f < 0.9; f += 0.1)
+                    for (const [x, z] of [
+                        [(cx0 + q) * span + f, start.z + dl],
+                        [start.x + dl, (cz0 + q) * span + f],
+                    ]) {
+                        const g = gezeichnet(x, z);
+                        if (g === null || r._koerperWasser(x, z, g) > g) continue;
+                        if (obenSteil) {
+                            leser.ueberhang++;
+                            continue;
+                        }
+                        const d = Math.abs(r._standSicht(x, z, g + 0.5, false) - g);
+                        if (!(d <= 0.25) && verwickelt(x, z, g)) {
+                            leser.kante++;
+                            continue;
+                        }
+                        leser.n++;
+                        if (!(d <= 0.25)) leser.fehl++;
+                        if (d > leser.max) {
+                            leser.max = d;
+                            leser.wo = [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
+                        }
+                    }
+        o.k6leser = {
+            n: leser.n,
+            fehl: leser.fehl,
+            ueberhang: leser.ueberhang,
+            kante: leser.kante,
+            maxCm: Math.round(leser.max * 1000) / 10,
+            wo: leser.wo,
+        };
+        let rand = null;
         for (let ax = cx0 - 1; ax <= cx0 + 2; ax++) {
             const x = ax * span + 0.45;
             for (let dz = -60; dz <= 60; dz += 1) {
@@ -619,6 +691,10 @@ function urteil(o) {
                 `K5 Tod-Lage: die tiefste Stelle liegt ${o.k5 ? o.k5.gegenStandCm : "?"} cm über ihrem Stand-Kontakt, auf dem Weg ${o.k5 ? o.k5.wegMinCm + " … " + o.k5.wegMaxCm : "?"} cm (Soll ± 3, Weg ≥ −5)`
             );
     }
+    if (!o.k6leser || !(o.k6leser.n >= 300) || o.k6leser.fehl > 0)
+        f.push(
+            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
+        );
     if (!o.rand || !(o.rand.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     else if (!Number.isFinite(o.rand.fehlerCm)) f.push("K6 Aufbau: keine Hang-Stelle im Rand-Streifen");
     else {
@@ -642,6 +718,7 @@ function zeile(o) {
         ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
         ` · K4 Leib−Karte Median ${o.k4 ? v(o.k4.leibMedianCm) : "?"} cm · Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
         ` · K5 Tod ${o.k5 ? v(o.k5.gegenStandCm) : "?"} cm gegen den Stand (Weg ${o.k5 ? v(o.k5.wegMinCm) + "…" + v(o.k5.wegMaxCm) : "?"})` +
+        ` · K6 Leser ${o.k6leser ? v(o.k6leser.fehl) + "/" + v(o.k6leser.n) + " (max " + v(o.k6leser.maxCm) + " cm)" : "?"}` +
         ` · K6 Rand schlechteste Pfote ${o.k6 ? v(o.k6.schlechtCm) : "?"} cm (je Pfote ${o.k6 && o.k6.jePfoteCm ? o.k6.jePfoteCm.join("/") : "?"}) · Leib ${o.k6 ? v(o.k6.leibMedianCm) : "?"} cm` +
         (o.rand && Number.isFinite(o.rand.fehlerCm)
             ? ` · Rand-Stelle ${o.rand.x.toFixed(2)}/${o.rand.z} Träger-Fehler ${o.rand.fehlerCm} cm`
@@ -711,7 +788,7 @@ function zeile(o) {
                 hoehle: ["K3 Tier in der Höhle"],
                 sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
-                rand: ["K6 Sohlen am Chunk-Rand"],
+                rand: ["K6 Leser im Rand-Streifen", "K6 Sohlen am Chunk-Rand"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o, pf } = await lauf(inj);

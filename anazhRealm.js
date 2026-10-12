@@ -17647,26 +17647,55 @@ class AnazhRealm {
         if (ikC) ikC.lockL.on = ikC.lockR.on = false;
         return g;
     }
-    // DER GEZEICHNETE BODEN AM WELT-PUNKT (K07, der Chunk-Rand): die Boden-Karte des Chunks, der den Punkt besitzt — am
-    // unteren Rand jedes Chunks (je Achse ein halber Zellen-Schritt, 0,9 m) zeichnet das Mesh des NACHBARN (Surface-Nets:
-    // die Fläche zwischen seiner letzten und der ersten eigenen Zelle gehört ihm), die eigene Karte ist dort leer; dort liest
-    // die Karte des Nachbarn (ihr Saum reicht zwei Schritte herüber). Vorher fiel der Stand-Leser dort auf den Träger: 4,9 %
-    // der Fläche, ein Netz aus 0,9-m-Streifen, auf dem Pfoten und Füße auf der Höhe des Leibs standen (ein stehender Wolf
-    // hangauf am 30°-Hang: die Hinterpfoten 0,40 m über dem Boden — gate:koerper-stand K6). null ohne Karte (fern, ungebaut).
+    // DER GEZEICHNETE BODEN AM WELT-PUNKT (K07, der Chunk-Rand): je Punkt die OBERSTE tragende Fläche aller Meshe, die dort
+    // zeichnen — das Gesetz der Boden-Karte (`_bodenKarteAusMesh`) über die Chunk-Naht hinweg. Am unteren Rand jedes Chunks
+    // (je Achse ein halber Zellen-Schritt, 0,9 m) zeichnet das Mesh des NACHBARN (Surface-Nets: die Fläche zwischen seiner
+    // letzten und der ersten eigenen Zelle gehört ihm); die Karte des Eigners ist dort leer oder trägt nur, was er darunter
+    // zeichnet (einen Höhlen-Boden 60 m tiefer), und die Naht der Meshe liegt zwischen zwei Punkten des Rasters. Darum nimmt
+    // jede Ecke der Raster-Zelle das Maximum aus Eigner und unteren Nachbarn: die Karten einer Stufe tasten dasselbe Raster der
+    // Welt ab (Ursprung Chunk − Schritt, Abstand Schritt/Teilung, der Chunk ein Vielfaches davon), ihr Saum reicht zwei Schritte
+    // herüber. Vorher las der Stand-Leser nur die Karte des Eigners und fiel im Streifen auf den Träger: 4,9 % der Fläche, ein
+    // Netz aus 0,9-m-Streifen, auf dem Pfoten und Füße auf der Höhe des Leibs standen (am 30°-Hang 86 von 869 Stand-Pfoten im
+    // Trab 12–22 cm über dem Boden, ein stehender Wolf hangauf mit den Hinterpfoten 0,40 m — gate:koerper-stand K6). null ohne
+    // Karte (fern, ungebaut) oder ohne Boden an einer Ecke.
     _bodenSichtAt(x, z) {
         const vc = this.state.voxelChunks;
         if (!vc) return null;
         const span = this._voxelChunkConfig(0).span;
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
-        for (let n = 0; n < 4; n++) {
-            const ax = cx - (n & 1);
-            const az = cz - (n >> 1);
-            const e = vc.get(`${ax},${az}`);
-            const k = e && e.surfMap ? this._chunkSurfaceAt(e, ax, az, x, z) : null;
-            if (Number.isFinite(k)) return k;
+        const e = vc.get(`${cx},${cz}`);
+        const lod = e ? e.lod || 0 : 0;
+        const cfg = this._voxelChunkConfig(lod);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const n = cfg.dim * T; // Raster-Abstände je Chunk
+        const gx = Math.floor(x / h);
+        const gz = Math.floor(z / h);
+        let a = -Infinity,
+            b = -Infinity,
+            c = -Infinity,
+            d = -Infinity;
+        for (let q = 0; q < 4; q++) {
+            const ax = cx - (q & 1);
+            const az = cz - (q >> 1);
+            const E = q === 0 ? e : vc.get(`${ax},${az}`);
+            const m = E && (E.lod || 0) === lod ? E.surfMap : null;
+            if (!m) continue;
+            const i = gx - ax * n + T;
+            const j = gz - az * n + T;
+            if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) continue;
+            const o = i + j * M;
+            if (m[o] > a) a = m[o];
+            if (m[o + 1] > b) b = m[o + 1];
+            if (m[o + M] > c) c = m[o + M];
+            if (m[o + M + 1] > d) d = m[o + M + 1];
         }
-        return null;
+        if (!(a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity)) return null;
+        const fu = x / h - gx;
+        const fv = z / h - gz;
+        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
     }
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
     // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
