@@ -29168,16 +29168,18 @@ class AnazhRealm {
         const him = geom.attributes.aHimmel;
         const nor = geom.attributes.normal;
         const pos = geom.attributes.position;
-        if (!col || !him || !nor || !pos)
-            throw new Error("_felsStoff: der Boden trägt nicht color · aHimmel · normal · position (fail-closed)");
+        if (!col || !nor || !pos)
+            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position (fail-closed)");
+        // Ohne Höhlen-Graph (nur der Voxel-Test `_voxelTest`: ein Gitter ohne Sicht-Graph) steht jeder Vertex unter dem
+        // Himmel — jeder Chunk trägt `aHimmel` (`_buildVoxelChunkData*` bauen den Graph fail-closed).
         const GK = globalThis.__gelaendeCore;
         const FS = AnazhRealm.FELS_STOFF;
         const G = AnazhRealm.TERRAIN_GEOLOGY;
         const C = col.array;
-        const H = him.array;
         const N = nor.array;
         const P = pos.array;
-        const n = H.length;
+        const n = pos.count;
+        const H = him ? him.array : new Float32Array(n).fill(1);
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -60054,16 +60056,9 @@ class AnazhRealm {
                         hs = (hs * 1664525 + 1013904223) & 0x7fffffff;
                         return hs / 0x7fffffff;
                     };
-                    // Geologie-Farbe (phyto-core `withColor`: Speckle · Kavitäts-AO · Sediment-Bänke · Eisen-Schlieren ·
-                    // Moos-Bleach). part.color (Strata + Fuß-Moos aus _rockVariant) ist der Basis-Ton rockA; rockB/rockC
-                    // leiten deterministisch ab. Tag-neutral (nur das color-Attribut). Das Material liest die
+                    // Die Gestalt aus phyto-core, der Stoff aus dem Fels-Gesetz (unten, K17). part.color (Strata + Fuß-Moos
+                    // aus _rockVariant) ist der Basis-Ton. Tag-neutral (nur das color-Attribut). Das Material liest die
                     // Vertex-Farbe (matOpts.vertexColorAlbedo).
-                    const _shadeRock = (c, f) => {
-                        const _r = Math.max(0, Math.min(255, Math.round(((c >> 16) & 0xff) * f)));
-                        const _g = Math.max(0, Math.min(255, Math.round(((c >> 8) & 0xff) * f)));
-                        const _b = Math.max(0, Math.min(255, Math.round((c & 0xff) * f)));
-                        return (_r << 16) | (_g << 8) | _b;
-                    };
                     const _rockBase = Number.isFinite(part.color) ? part.color : 0x8a8278;
                     // Werkstatt-Regler: `part.rockDials` (Rundheit/Rauheit/Streckung/Schichtung) / `part.rockSeed`
                     // überschreiben die Geologie live über dieselbe buildBoulderGeometry-Quelle; ohne Override das
@@ -60085,17 +60080,28 @@ class AnazhRealm {
                             // LOD-Override (Werkstatt-Regler): gröbere Regeneration = weniger Detail.
                             detail: Math.max(1, det + 2 - (Number.isFinite(part.rockLod) ? part.rockLod : 0)),
                             seed: Number.isFinite(part.rockSeed) ? (part.rockSeed % 9973) + 1 : (hs % 9973) + 1,
-                            withColor: true,
-                            speckle: true,
-                            rockA: _rockBase,
-                            rockB: _shadeRock(_rockBase, 0.52),
-                            rockC: _shadeRock(_rockBase, 1.14),
+                            withColor: false,
                         },
                         seq
                     );
                     if (g) {
                         g.scale(0.5 * sx, 0.5 * sy, 0.5 * sz);
                         g.computeVertexNormals();
+                        // DER STOFF ist das Fels-Gesetz (K17, gelaende-core `felsNetz`): der Basis-Ton (part.color) ist
+                        // eine sRGB-Absicht (FARB-GESETZ), die dunkle Lage und die helle Bank leitet das Gesetz ab.
+                        const GK = globalThis.__gelaendeCore;
+                        const n = g.attributes.position.count;
+                        const C = new Float32Array(n * 3);
+                        GK.felsNetz(
+                            GK.felsBasis(AnazhRealm._srgbHexLinear(_rockBase)),
+                            g.attributes.position.array,
+                            g.attributes.normal.array,
+                            g.index ? g.index.array : null,
+                            n,
+                            { himmel: 1, feucht: 0.3 },
+                            C
+                        );
+                        g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
                         return g;
                     }
                 }

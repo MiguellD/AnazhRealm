@@ -1287,14 +1287,13 @@
     // Formraum (elong/sph), Sediment-Bänke (strat), Wadell-Facetten-Clipping (round) + Laplace-
     // Rundung. THREE + eine noise3-Funktion werden INJIZIERT (kein Perm-Tabellen-Port; Main gibt
     // seine SimplexNoise, das Portal seine simplex3 — die Form ist gesetz-gleich, nicht byte-
-    // gleich, was für Fels genügt [kein Lockstep]). Optional geologische Vertex-Farben
-    // (opts.withColor + THREE.Color) für Materialien, die vertexColors lesen. `seq` (0..1) treibt
+    // gleich, was für Fels genügt [kein Lockstep]). Nur die GESTALT: den Stoff legt das Fels-Gesetz
+    // auf (gelaende-core `felsNetz`, K17; die Vertex-Farben hier sind gefallen). `seq` (0..1) treibt
     // die Facetten-Ebenen deterministisch. Rückgabe: eine THREE.BufferGeometry (Radius ~size).
     function buildBoulderGeometry(THREE, noise3, P, seq) {
         if (!THREE || !THREE.IcosahedronGeometry) return null;
         const rnd = typeof seq === "function" ? seq : Math.random;
         const rrange = (a, b) => a + (b - a) * rnd();
-        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
         const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
         const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -1415,69 +1414,6 @@
         for (let i = 0; i < n; i++) pos.setXYZ(i, V[i][0], V[i][1], V[i][2]);
         pos.needsUpdate = true;
         geo.computeVertexNormals();
-        // Optional: geologische Vertex-Farben (AO in Mulden · Sediment-Bänke · Eisen-Schlieren).
-        if (P.withColor && THREE.Color) {
-            const nor = geo.attributes.normal;
-            const ao = new Float32Array(n);
-            for (let i = 0; i < n; i++) {
-                let mean = [0, 0, 0],
-                    c = 0;
-                adj[i].forEach((j) => {
-                    mean = vadd(mean, V[j]);
-                    c++;
-                });
-                mean = vscl(mean, 1 / Math.max(1, c));
-                const toMean = vsub(mean, V[i]),
-                    nv = [nor.getX(i), nor.getY(i), nor.getZ(i)];
-                ao[i] = clamp(0.5 + vdot(vn(toMean), nv) * 1.2, 0.12, 1);
-            }
-            const cols = new Float32Array(n * 3);
-            const base = new THREE.Color(P.rockA || 0x8a8278),
-                dark = new THREE.Color(P.rockB || 0x4a463e),
-                acc = new THREE.Color(P.rockC || 0x9a9286);
-            const quartz = new THREE.Color(0xe8e0d2),
-                feld = new THREE.Color(0xc69a86),
-                mica = new THREE.Color(0x2c2a26),
-                bleach = new THREE.Color(0xccc7b6),
-                moss = new THREE.Color(0x6f8a3e),
-                iron = new THREE.Color(0x7a4a26);
-            const rockLichen = P.rockLichen != null ? P.rockLichen : 0;
-            const sr = mulberry32(Math.floor((P.seed || 1) * 9973));
-            for (let i = 0; i < n; i++) {
-                let c = base.clone();
-                const up = nor.getY(i);
-                if (P.speckle) {
-                    const m = sr();
-                    if (m < 0.14) c.lerp(quartz, 0.6);
-                    else if (m < 0.26) c.lerp(feld, 0.45);
-                    else if (m < 0.34) c.lerp(mica, 0.65);
-                }
-                c.lerp(dark, ao[i] * 0.7);
-                if (ao[i] < 0.42 && up > 0.1) c.lerp(bleach, ((0.42 - ao[i]) / 0.42) * 0.4 * clamp(up, 0, 1));
-                if (strat > 0.02) {
-                    const band = Math.sin(V[i][1] * 7.0 + off);
-                    if (band > 0.4) c.lerp(acc, 0.55 * strat);
-                    else if (band < -0.4) c.lerp(dark, 0.6 * strat);
-                }
-                const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, off + 21.0);
-                if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6);
-                // Vorlagen-Flechte/Moos (phytogenesis buildBoulder): auf sonnigen Kuppen, feucht-
-                // gemustert. Tag-neutral gegated (rockLichen default 0 → AnazhRealm-Fels unverändert;
-                // die Portal-Vorlage reicht 0.6 → ihr Moos bleibt). Byte-treu zur Vorlage.
-                if (rockLichen > 0 && up > 0.22) {
-                    const patch = fbm3([V[i][0] * 2.4, V[i][1] * 2.4, V[i][2] * 2.4], 3, off + 33.0);
-                    const lf = clamp((up - 0.22) / 0.5, 0, 1) * rockLichen;
-                    if (patch > -0.05) c.lerp(moss, clamp((patch + 0.05) * 1.8, 0, 1) * lf * 0.6);
-                }
-                const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, off + 7.7);
-                c.multiplyScalar(1 + mott * 0.22);
-                c.multiplyScalar(0.88 + sr() * 0.22);
-                cols[i * 3] = c.r;
-                cols[i * 3 + 1] = c.g;
-                cols[i * 3 + 2] = c.b;
-            }
-            geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-        }
         const size = P.size != null ? P.size : 0.5;
         geo.scale(size, size, size);
         return geo;

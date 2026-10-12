@@ -1043,7 +1043,24 @@ const server = http.createServer((req, res) => {
                         N3[3 * i + 1] = NA.getY(i);
                         N3[3 * i + 2] = NA.getZ(i);
                     }
-                    const KR = GK.felsKruemmung(P3, N3, geo.index ? geo.index.array : null, nV);
+                    // Die Krümmung je Block aus SEINEM Netz (der Satz-Index trägt freie Bereiche früherer Blöcke). Die
+                    // LOD-Naht (`stitch:`-Blöcke) kopiert die fertige Farbe ihres Chunks auf eigene Quads und Vorhänge
+                    // (Normale des Vorhangs 0,2 nach oben) — sie trägt den Stoff ihrer Quelle, gezählt werden die Chunks.
+                    const KR = new Float32Array(nV);
+                    const naht = new Uint8Array(nV).fill(1);
+                    if (bs)
+                        for (const [key, bl] of bs.bloecke) {
+                            if (String(key).startsWith("stitch:") || !bl.geom || !bl.geom.index) continue;
+                            const g = bl.geom;
+                            const k = GK.felsKruemmung(
+                                g.attributes.position.array,
+                                g.attributes.normal.array,
+                                g.index.array,
+                                bl.vAnzahl
+                            );
+                            KR.set(k, bl.vStart);
+                            naht.fill(0, bl.vStart, bl.vStart + bl.vAnzahl);
+                        }
                     const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
                     const fuss = FS ? FS.fuss : 1.8;
                     const soll = [0, 0, 0];
@@ -1067,7 +1084,7 @@ const server = http.createServer((req, res) => {
                     };
                     const Ys = [];
                     for (const i of hoehleV) {
-                        if (HA.getX(i) > 0.001) continue;
+                        if (HA.getX(i) > 0.001 || naht[i]) continue;
                         wf.ohneHimmel++;
                         const c = pruefe(i, 0, wf);
                         Ys.push(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
@@ -1079,7 +1096,7 @@ const server = http.createServer((req, res) => {
                         wf.streuung = m > 0 ? +(s / m).toFixed(3) : 0;
                     }
                     for (let i = 0; i < nV; i++) {
-                        if (HA.getX(i) < 0.999 || 1 - N3[3 * i + 1] < G.rockHi) continue;
+                        if (naht[i] || HA.getX(i) < 0.999 || 1 - N3[3 * i + 1] < G.rockHi) continue;
                         kl.steil++;
                         pruefe(i, HA.getX(i), kl);
                     }
