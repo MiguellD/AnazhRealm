@@ -1,0 +1,13 @@
+=== DER FERNWALD IST KARTE (gate:fernwald) ===
+  ✅ A FORM — Karten-Zone 150 m bis zum Rand: 517/517 Karten-Dinge tragen ihre Gestalt (jenseits des Bands die Karte allein; 0 Riesen im Band)
+  ✅ B ABSENZ — Feld-Sätze an Karten-Dingen: 0 · Satz-Weg für baum_erle: ret false, Slot false, aufgegeben false
+  ✅ C HORIZONT — nach dem Umzug: 718 Karten-Dinge jenseits ihres Rands + 16 m, platziert: 0 · Ränder 352.0–384.0 m (Saum 352–384) · Karten-Zone 1331/1331
+  ✅ D ÜBERGANG — grown_busch_hazel_v2 (97 m, Radius geregelt 100–150 m) → 165 m (Radius 146): Slots gleich true, L2 allein · zurück 97 m: Slots gleich true, voll false · Takte ohne Gestalt 0/80
+  ✅ D2 RIESE — Sichthöhe 110 m · im Band 165 m L1+L2 · jenseits 330 m L2 · zurück 165 m L1+L2 · Takte ohne Gestalt 0/107
+  ✅ SELBSTTEST 3 (kein Band jenseits des Radius — D2 rot) — alt: 165 m L1 · wieder: 165 m L1+L2
+  ✅ SELBSTTEST 1 (der alte Weg macht A und D rot) — A 0/1538 (baum_kiefer @ 129 m: kalt (Karte bereit)) · D Takte ohne Gestalt 40, Slots gleich false
+  ✅ SELBSTTEST 2 (ein injizierter Satz macht B rot) — baum_erle @ 14 m trägt einen Feld-Satz
+  ✅ T keine Ausnahme im Spiel-Takt
+  ✅ P keine Seiten-Fehler
+
+✅ GRÜN — der gesetzte Wald ist jenseits der Mesh-Zone seine Karte (517 Bäume), kein Satz, kein Pop am Radius.

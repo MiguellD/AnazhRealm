@@ -1,0 +1,25 @@
+  ✅ P: der Promotions-Block walkt ALLE geschnittenen Regionen (rx0..rx1 × rz0..rz1)
+  ✅ F(Quelle): SCATTER_FERN_SUPERREGION hat genau 5 Code-Vorkommen (Definition + _archFernRegionKey + 3 T3-Kugel-Radius-Leser) — vorkommen=5
+  ✅ F(Quelle): der `s:`-Super-Key wird an GENAU EINER Stelle abgeleitet (_archFernRegionKey) — ableitungen=1
+  ✅ F(Quelle): der Keying-Chokepoint mappt VOR dem Gruppen-Key (_archFernRegionKey zuerst)
+=== V18.464 SCATTER-LOD — der Fernwald folgt der LIVE-Distanz ===
+  ✅ Boot + Scatter-Zellen gebaut — zellen=150
+  ✅ Probe-Zelle gefunden
+  ✅ L: die Stufe WANDERT nach dem Weg-Sprung (1 → 2)
+  ✅ L: Slots re-alloziert bei Gestalt-Wechsel (bzw. bewusst behalten bei geklemmter Art) — bpGewechselt=true getauscht=true
+  ✅ H: nach der Sprung-Adaption kein Realloc-Churn (Hysterese stabil) — nachlauf=0 drainiert=true
+  ✅ D: private Boden-Zelle GEFUNDEN (B2-Population, zwei-stufig) — bp=fscatter:strauch:1:0 lodVor=0 Kandidat 155.4 m
+  ✅ D: DIE RÜCK-WANDERUNG — die Zelle demotet auf die Fern-Stufe, sobald der Spieler geht — lod 0 → 2
+  ✅ D: die Slots wandern nach @s: (Super-Region) bzw. in die EINE Karten-Gruppe, die private Hülle leert/reapt — slotsFern=true hülleWeg=true (private Slots vor: 4)
+  ✅ D: kein Ursprungs-Sphere-Hazard (kein Null-Skala-Slot in einer dichten Gruppe) — hazard-Slots=0
+  ✅ F: die EINE Fern-Key-Funktion (Unit: fern→Super-Region, nicht-fern/null/gemappt unberührt)
+  ✅ F: Gras-Fernstufe + strauch-Karte über die echte Pipe (lod=2)
+  ✅ F: DIE KARTEN-DIÄT (W6) — 16 Karten in 16 Regionen zeichnen in EINER Gruppe (impostor#fimp:atlas), Bilanz dicht — {"instanzen":16,"gruppen":1,"gruppe":"impostor#fimp:atlas","neueKartenGruppen":0,"leck":0}
+  ✅ K: DIE KARTEN IN DER WAHL (W7) — die Atlas-Gruppe ist eine Gruppe der Instanz-Wahl und zeichnet die Karten, die das Gesetz trifft (über den 16: alle, Himmel: keine), jede gezeichnete Instanz eine Karte der Fixtur — {"wahl":true,"alle":16,"treu":true,"himmel":0,"westBreite":8,"selbsttestHimmel":536}
+  ✅ K: … eine schmale Linse über der Westhälfte sieht genau deren 8 Karten — 8
+  ✅ K: Selbsttest — eine Wahl ohne das Gesetz legt jede Karte in den Himmels-Blick, die Linse nennt es — ohne Gesetz 536 Karten im Himmels-Blick (Soll mit Gesetz 0)
+  ✅ F: DIE DIÄT — 4×4 Regionen: per-Region 16 → Super-Region 1 Fern-Gruppen (≥4× weniger) — S=4
+  ✅ F: Slot-Bilanz dicht — die Empty-Dispose räumt BEIDE Welten restlos — leckA=0 leckB=0
+  ✅ keine Page-Errors während der Probe
+
+✅ GRÜN — die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei), die Promotion liest den ganzen Region-Fächer, und die Fern-Gruppen tragen die Super-Region-Diät (EIN Keying-Chokepoint, Bilanz dicht).

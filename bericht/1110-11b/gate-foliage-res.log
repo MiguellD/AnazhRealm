@@ -1,0 +1,12 @@
+
+===== SUBSYSTEM 5 — LAUB-AUFLÖSUNGS-REGLER + LAYER-TRENNUNG =====
+
+  FOLIAGE_LAYER 1 · PERF_FOLIAGE_RES_MIN 0.5
+  (1) headless _foliageResScale: 1 (erw 1) · Warmup: Loop function, 0 von 20 Takten warfen
+  (2) _markFoliageLayer: foliage {L0 true, L1 true} · placed {L0 true, L1 false} · global {L0 true, L1 false}
+  (2b) echte Gruppen: foliage-InstGroup {L0 true, L1 true} · placed {L0 true, L1 false} · Gras {L0 true, L1 true}
+  (3) REGLER heavy im Stand (effArch→0): Faktor 0.680 → Last-Boden 0.68 · heavy + schnelle Kamera: 0.600 → 0.6 · light (effArch→1): 1.000 → 1 · absoluter Boden 0.5
+  (4) Flugschreiber-Snapshot foliageRes: vorhanden true (1)
+
+  ✅ Der Laub-Auflösungs-Faktor folgt dem EINEN Regler (heavy im Stand→Last-Boden, heavy + Kamera→Bewegungs-Boden, light→1, headless→1); das Laub trägt die FOLIAGE_LAYER ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unberührt).
+

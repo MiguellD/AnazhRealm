@@ -1,0 +1,36 @@
+=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===
+  Worker ready: true
+  Atlas-Zelle: {"imAtlas":true,"schicht":0,"hasFrame":true,"keineSaison":true}
+  Atlas (Quad/Material geteilt, Schichten): {"quadGeteilt":true,"materialGeteilt":true,"billboard":true,"schichtenVerschieden":true,"texturen":true,"fmt":"rgba8"}
+  Gruppen (Streu ×2 Arten + gesetzt): {"neu":["impostor#fimp:atlas"],"karten":["impostor#fimp:atlas"],"zellen":[0,1,0],"rahmen":[3.801156997680664,4.537303924560547,3.5767502784729004,6.161046028137207,3.801156997680664,4.537303924560547],"slotGruppen":["impostor#fimp:atlas","impostor#fimp:atlas","impostor#fimp:atlas"],"erwartet":[0,1,0],"erwartetRahmen":[3.801156959460038,4.537303819656372,3.5767502348853593,6.16104606628418,3.801156959460038,4.537303819656372],"sicht":[17.87152671813965,22.72323226928711,19.4962100982666],"erwartetSicht":[17.871526018733977,22.723232393199204,19.496210202255245],"instanziert":true,"vertexPuffer":6,"attribute":["position","normal","uv","aKarte"]}
+  Vereinigung (Kanal/Methoden/kein Nachbau): {"kanalImTick":true,"requestMethode":true,"payloadKonsument":true,"rttNachbau":"undefined"}
+  asset-foundry-iframe im DOM: false (erwartet false)
+  gefallene Methoden (erwartet undefined): {"requestImpostor":"undefined","ensureBakeIframe":"undefined","buildImpostorRecord":"undefined"}
+
+=== TEIL C [bc] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===
+  geschrieben: true · Wiring: true
+  Eichung der Lese-Richtung: {"markerPx":115,"obenZuerst":false}
+  LAYOUT (Karte: links oben opak) — Quadranten px: lo 272 · ro 0 · lu 0 · ru 0
+  Schirm-Box {"x0":53.36490319830455,"x1":87.4729806396609,"yOben":46.94596127932182,"yUnten":81.05403872067818} · Zeilen {"47":16,"48":16,"49":16,"50":16,"51":16,"52":16,"53":16,"54":16,"55":16,"56":16,"57":16,"58":16,"59":16,"60":16,"61":16,"62":16,"63":16}
+  Selbsttest Monster-Slot (Skala 1000) Pixel: 7776 (Linse MUSS Müll sehen)
+  Free-Chokepoint verdichtet (count 1, der Lebende zog in Slot 0): true
+  nach _archGroupFree — lebender Slot: 293 px · befreiter Slot: 0 px
+
+=== TEIL C [rgba8] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===
+  geschrieben: true · Wiring: true
+  Eichung der Lese-Richtung: {"markerPx":115,"obenZuerst":false}
+  LAYOUT (Karte: links oben opak) — Quadranten px: lo 272 · ro 0 · lu 0 · ru 0
+  Schirm-Box {"x0":53.36490319830455,"x1":87.4729806396609,"yOben":46.94596127932182,"yUnten":81.05403872067818} · Zeilen {"47":16,"48":16,"49":16,"50":16,"51":16,"52":16,"53":16,"54":16,"55":16,"56":16,"57":16,"58":16,"59":16,"60":16,"61":16,"62":16,"63":16}
+  Selbsttest Monster-Slot (Skala 1000) Pixel: 7776 (Linse MUSS Müll sehen)
+  Free-Chokepoint verdichtet (count 1, der Lebende zog in Slot 0): true
+  nach _archGroupFree — lebender Slot: 293 px · befreiter Slot: 0 px
+
+=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ===
+  echte Quelle: hält
+  Selbsttest „Stichprobe ohne Gradienten“ → feuert
+  Selbsttest „Gradienten aus der springenden Koordinate“ → feuert
+  Selbsttest „Normale direkt gesampelt“ → feuert
+
+(Teil B [echter RTT-Bake] per Default aus — mit P5_REAL_RENDERER=1 aktivieren; den LOOK misst die Blick-Sonde auf echter GPU.)
+
+✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten.

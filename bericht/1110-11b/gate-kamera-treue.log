@@ -1,0 +1,30 @@
+=== KAMERA-TREUE — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Zeiger genullt" → rot: STAPEL: die Aufnahme verfolgt 1 von 13 Draws — der Schatten-Render nullte den Zeiger, der Replay refresht die übrigen nie
+  ✅ Selbsttest „Bundle unter Override" → rot: OVERRIDE: 2 Bundle(s) unter einem overrideMaterial gesammelt — der Replay refresht sie gegen den geteilten Stoff
+  ✅ Selbsttest „Bühne ohne Schatten" → rot: STAPEL: kein Schatten-Render während der Aufnahme (die Probe ist blind)
+  ✅ Selbsttest „Replay klebt" → rot: BILD: der Replay zeichnet Blick Y zu 0.4 gleich mit dem direkten Pfad (Soll ≥ 0.999) — ein Bürger klebt an der Kamera seiner Aufnahme
+  ✅ Selbsttest „Schatten gegen fremden Stoff" → rot: BILD: mit fremdem Schatten-Stoff zeichnet der Replay Y zu 0.9 gleich (Soll ≥ 0.999) — ein Schatten-Bundle wirft gegen den geteilten Stoff
+  ✅ Selbsttest „Stapel-Probe blind" → rot: BILD: ohne den Chokepoint zeichnet der Replay Y zu 1 gleich (Soll < 0.98) — die Stapel-Probe ist blind
+  ✅ Selbsttest „Override-Probe blind" → rot: BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu 1 gleich (Soll < 0.98) — die Override-Probe ist blind
+  ✅ Selbsttest „Bühne blind" → rot: BILD: Blick X und Blick Y sind zu 0.99 gleich (Soll < 0.9) — die Bühne ist blind
+  ✅ Selbsttest „Refresh je Frame ohne Änderung" → rot: STAND direkt: 2 Voll-Refreshs je Render ohne Änderung (Soll 0) — ein Refresh je Frame ohne Änderung
+  ✅ Selbsttest „Gang je Programm (Replay)" → rot: STAND replay: 31 wiederholte Gänge je Render ({"k":28,"g":3}: k Knoten · v Vorher · g Gruppe) — dieselbe Arbeit je Programm statt EINMAL
+  ✅ Selbsttest „Upload ohne Änderung" → rot: STAND direkt: 1 Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)
+  ✅ Selbsttest „vergessener Refresh" → rot: ÄNDERUNG replay: nach Kiste und Blatt zeichnet die Diät 0.9 gleich mit dem vollen Refresh (Soll ≥ 0.999) — ein vergessener Refresh
+  ✅ Selbsttest „Änderungs-Probe blind" → rot: ÄNDERUNG direkt: eine Diät, die nie refresht, zeichnet 1 gleich (Soll < 0.98) — die Änderungs-Probe ist blind
+  ✅ Selbsttest „Gruppe je Programm" → rot: TEILEN: die 8 Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen 8 geteilte Gruppen statt 1 — jedes Programm lädt Kamera und Schatten in seinen eigenen Puffer
+  ✅ Selbsttest „Teilen blind" → rot: TEILEN: 0 Karten-Programme im Hauptbild gesammelt (Soll 8) — die Probe ist blind
+  ✅ Selbsttest „Stand blind" → rot: STAND direkt: keine Diät-Prüfung gezählt — die Probe ist blind
+  ✅ Selbsttest „Stempel überlebt den verschachtelten Render" → rot: VERSCHACHTELT replay: nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät 0.1099 gleich mit dem vollen Refresh (Soll ≥ 0.999) — ein Stempel überlebte den verschachtelten Render, die nächste geteilte Gruppe trug dessen Kamera
+  ✅ Selbsttest „Verschachtelt blind (Täter)" → rot: VERSCHACHTELT direkt: ein Stempel nur aus der Render-Id zeichnet 1 gleich (Soll < 0.98) — die Probe ist blind (oder der Gang liest seinen Render-Abschnitt nicht aus `rend.info.calls`)
+  ✅ Selbsttest „kein verschachtelter Render" → rot: VERSCHACHTELT replay: kein verschachtelter Render im Bild der Diät — die Probe ist blind
+  ✅ Selbsttest „Spiel-Frame in der Bühne" → rot: LAUF: 2 Spiel-Bilder während der Bühne, der GPU-Kehraus nahm 51 Geometrie-Puffer — der Spiel-Loop lief hinein (ein Replay danach zeichnet das Bild davor: 0,3064) — der Lauf ist ungültig
+  ✅ Selbsttest „Kehraus ohne Spiel-Bild" → rot: LAUF: 0 Spiel-Bilder während der Bühne, der GPU-Kehraus nahm 3 Geometrie-Puffer — der Spiel-Loop lief hinein (ein Replay danach zeichnet das Bild davor: 0,3064) — der Lauf ist ungültig
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===
+  [4 s] Renderer bereit nach 2 s (Chokepoint eingehängt)
+  [6 s] Aufnahme: 13/13 verfolgt · 1 Schatten-Render · 0 Bundles unter Override · Bild {"replay":1,"fremd":1,"ohneStapel":0.7903,"schattenBundle":0.7903,"xGegenY":0.3064}
+  [6 s] Stand: {"teilen":{"programme":8,"gruppenJeProgramm":1,"gruppen":1},"direkt":{"pruef":25,"voll":0,"uploads":0,"wiederholt":0,"wer":{}},"replay":{"pruef":25,"voll":0,"uploads":0,"wiederholt":0,"wer":{}},"aenderung":{"direkt":{"diaet":1,"taeter":0.9404},"replay":{"diaet":1,"taeter":0.9505}},"verschachtelt":{"direkt":{"renders":1,"diaet":1,"taeter":0.1099},"replay":{"renders":1,"diaet":1,"taeter":0.1099}}}
+
+✅ GRÜN — LAUF: 0 Spiel-Bilder, 0 Kehraus-Puffer in der Bühne; die Aufnahme verfolgt 13 von 13 Draws trotz Schatten-Render, kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (1, mit fremdem Schatten-Stoff 1); ohne den Chokepoint 0.7903, ein Schatten-Bundle 0.7903. STAND: 8 Karten-Programme tragen 1 geteilte Gruppe(n); je Render 25 Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät 1/1 wie der volle Refresh (nie-Refresh 0.9404/0.9505); VERSCHACHTELT (Werfer ohne Diät) 1/1 (Stempel nur aus der Render-Id 0.1099/0.1099).

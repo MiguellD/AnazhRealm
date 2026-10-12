@@ -1,0 +1,16 @@
+=== WELLE S4 — IMPOSTOR EAGER + WERKSTATT-L2-BILLBOARD ===
+
+  TEIL A — Bake eager:
+    _frameOverBudget-Gate raus: true (erw true)
+    ein RTT/Frame (gedeckelt):  true (erw true)
+    Null-Renderer-Guard:        true (erw true)
+  TEIL B — Werkstatt-L2 = Billboard:
+    routet durch Impostor:      true (erw true)
+    nur für BÄUME (gated):      true (erw true)
+    InstancedMesh (Chokepoint): true (erw true)
+    L2-Zweig (lod === 2):       true (erw true)
+  BEHAVIORAL:
+    Foundry ready: true · Baum-Bauplan: baum_eiche
+    Vorschau-Gruppe: true · InstancedMesh: true · Verts: 6 · Karten-Signatur(aKarte): true [6,3.9264705181121826,4.821659564971924,17.27263069152832]
+
+✅ GRÜN — der Impostor bäckt eager (kein Frame-Budget-Gate, weiter gedeckelt), die Werkstatt zeigt auf der L2-Baumstufe die 8-Winkel-Karte (InstancedMesh, Schicht des EINEN Atlas, aus demselben Studio-Baum gebacken).

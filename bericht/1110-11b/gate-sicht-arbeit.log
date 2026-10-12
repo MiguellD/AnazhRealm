@@ -1,0 +1,134 @@
+=== SICHT-ARBEIT — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest grün → grün
+  ✅ Selbsttest grün mit Licht-Rand → grün
+  ✅ Selbsttest echter Loop mit Inhalts-Änderung → grün
+  ✅ Selbsttest Ruhe mit Änderung (Licht) → grün
+  ✅ Selbsttest Klasse „Inhalt änderte sich (ein Bereich kam)" → aenderung
+  ✅ Selbsttest Klasse „Stand ohne Inhalt" → ohne
+  ✅ Selbsttest Klasse „Stand-Bruch (der Satz zählt nur seinen Stand)" → ohne
+  ✅ Selbsttest Klasse „Verdichten-Zähler ohne Grund" → ohne
+  ✅ Selbsttest Klasse „Verdichten nach dem Überhang (die neue Wahl danach)" → folge
+  ✅ Selbsttest Klasse „Inhalt einer anderen Familie" → ohne
+  ✅ Selbsttest Klasse „Licht drehte (Kaskade)" → aenderung
+  ✅ Selbsttest Klasse „Licht drehte (Hauptbild)" → ohne
+  ✅ Selbsttest Klasse „Kamera bewegt (Hauptbild)" → aenderung
+  ✅ Selbsttest Klasse „Lage ohne Licht" → ohne
+  ✅ Selbsttest Klasse „Licht drehte seit dem letzten Pass der Kaskade (sie ruhte im Frame der Drehung)" → aenderung
+  ✅ Selbsttest Klasse „Licht drehte nur für die andere Kaskade" → ohne
+  ✅ Selbsttest Klasse „Licht je Kaskade für das Hauptbild" → ohne
+  ✅ Selbsttest Klasse „Blende des Reglers (Hauptbild)" → aenderung
+  ✅ Selbsttest Klasse „Verdichten einer ruhenden Wahl" → folge
+  ✅ Selbsttest Klasse „Umlegen" → folge
+  ✅ Selbsttest Klasse „Verdichten ohne Schuld" → ohne
+  ✅ Selbsttest Klasse „Umlegen ohne Wahl" → ohne
+  ✅ Selbsttest Klasse „ungesehene Bytes" → ohne
+  ✅ Selbsttest Kamera „Atmen ±4 mm" → steht
+  ✅ Selbsttest Kamera „Schritt 1,5 cm (über dem halben Halt)" → bewegt
+  ✅ Selbsttest Kamera „Drehung 0,5°" → steht
+  ✅ Selbsttest Kamera „Drehung 1,5°" → bewegt
+  ✅ Selbsttest Kamera „Projektion (Fern-Ebene)" → bewegt
+  ✅ Selbsttest Blende „Atmen ±1 mm quer" → steht
+  ✅ Selbsttest Blende „Atmen 9 mm (unter dem halben Halt)" → steht
+  ✅ Selbsttest Blende „Schritt 1,5 cm" → bewegt
+  ✅ Selbsttest Blende „Perf-Streck neu" → bewegt
+  ✅ Selbsttest Blende „Kante des Blend-Gesetzes neu" → bewegt
+  ✅ Selbsttest Blende „Maske aus" → bewegt
+  ✅ Selbsttest Arbeit ohne Änderung „ruhig" → 57
+  ✅ Selbsttest Arbeit ohne Änderung „Licht drehte" → 7
+  ✅ Selbsttest Arbeit ohne Änderung „Licht drehte seit dem letzten Pass von k1 (nicht von k0)" → 57
+  ✅ Selbsttest Arbeit ohne Änderung „die Werfer der Region-Bündel einer ruhenden Kaskade zählen nicht (wie `arbeit`)" → 7
+  ✅ Selbsttest Arbeit ohne Änderung „Kamera bewegt" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Blende neu" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Inhalt änderte sich" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Folge (die offene Ordnung lief)" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Stand-Bruch (der Satz zählt nur seinen Stand)" → 57
+  ✅ Selbsttest Satz-Inhalt „Stand-Bruch (Stand +1, nichts sonst)" → kein Grund (ohne Ursache: {"stand":1,"verdichtet":0})
+  ✅ Selbsttest Satz-Inhalt „ein Bereich kam" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Bereich wurde neu gebaut" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Bereich ging" → aenderung
+  ✅ Selbsttest Satz-Inhalt „der Anker zog um" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Geomorph legt eine neue Hülle" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Geomorph ohne neue Hülle" → kein Grund (ohne Ursache: {"stand":1,"verdichtet":0})
+  ✅ Selbsttest Satz-Inhalt „die offene Ordnung läuft" → folge
+  ✅ Selbsttest Satz-Inhalt „eine Ordnung ohne offenen Grund" → kein Grund (ohne Ursache: {"stand":1,"verdichtet":0})
+  ✅ Selbsttest Satz-Inhalt „das Verdichten nach dem Überhang" → folge
+  ✅ Selbsttest Satz-Inhalt „ein Verdichten-Zähler ohne Tausch" → kein Grund (ohne Ursache: {"stand":0,"verdichtet":1})
+  ✅ Selbsttest Satz-Inhalt „ein Verdichten ohne Überhang" → kein Grund (ohne Ursache: {"stand":0,"verdichtet":1})
+  ✅ Selbsttest „Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 15072, max 15072 Prüfungen, in 5 von 5 Frames, 0 mit Änderung; alle Frames Ø 15072, Höhlen-Sicht 3 + Licht 2 Aufrufe, Abschnitte 16, Ecken 9816, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch; neu gerechnet je Frame: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2 · RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25 · bauSatz stand:ohne ×10 · boden stand:ohne ×5 (der Cache-Schlüssel eines Satzes zählt, kein Bereich, kein Anker, keine Hülle änderte sich)
+  ✅ Selbsttest „Stand-Churn ohne Ursache: die Arbeit ist Arbeit ohne Änderung" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 15072, max 15072 Prüfungen, in 5 von 5 Frames, 0 mit Änderung; alle Frames Ø 15072, Höhlen-Sicht 3 + Licht 2 Aufrufe, Abschnitte 16, Ecken 9816, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch; neu gerechnet je Frame: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2 · RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25 · bauSatz stand:ohne ×10 · boden stand:ohne ×5 (der Cache-Schlüssel eines Satzes zählt, kein Bereich, kein Anker, keine Hülle änderte sich)
+  ✅ Selbsttest „stumpfe Stand-Linse (der Stand-Bruch heißt Änderung)" → rot: LINSE STUMPF: ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle ändert sich) zählt als Änderung (10 von 10 Frames mit Änderung, Arbeit ohne Änderung in 0, ohne Ursache {})
+  ✅ Selbsttest „stumpfe Stand-Linse (der Stand-Bruch steht ohne Namen)" → rot: LINSE STUMPF: ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle ändert sich) zählt als Änderung (0 von 10 Frames mit Änderung, Arbeit ohne Änderung in 10, ohne Ursache {})
+  ✅ Selbsttest „kein Stand-Bruch" → rot: LEER: kein Stand-Bruch gemessen — (S) prüfte die Satz-Arbeit ohne Ursache nicht
+  ✅ Selbsttest „das atmende Auge arbeitet (der Täter der zweiten Gegenprüfung)" → rot: AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames (Median 14999, max 14999 Prüfungen, Bytes ohne Grund in 0) — eine zweite Signatur neben dem Gesetz des Halts; neu gerechnet je Frame: satz streuSatz|haupt ×5, gruppe f:eiche|2|1:0#S ×2
+  ✅ Selbsttest „die Linse nennt das atmende Auge Blende" → rot: LINSE STUMPF: das atmende Auge (±1 mm, unter dem Halt) heißt Bewegung — Kamera in 0, Blende in 5 von 5 Frames; jede Arbeit darin wäre entschuldigt
+  ✅ Selbsttest „kein atmendes Auge" → rot: LEER: keine Phase mit atmendem Auge gemessen — (A) prüfte nichts
+  ✅ Selbsttest „die Maske ist aus" → rot: LEER: die Maske ist aus (uLodMaskOn) — (A) prüfte das Auge der Blende nicht
+  ✅ Selbsttest „Loch an der Kante des Fensters" → rot: BLENDE-TREUE: 1 Löcher — das Auge der Maske wanderte unter dem Halt, die gehaltene Wahl zeichnet nicht, was die Maske vom Auge dieses Frames behält: f:eiche|2|1:0 Slot 3 (Kante: f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m))
+  ✅ Selbsttest „die Lage hält das Auge nicht" → rot: BLENDE-TREUE VAKUÖS: die Lage hielt das Auge der Maske über 9,5 mm nicht (unter dem halben Halt) — f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)
+  ✅ Selbsttest „die Maske behält die Kante nicht" → rot: BLENDE-TREUE VAKUÖS: die Maske behält die Instanz an der Kante nicht — f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)
+  ✅ Selbsttest „keine Instanz an einer Kante" → rot: LEER: Blende-Treue ohne Instanz an der Kante eines Fensters — (A) prüfte die gehaltene Wahl nicht
+  ✅ Selbsttest „ohne Rand fehlt nichts (die Probe ist stumpf)" → rot: LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts (0 Löcher) — die Blende-Treue prüft die Kante nicht
+  ✅ Selbsttest „der Inhalt ändert sich in der eingefrorenen Welt" → rot: RUHE: die Welt ist eingefroren, doch ihr Inhalt änderte sich in 2 von 10 Frames (boden +-901,-850 -899,-850) — die Ruhe misst nicht die Ruhe
+  ✅ Selbsttest „Arbeit in Ruhe (die Basis)" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 5200, max 5200 Prüfungen, in 10 von 10 Frames, 0 mit Änderung; alle Frames Ø 5200, Höhlen-Sicht 0 + Licht 0 Aufrufe, Abschnitte 0, Ecken 0, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch · LINSE BLIND: kein Pass traf in Ruhe seinen Cache (die Wahl steht nie — oder die Linse sieht sie nicht)
+  ✅ Selbsttest „ein Ausreißer in Ruhe" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 0, max 30 Prüfungen, in 1 von 10 Frames, 0 mit Änderung; alle Frames Ø 0, Höhlen-Sicht 0 + Licht 0 Aufrufe, Abschnitte 0, Ecken 0, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch
+  ✅ Selbsttest „Bytes in Ruhe" → rot: RUHE: 96 Index-Bytes je Frame ohne Änderung (max 960, in 1 von 10 Frames) — ein Pass schreibt ohne Änderung: bauSatz dicht? 960 B
+  ✅ Selbsttest „kein Treffer" → rot: LINSE BLIND: kein Pass traf in Ruhe seinen Cache (die Wahl steht nie — oder die Linse sieht sie nicht)
+  ✅ Selbsttest „starres Drehen" → rot: STARR: beim Drehen rechnet die Sicht nicht neu (Median der Arbeit 0) — eine gehaltene Wahl über eine neue Lage ist ein Loch
+  ✅ Selbsttest „starres Gehen" → rot: STARR: beim Gehen rechnet die Sicht nicht neu (Median der Arbeit 0) — eine gehaltene Wahl über eine neue Lage ist ein Loch
+  ✅ Selbsttest „untreue Wahl" → rot: TREUE: boden|haupt: 41 statt 43 Zellen — die gehaltene Wahl ist nicht die frisch gerechnete
+  ✅ Selbsttest „Treue ohne Vergleich" → rot: LEER: Treue ohne Vergleich (kein Abschnitt, keine Gruppe)
+  ✅ Selbsttest „stumpfe Linse" → rot: LINSE STUMPF: ein eingeschmuggelter Cache-Bruch (die Lage jedes Passes neu) arbeitet in Ruhe nicht
+  ✅ Selbsttest „stumpfe Byte-Linse (der Byte-Bruch schreibt nichts)" → rot: LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt nicht als Bytes ohne Änderung (0 Frames, {})
+  ✅ Selbsttest „stumpfe Byte-Linse (der Byte-Bruch heißt Folge)" → rot: LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt nicht als Bytes ohne Änderung (0 Frames, {})
+  ✅ Selbsttest „kein Byte-Bruch" → rot: LEER: kein Byte-Bruch gemessen — (S) prüfte die Bytes ohne Änderung nicht
+  ✅ Selbsttest „das Licht dreht je Frame (die Basis)" → rot: SONNE: das Licht hat keine Stufe — es dreht in 120 von 120 Frames, jede Kaskade bekommt bei jedem Render eine neue Lage und wählt neu
+  ✅ Selbsttest „Arbeit zwischen den Stufen" → rot: SONNE: die Sicht-Kette arbeitet in 40 von 120 Frames (Ø 20 Prüfungen), das Licht drehte in 6 — Arbeit zwischen den Stufen
+  ✅ Selbsttest „Stufe ohne Halt" → rot: SONNE: das Licht dreht in 120 von 120 Frames — die Sonne lief 0.026 rad, die Stufe 0.00392156862745098 rad erlaubt etwa 8
+  ✅ Selbsttest „Kaskaden ohne Licht-Rand" → rot: SONNE: die Kaskaden wählen ohne Licht-Rand — jede Stufe der Sonne legt ihre Lage neu, und jede wählt neu
+  ✅ Selbsttest „Arbeit über den Licht-Rand hinaus" → rot: SONNE: die Sicht-Kette arbeitet in 199 von 199 Frames (Ø 20 Prüfungen), das Licht drehte in 199, der Licht-Rand (32 Texel) erlaubt etwa 61 neue Wahlen je Kaskade — Arbeit zwischen den Stufen
+  ✅ Selbsttest „Sonne ohne Lauf" → rot: LEER: in der Phase mit laufender Sonne lief die Sonne nicht
+  ✅ Selbsttest „keine Sonne" → rot: LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts
+  ✅ Selbsttest „keine Ruhe" → rot: LEER: keine Ruhe-Phase gemessen (die Linse prüfte nichts)
+  ✅ Selbsttest „ein Leser fehlt der Welt (die Linse hüllt ihn nicht)" → rot: LINSE BLIND: die Welt trägt die Leser _hoehlenSichtLicht nicht — ihre Arbeit zählt nichts
+  ✅ Selbsttest „Loch nach der Neu-Wahl in der Drehung" → rot: DREH-TREUE: 7 Löcher — nach einer Neu-Wahl mitten in der gehaltenen Drehung (Grenze 0.0348 rad) zeichnet die gehaltene Wahl nicht, was das echte Frustum trifft: boden Zelle
+  ✅ Selbsttest „Drehfolge ohne Halt" → rot: DREH-TREUE VAKUÖS: die Lage hielt die Drehfolge nicht (Grenze 0.0348 rad) — der Fall trat nie ein
+  ✅ Selbsttest „keine Dreh-Treue" → rot: LEER: keine Dreh-Treue gemessen — (D) prüfte nichts
+  ✅ Selbsttest „die zweite Kaskade hält eine tote Marke" → rot: INSTANZ: nach einem fremden Schreiber (Freigeben+Belegen g, Stufen-Wechsel g 1→0) 1 Würfe, 1 NaN-Slots, 1 tote Marken, 0 fehlende Werfer — eine Kaskade hielt ihre Wahl: Wurf: Cannot set properties of undefined (setting 'slot')
+  ✅ Selbsttest „ein Werfer fehlt der Kaskade" → rot: INSTANZ: nach einem fremden Schreiber (Freigeben+Belegen g, Stufen-Wechsel g 1→0) 0 Würfe, 0 NaN-Slots, 0 tote Marken, 2 fehlende Werfer — eine Kaskade hielt ihre Wahl: 
+  ✅ Selbsttest „Instanz-Treue ohne den echten Weg" → rot: LEER: Instanz-Treue ohne beide Fälle (Freigeben+Belegen g) — (I) prüfte nicht alles
+  ✅ Selbsttest „der Stufen-Wechsel leert seine Gruppe (CI 37612012391)" → rot: LEER: Instanz-Treue ohne beide Fälle (Freigeben+Belegen g) — ohne Prüfung: Stufen-Wechsel f:weide|1|1:0#S 1→0 leerte die Gruppe (eine leere Gruppe zeichnet in keinem Pass) — (I) prüfte nicht alles
+  ✅ Selbsttest „keine Generation" → rot: CODE: `_passWahlLage` legt keine Lage-Generation (`_passLageGen`) — die Kette weiß nie, ob sie steht
+  ✅ Selbsttest „Satz fragt nicht" → rot: CODE: `_chunkSatzPass` fragt `_satzAbschnittSteht` nicht (jeder Pass rechnet jeden Satz neu)
+  ✅ Selbsttest „Instanz fragt nicht" → rot: CODE: `_instanzWahlPass` fragt `_instanzWahlSteht` nicht (jede Instanz jeder Gruppe je Pass neu)
+  ✅ Selbsttest „Wiese liest nicht" → rot: CODE: `_nahWieseSicht` liest die Lage-Generation nicht (`L.gen`)
+  ✅ Selbsttest „zweite Signatur" → rot: CODE: `_sichtSteht` lebt — eine zweite Kamera-Signatur neben dem Gesetz der Lage
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===
+  Ring 81 Chunks · Sätze boden, wasser, bauSatz|b0734ef5-93bd-4ae4-98ca-83dbffa8dc76|-, bauSatz|586e630f-56a1-48c8-aaf1-8d93ac849b74|-, bauWurf|0c980d78-b842-42c5-871c-d7899f89f913|S, formationenSatz|92455cf6-1324-4d8c-afe2-2a065e2ad83e|w, streuSatz|78e105a0-be8c-4f5a-a267-64a95f4c699e, streuSatz|5178b69b-99a4-461d-89ab-c2fcfdda005d, streuSatz|6fbbdb91-739b-4006-bd11-94d5fe1bb8cf, streuSatz|1db05a6d-2592-4ccc-9d9b-3f58025b450b, streuSatz|e87d9aa1-0b13-4e82-89c0-0a86d5efbd1b · Gruppen der Wahl 49 · Höhle {"muendungen":551,"tore":429,"bereiche":81,"knoten":4078}
+  kalt    der erste Ruhe-Frame: Arbeit 0 · Ecken 0 · Bytes 0 · Treffer 77
+  ruhe    11 Frames · Pässe 1 · Arbeit Ø 0 (Median 0, max 0) · Höhlen-Sicht 0 + Licht 0 · Abschnitte 0 · Ecken 0 (Schirm 0, Licht 0 Boxen) · _passTrifft 0 (Werfer 0) · Instanzen 0 · Bytes 0 · Treffer 77
+  sonne   119 Frames · Pässe 1 · Arbeit Ø 305.9 (Median 0, max 12144) · Höhlen-Sicht 0.1 + Licht 0.1 · Abschnitte 0.2 · Ecken 729.1 (Schirm 0, Licht 91.1 Boxen) · _passTrifft 211.7 (Werfer 0) · Instanzen 2.8 · Bytes 84536.5 · Treffer 76.2
+          neu: gruppe f:birke|2|1:3#S ×0.05, gruppe f:strauch|1|1:0#S ×0.05, gruppe f:strauch|1|1:2#S ×0.05, gruppe f:tanne|2|1:3#S ×0.05, gruppe f:weide|1|1:3#S ×0.05, gruppe f:eiche|2|1:3#S ×0.05
+  drehen  36 Frames · Pässe 1 · Arbeit Ø 12024.6 (Median 13656, max 14312) · Höhlen-Sicht 2.7 + Licht 2 · Abschnitte 12.7 · Ecken 4713.1 (Schirm 589.1, Licht 0 Boxen) · _passTrifft 10303.5 (Werfer 0) · Instanzen 1114.7 · Bytes 42494 · Treffer 15.7
+          neu: satz streuSatz|haupt ×3.33, gruppe f:birke|2|1:3#S ×2, gruppe f:strauch|1|1:0#S ×2, gruppe f:strauch|1|1:2#S ×2, gruppe f:tanne|2|1:3#S ×2, gruppe f:weide|1|1:3#S ×2
+  gehen   20 Frames · Pässe 1 · Arbeit Ø 12685.5 (Median 12716, max 13296) · Höhlen-Sicht 3 + Licht 2 · Abschnitte 16 · Ecken 3772.4 (Schirm 471.6, Licht 0 Boxen) · _passTrifft 10576 (Werfer 0) · Instanzen 1617 · Bytes 38100 · Treffer 0
+          neu: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2, gruppe f:birke|2|1:3#S ×2, gruppe f:strauch|1|1:0#S ×2, gruppe f:strauch|1|1:2#S ×2, gruppe f:tanne|2|1:3#S ×2
+  bruch   5 Frames · Pässe 1 · Arbeit Ø 14389 (Median 14389, max 14389) · Höhlen-Sicht 3 + Licht 2 · Abschnitte 16 · Ecken 9728 (Schirm 1216, Licht 0 Boxen) · _passTrifft 11533 (Werfer 0) · Instanzen 1619 · Bytes 0 · Treffer 0
+          neu: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2, gruppe f:birke|2|1:3#S ×2, gruppe f:strauch|1|1:0#S ×2, gruppe f:strauch|1|1:2#S ×2, gruppe f:tanne|2|1:3#S ×2
+  byteBruch 5 Frames · Pässe 1 · Arbeit Ø 0 (Median 0, max 0) · Höhlen-Sicht 0 + Licht 0 · Abschnitte 0 · Ecken 0 (Schirm 0, Licht 0 Boxen) · _passTrifft 0 (Werfer 0) · Instanzen 0 · Bytes 4103964 · Treffer 77
+  standBruch 5 Frames · Pässe 1 · Arbeit Ø 14248 (Median 14248, max 14248) · Höhlen-Sicht 3 + Licht 2 · Abschnitte 16 · Ecken 38712 (Schirm 1216, Licht 3623 Boxen) · _passTrifft 9388 (Werfer 0) · Instanzen 0 · Bytes 0 · Treffer 61
+          neu: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2, satz boden|haupt ×1, satz wasser|haupt ×1, satz formationenSatz|haupt ×1, satz boden|k0 ×1
+  auge    5 Frames · Pässe 1 · Arbeit Ø 0 (Median 0, max 0) · Höhlen-Sicht 0 + Licht 0 · Abschnitte 0 · Ecken 0 (Schirm 0, Licht 0 Boxen) · _passTrifft 0 (Werfer 0) · Instanzen 0 · Bytes 0 · Treffer 77
+  Auge (±1 mm, unter dem Halt): Arbeit in 0 von 5 Frames, Kamera 0, Blende 0, ohne Änderung 0
+  Blende-Treue: impostor#fimp:atlas Slot 0 (Stufe karte, Kante 23.373 m) · gehalten true · getragen true · 556 geprüft, 0 Löcher 
+  Blende-Treue ohne Rand: impostor#fimp:atlas Slot 0 (Stufe karte, Kante 23.373 m) · gehalten true · getragen true · 556 geprüft, 1 Löcher impostor#fimp:atlas Slot 573 (die Instanz an der Kante)
+  ruhe: Arbeit ohne Änderung in 0 von 11 Frames (Median 0), mit Änderung 0, Inhalt mit Grund {}, ohne Ursache in 0: {}
+  standBruch: Arbeit ohne Änderung in 5 von 5 Frames (Median 14248), mit Änderung 0, Inhalt mit Grund {}, ohne Ursache in 5: {"boden stand:ohne":5,"wasser stand:ohne":5,"bauSatz stand:ohne":10,"bauWurf stand:ohne":5,"formationenSatz stand:ohne":5,"streuSatz stand:ohne":25}
+  Sonne: das Licht drehte in 3 von 119 Frames (0.00343 rad, Stufe 0.0009704905194424185 rad), die Kette arbeitete in 3
+  Treue: 77 Wahlen verglichen, 0 Abweichungen
+  Instanz-Treue: Freigeben+Belegen f:birke|2|1:3#S, Stufen-Wechsel f:birke|2|1:3#S 0→1 · 12 geprüft · 0 Würfe, 0 NaN, 0 tote Marken, 0 fehlen 
+  Dreh-Treue: Grenze 0.0174 rad, gehalten true, 766 geprüft, 0 Löcher 
+
+✅ SICHT-ARBEIT GRÜN — in Ruhe rechnet kein Pass neu, jede neue Lage rechnet, die gehaltene Wahl ist die frische.

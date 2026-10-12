@@ -1,0 +1,5 @@
+=== V18.414 — DIE VEGETATION WÄCHST MIT DEM BODEN (kein ferner Billboard-Ring) ===
+  gebauter Terrain-Ring: 2 (Reichweite 130 m, span 43 m)
+  foliageRadius: 60 m · MAX wäre 240 m
+
+✅ GRÜN — foliageRadius (60 m) bleibt an der gebauten Ring-Kante (130 m), rennt NICHT auf MAX (240 m). Die Vegetation wächst mit dem Boden — erst der Nah-Chunk, dann erweitern.

@@ -1,0 +1,53 @@
+=== SELBST-TEST (ohne Welt) ===
+  ✅ Selbst-Test K2: gesund == 0 Täter
+  ✅ Selbst-Test K2: ‚Kamera unter dem sichtbaren Boden (R-CAM unterBoden)' → die Linse nennt „Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): unter dem sichtbaren Boden" — Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): unter dem sichtbaren Boden (-12 cm über ihm)
+  ✅ Selbst-Test K2: ‚Verfolger im Haus (FZ-07)' → die Linse nennt „Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis" — Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis
+  ✅ Selbst-Test K2: ‚Fels zwischen Ziel und Linse' → die Linse nennt „Leib fuss: 1 von 50" — Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): Gelände zwischen Ziel und Linse
+  ✅ Selbst-Test K2: ‚der Hang fehlt' → die Linse nennt „Leib hang: nicht gemessen" — Leib hang: nicht gemessen (Vorbedingung) · Leib fuss: 40 von 50 Posen gemessen (Vorbedingung) · Leib ritt: 40 von 50 Posen gemessen (Vorbedingung)
+  ✅ Selbst-Test K2: ‚kein Zähler der Feld-Proben' → die Linse nennt „Leib: 0 Bilder gezählt" — Leib: 0 Bilder gezählt (Vorbedingung der Feld-Proben je 3rd-Bild)
+  ✅ Selbst-Test K2: ‚die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)' → die Linse nennt „Leib: Feld-Proben je 3rd-Bild Mittel 156" — Leib: Feld-Proben je 3rd-Bild Mittel 156 · Median 156 · höchstens 156 über dem Vor-Stand V18.541 (Mittel 35.4 · Median 34 + 4 Ring · höchstens 2 × 50) — der Wurf der Kugel (_fieldRaycast in _loopCamera)
+  ✅ Selbst-Test K2: ‚ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)' → die Linse nennt „Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101" — Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101 über dem Vor-Stand V18.541 (Mittel 35.4 · Median 34 + 4 Ring · höchstens 2 × 50) — der Wurf der Kugel (_fieldRaycast in _loopCamera)
+  ✅ Selbst-Test K2: ‚mehr Sprünge als vorher' → die Linse nennt „Leib: 5 Kamera-Sprünge" — Leib: 5 Kamera-Sprünge > 2 m im Rundgang (Vor-Stand 4)
+  ✅ Selbst-Test K3: gesund == 0 Täter
+  ✅ Selbst-Test K3: ‚Box 7 zwischen Ziel und Kamera (NP-03 pose-14)' → die Linse nennt „NP-03: 1 von 48 Posen — pose-14: Box 7" — NP-03: 1 von 48 Posen — pose-14: Box 7 zwischen Ziel und Kamera
+  ✅ Selbst-Test K3: ‚der Tunnel wird umgangen (NP-02)' → die Linse nennt „NP-02: der Tunnel wird bei x > 3 umgangen" — NP-02: der Tunnel wird bei x > 3 umgangen (Ende 3.6/0/30)
+  ✅ Selbst-Test K3: ‚die Figur steht (NP-02 ohne Urteil)' → die Linse nennt „NP-02: die Figur bewegt sich keine 3 m" — NP-02: die Figur bewegt sich keine 3 m ({"ende":[3.6,0,21],"weg":0,"umgangen":false,"gueltig":false})
+  ✅ Selbst-Test: gesund == 0 Täter
+  ✅ Selbst-Test: ‚Eichenkrone vor der Linse (Befund A 44)' → die Linse nennt „ufer third: Deckung im Freiraum bis 43.7 %" — ufer third: Deckung im Freiraum bis 43.7 % (Mittel 10.9 %; Laub baum_eiche 43.0 %) · ufer ritt: Deckung im Freiraum bis 43.7 % (Mittel 10.9 %; Laub baum_eiche 43.0 %) · ufer first: Deckung im Freiraum bis 43.7 % (Mittel 10.9 %; Laub baum_eiche 43.0 %)
+  ✅ Selbst-Test: ‚Strauch vor dem Ich-Auge (Befund C 12)' → die Linse nennt „hang third: Deckung im Freiraum bis 99.0 %" — hang third: Deckung im Freiraum bis 99.0 % (Mittel 24.8 %; Laub Streu 99.0 %) · hang ritt: Deckung im Freiraum bis 99.0 % (Mittel 24.8 %; Laub Streu 99.0 %) · hang first: Deckung im Freiraum bis 99.0 % (Mittel 24.8 %; Laub Streu 99.0 %)
+  ✅ Selbst-Test: ‚kein GT' → die Linse nennt „ankunft ritt: keine Stellung" — ankunft ritt: keine Stellung (Vorbedingung: kein GT)
+  ✅ Selbst-Test: ‚fremde Maske' → die Linse nennt „hang third: ein Pflanzen-Stoff trägt eine fremde Maske" — hang third: ein Pflanzen-Stoff trägt eine fremde Maske (nicht der Knoten seiner Art)
+  ✅ Selbst-Test: ‚Linse blind für Laub' → die Linse nennt „Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt" — Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt ({"max":0,"taeter":{}})
+  ✅ Selbst-Test: ‚Linse blind für Fels' → die Linse nennt „Schmuggel: ein Fels vor der Linse bleibt ungenannt" — Schmuggel: ein Fels vor der Linse bleibt ungenannt ({"max":0,"taeter":{}})
+  ✅ Selbst-Test: ‚ein Ort fehlt' → die Linse nennt „hang: nicht gemessen" — lichtung: nicht gemessen (Vorbedingung) · hang: nicht gemessen (Vorbedingung)
+  ✅ Selbst-Test W: der Arbeitsbaum ist grün
+  ✅ Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern — ✗ W1 ✗ W2 ✗ W3
+
+✅ SELBST-TEST GRÜN — die Kamera-Laub-Linse nennt ihre Täter beim Namen.
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 der Bau-Pick und der Streu-Pick treffen nur, was das Bild zeigt (`_durchsichtSteht` je Treffer)
+  ✅ W2 die 3rd-Kamera ist eine Kugel: der Wurf trägt den Radius des Kerns (`radius: kr`, `fx.bewegung.kamera`), der Deckel den Stand-Leser der Sicht, kein 0,85-Rückzug, kein KAMERA_ARM_RUHE
+  ✅ W3 das Körper-Studio prüft die Strecke Blickziel → Kamera gegen die Park-Boxen (`_kamSeg`, `fx.bewegung.kamera`), camG ist gefallen
+=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis 2/3 m; Ich: Laub und Streu bis 0.8 m) ===
+  ankunft (A 27) bei 36/0 · Anker baum_kiefer@39/17, baum_tanne@51/-14, baum_tanne@40/22, baum_tanne@17/-12, baum_kiefer@47/-22, Streu blume@29/-2, Streu blume@36/-8
+    third 221 Stellungen · Mittel 0.0 % · max 0.0 %
+    ritt  110 Stellungen · Mittel 0.0 % · max 0.0 %
+    first 224 Stellungen · Mittel 0.0 % · max 0.0 %
+  ufer (A 41–47) bei -872/-1127 · Anker baum_eiche@-872/-1118, baum_eiche@-864/-1119, baum_eiche@-873/-1117, baum_eiche@-867/-1120, baum_eiche@-868/-1117, Streu schilf@-871/-1129, Streu schilf@-869/-1131 · Satz: 9 Werke
+    third 224 Stellungen · Mittel 0.0 % · max 0.0 %
+    ritt  112 Stellungen · Mittel 0.0 % · max 0.0 %
+    first 224 Stellungen · Mittel 0.0 % · max 0.0 %
+  lichtung (C 01–04) bei -789/-1331 · Anker baum_kiefer@-788/-1326, baum_eiche@-803/-1325, baum_tanne@-782/-1315, baum_birke@-772/-1336, baum_tanne@-779/-1348, Streu blume@-789/-1333, Streu blume@-791/-1327
+    third 224 Stellungen · Mittel 0.0 % · max 0.0 %
+    ritt  112 Stellungen · Mittel 0.0 % · max 0.0 %
+    first 224 Stellungen · Mittel 0.0 % · max 0.0 %
+  hang (B 28–31, C 05–12) bei -744/-1356 · Anker baum_kiefer@-741/-1360, baum_tanne@-740/-1367, baum_tanne@-746/-1369, baum_eiche@-758/-1354, grown_busch_hazel_v0@-749/-1370, Streu gestruepp@-742/-1355, Streu gestruepp@-743/-1359
+    third 224 Stellungen · Mittel 0.0 % · max 0.0 %
+    ritt  112 Stellungen · Mittel 0.0 % · max 0.0 %
+    first 224 Stellungen · Mittel 0.0 % · max 0.0 %
+  Schmuggel: Laub ohne Durchsicht → 77.2 % (Laub baum_kiefer, Laub baum_tanne) · Fels vor der Linse → 36.3 % (Formation)
+  Zeiten (ms): {"boot":7179,"ankunft":4159,"ufer":19844,"lichtung":6926,"hang":6352}
+  ✅ K1 keine Stellung mit Laub, Strauch, Ast oder Fels vor der Linse (Deckung im Freiraum ≤ 2 %), die Linse nennt den eingeschmuggelten Täter
+  Zeiten (ms): {"laub":48358} · Lauf 50.3 s
+
+✅ GRÜN — die Kamera steckt nie in Laub, Strauch, Fels oder Boden.

@@ -1,0 +1,71 @@
+=== W5.3 — DIE GETEILTE MASKEN-QUELLE (phyto-core ↔ Studio-GLSL) ===
+--- Teil 3: die Drift-Wand (Studio-GLSL-Struktur + Konstanten geparst) ---
+  ✅ GLSL: _dh-IGN-Koeffizienten geparst — 52.9829189 · 0.06711056 · 0.00583715
+  ✅ GLSL: _f1-Rampe = (vLodD − (LOD_D1−LOD_FADE)) / LOD_FADE
+  ✅ GLSL: _f0-Rampe = (vLodDL − (LOD_D0−LOD_FADE0)) / LOD_FADE0
+  ✅ GLSL: _f1o = clamp(_f1·2 − 1, 0, 1) (verzögerte Fern-Ausblendung)
+  ✅ GLSL: der Laub-Branch (überlappende Rampen, FIX v37) steht wörtlich
+  ✅ GLSL: der Rinden-Branch (exakte Partition) steht wörtlich
+  ✅ GLSL: PORTAL_RENDER_CONFIG.lod geparst — d0=12 d1=26 fade=8 fade0=4
+  ✅ GLSL: die fin-EINblendung des Billboards (phytogenesis _impMat)
+  ✅ LOD_DISTANCES-Defaults == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0) — 12/26/8/4
+  ✅ phyto-core lodDitherIGN trägt die GEPARSTEN Koeffizienten wörtlich
+  ✅ TSL-Hälfte (_lodCrossfadeMaskNode): dieselben IGN-Koeffizienten + die Uniform-Quellen
+  ✅ Uniform-Seed + Live-Spiegel: uLodD0..Fade0 aus LOD_DISTANCES (thresh01/thresh12/fade/fade0)
+  ✅ PERF-WAHRHEIT: CPU-Stufenwahl und jede Maske lesen denselben Perf-Streck und dieselbe Sichthöhe
+  ✅ SCHATTEN-WAHRHEIT: Masken vom Auge · kein opacityNode-Ausschnitt an Werfern · Zwilling L0-gestempelt
+--- Teil 1+2: die Masken-Invarianten auf dem 64×64-Raster übers Band ---
+  ✅ phyto-core exportiert lodCrossfadeMask + lodDitherIGN
+  ✅ Dither-Äquivalenz: lodDitherIGN == geparste GLSL-IGN (2 uDitherT-Phasen)
+  ✅ Masken-Äquivalenz: keep == Referenz aus den geparsten Konstanten (alle Stufen)
+  ✅ RINDE: keepL0 XOR keepL1 == 1 an jedem Rasterpunkt × Sample im Partitions-Band — Samples=37
+  ✅ RINDE: Fern-Band lückenlos (L1 ∪ Impostor — verzögerte Ausblendung)
+  ✅ RINDE: Voll-Band lückenlos (L0 ∪ L1 ∪ Impostor)
+  ✅ LAUB: Union lückenlos an jedem Band-Punkt (überlappende Rampen)
+  ✅ LAUB: Union lückenlos auch bei divergenter Blatt-Metrik (vLodDL = 1.6·vLodD)
+  ✅ LAUB: Union-Deckung ≥ max(Einzel-Deckung) an jedem Band-Punkt
+  ✅ LAUB: Band-Anfang ~100 % L0 — 100.00 %
+  ✅ LAUB: Band-Ende ~100 % Impostor — 100.00 %
+  ✅ LAUB: monotoner Übergang (L0 fällt, Impostor steigt)
+  ✅ FENSTER (W7): die Instanz-Wahl verwirft nie, was das Blend-Gesetz zeigt — je Stufe kein Loch — 32544 Intervalle · 1: 0 Löcher · Überschuss 8/8136 · 2: 0 Löcher · Überschuss 76/8136 · 3: 0 Löcher · Überschuss 72/8136 · karte: 0 Löcher · Überschuss 18/8136
+  ✅ FENSTER (W7): der Stamm liest die Kanten aus dem EINEN Gesetz (_blendeKanten(pc.lodCrossfadeMask, …) in _passWahlLage)
+  ✅ MASS DER BLENDE: Maske · Blattmaske · Karte · Fenster messen die Instanz, nie das Fragment
+  ✅ STUFE OHNE BILD: keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält (doppelt außerhalb des Fade-Fensters) — 4800 Proben · ohne Bild 0 · Löcher 0
+  ❌ DIE LAUTE BLENDE (statisch): kein null, kein schluckender catch, keine Maske unter Wenn — die Maske gibt still null zurück (der Stoff zeichnet ohne Maske) · der catch der Maske schluckt den Fehler · ein Fehler der Blende landet still in einer Fenster-Variable · _blendeBruch meldet nicht laut beim Namen · der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX)) · der Baum-Stoff ohne Kanal verliert die Maske still · die Karte zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepFin)) · der catch der Karten-Verdrahtung schluckt den Bruch der Blende · die Blatt-Karte überspringt die Blende still
+  ✅ CPU-Band-Pflege: Baum-Wand + Chokepoint-Disziplin (_updateFoundryLodBand)
+--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---
+  ✅ KEHRAUS DES WURFS: die L0 trägt die Zwillings-Leaves ihrer L1 · ihr Räumen lässt die Wurf-Gestalt der lebenden L1 stehen · das Räumen der L1 gibt jede genau einmal frei — {"tw0":1,"tw1":1,"geteilt":true,"geoms":1,"nachL0":0,"nachL1":1}
+  ✅ ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie — geprüft=130 · Verstöße=0
+  ✅ GNADENFRIST: headless sofort · echt hält die Hülle · Realloc mintet nicht neu · Reaper räumt nach Ablauf — {"hlSofortWeg":true,"echtBleibt":true,"reMintInFrist":0,"lebtNachReaper":true,"reaperRaeumt":true}
+  ✅ W5.4: foundryCrossfade ist DEFAULT AN
+  ✅ Foundry ready + Preset aufgelöst — eiche
+  ✅ alle drei Stufen warm vor der Baseline (L0/L1/Impostor) — {"l0":true,"l1":true,"l2":true}
+  ✅ der Proben-Baum platziert (instanced)
+  ✅ Sweep gelaufen (13 Proben, hin + zurück)
+  ✅ NIE 0 Stufen resident
+  ✅ IM L0/L1-Band: Slots in BEIDEN Stufen-Gruppen ({0,1})
+  ✅ IM L1/L2-Band: Slots in BEIDEN Stufen-Gruppen ({1,2})
+  ✅ AUSSERHALB der Bänder: exakt EINE Stufe
+  ✅ SLOT-BILANZ: Σ liveCount zurück auf die Baseline (kein Leck) — 330 → 330
+  ✅ SLOT-BILANZ: je Gruppe dicht (count == liveCount, Marke i trägt Slot i)
+  ✅ SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)
+   Sweep: 6m→[0,1]B01 14m→[0,1]B01 18m→[1,2]B12 22m→[1,2]B12 26m→[1,2]B12 31m→[2] 36m→[2] 42m→[2] 55m→[2] 36m→[2] 26m→[1,2]B12 18m→[1,2]B12 6m→[0,1]B01
+  ❌ DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen — der Stoff entstand still (Maske fehlt)
+  ✅ Z (Stufen-Zensus): der Host serviert bei Studio-äquivalenten Distanzen DIESELBE Stufe (5 Sichthöhen × 7 Distanzen) — 35/35
+  ✅ Z: die Blatt-Kappe ist die Studio-24 (phytogenesis Z.2392) und der L1-Partner folgt dem LIVE-Formel-Zwilling — cap=24 partner=1 erwartet=1 (dnL=10 Kante=4.6)
+  ✅ Z: die SSE-Sichthöhe ist UNGEDECKELT (foundry-core Z.196) — dn(100, 36) = 33.33 (der alte 15-m-Deckel gab 80) — 33.33
+  ✅ STUFEN-WAHRHEIT: die CPU-Sichthöhe IST der Fassaden-Stempel jeder residenten Stufe (L0 = L1 = Höhen-Stufe) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1
+  ✅ STUFEN-WAHRHEIT: kein Loch über den Sweep (volle Leistung) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1
+  ✅ STUFEN-WAHRHEIT: kein Loch unter Last (Perf-Streck in CPU UND Maske) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3
+  ✅ STUFEN-WAHRHEIT Gegenprobe: der alte Leser (Sichthöhe 0) zeigt Löcher — die Probe sieht den Geist — 54 Proben · Löcher 28 · Stempel≠CPU 86 · Perf ×1/1.3 · z. B. {"raw":16,"modi":["l1","fin"],"visH":0,"stempel":[17.27,17.27],"laub":false}
+  ✅ STUFEN-WAHRHEIT: das Billboard stand im Sweep mit SEINEM Stempel (= die Höhe der L1, kein Rahmen-Modell) — {"voll":{"l0":28,"l1":44,"fin":13},"last":{"l0":20,"l1":36,"fin":17}}
+  ✅ STRAUCH: Preset strauch, L0, L1 und Billboard warm — {"preset":"strauch","warm":{"l0":true,"l1":true,"l2":true}}
+  ✅ STRAUCH: die Kette wie der Baum — L0 (aLodLevel 1) und L1 (aLodLevel 2) im Sweep, das Billboard im Band — {"l0":16,"l1":32,"fin":19}
+  ✅ STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1
+  ✅ STRAUCH: kein Loch unter Last (Perf-Streck) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3
+  ✅ KETTE OHNE PARTNER (fahrzeug_gt): Preset, nur die L0 deklariert, L0 warm — {"preset":"gt","stufen":[0],"warm":true}
+  ✅ KETTE OHNE PARTNER (fahrzeug_gt): kein Loch über den Sweep, voll und unter Last (die L0 bleibt ganz) — voll 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1 — last 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3 — Stempel {"l1e":378,"fin":19}
+  ✅ KETTE OHNE PARTNER (tor_drachentor): Preset, nur die L0 deklariert, L0 warm — {"preset":"drachentor","stufen":[0],"warm":true}
+  ✅ KETTE OHNE PARTNER (tor_drachentor): kein Loch über den Sweep, voll und unter Last (die L0 bleibt ganz) — voll 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1 — last 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3 — Stempel {"l1e":234,"fin":19}
+
+❌ ROT — 2 Verletzung(en).
