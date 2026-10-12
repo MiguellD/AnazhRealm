@@ -32203,7 +32203,7 @@ class AnazhRealm {
                                                 .lessThan(_Ta.float(0.0))
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
                                         });
-                                        if (_keepFin) {
+                                        {
                                             _alpha = _alpha.mul(_keepFin);
                                             // der Stoff trägt die Maske: die Instanz-Wahl darf ihr Fenster lesen
                                             // (`_instanzFensterGilt`)
@@ -32305,6 +32305,8 @@ class AnazhRealm {
                                     _wired = true;
                                 }
                             } catch (_e) {
+                                // der Bruch der Blende fällt nie in die Fernstufen-Geometrie: er bricht den Bau
+                                if (_e && _e.blende === true) throw _e;
                                 if (typeof window !== "undefined")
                                     window.__impostorAtlasError = String((_e && _e.message) || _e);
                             }
@@ -33139,6 +33141,19 @@ class AnazhRealm {
         return this._instanzMitteKnoten;
     }
 
+    // DER BRUCH DER BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied (ein Uniform des LOD-Satzes, ein TSL-Knoten, die
+    // Distanz der Karte, der Kanal des Stoffs), bricht der Bau des Stoffs LAUT beim Namen. Bis hierher gab die Blende still
+    // null zurück (ihr catch legte den Fehler in eine Fenster-Variable, die niemand las), und jeder Aufrufer zeichnete weiter:
+    // der Baum-Stoff ohne Maske (L0 und Band-L1 deckungsgleich voll, die Instanz-Wahl ohne Fenster), die Karte ohne
+    // Ausblendung, die Blatt-Karte ohne Stufen-Blende — gate:foundry-crossfade (9) DIE LAUTE BLENDE.
+    _blendeBruch(was) {
+        const text = "BLENDE: " + was + " — kein Stoff zeichnet ohne seine Maske";
+        this.log(text, "ERROR");
+        const e = new Error(text);
+        e.blende = true;
+        return e;
+    }
+
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
     // ihr entsprechen (Linse `gate:foundry-crossfade`); Zahlen aus uLodD0/uLodD1/uLodFade/uLodFade0 +
     // `_ensureLodUniforms`. opts.impostor → fin-Einblendung (lod=2) aus opts.distNode × Wahrnehmungs-k;
@@ -33147,24 +33162,23 @@ class AnazhRealm {
     _lodCrossfadeMaskNode(T, opts) {
         try {
             const _lu = this._ensureLodUniforms();
-            if (
-                !T ||
-                !_lu ||
-                !_lu.uLodRef ||
-                !_lu.uLodMaskOn ||
-                !_lu.uDitherT ||
-                !T.float ||
-                !T.fract ||
-                !T.screenCoordinate ||
-                !T.step ||
-                !T.mix ||
-                !_lu.uLodD0 ||
-                !_lu.uLodD1 ||
-                !_lu.uLodFade ||
-                !_lu.uLodFade0 ||
-                !_lu.uLodPerf
-            )
-                return null;
+            if (!T || !_lu)
+                throw this._blendeBruch(!T ? "TSL fehlt" : "der LOD-Uniform-Satz fehlt (_ensureLodUniforms)");
+            const _fehlt = [
+                "uLodRef",
+                "uLodMaskOn",
+                "uDitherT",
+                "uLodD0",
+                "uLodD1",
+                "uLodFade",
+                "uLodFade0",
+                "uLodPerf",
+            ]
+                .filter((k) => !_lu[k])
+                .concat(
+                    ["float", "fract", "screenCoordinate", "step", "mix"].filter((k) => !T[k]).map((k) => "TSL." + k)
+                );
+            if (_fehlt.length) throw this._blendeBruch("es fehlt " + _fehlt.join(" · "));
             // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
             // `_ensureLodUniforms`-Seed + `_loopRender`-Spiegel): Rampen-Kanten als Knoten-Mathe.
             const _edge1 = _lu.uLodD1.sub(_lu.uLodFade); // D1 − FADE
@@ -33183,7 +33197,7 @@ class AnazhRealm {
                 // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
-                if (!_dist) return null;
+                if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
                 let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
@@ -33202,7 +33216,8 @@ class AnazhRealm {
             // so maskiert der Schattenpass jede Stufe, wie das Auge sie sieht — jede Stufe wirft genau dort, wo sie
             // gezeichnet wird.
             const _auge = _lu.uLodAuge;
-            if (!T.attribute || !T.positionWorld || !_auge || !T.length || !T.vec2) return null;
+            if (!T.attribute || !_auge || !T.length || !T.vec2)
+                throw this._blendeBruch("die 3D-Stufen-Maske: TSL.attribute · uLodAuge · TSL.length · TSL.vec2 fehlen");
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
@@ -33231,8 +33246,9 @@ class AnazhRealm {
             const _keep = T.mix(T.float(1.0), _stageKeep, _masked);
             return T.mix(T.float(1.0), _keep, _lu.uLodMaskOn);
         } catch (_e) {
-            if (typeof window !== "undefined") window.__foundryCrossfadeError = String((_e && _e.message) || _e);
-            return null;
+            throw _e && _e.blende === true
+                ? _e
+                : this._blendeBruch("der Bau der Maske scheiterte: " + ((_e && _e.message) || _e));
         }
     }
 
@@ -33480,25 +33496,33 @@ class AnazhRealm {
             try {
                 const _Tl = THREE.TSL;
                 const _lu = this._ensureLodUniforms();
-                if (
-                    _Tl &&
-                    _lu &&
-                    _lu.uLodRef &&
-                    _lu.uLodAuge &&
-                    _Tl.attribute &&
-                    _Tl.positionWorld &&
-                    _Tl.vec2 &&
-                    _Tl.vec4 &&
-                    _Tl.float &&
-                    _Tl.length &&
-                    _Tl.screenCoordinate &&
-                    _Tl.fract &&
-                    _Tl.step &&
-                    _Tl.mix &&
-                    mat.colorNode &&
-                    mat.colorNode.rgb !== undefined &&
-                    mat.colorNode.a !== undefined
-                ) {
+                const _fehlt = [
+                    ["TSL", _Tl],
+                    ["der LOD-Uniform-Satz", _lu],
+                    ["uLodRef", _lu && _lu.uLodRef],
+                    ["uLodAuge", _lu && _lu.uLodAuge],
+                    [
+                        "die Farbe mit Alpha",
+                        mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined,
+                    ],
+                ]
+                    .concat(
+                        [
+                            "attribute",
+                            "vec2",
+                            "vec4",
+                            "float",
+                            "length",
+                            "screenCoordinate",
+                            "fract",
+                            "step",
+                            "mix",
+                        ].map((k) => ["TSL." + k, _Tl && _Tl[k]])
+                    )
+                    .filter((x) => !x[1])
+                    .map((x) => x[0]);
+                if (_fehlt.length) throw this._blendeBruch("die Blatt-Karte: es fehlt " + _fehlt.join(" · "));
+                {
                     const _aH0 = _Tl.attribute("aH0", "float");
                     const _aH0L = _Tl.attribute("aH0L", "float");
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
@@ -33545,7 +33569,9 @@ class AnazhRealm {
                     mat.userData.lodCrossfade = true; // Marker für das Test-Band (kein Verhalten)
                 }
             } catch (_e) {
-                if (typeof window !== "undefined") window.__lodCrossfadeError = String((_e && _e.message) || _e);
+                throw _e && _e.blende === true
+                    ? _e
+                    : this._blendeBruch("die Blatt-Karte: " + ((_e && _e.message) || _e));
             }
         }
         return mat;
@@ -77969,7 +77995,7 @@ class AnazhRealm {
             const _keepX = this._lodCrossfadeMaskNode(TSL, {
                 foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
             });
-            if (_keepX) {
+            {
                 // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
                 // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
                 // ohne die Maske des Passes schnitte ein Loch.
@@ -77980,16 +78006,17 @@ class AnazhRealm {
                 } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
                     mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
                     kanal = "farbe";
-                }
+                } else
+                    throw this._blendeBruch(
+                        `der Stoff „${kind}" trägt keinen Kanal für die Maske (Deckung oder Farbe mit Alpha)`
+                    );
                 // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
                 // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
                 // der Nacht (`_leuchtStoff`) blieb unsichtbar
                 if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5 * R.op;
                 mat.userData = mat.userData || {};
-                if (kanal) {
-                    mat.userData.foundryCrossfade = true;
-                    mat.userData.foundryCrossfadeKanal = kanal;
-                }
+                mat.userData.foundryCrossfade = true;
+                mat.userData.foundryCrossfadeKanal = kanal;
             }
         }
         // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
