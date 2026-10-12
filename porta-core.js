@@ -69,7 +69,7 @@
                 // 1110-9 (der Wurf aus der gröberen Stufe, Nordstern M4): die Stufe 0 wirft nicht mehr selbst — ihr Wurf ist
                 // die NUR-WURF-Stufe 3, die Hüllen-Liste des Tors (huelle, N5) als EIN Gitter; dieselbe Liste ist die Fernform.
                 // tris der Stufe 3 = die Regler-Hülle (Rezepte × Regler × Rand, gate:regler-wirkt fährt auch die Stufe 3).
-                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 3 }, 3: { tris: 15000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 3 }, 3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
                 gestalten: {},
             },
         },
@@ -266,7 +266,8 @@
     // innerhalb des Gezeichneten (der Werfer bleibt unter der Haut: keine Akne, kein Peter-Panning). Die Stufe 3 IST diese
     // Liste als Gitter (`huelleGruppe`), die Fernform liest dieselbe Liste (`__fern`).
     // DIE ROLLEN (N5): jedes feine Teil trägt "wurf" — es wirft nur (die NUR-WURF-Stufe ist die GANZE Liste); die Fernform
-    // des Welt-March liest nur "sicht": EIN Rahmen-Strang über alle Ordnungen (höchstens `sichtGlieder` Kapseln) und der
+    // des Welt-March liest nur "sicht": EIN Rahmen-Strang entlang der innersten Ordnung mit dem Radius ihres stärksten
+    // Stoffs (Mauer, Geflecht-Hülle oder Monolith — im Gezeichneten; höchstens `sichtGlieder` Kapseln) und der
     // Sockel — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
     var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 18, sichtGliedM: 1.2 };
     function hRaster(v) {
@@ -285,7 +286,8 @@
     function hKette(H, pts, r, m, dz) {
         if (!H || !(2 * r >= HUELLE_GESETZ.dickeM - 1e-9) || pts.length < 2) return;
         var kurve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
-        var N = 64, L = kurve.getLength(), ds = L / N, eps = HUELLE_GESETZ.sehneM;
+        // die Sehne nie weiter als der Radius (eine dünne Röhre: die Kette liefe neben ihr — geisttor-Monolith r 1,7 cm)
+        var N = 64, L = kurve.getLength(), ds = L / N, eps = Math.min(HUELLE_GESETZ.sehneM, Math.max(r, 0.01));
         var dichte = [0], summe = 0, t0 = kurve.getTangentAt(0), kreuz = new THREE.Vector3(), i;
         for (i = 1; i <= N; i++) {
             var t1 = kurve.getTangentAt(i / N);
@@ -375,12 +377,17 @@
                     RB.push([B.x + u.x * cs + w.x * sn, B.y + u.y * cs + w.y * sn, B.z + u.z * cs + w.z * sn]);
                 }
                 var pA = [A.x - ax.x * t.r, A.y - ax.y * t.r, A.z - ax.z * t.r], pB = [B.x + ax.x * t.r, B.y + ax.y * t.r, B.z + ax.z * t.r];
+                // die Kappen nur an den Enden einer Kette: ein Glied, dessen Nachbar am selben Punkt anschließt, trägt dort keine
+                // (die Kappe läge im Nachbar-Glied) — die Liste trägt die Ketten in ihrer Reihenfolge
+                var vorG = teile[i - 1], nachG = teile[i + 1];
+                var kA = !(vorG && vorG.art === "kapsel" && vorG.b[0] === t.a[0] && vorG.b[1] === t.a[1] && vorG.b[2] === t.a[2]);
+                var kB = !(nachG && nachG.art === "kapsel" && nachG.a[0] === t.b[0] && nachG.a[1] === t.b[1] && nachG.a[2] === t.b[2]);
                 for (var q = 0; q < n; q++) {
                     var r2 = (q + 1) % n;
                     tri(RA[q], RB[q], RB[r2]);
                     tri(RA[q], RB[r2], RA[r2]);
-                    tri(pA, RA[r2], RA[q]);
-                    tri(pB, RB[q], RB[r2]);
+                    if (kA) tri(pA, RA[r2], RA[q]);
+                    if (kB) tri(pB, RB[q], RB[r2]);
                 }
             }
         }
@@ -583,7 +590,7 @@
       // --- gluehende Apertur-Kante (Trichter) ---
       var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));hKette(HU,rimPts,0.04,rimMat,0);
 
-      if(HU){var sR=orders*jambW*0.5,sZ=(orders-1)*depthStep+frameDepth*(1+(orders-1)*0.18)*0.5,sM=(p.wBraid>Math.max(p.wMason,p.wMono))?bmatG:fmat;hSichtStrang(HU,offsetFull(sR),Math.min(sR,sZ),sM,0);var sx=0,sy0=baseY,sz=0;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.max(sx,(fullW+0.4+(sN-1)*0.7)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.max(sz,(baseDepth+(sN-1)*0.7)/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.max(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.max(sz,(baseDepth+0.3)/2);}if(sx>0)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
+      if(HU){var sK=[];if(p.wMason>0.03)sK.push([jambW*p.wMason*0.5,jambW*p.wMason*0.5,fmat]);if(p.wBraid>0.03)sK.push([jambW*0.5,jambW*0.5*p.wBraid*1.05+lerp(0.02,0.05,p.wBraid),bmatG]);if(p.wMono>0.03)sK.push([jambW*0.5,jambW*0.5*p.wMono+0.01,fmat]);sK.sort(function(u,v){return v[1]-u[1];});if(sK.length)hSichtStrang(HU,offsetFull(sK[0][0]),Math.min(sK[0][1],frameDepth*0.5),sK[0][2],0);var sx=0,sy0=baseY,sz=0;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.max(sx,(fullW+0.4+(sN-1)*0.7)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.max(sz,(baseDepth+(sN-1)*0.7)/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.max(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.max(sz,(baseDepth+0.3)/2);}if(sx>0)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
       return {gate:gate,D:D,leafL:leafL,leafR:leafR,leafLB:leafLB,leafRB:leafRB,rimMat:rimMat};
     }
 
