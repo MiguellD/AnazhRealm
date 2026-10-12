@@ -38916,7 +38916,7 @@ class AnazhRealm {
             off += W * reihen;
             return sh;
         });
-        // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): DER BODEN-STOFF DES CHUNKS (K16, die Naht) — dieselbe
+        // DER BODEN-STOFF DES CHUNKS (K16, die Naht) — dieselbe
         // Fabrik (`_buildToonNodeMaterial`) mit denselben Gesetzen: die Vertex-Farbe (`_bodenFarbeAt`) durch die Wege-Karte
         // (`_wegeBodenFarbe`) und die Geologie (`_terrainGeologyAlbedo`: Fels am Hang, der Wiesen-Grund, Moos), die geflattete
         // Licht-Normale und die Substanz-Antwort. Bis K16 trug der Ring einen eigenen Standard-Stoff aus der rohen Vertex-Farbe:
@@ -38931,13 +38931,22 @@ class AnazhRealm {
         const su = this._ensureSeasonUniforms();
         if (!TSL || !su || typeof THREE.MeshStandardNodeMaterial !== "function")
             throw new Error("Fern-Ring: der Stoff braucht TSL und die Saison-Uniform (uSeasonMul)");
-        const material = this._buildToonNodeMaterial({
-            vertexColors: true,
-            side: THREE.DoubleSide,
-            wegeKarte: true,
-            kroneVertex: TSL.attribute("aKrone", "vec4"),
-        });
-        if (!material || !material.colorNode) throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
+        // ZWEI STOFFE AUS DER EINEN FABRIK, DIE KOSTEN AN DER NAHT (K16, Prüfung Runde 3): der freie Stoff (ohne Maske und Weiche)
+        // trägt die Schalen 1 und 2 und die freien Dreiecke der Schale 0; der Naht-Stoff (maskNode + die Weiche im depthNode) nur
+        // die Dreiecke der Schale 0, die das Gebaute oder seine Bänder berühren (`_fernRingTeilung`). Eine Tiefe aus dem
+        // Fragment kostet jedes Fragment, das sie schreibt, den frühen Tiefentest und die Tiefen-Kompression: auf dem EINEN Stoff
+        // aller drei Schalen lag sie auf jedem Fragment des Rings (Radeon 890M gpu-bank ABAB +1,28 ms je Frame).
+        const stoff = () =>
+            this._buildToonNodeMaterial({
+                vertexColors: true,
+                side: THREE.DoubleSide,
+                wegeKarte: true,
+                kroneVertex: TSL.attribute("aKrone", "vec4"),
+            });
+        const material = stoff();
+        const stoffNaht = stoff();
+        if (!material || !material.colorNode || !stoffNaht || !stoffNaht.colorNode)
+            throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
         // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um den
         // SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe weiter
         // (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
@@ -39010,7 +39019,7 @@ class AnazhRealm {
                 .and(nahZ.not().or(traegt(TZ)))
                 .and(nahX.and(nahZ).not().or(traegt(TXZ)));
             const saum = sicher.not().and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
-            material.maskNode = sicher.not();
+            stoffNaht.maskNode = sicher.not();
             // die Weiche: der Strahl bis zur um `nahtWeiche` gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|)
             const pv = TSL.positionView;
             const lang = pv.length();
@@ -39023,9 +39032,23 @@ class AnazhRealm {
                 TSL.float(F.nahtWeicheMax)
             );
             const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
-            material.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
+            stoffNaht.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
         }
         const meshes = [];
+        const geos = [];
+        const zeichne = (geo, stoffZ) => {
+            const mesh = new THREE.Mesh(geo, stoffZ);
+            mesh.frustumCulled = false; // der Ring umgibt die Kamera ringsum
+            mesh.renderOrder = -1; // hinter der Welt (Depth-Test ordnet den Rest)
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.visible = false; // erst sichtbar, wenn der erste Höhen-Refresh durch ist
+            mesh.matrixAutoUpdate = false; // Vertex-XZ sind absolute Welt-Koordinaten
+            mesh.userData.inventar = "fern-ring"; // Identitäts-Stempel (H3-Familie)
+            st.scene.add(mesh);
+            meshes.push(mesh);
+            return mesh;
+        };
         for (let s = 0; s < schalen.length; s++) {
             const per = schalen[s].per;
             // Das Index-Muster der Schale (Wicklung: Normalen zeigen nach +Y).
@@ -39046,20 +39069,35 @@ class AnazhRealm {
             geo.setAttribute("aKrone", new THREE.Float32BufferAttribute(new Float32Array(per * 4), 4));
             geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setIndex(indices);
-            const mesh = new THREE.Mesh(geo, material);
-            mesh.frustumCulled = false; // der Ring umgibt die Kamera ringsum
-            mesh.renderOrder = -1; // hinter der Welt (Depth-Test ordnet den Rest)
-            mesh.castShadow = false;
-            mesh.receiveShadow = false;
-            mesh.visible = false; // erst sichtbar, wenn der erste Höhen-Refresh durch ist
-            mesh.matrixAutoUpdate = false; // Vertex-XZ sind absolute Welt-Koordinaten
-            mesh.userData.inventar = "fern-ring"; // Identitäts-Stempel (H3-Familie)
-            st.scene.add(mesh);
-            meshes.push(mesh);
+            geos.push(geo);
+            if (s > 0) zeichne(geo, material);
         }
+        // DIE SCHALE 0 IN ZWEI TEILEN (`_fernRingTeilung`): ihr Träger (`geos[0]`, das volle Index-Muster — Normalen und Linsen
+        // lesen ihn, gezeichnet wird er nie) und zwei Teil-Geometrien über DENSELBEN Attributen, je mit eigenem Index fester
+        // Länge (die Rest-Plätze entartet: kein Zeichen-Bereich wechselt, ein Bündel spielt jeden Stand ab). Bis die Maske
+        // trägt, ist alles frei.
+        const voll0 = geos[0].index.array;
+        const teil = (index) => {
+            const g = new THREE.BufferGeometry();
+            for (const k of ["position", "color", "aKrone", "normal"]) g.setAttribute(k, geos[0].attributes[k]);
+            g.setIndex(new THREE.BufferAttribute(index, 1));
+            return g;
+        };
+        const frei0 = zeichne(teil(voll0.slice()), material);
+        const naht0 = zeichne(teil(new voll0.constructor(voll0.length)), stoffNaht);
         st.fernRing = {
-            meshes,
-            material,
+            meshes, // die gezeichneten: Schale 1, Schale 2, Schale 0 frei, Schale 0 Naht
+            geos, // je Schale die volle Geometrie (Schreiber, Normalen, Linsen)
+            stoffe: { frei: material, naht: stoffNaht },
+            // DIE TEILUNG DER SCHALE 0 (`_fernRingTeilung`): je Dreieck 0 frei · 1 Naht · 2 sicher getragen (kein Index)
+            teilung: {
+                frei: frei0.geometry,
+                naht: naht0.geometry,
+                klasse: new Uint8Array(voll0.length / 3),
+                n: [voll0.length / 3, 0, 0],
+                schluessel: "",
+            },
+            xzGen: 0, // wandert eine Ecke der Schale 0 (Anker), teilt sie neu
             schalen,
             // der Anker folgt dem Spieler QUANTISIERT (kein Höhen-Schwimmen):
             anchorX: Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
@@ -39407,6 +39445,132 @@ class AnazhRealm {
         if (!anders) return;
         M.uZelle0.value.set(i0, j0);
         M.tex.needsUpdate = true;
+        M.ver = (M.ver | 0) + 1; // die Teilung der Schale 0 folgt (`_fernRingTeilung`)
+    }
+
+    // DIE TEILUNG DER SCHALE 0 (K16, die Kosten an der Naht — Prüfung Runde 3): je Dreieck frei (0: der freie Stoff), an der
+    // Naht (1: Maske und Weiche) oder sicher getragen (2: kein Index, es zeichnet niemand) — nach der Regel des maskNode
+    // (`_fernRingKlassen`). Neu geurteilt nur, wenn die Maske sich regt (`maske.ver`) oder eine Ecke der Schale wandert
+    // (`xzGen`, der Anker); die Indizes reisen nur, wenn ein Dreieck die Klasse wechselt. Leser: der Zeichner, gate:fern-ring
+    // Band 12 (die Weiche kostet nur an der Naht) und 13 (die Teilung ist treu).
+    _fernRingTeilung(fr) {
+        const T = fr.teilung;
+        const M = fr.maske;
+        const schluessel = `${M.ver | 0}|${fr.xzGen | 0}`;
+        if (T.schluessel === schluessel) return;
+        T.schluessel = schluessel;
+        const geo = fr.geos[0];
+        const I = geo.index.array;
+        const neu = T.neu || (T.neu = new Uint8Array(T.klasse.length));
+        AnazhRealm._fernRingKlassen(M, this._voxelChunkConfig().span, geo.attributes.position.array, I, neu);
+        let anders = false;
+        for (let t = 0; t < neu.length && !anders; t++) anders = neu[t] !== T.klasse[t];
+        if (!anders) return;
+        T.klasse.set(neu);
+        const fa = T.frei.index.array;
+        const na = T.naht.index.array;
+        let kf = 0;
+        let kn = 0;
+        for (let t = 0; t < neu.length; t++) {
+            if (neu[t] === 2) continue;
+            const ziel = neu[t] === 0 ? fa : na;
+            const o = neu[t] === 0 ? kf : kn;
+            ziel[o] = I[t * 3];
+            ziel[o + 1] = I[t * 3 + 1];
+            ziel[o + 2] = I[t * 3 + 2];
+            if (neu[t] === 0) kf += 3;
+            else kn += 3;
+        }
+        fa.fill(0, kf); // die Rest-Plätze entartet (0, 0, 0): kein Fragment, der Zeichen-Bereich bleibt
+        na.fill(0, kn);
+        T.frei.index.needsUpdate = true;
+        T.naht.index.needsUpdate = true;
+        T.n = [kf / 3, kn / 3, neu.length - (kf + kn) / 3];
+    }
+
+    // DAS URTEIL JE DREIECK (rein; der CPU-Spiegel des maskNode über den Kasten eines Dreiecks, ± `eps` gegen die f32-Rundung
+    // des Fragments). FREI (0): kein gezeichneter Chunk liegt im Kasten ± (1½ s_max + eps) — kein Punkt darin ist Chunk oder
+    // Band eines Chunks (`_fernRingRegel` 0 überall). GETRAGEN (2): jede Zelle im Kasten ± eps ist gezeichnet, und wo der
+    // Kasten ein Band der Zelle berührt (unten bis 1½ w, oben ab span − ½ w, w = die größte Stufe der 3 × 3 wie im Knoten),
+    // trägt der Nachbar jenseits (gezeichnet, dieselbe Stufe), in der Ecke auch der schräge (`_fernRingRegel` 2 überall).
+    // Sonst NAHT (1): dort urteilt der Knoten je Fragment.
+    static _fernRingKlassen(M, span, P, I, klasse) {
+        const n = M.n;
+        const D = M.daten;
+        const i0 = M.uZelle0.value.x;
+        const j0 = M.uZelle0.value.y;
+        const eps = 0.05;
+        const B = (a, b) => a >= 0 && b >= 0 && a < n && b < n && D[(b * n + a) * 4] / 255 > 0.5;
+        const S = (a, b) => (B(a, b) ? (D[(b * n + a) * 4 + 1] / 255) * 25.5 : 0);
+        let sMax = 0;
+        let a0 = n;
+        let a1 = -1;
+        let b0 = n;
+        let b1 = -1;
+        for (let b = 0; b < n; b++)
+            for (let a = 0; a < n; a++)
+                if (B(a, b)) {
+                    sMax = Math.max(sMax, S(a, b));
+                    a0 = Math.min(a0, a);
+                    a1 = Math.max(a1, a);
+                    b0 = Math.min(b0, b);
+                    b1 = Math.max(b1, b);
+                }
+        const rand = 1.5 * sMax + eps;
+        for (let t = 0; t < klasse.length; t++) {
+            const p = I[t * 3] * 3;
+            const q = I[t * 3 + 1] * 3;
+            const r = I[t * 3 + 2] * 3;
+            const x0 = Math.min(P[p], P[q], P[r]);
+            const x1 = Math.max(P[p], P[q], P[r]);
+            const z0 = Math.min(P[p + 2], P[q + 2], P[r + 2]);
+            const z1 = Math.max(P[p + 2], P[q + 2], P[r + 2]);
+            // frei: kein gezeichneter Chunk im Kasten ± rand
+            let gebaut = false;
+            const ra0 = Math.max(a0, Math.floor((x0 - rand) / span) - i0);
+            const ra1 = Math.min(a1, Math.floor((x1 + rand) / span) - i0);
+            const rb0 = Math.max(b0, Math.floor((z0 - rand) / span) - j0);
+            const rb1 = Math.min(b1, Math.floor((z1 + rand) / span) - j0);
+            for (let a = ra0; a <= ra1 && !gebaut; a++) for (let b = rb0; b <= rb1 && !gebaut; b++) gebaut = B(a, b);
+            if (!gebaut) {
+                klasse[t] = 0;
+                continue;
+            }
+            // getragen: jede Zelle im Kasten ± eps gezeichnet, jedes berührte Band vom Nachbarn getragen
+            let getragen = true;
+            const ca0 = Math.floor((x0 - eps) / span) - i0;
+            const ca1 = Math.floor((x1 + eps) / span) - i0;
+            const cb0 = Math.floor((z0 - eps) / span) - j0;
+            const cb1 = Math.floor((z1 + eps) / span) - j0;
+            for (let a = ca0; a <= ca1 && getragen; a++)
+                for (let b = cb0; b <= cb1 && getragen; b++) {
+                    if (!B(a, b)) {
+                        getragen = false;
+                        break;
+                    }
+                    const s = S(a, b);
+                    let w = 0;
+                    for (let da = -1; da <= 1; da++)
+                        for (let db = -1; db <= 1; db++) w = Math.max(w, S(a + da, b + db));
+                    const ox = (a + i0) * span;
+                    const oz = (b + j0) * span;
+                    const uX = Math.max(x0 - eps, ox) - ox < 1.5 * w;
+                    const oX = Math.min(x1 + eps, ox + span) - ox > span - 0.5 * w;
+                    const uZ = Math.max(z0 - eps, oz) - oz < 1.5 * w;
+                    const oZ = Math.min(z1 + eps, oz + span) - oz > span - 0.5 * w;
+                    const tr = (da, db) => B(a + da, b + db) && S(a + da, b + db) === s;
+                    getragen =
+                        (!uX || tr(-1, 0)) &&
+                        (!oX || tr(1, 0)) &&
+                        (!uZ || tr(0, -1)) &&
+                        (!oZ || tr(0, 1)) &&
+                        (!(uX && uZ) || tr(-1, -1)) &&
+                        (!(uX && oZ) || tr(-1, 1)) &&
+                        (!(oX && uZ) || tr(1, -1)) &&
+                        (!(oX && oZ) || tr(1, 1));
+                }
+            klasse[t] = getragen ? 2 : 1;
+        }
     }
 
     // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
@@ -39414,8 +39578,10 @@ class AnazhRealm {
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
         const wet = law < wl;
-        const geo = fr.meshes[p.s].geometry;
-        geo.attributes.position.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
+        const geo = fr.geos[p.s];
+        const pos = geo.attributes.position;
+        if (p.s === 0 && (pos.getX(p.li) !== p.x || pos.getZ(p.li) !== p.z)) fr.xzGen++; // die Teilung folgt der Lage
+        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
         // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
@@ -39481,14 +39647,20 @@ class AnazhRealm {
             dirty[p.s] = true;
             n++;
         }
-        for (let s = 0; s < fr.meshes.length; s++) {
+        this._fernRingHoch(fr, dirty);
+        return n;
+    }
+
+    // DER EINE HOCHLADE-HELFER der Schalen-Geometrie: je bewegte Schale Lage, Farben und die Normalen (das Licht braucht sie)
+    // — über das VOLLE Index-Muster der Schale (`fr.geos`; die Teile der Schale 0 teilen dieselben Attribute).
+    _fernRingHoch(fr, dirty) {
+        for (let s = 0; s < fr.geos.length; s++) {
             if (!dirty[s]) continue;
-            const geo = fr.meshes[s].geometry;
+            const geo = fr.geos[s];
             geo.attributes.position.needsUpdate = true;
             AnazhRealm._fernRingAttributeHoch(geo);
             geo.computeVertexNormals();
         }
-        return n;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -39530,7 +39702,7 @@ class AnazhRealm {
             const p = this._fernRingPunkt(fr, g);
             const law = fr.farbLaw[g];
             const f = this._fernRingTeile(p.x, p.z, law, law < wl, true, p.fuss);
-            AnazhRealm._fernRingSchreibe(fr.meshes[p.s].geometry, p.li, f);
+            AnazhRealm._fernRingSchreibe(fr.geos[p.s], p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
             fr.farbN--;
@@ -39541,7 +39713,7 @@ class AnazhRealm {
             }
         }
         fr.farbMin = fr.farbN > 0 ? g : fr.totalVerts;
-        for (let s = 0; s < dirty.length; s++) if (dirty[s]) AnazhRealm._fernRingAttributeHoch(fr.meshes[s].geometry);
+        for (let s = 0; s < dirty.length; s++) if (dirty[s]) AnazhRealm._fernRingAttributeHoch(fr.geos[s]);
         fr.gefaerbt = (fr.gefaerbt || 0) + n; // Linse
         return Math.max(0, mindest - n);
     }
@@ -39743,13 +39915,7 @@ class AnazhRealm {
             fr.cursor++;
             done++;
         }
-        for (let s = 0; s < fr.meshes.length; s++) {
-            if (!dirty[s]) continue;
-            const geo = fr.meshes[s].geometry;
-            geo.attributes.position.needsUpdate = true;
-            AnazhRealm._fernRingAttributeHoch(geo);
-            geo.computeVertexNormals(); // das Licht braucht Normalen
-        }
+        this._fernRingHoch(fr, dirty);
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
             fr.ready = true;
@@ -39790,8 +39956,7 @@ class AnazhRealm {
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
         }
-        const geo = fr.meshes[0].geometry;
-        const pos = geo.attributes.position;
+        const pos = fr.geos[0].attributes.position;
         let neu = false;
         for (let n = 0; n < 128; n++) {
             const i = fr.deckCursor % fr.zoneVerts;
@@ -39811,9 +39976,7 @@ class AnazhRealm {
         }
         this._standMeldet("deckWache", 128, neu, false);
         if (!neu) return;
-        geo.attributes.position.needsUpdate = true;
-        AnazhRealm._fernRingAttributeHoch(geo);
-        geo.computeVertexNormals();
+        this._fernRingHoch(fr, [true]);
     }
 
     // ===== DER FELD-ZEICHNER =====
@@ -39913,11 +40076,8 @@ class AnazhRealm {
                 // NUR ab dem Live-Cursor malen: Vertices davor hat die CPU schon
                 // aufs f64-Gesetz verfeinert — f32 überschreibt nie exakter.
                 for (let g = fr.cursor; g < n; g++) this._fernRingSetzVertex(fr, pts[g], werte[g], wl);
-                for (const m of fr.meshes) {
-                    m.geometry.attributes.position.needsUpdate = true;
-                    AnazhRealm._fernRingAttributeHoch(m.geometry);
-                    m.geometry.computeVertexNormals();
-                }
+                this._fernRingHoch(fr, [true, true, true]);
+                this._fernRingTeilung(fr); // die Ecken der Schale 0 stehen am neuen Anker: die Teilung folgt im selben Takt
                 fr.gpuLaeufe = (fr.gpuLaeufe || 0) + 1;
                 fr.gpuVerts = (fr.gpuVerts || 0) + n;
                 if (!fr.ready) {
@@ -41861,6 +42021,8 @@ class AnazhRealm {
         this._fernRingRefresh(F.refreshVertsProTick);
         // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
         this._fernRingWasserNeu(fr);
+        // DIE KOSTEN AN DER NAHT: die Dreiecke der Schale 0 folgen Maske und Lage (frei · Naht · getragen, `_fernRingTeilung`).
+        this._fernRingTeilung(fr);
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
@@ -41885,12 +42047,11 @@ class AnazhRealm {
         this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
         const fr = this.state.fernRing;
         if (!fr) return;
-        for (const m of fr.meshes || []) {
-            if (!m) continue;
-            if (this.state.scene) this.state.scene.remove(m);
-            this._queueGeometryDispose(m.geometry);
-        }
-        if (fr.material && typeof fr.material.dispose === "function") fr.material.dispose();
+        for (const m of fr.meshes || []) if (m && this.state.scene) this.state.scene.remove(m);
+        // je Schale die volle Geometrie und die zwei Teile der Schale 0 (sie teilen deren Attribute)
+        const T = fr.teilung || {};
+        for (const g of [...(fr.geos || []), T.frei, T.naht]) if (g) this._queueGeometryDispose(g);
+        for (const m of Object.values(fr.stoffe || {})) if (m && typeof m.dispose === "function") m.dispose();
         if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
