@@ -74,7 +74,17 @@
         // die Euler-Knickgrenze — echte Bäume sind viel dicker als kritisch).
         const k = lerp(13, 22, P.slim);
         const D = Math.pow((P.height / k) * 2, 1.5);
-        const trunkR = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
+        const trunkForm = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
+        // DAS WELT-MASS (K20, 12.10.): ein Baum, dessen Phänotyp sein Maß in Metern trägt (`P.hoeheM` die Höhe der
+        // Größe 1, `P.hd` die Schlankheit H/D seines Standorts, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
+        // der Welt so hoch und so schlank: der Stamm misst H/hd (Bestand 40–100, der Solitär gedrungener —
+        // waldwissen, McMahon 1973), die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-
+        // Einheiten las H/D 13–18 für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-
+        // Teilung der Konifere liest sie —, alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und
+        // der Zufalls-Strom bleiben gleich, jeder Ast wird mit dem Stamm schlanker. Ohne Welt-Maß (der Bauplan-Baum
+        // der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach der Formel oben.
+        const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
+        const trunkR = weltMass ? (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1) : trunkForm;
 
         const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
             if (count > countCap) return;
@@ -128,7 +138,7 @@
                     if (Math.floor(p2[1] / intn) > Math.floor(p[1] / intn)) {
                         const nWh = Math.round(lerp(5, 7, P.apical)),
                             uy = clamp(p2[1] / P.height, 0, 1);
-                        const wShare = clamp(0.42 - 0.37 * clamp(trunkR / 1.2, 0, 1), 0.05, 0.42);
+                        const wShare = clamp(0.42 - 0.37 * clamp(trunkForm / 1.2, 0, 1), 0.05, 0.42);
                         const brad = r1 * Math.pow(wShare / nWh, 1 / P.delta);
                         for (let w = 0; w < nWh; w++) {
                             azim.v += GOLDEN;
@@ -326,6 +336,7 @@
         } else {
             grow([0, 0, 0], [0, 1, 0], trunkR, P.height * (P.conifer ? 0.2 : 0.3), 0, 0, -1, false);
         }
+        if (weltMass) schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala);
         // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -343,7 +354,7 @@
             leaves.length = 0;
             for (const _k of kp) leaves.push(_k);
         }
-        return { segs, leaves, trunkR, height: P.height, runMeta };
+        return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta };
     }
 
     // ── MODUL-HELFER (für die Asset-Montage, geteilt von den Bau-Funktionen unten) ──
@@ -1742,6 +1753,70 @@
     // (`phenotype` Z.1058, `deriveParamsPlant` Tree-Zweig Z.1105) — THREE-frei (die Blatt-Farbe
     // bleibt roher Hex; der Renderer tönt sie). Die Zufalls-Zieh-REIHENFOLGE ist exakt die der
     // Vorlage (inkl. der 3 verworfenen Farb-Jitter-Ziehungen) → derselbe Same ⇒ dieselbe Gestalt.
+    // DER SCHAFT TRÄGT DIE HÖHE (K20): der gewachsene Baum wird so hoch, dass sein Wipfel (der höchste Strang des
+    // Skeletts — dasselbe Skelett in jeder Stufe, kein Sprung zwischen L0 und L1) bei `ziel` steht, und zwar im Schaft:
+    // der Stamm-Lauf (Lauf 0) streckt sich unter dem tiefsten Ast-Ansatz yb, jeder andere Lauf und jedes Blatt rückt
+    // starr um ziel − h0 (auch die hängende Rute). Die Krone bleibt, wie sie wuchs — Breite, Lagen, Blatt-Zahl: die
+    // Kronen-Deckung von oben (forestKronenDeckung) und die Kosten bleiben —, der Bestandsbaum steht auf seinem langen
+    // Schaft (die Buche trägt ihre Krone im oberen Drittel). Der gestreckte Schaft behält die Ring-Teilung seines
+    // Wuchses (je gestrecktem Strang so viele Teile, wie er länger wurde — der Wurzelanlauf bleibt rund). Der Schaft
+    // wächst nur: ein Baum, dessen Wipfel schon höher steht, bleibt, wie er wuchs (ein gestauchter Schaft zog die Krone
+    // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal.
+    function schaftHub(segs, leaves, runMeta, ziel) {
+        let h0 = 0,
+            yb = Infinity;
+        const erst = new Set();
+        for (const s of segs) {
+            h0 = Math.max(h0, s.p0[1], s.p1[1]);
+            if (erst.has(s.runId)) continue;
+            erst.add(s.runId);
+            const m = runMeta[s.runId];
+            if (m && m.parentRun === 0) yb = Math.min(yb, s.p0[1]);
+        }
+        if (!(yb > 1e-6) || !(h0 > yb)) return;
+        const dh = ziel - h0;
+        if (!(dh > 0)) return;
+        const streck = (yb + dh) / yb;
+        const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
+        const vorher = segs.map((q) => (q.runId === 0 ? laenge(q) : 0));
+        const gesehen = new Set();
+        const hebe = (q, stamm) => {
+            if (gesehen.has(q)) return;
+            gesehen.add(q);
+            if (!stamm || q[1] >= yb) q[1] += dh;
+            else if (q[1] > 0) q[1] *= streck;
+        };
+        for (const q of segs) {
+            hebe(q.p0, q.runId === 0);
+            hebe(q.p1, q.runId === 0);
+        }
+        for (const l of leaves) hebe(l.pos, false);
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const alle = segs.slice();
+        segs.length = 0;
+        alle.forEach((q, i) => {
+            const n = vorher[i] > 0 ? Math.max(1, Math.round(laenge(q) / vorher[i])) : 1;
+            if (n === 1) return void segs.push(q);
+            let a = q.p0;
+            for (let j = 1; j <= n; j++) {
+                const t0 = (j - 1) / n,
+                    t1 = j / n;
+                const b = j === n ? q.p1 : [lerp(q.p0[0], q.p1[0], t1), lerp(q.p0[1], q.p1[1], t1), lerp(q.p0[2], q.p1[2], t1)];
+                segs.push(
+                    Object.assign({}, q, {
+                        p0: a,
+                        p1: b,
+                        r0: lerp(q.r0, q.r1, t0),
+                        r1: lerp(q.r0, q.r1, t1),
+                        sway0: lerp(q.sway0, q.sway1, t0),
+                        sway1: lerp(q.sway0, q.sway1, t1),
+                    })
+                );
+                a = b;
+            }
+        });
+    }
+
     function treePhenotype(api, slim, trop, delta, leaf) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;

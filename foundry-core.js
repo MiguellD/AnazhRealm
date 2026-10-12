@@ -194,7 +194,6 @@ var INSEL_VIS = { lab: "coast-74", host: "none" };
 // prettier-ignore
 var WALD_GESETZ = {
     flod: 0,
-    trunkMul: 0.5,
     glade: 22,
     crownBase: { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 }
 };
@@ -500,7 +499,7 @@ const PORTAL_RENDER_CONFIG = {
             basalt: 0.42,
             sediment: 0.4,
             kristalle: 0.15,
-            birke: 4.13,
+            birke: 4.03,
             eiche: 4.16,
             weide: 2.75,
             tanne: 4.26,
@@ -1707,10 +1706,7 @@ function emitTreeRezept(P, stufe) {
         )
     )
         throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})");
-    const _skWedel = (() => {
-        const sc = PORTAL_RENDER_CONFIG.placement.scale[CURRENT];
-        return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
-    })(); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
+    const _skWedel = __weltSkalaArt(CURRENT); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
     const _aeste = new Map(), // Kopf-Lauf des Nadel-Asts → { kette: [Läufe der Haupt-Bahn], blaetter: [], pfad: [Punkte] }
         _astVon = new Map(); // jeder Lauf eines Nadel-Asts → sein Kopf
     if (_wedel) {
@@ -1946,9 +1942,7 @@ function emitTreeRezept(P, stufe) {
         !(_wurf1 && _wurf1.durchmesserM > 0 && _wurf1.teil === "schatten" && _wurf1.lagen > 0)
     )
         throw new Error("[phyto] lod.budget.tree[1].wurf fehlt ({durchmesserM, teil: \"schatten\", lagen})");
-    const _plz = PORTAL_RENDER_CONFIG.placement,
-        _skB = _wurf1 ? _plz.scale[CURRENT] : 0,
-        _skW = _skB === 1 ? 1 : _skB < 1 ? _skB : _skB * _plz.treeScaleMul; // die Welt-Skala der Art (wie der Wald pflanzt)
+    const _skW = _wurf1 ? __weltSkalaArt(CURRENT) : 0; // die Welt-Skala der Art (wie der Wald pflanzt)
     if (_wurf1 && !(_skW > 0)) throw new Error("[phyto] placement.scale." + CURRENT + " fehlt (Schatten-Teil der L1)");
     const _wurfR = _wurf1 ? _wurf1.durchmesserM / (2 * _skW) : 0; // der Radius-Schnitt in Vorlagen-Einheiten
     const _wurfRinge = []; // die Bahnen der werfenden Straenge (Ringe nach Bahn-Toleranz)
@@ -2082,6 +2076,9 @@ function emitTreeRezept(P, stufe) {
             let n = Math.sin(p[0] * 12.9 + p[1] * 78.2 + p[2] * 37.7) * 43758.5;
             return n - Math.floor(n);
         };
+        // Die Stummel-Maße sind am Stamm der FORM bemessen (phyto-core trunkForm): der schlanke Stamm des Welt-Maßes (K20)
+        // zieht sie mit (ein Stummel von 3,5 cm Vorlage stand dicker als der Stamm).
+        const stummel = nodes.trunkForm > 0 ? nodes.trunkR / nodes.trunkForm : 1;
         let stubN = 0;
         for (const sg of nodes.segs) {
             const h = sg.p0[1];
@@ -2092,7 +2089,7 @@ function emitTreeRezept(P, stufe) {
             const ang = dh([sg.p1[0] + 0.3, sg.p0[1], sg.p1[2] - 0.2]) * 6.2831,
                 down = -0.2 - 0.55 * dh(sg.p1);
             const odir = vnorm([Math.cos(ang), down, Math.sin(ang)]);
-            const baseR = Math.max(0.035, sg.r0 * (0.16 + 0.1 * dh(sg.p0))),
+            const baseR = Math.max(0.035 * stummel, sg.r0 * (0.16 + 0.1 * dh(sg.p0))),
                 L = baseR * (6 + 8 * dh(sg.p1));
             const start = vadd(sg.p0, vscl(odir, sg.r0 * 0.6));
             const NST = 4,
@@ -2103,7 +2100,7 @@ function emitTreeRezept(P, stufe) {
                 c[1] -= L * f * f * 0.4; // tot -> haengt ab
                 stubRings.push({
                     c,
-                    r: i === NST ? Math.max(0.01, baseR * 0.05) : baseR * (1 - f * 0.72),
+                    r: i === NST ? Math.max(0.01 * stummel, baseR * 0.05) : baseR * (1 - f * 0.72),
                     sway: sg.sway0 * (1 - f),
                     depth: 1,
                 });
@@ -4101,6 +4098,7 @@ const PRESETS = {
             roots: 5,
             flare: 0.18,
         },
+        ph: { hoeheM: 15.55, hd: 60 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m)
     },
     fichte: {
         kind: "tree",
@@ -4120,6 +4118,7 @@ const PRESETS = {
             roots: 4,
             flare: 0.12,
         },
+        ph: { hoeheM: 26.2, hd: 70 }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
     },
     birke: {
         kind: "tree",
@@ -4138,6 +4137,7 @@ const PRESETS = {
             roots: 3,
             flare: 0.1,
         },
+        ph: { hoeheM: 13, hd: 80 }, // Welt-Maß (K20): Birke, der schlanke Pionier (Altbestand 15–25 m)
     },
     weide: {
         kind: "tree",
@@ -4156,6 +4156,7 @@ const PRESETS = {
             roots: 5,
             flare: 0.15,
         },
+        ph: { hoeheM: 7, hd: 25 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär, gedrungen
     },
     mammut: {
         kind: "tree",
@@ -4176,6 +4177,7 @@ const PRESETS = {
             maxDepth: 10,
             windGain: 0.4,
         },
+        ph: { hoeheM: 39.9, hd: 18 }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
     },
     tanne: {
         kind: "tree",
@@ -4196,6 +4198,7 @@ const PRESETS = {
             maxDepth: 9,
             windGain: 0.5,
         },
+        ph: { hoeheM: 26.9, hd: 65 }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
     },
     strauch: {
         kind: "shrub",
@@ -4487,6 +4490,8 @@ const PRESETS = {
             leafShape: { m: 4.1, n1: 0.91, n2: 0.865, n3: 0.865, a: 1, b: 1, wsc: 0.36 }, // das ganzrandig-wellige Ovalblatt (Eichen-Gesetz bei Lappung 0,3)
             roots: 6,
             flare: 0.24,
+            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m)
+            hd: 70,
         },
     },
     // Der Karst-Baum: knorrig, gedrungen, mit mächtigem Wurzelanlauf an der Klippe.
@@ -4503,7 +4508,7 @@ const PRESETS = {
             leafCol: 0x3e6626,
             place: { mode: "none" },
         },
-        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444 },
+        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, hd: 15 }, // Welt-Maß (K20): Klippen-Solitär, gedrungen
     },
     // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
     totholz: {
@@ -4523,6 +4528,14 @@ function phenotype(api, slim, trop, delta, leaf) {
     if (!core || typeof core.treePhenotype !== "function")
         throw new Error("phyto-core fehlt — der Phänotyp wohnt im Gesetzbuch (Ladereihenfolge)");
     return core.treePhenotype(api, slim, trop, delta, leaf);
+}
+
+// DIE WELT-SKALA EINER ART (wie der Wald pflanzt, placement): Meter je Vorlagen-Einheit — Skala 1 baut in Welt-Metern,
+// unter 1 bleibt sie (Gras, Fels), darüber trägt der Baum den Wald-Faktor treeScaleMul. Die EINE Formel für jeden Leser
+// im Kern (Wedel-Nadel, Schatten-Teil, das Welt-Maß des Wuchses).
+function __weltSkalaArt(id) {
+    const sc = PORTAL_RENDER_CONFIG.placement.scale[id];
+    return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
 }
 
 function deriveParamsPlant(pre) {
@@ -4618,6 +4631,14 @@ function deriveParamsPlant(pre) {
         P.tot = 1;
         P.totBruch = 0.42 + IR() * 0.26;
         P.crown = "kahl";
+    }
+    // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Höhe der Größe 1,
+    // `ph.hd` die Schlankheit H/D seines Standorts) und die Welt-Skala, mit der der Wald ihn pflanzt — phyto-core
+    // `growSkeleton` lässt ihn so hoch und so schlank wachsen. Kein Wurf (der Zufalls-Strom bleibt).
+    if (ph.kind === "tree" && ph.hoeheM > 0 && ph.hd > 0 && !ph.tot) {
+        P.hoeheM = ph.hoeheM * (P.height / ph.height); // das Individuum: derselbe Höhen-Wurf wie seine Gestalt
+        P.hd = ph.hd;
+        P.weltSkala = __weltSkalaArt(CURRENT);
     }
     return P;
 }
@@ -4887,7 +4908,7 @@ function buildInstance(presetId, seed, lod, ov) {
             emitRock(P);
         } else {
             const P = deriveParamsPlant(pre);
-            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase/trunkMul)
+            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") emitFlower(P);
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
