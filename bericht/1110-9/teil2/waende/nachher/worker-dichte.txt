@@ -1,0 +1,32 @@
+
+> anazhrealm@18.541.0 gate:worker-dichte
+> node scripts/diag-worker-dichte.cjs --selftest
+
+
+========= DER DICHTE-SPIEGEL — Main _voxelEditedDensityGrid == Worker computeDensityGrid =========
+  Boot standard: 5295 ms (Seed anazh-realm-seed)
+
+  Welt standard (Seed anazh-realm-seed):
+    wiese            (-900|-850)  L0 =  L1 =  L2 =  L3 =
+    genesis          (36|0)  L0 =  L1 =  L2 =  L3 =
+    fluss            (584|-904)  L0 =  L1 =  L2 =  L3 =
+    wiese+edits      (-900|-850)  L0 =  L1 =  L2 =  L3 =
+    16 Gitter · 879976 Ecken · abweichend 0 · maxDiff 0
+    Erbgut: [wildnis] · Wildnis-Gewicht 1 · Höhen wiese 24.409 · genesis 54.823 · fluss 11.839
+
+  SELBSTTEST (terrainSteepness 1 → 1,0001 nur im Worker): 196733 abweichende Ecken in 16 Gittern, maxDiff 21.063753128051758
+  Boot buehne: 2215 ms (Seed pruefbuehne-1)
+
+  Welt bühne (Seed pruefbuehne-1):
+    s0-atrium        (0|0)  L0 =  L1 =  L2 =  L3 =
+    s2-hang30        (0|148)  L0 =  L1 =  L2 =  L3 =
+    s4-hindernisse   (0|-170)  L0 =  L1 =  L2 =  L3 =
+    s5-furt          (0|-380)  L0 =  L1 =  L2 =  L3 =
+    s5-kolk          (0|-350)  L0 =  L1 =  L2 =  L3 =
+    meer             (0|640)  L0 =  L1 =  L2 =  L3 =
+    s0-atrium+edits  (0|0)  L0 =  L1 =  L2 =  L3 =
+    28 Gitter · 1539958 Ecken · abweichend 0 · maxDiff 0
+    Erbgut: [insel, rampe, bucht] · Wildnis-Gewicht 0 · Höhen s0-atrium 10.26 · s2-hang30 19.054 · s4-hindernisse 9.75 · s5-furt -3.6 · s5-kolk -12 · meer -15
+
+✅ SELBSTTEST GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot
+

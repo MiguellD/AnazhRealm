@@ -1,0 +1,42 @@
+
+> anazhrealm@18.541.0 gate:nervensystem-porta
+> node scripts/diag-nervensystem-porta.cjs --selftest && node scripts/diag-nervensystem-porta.cjs
+
+=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===
+  ✅ Selbst-Test 1: porta-Zeile aus dem Manifest entfernt -> S1 feuert
+  ✅ Selbst-Test 2: gate-Policy-Zeile verstuemmelt -> S2 feuert
+
+✅ SELBST-TEST GRUEN — die Linse feuert auf beide Verletzungs-Klassen.
+=== ε-BEWEIS PORTA — TEIL S: die statischen Gesetze (Node) ===
+  ✅ S1: das Manifest traegt den porta-Kern (scripts porta-core.js, ns __portaCore)
+  ✅ S2: KIND_POLICY traegt die gate-Zeile (prefix tor_, donor tor_basis — die EINE Daten-Zeile)
+  ✅ S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)
+  ✅ S4: porta-core deklariert kindStages.gate == [0] (B2-Vertrags-Daten)
+  ✅ S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)
+  ✅ S6: die Donor-SUBSTANZ tor_basis lebt in KIND_SUBSTANCE (label Torbogen, parts, kein portalMeta) — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)
+
+=== TEIL B: der lebende Draht (Browser, foundry-ON) ===
+  ✅ B: das LIVE-Buch traegt drachentor als kind:gate (Worker-Draht lebt) — gate
+  ✅ B: die Regler-Daten fliessen (drachentor.s.orders == 2) — 2
+  ✅ B: alle 7 Tor-Ordnungen im Buch — 7
+  ✅ B: kindStages.gate == [0] (N7.5-Merge am Ingest) — [0]
+  ✅ B: foundry-core-kinds UNANGETASTET (tree [0,1,2]) — [0,1,2]
+  ✅ B: vehicle-kindStages UNANGETASTET ([0]) — [0]
+  ✅ D: Auto-Blueprint tor_drachentor registriert (Donor-Klon) — parts=4
+  ✅ D: die Herkunfts-Marke sitzt (_foundryAutoSpecies == drachentor)
+  ✅ D: KEIN _grownSpecies (ein Tor ist keine gewachsene Art) — null
+  ✅ D: das Label reist aus dem Rezept (lab == Drachentor) — Drachentor
+  ✅ D: der Alt-Donor tor_basis ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (4 Parts) — substanzParts=4
+  ✅ D: der Auto-Klon traegt die Substanz byte-gleich (tor_drachentor.parts == KIND_SUBSTANCE.tor_basis.parts)
+  ✅ D: die generische tor_-Regel loest auf (tor_drachentor -> drachentor) — drachentor
+  ✅ D: der Entry-Pfad loest auf (_foundryPresetForEntry) — drachentor
+  ✅ P: die Place-Aufloesung liest die Rezept-DATEN (mode "site" + siteTag "tor") — site/tor
+  ✅ P: site streut NICHT (Dispatch null, N5.6 — die Welt-Nische ist der benannte Folge-Anschluss) — null
+  ✅ P: keine tor_-Nische in der Wald-Liste
+  ✅ E: der Worker liefert das Tor-Asset (Meshes > 0) — meshes=13
+  ✅ E: die Material-Farbe reist mit (mat.color)
+  ✅ E: _foundryBuildGroup baut die Gruppe (Kinder > 0) — 13
+  ✅ E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)
+  ✅ F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 0 (fail-closed [0]) — drachentor|1|0
+
+✅ GRÜN — DER ε-BEWEIS STEHT: die Tor-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — porta-core reist durch den EINEN Foundry-Worker (Rezepte + kindStages + Asset), tor_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6).

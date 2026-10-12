@@ -1,0 +1,10 @@
+02:40:08 WB GELADEN 71 von 71 Gruppen, 71 Tor-Gruppen in der Welt
+02:40:08 WB GESETZT B: {"n":71,"ecken":206013}
+02:41:32 W-B1 tor-bild exit=0 Aufbau: {"pflanzen":63,"meshes":71,"tris":250338,"kams":4,"hauptLagen":1,"membranen":8,"version":"18.541.0","porta":52000}
+02:41:33 WB GESETZT A: {"n":71,"ecken":678754}
+02:42:11 W-A1 tor-bild exit=0 Aufbau: {"pflanzen":63,"meshes":71,"tris":1083648,"kams":4,"hauptLagen":1,"membranen":8,"version":"18.541.0","porta":52000}
+02:42:11 WB GESETZT B: {"n":71,"ecken":206013}
+02:42:50 W-B2 tor-bild exit=0 Aufbau: {"pflanzen":63,"meshes":71,"tris":250338,"kams":4,"hauptLagen":1,"membranen":8,"version":"18.541.0","porta":52000}
+02:42:50 WB GESETZT A: {"n":71,"ecken":678754}
+02:43:28 W-A2 tor-bild exit=0 Aufbau: {"pflanzen":63,"meshes":71,"tris":1083648,"kams":4,"hauptLagen":1,"membranen":8,"version":"18.541.0","porta":52000}
+02:43:34 INWELT ENDE

@@ -1,0 +1,11 @@
+
+> anazhrealm@18.541.0 lint
+> eslint anazhRealm.js phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js
+
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\welle-m-e-tor\anazhRealm.js
+  39672:21  warning  'fr' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+  57747:15  warning  'SC' is assigned a value but never used                               no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+

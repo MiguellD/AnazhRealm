@@ -1,0 +1,188 @@
+
+> anazhrealm@18.541.0 check
+> node --check anazhRealm.js && node --check phyto-core.js && node --check gelaende-core.js && node --check voxel-worker.js && node --check foundry-core.js && node --check vehicle-core.js && node --check porta-core.js && node --check schmiede-core.js && node --check fachwerk-core.js && node --check klang-core.js && node --check koerper-core.js && node --check tetrapoda-core.js && node --check feld-wgsl.js && node --check save-server.js && node --check signaling-server.js && node -e "JSON.parse(require('fs').readFileSync('cores.manifest.json','utf8'))" && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs && node scripts/diag-phyto-tree.cjs && node scripts/diag-phyto-core-parity.cjs && node scripts/diag-pipeline-constitution.cjs && node scripts/diag-studio-vertrag.cjs && node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs && node scripts/diag-koerper-kern.cjs --selftest && node scripts/diag-koerper-kern.cjs && node scripts/diag-membran-gesetz.cjs && node scripts/diag-charakter-achsen.cjs && node scripts/diag-kreatur-leben.cjs && node scripts/diag-konsum-bilanz.cjs && node scripts/diag-reconnect.cjs && node scripts/diag-profiband.cjs --selftest && node scripts/diag-profiband.cjs && node scripts/diag-wasser-leben.cjs --selftest && node scripts/diag-chunk-satz.cjs --selftest && node scripts/diag-hoehlen-sicht.cjs --selftest && node scripts/diag-kamera-treue.cjs --selftest && node scripts/diag-ego-schatten.cjs --selftest && node scripts/diag-takt-atem.cjs --selftest && node scripts/diag-sicht-arbeit.cjs --selftest && node scripts/diag-wetter-wache.cjs --selftest && node scripts/diag-weltakt-wache.cjs --selftest && node scripts/diag-blocker-netz.cjs --selftest && node scripts/diag-kollision-bild.cjs --selftest && node scripts/diag-fall-waechter.cjs --selftest && node scripts/diag-brennglas-takt.cjs --selftest && node scripts/diag-raum-tags.cjs --selftest && node scripts/omen-messfolge.cjs --selbsttest && node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-post-kette.cjs --selftest && node scripts/diag-ziel-zensus.cjs --selftest && node scripts/diag-verdeckungs-abfrage.cjs --selftest && node scripts/diag-start-rezept.cjs --selftest && node scripts/diag-start-rezept.cjs && node scripts/diag-apparat.cjs --selftest && node scripts/diag-apparat.cjs && node scripts/diag-vendor-anker.cjs --selftest && node scripts/diag-vendor-anker.cjs && node scripts/diag-betriebsgesetz.cjs && node scripts/diag-ci-deckung.cjs --selftest && node scripts/diag-ci-deckung.cjs && node scripts/diag-taille.cjs && node scripts/diag-haus-fern.cjs
+
+Atlas OK — 26 Zonen, Registry ↔ Marker deckungsgleich.
+=== Stale-Source-Probe-Linse ===
+Gate-Dateien: scripts/playtest.cjs, scripts/playtest-fast.cjs
+Code-Korpus-Symbole: 15597
+Geprüfte r.<symbol>-Proben (unique): 251
+Nebenwelt-Quell-Wand: 0 Lese-Aufrufe auf worlds/ in den Gate-Dateien.
+
+✅ Alle 251 geprobten Symbole existieren im Code — keine stale Probe.
+=== DAS NEUE KLEID K0 — Phyto-Wuchs-Kern (rein, headless) ===
+  ✅ Determinismus: gleicher Seed ⇒ 3× byte-identisch — 1105|3419|0.555509|33526.2532
+  ✅ McMahon: trunkR aus H/slim abgeleitet (nachgerechnet) — got=0.55551 exp=0.55551
+  ✅ McMahon: höherer Baum ⇒ dickerer Stamm — 0.5555 → 1.2500
+  ✅ McMahon: schlanker (slim↑) ⇒ dünnerer Stamm — 0.5555 → 0.4069
+  ✅ da Vinci: Flächenerhaltung an Gabeln (Σ Kind-Fläche ≤ Eltern-Fläche) — 111 Gabeln geprüft, 0 verletzt
+  ✅ Varianz: 40 Seeds ⇒ 40 verschiedene Bäume — 40/40 unique
+  ✅ Varianz: Segment-Zahl streut spürbar — Segmente 1039…1448
+  ✅ Apikaldominanz: Nadelbaum (exkurrent) schlanker als Eiche (dekurrent) — Tanne w/h=0.45 · Eiche w/h=0.65
+  ✅ Blatt-Budget: Cap deckelt die Blatt-Zahl — 50 ≤ 50
+
+✅ K0 GRÜN — der Phyto-Kern trägt die Gesetze.
+=== DAS NEUE KLEID Welle 0 — Phyto-Core Main↔Worker-Parität ===
+  ✅ Main-Pfad exportiert __phytoCore.growSkeleton
+  ✅ Worker-Pfad exportiert __phytoCore.growSkeleton
+  ✅ Beide Pfade sind SEPARATE Funktions-Instanzen (echt zwei Scopes)
+  ✅ Main==Worker byte-identisch über 4 Arten × 12 Seeds — 48 Läufe, 0 divergent
+
+✅ PARITÄT GRÜN — phyto-core.js trägt Main + Worker aus EINER Quelle (Gesetz #0).
+=== P8 — DIE VERFASSUNG DER PIPELINE (Struktur, nicht Ermahnung) ===
+
+Gesetz 1 — die Foundry ist die EINE Baum-Quelle (Chokepoint + Scatter-Gate):
+  ✅ der Chokepoint prüft `_foundryPresetFor(species)` (in `_buildVariantLODs`)
+  ✅ der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → return null` im Zellen-Chokepoint)
+
+Gesetz 2 — EIN Wuchs (foundry-core liest den geteilten phyto-core):
+  ✅ `growTreeNodes` delegiert an `__core.growSkeleton`
+  ✅ KEIN Inline-Parallel-Wuchs (die `grow(pos,dir,radius,length,depth)`-Rekursion ist geschnitten)
+
+Gesetz 3 — der Studio-Bäcker ist die Fernstufe (kein Nachbau, kein Bake-iframe):
+  ✅ der Stamm konsumiert den Studio-Bäcker-Kanal ("bake-impostor" → `_applyStudioImpostorPayload`)
+  ✅ der Welt-RTT-Nachbau bleibt geschnitten (kein `_bakeImpostorAtlasRTT`/`_impostorBlitPixels`/`_impostorDilate`/`_foundryBakeLeaves`)
+  ✅ KEIN asset-foundry-Bake-iframe (kein `iframe.src = …asset-foundry`)
+  ✅ die drei iframe-Impostor-Methoden bleiben geschnitten
+
+Gesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht:
+  ✅ Vertrag v1 (Pflanzen) existiert
+  ✅ Vertrag v2 (Kreatur-Skin) ist GEFALLEN (KONVERGENZ III — der Baum trägt)
+  ✅ `gate:asset-contract` verdrahtet
+
+Gesetz 5 — jede Regel hat ihre Linse (die Gates existieren):
+  ✅ `gate:foundry-warm` verdrahtet
+  ✅ `gate:foundry-deadlock` verdrahtet
+  ✅ `gate:portal-boot` verdrahtet
+  ✅ `gate:foundry-impostor` verdrahtet
+  ✅ `gate:luft-sicht` verdrahtet
+
+Gesetz 6 — Drähte statt Kopien (Wald-Plan + Rahmen leben in der Quelle):
+  ✅ phyto-core trägt den Wald-Plan (`planForestCell`)
+  ✅ phyto-core trägt den Impostor-Rahmen (`impostorFrame` + `scanRadialXZ`)
+  ✅ der Monolith DELEGIERT den Wald-Plan (ctx-Draht zu `planForestCell`)
+  ✅ KEINE Nischen-Formel-Kopie im Monolithen (die wF/wT/wE-Gewichte sind umgezogen)
+  ✅ KEINE Größen-Formel-Kopie im Monolithen (reverse-J `0.55 + 1.45·ue^1.45`)
+  ✅ der Monolith DELEGIERT den Rahmen (`core.impostorFrame(`)
+  ✅ KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)
+  ✅ das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)
+  ✅ der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)
+  ✅ GRAS ALS OBERFLÄCHEN-FUNKTION: der Bauer registriert null, baut nie ein Mesh
+  ✅ die Wiese lebt im Boden-Fragment (Halm-Term `_halmW` mixt MEADOW_GREEN)
+  ✅ die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)
+  ✅ der Studio-Wald liest kindStages SELBST (near/far-Kacheln)
+  ✅ AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryServierStufe` → `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)
+
+Gesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-Metrik:
+  ✅ der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)
+  ✅ der Scatter-Bau liest die EINE Quelle (kein eigener Dichte-Rechner in `_scatterPass`)
+  ✅ das Nach-Dünnen liest die EINE Quelle + trägt das Foundry-Gate (`_tickFoliageThin`)
+  ✅ kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback und als der EINE Kehraus-Zähler)
+  ✅ N1/M8: KIND_POLICY existiert (tree + vehicle als Tabellen-Zeilen)
+  ✅ N1/M8: der Auto-Register-Chokepoint laeuft die Tabelle (kein kind-String-Vergleich im Body)
+  ✅ N2: cores.manifest.json existiert + ist ein gueltiger Kern-Satz
+  ✅ N2: der Worker-Boot liest das Manifest (cores.manifest.json in _ensureAssetFoundry)
+  ✅ N2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + core.scripts → _foundrySchale)
+  ✅ N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)
+
+Gesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):
+  ✅ N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)
+  ✅ N4.1: jeder Reply-Leser routet durch die EINE Naht (8/8 Sites, erwartet ≥5)
+  ✅ N4.2: die Naht reicht das Reply-Material herein (`m.mat` an `_foundryTreeMaterial`)
+  ✅ N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp
+  ✅ N7.4: der Mesh-Gras-Konsum ist tot (kein `sg === "leer"`-Leser, keine Existenz-Gabel im Bauer)
+  ✅ N7.4: der Alt-Tuft-Bauer ist geschnitten (kein _grassBladeTuftGeometry im Code)
+  ✅ N7.4: der Gras-Thin-Tick ist geschnitten (die Wiese dünnt NIE — V18.422 bedingungslos)
+  ✅ N4.4: KIND_POLICY trägt die Impostor-Politik (tree + shrub `impostor: true`)
+  ✅ N4.4: vehicle trägt die Impostor-Zeile (Fahrzeug-Fernstufe, `gate:fahrzeug-fern` wacht)
+  ✅ N4.4: `_foundryPresetIsTree` liest die Policy-Tabelle, kein tree|shrub-kind-Literal im Body
+
+Gesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Chokepoint · kein placeExtra-Griff):
+  ✅ N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)
+  ✅ N5: kein direkter placeExtra-Griff in der Wald-Nischen-Quelle
+  ✅ N5: der `.placeExtra`-READ lebt genau EINMAL — in `_placePolicyFor` (die Ableitung)
+  ✅ N5: die Auflösung fällt fail-closed über die PLACE_MODES-Tabelle (unbekannter mode → "none")
+  ✅ N5: `gate:place-policy` verdrahtet
+
+55 Gesetze gehalten, 0 verletzt.
+
+✅ GRÜN — die Pipeline-Verfassung steht: eine Baum-Quelle · ein Wuchs · ein Bake-Pfad · zwei eingefrorene Verträge, jede Regel als Struktur (Chokepoint/Schnitt/Gate) verankert, nicht als Ermahnung.
+=== DER STUDIO-VERTRAG — Manifest-Validator (docs/studio-vertrag.md) ===
+  ✅ Vertrag existiert (docs/studio-vertrag.md)
+  ✅ Vertrag trägt die sechs Blöcke B1–B6 + die Empfänger-Gesetze
+  ✅ cores.manifest.json ist ein gültiger Kern-Satz (id + scripts + vertrag je Eintrag) — 9 Kern(e): phyto, vehicle, porta, schmiede, fachwerk, klang, koerper, tetrapoda, gelaende
+
+--- Kern: foundry-core.js ---
+  ✅ foundry-core.js: 0 Vertrags-Verletzungen
+      23 Rezepte · kinds: tree, shrub, flower, grass, rock, fern, reed, brush, deadwood · unbekannt (must-ignore): fern, reed, brush, deadwood
+  ✅ foundry-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: vehicle-core.js ---
+  ✅ vehicle-core.js: 0 Vertrags-Verletzungen
+      5 Rezepte · kinds: vehicle
+  ✅ vehicle-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: porta-core.js ---
+  ❌ porta-core.js: 0 Vertrags-Verletzungen — B2c: lod.budget.gate[0].band muss eine ganze Zahl > 0 und < tris sein
+      7 Rezepte · kinds: gate
+  ✅ porta-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: schmiede-core.js ---
+  ✅ schmiede-core.js: 0 Vertrags-Verletzungen
+      21 Rezepte · kinds: weapon
+  ✅ schmiede-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: fachwerk-core.js ---
+  ✅ fachwerk-core.js: 0 Vertrags-Verletzungen
+      35 Rezepte · kinds: haus, ausstattung · unbekannt (must-ignore): ausstattung
+  ✅ fachwerk-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: klang-core.js ---
+  ✅ klang-core.js: 0 Vertrags-Verletzungen
+      22 Rezepte · kinds: klang
+  ✅ klang-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: koerper-core.js ---
+  ✅ koerper-core.js: 0 Vertrags-Verletzungen
+      1 Rezepte · kinds: koerper
+  ✅ koerper-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: tetrapoda-core.js ---
+  ✅ tetrapoda-core.js: 0 Vertrags-Verletzungen
+      4 Rezepte · kinds: kreatur
+  ✅ tetrapoda-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: gelaende-core.js ---
+  ✅ gelaende-core.js: 0 Vertrags-Verletzungen
+      0 Rezepte · kinds: 
+  ✅ gelaende-core.js: §9 Gesetz-Kern (16 Funktionen: hoehe · erbgutNormal · wildnisY · termY · kontinentBasis · rauheit · ankerAusSaat · ankerBeitrag · massivMaske · grat · gratRauschen · kachelSchluessel · erosionFuer · erosionDelta · tarnMulde · tarnDelta)
+  ✅ Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)
+  ✅ G4.1: der Auto-Register-Chokepoint filtert per Policy (must-ignore, wirft nie)
+  ✅ B2c: jeder Kern mit Gestalt (kindStages) trägt lod.budget — foundry-core.js, vehicle-core.js, porta-core.js, schmiede-core.js, fachwerk-core.js, koerper-core.js, tetrapoda-core.js
+  ✅ B2c: jeder Zweit-Kern mit Gestalt zählt seine Gestalten (lod.budget.gestalten — Gesetzbuch statt Wirts-16)
+  ✅ B2c KARTEN-LINSE: budget[kind][letzte].karte ⇔ KIND_POLICY[kind].impostor (je Art mit Budget) — foundry-core.js, vehicle-core.js, porta-core.js, schmiede-core.js, fachwerk-core.js, koerper-core.js, tetrapoda-core.js
+  ✅ SELBST-TEST: ein Host ohne Strauch-Impostor feuert die Karten-Linse
+      Budget (B2c) trägt: foundry-core.js, vehicle-core.js, porta-core.js, schmiede-core.js, fachwerk-core.js, koerper-core.js, tetrapoda-core.js
+  ✅ W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel · Seh-Klasse beider Extraktoren · Sippe in Flatten und Ofen)
+  ✅ SELBST-TEST: ein Ofen ohne Faltung feuert die Leser-Probe
+  ✅ SELBST-TEST: ein Ofen-Extraktor ohne Seh-Klasse feuert die Leser-Probe
+  ✅ SELBST-TEST: eine Konversion ohne Sippen-Stempel feuert die Leser-Probe
+  ✅ PFLICHT vehicle-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ PFLICHT schmiede-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ PFLICHT koerper-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ PFLICHT tetrapoda-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ ZWILLINGS-ABSENZ: kein gefallener Fallback-Zwilling kehrt als Stamm-Zuweisung wieder (23 Namen) — 23 Namen abwesend
+  ✅ SELBST-TEST: ein injizierter Zwilling (SWING_LAWS-Zeile) feuert die Absenz-Wand — SWING_LAWS
+  ✅ ZWILLINGS-ABSENZ: kein globalThis-||-Inline-Fallback (HIMMEL/WASSER) im Stamm, Signaturen nur im Gesetzbuch — abwesend
+  ✅ KONSUM: terrain steht in GESETZ_KERNE und foundry-core trägt __terrainCore (HIMMEL+WASSER)
+  ✅ SELBST-TEST: ein injizierter Inline-Fallback feuert die Wand
+  ✅ KONSUM: gelaende steht in GESETZ_KERNE und im Manifest (§9), voxel-worker und index.html laden gelaende-core.js
+  ✅ SELBST-TEST: ein Gesetz-Kern mit Rezept und ohne Funktion feuert §9 — §9: ein Gesetz-Kern trägt keine Rezepte (PRESETS) · §9: der Gesetz-Kern trägt keine Funktion
+  ✅ KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad
+  ✅ SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · NUR-WURF-Stufe · Gelenk-Gestalt ab/hyst/wurf.seh · Version · MESHFREI-Widerspruch · Gefühls-Blöcke) — 55 erkannt
+  ✅ SELBST-TEST: der Sprung-Zwilling (Abflug in m/s einer Aktion · sprung.impulsProM) feuert die VERHALTEN-Wand — echt 0 · m/s 1 · Faktor 1
+  ✅ SELBST-TEST: der Substanz-Zwilling des Temperaments (Signaturen · fehlende Gattungs-Zeile) feuert die VERHALTEN-Wand — Signaturen 1 · ohne Gattung 1
+  ✅ B2c S3-Absenz: kein Pflanzen-Falten (budgetErzwingen nur im Zweit-Kern-Zweig), keine Seh-Klasse laub
+  ✅ SELBST-TEST: die S3-Wand feuert (Baum-Zeile ohne lagen/geruest/blattKarte/wedel/quote/wurf.teil, mit nadelKarte und dichte.laub · Fels zweistufig · Pflanzen-Falten · Seh-Klasse laub) — 13 Zeilen-Befunde · Falten 1 · laub 1
+
+❌ ROT — 1 Vertrags-Verletzung(en).

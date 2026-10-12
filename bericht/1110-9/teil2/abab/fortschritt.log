@@ -1,0 +1,8 @@
+02:15:16 SERIE START A=858ed586 (543555e773db4a78) B=2c3cb6eb+Arbeitsbaum (212386d2f556cd43) Instrument=3ccdcaea
+02:16:43 gA1 porta-core=543555e773db4a78 exit=0 [folge] band …  laufVoll: 51.5 fps · Frame p50/p95/max 16.7/25.1/33.5 ms · CPU p50/p95 5.2/7.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.88 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 2, fox 5) 
+02:18:41 gB1 porta-core=212386d2f556cd43 exit=0 [folge] band …  laufVoll: 51.9 fps · Frame p50/p95/max 16.7/25.1/33.4 ms · CPU p50/p95 5.6/7.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.29 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 3, fox 5) 
+02:20:40 gA2 porta-core=543555e773db4a78 exit=0 [folge] band …  laufVoll: 50.7 fps · Frame p50/p95/max 16.7/25.1/33.3 ms · CPU p50/p95 5.6/7.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.53 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 4, fox 3) 
+02:22:38 gB2 porta-core=212386d2f556cd43 exit=0 [folge] band …  laufVoll: 51.7 fps · Frame p50/p95/max 16.7/25.1/33.3 ms · CPU p50/p95 5.6/7.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.35 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 3, fox 5) 
+02:24:38 gA3 porta-core=543555e773db4a78 exit=0 [folge] band …  laufVoll: 50.6 fps · Frame p50/p95/max 16.7/25.1/33.4 ms · CPU p50/p95 5.7/7.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.49 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 4, fox 3) 
+02:26:36 gB3 porta-core=212386d2f556cd43 exit=0 [folge] band …  laufVoll: 51.5 fps · Frame p50/p95/max 16.7/25.1/33.7 ms · CPU p50/p95 5.7/7.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.53 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 3, fox 5) 
+02:27:10 SERIE ENDE

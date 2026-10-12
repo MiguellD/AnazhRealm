@@ -1,0 +1,45 @@
+
+> anazhrealm@18.541.0 gate:porta-contract
+> node scripts/diag-porta-contract.cjs
+
+=== ASSET-VERTRAG v4 — Tore (porta-core.js buildInstance) ===
+  ✅ porta-core geladen (__portaCore + buildInstance)
+  ✅ Determinismus: jeder der 16 Fälle baut doppelt byte-gleich
+  ✅ Seed-Invarianz: seed 7 == seed 12345 je Ordnung (Lab-fester rng-Strom)
+  ✅ ov-Kanal: Parameter-Override ändert den Bau (drachentor != drachentor+mass)
+  ✅ lod-Klemme: buildInstance(…, lod 2) == Stufe 0 (kindStages.gate=[0])
+  ✅ Golden trägt cv:4 + alle Fälle
+  ❌ Goldens byte-exakt (16 Fälle) — drachentor-s7-L0: sha256 weicht ab (5b421eb9f124… != baa36f6e9ae7…)
+      ↳ drachentor-s12345-L0: sha256 weicht ab (5b421eb9f124… != baa36f6e9ae7…)
+      ↳ kathedrale-s7-L0: sha256 weicht ab (caef222ce4c0… != 456218ca819b…)
+      ↳ kathedrale-s12345-L0: sha256 weicht ab (caef222ce4c0… != 456218ca819b…)
+      ↳ maschine-s7-L0: sha256 weicht ab (36612ff256a5… != d717ba830d09…)
+      ↳ maschine-s12345-L0: sha256 weicht ab (36612ff256a5… != d717ba830d09…)
+      ↳ geisttor-s7-L0: sha256 weicht ab (b82cd1b7ad68… != edd70fb4c00b…)
+      ↳ geisttor-s12345-L0: sha256 weicht ab (b82cd1b7ad68… != edd70fb4c00b…)
+      ↳ verkalkt-s7-L0: sha256 weicht ab (ba954bb9aff5… != fb1324963179…)
+      ↳ verkalkt-s12345-L0: sha256 weicht ab (ba954bb9aff5… != fb1324963179…)
+      ↳ ruine-s7-L0: sha256 weicht ab (e14844ebc793… != 54a8f41e21cf…)
+      ↳ ruine-s12345-L0: sha256 weicht ab (e14844ebc793… != 54a8f41e21cf…)
+      ↳ maurentor-s7-L0: sha256 weicht ab (5d3280f28ca4… != b4be15df3cae…)
+      ↳ maurentor-s12345-L0: sha256 weicht ab (5d3280f28ca4… != b4be15df3cae…)
+      ↳ drachentor-s7-L0-ov_mass: sha256 weicht ab (0780fa58b35d… != 8d26edc9537f…)
+      ↳ kathedrale-s7-L0-ov_glow_orders: sha256 weicht ab (c22d73ba5f92… != 6ec3bd933f13…)
+  ✅ PLATTFORM-PROBE v4: Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten die Ratsche (9 Fälle; benannt: keine — plattformgleich; Nenner pow 2295726 · hypot 5308 · cos 241704 · sin 247188 · atan2 242224 · acos 22754 · asin 5)
+  ✅ SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau
+  ✅ SELBST-TEST: die Ratsche v4 reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen
+  ❌ Tor-Hülle: TOR_HUELLE ist die gebaute Gestalt (7 Rezepte, je 9 Zahlen, ≤ 1 cm darüber) — drachentor.seiten[0].obenX: Tafel 2.69 gegen gebaut 2.6643
+      ↳ drachentor.seiten[1].obenX: Tafel 2.69 gegen gebaut 2.6643
+      ↳ kathedrale.oberkante: Tafel 8.57 gegen gebaut 8.5598
+      ↳ maschine.oberkante: Tafel 7.14 gegen gebaut 7.1250
+      ↳ maschine.seiten[0].pfostenX: Tafel 2.67 gegen gebaut 2.6575
+      ↳ maschine.seiten[1].pfostenX: Tafel 2.67 gegen gebaut 2.6575
+      ↳ geisttor.seiten[0].obenX: Tafel 2.36 gegen gebaut 2.3347
+      ↳ geisttor.seiten[1].obenX: Tafel 2.36 gegen gebaut 2.3347
+      ↳ verkalkt.oberkante: Tafel 7.36 gegen gebaut 7.3494
+      ↳ ruine.oberkante: Tafel 6.83 gegen gebaut 6.8064
+  ✅ SELBST-TEST: eine zu schmale Tor-Hülle und eine fehlende Zeile werden beim Namen genannt — drachentor.seiten[0].obenX: Tafel 2.69 gegen gebaut 2.6643 · drachentor.seiten[1].obenX: Tafel 2.69 gegen gebaut 2.6643 · kathedrale.oberkante: Tafel 8.57 gegen gebaut 8.5598 · maschine.oberkante: Tafel 7.14 gegen gebaut 7.1250 · maschine.seiten[0].pfostenX: Tafel 2.67 gegen gebaut 2.6575 · maschine.seiten[1].pfostenX: Tafel 2.67 gegen gebaut 2.6575 · geisttor: keine Zeile in TOR_HUELLE · verkalkt.oberkante: Tafel 7.36 gegen gebaut 7.3494 · ruine.oberkante: Tafel 6.83 gegen gebaut 6.8064 · ruine.seiten[1].pfostenX: Tafel 5.09 gegen gebaut 5.2817
+  ✅ SELBST-TEST: korruptes Golden (sha256) wird erkannt
+  ✅ SELBST-TEST: objects-Drift wird erkannt
+
+❌ ROT — 2 Vertrags-Verletzung(en).

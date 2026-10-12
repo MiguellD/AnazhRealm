@@ -1,0 +1,54 @@
+gA1: Tore 1732k (davon k0 620k), Tor-Befehle 113 · Tor-L0-Puffer 27.66 MB · Szene-Puffer 56.73 MB
+    f:maurentor:L0 314k [k0 119k, k1 12k, haupt 184k] Befehle 25
+    f:drachentor:L0 506k [k0 191k, k1 18k, haupt 297k] Befehle 24
+    f:verkalkt:L0 295k [k0 117k, k1 9k, haupt 168k] Befehle 24
+    f:maschine:L0 272k [k0 105k, haupt 167k] Befehle 14
+    f:kathedrale:L0 144k [k0 34k, haupt 110k] Befehle 9
+    f:ruine:L0 112k [k0 23k, haupt 88k] Befehle 9
+    f:geisttor:L0 89k [k0 30k, haupt 59k] Befehle 8
+    sonst: bodenSatz 238k/3 · portal-membran 65k/4 · f:gt:L0 51k/14 · spieler 38k/5 · formationenSatz 24k/5 · f:tanne:L1 22k/6 · dsl-insel 22k/7 · bauSatz 21k/6
+gA2: Tore 1732k (davon k0 620k), Tor-Befehle 113 · Tor-L0-Puffer 27.66 MB · Szene-Puffer 56.52 MB
+    f:maurentor:L0 314k [k0 119k, k1 12k, haupt 184k] Befehle 25
+    f:drachentor:L0 506k [k0 191k, k1 18k, haupt 297k] Befehle 24
+    f:verkalkt:L0 295k [k0 117k, k1 9k, haupt 168k] Befehle 24
+    f:maschine:L0 272k [k0 105k, haupt 167k] Befehle 14
+    f:kathedrale:L0 144k [k0 34k, haupt 110k] Befehle 9
+    f:ruine:L0 112k [k0 23k, haupt 88k] Befehle 9
+    f:geisttor:L0 89k [k0 30k, haupt 59k] Befehle 8
+    sonst: bodenSatz 238k/3 · portal-membran 65k/4 · f:gt:L0 51k/14 · spieler 38k/5 · formationenSatz 27k/5 · f:tanne:L1 22k/6 · dsl-insel 22k/7 · bauSatz 21k/6
+gA3: Tore 1732k (davon k0 620k), Tor-Befehle 113 · Tor-L0-Puffer 27.66 MB · Szene-Puffer 56.53 MB
+    f:maurentor:L0 314k [k0 119k, k1 12k, haupt 184k] Befehle 25
+    f:drachentor:L0 506k [k0 191k, k1 18k, haupt 297k] Befehle 24
+    f:verkalkt:L0 295k [k0 117k, k1 9k, haupt 168k] Befehle 24
+    f:maschine:L0 272k [k0 105k, haupt 167k] Befehle 14
+    f:kathedrale:L0 144k [k0 34k, haupt 110k] Befehle 9
+    f:ruine:L0 112k [k0 23k, haupt 88k] Befehle 9
+    f:geisttor:L0 89k [k0 30k, haupt 59k] Befehle 8
+    sonst: bodenSatz 237k/3 · portal-membran 65k/4 · f:gt:L0 51k/14 · spieler 38k/5 · formationenSatz 27k/5 · f:tanne:L1 22k/6 · dsl-insel 22k/7 · bauSatz 21k/6
+gB1: Tore 436k (davon k0 181k), Tor-Befehle 113 · Tor-L0-Puffer 7.76 MB · Szene-Puffer 36.55 MB
+    f:maurentor:L0 68k [k0 28k, k1 2k, haupt 38k] Befehle 25
+    f:drachentor:L0 190k [k0 86k, k1 3k, haupt 102k] Befehle 24
+    f:verkalkt:L0 78k [k0 35k, k1 1k, haupt 42k] Befehle 24
+    f:maschine:L0 46k [k0 18k, haupt 28k] Befehle 14
+    f:kathedrale:L0 26k [k0 7k, haupt 19k] Befehle 9
+    f:ruine:L0 19k [k0 5k, haupt 15k] Befehle 9
+    f:geisttor:L0 9k [k0 2k, haupt 6k] Befehle 8
+    sonst: bodenSatz 237k/3 · portal-membran 65k/4 · f:gt:L0 51k/14 · spieler 38k/5 · formationenSatz 24k/5 · f:tanne:L1 22k/6 · dsl-insel 22k/7 · bauSatz 21k/6
+gB2: Tore 436k (davon k0 181k), Tor-Befehle 113 · Tor-L0-Puffer 7.76 MB · Szene-Puffer 36.55 MB
+    f:maurentor:L0 68k [k0 28k, k1 2k, haupt 38k] Befehle 25
+    f:drachentor:L0 190k [k0 86k, k1 3k, haupt 102k] Befehle 24
+    f:verkalkt:L0 78k [k0 35k, k1 1k, haupt 42k] Befehle 24
+    f:maschine:L0 46k [k0 18k, haupt 28k] Befehle 14
+    f:kathedrale:L0 26k [k0 7k, haupt 19k] Befehle 9
+    f:ruine:L0 19k [k0 5k, haupt 15k] Befehle 9
+    f:geisttor:L0 9k [k0 2k, haupt 6k] Befehle 8
+    sonst: bodenSatz 238k/3 · portal-membran 65k/4 · f:gt:L0 51k/14 · spieler 38k/5 · formationenSatz 24k/5 · f:tanne:L1 22k/6 · dsl-insel 22k/7 · bauSatz 21k/6
+gB3: Tore 436k (davon k0 181k), Tor-Befehle 113 · Tor-L0-Puffer 7.76 MB · Szene-Puffer 36.6 MB
+    f:maurentor:L0 68k [k0 28k, k1 2k, haupt 38k] Befehle 25
+    f:drachentor:L0 190k [k0 86k, k1 3k, haupt 102k] Befehle 24
+    f:verkalkt:L0 78k [k0 35k, k1 1k, haupt 42k] Befehle 24
+    f:maschine:L0 46k [k0 18k, haupt 28k] Befehle 14
+    f:kathedrale:L0 26k [k0 7k, haupt 19k] Befehle 9
+    f:ruine:L0 19k [k0 5k, haupt 15k] Befehle 9
+    f:geisttor:L0 9k [k0 2k, haupt 6k] Befehle 8
+    sonst: bodenSatz 237k/3 · portal-membran 65k/4 · f:gt:L0 51k/14 · spieler 38k/5 · formationenSatz 27k/5 · f:tanne:L1 22k/6 · dsl-insel 22k/7 · bauSatz 21k/6

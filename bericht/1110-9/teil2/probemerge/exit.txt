@@ -1,0 +1,6 @@
+porta-contract EXIT=0
+asset-contract EXIT=0
+portal-gestalt EXIT=0
+studio-vertrag EXIT=0
+"recipes.json": "6b979a6e0736ce92
+"render-config.json": "4c00852adefef66a

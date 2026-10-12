@@ -1,0 +1,56 @@
+[
+ {
+  "blick": "d2.6",
+  "rauschAusgenommen": 37791,
+  "koerper": {
+   "iou": 0.9674,
+   "pxA": 994991,
+   "pxB": 1007355,
+   "nurA": 10426,
+   "nurB": 22790
+  },
+  "wurf": {
+   "iou": 0.9263,
+   "pxA": 30059,
+   "pxB": 28565,
+   "nurA": 1868,
+   "nurB": 374
+  }
+ },
+ {
+  "blick": "d11",
+  "rauschAusgenommen": 16761,
+  "koerper": {
+   "iou": 0.943,
+   "pxA": 436110,
+   "pxB": 431627,
+   "nurA": 14967,
+   "nurB": 10484
+  },
+  "wurf": {
+   "iou": 0.9647,
+   "pxA": 10327,
+   "pxB": 10237,
+   "nurA": 230,
+   "nurB": 140
+  }
+ },
+ {
+  "blick": "d30",
+  "rauschAusgenommen": 227,
+  "koerper": {
+   "iou": 0.8995,
+   "pxA": 75652,
+   "pxB": 76641,
+   "nurA": 3533,
+   "nurB": 4522
+  },
+  "wurf": {
+   "iou": 0.8031,
+   "pxA": 15041,
+   "pxB": 17259,
+   "nurA": 655,
+   "nurB": 2873
+  }
+ }
+]

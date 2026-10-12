@@ -1,0 +1,20 @@
+=== W-A1 gegen W-B1
+d2.6: Hauptbild IoU 0.9904 · ±1 px 0.9973 (A 1013571 · B 1014047 px; nur A 4674, nur B 5150) · Schatten IoU 0.9968 · ±2 px 0.9973 (A 29849 · B 29926 px; nur A 9, nur B 86) · Rausch ausgenommen 32517 px
+d11: Hauptbild IoU 0.9841 · ±1 px 0.9981 (A 436533 · B 434901 px; nur A 4315, nur B 2683) · Schatten IoU 0.9997 · ±2 px 1 (A 10313 · B 10310 px; nur A 3, nur B 0) · Rausch ausgenommen 18911 px
+d30: Hauptbild IoU 0.9713 · ±1 px 0.9973 (A 76077 · B 75723 px; nur A 1282, nur B 928) · Schatten IoU 0.9281 · ±2 px 0.9684 (A 15527 · B 15623 px; nur A 533, nur B 629) · Rausch ausgenommen 304 px
+=== W-A1 gegen W-B2
+d2.6: Hauptbild IoU 0.9903 · ±1 px 0.9972 (A 1016704 · B 1017261 px; nur A 4695, nur B 5252) · Schatten IoU 1 · ±2 px 1 (A 29848 · B 29849 px; nur A 0, nur B 1) · Rausch ausgenommen 24024 px
+d11: Hauptbild IoU 0.9841 · ±1 px 0.9982 (A 436379 · B 434724 px; nur A 4311, nur B 2656) · Schatten IoU 0.9997 · ±2 px 1 (A 10313 · B 10310 px; nur A 3, nur B 0) · Rausch ausgenommen 19196 px
+d30: Hauptbild IoU 0.9717 · ±1 px 0.9974 (A 76076 · B 75666 px; nur A 1293, nur B 883) · Schatten IoU 0.9162 · ±2 px 0.9671 (A 15527 · B 15320 px; nur A 778, nur B 571) · Rausch ausgenommen 313 px
+=== W-A2 gegen W-B2
+d2.6: Hauptbild IoU 0.9903 · ±1 px 0.9973 (A 1016254 · B 1016818 px; nur A 4688, nur B 5252) · Schatten IoU 0.9999 · ±2 px 0.9999 (A 29851 · B 29848 px; nur A 3, nur B 0) · Rausch ausgenommen 24325 px
+d11: Hauptbild IoU 0.9842 · ±1 px 0.9982 (A 436275 · B 434607 px; nur A 4307, nur B 2639) · Schatten IoU 0.999 · ±2 px 0.9993 (A 10320 · B 10310 px; nur A 10, nur B 0) · Rausch ausgenommen 19724 px
+d30: Hauptbild IoU 0.9718 · ±1 px 0.9978 (A 76093 · B 75665 px; nur A 1300, nur B 872) · Schatten IoU 0.9291 · ±2 px 0.9776 (A 15733 · B 15320 px; nur A 777, nur B 364) · Rausch ausgenommen 259 px
+=== W-B1 gegen W-B2
+d2.6: Hauptbild IoU 0.9998 · ±1 px 1 (A 1013730 · B 1013743 px; nur A 72, nur B 85) · Schatten IoU 0.9968 · ±2 px 0.9972 (A 29928 · B 29848 px; nur A 88, nur B 8) · Rausch ausgenommen 32545 px
+d11: Hauptbild IoU 0.9996 · ±1 px 0.9999 (A 434680 · B 434664 px; nur A 91, nur B 75) · Schatten IoU 0.9998 · ±2 px 0.9998 (A 10310 · B 10312 px; nur A 0, nur B 2) · Rausch ausgenommen 19554 px
+d30: Hauptbild IoU 0.9839 · ±1 px 0.9979 (A 75724 · B 75666 px; nur A 643, nur B 585) · Schatten IoU 0.9351 · ±2 px 0.9747 (A 15623 · B 15320 px; nur A 670, nur B 367) · Rausch ausgenommen 226 px
+=== W-A1 gegen W-A2
+d2.6: Hauptbild IoU 0.9998 · ±1 px 1 (A 1016304 · B 1016303 px; nur A 90, nur B 89) · Schatten IoU 0.9998 · ±2 px 0.9998 (A 29850 · B 29852 px; nur A 2, nur B 4) · Rausch ausgenommen 25155 px
+d11: Hauptbild IoU 0.9996 · ±1 px 0.9998 (A 436193 · B 436208 px; nur A 75, nur B 90) · Schatten IoU 0.9996 · ±2 px 0.9996 (A 10313 · B 10317 px; nur A 0, nur B 4) · Rausch ausgenommen 20034 px
+d30: Hauptbild IoU 0.9837 · ±1 px 0.9982 (A 76077 · B 76093 px; nur A 619, nur B 635) · Schatten IoU 0.9431 · ±2 px 0.9781 (A 15527 · B 15733 px; nur A 355, nur B 561) · Rausch ausgenommen 349 px

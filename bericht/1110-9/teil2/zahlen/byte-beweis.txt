@@ -1,0 +1,6 @@
+Rechnungen je Rezept: gateParams · deriveGate · membranUniforms · membranPalette · messen · archProfile — davon werfen 0 (vorher wie nachher dieselbe Antwort)
+Daten und Rechnungen: 54 gleich, 1 ungleich daten.PORTAL_RENDER_CONFIG
+Bau (7 Tore × 2 Saaten): 5340 Objekte · Rahmen (Typ, Name, Weltmatrix, Material, Sicht, Reihenfolge, userData) gleich 5340/5340
+  übrige Geometrie (Kasten, Zylinder, Membran, Form …) byte-gleich 2044/2044 · Röhren und Ringe 3296, davon neu geteilt 3296
+keine Abweichung außerhalb der Röhren und Ringe
+TOR_HUELLE: 63 Zahlen, 10 geändert drachentor[3] 2.69→2.67 · drachentor[7] 2.69→2.67 · kathedrale[0] 8.57→8.56 · maschine[0] 7.14→7.13 · maschine[1] 2.67→2.66 · maschine[5] 2.67→2.66 · geisttor[3] 2.36→2.34 · geisttor[7] 2.36→2.34 · verkalkt[0] 7.36→7.35 · ruine[0] 6.83→6.81

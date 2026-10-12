@@ -1,0 +1,31 @@
+
+> anazhrealm@18.541.0 gate:blocker-netz
+> node scripts/diag-blocker-netz.cjs --selftest && node scripts/diag-blocker-netz.cjs
+
+=== BLOCKER-NETZ — Selbsttest der Box-Wand (ohne Browser) ===
+✅ SELBSTTEST GRÜN — der Stamm sauber (6 Zuweisungen an .blockerAABBs, jede gestempelt), fünf eingeschleuste Schreiber rot, ein gestempelter grün.
+=== DIE NACHBARSCHAFT DER BLOCKER — der Strahl fragt seine Zellen (Null-Renderer, eine echte Welt) ===
+  Ort             86 Bauten, 2571 Boxen am Ort · 1200 Strahlen, 447 Treffer · Slabs je Strahl 5.8 (berührt 9.0) · Bau-Treffer 174 · Abweichungen 0
+  Abriss          82 Bauten, 2541 Boxen am Ort · 1200 Strahlen, 435 Treffer · Slabs je Strahl 5.3 (berührt 8.0) · Bau-Treffer 160 · Abweichungen 0
+  Neu gestempelt  82 Bauten, 2541 Boxen am Ort · 1200 Strahlen, 413 Treffer · Slabs je Strahl 7.2 (berührt 9.8) · Bau-Treffer 170 · Abweichungen 0
+  Neues Array     82 Bauten, 2541 Boxen am Ort · 1200 Strahlen, 428 Treffer · Slabs je Strahl 3.4 (berührt 7.4) · Bau-Treffer 146 · Abweichungen 0
+  Neue Bäume      97 Bauten, 3201 Boxen am Ort · 1200 Strahlen, 401 Treffer · Slabs je Strahl 7.5 (berührt 10.9) · Bau-Treffer 148 · Abweichungen 0
+  Beweger         97 Bauten, 3201 Boxen am Ort · 1200 Strahlen, 415 Treffer · Slabs je Strahl 5.7 (berührt 9.9) · Bau-Treffer 149 · Abweichungen 0
+  Löser Ort             800 Körper, 382 geschoben, 236 getragen · Löser-Rufe je Körper 118.1 (vorher 1418.7), fern 0 · Abweichungen 0
+  Löser Abriss          800 Körper, 387 geschoben, 249 getragen · Löser-Rufe je Körper 127.1 (vorher 1404.9), fern 0 · Abweichungen 0
+  Löser Neu gestempelt  800 Körper, 394 geschoben, 255 getragen · Löser-Rufe je Körper 123.1 (vorher 1375.5), fern 0 · Abweichungen 0
+  Löser Neues Array     800 Körper, 375 geschoben, 246 getragen · Löser-Rufe je Körper 116.5 (vorher 1393.8), fern 0 · Abweichungen 0
+  Löser Neue Bäume      800 Körper, 377 geschoben, 243 getragen · Löser-Rufe je Körper 142.4 (vorher 1912.5), fern 0 · Abweichungen 0
+  Löser Beweger         800 Körper, 404 geschoben, 260 getragen · Löser-Rufe je Körper 145.6 (vorher 1971.6), fern 0 · Abweichungen 0
+  Tier Ort              600 Nähe-Listen, 9.3 Einträge je Liste · Frage 12.4 Einträge je Neubau (Bestand 86) · Abweichungen 0
+  Tier Abriss           600 Nähe-Listen, 9.0 Einträge je Liste · Frage 11.6 Einträge je Neubau (Bestand 82) · Abweichungen 0
+  Tier Neu gestempelt   600 Nähe-Listen, 9.3 Einträge je Liste · Frage 12.1 Einträge je Neubau (Bestand 82) · Abweichungen 0
+  Tier Neues Array      600 Nähe-Listen, 9.5 Einträge je Liste · Frage 12.4 Einträge je Neubau (Bestand 82) · Abweichungen 0
+  Tier Neue Bäume       600 Nähe-Listen, 11.4 Einträge je Liste · Frage 15.6 Einträge je Neubau (Bestand 97) · Abweichungen 0
+  Tier Beweger          600 Nähe-Listen, 9.6 Einträge je Liste · Frage 13.8 Einträge je Neubau (Bestand 97) · Beweger in 132 Listen · Abweichungen 0
+  Decken-Probe am Ort: 0 Slabs je Strahl, ihr Segment berührt 0 Boxen
+  Marken-Probe (Neues Array): 13 Strahlen, 0 bis vor die alte Marke vorgezählt, Abweichungen 0
+  Quelle: {"strahlFragtNetz":true,"strahlSchleife":false,"stempel":true,"eintritt":true,"abriss":true,"kappe":true,"tierFragtPlatz":true,"tierSchleife":false}
+  Box-Wand: 6 Zuweisungen an .blockerAABBs, 0 Schreiber ohne Stempel
+
+GRÜN — Strahl, Löser und Tier-Leib urteilen byte-gleich wie die Schleife über den Bestand und fassen nur ihre Nachbarschaft an; das Netz ist der Bestand.

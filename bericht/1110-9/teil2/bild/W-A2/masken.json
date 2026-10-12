@@ -1,0 +1,59 @@
+[
+ {
+  "blick": "d2.6",
+  "satz": "2,6 m vor der maschine (Innenseite), Blick auf Bogen und Membran",
+  "w": 1920,
+  "h": 1080,
+  "koerperPx": 1028222,
+  "wurfPx": 30807,
+  "rauschPx": 1155,
+  "dc": {
+   "voll": 102,
+   "leer": 16,
+   "koerper": 82,
+   "wurf": 16
+  },
+  "dreiecke": {
+   "voll": 1230176,
+   "leer": 111760
+  }
+ },
+ {
+  "blick": "d11",
+  "satz": "der Spieler-Stand in der Ring-Mitte (Plattform), Blick +z: maschine und verkalkt in 11 m",
+  "w": 1920,
+  "h": 1080,
+  "koerperPx": 441958,
+  "wurfPx": 11912,
+  "rauschPx": 1657,
+  "dc": {
+   "voll": 112,
+   "leer": 22,
+   "koerper": 91,
+   "wurf": 22
+  },
+  "dreiecke": {
+   "voll": 1296773,
+   "leer": 167623
+  }
+ },
+ {
+  "blick": "d30",
+  "satz": "30 m vor der maschine, 30° von oben (26 m waagrecht, 15 m hoch): der Ring über Klang und Plattform, die Tore auf L0 wie im Ring",
+  "w": 1920,
+  "h": 1080,
+  "koerperPx": 76094,
+  "wurfPx": 15788,
+  "rauschPx": 8,
+  "dc": {
+   "voll": 129,
+   "leer": 39,
+   "koerper": 105,
+   "wurf": 39
+  },
+  "dreiecke": {
+   "voll": 1379222,
+   "leer": 232908
+  }
+ }
+]

@@ -1,0 +1,63 @@
+
+> anazhrealm@18.541.0 gate:kollision-bild
+> node scripts/diag-kollision-bild.cjs --selftest && node scripts/diag-kollision-bild.cjs
+
+=== KOLLISION = BILD — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Felsturm als Eisen-Mast" → rot: (B) BLOCKER OHNE BILD: felsturm#174 bei -913.7/-900.7 — eine Box ragt 16.46 m oben über das Bild (Bild 1.4×0.8×0.9, Box 4.4×16.8×4.4)
+  ✅ Selbsttest „Bild ohne Blocker" → rot: (U) BILD OHNE BLOCKER: haus_alemannisch#9 bei -913.7/-900.7 — das Bild steht im Körper-Band 1.20 m neben jeder Box (Bild 1.4×0.8×0.9)
+  ✅ Selbsttest „Baum ohne Stamm" → rot: (U) BAUM OHNE STAMM: baum_eiche#3 bei -913.7/-900.7 trägt keine Box
+  ✅ Selbsttest „fremde Gestalt" → rot: (G) FREMDE GESTALT: felsturm#174 bei -913.7/-900.7 — gezeichnet Gestalt 3, der Blocker misst 7
+  ✅ Selbsttest „leere Zählung" → rot: LEER: die Zählung fand kein Werk, das das Studio zeichnet
+  ✅ Selbsttest „stumpfer Schmuggel" → rot: LINSE STUMPF: (T) der eingeschmuggelte Täter (ein Felsturm mit den Spender-Parts) wurde nicht beim Namen genannt (felsturm#4)
+  ✅ Selbsttest „stumpfer Tor-Schmuggel" → rot: LINSE STUMPF: (T) das Tor ohne seinen ersten Pfosten wurde nicht als Bild ohne Blocker genannt (welt_fachwerk#9)
+  ✅ Selbsttest „fehlende Klasse" → rot: (E) KLASSE FEHLT: das Exemplar felsbogen stand nicht in der Zählung (nicht gesetzt)
+  ✅ Selbsttest „Typ-Liste" → rot: (Q) QUELLE: der Fels-Zweig `_felsBlockerParts` trägt eine Typ-Liste (`_var`)
+  ✅ Selbsttest „Fels ohne Skala" → rot: (Q) QUELLE: der Fels-Zweig liest die Welt-Skala nicht (`_studioWeltSkala`)
+  ✅ Selbsttest „Parts ohne Skala" → rot: (Q) QUELLE: der Parts-Pfad liest die Welt-Skala nicht (`_studioWeltSkala`)
+  ✅ Selbsttest „Hand-Spiegel" → rot: (Q) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt (zweite Welt-Skala neben dem Kern)
+  ✅ Selbsttest „Tor gebaut am Spawn" → rot: (K) DER HAUPT-THREAD BAUT: __portaCore.buildInstance(drachentor) am Spawn von tor_drachentor
+  ✅ Selbsttest „Bau-Zählung fehlt" → rot: LEER: (K) die Zählung der Haupt-Thread-Bauten fehlt
+  ✅ Selbsttest „Tor ohne Tafel" → rot: (Q) QUELLE: das Tor liest seine Hülle nicht aus dem Gesetzbuch (`porta:TOR_HUELLE`)
+  ✅ Selbsttest „Bau im Erzeuger" → rot: (Q) QUELLE: ein Blocker-Erzeuger ruft `buildInstance` (die Gestalt am Spawn nachgebaut)
+  ✅ Selbsttest „Tor-Bild ohne Box neben der Passage" → rot: (U) BILD OHNE BLOCKER: tor_ruine#7 bei -913.7/-900.7 — das Bild steht im Körper-Band 0.62 m neben jeder Box (Bild 1.4×0.8×0.9)
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===
+  Ring 81 Chunks · 1083 Studio-Werke gezählt
+  Klasse (Typ→Gestalt)                     n   Blocker ohne Bild seitlich/oben (m)   Bild ohne Blocker (m)
+  grown_blume_gross#→blume                    1     0.25 / 0.19                   0.00
+  kiesel→geroell                              1     0.10 / 0.09                   0.00
+  felsbrocken→geroell                         1     0.10 / 0.09                   0.00
+  stein_block→basalt                          1     0.04 / 0.09                   0.00
+  felsturm→zacken                            14     0.05 / 0.03                   0.00
+  felsbogen→zacken                           20     0.05 / 0.03                   0.00
+  fels_var8→zacken                            1     0.05 / 0.02                   0.00
+  glutbrunnen→feuerstelle                    62     0.05 / 0.00                   0.28
+  kristall_geode→kristalle                    1     0.02 / 0.02                   0.00
+  tor_geisttor→geisttor                       1     0.01 / 0.01                   0.00
+  tor_drachentor→drachentor                   1     0.01 / 0.00                   0.00
+  tor_maschine→maschine                       1     0.00 / 0.01                   0.00
+  welt_fachwerk→ruine                         1     0.01 / 0.00                   0.00
+  welt_schmiede→maurentor                     1     0.00 / 0.01                   0.00
+  baum_eiche→eiche                           67     0.00 / 0.00                   0.00
+  baum_tanne→tanne                          192     0.00 / 0.00                   0.00
+  baum_kiefer→fichte                        119     0.00 / 0.00                   0.00
+  grown_busch_hazel#→strauch                526     0.00 / 0.00                   0.00
+  baum_birke→birke                           59     0.00 / 0.00                   0.00
+  baum_erle→weide                             7     0.00 / 0.00                   0.00
+  fahrzeug_gt→gt                              1     0.00 / 0.00                   0.16
+  tor_kathedrale→kathedrale                   1     0.00 / 0.00                   0.00
+  tor_verkalkt→verkalkt                       1     0.00 / 0.00                   0.00
+  haus_alemannisch→alemannisch                1     0.00 / 0.00                   1.02
+  brunnen_dorf→brunnen                        1     0.00 / 0.00                   0.33
+  marktstand_dorf→marktstand                  1     0.00 / 0.00                   0.69
+  Exemplare: {"felsturm":true,"felsbogen":true,"stein_block":true,"kiesel":true,"felsbrocken":true,"kristall_geode":true,"fels_var8":true,"fahrzeug_gt":true,"tor_drachentor":true,"tor_kathedrale":true,"tor_maschine":true,"tor_geisttor":true,"tor_verkalkt":true,"welt_fachwerk":true,"welt_schmiede":true,"haus_alemannisch":true,"brunnen_dorf":true,"marktstand_dorf":true}
+  Schmuggel (T): {"wer":"felsturm#4","genannt":true,"funde":["blocker 1.69"]} · Tor: {"wer":"welt_fachwerk#1099","genannt":true,"funde":["bild 3.16"]}
+  Bauten des Haupt-Threads (K): 0
+  Quelle: {"felsOhneTypListe":true,"felsSkala":true,"partsSkala":true,"ohneSpiegel":true,"gestaltKern":true,"torTafel":true,"ohneBau":true}
+  OFFEN (U) haus: haus_alemannisch#1101 — das Bild steht 1.02 m neben jeder Box (bei 0.8/1.7/2.1)
+  OFFEN (U) ausstattung: brunnen_dorf#1102 — das Bild steht 0.33 m neben jeder Box (bei 1.4/1.2/0.0)
+  OFFEN (U) ausstattung: marktstand_dorf#1103 — das Bild steht 0.69 m neben jeder Box (bei 1.6/0.3/-0.1)
+
+✅ KOLLISION = BILD GRÜN — jede Box hat ihr Bild; Fels, Tor (außer der Passage) und Wagen: jedes Bild im Körper-Band liegt an einer Box; jedes feste Werk trägt Boxen; kein Blocker baut eine Gestalt auf dem Haupt-Thread — OFFEN: 3 Werk(e) mit Bild ohne Box (oben)

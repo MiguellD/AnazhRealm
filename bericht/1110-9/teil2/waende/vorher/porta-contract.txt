@@ -1,0 +1,21 @@
+
+> anazhrealm@18.541.0 gate:porta-contract
+> node scripts/diag-porta-contract.cjs
+
+=== ASSET-VERTRAG v4 — Tore (porta-core.js buildInstance) ===
+  ✅ porta-core geladen (__portaCore + buildInstance)
+  ✅ Determinismus: jeder der 16 Fälle baut doppelt byte-gleich
+  ✅ Seed-Invarianz: seed 7 == seed 12345 je Ordnung (Lab-fester rng-Strom)
+  ✅ ov-Kanal: Parameter-Override ändert den Bau (drachentor != drachentor+mass)
+  ✅ lod-Klemme: buildInstance(…, lod 2) == Stufe 0 (kindStages.gate=[0])
+  ✅ Golden trägt cv:4 + alle Fälle
+  ✅ Goldens byte-exakt (16 Fälle)
+  ✅ PLATTFORM-PROBE v4: Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten die Ratsche (9 Fälle; benannt: keine — plattformgleich; Nenner pow 1159179 · hypot 5308 · cos 1084081 · sin 1016633 · acos 56476 · atan2 780 · asin 5)
+  ✅ SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau
+  ✅ SELBST-TEST: die Ratsche v4 reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen
+  ✅ Tor-Hülle: TOR_HUELLE ist die gebaute Gestalt (7 Rezepte, je 9 Zahlen, ≤ 1 cm darüber)
+  ✅ SELBST-TEST: eine zu schmale Tor-Hülle und eine fehlende Zeile werden beim Namen genannt — geisttor: keine Zeile in TOR_HUELLE · ruine.seiten[1].pfostenX: Tafel 5.09 gegen gebaut 5.2817
+  ✅ SELBST-TEST: korruptes Golden (sha256) wird erkannt
+  ✅ SELBST-TEST: objects-Drift wird erkannt
+
+✅ GRÜN — der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt, die lod-Klemme hält, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.

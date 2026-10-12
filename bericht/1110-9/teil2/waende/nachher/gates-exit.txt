@@ -1,0 +1,11 @@
+check EXIT=0
+porta-contract EXIT=0
+asset-contract EXIT=0
+membran-gesetz EXIT=0
+portal-gestalt EXIT=0
+nervensystem-porta EXIT=0
+portal-membran EXIT=0
+blocker-netz EXIT=0
+kollision-bild EXIT=0
+worker-dichte EXIT=0
+lint EXIT=0

@@ -1,0 +1,21 @@
+
+> anazhrealm@18.541.0 gate:membran-gesetz
+> node scripts/diag-membran-gesetz.cjs
+
+— MEMBRAN-GESETZ (porta-core ⇄ Lab-Shell ⇄ Welt) —
+  ✅ MEMBRAN_GESETZ existiert im Gesetzbuch
+  ✅ Zwillings-Wand: alle Gesetz-Zahlen == Alt-Literale
+  ✅ Ableitungs-Wand: membranUniforms == Alt-Formeln (15 Fälle)
+  ✅ Shell liest MEMBRAN_GESETZ
+  ✅ Shell liest membranUniforms
+  ✅ Shell injiziert per GN(
+  ✅ Shell: Wellenzahl 13.8 steht nicht mehr roh im Text
+  ✅ Shell: Puls 1.25 nur noch als Gesetz
+  ✅ Stamm konsumiert membranUniforms (Welt-Leser)
+  ✅ Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)
+  ✅ Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick über das Gesetz pcN.nebelAct — der Kanal ist nicht mehr tot)
+  ✅ SELBST-TEST: mu.fog nur im Rückfall-Zweig wird erkannt
+  ✅ porta-core lädt main-seitig (mit ?v=-Buster)
+  ✅ SELBST-TEST: injizierte kk-Drift wird erkannt
+
+✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Shell-Zahlen, die Ableitung ist formel-identisch, Shell UND Welt konsumieren dieselben Flächen.

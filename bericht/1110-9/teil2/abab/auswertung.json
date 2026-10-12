@@ -1,0 +1,1118 @@
+{
+ "zeilen": [
+  {
+   "boot": "gA1",
+   "ort": "vorher",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.1,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 2341828,
+   "taktMHz": 1745.6,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 2273761,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 141.8,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     56.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "puffer": "{\"mb\":56.73,\"halter\":{\"szene\":56.73,\"bild\":0},\"klassen\":[{\"klasse\":\"szene:bodenSatz\",\"mb\":17.25,\"n\":7},{\"klasse\":\"szene:f:maurentor:L0\",\"mb\":5.49,\"n\":104},{\"klasse\":\"szene:f:verkalkt:L0\",\"mb\":5.07,\"n\":96},{\"klasse\":\"szene:f:maschine:L0\",\"mb\":4.77,\"n\":80},{\"klasse\":\"szene:f:drachentor:L0\",\"mb\":4.33,\"n\":104},{\"klasse\":\"szene:f:kathedrale:L0\",\"mb\":3.57,\"n\":56},{\"klasse\":\"szene:bauSatz\",\"mb\":2.9,\"n\":42},{\"klasse\":\"szene:f:ruine:L0\",\"mb\":2.73,\"n\":56},{\"klasse\":\"szene:f:geisttor:L0\",\"mb\":1.7,\"n\":48},{\"klasse\":\"szene:spieler\",\"mb\":1.67,\"n\":36},{\"klasse\":\"szene:formationenSatz\",\"mb\":1.44,\"n\":12},{\"kla",
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 1805627,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 261367,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 23600,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "boden k1: 70097 dreiecke über der Ratsche 64204 (Täter: bodenSatz, fern-ring, farWater)",
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "gA2",
+   "ort": "vorher",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.5,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 2348030,
+   "taktMHz": 1746.3,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 2277289,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 141.6,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     56.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "puffer": "{\"mb\":56.52,\"halter\":{\"szene\":56.52,\"bild\":0},\"klassen\":[{\"klasse\":\"szene:bodenSatz\",\"mb\":17.25,\"n\":7},{\"klasse\":\"szene:f:maurentor:L0\",\"mb\":5.49,\"n\":104},{\"klasse\":\"szene:f:verkalkt:L0\",\"mb\":5.07,\"n\":96},{\"klasse\":\"szene:f:maschine:L0\",\"mb\":4.77,\"n\":80},{\"klasse\":\"szene:f:drachentor:L0\",\"mb\":4.33,\"n\":104},{\"klasse\":\"szene:f:kathedrale:L0\",\"mb\":3.57,\"n\":56},{\"klasse\":\"szene:bauSatz\",\"mb\":2.9,\"n\":42},{\"klasse\":\"szene:f:ruine:L0\",\"mb\":2.73,\"n\":56},{\"klasse\":\"szene:f:geisttor:L0\",\"mb\":1.7,\"n\":48},{\"klasse\":\"szene:spieler\",\"mb\":1.67,\"n\":36},{\"klasse\":\"szene:formationenSatz\",\"mb\":1.49,\"n\":12},{\"kla",
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 1805627,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 261375,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 27120,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "boden k1: 70105 dreiecke über der Ratsche 64204 (Täter: bodenSatz, fern-ring, farWater)",
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "gA3",
+   "ort": "vorher",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.7,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 2345654,
+   "taktMHz": 1709.7,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 2276006,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 141.6,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     56.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "puffer": "{\"mb\":56.53,\"halter\":{\"szene\":56.53,\"bild\":0},\"klassen\":[{\"klasse\":\"szene:bodenSatz\",\"mb\":17.25,\"n\":7},{\"klasse\":\"szene:f:maurentor:L0\",\"mb\":5.49,\"n\":104},{\"klasse\":\"szene:f:verkalkt:L0\",\"mb\":5.07,\"n\":96},{\"klasse\":\"szene:f:maschine:L0\",\"mb\":4.77,\"n\":80},{\"klasse\":\"szene:f:drachentor:L0\",\"mb\":4.33,\"n\":104},{\"klasse\":\"szene:f:kathedrale:L0\",\"mb\":3.57,\"n\":56},{\"klasse\":\"szene:bauSatz\",\"mb\":2.9,\"n\":42},{\"klasse\":\"szene:f:ruine:L0\",\"mb\":2.73,\"n\":56},{\"klasse\":\"szene:f:geisttor:L0\",\"mb\":1.7,\"n\":48},{\"klasse\":\"szene:spieler\",\"mb\":1.67,\"n\":36},{\"klasse\":\"szene:formationenSatz\",\"mb\":1.5,\"n\":12},{\"klas",
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 1805627,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 260092,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 27120,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "gB1",
+   "ort": "nachher",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.6,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 1045264,
+   "taktMHz": 1723.8,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 976364,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 121.6,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     36.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "puffer": "{\"mb\":36.55,\"halter\":{\"szene\":36.55,\"bild\":0},\"klassen\":[{\"klasse\":\"szene:bodenSatz\",\"mb\":17.25,\"n\":7},{\"klasse\":\"szene:bauSatz\",\"mb\":2.9,\"n\":42},{\"klasse\":\"szene:spieler\",\"mb\":1.67,\"n\":36},{\"klasse\":\"szene:f:verkalkt:L0\",\"mb\":1.62,\"n\":96},{\"klasse\":\"szene:f:drachentor:L0\",\"mb\":1.61,\"n\":104},{\"klasse\":\"szene:f:maurentor:L0\",\"mb\":1.5,\"n\":104},{\"klasse\":\"szene:formationenSatz\",\"mb\":1.44,\"n\":12},{\"klasse\":\"szene:portal-membran\",\"mb\":1.13,\"n\":12},{\"klasse\":\"szene:f:kathedrale:L0\",\"mb\":1.08,\"n\":56},{\"klasse\":\"szene:f:maschine:L0\",\"mb\":0.95,\"n\":80},{\"klasse\":\"szene:f:gt:L0\",\"mb\":0.84,\"n\":56},{\"klass",
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 509477,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 260120,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 23600,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "gB2",
+   "ort": "nachher",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.8,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 1045194,
+   "taktMHz": 1739.2,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 977475,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 121.6,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     36.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "puffer": "{\"mb\":36.55,\"halter\":{\"szene\":36.55,\"bild\":0},\"klassen\":[{\"klasse\":\"szene:bodenSatz\",\"mb\":17.25,\"n\":7},{\"klasse\":\"szene:bauSatz\",\"mb\":2.9,\"n\":42},{\"klasse\":\"szene:spieler\",\"mb\":1.67,\"n\":36},{\"klasse\":\"szene:f:verkalkt:L0\",\"mb\":1.62,\"n\":96},{\"klasse\":\"szene:f:drachentor:L0\",\"mb\":1.61,\"n\":104},{\"klasse\":\"szene:f:maurentor:L0\",\"mb\":1.5,\"n\":104},{\"klasse\":\"szene:formationenSatz\",\"mb\":1.44,\"n\":12},{\"klasse\":\"szene:portal-membran\",\"mb\":1.13,\"n\":12},{\"klasse\":\"szene:f:kathedrale:L0\",\"mb\":1.08,\"n\":56},{\"klasse\":\"szene:f:maschine:L0\",\"mb\":0.95,\"n\":80},{\"klasse\":\"szene:f:gt:L0\",\"mb\":0.84,\"n\":56},{\"klass",
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 509477,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 261231,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 23600,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "boden k1: 69961 dreiecke über der Ratsche 64204 (Täter: bodenSatz, fern-ring, farWater)",
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "gB3",
+   "ort": "nachher",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.8,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 1050886,
+   "taktMHz": 1718.2,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 979884,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 121.6,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     36.6
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "puffer": "{\"mb\":36.6,\"halter\":{\"szene\":36.6,\"bild\":0},\"klassen\":[{\"klasse\":\"szene:bodenSatz\",\"mb\":17.25,\"n\":7},{\"klasse\":\"szene:bauSatz\",\"mb\":2.9,\"n\":42},{\"klasse\":\"szene:spieler\",\"mb\":1.67,\"n\":36},{\"klasse\":\"szene:f:verkalkt:L0\",\"mb\":1.62,\"n\":96},{\"klasse\":\"szene:f:drachentor:L0\",\"mb\":1.61,\"n\":104},{\"klasse\":\"szene:f:maurentor:L0\",\"mb\":1.5,\"n\":104},{\"klasse\":\"szene:formationenSatz\",\"mb\":1.48,\"n\":12},{\"klasse\":\"szene:portal-membran\",\"mb\":1.13,\"n\":12},{\"klasse\":\"szene:f:kathedrale:L0\",\"mb\":1.08,\"n\":56},{\"klasse\":\"szene:f:maschine:L0\",\"mb\":0.95,\"n\":80},{\"klasse\":\"szene:f:gt:L0\",\"mb\":0.84,\"n\":56},{\"klasse\"",
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 509477,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 260120,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 27120,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  }
+ ],
+ "mediane": {
+  "vorher": {
+   "frameP95": 25.1,
+   "cpuP95": 7.5,
+   "befehle": 226,
+   "dreiecke": 2276006,
+   "vramMB": 141.6,
+   "taktMHz": 1745.6
+  },
+  "nachher": {
+   "frameP95": 25.1,
+   "cpuP95": 7.8,
+   "befehle": 226,
+   "dreiecke": 977475,
+   "vramMB": 121.6,
+   "taktMHz": 1723.8
+  }
+ },
+ "soll": {
+  "frameP95": 33,
+  "befehle": 208,
+  "dreiecke": 680000,
+  "vramMB": 118,
+  "cpuP95": 5.8
+ }
+}
