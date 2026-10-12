@@ -1036,7 +1036,8 @@ jobs:
               # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
               # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden (die Rad-
-              # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              # Ebene steht auf dem Gesetz, Entscheid D1) · K6 das Tier am Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht
+              # wie daneben (K21, der EINE Boden-Leser). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
               run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)

@@ -19696,11 +19696,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
                 // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
                 // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
-                const span = r._voxelChunkConfig(0).span;
-                const kcx = Math.floor(testX / span);
-                const kcz = Math.floor(testZ / span);
-                const ke = r.state.voxelChunks ? r.state.voxelChunks.get(`${kcx},${kcz}`) : null;
-                const karte = ke && ke.surfMap ? r._chunkSurfaceAt(ke, kcx, kcz, testX, testZ) : null;
+                const karte = r._bodenSichtAt(testX, testZ);
                 const expected =
                     Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND
                         ? karte
@@ -42003,7 +41999,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
 
         // V18.508 — DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft
-        // `_chunkSurfaceAt` die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
+        // `_bodenSichtAt` (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung
         // zeigt oben nach unten). Das Gesetz `_voxelSurfaceY` liegt daneben (gemessen 01.10.: Spawn-Chunk
         // Median 45 cm, 8 % ≤ 5 cm; Mess-Wiese ±0,22 m) — Gras und Streu darauf steckten im Boden.
         // DIE NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
@@ -42022,7 +42018,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 for (let i = 0; i < 256; i++) {
                     const x = (lpc.cx + 0.05 + 0.9 * ((i * 0.618034) % 1)) * cfg.span;
                     const z = (lpc.cz + 0.05 + 0.9 * ((i * 0.381966 + 0.17) % 1)) * cfg.span;
-                    const y = r._chunkSurfaceAt(e, lpc.cx, lpc.cz, x, z);
+                    const y = r._bodenSichtAt(x, z);
                     if (y === null) continue;
                     rc.set(new THREE.Vector3(x, y + 50, z), new THREE.Vector3(0, -1, 0));
                     const h = rc.intersectObject(m, false);
@@ -42058,9 +42054,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             const b1 = r._nahWieseKachelBueschel(tx, tz);
             const b2 = r._nahWieseKachelBueschel(tx, tz);
             const fuss = (b) => {
-                const cx = Math.floor(b.x / cfg.span);
-                const cz = Math.floor(b.z / cfg.span);
-                const y = r._chunkSurfaceAt(r.state.voxelChunks.get(cx + "," + cz), cx, cz, b.x, b.z);
+                const y = r._bodenSichtAt(b.x, b.z);
                 return y !== null && Math.abs(y - b.y) < 1e-6;
             };
             out.nahWieseStabil =

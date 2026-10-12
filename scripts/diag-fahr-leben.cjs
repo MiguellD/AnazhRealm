@@ -1100,14 +1100,9 @@ async function probeLeben(expected) {
             let tauchBremse = 0;
             const spalte = [];
             const spalteSicht = [];
-            // die Boden-Karte des gezeichneten Meshs (`_chunkSurfaceAt` je Chunk, bilinear); null ohne Karte
-            const cfgB = r._voxelChunkConfig(0);
-            const sicht = (x, zz) => {
-                const cx = Math.floor(x / cfgB.span);
-                const cz = Math.floor(zz / cfgB.span);
-                const ce = st.voxelChunks ? st.voxelChunks.get(`${cx},${cz}`) : null;
-                return ce && ce.surfMap ? r._chunkSurfaceAt(ce, cx, cz, x, zz) : null;
-            };
+            // die Boden-Karte des gezeichneten Meshs (der EINE Leser `_bodenSichtAt`, bilinear, am Chunk-Rand die des
+            // Nachbarn); null ohne Karte
+            const sicht = (x, zz) => r._bodenSichtAt(x, zz);
             let phase = "w";
             const P5 = r._stepFixedSim;
             r._stepFixedSim = function (simTime, dt) {

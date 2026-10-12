@@ -27,6 +27,10 @@
 //       stehender Wolf hangauf an der Streifen-Stelle mit dem größten Träger-Fehler (12–30°): jede Sohle (Median je Pfote)
 //       und der Leib ≤ 6 cm. Vorher las der Stand-Leser dort den Träger: 527 von 582 Punkten daneben, die Hinterpfoten
 //       62–71 cm über dem Boden (Konsum-Leser: Pfoten-IK `_kreaturFussBoden`, Tier-Lage, Fuß-IK des Menschen `_gaitBodenY`)
+//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (LOD-0-Chunks im
+//       Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (0,9–2,7 m):
+//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
+//       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -80,7 +84,19 @@ const BASIS = {
     rand: [
         [
             "const k = this._bodenSichtAt(x, z);",
-            "const k = (() => { const sp = this._voxelChunkConfig(0).span, ax = Math.floor(x / sp), az = Math.floor(z / sp), e = this.state.voxelChunks ? this.state.voxelChunks.get(`${ax},${az}`) : null; return e && e.surfMap ? this._chunkSurfaceAt(e, ax, az, x, z) : null; })();",
+            // die Karte des Eigners allein (der Leser vor K07, bilinear, null an einer leeren Ecke)
+            "const k = (() => { const S = this._voxelChunkConfig(0).span, ax = Math.floor(x / S), az = Math.floor(z / S), e = this.state.voxelChunks ? this.state.voxelChunks.get(`${ax},${az}`) : null, m = e && e.surfMap; if (!m) return null; const C = this._voxelChunkConfig(e.lod || 0), T = AnazhRealm.BODEN_KARTE_TEILUNG, h = C.step / T, M = T * (C.dim + 3) + 1, u = (x - (ax * C.span - C.step)) / h, v = (z - (az * C.span - C.step)) / h, i = Math.floor(u), j = Math.floor(v); if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null; const a = m[i + j * M], b = m[i + 1 + j * M], c = m[i + (j + 1) * M], d = m[i + 1 + (j + 1) * M]; if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null; const fu = u - i, fv = v - j; return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv; })();",
+        ],
+    ],
+    // K21: Nah-Wiese und Nah-Streu lesen nur die Karte des Eigners — im Rand-Streifen ist sie leer (der Leser vor K21)
+    wiese: [
+        [
+            "const y = this._bodenSichtAt(x, z, grund);",
+            "const y = (() => { const C = this._voxelChunkConfig(0), lx = x - Math.floor(x / C.span) * C.span, lz = z - Math.floor(z / C.span) * C.span; return lx < C.step / 2 || lz < C.step / 2 ? null : this._bodenSichtAt(x, z, grund); })();",
+        ],
+        [
+            "const py = this._bodenSichtAt(px, pz);",
+            "const py = (() => { const C = this._voxelChunkConfig(0), lx = px - Math.floor(px / C.span) * C.span, lz = pz - Math.floor(pz / C.span) * C.span; return lx < C.step / 2 || lz < C.step / 2 ? null : this._bodenSichtAt(px, pz); })();",
         ],
     ],
 };
@@ -108,7 +124,7 @@ const server = http.createServer((req, res) => {
 });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
-async function proben() {
+async function proben(mitWiese) {
     const r = window.anazhRealm;
     const s = r.state;
     const T = window.THREE;
@@ -118,14 +134,33 @@ async function proben() {
     const p = s.player;
     const rig = pm && pm.userData && pm.userData.rig;
     if (!rig || !rig.hips) return { fehler: "Spieler-Rig fehlt" };
-    // die Boden-Karte selbst (das gezeichnete Mesh des Chunks, bilinear) — die Linse misst gegen sie, nie durch den Schnitt
+    // die Boden-Karte des EIGNERS selbst (das gezeichnete Mesh des Chunks, bilinear, null an einer leeren Ecke) — die Linse
+    // misst gegen sie, nie durch den Schnitt; K6 sucht mit ihr das Rand-Loch (dort ist sie leer, der Strahl richtet). Seit
+    // K21 liest das Spiel nur `_bodenSichtAt` — die Linse rechnet die Karte des Eigners selbst.
     const span = r._voxelChunkConfig(0).span;
     const karte = (x, z) => {
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
         const e = s.voxelChunks ? s.voxelChunks.get(`${cx},${cz}`) : null;
-        const v = e && e.surfMap ? r._chunkSurfaceAt(e, cx, cz, x, z) : null;
-        return Number.isFinite(v) ? v : null;
+        const m = e && e.surfMap;
+        if (!m) return null;
+        const C = r._voxelChunkConfig(e.lod || 0);
+        const T = A.BODEN_KARTE_TEILUNG;
+        const h = C.step / T;
+        const M = T * (C.dim + 3) + 1;
+        const u = (x - (cx * C.span - C.step)) / h;
+        const v = (z - (cz * C.span - C.step)) / h;
+        const i = Math.floor(u);
+        const j = Math.floor(v);
+        if (i < 0 || j < 0 || i >= M - 1 || j >= M - 1) return null;
+        const ka = m[i + j * M];
+        const kb = m[i + 1 + j * M];
+        const kc = m[i + (j + 1) * M];
+        const kd = m[i + 1 + (j + 1) * M];
+        if (!(Number.isFinite(ka) && Number.isFinite(kb) && Number.isFinite(kc) && Number.isFinite(kd))) return null;
+        const fu = u - i;
+        const fv = v - j;
+        return (ka * (1 - fu) + kb * fu) * (1 - fv) + (kc * (1 - fu) + kd * fu) * fv;
     };
     // die Kapsel ruhen lassen (Fuß-Tempo 0) und n feste Sim-Schritte gehen
     const savedVel = s.playerVel;
@@ -653,6 +688,93 @@ async function proben() {
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
     s.playerVel = savedVel;
+    // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
+    // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
+    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (−900/−850, dicht) die Kacheln der LOD-0-Chunks im Umkreis
+    // 120 m (der Nah-Ring liegt ganz in LOD 0): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m:
+    // dieselben Nähte, dieselben Felder — die ganze Mitte läge auf anderen Wiesen). Läuft im Lauf ohne Defekt und im Defekt
+    // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
+    if (mitWiese) {
+        const X = -900;
+        const Z = -850;
+        const setz = () => {
+            pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
+            s._fixedSimPos = null;
+        };
+        let last = -1;
+        let stabil = 0;
+        for (let t = 0; t < 200 && stabil < 8; t++) {
+            setz();
+            for (let i = 0; i < 30; i++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                if (i % 10 === 0) await new Promise((res) => setTimeout(res, 0));
+            }
+            const n = [...s.voxelChunks.values()].filter((e) => e && e.surfMap).length;
+            if (n === last) stabil++;
+            else {
+                stabil = 0;
+                last = n;
+            }
+        }
+        const C = r._voxelChunkConfig(0);
+        const halb = C.step / 2;
+        const fach = (x, z) => {
+            const lx = x - Math.floor(x / C.span) * C.span;
+            const lz = z - Math.floor(z / C.span) * C.span;
+            if (lx < halb || lz < halb) return 0; // der Rand-Streifen
+            if (lx < 3 * halb || lz < 3 * halb) return 1; // die Mitte daneben
+            return 2;
+        };
+        // jeder Chunk der Kachel und seine unteren Nachbarn gebaut und in LOD 0 (die Linse rechnet das selbst, nie über den Leser)
+        const lod0 = (x0, z0, x1, z1) => {
+            for (let cz = Math.floor(z0 / C.span) - 1; cz <= Math.floor(z1 / C.span); cz++)
+                for (let cx = Math.floor(x0 / C.span) - 1; cx <= Math.floor(x1 / C.span); cx++) {
+                    const e = s.voxelChunks.get(`${cx},${cz}`);
+                    if (!e || (e.lod || 0) !== 0) return false;
+                }
+            return true;
+        };
+        const R = 120;
+        const zaehle = (K, rand, bau) => {
+            const zahl = [0, 0, 0];
+            const flaeche = [0, 0, 0];
+            let kacheln = 0;
+            for (let tz = Math.floor((Z - R) / K); tz <= Math.floor((Z + R) / K); tz++)
+                for (let tx = Math.floor((X - R) / K); tx <= Math.floor((X + R) / K); tx++) {
+                    if (!lod0(tx * K - rand, tz * K - rand, (tx + 1) * K + rand, (tz + 1) * K + rand)) continue;
+                    const liste = bau(tx, tz);
+                    if (!liste) continue;
+                    kacheln++;
+                    for (let a = 0.05; a < K; a += 0.1)
+                        for (let b = 0.05; b < K; b += 0.1) flaeche[fach(tx * K + a, tz * K + b)] += 0.01;
+                    for (const q of liste) zahl[fach(q.x, q.z)]++;
+                }
+            const d = zahl.map((n, i) => (flaeche[i] > 0 ? n / flaeche[i] : 0));
+            const verh = d[1] > 0 ? d[0] / d[1] : 0;
+            // die Unschärfe des Verhältnisses unter gleicher Dichte (Poisson: die im Streifen erwartete Zahl und die daneben)
+            const erwartet = d[1] * flaeche[0];
+            const sigma = erwartet > 0 && zahl[1] > 0 ? Math.sqrt(1 / erwartet + 1 / zahl[1]) : 1;
+            return {
+                kacheln,
+                streifen: zahl[0],
+                daneben: zahl[1],
+                mitte: zahl[2],
+                dichte: d.map((v) => Math.round(v * 1000) / 1000),
+                verh: Math.round(verh * 1000) / 1000,
+                sigma: Math.round(sigma * 1000) / 1000,
+            };
+        };
+        const NW = A.NAH_WIESE;
+        const NS = A.NAH_STREU;
+        o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
+        const arten = r._nahStreuArten();
+        o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
+            const satz = r._nahStreuKachel(tx, tz, arten);
+            return satz ? satz.items : null;
+        });
+    }
     return o;
 }
 
@@ -708,6 +830,18 @@ function urteil(o) {
                 `K6 Leib am Chunk-Rand: Median ${o.k6 ? o.k6.leibMedianCm : "?"} cm gegen den gezeichneten Boden (Soll ≤ 6)`
             );
     }
+    // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): die Wiese auf ±10 % (≥ 1 000 Büschel daneben: die
+    // Unschärfe ≈ 3 %), die dünne Streu (≈ 0,1 je m²) im Band ±10 % oder drei Unschärfen, was weiter ist
+    const k7 = (w, name, n, toleranz) => {
+        if (!w) return;
+        if (!(w.daneben >= n)) f.push(`K7 Aufbau: ${w.daneben} ${name} neben dem Rand-Streifen (Soll ≥ ${n})`);
+        else if (!(Math.abs(w.verh - 1) <= toleranz(w)))
+            f.push(
+                `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
+            );
+    };
+    k7(o.k7wiese, "Büschel", 1000, () => 0.1);
+    k7(o.k7streu, "Pflanzen", 100, (w) => Math.max(0.1, 3 * w.sigma));
     return f;
 }
 
@@ -723,6 +857,12 @@ function zeile(o) {
         ` · K6 Rand schlechteste Pfote ${o.k6 ? v(o.k6.schlechtCm) : "?"} cm (je Pfote ${o.k6 && o.k6.jePfoteCm ? o.k6.jePfoteCm.join("/") : "?"}) · Leib ${o.k6 ? v(o.k6.leibMedianCm) : "?"} cm` +
         (o.rand && Number.isFinite(o.rand.fehlerCm)
             ? ` · Rand-Stelle ${o.rand.x.toFixed(2)}/${o.rand.z} Träger-Fehler ${o.rand.fehlerCm} cm`
+            : "") +
+        (o.k7wiese
+            ? ` · K7 Wiese Streifen/daneben ${v(o.k7wiese.verh)} ± ${v(o.k7wiese.sigma)} (${v(o.k7wiese.streifen)}/${v(o.k7wiese.daneben)} Büschel, ${v(o.k7wiese.dichte[0])}/${v(o.k7wiese.dichte[1])}/${v(o.k7wiese.dichte[2])} je m² Streifen/daneben/Mitte)`
+            : "") +
+        (o.k7streu
+            ? ` · K7 Streu ${v(o.k7streu.verh)} ± ${v(o.k7streu.sigma)} (${v(o.k7streu.streifen)}/${v(o.k7streu.daneben)} Pflanzen)`
             : "") +
         (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
         (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")
@@ -777,7 +917,7 @@ function zeile(o) {
                     if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
                 }
             });
-            const o = await page.evaluate(proben);
+            const o = await page.evaluate(proben, inj == null || inj === "wiese");
             await kontext.close();
             patch = null;
             return { o, errs, pf: patchFehler.slice() };
@@ -790,6 +930,7 @@ function zeile(o) {
                 sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
                 rand: ["K6 Leser im Rand-Streifen", "K6 Sohlen am Chunk-Rand"],
+                wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o, pf } = await lauf(inj);
