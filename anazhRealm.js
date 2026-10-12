@@ -78885,27 +78885,25 @@ class AnazhRealm {
         return 1 + Math.floor((h * V) / 4294967296);
     }
     // DIE GESTALT DES ORTS (K20, nordstern §4.5: „die Gestalt folgt dem Ort, nicht der Art allein"): eine Baum-Art mit V ≥ 2
-    // Gestalten trägt ihren Solitär als Gestalt V (gebaut mit FREISTAND_OV — phyto-core growSkeleton: kein Schaft-Hub, der
-    // gedrungene Stamm), ihren Bestand in 1..V−1. Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`):
-    // jeder Körper und jede Karte der Gestalt V ist der Solitär — Gestalten-Zahl, Befehle und Atlas-Schichten bleiben.
+    // Bestand-Gestalten (budget.gestalten) trägt DAZU ihren Solitär als Gestalt T = V+1 (phyto-core `solitaerGestalt`,
+    // gebaut mit FREISTAND_OV — growSkeleton: kein Schaft-Hub, der gedrungene Stamm); der Bestand behält 1..V (kein Klon).
+    // Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`): jeder Körper und jede Karte der
+    // Gestalt T ist der Solitär.
     _foundryGestaltOv(preset, gestalt) {
-        if (gestalt < 2 || !this._foundryPresetIsTree(preset)) return null;
-        return gestalt === this._foundryGestalten(preset) ? AnazhRealm.FREISTAND_OV : null;
+        const T = this._foundryGestalten(preset);
+        return T >= 2 && gestalt === T && AnazhRealm._solitaerVon(preset, T - 1) === T ? AnazhRealm.FREISTAND_OV : null;
     }
-    // Der Same, dessen Gestalt der Ort wählt (K20): `_foundryVariantFor` liest h = Same × 2654435761 in V Eimern; der Ort
-    // legt den Eimer fest (frei: V, Bestand: 1..V−1 nach dem eigenen Wurf), die Lage im Eimer bleibt die des Samens, und
-    // das Inverse des Knuth-Faktors gibt den Samen zurück. Synchron am Spawn aus dem Kern (der Bestand pflanzt vor dem Buch).
-    // Eine Art mit einer Gestalt oder ohne Baum-Rezept behält ihren Samen; `stehtFrei` (Funktion) fragt den Ort nur dann.
+    // Der Same, dessen Gestalt der Ort wählt (K20): `_foundryVariantFor` liest h = Same × 2654435761 in T Eimern; der Ort
+    // legt den Eimer fest (frei: der Solitär T, Bestand: 1..T−1 = die V Bestand-Gestalten nach dem eigenen Wurf), die Lage
+    // im Eimer bleibt die des Samens, und das Inverse des Knuth-Faktors gibt den Samen zurück. Synchron am Spawn aus dem
+    // Kern (der Bestand pflanzt vor dem Buch). Eine Art ohne Solitär behält ihren Samen; `stehtFrei` fragt den Ort nur dann.
     _foundryGestaltSame(seed, preset, stehtFrei) {
-        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
-        const rec = tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
-        if (!rec || rec.kind !== "tree") return seed >>> 0;
-        const V = AnazhRealm._studioGestaltenKern(preset);
-        if (!(V >= 2)) return seed >>> 0;
+        const T = AnazhRealm._studioGestaltenKern(preset);
+        if (!(T >= 2) || AnazhRealm._solitaerVon(preset, T - 1) !== T) return seed >>> 0;
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0;
         const lage = h / 4294967296;
-        const eimer = stehtFrei() ? V - 1 : Math.floor(lage * (V - 1));
-        const h2 = Math.ceil((eimer * 4294967296) / V) + Math.floor(lage * (Math.floor(4294967296 / V) - 1));
+        const eimer = stehtFrei() ? T - 1 : Math.floor(lage * (T - 1));
+        const h2 = Math.ceil((eimer * 4294967296) / T) + Math.floor(lage * (Math.floor(4294967296 / T) - 1));
         return Math.imul(h2 >>> 0, AnazhRealm.KNUTH_INVERS) >>> 0;
     }
     // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt das Wald-Gesetz an seinem Ort
@@ -78944,13 +78942,15 @@ class AnazhRealm {
         }
         return this._foundryVariantFor(m.same, preset);
     }
-    // Die Gestalten-Zahl einer Art (die Budget-Zeile, sonst '*'); 0 = Buch kalt. Der Vorrat wärmt 1..V.
+    // Die Gestalten-Zahl einer Art, wie der Wirt sie bedient: die Bestand-Gestalten der Budget-Zeile (sonst '*'), dazu der
+    // Solitär einer Baum-Art (`_solitaerVon`: Gestalt V+1); 0 = Buch kalt. Der Vorrat wärmt 1..T, je Gestalt EINE Karte.
     _foundryGestalten(preset) {
         const cfg = AnazhRealm._studioRenderConfig;
         const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
         if (!G) return 0;
         const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
-        return Number.isInteger(V) && V >= 1 ? V : 0;
+        if (!(Number.isInteger(V) && V >= 1)) return 0;
+        return AnazhRealm._solitaerVon(preset, V) || V;
     }
     // Foundry-Cache = LRU: ein Treffer wandert nach hinten, beim Überlauf fällt die älteste Gestalt. Eine
     // Räumung zerstört nie einen sichtbaren Baum (Dispose nur ohne lebende Instanz-Gruppe, s.
@@ -105291,7 +105291,18 @@ AnazhRealm._studioGestaltenKern = function (preset) {
     if (!G) return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.lod.budget.gestalten");
     const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
     if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
-    return V;
+    return AnazhRealm._solitaerVon(preset, V) || V;
+};
+// Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (K20, phyto-core `solitaerGestalt`: V+1 für eine Baum-Art mit
+// V ≥ FREISTAND.ab), 0 = die Art trägt keinen. Leser: `_foundryGestalten`, `_studioGestaltenKern`, `_foundryGestaltOv`,
+// `_foundryGestaltSame`.
+AnazhRealm._solitaerVon = function (preset, V) {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const rec = tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
+    if (!rec || rec.kind !== "tree") return 0;
+    const PC = globalThis.__phytoCore;
+    if (!PC || typeof PC.solitaerGestalt !== "function") return AnazhRealm._kernPflichtBruch("phyto:solitaerGestalt");
+    return PC.solitaerGestalt(rec.kind, V);
 };
 // DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
 // `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).

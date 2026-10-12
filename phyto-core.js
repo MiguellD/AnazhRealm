@@ -1994,7 +1994,15 @@
     // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
     // bei 0,15–0,2 der Höhe (Marbach: kurzer dicker Stamm unter der Krone — ohne ihn
     // stand die Krone als Busch auf dem Boden, Blick-Sonde 12.10.).
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3 });
+    // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
+    // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
+    // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
+    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
+    // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: der Wirt
+    // (`_foundryGestalten`, `_foundryGestaltOv`), gate:asset-contract (jede Gestalt der Welt unter ihrer Zeile).
+    function solitaerGestalt(kind, V) {
+        return kind === "tree" && Number.isInteger(V) && V >= FREISTAND.ab ? V + 1 : 0;
+    }
     function forestStandDensity(fbm, x, z, opt) {
         const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
         let contrast = FOREST_STAND.host.contrast,
@@ -4511,6 +4519,7 @@
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
+        solitaerGestalt: solitaerGestalt,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
         forestNicheWeights: forestNicheWeights,
