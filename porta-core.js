@@ -263,7 +263,7 @@
     // Türen, der Bogen-Saum und der Leucht-Ring warfen nie und tragen nichts bei): das Geflecht
     // als EINE Kapsel-Kette entlang seiner Achse mit dem Hüllen-Radius der Stränge (einzeln liegt jeder Strang unter dem
     // Texel der nahen Kaskade, zusammen werfen sie EIN Band), Monolith und Wurzeln als Ketten mit ihrem Röhren-Radius, die
-    // Scharniere als Kapsel, Steine, Stufen und Podest als Kasten. Teile dünner als `dickeM` fallen (der Texel der nahen Kaskade
+    // Scharniere als Kapsel, Stufen und Podest als Kasten, die gedrehten Steine (Bogen, Schutt) als einbeschriebene Kapseln. Teile dünner als `dickeM` fallen (der Texel der nahen Kaskade
     // am Genesis-Ring: 6,4 × 17 cm, OMEN 12.10.). Jede Zahl liegt auf dem Raster 2^-12; Kapsel und Kasten sitzen `einzugM`
     // innerhalb des Gezeichneten (der Werfer bleibt unter der Haut: keine Akne, kein Peter-Panning). Die Stufe 3 IST diese
     // Liste als Gitter (`huelleGruppe`), die Fernform liest dieselbe Liste (`__fern`).
@@ -352,7 +352,7 @@
         if (!(rs >= HUELLE_GESETZ.sichtMinM)) return;
         for (q = 0; q < n; q++) hKapsel(H, new THREE.Vector3(P[q].x, P[q].y, P[q].z + (dz || 0)), new THREE.Vector3(P[q + 1].x, P[q + 1].y, P[q + 1].z + (dz || 0)), rs, m, "sicht");
     }
-    // Der Kasten um ein gebautes Mesh (Stein, Stufe, Podest, Schutt): seine Ecken in der Lage des Tors (Rotation, Ort).
+    // Der Kasten um ein gebautes, ACHSGLEICHES Mesh (Stufe, Podest, Schlussstein): seine Ecken in der Lage des Tors.
     function hUm(H, me, m) {
         if (!H) return;
         me.updateMatrix();
@@ -366,7 +366,38 @@
         }
         hKasten(H, lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], m);
     }
-    // DAS GITTER DER LISTE (die Stufe 3): Kasten 12 Dreiecke, Kapsel ein `seiten`-Prisma mit Spitzen-Kappen — EIN Mesh.
+    // Ein Stein des Bogens (das Viereck `q` = [innen A, innen B, außen B, außen A] in xy, um `z` `d` tief): EINBESCHRIEBENE
+    // Kapseln von Fuge zu Fuge. Liegt die Achse in xy, trägt der Ring seine Ecken quer (z) und seine Flächen radial (0,866 r):
+    // r = min(w / √3, d / 2); ein breiterer Stein trägt Glieder radial nebeneinander (Abstand ≤ √3 r), ein tieferer übereinander
+    // (Abstand ≤ r) — so deckt die Hülle den Stein ohne Lücke und steht nirgends aus ihm.
+    function hStein(H, q, z, d, m) {
+        if (!H) return;
+        var S3 = Math.sqrt(3), w = (q[3].distanceTo(q[0]) + q[2].distanceTo(q[1])) / 2, r = Math.min(w / S3, d / 2);
+        var nW = Math.max(1, Math.ceil((w - S3 * r) / (S3 * r) - 1e-9) + 1), nZ = Math.max(1, Math.ceil((d - 2 * r) / r - 1e-9) + 1);
+        for (var i = 0; i < nW; i++)
+            for (var k = 0; k < nZ; k++) {
+                var f = nW > 1 ? ((S3 / 2) * r + (i * (w - S3 * r)) / (nW - 1)) / w : 0.5;
+                var zz = nZ > 1 ? z - d / 2 + r + (k * (d - 2 * r)) / (nZ - 1) : z;
+                var a = q[0].clone().lerp(q[3], f), b = q[1].clone().lerp(q[2], f);
+                hKapsel(H, new THREE.Vector3(a.x, a.y, zz), new THREE.Vector3(b.x, b.y, zz), r, m);
+            }
+    }
+    // Ein gedrehter Kasten (Schutt; Kanten `sx · sy · sz` in seinem Raum, Lage `me.matrix`): einbeschriebene Kapseln entlang der
+    // längsten Kante, r = halbe kürzeste, quer nebeneinander (Abstand ≤ √3 r; der Ring liegt in jeder Drehung im Kreis r).
+    function hDrehKasten(H, me, sx, sy, sz, m) {
+        if (!H) return;
+        me.updateMatrix();
+        var L = [[sx, new THREE.Vector3(1, 0, 0)], [sy, new THREE.Vector3(0, 1, 0)], [sz, new THREE.Vector3(0, 0, 1)]].sort(function (u, v) { return v[0] - u[0]; });
+        var r = L[2][0] / 2, n = Math.max(1, Math.ceil((L[1][0] - 2 * r) / (Math.sqrt(3) * r) - 1e-9) + 1);
+        for (var i = 0; i < n; i++) {
+            var t = n > 1 ? -L[1][0] / 2 + r + (i * (L[1][0] - 2 * r)) / (n - 1) : 0;
+            var a = L[0][1].clone().multiplyScalar(-L[0][0] / 2).addScaledVector(L[1][1], t).applyMatrix4(me.matrix);
+            var b = L[0][1].clone().multiplyScalar(L[0][0] / 2).addScaledVector(L[1][1], t).applyMatrix4(me.matrix);
+            hKapsel(H, a, b, r, m);
+        }
+    }
+    // DAS GITTER DER LISTE (die Stufe 3): Kasten 12 Dreiecke, Kapsel ein `seiten`-Prisma mit flachen Kappen (es endet an a und b
+    // wie die Röhre, deren Wurf es trägt; die Spitzen standen r über jedes Röhren-Ende hinaus) — EIN Mesh.
     function huelleGeometrie(teile) {
         var pos = [];
         var tri = function (a, b, c) {
@@ -394,7 +425,6 @@
                     RA.push([A.x + u.x * cs + w.x * sn, A.y + u.y * cs + w.y * sn, A.z + u.z * cs + w.z * sn]);
                     RB.push([B.x + u.x * cs + w.x * sn, B.y + u.y * cs + w.y * sn, B.z + u.z * cs + w.z * sn]);
                 }
-                var pA = [A.x - ax.x * t.r, A.y - ax.y * t.r, A.z - ax.z * t.r], pB = [B.x + ax.x * t.r, B.y + ax.y * t.r, B.z + ax.z * t.r];
                 // die Kappen nur an den Enden einer Kette: ein Glied, dessen Nachbar am selben Punkt anschließt, trägt dort keine
                 // (die Kappe läge im Nachbar-Glied) — die Liste trägt die Ketten in ihrer Reihenfolge
                 var vorG = teile[i - 1], nachG = teile[i + 1];
@@ -404,8 +434,11 @@
                     var r2 = (q + 1) % n;
                     tri(RA[q], RB[q], RB[r2]);
                     tri(RA[q], RB[r2], RA[r2]);
-                    if (kA) tri(pA, RA[r2], RA[q]);
-                    if (kB) tri(pB, RB[q], RB[r2]);
+                    // die flache Kappe als Fächer aus der ersten Ecke (n − 2 Dreiecke)
+                    if (q > 0 && q < n - 1) {
+                        if (kA) tri(RA[0], RA[q + 1], RA[q]);
+                        if (kB) tri(RB[0], RB[q], RB[q + 1]);
+                    }
                 }
             }
         }
@@ -526,8 +559,8 @@
               var inB=new THREE.Vector3(sp[i+1].x+nrm[i+1][0]*outOff,sp[i+1].y+nrm[i+1][1]*outOff,0);
               var ouA=new THREE.Vector3(sp[i].x+nrm[i][0]*(outOff+rad),sp[i].y+nrm[i][1]*(outOff+rad),0);
               var ouB=new THREE.Vector3(sp[i+1].x+nrm[i+1][0]*(outOff+rad),sp[i+1].y+nrm[i+1][1]*(outOff+rad),0);
-              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var qb=quadBlock([inA,inB,ouB,ouA],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qb);hUm(HU,qb,fmat);}
-              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var mA=inA.clone();mA.x*=-1;var mB=inB.clone();mB.x*=-1;var oA=ouA.clone();oA.x*=-1;var oB=ouB.clone();oB.x*=-1;var qm=quadBlock([mB,mA,oA,oB],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qm);hUm(HU,qm,fmat);}
+              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var qb=quadBlock([inA,inB,ouB,ouA],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qb);hStein(HU,[inA,inB,ouB,ouA],qb.position.z,dep,fmat);}
+              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var mA=inA.clone();mA.x*=-1;var mB=inB.clone();mB.x*=-1;var oA=ouA.clone();oA.x*=-1;var oB=ouB.clone();oB.x*=-1;var qm=quadBlock([mB,mA,oA,oB],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qm);hStein(HU,[mB,mA,oA,oB],qm.position.z,dep,fmat);}
             }
           }
           if(p.wBraid>0.03&&(o<2||orders<3)){
@@ -588,7 +621,7 @@
         leafL.rotation.y=-doorAngle;leafR.rotation.y=doorAngle;leafLB.rotation.y=doorAngleB;leafRB.rotation.y=-doorAngleB;  // vorne→+z, hinten→-z
         gate.add(leafL);gate.add(leafR);gate.add(leafLB);gate.add(leafRB);
         var hxA=[lxg,rxg];                                                          // Scharniere an beiden Maueröffnungen → am Stein, Bügel zur Tür
-        for(var zfi=0;zfi<2;zfi++){var zf=zfi===0?zFace:-zFace;for(var hsI=0;hsI<2;hsI++){var hx=hxA[hsI],hsg=hsI===0?-1:1;for(var hk=0;hk<5;hk++){var hy=baseY+0.2+hk*((springY-baseY-0.35)/4);var cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.26,10),amat);cyl.position.set(hx,hy,zf);cyl.castShadow=true;gate.add(cyl);var br=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.06),amat);br.position.set(hx-hsg*0.08,hy,zf);gate.add(br);hKapsel(HU,new THREE.Vector3(hx,hy-0.075,zf),new THREE.Vector3(hx,hy+0.075,zf),0.055,amat);}}}
+        for(var zfi=0;zfi<2;zfi++){var zf=zfi===0?zFace:-zFace;for(var hsI=0;hsI<2;hsI++){var hx=hxA[hsI],hsg=hsI===0?-1:1;for(var hk=0;hk<5;hk++){var hy=baseY+0.2+hk*((springY-baseY-0.35)/4);var cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.26,10),amat);cyl.position.set(hx,hy,zf);cyl.castShadow=true;gate.add(cyl);var br=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.06),amat);br.position.set(hx-hsg*0.08,hy,zf);gate.add(br);hKapsel(HU,new THREE.Vector3(hx,hy-0.13,zf),new THREE.Vector3(hx,hy+0.13,zf),0.055,amat);}}}
       }
       // --- FUNDAMENT: parametrisches Vokabular (abgeleitet aus Strategie × Masse × Ruine) ---
       var fullW=2*(M+jambW*orders),baseDepth=frameDepth+0.6+depthStep*2*orders,baseZ=0;
@@ -603,7 +636,7 @@
         var seam=new THREE.Mesh(new THREE.BoxGeometry(pw*0.9,0.03,baseDepth*0.25),rimMat);seam.position.set(0,baseY-ph+0.05,baseZ+baseDepth*0.25);gate.add(seam);}
       if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=new THREE.Mesh(ringGeometrie(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat);rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);  // 4) Leuchtende Dais
         var disc=new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,40),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide}));disc.material.userData.__seh="glut";disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
-      if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);hUm(HU,rk,fmat);}}  // 5) Schutt
+      if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);hDrehKasten(HU,rk,rsz,rsz*0.7,rsz,fmat);}}  // 5) Schutt
 
       // --- gluehende Apertur-Kante (Trichter) ---
       var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));
