@@ -44,6 +44,7 @@
         "gate:scatter-ab": "node scripts/diag-scatter-ab.cjs",
         "gate:scatter-slice": "node scripts/diag-scatter-slice.cjs",
         "gate:pruefbuehne": "node scripts/diag-pruefbuehne.cjs --selftest",
+        "gate:pruefbuehne-licht": "node scripts/diag-pruefbuehne.cjs --licht --selftest",
         "gate:weltgrenze": "node scripts/diag-weltgrenze.cjs --selftest",
         "gate:boot-rettung": "node scripts/diag-boot-rettung.cjs --selftest",
         "diag:boot-stage": "node scripts/diag-boot-stage.cjs",

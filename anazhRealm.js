@@ -10021,7 +10021,7 @@ class AnazhRealm {
     // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
     // Hör-Ring · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
-    // UMWELT.ohr.probenJeFrame Ring-Proben + ohr.bautenJeFrame Bauten-Prüfungen, die Mischung im Takt ohr.mischSek;
+    // UMWELT.ohr.probenJeFrame Ring-Proben, die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt ohr.mischSek;
     // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
     // (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linse: gate:klang-zensus.
     _umweltKlangBauen(ctx, masterGain, UM) {
@@ -10052,7 +10052,6 @@ class AnazhRealm {
         return Object.assign(um, {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
-            glut: { idx: 0, laufend: new Map(), fertig: new Map() },
             letzteMischung: -Infinity,
             rufSaat: saat || 1,
             lage: null,
@@ -10126,7 +10125,6 @@ class AnazhRealm {
         const p = this.state.playerMesh.position;
         const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
         this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame);
-        this._umweltGlutSweep(um, p.x, p.z, O.bautenJeFrame);
         const jetzt = s.ctx.currentTime;
         if (jetzt - um.letzteMischung < O.mischSek) return;
         const dt = Number.isFinite(um.letzteMischung) ? jetzt - um.letzteMischung : 0;
@@ -10213,32 +10211,6 @@ class AnazhRealm {
         for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer))
             if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
         return true;
-    }
-
-    // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
-    // tauscht die Kandidaten (abgebaute Bauten fallen spätestens nach einem Umlauf). Die Stärke ist die Substanz: die
-    // Brenn-Fläche der Teile (Material „glut"), je Bauplan gemerkt.
-    _umweltGlutSweep(um, px, pz, n) {
-        const archs = this.state.architectures;
-        const N = Array.isArray(archs) ? archs.length : 0;
-        const G = um.glut;
-        const U = AnazhRealm._umweltGesetz().UMWELT;
-        const H = U.stimmen.glut.hoerweiteM + U.ohr.glutRandM;
-        const lim = Math.min(n, N);
-        for (let k = 0; k < lim; k++) {
-            if (G.idx >= N) {
-                G.idx = 0;
-                G.fertig = G.laufend;
-                G.laufend = new Map();
-            }
-            const e = archs[G.idx++];
-            if (!e || !e.position) continue;
-            const dx = e.position.x - px;
-            const dz = e.position.z - pz;
-            if (dx * dx + dz * dz > H * H) continue;
-            const a = this._glutFlaeche(e);
-            if (a > 0) G.laufend.set(e, a);
-        }
     }
 
     // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
@@ -10350,16 +10322,16 @@ class AnazhRealm {
                 fall.pan = d > 1e-3 ? pan((wfall.x - px) / d, (wfall.z - pz) / d) : 0;
             }
         }
-        // Die nächste Glut (Kandidaten des Umlaufs).
+        // Die nächste Glut — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche, gestempelt beim Eintritt;
+        // jenseits der Hörweite schweigt das Gesetz). Bis K11 lief ein Umlauf über alle Bauten (48 je Frame, nur mit Klang).
         const glut = { d: Infinity, flaeche: 0, pan: 0 };
-        for (const quelle of [um.glut.fertig, um.glut.laufend]) {
-            for (const [e, a] of quelle) {
-                const d = Math.hypot(e.position.x - px, e.position.z - pz);
-                if (d < glut.d) {
-                    glut.d = d;
-                    glut.flaeche = a;
-                    glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
-                }
+        for (const e of this._blockerMit("glut")) {
+            if (!e.position) continue;
+            const d = Math.hypot(e.position.x - px, e.position.z - pz);
+            if (d < glut.d) {
+                glut.d = d;
+                glut.flaeche = this._glutFlaeche(e);
+                glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
             }
         }
         return {
@@ -16385,17 +16357,6 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshStandardNodeMaterial !== "function") {
-            // Defensive (Bootstrap-Bruch): klassisches Standard OHNE Wind. Im WebGPU-required-Normalbetrieb
-            // (V12.0-a) nie erreicht.
-            this.state._grassMat = new THREE.MeshStandardMaterial({
-                color: 0x5fa743,
-                side: THREE.DoubleSide,
-                roughness: 1,
-                metalness: 0,
-            });
-            return this.state._grassMat;
-        }
         // Natives MeshStandardNodeMaterial (rau, nicht-metallisch): die WebGPU-Lighting-Pipeline rechnet Licht +
         // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
         // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
@@ -16492,6 +16453,7 @@ class AnazhRealm {
         // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
         // Graph hängt nur an geteilten Wind-Uniforms + Attributen — equals()-Bahn.
         this._materialObserverDiaet(mat);
+        this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;
     }
@@ -18402,6 +18364,7 @@ class AnazhRealm {
         // Die Seh-Klasse des Gesetzbuchs reist mit (das Budget-Gesetz faltet nur innerhalb EINER, `_ofenBudget`).
         if (mat.userData && mat.userData.__seh) out.mat.seh = mat.userData.__seh;
         if (mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
+        if (mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht; // K11 (Brücke)
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
@@ -31847,9 +31810,20 @@ class AnazhRealm {
             // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
             // _dayNightApplyHemiUndLuft).
             terrainMoonRim: TSL.uniform(0.0),
-            // DAS LICHT DES AUGES (K15): Farbe × Stärke am Auge (linear); der Boden-Stoff trägt es unter Fels
-            // (`_buildPbrNodeMaterial`, 1 − aHimmel), unter dem Himmel 0. EIN Schreiber: `_dayNightApplyAugenLicht`.
-            augenLicht: TSL.uniform(new THREE.Color(0, 0, 0)),
+            // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz der Welt-Ort (xyz) mit der Reichweite (w, 0 = leer), die
+            // lineare Farbe × Stärke (rgb) mit dem Abfall (a) und der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
+            // Himmel fehlt — das Licht des Auges) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
+            // Quellen baut kein Programm. Der Welt-Ort gilt jedem Renderer der Seite (der Stoff rechnet ihn mit der Kamera
+            // SEINES Renderers in den Blick-Raum). Dazu die Glut der wachen Fenster (lineare Farbe × Glut des Zeitplans).
+            // EIN Schreiber: `_leuchtTakt`.
+            lichtLage: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 0, 0))
+            ),
+            lichtFarbe: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 0, 2))
+            ),
+            lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
             // R5_STRUCTURE_TEXTURE.microBoost (1.3); `_applySubstanceResponse` liest ihn live.
@@ -32494,60 +32468,9 @@ class AnazhRealm {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
-            // DAS LICHT DES AUGES (K02a, K15 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`): eine Eigenschaft der Flächen unter
-            // Fels, kein Szenen-Licht. Ein Punkt-Licht ab Boot stand im Licht-Hash JEDES beleuchteten Stoffs und rechnete
-            // seine BRDF in jedem Fragment, auch unter dem Himmel auf Stärke 0 (OMEN 1110-3, GTX 1060: 0,48 ms je Frame).
-            // Hier rechnet es nur der Boden, gewichtet mit dem fehlenden Himmel der Fläche (1 − `aHimmel`) und der Stärke
-            // am Auge (die geteilte Uniform `augenLicht` = Farbe × Stärke, unter dem Himmel 0): dieselbe Rechnung wie r184s
-            // Punkt-Licht am Auge (Lambert + GGX des Vendors, Abstand und Fenster aus `AUGEN_LICHT`), nur wo beides nicht 0 ist.
-            // ZWEI FALLEN (Werkbank 11.10., echte GPU): r184 baut die Emissiv-Zuweisung VOR der Lichtung — liest der Term
-            // `normalView`/`positionViewDirection` (EINE Variable je Programm) zuerst im Zweig, steht ihre Zuweisung nur dort,
-            // und unter dem Himmel lichtete jede Boden-Fläche mit der Normale 0 (schwarz, die Mündung Helligkeit 60 statt 123):
-            // die BEDINGUNG des Zweigs liest sie (r184 `select` baut die Bedingung vor dem `if`). Und `three/tsl` der Seite kennt
-            // `diffuseContribution`/`specularColorBlended` nicht — die Stoff-Werte kommen aus `diffuseColor` · `metalness` ·
-            // `specularColor` · `specularF90` (wie r184 sie mischt).
-            // KEIN Fn-RUMPF (Integration V18.541, voller Playtest RAUSCH-GESETZ (B): „1 verborgene Fn-Rümpfe (Soll 0)"): ein
-            // Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler, der Stoff-Graph sieht ihn nicht — der Term ist ein
-            // Ausdruck und `select` der Zweig, Lambert und GGX des Vendors stehen ausgeschrieben (BRDF_Lambert, BRDF_GGX und
-            // F_Schlick tragen kein Layout; D_GGX und V_GGX_SmithCorrelated tragen ihres).
-            if (opts.himmelsSicht) {
-                const _Te = THREE.TSL;
-                const _A = AnazhRealm.AUGEN_LICHT;
-                const _uAuge = this.state.atmoUniforms.augenLicht;
-                const _hS = _Te.attribute("aHimmel", "float");
-                const _unterFels = _hS.oneMinus();
-                const _N = _Te.normalView;
-                const _L = _Te.positionViewDirection; // vom Fragment zum Auge (das Licht steht am Auge)
-                const _d = _Te.positionView.length();
-                const _nl = _N.dot(_L);
-                // der Zweig rechnet nur, wo der Term nicht 0 ist: Fels über der Fläche und Licht am Auge · die Fläche dem Auge
-                // zugewandt · innerhalb der Reichweite (das Fenster ist dort 0)
-                const _zweig = _unterFels
-                    .mul(_uAuge.r)
-                    .greaterThan(0)
-                    .and(_nl.greaterThan(0))
-                    .and(_d.lessThan(_A.reichweiteM));
-                // r184 getDistanceAttenuation: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)²
-                let _abst = _d.div(_A.reichweiteM).pow4().oneMinus().clamp().pow2();
-                if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
-                const _nlc = _nl.clamp();
-                const _E = _uAuge.mul(_nlc.mul(_abst).mul(_unterFels));
-                const _alb = _Te.diffuseColor.rgb;
-                const _met = _Te.metalness;
-                // r184 BRDF_GGX mit dem Licht am Auge: Licht- und Blick-Richtung sind eine, H = L, also N·H = N·V = N·L und
-                // V·H = 1 — F_Schlick(V·H = 1) mischt f0 und f90 mit 2^(−5,55473 − 6,98316)
-                const _a = _Te.roughness.pow2();
-                const _s = Math.pow(2, -5.55473 - 6.98316);
-                const _F = _Te
-                    .mix(_Te.specularColor, _alb, _met)
-                    .mul(1 - _s)
-                    .add(_Te.specularF90.mul(_s));
-                const _glanz = _F
-                    .mul(_Te.V_GGX_SmithCorrelated({ alpha: _a, dotNL: _nlc, dotNV: _nlc }))
-                    .mul(_Te.D_GGX({ alpha: _a, dotNH: _nlc }));
-                const _diffus = _alb.mul(_met.oneMinus()).mul(1 / Math.PI); // r184 BRDF_Lambert
-                mat.emissiveNode = _Te.select(_zweig, _E.mul(_diffus.add(_glanz)), _Te.vec3(0));
-            }
+            // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
+            // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
+            // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
                 try {
@@ -32567,12 +32490,107 @@ class AnazhRealm {
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
         // Laub (useFlexAttr) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
+        // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
+        this._leuchtStoff(mat, null, opts.himmelsSicht ? THREE.TSL.attribute("aHimmel", "float") : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
         mat.userData.pbrRoughness = params.roughness;
         mat.userData.pbrMetalness = params.metalness;
         return mat;
+    }
+
+    // DAS LEUCHTQUELLEN-GESETZ IM STOFF (K11): JEDER beleuchtete Stoff der Welt trägt den Licht-Pool als Term seines Leuchtens
+    // — der Stoff-Bau `_buildPbrNodeMaterial` (und mit ihm jeder Toon-Aufruf), der Foundry-Stoff `_foundryTreeMaterial` und
+    // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
+    // die Wand: die S0-Probe der Mess-Bühne (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
+    // Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
+    // (`atmoUniforms.fensterGlut`); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
+    // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
+    // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
+    // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
+    // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
+    _leuchtStoff(mat, mp, himmel) {
+        if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
+        const Te = THREE.TSL;
+        const atmo = this._ensureAtmoUniforms();
+        mat.userData = mat.userData || {};
+        if (mp && (mp.seh === "glut" || mp.leucht > 0)) {
+            mat.userData.lichtPool = "quelle";
+            return mat;
+        }
+        let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
+        if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
+        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        mat.userData.lichtPool = true;
+        return mat;
+    }
+
+    // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
+    // Platz ein Zweig mit der Rechnung des Labors — der Abfall des r128-Punktlichts (1 − d/R)^abfall, die Stärke schon durch
+    // LEGACY_LICHT (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Abfall des Labors ist nah an der Quelle
+    // beschränkt (eine Flamme ist keine Punkt-Singularität: r184s 1/d² legte die Steine am Bett auf das Zehnfache ihrer Glut, und
+    // das Licht des Auges lag mit 1/d an der Wand weiß) und fällt an der Reichweite stetig auf 0. Der Welt-Ort des Platzes geht
+    // mit `cameraViewMatrix` (der Kamera DES zeichnenden Renderers) in den Blick-Raum. Die BEDINGUNG liest `positionView` und
+    // `normalView` (EINE Variable je Programm: r184 baut das Leuchten VOR der Lichtung — zuerst im Zweig gelesen, stünde ihre
+    // Zuweisung nur dort, die Falle des Lichts des Auges): eine Reichweite, ein Gewicht (der Himmels-Ersatz), die Fläche in ihr
+    // und ihm zugewandt. Die Blick-Richtung rechnet der Zweig aus `positionView`. WAS DER ZWEIG KOSTET (berichtigt beim Merge
+    // V18.542 aus der Quelle, nicht aus der Annahme „WGSL select wertet beide Seiten aus"): r184s `select` ist ein
+    // ConditionalNode und schreibt außerhalb von `uniformFlow` ein `if`/`else` ins WGSL, kein WGSL-`select` — das erzeugte
+    // Boden-Fragment (`werkbank shader --stoff boden`) trägt je Platz `if (Bedingung) { Lambert + GGX } else { 0 }` und kein
+    // `select(`. Jedes Fragment zahlt also die Bedingung je Platz (Ort in den Blick-Raum, Abstand, N·L); die BRDF zahlt eine
+    // Welle der GPU nur, wenn eines ihrer Fragmente den Zweig nimmt.
+    _lichtPoolTerm(Te, atmo, himmel) {
+        const N = Te.normalView;
+        const P = Te.positionView;
+        let summe = null;
+        for (let k = 0; k < atmo.lichtLage.length; k++) {
+            const lage = atmo.lichtLage[k];
+            const farbe = atmo.lichtFarbe[k];
+            const ersatz = atmo.lichtErsatz[k];
+            const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
+            const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
+            const d = Lv.length();
+            const bedingung = lage.w
+                .greaterThan(0)
+                .and(gewicht.greaterThan(0))
+                .and(d.lessThan(lage.w))
+                .and(N.dot(Lv).greaterThan(0));
+            const L = Lv.div(d);
+            const nl = N.dot(L).clamp();
+            const abst = d.div(lage.w).oneMinus().clamp().pow(farbe.a);
+            const beitrag = farbe.rgb
+                .mul(nl.mul(abst).mul(gewicht))
+                .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
+            const term = Te.select(bedingung, beitrag, Te.vec3(0));
+            summe = summe ? summe.add(term) : term;
+        }
+        return summe;
+    }
+
+    // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,
+    // BRDF_GGX und F_Schlick tragen kein Layout (ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler, der Stoff-Graph
+    // sieht ihn nicht), D_GGX und V_GGX_SmithCorrelated tragen ihres; die Stoff-Werte aus `diffuseColor` · `metalness` ·
+    // `specularColor` · `specularF90` (wie r184 sie mischt — `three/tsl` der Seite kennt `diffuseContribution`/
+    // `specularColorBlended` nicht). N, L, V normiert im Blick-Raum, `nl` = N·L geklemmt.
+    _punktLichtBrdf(Te, N, L, V, nl) {
+        const alb = Te.diffuseColor.rgb;
+        const met = Te.metalness;
+        const a = Te.roughness.pow2();
+        const f0 = Te.mix(Te.specularColor, alb, met);
+        const H = L.add(V).normalize();
+        const vh = V.dot(H).clamp();
+        const nv = N.dot(V).clamp();
+        const nh = N.dot(H).clamp();
+        const fres = Te.exp2(vh.mul(-5.55473).sub(6.98316).mul(vh)); // r184 F_Schlick: 2^((−5,55473 · V·H − 6,98316) · V·H)
+        const F = f0.mul(fres.oneMinus()).add(Te.specularF90.mul(fres));
+        const glanz = F.mul(Te.V_GGX_SmithCorrelated({ alpha: a, dotNL: nl, dotNV: nv })).mul(
+            Te.D_GGX({ alpha: a, dotNH: nh })
+        );
+        return alb
+            .mul(met.oneMinus())
+            .mul(1 / Math.PI)
+            .add(glanz); // r184 BRDF_Lambert + GGX
     }
 
     // DER RAUSCH-ATLAS (Welle G, der Boden-Stoff): das RAUSCH-GESETZ als EINE Textur, gelesen von zwei Knoten-Bauern, die
@@ -33482,17 +33500,7 @@ class AnazhRealm {
     _buildToonNodeMaterial(opts = {}) {
         // PBR ist die EINE Material-Wahrheit: dieser Aufruf baut IMMER PBR (roughness/metalness aus den
         // Material-Tags); der Name bleibt für die ~14 Aufrufstellen — kein Toon-Zwilling.
-        const pbr = typeof this._buildPbrNodeMaterial === "function" ? this._buildPbrNodeMaterial(opts) : null;
-        if (pbr) return pbr;
-        // Sicherheits-Fallback (nur falls r184/MeshStandardNodeMaterial fehlt — in der
-        // vendored r184 nie der Fall): ein schlichtes lit Material, kein Toon mehr.
-        const params = {};
-        if (opts.color !== undefined) params.color = opts.color;
-        if (opts.side !== undefined) params.side = opts.side;
-        if (opts.transparent !== undefined) params.transparent = opts.transparent;
-        if (opts.opacity !== undefined) params.opacity = opts.opacity;
-        if (opts.vertexColors) params.vertexColors = true;
-        return new THREE.MeshStandardNodeMaterial(params);
+        return this._buildPbrNodeMaterial(opts);
     }
 
     // ===== ATLAS §11 · VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits =====
@@ -36007,12 +36015,16 @@ class AnazhRealm {
         }
     }
 
-    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen und „rauch", wenn er einen Kamin trägt.
+    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen, „rauch", wenn er einen Kamin trägt,
+    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), und „licht", wenn er eine Leuchtquelle ist
+    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`).
     _blockerNamen(entry) {
         const out = [];
         const a = entry.affordances;
         if (a && typeof a === "object") for (const k in a) if (a[k]) out.push(k);
         if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
+        if (this._glutFlaeche(entry) > 0) out.push("glut");
+        if (this._lichtDatum(entry)) out.push("licht");
         return out;
     }
 
@@ -39167,6 +39179,7 @@ class AnazhRealm {
             TSL.mix(TSL.attribute("color", "vec3"), krone.rgb.mul(su.uSeasonMul), krone.a),
             TSL.float(1.0)
         );
+        this._leuchtStoff(material, null); // das Leuchtquellen-Gesetz (K11): jeder beleuchtete Stoff trägt den Pool
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const geo = new THREE.BufferGeometry();
@@ -53964,7 +53977,10 @@ class AnazhRealm {
                 }
             }
         }
-        if (reg.size === 0) return;
+        if (reg.size === 0) {
+            this._tickPortalLicht(null); // kein Tor, kein Licht des Tors (mit dem letzten fällt sein Platz im Licht-Pool)
+            return;
+        }
         // ── pro Frame: Atem + Hindurchgehen ──
         const reach = AnazhRealm.PORTAL_REACH_M;
         for (const rec of reg.values()) {
@@ -54081,37 +54097,32 @@ class AnazhRealm {
         this._tickPortalLicht(naeh);
     }
 
+    // DAS LICHT DES TORS (K11): das Lab-portalLight ist ein Bürger des Licht-Pools — das wache Tor (das nächste aktive) trägt
+    // sein Emitter-Datum aus porta GLUT_GESETZ (Farbe, Reichweite, Abfall, Höhe am Spring-Punkt) und die Stärke des Labors
+    // `glutIntensity(act, puls)`; der Licht-Takt liest es (`_leuchtQuellen`). Kein Szenen-Licht (bis K11 ein PointLight, das
+    // beim ersten Tor in die Szene trat und dort auf 0 blieb). Ohne waches Tor kein Licht.
     _tickPortalLicht(rec) {
-        // V18.491.126 GLUT_GESETZ — Lab+Host portal PointLight (fail-soft Literale).
-        let li = this._portalLicht;
         if (!rec) {
-            if (li) li.intensity = 0;
+            this._portalLeuchte = null;
             return;
         }
         const PC = globalThis.__portaCore;
-        const G = (PC && PC.GLUT_GESETZ) || {};
-        if (!li) {
-            // Lab-Werte (porta.js / GLUT_GESETZ: PointLight color, Reichweite, decay).
-            li = this._portalLicht = new THREE.PointLight(
-                G.color != null ? G.color : 0xffd9a0,
-                0,
-                G.dist != null ? G.dist : 14,
-                G.decay != null ? G.decay : 2
-            );
-            li.castShadow = false;
-            this.state.scene.add(li);
-        }
+        const G = PC.GLUT_GESETZ;
         const e = rec.entry;
         const mu = rec.tor.mu;
         const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-        const ySpring = G.ySpring != null ? G.ySpring : 0.55;
-        li.position.set(e.position.x, e.position.y - 0.5 + mu.springY * ySpring * sc, e.position.z);
-        const pulse = rec.u && rec.u.pulse ? rec.u.pulse.value : 1;
-        // V18.491.160 GLUT_GESETZ cold fallback fail-soft (i0/iOpen/pulseBase/pulseAmp; live glutIntensity first)
-        li.intensity =
-            PC && typeof PC.glutIntensity === "function"
-                ? PC.glutIntensity(rec._act, pulse)
-                : ((G.i0 || 0.3) + rec._act * (G.iOpen || 3.4)) * ((G.pulseBase || 0.8) + (G.pulseAmp || 0.28) * pulse);
+        const q =
+            this._portalLeuchte ||
+            (this._portalLeuchte = {
+                quelle: "tor",
+                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay },
+                masse: 1,
+                phase: 0,
+            });
+        q.x = e.position.x;
+        q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
+        q.z = e.position.z;
+        q.L.staerke = PC.glutIntensity(rec._act, rec.u && rec.u.pulse ? rec.u.pulse.value : 1);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
@@ -54356,6 +54367,7 @@ class AnazhRealm {
                 metalness: 0,
             });
             mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
+            this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
             mesh.name = "dorf-rauch";
             mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
@@ -67297,8 +67309,8 @@ class AnazhRealm {
     // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide.
     _treeShadowTwinMaterial() {
         if (this._treeShadowTwinMat) return this._treeShadowTwinMat;
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
         const m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        this._leuchtStoff(m, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         m.userData.shadowTwin = true;
         this._treeShadowTwinMat = m;
         return m;
@@ -71117,11 +71129,14 @@ class AnazhRealm {
                 })());
             const mat =
                 this._archFundMat ||
-                (this._archFundMat = new THREE.MeshStandardNodeMaterial({
-                    color: 0x7a7168,
-                    roughness: 1,
-                    metalness: 0,
-                })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
+                (this._archFundMat = this._leuchtStoff(
+                    new THREE.MeshStandardNodeMaterial({
+                        color: 0x7a7168,
+                        roughness: 1,
+                        metalness: 0,
+                    }),
+                    null
+                )); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz), der Licht-Pool (K11) das Feuer
             const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
             AnazhRealm._instanzZahl(mesh, 0);
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
@@ -71799,7 +71814,10 @@ class AnazhRealm {
         // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
         const mat =
             this._stlWegeMat ||
-            (this._stlWegeMat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
+            (this._stlWegeMat = this._leuchtStoff(
+                new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }),
+                null
+            )); // der Licht-Pool (K11)
         const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
@@ -72001,6 +72019,7 @@ class AnazhRealm {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
+        this._laternen = null; // die Laternen der Pläne fallen mit ihren Marken (der Rebuild liest sie neu, `_laternenLesen`)
     }
 
     _archInstanceAdd(entry, flat, opts) {
@@ -74832,10 +74851,11 @@ class AnazhRealm {
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
     // über `spawnArchitecture` (Bauplan `brunnen_dorf`). Aufrufer: `spawnSettlement` ·
     // `_autoSettlementSpawnCell` · Reload-Rebuild (so.nurWege — Brunnen sind persistierte Architektur).
-    // Konsum: fences/felder/trees/staende/brunnen; unkonsumiert (export-stripped): mauer/laternen/fluss.
+    // Konsum: fences/felder/trees/staende/brunnen/laternen (das Licht, `_laternenLesen`); unkonsumiert (export-stripped): mauer/fluss.
     _spawnSettlementErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        this._laternenLesen(plan, origin, so && so.key ? so.key : null); // die Laternen leuchten (K11, LICHT_GESETZ.laterne)
         if (so && so.nurWege) return;
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         let n = 0;
@@ -77621,346 +77641,344 @@ class AnazhRealm {
         // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
         // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
         const rendM = this.state && this.state.renderer;
-        try {
-            const MatK =
-                ccSoll && rendM && !rendM._isHeadlessNull
-                    ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
-                    : T.MeshStandardNodeMaterial;
-            mat = new MatK({
-                roughness: rough,
-                metalness: metal,
-                flatShading: flat,
-                side: sideDouble ? T.DoubleSide : T.FrontSide,
-            });
-            if (MatK !== T.MeshStandardNodeMaterial) {
-                mat.clearcoat = ccSoll.cc;
-                mat.clearcoatRoughness = ccSoll.ccr;
-            }
-            // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
-            // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); einen Schatten
-            // wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Eine dünne Scheibe zeichnet beide
-            // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
-            // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
-            if (R.op < 1) {
-                mat.transparent = true;
-                mat.opacity = R.op;
-                mat.depthWrite = false;
-                mat.forceSinglePass = true;
-            }
-            if (env !== 1) mat.envMapIntensity = env;
-            if (emis) {
-                mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
-                mat.emissiveIntensity = emisI;
-            }
-            // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
-            // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
-            // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
-            // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
-            if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
-            // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
-            // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
-            // `_foundryBuildGroup` garantiert das color-Attribut.
-            const vcol = TSL.attribute("color", "vec3");
-            // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
-            // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
-            // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
-            if (mp && typeof mp.leucht === "number" && mp.leucht > 0) mat.emissiveNode = vcol.mul(mp.leucht);
-            // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
-            // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
-            // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
-            const _suF =
-                kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
-            const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
-            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
-            // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
-            // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
-            const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
-            const laubFarbe = _BU
-                ? TSL.mix(
-                      laubFarbe0,
-                      TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
-                          _BU.hell
-                      ),
-                      TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
-                  )
-                : laubFarbe0;
-            if (isBark) {
-                // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
-                // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
-                // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
-                mat.colorNode = TSL.vec4(vcol, 1.0);
-            } else if (kind === "foliageTex") {
-                // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
-                // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
-                // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
-                // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
-                // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-                const atl = this._blattAtlasProbe(TSL);
-                if (atl) {
-                    // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
-                    // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                    // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
-                    mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
-                    mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
-                    mat.transparent = false;
-                } else {
-                    // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
-                    mat.colorNode = TSL.vec4(laubFarbe, 1.0);
-                }
-            } else if (kind === "schatten") {
-                // DER SCHATTEN-STOFF (S3, das EINE Wurf-Gesetz E1): der Schatten-Teil einer Stufe zeichnet nur in den Kaskaden
-                // (SHADOW_TWIN_LAYER) — seine Alpha ist max(aDeckt, Atlas-Alpha): das Gerüst deckt ganz (aDeckt 1), die Karte
-                // schneidet ihre Blattform aus dem EINEN Atlas (aDeckt 0). Die Alpha lebt in colorNode, nie in opacityNode:
-                // der r184-Schattenpass liest colorNode.a · map.a · maskShadowNode (Lehre 26). EIN Programm für jeden
-                // statischen Wurf (Baum-Teil, die Haus-Stufe 3 mit aDeckt 1).
-                const atl = this._blattAtlasProbe(TSL);
-                const deckt = TSL.attribute("aDeckt", "float");
-                mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
-                mat.alphaTest = 0.5;
+        const MatK =
+            ccSoll && rendM && !rendM._isHeadlessNull
+                ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
+                : T.MeshStandardNodeMaterial;
+        mat = new MatK({
+            roughness: rough,
+            metalness: metal,
+            flatShading: flat,
+            side: sideDouble ? T.DoubleSide : T.FrontSide,
+        });
+        if (MatK !== T.MeshStandardNodeMaterial) {
+            mat.clearcoat = ccSoll.cc;
+            mat.clearcoatRoughness = ccSoll.ccr;
+        }
+        // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
+        // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); einen Schatten
+        // wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Eine dünne Scheibe zeichnet beide
+        // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
+        // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
+        if (R.op < 1) {
+            mat.transparent = true;
+            mat.opacity = R.op;
+            mat.depthWrite = false;
+            mat.forceSinglePass = true;
+        }
+        if (env !== 1) mat.envMapIntensity = env;
+        if (emis) {
+            mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
+            mat.emissiveIntensity = emisI;
+        }
+        // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
+        // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
+        // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
+        // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
+        if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
+        // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
+        // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
+        // `_foundryBuildGroup` garantiert das color-Attribut.
+        const vcol = TSL.attribute("color", "vec3");
+        // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
+        // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
+        // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
+        if (mp && typeof mp.leucht === "number" && mp.leucht > 0) mat.emissiveNode = vcol.mul(mp.leucht);
+        // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
+        // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
+        // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
+        const _suF =
+            kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
+        const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
+        // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
+        // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
+        const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
+        const laubFarbe = _BU
+            ? TSL.mix(
+                  laubFarbe0,
+                  TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
+                      _BU.hell
+                  ),
+                  TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
+              )
+            : laubFarbe0;
+        if (isBark) {
+            // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
+            // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
+            // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
+            mat.colorNode = TSL.vec4(vcol, 1.0);
+        } else if (kind === "foliageTex") {
+            // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
+            // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
+            // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
+            // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
+            // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
+            const atl = this._blattAtlasProbe(TSL);
+            if (atl) {
+                // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
+                // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
+                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
+                mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
+                mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                 mat.transparent = false;
-            } else if (klasseLook) {
-                // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
-                // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
-                // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
-                // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
-                // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
-                mat.colorNode = TSL.vec4(vcol, 1.0);
-                try {
-                    const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-                    const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-                    const schale = kind === "fellSchale";
-                    const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
-                    const L =
-                        kind === "skin" || kind === "haut"
-                            ? kkC && kkC.HAUT_LOOK
-                            : kind === "hair"
-                              ? kkC && kkC.HAAR_LOOK
-                              : kind === "fell"
-                                ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
-                                : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
-                    if (L && TSL.normalView && TSL.positionViewDirection && TSL.float && TSL.vec3) {
-                        const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
-                        const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
-                        let add = null;
-                        const term = (farbe, knoten) => {
-                            const t = TSL.vec3(farbe[0], farbe[1], farbe[2]).mul(knoten);
-                            add = add ? add.add(t) : t;
-                        };
-                        if (strand) {
-                            const tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
-                            const tonL = tonA
-                                ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
-                                : null;
-                            const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
-                            // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
-                            // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
-                            // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
-                            // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
-                            // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
-                            // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
-                            const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
-                            if (schale) {
-                                const t = aS.x;
-                                const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
-                                const zelle = TSL.floor(p);
-                                const h1 = TSL.fract(
-                                    TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453)
-                                );
-                                const h2 = TSL.fract(
-                                    TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
-                                );
-                                const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
-                                    .sub(0.5)
-                                    .mul(0.4);
-                                const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
-                                const radius = aS.y
-                                    .sqrt()
-                                    .mul(0.62)
-                                    .mul(TSL.float(1.0).sub(t.mul(0.75)));
-                                const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
-                                const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
-                                mat.opacityNode = TSL.max(haar, wolle);
-                                mat.alphaTest = 0.5;
-                                const FS = AnazhRealm.FELL_SCHALE;
-                                mat.colorNode = TSL.vec4(
-                                    vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
-                                    1.0
-                                );
-                            }
-                            const sT = schale
-                                ? aS.x
-                                : tonL !== null
-                                  ? vcol
-                                        .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                        .div(tonL)
-                                        .sub(wA)
-                                        .div(Math.max(1e-3, 1 - wA))
-                                        .clamp(0.0, 1.0)
-                                  : TSL.float(1.0);
-                            if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
-                                term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
-                            if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
-                                term(L.specFarbe, ndv.max(0.0).pow(L.specPow).mul(sT).mul(L.specAmt));
-                        } else {
-                            if (Number.isFinite(L.sssPow) && Array.isArray(L.sssFarbe))
-                                term(L.sssFarbe, rim.pow(L.sssPow).mul(L.sssAmt));
-                            if (Number.isFinite(L.rimPow) && Array.isArray(L.rimFarbe))
-                                term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
-                            if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
-                                term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
-                            // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
-                            // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
-                            // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
-                            const mf = L.microFur;
-                            if (
-                                mf &&
-                                Array.isArray(mf.farbe) &&
-                                TSL.positionLocal &&
-                                TSL.floor &&
-                                TSL.fract &&
-                                TSL.sin &&
-                                TSL.step
-                            ) {
-                                const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
-                                const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
-                                term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
-                            }
-                        }
-                        if (add) mat.emissiveNode = add;
-                        // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
-                        // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
-                        if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
-                            const w = ndv
-                                .max(0.0)
-                                .mul(L.wrap)
-                                .add(1.0 - L.wrap);
-                            mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
-                        }
-                        // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
-                        // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
-                        // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
-                        // Die haut-Hülle des Menschen bleibt still.
-                        const at = L.atem;
-                        if (
-                            at &&
-                            (kind === "fell" || kind === "skin") &&
-                            TSL.positionLocal &&
-                            TSL.normalLocal &&
-                            TSL.mx_noise_float &&
-                            TSL.time
-                        ) {
-                            mat.positionNode = TSL.positionLocal.add(
-                                TSL.normalLocal.mul(
-                                    TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(
-                                        at.amp
-                                    )
-                                )
-                            );
-                        }
-                    }
-                } catch (_eL) {
-                    /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
-                }
-            } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
-                // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
-                // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt.
-                const wf =
-                    mp.webe === "knit"
-                        ? 90.0
-                        : mp.webe === "wool"
-                          ? 70.0
-                          : mp.webe === "denim"
-                            ? 160.0
-                            : mp.webe === "cotton"
-                              ? 140.0
-                              : 24.0;
-                const wa =
-                    mp.webe === "knit"
-                        ? 0.1
-                        : mp.webe === "wool"
-                          ? 0.08
-                          : mp.webe === "leather"
-                            ? 0.05
-                            : mp.webe === "rubber"
-                              ? 0.03
-                              : 0.06;
-                const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
-                mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
             } else {
-                // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
-                // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
+                // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
                 mat.colorNode = TSL.vec4(laubFarbe, 1.0);
             }
-            // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
-            // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
-            // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
-            // unverändert. Die Klassen-Look-Familie (Kreatur/Mensch, aLodLevel=0 → Maske = Identität) bleibt
-            // maskenfrei — sonst nur tote Attribut-Reads + Warnungen auf ungestempelten Geometrien.
-            if (xfade && !klasseLook) {
-                const _keepX = this._lodCrossfadeMaskNode(TSL, {
-                    foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
-                });
-                if (_keepX) {
-                    // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
-                    // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
-                    // ohne die Maske des Passes schnitte ein Loch.
-                    let kanal = null;
-                    if (mat.opacityNode) {
-                        mat.opacityNode = mat.opacityNode.mul(_keepX);
-                        kanal = "deckung";
-                    } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
-                        mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
-                        kanal = "farbe";
+        } else if (kind === "schatten") {
+            // DER SCHATTEN-STOFF (S3, das EINE Wurf-Gesetz E1): der Schatten-Teil einer Stufe zeichnet nur in den Kaskaden
+            // (SHADOW_TWIN_LAYER) — seine Alpha ist max(aDeckt, Atlas-Alpha): das Gerüst deckt ganz (aDeckt 1), die Karte
+            // schneidet ihre Blattform aus dem EINEN Atlas (aDeckt 0). Die Alpha lebt in colorNode, nie in opacityNode:
+            // der r184-Schattenpass liest colorNode.a · map.a · maskShadowNode (Lehre 26). EIN Programm für jeden
+            // statischen Wurf (Baum-Teil, die Haus-Stufe 3 mit aDeckt 1).
+            const atl = this._blattAtlasProbe(TSL);
+            const deckt = TSL.attribute("aDeckt", "float");
+            mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
+            mat.alphaTest = 0.5;
+            mat.transparent = false;
+        } else if (klasseLook) {
+            // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
+            // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
+            // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
+            // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
+            // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
+            mat.colorNode = TSL.vec4(vcol, 1.0);
+            try {
+                const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+                const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+                const schale = kind === "fellSchale";
+                const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
+                const L =
+                    kind === "skin" || kind === "haut"
+                        ? kkC && kkC.HAUT_LOOK
+                        : kind === "hair"
+                          ? kkC && kkC.HAAR_LOOK
+                          : kind === "fell"
+                            ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
+                            : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
+                if (L && TSL.normalView && TSL.positionViewDirection && TSL.float && TSL.vec3) {
+                    const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
+                    const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
+                    let add = null;
+                    const term = (farbe, knoten) => {
+                        const t = TSL.vec3(farbe[0], farbe[1], farbe[2]).mul(knoten);
+                        add = add ? add.add(t) : t;
+                    };
+                    if (strand) {
+                        const tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
+                        const tonL = tonA
+                            ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
+                            : null;
+                        const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
+                        // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
+                        // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
+                        // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
+                        // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
+                        // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
+                        // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
+                        const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
+                        if (schale) {
+                            const t = aS.x;
+                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
+                            const zelle = TSL.floor(p);
+                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453));
+                            const h2 = TSL.fract(
+                                TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
+                            );
+                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
+                                .sub(0.5)
+                                .mul(0.4);
+                            const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
+                            const radius = aS.y
+                                .sqrt()
+                                .mul(0.62)
+                                .mul(TSL.float(1.0).sub(t.mul(0.75)));
+                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
+                            const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
+                            mat.opacityNode = TSL.max(haar, wolle);
+                            mat.alphaTest = 0.5;
+                            const FS = AnazhRealm.FELL_SCHALE;
+                            mat.colorNode = TSL.vec4(
+                                vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
+                                1.0
+                            );
+                        }
+                        const sT = schale
+                            ? aS.x
+                            : tonL !== null
+                              ? vcol
+                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                    .div(tonL)
+                                    .sub(wA)
+                                    .div(Math.max(1e-3, 1 - wA))
+                                    .clamp(0.0, 1.0)
+                              : TSL.float(1.0);
+                        if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
+                            term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
+                        if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
+                            term(L.specFarbe, ndv.max(0.0).pow(L.specPow).mul(sT).mul(L.specAmt));
+                    } else {
+                        if (Number.isFinite(L.sssPow) && Array.isArray(L.sssFarbe))
+                            term(L.sssFarbe, rim.pow(L.sssPow).mul(L.sssAmt));
+                        if (Number.isFinite(L.rimPow) && Array.isArray(L.rimFarbe))
+                            term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
+                        if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
+                            term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
+                        // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
+                        // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
+                        // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
+                        const mf = L.microFur;
+                        if (
+                            mf &&
+                            Array.isArray(mf.farbe) &&
+                            TSL.positionLocal &&
+                            TSL.floor &&
+                            TSL.fract &&
+                            TSL.sin &&
+                            TSL.step
+                        ) {
+                            const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
+                            const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
+                            term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
+                        }
                     }
-                    if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5;
-                    mat.userData = mat.userData || {};
-                    if (kanal) {
-                        mat.userData.foundryCrossfade = true;
-                        mat.userData.foundryCrossfadeKanal = kanal;
+                    if (add) mat.emissiveNode = add;
+                    // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
+                    // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
+                    if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
+                        const w = ndv
+                            .max(0.0)
+                            .mul(L.wrap)
+                            .add(1.0 - L.wrap);
+                        mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
+                    }
+                    // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
+                    // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
+                    // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
+                    // Die haut-Hülle des Menschen bleibt still.
+                    const at = L.atem;
+                    if (
+                        at &&
+                        (kind === "fell" || kind === "skin") &&
+                        TSL.positionLocal &&
+                        TSL.normalLocal &&
+                        TSL.mx_noise_float &&
+                        TSL.time
+                    ) {
+                        mat.positionNode = TSL.positionLocal.add(
+                            TSL.normalLocal.mul(
+                                TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(at.amp)
+                            )
+                        );
                     }
                 }
+            } catch (_eL) {
+                /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
             }
-            // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
-            // der Kreaturen und Menschen) wird zwischen Auge und Spieler und in der Nah-Kugel um das Auge durchsichtig
-            // (`_kameraDurchsichtNode` seiner Art: der wiegende Stoff der Nah-Streu ist Boden, sonst Rinde oder Laub) — im
-            // maskNode, den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
-            if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
-                const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");
-                if (_durch) {
-                    mat.maskNode = _durch;
-                    mat.maskShadowNode = TSL.bool(true);
-                }
-            }
-            // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
-            // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
-            // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
-            // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
-            if (kind === "grass") {
-                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
-                const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
-                const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
-                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
-            } else if (wiegen === true) {
-                // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
-                // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
-                // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
-                // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
-                // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
-                // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
-                // Klein-Vegetations-Zwillings.
-                if (!this.state.windUniforms) this._grassInstanceMat();
-                const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
-                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
-            }
-            mat.userData = mat.userData || {};
-            mat.userData.foundryKind = kind;
-            mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
-        } catch (_e) {
-            mat = new T.MeshStandardMaterial({ vertexColors: true, side: sideDouble ? T.DoubleSide : T.FrontSide });
+        } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
+            // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
+            // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt.
+            const wf =
+                mp.webe === "knit"
+                    ? 90.0
+                    : mp.webe === "wool"
+                      ? 70.0
+                      : mp.webe === "denim"
+                        ? 160.0
+                        : mp.webe === "cotton"
+                          ? 140.0
+                          : 24.0;
+            const wa =
+                mp.webe === "knit"
+                    ? 0.1
+                    : mp.webe === "wool"
+                      ? 0.08
+                      : mp.webe === "leather"
+                        ? 0.05
+                        : mp.webe === "rubber"
+                          ? 0.03
+                          : 0.06;
+            const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
+            mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
+        } else {
+            // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
+            // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
+            mat.colorNode = TSL.vec4(laubFarbe, 1.0);
         }
+        // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
+        // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
+        // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
+        // unverändert. Die Klassen-Look-Familie (Kreatur/Mensch, aLodLevel=0 → Maske = Identität) bleibt
+        // maskenfrei — sonst nur tote Attribut-Reads + Warnungen auf ungestempelten Geometrien.
+        if (xfade && !klasseLook) {
+            const _keepX = this._lodCrossfadeMaskNode(TSL, {
+                foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
+            });
+            if (_keepX) {
+                // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
+                // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
+                // ohne die Maske des Passes schnitte ein Loch.
+                let kanal = null;
+                if (mat.opacityNode) {
+                    mat.opacityNode = mat.opacityNode.mul(_keepX);
+                    kanal = "deckung";
+                } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
+                    mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
+                    kanal = "farbe";
+                }
+                // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
+                // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
+                // der Nacht (`_leuchtStoff`) blieb unsichtbar
+                if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5 * R.op;
+                mat.userData = mat.userData || {};
+                if (kanal) {
+                    mat.userData.foundryCrossfade = true;
+                    mat.userData.foundryCrossfadeKanal = kanal;
+                }
+            }
+        }
+        // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
+        // der Kreaturen und Menschen) wird zwischen Auge und Spieler und in der Nah-Kugel um das Auge durchsichtig
+        // (`_kameraDurchsichtNode` seiner Art: der wiegende Stoff der Nah-Streu ist Boden, sonst Rinde oder Laub) — im
+        // maskNode, den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
+        if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
+            const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");
+            if (_durch) {
+                mat.maskNode = _durch;
+                mat.maskShadowNode = TSL.bool(true);
+            }
+        }
+        // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
+        // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
+        // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
+        // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
+        if (kind === "grass") {
+            if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+            const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
+            const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
+            if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+        } else if (wiegen === true) {
+            // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
+            // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
+            // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
+            // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
+            // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
+            // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
+            // Klein-Vegetations-Zwillings.
+            if (!this.state.windUniforms) this._grassInstanceMat();
+            const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
+            if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+        }
+        // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
+        this._leuchtStoff(mat, mp);
+        mat.userData = mat.userData || {};
+        mat.userData.foundryKind = kind;
+        mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         // Observer-Diät auch für die Masken-Familie: ihr Graph hängt an Vertex-Farben + Stempel-Attributen
         // (aLodLevel/aH0/aH0L — equals sieht Attribut-Versionen), geteilten LOD-Uniforms (renderGroup) und dem
-        // statischen Blatt-Atlas. Der Fallback (MeshStandardMaterial, kein setupObserver) bleibt unberührt.
+        // statischen Blatt-Atlas. Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden
+        // Fehler und baute einen Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
         this._materialObserverDiaet(mat);
         this._foundryMats[key] = mat;
         return mat;
@@ -88395,16 +88413,9 @@ class AnazhRealm {
     // die Farbe immer. DoubleSide (Blatt/Tube dünn/gewickelt, wie die Welt).
     _workshopPreviewFoliageMat() {
         if (this._wsPreviewFoliageMat) return this._wsPreviewFoliageMat;
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
         const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.82, metalness: 0 });
-        try {
-            const TSL = THREE.TSL;
-            if (TSL && TSL.attribute && TSL.vec4) {
-                mat.colorNode = TSL.vec4(TSL.attribute("color", "vec3"), 1.0);
-            }
-        } catch (_e) {
-            /* kein color-Attribut → Default-Albedo (kein Crash) */
-        }
+        mat.colorNode = THREE.TSL.vec4(THREE.TSL.attribute("color", "vec3"), 1.0);
+        this._leuchtStoff(mat, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         this._wsPreviewFoliageMat = mat;
         return mat;
     }
@@ -92942,22 +92953,257 @@ class AnazhRealm {
     // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
     // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
-    // ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem Abstand, mit Abfall in `AUGEN_LICHT.karteM`)
-    // dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte).
-    // Es ist KEIN Szenen-Licht (K15): die Uniform `atmoUniforms.augenLicht` (Farbe × Stärke) trägt es in den Boden-Stoff,
-    // der es nur unter Fels rechnet (`_buildPbrNodeMaterial`, 1 − aHimmel) — kein anderer Stoff zahlt es.
+    // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
+    // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes (1 − d/R)^abfall).
+    // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
+    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
+    // die EINE Übersetzung Labor → Welt sie trägt wie jede Quelle. Unter dem Himmel ist es aus (`_augenLeuchte` null).
     _dayNightApplyAugenLicht() {
         const st = this.state;
-        const atmo = this._ensureAtmoUniforms();
-        if (!atmo) return;
         const cam = st.camera;
         const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
         st.himmelAmAuge = h;
         const B = AnazhRealm.BELICHTUNG;
         const A = AnazhRealm.AUGEN_LICHT;
         const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
-        const I = (1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall) * (1 / k);
-        atmo.augenLicht.value.set(A.farbe).multiplyScalar(I > 1e-4 ? I : 0);
+        const abstKarte = Math.pow(1 - A.karteM / A.reichweiteM, A.abfall);
+        const I = ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) / (k * abstKarte);
+        if (!(I > 1e-4)) {
+            this._augenLeuchte = null;
+            return;
+        }
+        const q =
+            this._augenLeuchte ||
+            (this._augenLeuchte = {
+                quelle: "auge",
+                L: { farbe: A.farbe, staerke: 0, reichweiteM: A.reichweiteM, abfall: A.abfall, ersatz: true },
+                masse: 1,
+                phase: 0,
+            });
+        q.L.staerke = I / AnazhRealm.LEGACY_LICHT;
+    }
+
+    // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
+    // Die Plätze gehen an die Leuchtquellen, deren Reichweite dem Auge am nächsten kommt (`_leuchtQuellen`: das Licht des
+    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis, die Laternen der Pläne, das wache Tor; neu gewählt je `wahlS`
+    // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
+    // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
+    // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
+    // Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
+    // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
+    // Stärke, Reichweite, Abfall, lineare Farbe, Himmels-Ersatz, Blende).
+    _leuchtTakt() {
+        const st = this.state;
+        const atmo = st.atmoUniforms;
+        const cam = st.camera;
+        if (!atmo || !cam) return; // vor der Welt: kein Stoff liest den Pool
+        const LP = AnazhRealm.LICHT_POOL;
+        const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
+        atmo.fensterGlut.value.set(LG.fenster.farbe).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
+        const pool =
+            this._leuchtPool ||
+            (this._leuchtPool = {
+                t: -Infinity,
+                uhr: -Infinity,
+                x: NaN,
+                y: NaN,
+                z: NaN,
+                wahl: [],
+                halter: new Array(LP.plaetze).fill(null),
+                blende: new Float32Array(LP.plaetze),
+                plaetze: [],
+            });
+        const cp = cam.position;
+        const jetzt = performance.now() / 1000;
+        const schritt = Math.max(0, jetzt - pool.uhr) / LP.blendeS;
+        pool.uhr = jetzt;
+        if (jetzt - pool.t >= LP.wahlS || !(Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM)) {
+            pool.t = jetzt;
+            pool.x = cp.x;
+            pool.y = cp.y;
+            pool.z = cp.z;
+            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM);
+            q.sort((a, b) => a.rang - b.rang);
+            pool.wahl = q.slice(0, LP.plaetze);
+        }
+        // die Plätze: gewählt bleibt und blendet ein, abgewählt blendet aus, der freie Platz nimmt die nächste Gewählte
+        const H = pool.halter;
+        for (let k = 0; k < H.length; k++) {
+            const neu = H[k] && pool.wahl.find((w) => w.id === H[k].id);
+            if (neu) {
+                H[k] = neu;
+                pool.blende[k] = Math.min(1, pool.blende[k] + schritt);
+            } else if (H[k]) {
+                pool.blende[k] = Math.max(0, pool.blende[k] - schritt);
+                if (pool.blende[k] === 0) H[k] = null;
+            }
+        }
+        for (const w of pool.wahl) {
+            if (H.some((h) => h && h.id === w.id)) continue;
+            const frei = H.indexOf(null);
+            if (frei < 0) break;
+            H[frei] = w;
+            pool.blende[frei] = Math.min(1, schritt);
+        }
+        const c = this._leuchtC || (this._leuchtC = new THREE.Color());
+        const t = this._windZeit();
+        pool.plaetze.length = 0;
+        for (let k = 0; k < H.length; k++) {
+            const q = H[k];
+            const lage = atmo.lichtLage[k].value;
+            const farbe = atmo.lichtFarbe[k].value;
+            const I = q ? this._leuchtStaerke(q, t) * pool.blende[k] : 0;
+            if (!(I > 0)) {
+                lage.set(0, 0, 0, 0);
+                farbe.set(0, 0, 0, 0);
+                atmo.lichtErsatz[k].value = 0;
+                continue;
+            }
+            const L = q.L;
+            // das Licht des Auges folgt ihm je Bild
+            if (q.quelle === "auge") {
+                q.x = cp.x;
+                q.y = cp.y;
+                q.z = cp.z;
+            }
+            lage.set(q.x, q.y, q.z, L.reichweiteM);
+            c.set(L.farbe);
+            farbe.set(c.r * I, c.g * I, c.b * I, L.abfall);
+            atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
+            pool.plaetze.push({
+                quelle: q.quelle,
+                x: q.x,
+                y: q.y,
+                z: q.z,
+                staerke: I,
+                reichweite: L.reichweiteM,
+                abfall: L.abfall,
+                farbe: [c.r, c.g, c.b],
+                ersatz: !!L.ersatz,
+                blende: pool.blende[k],
+            });
+        }
+    }
+
+    // DIE STÄRKE einer Quelle zur Wind-Zeit t (K11): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
+    _leuchtStaerke(q, t) {
+        const L = q.L;
+        const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
+        return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
+    }
+
+    // DIE LEUCHTQUELLEN um das Auge (x, y, z) im Umkreis R (K11), je mit stabiler Kennung (`id`) und Rang (der Abstand des
+    // Auges zur Kugel ihrer Reichweite, 0 in ihr — dann der Abstand selbst, das Nächste zuerst): das Licht des Auges
+    // (`_augenLeuchte`, am Auge: Rang 0), jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim Eintritt)
+    // mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist es ihres
+    // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
+    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laternen der Pläne (`_laternenLesen`, Zellen)
+    // und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
+    _leuchtQuellen(x, y, z, R) {
+        const out = [];
+        const t = this._windZeit();
+        const nimm = (id, q) => {
+            const d = Math.hypot(q.x - x, q.y - y, q.z - z);
+            if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
+            out.push(Object.assign(q, { id, rang: Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+        };
+        const auge = this._augenLeuchte;
+        if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
+        const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
+        const bezug = (Math.PI / 4) * bett * bett;
+        for (const e of this._blockerMit("licht")) {
+            const p = e.position;
+            if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
+            const L = this._lichtDatum(e);
+            if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
+            const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
+            nimm(e, {
+                quelle: e.type,
+                x: p.x,
+                y: p.y - 0.5 + (L.hoeheM || 0) * sk,
+                z: p.z,
+                L,
+                masse: a > 0 ? a / bezug : sk * sk,
+                phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
+            });
+        }
+        const LZ = this._laternen;
+        if (LZ) {
+            const Z = AnazhRealm.LICHT_POOL.zelleM;
+            for (let i = Math.floor((x - R) / Z); i <= Math.floor((x + R) / Z); i++)
+                for (let j = Math.floor((z - R) / Z); j <= Math.floor((z + R) / Z); j++)
+                    for (const l of LZ.zellen.get(i + "," + j) || []) nimm(l, Object.assign({}, l));
+        }
+        const tor = this._portalLeuchte;
+        if (tor) nimm(tor, Object.assign({}, tor));
+        return out;
+    }
+
+    // DER LESER DER LATERNEN (K11 ↔ K10): `laternen[]` eines Siedlungs-Plans (fachwerk exportSettlement, je Laterne x/z
+    // plan-lokal) wird Leuchtquelle mit dem Datum LICHT_GESETZ.laterne — der Kopf `hoeheM` über dem Boden des Gesetzes —, je
+    // Plan einmal (der Schlüssel der Siedlung, wie die Wege), abgelegt in Zellen von `LICHT_POOL.zelleM` (die Wahl liest nur die
+    // Zellen um das Auge, nie alle Laternen der Welt). Gerufen aus dem EINEN Hebe-Chokepoint `_spawnSettlementErlebnis`.
+    _laternenLesen(plan, origin, key) {
+        if (!plan || !Array.isArray(plan.laternen) || plan.laternen.length === 0) return 0;
+        const LZ = this._laternen || (this._laternen = { zellen: new Map(), schluessel: new Set() });
+        if (key) {
+            if (LZ.schluessel.has(key)) return 0;
+            LZ.schluessel.add(key);
+        }
+        const L = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
+        const Z = AnazhRealm.LICHT_POOL.zelleM;
+        let n = 0;
+        for (const l of plan.laternen) {
+            if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
+            const wx = origin.x + l.x;
+            const wz = origin.z + l.z;
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (!Number.isFinite(wy)) continue;
+            const zk = Math.floor(wx / Z) + "," + Math.floor(wz / Z);
+            const liste = LZ.zellen.get(zk) || [];
+            liste.push({ quelle: "laterne", x: wx, y: wy + L.hoeheM, z: wz, L, masse: 1, phase: 0 });
+            LZ.zellen.set(zk, liste);
+            n++;
+        }
+        return n;
+    }
+
+    // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
+    // Gesetzbuch fachwerk, synchron geladen — die Feuerstelle trägt LICHT_GESETZ.feuer, dasselbe Rezept, das das Buch der Welt
+    // reist: recipes.json), sonst für jede Glut (Brenn-Fläche > 0) das Herdfeuer des Gesetzbuchs. null: keine Leuchtquelle.
+    _lichtDatum(entry) {
+        const L = this._lichtDatumDerGestalt(entry);
+        if (L) return L;
+        return this._glutFlaeche(entry) > 0 ? globalThis.__fachwerkCore.LICHT_GESETZ.feuer : null;
+    }
+
+    // Das Emitter-Datum der Studio-Gestalt eines Eintrags (`fx.licht` ihres Rezepts) oder null.
+    _lichtDatumDerGestalt(entry) {
+        const FC = globalThis.__fachwerkCore;
+        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
+        const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
+        return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
+    }
+
+    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
+    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall (1 − d/R)^abfall rechnet der Stoff wie das
+    // Labor (`_lichtPoolTerm`). So trifft jeder Abstand das Labor.
+    _laborLichtStaerke(I) {
+        return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
+    }
+
+    // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
+    // auf der Tag-Achse der Welt: der Nacht-Anteil der Sonne (`_nachtAnteil`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
+    // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
+    _lichtZeitplan(z) {
+        if (!z) return 1;
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const n = this._nachtAnteil(this._sonnenWinkel(t));
+        const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
+        return n <= 0.5
+            ? z.mittag + (daemmer - z.mittag) * (n / 0.5)
+            : daemmer + (z.nacht - daemmer) * ((n - 0.5) / 0.5);
     }
 
     // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
@@ -100961,6 +101207,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
+        // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
+        this._leuchtTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: die Render-Objekte (auch die mit noch
@@ -101406,21 +101654,27 @@ AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
 // nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
 AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
-// Helligkeit wie am Tag — die 18-%-Karte das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge adaptiert an sein
-// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 (1 − (d/R)⁴)² blendet
-// es bis `reichweiteM` aus (bei 10 m 88 %, 15 m 47 %, 18 m 12 %). Es ist ein Term des Boden-Stoffs unter Fels
-// (`_buildPbrNodeMaterial`, 1 − aHimmel), kein Szenen-Licht (K15). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
-// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz; ohne Abfall trägt der Fels in jeder
-// Nähe seine Maserung. `farbe` warmweiß (~4500 K, sRGB) — eine Flamme (0xffc489) tönte den Fels orange; der Himmel am
-// Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
+// Helligkeit wie am Tag — die 18-%-Karte in `karteM` das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge
+// adaptiert an sein Licht). Es ist ein Platz des Licht-Pools mit Himmels-Ersatz (K11) und fällt nach dem EINEN Punktlicht-
+// Gesetz (1 − d/R)^abfall: mit `abfall` 1 zeigt die Wand in 0,3 m 1,09× die Karte in 2 m (ihre Maserung), in 10 m 56 %, in
+// 15 m 28 %, und an `reichweiteM` fällt es stetig auf 0. Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
+// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz. `farbe` warmweiß (~4500 K, sRGB) — eine
+// Flamme (0xffc489) tönte den Fels orange; der Himmel am Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis
+// `umkreisM`, neu nach `neuM` Metern Weg.
 AnazhRealm.AUGEN_LICHT = Object.freeze({
     karteM: 2,
-    abfall: 0,
+    abfall: 1,
     reichweiteM: 20,
     farbe: 0xffe2c6,
     umkreisM: 4,
     neuM: 0.25,
 });
+// DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
+// Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
+// am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
+// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt). Die Laternen der
+// Pläne liegen in Zellen von `zelleM` Metern (die Wahl liest nur die Zellen um das Auge).
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5, zelleM: 32 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
@@ -103945,7 +104199,8 @@ AnazhRealm.ERBGUT_PROTOKOLL = 1;
 // DIE WELTGRENZE: was beim Wechsel der Welt aus der alten reist — beim Namen, sonst nichts (gate:weltgrenze).
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
-//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug) —
+//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug,
+//                die Lichter: Laternen der Pläne, das wache Tor, der Licht-Pool, der ihre Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
 AnazhRealm.WELT_GRENZE = Object.freeze({
     geburt: Object.freeze(["visibility", "creator"]),
@@ -103960,6 +104215,9 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_autoSettlementRejected",
         "_autoSettlementStartHopeless",
         "_stlWegeKeys",
+        "_laternen",
+        "_portalLeuchte",
+        "_leuchtPool",
     ]),
 });
 

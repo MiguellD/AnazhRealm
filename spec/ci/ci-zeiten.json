@@ -1776,12 +1776,20 @@
         "38096257646/1"
       ]
     },
-    "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)": {
+    "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)": {
       "s": 136,
       "n": 1,
       "lauf": "npm run gate:pruefbuehne",
       "laeufe": [
         "38096257646/1"
+      ]
+    },
+    "Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)": {
+      "s": 31,
+      "n": 1,
+      "lauf": "npm run gate:pruefbuehne-licht",
+      "laeufe": [
+        "38182494401/1"
       ]
     },
     "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
