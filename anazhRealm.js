@@ -59890,7 +59890,13 @@ class AnazhRealm {
         const rec = preset ? tab[preset] : null;
         if (!rec || !rec.s || !Number.isFinite(rec.s.api)) return null;
         const s = rec.s;
-        const fx = rec.fx || {};
+        // Ein Baum oder Strauch trägt Rinde, Laub, Nadel und Krone als seinen Phänotyp (K24: phyto-core artPhaenotyp aus
+        // Reglern und Phänotyp-Zeile — dieselbe Quelle wie der gezeichnete Baum); jede andere Art ihre Rezept-Zeile fx.
+        const pc = globalThis.__phytoCore;
+        const baum = rec.kind === "tree" || rec.kind === "shrub";
+        if (baum && !(pc && typeof pc.artPhaenotyp === "function"))
+            return AnazhRealm._kernPflichtBruch("phyto:artPhaenotyp");
+        const fx = baum ? pc.artPhaenotyp(s, rec) : rec.fx || {};
         return {
             api: s.api,
             delta: s.delta,
@@ -78062,7 +78068,7 @@ class AnazhRealm {
         return mat;
     }
 
-    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (foundry-core fx.conifer der Zelle), sonst 0 — EINE
+    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (der Phänotyp der Zelle, K24), sonst 0 — EINE
     // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
     // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
     _karteNadel(T, z) {
@@ -78080,7 +78086,12 @@ class AnazhRealm {
         }
         if (z) {
             const rec = tab[z.preset];
-            at.nadelU.array[z.idx] = rec && rec.fx && rec.fx.conifer ? 1 : 0;
+            // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp, dieselbe Quelle wie der Baum).
+            const pc = globalThis.__phytoCore;
+            at.nadelU.array[z.idx] =
+                rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && pc.artPhaenotyp(rec.s, rec).conifer
+                    ? 1
+                    : 0;
         }
         return at.nadelU;
     }

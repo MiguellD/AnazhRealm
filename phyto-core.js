@@ -1843,6 +1843,14 @@
         }
         return ((R * 255) << 16) ^ ((G * 255) << 8) ^ ((B * 255) << 0);
     }
+    // DER PHÄNOTYP EINER ART (K24): das Gesetz aus den Reglern `dials` ⊕ die Phänotyp-Zeile der Art (`art.ph`: die
+    // Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf, das Totholz seine vergraute Borke). Die EINE
+    // Quelle für Rinde, Laubfarbe, Nadel-Art und Krone jedes Baums — die Ableitung `treeParams`, die Fern-Farbe und die
+    // Nadel der Karte im Wirt, die Pflanzen-Linsen lesen sie; eine Hand-Abschrift im Preset gibt es nicht mehr.
+    function artPhaenotyp(dials, art) {
+        const ph = treePhenotype(dials.api, dials.slim, dials.trop, dials.delta, dials.leaf);
+        return art && art.ph ? Object.assign(ph, art.ph) : ph;
+    }
     // DIE EINE ABLEITUNG Dials → P (K24): `dials` = {api,slim,trop,delta,leaf} (das Rezept), `seedInt` = die Saat
     // (int, treibt IR), `stufe` = die Bau-Stufe 0|1|2, `art` = das Preset der Art (seine Phänotyp-Zeile `ph`: die
     // Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf, das Totholz seine vergraute Borke). Gibt den
@@ -1860,8 +1868,7 @@
         const IR = mulberry32(((Math.floor(seedInt) + 1) * 2246822519) >>> 0);
         const J = (a) => 1 + (IR() - 0.5) * 2 * a,
             O = (a) => (IR() - 0.5) * 2 * a;
-        const ph0 = treePhenotype(api, slim, trop, delta, leaf);
-        const ph = art && art.ph ? Object.assign(ph0, art.ph) : ph0;
+        const ph = artPhaenotyp(dials, art);
         const rezept = stufenRezept(ph.kind, stufe | 0);
         // Blatt-Stride `_lf` (Index-Ausdünnung NACH dem Wuchs, nie im Wuchs-Strom) und Blatt-Maß `ls` der Stufe:
         // Aggregation statt Ausdünnung (Wahrnehmung ~ n·s²); die Nadel-L1 trägt ihre Karten aus EINEM Blatt-Atlas.
@@ -4357,6 +4364,7 @@
         WX_GESETZ: WX_GESETZ,
         WX_VIS: WX_VIS,
         treePhenotype: treePhenotype,
+        artPhaenotyp: artPhaenotyp, // K24 — der Phänotyp einer Art: Gesetz ⊕ Phänotyp-Zeile (Wirt, Linsen, treeParams)
         treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)
         stufenRezept: stufenRezept, // K24 — das Rezept einer Bau-Stufe (foundry-core emitTree delegiert)
         hexOffsetHSL: hexOffsetHSL, // K24 — der Farb-Wurf im HSL-Raum (r128-Arithmetik, renderer-frei)
