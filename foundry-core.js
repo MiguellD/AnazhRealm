@@ -1683,12 +1683,14 @@ function __wedelBreiten(pts, blaetter, K, rand, ab) {
     return h;
 }
 // DIE STUFEN-ABBILDUNG (Welle 6): EINE Bedeutung je Bau-Stufe, fuer das Labor (`build()`, Knopf L0/L1/L2) wie fuer die
-// Welt (`buildInstance`) — welches REZEPT die Stufe faehrt. Der Strauch: Nah- (0) und Mittel-Stufe (1) fahren beide das
-// Rezept 1 (Karten-Krone, Blatt-Aggregation, Ring-Duennung), was sie trennt, ist ihre Holz-Zeile budget.shrub[Stufe];
-// einen Strauch nach Rezept 0 (die Klingen-Krone, ~175k Dreiecke) gibt es nicht. Jede andere Art: Rezept = Stufe.
-// Leser: deriveParamsPlant (Blatt-Stride, Blatt-Mass, Wurzeln) und emitTree (Wuchs, Wurzeln, Rinde, Krone).
+// Welt (`buildInstance`) — welches REZEPT die Stufe faehrt; was Strauch-Nah- und -Mittel-Stufe trennt, ist ihre Holz-Zeile
+// budget.shrub[Stufe]. Das Gesetz wohnt seit K24 EINMAL in phyto-core (`stufenRezept`, gelesen auch von `treeParams`);
+// dieser Name bleibt der Delegat fuer emitTree (Wuchs, Wurzeln, Rinde, Krone). Fail-closed: ohne Gesetzbuch kein Rezept.
 function stufenRezept(kind, stufe) {
-    return kind === "shrub" && stufe === 0 ? 1 : stufe;
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.stufenRezept !== "function")
+        throw new Error("phyto-core fehlt — das Stufen-Rezept wohnt im Gesetzbuch (Ladereihenfolge)");
+    return core.stufenRezept(kind, stufe);
 }
 // Der Baum- und Strauch-Bau: die Bau-Stufe `__lod` wird fuer den ganzen Bau zum Rezept (Wuchs, Wurzeln und Rinde lesen
 // `__lod`), die Stufe selbst reist als Zeile mit; danach steht `__lod` wieder auf der Stufe (der Labor-Knopf bleibt).
@@ -4597,16 +4599,6 @@ const PRESETS = {
     },
 };
 
-// ULTRAGUSS U2 — DER PHÄNOTYP-ZWILLING IST TOT: das Gesetz wohnt EINMAL in
-// phyto-core (treePhenotype); dieser Name bleibt als Delegat für alle Leser
-// (Studio + Foundry-Worker). Fail-closed: ohne Gesetzbuch kein Phänotyp.
-function phenotype(api, slim, trop, delta, leaf) {
-    const core = typeof self !== "undefined" && self.__phytoCore;
-    if (!core || typeof core.treePhenotype !== "function")
-        throw new Error("phyto-core fehlt — der Phänotyp wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treePhenotype(api, slim, trop, delta, leaf);
-}
-
 function deriveParamsPlant(pre) {
     const _D = __dials;
     const api = _D ? _D.api : gv("sApi"),
@@ -4650,58 +4642,13 @@ function deriveParamsPlant(pre) {
         }; // Belaubung -> Aehren/Rispen, Gravitropismus -> Fontaene
     }
     if (WALDBODEN_EMIT[pre.kind]) return deriveParamsWaldboden(pre, { api, delta, slim, trop, leaf }, IR, J, O);
-    // tree / shrub — phaenotypische Variation um den Genotyp (Slider) + LOD
-    // Die Phänotyp-Zeilen einer Art (`pre.ph`, 04.10.): was das Gesetz aus den Reglern ableitet, kann die Art
-    // benennen — die Buche ihre glatte graue Rinde und das ganzrandige Blatt, der Karst-Baum seinen Wurzelanlauf,
-    // das Totholz seine vergraute Borke. Ohne Zeile byte-gleich.
-    const ph = pre.ph ? Object.assign(phenotype(api, slim, trop, delta, leaf), pre.ph) : phenotype(api, slim, trop, delta, leaf);
-    // Das Rezept der Bau-Stufe (`stufenRezept`, dieselbe Abbildung wie emitTree): Blatt-Stride, Blatt-Mass und Wurzeln.
-    const rezept = stufenRezept(ph.kind, __lod);
-    const lf = rezept === 0 ? 1 : rezept === 1 ? (fx && fx.conifer ? 0.0265 : 0.21) : 0.16,
-        ls =
-            rezept === 0
-                ? 1
-                : rezept === 1
-                  ? fx && fx.conifer
-                      ? 1.62
-                      : 2.05
-                  : 4.0; /* FIX v29: AGGREGATION statt Ausduennung (SpeedTree/FarCry-Prinzip): Wahrnehmung ~ n*s^2. Vorher L1: 0.34*1.35^2=0.62 -> Mittelfeld-Kronen 38% LOECHRIGER als L0 (und trotzdem teuer). Jetzt Laub: 0.21*2.05^2=0.88, Nadel: 0.36*1.62^2=0.94 -> VOLLERE Kronen bei ~35% weniger Blatt-Dreiecken. Nahfeld (L0) bleibt unangetastet — dort sitzt die Wahrnehmung. */
-    const lc0 = new THREE.Color(ph.leafCol);
-    lc0.offsetHSL((IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
-    const lcol = lc0.getHex();
-    const P = {
-        kind: ph.kind,
-        apical: clamp(api + O(0.1), 0, 1),
-        delta: delta + O(0.1),
-        slim: clamp(slim + O(0.1), 0, 1),
-        trop: trop + O(0.1),
-        leafD: clamp(leaf * J(0.16), 0.05, 1),
-        _lf: lf /* FIX v35: lf NICHT mehr im Wachstum (sonst andere rnd()-Zugzahl je LOD -> Stromdivergenz) — Ausduennung passiert als Index-Stride NACH dem Wachstum */,
-        height: ph.height * J(0.16),
-        conifer: ph.conifer,
-        coniferDroop: ph.coniferDroop,
-        crownBase: ph.crownBase,
-        flare: ph.flare,
-        roots: ph.roots * (rezept === 0 ? 1 : rezept === 1 ? 0.8 : 0.6),
-        basalStems: ph.basalStems,
-        maxDepth: ph.kind === "shrub" && rezept === 2 ? 3 : Math.max(4, ph.maxDepth),
-        /* FIX v35: KEINE Tiefenreduktion je LOD mehr — die kappte den Rekursionsbaum frueher und verschob damit den Zufallsstrom: gleicher Same, ANDERER Stamm. Skelett waechst immer voll; Detail nimmt die Dezimierung (Radius-Prune + Stride), nie der Zufall. */ barkA: ph.barkA,
-        barkB: ph.barkB,
-        leafCol: lcol,
-        leafShape: ph.leafShape,
-        leafSize: lerp(0.22, 0.6, leaf) * (ph.conifer ? 0.6 : 1) * J(0.12) * ls,
-        windGain: ph.windGain,
-        barkType: ph.barkType,
-        _bphase: IR() * 6.2831,
-    };
-    // Totholz (stehend): die Bruch-Höhe ist ein Wurf des Individuums (nach allen anderen — jeder lebende Baum
-    // zieht byte-gleich), die Krone der Fernform ist kahl.
-    if (ph.tot) {
-        P.tot = 1;
-        P.totBruch = 0.42 + IR() * 0.26;
-        P.crown = "kahl";
-    }
-    return P;
+    // tree / shrub — DIE EINE ABLEITUNG (K24): der Baum-Zweig ist das Gesetz `treeParams` (phyto-core) — Regler, Saat,
+    // Bau-Stufe und die Phänotyp-Zeile der Art (`pre.ph`). Hier lebt keine eigene Ableitung mehr (der Zwilling setzte
+    // keinen Quirl-Abstand und trug eine eigene Stufen-Tafel). Fail-closed: ohne Gesetzbuch kein Baum.
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.treeParams !== "function")
+        throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).

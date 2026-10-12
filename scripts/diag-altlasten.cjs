@@ -1222,6 +1222,12 @@ const ZWILLINGE = [
         fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
     },
     {
+        fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
+        gesetzbuch: "phyto-core.js",
+        verboten: ["foundry-core.js", "anazhRealm.js"],
+        fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
+    },
+    {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
         verboten: ["foundry-core.js", "anazhRealm.js"],
@@ -1764,14 +1770,15 @@ function scanNormalWand(srcRoh) {
 // DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
-// deriveParamsPlant liest dieselbe Abbildung. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot
-// mit Zeile; fehlt ein Anker, ist die Abbildung aus emitTree oder deriveParamsPlant gewandert.
+// deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
+// (K24). Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot mit Zeile; fehlt ein Anker, ist die
+// Abbildung aus emitTree gewandert oder deriveParamsPlant reicht dem Gesetz eine andere als die rohe Stufe.
 const STUFEN_ANKER = [
     "__lod = lod;",
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "const rezept = stufenRezept(ph.kind, __lod);",
+    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -2035,13 +2042,16 @@ function main() {
         const ohne = scanStufenWand(
             kern
                 .replace("__lod = stufenRezept(P.kind, stufe);", "")
-                .replace("const rezept = stufenRezept(ph.kind, __lod);", "const rezept = __lod;")
+                .replace(
+                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
+                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre);'
+                )
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
             ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /stufenRezept\(ph\.kind, __lod\);` steht 0×/.test(e));
+            ohne.some((e) => /SEED, __lod, pre\);` steht 0×/.test(e));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);

@@ -25,6 +25,10 @@
         };
     }
     function growSkeleton(P, seq) {
+        // Der Quirl-Abstand der Konifere ist ein Wert des Gesetzes (treePhenotype → treeParams), nie ein stiller
+        // Ersatz: ohne ihn bricht der Wuchs laut beim Namen (K24 — der Zwilling wuchs mit fest 0,12·H).
+        if (P.conifer && !(P.whorlSpacing > 0))
+            throw new Error("growSkeleton: Konifere ohne whorlSpacing (das Gesetz setzt ihn — treeParams)");
         const rnd = seq;
         const rrange = (a, b) => a + (b - a) * rnd();
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -124,7 +128,7 @@
                     count < countCap - 300 &&
                     p2[1] > (P.crownBase || 0) * P.height
                 ) {
-                    const intn = P.height * (P.whorlSpacing || 0.12);
+                    const intn = P.height * P.whorlSpacing;
                     if (Math.floor(p2[1] / intn) > Math.floor(p[1] / intn)) {
                         const nWh = Math.round(lerp(5, 7, P.apical)),
                             uy = clamp(p2[1] / P.height, 0, 1);
@@ -1707,10 +1711,11 @@
     // GENAU zwei Funktionen: `phenotype()` leitet den Art-Charakter ab (Höhe/Rinde/Krone/…),
     // `deriveParamsPlant()` (hier `treeParams`) fügt Saat-Jitter + LOD hinzu → der P-Vektor für
     // `growSkeleton`. KEIN Nachbauen der Rezepte mehr — die 5 Regler fliessen durch DIESE eine
-    // Quelle (Main + Worker + Portal lesen sie). Portiert 1:1 aus phytogenesis v38
-    // (`phenotype` Z.1058, `deriveParamsPlant` Tree-Zweig Z.1105) — THREE-frei (die Blatt-Farbe
-    // bleibt roher Hex; der Renderer tönt sie). Die Zufalls-Zieh-REIHENFOLGE ist exakt die der
-    // Vorlage (inkl. der 3 verworfenen Farb-Jitter-Ziehungen) → derselbe Same ⇒ dieselbe Gestalt.
+    // Quelle (Studio + Foundry-Worker lesen sie; foundry-core `deriveParamsPlant` delegiert seinen
+    // Baum-Zweig hierher, K24). Portiert 1:1 aus phytogenesis v38 (`phenotype` Z.1058,
+    // `deriveParamsPlant` Tree-Zweig Z.1105) — THREE-frei (der Farb-Wurf ist `hexOffsetHSL`, die
+    // r128-Arithmetik). Die Zufalls-Zieh-REIHENFOLGE ist exakt die der Vorlage → derselbe Same ⇒
+    // dieselbe Gestalt.
     function treePhenotype(api, slim, trop, delta, leaf) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
@@ -1779,11 +1784,72 @@
             windGain: isCon ? lerp(0.45, 0.7, slim) : lerp(0.85, 1.3, slim * 0.5 + weep * 0.5),
         };
     }
-    // `dials` = {api,slim,trop,delta,leaf} (das Rezept). `seedInt` = die Saat (int, treibt IR).
-    // `lod` = 0|1|2. Gibt den P-Vektor für `growSkeleton` (+ die Material-Felder barkA/B/leafCol/
-    // leafShape/barkType, die der Renderer liest). Die 3 verworfenen Farb-Jitter-Ziehungen sind
-    // BEWAHRT (IR-Strom-Position = Vorlage), damit die Gestalt byte-treu zur Vorlage bleibt.
-    function treeParams(dials, seedInt, lod) {
+    // DIE STUFEN-ABBILDUNG (Welle 6, seit K24 im Gesetzbuch): EINE Bedeutung je Bau-Stufe — welches REZEPT die Stufe
+    // fährt. Der Strauch: Nah- (0) und Mittel-Stufe (1) fahren beide das Rezept 1 (Karten-Krone, Blatt-Aggregation,
+    // Ring-Dünnung); einen Strauch nach Rezept 0 gibt es nicht. Jede andere Art: Rezept = Stufe. Leser: `treeParams`
+    // (Blatt-Stride, Blatt-Maß, Wurzeln) und foundry-core `emitTree` (Wuchs, Wurzeln, Rinde, Krone).
+    function stufenRezept(kind, stufe) {
+        return kind === "shrub" && stufe === 0 ? 1 : stufe;
+    }
+    // Der Farb-Wurf eines Paletten-Hex im HSL-Raum — die Arithmetik von three r128 `Color.setHex · offsetHSL · getHex`
+    // (der Foundry-Worker rechnete sie über THREE): rein, renderer-frei, byte-gleich.
+    function hexOffsetHSL(hex, dh, ds, dl) {
+        const hx = Math.floor(hex);
+        const r = ((hx >> 16) & 255) / 255,
+            g = ((hx >> 8) & 255) / 255,
+            b = (hx & 255) / 255;
+        const max = Math.max(r, g, b),
+            min = Math.min(r, g, b);
+        let h, s;
+        const l = (min + max) / 2;
+        if (min === max) {
+            h = 0;
+            s = 0;
+        } else {
+            const d = max - min;
+            s = l <= 0.5 ? d / (max + min) : d / (2 - max - min);
+            switch (max) {
+                case r:
+                    h = (g - b) / d + (g < b ? 6 : 0);
+                    break;
+                case g:
+                    h = (b - r) / d + 2;
+                    break;
+                case b:
+                    h = (r - g) / d + 4;
+                    break;
+            }
+            h /= 6;
+        }
+        const H = (((h + dh) % 1) + 1) % 1,
+            S = Math.max(0, Math.min(1, s + ds)),
+            L = Math.max(0, Math.min(1, l + dl));
+        const hue = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * 6 * (2 / 3 - t);
+            return p;
+        };
+        let R, G, B;
+        if (S === 0) R = G = B = L;
+        else {
+            const p = L <= 0.5 ? L * (1 + S) : L + S - L * S,
+                q = 2 * L - p;
+            R = hue(q, p, H + 1 / 3);
+            G = hue(q, p, H);
+            B = hue(q, p, H - 1 / 3);
+        }
+        return ((R * 255) << 16) ^ ((G * 255) << 8) ^ ((B * 255) << 0);
+    }
+    // DIE EINE ABLEITUNG Dials → P (K24): `dials` = {api,slim,trop,delta,leaf} (das Rezept), `seedInt` = die Saat
+    // (int, treibt IR), `stufe` = die Bau-Stufe 0|1|2, `art` = das Preset der Art (seine Phänotyp-Zeile `ph`: die
+    // Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf, das Totholz seine vergraute Borke). Gibt den
+    // P-Vektor für `growSkeleton` und die Bau-Stufen (foundry-core `deriveParamsPlant` delegiert hierher, Studio und
+    // Foundry-Worker lesen ihn). Die Zieh-Reihenfolge ist die der Vorlage: 3 Farb-Würfe, der Wuchs-Strom, die Phase,
+    // danach nur beim Totholz die Bruch-Höhe — derselbe Same ⇒ dieselbe Gestalt.
+    function treeParams(dials, seedInt, stufe, art) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
         const api = dials.api,
@@ -1794,41 +1860,49 @@
         const IR = mulberry32(((Math.floor(seedInt) + 1) * 2246822519) >>> 0);
         const J = (a) => 1 + (IR() - 0.5) * 2 * a,
             O = (a) => (IR() - 0.5) * 2 * a;
-        const _lod = lod | 0;
-        const _lf = _lod === 0 ? 1 : _lod === 1 ? (dials && dials.conifer ? 0.36 : 0.21) : 0.16;
-        const ls = _lod === 0 ? 1 : _lod === 1 ? (dials && dials.conifer ? 1.62 : 2.05) : 4.0;
-        const ph = treePhenotype(api, slim, trop, delta, leaf);
-        // Die 3 Farb-Jitter-Ziehungen der Vorlage (Z.1107 offsetHSL) — verworfen, aber gezogen,
-        // damit der Wuchs-Strom (apical/height/leafSize…) byte-treu an der Vorlagen-Position sitzt.
-        IR();
-        IR();
-        IR();
-        return {
+        const ph0 = treePhenotype(api, slim, trop, delta, leaf);
+        const ph = art && art.ph ? Object.assign(ph0, art.ph) : ph0;
+        const rezept = stufenRezept(ph.kind, stufe | 0);
+        // Blatt-Stride `_lf` (Index-Ausdünnung NACH dem Wuchs, nie im Wuchs-Strom) und Blatt-Maß `ls` der Stufe:
+        // Aggregation statt Ausdünnung (Wahrnehmung ~ n·s²); die Nadel-L1 trägt ihre Karten aus EINEM Blatt-Atlas.
+        const lf = rezept === 0 ? 1 : rezept === 1 ? (ph.conifer ? 0.0265 : 0.21) : 0.16,
+            ls = rezept === 0 ? 1 : rezept === 1 ? (ph.conifer ? 1.62 : 2.05) : 4.0;
+        const lcol = hexOffsetHSL(ph.leafCol, (IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
+        const P = {
             kind: ph.kind,
             apical: clamp(api + O(0.1), 0, 1),
             delta: delta + O(0.1),
             slim: clamp(slim + O(0.1), 0, 1),
             trop: trop + O(0.1),
             leafD: clamp(leaf * J(0.16), 0.05, 1),
-            _lf: _lf,
+            _lf: lf,
             height: ph.height * J(0.16),
             conifer: ph.conifer,
             coniferDroop: ph.coniferDroop,
             crownBase: ph.crownBase,
             whorlSpacing: ph.whorlSpacing,
             flare: ph.flare,
-            roots: ph.roots * (_lod === 0 ? 1 : _lod === 1 ? 0.8 : 0.6),
+            roots: ph.roots * (rezept === 0 ? 1 : rezept === 1 ? 0.8 : 0.6),
             basalStems: ph.basalStems,
-            maxDepth: ph.kind === "shrub" && _lod === 2 ? 3 : Math.max(4, ph.maxDepth),
+            // Keine Tiefen-Reduktion je Stufe: das Skelett wächst immer voll (gleicher Same, gleicher Stamm).
+            maxDepth: ph.kind === "shrub" && rezept === 2 ? 3 : Math.max(4, ph.maxDepth),
             barkA: ph.barkA,
             barkB: ph.barkB,
-            leafCol: ph.leafCol,
+            leafCol: lcol,
             leafShape: ph.leafShape,
-            barkType: ph.barkType,
             leafSize: lerp(0.22, 0.6, leaf) * (ph.conifer ? 0.6 : 1) * J(0.12) * ls,
             windGain: ph.windGain,
+            barkType: ph.barkType,
             _bphase: IR() * 6.2831,
         };
+        // Totholz (stehend): die Bruch-Höhe ist ein Wurf des Individuums (nach allen anderen — jeder lebende Baum
+        // zieht byte-gleich), die Krone der Fernform ist kahl.
+        if (ph.tot) {
+            P.tot = 1;
+            P.totBruch = 0.42 + IR() * 0.26;
+            P.crown = "kahl";
+        }
+        return P;
     }
 
     // DER EINE IMPOSTOR-RAHMEN (Studio v36, phytogenesis bakeImpostorAtlas — „Drähte statt
@@ -4283,7 +4357,9 @@
         WX_GESETZ: WX_GESETZ,
         WX_VIS: WX_VIS,
         treePhenotype: treePhenotype,
-        treeParams: treeParams,
+        treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)
+        stufenRezept: stufenRezept, // K24 — das Rezept einer Bau-Stufe (foundry-core emitTree delegiert)
+        hexOffsetHSL: hexOffsetHSL, // K24 — der Farb-Wurf im HSL-Raum (r128-Arithmetik, renderer-frei)
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         bakeLeafAtlasBild: bakeLeafAtlasBild, // das Textur-Bild des EINEN Atlas: blutend, Zell-Mittel gleich, deckungstreue Mips, `wert`
         blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC1 ab Stufe 0, rgba ab Stufe 1 (05.10.)
