@@ -1742,6 +1742,7 @@ function wasserQuelle(opts) {
         querschnitte = 0,
         verdeckt = 0,
         imKanal = 0,
+        zulauf = 0,
         buckel = 0,
         buckelMax = 0;
     const breiten0 = [],
@@ -1879,7 +1880,17 @@ function wasserQuelle(opts) {
                         beispiele.push(["buckel", R(P[0].x, 0), R(P[0].z, 0), R(hub)]);
                 }
             }
-            const gespeistJa = (abfluss && seeNah) || imKanalJa;
+            // ZULAUF (K16): das Netz des Gelände-Gesetzes ist eins für die ganze Welt, die Kachel schneidet es — ein Lauf, der
+            // am Rand seiner Kachel beginnt (bis eine Zelle innen), trägt das Wasser seines Oberlaufs jenseits des Rands.
+            const randAbstand = Math.min(
+                P[0].x - h.originX,
+                P[0].z - h.originZ,
+                h.originX + h.dim * h.cell - P[0].x,
+                h.originZ + h.dim * h.cell - P[0].z
+            );
+            const zulaufJa = randAbstand <= h.cell * 1.01;
+            if (zulaufJa) zulauf++;
+            const gespeistJa = (abfluss && seeNah) || imKanalJa || zulaufJa;
             if (gespeistJa) gespeist++;
             let ueber = null;
             if (!gespeistJa)
@@ -1942,6 +1953,7 @@ function wasserQuelle(opts) {
         quellen,
         gespeist,
         imKanal,
+        zulauf,
         buckel,
         buckelMax: R(buckelMax),
         regionen: regionen.length,
