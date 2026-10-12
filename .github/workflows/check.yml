@@ -1006,7 +1006,7 @@ jobs:
               if: matrix.gruppe == 9
               # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
-              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden (die Rad-
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden (die Rad-
               # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
               run: npm run gate:koerper-stand
 
@@ -1044,8 +1044,12 @@ jobs:
               if: matrix.gruppe == 10
               # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
               # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
-              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
-              # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
+              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,05 (K07, Ratsche von 0,2). Derselbe Punkt am Spieler-Leib
+              # (animatePlayerSoul: Gehen 1,15, Laufen 5,16, Spitze 6,75 m/s) mit Kadenz, Schritt-Tönen, Becken (Hub/Tiefe
+              # in Beinlängen) und Lock-Lösern im Stand-Fenster (Soll 0), dazu das Körper-Studio (Schlupf, Becken-Hub)
+              # und die Schwere (Mensch und Wolf unter 1,62 m/s² nach der Schwere der Welt, Schritt und Becken aus EINER
+              # Zeile, kein Literal-Zwilling). --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt, feste
+              # Auslenkung) gleitet jede Pfote, die Zeile ohne die Schwere der Welt macht die Schwere-Wand rot.
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
@@ -1062,7 +1066,7 @@ jobs:
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
               # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
               # das Tier steht auf der Auflage der Bauten) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
-              # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
+              # gleitet nicht — Schlupf ≤ 0,05, Ratsche K07; ein Fuß an der Grenze seiner Kette hebt ab) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
               # wer läuft, wird ausgewertet). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt

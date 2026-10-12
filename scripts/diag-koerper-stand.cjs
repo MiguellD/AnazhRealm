@@ -18,7 +18,9 @@
 //       Welle LF finden die Sohlen die Karte selbst, gleich wo der Leib steht: der Leib ist der Zeuge der Sicht); entlang
 //       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe)
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
-//       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter
+//       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
+//       steht dort; die flachste Stelle war ein Seegrund, der Wolf schwamm 16 cm über ihm, und der Selbsttest las nur die
+//       Beine, die ein Ruf 20 m weit am alten Ort verankert ließ: blind, sobald der Gang sie am neuen Ort setzte, K07)
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
@@ -221,7 +223,7 @@ async function proben() {
     s._fieldVy = 0;
     kapsel(30);
     // ── K4 TIER AM HANG: die Hang-Stelle (12–30°, die Karte geschlossen im 2-m-Umkreis) mit dem größten Abstand Gesetz ↔
-    // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene Stelle (≤ 3°) für die Tod-Lage ──
+    // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene trockene Stelle (≤ 3°, über dem Wasser) für die Tod-Lage ──
     let hang = null;
     let eben = null;
     for (let dx = -60; dx <= 60; dx += 2)
@@ -238,7 +240,8 @@ async function proben() {
             if ([karte(x + 2, z + 2), karte(x - 2, z + 2), karte(x + 2, z - 2), karte(x - 2, z - 2)].includes(null)) continue;
             const neig = Math.atan(Math.hypot(kx - k, kz - k)) * (180 / Math.PI);
             const ab = Math.abs(g - k);
-            if (neig <= 3 && ab < 0.1 && (!eben || neig < eben.neig)) eben = { x, z, karte: k, gesetz: g, neig };
+            const trocken = !(r._koerperWasser(x, z, k) > k);
+            if (neig <= 3 && ab < 0.1 && trocken && (!eben || neig < eben.neig)) eben = { x, z, karte: k, gesetz: g, neig };
             if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
             if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
         }
