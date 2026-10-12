@@ -8,8 +8,9 @@
 // misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7 Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node,
 // worlds/terrain/lib/three-r128.min.js + porta-core.js) und mit dem EINEN Leser des Stamms (`_huelleVon` aus anazhRealm.js):
 //
-//   K  KOSTEN: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil, die Stufe 3 ≤ ihrer Budget-Zeile
-//      (tris, 1 Draw) — je Bau der Regler-Hülle
+//   K  KOSTEN: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle), die
+//      Stufe 3 1 Draw und am Rezept ≤ ihrer Budget-Zeile (das Rezept-Maß; am Regler-Rand richtet die Kosten-Regel des Wirts
+//      `_wurfVonBilligerer` — gate:regler-wirkt WURF)
 //   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (Projektion entlang der Sonne auf y = 0, Raster
 //      5 cm) unter zwölf Sonnen (25° · 40° · 60° · 74° Höhe × drei Azimute) — die L0 mit den Teilen, die sie wirft (castShadow:
 //      die leuchtenden Türen, der Bogen-Saum, der Leucht-Ring und die Scheibe warfen nie)
@@ -199,7 +200,7 @@ const draws = (g3) => {
 // ── K über die Regler-Hülle ──
 function kosten(leserFn, umbau, nurRezepte) {
     const bruch = [];
-    let maxSicht = 0, maxTris = 0;
+    let maxSicht = 0, maxTris = 0, maxRand = 0;
     for (const id of Object.keys(PC.PRESETS)) {
         if (NUR && !NUR.test(id)) continue;
         const raender = [null];
@@ -221,14 +222,17 @@ function kosten(leserFn, umbau, nurRezepte) {
             maxSicht = Math.max(maxSicht, sicht.length);
             if (!umbau) {
                 // das Gitter der Stufe 3 aus derselben Liste mit dem EINEN Gitter-Bauer des Kerns (buildInstance(…, 3) = huelle → huelleGruppe)
+                // die Zeile ist das Rezept-Maß (Entscheidung A, 12.10.): am Rezept gilt sie, am Regler-Rand richtet die
+                // Kosten-Regel des Wirts (`_wurfVonBilligerer`, gate:regler-wirkt WURF) — hier steht dort nur die Zahl
                 const g3 = PC.huelleGruppe(h.teile), n = tris(g3), dr = draws(g3);
-                maxTris = Math.max(maxTris, n);
-                if (n > ZEILE.tris) bruch.push(`${wo}: Stufe 3 ${n} Dreiecke > ${ZEILE.tris}`);
+                if (r) maxRand = Math.max(maxRand, n);
+                else maxTris = Math.max(maxTris, n);
+                if (!r && n > ZEILE.tris) bruch.push(`${wo}: Stufe 3 ${n} Dreiecke > ${ZEILE.tris}`);
                 if (dr > ZEILE.draws) bruch.push(`${wo}: Stufe 3 ${dr} Draws > ${ZEILE.draws}`);
             }
         }
     }
-    return { bruch, maxSicht, maxTris };
+    return { bruch, maxSicht, maxTris, maxRand };
 }
 
 // ── W und I je Rezept ──
@@ -259,9 +263,11 @@ const check = (name, ok, info) => {
 console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle, Zeile ${JSON.stringify(ZEILE)}) ===`);
 const k = kosten(huelleVon);
 check(
-    `K KOSTEN: Fernbild ≤ ${SOLL.fernTeile} Teile ohne wurf-Teil, Stufe 3 ≤ ${ZEILE.tris} Dreiecke / ${ZEILE.draws} Draw (Regler-Hülle)`,
+    `K KOSTEN: Fernbild ≤ ${SOLL.fernTeile} Teile ohne wurf-Teil (Regler-Hülle), Stufe 3 ≤ ${ZEILE.tris} Dreiecke am Rezept / ${ZEILE.draws} Draw`,
     k.bruch.length === 0,
-    k.bruch.length ? k.bruch.slice(0, 4).join(" · ") : `Fernbild max ${k.maxSicht} Teile · Stufe 3 max ${k.maxTris} Dreiecke`
+    k.bruch.length
+        ? k.bruch.slice(0, 4).join(" · ")
+        : `Fernbild max ${k.maxSicht} Teile · Stufe 3 am Rezept max ${k.maxTris} Dreiecke · am Regler-Rand max ${k.maxRand} (dort richtet die Kosten-Regel des Wirts, gate:regler-wirkt WURF)`
 );
 const z = deckung(null, 0);
 const med = [...z.map((r) => r.iouMedian)].sort((a, b) => a - b)[z.length >> 1];

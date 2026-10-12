@@ -17,11 +17,17 @@
 // fällt (die Zahl sinkt, sie wächst nie still zurück). Das Soll steht daneben (Synthese W4: „Regler-wirkt-Probe grün"
 // = 0 tote Regler).
 //
+// DER WURF (1110-9, unten `wurfMessen`): die NUR-WURF-Stufe richtet am Regler-Rand die Kosten-Regel des Wirts, nie ihre
+// Zeile (die ist das Rezept-Maß) — die Linse nennt jede Stelle, an der die gezeigte Stufe selbst wirft, mit den Kosten,
+// und ist rot, wo die Regel des Stamms von der teureren Stufe würfe.
+//
 //   node scripts/diag-regler-wirkt.cjs --selftest   die Linse feuert: der alte Brücken-Defekt (W-A1: ov kam nicht
 //                                                   an, die Brücke reichte null) macht jeden Regler tot → rot; ein
 //                                                   Regler, dessen Bau wirft bzw. NaN rechnet → BRICHT beim Namen;
 //                                                   am Ofen: der Ofen verliert den Wert → koerper tot, der
-//                                                   Mensch-Bäcker wirft → Not-Körper → BRICHT
+//                                                   Mensch-Bäcker wirft → Not-Körper → BRICHT; WURF: die Regel
+//                                                   „der Zwilling wirft immer" wirft an kathedrale von der
+//                                                   teureren Stufe → rot beim Namen
 //   node scripts/diag-regler-wirkt.cjs              Messung gegen die Ratsche
 //   node scripts/diag-regler-wirkt.cjs --messen     nur messen und ausgeben (kein Urteil)
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
@@ -418,6 +424,133 @@ async function messen(h, opts) {
     return { zeilen, builds };
 }
 
+// ── DIE WURF-PROBE (1110-9, docs/studio-vertrag.md N5): DIE KOSTEN-REGEL DES WIRTS am Regler-Rand. Wirft die erste Stufe
+// einer Art über ihre NUR-WURF-Stufe (B2c `schatten` → eine Stufe mit `nurWurf`), nimmt der Wirt deren Zwilling nur, wo er
+// weniger Dreiecke wirft als die werfenden Teile der Stufe selbst (`_wurfVonBilligerer` in `_foundryFlattenFor`; das
+// Wurf-Recht je Teil `_teilWirft`). Die Probe liest BEIDE Regeln aus der Quelle des Stamms, baut je Rezept der Art die
+// erste Stufe und die NUR-WURF-Stufe ohne ov und an jedem Regler-Rand (min, max) über die echte Brücke und richtet: die
+// Regel wirft nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am
+// Regler-Rand richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
+const STAMM_PFAD = path.join(ROOT, "anazhRealm.js");
+function statischeMethode(src, kopf, args) {
+    const i = src.indexOf(kopf);
+    if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);
+    const j = src.indexOf("{", i);
+    let tiefe = 0,
+        k = j;
+    for (; k < src.length; k++) {
+        if (src[k] === "{") tiefe++;
+        else if (src[k] === "}" && --tiefe === 0) break;
+    }
+    return { rumpf: src.slice(j + 1, k), fn: new Function(...args, src.slice(j + 1, k)) };
+}
+function stammRegel(src) {
+    const s = src || fs.readFileSync(STAMM_PFAD, "utf8");
+    return {
+        teilWirft: statischeMethode(s, "static _teilWirft(m) {", ["m"]).fn,
+        vonBilligerer: statischeMethode(s, "static _wurfVonBilligerer(eigen, zwilling) {", ["eigen", "zwilling"]).fn,
+    };
+}
+function budgetVonArt(rc, art) {
+    const L = (rc && rc.lod) || {};
+    if (L.budget && L.budget[art]) return L.budget[art];
+    for (const k in L.zusatzBudget || {}) if (L.zusatzBudget[k] && L.zusatzBudget[k][art]) return L.zusatzBudget[k][art];
+    return null;
+}
+// DER ABSTAND (proportional): eine Art, deren Zwilling am Grund-Bau JEDES Rezepts und an jedem Regler-Rand ihres ersten
+// Rezepts höchstens ein Zehntel der werfenden Stufe trägt, ist mit Abstand entschieden (gemessen 12.10.: das Haus 96 gegen
+// ≥ 30 000 Dreiecke, höchstens 0,3 %; die volle Hülle des Hauses wären 2 752 Bauten, ~2,5 min lokal); jede andere Art fährt
+// die volle Regler-Hülle (alle Rezepte × min/max — das Tor: 385 Paare).
+const WURF_ABSTAND = 0.1;
+async function wurfMessen(h, opts) {
+    const o = opts || {};
+    const regel = o.regel || stammRegel();
+    const env = await h.getData("get-book");
+    const buch = env.book || {};
+    const pbk = env.paramsByKind || {};
+    const rc = env.renderConfig || {};
+    const kosten = (teile) => (teile || []).reduce((a, t) => a + (regel.teilWirft(t) ? t.tris : 0), 0);
+    let builds = 0;
+    const paare = async (plan) => {
+        const liste = [];
+        for (const pl of plan)
+            for (const st of [pl.lod, pl.s]) liste.push(Object.assign({ presetId: pl.p, seed: SEED, lod: st }, pl.ov ? { ov: pl.ov } : {}));
+        const res = liste.length ? await h.kostenListe(liste, null, true) : [];
+        builds += liste.length;
+        return plan.map((pl, i) => {
+            const a = res[2 * i],
+                b = res[2 * i + 1];
+            const bruch = !a || !a.teile || !a.teile.length ? "die Stufe " + pl.lod + " baut 0 Teile" : !b || !b.teile || !b.teile.length ? "die NUR-WURF-Stufe " + pl.s + " baut 0 Teile" : null;
+            return Object.assign({}, pl, { eigen: kosten(a && a.teile), zwilling: kosten(b && b.teile), bruch, ueberZeile: !!(b && b.budgetBruch) });
+        });
+    };
+    const arten = [];
+    for (const art of Object.keys(pbk).sort()) {
+        if (o.nurArt && art !== o.nurArt) continue;
+        const lod = ersteStufe(rc, art);
+        const B = budgetVonArt(rc, art);
+        const s = B && B[lod] ? B[lod].schatten : null;
+        if (!Number.isInteger(s) || s === lod || !(B[s] && B[s].nurWurf === true)) continue;
+        const rezepte = Object.keys(buch)
+            .filter((id) => buch[id] && buch[id].kind === art && (!o.nurRezept || o.nurRezept === id))
+            .sort();
+        const raender = pbk[art].flatMap((d) => [[d.id, d.min], [d.id, d.max]]);
+        const pl = (p, r) => ({ art, p, ov: r ? { [r[0]]: r[1] } : null, lod, s, wo: p + (r ? " " + r[0] + "=" + r[1] : "") });
+        arten.push({ art, lod, s, rezepte, raender, pl });
+    }
+    // Runde 1: der Grund-Bau jedes Rezepts, jeder Rand am ersten Rezept.
+    const runde1 = [];
+    for (const a of arten) {
+        for (const p of a.rezepte) runde1.push(a.pl(p, null));
+        if (a.rezepte.length) for (const r of a.raender) runde1.push(a.pl(a.rezepte[0], r));
+    }
+    const zeilen = await paare(runde1);
+    // Runde 2: die volle Regler-Hülle jeder Art ohne Abstand.
+    const runde2 = [];
+    for (const a of arten) {
+        const eigene = zeilen.filter((z) => z.art === a.art && !z.bruch);
+        a.verhaeltnis = eigene.reduce((m, z) => Math.max(m, z.eigen > 0 ? z.zwilling / z.eigen : Infinity), 0);
+        a.voll = a.verhaeltnis > WURF_ABSTAND || eigene.length < zeilen.filter((z) => z.art === a.art).length;
+        if (a.voll) for (const p of a.rezepte.slice(1)) for (const r of a.raender) runde2.push(a.pl(p, r));
+    }
+    zeilen.push(...(await paare(runde2)));
+    return {
+        zeilen: wurfRichten(zeilen, regel),
+        arten: arten.map((a) => `${a.art} L${a.lod}→${a.s} ${a.voll ? "volle Hülle" : "mit Abstand (Zwilling ≤ " + (100 * a.verhaeltnis).toFixed(1) + " % der Stufe)"}`),
+        builds,
+    };
+}
+// Die Regel des Stamms entscheidet je Paar, wer wirft (der Selbsttest richtet dieselben Bauten mit dem Täter neu).
+function wurfRichten(zeilen, regel) {
+    return zeilen.map((z) => {
+        const von = regel.vonBilligerer(z.eigen, z.zwilling);
+        return Object.assign({}, z, { von, wirft: von === "zwilling" ? z.zwilling : z.eigen });
+    });
+}
+// Das Urteil (rein): rot, wo die Regel von der teureren Stufe wirft oder eine Stufe bricht.
+function wurfUrteil(zeilen) {
+    const rot = [];
+    for (const z of zeilen) {
+        if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
+        else if (z.von !== "zwilling" && z.von !== "selbst") rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
+        else if (z.wirft > Math.min(z.eigen, z.zwilling))
+            rot.push(`${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`);
+    }
+    return rot;
+}
+const tausend = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+function wurfBericht(w) {
+    const selbst = w.zeilen.filter((z) => !z.bruch && z.von === "selbst");
+    const ueber = w.zeilen.filter((z) => !z.bruch && z.ueberZeile);
+    console.log(
+        `WURF (Kosten-Regel des Wirts, N5): ${w.zeilen.length} Bauten-Paare über die Regler-Hülle (${w.arten.join(", ")}) · ${w.builds} Bauten · die Stufe wirft selbst an ${selbst.length} · die NUR-WURF-Stufe über ihrer Zeile an ${ueber.length}`
+    );
+    for (const z of selbst)
+        console.log(`  WURF ${z.art} ${z.wo}: Stufe ${z.lod} wirft (${tausend(z.eigen)} Dreiecke; der Zwilling trüge ${tausend(z.zwilling)})`);
+    for (const z of ueber.filter((x) => x.von === "zwilling"))
+        console.log(`  WURF ${z.art} ${z.wo}: der Zwilling wirft (${tausend(z.zwilling)} über der Zeile, billiger als Stufe ${z.lod} mit ${tausend(z.eigen)})`);
+}
+
 // Die Zeilen des Ofen-Kanals in die gemeinsame Form (Kern je Art wie die Brücke sie sammelt).
 function ofenZeilen(ofen) {
     const kerne = kernVonArt();
@@ -437,12 +570,14 @@ function ofenZeilen(ofen) {
 // Die ganze Messung: erst der Stamm (er entscheidet die Ofen-Arten und gießt sie), dann die Brücke für den Rest.
 async function messenAlle() {
     const ofen = await imStamm((page) => ofenMessen(page, {}));
-    let m = null;
+    let m = null,
+        wurf = null;
     await runWithWorker(PORT, async (h) => {
         m = await messen(h, { ohneArten: Object.keys(ofen.arten) });
+        wurf = await wurfMessen(h);
     });
     const gusse = ofen.zeilen.reduce((s, z) => s + z.gusse, 0);
-    return { zeilen: [...m.zeilen, ...ofenZeilen(ofen)], builds: m.builds, gusse, ofenArten: ofen.arten };
+    return { zeilen: [...m.zeilen, ...ofenZeilen(ofen)], builds: m.builds, gusse, ofenArten: ofen.arten, wurf };
 }
 
 const name = (z) => z.kern + ":" + z.art + ":" + z.id;
@@ -549,7 +684,23 @@ async function selbsttest() {
     const hB = zB2.find((z) => z.id === "height");
     const ofenBruch = !!hB && bricht(hB) && zB2.filter(bricht).length === 1 && /Not-Körper|wirft|ERROR/.test(hB.bricht.join(" "));
     console.log(`${ofenBruch ? "✅" : "❌"} SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): ${hB ? name(hB) + " — " + hB.grund : "height fehlt"}`);
-    return rein && kanal && bruchOk && ofenKanal && ofenBruch;
+    // (e) DIE WURF-PROBE am Tor kathedrale (Grund-Bau und jeder Rand): die Regel des Stamms wirft nie von der teureren
+    // Stufe; der Täter „der Zwilling wirft immer" (der Stand vor der Kosten-Regel, in der Quelle des Stamms gesetzt) wirft am
+    // Regler-Rand von der teureren Stufe (orders=9: 20 308 gegen 16 900) → rot beim Namen (dieselben Bauten, neu gerichtet).
+    let wHeil = null;
+    await runWithWorker(PORT, async (h) => {
+        wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
+    });
+    const quelle = fs.readFileSync(STAMM_PFAD, "utf8");
+    const taeterQ = quelle.replace('return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
+    const wTaeter = taeterQ !== quelle ? wurfRichten(wHeil.zeilen, stammRegel(taeterQ)) : [];
+    const rotHeil = wurfUrteil(wHeil.zeilen);
+    const rotTaeter = wurfUrteil(wTaeter);
+    const wurfOk = wHeil.zeilen.length > 0 && !rotHeil.length && rotTaeter.length > 0;
+    console.log(
+        `${wurfOk ? "✅" : "❌"} SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil ${wHeil.zeilen.length} Paare, ${rotHeil.length} rot · Täter ${taeterQ === quelle ? "— die Regel fehlt in der Quelle" : rotTaeter.length + " rot (" + rotTaeter.slice(0, 2).join(" · ") + ")"}`
+    );
+    return rein && kanal && bruchOk && ofenKanal && ofenBruch && wurfOk;
 }
 
 (async () => {
@@ -569,6 +720,9 @@ async function selbsttest() {
     for (const z of brechend) console.log(`❌ BRICHT ${name(z)} — ${z.grund}`);
     const budgetZ = m.zeilen.filter((z) => z.budget && z.budget.length);
     for (const z of budgetZ) console.log(`  BUDGET ${name(z)} — ${z.budget.slice(0, 2).join(" · ")}`);
+    wurfBericht(m.wurf);
+    const wurfRot = wurfUrteil(m.wurf.zeilen);
+    for (const r of wurfRot.slice(0, 12)) console.log(`❌ WURF ${r}`);
     if (process.argv.includes("--messen")) {
         for (const z of m.zeilen.filter((x) => x.wirkt && !bricht(x))) console.log(`  wirkt ${name(z)} — ${z.grund}`);
         process.exit(0);
@@ -584,10 +738,10 @@ async function selbsttest() {
     const vB = vergleich(budgetZ.map(name), { tot: rb.bruch });
     for (const n of vB.neu) console.log(`❌ NEU ÜBER BUDGET: ${n} — ${budgetZ.find((z) => name(z) === n).budget[0]}`);
     for (const n of vB.geheilt) console.log(`❌ BUDGET GEHEILT: ${n} — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch)`);
-    if (!v.ok || !vB.ok || brechend.length) process.exit(1);
+    if (!v.ok || !vB.ok || brechend.length || wurfRot.length) process.exit(1);
     const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
     console.log(
-        `✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${budgetZ.length} = Ratsche ${Object.keys(rb.bruch).length} (Soll ${rb.soll})`
+        `✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle}) · über Budget ${budgetZ.length} = Ratsche ${Object.keys(rb.bruch).length} (Soll ${rb.soll}) · WURF ${m.wurf.zeilen.length} Paare, nie von der teureren Stufe`
     );
     process.exit(0);
 })().catch((e) => {

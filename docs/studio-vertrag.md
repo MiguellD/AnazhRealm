@@ -107,6 +107,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   selbst), nie `karte`. Der Satz-Bau des Wirts legt ihren Zwilling in den Wurf-Satz `bauWurf` seines Schatten-Stoffs
   (`_bauSatzArt`: EIN Befehl je Kaskade für jeden Werfer, im Hauptbild keiner — `gate:chunk-satz` (l)). Haus: Stufe 3 ≤ 96
   Dreiecke in 1 Draw; Ausstattung ≤ 48 (die Feuerstelle ≤ 32) — `gate:haus-fern` misst Kosten und Form.
+  **Die Kosten-Regel des Wurfs (1110-9, generisch je Art mit NUR-WURF-Stufe):** geworfen wird von der billigeren Stufe —
+  der Wirt nimmt den Zwilling der NUR-WURF-Stufe nur, wo er weniger Dreiecke wirft als die werfenden Teile der gezeigten
+  Stufe, sonst wirft sie selbst (`_wurfVonBilligerer` in `_foundryFlattenFor`; die Zeile der Stufe 3 ist das Rezept-Maß,
+  am Regler-Rand richtet die Regel — `gate:regler-wirkt` WURF nennt dort Stufe und Kosten).
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
   `false` wirft nicht) und für die Nah-Wiese, die Gelenk-Gestalt liest sie über `_ofenZeile` (den Leser von

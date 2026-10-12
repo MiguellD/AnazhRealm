@@ -76015,7 +76015,8 @@ class AnazhRealm {
             Number.isFinite(v[2]);
         const out = [];
         for (const t of h.teile) {
-            if (!t || !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "wurf" || t.rolle === "beide")) return bruch("rolle");
+            if (!t || !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "wurf" || t.rolle === "beide"))
+                return bruch("rolle");
             if (t.art === "box" || t.art === "keil") {
                 if (!v3(t.c) || !v3(t.h)) return bruch(t.art + " c/h");
                 if (t.art === "keil" && AnazhRealm.HUELLE_KEIL_TYP[t.first] == null) return bruch("keil first");
@@ -77481,6 +77482,33 @@ class AnazhRealm {
         this._foundryMats[key] = mat;
         return mat;
     }
+    // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
+    // Quelle). Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
+    // Eine LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
+    // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
+    // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
+    // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
+    // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
+    static _teilWirft(m) {
+        return (
+            m.kind !== "fellSchale" &&
+            !(m.mat && m.mat.seh === "glut") &&
+            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1)
+        );
+    }
+    // DIE KOSTEN-REGEL DES WURFS (1110-9, docs/studio-vertrag.md N5): geworfen wird von der billigeren Stufe — wirft eine
+    // gezeigte Stufe über ihre NUR-WURF-Stufe, nimmt der Wirt deren Zwilling nur, wo er WENIGER Dreiecke in die Kaskaden
+    // trägt als die werfenden Teile der Stufe selbst; sonst wirft die Stufe selbst. `eigen` und `zwilling` = Dreiecke der
+    // werfenden Teile (`_teilWirft`). Gemessen am Regler-Rand: kathedrale orders=9 trägt eine Stufe 3 von 20 308 gegen eine
+    // werfende L0 von 16 652 — der Zwilling wäre dort teurer als das, was er ersetzt (gate:regler-wirkt WURF).
+    static _wurfVonBilligerer(eigen, zwilling) {
+        return zwilling < eigen ? "zwilling" : "selbst";
+    }
+    // Die Dreiecke einer Geometrie (indiziert oder nicht).
+    static _geomDreiecke(g) {
+        if (!g || !g.attributes || !g.attributes.position) return 0;
+        return Math.floor((g.index ? g.index.count : g.attributes.position.count) / 3);
+    }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
@@ -77544,16 +77572,7 @@ class AnazhRealm {
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         }
-        // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
-        // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
-        // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
-        // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
-        // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
-        // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
-        mesh.castShadow =
-            m.kind !== "fellSchale" &&
-            !(m.mat && m.mat.seh === "glut") &&
-            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1);
+        mesh.castShadow = AnazhRealm._teilWirft(m);
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (globalThis.__phytoCore.budgetLook(m.kind)) mesh.userData.__klasse = m.kind;
@@ -78239,6 +78258,25 @@ class AnazhRealm {
                 if (fw && fw.instanceable && fw.lod === wurf && Array.isArray(fw.leaves) && fw.leaves.length)
                     schatten = fw;
             }
+            // DIE KOSTEN-REGEL (`_wurfVonBilligerer`, N5): ist die Wurf-Stufe eine NUR-WURF-Stufe, wirft ihr Zwilling nur,
+            // wo er weniger Dreiecke trägt als die werfenden Teile dieser Stufe — sonst wirft die Stufe selbst. Der Flat
+            // trägt die Kosten (`wurfKosten`: eigen · zwilling · von = die werfende Stufe).
+            let wurfKosten = null;
+            if (schatten && this._foundryNurWurf(preset, wurf)) {
+                let eigen = 0;
+                let zwilling = 0;
+                for (const c of group.children) {
+                    if (!c.geometry || !c.material || c.castShadow === false) continue;
+                    const rad = c.userData && c.userData.__rad;
+                    const mal = rad && Array.isArray(rad.raeder) && rad.raeder.length ? rad.raeder.length : 1;
+                    eigen += AnazhRealm._geomDreiecke(c.geometry) * mal;
+                }
+                for (const lf of schatten.leaves)
+                    if (lf.shadowTwin && lf.castShadow !== false) zwilling += AnazhRealm._geomDreiecke(lf.geom);
+                const von = AnazhRealm._wurfVonBilligerer(eigen, zwilling);
+                wurfKosten = { eigen, zwilling, von: von === "zwilling" ? wurf : lod };
+                if (von !== "zwilling") schatten = null;
+            }
             // EINE Sichthöhe je Baum über alle Stufen (vor dem Flat: die Instanz-Fassaden lesen die Vorlage). Ohne
             // bekannte Höhe der Höhen-Stufe wartet die Stufe (nie mit eigenem Stempel).
             if (this._foundryPresetIsTree(preset) && lod !== this._foundryHoehenStufe(preset)) {
@@ -78256,7 +78294,7 @@ class AnazhRealm {
             // Zwilling, L1 selbst, Karte nie; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
             // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
             // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = wurf === lod && !zwillingsQuelle;
+            const castsShadow = (wurf === lod && !zwillingsQuelle) || (wurfKosten !== null && wurfKosten.von === lod);
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -78380,6 +78418,7 @@ class AnazhRealm {
                       leaves,
                       huelle: group._huelle || null,
                       fern: group._fern || null,
+                      wurfKosten,
                   }
                 : false;
         }
