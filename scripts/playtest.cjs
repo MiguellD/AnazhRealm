@@ -30832,25 +30832,19 @@ async function checkBandLambda3Wind(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // Profil-Werte: laub (hoch wiegen), stein (=0).
+        // K19: den Wind trägt kein Substanz-Tag — die Achse `wiegen` ist fort, Holz und Stein stehen.
         const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
-        const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
-        out.laubWiegt = laubProfile.wiegen;
-        out.steinWiegtNull = steinProfile.wiegen;
-        // Source-Probe: V18.234 — der Wind-Sway lebt im GETEILTEN _applyVegetationResponse
-        // (Toon + PBR rufen ihn).
+        out.wiegenFort = !("wiegen" in laubProfile);
+        // Source-Probe: der Werkstatt-Baum (die geteilte Vegetations-Antwort) reicht den Wind an den EINEN Term
+        // (`_baumWindStoff`), keine eigene Formel über die Wind-Uhr.
         const src = window.__codeOf(r._applyVegetationResponse);
-        out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
+        out.windEinTerm = /this\._baumWindStoff\(/.test(src) && !/uWindTime/.test(src);
         return out;
     });
+    check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
     check(
-        `Λ.3 Wind: holz-Profil.wiegen > 0.2 (GEMESSEN ${res.laubWiegt && res.laubWiegt.toFixed(3)})`,
-        Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2
-    );
-    check("Λ.3 Wind: stein-Profil.wiegen === 0 (kein Sway auf Stein)", res.steinWiegtNull === 0);
-    check(
-        "Λ.3 Wind: _applyVegetationResponse setzt positionNode für wiegen > 0.05 (geteilt Toon+PBR)",
-        res.windSwayCode === true
+        "Λ.3 Wind: _applyVegetationResponse reicht den Werkstatt-Baum an den EINEN Wind-Term (_baumWindStoff)",
+        res.windEinTerm === true
     );
 }
 
@@ -35741,14 +35735,22 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-W VERTIEFTES WIND ───
-        // Source-Probe: das Wind-Sway (_applyVegetationResponse) trägt (1) quadratischen crownFactor UND
-        // (2) ein aperiodisches Flatter (flutter mit höherer Frequenz).
-        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
-        out.wQuadraticCrown =
-            /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
-        out.wHasFlutter = /_flutter\b/.test(swaySrc) && /flutterPhase/.test(swaySrc);
-        // Stronger sway magnitude (V18.211 war 0.25, V18.212 ist 0.32).
-        out.wStrongerSway = /float\(_sway\s*\*\s*0\.32\)/.test(swaySrc);
+        // K19: der Wind des Werkstatt-Baums ist der EINE Term des Kerns (phyto-core `windAusschlag`) — die Spitze
+        // biegt quadratisch (ζ²), das Blatt flattert schneller als sein Ast, der Sturm biegt ≥ 3× die Brise.
+        {
+            const PC = window.__phytoCore,
+                Z = PC.WIND_ZAHLEN,
+                W = PC.WIND_GESETZ;
+            const e = (U, zeta, t) => ({ t, U, g: 1, f0: 0.4, H: 20, zeta, rho: 0, phi: 0, psi: 1 });
+            const spitze = (U, zeta) => {
+                let m = 0;
+                for (let t = 0; t < 10; t += 0.01) m = Math.max(m, Math.abs(PC.windAusschlag(Z, e(U, zeta, t), true).quer));
+                return m;
+            };
+            out.wQuadraticCrown = Math.abs(spitze(1, 1) / spitze(1, 0.5) - 4) < 0.2;
+            out.wHasFlutter = Math.max(W.blatt.f, W.blatt.ueberAst * W.ast.faktor * 0.4) > W.ast.faktor * 0.4;
+            out.wStrongerSway = spitze(1, 1) >= 3 * spitze(0.06, 1);
+        }
 
         // ─── Ω-H PROVENIENZ BEIM ERNTEN (§2 Plan SEELEN-Band) ─────────
         // Source-Probe: harvestArchitecture liest _isGrown + _grownSpecies +
@@ -35801,9 +35803,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("V18.212 (K2b) Flare am Stamm-Ursprung (|x|, |z| < 0.5m)", res.k2FlareAtTrunkBase === true);
 
     // Ω-W
-    check("V18.212 (W1) Wind: quadratischer crownFactor (Spitzen flexen stärker)", res.wQuadraticCrown === true);
-    check("V18.212 (W2) Wind: aperiodisches Flattern (flutter mit höherer Frequenz)", res.wHasFlutter === true);
-    check("V18.212 (W3) Wind: stärkerer Sway (0.32 statt 0.25)", res.wStrongerSway === true);
+    check("K19 (W1) Wind: die Spitze biegt quadratisch (ζ², der EINE Term)", res.wQuadraticCrown === true);
+    check("K19 (W2) Wind: das Blatt flattert schneller als sein Ast", res.wHasFlutter === true);
+    check("K19 (W3) Wind: der Sturm biegt ≥ 3× die Brise (Wind-Zeile)", res.wStrongerSway === true);
 
     // Ω-H
     check("V18.212 (H1) harvestArchitecture liest _isGrown + _grownSpecies (Source)", res.hReadsGrown === true);
@@ -36026,8 +36028,8 @@ async function checkBandV18213MeshMerge(ctx) {
     check("V18.213 (M10b) archMergedGeomCache wird beim Reset geleert", res.cacheClearedAfterReset === true);
 }
 
-// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) +
-// per-Vertex Wind-flex/phase + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
+// Skeleton-Mesh: echte Tube-Geometrie (bark mit lobed flare) + Foliage-Cards (normalBend) + der EINE
+// Wind-Term im Stoff (K19) + Slope/Höhen-Toleranzen. Reine Render-Vertiefung — bp.parts bleibt
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh(ctx) {
     const { page, check } = ctx;
@@ -36040,7 +36042,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.tubeBuilderExists = typeof r._buildTreeTubeGeometry === "function";
         out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
-        out.mergeAttrExists = typeof r._mergeAttributedGeometries === "function";
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         out.defaultFlareExists =
@@ -36061,9 +36062,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
             ].every((k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp));
         }
 
-        // ─── (T2) Wind: useFlexAttr-Pfad existiert in _buildToonNodeMaterial ─
-        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
-        out.swayReadsFlexAttr = /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
+        // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
+        const skelSrc = window.__codeOf(r._buildTreeSkeletonLeaves);
+        out.skelettWindDaten = /_skelettWindDaten\(/.test(skelSrc) && /baumWind/.test(skelSrc);
 
         // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
@@ -36120,18 +36121,18 @@ async function checkBandV18214SkeletonMesh(ctx) {
             // 2 leaves erwartet (bark + foliage), max 4 als Toleranz.
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
             if (flat && flat.leaves.length > 0) {
-                // T6: bark-Geometrie trägt aFlex + aPhase + color + viele Vertices
+                // T6: bark-Geometrie trägt color + viele Vertices; der Wind lebt im Stoff (K19: `_baumWindStoff` liest
+                // positionGeometry und den Stempel aH0) — die Geometrie trägt nur, was ein Stoff liest.
+                const ungelesen = (lf, gelesen) => Object.keys(lf.geom.attributes).filter((k) => !gelesen.includes(k));
+                const imWind = (lf) =>
+                    !!(lf.mat && lf.mat.positionNode && lf.mat.userData.baumWind && lf.mat.userData.baumWind.ht > 0);
                 const bark = flat.leaves[0];
                 out.barkVerts = bark.geom.attributes.position.count;
-                out.barkHasFlex = !!bark.geom.attributes.aFlex;
-                out.barkHasPhase = !!bark.geom.attributes.aPhase;
+                out.barkUngelesen = ungelesen(bark, ["position", "normal", "color", "aH0", "aH0L"]);
+                out.barkImWind = imWind(bark);
                 out.barkHasColor = !!bark.geom.attributes.color;
                 out.barkHasNormal = !!bark.geom.attributes.normal;
                 out.barkManyVerts = bark.geom.attributes.position.count >= 100;
-                out.barkMatUseFlex =
-                    bark.mat && bark.mat.userData && bark.mat.userData.useFlexAttr !== undefined
-                        ? bark.mat.userData.useFlexAttr === true
-                        : true; // useFlexAttr ist opts-only, nicht userData-propagiert; akzeptiere
                 // T7: localMatrix Identity
                 const elems = bark.localMatrix.elements;
                 out.barkIdentity =
@@ -36139,7 +36140,8 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 // T8: foliage falls vorhanden
                 if (flat.leaves.length > 1) {
                     const fol = flat.leaves[1];
-                    out.foliageHasFlex = !!fol.geom.attributes.aFlex;
+                    out.foliageUngelesen = ungelesen(fol, ["position", "normal", "color", "uv", "aH0", "aH0L"]);
+                    out.foliageImWind = imWind(fol);
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
                     // Die Krone ist Vorlagen-Geometrie aus der EINEN phyto-core-Quelle: EIN Element je Phyto-Blatt, die
@@ -36185,7 +36187,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check("V18.214 (T1a) _buildTreeTubeGeometry existiert", res.tubeBuilderExists === true);
     check("V18.214 (T1b) _buildTreeFoliageCardGeometry existiert", res.cardBuilderExists === true);
     check("V18.214 (T1c) _buildTreeSkeletonLeaves existiert", res.skelLeavesExists === true);
-    check("V18.214 (T1d) _mergeAttributedGeometries existiert", res.mergeAttrExists === true);
     check(
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
@@ -36197,7 +36198,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
-    check("V18.214 (T2) _buildToonNodeMaterial liest aFlex Attribut bei useFlexAttr", res.swayReadsFlexAttr === true);
+    check("K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)", res.skelettWindDaten === true);
     check(
         "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
         res.spawnReadsSlopeHeight === true
@@ -36220,13 +36221,18 @@ async function checkBandV18214SkeletonMesh(ctx) {
         `V18.214 (T5c) ≤4 leaves (gemessen ${res.flatLeafCount}, erwartet 1-2 bark+foliage)`,
         res.flatLeavesFew === true
     );
-    check(`V18.214 (T6a) bark-Geom trägt aFlex (gemessen ${res.barkVerts} verts)`, res.barkHasFlex === true);
-    check("V18.214 (T6b) bark-Geom trägt aPhase", res.barkHasPhase === true);
+    check(
+        `K19 (T6a) die Rinde schwingt im Wind-Term ihres Stoffs, die Geometrie trägt nur Gelesenes (${res.barkVerts} verts, ungelesen: ${(res.barkUngelesen || []).join(" · ") || "—"})`,
+        res.barkImWind === true && Array.isArray(res.barkUngelesen) && res.barkUngelesen.length === 0
+    );
     check("V18.214 (T6c) bark-Geom trägt color", res.barkHasColor === true);
     check("V18.214 (T6d) bark-Geom trägt normal", res.barkHasNormal === true);
     check("V18.214 (T6e) bark-Geom hat ≥100 Vertices (Ring-of-6 pro Punkt)", res.barkManyVerts === true);
     check("V18.214 (T7) bark-Leaf localMatrix ist Identity", res.barkIdentity === true);
-    check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
+    check(
+        `K19 (T8a) das Laub schwingt im Wind-Term seines Stoffs, die Geometrie trägt nur Gelesenes (${res.foliageVerts} verts, ungelesen: ${(res.foliageUngelesen || []).join(" · ") || "—"})`,
+        res.foliageImWind === true && Array.isArray(res.foliageUngelesen) && res.foliageUngelesen.length === 0
+    );
     check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
         `V18.386/.390 Neues Kleid/Eins W4: foliage-Vertex-Count = anchors·4 (Quad) oder anchors·30 (L0-Klinge): ${res.foliageVerts}/${res.skelAnchorCount}`,
@@ -37802,23 +37808,23 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const sigs = {
             boden: { vertexColors: true, side: THREE.DoubleSide },
             fels: { vertexColors: true, vertexColorAlbedo: true, color: 0x8a8a8a },
-            rinde: { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide },
+            rinde: { vertexColors: true, pflanzenStoff: true, bark: true, side: THREE.DoubleSide },
             laub: {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true,
                 side: THREE.DoubleSide,
             },
             klinge: {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true,
                 foliageBlade: true,
                 side: THREE.DoubleSide,
             },
-            kern: { vertexColors: true, useInstanceTint: true, useFlexAttr: true },
+            kern: { vertexColors: true, useInstanceTint: true, pflanzenStoff: true },
         };
         out.farbeQuadrat = [];
         out.farbeOhneNode = [];
@@ -37946,11 +37952,11 @@ async function checkBandWahrerAnblickFels(ctx) {
             layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false)
         );
 
-        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
+        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !pflanzenStoff)
         // V18.236 (§2): der EINE Builder ist PBR; die Gate-Probe liest ihn.
         const pbrSrc = window.__codeOf(r._buildPbrNodeMaterial);
-        out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(pbrSrc);
-        out.pbrGeologyGated = /!opts\.useFlexAttr/.test(pbrSrc);
+        out.geologyGated = /!opts\.pflanzenStoff.*_terrainGeologyAlbedo/s.test(pbrSrc);
+        out.pbrGeologyGated = /!opts\.pflanzenStoff/.test(pbrSrc);
 
         // (F) Version
         out.versionStr = A.VERSION;
@@ -37979,10 +37985,10 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
     check(
-        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !useFlexAttr (Toon, kein Fels auf Rinde)",
+        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !pflanzenStoff (Toon, kein Fels auf Rinde)",
         res.geologyGated === true
     );
-    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !useFlexAttr (PBR)", res.pbrGeologyGated === true);
+    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !pflanzenStoff (PBR)", res.pbrGeologyGated === true);
 
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
@@ -38182,8 +38188,14 @@ async function checkBandWahrerAnblickLaub(ctx) {
         const out = {};
 
         // (A) CONSUM Source-Probes
+        // Die Maserung lebt im Kern (phyto-core buildBarkTubeArrays); die Welt-Tube ruft ihn (K19: der Inline-Zwilling fiel).
         const tubeSrc = window.__codeOf(r._buildTreeTubeGeometry);
-        out.barkGrain = /grainFreq/.test(tubeSrc) && /Math\.sin\(i \* grainFreq\)/.test(tubeSrc);
+        const kernTube = globalThis.__phytoCore && globalThis.__phytoCore.buildBarkTubeArrays;
+        const kernSrc = typeof kernTube === "function" ? window.__codeOf(kernTube) : "";
+        out.barkGrain =
+            /_core\.buildBarkTubeArrays\(/.test(tubeSrc) &&
+            /grainFreq/.test(kernSrc) &&
+            /Math\.sin\(i \* grainFreq\)/.test(kernSrc);
         const cardSrc = window.__codeOf(r._buildTreeFoliageCardGeometry);
         out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
         out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);

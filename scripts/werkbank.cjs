@@ -28,6 +28,8 @@
 //                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
+//                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
 //                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
@@ -708,7 +710,8 @@ function bandEinschwingen(k) {
                 if (dx * dx + dz * dz <= rad2 && !r._archIsRendered(e)) ungebaut++;
             }
             let instanzen = 0;
-            if (st.archInstanceGroups) for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
+            if (st.archInstanceGroups)
+                for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
             const ls = st.perfSense ? +st.perfSense.loadScale.toFixed(3) : 1;
             return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut, loadScale: ls };
         };
@@ -915,7 +918,8 @@ async function starte() {
             r.activeWorldSet(x.worldId);
             return { id: x.worldId };
         }, json);
-        if (res.fehler) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
+        if (res.fehler)
+            throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
         await lade();
         await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
@@ -952,7 +956,10 @@ async function starte() {
                 };
                 const stell = (o && o.stell) || null;
                 for (const k of Object.keys(stell || {}))
-                    if (!FELD[k]) throw new Error(`Messort ${o.ort}: unbekannte Stellgröße „${k}" (${Object.keys(FELD).join(", ")})`);
+                    if (!FELD[k])
+                        throw new Error(
+                            `Messort ${o.ort}: unbekannte Stellgröße „${k}" (${Object.keys(FELD).join(", ")})`
+                        );
                 window.__ortStell = stell
                     ? () => {
                           for (const [k, v] of Object.entries(stell)) for (const f of FELD[k]) r.state[f] = v;
@@ -1221,9 +1228,13 @@ async function starte() {
                             stell: ort.stell || null,
                         });
                         return send(
-                            Object.assign({ ort: ort.id, pose: pose ? pose.id : null, welt, spieler: stelle.spieler }, o, {
-                                ms: Date.now() - t0,
-                            })
+                            Object.assign(
+                                { ort: ort.id, pose: pose ? pose.id : null, welt, spieler: stelle.spieler },
+                                o,
+                                {
+                                    ms: Date.now() - t0,
+                                }
+                            )
                         );
                     }
                     aktOrt = null;
@@ -1442,7 +1453,11 @@ async function starte() {
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
-                    const liste = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: t.zeilen, w: 640, h: 400 });
+                    const liste = await page.evaluate((o) => window.__albedoSicht(o), {
+                        zeilen: t.zeilen,
+                        w: 640,
+                        h: 400,
+                    });
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
@@ -1450,7 +1465,10 @@ async function starte() {
                     for (const e of liste) {
                         if (e.png) {
                             fs.writeFileSync(
-                                path.join(ordner, "welt-" + String(e.id || e.name).replace(/[^a-z0-9_-]+/gi, "_") + ".png"),
+                                path.join(
+                                    ordner,
+                                    "welt-" + String(e.id || e.name).replace(/[^a-z0-9_-]+/gi, "_") + ".png"
+                                ),
                                 Buffer.from(e.png.split(",")[1], "base64")
                             );
                             delete e.png;
@@ -1458,7 +1476,14 @@ async function starte() {
                         if (e.name === "graukarte") eichung = e.gesamt ? e.gesamt.Y : null;
                         else
                             welt[e.id] = e.gesamt
-                                ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe, gesetzt: e.gesetzt }
+                                ? {
+                                      Y: e.gesamt.Y,
+                                      rgb: e.gesamt.rgb,
+                                      pixel: e.pixel,
+                                      zuege: e.zuege,
+                                      stoffe: e.stoffe,
+                                      gesetzt: e.gesetzt,
+                                  }
                                 : { Y: null, fehler: e.fehler || "kein Pixel" };
                     }
                     const geraet = await page.evaluate(async () => {
@@ -1470,7 +1495,15 @@ async function starte() {
                         const p = window.anazhRealm.state.playerMesh.position;
                         return [p.x, p.z].map((v) => +v.toFixed(1));
                     });
-                    const messung = { datum: new Date().toISOString(), echt: ECHT, geraet, ort: aktOrt, spieler, eichung, welt };
+                    const messung = {
+                        datum: new Date().toISOString(),
+                        echt: ECHT,
+                        geraet,
+                        ort: aktOrt,
+                        spieler,
+                        eichung,
+                        welt,
+                    };
                     const datei = path.resolve(b.datei || path.join(ordner, `welt-${Date.now()}.json`));
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, JSON.stringify(messung, null, 1));
@@ -1504,9 +1537,13 @@ async function starte() {
                 if (req.url === "/shader") {
                     const stoff = b.stoff ? SK.STOFFE[b.stoff] : null;
                     if (b.stoff && !stoff)
-                        return send({ fehler: `unbekannter Stoff „${b.stoff}" (STOFFE: ${Object.keys(SK.STOFFE).join(", ")})` });
+                        return send({
+                            fehler: `unbekannter Stoff „${b.stoff}" (STOFFE: ${Object.keys(SK.STOFFE).join(", ")})`,
+                        });
                     if ((b.gegen || b.datei) && !stoff)
-                        return send({ fehler: "--gegen und --datei gelten den Programmen eines Stoffs (--stoff <name>)" });
+                        return send({
+                            fehler: "--gegen und --datei gelten den Programmen eines Stoffs (--stoff <name>)",
+                        });
                     const rot = [];
                     const zustand = {};
                     for (const [n, s] of Object.entries(SK.STOFFE)) zustand[n] = s.zustand;
@@ -1518,18 +1555,32 @@ async function starte() {
                     const alle = liste
                         .map((p) =>
                             Object.assign(
-                                { programm: p.programm, objekte: p.objekte, klassen: p.klassen, stoffe: p.stoffe, wgsl: p.fragment },
+                                {
+                                    programm: p.programm,
+                                    objekte: p.objekte,
+                                    klassen: p.klassen,
+                                    stoffe: p.stoffe,
+                                    wgsl: p.fragment,
+                                },
                                 SK.wgslKosten(p.fragment)
                             )
                         )
                         .sort((x, y) => y.abtastungen.unbedingt - x.abtastungen.unbedingt || y.ops - x.ops);
                     const nur = b.nur ? new RegExp(b.nur) : null;
-                    const zeilen = alle.filter((p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k)));
+                    const zeilen = alle.filter(
+                        (p) => !nur || nur.test(p.programm) || p.klassen.some(([k]) => nur.test(k))
+                    );
                     if (b.ordner) {
                         const ordner = path.resolve(b.ordner);
                         fs.mkdirSync(ordner, { recursive: true });
                         zeilen.forEach((z, i) =>
-                            fs.writeFileSync(path.join(ordner, `${String(i).padStart(3, "0")}-${z.programm.replace(/[^a-z0-9._-]+/gi, "_")}.wgsl`), z.wgsl)
+                            fs.writeFileSync(
+                                path.join(
+                                    ordner,
+                                    `${String(i).padStart(3, "0")}-${z.programm.replace(/[^a-z0-9._-]+/gi, "_")}.wgsl`
+                                ),
+                                z.wgsl
+                            )
                         );
                     }
                     const top = Math.max(1, Number(b.top) || 30);
@@ -1543,33 +1594,47 @@ async function starte() {
                                 (z) =>
                                     `${pad(z.abtastungen.gesamt, 4)} ${pad(z.abtastungen.unbedingt, 4)} ${pad(z.abtastungen.zweig, 4)} ${pad(z.abtastungen.schleife, 4)} | ${pad(z.ladungen, 4)} | ${pad(z.schleifen, 3)} | ${pad(z.rauschen, 3)} | ${pad(z.ops, 5)} | ${pad(z.objekte, 4)} | ${z.programm}` +
                                     (z.stoffe.length ? " [" + z.stoffe.join(", ") + "]" : "") +
-                                    (z.klassen.length > 1 ? " (" + z.klassen.map(([k, n]) => k + " ×" + n).join(", ") + ")" : "")
+                                    (z.klassen.length > 1
+                                        ? " (" + z.klassen.map(([k, n]) => k + " ×" + n).join(", ") + ")"
+                                        : "")
                             ),
                     ].join("\n");
                     let stoffBericht = null;
                     if (stoff) {
                         const progs = alle.filter((z) => z.stoffe.includes(b.stoff));
                         if (!progs.length)
-                            rot.push(`der Stoff ${b.stoff} (state.${stoff.zustand}) zeichnet in diesem Frame kein Programm (die Linse ist blind)`);
+                            rot.push(
+                                `der Stoff ${b.stoff} (state.${stoff.zustand}) zeichnet in diesem Frame kein Programm (die Linse ist blind)`
+                            );
                         const vor = b.gegen ? SK.wgslKosten(fs.readFileSync(path.resolve(b.gegen), "utf8")) : null;
-                        if (vor && !vor.einstieg) rot.push(`--gegen ${b.gegen}: kein Fragment-Einstieg (die Linse ist blind)`);
+                        if (vor && !vor.einstieg)
+                            rot.push(`--gegen ${b.gegen}: kein Fragment-Einstieg (die Linse ist blind)`);
                         if (b.datei)
                             progs.forEach((z, i) => {
                                 const d = path.resolve(i ? b.datei.replace(/(\.wgsl)?$/, `-${i + 1}.wgsl`) : b.datei);
                                 fs.mkdirSync(path.dirname(d), { recursive: true });
                                 fs.writeFileSync(d, z.wgsl);
                             });
-                        for (const z of progs) rot.push(...SK.kostenUrteil(z, stoff.budget, `${b.stoff} (${z.programm})`));
+                        for (const z of progs)
+                            rot.push(...SK.kostenUrteil(z, stoff.budget, `${b.stoff} (${z.programm})`));
                         const namen = (z) =>
                             Object.keys(z.rauschNamen).length
-                                ? "\nRausch-Aufrufe: " + Object.entries(z.rauschNamen).map(([f, c]) => f + " ×" + c).join(" · ")
+                                ? "\nRausch-Aufrufe: " +
+                                  Object.entries(z.rauschNamen)
+                                      .map(([f, c]) => f + " ×" + c)
+                                      .join(" · ")
                                 : "";
                         stoffBericht = {
                             name: b.stoff,
                             budget: stoff.budget,
                             programme: progs.length,
                             tabelle: progs
-                                .map((z, i) => `STOFF ${b.stoff} — Programm ${i + 1}/${progs.length}: ${z.programm} (${z.objekte} Objekte)\n` + SK.kostenTabelle(z, vor) + namen(z))
+                                .map(
+                                    (z, i) =>
+                                        `STOFF ${b.stoff} — Programm ${i + 1}/${progs.length}: ${z.programm} (${z.objekte} Objekte)\n` +
+                                        SK.kostenTabelle(z, vor) +
+                                        namen(z)
+                                )
                                 .join("\n\n"),
                         };
                     }
@@ -1578,7 +1643,15 @@ async function starte() {
                         probe = await page.evaluate(() => window.__rauschProbe());
                         rot.push(...SK.probeUrteil(probe));
                     }
-                    return send({ programme: zeilen.length, tabelle, stoff: stoffBericht, probe, rot, ordner: b.ordner || null, ms: Date.now() - t0 });
+                    return send({
+                        programme: zeilen.length,
+                        tabelle,
+                        stoff: stoffBericht,
+                        probe,
+                        rot,
+                        ordner: b.ordner || null,
+                        ms: Date.now() - t0,
+                    });
                 }
                 if (req.url === "/diaet") {
                     const o = await page.evaluate((k) => window.__diaetLauf(k), {
@@ -1605,7 +1678,11 @@ async function starte() {
                         tiere: b.tiere || "frei",
                     });
                     return send(
-                        Object.assign(o, { urteil: STAND.standUrteil(o), fehler: fehler.slice(-5), ms: Date.now() - t0 })
+                        Object.assign(o, {
+                            urteil: STAND.standUrteil(o),
+                            fehler: fehler.slice(-5),
+                            ms: Date.now() - t0,
+                        })
                     );
                 }
                 if (req.url === "/sicht") {
@@ -1634,25 +1711,28 @@ async function starte() {
                     const cdp = await page.target().createCDPSession();
                     await cdp.send("HeapProfiler.collectGarbage");
                     await cdp.detach();
-                    const o = await page.evaluate(async (top) => {
-                        for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
-                        // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
-                        window.__buehne();
-                        await window.__drawZensus({ top: 1 });
-                        window.__kehrausJetzt();
-                        window.__texturZensus();
-                        const puffer = window.__pufferZensus();
-                        const v = window.__vram || {};
-                        const mb = (x) => +(x / 1048576).toFixed(1);
-                        return {
-                            vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
-                            pufferMB: mb(v.puffer || 0),
-                            texturenMB: mb(v.texturen || 0),
-                            gcMB: mb(v.gc || 0),
-                            puffer,
-                            gross: window.__vramBericht ? window.__vramBericht(top) : null,
-                        };
-                    }, Number(b.top) || 30);
+                    const o = await page.evaluate(
+                        async (top) => {
+                            for (let i = 0; i < 3; i++) await new Promise((res) => setTimeout(res, 30));
+                            // Ein gezählter Frame zuerst: `bild` heißt „dieser Frame zeichnete ihn" (__zensusCalls).
+                            window.__buehne();
+                            await window.__drawZensus({ top: 1 });
+                            window.__kehrausJetzt();
+                            window.__texturZensus();
+                            const puffer = window.__pufferZensus();
+                            const v = window.__vram || {};
+                            const mb = (x) => +(x / 1048576).toFixed(1);
+                            return {
+                                vramMB: mb((v.puffer || 0) + (v.texturen || 0)),
+                                pufferMB: mb(v.puffer || 0),
+                                texturenMB: mb(v.texturen || 0),
+                                gcMB: mb(v.gc || 0),
+                                puffer,
+                                gross: window.__vramBericht ? window.__vramBericht(top) : null,
+                            };
+                        },
+                        Number(b.top) || 30
+                    );
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/zaehlen") {
@@ -1735,7 +1815,8 @@ async function starte() {
                     });
                     const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
                     const w3 = await stempel();
-                    const ue = (a, c) => (a && c && Number.isFinite(c.ueberlauf) ? c.ueberlauf - (a.ueberlauf || 0) : null);
+                    const ue = (a, c) =>
+                        a && c && Number.isFinite(c.ueberlauf) ? c.ueberlauf - (a.ueberlauf || 0) : null;
                     const stempelBand = w3
                         ? {
                               einschwingen: ue(w0, w1),
@@ -1844,7 +1925,13 @@ async function starte() {
                         const z = await page.evaluate((k) => window.__zielZensus(k), { n });
                         if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
                         const ids = z.ziele
-                            .filter((x) => !x.leinwand && !x.tiefe && x.kopierbar && /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format))
+                            .filter(
+                                (x) =>
+                                    !x.leinwand &&
+                                    !x.tiefe &&
+                                    x.kopierbar &&
+                                    /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format)
+                            )
                             .map((x) => x.id);
                         const lesen = await page.evaluate((k) => window.__zielLesen(k), { ids });
                         return { z, lesen, u: ZZ.zielUrteil(z, lesen) };
@@ -1852,7 +1939,8 @@ async function starte() {
                     let selbst = null;
                     if (b.selbsttest) {
                         const s = await page.evaluate(() => window.__zielSchmuggel(true));
-                        if (!s || s.fehler) return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
+                        if (!s || s.fehler)
+                            return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
                         let mit;
                         try {
                             mit = await zensus();
@@ -1870,7 +1958,9 @@ async function starte() {
                     }
                     const { z, lesen, u } = await zensus();
                     if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
-                    const rest = selbst ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name) : [];
+                    const rest = selbst
+                        ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name)
+                        : [];
                     const selbstOk = selbst ? selbst.every((x) => x.ok) && !rest.length : null;
                     const datei = path.resolve(
                         b.json || path.join(root, "artifacts", "werkbank", `ziele-${Date.now()}.json`)
@@ -1885,9 +1975,15 @@ async function starte() {
                             ? (selbstOk ? "SELBSTTEST GRÜN" : "SELBSTTEST ROT") +
                               ` — ${selbst.filter((x) => x.ok).length} von ${selbst.length} Tätern beim Namen` +
                               (selbst.some((x) => !x.ok)
-                                  ? "; blind für: " + selbst.filter((x) => !x.ok).map((x) => x.muss).join(" · ")
+                                  ? "; blind für: " +
+                                    selbst
+                                        .filter((x) => !x.ok)
+                                        .map((x) => x.muss)
+                                        .join(" · ")
                                   : "") +
-                              (rest.length ? "; nach dem Abbau noch im Zensus: " + rest.join(", ") : "; danach restlos fort")
+                              (rest.length
+                                  ? "; nach dem Abbau noch im Zensus: " + rest.join(", ")
+                                  : "; danach restlos fort")
                             : null,
                         datei,
                         ms: Date.now() - t0,
@@ -2121,19 +2217,30 @@ async function starte() {
                     }
                     const a = HL.haengerAuswerten(roh, profile, { schwelle: Number(b.schwelle) || 100 });
                     const befunde = HL.haengerLinsenBefunde(a);
-                    const datei = path.resolve(b.json || path.join(root, "artifacts", "werkbank", `haenger-${Date.now()}.json`));
+                    const datei = path.resolve(
+                        b.json || path.join(root, "artifacts", "werkbank", `haenger-${Date.now()}.json`)
+                    );
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     // Das ROHE (Takte + Profil) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, profile }));
                     fs.writeFileSync(
                         datei,
                         JSON.stringify(
-                            Object.assign({ echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen }, befunde }, a),
+                            Object.assign(
+                                { echt: ECHT, boot: { art: bootArt(), ladungen: boot.ladungen }, befunde },
+                                a
+                            ),
                             null,
                             1
                         )
                     );
-                    return send({ tabelle: HL.haengerTabelle(a), befunde, haenger: a.haengerN, datei, ms: Date.now() - t0 });
+                    return send({
+                        tabelle: HL.haengerTabelle(a),
+                        befunde,
+                        haenger: a.haengerN,
+                        datei,
+                        ms: Date.now() - t0,
+                    });
                 }
                 if (req.url === "/licht")
                     return send(
@@ -2188,7 +2295,8 @@ async function starte() {
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
     let o;
     if (cmd === "status") o = await rufe("/status");
-    else if (cmd === "umstellen") o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose") });
+    else if (cmd === "umstellen")
+        o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose") });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -2263,8 +2371,17 @@ async function starte() {
                 { name: "fern-krone-nah", soll: 4, gpu: 4 },
                 { name: "wege-karte:nah", soll: 21, gpu: 21 },
             ];
-            const hoch = (texe, ruhigOk, bilder) => ({ ruhig: ruhigOk !== false, versuche: 1, bilder: bilder == null ? 3 : bilder, texe });
-            pruefe("das Hauptbild lädt jedes Daten-Bild", LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch) }), null);
+            const hoch = (texe, ruhigOk, bilder) => ({
+                ruhig: ruhigOk !== false,
+                versuche: 1,
+                bilder: bilder == null ? 3 : bilder,
+                texe,
+            });
+            pruefe(
+                "das Hauptbild lädt jedes Daten-Bild",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch) }),
+                null
+            );
             pruefe(
                 "ein Daten-Bild bleibt alt",
                 LL.nahFernUrteil({
@@ -2273,7 +2390,11 @@ async function starte() {
                 }),
                 /NAH-FERN Upload: kronen-streu:nah — die GPU hält Version 17, der Schreiber hob sie auf 18/
             );
-            pruefe("die Upload-Probe ohne Bild", LL.nahFernUrteil({ orte: ruhig, upload: hoch([]) }), /die Probe ist blind/);
+            pruefe(
+                "die Upload-Probe ohne Bild",
+                LL.nahFernUrteil({ orte: ruhig, upload: hoch([]) }),
+                /die Probe ist blind/
+            );
             pruefe(
                 "die Upload-Probe ohne gezeichnetes Bild",
                 LL.nahFernUrteil({ orte: ruhig, upload: hoch(frisch, true, 0) }),
@@ -2293,7 +2414,16 @@ async function starte() {
                 "die Welt stand nicht",
                 LL.nahFernUrteil({
                     orte: ruhig,
-                    welt: { gestanden: false, ms: 120000, chunk: "-21,-20", fehlt: ["-19,-18"], gebaut: 1, ring: 2, imBau: 3, karte: 1 },
+                    welt: {
+                        gestanden: false,
+                        ms: 120000,
+                        chunk: "-21,-20",
+                        fehlt: ["-19,-18"],
+                        gebaut: 1,
+                        ring: 2,
+                        imBau: 3,
+                        karte: 1,
+                    },
                 }),
                 /NAH-FERN Welt: das Quadrat der Linse stand nach 120 s nicht \(Chunk -21,-20, fehlt 1: -19,-18/
             );
@@ -2304,7 +2434,13 @@ async function starte() {
                         i
                             ? o
                             : Object.assign(ort("wald", 0, 0.06, 0.058), {
-                                  nah: { n: 4096, Y: 0.6, rgb: [0.6, 0.6, 0.6], still: false, spur: { hell: [[4096, 0.69]] } },
+                                  nah: {
+                                      n: 4096,
+                                      Y: 0.6,
+                                      rgb: [0.6, 0.6, 0.6],
+                                      still: false,
+                                      spur: { hell: [[4096, 0.69]] },
+                                  },
                               })
                     ),
                 }),
@@ -2358,7 +2494,12 @@ async function starte() {
             process.exit(o.befunde.length ? 1 : 0);
         }
     } else if (cmd === "albedo") {
-        o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner"), tafel: argv.includes("--tafel"), datei: opt("--datei") });
+        o = await rufe("/albedo", {
+            nur: opt("--nur"),
+            ordner: opt("--ordner"),
+            tafel: argv.includes("--tafel"),
+            datei: opt("--datei"),
+        });
         if (o && o.tabelle) {
             console.log(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner);
             process.exit(o.urteil === "GRUEN" ? 0 : 1);
@@ -2368,8 +2509,76 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
         }
-    }
-    else if (cmd === "licht") o = await rufe("/licht");
+    } else if (cmd === "licht" && argv.includes("--laub")) {
+        // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
+        // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
+        const LL = require("./lib/licht-linsen.cjs");
+        if (argv.includes("--selbsttest")) {
+            const m = (v) => ({ verhaeltnis: v, gegen: { Y: v }, auf: { Y: 1 }, stoffe: "laub" });
+            const f = [
+                [LL.laubLichtUrteil({ welt: { eiche: m(1.4) } }).urteil, "GRUEN"],
+                [
+                    LL.laubLichtUrteil({ welt: { eiche: m(0.3) } }).befunde.join(),
+                    /eiche: Gegenlicht\/Auflicht 0\.3 < 1\.3/,
+                ],
+                [LL.laubLichtUrteil({ welt: { eiche: m(1.4) }, labor: { eiche: { verhaeltnis: 1.0 } } }).urteil, "ROT"],
+                [
+                    LL.laubLichtUrteil({ welt: { eiche: m(1.4) }, labor: { eiche: { verhaeltnis: 1.35 } } }).urteil,
+                    "GRUEN",
+                ],
+                // das Labor misst unter EINEM Licht: gegen die Welt-Seite `sonne`, nie gegen die volle Licht-Kette
+                [
+                    LL.laubLichtUrteil({
+                        welt: { eiche: Object.assign(m(1.4), { sonne: { verhaeltnis: 1.0 } }) },
+                        labor: { eiche: { verhaeltnis: 1.4 } },
+                    }).befunde.join(),
+                    /Welt 1 gegen Labor 1\.4 \(nur Sonne\)/,
+                ],
+                [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
+                [LL.laubLichtUrteil({}).urteil, "ROT"],
+            ];
+            const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+            console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);
+            process.exit(fehl.length ? 1 : 0);
+        }
+        const welt = {};
+        // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
+        const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "wiese");
+        for (const art of String(opt("--laub", "eiche,birke")).split(",")) {
+            const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
+            // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
+            await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
+            const plan = (
+                await rufe("/eval", {
+                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)} }; ${c}`,
+                })
+            ).ergebnis;
+            if (!plan || plan.fehler) {
+                welt[art] = plan || { fehler: "kein Plan" };
+                continue;
+            }
+            await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
+            const w = (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)} }; ${c}` }))
+                .ergebnis;
+            const ordner = opt("--ordner");
+            if (w && w.gegen)
+                for (const k of ["gegen", "auf"]) {
+                    if (ordner)
+                        fs.writeFileSync(
+                            path.join(ordner, `laub-${art}-${k}.png`),
+                            Buffer.from(w[k].png.split(",")[1], "base64")
+                        );
+                    delete w[k].png;
+                }
+            welt[art] = w;
+        }
+        const u = LL.laubLichtUrteil({ welt });
+        // `--datei`: die Welt-Seite für das Labor-Urteil (diag-albedo-tafel.cjs --laub --welt <datei>)
+        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify({ welt }, null, 1));
+        console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+        console.log(`LAUB-LICHT ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
+    } else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
@@ -2384,13 +2593,17 @@ async function starte() {
             );
             process.exit(f.length ? 1 : 0);
         }
-        o = await rufe("/diaet", { frames: a[0], modus: opt("--modus", "ruhe"), grad: opt("--grad"), tiere: opt("--tiere", "halten") });
+        o = await rufe("/diaet", {
+            frames: a[0],
+            modus: opt("--modus", "ruhe"),
+            grad: opt("--grad"),
+            tiere: opt("--tiere", "halten"),
+        });
         if (o && o.urteil) {
             console.log(JSON.stringify(o, null, 1));
             process.exit(o.urteil.length ? 1 : 0);
         }
-    }
-    else if (cmd === "stand")
+    } else if (cmd === "stand")
         o = await rufe("/stand", {
             n: a[0],
             ein: opt("--ein"),
@@ -2441,13 +2654,15 @@ async function starte() {
         const fehler = [];
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
         const boots = new Set(laeufe.map((u) => u.boot && u.boot.art));
-        if (!boots.has("erst") || !boots.has("zweit")) fehler.push(`Boot-Arten ${[...boots].join("/")} — Erst- UND Zweit-Boot`);
+        if (!boots.has("erst") || !boots.has("zweit"))
+            fehler.push(`Boot-Arten ${[...boots].join("/")} — Erst- UND Zweit-Boot`);
         laeufe.forEach((u, i) => {
             const n = path.basename(dateien[i]);
             if (!u.roh) fehler.push(`${n}: kein Rohes (eine Messung vor der Serien-Ratsche)`);
             if (u.echt !== true) fehler.push(`${n}: nicht die echte GPU (start --echt)`);
             // Ein Lauf ohne Ort-Feld stammt von vor den Messorten (S1): er stand an der Mess-Wiese.
-            if ((u.ort || "wiese") !== ort.id) fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
+            if ((u.ort || "wiese") !== ort.id)
+                fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
             if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
             // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick).
             for (const f of BAND.ortGestellt(ort, u.zustand)) fehler.push(`${n}: ${f}`);
@@ -2567,8 +2782,7 @@ async function starte() {
         }
         console.log(JSON.stringify(o, null, 1));
         process.exit(1);
-    }
-    else if (cmd === "zerlegen") {
+    } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");
         o = await rufe("/zerlegen", {
             runden: opt("--runden"),
@@ -2587,8 +2801,7 @@ async function starte() {
             console.log(JSON.stringify(o, null, 1));
             process.exit(1);
         }
-    }
-    else if (cmd === "shader") {
+    } else if (cmd === "shader") {
         if (argv.includes("--selbsttest")) {
             const f = SK.selbsttest();
             console.log(
@@ -2613,12 +2826,12 @@ async function starte() {
             process.exit(1);
         }
         console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
-        if (o.stoff) console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
+        if (o.stoff)
+            console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
         if (o.probe) console.log("\nRausch-Probe (max |GPU − CPU| je Probe, Grenze 1e-4) " + JSON.stringify(o.probe));
         console.log(o.rot.length ? "\nROT:\n  " + o.rot.join("\n  ") : "\nGRÜN");
         process.exit(o.rot.length ? 1 : 0);
-    }
-    else if (cmd === "reload") o = await rufe("/reload");
+    } else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");
     else {
         console.log(fs.readFileSync(__filename, "utf8").split('"use strict"')[0].trimEnd());

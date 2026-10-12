@@ -418,6 +418,203 @@ function leserUrteil(quelle) {
     return v;
 }
 
+// (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
+// Gestalt und seine Leser:
+//   f0   je Baum-Art (L0, Gestalt 1): f0 = kF · D / H² mit D = Stamm-Durchmesser in 1,3 m Welt-Höhe (der Ring des Stamm-
+//        Strangs, gemessen von DIESER Linse) und H = Welt-Höhe — gegen das f0, das der Welt-Stoff rechnet (kF · δ / H, δ aus
+//        der gelieferten Gestalt über `windSchlankheit`, den Leser von `_baumWindDaten`): ± F0_TOL.
+//   GLIED der Ausschlag je Glied (Stamm-Spitze, Ast-Hebel, Blatt) über 20 s: Sturm (Wind-Zeile 1) zu Brise (0,06) ≥ STURM_BRISE,
+//        und die Leiter der Frequenzen Stamm < Ast < Blatt.
+//   LESER der EINE Term hat seine Leser — Rinde und Laub der Welt (`_baumWindStoff`, gerufen aus `_foundryTreeMaterial`), die
+//        Karte (`_buildPbrNodeMaterial`) und das Labor (foundry-core `injectWind`); die eigenen Sinus-Formeln sind fort (die
+//        Karte pendelte 0,22 m in jedem Wetter, das Labor bog linear in uWindStrength und las omega nie).
+const F0_TOL = 0.3;
+const STURM_BRISE = 3;
+function stammDurchmesser(T, yT) {
+    const S = stammRinge(T);
+    if (!S) return null;
+    let best = null;
+    for (const x of S.ringe) if (!best || Math.abs(x.y - yT) < Math.abs(best.y - yT)) best = x;
+    const p = S.t.pos;
+    let cx = 0,
+        cz = 0;
+    const n = S.R1 - 1;
+    for (let j = 0; j < n; j++) {
+        cx += p[(best.r * S.R1 + j) * 3];
+        cz += p[(best.r * S.R1 + j) * 3 + 2];
+    }
+    cx /= n;
+    cz /= n;
+    let r = 0;
+    for (let j = 0; j < n; j++) r += Math.hypot(p[(best.r * S.R1 + j) * 3] - cx, p[(best.r * S.R1 + j) * 3 + 2] - cz);
+    return (2 * r) / n;
+}
+function gliedAusschlag(f0, H, U) {
+    const A = PC.WIND_ZAHLEN;
+    const m = { stamm: 0, ast: 0, blatt: 0 };
+    for (let t = 0; t < 20; t += 0.005) {
+        const e = { t, U, g: 1, f0, H, zeta: 1, rho: 0, phi: 0, psi: 1 };
+        const s = PC.windAusschlag(A, e, true);
+        const a = PC.windAusschlag(A, Object.assign({}, e, { zeta: 0.8, rho: 0.3 }), true);
+        const s8 = PC.windAusschlag(A, Object.assign({}, e, { zeta: 0.8 }), true);
+        m.stamm = Math.max(m.stamm, Math.abs(s.quer));
+        m.ast = Math.max(m.ast, Math.hypot(a.quer - s8.quer, a.hoch - s8.hoch));
+        m.blatt = Math.max(m.blatt, Math.abs(s.flattern));
+    }
+    return m;
+}
+// `deltaMul` (Selbsttest): eine Welt, die ein falsches δ liest.
+function windUrteil(fall, T, skala, deltaMul) {
+    const v = [];
+    const H = hoehe(T) * skala;
+    const D = stammDurchmesser(T, 1.3 / skala);
+    if (!(D > 0)) return { v: [`${fall}: kein Stamm-Strang für den Wind`], m: {} };
+    const Dw = D * skala;
+    const W = PC.WIND_GESETZ;
+    const f0mess = (W.kF * Dw) / (H * H);
+    const rinde = T.find((t) => t.kind === "bark");
+    const dWelt = PC.windSchlankheit(rinde && rinde.pos, hoehe(T), skala);
+    if (!(dWelt > 0)) return { v: [`${fall}: die Welt findet keinen Stamm-Ring (windSchlankheit)`], m: {} };
+    const f0welt = (W.kF * dWelt * (deltaMul || 1)) / H;
+    if (Math.abs(f0welt / f0mess - 1) > F0_TOL)
+        v.push(
+            `${fall}: f0 der Welt ${f0welt.toFixed(2)} Hz ≠ Gesetz ${f0mess.toFixed(2)} Hz (D ${Dw.toFixed(2)} m, H ${H.toFixed(1)} m)`
+        );
+    const sturm = gliedAusschlag(f0welt, H, 1);
+    const brise = gliedAusschlag(f0welt, H, 0.06);
+    for (const g of ["stamm", "ast", "blatt"])
+        if (!(sturm[g] >= STURM_BRISE * brise[g]))
+            v.push(
+                `${fall}: ${g} im Sturm ${sturm[g].toFixed(3)} m nur ${(sturm[g] / brise[g]).toFixed(2)}× die Brise`
+            );
+    const fAst = W.ast.faktor * f0welt,
+        fBl = Math.max(W.blatt.f, W.blatt.ueberAst * fAst);
+    if (!(f0welt < fAst && fAst < fBl)) v.push(`${fall}: Leiter Stamm < Ast < Blatt gebrochen`);
+    return {
+        v,
+        m: {
+            f0: f0welt,
+            f0Gesetz: f0mess,
+            "Stamm Sturm/Brise m": `${sturm.stamm.toFixed(3)}/${brise.stamm.toFixed(4)}`,
+            "Blatt Sturm/Brise m": `${sturm.blatt.toFixed(3)}/${brise.blatt.toFixed(4)}`,
+        },
+    };
+}
+function windLeserUrteil(quellen) {
+    const v = [];
+    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const welt = code(quellen["anazhRealm.js"]);
+    const i = welt.indexOf("\n    _baumWindStoff(");
+    const rumpf = i < 0 ? "" : welt.slice(i, welt.indexOf("\n    }\n", i));
+    if (!/__phytoCore\.windAusschlag\(/.test(rumpf))
+        v.push("anazhRealm.js: Rinde und Laub der Welt lesen den Wind-Term nicht");
+    if (!/this\._baumWindStoff\(/.test(welt)) v.push("anazhRealm.js: _foundryTreeMaterial ruft _baumWindStoff nicht");
+    if ((welt.match(/__phytoCore\.windAusschlag\(/g) || []).length < 2)
+        v.push("anazhRealm.js: die Karte liest den Wind-Term nicht");
+    if (/_Ta\.sin\(_ph\)\.mul\(_fx\)/.test(welt)) v.push("anazhRealm.js: die Karte pendelt mit eigener Formel");
+    const j = welt.indexOf("\n    _baumWindDaten(");
+    const daten = j < 0 ? "" : welt.slice(j, welt.indexOf("\n    }\n", j));
+    if (!/__phytoCore\.windSchlankheit\(/.test(daten))
+        v.push("anazhRealm.js: _baumWindDaten misst δ nicht an der gelieferten Gestalt (windSchlankheit)");
+    const labor = code(quellen["foundry-core.js"]);
+    if (!/__phytoCore\.windAusschlag\(/.test(labor)) v.push("foundry-core.js: das Labor liest den Wind-Term nicht");
+    // die Halm-Biegung (Gras, Blumen-Stiel) bleibt; der Baum darf sie nicht lesen
+    const h = labor.indexOf("\nfunction halmBiegung(");
+    const ohneHalm = h < 0 ? labor : labor.slice(0, h) + labor.slice(labor.indexOf("\n}\n", h));
+    if (/_theta=clamp\(_sw\*uWindStrength/.test(ohneHalm))
+        v.push("foundry-core.js: das Labor biegt mit eigener Formel");
+    const baeume = (labor.match(/,\s*(true|false),\s*false,\s*true\s*\)/g) || []).length;
+    if (baeume < 4) v.push(`foundry-core.js: nur ${baeume} von 4 Baum-Stoffen (Rinde ×2, Laub ×2) lesen den Baum-Wind`);
+    const bestand = code(quellen["worlds/terrain/phytogenesis.js"] || "");
+    if ((bestand.match(/windStempel\(geo,/g) || []).length < 4)
+        v.push("phytogenesis.js: der Bestand des Labors trägt den Wind-Stempel nicht an jedem Klon");
+    if (!/WIND\.uWindBaum\.value\.set\(/.test(bestand))
+        v.push("phytogenesis.js: die Einzel-Ansicht trägt den Baum nicht als uWindBaum");
+    // DER WERKSTATT-BAUM (Grammatik-Pfad `_buildTreeSkeletonLeaves` → `_applyVegetationResponse`): Rinde, Laub und Kern
+    // lesen denselben Term über `_baumWindStoff`, δ an der Stamm-Achse seines Skeletts (`windSchlankheitAchse`); die
+    // eigene Sinus-Formel (ohne Wind-Zeile: der Sturm sah aus wie die Brise) ist fort.
+    const rumpfVon = (name) => {
+        const k = welt.indexOf("\n    " + name + "(");
+        return k < 0 ? "" : welt.slice(k, welt.indexOf("\n    }\n", k));
+    };
+    const veg = rumpfVon("_applyVegetationResponse");
+    if (!/this\._baumWindStoff\(/.test(veg))
+        v.push("anazhRealm.js: der Werkstatt-Baum (_applyVegetationResponse) liest den Wind-Term nicht");
+    if (/uWindTime/.test(veg))
+        v.push("anazhRealm.js: der Werkstatt-Baum (_applyVegetationResponse) schwingt mit eigener Formel");
+    if (!/__phytoCore\.windSchlankheitAchse\(/.test(rumpfVon("_skelettWindDaten")))
+        v.push("anazhRealm.js: der Werkstatt-Baum misst δ nicht an seiner Stamm-Achse (_skelettWindDaten)");
+    // DER WURF (Lehre 26): jeder Schatten-Werfer eines schwingenden Baums trägt denselben Term — der Wurf-Teil der
+    // Foundry-L1 (`kind "schatten"`) und der Zwilling des Werkstatt-Baums; sonst steht der Schatten unter der Krone.
+    const ruf = /if \(([^;{]*)\)\s*this\._baumWindStoff\(mat, kind, baum\)/.exec(rumpfVon("_foundryTreeMaterial"));
+    if (!ruf || !/"schatten"/.test(ruf[1]))
+        v.push("anazhRealm.js: der Wurf-Teil der Foundry-L1 (kind schatten) steht im Wind still (_foundryTreeMaterial)");
+    if (!/this\._baumWindStoff\(/.test(rumpfVon("_treeShadowTwinMaterial")))
+        v.push("anazhRealm.js: der Schatten-Zwilling des Werkstatt-Baums steht im Wind still (_treeShadowTwinMaterial)");
+    return v;
+}
+// (LL) DAS LAUB-LICHT (K19) hat seine Leser: das Lichtmodell der Welt rechnet phyto-core `laubDurchlass`, jeder Laub-Stoff
+// trägt es (Foundry-Laub und Blatt-Karte, das Grammatik-Laub, die ferne Karte mit der Nadel ihrer Schicht), das Labor
+// lichtet mit demselben Term; die Fresnel-Aufhellung lebt nur noch im Gras des Labors.
+function laubLichtLeserUrteil(quellen) {
+    const v = [];
+    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const welt = code(quellen["anazhRealm.js"]);
+    const rumpfVon = (name) => {
+        const k = welt.indexOf("\n    " + name + "(");
+        return k < 0 ? "" : welt.slice(k, welt.indexOf("\n    }\n", k));
+    };
+    if (!/__phytoCore\.laubDurchlass\b/.test(rumpfVon("static _laubLichtModell")))
+        v.push("anazhRealm.js: das Lichtmodell des Laubs rechnet laubDurchlass nicht (_laubLichtModell)");
+    if (!/this\._laubLichtStoff\(mat, kind === "foliageTex"\)/.test(rumpfVon("_foundryTreeMaterial")))
+        v.push("anazhRealm.js: das Foundry-Laub trägt das Laub-Licht nicht (_foundryTreeMaterial)");
+    if (!/this\._laubLichtStoff\(/.test(rumpfVon("_applyVegetationResponse")))
+        v.push("anazhRealm.js: das Grammatik-Laub trägt das Laub-Licht nicht (_applyVegetationResponse)");
+    if (!/this\._laubLichtStoff\(mat, \(\) => this\._karteNadel\(/.test(welt))
+        v.push("anazhRealm.js: die ferne Karte trägt das Laub-Licht nicht (_karteNadel)");
+    const labor = code(quellen["foundry-core.js"]);
+    if (!/__phytoCore\.laubDurchlass\(/.test(labor)) v.push("foundry-core.js: das Labor-Laub lichtet ohne laubDurchlass");
+    if ((labor.match(/pow\(1\.0-_ndv,2\.5\)\*0\.55/g) || []).length > 1 || !/if \(isGrass\)\s*sh\.fragmentShader/.test(labor))
+        v.push("foundry-core.js: die Fresnel-Aufhellung lebt außerhalb des Grases");
+    return v;
+}
+// (WD) DIE WIND-DATEN HABEN IHREN LESER (K19): jedes Attribut-Schema (a + Großbuchstabe), das der Werkstatt-Baum in seine
+// Geometrie setzt (`_buildTree*`, `_stampFoliage*`) oder das ein Geometrie-Bauer des Kerns liefert (phyto-core
+// buildFoliageQuads · buildLeafBlades · buildBarkTubeArrays), liest ein Stoff — ein TSL-`attribute("aX")` der Welt oder ein
+// GLSL-`attribute … aX;` des Labors. Der Wind liest positionGeometry und aH0; bis K19-N2 erzeugten vier Bauer der Welt und
+// drei des Kerns aFlex/aPhase der gefallenen Werkstatt-Formel, und der Playtest prüfte nur, dass es sie gibt.
+const KERN_GEOMETRIE_BAUER = ["buildFoliageQuads", "buildLeafBlades", "buildBarkTubeArrays"];
+function windDatenUrteil(quellen) {
+    const v = [];
+    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const welt = code(quellen["anazhRealm.js"]);
+    const labor = code(quellen["foundry-core.js"]);
+    const kern = code(quellen["phyto-core.js"]);
+    // die Geometrie der Welt liest ein Stoff der Welt; was der Kern liefert, liest die Welt oder das Labor
+    const inWelt = (a) => new RegExp('attribute\\(\\s*"' + a + '"').test(welt);
+    const imLabor = (a) => new RegExp("attribute\\s+\\w+\\s+" + a + "\\s*;").test(labor);
+    const urteil = (wo, name, namen, gelesen) => {
+        const ohne = [...new Set(namen)].filter((a) => !gelesen(a));
+        if (ohne.length) v.push(`${wo}: ${name} erzeugt ${ohne.join(" · ")} — kein Stoff liest es`);
+    };
+    for (const m of welt.matchAll(/\n    (_buildTree\w*|_stampFoliage\w*)\(/g)) {
+        const rumpf = welt.slice(m.index, welt.indexOf("\n    }\n", m.index));
+        const namen = [...rumpf.matchAll(/setAttribute\(\s*"(a[A-Z]\w*)"/g)].map((x) => x[1]);
+        urteil("anazhRealm.js", m[1], namen, inWelt);
+    }
+    for (const f of KERN_GEOMETRIE_BAUER) {
+        const k = kern.indexOf("\n    function " + f + "(");
+        if (k < 0) {
+            v.push(`phyto-core.js: ${f} fehlt`);
+            continue;
+        }
+        const rumpf = kern.slice(k, kern.indexOf("\n    }\n", k));
+        const namen = [...rumpf.matchAll(/[{,]\s*(a[A-Z]\w*)\s*(?=[,}:])/g)].map((x) => x[1]);
+        urteil("phyto-core.js", f, namen, (a) => inWelt(a) || imLabor(a));
+    }
+    return v;
+}
+
 (async () => {
     const fails = [];
     const roh = {};
@@ -442,7 +639,8 @@ function leserUrteil(quelle) {
         for (const p of baeume) await fall(p, 0, 1);
         for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
-        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub")) for (const l of [0, 1]) await fall(p, l, 1);
+        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub"))
+            for (const l of [0, 1]) await fall(p, l, 1);
         for (const p of Object.keys(buch).filter((x) => art(x) === "flower"))
             for (const s of [1, 2]) await fall(p, 0, s);
     });
@@ -459,6 +657,11 @@ function leserUrteil(quelle) {
         if (kind === "tree" && f.lod === 1) u = klingenL1(k, f.T);
         else if (kind === "tree") {
             u = rindeUrteil(k, f.T, fx.barkType || (fx.conifer ? "conifer" : "oak"), f.presetId !== "totholz");
+            if (f.seed === 1) {
+                const w = windUrteil(k, f.T, skala(f.presetId));
+                u.v.push(...w.v);
+                Object.assign(u.m, w.m);
+            }
             // Die Trauer-L0 trägt Strähnen (gestreckte Zellen) — ihr Blatt-Maß ist kein Karten-Maß.
             const trauer = buch[f.presetId].s && buch[f.presetId].s.trop >= 0.55;
             if (!trauer && f.T.some((t) => t.kind === "foliageTex")) {
@@ -494,7 +697,15 @@ function leserUrteil(quelle) {
         "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
         "anazhRealm.js": fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8"),
     };
-    fails.push(...unterseiteUrteil(quellen));
+    // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle), der Kern nur die Wind-Daten
+    const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");
+    const kernQuelle = fs.readFileSync(path.join(ROOT, "phyto-core.js"), "utf8");
+    fails.push(
+        ...unterseiteUrteil(quellen),
+        ...windLeserUrteil(Object.assign({ "worlds/terrain/phytogenesis.js": laborBestand }, quellen)),
+        ...windDatenUrteil(Object.assign({ "phyto-core.js": kernQuelle }, quellen)),
+        ...laubLichtLeserUrteil(quellen)
+    );
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
     // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
     const fracht = frachtReihen(bild);
@@ -595,11 +806,59 @@ function leserUrteil(quelle) {
         "Leser teilt nicht durch alpha",
         leserUrteil(quellen["anazhRealm.js"].replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
     ]);
+    if (eiche)
+        st.push(["Welt-δ ×0,5 (f0 gegen das Gesetz)", windUrteil("halb", eiche.T, skala("eiche"), 0.5).v.length > 0]);
+    st.push([
+        "Wind-Leser entfernt",
+        windLeserUrteil({
+            "anazhRealm.js": quellen["anazhRealm.js"].replace(/__phytoCore\.windAusschlag\(/g, "X("),
+            "foundry-core.js": quellen["foundry-core.js"],
+            "worlds/terrain/phytogenesis.js": laborBestand,
+        }).length >= 2,
+    ]);
+    const windMit = (alt, neu) =>
+        windLeserUrteil({
+            "anazhRealm.js": quellen["anazhRealm.js"].replace(alt, neu),
+            "foundry-core.js": quellen["foundry-core.js"],
+            "worlds/terrain/phytogenesis.js": laborBestand,
+        }).length >= 1;
+    st.push([
+        "Werkstatt-Baum ohne Wind-Term",
+        windMit(/(\n    _applyVegetationResponse\([\s\S]*?)this\._baumWindStoff\(/, "$1this.X("),
+    ]);
+    st.push([
+        "Wurf-Teil ohne Wind",
+        windMit(/(\n    _foundryTreeMaterial\([\s\S]*?)\|\| kind === "schatten"/, "$1"),
+    ]);
+    const datenMit = (welt, kern) =>
+        windDatenUrteil({
+            "anazhRealm.js": welt,
+            "foundry-core.js": quellen["foundry-core.js"],
+            "phyto-core.js": kern,
+        }).length >= 1;
+    st.push([
+        "Stempel aH0 ohne Leser",
+        datenMit(quellen["anazhRealm.js"].replace(/attribute\("aH0"/g, 'attribute("aX0"'), kernQuelle),
+    ]);
+    st.push([
+        "Kern liefert Wind-Daten ohne Leser",
+        datenMit(
+            quellen["anazhRealm.js"],
+            kernQuelle.replace(/(\n    function buildFoliageQuads\([\s\S]*?return \{ positions,)/, "$1 aSchwung,")
+        ),
+    ]);
+    st.push([
+        "Laub-Licht-Leser entfernt",
+        laubLichtLeserUrteil({
+            "anazhRealm.js": quellen["anazhRealm.js"].replace("this._laubLichtStoff(mat, kind === \"foliageTex\")", "this.X(mat)"),
+            "foundry-core.js": quellen["foundry-core.js"],
+        }).length >= 1,
+    ]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht · Wind ==="
     );
     if (fails.length) {
         console.error("\n❌ ROT:");

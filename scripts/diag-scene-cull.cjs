@@ -85,7 +85,7 @@ const server = http.createServer((req, res) => {
                 if (/grass|gras/i.test(nm)) return "grass";
                 if (/water|wasser|iso/i.test(nm)) return "water";
                 if (/star|sky|himmel|planet|mantle|horizon/i.test(nm)) return "sky";
-                if (u.useFlexAttr || u.foliageLeaf || u.archInstanceKey || /laub|foliage|leaf|blatt/i.test(nm))
+                if (u.foliageLeaf || u.archInstanceKey || /laub|foliage|leaf|blatt/i.test(nm))
                     return "foliage";
                 return "other";
             };

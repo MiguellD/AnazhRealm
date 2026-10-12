@@ -20629,7 +20629,7 @@ class AnazhRealm {
     // (λ = 2π/k ≈ 164 m, Periode 2π/omega ≈ 15,7 s). `_windSwayOffset` (Gras/Streu/Laub im Shader) und `_windBoeAt`
     // (der Wind am Ohr, klang:UMWELT) lesen dieselben Zahlen.
     static get WIND_BOE() {
-        return Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 });
+        return globalThis.__phytoCore.WIND_GESETZ.boe; // die Zahlen leben im Wind-Gesetz des Kerns (K19) — das Labor liest sie dort
     }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
@@ -31846,8 +31846,8 @@ class AnazhRealm {
 
     // Das Antwort-Profil emergiert aus den 10 Substanz-Tags (eine weitere LESART der Substanz-Wahrheit):
     // glanz = härte+dichte (Rim/Specular) · tiefe = dichte (AO) · glimmen = magieleitung + wärmeleitung·
-    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · wiegen =
-    // lebendig·(1−dichte)·zähigkeit (Wind) · detail = max(lebendig·(1−dichte), magieleitung·transparent).
+    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · detail =
+    // max(lebendig·(1−dichte), magieleitung·transparent). Den Wind trägt kein Tag: er ist das Wind-Gesetz des Baums (K19).
     // Nimmt ein Material oder ein tags-Objekt. Darunter die FEATURE-Gewichte (Antennen → Render-Hebel):
     _substanceResponseProfile(materialOrTags) {
         let tags = null;
@@ -31869,7 +31869,6 @@ class AnazhRealm {
         };
         const haerte = t("härte");
         const dichte = t("dichte");
-        const zaehigkeit = t("zähigkeit");
         const magieleitung = t("magieleitung");
         const transparent = t("transparent");
         const brennbar = t("brennbar");
@@ -31881,8 +31880,7 @@ class AnazhRealm {
         const glimmen = Math.min(1, magieleitung * 0.55 + waermeleitung * brennbar * 0.6);
         const waerme = lebendig;
         const glas = transparent;
-        // 2 clever-gauss-Achsen (Λ.3 + Λ.6):
-        const wiegen = lebendig * (1 - dichte) * zaehigkeit;
+        // die clever-gauss-Achse (Λ.6):
         const detail = Math.max(lebendig * (1 - dichte), magieleitung * transparent);
         return {
             glanz,
@@ -31890,7 +31888,6 @@ class AnazhRealm {
             glimmen,
             waerme,
             glas,
-            wiegen,
             detail,
             micro: 0.5 + 0.5 * tiefe,
             rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
@@ -32080,7 +32077,7 @@ class AnazhRealm {
                         }
                         if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                     } else if (
-                        !opts.useFlexAttr &&
+                        !opts.pflanzenStoff &&
                         typeof this._terrainGeologyAlbedo === "function" &&
                         _Ta.positionWorld
                     ) {
@@ -32105,7 +32102,7 @@ class AnazhRealm {
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
-                    } else if (opts.useFlexAttr && _Ta.vec4) {
+                    } else if (opts.pflanzenStoff && _Ta.vec4) {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —
                         // sonst fällt sie aus `_T.output` und die Krone wäscht zur reinen Licht-Farbe.
                         let _alpha = _Ta.float(1.0);
@@ -32263,32 +32260,38 @@ class AnazhRealm {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _ecke.mul(_rahmen.x).mul(_sInst);
-                                    // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, Gewicht (y/H)² = uv.y² — ein eigenes
-                                    // aFlex-Attribut wäre ein weiterer Vertex-Puffer (WebGPU: höchstens 8))
-                                    let _swayX = _Ta.float(0.0);
-                                    let _swayZ = _Ta.float(0.0);
-                                    if (!this.state.windUniforms && typeof this._grassInstanceMat === "function")
-                                        this._grassInstanceMat();
-                                    const _wu = this.state.windUniforms;
-                                    if (_wu && _wu.uWindTime && opts.useFlexAttr) {
-                                        const _fx = _uv.y.mul(_uv.y); // das Wind-Gewicht y² (die Kronenspitze pendelt)
-                                        // Der Impostor liest DIESELBE Richtungs-Quelle uWindDir wie Baum/Gras → die ferne Karte wogt im
-                                        // Gleichtakt mit dem nahen Laub (kein Richtungs-Riss am 40-m-Crossfade).
-                                        const _wcu = this._ensureWindCoupling(_Ta);
-                                        const _phSpatial =
-                                            _wcu && _wcu.uWindDir
-                                                ? _axis.x
-                                                      .mul(_wcu.uWindDir.x)
-                                                      .add(_axis.z.mul(_wcu.uWindDir.y))
-                                                      .mul(_Ta.float(0.228))
-                                                : _axis.x.mul(_Ta.float(0.18)).add(_axis.z.mul(_Ta.float(0.14)));
-                                        const _ph = _wu.uWindTime.mul(_Ta.float(1.1)).add(_phSpatial);
-                                        _swayX = _Ta.sin(_ph).mul(_fx).mul(_Ta.float(0.22));
-                                        _swayZ = _Ta
-                                            .cos(_ph.mul(_Ta.float(0.7)))
-                                            .mul(_fx)
-                                            .mul(_Ta.float(0.13));
-                                    }
+                                    // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
+                                    // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
+                                    // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
+                                    // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
+                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter.
+                                    if (!this.state.windUniforms) this._grassInstanceMat();
+                                    const _wu = this._ensureWindCoupling(_Ta);
+                                    const _WB = AnazhRealm.WIND_BOE;
+                                    const _Hk = _rahmen.y.mul(_sInst).max(0.5);
+                                    const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
+                                    const _wK = globalThis.__phytoCore.windAusschlag(
+                                        AnazhRealm._windTsl(_Ta),
+                                        {
+                                            t: _wu.uWindTime,
+                                            U: _wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
+                                            g: _Ta
+                                                .sin(_wu.uWindTime.mul(_WB.omega).sub(_ortK.mul(_WB.k)))
+                                                .mul(_WB.amp)
+                                                .add(_WB.mitte),
+                                            f0: this._karteWindDelta()
+                                                .mul(globalThis.__phytoCore.WIND_GESETZ.kF)
+                                                .div(_Hk),
+                                            H: _Hk,
+                                            zeta: _uv.y,
+                                            rho: _Ta.float(0),
+                                            phi: _ortK.mul(-_WB.k),
+                                            psi: _Ta.float(0),
+                                        },
+                                        false
+                                    );
+                                    const _swayX = _wu.uWindDir.x.mul(_wK.quer);
+                                    const _swayZ = _wu.uWindDir.y.mul(_wK.quer);
                                     mat.positionNode = _Ta.vec3(
                                         _axis.x.add(_lz.mul(_off)).add(_swayX),
                                         _axisY,
@@ -32298,6 +32301,10 @@ class AnazhRealm {
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
                                     // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
                                     _wired = true;
+                                    // DAS LAUB-LICHT DER KARTE (K19): die ferne Stufe lichtet mit dem EINEN Laub-Licht-Term der
+                                    // nahen (phyto-core `laubDurchlass`) über der Normale des Normal-Atlas; die Nadel trägt ihre
+                                    // Schicht (`_karteNadel`). Bis K19 leuchtete die nahe Krone im Gegenlicht, ihre Karte nicht.
+                                    this._laubLichtStoff(mat, () => this._karteNadel(_Ta).element(_schicht.toInt()));
                                 }
                             } catch (_e) {
                                 if (typeof window !== "undefined")
@@ -32389,10 +32396,10 @@ class AnazhRealm {
             }
             this._applySubstanceResponse(mat, responseProfile, { albedoNode });
         }
-        // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne useFlexAttr).
-        // Vegetation (useFlexAttr) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
+        // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
+        // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
         // voll sonnen-lit, ACES wüsche die Krone teal/weiß.
-        if (opts.vertexColors && !opts.useFlexAttr && !opts.vertexColorAlbedo) {
+        if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
                 const _aun = this.state.atmoUniforms;
@@ -32508,7 +32515,7 @@ class AnazhRealm {
             }
         }
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
-        // Laub (useFlexAttr) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
+        // Laub (pflanzenStoff) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
         // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
         this._leuchtStoff(mat, null, opts.himmelsSicht ? THREE.TSL.attribute("aHimmel", "float") : null);
@@ -33310,67 +33317,16 @@ class AnazhRealm {
             if (!mat.userData) mat.userData = {};
             mat.userData.useInstanceTint = true;
         }
-        // Wind-Sway (wiegen > 0.05): positionNode-Sway über windUniforms.uWindTime (EINE Welt-Quelle mit dem
-        // Gras); die Krone wiegt mehr (aFlex²/crownLin) + aperiodisches Flattern. NICHT für den Impostor —
-        // er trägt seinen eigenen positionNode, den dieser Sway überschriebe.
-        if (responseProfile && responseProfile.wiegen > 0.05 && !opts.impostorAtlas) {
-            try {
-                const _Tw = THREE.TSL;
-                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
-                    this._grassInstanceMat();
-                }
-                const _wu = this.state.windUniforms;
-                if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
-                    const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
-                    // Der Baum liest DIESELBE Richtungs-Quelle uWindDir wie Gras/Streu/Impostor: Orts-Term =
-                    // dot(worldXZ, windDir) × 0.228 (= |0.18, 0.14|). Ohne uWindDir: der feste Baum.
-                    const _wcu = this._ensureWindCoupling(_Tw);
-                    const _phaseSpatial =
-                        _wcu && _wcu.uWindDir
-                            ? _Tw.positionWorld.x
-                                  .mul(_wcu.uWindDir.x)
-                                  .add(_Tw.positionWorld.z.mul(_wcu.uWindDir.y))
-                                  .mul(_Tw.float(0.228))
-                            : _Tw.positionWorld.x.mul(_Tw.float(0.18)).add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
-                    const _phase = _wu.uWindTime.mul(_Tw.float(1.1)).add(_phaseSpatial);
-                    let _crownFactor;
-                    let _flutterShift;
-                    if (opts.useFlexAttr === true && _Tw.attribute) {
-                        const _aFlex = _Tw.attribute("aFlex", "float").clamp(0.0, 1.0);
-                        const _aPhase = _Tw.attribute("aPhase", "float");
-                        _crownFactor = _aFlex.mul(_aFlex);
-                        _flutterShift = _aPhase;
-                    } else {
-                        const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
-                        _crownFactor = _crownLin.mul(_crownLin);
-                        _flutterShift = _Tw.float(0.0);
-                    }
-                    const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
-                    const _offsetX = _Tw.sin(_phase.add(_flutterShift)).mul(_swayMag);
-                    const _offsetZ = _Tw
-                        .cos(_phase.mul(_Tw.float(0.7)).add(_flutterShift))
-                        .mul(_swayMag.mul(_Tw.float(0.6)));
-                    const _flutterPhase = _wu.uWindTime
-                        .mul(_Tw.float(6.5))
-                        .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)))
-                        .add(_flutterShift.mul(_Tw.float(1.3)));
-                    const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
-                    const _flutterZ = _Tw
-                        .cos(_flutterPhase.mul(_Tw.float(0.83)))
-                        .mul(_swayMag)
-                        .mul(_Tw.float(0.14));
-                    mat.positionNode = _Tw.positionLocal.add(
-                        _Tw.vec3(_offsetX.add(_flutter), _Tw.float(0.0), _offsetZ.add(_flutterZ))
-                    );
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
-            }
-        }
+        // DER WIND DES WERKSTATT-BAUMS (K19): der Grammatik-Baum (`_buildTreeSkeletonLeaves`) trägt den EINEN Wind-Term der
+        // Foundry-Pflanze (`_baumWindStoff`): Höhe und Schlankheit aus seinem Skelett (`opts.baumWind`, `_skelettWindDaten`),
+        // die Welt-Höhe aus dem Instanz-Stempel aH0, die Last aus der Wind-Zeile des Wetters. Was kein Skelett trägt (Holz,
+        // Leder, Fleisch der Bauteile), steht im Wind: bis K19 bog die Tag-Achse `wiegen` jedes lebendige Bauteil mit eigener
+        // Sinus-Formel ohne Wind-Zeile (der Sturm sah aus wie die Brise). Die Karte (impostorAtlas) trägt ihren eigenen Term.
+        if (opts.baumWind && !opts.impostorAtlas)
+            this._baumWindStoff(mat, opts.foliageLeaf === true ? "foliage" : "bark", opts.baumWind);
         // SUBSURFACE-BACKLIT (detail > 0.4, laub): warmer Gegenlicht-Glow,
-        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha).
-        if (responseProfile && responseProfile.detail > 0.4) {
+        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha). Laub trägt das Laub-Licht (K19), nie ihn.
+        if (responseProfile && responseProfile.detail > 0.4 && opts.foliageLeaf !== true) {
             try {
                 const _Td = THREE.TSL;
                 const _wu = this.state.windUniforms;
@@ -33397,45 +33353,10 @@ class AnazhRealm {
                 if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
             }
         }
-        // Unlit-Silhouetten-Floor + Kanten-Grün (Vorlage `injectWind`): `output += albedo·pow(1−ndv,2.5)·0.55
-        // + vec3(0.09,0.15,0.04)·pow(1−ndv,4)·0.5` — bewusst sonnen-unabhängig (lebt im Schatten + nachts),
-        // der sonnen-gegatete Backlit ersetzt ihn nicht. NUR Laub (opts.foliageLeaf; der Impostor lichtet
-        // über den Normal-Atlas). Post-lighting auf outputNode, nie colorNode. Dazu ein kleiner nicht-
-        // direktionaler Ambient-Boden → die Unterkrone fällt auch face-on nie absolut schwarz.
-        if (opts.foliageLeaf === true) {
-            try {
-                const _Tf = THREE.TSL;
-                if (
-                    _Tf &&
-                    _Tf.normalWorld &&
-                    _Tf.cameraPosition &&
-                    _Tf.positionWorld &&
-                    _Tf.pow &&
-                    _Tf.abs &&
-                    mat.colorNode &&
-                    mat.colorNode.rgb !== undefined
-                ) {
-                    const _vdF = _Tf.normalize(_Tf.cameraPosition.sub(_Tf.positionWorld));
-                    const _ndv = _Tf.abs(_Tf.normalWorld.dot(_vdF)).clamp(0.0, 1.0);
-                    const _inv = _Tf.float(1.0).sub(_ndv);
-                    // Subsurface-Rim: die eigene Albedo, unbelichtet, an der Silhouette.
-                    const _rim = mat.colorNode.rgb.mul(_Tf.pow(_inv, _Tf.float(2.5))).mul(_Tf.float(0.55));
-                    // grünes Kanten-Glimmen (die zweite Vorlagen-Zeile).
-                    const _edge = _Tf
-                        .vec3(0.09, 0.15, 0.04)
-                        .mul(_Tf.pow(_inv, _Tf.float(4.0)))
-                        .mul(_Tf.float(0.5));
-                    // Ambient-Boden: eigene Albedo × 0.06, view- und sonnen-unabhängig.
-                    const _amb = mat.colorNode.rgb.mul(_Tf.float(0.06));
-                    const _outF = mat.outputNode || _Tf.output;
-                    mat.outputNode = _outF.add(_Tf.vec4(_rim.add(_edge).add(_amb), _Tf.float(0.0)));
-                    mat.userData = mat.userData || {};
-                    mat.userData.unlitSilhouetteFloor = true; // Linsen-Marker (diag-leaf-blades)
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__unlitFloorError = String((_e && _e.message) || _e);
-            }
-        }
+        // DAS LAUB-LICHT (K19): das Grammatik-Laub (Blatt-Karte und Klinge) lichtet mit dem EINEN Laub-Licht-Term des Foundry-
+        // Laubs (`_laubLichtStoff`, phyto-core `laubDurchlass`) — die unbelichtete Silhouetten-Aufhellung (die Fresnel-Kopie des
+        // Labors) und der sonnen-blinde Gegenlicht-Glow sind gefallen; die Klinge ist Laub, die Karte erkennt die Nadel am Atlas.
+        if (opts.foliageLeaf === true) this._laubLichtStoff(mat, opts.foliageBlade !== true);
         // SSE-Metrik + Dither-Crossfade NUR für Laub-Karten (`opts.foliageLeaf` trägt aH0/aH0L aus
         // `_buildTreeFoliageCardGeometry`; sonst attribute()-Crash). Dieselbe `uLodRef`-Quelle wie die CPU:
         //   vLodD  = |cam.xz − posWorld.xz| · min(uLodRef/aH0, 1) (großer Baum behält Detail länger;
@@ -60030,8 +59951,8 @@ class AnazhRealm {
                 const top = trunkPts[trunkPts.length - 1];
                 foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
             } else {
-                // Die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/needle/sway/phase) — daraus baut
-                // `__phytoCore.buildFoliageQuads` die Krone. Der `_lean`-Shear trifft die Position (Card: dir/up).
+                // Die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/needle/phase — phase dreht die Karte) — daraus
+                // baut `__phytoCore.buildFoliageQuads` die Krone. Der `_lean`-Shear trifft die Position (Card: dir/up).
                 const phytoLeaves = [];
                 for (const l of phyto.leaves) {
                     const lp = _lean({ x: l.pos[0], y: l.pos[1], z: l.pos[2], r: 0 });
@@ -60042,7 +59963,6 @@ class AnazhRealm {
                         up: l.up ? [l.up[0], l.up[1], l.up[2]] : [0, 1, 0],
                         scale: l.scale,
                         needle: !!l.needle,
-                        sway: l.sway,
                         phase: l.phase,
                     });
                 }
@@ -66469,8 +66389,7 @@ class AnazhRealm {
     }
 
     // EINE bark-BufferGeometry aus dem Skeleton (Polylinien): Ring von 6 Vertices je Punkt, zu Quads
-    // verbunden, Radius = radii[i]; lobed flare am Stamm-Fuß; Per-Vertex flex (höhen-relative
-    // Wind-Empfindlichkeit) + phase (aperiodischer Hash-Versatz). Alle Äste zu EINER Geometrie gemerged.
+    // verbunden, Radius = radii[i]; lobed flare am Stamm-Fuß. Alle Äste zu EINER Geometrie gemerged.
     _buildTreeTubeGeometry(skeleton, opts) {
         if (!skeleton || !Array.isArray(skeleton.branches) || skeleton.branches.length === 0) return null;
         const radialSegs = (opts && opts.radialSegs) || 6;
@@ -66489,191 +66408,29 @@ class AnazhRealm {
             bBb = (_bB & 0xff) / 255;
         // Die Ring-Tube-Mathematik lebt in `phyto-core.js` (`globalThis.__phytoCore.buildBarkTubeArrays`) —
         // Main + Worker + Portal lesen EINE Formel. Plain-Arrays je Branch, hier in BufferGeometry gewickelt
-        // (Vertrag EXAKT: position/normal/color/aFlex/aPhase + index) + gemerged; ohne phyto-core Inline-Pfad.
+        // (Vertrag EXAKT: position/normal/color + index; der Wind liest die Gestalt, `_baumWindStoff`) + gemerged.
+        // Ohne Kern kein stiller Inline-Zwilling: lauter Bruch (KERN-PFLICHT).
         const _core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        if (_core && typeof _core.buildBarkTubeArrays === "function") {
-            const snippets = _core.buildBarkTubeArrays(skeleton.branches, {
-                radialSegs,
-                totalH,
-                barkColorA: [bAr, bAg, bAb],
-                barkColorB: [bBr, bBg, bBb],
-                flareAmp: skeleton.flareAmp || 0.45,
-                flareLobes: skeleton.flareLobes || 5,
-            });
-            if (Array.isArray(snippets) && snippets.length > 0) {
-                const geomListCore = [];
-                for (let si = 0; si < snippets.length; si++) {
-                    const s = snippets[si];
-                    const g = new THREE.BufferGeometry();
-                    g.setAttribute("position", new THREE.BufferAttribute(s.positions, 3));
-                    g.setAttribute("normal", new THREE.BufferAttribute(s.normals, 3));
-                    g.setAttribute("color", new THREE.BufferAttribute(s.colors, 3));
-                    g.setAttribute("aFlex", new THREE.BufferAttribute(s.aFlex, 1));
-                    g.setAttribute("aPhase", new THREE.BufferAttribute(s.aPhase, 1));
-                    g.setIndex(new THREE.BufferAttribute(s.indices, 1));
-                    geomListCore.push(g);
-                }
-                if (geomListCore.length > 0) return this._mergeAttributedGeometries(geomListCore, ["aFlex", "aPhase"]);
-            }
-        }
-        // pcg-Hash für aperiodische Phase pro Vertex (deterministisch aus
-        // (branchIdx, pointIdx, radialIdx)) → benachbarte Vertices flattern
-        // verschieden im Wind-Shader (Plan Ω-W „aperiodisches Flattern").
-        const hashPhase = (a, b, c) => {
-            let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
-            h = (h ^ (h >>> 13)) >>> 0;
-            return ((h * 0.00000000023283) % 1) * Math.PI * 2;
-        };
-        // Sammeln pro Branch ein eigenes BufferGeometry-Snippet, am Ende
-        // mergen (geteiltes Material via vertexColors).
+        if (!_core || typeof _core.buildBarkTubeArrays !== "function")
+            throw new Error("KERN-PFLICHT: phyto-core buildBarkTubeArrays fehlt (die Rinde des Werkstatt-Baums)");
+        const snippets = _core.buildBarkTubeArrays(skeleton.branches, {
+            radialSegs,
+            totalH,
+            barkColorA: [bAr, bAg, bAb],
+            barkColorB: [bBr, bBg, bBb],
+            flareAmp: skeleton.flareAmp || 0.45,
+            flareLobes: skeleton.flareLobes || 5,
+        });
         const geomList = [];
-        for (let bi = 0; bi < skeleton.branches.length; bi++) {
-            const br = skeleton.branches[bi];
-            const pts = br.points;
-            if (!Array.isArray(pts) || pts.length < 2) continue;
-            const nP = pts.length;
-            const nV = nP * radialSegs;
-            const positions = new Float32Array(nV * 3);
-            const normals = new Float32Array(nV * 3);
-            const colors = new Float32Array(nV * 3);
-            const flex = new Float32Array(nV);
-            const phase = new Float32Array(nV);
-            const indices = new Uint32Array((nP - 1) * radialSegs * 6);
-            // Pro Punkt: Tangent → perpendicular basis → Ring von radialSegs
-            // Vertices. Per-Vertex normal = radial, color = holz-tint·brightness,
-            // flex = relative Höhe im Baum (Stamm-Spitzen flexen mehr).
-            for (let i = 0; i < nP; i++) {
-                const p = pts[i];
-                // Tangent: forward-diff am Anfang/Ende, central in der Mitte.
-                let tx, ty, tz;
-                if (i === 0) {
-                    tx = pts[1].x - p.x;
-                    ty = pts[1].y - p.y;
-                    tz = pts[1].z - p.z;
-                } else if (i === nP - 1) {
-                    tx = p.x - pts[i - 1].x;
-                    ty = p.y - pts[i - 1].y;
-                    tz = p.z - pts[i - 1].z;
-                } else {
-                    tx = pts[i + 1].x - pts[i - 1].x;
-                    ty = pts[i + 1].y - pts[i - 1].y;
-                    tz = pts[i + 1].z - pts[i - 1].z;
-                }
-                const tlen = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
-                tx /= tlen;
-                ty /= tlen;
-                tz /= tlen;
-                // Perpendicular basis: nutze Welt-Up als Referenz; bei fast
-                // vertikalem Tangent (|dot| > 0.99) auf Welt-X umschalten.
-                let upX = 0,
-                    upY = 1,
-                    upZ = 0;
-                if (Math.abs(ty) > 0.99) {
-                    upX = 1;
-                    upY = 0;
-                    upZ = 0;
-                }
-                // binormal = cross(tangent, up); normal = cross(binormal, tangent).
-                let bx = ty * upZ - tz * upY;
-                let by = tz * upX - tx * upZ;
-                let bz = tx * upY - ty * upX;
-                let blen = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
-                bx /= blen;
-                by /= blen;
-                bz /= blen;
-                let nx = by * tz - bz * ty;
-                let ny = bz * tx - bx * tz;
-                let nz = bx * ty - by * tx;
-                // Flare am Stamm-Fuß (Plan §3.3): nur isTrunk + erste ~15%
-                // der Polylinie. amp+lobes pro Spezies (SPECIES_TREE_PARAMS).
-                let radius = p.r;
-                if (br.isTrunk && i < Math.max(2, Math.floor(nP * 0.18))) {
-                    const flareT = 1 - i / Math.max(1, Math.floor(nP * 0.18));
-                    const ease = flareT * flareT * (3 - 2 * flareT); // smoothstep
-                    const amp = skeleton.flareAmp || 0.45;
-                    // lobed multiplier wird pro Vertex (mit Ring-Winkel) angewandt.
-                    radius = p.r * (1 + amp * ease * 0.4); // average flare (Lobes-Variation kommt unten)
-                }
-                const lobes = skeleton.flareLobes || 5;
-                const flareActive = br.isTrunk && i < Math.max(2, Math.floor(nP * 0.18));
-                const flareT = flareActive ? 1 - i / Math.max(1, Math.floor(nP * 0.18)) : 0;
-                const flareEase = flareT * flareT * (3 - 2 * flareT);
-                const flareAmp = (skeleton.flareAmp || 0.45) * flareEase;
-                // flex aus Welt-Höhe relativ zur Baum-Höhe (Spitzen flexen mehr).
-                const flexVal = Math.max(0, Math.min(1, p.y / totalH));
-                for (let j = 0; j < radialSegs; j++) {
-                    const a = (j / radialSegs) * Math.PI * 2;
-                    const ca = Math.cos(a);
-                    const sa = Math.sin(a);
-                    // lobed radius: r_eff = radius * (1 + flareAmp * sin(j·lobes·2π/radialSegs))
-                    // → mehrere Rippen am Stamm-Sockel
-                    const lobedMul = 1 + flareAmp * Math.sin((j * lobes * 2 * Math.PI) / radialSegs);
-                    const rEff = radius * (flareActive ? lobedMul : 1.0);
-                    // Position
-                    const vx = p.x + (nx * ca + bx * sa) * rEff;
-                    const vy = p.y + (ny * ca + by * sa) * rEff;
-                    const vz = p.z + (nz * ca + bz * sa) * rEff;
-                    // Normal (radial nach außen)
-                    const vnx = nx * ca + bx * sa;
-                    const vny = ny * ca + by * sa;
-                    const vnz = nz * ca + bz * sa;
-                    const vIdx = (i * radialSegs + j) * 3;
-                    positions[vIdx] = vx;
-                    positions[vIdx + 1] = vy;
-                    positions[vIdx + 2] = vz;
-                    normals[vIdx] = vnx;
-                    normals[vIdx + 1] = vny;
-                    normals[vIdx + 2] = vnz;
-                    // RINDEN-MASERUNG: axiale Borke-Bänder (sin über den Polylinien-Index i) + radialer Streifen (über j);
-                    // Stamm gröber als Äste. Billig, deterministisch, per-Vertex.
-                    const grainFreq = br.isTrunk ? 2.1 : 3.6;
-                    const grain =
-                        1 -
-                        0.15 * (Math.sin(i * grainFreq) * 0.5 + 0.5) -
-                        0.08 * (Math.sin(j * 1.9 + i * 0.5) * 0.5 + 0.5);
-                    // Rinden-Farbe: barkA (Fuß) → barkB (Wipfel) über die Vertex-Höhe gelerpt (wie buildTube
-                    // barkBase→barkTip), × grain. tintT ist KEINE Helligkeits-Skala — der Gradient trägt das selbst.
-                    const hMix = Math.max(0, Math.min(1, p.y / totalH));
-                    colors[vIdx] = (bAr + (bBr - bAr) * hMix) * grain;
-                    colors[vIdx + 1] = (bAg + (bBg - bAg) * hMix) * grain;
-                    colors[vIdx + 2] = (bAb + (bBb - bAb) * hMix) * grain;
-                    // flex + phase: pro Vertex (höher → mehr flex, Hash-Phase)
-                    const vF = i * radialSegs + j;
-                    flex[vF] = flexVal * (br.isTrunk ? 0.45 : 0.85); // Stamm flext weniger, Äste mehr
-                    phase[vF] = hashPhase(bi, i, j);
-                }
-            }
-            // Indizes: pro Quad zwei Triangles (radialSegs wraps around).
-            let triIdx = 0;
-            for (let i = 0; i < nP - 1; i++) {
-                for (let j = 0; j < radialSegs; j++) {
-                    const j1 = (j + 1) % radialSegs;
-                    const a = i * radialSegs + j;
-                    const b = i * radialSegs + j1;
-                    const c = (i + 1) * radialSegs + j;
-                    const d = (i + 1) * radialSegs + j1;
-                    indices[triIdx++] = a;
-                    indices[triIdx++] = c;
-                    indices[triIdx++] = b;
-                    indices[triIdx++] = b;
-                    indices[triIdx++] = c;
-                    indices[triIdx++] = d;
-                }
-            }
+        for (const s of snippets) {
             const g = new THREE.BufferGeometry();
-            g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-            g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
-            g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-            g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-            g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
-            g.setIndex(new THREE.BufferAttribute(indices, 1));
+            g.setAttribute("position", new THREE.BufferAttribute(s.positions, 3));
+            g.setAttribute("normal", new THREE.BufferAttribute(s.normals, 3));
+            g.setAttribute("color", new THREE.BufferAttribute(s.colors, 3));
+            g.setIndex(new THREE.BufferAttribute(s.indices, 1));
             geomList.push(g);
         }
-        if (geomList.length === 0) return null;
-        // Mergen über `_mergeGeometries` — der V18.213-Helper. Erweitern um
-        // aFlex+aPhase: per-Vertex-Custom-Attribute durch denselben Vertex-
-        // Konkat-Pfad (eine flat-Concat über alle Branch-Geoms).
-        return this._mergeAttributedGeometries(geomList, ["aFlex", "aPhase"]);
+        return geomList.length ? this._mergeGeometries(geomList) : null;
     }
 
     // Der Blatt-Atlas kommt aus phyto-core — kein Parallel-Painter: das Atlas-BILD (`bakeLeafAtlasBild`, W5) ist
@@ -66826,7 +66583,7 @@ class AnazhRealm {
     }
 
     // NAHER BAUM (LOD0): 30-Vert-Superformel-Blatt-Klingen aus den Nicht-Nadel-Phyto-Blättern über
-    // `__phytoCore.buildLeafBlades` (Attribute wie die Karten: position/normal/color/aFlex/aPhase/uv +
+    // `__phytoCore.buildLeafBlades` (Attribute wie die Karten: position/normal/color/uv +
     // aH0/aH0L). Nadeln bleiben Spray-Quads (Einzel-Nadeln trügen beim 480er-Blatt-Budget die Deckung
     // nicht). null (kein Kern/Blätter/THREE) → der Aufrufer bleibt beim Karten-Pfad.
     _buildTreeFoliageBladeGeometry(skeleton) {
@@ -66859,8 +66616,6 @@ class AnazhRealm {
         g.setAttribute("position", new THREE.BufferAttribute(q.positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(q.normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(q.aFlex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
         g.setIndex(new THREE.BufferAttribute(q.indices, 1));
         // KUPPEL-NORMALE auch für die Klingen (22.07.): die Core-cup-Normalen litten
@@ -66882,7 +66637,7 @@ class AnazhRealm {
         if (!fo) return null;
         // Laub-Geometrie aus phyto-core (`buildFoliageQuads`): ein Quad je Blatt (Achse aus dir/up, Roll aus
         // phase, UV in die Atlas-Zelle); hier nur in BufferGeometry gewickelt + WebGPU-Material (liest
-        // position/normal/color/aFlex/aPhase/uv). Kein phyto-Blatt (lod2, Alt-Skelett) → Anker-Pfad unten.
+        // position/normal/color/uv). Kein phyto-Blatt (lod2, Alt-Skelett) → Anker-Pfad unten.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         if (
             core &&
@@ -66911,8 +66666,6 @@ class AnazhRealm {
                 g.setAttribute("position", new THREE.BufferAttribute(q.positions, 3));
                 g.setAttribute("normal", new THREE.BufferAttribute(q.normals, 3));
                 g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
-                g.setAttribute("aFlex", new THREE.BufferAttribute(q.aFlex, 1));
-                g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
                 // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
@@ -66960,11 +66713,6 @@ class AnazhRealm {
         cy /= aN;
         cz /= aN;
         cy += totalH * 0.05; // leicht nach oben
-        const hashPhase = (a, b) => {
-            let h = (a * 73856093) ^ (b * 19349663);
-            h = (h ^ (h >>> 13)) >>> 0;
-            return ((h * 0.00000000023283) % 1) * Math.PI * 2;
-        };
         // Cluster aus K Karten je Anchor füllt das Kronen-VOLUMEN (eine Karte je Anchor las als Stachel).
         // Jede Karte card{cross} (8 Verts + 12 Indizes), im Volumen gejittert (teils zur Mitte), mit
         // Größen-Varianz + Drehung um y. LOD1/2 dünnen über cardsPerAnchor (der LOD trägt die FPS).
@@ -66973,8 +66721,6 @@ class AnazhRealm {
         const positions = new Float32Array(M * 8 * 3);
         const normals = new Float32Array(M * 8 * 3);
         const colors = new Float32Array(M * 8 * 3);
-        const flex = new Float32Array(M * 8);
-        const phase = new Float32Array(M * 8);
         // Ω-O14 (wahreranblick §8.5) — per-Ecke UV [0..1], damit das Laub-Material eine
         // weiche BLATT-Alpha-Maske rechnen kann (die harten Rechteck-Ecken wegclippen →
         // die Krone liest als Laub, nicht als Karten-Stapel). Ecken: 0,1,2,3.
@@ -67057,8 +66803,6 @@ class AnazhRealm {
                 // Eck-Halbbreiten (Blatt-Form): unten ±hw, oben ±tw.
                 const lxs = [-hw, hw, tw, -tw];
                 const lys = [-hh, -hh, hh, hh];
-                const phBase = hashPhase(ai, kk);
-                const flexBase = Math.max(0.5, Math.min(1, ay / totalH));
                 const base = cardIdx * 8;
                 // Quad 1 (Tangente t1=(cR,0,−sR))
                 for (let c = 0; c < 4; c++) {
@@ -67071,8 +66815,6 @@ class AnazhRealm {
                     colors[v3] = cr;
                     colors[v3 + 1] = cg;
                     colors[v3 + 2] = cb;
-                    flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
-                    phase[vWrite] = phBase + c * 0.7;
                     uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.25;
                     uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
@@ -67088,8 +66830,6 @@ class AnazhRealm {
                     colors[v3] = cr;
                     colors[v3 + 1] = cg;
                     colors[v3 + 2] = cb;
-                    flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
-                    phase[vWrite] = phBase + 1.7 + c * 0.7;
                     uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.25;
                     uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
@@ -67112,8 +66852,6 @@ class AnazhRealm {
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
         // Kuppel-Normale vom Kronen-Boden (facing-unabhängig, s. Helper).
@@ -67188,8 +66926,6 @@ class AnazhRealm {
         const positions = new Float32Array(vCount * 3);
         const normals = new Float32Array(vCount * 3);
         const colors = new Float32Array(vCount * 3);
-        const flex = new Float32Array(vCount); // 0 → statisch (verdeckt → Sway unsichtbar)
-        const phase = new Float32Array(vCount);
         const uvs = new Float32Array(vCount * 2);
         // Kern-Farbe: das DUNKLE Innen-Grün (tiefer Kronen-Schatten) — die instanceColor (per-Spawn)
         // moduliert es wie die Karten, so matcht der Kern den Baum.
@@ -67221,8 +66957,6 @@ class AnazhRealm {
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
         ico.dispose();
         g.computeBoundingBox();
@@ -67326,76 +67060,33 @@ class AnazhRealm {
 
     // Das EINE geteilte, OPAKE Schatten-Zwilling-Material (kein Alpha-Test/vertexColors/useInstanceTint →
     // nur position+normal; Instanz-Feld, nicht serialisiert). Der Zwilling rendert nie im Farb-Pass
-    // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide.
-    _treeShadowTwinMaterial() {
-        if (this._treeShadowTwinMat) return this._treeShadowTwinMat;
-        const m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+    // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide. Der Zwilling schwingt mit seiner Krone (K19): EIN
+    // Stoff je Baum-Gestalt (`baumWind` aus `_skelettWindDaten`, derselbe Wind-Term wie der Wurf-Teil der Foundry-L1), EIN
+    // Programm für alle; jeder trägt den Licht-Pool (K11, `_leuchtStoff` im Leuchten, der Wind im positionNode).
+    _treeShadowTwinMaterial(baumWind) {
+        if (!this._treeShadowTwinMats) this._treeShadowTwinMats = new Map();
+        const key = baumWind ? baumWind.ht + "/" + baumWind.delta : "still";
+        let m = this._treeShadowTwinMats.get(key);
+        if (m) return m;
+        m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
         this._leuchtStoff(m, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         m.userData.shadowTwin = true;
-        this._treeShadowTwinMat = m;
+        this._baumWindStoff(m, "schatten", baumWind || null);
+        this._treeShadowTwinMats.set(key, m);
         return m;
     }
 
-    // Mergt N Geometries inklusive Custom-Attribute (z. B. aFlex + aPhase) — attribut-bewusster Spiegel
-    // zu _mergeGeometries. Erwartet identische Attribut-Sets (alle indexed oder alle nicht); non-indexed.
-    _mergeAttributedGeometries(geometries, customAttrs) {
-        if (!Array.isArray(geometries) || geometries.length === 0) return null;
-        let totalVerts = 0;
-        for (const g of geometries) {
-            if (!g || !g.attributes || !g.attributes.position) return null;
-            const idx = g.index;
-            totalVerts += idx ? idx.count : g.attributes.position.count;
-        }
-        if (totalVerts === 0) return null;
-        const posOut = new Float32Array(totalVerts * 3);
-        const norOut = new Float32Array(totalVerts * 3);
-        const colOut = new Float32Array(totalVerts * 3);
-        const customOut = {};
-        for (const attr of customAttrs || []) customOut[attr] = new Float32Array(totalVerts);
-        let cursor = 0;
-        for (const g of geometries) {
-            const posIn = g.attributes.position.array;
-            const norIn = g.attributes.normal ? g.attributes.normal.array : null;
-            const colIn = g.attributes.color ? g.attributes.color.array : null;
-            const customIn = {};
-            for (const attr of customAttrs || []) {
-                customIn[attr] = g.attributes[attr] ? g.attributes[attr].array : null;
-            }
-            const idx = g.index ? g.index.array : null;
-            const vCount = idx ? idx.length : g.attributes.position.count;
-            for (let i = 0; i < vCount; i++) {
-                const srcIdx = idx ? idx[i] : i;
-                const o3 = (cursor + i) * 3;
-                const s3 = srcIdx * 3;
-                posOut[o3] = posIn[s3];
-                posOut[o3 + 1] = posIn[s3 + 1];
-                posOut[o3 + 2] = posIn[s3 + 2];
-                if (norIn) {
-                    norOut[o3] = norIn[s3];
-                    norOut[o3 + 1] = norIn[s3 + 1];
-                    norOut[o3 + 2] = norIn[s3 + 2];
-                }
-                if (colIn) {
-                    colOut[o3] = colIn[s3];
-                    colOut[o3 + 1] = colIn[s3 + 1];
-                    colOut[o3 + 2] = colIn[s3 + 2];
-                }
-                for (const attr of customAttrs || []) {
-                    if (customIn[attr]) customOut[attr][cursor + i] = customIn[attr][srcIdx];
-                }
-            }
-            cursor += vCount;
-        }
-        const merged = new THREE.BufferGeometry();
-        merged.setAttribute("position", new THREE.BufferAttribute(posOut, 3));
-        merged.setAttribute("normal", new THREE.BufferAttribute(norOut, 3));
-        merged.setAttribute("color", new THREE.BufferAttribute(colOut, 3));
-        for (const attr of customAttrs || []) {
-            merged.setAttribute(attr, new THREE.BufferAttribute(customOut[attr], 1));
-        }
-        merged.computeBoundingBox();
-        merged.computeBoundingSphere();
-        return merged;
+    // DIE WIND-DATEN DES WERKSTATT-BAUMS (K19): ht = die Skelett-Höhe (die Vorlage steht in Metern, die Instanz-Skala trägt
+    // aH0), δ an der Stamm-Achse (phyto-core `windSchlankheitAchse`, dieselbe Brusthöhe wie die Foundry-Gestalt). null ohne
+    // Stamm-Achse: der Baum steht still (sichtbar, nie ein geratener Wert).
+    _skelettWindDaten(skel) {
+        const ht = skel && Number.isFinite(skel.totalH) && skel.totalH > 0 ? skel.totalH : 0;
+        const stamm =
+            ht > 0 && Array.isArray(skel.branches)
+                ? skel.branches.find((b) => b && b.isTrunk && Array.isArray(b.points))
+                : null;
+        const delta = stamm ? globalThis.__phytoCore.windSchlankheitAchse(stamm.points, ht, 1) : null;
+        return delta > 0 ? { ht: +ht.toFixed(2), delta: +delta.toFixed(4), an: 1 } : null;
     }
 
     // Baut aus dem Skeleton beide Leaves (bark + foliage) als merged Geometries. Materialien:
@@ -67412,15 +67103,25 @@ class AnazhRealm {
             if (imp) return { leaves: [imp] };
         }
         const leaves = [];
+        // DER WIND (K19): Höhe und Schlankheit des Skeletts — Rinde, Laub, Kern und Zwilling tragen sie im Stoff
+        // (`_baumWindStoff` über `opts.baumWind`), die Welt-Höhe jedes Teils im Stempel aH0: `_stampFoliageVisHeights` trägt
+        // die Vorlage, die Instanz-Fassade (`_lodInstanceFacade`, je Slot gestempelt) Vorlage × Instanz-Skala.
+        const baumWind = this._skelettWindDaten(skel);
+        const totalH = Math.max(1, skel.totalH || 10);
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
         if (barkGeom) {
             const holzMat = this.state.materials && this.state.materials.holz;
-            // useFlexAttr → der Wind-Sway in _buildToonNodeMaterial liest die gebackenen aFlex/aPhase statt der
-            // crownLin-Schätzung. `bark:true` weckt die Rinden-Maserung in _buildPbrNodeMaterial (Faser +
-            // härte-Risse aus dem holz-Tag). DoubleSide: die Tube-Wicklung macht die Außenflächen back-facing —
-            // FrontSide cullte sie (der Stamm las konkav).
-            const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide };
+            // `bark:true` weckt die Rinden-Maserung in _buildPbrNodeMaterial (Faser + härte-Risse aus dem holz-Tag).
+            // DoubleSide: die Tube-Wicklung macht die Außenflächen back-facing — FrontSide cullte sie (der Stamm las konkav).
+            this._stampFoliageVisHeights(barkGeom, totalH);
+            const barkMatOpts = {
+                vertexColors: true,
+                pflanzenStoff: true,
+                bark: true,
+                side: THREE.DoubleSide,
+                baumWind,
+            };
             if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
             const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
@@ -67442,9 +67143,10 @@ class AnazhRealm {
             const foliageMatOpts = {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true, // Ω-O14: weiche Blatt-Alpha-Maske (alphaTest) statt harter Karte
                 side: THREE.DoubleSide,
+                baumWind,
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
             // Klingen-Material: DIESELBE Opts-Signatur + `foliageBlade` → eigenes geteiltes
@@ -67468,10 +67170,12 @@ class AnazhRealm {
             if (this.state.foliageOpaqueCore !== false && (skel.lodLevel | 0) === 0) {
                 const coreGeom = this._buildTreeFoliageCoreGeometry(skel);
                 if (coreGeom) {
+                    this._stampFoliageVisHeights(coreGeom, totalH);
                     const coreMat = this._sharedFoliageMaterial({
                         vertexColors: true,
                         useInstanceTint: true,
-                        useFlexAttr: true,
+                        pflanzenStoff: true,
+                        baumWind,
                     });
                     coreLeaf = {
                         geom: coreGeom,
@@ -67487,7 +67191,8 @@ class AnazhRealm {
             let twinLeaf = null;
             if (this.state.foliageShadowTwin !== false && (skel.lodLevel | 0) <= 1) {
                 const twinGeom = this._buildTreeShadowTwinGeometry(skel);
-                const twinMat = twinGeom && this._treeShadowTwinMaterial();
+                if (twinGeom) this._stampFoliageVisHeights(twinGeom, totalH);
+                const twinMat = twinGeom && this._treeShadowTwinMaterial(baumWind);
                 if (twinGeom && twinMat) {
                     twinLeaf = {
                         geom: twinGeom,
@@ -67696,6 +67401,7 @@ class AnazhRealm {
             _flat: null,
         };
         at.zellen.set(key, z);
+        this._karteNadel(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
         const rend = this.state && this.state.renderer;
         if (rend && !rend._isHeadlessNull) {
@@ -67755,7 +67461,7 @@ class AnazhRealm {
         const matOpts = {
             vertexColors: true,
             useInstanceTint: true, // konstante Kronenfarbe je Baum über die LODs
-            useFlexAttr: true, // Wind-Sway liest aFlex (Kronenspitze wiegt)
+            pflanzenStoff: true, // Vertex-Albedo im colorNode, echte Normale, keine Geologie; Wind: `windAusschlag` über uv.y
             impostorAtlas: true,
             side: THREE.DoubleSide,
         };
@@ -68063,7 +67769,7 @@ class AnazhRealm {
             return result;
         }
         // SKELETON-Pfad: ein Bauplan mit `_skeleton` wird einmalig zu zwei organischen Geometries gebaut
-        // (bark-Tube + foliage), Per-Vertex aFlex + aPhase für den Wind-Shader. `bp.parts` bleibt UNVERÄNDERT
+        // (bark-Tube + foliage), ihr Stoff trägt den EINEN Wind-Term (`_baumWindStoff`). `bp.parts` bleibt UNVERÄNDERT
         // → computeCompoundTags + Snapshot-Re-Growth wie zuvor.
         if (bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
             if (!this.state.archMergedGeomCache) this.state.archMergedGeomCache = new Map();
@@ -77605,7 +77311,7 @@ class AnazhRealm {
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
-    _foundryTreeMaterial(kind, mp, wiegen) {
+    _foundryTreeMaterial(kind, mp, wiegen, baum) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -77634,7 +77340,10 @@ class AnazhRealm {
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
         const key =
-            globalThis.__phytoCore.budgetStoff(kind, mp) + (xfade ? "|xf" : "") + (wiegen === true ? "|wiegt" : "");
+            globalThis.__phytoCore.budgetStoff(kind, mp) +
+            (xfade ? "|xf" : "") +
+            (wiegen === true ? "|wiegt" : "") +
+            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -78001,13 +77710,208 @@ class AnazhRealm {
         // Fehler und baute einen Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
         this._materialObserverDiaet(mat);
         this._foundryMats[key] = mat;
+        // der Wurf-Teil (kind "schatten") trägt denselben Wind wie das Bild seiner Stufe; der Wurf eines Baus steht (an 0)
+        if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
+            this._baumWindStoff(mat, kind, baum);
+        if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
         return mat;
+    }
+
+    // DAS LAUB-LICHT IM STOFF (K19): jeder Laub-Stoff der Welt (Foundry-Laub und Blatt-Karte, das Grammatik-Laub) rechnet je
+    // direktem Licht den EINEN Laub-Licht-Term (phyto-core `laubDurchlass`, hier über der TSL-Algebra) in seiner Lichtung —
+    // das Lichtmodell des Standard-Stoffs (r184 PhysicalLightingModel), dessen `direct` nach der Physik des Stoffs den
+    // Durchlass der Rückseite addiert: `lightColor` trägt den Schatten der Kaskade, die Normierung ist die Lambert-Antwort der
+    // Vorderseite (diffuseColor/π ausgeschrieben — ein Fn-Aufruf ohne Layout baute seinen Rumpf erst im Compiler). Kein
+    // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `nadel`: true — die Blatt-Karte erkennt die
+    // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); false — Klinge und Blatt-Geometrie sind Laub; eine Funktion — die
+    // ferne Karte liest die Nadel ihrer Schicht (`_karteNadel`), der Knoten entsteht je Programm-Bau.
+    _laubLichtStoff(mat, nadel) {
+        if (!mat || mat.isNodeMaterial !== true) throw new Error("_laubLichtStoff: kein Knoten-Stoff");
+        const T = THREE.TSL;
+        const K = AnazhRealm._laubLichtModell();
+        const ab = globalThis.__phytoCore.LAUB_LICHT.nadelAbU;
+        const art = typeof nadel === "function" ? "karte" : nadel === true ? "atlas" : "laub";
+        mat.setupLightingModel = () =>
+            new K(
+                art === "karte"
+                    ? nadel()
+                    : art === "atlas"
+                      ? T.select(T.attribute("uv", "vec2").x.greaterThanEqual(ab), T.float(1), T.float(0))
+                      : T.float(0)
+            );
+        const schluessel = mat.customProgramCacheKey;
+        const at = art === "karte" ? this._impostorAtlas() : null;
+        mat.customProgramCacheKey = function () {
+            return (
+                schluessel.call(this) +
+                (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) +
+                (at && at.nadelU ? ":" + at.nadelU.array.length : "")
+            );
+        };
+        mat.userData = mat.userData || {};
+        mat.userData.laubLicht = art;
+        return mat;
+    }
+
+    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (foundry-core fx.conifer der Zelle), sonst 0 — EINE
+    // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
+    // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
+    _karteNadel(T, z) {
+        const at = this._impostorAtlas();
+        const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
+        if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
+        let n = at.nadelU ? at.nadelU.array.length : 0;
+        if (n < Math.max(at.n, 1)) {
+            const alt = at.nadelU ? at.nadelU.array : [];
+            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
+            const a = new Array(n).fill(0);
+            for (let i = 0; i < alt.length; i++) a[i] = alt[i];
+            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
+            if (at.mat) at.mat.needsUpdate = true;
+        }
+        if (z) {
+            const rec = tab[z.preset];
+            at.nadelU.array[z.idx] = rec && rec.fx && rec.fx.conifer ? 1 : 0;
+        }
+        return at.nadelU;
+    }
+
+    // Das Lichtmodell des Laubs (K19): die Klasse ist die des Standard-Stoffs selbst (sein `setupLightingModel` liefert sie
+    // — die Bootstrap-Brücke reicht sie nicht als THREE-Symbol), erweitert um den Durchlass.
+    static _laubLichtModell() {
+        if (AnazhRealm._laubLichtK) return AnazhRealm._laubLichtK;
+        const T = THREE.TSL;
+        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
+        const A = AnazhRealm._windTsl(T);
+        const durchlass = globalThis.__phytoCore.laubDurchlass;
+        class LaubLicht extends Basis {
+            constructor(nadel) {
+                super();
+                this.nadel = nadel;
+            }
+            direct(e, builder) {
+                super.direct(e, builder);
+                const L = e.lightDirection;
+                const f = durchlass(A, T.normalView.dot(L), T.positionViewDirection.dot(L).negate(), this.nadel);
+                e.reflectedLight.directDiffuse.addAssign(
+                    e.lightColor
+                        .mul(f)
+                        .mul(T.diffuseColor.rgb)
+                        .mul(1 / Math.PI)
+                );
+            }
+        }
+        AnazhRealm._laubLichtK = LaubLicht;
+        return LaubLicht;
+    }
+
+    // Die Schlankheit der Karte (K19): EINE Uniform, das Mittel von δ über die Arten, deren Gestalt geliefert ist
+    // (`_baumWindDaten` misst sie, phyto-core `windSchlankheit`) — die Karte zeichnet jede Art aus EINEM Stoff und kennt
+    // ihre Art nur als Atlas-Schicht. Vor der ersten Gestalt ist δ 0 (f0 0: die Karte neigt sich mit der Böe, ohne Pendel).
+    _karteWindDelta() {
+        if (!this._karteWindU) this._karteWindU = THREE.TSL.uniform(0);
+        return this._karteWindU;
+    }
+
+    // DIE WIND-DATEN EINER ART (K19) für den Stoff ihrer Gruppe, gemessen an der GELIEFERTEN Gestalt: die Vorlagen-Höhe
+    // (die Wurzel liegt bei y = 0 — ζ = y / ht), die Schlankheit δ = D(Brusthöhe) / ht des Stamm-Strangs (phyto-core
+    // `windSchlankheit` mit der Welt-Skala der Art) und ob sie im Wind steht (Baum und Strauch; der liegende Stamm, der
+    // Stumpf, Fels und Bau stehen still). Bis K19 kam δ aus dem Buch-Phänotyp — das Totholz (gebrochene Krone) schwang
+    // 42 % zu langsam.
+    _baumWindDaten(preset, meshes) {
+        const rec = this._foundryRecipeFor(preset);
+        if (!rec || rec.panel !== "plant") return null;
+        const an = rec.kind === "tree" || rec.kind === "shrub" ? 1 : 0;
+        if (!an) return null;
+        let top = 0,
+            rinde = null;
+        for (const m of meshes || []) {
+            const pa = m && m.position && m.position.array;
+            if (!pa) continue;
+            if (!rinde && m.kind === "bark") rinde = pa;
+            for (let i = 1; i < pa.length; i += 3) if (pa[i] > top) top = pa[i];
+        }
+        if (!(top > 0)) return null;
+        const skala = this._foundryWorldScaleMatrix(preset).elements[5];
+        const delta = globalThis.__phytoCore.windSchlankheit(rinde, top, skala);
+        if (!(delta > 0)) throw new Error("_baumWindDaten: " + preset + " liefert keinen Stamm-Ring für den Wind");
+        if (!this._windDeltaJeArt) this._windDeltaJeArt = new Map();
+        if (!this._windDeltaJeArt.has(preset)) {
+            this._windDeltaJeArt.set(preset, delta);
+            let s = 0;
+            for (const d of this._windDeltaJeArt.values()) s += d;
+            this._karteWindDelta().value = s / this._windDeltaJeArt.size;
+        }
+        return { ht: top, delta, an };
+    }
+
+    // Die TSL-Algebra des Wind-Terms (phyto-core `windAusschlag`) — Rinde, Laub und Karte der Welt rechnen über ihr.
+    static _windTsl(T) {
+        return {
+            k: (n) => T.float(n),
+            add: (a, b) => a.add(b),
+            mul: (a, b) => a.mul(b),
+            min: (a, b) => T.min(a, b),
+            max: (a, b) => T.max(a, b),
+            pow: (a, b) => T.pow(a, b),
+            sin: (a) => T.sin(a),
+            sqrt: (a) => T.sqrt(a),
+        };
+    }
+
+    // DER WIND IM PFLANZEN-STOFF (K19): Rinde und Laub jeder Foundry-Pflanze tragen den EINEN Wind-Term (phyto-core
+    // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
+    // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
+    // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
+    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
+    // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
+    // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
+    // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
+    // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
+    // trägt er nicht: sein Hub (WIND_GESETZ.blatt.hub 0,035 m im Sturm) liegt unter dem Kaskaden-Texel (wurf 0,17 m).
+    // Jeder Wurf zeichnet aus EINEM Programm (der eines Baus mit an 0).
+    _baumWindStoff(mat, kind, baum) {
+        if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
+        if (!this.state.windUniforms) this._grassInstanceMat();
+        const T = THREE.TSL;
+        const wu = this._ensureWindCoupling(T);
+        const WG = globalThis.__phytoCore.WIND_GESETZ;
+        const B = AnazhRealm.WIND_BOE;
+        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
+        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
+        const A = AnazhRealm._windTsl(T);
+        const pG = T.positionGeometry;
+        const pW = T.positionWorld;
+        const ht = uB.x.max(1e-3);
+        const H = T.attribute("aH0", "float").max(0.5);
+        const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
+        const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
+            .mul(B.amp)
+            .add(B.mitte);
+        const e = {
+            t: wu.uWindTime,
+            U: wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
+            g,
+            f0: uB.y.mul(WG.kF).div(H),
+            H,
+            zeta: pG.y.div(ht),
+            rho: T.length(pG.xz).div(ht),
+            phi: ort.mul(-B.k),
+            psi: pG.x.mul(1.7).add(pG.y.mul(0.9)).add(pG.z.mul(1.3)).div(ht).mul(6.2832),
+        };
+        const laub = kind === "foliage" || kind === "foliageTex";
+        const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
+        const quer = w.quer.mul(uB.z);
+        let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
+        if (laub) off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
+        mat.positionNode = T.positionLocal.add(off);
+        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
-    _foundryBuildMesh(m) {
+    _foundryBuildMesh(m, baum) {
         if (!m || !m.position || !m.position.array) return null;
         // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
         // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
@@ -78064,7 +77968,7 @@ class AnazhRealm {
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
-            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null));
         }
         // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
         // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
@@ -78115,6 +78019,8 @@ class AnazhRealm {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
         let group = null;
+        // die Wind-Daten der Art (K19): Rinde und Laub ihrer Gestalt tragen sie im Stoff (`_baumWindStoff`)
+        const baum = stage && stage.preset ? this._baumWindDaten(stage.preset, meshes) : null;
         try {
             group = new T.Group();
             for (const m of meshes) {
@@ -78127,7 +78033,7 @@ class AnazhRealm {
                     if (feld && m.huelle && typeof m.huelle === "object") group[feld] = m.huelle;
                     continue;
                 }
-                const mesh = this._foundryBuildMesh(m);
+                const mesh = this._foundryBuildMesh(m, baum);
                 if (mesh) group.add(mesh);
             }
         } catch (_e) {
