@@ -66,6 +66,25 @@ async function kreaturProben(r, T, opts) {
         s.creatures = [];
         s.creatureEmotions = [];
         s.maxCreatures = 64;
+        // DIE UHR DER BÜHNE (K07): jede Probe beginnt am selben Takt der Kreatur-Uhr und des KI-Takts und mit frischen
+        // Fauna-Strömen (_faunaRng, aus dem Seed der Welt), der Blick vom Spieler nach Norden (der Schirm wählt, wessen Gang
+        // ausgewertet wird: die Raten-Leiter, _creatureAnimDiv) — gleich, wie lange die Welt einschwang (performance.now: ihre
+        // Geburten zogen aus denselben Strömen) und welche Probe vorher lief. Vorher hielt nur jede zweite Probe ihre Uhr
+        // selbst (sieben Abschriften); gier lief ab der Uhr des Einschwingens (9,73 oder 9,77 s), der Fuchs wechselte von
+        // Lauf zu Lauf 15- bis 32,5-mal je Minute zwischen Gas und Bremse.
+        const altUhr = s.creatureAnimationTime;
+        const altAi = r._creatureAiFrame;
+        const altStroeme = r._faunaStroeme;
+        const altFelder = [s.lifeField, s.emotionField];
+        const altSpieler = Object.assign({}, s.player);
+        const altTempo = [s.speed, s.sprintSpeed, s.jumpPower];
+        s.lifeField = undefined;
+        s.emotionField = undefined;
+        s.creatureAnimationTime = 100;
+        r._creatureAiFrame = 0;
+        r._faunaStroeme = null;
+        pm.copy(P0);
+        kamera(0, -1);
         try {
             aus[name] = await fn(restore);
         } catch (e) {
@@ -86,6 +105,14 @@ async function kreaturProben(r, T, opts) {
             r.setGameMode(altModus);
             if (s.player.emotions) Object.assign(s.player.emotions, altGefuehl);
             pm.copy(P0);
+            s.creatureAnimationTime = altUhr;
+            r._creatureAiFrame = altAi;
+            r._faunaStroeme = altStroeme;
+            for (const k of Object.keys(s.player)) if (!(k in altSpieler)) delete s.player[k];
+            Object.assign(s.player, altSpieler);
+            [s.speed, s.sprintSpeed, s.jumpPower] = altTempo;
+            s.lifeField = altFelder[0];
+            s.emotionField = altFelder[1];
         }
     };
     // Ein Ort auf Land (nicht im Wasser), relativ zum Spieler.
@@ -350,11 +377,6 @@ async function kreaturProben(r, T, opts) {
         r.setGameMode("frieden");
         // Die Kreatur-Uhr fest (die Aktions-Wahl hasht Index × Zeit): jeder Lauf wählt dieselben Aktionen — sonst hing die
         // Zahl der Sprünge (3–5) an der Boot-Dauer der Welt.
-        const altUhr = s.creatureAnimationTime;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-        });
-        s.creatureAnimationTime = 100;
         const F = A._verhaltenGesetz().freude;
         const hoehe = (c) => (s.creatureEmotions[s.creatures.indexOf(c)] === "happy" ? F.hopHochM : F.hopBasisM);
         const tiere = [];
@@ -901,12 +923,6 @@ async function kreaturProben(r, T, opts) {
             K.herdeZug = zugAlt;
         });
         const seq0 = s._creatureNetSeq || 0;
-        const altUhr = s.creatureAnimationTime;
-        const altAi = r._creatureAiFrame;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-            r._creatureAiFrame = altAi;
-        });
         const lauf = (mitFuchs, blickX, blickZ, fern) => {
             for (const c of s.creatures.slice()) r.removeCreature(c);
             s._creatureNetSeq = seq0;
@@ -1869,14 +1885,6 @@ async function kreaturProben(r, T, opts) {
     // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
     await buehne("jagdkreis", async (restore) => {
         r.setGameMode("pfad");
-        const altUhr = s.creatureAnimationTime,
-            altAi = r._creatureAiFrame;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-            r._creatureAiFrame = altAi;
-        });
-        s.creatureAnimationTime = 100;
-        r._creatureAiFrame = 0;
         // ein ruhiger Spieler, je Takt (ein zorniger verschreckt den Wolf — seine Wariness schlägt die Jagd; die Ansteckung
         // der Gefühle im Kreatur-Takt trägt die Furcht der Beute zu ihm)
         const ruhigSpieler = () => {
@@ -2081,14 +2089,6 @@ async function kreaturProben(r, T, opts) {
     // Biss ──
     await buehne("rudel", async (restore) => {
         r.setGameMode("pfad");
-        const altUhr = s.creatureAnimationTime,
-            altAi = r._creatureAiFrame;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-            r._creatureAiFrame = altAi;
-        });
-        s.creatureAnimationTime = 100;
-        r._creatureAiFrame = 0;
         const ruhigSpieler = () => {
             if (s.player.emotions)
                 Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
@@ -2204,11 +2204,6 @@ async function kreaturProben(r, T, opts) {
         const mx = (box.minX + box.maxX) / 2,
             mz = (box.minZ + box.maxZ) / 2;
         // die Kreatur-Uhr fest (die Aktions-Wahl hasht sie): jeder Lauf sieht dieselben Schritte, gleich welche Probe vorher lief
-        const altUhr = s.creatureAnimationTime;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-        });
-        s.creatureAnimationTime = 100;
         pm.set(mx, box.topY + 0.5, mz + 1.6);
         // der Hirsch auf der Mitte des Sockels: erst wartet er dort (die Mitte ist eine Stufe von 0,35 m), dann folgt er dem
         // Spieler, der auf dem Sockel hin und her geht
@@ -2250,11 +2245,6 @@ async function kreaturProben(r, T, opts) {
     // deren Sohle höchstens 3 cm über dem Boden unter ihr liegt, steht; ihr Weg in solchen Takten je Weg des Leibs ──
     await buehne("querhang", async (restore) => {
         r.setGameMode("frieden");
-        const altUhr = s.creatureAnimationTime;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-        });
-        s.creatureAnimationTime = 100;
         if (taeter === "querhang")
             decke(
                 restore,
@@ -2452,11 +2442,6 @@ async function kreaturProben(r, T, opts) {
     // vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet dreimal aus) in 0,02 rad ──
     await buehne("ferngang", async (restore) => {
         r.setGameMode("frieden");
-        const altUhr = s.creatureAnimationTime;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-        });
-        s.creatureAnimationTime = 100;
         if (taeter === "ferngang")
             decke(
                 restore,
@@ -2586,6 +2571,84 @@ async function kreaturProben(r, T, opts) {
         return aus2;
     });
 
+    // DIE GESTALT AUS DER RUHE (K07): die Treffer-Kapseln einer Gattung (_kreaturTrefferGlieder, der Biss liest sie über
+    // _kreaturMaul) sind EINE Passung — gleich, an welchem Tier, an welcher Lage, in welcher Pose und Größe sie zuerst
+    // entsteht. Zwei Wölfe an zwei Orten, der zweite größer und gedreht, beide mitten im Schritt (jedes Glied ausgelenkt):
+    // jede Kapsel muss bit-gleich sein, und die laufende Pose steht danach unverändert.
+    await buehne("gestalt", async (restore) => {
+        const altK = r._gliedKapseln,
+            altN = r._trefferGliedNamen;
+        restore.push(() => {
+            r._gliedKapseln = altK;
+            r._trefferGliedNamen = altN;
+        });
+        if (taeter === "gestalt")
+            decke(
+                restore,
+                "_gestaltRuhe",
+                () =>
+                    function () {
+                        // der Täter: die Passung im laufenden Rahmen des Tiers (Lage, Pose, Größe des ersten)
+                        return (n) => (n.updateWorldMatrix(true, false), n.matrixWorld);
+                    }
+            );
+        const passung = (dx, dz, groesse, pose) => {
+            r._gliedKapseln = new Map();
+            r._trefferGliedNamen = new Map();
+            const o = frei(dx, dz, 6) || land(dx, dz);
+            const c = tier({ x: o.x, y: o.y, z: o.z }, "wolf", groesse);
+            c.rotation.y = pose * 1.3;
+            const T = c.userData._tierBaum.teile;
+            let k = 0;
+            for (const nm of Object.keys(T).sort()) {
+                T[nm].rotation.x += Math.sin(pose * 7 + k) * 0.4;
+                T[nm].rotation.z += Math.cos(pose * 5 + k++) * 0.3;
+            }
+            c.updateMatrixWorld(true);
+            const lage = () =>
+                Object.keys(T)
+                    .sort()
+                    .map((nm) => T[nm].quaternion.toArray().join() + T[nm].matrixWorld.elements.join())
+                    .join("|");
+            const vorher = lage();
+            const gl = r._kreaturTrefferGlieder(c);
+            const nachher = lage();
+            const kaps = new Map();
+            for (const [key, kp] of r._gliedKapseln)
+                if (kp) kaps.set(key, [kp.a.x, kp.a.y, kp.a.z, kp.b.x, kp.b.y, kp.b.z, kp.r]);
+            r.removeCreature(c);
+            return { kaps, n: gl ? gl.length : 0, gehalten: vorher === nachher };
+        };
+        const A = passung(30, 30, 1, 0);
+        const B = passung(-40, 60, 1.3, 1);
+        let maxAbw = 0,
+            glied = null;
+        const fehlt = [];
+        for (const [key, a] of A.kaps) {
+            const b = B.kaps.get(key);
+            if (!b) {
+                fehlt.push(key);
+                continue;
+            }
+            for (let i = 0; i < a.length; i++) {
+                const d = Math.abs(a[i] - b[i]);
+                if (d > maxAbw) {
+                    maxAbw = d;
+                    glied = key;
+                }
+            }
+        }
+        for (const key of B.kaps.keys()) if (!A.kaps.has(key)) fehlt.push(key);
+        return {
+            glieder: A.n,
+            kapseln: A.kaps.size,
+            fehlt,
+            maxAbw,
+            glied,
+            gehalten: A.gehalten && B.gehalten,
+        };
+    });
+
     return aus;
 }
 
@@ -2613,6 +2676,7 @@ const PROBEN = [
     "sockel",
     "querhang",
     "ferngang",
+    "gestalt",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -2832,6 +2896,15 @@ function urteil(name, z) {
             `kein persönlicher Raum: der nächste Nachbar p50 ${z.nachbarRaumP50} / p10 ${z.nachbarRaumP10} der Körper-Kugeln (Soll ≥ 1 / 0,85; zuletzt zwei Mitten ${z.paarMinM} m)`
         );
     }
+    if (name === "gestalt") {
+        soll(z.glieder > 0 && z.kapseln > 0, "der Wolf trägt keine Treffer-Kapseln (vakuös)");
+        soll(z.fehlt.length === 0, `die Passung zerlegt den Wolf je Tier anders: ${z.fehlt.join(", ")}`);
+        soll(
+            z.maxAbw === 0,
+            `die Treffer-Gestalt hängt am ersten Tier: die Kapsel ${z.glied} weicht ${z.maxAbw} ab (gepasst in Lage, Pose und Größe des Tiers statt in der Ruhe seiner Gattung)`
+        );
+        soll(z.gehalten === true, "die Passung verstellt die laufende Pose des Tiers");
+    }
     if (name === "jagdkreis") {
         const a = z.kampfSchau,
             b = z.sprinter;
@@ -2962,6 +3035,7 @@ const TAETER = {
         ["ferngang", /ferner Gang gleitet/],
         ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
+    gestalt: [["gestalt", /hängt am ersten Tier/]],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

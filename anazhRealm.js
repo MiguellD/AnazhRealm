@@ -19252,6 +19252,16 @@ class AnazhRealm {
                 wrap: wrap2,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
                 leibV: AnazhRealm._leibVolumen(klon, group2),
+                // die RUHE der Gestalt (`_gestaltRuhe`): die benannten Glieder der Vorlage, die nie ein Gang bewegt
+                ruhe:
+                    t0.ruheTeile ||
+                    (t0.ruheTeile = (() => {
+                        const R = {};
+                        t0.root.traverse((n) => {
+                            if ((n.isGroup || n.isBone) && n.name) R[n.name] = n;
+                        });
+                        return R;
+                    })()),
             };
             this._gelenkStufe(group2, 0);
             return group2;
@@ -76926,7 +76936,8 @@ class AnazhRealm {
             g.meshes.push(o);
             g.verts += n;
         };
-        cr.updateMatrixWorld(true);
+        // jede Lage der Zerlegung liest die RUHE der Gestalt (`_gestaltRuhe`), nie den laufenden Rahmen des Tiers
+        const ruhe = this._gestaltRuhe(cr);
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
@@ -76969,13 +76980,17 @@ class AnazhRealm {
                     const stueck = {
                         geometry: { attributes: attribute },
                         material: o.material,
-                        matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
+                        matrixWorld: new THREE.Matrix4().multiplyMatrices(ruhe(bone), inv).multiply(o.bindMatrix),
                     };
                     zuGruppe(ankerVon(bone), stueck, liste.length);
                 }
                 return;
             }
-            zuGruppe(ankerVon(o.parent), o, o.geometry.attributes.position.count);
+            zuGruppe(
+                ankerVon(o.parent),
+                { geometry: o.geometry, material: o.material, matrixWorld: ruhe(o) },
+                o.geometry.attributes.position.count
+            );
         });
         if (gruppen.size === 0) return null;
         const zielVon = (a) => {
@@ -76999,7 +77014,34 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
+        for (const [a, g] of gruppen) g.ruhe = ruhe(a);
         return { gruppen, wurzel, gattung: this._kreaturGattung(cr) };
+    }
+
+    // DIE RUHE DER GESTALT (K07): die Welt-Matrix jedes Knotens der Gestalt, wie die Gattung RUHT — jedes benannte Glied in
+    // der Lage seiner Vorlage (der Ofen-Guss, den nie ein Gang bewegt: `_tierBaum.ruhe`), der Leib im Ursprung mit Größe 1,
+    // alles andere in seiner eigenen Lage. Zerlegung und Kapsel-Passung (Treffer-Volumen, Fern-Bild) lesen sie, nie den
+    // laufenden Rahmen: vorher passte der Fit am ERSTEN Tier seiner Gattung, wo und wie es gerade stand — mitten im Schritt
+    // (verschmolzene Glieder trugen ihren Winkel, der Rumpf des Wolfs 0,18 Lab-Einheiten), an seiner Welt-Lage, in seiner
+    // Größe —, und welches Tier zuerst kam, entschied die Bake-Uhr (performance.now). Der Biss liest diese Kapseln
+    // (_kreaturMaul): der Jagd-Kreislauf schwankte bei gleichem Code von Lauf zu Lauf (gate:kreatur-takt gestalt). Die
+    // laufende Pose bleibt unberührt — die Ruhe wird gerechnet, nie gestellt.
+    _gestaltRuhe(cr) {
+        const tb = cr.userData && cr.userData._tierBaum;
+        const R = tb ? tb.ruhe : null;
+        if (tb && !R) throw new Error("Gestalt ohne Ruhe: _tierBaum.ruhe fehlt (der EINE Bau ist _buildCreatureGroup)");
+        const memo = new Map();
+        const eins = new THREE.Matrix4();
+        const welt = (n) => {
+            if (!n || n === cr) return eins;
+            let m = memo.get(n);
+            if (m) return m;
+            const v = R && n.name && tb.teile[n.name] === n && R[n.name] ? R[n.name] : n;
+            m = new THREE.Matrix4().compose(v.position, v.quaternion, v.scale).premultiply(welt(n.parent));
+            memo.set(n, m);
+            return m;
+        };
+        return welt;
     }
 
     // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
@@ -77018,12 +77060,12 @@ class AnazhRealm {
     }
 
     // Die Glied-Kapsel im Anker-Raum, EINMAL je Gattung × Glied gepasst (der Schlüssel des Fern-Satzes): das Fern-Bild
-    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung.
-    _gliedKapselMemo(key, anker, meshes) {
+    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung — die Gruppe der
+    // Zerlegung (_kreaturGliederGruppen) trägt ihre Stücke und ihren Anker in der Ruhe der Gestalt (`_gestaltRuhe`).
+    _gliedKapselMemo(key, gruppe) {
         const memo = this._gliedKapseln || (this._gliedKapseln = new Map());
         if (memo.has(key)) return memo.get(key);
-        anker.updateMatrixWorld(true);
-        const k = this._gliedKapselFit(meshes, new THREE.Matrix4().copy(anker.matrixWorld).invert());
+        const k = this._gliedKapselFit(gruppe.meshes, new THREE.Matrix4().copy(gruppe.ruhe).invert());
         memo.set(key, k);
         return k;
     }
@@ -77040,13 +77082,7 @@ class AnazhRealm {
         for (const [a, g] of G.gruppen) {
             a.updateMatrixWorld(true);
             const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-            const meshes = g.meshes;
-            const handle = this._weltKapselSpawn(
-                key,
-                a.matrixWorld,
-                () => this._gliedKapselMemo(key, a, meshes),
-                einblenden
-            );
+            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapselMemo(key, g), einblenden);
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -77082,7 +77118,7 @@ class AnazhRealm {
             for (const [a, g] of G.gruppen) {
                 const name = a === G.wurzel ? "" : a.name;
                 const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-                if (this._gliedKapselMemo(key, a, g.meshes)) namen.push({ name, key });
+                if (this._gliedKapselMemo(key, g)) namen.push({ name, key });
             }
             namenMemo.set(gattung, namen);
         }
