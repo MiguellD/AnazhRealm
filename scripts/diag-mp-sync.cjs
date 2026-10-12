@@ -416,6 +416,57 @@ function bericht(p) {
         if (!process.env.CI && latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, latenz <= LATENZ_MS, `${latenz} ms`);
 
+        // ── (c) DAS CHAT-GRABEN REIST (K23) ──
+        // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
+        // dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand. Täter, wenn ROT:
+        // `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxelSphere/fillVoxelSphere) statt über dslRun, das broadcastet.
+        const editsVon = (p) => p.evaluate(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).map((e) => ({ ...e })));
+        const vorA = (await editsVon(pageA)).length;
+        const vorB = (await editsVon(pageB)).length;
+        await pageA.bringToFront();
+        for (const satz of ["voxel carve", "voxel fill"]) {
+            await pageA.keyboard.press("Enter");
+            await sleep(150);
+            // Öffnete die Taste das Feld nicht (der Zeiger-Fang nach dem ersten Senden), klickt der Spieler hinein.
+            const offen = await pageA.evaluate(() => document.activeElement && document.activeElement.id === "chat-input");
+            if (!offen) await pageA.click("#chat-input");
+            // Der Voxel-Befehl lässt seinen Satz im Feld stehen (Wiederholung mit Enter): der Spieler markiert ihn und tippt neu.
+            await pageA.keyboard.down("Control");
+            await pageA.keyboard.press("KeyA");
+            await pageA.keyboard.up("Control");
+            await pageA.keyboard.type(satz);
+            await pageA.keyboard.press("Enter");
+            await sleep(300);
+        }
+        const neuA = (await editsVon(pageA)).slice(vorA);
+        let neuB = [];
+        const tGrab = Date.now();
+        while (Date.now() - tGrab < 6000) {
+            neuB = (await editsVon(pageB)).slice(vorB);
+            if (neuB.length >= neuA.length && neuA.length > 0) break;
+            await sleep(150);
+        }
+        const gleich = neuA.filter((a) =>
+            neuB.some(
+                (b) =>
+                    b.mode === a.mode &&
+                    b.r === a.r &&
+                    Math.abs(b.x - a.x) < 1e-6 &&
+                    Math.abs(b.y - a.y) < 1e-6 &&
+                    Math.abs(b.z - a.z) < 1e-6
+            )
+        ).length;
+        roh.chatGraben = { neuA, neuB, gleich };
+        check("A gräbt und schüttet per Chat (zwei Edits bei A)", neuA.length === 2, `${neuA.length} Edits bei A`);
+        check(
+            "(c) B sieht das Chat-Graben (dieselben Edits wie A)",
+            neuA.length === 2 && gleich === neuA.length,
+            `${gleich}/${neuA.length} bei B (B trägt ${neuB.length} neue)` +
+                (gleich < neuA.length
+                    ? " — Täter _chatTryVoxelDebugCommand: schnitzt direkt statt über dslRun (kein Broadcast)"
+                    : "")
+        );
+
         // ── (a) URSPRUNG ──
         const endA = await bericht(pageA);
         const endB = await bericht(pageB);
