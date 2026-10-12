@@ -848,10 +848,16 @@ async function lauf() {
         if (v.length) {
             console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);
+            // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
+            // und lokal grün, der Täter stand nur im Log
+            if (process.env.GITHUB_ACTIONS) for (const x of v) console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
         } else console.log("\nWASSER-LEBEN GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
         console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
+        if (process.env.GITHUB_ACTIONS)
+            console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`);
+        if (process.env.GITHUB_ACTIONS && seitenFehler.length) console.log(`::error title=wasser-leben::SEITE ${seitenFehler[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});
