@@ -21,8 +21,11 @@
 //   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
 //       Gesetz (Bias ≤ 0,15 m, p95 ≤ Sehne des Rings im Freien + Abweichung des Chunks + 0,1 m), im Gebauten zeichnet er
-//       nicht (die Masken-Karte seines maskNode trägt jeden gezeichneten Chunk, kein gezeichneter Durchstich). Selbsttests: das
-//       alte 2-m-Tauchen fällt rot, ohne die Karte sticht die Sehne durch.
+//       nicht (die Masken-Karte seines maskNode trägt jeden gezeichneten Chunk, kein gezeichneter Durchstich). Am Ring 3
+//       (Stufe 0 und 1) misst die LOCH-PROBE nach der Regel des maskNode (`_fernRingRegel`): wo er verwirft, trifft der
+//       senkrechte Strahl ein gezeichnetes Deck (gemorpht, mit Stich-Band), an jeder Kante in Voxel-Kanten der Stufe, innen
+//       und außen. Selbsttests: das alte 2-m-Tauchen fällt rot, ohne die Karte sticht die Sehne durch, die alte Zellen-Regel
+//       zeigt Löcher.
 //   (10) DIE FERN-FARBE OHNE STREIFEN (K16) — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
 //       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
 //   (11) DAS DACH IST DER BESTAND (K16) — die Deckung des Kronendachs (Fern-Farbe) gegen die Kronen-Deckung, die der Wald-
