@@ -66,11 +66,11 @@ jobs:
               run: npm ci --no-audit --no-fund
 
             - name: Prettier-Format-Check
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 1
               run: npm run format:check
 
             - name: ESLint
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 1
               run: npm run lint
 
             - name: Syntax-Check JS-Dateien
@@ -410,7 +410,7 @@ jobs:
               run: npm run gate:pruefbuehne
 
             - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 2
               # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
               # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
               # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
@@ -1346,7 +1346,7 @@ jobs:
               run: npm run gate:werkstatt-weg
 
             - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 1
               # An vier Orten der Leben-Schau 2 je Pflanze acht Stellungen zu Fuß, im Ritt und im Ich-Auge: die Nah-Deckung
               # des Schirms je Täter-Klasse (scripts/lib/kamera-nah.cjs); der eingeschmuggelte Laub-Stoff und Fels müssen beim
               # Namen fallen, der Selbsttest nennt jeden Bruch und die statische Wand feuert am Vor-Stand.
@@ -1463,7 +1463,7 @@ jobs:
               run: npm run gate:ego-schatten
 
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 6
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) n Frames lang durch die Haken des Ziel-Zensus: jede GPU-Textur
               # mit Erzeuger, Schreibern und Lesern je Pass, keine Taeter-Klasse (ohne Leser, teilbar, volle Aufloesung fuer
               # niederfrequente Effekte, Tiefe ohne Leser oder doppelt, 32 bit mit 16-bit-Inhalt). Dazu eine Schatten-Buehne
