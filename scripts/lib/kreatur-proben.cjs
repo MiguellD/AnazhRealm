@@ -139,6 +139,48 @@ async function kreaturProben(r, T, opts) {
         }
         return null;
     };
+    // DIE FREIE BAHN des Sprinters (K16): die Probe trägt den Läufer ohne Physik geradeaus längs +x, durch jeden Stamm und
+    // über jede Kante; der Jäger hinter ihm hält am Stamm (der Hüllen-Kontakt seines Leibs). Die Bahn liest die Probe darum
+    // aus der Welt: Land ohne Wasser 8 m quer, ebener Grund (Spanne ≤ 3 m, die Dorfplatz-Grenze), kein Fels über ihr und
+    // keine Hülle des Bestands in der Gasse (`_blockerUmPlatz` + `_boxAbstand2`, dieselbe Nachbarschaft und Box-Probe wie
+    // `_kreaturHuellenKontakt`). Vorher stand der Ort als Versatz der alten Welt (frei(-50, 60, 30): 30 m Umkreis um den
+    // Start, die Bahn 43 m lang): im neuen Gelände lag eine Tanne in der Gasse, der Wolf hielt am Stamm, der Sprinter entkam.
+    const freieBahn = (dx, dz, laenge, vor) => {
+        const kand = [];
+        const gasse = 1.5; // halbe Breite der Gasse: Radius und halbe Länge des Wolf-Leibs mit Rand
+        const stufe = A.PLAYER_STEP_UP;
+        const bahnFrei = (x0, z0) => {
+            let lo = Infinity,
+                hi = -Infinity;
+            for (let u = -vor; u <= laenge; u += 1.5) {
+                const x = x0 + u;
+                if (!r._landAt(x, z0) || !r._landAt(x, z0 - 8) || !r._landAt(x, z0 + 8)) return false;
+                const h = r.getTerrainHeightAt(x, z0);
+                if (!Number.isFinite(h)) return false;
+                lo = Math.min(lo, h);
+                hi = Math.max(hi, h);
+                if (hi - lo > 3 || r._kreaturUnterFels(x, h, z0)) return false;
+                kand.length = 0;
+                r._blockerUmPlatz(x, z0, 8, kand);
+                for (const e of kand)
+                    for (const b of e.blockerAABBs || []) {
+                        if (b.topY <= h + stufe || b.botY >= h + 2) continue;
+                        if (r._boxAbstand2(b, x, z0) < gasse * gasse) return false;
+                    }
+            }
+            return true;
+        };
+        for (let ring = 0; ring < 40; ring++) {
+            const n = Math.max(1, ring * 6);
+            for (let q = 0; q < n; q++) {
+                const a = (q / n) * Math.PI * 2;
+                const x = P0.x + dx + Math.cos(a) * ring * 8,
+                    z = P0.z + dz + Math.sin(a) * ring * 8;
+                if (bahnFrei(x, z)) return { x, y: r.getTerrainHeightAt(x, z) + 0.5, z };
+            }
+        }
+        return null;
+    };
     // DAS FELD OHNE HÖHLE (Leben-Schau 2): ein Ort, unter dessen Umkreis (der Weg des Spielers und der Folger, x −10…+35,
     // z −8…+35) 15 m tief keine Höhle liegt — die Wand hält ein Tier jetzt in jeder Höhle, in die es läuft (ein Folger ohne
     // Wegfindung bleibt darin; vorher sprang er beim ersten Wand-Kontakt durch das Dach auf die Wiese). Die Gang-Probe misst
@@ -2022,8 +2064,11 @@ async function kreaturProben(r, T, opts) {
         };
         const rudelBisse = kreis(3, 1, -60, -40);
         const kitzBisse = kreis(1, 0.6, 80, -20);
-        // (B) der Sprinter: der Spieler läuft im Sprint geradeaus, der Wolf jagt ihn
-        const o2 = frei(-50, 60, 30) || land(-50, 60);
+        // (B) der Sprinter: der Spieler läuft im Sprint geradeaus, der Wolf jagt ihn — auf einer freien Bahn aus der Welt
+        // (die Länge seines Laufs, der Wolf 6 m dahinter); keine freie Bahn ist ein Fehler, kein Ersatz-Ort
+        const sprint = s.sprintSpeed;
+        const o2 = freieBahn(-50, 60, sprint * 600 * dt + 4, 8);
+        if (!o2) throw new Error("keine freie Bahn für den Sprinter (Land, eben, ohne Hülle)");
         pm.set(o2.x, o2.y, o2.z);
         const wolf2 = tier({ x: o2.x - 6, y: o2.y, z: o2.z }, "wolf", 1);
         ruhig(wolf2);
@@ -2045,7 +2090,6 @@ async function kreaturProben(r, T, opts) {
                     return alt.call(this, amount, quelle);
                 }
         );
-        const sprint = s.sprintSpeed;
         const abst0 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
         let abstMin = abst0;
         for (let k = 0; k < 600; k++) {
@@ -2070,6 +2114,7 @@ async function kreaturProben(r, T, opts) {
                 abstandMin: +abstMin.toFixed(1),
                 bisse: spielerBisse,
                 wolfSprintMs: +A._steuerGesetz().sprintTempo(r._kreaturHueftL(wolf2)).toFixed(2),
+                bahn: [Math.round(o2.x), Math.round(o2.z)],
             },
         };
     });
