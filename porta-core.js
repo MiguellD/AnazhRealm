@@ -258,18 +258,21 @@
         return new THREE.TorusGeometry(R, r, umfangTeilung(r, umfangHoechst), Math.max(TOR_DETAIL.ringMin, Math.min(laengsHoechst, laengs)));
     }
     // ═══ DIE HÜLLE DES TORS (1110-9, N5 — docs/studio-vertrag.md: EINE Liste für Wurf und Fernform) ═══
-    // buildGate sammelt im SELBEN Lauf, der die Meshes baut, je Bauteil seine Primitive (`box` · `kapsel`): das Geflecht
+    // buildGate sammelt im SELBEN Lauf, der die Meshes baut, je WERFENDEM Bauteil seine Primitive (`box` · `kapsel`) — nur, was in
+    // der L0 wirft (castShadow: Steine, Stränge, Monolith, Schlussstein, Scharniere, Stufen, Wurzeln, Podest, Schutt; die leuchtenden
+    // Türen, der Bogen-Saum und der Leucht-Ring warfen nie und tragen nichts bei): das Geflecht
     // als EINE Kapsel-Kette entlang seiner Achse mit dem Hüllen-Radius der Stränge (einzeln liegt jeder Strang unter dem
-    // Texel der nahen Kaskade, zusammen werfen sie EIN Band), Monolith, Bogen-Saum, Stiele und Wurzeln als Ketten mit ihrem
-    // Röhren-Radius, Steine, Stufen und Podest als Kasten. Teile dünner als `dickeM` fallen (der Texel der nahen Kaskade
+    // Texel der nahen Kaskade, zusammen werfen sie EIN Band), Monolith und Wurzeln als Ketten mit ihrem Röhren-Radius, die
+    // Scharniere als Kapsel, Steine, Stufen und Podest als Kasten. Teile dünner als `dickeM` fallen (der Texel der nahen Kaskade
     // am Genesis-Ring: 6,4 × 17 cm, OMEN 12.10.). Jede Zahl liegt auf dem Raster 2^-12; Kapsel und Kasten sitzen `einzugM`
     // innerhalb des Gezeichneten (der Werfer bleibt unter der Haut: keine Akne, kein Peter-Panning). Die Stufe 3 IST diese
     // Liste als Gitter (`huelleGruppe`), die Fernform liest dieselbe Liste (`__fern`).
     // DIE ROLLEN (N5): jedes feine Teil trägt "wurf" — es wirft nur (die NUR-WURF-Stufe ist die GANZE Liste); die Fernform
     // des Welt-March liest nur "sicht": EIN Rahmen-Strang entlang der innersten Ordnung mit dem Radius ihres stärksten
-    // Stoffs (Mauer, Geflecht-Hülle oder Monolith — im Gezeichneten; höchstens `sichtGlieder` Kapseln) und der
-    // Sockel — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
-    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 18, sichtGliedM: 1.2 };
+    // Stoffs (Mauer, Geflecht-Hülle oder Monolith — im werfenden Körper; höchstens `sichtGlieder` Kapseln) und der
+    // Sockel, EINBESCHRIEBEN: die kleinste Standfläche aus Stufen und Podest über ihre größte Tiefe (die Hüllbox der Stufen
+    // lag über den unteren Tritten und beschattete sie — in EINER Welt auf 2,6 m 26k → 69k px Schatten) — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
+    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03 };
     function hRaster(v) {
         return Math.round(v * 4096) / 4096 + 0;
     }
@@ -315,24 +318,39 @@
         if (rolle !== "sicht" && !(mass3[1] >= HUELLE_GESETZ.dickeM - 1e-9)) return;
         H.push({ art: "box", c: [hRaster((x0 + x1) / 2), hRaster((y0 + y1) / 2), hRaster((z0 + z1) / 2)], h: [hRaster(hx), hRaster(hy), hRaster(hz)], farbe: hFarbe(m), rolle: rolle || "wurf" });
     }
-    // Ein Holz (barBetween: Kasten Länge × Dicke `th` in der Ebene × 0,1 m Tiefe) als Kasten um seine vier Ecken in der Ebene
-    // (die Hölzer der Tür stehen achsparallel: der Kasten ist exakt), Tiefe ±0,05 m um z. Als Kapsel (r = th / 2) fehlte ihm
-    // die Tiefe, die unter hoher Sonne den Wurf trägt (drachentor: 2 077 von 5 083 ungedeckten Wurf-Pixeln).
-    function hBalken(H, x0, y0, x1, y1, z, th, m) {
-        var dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 0.01, nx = (-dy / l) * th * 0.5, ny = (dx / l) * th * 0.5;
-        hKasten(H, Math.min(x0 + nx, x0 - nx, x1 + nx, x1 - nx), Math.min(y0 + ny, y0 - ny, y1 + ny, y1 - ny), z - 0.05, Math.max(x0 + nx, x0 - nx, x1 + nx, x1 - nx), Math.max(y0 + ny, y0 - ny, y1 + ny, y1 - ny), z + 0.05, m);
-    }
-    // Der Fern-Strang (rolle "sicht"): die Kurve gleichmäßig in Glieder von ~`sichtGliedM`, höchstens `sichtGlieder`.
+    // Der Fern-Strang (rolle "sicht"): die Kurve nach ihrer Krümmung geteilt (∫ √(κ / 8ε) ds mit ε = r / 2, dicht am Bogen,
+    // weit am Pfosten), höchstens `sichtGlieder` Glieder. Ein sicht-Teil wirft auch (das Gitter der NUR-WURF-Stufe ist die
+    // ganze Liste, wie beim Haus): der Strang bleibt IM werfenden Körper — sein Radius verliert die größte Abweichung der
+    // Sehnen von der Kurve; was dann dünner als `sichtMinM` bliebe, fällt (jenseits 64 m unter einem Pixel).
     function hSichtStrang(H, pts, r, m, dz) {
         if (!H || pts.length < 2) return;
         var kurve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
-        var n = Math.max(2, Math.min(HUELLE_GESETZ.sichtGlieder, Math.ceil(hRaster(kurve.getLength() / HUELLE_GESETZ.sichtGliedM))));
-        var vor = kurve.getPointAt(0);
-        for (var q = 1; q <= n; q++) {
-            var pt = kurve.getPointAt(q / n);
-            hKapsel(H, new THREE.Vector3(vor.x, vor.y, vor.z + (dz || 0)), new THREE.Vector3(pt.x, pt.y, pt.z + (dz || 0)), r, m, "sicht");
-            vor = pt;
+        var N = 64, L = kurve.getLength(), ds = L / N, eps = Math.max(0.01, r * 0.5);
+        var dichte = [0], summe = 0, t0 = kurve.getTangentAt(0), kreuz = new THREE.Vector3(), i, q;
+        for (i = 1; i <= N; i++) {
+            var t1 = kurve.getTangentAt(i / N);
+            var w = Math.atan2(kreuz.crossVectors(t0, t1).length(), t0.dot(t1));
+            summe += Math.max(Math.sqrt((w < 1e-9 ? 0 : w) / ds / (8 * eps)), 1 / HUELLE_GESETZ.laengsM) * ds;
+            dichte.push(summe);
+            t0 = t1;
         }
+        var n = Math.max(2, Math.min(HUELLE_GESETZ.sichtGlieder, Math.ceil(hRaster(summe)))), j = 0, U = [0];
+        for (q = 1; q <= n; q++) {
+            var z = (q / n) * summe;
+            while (j < N - 1 && dichte[j + 1] < z) j++;
+            var d = dichte[j + 1] - dichte[j];
+            U.push(Math.min(1, (j + (d > 0 ? Math.min(1, (z - dichte[j]) / d) : 1)) / N));
+        }
+        var P = U.map(function (u) { return kurve.getPointAt(u); }), dev = 0;
+        for (q = 0; q < n; q++)
+            for (var k = 1; k < 8; k++) {
+                var c = kurve.getPointAt(U[q] + ((U[q + 1] - U[q]) * k) / 8), ab = P[q + 1].clone().sub(P[q]);
+                var t = Math.max(0, Math.min(1, c.clone().sub(P[q]).dot(ab) / Math.max(1e-12, ab.lengthSq())));
+                dev = Math.max(dev, c.distanceTo(P[q].clone().addScaledVector(ab, t)));
+            }
+        var rs = r - dev;
+        if (!(rs >= HUELLE_GESETZ.sichtMinM)) return;
+        for (q = 0; q < n; q++) hKapsel(H, new THREE.Vector3(P[q].x, P[q].y, P[q].z + (dz || 0)), new THREE.Vector3(P[q + 1].x, P[q + 1].y, P[q + 1].z + (dz || 0)), rs, m, "sicht");
     }
     // Der Kasten um ein gebautes Mesh (Stein, Stufe, Podest, Schutt): seine Ecken in der Lage des Tors (Rotation, Ort).
     function hUm(H, me, m) {
@@ -521,7 +539,7 @@
           if(p.wMono>0.03){var oc2=offsetFull(outOff+jambW*0.5),mt=tubeMesh(oc2,jambW*0.5*p.wMono+0.01,fmat,170,12);mt.position.z=zO;hKette(HU,oc2,jambW*0.5*p.wMono+0.01,fmat,zO);mt.castShadow=true;gate.add(mt);}
           if(o===0&&p.wMason>0.03){var rad2=jambW*p.wMason,ay=springY+D.rise;                       // Schlussstein zentral (von beiden Seiten sichtbar)
             var kb=new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.12,M*0.28),rad2*1.25,dep*1.15),fmat);kb.position.set(0,ay+rad2*0.12,0);kb.castShadow=true;gate.add(kb);hUm(HU,kb,fmat);
-            var jw=new THREE.Mesh(new THREE.OctahedronGeometry(rad2*0.34,0),amat);jw.position.set(0,ay+rad2*0.12,0);gate.add(jw);hUm(HU,jw,amat);}
+            var jw=new THREE.Mesh(new THREE.OctahedronGeometry(rad2*0.34,0),amat);jw.position.set(0,ay+rad2*0.12,0);gate.add(jw);}
         }
       }
       // --- TÜREN: vordere (E) + hintere (R) Flügel, beide an der vordersten Maueröffnung gelagert ---
@@ -534,23 +552,23 @@
           var grp=new THREE.Group();
           var seg=side<0?FB.slice(0,apexIdx+1):FB.slice(apexIdx).reverse();        // von Außenkante(unten) → Scheitel(Mitte)
           var hingeX=seg[0].x, apexX=seg[seg.length-1].x, apY=seg[seg.length-1].y;
-          grp.add(tubeMesh(seg,0.05,laceMat,Math.max(48,seg.length*4),6));hKette(HU,seg,0.05,laceMat,zf);         // Außenstiel + Bogen folgen dem Stein
+          grp.add(tubeMesh(seg,0.05,laceMat,Math.max(48,seg.length*4),6));         // Außenstiel + Bogen folgen dem Stein
           // (kein mittiger Schlagstiel — er stand als Balken vor dem Sheet; die Flügel treffen sich am Maßwerk-Rand & Bogenscheitel)
-          grp.add(barBetween(hingeX,baseY+0.02,apexX,baseY+0.02,laceMat,0,0.05));hBalken(HU,hingeX,baseY+0.02,apexX,baseY+0.02,zf,0.05,laceMat);  // unteres Holz auf der Schwelle
-          grp.add(barBetween(hingeX,springY,apexX,springY,laceMat,0,0.05));hBalken(HU,hingeX,springY,apexX,springY,zf,0.05,laceMat);        // Kämpferholz
-          if(D.jambH>2.0){grp.add(barBetween(hingeX,baseY+D.jambH*0.5,apexX,baseY+D.jambH*0.5,laceMat,0,0.045));hBalken(HU,hingeX,baseY+D.jambH*0.5,apexX,baseY+D.jambH*0.5,zf,0.045,laceMat);}
+          grp.add(barBetween(hingeX,baseY+0.02,apexX,baseY+0.02,laceMat,0,0.05));  // unteres Holz auf der Schwelle
+          grp.add(barBetween(hingeX,springY,apexX,springY,laceMat,0,0.05));        // Kämpferholz
+          if(D.jambH>2.0)grp.add(barBetween(hingeX,baseY+D.jambH*0.5,apexX,baseY+D.jambH*0.5,laceMat,0,0.045));
           var segTopY=function(x){var best=baseY;for(var si=0;si<seg.length-1;si++){var pa=seg[si],pb=seg[si+1];if((pa.x-x)*(pb.x-x)<=0.0&&Math.abs(pb.x-pa.x)>1e-5){var tt=(x-pa.x)/(pb.x-pa.x),yy=pa.y+tt*(pb.y-pa.y);if(yy>best)best=yy;}}return best;};
           var nM2=Math.max(2,Math.round(2+nMull*0.6)),innerXs=[];                  // Pfosten bis zur BOGENLINIE (füllt das Feld)
-          for(var k=1;k<=nM2;k++){var fx=hingeX+(apexX-hingeX)*k/(nM2+1);innerXs.push(fx);grp.add(barBetween(fx,baseY+0.02,fx,segTopY(fx)-0.03,laceMat,0,0.04));hBalken(HU,fx,baseY+0.02,fx,segTopY(fx)-0.03,zf,0.04,laceMat);}
+          for(var k=1;k<=nM2;k++){var fx=hingeX+(apexX-hingeX)*k/(nM2+1);innerXs.push(fx);grp.add(barBetween(fx,baseY+0.02,fx,segTopY(fx)-0.03,laceMat,0,0.04));}
           var edgesX=[hingeX].concat(innerXs,[apexX]);
           for(var bj=0;bj<edgesX.length-1;bj++){                                   // je Feld: Haupt-Spitzbogen + verschachtelte Sub-Tracery (Tiefe)
             var a0=edgesX[bj],a1=edgesX[bj+1],am=(a0+a1)/2,ww=Math.abs(a1-a0);if(Math.abs(am)<0.42)continue;  // nur innerstes Feld frei → Mittelnaht sauber (volle Tracery sonst)
             var topF=Math.min(segTopY(am)-0.04, springY+ww*1.15);
             var Lp=[],Rp=[];for(var s=0;s<=8;s++){var tt=s/8;Lp.push(new THREE.Vector3(lerp(a0,am,tt),lerp(springY,topF,tt*tt),0));Rp.push(new THREE.Vector3(lerp(a1,am,tt),lerp(springY,topF,tt*tt),0));}
-            grp.add(tubeMesh(Lp,0.022,laceMat,20,5));grp.add(tubeMesh(Rp,0.022,laceMat,20,5));hKette(HU,Lp,0.022,laceMat,zf);hKette(HU,Rp,0.022,laceMat,zf);
+            grp.add(tubeMesh(Lp,0.022,laceMat,20,5));grp.add(tubeMesh(Rp,0.022,laceMat,20,5));
             if(ww>0.46){                                                           // NESTED Sub-Tracery auf ALLEN Feldern (volle gotische Tiefe — nicht abtragen)
               var subTop=springY+(topF-springY)*0.60, qL=(a0+am)/2, qR=(am+a1)/2;
-              grp.add(barBetween(am,springY,am,subTop+0.03,laceMat,0,0.018));hBalken(HU,am,springY,am,subTop+0.03,zf,0.018,laceMat);
+              grp.add(barBetween(am,springY,am,subTop+0.03,laceMat,0,0.018));
               var sA=[],sB=[],sC=[],sD=[];for(var s2=0;s2<=6;s2++){var u=s2/6;
                 sA.push(new THREE.Vector3(lerp(a0,qL,u),lerp(springY,subTop,u*u),0));sB.push(new THREE.Vector3(lerp(am,qL,u),lerp(springY,subTop,u*u),0));
                 sC.push(new THREE.Vector3(lerp(am,qR,u),lerp(springY,subTop,u*u),0));sD.push(new THREE.Vector3(lerp(a1,qR,u),lerp(springY,subTop,u*u),0));}
@@ -570,7 +588,7 @@
         leafL.rotation.y=-doorAngle;leafR.rotation.y=doorAngle;leafLB.rotation.y=doorAngleB;leafRB.rotation.y=-doorAngleB;  // vorne→+z, hinten→-z
         gate.add(leafL);gate.add(leafR);gate.add(leafLB);gate.add(leafRB);
         var hxA=[lxg,rxg];                                                          // Scharniere an beiden Maueröffnungen → am Stein, Bügel zur Tür
-        for(var zfi=0;zfi<2;zfi++){var zf=zfi===0?zFace:-zFace;for(var hsI=0;hsI<2;hsI++){var hx=hxA[hsI],hsg=hsI===0?-1:1;for(var hk=0;hk<5;hk++){var hy=baseY+0.2+hk*((springY-baseY-0.35)/4);var cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.26,10),amat);cyl.position.set(hx,hy,zf);cyl.castShadow=true;gate.add(cyl);var br=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.06),amat);br.position.set(hx-hsg*0.08,hy,zf);gate.add(br);hKapsel(HU,new THREE.Vector3(hx,hy-0.075,zf),new THREE.Vector3(hx,hy+0.075,zf),0.055,amat);hUm(HU,br,amat);}}}
+        for(var zfi=0;zfi<2;zfi++){var zf=zfi===0?zFace:-zFace;for(var hsI=0;hsI<2;hsI++){var hx=hxA[hsI],hsg=hsI===0?-1:1;for(var hk=0;hk<5;hk++){var hy=baseY+0.2+hk*((springY-baseY-0.35)/4);var cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.26,10),amat);cyl.position.set(hx,hy,zf);cyl.castShadow=true;gate.add(cyl);var br=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.06),amat);br.position.set(hx-hsg*0.08,hy,zf);gate.add(br);hKapsel(HU,new THREE.Vector3(hx,hy-0.075,zf),new THREE.Vector3(hx,hy+0.075,zf),0.055,amat);}}}
       }
       // --- FUNDAMENT: parametrisches Vokabular (abgeleitet aus Strategie × Masse × Ruine) ---
       var fullW=2*(M+jambW*orders),baseDepth=frameDepth+0.6+depthStep*2*orders,baseZ=0;
@@ -583,14 +601,14 @@
       if(p.wMono*p.mass>0.05){var pw=fullW+0.5,ph=0.2+0.3*p.mass;                                // 3) Tech-Podest mit Leuchtnaht
         var pl=new THREE.Mesh(new THREE.BoxGeometry(pw,ph,baseDepth+0.3),fmat);pl.position.set(0,baseY-ph/2,baseZ);pl.castShadow=pl.receiveShadow=true;gate.add(pl);hUm(HU,pl,fmat);
         var seam=new THREE.Mesh(new THREE.BoxGeometry(pw*0.9,0.03,baseDepth*0.25),rimMat);seam.position.set(0,baseY-ph+0.05,baseZ+baseDepth*0.25);gate.add(seam);}
-      if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=new THREE.Mesh(ringGeometrie(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat);rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);if(HU){var dR=M+jambW*0.5+0.3,dP=[];for(var dq=0;dq<=16;dq++){var da=dq/16*Math.PI*2;dP.push(new THREE.Vector3(Math.cos(da)*dR,baseY+0.02,baseZ+Math.sin(da)*dR));}for(var dk=0;dk<16;dk++)hKapsel(HU,dP[dk],dP[dk+1],0.05+0.05*p.glow,rimMat);}  // 4) Leuchtende Dais
+      if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=new THREE.Mesh(ringGeometrie(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat);rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);  // 4) Leuchtende Dais
         var disc=new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,40),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide}));disc.material.userData.__seh="glut";disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
       if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);hUm(HU,rk,fmat);}}  // 5) Schutt
 
       // --- gluehende Apertur-Kante (Trichter) ---
-      var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));hKette(HU,rimPts,0.04,rimMat,0);
+      var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));
 
-      if(HU){var sK=[];if(p.wMason>0.03)sK.push([jambW*p.wMason*0.5,jambW*p.wMason*0.5,fmat]);if(p.wBraid>0.03)sK.push([jambW*0.5,jambW*0.5*p.wBraid*1.05+lerp(0.02,0.05,p.wBraid),bmatG]);if(p.wMono>0.03)sK.push([jambW*0.5,jambW*0.5*p.wMono+0.01,fmat]);sK.sort(function(u,v){return v[1]-u[1];});if(sK.length)hSichtStrang(HU,offsetFull(sK[0][0]),Math.min(sK[0][1],frameDepth*0.5),sK[0][2],0);var sx=0,sy0=baseY,sz=0;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.max(sx,(fullW+0.4+(sN-1)*0.7)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.max(sz,(baseDepth+(sN-1)*0.7)/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.max(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.max(sz,(baseDepth+0.3)/2);}if(sx>0)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
+      if(HU){var sK=[];if(p.wMason>0.03)sK.push([jambW*p.wMason*0.5,jambW*p.wMason*0.5,fmat]);if(p.wBraid>0.03)sK.push([jambW*0.5,jambW*0.5*p.wBraid*1.05+lerp(0.02,0.05,p.wBraid),bmatG]);if(p.wMono>0.03)sK.push([jambW*0.5,jambW*0.5*p.wMono+0.01,fmat]);sK.sort(function(u,v){return v[1]-u[1];});if(sK.length)hSichtStrang(HU,offsetFull(sK[0][0]),Math.min(sK[0][1],frameDepth*0.5),sK[0][2],0);var sx=Infinity,sy0=baseY,sz=Infinity;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.min(sx,(fullW+0.4)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.min(sz,baseDepth/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.min(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.min(sz,(baseDepth+0.3)/2);}if(sx<Infinity)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
       return {gate:gate,D:D,leafL:leafL,leafR:leafR,leafLB:leafLB,leafRB:leafRB,rimMat:rimMat};
     }
 

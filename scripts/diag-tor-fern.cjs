@@ -11,8 +11,8 @@
 //   K  KOSTEN: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil, die Stufe 3 ≤ ihrer Budget-Zeile
 //      (tris, 1 Draw) — je Bau der Regler-Hülle
 //   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (Projektion entlang der Sonne auf y = 0, Raster
-//      5 cm) unter zwölf Sonnen (25° · 40° · 60° · 74° Höhe × drei Azimute); die Licht-Scheibe der L0 (1,2 cm über dem Boden)
-//      zählt nicht: unter dem Tiefen-Bias der Kaskade (5–13 cm) wirft sie nichts
+//      5 cm) unter zwölf Sonnen (25° · 40° · 60° · 74° Höhe × drei Azimute) — die L0 mit den Teilen, die sie wirft (castShadow:
+//      die leuchtenden Türen, der Bogen-Saum, der Leucht-Ring und die Scheibe warfen nie)
 //   I  INNEN: die Stufe 3 steht nicht aus dem Gezeichneten — je Ecke ihres Gitters der Abstand zur L0-Oberfläche (Proben: jede
 //      L0-Fläche bis 8 cm unterteilt), p95 ≤ Soll (der Tiefen-Bias der nahen Kaskade, 0,75 Texel ≈ 5–13 cm, trägt den Rest)
 //
@@ -68,11 +68,12 @@ const huelleVon = leser(RUMPF);
 
 // ── Fußabdruck entlang der Sonne (Raster 5 cm) ──
 const RASTER = 0.05;
-function dreiecke(g, ohneScheibe) {
+function dreiecke(g, nurWerfer) {
     const out = [], v = new THREE.Vector3();
     g.updateMatrixWorld(true);
     g.traverse((o) => {
-        if (!o.isMesh || (ohneScheibe && o.geometry.type === "CircleGeometry")) return;
+        // die L0 wirft, was castShadow trägt (der Wirt: leaf.castShadow = castsShadow && child.castShadow !== false)
+        if (!o.isMesh || (nurWerfer && !o.castShadow)) return;
         const P = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P.count;
         for (let i = 0; i < n; i++) {
             v.fromBufferAttribute(P, I ? I.getX(i) : i).applyMatrix4(o.matrixWorld);
