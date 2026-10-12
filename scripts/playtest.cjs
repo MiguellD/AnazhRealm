@@ -27974,11 +27974,20 @@ async function checkBandV18132FerneSeen(ctx) {
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
         out.homeIdentical = fp() === before;
-        // hydroBand deckt die Kachel-Seen (V9.77: das Band ist global).
-        let maxLake = -Infinity;
-        if (tile && Array.isArray(tile.lakes))
-            for (const lk of tile.lakes) if (Number.isFinite(lk.level) && lk.level > maxLake) maxLake = lk.level;
-        out.bandCovers = !Number.isFinite(maxLake) || (r.state.hydroBand && r.state.hydroBand.top >= maxLake);
+        // hydroBand deckt JEDEN Spiegel (V9.77: das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
+        // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
+        // Zell-Bau ließ jede Fluss-Zelle über dem Band AIR (Heimat 344 von 549 Segmenten ohne gezeichnetes Wasser).
+        let maxSpiegel = -Infinity;
+        for (const h of [r.state.hydrosphere, ...(r.state.hydroTiles ? r.state.hydroTiles.values() : [])]) {
+            if (!h) continue;
+            for (const lk of h.lakes || [])
+                if (Number.isFinite(lk.level) && lk.level > maxSpiegel) maxSpiegel = lk.level;
+            for (const fl of h.rivers || [])
+                for (const p of fl.points || []) if (Number.isFinite(p.S) && p.S > maxSpiegel) maxSpiegel = p.S;
+        }
+        out.maxSpiegel = maxSpiegel;
+        out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
+        out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
         // Der Worker-Snapshot traegt die Kachel.
         const snap = r._voxelWorkerSnapshotState();
         out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
@@ -28006,7 +28015,11 @@ async function checkBandV18132FerneSeen(ctx) {
             `substanz=${res.tileSubstanz}`
         );
         check("V18.132 Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
-        check("V18.132 Ferne Seen: hydroBand deckt die Kachel-Seen (global, V9.77)", res.bandCovers);
+        check(
+            "V18.132 Ferne Seen: hydroBand deckt jeden Spiegel — Seen und Flüsse der Heimat und jeder Kachel (global, V9.77)",
+            res.bandCovers,
+            `Band-Oberkante ${res.bandTop} · höchster Spiegel ${res.maxSpiegel} (Täter: _computeHydroBand)`
+        );
         check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
     }
 }
