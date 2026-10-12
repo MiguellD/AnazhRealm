@@ -403,6 +403,80 @@ function realismusLage(K, saat) {
         regionSize: 2048,
     };
 }
+// DAS SPALTEN-BUDGET (K16; Nordstern §4.1: ≤ 6 µs je Gelände-Spalte mit allen Termen, ≤ 3 µs in Ebenen, gegen „heute
+// 2,4–3,5 µs (26 noise2D)"). Gemessen wird, was der Chunk-Bau zahlt: die WARME Spalte (das Netz-Gedächtnis je Zelle steht —
+// der Bau tastet in 1,8 m, derselbe Raster um 7,3 m versetzt) plus das kalte Gedächtnis, umgelegt auf die 1,8-m-Spalten
+// seiner Fläche; als noise2D-Äquivalent derselben vm, so fällt die Uhr des Holzes heraus (die Eichung der Karte: 2,95 µs =
+// 26 noise2D → 6 µs ≙ 52,9, 3 µs ≙ 26,4). Ebene = Hang < 8 % über dem Wasser. Bis 12.10. maß die Linse kalte µs auf dem
+// 30-m-Raster (25–47 µs unter Last: das Gedächtnis je Zelle auf 1/278 der Spalten des Spiels verteilt) und urteilte nicht.
+const SPALTEN_BUDGET = Object.freeze({ alle: 52.9, ebenen: 26.4, eichungUsJeNoise: 2.95 / 26 });
+function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
+    const off = 7.3;
+    const hoehe = last
+        ? (x, z) => {
+              let h = G.hoehe(L, x, z, true);
+              for (let k = 0; k < last; k++) h += L.noise.noise2D(x * 0.01 + k, z * 0.01) * 1e-12;
+              return h;
+          }
+        : (x, z) => G.hoehe(L, x, z, true);
+    const eben = [];
+    for (let j = 1; j < n - 1; j++)
+        for (let i = 1; i < n - 1; i++) {
+            const k = i + j * n;
+            const g = Math.hypot((H[k + 1] - H[k - 1]) / (2 * S), (H[k + n] - H[k - n]) / (2 * S));
+            if (g < 0.08 && H[k] > L.waterLevel) eben.push(k);
+        }
+    // Spalten und Eichung WECHSELN sich ab (16 Scheiben, je Scheibe 4 000 noise2D): die Last des Holzes driftet während der
+    // Messung (ein voller Rechner verdoppelte noise2D 0,20 → 0,48 µs), das Verhältnis je Scheibe nicht — gezählt wird sein
+    // Median. Erst die Rohwerte kalt am 30-m-Raster und eine Eichung am Ende ließen dieselbe Welt zwischen 17 und 30 springen.
+    const median = (a) => a.slice().sort((p, q) => p - q)[a.length >> 1];
+    const takt = (ks) => {
+        const B = Math.max(1, Math.floor(ks.length / 16));
+        const rat = [];
+        const usS = [];
+        const usN = [];
+        for (let b = 0; b + B <= ks.length; b += B) {
+            let t0 = process.hrtime.bigint();
+            let s = 0;
+            for (let q = b; q < b + B; q++) {
+                const k = ks[q];
+                s += hoehe(-A + off + (k % n) * S, -A + off + ((k / n) | 0) * S);
+            }
+            const us = Number(process.hrtime.bigint() - t0) / 1000 / B;
+            t0 = process.hrtime.bigint();
+            for (let q = 0; q < 4000; q++) s += L.noise.noise2D(q * 0.013 + b, q * 0.007);
+            const un = Number(process.hrtime.bigint() - t0) / 1000 / 4000;
+            if (!(s === s)) throw new Error("spaltenKosten: NaN aus dem Gesetz");
+            rat.push(us / un);
+            usS.push(us);
+            usN.push(un);
+        }
+        return { eq: median(rat), us: median(usS), usNoise: median(usN) };
+    };
+    // der Selbsttest (eine Last von `last` noise2D je Spalte) misst jede vierte Spalte
+    const jede = last ? 4 : 1;
+    const W = takt(Array.from({ length: Math.floor((n * n) / jede) }, (_, q) => q * jede));
+    const E = takt(eben.filter((_, q) => q % jede === 0));
+    const usWarm = W.us;
+    const usEben = E.us;
+    const usNoise = W.usNoise;
+    const flaecheKm2 = ((n - 1) * S * 1e-3) ** 2;
+    const memoUsJeKm2 = last ? 0 : Math.max(0, (usKalt - usWarm) * n * n) / flaecheKm2;
+    const umgelegt = memoUsJeKm2 / (1e6 / (1.8 * 1.8)); // je 1,8-m-Spalte des Spiels
+    const alle = W.eq + umgelegt / W.usNoise;
+    const ebenen = E.eq + umgelegt / E.usNoise;
+    return {
+        usWarm: +usWarm.toFixed(2),
+        usEbene: +usEben.toFixed(2),
+        usNoise2D: +usNoise.toFixed(3),
+        memoMsJeKm2: +(memoUsJeKm2 / 1000).toFixed(1),
+        umgelegtUs: +umgelegt.toFixed(3),
+        noise2DAlle: +alle.toFixed(1),
+        noise2DEbene: +ebenen.toFixed(1),
+        ebeneSpalten: eben.length,
+        imBudget: alle <= SPALTEN_BUDGET.alle && ebenen <= SPALTEN_BUDGET.ebenen,
+    };
+}
 function realismus() {
     // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
     // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
@@ -433,6 +507,7 @@ function realismus() {
         for (let j = 0; j < n; j++)
             for (let i = 0; i < n; i++) H[i + j * n] = G.hoehe(L, -AUSSEN + i * SCHRITT, -AUSSEN + j * SCHRITT, true);
         const us = Number(process.hrtime.bigint() - t0) / 1000 / (n * n);
+        const kosten = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us);
         const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
         const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
         // Das Schicht-Gesetz am Schicht-Ort auf 2-m-Raster, 600 m: das Tafelland ist ein ORT (Stil-Feld λ 5,2 km), der Kern
@@ -458,6 +533,7 @@ function realismus() {
             hammond: st.hammond.sanft >= 1,
             dorfplaetze: st.dorfplaetze >= 3,
             schicht: !!ort && schicht.kliff >= 0.02 && schicht.schutt >= 0.05 && schicht.pediment >= 0.2,
+            kosten: kosten.imBudget,
         };
         const taeter = {
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
@@ -467,24 +543,30 @@ function realismus() {
             schicht: ort
                 ? "die Bänder fehlen am Schicht-Ort (treppe/schichtMass: Kliff, Schutthang, Pediment)"
                 : "kein Tafelland in 16 × 16 km (grossform: Stil-Feld)",
+            kosten: `die Spalte kostet ${kosten.noise2DAlle} noise2D (Ebene ${kosten.noise2DEbene}) gegen das Budget ${SPALTEN_BUDGET.alle} (Ebene ${SPALTEN_BUDGET.ebenen}) — hoehe: die Terme je Spalte (Netz, Profil, Detail)`,
         };
         let stoer = null;
+        let last = null;
         if (SELBSTTEST) {
             const HS = H.map((h, k) => h + stoerung(-AUSSEN + (k % n) * SCHRITT, -AUSSEN + ((k / n) | 0) * SCHRITT));
             stoer = Z.statistik(HS, n, SCHRITT, L.waterLevel, benannt, RAND);
+            // die Kosten-Last: 40 noise2D mehr je Spalte MÜSSEN das Budget sprengen
+            last = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us, 40);
         }
         welten.push({
             saat,
             raster: { halbM: HALB, randM: RAND * SCHRITT, schrittM: SCHRITT, n },
-            usJeSpalte: +us.toFixed(2),
+            usJeSpalteKalt: +us.toFixed(2),
+            kosten,
             statistik: st,
             schichtOrt: ort ? { x: ox, z: oz, stil: ort.stil } : null,
             schicht,
             urteil,
             stoerung: stoer && { senken1mJeKm2: stoer.senken1mJeKm2, minimaJeKm2: stoer.minimaJeKm2 },
+            kostenLast: last,
         });
         console.log(
-            `\n  ${saat}: ${us.toFixed(2)} µs/Spalte · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.klassen} Klassen aus ${st.flint.zellen} Zellen; je Zelle θ ${st.flint.thetaZelle} R² ${st.flint.r2Zelle}) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
+            `\n  ${saat}: Spalte ${kosten.noise2DAlle} noise2D (Ebene ${kosten.noise2DEbene}; warm ${kosten.usWarm} µs, Ebene ${kosten.usEbene} µs, noise2D ${kosten.usNoise2D} µs, Gedächtnis ${kosten.memoMsJeKm2} ms/km² = ${kosten.umgelegtUs} µs je 1,8-m-Spalte; kalt ${us.toFixed(2)} µs am 30-m-Raster) · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.klassen} Klassen aus ${st.flint.zellen} Zellen; je Zelle θ ${st.flint.thetaZelle} R² ${st.flint.r2Zelle}) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
         );
         console.log(
             `    Schicht-Ort ${ort ? `(${Math.round(ox)}, ${Math.round(oz)})` : "— (kein Schicht-Term)"}: Kliff≥60° ${(100 * schicht.kliff).toFixed(1)} % · Schutt 30–40° ${(100 * schicht.schutt).toFixed(1)} % (Ruhewinkel 33–37° ${(100 * schicht.ruhe).toFixed(1)} %) · Pediment 0,5–7° ${(100 * schicht.pediment).toFixed(1)} %`
@@ -495,6 +577,7 @@ function realismus() {
             console.log(`    ⛔ ${k}: ${taeter[k]}`);
         }
         if (stoer) console.log(`    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km²`);
+        if (last) console.log(`    Selbsttest-Last (+40 noise2D je Spalte): ${last.noise2DAlle} noise2D (Ebene ${last.noise2DEbene})`);
     }
     const JSON_ZIEL = JSON_AUS;
     if (JSON_ZIEL)
@@ -503,9 +586,11 @@ function realismus() {
             JSON.stringify({ zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten }, null, 1)
         );
     if (SELBSTTEST) {
-        const blind = welten.some((w) => !(w.stoerung && w.stoerung.senken1mJeKm2 > 1));
+        const blind = welten.some(
+            (w) => !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) || !(w.kostenLast && !w.kostenLast.imBudget)
+        );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung oder die Kosten-Last blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget"}\n`
         );
         return blind ? 1 : 0;
     }

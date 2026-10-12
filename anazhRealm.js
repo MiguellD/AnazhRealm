@@ -27981,6 +27981,16 @@ class AnazhRealm {
     // quer zum Segment) — die Leser (Feuchte, Pfad, Schlick, Strand) falten ihre Bänder genauso und nehmen das Maximum der
     // Segmente: stetig im Ort. Befund 12.10. (gate:fern-ring Band 10): neun Punkt-Abtastungen je Masche trafen die schmalen
     // Bänder oder nicht — mit den Netz-Flüssen stieg der Streifen-Index 0,47 → 0,54 (dieselbe Welt ohne Fluss-Bänder 0,33).
+    // Der Abdruck wächst, wenn mehr Segmente unter ihm liegen, als er fasst (verdoppelt) — bis 12.10. kappte er still bei 32
+    // (1 052 von 1,82 Mio. Rufen, Prüfung K16: ein Fern-Punkt bis 1 300 m Abdruck über einem dichten Netz verlor Bänder).
+    static _flussAbdruckWachse(A) {
+        for (const k of ["dist", "hw", "kappa", "sp", "mu"]) {
+            const neu = new Float64Array(A[k].length * 2);
+            neu.set(A[k]);
+            A[k] = neu;
+        }
+    }
+
     _flussAbdruck(x, z, F) {
         const A =
             this._flussAbdruckMemo ||
@@ -28023,7 +28033,7 @@ class AnazhRealm {
                 if (bi < 0 || bi >= bd) continue;
                 const list = h.riverBuckets[bj * bd + bi];
                 if (!list) continue;
-                for (let s = 0; s < list.length && A.n < 32; s++) {
+                for (let s = 0; s < list.length; s++) {
                     const seg = list[s];
                     const ex = seg.bx - seg.ax;
                     const ez = seg.bz - seg.az;
@@ -28042,6 +28052,7 @@ class AnazhRealm {
                             break;
                         }
                     if (schon) continue;
+                    if (A.n === A.dist.length) AnazhRealm._flussAbdruckWachse(A); // keine Kappe: jedes Segment unter dem Abdruck zählt
                     const n = A.n++;
                     A.seg[n] = seg;
                     A.dist[n] = dist;
@@ -38390,15 +38401,59 @@ class AnazhRealm {
         maskeTex.generateMipmaps = false;
         maskeTex.needsUpdate = true;
         const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
+        // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
+        // deckt nicht seine Zelle, sondern liegt eine halbe Voxel-Kante versetzt — der Pad-Aufruf (`ox − step`, `dim + 3`,
+        // crop 1) behält die Zellen 1 … dim + 1, die erste Vertex-Spalte steht IN der ersten Voxel-Spalte der Zelle, die letzte
+        // in der des +Nachbarn. Sicher getragen ist also die Zelle ohne ihre erste Voxel-Spalte (je Achse), und die erste
+        // Spalte nur, wenn der −Nachbar gebaut ist (über die Stufen-Grenze schließt das Stich-Band die Naht).
+        // Dort verwirft der Ring (2). Im SAUM — der ersten Voxel-Spalte am Rand des Gebauten, innen wie außen (der Überhang
+        // des Decks in die freie Nachbar-Zelle) — zeichnet er und WEICHT dem Chunk in die Tiefe (`nahtWeiche`, senkrecht über
+        // die Ring-Normale auf den Strahl, gekappt `nahtWeicheMax`): wo das Deck fehlt, trägt der Ring, wo es steht, gewinnt
+        // es (1). Die Breite der Spalte ist die Voxel-Kante der Stufe (die Karte trägt sie im Grün-Kanal, Kante × 10).
+        // Bis 12.10. verwarf die ganze Zelle: an der −X- und −Z-Kante des Gebauten zeichnete niemand (Prüfung: 47 von 52
+        // Punkten 5 cm innen ohne Deck, im Bild eine blaue Linie über die Bau-Kante).
         {
-            const zelle = TSL.floor(TSL.positionWorld.xz.div(cfg.span)).sub(uMaskeZelle0);
-            const drin = zelle.x
-                .greaterThanEqual(0)
-                .and(zelle.y.greaterThanEqual(0))
-                .and(zelle.x.lessThan(maskeN))
-                .and(zelle.y.lessThan(maskeN));
-            const ij = TSL.ivec2(TSL.clamp(zelle, TSL.vec2(0), TSL.vec2(maskeN - 1)));
-            material.maskNode = drin.and(TSL.textureLoad(maskeTex, ij).x.greaterThan(0.5)).not();
+            const zelleF = TSL.floor(TSL.positionWorld.xz.div(cfg.span));
+            const lokal = TSL.positionWorld.xz.sub(zelleF.mul(cfg.span));
+            const zelle = zelleF.sub(uMaskeZelle0);
+            const lies = (dx, dz) => {
+                const z = zelle.add(TSL.vec2(dx, dz));
+                const drin = z.x
+                    .greaterThanEqual(0)
+                    .and(z.y.greaterThanEqual(0))
+                    .and(z.x.lessThan(maskeN))
+                    .and(z.y.lessThan(maskeN));
+                const t = TSL.textureLoad(maskeTex, TSL.ivec2(TSL.clamp(z, TSL.vec2(0), TSL.vec2(maskeN - 1))));
+                const b = drin.and(t.x.greaterThan(0.5));
+                return { b, s: TSL.select(b, t.y.mul(25.5), TSL.float(0)) };
+            };
+            const T00 = lies(0, 0);
+            const T10 = lies(-1, 0);
+            const T01 = lies(0, -1);
+            const T11 = lies(-1, -1);
+            const w = TSL.max(TSL.max(T00.s, T10.s), TSL.max(T01.s, T11.s));
+            const nahX = lokal.x.lessThan(w);
+            const nahZ = lokal.y.lessThan(w);
+            const traegt = (T) => T.b.and(T.s.equal(T00.s)); // über die Stufen-Grenze trägt das Deck nicht sicher: Saum
+            const sicher = T00.b
+                .and(nahX.not().or(traegt(T10)))
+                .and(nahZ.not().or(traegt(T01)))
+                .and(nahX.and(nahZ).not().or(traegt(T11)));
+            const saum = sicher
+                .not()
+                .and(T00.b.or(nahX.and(T10.b)).or(nahZ.and(T01.b)).or(nahX.and(nahZ).and(T11.b)));
+            material.maskNode = sicher.not();
+            // die Weiche: der Strahl bis zur um `nahtWeiche` gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|)
+            const pv = TSL.positionView;
+            const lang = pv.length();
+            const nW = TSL.normalWorldGeometry;
+            const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
+            const dt = TSL.min(
+                TSL.float(F.nahtWeiche).mul(TSL.abs(nW.y)).div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)),
+                TSL.float(F.nahtWeicheMax)
+            );
+            const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
+            material.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
         }
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
@@ -38667,31 +38722,57 @@ class AnazhRealm {
         return out;
     }
 
-    // DIE LAGE EINES RING-PUNKTS ZUM GEBAUTEN (K16, die Naht): 0 frei · 1 frei, ein Nachbar gebaut (die Naht draußen) · 2 gebaut,
-    // ein Nachbar frei (die Naht drinnen) · 3 gebaut ringsum. Nachbarn = die acht Punkte der Schale um ihn; die Frage stellt nur
-    // die Bau-Zone (`bauZoneRad`: wo ein Chunk stehen kann).
-    _fernRingLage(fr, p) {
-        if (p.s !== 0 || !(p.rad <= fr.bauZoneRad)) return 0;
+    // AN DER NAHT (K16): trägt ein gebauter Chunk den Ring-Punkt oder einen der acht Punkte der Schale um ihn, liegt der Punkt
+    // auf dem vollen Gesetz (`_fernRingY`). Die Frage stellt nur die Bau-Zone (`bauZoneRad`: wo ein Chunk stehen kann).
+    _fernRingNaht(fr, p) {
+        if (p.s !== 0 || !(p.rad <= fr.bauZoneRad)) return false;
+        if (this._chunkDecktRing(p.x, p.z)) return true;
         const W = AnazhRealm.FERN_RING.winkel;
         const sh = fr.schalen[0];
         const ai = p.li - p.row * W;
-        const selbst = this._chunkDecktRing(p.x, p.z);
         const o = this._fernRingOrtTmp || (this._fernRingOrtTmp = {});
         for (let dr = -1; dr <= 1; dr++) {
             const row = p.row + dr;
-            if (row < 0) continue; // innen steht der Spieler: dort gibt es keinen Nachbarn
+            if (row < 0 || row >= sh.reihen) continue; // innen steht der Spieler: dort gibt es keinen Nachbarn
             for (let da = -1; da <= 1; da++) {
                 if (!dr && !da) continue;
-                let gedeckt = false;
-                if (row < sh.reihen) {
-                    AnazhRealm._fernRingOrt(fr, sh, row, (ai + da + W) % W, o);
-                    gedeckt = this._chunkDecktRing(o.x, o.z);
-                }
-                if (selbst && !gedeckt) return 2;
-                if (!selbst && gedeckt) return 1;
+                AnazhRealm._fernRingOrt(fr, sh, row, (ai + da + W) % W, o);
+                if (this._chunkDecktRing(o.x, o.z)) return true;
             }
         }
-        return selbst ? 3 : 0;
+        return false;
+    }
+
+    // DIE REGEL DES maskNode, ihr CPU-Spiegel (K16, die Naht; die Herleitung steht am Stoff in `_fernRingEnsure`): 2 = der Ring
+    // verwirft (ein Deck trägt sicher), 1 = Saum (der Ring zeichnet und weicht dem Chunk um `nahtWeiche` in die Tiefe), 0 = frei.
+    // Leser: gate:fern-ring Band 9 (das Loch, der Durchstich) — dieselbe Rechnung wie der Knoten, Texel für Texel.
+    _fernRingRegel(fr, x, z) {
+        const M = fr.maske;
+        const span = this._voxelChunkConfig().span;
+        const ci = Math.floor(x / span);
+        const cj = Math.floor(z / span);
+        const lx = x - ci * span;
+        const lz = z - cj * span;
+        const i = ci - M.uZelle0.value.x;
+        const j = cj - M.uZelle0.value.y;
+        const T = (a, b) => {
+            const drin = a >= 0 && b >= 0 && a < M.n && b < M.n;
+            const k = (b * M.n + a) * 4;
+            const g = drin && M.daten[k] / 255 > 0.5;
+            return { b: g, s: g ? (M.daten[k + 1] / 255) * 25.5 : 0 };
+        };
+        const T00 = T(i, j);
+        const T10 = T(i - 1, j);
+        const T01 = T(i, j - 1);
+        const T11 = T(i - 1, j - 1);
+        const w = Math.max(T00.s, T10.s, T01.s, T11.s);
+        const nahX = lx < w;
+        const nahZ = lz < w;
+        const traegt = (t) => t.b && t.s === T00.s;
+        const sicher =
+            T00.b && (!nahX || traegt(T10)) && (!nahZ || traegt(T01)) && (!(nahX && nahZ) || traegt(T11));
+        if (sicher) return 2;
+        return T00.b || (nahX && T10.b) || (nahZ && T01.b) || (nahX && nahZ && T11.b) ? 1 : 0;
     }
 
     // Der Ring weicht dem Gebauten: trägt ein GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring
@@ -38730,7 +38811,8 @@ class AnazhRealm {
         const h = (M.n - 1) / 2;
         const i0 = Math.floor(fr.anchorX / span) - h;
         const j0 = Math.floor(fr.anchorZ / span) - h;
-        const neu = M.neu || (M.neu = new Uint8Array(M.n * M.n));
+        // je Texel: Rot 255 = gezeichnet, Grün = die Voxel-Kante seiner Stufe × 10 (die Breite des Saums, `_fernRingRegel`)
+        const neu = M.neu || (M.neu = new Uint8Array(M.n * M.n * 2));
         neu.fill(0);
         if (chunks)
             for (const [key, e] of chunks) {
@@ -38738,12 +38820,15 @@ class AnazhRealm {
                 const k = key.indexOf(",");
                 const i = Number(key.slice(0, k)) - i0;
                 const j = Number(key.slice(k + 1)) - j0;
-                if (i >= 0 && j >= 0 && i < M.n && j < M.n) neu[j * M.n + i] = 255;
+                if (i < 0 || j < 0 || i >= M.n || j >= M.n) continue;
+                neu[(j * M.n + i) * 2] = 255;
+                neu[(j * M.n + i) * 2 + 1] = Math.round(this._voxelChunkConfig(e.lod || 0).step * 10);
             }
         let anders = M.uZelle0.value.x !== i0 || M.uZelle0.value.y !== j0;
-        for (let q = 0; q < neu.length; q++)
-            if (M.daten[q * 4] !== neu[q]) {
-                M.daten[q * 4] = neu[q];
+        for (let q = 0; q < M.n * M.n; q++)
+            if (M.daten[q * 4] !== neu[q * 2] || M.daten[q * 4 + 1] !== neu[q * 2 + 1]) {
+                M.daten[q * 4] = neu[q * 2];
+                M.daten[q * 4 + 1] = neu[q * 2 + 1];
                 anders = true;
             }
         if (!anders) return;
@@ -38779,14 +38864,14 @@ class AnazhRealm {
     }
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
-    // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingLage`): wo ein gebauter Chunk den Punkt oder einen
+    // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingNaht`): wo ein gebauter Chunk den Punkt oder einen
     // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung) —
     // die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er nicht (die Masken-Karte,
     // `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte ihn per Tiefe — über jeder
     // Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
-        if (this._fernRingLage(fr, p) > 0) {
+        if (this._fernRingNaht(fr, p)) {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
@@ -101005,6 +101090,11 @@ AnazhRealm.FERN_RING = Object.freeze({
     ]),
     randPad: 40,
     saumDrop: 6,
+    // DIE WEICHE IM SAUM DES GEBAUTEN (`_fernRingRegel` 1): so tief (m, senkrecht) weicht der Ring dem Chunk in der ersten
+    // Voxel-Spalte am Rand des Gebauten — über der Sehne des Rings (Ring 3 mit Stufe 1 an der Bau-Kante: Naht p95 1,3 m, max 4,3 m) und der Abweichung des Chunks
+    // (±0,4 m); längs des Strahls gekappt (`nahtWeicheMax`), damit der streifende Blick nicht ferne Hänge durch den Saum zieht.
+    nahtWeiche: 6,
+    nahtWeicheMax: 24,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,

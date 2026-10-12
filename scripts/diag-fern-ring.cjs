@@ -201,21 +201,15 @@ const server = http.createServer((req, res) => {
                     Math.round((fr.anchorZ + Math.sin(an) * rd) / sh.snap) * sh.snap,
                 ];
             };
-            let lage = 0;
+            // an der Naht: der Punkt selbst oder einer der acht um ihn steht im Gebauten (`_fernRingNaht`)
+            let naht = false;
             if (s === 0 && rad <= fr.bauZoneRad) {
-                const selbst = r._chunkDecktRing(sx, sz);
-                let frei = false;
-                let gedeckt = false;
-                for (let dr = -1; dr <= 1; dr++)
-                    for (let da = -1; da <= 1; da++) {
-                        if ((!dr && !da) || row + dr < 0) continue;
-                        const n =
-                            row + dr < reihenSoll[s] &&
-                            r._chunkDecktRing(...orte(row + dr, (ai + da + F.winkel) % F.winkel));
-                        if (n) gedeckt = true;
-                        else frei = true;
+                naht = r._chunkDecktRing(sx, sz);
+                for (let dr = -1; dr <= 1 && !naht; dr++)
+                    for (let da = -1; da <= 1 && !naht; da++) {
+                        if ((!dr && !da) || row + dr < 0 || row + dr >= reihenSoll[s]) continue;
+                        naht = r._chunkDecktRing(...orte(row + dr, (ai + da + F.winkel) % F.winkel));
                     }
-                lage = selbst ? (frei ? 2 : 3) : gedeckt ? 1 : 0;
             }
             let law = r._terrainMacroSurfaceY(sx, sz, false);
             // LOCH-DECKEL-Formel (gespiegelt): Zone = volles Gesetz −0.3, ×1.35-Blende auf Makro.
@@ -224,7 +218,7 @@ const server = http.createServer((req, res) => {
                 const voll = r._terrainMacroSurfaceY(sx, sz, true);
                 law = law + (voll - law) * w - 0.3 * w;
             }
-            if (lage > 0) law = r._terrainMacroSurfaceY(sx, sz, true);
+            if (naht) law = r._terrainMacroSurfaceY(sx, sz, true);
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
             // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
@@ -547,12 +541,17 @@ const server = http.createServer((req, res) => {
                 return n;
             };
             // Der Null-Renderer treibt keinen Loop: die Linse pumpt den Spiel-Takt (das diag-boot-stage-Muster), bis der
-            // Boot-Ring steht oder der Bestand 2 s ruht.
+            // Ring steht oder der Bestand 3 s ruht. RING 3 (7 × 7, gehalten gegen den Boot-Ramp, das diag-chunk-seam-Muster):
+            // die äußere Reihe trägt Stufe 1 (DETAIL_CASCADE, Band 0 bis Ring 2) — die Bau-Kante des Spiels und die
+            // Stufen-Naht 0 ↔ 1 stehen im Satz (mit dem 5 × 5-Satz sah die Linse nur Stufe 0).
+            const ziel9 = 3;
+            r.state.chunkRingRadius = ziel9;
+            r.state._activeRingRadius = ziel9;
             let n9 = -1;
             let still9 = performance.now();
-            const dl9 = performance.now() + 60000;
-            const ziel9 = Math.max(1, Math.min(12, r.state.chunkRingRadius || 4));
+            const dl9 = performance.now() + 90000;
             for (let t = 0; performance.now() < dl9; t++) {
+                r.state._activeRingRadius = ziel9;
                 try {
                     r._gameLoopTick();
                 } catch (_e) {
@@ -563,8 +562,12 @@ const server = http.createServer((req, res) => {
                 if (n !== n9) {
                     n9 = n;
                     still9 = performance.now();
-                } else if (n >= 9 && (r.state._activeRingRadius >= ziel9 || performance.now() - still9 > 2000)) break;
+                } else if (n >= (2 * ziel9 + 1) ** 2 || (n >= 9 && performance.now() - still9 > 3000)) break;
             }
+            res.nahtStufen = [...r.state.voxelChunks.values()].reduce((a, e) => {
+                if (e && !e.empty && e.mesh) a[e.lod || 0] = (a[e.lod || 0] || 0) + 1;
+                return a;
+            }, {});
             res.nahtChunks = n9;
             const spion = { geo: 0, wege: 0 };
             const tga = r._terrainGeologyAlbedo;
@@ -615,6 +618,38 @@ const server = http.createServer((req, res) => {
             const durch = [0, 0];
             let durchOhne = 0; // SELBSTTEST: dieselben Punkte ohne die Masken-Karte (die Sehne des Rings im Gebauten)
             const maske9 = [0, 0]; // die Masken-Treue: gezeichnete Chunks mit ihrem Texel / alle
+            const loch9 = [0, 0]; // DAS LOCH: verworfene Punkte ohne Deck / verworfene Punkte (nach `_fernRingRegel`)
+            const lochZelle = [0, 0]; // SELBSTTEST: dasselbe nach der alten Regel (die ganze Chunk-Zelle verwirft)
+            const lochSeite = {}; // der Täter beim Namen: wo die Löcher liegen (Kante −X/+X/−Z/+Z oder innen)
+            const lochOrte = []; // die ersten Löcher beim Ort (Punkt, Chunk, Stufe)
+            const durchSeite = {}; // ebenso der Durchstich: je Kante:Regel [Zahl, größte Höhe über dem Deck]
+            const muendung9 = [0, 0]; // die Mündung an der Bau-Kante: [Punkte, größte Höhe des Rings über dem Höhlen-Deck]
+            const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
+            const morphF = r.state.atmoUniforms && r.state.atmoUniforms.geomorph ? r.state.atmoUniforms.geomorph.value : 0;
+            const morphMemo = new Map();
+            const gemorpht = (m) => {
+                const A = m.geometry.attributes;
+                if (!morphF || !A.aMorphTarget || !A.aMorphWeight) return m;
+                let g = morphMemo.get(m);
+                if (g) return g;
+                const P = A.position;
+                const Tg = A.aMorphTarget;
+                const Wg = A.aMorphWeight;
+                const neu = new Float32Array(P.count * 3);
+                for (let v = 0; v < P.count; v++) {
+                    const f = morphF * Wg.getX(v);
+                    neu[v * 3] = P.getX(v) + (Tg.getX(v) - P.getX(v)) * f;
+                    neu[v * 3 + 1] = P.getY(v) + (Tg.getY(v) - P.getY(v)) * f;
+                    neu[v * 3 + 2] = P.getZ(v) + (Tg.getZ(v) - P.getZ(v)) * f;
+                }
+                const geo = new T9.BufferGeometry();
+                geo.setAttribute("position", new T9.BufferAttribute(neu, 3));
+                geo.setIndex(m.geometry.index);
+                g = new T9.Mesh(geo, m.material);
+                g.matrixWorld.copy(m.matrixWorld);
+                morphMemo.set(m, g);
+                return g;
+            };
             const seiten = [
                 [1, 0],
                 [-1, 0],
@@ -672,29 +707,89 @@ const server = http.createServer((req, res) => {
                     }
                 }
                 // DER RING WEICHT DEM GEBAUTEN: die Masken-Karte des Rings (`fr.maske`, die sein `maskNode` liest) trägt jeden
-                // gezeichneten Chunk — ein Raster-Punkt sticht durch, wo der Ring GEZEICHNET wird (Texel frei) und über dem Chunk liegt.
-                // (ohne Karte — der Stand vor K16 — zählt jeder Punkt über dem Chunk: der Ring zeichnet im Gebauten)
+                // gezeichneten Chunk. Gemessen wird nach der REGEL, die der maskNode zeichnet (`_fernRingRegel`, ihr CPU-Spiegel:
+                // 2 verworfen, 1 Saum — der Ring zeichnet und weicht dem Chunk um `nahtWeiche` in die Tiefe —, 0 frei), an den vier
+                // Kanten (innen UND außen, 0,05–1,5 m) und im Inneren:
+                //   DAS LOCH — die Regel verwirft, und kein Deck (Chunk oder Stich-Band der 3 × 3 Nachbarn) trifft den senkrechten
+                //   Strahl: dort zeichnet niemand (Befund der Prüfung 12.10.: die Zelle verwarf, das Deck lag eine halbe Voxel-Kante
+                //   versetzt — 47 von 52 Punkten 5 cm innen an der −X-Kante, im Bild eine blaue Linie über die Bau-Kante).
+                //   DER DURCHSTICH — der Ring zeichnet (Saum oder frei), ein Deck liegt darunter, und der Ring (im Saum um die
+                //   Weiche gesenkt) steht über ihm.
+                // Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) MUSS Löcher zeigen; ohne Karte sticht die Sehne durch.
                 const M9 = fr9.maske;
                 const ti = M9 ? cx - M9.uZelle0.value.x : -1;
                 const tj = M9 ? cz - M9.uZelle0.value.y : -1;
-                const maskiert =
-                    !!M9 && ti >= 0 && tj >= 0 && ti < M9.n && tj < M9.n && M9.daten[(tj * M9.n + ti) * 4] === 255;
+                const zelleVon = (x, z) => {
+                    const a = Math.floor(x / span9) - (M9 ? M9.uZelle0.value.x : 0);
+                    const b = Math.floor(z / span9) - (M9 ? M9.uZelle0.value.y : 0);
+                    return !!M9 && a >= 0 && b >= 0 && a < M9.n && b < M9.n && M9.daten[(b * M9.n + a) * 4] === 255;
+                };
                 maske9[1]++;
-                if (maskiert) maske9[0]++;
+                if (!!M9 && ti >= 0 && tj >= 0 && ti < M9.n && tj < M9.n && M9.daten[(tj * M9.n + ti) * 4] === 255)
+                    maske9[0]++;
+                // DAS DECK, WIE ES GEZEICHNET WIRD: der Boden-Stoff zieht die Grenz-Zeile einer feineren Stufe auf die gröbere
+                // Fläche (Geomorph, `positionNode` = position + (aMorphTarget − position) · geomorph · aMorphWeight) — der Strahl
+                // trifft die gemorphte Fläche, nie die rohe CPU-Lage (die Stufen-Naht 0 ↔ 1 klafft roh bis zu einer Voxel-Kante).
+                const decks = [];
+                for (let di = -1; di <= 1; di++)
+                    for (let dj = -1; dj <= 1; dj++) {
+                        const en = r.state.voxelChunks.get(`${cx + di},${cz + dj}`);
+                        if (!r._chunkGezeichnet(en)) continue;
+                        decks.push(gemorpht(en.mesh));
+                        if (en.lodStitchMesh) decks.push(en.lodStitchMesh);
+                    }
+                const deckY = (x, z) => {
+                    o9.set(x, 4000, z);
+                    ray.set(o9, ab);
+                    ray.far = 9000;
+                    const h = ray.intersectObjects(decks, false);
+                    return h.length ? h[0].point.y : null;
+                };
+                const punkte = [];
                 for (let i = 0; i < 7; i++)
-                    for (let j = 0; j < 7; j++) {
-                        const x = cx * span9 + 3 + i * 6.2;
-                        const z = cz * span9 + 3 + j * 6.2;
-                        if (r._terrainMacroSurfaceY(x, z, true) < wl9 + 0.5) continue;
-                        const yc = hoch(e.mesh, x, z);
-                        const yr = hoch(ringMesh, x, z);
-                        if (yc === null || yr === null) continue;
-                        durch[1]++;
-                        if (yr > yc + 0.05) {
-                            durchOhne++;
-                            if (!maskiert) durch[0]++;
+                    for (let j = 0; j < 7; j++) punkte.push([cx * span9 + 3 + i * 6.2, cz * span9 + 3 + j * 6.2, "innen"]);
+                for (const d of [0.05, 0.3, 0.6, 0.9, 1.5, -0.05, -0.3, -0.6, -0.9, -1.5])
+                    for (let k = 1; k < 8; k++) {
+                        const u = (k / 8) * span9;
+                        punkte.push([cx * span9 + d, cz * span9 + u, "-X"]);
+                        punkte.push([(cx + 1) * span9 - d, cz * span9 + u, "+X"]);
+                        punkte.push([cx * span9 + u, cz * span9 + d, "-Z"]);
+                        punkte.push([cx * span9 + u, (cz + 1) * span9 - d, "+Z"]);
+                    }
+                for (const [x, z, seite] of punkte) {
+                    const regel = typeof r._fernRingRegel === "function" ? r._fernRingRegel(fr9, x, z) : -1;
+                    const yc = deckY(x, z);
+                    if (regel === 2) {
+                        loch9[1]++;
+                        if (yc === null) {
+                            loch9[0]++;
+                            lochSeite[seite] = (lochSeite[seite] || 0) + 1;
+                            if (lochOrte.length < 6) lochOrte.push(`(${x.toFixed(2)}|${z.toFixed(2)}) ${cx},${cz} L${e.lod || 0}`);
                         }
                     }
+                    if (zelleVon(x, z)) {
+                        lochZelle[1]++;
+                        if (yc === null) lochZelle[0]++;
+                    }
+                    if (yc === null || r._terrainMacroSurfaceY(x, z, true) < wl9 + 0.5) continue;
+                    const yr = hoch(ringMesh, x, z);
+                    if (yr === null) continue;
+                    durch[1]++;
+                    if (yr > yc + 0.05) durchOhne++;
+                    const ueber = yr - (regel === 1 ? weiche9 : 0) - yc;
+                    if (regel !== 2 && ueber > 0.05 && yc < r._terrainMacroSurfaceY(x, z, true) - weiche9 - 2) {
+                        // DIE MÜNDUNG AN DER BAU-KANTE: das Deck liegt in einer Höhle weit unter dem Gesetz, der Ring trägt das
+                        // Gesetz (er kennt keine Höhle) — benannt und gezählt, nicht die Sehne der Naht
+                        muendung9[0]++;
+                        muendung9[1] = Math.max(muendung9[1], +ueber.toFixed(1));
+                    } else if (regel !== 2 && ueber > 0.05) {
+                        durch[0]++;
+                        const k = `${seite}:${regel}`;
+                        const d = durchSeite[k] || (durchSeite[k] = [0, 0]);
+                        d[0]++;
+                        d[1] = Math.max(d[1], +ueber.toFixed(2));
+                    }
+                }
             }
             stufen.sort((a, b) => a - b);
             const q = (p) => (stufen.length ? stufen[Math.min(stufen.length - 1, Math.floor(p * stufen.length))] : NaN);
@@ -714,6 +809,15 @@ const server = http.createServer((req, res) => {
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
             res.maskeTreue = maske9;
             res.maskNode = !!(fr9.material && fr9.material.maskNode);
+            res.regel = typeof r._fernRingRegel === "function";
+            res.loch = loch9;
+            res.lochZelle = lochZelle;
+            res.lochSeite = lochSeite;
+            res.lochOrte = lochOrte;
+            res.morph = morphF;
+            res.durchSeite = durchSeite;
+            res.muendung = muendung9;
+            res.weiche = weiche9;
             // ===== (10) DIE FERN-FARBE OHNE STREIFEN =====
             // Längs jeder Ring-Reihe jenseits des Karten-Horizonts (das Kronendach trägt) die gezeichnete Farbe (Boden unter
             // dem Dach zur Deckung, Saison 1): der STREIFEN-INDEX = RMS der Sprünge zum Nachbarpunkt / RMS der Sprünge über
@@ -985,7 +1089,18 @@ const server = http.createServer((req, res) => {
         `chunks=${out.nahtChunks} proben=${out.nahtN} chunk-eigen-p95=${(+out.nahtEigenP95).toFixed(3)} ring-sehne-p95=${(+out.nahtSehneP95).toFixed(3)} bias=${(+out.nahtBias).toFixed(3)} p50=${(+out.nahtP50).toFixed(3)} p95=${(+out.nahtP95).toFixed(3)} max=${(+out.nahtMax).toFixed(3)} selbsttest-p95=${(+out.nahtSelbstP95).toFixed(3)}`
     );
     check(
-        "9: DIE NAHT — kein Durchstich: im Gebauten zeichnet der Ring nicht (die Masken-Karte seines maskNode trägt jeden gezeichneten Chunk, kein gezeichneter Raster-Punkt über dem Chunk); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %)",
+        "9: DIE NAHT — kein Loch: wo der maskNode verwirft (`_fernRingRegel` 2), trifft der senkrechte Strahl ein Deck (Chunk oder Stich-Band), an allen vier Kanten innen und außen und im Inneren; Selbsttest: die alte Regel (die ganze Chunk-Zelle verwirft) zeigt Löcher",
+        out.regel === true &&
+            !!out.loch &&
+            out.loch[1] >= 500 &&
+            out.loch[0] === 0 &&
+            !!out.lochZelle &&
+            out.lochZelle[0] > 0,
+        `regel=${out.regel} verworfen=${(out.loch || [])[1]} loch=${(out.loch || [])[0]} seiten=${JSON.stringify(out.lochSeite || {})} orte=${JSON.stringify(out.lochOrte || [])} geomorph=${out.morph} selbsttest-zelle=${(out.lochZelle || []).join("/")}` +
+            (out.regel === true ? "" : " — TÄTER: der maskNode hat keinen CPU-Spiegel (`_fernRingRegel`), die ganze Zelle verwirft")
+    );
+    check(
+        "9: DIE NAHT — kein Durchstich: wo der Ring zeichnet, liegt er nicht über dem Deck (im Saum um die Weiche gesenkt — er weicht dem Chunk in die Tiefe); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %)",
         out.durchN >= 100 &&
             out.durchAnteil === 0 &&
             out.maskNode === true &&
@@ -993,7 +1108,7 @@ const server = http.createServer((req, res) => {
             out.maskeTreue[1] > 0 &&
             out.maskeTreue[0] === out.maskeTreue[1] &&
             out.durchOhne > 0.02,
-        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
+        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} seiten=${JSON.stringify(out.durchSeite || {})} weiche=${out.weiche} muendung=${(out.muendung || []).join("/")} stufen=${JSON.stringify(out.nahtStufen || {})} maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",
