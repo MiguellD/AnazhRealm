@@ -3049,9 +3049,12 @@ function bahnTastenVerdict(m) {
 function bahnWandVerdict(m) {
     if (!m || !m.da) return [m && m.grund ? m.grund : "keine Probe"];
     const out = [];
-    if (m.urteil !== "wagen") out.push(`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`);
+    if (m.urteil !== "wagen")
+        out.push(`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`);
     if (m.grundriss)
-        out.push(`der Wagen ist ein Grundriss (_imGrundriss → ${m.grundriss}): ein Haus räumt die Natur aus ihm und nennt sich`);
+        out.push(
+            `der Wagen ist ein Grundriss (_imGrundriss → ${m.grundriss}): ein Haus räumt die Natur aus ihm und nennt sich`
+        );
     return out;
 }
 
@@ -4546,6 +4549,8 @@ function quellenAbgriff() {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
+    // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
+    await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
     const bahnLauf = async () => {
         const page2 = await browser.newPage();
@@ -4558,8 +4563,6 @@ function quellenAbgriff() {
         await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
         return page2.evaluate(probeBahn, BAHN);
     };
-    // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
-    await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     const out = await page.evaluate(probeLeben, { messort, randM: STATION.randM });
     await page.close();
     const bahn = await bahnLauf();

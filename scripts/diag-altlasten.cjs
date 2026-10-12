@@ -1123,8 +1123,14 @@ const FORBIDDEN = [
     // DAS EINE LEUCHTQUELLEN-GESETZ (K11 Runde 2): das Licht des Auges ist ein Platz des Licht-Pools (`_augenLeuchte`, mit
     // Himmels-Ersatz), sein eigener Term mit r184-Abfall stand als zweites Punktlicht-Gesetz neben dem Pool; der Glut-Umlauf des
     // Klangs und das Szenen-Licht des Tors fielen (das Verzeichnis „glut“, der Pool).
-    { token: "atmoUniforms.augenLicht", fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)" },
-    { token: "augenLicht: TSL.uniform", fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)" },
+    {
+        token: "atmoUniforms.augenLicht",
+        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+    },
+    {
+        token: "augenLicht: TSL.uniform",
+        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+    },
     { token: "_umweltGlutSweep", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
     { token: "bautenJeFrame", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
     { token: "this._portalLicht ", fiel: "K11 — das Szenen-Licht des Tors (ein Bürger des Licht-Pools)" },
@@ -1445,9 +1451,7 @@ const ZWILLINGE = [
 // selbst als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
-    const wurzel = fs
-        .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
+    const wurzel = fs.readdirSync(root).filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))

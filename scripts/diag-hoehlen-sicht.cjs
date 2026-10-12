@@ -438,7 +438,11 @@ function selbsttest() {
             /LICHT DES AUGES: in der Höhle Stärke 3, das Gesetz verlangt 30/,
         ],
         ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
-        ["Stoff ohne Himmels-Sicht im Pool", (b) => (b.code.augenTerm = false), /CODE: der Boden-Stoff .* reicht dem Licht-Pool/],
+        [
+            "Stoff ohne Himmels-Sicht im Pool",
+            (b) => (b.code.augenTerm = false),
+            /CODE: der Boden-Stoff .* reicht dem Licht-Pool/,
+        ],
         // (j) K11: das Licht des Auges und jede Leuchtquelle fallen nach EINEM Gesetz
         ["zwei Punktlicht-Gesetze", (b) => (b.code.poolGesetz = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
         // die zwei Fallen der Werkbank 11.10. (echte GPU): die Mündung schwarz (Helligkeit 60 statt 123)
@@ -1201,8 +1205,9 @@ const server = http.createServer((req, res) => {
             aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
             const pool = code(r._lichtPoolTerm);
             aus.code.augenTerm =
-                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr) &&
-                /lichtErsatz/.test(pool);
+                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(
+                    pbr
+                ) && /lichtErsatz/.test(pool);
             // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Gesetzes (fachwerk `lichtAbfall`: der Saum
             // (1 − (d/R)⁴)² und (d² + k²)^(−abfall/2)), und nur er ruft die BRDF eines Punktlichts
             const P = Object.getPrototypeOf(r);

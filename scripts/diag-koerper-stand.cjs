@@ -257,7 +257,8 @@ async function proben(mitWiese) {
                 if (sol && inLuft) {
                     if (luftOben - y >= 3.0) {
                         const boden = r._fieldSurfaceBelow(x, y + 0.5, z, 2);
-                        if (Number.isFinite(boden) && top - boden > 6 && passt(x, z, boden, 2.4)) hoehle = { x, z, top, boden };
+                        if (Number.isFinite(boden) && top - boden > 6 && passt(x, z, boden, 2.4))
+                            hoehle = { x, z, top, boden };
                     }
                     break;
                 }
@@ -314,7 +315,12 @@ async function proben(mitWiese) {
     let hang = null;
     let eben = null;
     const orte = [[0, 0]];
-    for (const d of [150, 300]) for (let a = 0; a < 8; a++) orte.push([Math.round(Math.cos((a / 8) * Math.PI * 2) * d), Math.round(Math.sin((a / 8) * Math.PI * 2) * d)]);
+    for (const d of [150, 300])
+        for (let a = 0; a < 8; a++)
+            orte.push([
+                Math.round(Math.cos((a / 8) * Math.PI * 2) * d),
+                Math.round(Math.sin((a / 8) * Math.PI * 2) * d),
+            ]);
     for (const [ox, oz] of orte) {
         if (hang) break;
         eben = null;
@@ -341,27 +347,27 @@ async function proben(mitWiese) {
             }
             s.playerVel = vel;
         }
-    for (let dx = -60; dx <= 60; dx += 2)
-        for (let dz = -60; dz <= 60; dz += 2) {
-            const x = start.x + ox + dx;
-            const z = start.z + oz + dz;
-            const k = karte(x, z);
-            if (k === null) continue;
-            const g = r._voxelSurfaceY(x, z);
-            if (!Number.isFinite(g)) continue;
-            const kx = karte(x + 1, z);
-            const kz = karte(x, z + 1);
-            if (kx === null || kz === null) continue;
-            if ([karte(x + 2, z + 2), karte(x - 2, z + 2), karte(x + 2, z - 2), karte(x - 2, z - 2)].includes(null))
-                continue;
-            const neig = Math.atan(Math.hypot(kx - k, kz - k)) * (180 / Math.PI);
-            const ab = Math.abs(g - k);
-            const trocken = !(r._koerperWasser(x, z, k) > k);
-            if (neig <= 3 && ab < 0.1 && trocken && (!eben || neig < eben.neig))
-                eben = { x, z, karte: k, gesetz: g, neig };
-            if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
-            if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
-        }
+        for (let dx = -60; dx <= 60; dx += 2)
+            for (let dz = -60; dz <= 60; dz += 2) {
+                const x = start.x + ox + dx;
+                const z = start.z + oz + dz;
+                const k = karte(x, z);
+                if (k === null) continue;
+                const g = r._voxelSurfaceY(x, z);
+                if (!Number.isFinite(g)) continue;
+                const kx = karte(x + 1, z);
+                const kz = karte(x, z + 1);
+                if (kx === null || kz === null) continue;
+                if ([karte(x + 2, z + 2), karte(x - 2, z + 2), karte(x + 2, z - 2), karte(x - 2, z - 2)].includes(null))
+                    continue;
+                const neig = Math.atan(Math.hypot(kx - k, kz - k)) * (180 / Math.PI);
+                const ab = Math.abs(g - k);
+                const trocken = !(r._koerperWasser(x, z, k) > k);
+                if (neig <= 3 && ab < 0.1 && trocken && (!eben || neig < eben.neig))
+                    eben = { x, z, karte: k, gesetz: g, neig };
+                if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
+                if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
+            }
     }
     o.hang = hang;
     o.eben = eben;
@@ -843,7 +849,9 @@ function urteil(o) {
     else {
         // ein fehlender Wert ist nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
         if (!o.k2 || o.k2.abstandCm == null || !(o.k2.abstandCm <= 10))
-            f.push(`K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
+            f.push(
+                `K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`
+            );
         if (!o.k3 || o.k3.abstandM == null || !(o.k3.abstandM <= 0.15))
             f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
     }
