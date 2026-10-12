@@ -314,6 +314,9 @@ async function proben(mitWiese) {
     // (die Welt schwingt dort ein), der erste mit einer Hang-Stelle im Band.
     let hang = null;
     let eben = null;
+    // DIE MITTE DER EINGESCHWUNGENEN WELT: um sie stehen die Chunks der Stufe 0 (K6 misst den Rand-Streifen dort, nie am
+    // verlassenen Start — 300 m weiter trägt der Start die gröberen Stufen, und der Leser liest über die Stufen-Grenze nichts)
+    let mitte = { x: start.x, z: start.z };
     const orte = [[0, 0]];
     for (const d of [150, 300])
         for (let a = 0; a < 8; a++)
@@ -329,6 +332,7 @@ async function proben(mitWiese) {
             const vel = s.playerVel;
             s.playerVel = savedVel;
             pm.position.set(start.x + ox, r._voxelSurfaceY(start.x + ox, start.z + oz) + 2, start.z + oz);
+            mitte = { x: start.x + ox, z: start.z + oz };
             savedVel.setValue(0, 0, 0);
             let last = -1;
             let stabil = 0;
@@ -553,8 +557,8 @@ async function proben(mitWiese) {
             }
             return best;
         };
-        const cx0 = Math.floor(start.x / span);
-        const cz0 = Math.floor(start.z / span);
+        const cx0 = Math.floor(mitte.x / span);
+        const cz0 = Math.floor(mitte.z / span);
         // DER LESER QUER DURCH DEN STREIFEN: je Rand-Streifen der Chunks um den Start (x- und z-Rand, alle 8 m) Punkte im Abstand
         // 0,1 m über die ganze Breite (0,05–0,85 m) — der Stand-Leser mit einem Träger 0,5 m über dem gezeichneten Boden (eine
         // Pfote hangab ihres Leibs) trifft den gezeichneten Boden; wer auf den Träger fällt, verfehlt ihn um 0,5 m (die Wache
@@ -585,8 +589,8 @@ async function proben(mitWiese) {
             for (let dl = -40; dl <= 40; dl += 8)
                 for (let f = 0.05; f < 0.9; f += 0.1)
                     for (const [x, z] of [
-                        [(cx0 + q) * span + f, start.z + dl],
-                        [start.x + dl, (cz0 + q) * span + f],
+                        [(cx0 + q) * span + f, mitte.z + dl],
+                        [mitte.x + dl, (cz0 + q) * span + f],
                     ]) {
                         const g = gezeichnet(x, z);
                         if (g === null || r._koerperWasser(x, z, g) > g) continue;
@@ -604,6 +608,16 @@ async function proben(mitWiese) {
                         if (d > leser.max) {
                             leser.max = d;
                             leser.wo = [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
+                            // die Stufen der vier Chunks, deren Karten der Leser dort fragt (Eigner und untere Nachbarn)
+                            leser.stufen = [
+                                [0, 0],
+                                [-1, 0],
+                                [0, -1],
+                                [-1, -1],
+                            ].map(([a, b]) => {
+                                const e = s.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`);
+                                return e ? `L${e.lod || 0}${e.surfMap ? "" : " ohne Karte"}` : "fehlt";
+                            });
                         }
                     }
         o.k6leser = {
@@ -613,12 +627,14 @@ async function proben(mitWiese) {
             kante: leser.kante,
             maxCm: Math.round(leser.max * 1000) / 10,
             wo: leser.wo,
+            stufen: leser.stufen || null,
+            mitte: [Math.round(mitte.x), Math.round(mitte.z)],
         };
         let rand = null;
         for (let ax = cx0 - 1; ax <= cx0 + 2; ax++) {
             const x = ax * span + 0.45;
             for (let dz = -60; dz <= 60; dz += 1) {
-                const z = start.z + dz;
+                const z = mitte.z + dz;
                 if (karte(x, z) !== null) continue; // die Karte des Eigners trägt hier: kein Rand-Loch
                 const g = gezeichnet(x, z);
                 const gv = gezeichnet(x, z + 0.7);
@@ -646,7 +662,7 @@ async function proben(mitWiese) {
         if (rand) {
             const saveMax = s.maxCreatures;
             s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
-            pm.position.set(rand.x + 6, start.y, rand.z + 6);
+            pm.position.set(rand.x + 6, r._voxelSurfaceY(rand.x + 6, rand.z + 6) + 1.7, rand.z + 6);
             const c = r.spawnCreatureAt(rand.x, rand.boden + 0.3, rand.z, "happy", "wolf", {
                 precise: true,
                 bodySize: 1,
@@ -875,7 +891,7 @@ function urteil(o) {
     }
     if (!o.k6leser || !(o.k6leser.n >= 300) || o.k6leser.fehl > 0)
         f.push(
-            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
+            `K6 Leser im Rand-Streifen: ${o.k6leser ? o.k6leser.fehl : "?"} von ${o.k6leser ? o.k6leser.n : "?"} Punkten verfehlen den gezeichneten Boden um mehr als 25 cm (max ${o.k6leser ? o.k6leser.maxCm : "?"} cm bei ${o.k6leser && o.k6leser.wo ? o.k6leser.wo.join("/") : "?"}, Karten dort ${o.k6leser && o.k6leser.stufen ? o.k6leser.stufen.join(" · ") : "?"}, Mitte ${o.k6leser && o.k6leser.mitte ? o.k6leser.mitte.join("/") : "?"}) — Täter _standSicht/_bodenSichtAt: dort trägt der Träger`
         );
     if (!o.rand || !(o.rand.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     else if (!Number.isFinite(o.rand.fehlerCm)) f.push("K6 Aufbau: keine Hang-Stelle im Rand-Streifen");

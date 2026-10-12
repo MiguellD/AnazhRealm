@@ -3006,7 +3006,7 @@ function bahnPlatzVerdict(m) {
 function bahnStossVerdict(m) {
     if (!m || !m.da) return [m && m.grund ? m.grund : "keine Station"];
     const out = [];
-    if (!m.stoss) out.push(`kein Stoß am ${m.ziel}`);
+    if (!m.stoss) out.push(`kein Stoß am ${m.ziel}${m.ohneStoss ? " " + JSON.stringify(m.ohneStoss) : ""}`);
     if (!m.versuche || m.versuche.length === 0) out.push(`keine Befreiung am ${m.ziel}`);
     for (const v of m.versuche || [])
         if (!(v.freiFrame >= 0 && v.freiFrame <= BAHN.freiFrames))
@@ -3455,10 +3455,25 @@ async function probeBahn(B) {
                 return true;
             };
         }
+        // DER ORT, AN DEM DAS GESETZ ZÄHLT (K16): ein Kiefern-Stamm auf dem Wunsch-Ort der Vorschau (`_portalVorschauOrt`) —
+        // ohne Platz-Gesetz steht der Wagen in ihm. Die Welt allein trägt dort nicht immer ein Hindernis: am Flussnetz-Gelände
+        // ist der Wunsch-Ort am Garage-Tor frei (3°, keine Wand, kein Blocker), und der Schmuggel fiel vakuös grün.
+        const torG = st.architectures.find((a) => a && a.type === "welt_garage" && a.position);
+        const wo = torG && typeof r._portalVorschauOrt === "function" ? r._portalVorschauOrt(torG) : null;
+        const stamm = wo
+            ? r.spawnArchitecture(
+                  "baum_kiefer",
+                  { x: wo.x, y: boden(wo.x, wo.z), z: wo.z },
+                  { silent: true, precise: true, id: "fahr-bahn-schmuggel-stamm" }
+              )
+            : null;
+        if (stamm) await gebaut(stamm);
         stelle(M.x, M.z);
         const e3 = await vorschau();
         out.schmuggelPlatz = e3 ? platzMessung(e3) : { da: false, grund: "keine Vorschau" };
         out.schmuggelPlatz.gesetzStub = hatGesetz;
+        out.schmuggelPlatz.stamm = !!stamm;
+        if (stamm) r.removeArchitecture(stamm);
         delete r._fahrPlatzSuche;
         delete r._fahrPlatzWege;
         wagenWeg(e3);
@@ -3479,13 +3494,49 @@ async function probeBahn(B) {
         out.log.push("initSymphony: " + (e && e.message));
     }
     const Q = window.__fahrQuellen || [];
-    const stossStation = async (zielTyp, zielAbstand) => {
-        const sx = -875;
-        const sz = -732;
-        const fahrt = Math.atan2(-765 - sx, -752 - sz);
+    // DIE STELLE AUS DER WELT (K16): die Schau stand auf ebenem Grund (−875/−732, Kurs auf −765/−752); am Flussnetz-Gelände liegt
+    // sie am Hang, und der Wagen glitt quer am Ziel vorbei (kein Stoß). Die Station sucht in Ringen um die Stelle der Schau
+    // den nächsten trockenen Anlauf (2 m zurück, 10 m voraus) mit Stufe ≤ 0,08 m je m und Quergefälle ≤ 0,05 m je m.
+    const stossOrt = (() => {
+        const fahrt = Math.atan2(-765 - -875, -752 - -732);
         const fX = Math.sin(fahrt);
         const fZ = Math.cos(fahrt);
+        const nass = (x, z) => {
+            const ws = r._atlasWaterLevelAt(x, z, boden(x, z));
+            return Number.isFinite(ws) && ws > boden(x, z) - 0.3;
+        };
+        const eben = (x, z) => {
+            for (let s = -2; s <= 10; s++) {
+                const px = x + fX * s;
+                const pz = z + fZ * s;
+                const h = boden(px, pz);
+                if (!Number.isFinite(h) || nass(px, pz)) return false;
+                if (Math.abs(h - boden(px - fX, pz - fZ)) > 0.08) return false;
+                if (Math.abs(boden(px + fZ * 2, pz - fX * 2) - boden(px - fZ * 2, pz + fX * 2)) / 4 > 0.05)
+                    return false;
+            }
+            return true;
+        };
+        for (let ring = 0; ring <= 20; ring++)
+            for (let k = 0; k < (ring ? 12 : 1); k++) {
+                const x = -875 + Math.cos((k * Math.PI) / 6) * ring * 24;
+                const z = -732 + Math.sin((k * Math.PI) / 6) * ring * 24;
+                if (eben(x, z)) return { x, z, fahrt };
+            }
+        return null;
+    })();
+    out.stossOrt = stossOrt ? [Math.round(stossOrt.x), Math.round(stossOrt.z)] : null;
+    const stossStation = async (zielTyp, zielAbstand) => {
         const m = { da: false, ziel: zielTyp, versuche: [] };
+        if (!stossOrt) {
+            m.grund = "kein ebener trockener Anlauf um die Stelle der Schau (480 m)";
+            return m;
+        }
+        const sx = stossOrt.x;
+        const sz = stossOrt.z;
+        const fahrt = stossOrt.fahrt;
+        const fX = Math.sin(fahrt);
+        const fZ = Math.cos(fahrt);
         stelle(sx - Math.cos(fahrt) * 1.5, sz + Math.sin(fahrt) * 1.5);
         // das Ziel der Schau steht vor dem Bug: die Welt trägt den Glutbrunnen; fehlt er (oder für den Stamm), setzt die
         // Station ihn (Fixture)
@@ -3540,12 +3591,35 @@ async function probeBahn(B) {
             // der Stoß: Gas gegen das Ziel, bis der Wagen steht (höchstens 3 s), dann 0,5 s drücken
             halte(["w"]);
             let stoss = false;
+            const w0 = { x: e.position.x, z: e.position.z };
+            let vMax = 0;
             for (let i = 0; i < 180; i++) {
                 frame();
+                if (e._fahr) vMax = Math.max(vMax, Math.abs(e._fahr.vlong));
                 if (e._fahr && Math.abs(e._fahr.vlong) < 0.3 && i > 20) {
                     stoss = true;
                     break;
                 }
+            }
+            // der Täter beim Namen: wie weit der Wagen fuhr, wo das Ziel dann lag (längs, quer), seine Boxen
+            if (!stoss && !m.ohneStoss) {
+                const dx = ziel.position.x - e.position.x;
+                const dz = ziel.position.z - e.position.z;
+                const bx = ziel.blockerAABBs || [];
+                m.ohneStoss = {
+                    weg: +Math.hypot(e.position.x - w0.x, e.position.z - w0.z).toFixed(2),
+                    vMax: +vMax.toFixed(2),
+                    zielLaengs: +(dx * fX + dz * fZ).toFixed(2),
+                    zielQuer: +(dx * fZ - dz * fX).toFixed(2),
+                    quelle: fixture ? "gesetzt" : "Welt",
+                    boxen: bx.length,
+                    unten: bx.length
+                        ? +(Math.min(...bx.map((b) => b.botY)) - boden(ziel.position.x, ziel.position.z)).toFixed(2)
+                        : null,
+                    oben: bx.length
+                        ? +(Math.max(...bx.map((b) => b.topY)) - boden(ziel.position.x, ziel.position.z)).toFixed(2)
+                        : null,
+                };
             }
             takt(15);
             halte([]);
