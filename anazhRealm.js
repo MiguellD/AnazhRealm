@@ -31826,8 +31826,8 @@ class AnazhRealm {
 
     // Das Antwort-Profil emergiert aus den 10 Substanz-Tags (eine weitere LESART der Substanz-Wahrheit):
     // glanz = härte+dichte (Rim/Specular) · tiefe = dichte (AO) · glimmen = magieleitung + wärmeleitung·
-    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · wiegen =
-    // lebendig·(1−dichte)·zähigkeit (Wind) · detail = max(lebendig·(1−dichte), magieleitung·transparent).
+    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · detail =
+    // max(lebendig·(1−dichte), magieleitung·transparent). Den Wind trägt kein Tag: er ist das Wind-Gesetz des Baums (K19).
     // Nimmt ein Material oder ein tags-Objekt. Darunter die FEATURE-Gewichte (Antennen → Render-Hebel):
     _substanceResponseProfile(materialOrTags) {
         let tags = null;
@@ -31849,7 +31849,6 @@ class AnazhRealm {
         };
         const haerte = t("härte");
         const dichte = t("dichte");
-        const zaehigkeit = t("zähigkeit");
         const magieleitung = t("magieleitung");
         const transparent = t("transparent");
         const brennbar = t("brennbar");
@@ -31861,8 +31860,7 @@ class AnazhRealm {
         const glimmen = Math.min(1, magieleitung * 0.55 + waermeleitung * brennbar * 0.6);
         const waerme = lebendig;
         const glas = transparent;
-        // 2 clever-gauss-Achsen (Λ.3 + Λ.6):
-        const wiegen = lebendig * (1 - dichte) * zaehigkeit;
+        // die clever-gauss-Achse (Λ.6):
         const detail = Math.max(lebendig * (1 - dichte), magieleitung * transparent);
         return {
             glanz,
@@ -31870,7 +31868,6 @@ class AnazhRealm {
             glimmen,
             waerme,
             glas,
-            wiegen,
             detail,
             micro: 0.5 + 0.5 * tiefe,
             rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
@@ -33196,64 +33193,13 @@ class AnazhRealm {
             if (!mat.userData) mat.userData = {};
             mat.userData.useInstanceTint = true;
         }
-        // Wind-Sway (wiegen > 0.05): positionNode-Sway über windUniforms.uWindTime (EINE Welt-Quelle mit dem
-        // Gras); die Krone wiegt mehr (aFlex²/crownLin) + aperiodisches Flattern. NICHT für den Impostor —
-        // er trägt seinen eigenen positionNode, den dieser Sway überschriebe.
-        if (responseProfile && responseProfile.wiegen > 0.05 && !opts.impostorAtlas) {
-            try {
-                const _Tw = THREE.TSL;
-                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
-                    this._grassInstanceMat();
-                }
-                const _wu = this.state.windUniforms;
-                if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
-                    const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
-                    // Der Baum liest DIESELBE Richtungs-Quelle uWindDir wie Gras/Streu/Impostor: Orts-Term =
-                    // dot(worldXZ, windDir) × 0.228 (= |0.18, 0.14|). Ohne uWindDir: der feste Baum.
-                    const _wcu = this._ensureWindCoupling(_Tw);
-                    const _phaseSpatial =
-                        _wcu && _wcu.uWindDir
-                            ? _Tw.positionWorld.x
-                                  .mul(_wcu.uWindDir.x)
-                                  .add(_Tw.positionWorld.z.mul(_wcu.uWindDir.y))
-                                  .mul(_Tw.float(0.228))
-                            : _Tw.positionWorld.x.mul(_Tw.float(0.18)).add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
-                    const _phase = _wu.uWindTime.mul(_Tw.float(1.1)).add(_phaseSpatial);
-                    let _crownFactor;
-                    let _flutterShift;
-                    if (opts.useFlexAttr === true && _Tw.attribute) {
-                        const _aFlex = _Tw.attribute("aFlex", "float").clamp(0.0, 1.0);
-                        const _aPhase = _Tw.attribute("aPhase", "float");
-                        _crownFactor = _aFlex.mul(_aFlex);
-                        _flutterShift = _aPhase;
-                    } else {
-                        const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
-                        _crownFactor = _crownLin.mul(_crownLin);
-                        _flutterShift = _Tw.float(0.0);
-                    }
-                    const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
-                    const _offsetX = _Tw.sin(_phase.add(_flutterShift)).mul(_swayMag);
-                    const _offsetZ = _Tw
-                        .cos(_phase.mul(_Tw.float(0.7)).add(_flutterShift))
-                        .mul(_swayMag.mul(_Tw.float(0.6)));
-                    const _flutterPhase = _wu.uWindTime
-                        .mul(_Tw.float(6.5))
-                        .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)))
-                        .add(_flutterShift.mul(_Tw.float(1.3)));
-                    const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
-                    const _flutterZ = _Tw
-                        .cos(_flutterPhase.mul(_Tw.float(0.83)))
-                        .mul(_swayMag)
-                        .mul(_Tw.float(0.14));
-                    mat.positionNode = _Tw.positionLocal.add(
-                        _Tw.vec3(_offsetX.add(_flutter), _Tw.float(0.0), _offsetZ.add(_flutterZ))
-                    );
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
-            }
-        }
+        // DER WIND DES WERKSTATT-BAUMS (K19): der Grammatik-Baum (`_buildTreeSkeletonLeaves`) trägt den EINEN Wind-Term der
+        // Foundry-Pflanze (`_baumWindStoff`): Höhe und Schlankheit aus seinem Skelett (`opts.baumWind`, `_skelettWindDaten`),
+        // die Welt-Höhe aus dem Instanz-Stempel aH0, die Last aus der Wind-Zeile des Wetters. Was kein Skelett trägt (Holz,
+        // Leder, Fleisch der Bauteile), steht im Wind: bis K19 bog die Tag-Achse `wiegen` jedes lebendige Bauteil mit eigener
+        // Sinus-Formel ohne Wind-Zeile (der Sturm sah aus wie die Brise). Die Karte (impostorAtlas) trägt ihren eigenen Term.
+        if (opts.baumWind && !opts.impostorAtlas)
+            this._baumWindStoff(mat, opts.foliageLeaf === true ? "foliage" : "bark", opts.baumWind);
         // SUBSURFACE-BACKLIT (detail > 0.4, laub): warmer Gegenlicht-Glow,
         // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha). Laub trägt das Laub-Licht (K19), nie ihn.
         if (responseProfile && responseProfile.detail > 0.4 && opts.foliageLeaf !== true) {
@@ -66828,14 +66774,33 @@ class AnazhRealm {
 
     // Das EINE geteilte, OPAKE Schatten-Zwilling-Material (kein Alpha-Test/vertexColors/useInstanceTint →
     // nur position+normal; Instanz-Feld, nicht serialisiert). Der Zwilling rendert nie im Farb-Pass
-    // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide.
-    _treeShadowTwinMaterial() {
-        if (this._treeShadowTwinMat) return this._treeShadowTwinMat;
+    // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide. Der Zwilling schwingt mit seiner Krone (K19): EIN
+    // Stoff je Baum-Gestalt (`baumWind` aus `_skelettWindDaten`, derselbe Wind-Term wie der Wurf-Teil der Foundry-L1), EIN
+    // Programm für alle.
+    _treeShadowTwinMaterial(baumWind) {
         if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
-        const m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        if (!this._treeShadowTwinMats) this._treeShadowTwinMats = new Map();
+        const key = baumWind ? baumWind.ht + "/" + baumWind.delta : "still";
+        let m = this._treeShadowTwinMats.get(key);
+        if (m) return m;
+        m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
         m.userData.shadowTwin = true;
-        this._treeShadowTwinMat = m;
+        this._baumWindStoff(m, "schatten", baumWind || null);
+        this._treeShadowTwinMats.set(key, m);
         return m;
+    }
+
+    // DIE WIND-DATEN DES WERKSTATT-BAUMS (K19): ht = die Skelett-Höhe (die Vorlage steht in Metern, die Instanz-Skala trägt
+    // aH0), δ an der Stamm-Achse (phyto-core `windSchlankheitAchse`, dieselbe Brusthöhe wie die Foundry-Gestalt). null ohne
+    // Stamm-Achse: der Baum steht still (sichtbar, nie ein geratener Wert).
+    _skelettWindDaten(skel) {
+        const ht = skel && Number.isFinite(skel.totalH) && skel.totalH > 0 ? skel.totalH : 0;
+        const stamm =
+            ht > 0 && Array.isArray(skel.branches)
+                ? skel.branches.find((b) => b && b.isTrunk && Array.isArray(b.points))
+                : null;
+        const delta = stamm ? globalThis.__phytoCore.windSchlankheitAchse(stamm.points, ht, 1) : null;
+        return delta > 0 ? { ht: +ht.toFixed(2), delta: +delta.toFixed(4), an: 1 } : null;
     }
 
     // Mergt N Geometries inklusive Custom-Attribute (z. B. aFlex + aPhase) — attribut-bewusster Spiegel
@@ -66914,15 +66879,24 @@ class AnazhRealm {
             if (imp) return { leaves: [imp] };
         }
         const leaves = [];
+        // DER WIND (K19): Höhe und Schlankheit des Skeletts — Rinde, Laub, Kern und Zwilling tragen sie im Stoff
+        // (`_baumWindStoff` über `opts.baumWind`), die Welt-Höhe jedes Teils im Stempel aH0 (Vorlage × Instanz-Skala).
+        const baumWind = this._skelettWindDaten(skel);
+        const totalH = Math.max(1, skel.totalH || 10);
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
         if (barkGeom) {
             const holzMat = this.state.materials && this.state.materials.holz;
-            // useFlexAttr → der Wind-Sway in _buildToonNodeMaterial liest die gebackenen aFlex/aPhase statt der
-            // crownLin-Schätzung. `bark:true` weckt die Rinden-Maserung in _buildPbrNodeMaterial (Faser +
-            // härte-Risse aus dem holz-Tag). DoubleSide: die Tube-Wicklung macht die Außenflächen back-facing —
-            // FrontSide cullte sie (der Stamm las konkav).
-            const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide };
+            // `bark:true` weckt die Rinden-Maserung in _buildPbrNodeMaterial (Faser + härte-Risse aus dem holz-Tag).
+            // DoubleSide: die Tube-Wicklung macht die Außenflächen back-facing — FrontSide cullte sie (der Stamm las konkav).
+            this._stampFoliageVisHeights(barkGeom, totalH);
+            const barkMatOpts = {
+                vertexColors: true,
+                useFlexAttr: true,
+                bark: true,
+                side: THREE.DoubleSide,
+                baumWind,
+            };
             if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
             const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
@@ -66947,6 +66921,7 @@ class AnazhRealm {
                 useFlexAttr: true,
                 foliageLeaf: true, // Ω-O14: weiche Blatt-Alpha-Maske (alphaTest) statt harter Karte
                 side: THREE.DoubleSide,
+                baumWind,
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
             // Klingen-Material: DIESELBE Opts-Signatur + `foliageBlade` → eigenes geteiltes
@@ -66970,10 +66945,12 @@ class AnazhRealm {
             if (this.state.foliageOpaqueCore !== false && (skel.lodLevel | 0) === 0) {
                 const coreGeom = this._buildTreeFoliageCoreGeometry(skel);
                 if (coreGeom) {
+                    this._stampFoliageVisHeights(coreGeom, totalH);
                     const coreMat = this._sharedFoliageMaterial({
                         vertexColors: true,
                         useInstanceTint: true,
                         useFlexAttr: true,
+                        baumWind,
                     });
                     coreLeaf = {
                         geom: coreGeom,
@@ -66989,7 +66966,8 @@ class AnazhRealm {
             let twinLeaf = null;
             if (this.state.foliageShadowTwin !== false && (skel.lodLevel | 0) <= 1) {
                 const twinGeom = this._buildTreeShadowTwinGeometry(skel);
-                const twinMat = twinGeom && this._treeShadowTwinMaterial();
+                if (twinGeom) this._stampFoliageVisHeights(twinGeom, totalH);
+                const twinMat = twinGeom && this._treeShadowTwinMaterial(baumWind);
                 if (twinGeom && twinMat) {
                     twinLeaf = {
                         geom: twinGeom,
@@ -77458,7 +77436,8 @@ class AnazhRealm {
         // statischen Blatt-Atlas. Der Fallback (MeshStandardMaterial, kein setupObserver) bleibt unberührt.
         this._materialObserverDiaet(mat);
         this._foundryMats[key] = mat;
-        if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex"))
+        // der Wurf-Teil (kind "schatten") trägt denselben Wind wie das Bild seiner Stufe; der Wurf eines Baus steht (an 0)
+        if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
             this._baumWindStoff(mat, kind, baum);
         if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
         return mat;
@@ -77613,6 +77592,10 @@ class AnazhRealm {
     // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
     // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
     // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
+    // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
+    // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
+    // trägt er nicht: sein Hub (WIND_GESETZ.blatt.hub 0,035 m im Sturm) liegt unter dem Kaskaden-Texel (wurf 0,17 m).
+    // Jeder Wurf zeichnet aus EINEM Programm (der eines Baus mit an 0).
     _baumWindStoff(mat, kind, baum) {
         if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
         if (!this.state.windUniforms) this._grassInstanceMat();
@@ -77642,10 +77625,11 @@ class AnazhRealm {
             phi: ort.mul(-B.k),
             psi: pG.x.mul(1.7).add(pG.y.mul(0.9)).add(pG.z.mul(1.3)).div(ht).mul(6.2832),
         };
-        const w = globalThis.__phytoCore.windAusschlag(A, e, kind !== "bark");
+        const laub = kind === "foliage" || kind === "foliageTex";
+        const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
         const quer = w.quer.mul(uB.z);
         let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
-        if (kind !== "bark") off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
+        if (laub) off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
         mat.positionNode = T.positionLocal.add(off);
         mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
     }

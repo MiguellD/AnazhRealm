@@ -30832,25 +30832,19 @@ async function checkBandLambda3Wind(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // Profil-Werte: laub (hoch wiegen), stein (=0).
+        // K19: den Wind trägt kein Substanz-Tag — die Achse `wiegen` ist fort, Holz und Stein stehen.
         const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
-        const steinProfile = r._substanceResponseProfile({ tags: { lebendig: 0, dichte: 1, härte: 1 } });
-        out.laubWiegt = laubProfile.wiegen;
-        out.steinWiegtNull = steinProfile.wiegen;
-        // Source-Probe: V18.234 — der Wind-Sway lebt im GETEILTEN _applyVegetationResponse
-        // (Toon + PBR rufen ihn).
+        out.wiegenFort = !("wiegen" in laubProfile);
+        // Source-Probe: der Werkstatt-Baum (die geteilte Vegetations-Antwort) reicht den Wind an den EINEN Term
+        // (`_baumWindStoff`), keine eigene Formel über die Wind-Uhr.
         const src = window.__codeOf(r._applyVegetationResponse);
-        out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
+        out.windEinTerm = /this\._baumWindStoff\(/.test(src) && !/uWindTime/.test(src);
         return out;
     });
+    check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
     check(
-        `Λ.3 Wind: holz-Profil.wiegen > 0.2 (GEMESSEN ${res.laubWiegt && res.laubWiegt.toFixed(3)})`,
-        Number.isFinite(res.laubWiegt) && res.laubWiegt > 0.2
-    );
-    check("Λ.3 Wind: stein-Profil.wiegen === 0 (kein Sway auf Stein)", res.steinWiegtNull === 0);
-    check(
-        "Λ.3 Wind: _applyVegetationResponse setzt positionNode für wiegen > 0.05 (geteilt Toon+PBR)",
-        res.windSwayCode === true
+        "Λ.3 Wind: _applyVegetationResponse reicht den Werkstatt-Baum an den EINEN Wind-Term (_baumWindStoff)",
+        res.windEinTerm === true
     );
 }
 
@@ -35741,14 +35735,22 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         }
 
         // ─── Ω-W VERTIEFTES WIND ───
-        // Source-Probe: das Wind-Sway (_applyVegetationResponse) trägt (1) quadratischen crownFactor UND
-        // (2) ein aperiodisches Flatter (flutter mit höherer Frequenz).
-        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
-        out.wQuadraticCrown =
-            /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
-        out.wHasFlutter = /_flutter\b/.test(swaySrc) && /flutterPhase/.test(swaySrc);
-        // Stronger sway magnitude (V18.211 war 0.25, V18.212 ist 0.32).
-        out.wStrongerSway = /float\(_sway\s*\*\s*0\.32\)/.test(swaySrc);
+        // K19: der Wind des Werkstatt-Baums ist der EINE Term des Kerns (phyto-core `windAusschlag`) — die Spitze
+        // biegt quadratisch (ζ²), das Blatt flattert schneller als sein Ast, der Sturm biegt ≥ 3× die Brise.
+        {
+            const PC = window.__phytoCore,
+                Z = PC.WIND_ZAHLEN,
+                W = PC.WIND_GESETZ;
+            const e = (U, zeta, t) => ({ t, U, g: 1, f0: 0.4, H: 20, zeta, rho: 0, phi: 0, psi: 1 });
+            const spitze = (U, zeta) => {
+                let m = 0;
+                for (let t = 0; t < 10; t += 0.01) m = Math.max(m, Math.abs(PC.windAusschlag(Z, e(U, zeta, t), true).quer));
+                return m;
+            };
+            out.wQuadraticCrown = Math.abs(spitze(1, 1) / spitze(1, 0.5) - 4) < 0.2;
+            out.wHasFlutter = Math.max(W.blatt.f, W.blatt.ueberAst * W.ast.faktor * 0.4) > W.ast.faktor * 0.4;
+            out.wStrongerSway = spitze(1, 1) >= 3 * spitze(0.06, 1);
+        }
 
         // ─── Ω-H PROVENIENZ BEIM ERNTEN (§2 Plan SEELEN-Band) ─────────
         // Source-Probe: harvestArchitecture liest _isGrown + _grownSpecies +
@@ -35801,9 +35803,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("V18.212 (K2b) Flare am Stamm-Ursprung (|x|, |z| < 0.5m)", res.k2FlareAtTrunkBase === true);
 
     // Ω-W
-    check("V18.212 (W1) Wind: quadratischer crownFactor (Spitzen flexen stärker)", res.wQuadraticCrown === true);
-    check("V18.212 (W2) Wind: aperiodisches Flattern (flutter mit höherer Frequenz)", res.wHasFlutter === true);
-    check("V18.212 (W3) Wind: stärkerer Sway (0.32 statt 0.25)", res.wStrongerSway === true);
+    check("K19 (W1) Wind: die Spitze biegt quadratisch (ζ², der EINE Term)", res.wQuadraticCrown === true);
+    check("K19 (W2) Wind: das Blatt flattert schneller als sein Ast", res.wHasFlutter === true);
+    check("K19 (W3) Wind: der Sturm biegt ≥ 3× die Brise (Wind-Zeile)", res.wStrongerSway === true);
 
     // Ω-H
     check("V18.212 (H1) harvestArchitecture liest _isGrown + _grownSpecies (Source)", res.hReadsGrown === true);
@@ -36061,9 +36063,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
             ].every((k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp));
         }
 
-        // ─── (T2) Wind: useFlexAttr-Pfad existiert in _buildToonNodeMaterial ─
-        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
-        out.swayReadsFlexAttr = /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
+        // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
+        const skelSrc = window.__codeOf(r._buildTreeSkeletonLeaves);
+        out.swayReadsFlexAttr = /_skelettWindDaten\(/.test(skelSrc) && /baumWind/.test(skelSrc);
 
         // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
@@ -36197,7 +36199,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
-    check("V18.214 (T2) _buildToonNodeMaterial liest aFlex Attribut bei useFlexAttr", res.swayReadsFlexAttr === true);
+    check("K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)", res.swayReadsFlexAttr === true);
     check(
         "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
         res.spawnReadsSlopeHeight === true

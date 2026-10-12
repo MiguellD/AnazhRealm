@@ -495,7 +495,10 @@ function bildUrteil(mess, tafel) {
     let schwebeProbe = null;
     const sehProben = [];
     let gestaltWand = null;
-    const tafelSchreiben = process.argv.includes("--tafel");
+    // `--tafel-farbe` (der Re-Mint der Kronenfarbe, K19): nur `karte.farbe` je Fall wird neu gelesen, Deckung und Bild
+    // jeder Stufe bleiben die von V18.536; der Akt steht als `remint` in der Tafel.
+    const nurFarbe = process.argv.includes("--tafel-farbe");
+    const tafelSchreiben = nurFarbe || process.argv.includes("--tafel");
     const tafel = fs.existsSync(TAFEL_BILD) ? JSON.parse(fs.readFileSync(TAFEL_BILD, "utf8")) : null;
     const lagenMess = [];
     const quotePaare = {};
@@ -837,6 +840,26 @@ function bildUrteil(mess, tafel) {
         console.log("Plattform-Probe (Chrome-Worker, alle Transzendenten ±1 ULP):");
         await probeWand("v1", { lauf: probeLauf(probeFaelle) }, pruefe);
     });
+    if (tafelSchreiben && nurFarbe) {
+        const r8 = (x) => +x.toPrecision(8);
+        const alt = JSON.parse(fs.readFileSync(TAFEL_BILD, "utf8"));
+        for (const k of Object.keys(alt.faelle)) {
+            const m = bildMess[k];
+            if (!m || !m.karte) throw new Error(`--tafel-farbe: ${k} ohne gemessene Karte`);
+            alt.faelle[k].karte.farbe = m.karte.farbe.map(r8);
+        }
+        alt.remint = (alt.remint || []).concat([
+            {
+                feld: "karte.farbe",
+                karte: "K19",
+                grund: "die Fresnel-Aufhellung des Laubs fiel (foundry-core injectWind: das Laub-Licht ist der Durchlass-Term); der Studio-Bake (nur Halbkugel-Licht) trägt die Laub-Albedo ohne die unbelichtete Silhouetten-Aufhellung",
+                quelle: "node scripts/diag-asset-contract.cjs --tafel-farbe",
+            },
+        ]);
+        fs.writeFileSync(TAFEL_BILD, JSON.stringify(alt, null, 4) + "\n");
+        console.log(`Bild-Tafel: Kronenfarbe neu gelesen in ${Object.keys(alt.faelle).length} Fällen → ${path.relative(process.cwd(), TAFEL_BILD)}`);
+        process.exit(0);
+    }
     if (tafelSchreiben) {
         const faelle = {};
         const r8 = (x) => +x.toPrecision(8);

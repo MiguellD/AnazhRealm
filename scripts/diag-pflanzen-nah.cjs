@@ -530,6 +530,27 @@ function windLeserUrteil(quellen) {
         v.push("phytogenesis.js: der Bestand des Labors trägt den Wind-Stempel nicht an jedem Klon");
     if (!/WIND\.uWindBaum\.value\.set\(/.test(bestand))
         v.push("phytogenesis.js: die Einzel-Ansicht trägt den Baum nicht als uWindBaum");
+    // DER WERKSTATT-BAUM (Grammatik-Pfad `_buildTreeSkeletonLeaves` → `_applyVegetationResponse`): Rinde, Laub und Kern
+    // lesen denselben Term über `_baumWindStoff`, δ an der Stamm-Achse seines Skeletts (`windSchlankheitAchse`); die
+    // eigene Sinus-Formel (ohne Wind-Zeile: der Sturm sah aus wie die Brise) ist fort.
+    const rumpfVon = (name) => {
+        const k = welt.indexOf("\n    " + name + "(");
+        return k < 0 ? "" : welt.slice(k, welt.indexOf("\n    }\n", k));
+    };
+    const veg = rumpfVon("_applyVegetationResponse");
+    if (!/this\._baumWindStoff\(/.test(veg))
+        v.push("anazhRealm.js: der Werkstatt-Baum (_applyVegetationResponse) liest den Wind-Term nicht");
+    if (/uWindTime/.test(veg))
+        v.push("anazhRealm.js: der Werkstatt-Baum (_applyVegetationResponse) schwingt mit eigener Formel");
+    if (!/__phytoCore\.windSchlankheitAchse\(/.test(rumpfVon("_skelettWindDaten")))
+        v.push("anazhRealm.js: der Werkstatt-Baum misst δ nicht an seiner Stamm-Achse (_skelettWindDaten)");
+    // DER WURF (Lehre 26): jeder Schatten-Werfer eines schwingenden Baums trägt denselben Term — der Wurf-Teil der
+    // Foundry-L1 (`kind "schatten"`) und der Zwilling des Werkstatt-Baums; sonst steht der Schatten unter der Krone.
+    const ruf = /if \(([^;{]*)\)\s*this\._baumWindStoff\(mat, kind, baum\)/.exec(rumpfVon("_foundryTreeMaterial"));
+    if (!ruf || !/"schatten"/.test(ruf[1]))
+        v.push("anazhRealm.js: der Wurf-Teil der Foundry-L1 (kind schatten) steht im Wind still (_foundryTreeMaterial)");
+    if (!/this\._baumWindStoff\(/.test(rumpfVon("_treeShadowTwinMaterial")))
+        v.push("anazhRealm.js: der Schatten-Zwilling des Werkstatt-Baums steht im Wind still (_treeShadowTwinMaterial)");
     return v;
 }
 
@@ -730,6 +751,20 @@ function windLeserUrteil(quellen) {
             "foundry-core.js": quellen["foundry-core.js"],
             "worlds/terrain/phytogenesis.js": laborBestand,
         }).length >= 2,
+    ]);
+    const windMit = (alt, neu) =>
+        windLeserUrteil({
+            "anazhRealm.js": quellen["anazhRealm.js"].replace(alt, neu),
+            "foundry-core.js": quellen["foundry-core.js"],
+            "worlds/terrain/phytogenesis.js": laborBestand,
+        }).length >= 1;
+    st.push([
+        "Werkstatt-Baum ohne Wind-Term",
+        windMit(/(\n    _applyVegetationResponse\([\s\S]*?)this\._baumWindStoff\(/, "$1this.X("),
+    ]);
+    st.push([
+        "Wurf-Teil ohne Wind",
+        windMit(/(\n    _foundryTreeMaterial\([\s\S]*?)\|\| kind === "schatten"/, "$1"),
     ]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");

@@ -4152,10 +4152,30 @@
     // Die Schlankheit δ = D / H einer gelieferten Gestalt (skalenfrei): D in Brusthöhe (dbh Meter Welt → dbh / skala in der
     // Vorlage; der Kleinwuchs unter 4·dbh misst im ersten Viertel seiner Höhe — die Brusthöhe eines 1,6-m-Strauchs läge in
     // seiner Spitze), H = ht (die Vorlagen-Höhe der Gestalt). Welt, Karte und Labor rechnen f0 = kF · δ / H_Welt je Baum.
+    function brustHoehe(ht, skala) {
+        return Math.min(WIND_GESETZ.dbh, 0.25 * ht * skala) / skala;
+    }
     function windSchlankheit(barkPos, ht, skala) {
         if (!(ht > 0) || !(skala > 0)) return null;
-        const D = stammDurchmesser(barkPos, Math.min(WIND_GESETZ.dbh, 0.25 * ht * skala) / skala);
+        const D = stammDurchmesser(barkPos, brustHoehe(ht, skala));
         return D > 0 ? D / ht : null;
+    }
+    // Dieselbe Schlankheit an der Stamm-ACHSE (K19, der Werkstatt-Baum trägt sein Skelett: Punkte { y, r } aufwärts, r der
+    // Radius) — D = 2 r, linear zwischen den Achsen-Punkten um dieselbe Brusthöhe. null ohne Achse.
+    function windSchlankheitAchse(punkte, ht, skala) {
+        if (!Array.isArray(punkte) || punkte.length < 2 || !(ht > 0) || !(skala > 0)) return null;
+        const yT = brustHoehe(ht, skala);
+        let r = null;
+        for (let i = 1; i < punkte.length; i++) {
+            const a = punkte[i - 1],
+                b = punkte[i];
+            if (b.y >= yT || i === punkte.length - 1) {
+                const t = b.y > a.y ? Math.max(0, Math.min(1, (yT - a.y) / (b.y - a.y))) : 0;
+                r = a.r + (b.r - a.r) * t;
+                break;
+            }
+        }
+        return r > 0 ? (2 * r) / ht : null;
     }
     // DER EINE TERM: e = { t, U, g (Böe), f0, H (m), zeta, rho, phi (Orts-Phase), psi (Ast-Phase) }, blatt (bool, JS).
     // Rückgabe in Metern: quer (längs der Wind-Richtung), hoch (senkrecht), flattern (längs der Normale; 0 ohne Laub).
@@ -4340,6 +4360,7 @@
         WIND_GESETZ: WIND_GESETZ, // K19 — das Wind-Gesetz des Baums (f0 = kF·D/H², Stamm < Ast < Blatt, Last ∝ U^vogel)
         stammDurchmesser: stammDurchmesser, // K19 — der Fuß-Durchmesser der gelieferten Gestalt (Ring des Stamm-Strangs)
         windSchlankheit: windSchlankheit, // K19 — δ = D(Brusthöhe) / H der gelieferten Gestalt
+        windSchlankheitAchse: windSchlankheitAchse, // K19 — dasselbe δ an der Stamm-Achse eines Skeletts (Werkstatt-Baum)
         windAusschlag: windAusschlag, // K19 — DER EINE Wind-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
