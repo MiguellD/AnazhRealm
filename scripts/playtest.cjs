@@ -37766,35 +37766,43 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
 
         // (D) Behavioral — der Helfer baut einen Node-Graph ohne zu werfen
         if (THREE && THREE.TSL && THREE.TSL.attribute && THREE.TSL.positionWorld) {
-            delete window.__terrainGeologyError;
             const vc = THREE.TSL.attribute("color", "vec3");
             const wp = THREE.TSL.positionWorld;
             const node = r._terrainGeologyAlbedo(THREE.TSL, vc, wp);
             out.helperReturnsNode = !!node && typeof node === "object";
-            out.helperNoThrow = typeof window.__terrainGeologyError === "undefined";
+            out.helperNoThrow = true; // ein Bruch der Geologie würfe laut aus dem Aufruf oben (`_stoffBruch`, K22)
         } else {
             out.helperReturnsNode = true;
             out.helperNoThrow = true;
         }
-        // Graceful: ohne TSL gibt der Helfer den Eingangs-Albedo unverändert zurück
-        out.helperGraceful = r._terrainGeologyAlbedo(null, "ALBEDO_SENTINEL", null) === "ALBEDO_SENTINEL";
+        // LAUT (K22): ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
+        {
+            const logAlt = r.log;
+            r.log = () => {};
+            try {
+                r._terrainGeologyAlbedo(null, "ALBEDO_SENTINEL", null);
+                out.helperGraceful = false;
+            } catch (e) {
+                out.helperGraceful = !!(e && e.stoff === true);
+            } finally {
+                r.log = logAlt;
+            }
+        }
 
         // (E) Toon-Terrain trägt den colorNode (kein Fehler in der Geologie-Schicht)
-        delete window.__terrainGeologyError;
         const savedMode = r.state.atmosphere && r.state.atmosphere.materialMode;
         const mToon = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
         out.toonTerrainColorNode = !!(mToon && mToon.colorNode);
-        out.toonTerrainNoGeoError = typeof window.__terrainGeologyError === "undefined";
+        out.toonTerrainNoGeoError = true; // ein Bruch der Geologie würfe laut aus dem Bau oben (K22)
         if (mToon && typeof mToon.dispose === "function") mToon.dispose();
 
         // (F) PBR-Terrain trägt JETZT denselben Geologie-colorNode (die geheilte Lücke)
         try {
             r.state.atmosphere.materialMode = "pbr";
-            delete window.__terrainGeologyError;
             const mPbr = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
             out.pbrTerrainIsPbr = !!(mPbr && mPbr.userData && mPbr.userData.isPbrMaterial);
             out.pbrTerrainColorNode = !!(mPbr && mPbr.colorNode);
-            out.pbrTerrainNoGeoError = typeof window.__terrainGeologyError === "undefined";
+            out.pbrTerrainNoGeoError = true; // ein Bruch der Geologie würfe laut aus dem Bau oben (K22)
             if (mPbr && typeof mPbr.dispose === "function") mPbr.dispose();
         } finally {
             if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
@@ -37870,7 +37878,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
 
     check("Ω-OPSIS S1 (D1) Helfer baut Node-Graph (kein Wurf)", res.helperReturnsNode === true);
     check("Ω-OPSIS S1 (D2) Helfer wirft keinen Fehler (Marker leer)", res.helperNoThrow === true);
-    check("Ω-OPSIS S1 (D3) Helfer graceful ohne TSL (gibt Albedo zurück)", res.helperGraceful === true);
+    check("Ω-OPSIS S1 (D3) Helfer bricht ohne TSL laut beim Namen (_stoffBruch, K22)", res.helperGraceful === true);
 
     check("Ω-OPSIS S1 (E1) Toon-Terrain setzt colorNode", res.toonTerrainColorNode === true);
     check("Ω-OPSIS S1 (E2) Toon-Terrain: kein Geologie-Fehler", res.toonTerrainNoGeoError === true);
@@ -39085,7 +39093,6 @@ async function checkBandWGGelenke(ctx) {
                 (sm.length === 0 || Math.min(...sp) >= Math.max(...sm));
         }
         // (b) ACHSEN-GEISTER: der Viewer-Build erzeugt Achsen-Linien (isJointAxis).
-        window.__jointAxisError = null;
         out.axisGhosts = false;
         out.axisTeachAttached = false;
         if (wagen) {
@@ -39097,7 +39104,7 @@ async function checkBandWGGelenke(ctx) {
             });
             out.axisGhosts = axes >= 1;
         }
-        out.axisNoError = !window.__jointAxisError;
+        out.axisNoError = true; // ein Bruch der Achsen würfe laut aus dem Bau oben (`_stoffBruch`, K22)
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
@@ -39143,7 +39150,7 @@ async function checkBandW3UiPuls(ctx) {
         r._uiDirty("hof");
         out.dedup = r._uiPulseQueued === true && r._uiDirtyRooms.size === 1;
         // (4) Migration: Grep-Wand am Quelltext (s. unten).
-        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt den Puls nicht (try/catch, __uiPulseError).
+        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt den Puls nicht (try/catch, ERROR beim Namen des Raums).
         out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(window.__codeOf(r._uiDirty));
         // (6) der ON-OPEN-Render im Hof-Hook (so darf die Insel isOpen-skippen).
         out.hofOnOpen = /_renderCreatureListUI\(\)/.test(window.__codeOf(r._hofHandleDrawerChange));
@@ -41722,7 +41729,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
         // KONSUM: `_applySubstanceResponse` setzt outputNode IDENTISCH auf Terrain UND Strukturen;
         // transparente Phantome bleiben unberührt, material.color bleibt setzbar (kein colorNode-Override).
-        window.__aerialOutputError = null;
         out.aerialHelperExists = typeof r._applySubstanceResponse === "function";
         // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
         out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
@@ -41754,8 +41760,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 : null;
         out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
-        out.aerialNoError = !window.__aerialOutputError;
-        out.aerialOutputError = window.__aerialOutputError || null;
+        out.aerialNoError = true; // ein Bruch der Umgebungs-Antwort würfe laut aus dem Bau oben (`_stoffBruch`, K22)
+        out.aerialOutputError = null;
         // (7) Die Luft ist AUGEN-relativ (V18.530: der Luft-Knoten integriert vom Auge `cameraPosition` zum Punkt,
         // die Höhen-Abnahme über die Skalenhöhe) — nie absolute Welt-Höhe, sonst bleicht Klettern den Boden.
         const _aerSrc = window.__codeOf(r._luftEnsure);

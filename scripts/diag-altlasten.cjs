@@ -1761,6 +1761,300 @@ function scanNormalWand(srcRoh) {
     return errs;
 }
 
+// DIE STOFF-WAND (K22, 12.10.): kein stiller Fang im Render- und Stoff-Bau. Bis 1110-11b gab die LOD-Blende bei einem
+// fehlenden Glied still null zurück, und jeder Stoff zeichnete ohne seine Maske weiter (`_blendeBruch` heilte die Blende);
+// dieselbe Klasse lebte daneben in jedem Stoff. Ein FANG ist:
+//   (a) ein catch im Stoff- oder Render-Bau, der weder wirft noch ERROR meldet (der Fehler verschwindet, das Bild zeichnet
+//       byte-alt weiter);
+//   (b) eine Fehler-Variable `window.__…Error` (der Fehler wandert in ein Fach, das kein Spiel-Leser liest);
+//   (c) ein AUSSTATTUNGS-WENN: der Bau fragt, ob TSL (THREE.TSL, im Stoff T · _T · TSL …) ein Glied trägt. Der Vendor ist
+//       gepinnt (three-bootstrap importiert three/tsl ganz, gate:vendor-anker), ein fehlendes Glied bricht beim ersten Ruf
+//       mit seinem Namen; das Wenn machte daraus einen Stoff ohne seinen Knoten;
+//   (d) ein NULL-KNOTEN: ein Knoten-Bauer, dessen Ergebnis ein Stoff in einen `…Node` setzt, gibt null zurück, oder sein
+//       Aufrufer setzt den Knoten nur unter Wenn.
+// Stoff-Bau = jede Methode, die TSL liest (ein Bezeichner aus THREE.TSL oder ein Parameter T/TSL, der TSL-Knoten baut);
+// Render-Bau = jeder try, der den Render-Graphen baut (CSM, Post, TRAA, ein Renderer, ein NodeMaterial). Laut ist ein Fang,
+// der wirft (`_stoffBruch`, ERROR mit dem Glied beim Namen) — ein bewusster Zweig steht mit Grund und Bild-Leser in
+// STOFF_ZWEIGE (eine tote Zeile ist rot).
+const OHNE_SEITE =
+    "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
+    "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
+const STOFF_ZWEIGE = [
+    {
+        methode: "_blattAtlasProbe",
+        art: "Null-Knoten",
+        anker: "gibt null",
+        grund: OHNE_SEITE,
+        bild: "der Laub-, Schatten- und Blatt-Karten-Stoff lesen den Atlas; gate:pflanzen-nah (F) misst seine Fracht am Bild",
+    },
+    {
+        methode: "_foundryTreeMaterial",
+        art: "Null-Knoten",
+        anker: "atl = this._blattAtlasProbe",
+        grund: OHNE_SEITE,
+        bild: "der Laub-Stoff (foliageTex) schneidet die Blattform aus dem Atlas; gate:pflanzen-nah (F)",
+    },
+];
+function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
+    const acorn = require("acorn");
+    const ast = acorn.parse(srcRoh, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    const kinder = (n, f) => {
+        for (const k in n) {
+            if (k === "loc") continue;
+            const v = n[k];
+            if (Array.isArray(v)) {
+                for (const c of v) if (c && typeof c.type === "string") f(c);
+            } else if (v && typeof v.type === "string") f(v);
+        }
+    };
+    const gehe = (n, f, eltern = null) => {
+        f(n, eltern);
+        kinder(n, (c) => gehe(c, f, n));
+    };
+    const kurz = (n) => srcRoh.slice(n.start, n.end).replace(/\s+/g, " ").slice(0, 90);
+    const funde = [];
+    const fund = (art, methode, n, was) => funde.push({ art, methode, zeile: n.loc.start.line, was });
+    const istThreeTsl = (e) =>
+        !!e &&
+        e.type === "MemberExpression" &&
+        !e.computed &&
+        e.object.type === "Identifier" &&
+        e.object.name === "THREE" &&
+        e.property.name === "TSL";
+    const ausTsl = (e) =>
+        !!e &&
+        (istThreeTsl(e) ||
+            (e.type === "MemberExpression" && !e.computed && e.property.name === "TSL") ||
+            (e.type === "LogicalExpression" && ausTsl(e.right)) ||
+            (e.type === "ConditionalExpression" && ausTsl(e.consequent)));
+    const methoden = [];
+    gehe(ast, (n) => {
+        if (n.type === "MethodDefinition" && n.key && n.value) methoden.push(n);
+    });
+    const nameVon = (m) => m.key.name || m.key.value;
+    const tslApi = (name, rumpf) =>
+        new RegExp(
+            `\\b${name}\\.(float|vec[234]|uniform|attribute|mix|fract|positionWorld|positionLocal|screenCoordinate|texture)\\b`
+        ).test(rumpf);
+    const aliase = (m) => {
+        const al = new Set();
+        const rumpf = srcRoh.slice(m.value.start, m.value.end);
+        for (const p of m.value.params)
+            if (p.type === "Identifier" && /^(T|TSL|_T)$/.test(p.name) && tslApi(p.name, rumpf)) al.add(p.name);
+        gehe(m.value, (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && ausTsl(n.init)) al.add(n.id.name);
+            if (n.type === "VariableDeclarator" && n.id.type === "ObjectPattern" && n.init)
+                for (const p of n.id.properties)
+                    if (p.key && p.key.name === "TSL" && p.value && p.value.type === "Identifier") al.add(p.value.name);
+        });
+        return al;
+    };
+    // (d) die Knoten-Bauer: `const v = this._m(…)`, danach `if (v …) { x.…Node = … }` oder `x.…Node = v ? … : …`
+    const bauer = new Map(); // name → [{ methode, zeile }]
+    const wennKnoten = [];
+    for (const m of methoden) {
+        const vars = new Map();
+        gehe(m.value, (n) => {
+            if (
+                n.type === "VariableDeclarator" &&
+                n.id.type === "Identifier" &&
+                n.init &&
+                n.init.type === "CallExpression" &&
+                n.init.callee.type === "MemberExpression" &&
+                n.init.callee.object.type === "ThisExpression" &&
+                !n.init.callee.computed
+            )
+                vars.set(n.id.name, n.init.callee.property.name);
+        });
+        if (!vars.size) continue;
+        // gefragt ist der Knoten selbst (`if (v)`, `v ? … : …`, `v && …`), nie ein Glied seines Vertrags (`v.roughNode` trägt
+        // der Bauer nur, wenn sein Auftrag es verlangt)
+        const nennt = (test) => {
+            const t = [];
+            gehe(test, (e, el) => {
+                if (
+                    e.type === "Identifier" &&
+                    vars.has(e.name) &&
+                    !(el && el.type === "MemberExpression" && el.object === e)
+                )
+                    t.push(e.name);
+            });
+            return t;
+        };
+        const setztKnoten = (n) => /\.\w*Node\s*=(?!=)/.test(srcRoh.slice(n.start, n.end));
+        // jeder Bauer, dessen Ergebnis in einen `…Node` fließt, steht unter der Wand — auch ohne Wenn beim Aufrufer
+        gehe(m.value, (n) => {
+            if (
+                n.type === "AssignmentExpression" &&
+                n.left.type === "MemberExpression" &&
+                /Node$/.test(n.left.property.name || "")
+            )
+                gehe(n.right, (e) => {
+                    if (e.type === "Identifier" && vars.has(e.name) && !bauer.has(vars.get(e.name)))
+                        bauer.set(vars.get(e.name), []);
+                });
+        });
+        gehe(m.value, (n, eltern) => {
+            let t = [];
+            if (n.type === "IfStatement" && setztKnoten(n.consequent)) t = nennt(n.test);
+            else if (
+                n.type === "ConditionalExpression" &&
+                eltern &&
+                eltern.type === "AssignmentExpression" &&
+                eltern.left.type === "MemberExpression" &&
+                /Node$/.test(eltern.left.property.name || "")
+            )
+                t = nennt(n.test);
+            for (const v of new Set(t)) {
+                const b = vars.get(v);
+                if (!bauer.has(b)) bauer.set(b, []);
+                bauer.get(b).push({ methode: nameVon(m), zeile: n.loc.start.line });
+                wennKnoten.push({
+                    methode: nameVon(m),
+                    n,
+                    was: `${v} = this.${b}(…) setzt seinen Knoten nur unter Wenn`,
+                });
+            }
+        });
+    }
+    for (const w of wennKnoten) fund("Null-Knoten", w.methode, w.n, w.was);
+    for (const m of methoden) {
+        const name = nameVon(m);
+        const al = aliase(m);
+        const stoff = al.size > 0 || /\bTHREE\.TSL\b/.test(srcRoh.slice(m.value.start, m.value.end));
+        // (b) die Fehler-Variable — im ganzen Stamm
+        gehe(m.value, (n) => {
+            if (
+                n.type === "AssignmentExpression" &&
+                n.left.type === "MemberExpression" &&
+                !n.left.computed &&
+                n.left.object.type === "Identifier" &&
+                n.left.object.name === "window" &&
+                /^__\w*(Error|Fehler)/.test(n.left.property.name)
+            )
+                fund("Fehler-Variable", name, n, `window.${n.left.property.name} (kein Spiel-Leser)`);
+        });
+        // (a) der Fang: im Stoff-Bau jeder catch, im Render-Bau jeder try, der den Render-Graphen baut
+        const laut = (koerper) =>
+            koerper.body.some(
+                (s) =>
+                    s.type === "ThrowStatement" ||
+                    (s.type === "ExpressionStatement" &&
+                        /^this\.(log\([\s\S]*"ERROR"\s*\)|_stoffBruch\([\s\S]*\))$/.test(
+                            srcRoh.slice(s.expression.start, s.expression.end)
+                        ))
+            );
+        gehe(m.value, (n) => {
+            if (n.type !== "TryStatement" || !n.handler) return;
+            const render =
+                /new THREE\.(CSMShadowNode|PostProcessing|RenderPipeline|TRAANode|WebGPURenderer|\w+NodeMaterial)\b/.test(
+                    srcRoh.slice(n.block.start, n.block.end)
+                );
+            if ((stoff || render) && !laut(n.handler.body))
+                fund("Fang", name, n.handler, `catch ${kurz(n.handler.body)}`);
+        });
+        if (!stoff) continue;
+        // (c) das Ausstattungs-Wenn: ein Glied von TSL als Wahrheitswert
+        const glied = (e) =>
+            !!e &&
+            ((e.type === "Identifier" && al.has(e.name)) ||
+                istThreeTsl(e) ||
+                (e.type === "MemberExpression" &&
+                    !e.computed &&
+                    ((e.object.type === "Identifier" && al.has(e.object.name)) || istThreeTsl(e.object))));
+        // `wert`: der Ausdruck liefert seinen Wert (`opts.pos || T.positionLocal` — das letzte Glied ist ein Wert, keine
+        // Frage); in einer Bedingung ist jedes Glied eine Frage.
+        const glieder = (e, aus, wert) => {
+            if (!e) return aus;
+            if (e.type === "LogicalExpression") {
+                glieder(e.left, aus, false);
+                glieder(e.right, aus, wert);
+            } else if (e.type === "UnaryExpression" && (e.operator === "!" || e.operator === "typeof"))
+                glieder(e.argument, aus, false);
+            else if (e.type === "BinaryExpression" && /^[!=]==?$/.test(e.operator)) {
+                if (e.left.type === "UnaryExpression" && e.left.operator === "typeof")
+                    glieder(e.left.argument, aus, false);
+            } else if (!wert && glied(e)) aus.push(kurz(e));
+            return aus;
+        };
+        // eine Frage, die laut bricht, fängt nicht: `if (!T) throw …` und alles im Wurf selbst
+        const wirft = (s) =>
+            !!s &&
+            (s.type === "ThrowStatement" ||
+                (s.type === "BlockStatement" && s.body.some((x) => x.type === "ThrowStatement")));
+        const imWurf = new Set();
+        gehe(m.value, (n) => {
+            if (n.type === "ThrowStatement") gehe(n, (c) => imWurf.add(c));
+        });
+        gehe(m.value, (n, eltern) => {
+            if (imWurf.has(n) || (n.type === "IfStatement" && wirft(n.consequent))) return;
+            let test = null;
+            let wert = false;
+            if (n.type === "IfStatement" || n.type === "ConditionalExpression") test = n.test;
+            else if (
+                n.type === "LogicalExpression" &&
+                !(eltern && /^(LogicalExpression|UnaryExpression)$/.test(eltern.type)) &&
+                !(
+                    eltern &&
+                    (eltern.type === "IfStatement" || eltern.type === "ConditionalExpression") &&
+                    eltern.test === n
+                )
+            ) {
+                test = n;
+                wert = true;
+            }
+            if (!test) return;
+            const g = glieder(test, [], wert);
+            if (g.length)
+                fund("Ausstattungs-Wenn", name, n, `fragt ${g.slice(0, 4).join(" · ")}${g.length > 4 ? " …" : ""}`);
+        });
+    }
+    // (d) der Knoten-Bauer gibt null
+    for (const m of methoden) {
+        const name = nameVon(m);
+        if (!bauer.has(name)) continue;
+        const flach = (n, f) => {
+            f(n);
+            kinder(n, (c) => {
+                if (!/Function/.test(c.type)) flach(c, f);
+            });
+        };
+        flach(m.value.body, (n) => {
+            if (
+                n.type === "ReturnStatement" &&
+                (!n.argument || (n.argument.type === "Literal" && n.argument.value === null))
+            )
+                fund(
+                    "Null-Knoten",
+                    name,
+                    n,
+                    `${name} gibt ${n.argument ? "null" : "nichts"} (sein Knoten fehlt still im Stoff)`
+                );
+        });
+    }
+    // die bewussten Zweige: je Zeile genau ein Fund (eine tote Zeile ist rot)
+    const rest = [];
+    const tot = [];
+    for (const z of zweige) {
+        const i = funde.findIndex((f) => f.methode === z.methode && f.art === z.art && f.was.includes(z.anker));
+        if (i < 0) tot.push(z);
+        else funde.splice(i, 1);
+    }
+    for (const f of funde) rest.push(f);
+    return { funde: rest, tot };
+}
+function scanStoffWand(srcRoh, zweige = STOFF_ZWEIGE) {
+    const { funde, tot } = stoffFaenge(srcRoh, zweige);
+    return funde
+        .map((f) => `Stoff-Wand: ${f.art} — anazhRealm.js:${f.zeile} \`${f.methode}\` ${f.was}`)
+        .concat(
+            tot.map(
+                (z) =>
+                    `Stoff-Wand: tote Zeile in STOFF_ZWEIGE — \`${z.methode}\` ${z.art} „${z.anker}" fängt nichts mehr`
+            )
+        );
+}
+
 // DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
@@ -2120,6 +2414,80 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)`
         );
+        // Die Stoff-Wand muss feuern (K22): je Art ein eingeschmuggelter Fang in eine Kopie des Stamms, jeder beim Namen
+        // seiner Methode; eine tote Zeile der bewussten Zweige ist rot; der Stamm heute steht ohne Fang.
+        {
+            // die Täter reisen in einer Kopie der drei berührten Methoden (eine Klasse, ein Parse in Millisekunden); der
+            // ganze Stamm wird einmal gelesen (heute 0)
+            const methode = (name) => {
+                const i = stamm.indexOf("\n    " + name + "(");
+                const j = i < 0 ? -1 : stamm.indexOf("\n    }\n", i);
+                return j < 0 ? "" : stamm.slice(i, j + 7);
+            };
+            const klein =
+                "class AnazhRealm {" +
+                ["_applySubstanceResponse", "_foundryTreeMaterial", "_kameraDurchsichtNode"].map(methode).join("") +
+                "}\n";
+            const ein = (alt, neu) => (klein.includes(alt) ? klein.replace(alt, neu) : null);
+            const faelle = [
+                [
+                    "Fang (catch schluckt)",
+                    ein(
+                        'throw this._stoffBruch("die Umgebungs-Antwort (outputNode)", _e);',
+                        "/* die Umgebung bleibt still */"
+                    ),
+                    /Fang — .*`_applySubstanceResponse`/,
+                ],
+                [
+                    "Fehler-Variable",
+                    ein(
+                        'throw this._stoffBruch("die Umgebungs-Antwort (outputNode)", _e);',
+                        "window.__aerialOutputError = String(_e);"
+                    ),
+                    /Fehler-Variable — .*`_applySubstanceResponse` window\.__aerialOutputError/,
+                ],
+                [
+                    "Ausstattungs-Wenn",
+                    ein('if (_p("micro") > 0) {', 'if (_p("micro") > 0 && _T.fwidth) {'),
+                    /Ausstattungs-Wenn — .*`_applySubstanceResponse` fragt _T\.fwidth/,
+                ],
+                [
+                    "Null-Knoten (Aufrufer)",
+                    ein("            mat.maskNode = _durch;", "            if (_durch) mat.maskNode = _durch;"),
+                    /Null-Knoten — .*`_foundryTreeMaterial` _durch = this\._kameraDurchsichtNode/,
+                ],
+                [
+                    "Null-Knoten (Bauer)",
+                    ein(
+                        "        const lu = this._ensureLodUniforms();\n        const A = {",
+                        "        const lu = this._ensureLodUniforms();\n        if (!lu.uKamAuge) return null;\n        const A = {"
+                    ),
+                    /Null-Knoten — .*`_kameraDurchsichtNode` _kameraDurchsichtNode gibt null/,
+                ],
+            ];
+            const kz = STOFF_ZWEIGE.filter((z) => klein.includes("    " + z.methode + "("));
+            const heute = scanStoffWand(stamm).concat(scanStoffWand(klein, kz));
+            const roh = faelle.map(([name, src, muster]) => {
+                const e = src ? scanStoffWand(src, kz) : [];
+                return { name, ok: e.some((x) => muster.test(x)), e: e[0] || "(kein Fund — der Anker fehlt?)" };
+            });
+            const tot = scanStoffWand(
+                stamm,
+                STOFF_ZWEIGE.concat([{ methode: "_gibtEsNicht", art: "Fang", anker: "catch", grund: "Selbsttest" }])
+            );
+            const totFeuert = tot.length === 1 && /tote Zeile .*`_gibtEsNicht`/.test(tot[0]);
+            if (heute.length || roh.some((f) => !f.ok) || !totFeuert) {
+                console.log("❌ SELBST-TEST: die Stoff-Wand feuert nicht je Art (oder steht heute rot)", {
+                    heute: heute.slice(0, 5),
+                    arten: roh.filter((f) => !f.ok),
+                    tot,
+                });
+                process.exit(1);
+            }
+            console.log(
+                `✅ SELBST-TEST: die Stoff-Wand nennt je Art den Täter (${roh.map((f) => f.name).join(" · ")} · tote Zweig-Zeile), heute 0 — ${roh[0].e}`
+            );
+        }
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -2178,6 +2546,7 @@ function main() {
         .concat(scanEntsorgungsWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanStoffWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
@@ -2188,7 +2557,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch, keine Fehler-Variable, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} bewusste Zweige ohne Seite), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 
