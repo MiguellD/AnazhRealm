@@ -194,9 +194,10 @@ function wasserKoerper(opts) {
         const st = r.state;
         const A = r.constructor;
         const DT = A.FIXED_DT;
-        const h = st.hydrosphere;
+        const ziel = o.see || window.__wasserOrte({}).see.mitte;
+        // die Region des Sees (Heimat oder Kachel — der See der Landform liegt jenseits ±1024 m)
+        const h = r._hydroFor(ziel[0], ziel[1]);
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const ziel = o.see || [-944, -640];
         const seen = (h.lakes || []).filter((l) => l.level > (st.waterLevel || 0) + 2 && l.cells && l.cells.length > 8);
         let see = null,
             best = Infinity;
@@ -213,8 +214,8 @@ function wasserKoerper(opts) {
         const spiegel = see.level;
         // Der Weg des Befunds (06.10., Station 1): vom Ostufer (−884/−650, trockenes Gras) nach Westen bis −935 (8 m
         // tief) — kein Fluss quert ihn; dort Lage, Kraulen und Eintauchen.
-        const [x0, mz] = o.start || [-884, -650];
-        const mx = (o.ziel || [-935, -650])[0];
+        const [x0, mz] = o.start || window.__wasserOrte({}).see.ufer;
+        const mx = (o.ziel || ziel)[0];
         const grundMitte = r._voxelSurfaceY(mx, mz);
         const tiefeMitte = grundMitte !== null ? spiegel - grundMitte : null;
         // Die Brustkorb-Linie aus dem Körper-Gesetz: Brustwarzen-Höhe nippleY/H der Proportionen × Welt-Körperhöhe
@@ -539,7 +540,7 @@ function wasserUfer(opts) {
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
         const HC = r.constructor.HYDROSPHERE;
-        const ziel = o.ort || [-872, -1127];
+        const ziel = o.ort || (({ fluss }) => [fluss.x, fluss.z])(window.__wasserOrte({}));
         let best = null,
             bd = Infinity;
         // Die Heimat-Region und die fernen Kacheln (der Fluss des Befunds liegt jenseits ±1024 m).
@@ -1254,9 +1255,9 @@ function wasserWagen(opts) {
         const o = opts || {};
         const r = window.anazhRealm;
         const st = r.state;
-        const h = st.hydrosphere;
+        const ziel = o.see || window.__wasserOrte({}).see.mitte;
+        const h = r._hydroFor(ziel[0], ziel[1]);
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const ziel = o.see || [-944, -640];
         let see = null,
             best = Infinity;
         for (const l of h.lakes || []) {
@@ -1324,20 +1325,31 @@ function wasserWagen(opts) {
         };
         const aus = { see: { spiegel: R(S, 2) } };
         try {
-            const mitte = o.mitte || [-935, -650];
+            const mitte = o.mitte || ziel;
             aus.wagen = fahre("fahrzeug_gt", mitte[0], mitte[1]);
             aus.boot = fahre(BOOT, mitte[0], mitte[1]);
-            // (c) der Rand-Streifen: Atlas-Land neben dem See, der Boden ≥ 1 m unter dem Spiegel.
+            // (c) der Rand-Streifen: Atlas-Land neben dem See, der Boden ≥ 1 m unter dem Spiegel — auf den Strahlen von der
+            //     Mitte des Sees (16 Richtungen, je 3 m) die ersten Atlas-Land-Spalten jenseits der See-Zellen
+            //     (K16: vorher ein Literal-Streifen x −944, z −690…−726 am See der alten Welt)
             const rand = [];
-            for (let z = -690; z >= -726; z -= 3) {
-                const x = -944;
-                const boden = r._voxelSurfaceY(x, z);
-                if (!Number.isFinite(boden) || S - boden < 1) continue;
-                const hr = r._hydroFor(x, z);
-                const ci = Math.floor((x - hr.originX) / hr.cell),
-                    cj = Math.floor((z - hr.originZ) / hr.cell);
-                if (hr.water.waterKind[ci + cj * hr.dim] !== 0) continue; // nur Atlas-Land (der Streifen)
-                rand.push([x, z, S - boden]);
+            for (let w = 0; w < 16 && rand.length < 12; w++) {
+                const ca = Math.cos((w * Math.PI) / 8),
+                    sa = Math.sin((w * Math.PI) / 8);
+                let land = false;
+                for (let d = 3; d <= 600 && rand.length < 12; d += 3) {
+                    const x = mitte[0] + ca * d,
+                        z = mitte[1] + sa * d;
+                    const hr = r._hydroFor(x, z);
+                    if (!hr || !hr.water) break;
+                    const ci = Math.floor((x - hr.originX) / hr.cell),
+                        cj = Math.floor((z - hr.originZ) / hr.cell);
+                    if (hr.water.waterKind[ci + cj * hr.dim] !== 0) continue; // noch See
+                    land = true;
+                    const boden = r._voxelSurfaceY(x, z);
+                    if (!Number.isFinite(boden) || S - boden < 1) break; // der Streifen endet am Ufer
+                    rand.push([R(x, 1), R(z, 1), S - boden]);
+                }
+                if (!land) continue;
             }
             let treibt = 0;
             const randAus = [];
@@ -1347,11 +1359,13 @@ function wasserWagen(opts) {
                 randAus.push([x, z, R(tiefe, 2), f.afloat]);
             }
             aus.rand = { proben: rand.length, treibt, punkte: randAus };
-            // (d) Bug-ab: der Punkt des Wegs vom Ostufer mit dem steilsten Seegrund und ≥ 2,5 m Wasser.
+            // (d) Bug-ab: der Punkt des Wegs vom Ostufer (`o.ufer`, aus der Welt) zur Mitte mit dem steilsten Seegrund und
+            //     ≥ 2,5 m Wasser.
             let steil = null,
                 gMax = 0;
-            for (let x = -890; x >= -934; x -= 1) {
-                const z = -650;
+            const ostufer = o.ufer || window.__wasserOrte({}).see.ufer;
+            for (let x = ostufer[0]; x >= mitte[0]; x -= 1) {
+                const z = ostufer[1];
                 const b0 = r._voxelSurfaceY(x, z),
                     b1 = r._voxelSurfaceY(x - 2, z);
                 if (!Number.isFinite(b0) || !Number.isFinite(b1) || S - b0 < 2.5) continue;
@@ -1695,8 +1709,9 @@ function wasserQuelle(opts) {
         huelle.rinnsal = qBett;
         return huelle;
     };
-    // die Kachel des Bachs der Mess-Wiese (−856/−1160) gehört immer zum Mess-Ring
-    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(-856, -1160, 64);
+    // die Kachel des Bachs der Mess-Wiese (aus der Welt, `__wasserOrte`) gehört immer zum Mess-Ring
+    const bachOrt = o.bach || window.__wasserOrte({}).bach;
+    if (bachOrt && typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(bachOrt.x, bachOrt.z, 64);
     const regionen = [];
     const dazu = (h) => {
         if (h && h.ready && Array.isArray(h.rivers) && regionen.indexOf(h) < 0) regionen.push(h);
@@ -1898,8 +1913,9 @@ function wasserBach(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
-    const ZX = Number.isFinite(o.x) ? o.x : -856,
-        ZZ = Number.isFinite(o.z) ? o.z : -1160;
+    const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : window.__wasserOrte({}).bach;
+    const ZX = bachOrt ? bachOrt.x : o.x,
+        ZZ = bachOrt ? bachOrt.z : o.z;
     if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(ZX, ZZ, 64);
     const h = r._hydroFor(ZX, ZZ);
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre am Bach" };
@@ -1965,7 +1981,7 @@ function wasserBach(opts) {
 // Pflanzen im Fenster (`__wasserFlora`).
 function wasserSee(opts) {
     const o = opts || {};
-    const f = o.fenster || [-930, -690, -850, -610];
+    const f = o.fenster || window.__wasserOrte({}).see.fenster;
     const sicht = window.__wasserSichtNetz();
     const aus = sicht.fenster(f[0], f[1], f[2], f[3], o.d || 0.5);
     aus.fenster = f;
@@ -2281,10 +2297,7 @@ function wasserLeser(opts) {
         };
         const bsp = { klang: [], scheu: [], kueste: [], trinken: [] };
         const R1 = (v) => Math.round(v * 10) / 10;
-        for (const [px, pz] of o.orte || [
-            [-890, -650],
-            [-88, -880],
-        ]) {
+        for (const [px, pz] of o.orte || (({ see, kueste }) => [see.ufer, kueste])(window.__wasserOrte({}))) {
             await strom(px, pz);
             aus.orte.push([px, pz, st.voxelChunks.size]);
             const pcx = Math.floor(px / span),
@@ -2351,8 +2364,136 @@ function wasserLeser(opts) {
     })();
 }
 
+// ── DIE ORTE DES WASSERS AUS DER WELT (K16) ──
+// Die Proben lasen die Orte der alten Welt als Literale (der See der Mess-Wiese −944/−640 mit Ostufer −884/−650, der Bach
+// −856/−1160, der Fluss −872/−1127, die Küste −88/−880); seit die Landform im Gelände-Gesetz liegt, steht dort kein See und
+// kein Bach (K11/K „kein See", F8 „kein Fluss an −856/−1160, nächster Punkt 549,85 m"). Gesucht am Gesetz nächst der
+// Mess-Wiese (`mess`): der See (die nächste benannte Senke des Gelände-Gesetzes, deren Kachel einen See über dem Meer trägt,
+// tiefste Stelle ≥ 3 m), sein Ostufer (von der tiefsten Stelle nach +x die erste trockene Spalte, 4 m landein — der Weg
+// des Körpers läuft längs x), der Fluss (der nächste Lauf-Punkt 2–14 m breit), der Bach (die Quelle des nächsten Laufs
+// mit ≥ 11 Punkten — die Bach-Probe misst seine ersten Segmente) und die Küste (die nächste Ozean-Zelle des Atlas neben
+// Land, dort die Land-Seite).
+function wasserOrte(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    const st = r.state;
+    const G = window.__gelaendeCore;
+    const [MX, MZ] = o.mess || [-900, -850];
+    const wl = st.waterLevel || 0;
+    const R1 = (v) => Math.round(v * 10) / 10;
+    const tiefe = (x, z) => {
+        const g = r._voxelSurfaceY(x, z);
+        if (!Number.isFinite(g)) return -Infinity;
+        const w = r._atlasWaterLevelAt(x, z, g);
+        return w > g ? w - g : -Infinity;
+    };
+    const aus = { mess: [MX, MZ], see: null, fluss: null, bach: null, kueste: null };
+    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(MX, MZ, 1024);
+    // 1) der See
+    const L = r._gelaende();
+    const kand = G.benannteSeen(L, -12000, -12000, 64, 375)
+        .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
+        .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
+    for (const k of kand) {
+        r._ensureHydroTilesAround(k.x, k.z, 0);
+        const h = r._hydroFor(k.x, k.z);
+        const lake = h && (h.lakes || []).find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+        if (!lake) continue;
+        // die Mitte und der Weg vom Ostufer tragen das Wasser des SEES (kein Fluss mündet dort: sein Spiegel läge über dem
+        // des Sees — am See 1816/−6168 trug die tiefste Zelle den Fluss-Spiegel 1,54 m statt 0,91 m, K2/K6 maßen am See)
+        const seeWasser = (x, z) => tiefe(x, z) > 0 && !r._hydroRiverAt(x, z);
+        const zellen = [];
+        for (const q of lake.cells) {
+            const x = h.originX + ((q % h.dim) + 0.5) * h.cell;
+            const z = h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell;
+            const t = tiefe(x, z);
+            if (t >= 3 && !r._hydroRiverAt(x, z)) zellen.push({ x, z, t });
+        }
+        zellen.sort((a, b) => b.t - a.t);
+        let best = null;
+        let ufer = null;
+        for (const c of zellen) {
+            let d = 2;
+            while (d <= 600 && seeWasser(c.x + d, c.z)) d++;
+            if (d > 600 || tiefe(c.x + d, c.z) > 0) continue; // ein Fluss oder kein Ufer auf dem Weg
+            best = c;
+            ufer = [R1(c.x + d + 4), R1(c.z)];
+            break;
+        }
+        if (!best) continue;
+        aus.see = {
+            x: R1(best.x),
+            z: R1(best.z),
+            tiefe: R1(best.t),
+            level: lake.level,
+            ufer,
+            mitte: [R1(best.x), R1(best.z)],
+            fenster: [ufer[0] - 40, ufer[1] - 40, ufer[0] + 40, ufer[1] + 40],
+        };
+        break;
+    }
+    // 2) Fluss und Bach: über alle geladenen Regionen
+    const regionen = [st.hydrosphere]
+        .concat(st.hydroTiles ? [...st.hydroTiles.values()] : [])
+        .filter((h) => h && h.ready);
+    let fd = Infinity;
+    let bd = Infinity;
+    for (const h of regionen)
+        for (const rv of h.rivers || []) {
+            const P = rv.points || [];
+            for (const p of P) {
+                if (p.inLake || !(p.width >= 2 && p.width <= 14)) continue;
+                const d = Math.hypot(p.x - MX, p.z - MZ);
+                if (d < fd) ((fd = d), (aus.fluss = { x: R1(p.x), z: R1(p.z), breite: R1(p.width) }));
+            }
+            if (P.length >= 11) {
+                const d = Math.hypot(P[0].x - MX, P[0].z - MZ);
+                if (d < bd) ((bd = d), (aus.bach = { x: R1(P[0].x), z: R1(P[0].z) }));
+            }
+        }
+    // 3) die Küste: die nächste Ozean-Zelle (waterKind 1) neben Land, die Land-Seite — liegt das Meer jenseits der geladenen
+    //    Kacheln, zuerst am Gesetz (Ringe zu 64 m bis 12 km) der erste Grund unter dem Meer, dort die Kachel
+    if (!regionen.some((h) => h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0))
+        for (let R = 64, da = false; R <= 12000 && !da; R += 64) {
+            const n = Math.ceil((2 * Math.PI * R) / 64);
+            for (let k = 0; k < n && !da; k++) {
+                const x = MX + R * Math.cos((k / n) * 2 * Math.PI);
+                const z = MZ + R * Math.sin((k / n) * 2 * Math.PI);
+                if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
+                r._ensureHydroTilesAround(x, z, 0);
+                const h = r._hydroFor(x, z);
+                if (h && h.ready && regionen.indexOf(h) < 0) regionen.push(h);
+                da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
+            }
+        }
+    let kd = Infinity;
+    for (const h of regionen) {
+        const wK = h.water && h.water.waterKind;
+        if (!wK) continue;
+        for (let cj = 1; cj < h.dim - 1; cj++)
+            for (let ci = 1; ci < h.dim - 1; ci++) {
+                if (wK[ci + cj * h.dim] !== 0) continue;
+                let meer = null;
+                for (const [di, dj] of [
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1],
+                ])
+                    if (wK[ci + di + (cj + dj) * h.dim] === 1) meer = [di, dj];
+                if (!meer) continue;
+                const x = h.originX + (ci + 0.5) * h.cell;
+                const z = h.originZ + (cj + 0.5) * h.cell;
+                const d = Math.hypot(x - MX, z - MZ);
+                if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]));
+            }
+    }
+    return aus;
+}
+
 module.exports = {
     WASSER_INSTALL:
+        `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +
         `window.__wasserWagen = ${wasserWagen.toString()};` +
