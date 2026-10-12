@@ -78,6 +78,16 @@ async function kreaturProben(r, T, opts) {
         const altFelder = [s.lifeField, s.emotionField];
         const altSpieler = Object.assign({}, s.player);
         const altTempo = [s.speed, s.sprintSpeed, s.jumpPower];
+        // DER LEIB DES SPIELERS (K07): sein Lauf (`playerVel`, den der Leib-Löser im Stoß liest, `_stossKoerper`), seine
+        // Lage des Vor-Takts (`_spielerLageAlt`, der Lauf, vor dem ein Jäger hetzt) und der Herden-Takt beginnen je Probe
+        // in Ruhe — der Sprinter der Jagd-Probe hinterließ dem Rudel einen Spieler, der mit 0,24 m/s lief (Lücke 186° statt
+        // 151°, allein gemessen).
+        const altVel = s.playerVel ? [s.playerVel.x(), s.playerVel.y(), s.playerVel.z()] : null;
+        const altLage = r._spielerLageAlt;
+        const altHerde = s._herdContagionAcc;
+        if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+        r._spielerLageAlt = null;
+        s._herdContagionAcc = 0;
         s.lifeField = undefined;
         s.emotionField = undefined;
         s.creatureAnimationTime = 100;
@@ -111,6 +121,9 @@ async function kreaturProben(r, T, opts) {
             for (const k of Object.keys(s.player)) if (!(k in altSpieler)) delete s.player[k];
             Object.assign(s.player, altSpieler);
             [s.speed, s.sprintSpeed, s.jumpPower] = altTempo;
+            if (altVel && s.playerVel) s.playerVel.setValue(altVel[0], altVel[1], altVel[2]);
+            r._spielerLageAlt = altLage;
+            s._herdContagionAcc = altHerde;
             s.lifeField = altFelder[0];
             s.emotionField = altFelder[1];
         }
