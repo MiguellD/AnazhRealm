@@ -167,20 +167,20 @@ function urteil(b) {
         }
     }
     // (j) BLENDUNG: das Licht fällt nah nicht steil — die Wand in Armlänge zeigt ihre Maserung wie die Karte in 2 m (das EINE
-    // Punktlicht-Gesetz, der Abfall des Labors (1 − d/R)^abfall; r184s 1/d legte die Wand weiß)
-    if (al && al.hoehle && Number.isFinite(al.hoehle.abfall) && al.hoehle.R > 2) {
-        const R = al.hoehle.R;
-        const q = Math.pow((1 - 0.3 / R) / (1 - 2 / R), al.hoehle.abfall);
+    // Punktlicht-Gesetz, fachwerk `lichtAbfall`: 1/d^abfall mit dem Kern der Quelle; r184s 1/d ohne Kern legte die Wand weiß)
+    if (al && al.hoehle && Number.isFinite(al.hoehle.blendung)) {
+        const q = al.hoehle.blendung;
         if (q > 1.5)
             v.push(
-                `BLENDUNG: das Licht des Auges fällt mit (1 − d/R)^${al.hoehle.abfall} — die Wand in 0,3 m ist ${q.toFixed(1)}× ` +
-                    "heller als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)"
+                `BLENDUNG: das Licht des Auges fällt mit 1/d^${al.hoehle.abfall} bei Kern ${al.hoehle.kern} m — die Wand in 0,3 m ist ` +
+                    `${q.toFixed(1)}× heller als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)`
             );
     }
-    if (!c.poolLabor)
+    if (!c.poolGesetz)
         v.push(
-            "PUNKTLICHT-GESETZ: der Licht-Pool (`_lichtPoolTerm`) rechnet nicht den Abfall des Labors (1 − d/R)^abfall, oder ein " +
-                "zweiter Term ruft die BRDF eines Punktlichts (`_punktLichtBrdf`) — zwei Punktlicht-Gesetze im Stamm"
+            "PUNKTLICHT-GESETZ: der Licht-Pool (`_lichtPoolTerm`) rechnet nicht den Abfall des Gesetzes (fachwerk `lichtAbfall`: " +
+                "(d² + k²)^(−abfall/2) mit dem Saum), oder ein zweiter Term ruft die BRDF eines Punktlichts (`_punktLichtBrdf`) — " +
+                "zwei Punktlicht-Gesetze im Stamm"
         );
     // (l) SZENEN-LICHT: unter freiem Himmel trägt jedes DIREKTE Licht der Szene Licht (r184 sammelt jedes sichtbare Licht in
     // den Licht-Hash jedes beleuchteten Stoffs — ein direktes Licht auf 0 rechnet trotzdem seine BRDF in jedem Fragment;
@@ -309,12 +309,12 @@ function selbsttest() {
             augenTerm: true,
             augenVorZweig: true,
             augenTslFremd: null,
-            poolLabor: true,
+            poolGesetz: true,
         },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
             augeInHoehle: true,
-            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, abfall: 1, R: 20 },
+            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, abfall: 1, kern: 8, R: 20, blendung: 1.03 },
             frei: { auge: [-1041, 30, -738], h: 1, I: 0, soll: 0 },
             wesenInHoehle: 0,
         },
@@ -422,7 +422,7 @@ function selbsttest() {
         ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
         ["Stoff ohne Himmels-Sicht im Pool", (b) => (b.code.augenTerm = false), /CODE: der Boden-Stoff .* reicht dem Licht-Pool/],
         // (j) K11: das Licht des Auges und jede Leuchtquelle fallen nach EINEM Gesetz
-        ["zwei Punktlicht-Gesetze", (b) => (b.code.poolLabor = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
+        ["zwei Punktlicht-Gesetze", (b) => (b.code.poolGesetz = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
         // die zwei Fallen der Werkbank 11.10. (echte GPU): die Mündung schwarz (Helligkeit 60 statt 123)
         [
             "Normale im Zweig",
@@ -457,8 +457,8 @@ function selbsttest() {
         // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): steil am Auge lag die Wand in 0,2 m weiß ohne Maserung
         [
             "geblendet",
-            (b) => (b.augenLicht.hoehle.abfall = 5),
-            /BLENDUNG: das Licht des Auges fällt mit \(1 − d\/R\)\^5 — .* 1\.6×/,
+            (b) => Object.assign(b.augenLicht.hoehle, { abfall: 2, kern: 0.3, blendung: 23.6 }),
+            /BLENDUNG: das Licht des Auges fällt mit 1\/d\^2 bei Kern 0\.3 m — .* 23\.6×/,
         ],
         // (k) der Befund von Auge 11: der Höhlen-Boden 25 m unter der Wiese trug ihr Grün
         [
@@ -1000,8 +1000,11 @@ const server = http.createServer((req, res) => {
                     const soll =
                         A && Number.isFinite(h)
                             ? ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) /
-                              (k * Math.pow(1 - A.karteM / A.reichweiteM, A.abfall))
+                              (k * window.__fachwerkCore.lichtAbfall(A, A.karteM))
                             : null;
+                    // die Blendung: die Wand in 0,3 m gegen die Karte in 2 m, nach dem EINEN Gesetz (fachwerk `lichtAbfall`)
+                    const LA = window.__fachwerkCore.lichtAbfall;
+                    const blendung = A ? LA(A, 0.3) / LA(A, 2) : null;
                     const lichter = [];
                     st.scene.traverseVisible((o) => {
                         if (!o.isLight || !o.layers.test(cam.layers)) return;
@@ -1024,7 +1027,9 @@ const server = http.createServer((req, res) => {
                         I: !imPool ? null : au ? +(au.L.staerke * r.constructor.LEGACY_LICHT).toFixed(3) : 0,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
                         abfall: A ? A.abfall : null,
+                        kern: A ? A.kernM : null,
                         R: A ? A.reichweiteM : null,
+                        blendung: blendung === null ? null : +blendung.toFixed(3),
                         lichter,
                     };
                 };
@@ -1075,13 +1080,15 @@ const server = http.createServer((req, res) => {
             aus.code.augenTerm =
                 /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr) &&
                 /lichtErsatz/.test(pool);
-            // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Labors, und nur er ruft die BRDF eines Punktlichts
+            // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Gesetzes (fachwerk `lichtAbfall`: der Saum
+            // (1 − (d/R)⁴)² und (d² + k²)^(−abfall/2)), und nur er ruft die BRDF eines Punktlichts
             const P = Object.getPrototypeOf(r);
             const brdfRufer = Object.getOwnPropertyNames(P).filter(
                 (n) => n !== "constructor" && typeof P[n] === "function" && /this\._punktLichtBrdf\(/.test(code(P[n]))
             );
-            aus.code.poolLabor =
-                /\.oneMinus\(\)\s*\.clamp\(\)\s*\.pow\(farbe\.a\)/.test(pool) &&
+            aus.code.poolGesetz =
+                /\.pow2\(\)\s*\.oneMinus\(\)\s*\.clamp\(\)\s*\.pow2\(\)/.test(pool) &&
+                /\.add\(kern\)\s*\.pow\(farbe\.a\.mul\(-0\.5\)\)/.test(pool) &&
                 !/reciprocal\(\)/.test(pool) &&
                 brdfRufer.length === 1 &&
                 brdfRufer[0] === "_lichtPoolTerm";
