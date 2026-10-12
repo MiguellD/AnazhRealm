@@ -1,0 +1,66 @@
+
+> anazhrealm@18.541.0 gate:asset-contract
+> node scripts/diag-asset-contract.cjs
+
+Fern-Wand (N5): 519 NUR-WURF-Stufen gebaut (haus · ausstattung; 35 Rezepte), höchstens 14 Teile · Selbsttest (ohne __fern · Keil ohne First) ✅
+Plattform-Probe (Chrome-Worker, alle Transzendenten ±1 ULP):
+  ✅ PLATTFORM-PROBE v1: Math.pow hält seine Zeile (gepinnter Wirt — CI und lokal dieselbe V8), die übrigen Transzendenten halten die Ratsche (43 Fälle; benannt: pow 16 · hypot 26 · sin 21 · cos 18; Nenner pow 414570 · hypot 2268385 · sin 645478 · cos 592804 · exp 50738 · atan2 84536 · acos 453)
+  ↓ RATSCHE v1 kann fallen (spec/asset-contract/plattform-ratsche.json): pow 16 → 15
+  ✅ SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau
+  ✅ SELBST-TEST: die Ratsche v1 reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen
+Budget-Wand (Dreiecke max/Zeile · Draws max/Zeile):
+  tree[0] 11924/12000 · Draws 2/2 (50 Fälle, max birke-s1-L0-summer (Gestalt))
+  tree[1] 2782/2900 · Draws 2/2 (50 Fälle, max birke-s2-L1-summer (Gestalt))
+  tree[2] Karte (2) · L2-Gitter nicht geliefert, max 19216
+  shrub[0] 8612/12000 · Draws 2/2 (2 Fälle, max strauch-s1-L0-summer (Gestalt))
+  shrub[1] 1040/1100 · Draws 2/2 (2 Fälle, max strauch-s7-L1-summer)
+  shrub[2] Karte (2)
+  grass[1] 1200/1220 · Draws 1/1 (2 Fälle, max gras-s2-L1-summer)
+  grass[2] 118/130 · Draws 1/1 (2 Fälle, max gras-s2-L2-summer)
+  flower[0] 3466/3600 · Draws 2/2 (3 Fälle, max blume-s2-L0-summer (Gestalt))
+  flower[2] 358/380 · Draws 2/2 (3 Fälle, max blume-s2-L2-summer (Gestalt))
+  rock[0] 1280/1300 · Draws 1/1 (82 Fälle, max geroell-s7-L0-summer)
+  fern[0] 3344/3800 · Draws 1/1 (3 Fälle, max farn-s1-L0-summer (Gestalt))
+  fern[1] 130/150 · Draws 1/1 (3 Fälle, max farn-s1-L1-summer (Gestalt))
+  reed[0] 1974/2200 · Draws 1/1 (3 Fälle, max schilf-s1-L0-summer (Gestalt))
+  reed[1] 267/300 · Draws 1/1 (3 Fälle, max schilf-s1-L1-summer (Gestalt))
+  brush[0] 2950/3700 · Draws 2/2 (2 Fälle, max gestruepp-s7-L0-summer)
+  brush[1] 240/300 · Draws 1/1 (2 Fälle, max gestruepp-s7-L1-summer)
+  deadwood[0] 4904/5400 · Draws 1/1 (4 Fälle, max stumpf-s1-L0-summer (Gestalt))
+  deadwood[1] 566/640 · Draws 1/1 (4 Fälle, max stumpf-s1-L1-summer (Gestalt))
+  vehicle[0] 30624/32000 · Draws 12/12 (ungefaltet bis 23) · Band 20000 (1.5×) (40 Fälle, max suv-s1-L0)
+  gate[0] 51096/76000 · Draws 13/13 (ungefaltet bis 315) · Band 60000 (0.9×) (7 Fälle, max drachentor-s1-L0)
+  weapon[0] 21640/22000 · Draws 4/4 (ungefaltet bis 5) · Band 8000 (2.7×) (21 Fälle, max grossschwert-s1-L0)
+  haus[0] 131656/132000 · Draws 11/11 (ungefaltet bis 20) · Band 40000 (3.3×) (512 Fälle, max gotisch-s3-L0)
+  haus[1] 43744/44000 · Draws 4/4 (ungefaltet bis 15) · Band 10000 (4.4×) (512 Fälle, max gotisch-s3-L1)
+  haus[2] 6846/7000 · Draws 3/3 (ungefaltet bis 7) · Band 2000 (3.4×) (512 Fälle, max marokkanisch-s1-L2)
+  haus[3] 96/96 · Draws 1/1 (ungefaltet bis 1) (512 Fälle, max marokkanisch-s1-L3)
+  ausstattung[0] 3338/3400 · Draws 2/2 (ungefaltet bis 6) (7 Fälle, max brunnen-s1-L0)
+  ausstattung[1] 595/620 · Draws 2/2 (ungefaltet bis 6) (7 Fälle, max feuerstelle-s1-L1)
+  ausstattung[3] 40/48 · Draws 1/1 (ungefaltet bis 1) (7 Fälle, max marktstand-s1-L3)
+  koerper[0] 162412/166000 · Draws 8/8 (ungefaltet bis 15) · Band 40000 (4.1×) (1 Fälle, max mensch-s1-L0)
+  koerper[1] 38444/40000 · Draws 6/6 (ungefaltet bis 15) · Band 8000 (4.8×) (1 Fälle, max mensch-s1-L1)
+  kreatur[0] 60512/62000 · Draws 8/8 (ungefaltet bis 13) · Band 20000 (3.0×) (4 Fälle, max bear-s1-L0)
+  kreatur[1] 6442/7000 · Draws 5/5 (ungefaltet bis 6) · Band 3000 (2.1×) (4 Fälle, max bear-s1-L1)
+Atlas: Breitblatt-Kern bis 0.6738 (Steckbrief 0.72) · Füllung 0.1796 (0.1796) · Wedel-Zelle bis 0.9355 · Füllung 0.2811 (0.2811) · Großblatt-Zelle bis 0.7090 · Füllung 0.1864 (0.1864) · Weiden-Zelle bis 0.7090 · Füllung 0.1346 (0.1346)
+L1-Deckung (Band 0.8–1.15): birke-s12345-summer laub 1.08 · birke-s7-summer laub 1.03 · buche-s12345-summer laub 1.08 · buche-s7-summer laub 1.02 · eiche-s12345-summer laub 1.05 · eiche-s7-summer laub 1.02 · fichte-s12345-summer nadel 1.01 · fichte-s7-summer nadel 1.04 · karst-s12345-summer laub 1.05 · karst-s7-summer laub 1.01 · mammut-s12345-summer nadel 1.09 · mammut-s7-summer nadel 1.08 · tanne-s12345-summer nadel 1.02 · tanne-s7-summer nadel 1.06 · weide-s12345-summer laub 1.01 · weide-s7-summer laub 1.03
+Schwebe-Wand: 50 Baum-L0 gemessen, 21651 Karten, schwebend höchstens 0
+Seh-Wand: 5 Proben (mensch-s1-L0, wolf-s1-L0, suv-s1-L0, alemannisch-s1-L1, verkalkt-s1-L0) · Seh-Klassen 4/4/4/3/3
+Selbsttest Budget-Wand: jede Zeile halbiert/−1 Draw wird rot ✅ · jede Gitter-Zeile gemessen ✅ · Laub-Karte 1,5× sprengt das Band ✅ · Nadel-Karte 1,5× sprengt das Band ✅ · Kern 0,6 bricht den Steckbrief ✅ · 16 Paare (Laub/Nadel, keine Klinge) ✅ · L0-Karte 1,5× sprengt das Band ✅ · L0 ohne Rinde schwebt ✅ · abgesenkte Krone liegt unter dem Boden ✅ · ohne zusatzBudget fehlt das Budget für 6/6 Zweit-Kerne ✅ · ungefaltet über draws je Zweit-Art ✅ · Stoff ohne Seh-Klasse bricht ✅ · Auge→Haut und Glimmen→matt fängt die Kreuz-Linse ✅
+Kronen-Kosten (Maximum je Art × Stufe über die Gestalten): birke-L0 Lagen 13.9 (Alpha 6.8, 4 Gestalten) · birke-L1 Lagen 12.0 (Alpha 5.9, 4 Gestalten) · buche-L0 Lagen 14.8 (Alpha 7.3, 4 Gestalten) · buche-L1 Lagen 12.5 (Alpha 6.4, 4 Gestalten) · eiche-L0 Lagen 15.0 (Alpha 7.2, 4 Gestalten) · eiche-L1 Lagen 12.6 (Alpha 6.3, 4 Gestalten) · fichte-L0 Lagen 4.9 (Alpha 2.7, 4 Gestalten) · fichte-L1 Lagen 5.1 (Alpha 2.8, 4 Gestalten) · karst-L0 Lagen 14.3 (Alpha 6.7, 3 Gestalten) · karst-L1 Lagen 12.7 (Alpha 6.1, 3 Gestalten) · mammut-L0 Lagen 4.2 (Alpha 2.5, 3 Gestalten) · mammut-L1 Lagen 4.3 (Alpha 2.6, 3 Gestalten) · tanne-L0 Lagen 4.4 (Alpha 2.2, 4 Gestalten) · tanne-L1 Lagen 4.8 (Alpha 2.4, 4 Gestalten) · totholz-L0 Lagen 0.0 (Alpha 0.0, 3 Gestalten) · totholz-L1 Lagen 0.0 (Alpha 0.0, 3 Gestalten) · weide-L0 Lagen 12.2 (Alpha 4.3, 3 Gestalten) · weide-L1 Lagen 10.9 (Alpha 4.2, 3 Gestalten) | Quote L1/L0: birke 0.25 · buche 0.23 · eiche 0.23 · fichte 0.36 · karst 0.27 · mammut 0.38 · tanne 0.36 · totholz 0.55 · weide 0.25
+Bild gegen V18.536 (32 Bäume): L0 0° 0.928–1.092 · 30° 0.971–1.090 · 60° 0.922–1.110 | L1 0° 0.888–1.090 · 30° 0.940–1.087 · 60° 0.904–1.133 | Karte 0.869–1.072, ΔE bis 2.96
+Bild je Art (Mittel der Gestalten, 0°/30°/60°; Karte Deckung, ΔE max): birke L0 1.06/1.05/1.04 L1 1.06/1.06/1.04 Karte 1.00 ΔE 1.0 · buche L0 1.01/1.01/0.97 L1 1.00/1.00/0.96 Karte 0.94 ΔE 0.5 · eiche L0 1.00/0.99/0.96 L1 1.01/0.99/0.94 Karte 0.96 ΔE 0.6 · fichte L0 1.00/1.04/1.04 L1 0.97/1.01/1.02 Karte 0.99 ΔE 1.7 · karst L0 1.01/1.01/0.98 L1 1.01/1.00/0.98 Karte 0.98 ΔE 0.9 · mammut L0 1.01/1.02/1.02 L1 1.06/1.04/1.06 Karte 1.01 ΔE 3.0 · tanne L0 0.96/1.02/1.04 L1 0.93/0.99/1.04 Karte 0.97 ΔE 2.6 · totholz L0 1.00/1.00/1.00 L1 0.98/0.97/0.96 Karte 0.98 ΔE 0.3 · weide L0 1.02/1.02/1.06 L1 0.99/1.00/1.04 Karte 0.98 ΔE 0.5
+Selbsttest Kronen-Kosten: verdreifachte Karten > 16 Lagen ✅ · die Wand liest 64 Kronen ✅ · Birke-L1 0,63 > 0,35 ✅ · die Wand liest 32 Paare ✅ · Schatten-Teil fehlt/schwer/dicht wird rot (50 gelesen) ✅ · halbierte Krone, Karte 0,8 und Kronenfarbe +12 % Grün fallen aus der Bild-Tafel (32 Bäume) ✅
+Schatten-Teil (50 Baum-L1): höchstens 746 Dreiecke (karst-s7-L1-summer), im Mittel 489, Karten bis 10.9 Lagen
+Gestalten-Wand: 54 Arten/Rezepte mit V ≥ 2, 657 Gestalten (jede Gestalt 1..V; vehicle 5 · fachwerk 35 · phyto 14) · Lügen 0 · Zweit-Kern-Zug 2147 Bauten · Hash-Bauten 101
+Selbsttest Gestalten-Wand: drachentor mit V 2 wird rot ✅ · V verschiedene Abdrücke gesehen ✅ · gt mit V 9 wird rot (Same 9 = Same 1) ✅
+Karten-Rundlauf (BC1-sRGB + BC5, Studio-Bake → Codec → zurück):
+  eiche|1: Alpha-Fehler 0 · PSNR 36.67 dB · Normale Ø 1.47° (p95 4.8°) · Deckung 0.3214/0.3214/0.3214/0.3208/0.3223/0.3203 (Box 0.3214/0.3342/0.3407/0.3577/0.3711/0.3906) · Krone linear 0.085,0.207,0.034 → 0.084,0.206,0.034 · 0.250 MiB
+  fichte|1: Alpha-Fehler 0 · PSNR 37.47 dB · Normale Ø 1.59° (p95 5.6°) · Deckung 0.2683/0.2683/0.2682/0.2681/0.2695/0.2656 (Box 0.2683/0.2906/0.3054/0.3403/0.3613/0.3750) · Krone linear 0.049,0.093,0.022 → 0.049,0.092,0.022 · 0.250 MiB
+  birke|2: Alpha-Fehler 0 · PSNR 36.44 dB · Normale Ø 1.56° (p95 5.0°) · Deckung 0.3535/0.3535/0.3535/0.3533/0.3535/0.3594 (Box 0.3535/0.3655/0.3749/0.3862/0.3945/0.4219) · Krone linear 0.261,0.411,0.109 → 0.261,0.411,0.108 · 0.250 MiB
+  strauch|1: Alpha-Fehler 0 · PSNR 35.88 dB · Normale Ø 0.96° (p95 4.1°) · Deckung 0.4649/0.4650/0.4648/0.4648/0.4648/0.4688 (Box 0.4649/0.4871/0.4927/0.5073/0.5273/0.5313) · Krone linear 0.073,0.196,0.030 → 0.072,0.196,0.030 · 0.250 MiB
+Selbsttest Karten-Linse: gestörte BC1-Albedo wird rot ✅ · Box-Mip sprengt die Deckungs-Wand ✅ · linear-als-sRGB (Blick-Tour: 0,12 → 0,013) wird rot ✅ · 1,25-MiB-Schicht sprengt das Budget ✅
+=== ASSET-VERTRAG v1 — Konformanz-Gate ===
+Goldens: 128 · byte-gleich: 128
+
+✅ GRÜN — der Generator trifft die eingefrorenen Goldens byte-genau (cv:1). Kein stiller Drift.

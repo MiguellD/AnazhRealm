@@ -1,0 +1,13 @@
+385 Bauten (7 Rezepte × 27 Regler × Rand + Rezept) — Maximum 75608 (ruine wBraid=1)
+    75608  ruine wBraid=1
+    70828  drachentor k=1
+    67382  drachentor rise=0.55
+    64948  maurentor wBraid=1
+    61912  kathedrale wBraid=1
+    59724  drachentor mass=1
+    56858  verkalkt wBraid=1
+    55684  verkalkt orders=9
+    55464  drachentor wMason=1
+    55300  drachentor wMono=1
+    54576  drachentor depth=0
+    54368  drachentor orders=9

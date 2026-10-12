@@ -1,0 +1,150 @@
+
+===== KAMPF-GEFÜHL — Dauer ∝ √I · Klingen-Sweep · Hit-Stop ≠ Sim · Tod-Kippen (gate:kampf-gefuehl) =====
+
+  (A) I1=0.437 → 0.364 s · I2=2.624 → 0.891 s · Ratio 2.449 (soll √(I2/I1)=2.449)
+  (B) Reichweite 2.16 m · Treffer je Schwung 1 · (C) Sim-Schritte im Hit-Stop 6 (Δt 0.100 s) · Phase gestoppt 0.000 / frei 3.29
+  (D) up·y: 1.00 → 0.99 → 0.75 → 0.12 · (E) Arm 1.38 rad · Rumpf 0.26 rad · Füße im Strike 0.509 m verschoben
+
+  (BREI) dolch:0.25s/0.93m/×0.10 messer:0.25s/0.89m/×0.08 langschwert:0.52s/1.66m/×0.55 saebel:0.53s/1.53m/×0.77 grossschwert:0.81s/1.87m/×0.76 keule:0.89s/1.22m/×1.48 kriegsaxt:0.77s/1.26m/×1.74
+
+  ✅ EINHEITSBREI: byte-gleiche Donor-Parts, ≥3 distinkte Dauern/Reichweiten/Schadens-Faktoren — die Quelle ist der Kern (kampfMasze)
+  ✅ EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule im Schaden)
+  ✅ EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ± 5 % gegen kampfMasze (ist 1.569 soll 1.569)
+  ✅ EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → alles kollabiert auf EINE Donor-Dauer (die Wand sieht den Riss)
+  ✅ KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)
+  ✅ KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)
+  ✅ KONSUM: das Stats-HUD (Angriffstempo) liest die Schwung-Quelle
+  ✅ KONSUM: die Werkstatt-Ablesung (Tempo) liest die Schwung-Quelle
+  ✅ (A) beide Fixtures liegen UNGEKLEMMT im [min,max]-Band (der Test ist ehrlich)
+  ✅ (A) Schwung-Dauer-Verhältnis ∝ √(I2/I1) ± 5 % (2.449 vs 2.449)
+  ✅ (A) die leere Faust hat die endliche Hand-Dauer (kein Instant-Prügeln)
+  ✅ (B) der Sweep trifft ein Ziel NEBEN dem Crosshair (in der Klingen-Kapsel)
+  ✅ (B) dedupliziert je Schwung: GENAU EIN Treffer (1)
+  ✅ (B) ein zweiter Schwung trifft wieder (Dedup gilt JE Schwung)
+  ✅ (B) NIE ein Ziel hinter dem Rücken (die Wand im Sweep-Chokepoint)
+  ✅ (B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (200 ms)
+  ✅ (B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)
+  ✅ (B) Hit-Juice wired: Kamera-Dip + Klang-One-Shot in _kampfHitJuice
+  ✅ (B) Klang über die EXISTIERENDE Maschine (masterGain, kein zweiter AudioContext)
+  ✅ (B) Stimme-aus respektiert: Symphonie aus → der Treffer bleibt stumm
+  ✅ SELBST-TEST (S2): Kapsel-Mathe ≡ ∞ gestubbt → kein Treffer (die Messung ist nicht blind)
+  ✅ (C) HIT-STOP: die Schwung-Phase friert (t bleibt 0)
+  ✅ (C) HIT-STOP: die Gang-Phase friert (walkPhase Δ=0 am echten Konsumenten)
+  ✅ (C) die FIXE SIM läuft WÄHREND des Hit-Stops weiter (6 Schritte, Fixed-Akku-Probe)
+  ✅ (C) Gegenprobe: ohne Hit-Stop läuft die Anzeige-Uhr wieder
+  ✅ (C) Source-Wand: _stepFixedSim/_loopFixedStep lesen _hitStopFactor NIE
+  ✅ (C) und NUR die Anzeige-Uhr (animatePlayerSoul + Schwung-Tick) liest ihn
+  ✅ SELBST-TEST (S1): _hitStopFactor ≡ 1 gestubbt → die Uhr läuft (die Freeze-Messung misst den Faktor)
+  ✅ (D) TOD: der Kill setzt dying — KEIN Sofort-Despawn
+  ✅ (D) der Körper KIPPT: die Rotation wächst über die Ticks (entlang _fieldGradient)
+  ✅ (D) ein sterbendes Wesen ist inert (damageCreature-Wand: reason=dying)
+  ✅ (D) gekippt (~83°) und noch DA während des Nachklangs
+  ✅ (D) der Leichnam liegt nach dem Kippen und fällt erst NACH der Frist (Kipp + Leichnam)
+  ✅ (D) Source-Wand: _creatureCombatDeath fällt den EINEN Fall (_kreaturFaellt kippt nach _fieldGradient), keiner despawnt selbst
+  ✅ (D) und der Leichnam-Takt (_tickLeichname, aus updateCreatures) trägt den Abschied (removeCreature nach der Frist)
+  ✅ (E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)
+  ✅ (E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)
+  ✅ (E) nach dem Schwung ist die Pose rückstandsfrei byte-alt
+  ✅ (E) KONSUM: animatePlayerSoul wendet den Schwung-Layer an
+  ✅ kein Page-Error (sauber)
+
+  ── WELLE L — Treffer · Maus · Blick (die Leben-Prüfung „Kampf“ als Linse) ──
+
+  (Q8) Zone Kopf÷Bein 2.67 (Ziel-Rest 0.00°/0.02°, Zonen ["kopf","bein"]) · hangab Hirsch 10/10, Fuchs 10/10 · klein flach 10/10
+       Hit-Stop-Energie Grossschwert 61.45 J · Keule 56.90 J · gleiche Energie (±3 %) höchstens 3 von 16 Rezepten, Spanne ×3.8 · Kappe 2 von 17 · Gegenwehr Bär 9/20 · Hirsch 0/20
+       Faktoren langschwert:0.82 saebel:0.95 degen:0.73 grossschwert:0.55 dolch:0.25 messer:- streitkolben:0.43 kriegsaxt:0.94 kriegshammer:0.38 keule:0.52 faellaxt:0.83 spaltmaul:0.39 vorschlaghammer:0.58 beil:0.87 spitzhacke:0.36 spaten:0.30 schaufel:0.36
+       defense 12.80→12.80 · hpMax 134.0→134.0 · damage 22.00→39.98 · Verschleiß wear 0.95 nach 16 Treffern, verbraucht 0 Treffer · Phantome 0 · Güte uneins 0 von 21
+       Pfeil voll 42.30 · 25 % 2.72 · hinter der Wand 0 · frei 1
+       Bogen-Verschleiß: wear 1 42.30 · wear 0,5 27.49 (÷ 0.65, Soll 0.65) · zehrt je Schuss 0.0032/0.0032 · verbraucht (0,02) flog 0, traf 0 · Täter S6 ok=false
+       Waffen-Schadens-Pfade _kampfSweepTick,_tickPfeile · ohne _kampfRohSchaden: – · Täter S7 nennt __taeterWurf · trefferZone fehlt → Bruch benannt (mit Kern 12 Glieder)
+       kalter erster Treffer bear: traf true, zerlegt 0 Vertices · Täter S8 wolf: zerlegt 29987 · Sweep Math.sin/cos 0 · typeof-Selbst –
+       Grob-Tor: Körpermaße außerhalb des Leibs 0 · Gestalt-Proben 11520, außerhalb 0 · Gestalt je L wesen 2.09 · wolf 2.05 · fuchs 2.21 · baer 2.33 · Täter S9 außerhalb 326 (wesen@0.60, wesen@0.60, wesen@0.60)
+  (Q9) 3rd: Fadenkreuz 10/10, frei 10, Schwünge 10, Krater 0, Treffer 10 · Halten nach dem Stoß 0 Krater · RMB Schwert 0/3, Spaten 1, Hand 1 · Werkstatt: der Canvas greift 0/4 (ohne Schublade 1/1) · FERTIGEN {"ok":true,"hand":null,"bauModus":true}
+  (Q10) Ego-Neigung −90° → -89.94°, −57,3° → -57.30° · vor dir min cos 1.00 · „baue dorf hier" cos 1.00 · Pfeil↔Fadenkreuz 0.02°
+
+  ✅ Q8 K-D2: jeder Treffer trägt eine Zone (die Phantom-Zone war null in 222/222)
+  ✅ Q8 K-D2: die Zone wirkt — Kopf ÷ Bein ≥ 1,5 (dieselbe Klinge, derselbe Hirsch)
+  ✅ Q8 K-D2: die fünf Phantom-Leser (zoneMulAt/…/handlingWindF) sind aus dem Stamm verschwunden
+  ✅ Q8 K-D3: hangab (Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m) je ≥ 8/10 — die Klinge folgt dem Fadenkreuz
+  ✅ Q8 K-D3: klein auf gleicher Höhe (Hirsch L 0,64) ≥ 8/10 — getroffen wird die Gestalt
+  ✅ Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)
+  ✅ Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor
+  ✅ Q8 K-D6: Kampf verschleißt die Klinge, ein verbrauchtes Gerät schlägt nicht
+  ✅ Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns
+  ✅ Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)
+  ✅ Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)
+  (T13) Rückstoß: Fuchs Dolch Sprung 0 m · Weg 0.015 m (Δv 0.39 m/s, Leib 14.7 kg, Schlag p 1.93 · m 0.05) · Fuchs Keule Sprung 0 m · Weg 1.327 m (Δv 3.906 m/s, Leib 14.7 kg, Schlag p 21.57 · m 1.71) · Bär Dolch Sprung 0 m · Weg 0 m (Δv 0.064 m/s, Leib 87.2 kg, Schlag p 1.88 · m 0.05) · Bär Keule Sprung 0 m · Weg 0.046 m (Δv 0.69 m/s, Leib 87.2 kg, Schlag p 20.65 · m 1.71)
+  ✅ Q8 K-D9: der Rückstoß folgt dem EINEN Impuls-Gesetz — kein Satz im Treffer-Takt, der Fuchs fliegt (≥ 0,3 m), die Masse teilt (Fuchs ≥ 3 × Bär), die Waffe wirkt (Keule ≥ 1,15 × Dolch)
+  ✅ Selbst-Test K-D9: der Befund (2,16 m überall, in EINEM Takt) nennt Satz, Masse und Waffe; ein gesunder Stoß bleibt grün
+  (T14) Masse-Tafel (Wirt / Gestalt): fuchs 15.0 / 15.0 kg · wolf 64.0 / 64.0 kg · hirsch 94.2 / 94.2 kg · baer 335.4 / 335.4 kg · mensch 98.8 / 98.8 kg · gt 1341.4 / 1341.4 kg
+  ✅ 0710-4 T14: EINE Masse je Leib — die Gestalt (geschlossene Haut × Dichte des Kerns, der Wagen carPhys × FAHR.masseDichte), keine Dichte im Wirt, die Reihe Fuchs < Wolf < Hirsch < Bär < Wagen
+  ✅ Selbst-Test T14: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt) nennt Kern, Zwilling, Hirsch, Bär und Reihe; eine Tafel aus EINER Quelle bleibt grün
+  (T15) Biss: Kitz fuchs biss Δv 0.212 · wolf biss Δv 0.721 · baer biss Δv 1.365 · Spieler fuchs biss Δv 0.051 · wolf biss Δv 0.242 · baer biss Δv 0.828 m/s
+  ✅ 0710-4 T15: der Biss stößt durch das EINE Impuls-Gesetz — Kitz und Spieler bekommen ihren Impuls, der schwerere Jäger stößt stärker (Fuchs < Wolf < Bär)
+  ✅ Selbst-Test T15: der Befund (Biss ohne Rückstoß) nennt Beute und Spieler, ein Jäger-Gewicht ohne Wirkung nennt die Masse; ein Biss nach Masse bleibt grün
+  (T16) Treffer-Energie J: Großschwert 60.9 59.7 15.9 60.4 60.4 60.6 59.4 30.5 60.3 60.3 60.7 59.3 45.3 60.4 60.4 · Befund-Lage abgewandt 1,5/1,6/1,7 m 59.6 59.4 59.3 · Dolch 28.4 27.1 8.2 28.0 27.9 27.6 26.8 24.9 27.2 27.2 · zu nah (Kitz 0,6 m, 1 m höher) 33.8 J am Ort griffnah, Weg [0.41,1.05] m
+       je Treffer (Ort · Wirkung · Tempo m/s): grossschwert@1.3 schlagpunkt 1 16.8 · grossschwert@1.3 schlagpunkt 1 16.6 · grossschwert@1.3 hand 0.28 16.3 · grossschwert@1.3 schlagpunkt 1 16.7 · grossschwert@1.3 schlagpunkt 1 16.7 · grossschwert@1.6 schlagpunkt 1 16.8 · grossschwert@1.6 schlagpunkt 1 16.6 · grossschwert@1.6 griffnah 0.53 16.3 · grossschwert@1.6 schlagpunkt 1 16.7 · grossschwert@1.6 schlagpunkt 1 16.7 · grossschwert@1.9 schlagpunkt 1 16.8 · grossschwert@1.9 schlagpunkt 1 16.6 · grossschwert@1.9 griffnah 0.78 16.4 · grossschwert@1.9 schlagpunkt 1 16.7 · grossschwert@1.9 schlagpunkt 1 16.7 · dolch@1.2 schlagpunkt 1 31.7 · dolch@1.2 schlagpunkt 1 30.9 · dolch@1.2 hand 0.33 29.5 · dolch@1.2 schlagpunkt 1 31.4 · dolch@1.2 schlagpunkt 1 31.4 · dolch@1.6 schlagpunkt 1 31.2 · dolch@1.6 schlagpunkt 1 30.8 · dolch@1.6 schlagpunkt 1 29.6 · dolch@1.6 schlagpunkt 1 31 · dolch@1.6 schlagpunkt 1 31 · grossschwert@1.5 schlagpunkt 1 16.6 · grossschwert@1.6 schlagpunkt 1 16.6 · grossschwert@1.7 schlagpunkt 1 16.6 · grossschwert@0.6 griffnah 0.59 16.3
+  ✅ LF Posten 1: die Treffer-Energie folgt dem Schwung — derselbe Hieb trifft immer, springt in der Befund-Lage nicht (≤ ×1,25), jede Streuung nennt ihren Ort und bleibt über dem Boden des Kerns, das Großschwert schlägt nie schwächer als der Dolch
+  ✅ Selbst-Test T16: der Befund (15–91 J je Kontakt, unter dem Dolch) nennt Kontakt und Waffe; ein Schwung-Gesetz bleibt grün
+  (T17) Reichweite: Klinge 1.66 m · Fuchs 1,8 m/−0,77 m: 0/9 Treffer, gesagt ["Zu weit: Langschwert reicht 1,7 m — das Ziel steht 2,1 m vor deiner Schulter."] · Fuchs 1,3 m/−0,6 m: 9/9 · reachMaxM im Verb-Tor 0
+  ✅ LF Posten 3: EINE Reichweite aus der Waffe — das Verb-Tor liest die Klinge, jenseits nennt der Spieler-Kanal die Reichweite, in ihr trifft die Serie
+  ✅ Selbst-Test T17: der Befund (Tor 6 m, 9 stumme Hiebe) nennt Zwilling, Stille und Nähe; EINE Reichweite bleibt grün
+  (T26) Klick-Pfad-Matrix (8 Waffen × 3 Abstände × 3rd/1st): Rumpf 48/48 · Horizont 48/48 mit Schaden · Rücken {"dmg":0,"ziel":false,"dot":-1} · Begleiter {"dmg":0,"ziel":false} · Dolch jenseits {"klinge":1,"schwung":true,"gesagt":true,"dmg":0,"verb":"hieb"} · Ernte neben dem Wildtier [{"soll":"abbau","ziel":true,"ab":2.74,"verb":"abbau","dmg":0},{"soll":"pfluecken","ziel":true,"ab":1.75,"verb":"pfluecken","dmg":0},{"soll":"graben","ziel":true,"ab":1.75,"verb":"graben","dmg":0},{"soll":"hieb","fern":true,"ziel":true,"ab":7.51,"verb":"hieb","dmg":47.4}] · 5922 ms
+  ✅ K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem Rücken und der Begleiter bleiben heil, jenseits der Klinge ein Luftschlag mit Hinweis, Abbau, Pflücken und Graben neben dem Wildtier bleiben beim Fadenkreuz
+  ✅ Selbst-Test T26: der Befund (Horizont 0 von 48, der Wolf im Rücken getroffen, der Dolch pflückt, der Kegel erntet den Wolf) nennt Horizont, Rücken, Ferne und je Ernte-Verb den Kegel; ohne die Kegel-Wahl (S10) trifft kein Horizont-Klick, und der Schwung ohne Ziel heißt „kein Ziel unter dem Fadenkreuz" (["kein Schwung (abbau)","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz","kein Ziel unter dem Fadenkreuz"]); 96 Treffer bleiben grün
+  (T18) Pose im Treffer-Takt: [{traf:true,spitzeAb:0.01,mitteAb:0.01,zeichnet:true,imBild:true,held:studio,spalt:0,rad:0.07},{traf:true,spitzeAb:0.01,mitteAb:0.01,zeichnet:true,imBild:true,held:studio,spalt:0,rad:0.07},{traf:true,spitzeAb:0.01,mitteAb:0.01,zeichnet:true,imBild:true,held:studio,spalt:0,rad:0.07}]
+       Ich-Regel: {"rueckstand":false,"hautImErsten":0}
+  ✅ LF Posten 2: Pose, Treffer-Volumen und Ich-Sicht lesen DENSELBEN Schwung — im Treffer-Takt liegt die sichtbare Klinge auf dem Volumen und steht im Bild der Ich-Kamera
+  ✅ Selbst-Test T18: der Befund (Klinge über dem Kopf, Ich-Sicht leer) nennt Volumen und Ich-Sicht; derselbe Schwung bleibt grün
+  (T19) Ausdauer je Hieb: faust 0 kg → 5 · dolch 0.464 kg → 5.47 · langschwert 1.387 kg → 6.4 · grossschwert 2.208 kg → 7.24 · keule 2.177 kg → 7.2 · vorschlaghammer 6.399 kg → 11.48
+  ✅ LF Posten 8: die Ausdauer je Hieb folgt der Masse des Geräts — die Reihe steigt streng mit kg, nie flach
+  ✅ Selbst-Test T19: der Befund (5 je Hieb für jede Waffe) nennt die flache Reihe; eine Reihe nach Masse bleibt grün
+  (T20) Kampf-Werte (kg → Biss/Haut/Leben): fuchs@0.62 3.6 → 2.89/4.55/18.9 · fuchs@1 15 → 7.51/7.34/49.2 · fuchs@2 120 → 30.03/14.67/196.9 · wolf@0.62 15.3 → 7.59/7.38/49.8 · wolf@1 64 → 19.75/11.9/129.5 · wolf@2 512.1 → 79.01/23.8/518.1 · wesen@0.62 22.5 → 9.83/8.39/64.4 · wesen@1 94.2 → 25.56/13.54/167.6 · wesen@2 753.9 → 102.25/27.08/670.5 · baer@0.62 79.9 → 22.9/12.82/150.2 · baer@1 335.4 → 59.58/20.67/390.7 · baer@2 2683 → 238.34/41.34/1562.8
+  ✅ LF Posten 6: Biss, Haut und Leben eines Tiers steigen mit der EINEN Masse seines Leibs — Gattung × Größe, nie gattungs- oder größenblind
+  ✅ Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün
+  (T21) Pfeil: {"teile":6,"unbeleuchtet":0,"wirft":6,"laenge":0.774,"farben":5,"wirtZylinder":false,"leerStill":false} · Shell eigener Pfeil false
+  ✅ LF Posten 4: der Pfeil ist die Gestalt des Schmiede-Kerns — Schaft, Spitze, Nocke, Federn, beleuchtet, mit Schatten; kein Wirts- und kein Shell-Zwilling
+  ✅ Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge, ein leerer Guss still) nennt Gestalt, Licht, Schatten, Länge, Zwilling und die Stille; der Kern-Pfeil, der laut bricht, bleibt grün
+  (T22) Tod am Hang (Gefälle längs der Leibes-Achse): {"vornY":0,"obenY":0.12,"stromAnteil":1,"kopieOben":0.12,"liegt10s":true,"unterWesen":false,"aeltester":false,"naechster":false,"fragen":[],"zielLeichnam":false,"platzFrei":true,"nexusZaehlt":false,"alterLiegt":true}
+  ✅ LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen, auch beim Mitspieler und am Alter; der Leichnam ist kein Wesen (nicht in der Liste der Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)
+  ✅ Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl, Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage, der Tod am Alter ohne Leib; der Strom ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt grün
+  (T23) Biss — Jagd: pounce Spalt -0.04 m / Mitten 1.15 m · pounce Spalt -0.03 m / Mitten 0.98 m · pounce Spalt -0.03 m / Mitten 0.93 m
+         Beute: pounce Spalt -0.04 m / Mitten 1.07 m · pounce Spalt -0.01 m / Mitten 0.98 m
+         Gegenwehr: pounce Spalt -0.07 m / Mitten 1.37 m · pounce Spalt -0.04 m / Mitten 1.4 m
+  ✅ LF Posten 5: der Biss trifft, wo die Geste schnappt — auf jedem Biss-Weg im Ansprung und mit dem Kopf am Leib
+  ✅ Selbst-Test T23: der Befund (Biss ohne Geste, aus 2,39 m, ein Weg ohne Biss) nennt Geste, Ferne und Weg; ein Biss im Ansprung am Leib bleibt grün
+  (T25) Wunde über den Reload: [{"seele":"wesen@1","hpAlt":124,"altVoll":1,"altHalb":0.5,"neu30":0.3},{"seele":"baer@1.75","hpAlt":153.7,"altVoll":1,"altHalb":0.5,"neu30":0.3}]
+  ✅ LF Posten 6 (Nachbesserung 2): die Wunde reist als Anteil des Lebens — voll bleibt voll, auch aus einem Stand vor dem Massen-Gesetz
+  ✅ Selbst-Test T25: der Befund (ein voller Hirsch bei 124/168 nach dem Reload) nennt die alte Wunde; voll bleibt voll bleibt grün
+  (T24) Biss-Reichweite: {"gestaltenJeTakt":0,"msJeTakt":0.023,"simsAnspruenge":0,"simsSek":10,"kaltZerlegt":0,"kaltVerts":0,"beute":15,"simsUeber":0.63,"simsWaagrecht":0.42,"simsReich":1.09,"simsZustaende":["jagd","hetzen"]}
+  (T24) das stehende Reh: {"versuche":6,"anspruenge":6,"bisse":6,"takte":78,"klemme":6,"je":{"1.6":{"anspruenge":3,"bisse":3},"1.3":{"anspruenge":3,"bisse":3}},"boden":{"ort":[14,14],"reh":0.1,"wolf":0.73},"hubMaxM":0.8,"kopfSumme":{"takte":10,"rest":0.8074,"drift":0,"reihe":[0.8074,0.8074,0.8074,0.8074],"klemme":[-0.6,1]}}
+  ✅ LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, keine kalte Gattung zerlegt), springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)
+  ✅ Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün
+  ✅ Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht
+  ✅ Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden
+  ✅ Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)
+  ✅ Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind vorgebacken (die EINE Bake-Uhr)
+  ✅ Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)
+  ✅ Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle
+  ✅ Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor (_trefferErreichbar), es liest den kreatur-Leib — kein drittes Körpermaß
+  ✅ Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen × Größen-Grenzen, 90 Takte)
+  ✅ Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)
+  ✅ Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)
+  ✅ Q9 K-D1: 3rd-Person — jeder freie Klick auf das Tier im Fadenkreuz schwingt (≥ 8 von 10 frei), 0 Krater
+  ✅ Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)
+  ✅ Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)
+  ✅ Q9 V-D2: bei offener Werkstatt ist der Canvas taub (0 von 4 Griffen; ohne Schublade greift er)
+  ✅ Q9 V-k11: FERTIGEN eines Bauwerks öffnet den Bau-Modus, die Hand bleibt leer
+  ✅ Q10 K-D14: die Ego-Neigung ist der Blick (−90° → −90°, −57,3° → −57,3°)
+  ✅ Q10 V-D4: jedes „vor dir“ liegt vor dem Blick (at_player_forward, „baue dorf hier“: cos > 0,9)
+  ✅ Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung)
+  ✅ SELBST-TEST (S3): _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir“ kippt hinter dich
+  ✅ SELBST-TEST (S4): _geraetGraebt ≡ wahr → das Schwert schüttet auf (die Linse sieht den Rückfall)
+  ✅ SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)
+  ✅ SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot
+  ✅ SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn
+  ✅ SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
+  ✅ SELBST-TEST (S9): der Leib ohne Glieder (Reichweite = halb + radius) → Kopf und Rute liegen außerhalb, die Deckungs-Probe nennt sie
+
+  ✅ GRÜN — die gerechnete Schwungphysik erreicht den Kampf: √I führt · die Klinge trifft · die Sim steht nie
+

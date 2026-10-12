@@ -1,0 +1,1046 @@
+
+> anazhrealm@18.541.0 check
+> node --check anazhRealm.js && node --check phyto-core.js && node --check gelaende-core.js && node --check voxel-worker.js && node --check foundry-core.js && node --check vehicle-core.js && node --check porta-core.js && node --check schmiede-core.js && node --check fachwerk-core.js && node --check klang-core.js && node --check koerper-core.js && node --check tetrapoda-core.js && node --check feld-wgsl.js && node --check save-server.js && node --check signaling-server.js && node -e "JSON.parse(require('fs').readFileSync('cores.manifest.json','utf8'))" && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs && node scripts/diag-phyto-tree.cjs && node scripts/diag-phyto-core-parity.cjs && node scripts/diag-pipeline-constitution.cjs && node scripts/diag-studio-vertrag.cjs && node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs && node scripts/diag-koerper-kern.cjs --selftest && node scripts/diag-koerper-kern.cjs && node scripts/diag-membran-gesetz.cjs && node scripts/diag-charakter-achsen.cjs && node scripts/diag-kreatur-leben.cjs && node scripts/diag-konsum-bilanz.cjs && node scripts/diag-reconnect.cjs && node scripts/diag-profiband.cjs --selftest && node scripts/diag-profiband.cjs && node scripts/diag-wasser-leben.cjs --selftest && node scripts/diag-chunk-satz.cjs --selftest && node scripts/diag-hoehlen-sicht.cjs --selftest && node scripts/diag-kamera-treue.cjs --selftest && node scripts/diag-ego-schatten.cjs --selftest && node scripts/diag-takt-atem.cjs --selftest && node scripts/diag-sicht-arbeit.cjs --selftest && node scripts/diag-wetter-wache.cjs --selftest && node scripts/diag-weltakt-wache.cjs --selftest && node scripts/diag-blocker-netz.cjs --selftest && node scripts/diag-kollision-bild.cjs --selftest && node scripts/diag-fall-waechter.cjs --selftest && node scripts/diag-brennglas-takt.cjs --selftest && node scripts/diag-raum-tags.cjs --selftest && node scripts/omen-messfolge.cjs --selbsttest && node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-post-kette.cjs --selftest && node scripts/diag-ziel-zensus.cjs --selftest && node scripts/diag-verdeckungs-abfrage.cjs --selftest && node scripts/diag-start-rezept.cjs --selftest && node scripts/diag-start-rezept.cjs && node scripts/diag-apparat.cjs --selftest && node scripts/diag-apparat.cjs && node scripts/diag-vendor-anker.cjs --selftest && node scripts/diag-vendor-anker.cjs && node scripts/diag-betriebsgesetz.cjs && node scripts/diag-ci-deckung.cjs --selftest && node scripts/diag-ci-deckung.cjs && node scripts/diag-taille.cjs && node scripts/diag-haus-fern.cjs
+
+Atlas OK — 26 Zonen, Registry ↔ Marker deckungsgleich.
+=== Stale-Source-Probe-Linse ===
+Gate-Dateien: scripts/playtest.cjs, scripts/playtest-fast.cjs
+Code-Korpus-Symbole: 15597
+Geprüfte r.<symbol>-Proben (unique): 251
+Nebenwelt-Quell-Wand: 0 Lese-Aufrufe auf worlds/ in den Gate-Dateien.
+
+✅ Alle 251 geprobten Symbole existieren im Code — keine stale Probe.
+=== DAS NEUE KLEID K0 — Phyto-Wuchs-Kern (rein, headless) ===
+  ✅ Determinismus: gleicher Seed ⇒ 3× byte-identisch — 1105|3419|0.555509|33526.2532
+  ✅ McMahon: trunkR aus H/slim abgeleitet (nachgerechnet) — got=0.55551 exp=0.55551
+  ✅ McMahon: höherer Baum ⇒ dickerer Stamm — 0.5555 → 1.2500
+  ✅ McMahon: schlanker (slim↑) ⇒ dünnerer Stamm — 0.5555 → 0.4069
+  ✅ da Vinci: Flächenerhaltung an Gabeln (Σ Kind-Fläche ≤ Eltern-Fläche) — 111 Gabeln geprüft, 0 verletzt
+  ✅ Varianz: 40 Seeds ⇒ 40 verschiedene Bäume — 40/40 unique
+  ✅ Varianz: Segment-Zahl streut spürbar — Segmente 1039…1448
+  ✅ Apikaldominanz: Nadelbaum (exkurrent) schlanker als Eiche (dekurrent) — Tanne w/h=0.45 · Eiche w/h=0.65
+  ✅ Blatt-Budget: Cap deckelt die Blatt-Zahl — 50 ≤ 50
+
+✅ K0 GRÜN — der Phyto-Kern trägt die Gesetze.
+=== DAS NEUE KLEID Welle 0 — Phyto-Core Main↔Worker-Parität ===
+  ✅ Main-Pfad exportiert __phytoCore.growSkeleton
+  ✅ Worker-Pfad exportiert __phytoCore.growSkeleton
+  ✅ Beide Pfade sind SEPARATE Funktions-Instanzen (echt zwei Scopes)
+  ✅ Main==Worker byte-identisch über 4 Arten × 12 Seeds — 48 Läufe, 0 divergent
+
+✅ PARITÄT GRÜN — phyto-core.js trägt Main + Worker aus EINER Quelle (Gesetz #0).
+=== P8 — DIE VERFASSUNG DER PIPELINE (Struktur, nicht Ermahnung) ===
+
+Gesetz 1 — die Foundry ist die EINE Baum-Quelle (Chokepoint + Scatter-Gate):
+  ✅ der Chokepoint prüft `_foundryPresetFor(species)` (in `_buildVariantLODs`)
+  ✅ der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → return null` im Zellen-Chokepoint)
+
+Gesetz 2 — EIN Wuchs (foundry-core liest den geteilten phyto-core):
+  ✅ `growTreeNodes` delegiert an `__core.growSkeleton`
+  ✅ KEIN Inline-Parallel-Wuchs (die `grow(pos,dir,radius,length,depth)`-Rekursion ist geschnitten)
+
+Gesetz 3 — der Studio-Bäcker ist die Fernstufe (kein Nachbau, kein Bake-iframe):
+  ✅ der Stamm konsumiert den Studio-Bäcker-Kanal ("bake-impostor" → `_applyStudioImpostorPayload`)
+  ✅ der Welt-RTT-Nachbau bleibt geschnitten (kein `_bakeImpostorAtlasRTT`/`_impostorBlitPixels`/`_impostorDilate`/`_foundryBakeLeaves`)
+  ✅ KEIN asset-foundry-Bake-iframe (kein `iframe.src = …asset-foundry`)
+  ✅ die drei iframe-Impostor-Methoden bleiben geschnitten
+
+Gesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht:
+  ✅ Vertrag v1 (Pflanzen) existiert
+  ✅ Vertrag v2 (Kreatur-Skin) ist GEFALLEN (KONVERGENZ III — der Baum trägt)
+  ✅ `gate:asset-contract` verdrahtet
+
+Gesetz 5 — jede Regel hat ihre Linse (die Gates existieren):
+  ✅ `gate:foundry-warm` verdrahtet
+  ✅ `gate:foundry-deadlock` verdrahtet
+  ✅ `gate:portal-boot` verdrahtet
+  ✅ `gate:foundry-impostor` verdrahtet
+  ✅ `gate:luft-sicht` verdrahtet
+
+Gesetz 6 — Drähte statt Kopien (Wald-Plan + Rahmen leben in der Quelle):
+  ✅ phyto-core trägt den Wald-Plan (`planForestCell`)
+  ✅ phyto-core trägt den Impostor-Rahmen (`impostorFrame` + `scanRadialXZ`)
+  ✅ der Monolith DELEGIERT den Wald-Plan (ctx-Draht zu `planForestCell`)
+  ✅ KEINE Nischen-Formel-Kopie im Monolithen (die wF/wT/wE-Gewichte sind umgezogen)
+  ✅ KEINE Größen-Formel-Kopie im Monolithen (reverse-J `0.55 + 1.45·ue^1.45`)
+  ✅ der Monolith DELEGIERT den Rahmen (`core.impostorFrame(`)
+  ✅ KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)
+  ✅ das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)
+  ✅ der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)
+  ✅ GRAS ALS OBERFLÄCHEN-FUNKTION: der Bauer registriert null, baut nie ein Mesh
+  ✅ die Wiese lebt im Boden-Fragment (Halm-Term `_halmW` mixt MEADOW_GREEN)
+  ✅ die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)
+  ✅ der Studio-Wald liest kindStages SELBST (near/far-Kacheln)
+  ✅ AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryServierStufe` → `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)
+
+Gesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-Metrik:
+  ✅ der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)
+  ✅ der Scatter-Bau liest die EINE Quelle (kein eigener Dichte-Rechner in `_scatterPass`)
+  ✅ das Nach-Dünnen liest die EINE Quelle + trägt das Foundry-Gate (`_tickFoliageThin`)
+  ✅ kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback und als der EINE Kehraus-Zähler)
+  ✅ N1/M8: KIND_POLICY existiert (tree + vehicle als Tabellen-Zeilen)
+  ✅ N1/M8: der Auto-Register-Chokepoint laeuft die Tabelle (kein kind-String-Vergleich im Body)
+  ✅ N2: cores.manifest.json existiert + ist ein gueltiger Kern-Satz
+  ✅ N2: der Worker-Boot liest das Manifest (cores.manifest.json in _ensureAssetFoundry)
+  ✅ N2: der Platten-Stempel hasht manifest-getrieben (Manifest-Text + core.scripts → _foundrySchale)
+  ✅ N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)
+
+Gesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):
+  ✅ N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)
+  ✅ N4.1: jeder Reply-Leser routet durch die EINE Naht (8/8 Sites, erwartet ≥5)
+  ✅ N4.2: die Naht reicht das Reply-Material herein (`m.mat` an `_foundryTreeMaterial`)
+  ✅ N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp
+  ✅ N7.4: der Mesh-Gras-Konsum ist tot (kein `sg === "leer"`-Leser, keine Existenz-Gabel im Bauer)
+  ✅ N7.4: der Alt-Tuft-Bauer ist geschnitten (kein _grassBladeTuftGeometry im Code)
+  ✅ N7.4: der Gras-Thin-Tick ist geschnitten (die Wiese dünnt NIE — V18.422 bedingungslos)
+  ✅ N4.4: KIND_POLICY trägt die Impostor-Politik (tree + shrub `impostor: true`)
+  ✅ N4.4: vehicle trägt die Impostor-Zeile (Fahrzeug-Fernstufe, `gate:fahrzeug-fern` wacht)
+  ✅ N4.4: `_foundryPresetIsTree` liest die Policy-Tabelle, kein tree|shrub-kind-Literal im Body
+
+Gesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Chokepoint · kein placeExtra-Griff):
+  ✅ N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)
+  ✅ N5: kein direkter placeExtra-Griff in der Wald-Nischen-Quelle
+  ✅ N5: der `.placeExtra`-READ lebt genau EINMAL — in `_placePolicyFor` (die Ableitung)
+  ✅ N5: die Auflösung fällt fail-closed über die PLACE_MODES-Tabelle (unbekannter mode → "none")
+  ✅ N5: `gate:place-policy` verdrahtet
+
+55 Gesetze gehalten, 0 verletzt.
+
+✅ GRÜN — die Pipeline-Verfassung steht: eine Baum-Quelle · ein Wuchs · ein Bake-Pfad · zwei eingefrorene Verträge, jede Regel als Struktur (Chokepoint/Schnitt/Gate) verankert, nicht als Ermahnung.
+=== DER STUDIO-VERTRAG — Manifest-Validator (docs/studio-vertrag.md) ===
+  ✅ Vertrag existiert (docs/studio-vertrag.md)
+  ✅ Vertrag trägt die sechs Blöcke B1–B6 + die Empfänger-Gesetze
+  ✅ cores.manifest.json ist ein gültiger Kern-Satz (id + scripts + vertrag je Eintrag) — 9 Kern(e): phyto, vehicle, porta, schmiede, fachwerk, klang, koerper, tetrapoda, gelaende
+
+--- Kern: foundry-core.js ---
+  ✅ foundry-core.js: 0 Vertrags-Verletzungen
+      23 Rezepte · kinds: tree, shrub, flower, grass, rock, fern, reed, brush, deadwood · unbekannt (must-ignore): fern, reed, brush, deadwood
+  ✅ foundry-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: vehicle-core.js ---
+  ✅ vehicle-core.js: 0 Vertrags-Verletzungen
+      5 Rezepte · kinds: vehicle
+  ✅ vehicle-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: porta-core.js ---
+  ✅ porta-core.js: 0 Vertrags-Verletzungen
+      7 Rezepte · kinds: gate
+  ✅ porta-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: schmiede-core.js ---
+  ✅ schmiede-core.js: 0 Vertrags-Verletzungen
+      21 Rezepte · kinds: weapon
+  ✅ schmiede-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: fachwerk-core.js ---
+  ✅ fachwerk-core.js: 0 Vertrags-Verletzungen
+      35 Rezepte · kinds: haus, ausstattung · unbekannt (must-ignore): ausstattung
+  ✅ fachwerk-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: klang-core.js ---
+  ✅ klang-core.js: 0 Vertrags-Verletzungen
+      22 Rezepte · kinds: klang
+  ✅ klang-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: koerper-core.js ---
+  ✅ koerper-core.js: 0 Vertrags-Verletzungen
+      1 Rezepte · kinds: koerper
+  ✅ koerper-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: tetrapoda-core.js ---
+  ✅ tetrapoda-core.js: 0 Vertrags-Verletzungen
+      4 Rezepte · kinds: kreatur
+  ✅ tetrapoda-core.js: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)
+
+--- Kern: gelaende-core.js ---
+  ✅ gelaende-core.js: 0 Vertrags-Verletzungen
+      0 Rezepte · kinds: 
+  ✅ gelaende-core.js: §9 Gesetz-Kern (16 Funktionen: hoehe · erbgutNormal · wildnisY · termY · kontinentBasis · rauheit · ankerAusSaat · ankerBeitrag · massivMaske · grat · gratRauschen · kachelSchluessel · erosionFuer · erosionDelta · tarnMulde · tarnDelta)
+  ✅ Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)
+  ✅ G4.1: der Auto-Register-Chokepoint filtert per Policy (must-ignore, wirft nie)
+  ✅ B2c: jeder Kern mit Gestalt (kindStages) trägt lod.budget — foundry-core.js, vehicle-core.js, porta-core.js, schmiede-core.js, fachwerk-core.js, koerper-core.js, tetrapoda-core.js
+  ✅ B2c: jeder Zweit-Kern mit Gestalt zählt seine Gestalten (lod.budget.gestalten — Gesetzbuch statt Wirts-16)
+  ✅ B2c KARTEN-LINSE: budget[kind][letzte].karte ⇔ KIND_POLICY[kind].impostor (je Art mit Budget) — foundry-core.js, vehicle-core.js, porta-core.js, schmiede-core.js, fachwerk-core.js, koerper-core.js, tetrapoda-core.js
+  ✅ SELBST-TEST: ein Host ohne Strauch-Impostor feuert die Karten-Linse
+      Budget (B2c) trägt: foundry-core.js, vehicle-core.js, porta-core.js, schmiede-core.js, fachwerk-core.js, koerper-core.js, tetrapoda-core.js
+  ✅ W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel · Seh-Klasse beider Extraktoren · Sippe in Flatten und Ofen)
+  ✅ SELBST-TEST: ein Ofen ohne Faltung feuert die Leser-Probe
+  ✅ SELBST-TEST: ein Ofen-Extraktor ohne Seh-Klasse feuert die Leser-Probe
+  ✅ SELBST-TEST: eine Konversion ohne Sippen-Stempel feuert die Leser-Probe
+  ✅ PFLICHT vehicle-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ PFLICHT schmiede-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ PFLICHT koerper-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ PFLICHT tetrapoda-core.js: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)
+  ✅ ZWILLINGS-ABSENZ: kein gefallener Fallback-Zwilling kehrt als Stamm-Zuweisung wieder (23 Namen) — 23 Namen abwesend
+  ✅ SELBST-TEST: ein injizierter Zwilling (SWING_LAWS-Zeile) feuert die Absenz-Wand — SWING_LAWS
+  ✅ ZWILLINGS-ABSENZ: kein globalThis-||-Inline-Fallback (HIMMEL/WASSER) im Stamm, Signaturen nur im Gesetzbuch — abwesend
+  ✅ KONSUM: terrain steht in GESETZ_KERNE und foundry-core trägt __terrainCore (HIMMEL+WASSER)
+  ✅ SELBST-TEST: ein injizierter Inline-Fallback feuert die Wand
+  ✅ KONSUM: gelaende steht in GESETZ_KERNE und im Manifest (§9), voxel-worker und index.html laden gelaende-core.js
+  ✅ SELBST-TEST: ein Gesetz-Kern mit Rezept und ohne Funktion feuert §9 — §9: ein Gesetz-Kern trägt keine Rezepte (PRESETS) · §9: der Gesetz-Kern trägt keine Funktion
+  ✅ KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad
+  ✅ SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · NUR-WURF-Stufe · Gelenk-Gestalt ab/hyst/wurf.seh · Version · MESHFREI-Widerspruch · Gefühls-Blöcke) — 55 erkannt
+  ✅ SELBST-TEST: der Sprung-Zwilling (Abflug in m/s einer Aktion · sprung.impulsProM) feuert die VERHALTEN-Wand — echt 0 · m/s 1 · Faktor 1
+  ✅ SELBST-TEST: der Substanz-Zwilling des Temperaments (Signaturen · fehlende Gattungs-Zeile) feuert die VERHALTEN-Wand — Signaturen 1 · ohne Gattung 1
+  ✅ B2c S3-Absenz: kein Pflanzen-Falten (budgetErzwingen nur im Zweit-Kern-Zweig), keine Seh-Klasse laub
+  ✅ SELBST-TEST: die S3-Wand feuert (Baum-Zeile ohne lagen/geruest/blattKarte/wedel/quote/wurf.teil, mit nadelKarte und dichte.laub · Fels zweistufig · Pflanzen-Falten · Seh-Klasse laub) — 13 Zeilen-Befunde · Falten 1 · laub 1
+
+✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, must-ignore ist am Chokepoint verankert, und der Selbst-Test beweist die Linse feuert.
+✅ SELBST-TEST: die Entsorgungs-Wand feuert je Form (A traverse · B for…of · C children.forEach · D Zwischen-Variable · E Stoff-forEach · F Stoff-for…of · G Stoff in der Regel · H tote Zeile · I Memo-Eintrag), heute 0 — Entsorgungs-Wand: anazhRealm.js:79 `_frostFormB` entsorgt Geometrie (`c.geometry.dispose()`) — nicht ihr Besitz: Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`, eigene frische Objekte nur ihr Besitzer (ENTSORGUNG_BESITZER)
+✅ SELBST-TEST: die Stufen-Wand feuert (Stufen-Wand: foundry-core.js:4872 `__lod = lod <= 1 ? 1 : lod;` gibt der Bau-Stufe eine zweite Bedeutung (stufenRezept) · 2 fehlende Anker)
+✅ SELBST-TEST: die Port-Wand feuert (250 Gate-Dateien, DIAG_PORT erkannt)
+✅ SELBST-TEST: die Hüllen-Form-Wand feuert (256 Wirts-Dateien, Hüllen-Form-Wand: scripts/lib/x.cjs:2 gibt dem Wirt die alte Hüllen-Zeile (boxen) — die EINE Form trägt teile (N5, _huelleVon) · Kurzform erkannt)
+✅ SELBST-TEST: die Linsen stehen in der Wand (27 Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)
+✅ SELBST-TEST: die Wand feuert (1 Injektion erkannt, Kommentar ignoriert)
+✅ SELBST-TEST: die Alias-Wand feuert (der Mammut als Buche erkannt)
+✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)
+✅ DIE RÜCKKEHR-WAND steht — 507 gefallene Namen grep=0 in 33 Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [wesen · wolf · fuchs · baer], 33 Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, 12 Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).
+  ⛔ Gitter {"height":0.85,"mass":0,"tone":0,"age":0,"gender":0,"arms":0} Wert[389] (0.5664381004270166): alt=0.5664381004270166 neu=0.5664381014270166
+  ⛔ Gitter {"height":0.85,"mass":0,"tone":0,"age":0,"gender":0,"arms":0} Wert[401] (0.7880039574686437): alt=0.7880039574686437 neu=0.7880039584686437
+  ⛔ Gitter {"height":0.85,"mass":0,"tone":0,"age":0,"gender":0,"arms":0} Wert[389] (0.5664381004270166): alt=0.5664381004270166 neu=0.5664381014270166
+  ⛔ Gitter {"height":0.85,"mass":0,"tone":0,"age":0,"gender":0,"arms":0} Wert[401] (0.7880039574686437): alt=0.7880039574686437 neu=0.7880039584686437
+  ⛔ Proportion acromionY: alt=4.9079999999999995 neu=4.908000001
+  ⛔ Landmarke wristFrac: alt=1.36 neu=1.3600000010000002
+  ⛔ Landmarke wristFrac: alt=1.36 neu=1.3600000010000002
+  ⛔ Landmarke wristFrac: alt=1.36 neu=1.3600000010000002
+  ⛔ Landmarke wristFrac: alt=1.36 neu=1.3600000010000002
+✅ Selbsttest: alle drei injizierten Abweichungen erkannt (1458/1/5 Treffer).
+✅ DER MENSCH IST EINER — Dial-Gitter 729 Punkte, 396659 Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch.
+— MEMBRAN-GESETZ (porta-core ⇄ Lab-Shell ⇄ Welt) —
+  ✅ MEMBRAN_GESETZ existiert im Gesetzbuch
+  ✅ Zwillings-Wand: alle Gesetz-Zahlen == Alt-Literale
+  ✅ Ableitungs-Wand: membranUniforms == Alt-Formeln (15 Fälle)
+  ✅ Shell liest MEMBRAN_GESETZ
+  ✅ Shell liest membranUniforms
+  ✅ Shell injiziert per GN(
+  ✅ Shell: Wellenzahl 13.8 steht nicht mehr roh im Text
+  ✅ Shell: Puls 1.25 nur noch als Gesetz
+  ✅ Stamm konsumiert membranUniforms (Welt-Leser)
+  ✅ Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)
+  ✅ Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick über das Gesetz pcN.nebelAct — der Kanal ist nicht mehr tot)
+  ✅ SELBST-TEST: mu.fog nur im Rückfall-Zweig wird erkannt
+  ✅ porta-core lädt main-seitig (mit ?v=-Buster)
+  ✅ SELBST-TEST: injizierte kk-Drift wird erkannt
+
+✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Shell-Zahlen, die Ableitung ist formel-identisch, Shell UND Welt konsumieren dieselben Flächen.
+=== V18.466 CHARAKTER-ACHSEN — Tradition · Kultur · Genre ===
+  ✅ T: TRADITIONEN exportiert (5 Design-Sprachen) — Frank · Nihon · Pars · Urvolk · Brut
+  ✅ T: ov-freier Bau byte-stabil (Frank bleibt Frank) — e6b65b7250950d68/18
+  ✅ T: JEDE Tradition formt das Langschwert anders (5 unverwechselbare Fingerprints) — 5/5
+  ✅ T: unbekannte Tradition fällt fail-soft auf Frank
+  ✅ K: KULTUREN exportiert (5 Marken-Sprachen) — cavallo · toro · stern · vorsprung · monolith
+  ✅ K: jede Kultur trägt einen fx-Dial-Vektor (cEdge/cStance/cGrille)
+  ✅ G: klang-core exportiert die Genre-Presets (22) — blues · bebop · cooljazz · freejazz · boombap · trap …
+  ✅ V: KIND_CHARAKTER-Tabelle (M8) trägt weapon→TRADITIONEN + vehicle→CULTURES
+  ✅ V: das präge-Verb schreibt den EINEN Regler-Kanal (studioOv)
+  ✅ V: das spiele-Verb schreibt state.klangPreset (der Lofi-Konsument liest sie)
+  ✅ V: der Lofi-Konsument liest die Welt-Klang-Wahl (ERFINDER-Zeile lebt)
+  ✅ V: schmiede-core + vehicle-core laden main-seitig (?v=-Buster)
+  ✅ V: __-Steuer-Schlüssel wandern nie in die Bau-Parameter (Kern-Wand)
+  ✅ SELBST-TEST: Nihon==Frank würde erkannt (die T-Probe feuert)
+
+✅ GRÜN — die Charakter-Achsen der Studios sind welt-wählbar: die Tradition FORMT (5 unverwechselbare Klingen-Sprachen, ov-frei byte-stabil), die Kulturen tragen ihre Dial-Vektoren, die Genres stehen im Buch, und die Verben schreiben die EINEN Kanäle (studioOv · klangPreset).
+  ✅ tetrapoda-core lädt (Namensraum __tetrapodaCore)
+  ✅ MOTION_ZUSTAND_PROFILES existiert im Stamm
+  ✅ Zustand-Tabelle trägt Zeilen (schwimmen/jagd/flucht) — Ziele: schwimmen,hunt,flee,flee
+  ✅ DECKUNG: jedes Zustand-Ziel ist ein existierendes MOTION-Preset (keine tote Zeile) — 4 gedeckt
+  ✅ MOTION trägt hunt UND schwimmen (die einst toten/neuen Gänge)
+  ✅ fx.verhalten reist im Kern (VERHALTEN: aktionen + stimmung)
+  ✅ jede Stimmungs-Aktion existiert im Katalog + alle=[min,max] gültig — 7 Stimmungen
+  ✅ Aktions-Profile nutzen nur bekannte MOTION-Felder
+  ✅ PRESETS.wolf.fx.verhalten reist im Rezept (der Buch-Pfad)
+  ✅ VERHALTEN trägt die Seelen-Blöcke jagd/furcht/temperament/wandern
+  ✅ VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser)
+  ✅ groessen-Bänder strikt aufsteigend (bis-Schwellen)
+  ✅ KONSUM: _motionProfileName trägt den Zustand-Vorrang (zustand vor Emotion)
+  ✅ KONSUM: updateCreatures stempelt die JAGD (Stempel am Hunt-Drive)
+  ✅ KONSUM: updateCreatures stempelt die FLUCHT
+  ✅ KONSUM: der Schwimm-Stempel lebt an der Wasser-Wahrheit
+  ✅ KONSUM: _animateTierBaum konsumiert bodyX (Rumpf-Neigung reist)
+  ✅ KONSUM: _animateTierBaum trägt den Aktions-Overlay
+  ✅ KONSUM: der Verhaltens-Tick würfelt deterministisch (FNV, kein Math.random)
+  ✅ KONSUM: die Verhaltens-Zahlen fließen durch den EINEN memoisierten Leser (_verhaltenGesetz)
+  ✅ KONSUM: der Gang-Phasen-Seed liest das Gesetz (P.phases statt hartem Trab)
+  ✅ KONSUM: die Gegenwehr ist der EINE Biss (der Ansprung, _kreaturBissAnsatz mit der Quelle gegenwehr)
+  ✅ KONSUM: die Reichweite des Bisses ist der Weg des Ansprungs (sein Tempo × die Sprung-Zeit)
+  ✅ KONSUM: die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)
+  ✅ KONSUM: die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)
+  ✅ KONSUM: die Separations-Kraft liest das Gesetz (VERHALTEN.separation)
+  ✅ KONSUM: die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)
+  ✅ KONSUM: die Schwarm-Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug über VERHALTEN.herde, je Gattung)
+  ✅ KONSUM: die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)
+  ✅ KONSUM: die Hetze hält, wo das Maul den Leib erreicht (_kreaturBissRadial im Jagd-Weg _kreaturJagdZug; die Neugier hält am persönlichen Raum)
+  ✅ KONSUM: das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h)); der Ansprung eines Bisses springt den Grund-Hüpfer (K13)
+  ✅ KONSUM: eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)
+  ✅ SELBST-TEST: eine injizierte tote Zustand-Zeile fällt auf
+
+✅ GRÜN — DAS KREATUR-LEBEN IST VERBUNDEN: jedes reisende Preset hat einen wählenden Pfad (Zustand vor Emotion), die Verhaltens-Seele ist in sich geschlossen und der Baum-Gang trägt sie.
+=== DER KONSUM-WÄCHTER (Export-Fläche vs Stamm-Leser) ===
+  foundry-core.js: 770 Export-Blätter · 0 bekannte Waisen
+  vehicle-core.js: 143 Export-Blätter · 0 bekannte Waisen
+  porta-core.js: 102 Export-Blätter · 0 bekannte Waisen
+  schmiede-core.js: 645 Export-Blätter · 0 bekannte Waisen
+  fachwerk-core.js: 915 Export-Blätter · 0 bekannte Waisen
+  klang-core.js: 1315 Export-Blätter · 0 bekannte Waisen
+  koerper-core.js: 893 Export-Blätter · 0 bekannte Waisen
+  tetrapoda-core.js: 1766 Export-Blätter · 0 bekannte Waisen
+  gelaende-core.js: 18 Export-Blätter · 0 bekannte Waisen
+  ✅ SELBSTTEST: injizierter Fake-Export fiele als neue Waise
+  ✅ SELBSTTEST 2: die Kompositum-Regel urteilt (Fake-inst-Blatt rot, inst.drums/tilt.harmony grün)
+  ✅ SELBSTTEST 3: die Maschinen-Regel urteilt (1× Definition = rot, 2× = gelesen)
+
+✅ GRÜN — kein Export fällt still: alle Waisen sind BENANNT, jede neue wäre rot.
+=== RECONNECT-LINSE — WS-Rejoin · RTC-Heilung · Snapshot-Puffer ===
+  Konstanten (Produktion): Basis 1000 ms · Deckel 30000 ms · Jitter < 1000 ms · Interp-Delay 120 ms · Puffer ≤ 20
+  ✅ Konstanten im Band (Backoff 1 s/30 s · Interp-Delay 100–150 ms)
+
+── A: WS-Rejoin (Exponential-Backoff + seeded Jitter) ──
+  ✅ Aufbau: initP2PSync ok, EIN Socket
+  ✅ open: verbunden + join gesendet + Backoff-Zähler 0
+  ✅ Riss: Meshes geräumt, connected=false, GENAU EIN Rejoin-Timer
+  ✅ Delay-Leiter wächst 1·2·4·…≤30 s (Basis nach Jitter-Abzug): [1·2·4·8·16·30·30] — Deckel 30 s
+  ✅ Jitter im Band [0, 1000) ms
+  ✅ Jitter DETERMINISTISCH (gleicher Versuch+peerId ⇒ gleicher Wert) und streuend (≥ 2 Werte über 10 Versuche)
+  ✅ Stale-Wache: close des ersetzten Sockets räumt/plant NICHTS
+  ✅ open heilt den Zähler: nächster Riss startet wieder bei 1 s
+  ✅ bewusstes close: geplanter Rejoin gefällt, intentionalClose gestempelt
+  ✅ bewusstes close: KEIN Rejoin (auch nach nachlaufendem close-Event)
+  ✅ bewusstes close (verbunden): KEIN Rejoin
+  ✅ enabled=false: KEIN Rejoin
+  ✅ SELBST-TEST A: gekappter Rejoin ⇒ 0 Timer (die Fixture sähe den alten Bug)
+
+── B: RTC-Heilung (restartIce genau 1× je failed-Übergang) ──
+  ✅ failed-Übergang: restartIce GENAU 1× (Spy) — calls=1
+  ✅ Initiator re-offeriert mit iceRestart (Perfect-Negotiation)
+  ✅ Pegel statt Flanke: wiederholtes failed-Event heilt NICHT erneut
+  ✅ zweiter failed-Übergang: Heil-Versuch über Backoff-Timer, noch KEIN restartIce
+  ✅ Backoff-Timer feuert: restartIce 2× + zweiter iceRestart-Offer
+  ✅ connected heilt den Zähler: nächster failed-Übergang heilt sofort
+  ✅ Nicht-Initiator: restartIce 1×, aber KEIN Offer (Glare-Wand)
+  ✅ closed heilt NIE
+  ✅ Peer-Abbau fällt den Heil-Timer (kein Zombie-Restart)
+  ✅ SELBST-TEST B: gekappte Heilung ⇒ 0 restartIce (die Fixture sähe den alten Bug)
+
+── C: Snapshot-Puffer (Valve-Source-Interpolation) ──
+  ✅ Kern: t=50 zwischen (0,x=0) und (100,x=3) ⇒ x=1,5 (y/z/yaw lerpen mit) — x=1.5
+  ✅ Kern KLEMMT statt zu extrapolieren (vor dem ältesten / hinter dem jüngsten)
+  ✅ Kern: yaw reist über den KÜRZESTEN Bogen (3,0→−3,0 quert ±π, nie 0) — yaw=3.1416
+  ✅ Pipe: zwei rohe 30-Hz-Snaps ⇒ der Render-Sampler stellt den Peer auf x≈1,5 — x=1.5
+  ✅ Erst-Kontakt: EIN Snap ⇒ rohes Direkt-Schreiben, Sampler tritt zurück
+  ✅ Lockstep-Pfad byte-heilig: Snap wird Autorität (authX), Puffer fällt, Sampler tritt zurück
+  ✅ Puffer bounded (≤ 20 Snaps bei 40 Empfängen)
+  ✅ SELBST-TEST C: gekappter Faktor ⇒ x=0 statt 1,5 (die Fixture sähe den alten Bug)
+
+── Konsum-Proben (der Stamm LIEST die neuen Teile) ──
+  ✅ _p2pUpdatePeer sampelt den Snap-Puffer vor dem Zeichnen
+  ✅ EINE Frische-Frage (_p2pLockstepDrives) — ZWEI Leser: _p2pMsgPos + Sampler
+  ✅ shutdownP2PSync stempelt intentionalClose + fällt den Rejoin-Timer
+  ✅ _p2pCloseRtcPeer fällt den Heil-Timer
+  ✅ kein Math.random im Reconnect-Pfad (seeded Jitter, Lehre 7)
+  ✅ D Tür: initP2PSync setzt die Absicht selbst (ein Setzer in der Tür) — 1
+  ✅ D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)
+  ✅ D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer
+  ✅ D Selbsttest: ein Hand-Setzer und die Tür ohne Absicht sehen ROT
+
+✅ GRÜN — ein Netz-Blip beendet die Ko-Präsenz nicht mehr still: der WS-Riss rejoint mit 1·2·4·…≤30 s + seeded Jitter (bewusstes close bleibt endgültig), der failed-Übergang heilt via restartIce+Re-Offer genau einmal je Flanke (Backoff dahinter), und der Nicht-Lockstep-pos-Pfad rendert butterweich aus dem 120-ms-Snapshot-Puffer.
+✅ SELBST-TEST: unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot
+✅ SELBST-TEST: fscatter:geroell:3:0 bei 200 m → rot, bei 40 m nicht
+✅ SELBST-TEST: Boden haupt 8 Befehle über Ratsche 5 (+2) → rot, 7 nicht, 5 nicht
+✅ SELBST-TEST: Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht
+✅ SELBST-TEST: neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)
+✅ SELBST-TEST: Namens-Wand: namenlos rot, ohne Ziel rot, benannt grün, Neu-Zuweisung grün, fremder .name rot
+✅ SELBST-TEST: tex:? → rot, karte-albedo nicht; die EINE Faltung: r184-ausgabe und kaskade0 ganz, bindingBuffer1381_ → bindingBuffer
+✅ SELBST-TEST: Schlüssel-Formen des Stamms → 11 Klassen
+✅ SELBST-TEST: Textur-Erzeuger: Name · <ziel>:tiefe · r184-ausgabe · namenlos → null, im Urteil rot
+✅ SELBST-TEST: Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), Schema hält nur eingeschwungen
+✅ SELBST-TEST: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb; ein Wald über dem Band → BAND ROT bei sauberer Linse
+✅ SELBST-TEST: zensusMax: tier:wolf haupt 12 · k0 6 · dMax 40, himmel aus der zweiten Probe
+✅ SELBST-TEST: Täter-Klasse: tier:wolf · fscatter:eiche:L1 · UNBENANNT unter der Region · spieler · voxelChunk · p2p-spieler · leer:fscatter:blume:L0 (Gruppe ohne lebende Instanz)
+✅ SELBST-TEST: freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot
+✅ SELBST-TEST: bandHuelle: f:griechisch:L2 42 aus Lauf 1, bodenSatz 6 aus Lauf 2, VRAM 230 MB, beide Erzeuger
+✅ SELBST-TEST: H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt
+✅ SELBST-TEST: buf:verwaist und buf:ruhend → LINSE rot `leck` mit Täter; buf:szene und buf:bild nicht; die Halter falten, die größten Täter reisen mit
+✅ SELBST-TEST: tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber
+✅ SELBST-TEST: Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben
+✅ SELBST-TEST: buf:szene:tier:* → freier Erzeuger buf:tier (10 MB über seiner Ratsche 1 nie rot), gebunden 30 MB, der Nachzug lässt ihn
+✅ SELBST-TEST: Messorte: Blick auf dem Spieler, doppelte id, fremde Ratsche, dorfZug fehlt, geteilte Ratsche, Soll ohne Quelle → rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht
+✅ SELBST-TEST: bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis −π/2
+✅ SELBST-TEST: Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht
+✅ SELBST-TEST: H6: _genesisRingAlt im Ort-Takt und _genesisMitteAlt als Anker → je rot, ein Anker ohne Methoden-Namen bricht das Schema; der echte Ort-Takt und Anker leben
+✅ SELBST-TEST: Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, ohne Aufzeichnung → je rot
+✅ SELBST-TEST: Projektion: die Ist-Wiese V18.536 (420742 Dreiecke) ist rot, das Soll je Instanz (146500) grün, eine Zeile ohne Golden-Dreiecke beim Namen
+✅ SELBST-TEST: Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760", die Tabelle den Inhalt
+✅ SELBST-TEST: Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), das Hauptbild ohne ihn nicht, ein falscher Draw-Umfang als REST
+✅ SELBST-TEST: Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im Haus-Wurf; stufe + stufen bzw. keins bricht das Schema; ohne k1 keine k1-Zeile
+✅ SELBST-TEST: Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht
+✅ SELBST-TEST: Projektion nahWiese: die Mess-Wiese (54994 Dreiecke) liegt unter der Ratsche 57066, das Maximum über die Samen (63002) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen
+✅ SELBST-TEST: die Band-Wand feuert (31/31)
+P Projektion wiese/baum: 124304 Dreiecke (Haushalt 150000; haupt 106436 · k0 15564 · k1 2304)
+P Projektion wiese/nahWiese: 54994 Dreiecke (Ratsche 57066, Haushalt 80000; L1 29520 · L2 25474)
+✅ DIE BAND-WAND steht — H1 Haushalt 208/208 Befehle · 680000/680000 Dreiecke in 12 Klassen (keine Sammelzeile) · H2 Ratsche 12 Klassen × 3 Pässe (gemessen 66 von 72, 2026-10-05, Toleranz 1 % / +2 Befehle) · H3 20 Textur-Erzeuger benannt · H4 Täter-Klasse des Stamms: 11 Schlüssel-Formen · H5 29 Haushalt-Namen mit Erzeuger im Stamm · Messorte wiese (ratsche.json, gemessen 66 von 72) · genesis (ratsche-genesis.json, gemessen 66 von 72) · dorf (ratsche-dorf.json, gemessen 66 von 72) · H6 3 Ort-Takt- und Anker-Methoden im Stamm.
+  ✅ der grüne Befund bleibt grün
+  ✅ Täter F1 BERGAUF → F1 BERGAUF: 14.2 % der 2-m-Schritte steigen (551 von 3800, 133.2 m Anstieg, Spitze 0 m)
+  ✅ Täter F2 BUCKEL → F2 BUCKEL: der Querschnitt wölbt sich p90 1.2 m (max 0.03 m; Spanne p90 9.65 m) statt waagrecht
+  ✅ Täter F4 DOPPEL → F4 DOPPEL: 19 Wasserfall-Einträge an 9 Orten
+  ✅ Täter F LEER → F LEER: nur 0 Fluss-Schritte gemessen (die Probe prüfte nichts)
+  ✅ Täter FP ZWEI KANÄLE → FP ZWEI KANÄLE: 412 von 18000 Dichte-Zellen weichen Main ↔ Worker ab (max 3.1)
+  ✅ Täter FP PROBE KAPUTT → FP PROBE KAPUTT: 19074 Main- und 0 Worker-Zellen nicht endlich (kein Befund über den Kanal)
+  ✅ Täter FP LEER → FP LEER: nur 0 Kanal-Zellen verglichen
+  ✅ Täter F5 SPRUNG → F5 SPRUNG: 43 von 45 Quellen brechen aus dem Nichts — breiter oder tiefer als die Hülle des Gesetzes (am Ursprung 2.83 m breit, 0.35 m tief; gemessen p50 2 m / 0.31 m, max 12.75 m / 1.73 m)
+  ✅ Täter F5 TROCKEN → F5 TROCKEN: 1 von 64 Quellen tragen auf ihren ersten 16 m kein Wasser
+  ✅ Täter F5 UNSICHTBAR → F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf 1200.5 m Breite (Summe je Punkt, in 487 von 1322 Querschnitten) Wasser, das die Welt nicht zeichnet
+  ✅ Täter F5 PHANTOM → F5 PHANTOM: auf den Quell-Läufen zeichnet die Welt auf 0.5 m Breite (Summe je Punkt, in 2 von 1322 Querschnitten) Wasser, in dem der Körper trocken steht
+  ✅ Täter F5 LEER → F5 LEER: nur 16 Quellen gemessen
+  ✅ Täter F8 UNSICHTBAR → F8 UNSICHTBAR: der Bach der Mess-Wiese — der Körper liest auf 177.5 m Breite (Summe je Punkt, in 39 von 104 Querschnitten) Wasser, das die Welt nicht zeichnet (Breiten-Summe Körper 506 m, Bild 506 m)
+  ✅ Täter F8 PHANTOM → F8 PHANTOM: der Bach der Mess-Wiese — die Welt zeichnet auf 64.25 m Breite (Summe je Punkt, in 41 von 104 Querschnitten) Wasser, in dem der Körper trocken steht (Breiten-Summe Körper 506 m, Bild 576.25 m)
+  ✅ Täter F8 PHANTOM: der Bach → F8 PHANTOM: der Bach der Mess-Wiese — die Welt zeichnet auf 0.25 m Breite (Summe je Punkt, in 1 von 104 Querschnitten) Wasser, in dem der Körper trocken steht (Breiten-Summe Körper 506 m, Bild 506 m)
+  ✅ Täter F8 LEER → F8 LEER: nur 0 Querschnitte, 104 mit Körper-Wasser
+  ✅ Täter F9 STREU → F9 STREU: am Bach stehen 11 von 150 Pflanzen der Nah-Streu ohne Ufer-Band im gezeichneten Wasser (bis 0.99 m über dem Fuß; {"farn":8})
+  ✅ Täter F9 WIESE → F9 WIESE: am Bach stehen 21 von 60 Büscheln der Nah-Wiese im gezeichneten Wasser (bis 1.32 m über dem Fuß)
+  ✅ Täter F9 LEER → F9 LEER: im See-Fenster nur 2400 Pflanzen der Nah-Streu und 0 Büschel der Nah-Wiese
+  ✅ Täter F9: am Bach → F9: am Bach die Nah-Streu hat keine Arten (das Buch fehlt)
+  ✅ Täter F10 PHANTOM → F10 PHANTOM: im See-Fenster zeichnet die Welt auf 80.25 m² Wasser, in dem der Körper trocken steht (Körper 3330 m², Bild 3330 m²; z. B. [-876.5,-690,0.4])
+  ✅ Täter F10 UNSICHTBAR → F10 UNSICHTBAR: im See-Fenster liest der Körper auf 7.25 m² Wasser, das die Welt nicht zeichnet (z. B. [-874.5,-624,0.47])
+  ✅ Täter F10 LEER → F10 LEER: nur 0 m² Körper-Wasser im See-Fenster
+  ✅ Täter F7 STEILWAND → F7 STEILWAND: 18 von 60 Bank-Profilen steiler als der Fels des Boden-Gesetzes (54.5°; Neigung p50 30°, p90 68.9°, max 60°)
+  ✅ Täter F7 LEER → F7 LEER: nur 0 Bank-Profile gemessen
+  ✅ Täter K10 HÖHLE → K10 HÖHLE: 3511 von 3500 trockenen Höhlen-Proben tragen Körper-Wasser (unter dem See 766 von 760, daneben 2745 von 2740; bis 54.3 m)
+  ✅ Täter K10 SPIELER → K10 SPIELER: in 6 trockenen Höhlen schwimmt der Spieler 120 von 120 Schritten
+  ✅ Täter K10 KAMERA → K10 KAMERA: in 6 von 6 trockenen Höhlen sieht die Kamera Unterwasser
+  ✅ Täter K10 TIER → K10 TIER: in 6 von 6 trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden
+  ✅ Täter K10 WAGEN → K10 WAGEN: an 766 von 3500 trockenen Höhlen-Böden steht der Wagen im Wasser (bis 8.2 m) — die Tiefe am Wagen liest das Wasser über der obersten Fläche
+  ✅ Täter K10 WAGEN LEER → K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand
+  ✅ Täter K10 LEER → K10 LEER: nur 0 trockene Höhlen-Proben
+  ✅ Täter K11 STRASSENWAGEN SCHWIMMT → K11 STRASSENWAGEN SCHWIMMT: der GT treibt im See (8.2 m Wasser; Unterkante 7.3 m über dem Grund, 0.9 m unter dem Spiegel)
+  ✅ Täter K11 BOOT SINKT → K11 BOOT SINKT: das Holz-Boot steht im See am Grund (8.2 m Wasser)
+  ✅ Täter K11 BUG-AB → K11 BUG-AB: treibend neigt sich das Boot mit dem Seegrund (Nick-Ziel 7.3°, Wank-Ziel 29.5°; Grund 29.3°)
+  ✅ Täter K11 LEER → K11 LEER: die Bug-ab-Probe lief nicht
+  ✅ Täter W2 RAND-STREIFEN → W2 RAND-STREIFEN: im Rand-Streifen des Sees (1–7 m Wasser über Atlas-Land) treibt das Boot an 0 von 13 Proben — sonst fährt es am Seegrund
+  ✅ Täter W2 LEER → W2 LEER: nur 0 Proben im Rand-Streifen des Sees
+  ✅ Täter K1 AM GRUND → K1 AM GRUND: 966 Frames Brustkorb unter dem Spiegel UND geerdet (bis 4.68 m tief)
+  ✅ Täter K2 ZELL-DACH → K2 ZELL-DACH: in Ruhe die Füße 0.352 m unter dem Spiegel, die Brustkorb-Linie verlangt 1.224 m
+  ✅ Täter K3 KRIECHEN → K3 KRIECHEN: Kraulen 0.141 m/s = 14 % des Gesetzes (0.977 m/s)
+  ✅ Täter K4 STUMM → K4 STUMM: das Eintauchen mit -10.6 m/s löst keine Landung aus
+  ✅ Täter K LEER → K LEER: der Gang erreichte kein Wasser (die Probe prüfte nichts)
+  ✅ Täter K5 MEDIUM → K5 MEDIUM: die Kamera 3 m unter dem Spiegel sieht klare Luft (die Luft folgt den Augen des Körpers)
+  ✅ Täter K6 AM GRUND → K6 AM GRUND: wesen in 120 m steht am Seegrund (Sohle 8 m unter dem Spiegel)
+  ✅ Täter K6 LAGE → K6 LAGE: wesen in 8 m treibt mit der Sohle 0.3 m unter dem Spiegel, ihre Wasserlinie (Schultergelenk) liegt bei 0.87 m
+  ✅ Täter K6 LEER → K6 LEER: nur 0 Tier-Proben (4 Arten × nah/fern verlangt)
+  ✅ Täter K7 MITSPIELER → K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne 0)
+  ✅ Täter K9 NACHT → K9 NACHT: unter Wasser ist die Mitternacht heller (0.17) als die Luft darüber (0.03)
+  ✅ Täter K9 LITERAL → K9 LITERAL: das Wasser kennt Tag und Nacht nicht (Mittag 0.17, Mitternacht 0.17)
+  ✅ Täter K9 HIMMEL → K9 HIMMEL: der Tauchgang färbt die Himmels-Umgebung (191/218/237 → 81/132/170)
+  ✅ Täter K9 LEER → K9 LEER: die Licht-Probe lief nicht (Luft oder Himmels-Umgebung fehlt)
+  ✅ Täter K8 UFER-FLUT → K8 UFER-FLUT: 37 von 180 trockenen Ufer-Proben tragen Körper-Wasser (bis 3.15 m über dem Gras)
+  ✅ Täter K12 KLANG → K12 KLANG: in 163 von 26000 Spalten hört der Klang (_nassAt) Wasser anders, als der Körper es trägt (z. B. null)
+  ✅ Täter K12 TIER-SCHEU → K12 TIER-SCHEU: in 173 von 26000 Spalten sieht die Ufer-Scheu der Tiere Wasser anders, als der Körper es trägt (z. B. null)
+  ✅ Täter K12 KÜSTE → K12 KÜSTE: in 110 von 110 Spalten zeichnet das Sheet den Küsten-Aquifer über dem Boden, der Körper steht dort trocken
+  ✅ Täter K12 LEER → K12 LEER: nur 0 Küsten-Spalten mit Sheet-Wasser über Atlas-Land
+  ✅ Täter K12 TRINKEN → K12 TRINKEN: 34 von 450 Trink-Zielen der Tiere liegen trocken (der Körper trägt dort kein Wasser; z. B. null)
+  ✅ Täter K6 BAUMLOS → K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle 0 m unter dem Spiegel, die Schwimm-Tiefe des Gesetzes ist 0.5 m
+  ✅ Täter U3 SCHILF-SPRUNG → U3 SCHILF-SPRUNG: das Ufer-Band der Nah-Streu (schilf) springt quer zum Fluss 12-mal (Gewicht-Stufe bis 0.61 je 2 cm, z. B. null)
+  ✅ Täter U3 LEER → U3 LEER: nur 0 Schilf-Schritte gemessen
+  ✅ Täter K8 LEER → K8 LEER: nur 0 trockene Ufer-Proben
+  ✅ Täter U1 UFER-SPRUNG → U1 UFER-SPRUNG: die Boden-Farbe springt quer zum Fluss 34-mal (Luma-Stufe bis 0.223 je 2 cm, z. B. [607.8,-840,8.24])
+  ✅ Täter U LEER → U LEER: nur 0 Ufer-Schritte gemessen
+  ✅ Täter U2 ZWEI FARBEN → U2 ZWEI FARBEN: 2137 von 6500 Ufer-Vertices färbt der Worker anders als der Main (max 0.056)
+  ✅ Täter U2 LEER → U2 LEER: die Farb-Parität verglich keinen Ufer-Chunk
+  ✅ Täter B4 REGEN → B4 REGEN: der Sturm zeigt 0 Schlieren (lit 0.002 der Pixel)
+  ✅ Täter B5 SENKRECHT → B5 SENKRECHT: quer zum Sturm fallen die Schlieren senkrecht (Neigung 0.02)
+  ✅ Täter B2 ZEBRA → B2 ZEBRA: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s 21 = 5.8 × der bei 60 s (20)
+  ✅ Täter B1 SCHAUM → B1 SCHAUM: 60.0 % des ruhigen Flusses schaumbedeckt ohne Gesetz-Grund
+  ✅ Täter B3 STURM → B3 STURM: der Sturm bewegt das Wasser nicht (Kanten-Dichte im Sturm 1 × der ruhigen)
+  ✅ Täter B2 ZEBRA: der ruhige → B2 ZEBRA: der ruhige Fluss trägt bei Wasser-Uhr 3600 s Kanten-Dichte 63.4 (bei 60 s 1)
+  ✅ Täter B LEER → B LEER: der Fluss-Bogen deckt keine Pixel (die Probe prüfte nichts)
+  ✅ Täter SEITE → SEITE: TypeError: x
+SELBSTTEST GRÜN
+=== CHUNK-SATZ — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „voxelChunk:0,0:lod0 direkt in der Szene" → rot: BODEN: 2 Objekte tragen das Boden-Material (Soll 1, der Satz) — bodenSatz, voxelChunk:0,0:lod0 · BODEN: 1 `voxelChunk:`-Objekte im Szenen-Baum — voxelChunk:0,0:lod0
+  ✅ Selbsttest „Gruppe x#0@p:0,0" → rot: BAU: 1 Instanz-Gruppen mit `@p:` im Schlüssel — x#0@p:0,0
+  ✅ Selbsttest „eine Streu-Senke zeichnet selbst" → rot: STREU: 1 Nah-Streu-Objekte zeichnen selbst (Soll 0, der Streu-Satz ihres Stoffs) — blume:1:L2:0
+  ✅ Selbsttest „ein Block ohne Bereich im Streu-Satz" → rot: STREU-SATZ: 1 Blöcke ohne treuen Bereich — farn:2:L1:0@-226,-212
+  ✅ Selbsttest „die Fern-Deko lebt" → rot: STREU: 1 Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)
+  ✅ Selbsttest „Deck-Zwilling lebt" → rot: STREU: 3 Deck-Streu-InstancedMeshes (gefallen, Soll 0)
+  ✅ Selbsttest „eine Felszacken-Gestalt zeichnet als eigene Gruppe" → rot: BAU-SATZ: 1 Gruppen einer Satz-Art zeichnen selbst (Soll 0, der Satz ihres Stoffs) — f:zacken:L0 (f:zacken|4|0:0)
+  ✅ Selbsttest „ein Haus ohne Bereich im Satz" → rot: BAU-SATZ: 1 Satz-Gruppen ohne treuen Bereich — f:griechisch:L2 (f:griechisch|4|2|ov:x:0)
+  ✅ Selbsttest „die Kaskaden verdrängen einander je Frame" → rot: NEUSCHREIBEN (druck, Frame 2): k1 schrieb seinen Abschnitt — 1090140 B · NEUSCHREIBEN (druck, Frame 3): k0 schrieb seinen Abschnitt — 1758984 B
+  ✅ Selbsttest „ein Schatten-Pass schreibt den Abschnitt eines anderen" → rot: NEUSCHREIBEN (ruhe, Frame 2): k1 schrieb den Abschnitt von k0 — 4096 B
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Spiegel-Drift" → rot: SPIEGEL: Chunk 0,0 (LOD 0): tri weicht ab (Main ≠ Worker)
+  ✅ Selbsttest „kein Spiegel" → rot: SPIEGEL: kein Chunk zwischen Main und Worker verglichen
+  ✅ Selbsttest „Loch an der Mündung" → rot: LOCH: Blick muendung: 1 Zellen fehlen im Abschnitt, zuerst -21,-20#7 (Höhle) am Punkt [1,2,3]
+  ✅ Selbsttest „Licht-Leck" → rot: LICHT-LECK: Blick hoehle: 1 Empfänger, zuerst [1,2,3] — die erste Fläche zum Licht (-22,-20#4) fehlt in der Kaskade
+  ✅ Selbsttest „leere Mündung" → rot: LEER: Blick muendung zeigt keine Höhlen-Fläche (10 Strahlen) — (b) prüfte nichts
+  ✅ Selbsttest „fehlender Blick" → rot: LEER: Blick hang fehlt (kein Standort gefunden)
+  ✅ Selbsttest „blinde Linse" → rot: LINSE BLIND: Blick hoehle: ohne die Höhlen-Zellen im Abschnitt fehlt der Linse nichts
+  ✅ Selbsttest „toter Schnitt" → rot: KEIN SCHNITT: die Wiese zeichnet 100 von 100 Höhlen-Dreiecken ihres Frustums — die Höhlen-Sicht wirkt nicht
+  ✅ Selbsttest „die alte Probe (Loch beim Blick hinaus)" → rot: LOCH: Blick hinaus: 1 Zellen fehlen im Abschnitt, zuerst -24,-18#64 (Höhle) am Punkt [-1021,15.8,-734.5]
+  ✅ Selbsttest „stumpfer Hinaus-Blick" → rot: LINSE STUMPF: Blick hinaus: die alte Probe (die Sperre ohne den Weg hinaus) ließe hier keine Zelle weg — der Blick prüft die Klasse nicht
+  ✅ Selbsttest „Auge nicht in der Höhle" → rot: LEER: Blick hinaus: das Auge steht nicht in Höhlen-Luft (Fels über ihm, Luft an ihm)
+  ✅ Selbsttest „Weg hinaus fehlt" → rot: CODE: `_hoehlenSicht` ruft `_hoehlenHinaus` nicht (kein Strahl kommt aus einer Höhle an der Sperre vorbei)
+  ✅ Selbsttest „Schatten prüft nichts" → rot: LEER: Blick hang: kein Empfänger im Licht-Frustum (der Schatten prüfte nichts)
+  ✅ Selbsttest „Chokepoint fehlt" → rot: CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)
+  ✅ Selbsttest „Stempel ungelesen" → rot: CODE: `_chunkSatzAbschnitt` liest den Stempel des Höhlen-Knotens nicht
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+  ✅ Selbsttest „die Sperre überlebt den Boden" → rot: GEDÄCHTNIS: 6 von 6 Mündungen im Bild behalten ihre Sperre über einen neuen Boden (`_chunkSatzMarke` im Stand) — ein gegrabener oder gesenkter Hang sperrte die Mündung dahinter weiter
+  ✅ Selbsttest „stumpfes Gedächtnis" → rot: LINSE STUMPF: (h) Gedächtnis: im Stand misst jeder Pass 6 von 6 Mündungen neu — die Sperre wird nie gemerkt, die Wand prüfte nichts
+  ✅ Selbsttest „Gedächtnis ohne Mündung" → rot: LEER: (h) Gedächtnis: keine Mündung im Bild (die Wand prüfte nichts)
+  ✅ Selbsttest „Himmel in der Höhle" → rot: HIMMELS-LICHT: der Boden-Satz trägt keine Himmels-Sicht — 900 Höhlen-Vertices sehen den vollen Himmel, 300 davon tiefer als 14 m hinter der nächsten Himmels-Fläche
+  ✅ Selbsttest „zu viel Himmel" → rot: HIMMELS-LICHT: 1 von 900 Höhlen-Vertices tragen mehr Himmel, als ihr Abstand lässt, zuerst [762,11,-140]: Himmels-Sicht 1 bei 22.4 m (höchstens 0.02)
+  ✅ Selbsttest „schwarze Mündung" → rot: SCHWARZE MÜNDUNG: 40 Höhlen-Vertices in den Mündungs-Boxen tragen im Mittel 0 Himmels-Sicht (mindestens 0.15) — der Himmel fällt schon an der Kante weg
+  ✅ Selbsttest „Stoff ohne Himmels-Sicht" → rot: CODE: `_getVoxelChunkMaterial` liest die Himmels-Sicht nicht (`aoNode` = `aHimmel`) — das Himmels-Licht liegt auf jeder Höhlen-Wand
+  ✅ Selbsttest „Himmel ohne Höhle" → rot: LEER: (i) Himmels-Licht: kein Höhlen-Vertex im Boden-Satz (die Wand prüfte nichts)
+  ✅ Selbsttest „flache Höhle" → rot: CODE: `_buildPbrNodeMaterial` flacht die Normale auch in der Höhle (die 2.5D-Lichtung ohne `aHimmel`) — jede Decke und Wand liegt als Wiese im Licht von oben, kein Licht von unten erreicht sie
+  ✅ Selbsttest „kein Licht des Auges" → rot: LICHT DES AUGES: der Boden-Stoff trägt kein Licht des Auges (`atmoUniforms.augenLicht` fehlt) — die Ich-Sicht in der Höhle [-1041,9,-738] ist schwarz (kein Himmel, keine Sonne, kein Licht)
+  ✅ Selbsttest „Licht aus in der Höhle" → rot: LICHT DES AUGES: das Auge in der Höhle [-1041,9,-738] sieht den Himmel 0.2 und trägt Licht 0 — die Ich-Sicht ist schwarz
+  ✅ Selbsttest „Licht ohne Gesetz" → rot: LICHT DES AUGES: in der Höhle Stärke 3, das Gesetz verlangt 30 (Himmel am Auge 0.2)
+  ✅ Selbsttest „Licht im Freien" → rot: LICHT DES AUGES: unter freiem Himmel [-1041,30,-738] brennt es (Himmel 1, Stärke 5) — die Welt zahlte das Licht auch, wo der Himmel leuchtet
+  ✅ Selbsttest „Stoff ohne Augen-Term" → rot: CODE: der Boden-Stoff (`_buildPbrNodeMaterial`) trägt den Term des Lichts des Auges nicht (`atmoUniforms.augenLicht` × (1 − `aHimmel`)) — die Höhle ist schwarz oder ein Szenen-Licht trägt es überall
+  ✅ Selbsttest „Normale im Zweig" → rot: CODE: der Term des Lichts des Auges liest `normalView`/`positionViewDirection` nicht in der Bedingung seines Zweigs (`select`), sondern erst im Zweig — r184 baut das Emissiv VOR der Lichtung, die Variable stünde nur im Zweig: unter dem Himmel lichtet der Boden mit der Normale 0 (schwarz)
+  ✅ Selbsttest „fremder TSL-Name" → rot: CODE: der Term des Lichts des Auges liest `diffuseContribution` — `three/tsl` der Seite kennt den Namen nicht (undefined, der Graph bricht, der Boden ist schwarz)
+  ✅ Selbsttest „Szenen-Licht auf 0" → rot: SZENEN-LICHT: 1 von 2 direkten Lichtern der Szene tragen unter freiem Himmel nichts, zuerst `augenLicht` (PointLight/AugenLicht, Stärke 0) — jeder beleuchtete Stoff trägt 4 Licht-Knoten im Hash, 1 davon rechnen eine BRDF ohne Licht
+  ✅ Selbsttest „schwarzes Szenen-Licht" → rot: SZENEN-LICHT: 1 von 1 direkten Lichtern der Szene tragen unter freiem Himmel nichts, zuerst `(ohne Namen)` (DirectionalLight, Stärke 1, schwarz) — jeder beleuchtete Stoff trägt 3 Licht-Knoten im Hash, 1 davon rechnen eine BRDF ohne Licht
+  ✅ Selbsttest „Szenen-Licht ungezählt" → rot: LEER: (l) Szenen-Licht: kein Licht der Szene unter freiem Himmel gezählt (die Wand prüfte nichts)
+  ✅ Selbsttest „Licht ohne Höhle" → rot: LEER: (j) Licht des Auges: kein Auge in der Höhlen-Luft gemessen (die Wand prüfte nichts)
+  ✅ Selbsttest „geblendet" → rot: BLENDUNG: das Licht des Auges fällt mit 1/d^1 — die Wand in 0,3 m ist 6.7× heller als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)
+  ✅ Selbsttest „Wiese unter Fels" → rot: WIESE UNTER FELS: 650 von 700 Höhlen-Vertices ohne Himmel tragen nicht den Stein der Palette (420 davon grün), zuerst {"p":[762,9.4,-136],"c":[0.05,0.12,0.03],"fels":[0.14,0.13,0.12]} — die Farbe der Säule (Wiese, Feuchte, Schnee) liegt auf dem Höhlen-Boden (`_bodenFarbeUnterFels`)
+  ✅ Selbsttest „Fels ohne Höhle" → rot: LEER: (k) Wiese unter Fels: kein Höhlen-Vertex ohne Himmel im Boden-Satz (die Wand prüfte nichts)
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== KAMERA-TREUE — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Zeiger genullt" → rot: STAPEL: die Aufnahme verfolgt 1 von 13 Draws — der Schatten-Render nullte den Zeiger, der Replay refresht die übrigen nie
+  ✅ Selbsttest „Bundle unter Override" → rot: OVERRIDE: 2 Bundle(s) unter einem overrideMaterial gesammelt — der Replay refresht sie gegen den geteilten Stoff
+  ✅ Selbsttest „Bühne ohne Schatten" → rot: STAPEL: kein Schatten-Render während der Aufnahme (die Probe ist blind)
+  ✅ Selbsttest „Replay klebt" → rot: BILD: der Replay zeichnet Blick Y zu 0.4 gleich mit dem direkten Pfad (Soll ≥ 0.999) — ein Bürger klebt an der Kamera seiner Aufnahme
+  ✅ Selbsttest „Schatten gegen fremden Stoff" → rot: BILD: mit fremdem Schatten-Stoff zeichnet der Replay Y zu 0.9 gleich (Soll ≥ 0.999) — ein Schatten-Bundle wirft gegen den geteilten Stoff
+  ✅ Selbsttest „Stapel-Probe blind" → rot: BILD: ohne den Chokepoint zeichnet der Replay Y zu 1 gleich (Soll < 0.98) — die Stapel-Probe ist blind
+  ✅ Selbsttest „Override-Probe blind" → rot: BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu 1 gleich (Soll < 0.98) — die Override-Probe ist blind
+  ✅ Selbsttest „Bühne blind" → rot: BILD: Blick X und Blick Y sind zu 0.99 gleich (Soll < 0.9) — die Bühne ist blind
+  ✅ Selbsttest „Refresh je Frame ohne Änderung" → rot: STAND direkt: 2 Voll-Refreshs je Render ohne Änderung (Soll 0) — ein Refresh je Frame ohne Änderung
+  ✅ Selbsttest „Gang je Programm (Replay)" → rot: STAND replay: 31 wiederholte Gänge je Render ({"k":28,"g":3}: k Knoten · v Vorher · g Gruppe) — dieselbe Arbeit je Programm statt EINMAL
+  ✅ Selbsttest „Upload ohne Änderung" → rot: STAND direkt: 1 Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)
+  ✅ Selbsttest „vergessener Refresh" → rot: ÄNDERUNG replay: nach Kiste und Blatt zeichnet die Diät 0.9 gleich mit dem vollen Refresh (Soll ≥ 0.999) — ein vergessener Refresh
+  ✅ Selbsttest „Änderungs-Probe blind" → rot: ÄNDERUNG direkt: eine Diät, die nie refresht, zeichnet 1 gleich (Soll < 0.98) — die Änderungs-Probe ist blind
+  ✅ Selbsttest „Gruppe je Programm" → rot: TEILEN: die 8 Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen 8 geteilte Gruppen statt 1 — jedes Programm lädt Kamera und Schatten in seinen eigenen Puffer
+  ✅ Selbsttest „Teilen blind" → rot: TEILEN: 0 Karten-Programme im Hauptbild gesammelt (Soll 8) — die Probe ist blind
+  ✅ Selbsttest „Stand blind" → rot: STAND direkt: keine Diät-Prüfung gezählt — die Probe ist blind
+  ✅ Selbsttest „Stempel überlebt den verschachtelten Render" → rot: VERSCHACHTELT replay: nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät 0.1099 gleich mit dem vollen Refresh (Soll ≥ 0.999) — ein Stempel überlebte den verschachtelten Render, die nächste geteilte Gruppe trug dessen Kamera
+  ✅ Selbsttest „Verschachtelt blind (Täter)" → rot: VERSCHACHTELT direkt: ein Stempel nur aus der Render-Id zeichnet 1 gleich (Soll < 0.98) — die Probe ist blind (oder der Gang liest seinen Render-Abschnitt nicht aus `rend.info.calls`)
+  ✅ Selbsttest „kein verschachtelter Render" → rot: VERSCHACHTELT replay: kein verschachtelter Render im Bild der Diät — die Probe ist blind
+  ✅ Selbsttest „Spiel-Frame in der Bühne" → rot: LAUF: 2 Spiel-Bilder während der Bühne, der GPU-Kehraus nahm 51 Geometrie-Puffer — der Spiel-Loop lief hinein (ein Replay danach zeichnet das Bild davor: 0,3064) — der Lauf ist ungültig
+  ✅ Selbsttest „Kehraus ohne Spiel-Bild" → rot: LAUF: 0 Spiel-Bilder während der Bühne, der GPU-Kehraus nahm 3 Geometrie-Puffer — der Spiel-Loop lief hinein (ein Replay danach zeichnet das Bild davor: 0,3064) — der Lauf ist ungültig
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „main (der Wurf geht mit der Haut)" → rot: LEIB WIRFT NICHT: in der Ego-Sicht 0 px Schatten des Spielers am Boden (3rd-Person: 1500 px) — die Ego-Regel nimmt dem Leib den Wurf
+  ✅ Selbsttest „nur der Rumpf wirft" → rot: UMRISS: der Ego-Schatten deckt den der 3rd-Person zu IoU 0.62 (Soll ≥ 0.9; Ego 1500 px, 3rd 1500 px) — es wirft nicht der ganze Leib
+  ✅ Selbsttest „Leib vor dem Auge" → rot: AUGE: die Haupt-Kamera sieht in der Ego-Sicht Leib — 12 Bildpunkte vor dem Auge, 0 sichtbare Leib-Meshes auf Ebene 0
+  ✅ Selbsttest „Leib-Mesh auf Ebene 0" → rot: AUGE: die Haupt-Kamera sieht in der Ego-Sicht Leib — 0 Bildpunkte vor dem Auge, 3 sichtbare Leib-Meshes auf Ebene 0
+  ✅ Selbsttest „Gerät verborgen" → rot: GERÄT: das Gerät in der Hand liegt in der Ego-Sicht auf Maske 4 statt 1 (Ebene 0) — das Auge sähe es nicht
+  ✅ Selbsttest „Zwilling geweckt" → rot: ZWILLING: ein Knoten, der nur in den Kaskaden lebt, trägt nach 1st → 3rd die Maske 5 — die Haupt-Kamera sähe ihn
+  ✅ Selbsttest „visible geschaltet" → rot: ZURÜCK: die Regel schaltet visible an 2 Knoten
+  ✅ Selbsttest „Haupt-Kamera sieht die Zwillings-Ebene" → rot: VERTRAG: die Haupt-Kamera sieht Ebene 2
+  ✅ Selbsttest „Bühne ohne Schatten" → rot: BLIND: die 3rd-Person wirft auf der Bühne 3 px (Soll ≥ 400) — die Linse sähe keinen Schatten
+  ✅ Selbsttest „Gegenprobe blind" → rot: GEGENPROBE: die Regel „main: visible" fällt nicht als LEIB WIRFT NICHT (grün) — die Linse ist blind
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== TAKT-ATEM — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Dichte ohne Wand (V18.538)" → rot: DICHTE ATMET: _foliageDensityScale wechselt in 52.0 % der Takte (Soll ≤ 10.0 %) — der Stand-Stempel stieg in 52.0 % der Takte allein durch sie · STAND WACH: die Dichte weckt über den Stand-Stempel die Fege-Takte in 52.0 % der Takte (Soll ≤ 10.0 %) — _tickArchitectureLOD geht 3.1 von 95 Einträgen je Takt, _lodTreeVisHeight 0.7, _foundrySichtHoehe 0.7 je Takt
+  ✅ Selbsttest „Stempel je Takt durch die Dichte" → rot: STAND WACH: die Dichte weckt über den Stand-Stempel die Fege-Takte in 50.0 % der Takte (Soll ≤ 10.0 %) — _tickArchitectureLOD geht 47.5 von 95 Einträgen je Takt, _lodTreeVisHeight 0.7, _foundrySichtHoehe 0.7 je Takt
+  ✅ Selbsttest „Lage fällt je Takt" → rot: LAGE FÄLLT: die Lage des Hauptbilds fällt in 50.0 % der Takte (Soll ≤ 10.0 %) — _chunkSatzAbschnitt 4.5, _hoehlenSicht 0.03 je Takt
+  ✅ Selbsttest „Welt ohne Baum" → rot: BLIND: kein Baum der Stufen-Wahl in der Welt
+  ✅ Selbsttest „Gegenprobe blind" → rot: GEGENPROBE: die stoßende Dichte fällt nicht als DICHTE ATMET (STAND WACH (Gegenprobe): die Dichte weckt über den Stand-Stempel die Fege-Takte in 100.0 % der Takte (Soll ≤ 10.0 %) — _tickArchitectureLOD geht 95 von 95 Einträgen je Takt, _lodTreeVisHeight 0.7, _foundrySichtHoehe 0.7 je Takt · LAGE FÄLLT (Gegenprobe): die Lage des Hauptbilds fällt in 100.0 % der Takte (Soll ≤ 10.0 %) — _chunkSatzAbschnitt 0.3, _hoehlenSicht 0.03 je Takt) — die Linse ist blind
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== SICHT-ARBEIT — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest grün → grün
+  ✅ Selbsttest grün mit Licht-Rand → grün
+  ✅ Selbsttest echter Loop mit Inhalts-Änderung → grün
+  ✅ Selbsttest Ruhe mit Änderung (Licht) → grün
+  ✅ Selbsttest Klasse „Inhalt änderte sich (ein Bereich kam)" → aenderung
+  ✅ Selbsttest Klasse „Stand ohne Inhalt" → ohne
+  ✅ Selbsttest Klasse „Stand-Bruch (der Satz zählt nur seinen Stand)" → ohne
+  ✅ Selbsttest Klasse „Verdichten-Zähler ohne Grund" → ohne
+  ✅ Selbsttest Klasse „Verdichten nach dem Überhang (die neue Wahl danach)" → folge
+  ✅ Selbsttest Klasse „Inhalt einer anderen Familie" → ohne
+  ✅ Selbsttest Klasse „Licht drehte (Kaskade)" → aenderung
+  ✅ Selbsttest Klasse „Licht drehte (Hauptbild)" → ohne
+  ✅ Selbsttest Klasse „Kamera bewegt (Hauptbild)" → aenderung
+  ✅ Selbsttest Klasse „Lage ohne Licht" → ohne
+  ✅ Selbsttest Klasse „Licht drehte seit dem letzten Pass der Kaskade (sie ruhte im Frame der Drehung)" → aenderung
+  ✅ Selbsttest Klasse „Licht drehte nur für die andere Kaskade" → ohne
+  ✅ Selbsttest Klasse „Licht je Kaskade für das Hauptbild" → ohne
+  ✅ Selbsttest Klasse „Blende des Reglers (Hauptbild)" → aenderung
+  ✅ Selbsttest Klasse „Verdichten einer ruhenden Wahl" → folge
+  ✅ Selbsttest Klasse „Umlegen" → folge
+  ✅ Selbsttest Klasse „Verdichten ohne Schuld" → ohne
+  ✅ Selbsttest Klasse „Umlegen ohne Wahl" → ohne
+  ✅ Selbsttest Klasse „ungesehene Bytes" → ohne
+  ✅ Selbsttest Kamera „Atmen ±4 mm" → steht
+  ✅ Selbsttest Kamera „Schritt 1,5 cm (über dem halben Halt)" → bewegt
+  ✅ Selbsttest Kamera „Drehung 0,5°" → steht
+  ✅ Selbsttest Kamera „Drehung 1,5°" → bewegt
+  ✅ Selbsttest Kamera „Projektion (Fern-Ebene)" → bewegt
+  ✅ Selbsttest Blende „Atmen ±1 mm quer" → steht
+  ✅ Selbsttest Blende „Atmen 9 mm (unter dem halben Halt)" → steht
+  ✅ Selbsttest Blende „Schritt 1,5 cm" → bewegt
+  ✅ Selbsttest Blende „Perf-Streck neu" → bewegt
+  ✅ Selbsttest Blende „Kante des Blend-Gesetzes neu" → bewegt
+  ✅ Selbsttest Blende „Maske aus" → bewegt
+  ✅ Selbsttest Arbeit ohne Änderung „ruhig" → 57
+  ✅ Selbsttest Arbeit ohne Änderung „Licht drehte" → 7
+  ✅ Selbsttest Arbeit ohne Änderung „Licht drehte seit dem letzten Pass von k1 (nicht von k0)" → 57
+  ✅ Selbsttest Arbeit ohne Änderung „die Werfer der Region-Bündel einer ruhenden Kaskade zählen nicht (wie `arbeit`)" → 7
+  ✅ Selbsttest Arbeit ohne Änderung „Kamera bewegt" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Blende neu" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Inhalt änderte sich" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Folge (die offene Ordnung lief)" → 0
+  ✅ Selbsttest Arbeit ohne Änderung „Stand-Bruch (der Satz zählt nur seinen Stand)" → 57
+  ✅ Selbsttest Satz-Inhalt „Stand-Bruch (Stand +1, nichts sonst)" → kein Grund (ohne Ursache: {"stand":1,"verdichtet":0})
+  ✅ Selbsttest Satz-Inhalt „ein Bereich kam" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Bereich wurde neu gebaut" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Bereich ging" → aenderung
+  ✅ Selbsttest Satz-Inhalt „der Anker zog um" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Geomorph legt eine neue Hülle" → aenderung
+  ✅ Selbsttest Satz-Inhalt „ein Geomorph ohne neue Hülle" → kein Grund (ohne Ursache: {"stand":1,"verdichtet":0})
+  ✅ Selbsttest Satz-Inhalt „die offene Ordnung läuft" → folge
+  ✅ Selbsttest Satz-Inhalt „eine Ordnung ohne offenen Grund" → kein Grund (ohne Ursache: {"stand":1,"verdichtet":0})
+  ✅ Selbsttest Satz-Inhalt „das Verdichten nach dem Überhang" → folge
+  ✅ Selbsttest Satz-Inhalt „ein Verdichten-Zähler ohne Tausch" → kein Grund (ohne Ursache: {"stand":0,"verdichtet":1})
+  ✅ Selbsttest Satz-Inhalt „ein Verdichten ohne Überhang" → kein Grund (ohne Ursache: {"stand":0,"verdichtet":1})
+  ✅ Selbsttest „Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 15072, max 15072 Prüfungen, in 5 von 5 Frames, 0 mit Änderung; alle Frames Ø 15072, Höhlen-Sicht 3 + Licht 2 Aufrufe, Abschnitte 16, Ecken 9816, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch; neu gerechnet je Frame: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2 · RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25 · bauSatz stand:ohne ×10 · boden stand:ohne ×5 (der Cache-Schlüssel eines Satzes zählt, kein Bereich, kein Anker, keine Hülle änderte sich)
+  ✅ Selbsttest „Stand-Churn ohne Ursache: die Arbeit ist Arbeit ohne Änderung" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 15072, max 15072 Prüfungen, in 5 von 5 Frames, 0 mit Änderung; alle Frames Ø 15072, Höhlen-Sicht 3 + Licht 2 Aufrufe, Abschnitte 16, Ecken 9816, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch; neu gerechnet je Frame: satz streuSatz|haupt ×5, satz bauSatz|haupt ×2 · RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25 · bauSatz stand:ohne ×10 · boden stand:ohne ×5 (der Cache-Schlüssel eines Satzes zählt, kein Bereich, kein Anker, keine Hülle änderte sich)
+  ✅ Selbsttest „stumpfe Stand-Linse (der Stand-Bruch heißt Änderung)" → rot: LINSE STUMPF: ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle ändert sich) zählt als Änderung (10 von 10 Frames mit Änderung, Arbeit ohne Änderung in 0, ohne Ursache {})
+  ✅ Selbsttest „stumpfe Stand-Linse (der Stand-Bruch steht ohne Namen)" → rot: LINSE STUMPF: ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle ändert sich) zählt als Änderung (0 von 10 Frames mit Änderung, Arbeit ohne Änderung in 10, ohne Ursache {})
+  ✅ Selbsttest „kein Stand-Bruch" → rot: LEER: kein Stand-Bruch gemessen — (S) prüfte die Satz-Arbeit ohne Ursache nicht
+  ✅ Selbsttest „das atmende Auge arbeitet (der Täter der zweiten Gegenprüfung)" → rot: AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames (Median 14999, max 14999 Prüfungen, Bytes ohne Grund in 0) — eine zweite Signatur neben dem Gesetz des Halts; neu gerechnet je Frame: satz streuSatz|haupt ×5, gruppe f:eiche|2|1:0#S ×2
+  ✅ Selbsttest „die Linse nennt das atmende Auge Blende" → rot: LINSE STUMPF: das atmende Auge (±1 mm, unter dem Halt) heißt Bewegung — Kamera in 0, Blende in 5 von 5 Frames; jede Arbeit darin wäre entschuldigt
+  ✅ Selbsttest „kein atmendes Auge" → rot: LEER: keine Phase mit atmendem Auge gemessen — (A) prüfte nichts
+  ✅ Selbsttest „die Maske ist aus" → rot: LEER: die Maske ist aus (uLodMaskOn) — (A) prüfte das Auge der Blende nicht
+  ✅ Selbsttest „Loch an der Kante des Fensters" → rot: BLENDE-TREUE: 1 Löcher — das Auge der Maske wanderte unter dem Halt, die gehaltene Wahl zeichnet nicht, was die Maske vom Auge dieses Frames behält: f:eiche|2|1:0 Slot 3 (Kante: f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m))
+  ✅ Selbsttest „die Lage hält das Auge nicht" → rot: BLENDE-TREUE VAKUÖS: die Lage hielt das Auge der Maske über 9,5 mm nicht (unter dem halben Halt) — f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)
+  ✅ Selbsttest „die Maske behält die Kante nicht" → rot: BLENDE-TREUE VAKUÖS: die Maske behält die Instanz an der Kante nicht — f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)
+  ✅ Selbsttest „keine Instanz an einer Kante" → rot: LEER: Blende-Treue ohne Instanz an der Kante eines Fensters — (A) prüfte die gehaltene Wahl nicht
+  ✅ Selbsttest „ohne Rand fehlt nichts (die Probe ist stumpf)" → rot: LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts (0 Löcher) — die Blende-Treue prüft die Kante nicht
+  ✅ Selbsttest „der Inhalt ändert sich in der eingefrorenen Welt" → rot: RUHE: die Welt ist eingefroren, doch ihr Inhalt änderte sich in 2 von 10 Frames (boden +-901,-850 -899,-850) — die Ruhe misst nicht die Ruhe
+  ✅ Selbsttest „Arbeit in Ruhe (die Basis)" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 5200, max 5200 Prüfungen, in 10 von 10 Frames, 0 mit Änderung; alle Frames Ø 5200, Höhlen-Sicht 0 + Licht 0 Aufrufe, Abschnitte 0, Ecken 0, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch · LINSE BLIND: kein Pass traf in Ruhe seinen Cache (die Wahl steht nie — oder die Linse sieht sie nicht)
+  ✅ Selbsttest „ein Ausreißer in Ruhe" → rot: RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median 0, max 30 Prüfungen, in 1 von 10 Frames, 0 mit Änderung; alle Frames Ø 0, Höhlen-Sicht 0 + Licht 0 Aufrufe, Abschnitte 0, Ecken 0, Instanzen 0) — nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch
+  ✅ Selbsttest „Bytes in Ruhe" → rot: RUHE: 96 Index-Bytes je Frame ohne Änderung (max 960, in 1 von 10 Frames) — ein Pass schreibt ohne Änderung: bauSatz dicht? 960 B
+  ✅ Selbsttest „kein Treffer" → rot: LINSE BLIND: kein Pass traf in Ruhe seinen Cache (die Wahl steht nie — oder die Linse sieht sie nicht)
+  ✅ Selbsttest „starres Drehen" → rot: STARR: beim Drehen rechnet die Sicht nicht neu (Median der Arbeit 0) — eine gehaltene Wahl über eine neue Lage ist ein Loch
+  ✅ Selbsttest „starres Gehen" → rot: STARR: beim Gehen rechnet die Sicht nicht neu (Median der Arbeit 0) — eine gehaltene Wahl über eine neue Lage ist ein Loch
+  ✅ Selbsttest „untreue Wahl" → rot: TREUE: boden|haupt: 41 statt 43 Zellen — die gehaltene Wahl ist nicht die frisch gerechnete
+  ✅ Selbsttest „Treue ohne Vergleich" → rot: LEER: Treue ohne Vergleich (kein Abschnitt, keine Gruppe)
+  ✅ Selbsttest „stumpfe Linse" → rot: LINSE STUMPF: ein eingeschmuggelter Cache-Bruch (die Lage jedes Passes neu) arbeitet in Ruhe nicht
+  ✅ Selbsttest „stumpfe Byte-Linse (der Byte-Bruch schreibt nichts)" → rot: LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt nicht als Bytes ohne Änderung (0 Frames, {})
+  ✅ Selbsttest „stumpfe Byte-Linse (der Byte-Bruch heißt Folge)" → rot: LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt nicht als Bytes ohne Änderung (0 Frames, {})
+  ✅ Selbsttest „kein Byte-Bruch" → rot: LEER: kein Byte-Bruch gemessen — (S) prüfte die Bytes ohne Änderung nicht
+  ✅ Selbsttest „das Licht dreht je Frame (die Basis)" → rot: SONNE: das Licht hat keine Stufe — es dreht in 120 von 120 Frames, jede Kaskade bekommt bei jedem Render eine neue Lage und wählt neu
+  ✅ Selbsttest „Arbeit zwischen den Stufen" → rot: SONNE: die Sicht-Kette arbeitet in 40 von 120 Frames (Ø 20 Prüfungen), das Licht drehte in 6 — Arbeit zwischen den Stufen
+  ✅ Selbsttest „Stufe ohne Halt" → rot: SONNE: das Licht dreht in 120 von 120 Frames — die Sonne lief 0.026 rad, die Stufe 0.00392156862745098 rad erlaubt etwa 8
+  ✅ Selbsttest „Kaskaden ohne Licht-Rand" → rot: SONNE: die Kaskaden wählen ohne Licht-Rand — jede Stufe der Sonne legt ihre Lage neu, und jede wählt neu
+  ✅ Selbsttest „Arbeit über den Licht-Rand hinaus" → rot: SONNE: die Sicht-Kette arbeitet in 199 von 199 Frames (Ø 20 Prüfungen), das Licht drehte in 199, der Licht-Rand (32 Texel) erlaubt etwa 61 neue Wahlen je Kaskade — Arbeit zwischen den Stufen
+  ✅ Selbsttest „Sonne ohne Lauf" → rot: LEER: in der Phase mit laufender Sonne lief die Sonne nicht
+  ✅ Selbsttest „keine Sonne" → rot: LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts
+  ✅ Selbsttest „keine Ruhe" → rot: LEER: keine Ruhe-Phase gemessen (die Linse prüfte nichts)
+  ✅ Selbsttest „ein Leser fehlt der Welt (die Linse hüllt ihn nicht)" → rot: LINSE BLIND: die Welt trägt die Leser _hoehlenSichtLicht nicht — ihre Arbeit zählt nichts
+  ✅ Selbsttest „Loch nach der Neu-Wahl in der Drehung" → rot: DREH-TREUE: 7 Löcher — nach einer Neu-Wahl mitten in der gehaltenen Drehung (Grenze 0.0348 rad) zeichnet die gehaltene Wahl nicht, was das echte Frustum trifft: boden Zelle
+  ✅ Selbsttest „Drehfolge ohne Halt" → rot: DREH-TREUE VAKUÖS: die Lage hielt die Drehfolge nicht (Grenze 0.0348 rad) — der Fall trat nie ein
+  ✅ Selbsttest „keine Dreh-Treue" → rot: LEER: keine Dreh-Treue gemessen — (D) prüfte nichts
+  ✅ Selbsttest „die zweite Kaskade hält eine tote Marke" → rot: INSTANZ: nach einem fremden Schreiber (Freigeben+Belegen g, Stufen-Wechsel g 1→0) 1 Würfe, 1 NaN-Slots, 1 tote Marken, 0 fehlende Werfer — eine Kaskade hielt ihre Wahl: Wurf: Cannot set properties of undefined (setting 'slot')
+  ✅ Selbsttest „ein Werfer fehlt der Kaskade" → rot: INSTANZ: nach einem fremden Schreiber (Freigeben+Belegen g, Stufen-Wechsel g 1→0) 0 Würfe, 0 NaN-Slots, 0 tote Marken, 2 fehlende Werfer — eine Kaskade hielt ihre Wahl: 
+  ✅ Selbsttest „Instanz-Treue ohne den echten Weg" → rot: LEER: Instanz-Treue ohne beide Fälle (Freigeben+Belegen g) — (I) prüfte nicht alles
+  ✅ Selbsttest „der Stufen-Wechsel leert seine Gruppe (CI 37612012391)" → rot: LEER: Instanz-Treue ohne beide Fälle (Freigeben+Belegen g) — ohne Prüfung: Stufen-Wechsel f:weide|1|1:0#S 1→0 leerte die Gruppe (eine leere Gruppe zeichnet in keinem Pass) — (I) prüfte nicht alles
+  ✅ Selbsttest „keine Generation" → rot: CODE: `_passWahlLage` legt keine Lage-Generation (`_passLageGen`) — die Kette weiß nie, ob sie steht
+  ✅ Selbsttest „Satz fragt nicht" → rot: CODE: `_chunkSatzPass` fragt `_satzAbschnittSteht` nicht (jeder Pass rechnet jeden Satz neu)
+  ✅ Selbsttest „Instanz fragt nicht" → rot: CODE: `_instanzWahlPass` fragt `_instanzWahlSteht` nicht (jede Instanz jeder Gruppe je Pass neu)
+  ✅ Selbsttest „Wiese liest nicht" → rot: CODE: `_nahWieseSicht` liest die Lage-Generation nicht (`L.gen`)
+  ✅ Selbsttest „zweite Signatur" → rot: CODE: `_sichtSteht` lebt — eine zweite Kamera-Signatur neben dem Gesetz der Lage
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== WETTER-WACHE — Selbsttest der Urteile (ohne Browser) ===
+✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr, blinder Spion; Nexus an der Uhr, Sprung, lahmer Gang, Zug gegen das Wort, fehlender Täter, die Welt schreibt selbst, Zug im Galopp, das Wesen gegen das Wort, das Wesen schreibt selbst, das Wesen fehlt fallen rot; Bühne, Verweigerung und Wunsch grün.
+=== WELT-WACHE — Selbsttest des Urteils (ohne Browser) ===
+✅ SELBSTTEST GRÜN — durchgelaufene Akte, blinder und fehlender Spion fallen rot; Verweigerung grün.
+=== BLOCKER-NETZ — Selbsttest der Box-Wand (ohne Browser) ===
+✅ SELBSTTEST GRÜN — der Stamm sauber (6 Zuweisungen an .blockerAABBs, jede gestempelt), fünf eingeschleuste Schreiber rot, ein gestempelter grün.
+=== KOLLISION = BILD — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Felsturm als Eisen-Mast" → rot: (B) BLOCKER OHNE BILD: felsturm#174 bei -913.7/-900.7 — eine Box ragt 16.46 m oben über das Bild (Bild 1.4×0.8×0.9, Box 4.4×16.8×4.4)
+  ✅ Selbsttest „Bild ohne Blocker" → rot: (U) BILD OHNE BLOCKER: haus_alemannisch#9 bei -913.7/-900.7 — das Bild steht im Körper-Band 1.20 m neben jeder Box (Bild 1.4×0.8×0.9)
+  ✅ Selbsttest „Baum ohne Stamm" → rot: (U) BAUM OHNE STAMM: baum_eiche#3 bei -913.7/-900.7 trägt keine Box
+  ✅ Selbsttest „fremde Gestalt" → rot: (G) FREMDE GESTALT: felsturm#174 bei -913.7/-900.7 — gezeichnet Gestalt 3, der Blocker misst 7
+  ✅ Selbsttest „leere Zählung" → rot: LEER: die Zählung fand kein Werk, das das Studio zeichnet
+  ✅ Selbsttest „stumpfer Schmuggel" → rot: LINSE STUMPF: (T) der eingeschmuggelte Täter (ein Felsturm mit den Spender-Parts) wurde nicht beim Namen genannt (felsturm#4)
+  ✅ Selbsttest „stumpfer Tor-Schmuggel" → rot: LINSE STUMPF: (T) das Tor ohne seinen ersten Pfosten wurde nicht als Bild ohne Blocker genannt (welt_fachwerk#9)
+  ✅ Selbsttest „fehlende Klasse" → rot: (E) KLASSE FEHLT: das Exemplar felsbogen stand nicht in der Zählung (nicht gesetzt)
+  ✅ Selbsttest „Typ-Liste" → rot: (Q) QUELLE: der Fels-Zweig `_felsBlockerParts` trägt eine Typ-Liste (`_var`)
+  ✅ Selbsttest „Fels ohne Skala" → rot: (Q) QUELLE: der Fels-Zweig liest die Welt-Skala nicht (`_studioWeltSkala`)
+  ✅ Selbsttest „Parts ohne Skala" → rot: (Q) QUELLE: der Parts-Pfad liest die Welt-Skala nicht (`_studioWeltSkala`)
+  ✅ Selbsttest „Hand-Spiegel" → rot: (Q) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt (zweite Welt-Skala neben dem Kern)
+  ✅ Selbsttest „Tor gebaut am Spawn" → rot: (K) DER HAUPT-THREAD BAUT: __portaCore.buildInstance(drachentor) am Spawn von tor_drachentor
+  ✅ Selbsttest „Bau-Zählung fehlt" → rot: LEER: (K) die Zählung der Haupt-Thread-Bauten fehlt
+  ✅ Selbsttest „Tor ohne Tafel" → rot: (Q) QUELLE: das Tor liest seine Hülle nicht aus dem Gesetzbuch (`porta:TOR_HUELLE`)
+  ✅ Selbsttest „Bau im Erzeuger" → rot: (Q) QUELLE: ein Blocker-Erzeuger ruft `buildInstance` (die Gestalt am Spawn nachgebaut)
+  ✅ Selbsttest „Tor-Bild ohne Box neben der Passage" → rot: (U) BILD OHNE BLOCKER: tor_ruine#7 bei -913.7/-900.7 — das Bild steht im Körper-Band 0.62 m neben jeder Box (Bild 1.4×0.8×0.9)
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== FALL-WÄCHTER — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Tier im Höhlen-Band" bleibt grün: grün
+  ✅ Selbsttest „der Wagen der Schau fällt durch den Spaltgrund" → rot: (O) DURCH DEN BODEN: O1 Wagen unter dem Überhang — Wagen fahrzeug_gt#9 bei -900.6/-976.1 lag 6444.00 m unter dem Fels unter ihm (am Ende y -6428.00, Grund 16.00) · (O) UNENDLICHER FALL: O1 Wagen unter dem Überhang — Wagen fahrzeug_gt#9 bei -900.6/-976.1 fiel unter die Todes-Ebene (y -6428.0) · (O) STEHT NICHT: O1 Wagen unter dem Überhang — Wagen fahrzeug_gt#9 bei -900.6/-976.1 ruht -6444.00 m über seinem Grund (y -6428.00, Grund 16.00)
+  ✅ Selbsttest „unendlicher Fall" → rot: (O) UNENDLICHER FALL: O2 Schau-Fahrt über die Spaltkante — Wagen fahrzeug_gt#10 bei -900.6/-976.1 fiel unter die Todes-Ebene (y -900.0)
+  ✅ Selbsttest „der Wolf auf dem Dach" → rot: (O) AUF DEM DACH: O3 Wolf in der Höhle — Tier wolf#3 bei -900.6/-976.1 steht 18.60 m über dem Grund, auf den er gesetzt war (y 48.60, Grund 30.00, Säulen-Oberkante 48.60)
+  ✅ Selbsttest „der Wagen schwebt" → rot: (O) STEHT NICHT: O3 Wagen in der Höhle — Wagen fahrzeug_gt#11 bei -900.6/-976.1 ruht 1.50 m über seinem Grund (y 31.50, Grund 30.00)
+  ✅ Selbsttest „fehlende Probe" → rot: LEER: die Probe „O3 Spieler in der Höhle" fehlt
+  ✅ Selbsttest „der Wolf läuft durch die Wand aufs Dach" → rot: (O) AUF DEM DACH: O3 Wolf läuft in die Wand — Tier wolf#4 (läuft an die Wand 0.4 m) bei -900.6/-976.1 steht 11.88 m über dem Grund, auf den er gesetzt war (y 42.28, Grund 30.40, Säulen-Oberkante 42.33)
+  ✅ Selbsttest „ein Tier tiefer als sein Sicht-Band" → rot: (O) DURCH DEN BODEN: O3 Wolf läuft in die Wand — Tier wolf#4 (läuft an die Wand 0.4 m) bei -900.6/-976.1 lag 2.50 m unter dem Fels unter ihm (am Ende y 29.80, Grund 32.30) · (O) STEHT NICHT: O3 Wolf läuft in die Wand — Tier wolf#4 (läuft an die Wand 0.4 m) bei -900.6/-976.1 ruht -2.50 m über seinem Grund (y 29.80, Grund 32.30)
+  ✅ Selbsttest „das Sicht-Band trägt in der Höhle nicht (Prüfung 2 K02a: 0,55 m unter dem Grund)" → rot: (O) DURCH DEN BODEN: O3 Wolf läuft in die Wand — Tier wolf#4 (läuft an die Wand 0.4 m) bei -900.6/-976.1 lag 0.55 m unter dem Fels unter ihm (am Ende y 29.85, Grund 30.40) · (O) STEHT NICHT: O3 Wolf läuft in die Wand — Tier wolf#4 (läuft an die Wand 0.4 m) bei -900.6/-976.1 ruht -0.55 m über seinem Grund (y 29.85, Grund 30.40)
+  ✅ Selbsttest „der laufende Wolf steigt die Höhlenwand hinauf (Prüfung 2 K02a, unter CPU-Last 1,00 m gehoben)" → rot: (O) KLETTERWAND: O3 Wolf läuft in die Wand — Tier wolf#4 (läuft an die Wand 0.4 m) bei -900.6/-976.1 steht mit der Stirn 1.40 m über seinem Heck (beim Anlauf 0.66 m; je 0.26 m vor und hinter der Wurzel; der Gang-Deckel trägt 0.35 m)
+  ✅ Selbsttest „der laufende Wolf ohne Stirn" → rot: LEER: O3 Wolf läuft in die Wand — keine Stirn gemessen
+  ✅ Selbsttest „der lebende Wolf steht am Wandfuß im Fels (Prüfung 2 K02a)" → rot: (O) STAND IM FELS: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 steht lebend mit der Haut 0.46 m im Fels (höchstens 0.15 m)
+  ✅ Selbsttest „der tote Wolf liegt im Grund (Gegenprüfung 10.10.)" → rot: (O) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 liegt 0.38 m im Fels (Stand 0.02 m über dem Fels) · (O) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 sinkt im Kippen 0.38 m in den Fels (Stand 0.02 m)
+  ✅ Selbsttest „der tote Wolf liegt über dem Boden" → rot: (O) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 liegt 0.62 m über dem Fels (Stand 0.02 m) — er schwebt
+  ✅ Selbsttest „der Stand im Hang ist kein Soll: er sinkt kippend tiefer (CI 38029478199)" → rot: (O) STAND IM FELS: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 steht lebend mit der Haut 0.68 m im Fels (höchstens 0.15 m) · (O) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 sinkt im Kippen 0.92 m in den Fels (Stand -0.68 m)
+  ✅ Selbsttest „der tote Wolf schwebt im Kippen" → rot: (O) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 (stirbt) bei -900.6/-976.1 schwebt im Kippen 0.90 m über dem Fels
+  ✅ Selbsttest „Tod ohne Haut" → rot: LEER: O3 Wolf stirbt in der Höhle — keine Haut gemessen (Stand 0.02, Lage null)
+  ✅ Selbsttest „leerer Zensus" → rot: LEER: (Z) der Zensus fand keine Überhang-Spalte
+  ✅ Selbsttest „Zensus-Täter" → rot: (Z) Wagen an -870/-1230 3,1 m durch den Boden
+  ✅ Selbsttest „stumpfer Schmuggel" → rot: LINSE STUMPF: (T) mit dem Dach-Leser im Boden des Werks fiel O1 nicht rot (8,2 m durch den Boden)
+  ✅ Selbsttest „Quelle" → rot: (Q) DACH-LESER: _fahrBoden Zeile 1 ruft getTerrainHeightAt
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+  ✅ Quellen-Wand am Stamm: sauber
+  ✅ Quellen-Wand an der Kopie mit dem alten Leser → _werkBoden Zeile 55669 ruft getTerrainHeightAt (die Oberkante der Säule)
+  ✅ Quellen-Wand an der Kopie mit der alten Tod-Lage → _todHebeTafel Zeile 20202 ruft getTerrainHeightAt (die Oberkante der Säule)
+  ✅ Quellen-Wand: ein unbenannter Leser am Leib und ein veralteter Name → UNBENANNT: _schmuggelLeib Zeile 20153 ruft getTerrainHeightAt (die Oberkante der Säule) und berührt die Höhe eines Leibs — Körper-Schritt (_koerperBodenUnter) oder benannte Platzierung? · VERALTET: _nieGelesen ist benannt, liest aber keine Oberkante an einem Leib mehr (die Liste wandert mit)
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== BRENNGLAS-TAKT — Selbsttest der Quell-Wand (ohne Browser) ===
+✅ SELBSTTEST GRÜN — kein Takt der Klasse läuft über den Bestand, jeder Schreiber stempelt; 22 eingeschleuste Brüche fallen rot (Alias, forEach, Index, Destrukturierung, Spread, Kopie, Netz-Liste, verschachtelte und userData-Schreiber, fremde Hitze, tote Ausnahme), 3 harmlose Formen bleiben grün.
+=== RAUM-TAGS — Selbsttest der Quell-Wand (ohne Browser) ===
+✅ SELBSTTEST GRÜN — Aufrufbaum 10 Methoden, 10 Tabellen (SPATIAL_POINTED_SHAPES, SPATIAL_HOLLOW_BONUS, SPATIAL_TRANSFERABLE_TAGS, SPATIAL_AXIS_BONUS, SPATIAL_ARRAY_BONUS, SPATIAL_HOLLOW_SHAPES, FORM_TAG_ACTIVATION, MATERIAL_TAG_CEIL, MATERIAL_TAG_KEYS, SPECIES_TAG_VARIATION); Zustands-Leser, Instanz-Feld, Tabellen-Schreiber und Leser vorbei am Gedächtnis fallen rot.
+  ✅ die Folge → grün
+  ✅ band vor lauf → FOLGE: „lauf-voll" nach „band" — die Ordnung ist boot · dorf-aus · fenster · umstellen · buehne · lauf-voll · lauf-frei · gpu-bank · band · profil · FOLGE: „lauf-frei" nach „band" — die Ordnung ist boot · dorf-aus · fenster · umstellen · buehne · lauf-voll · lauf-frei · gpu-bank · band · profil · FOLGE: „gpu-bank" nach „band" — die Ordnung ist boot · dorf-aus · fenster · umstellen · buehne · lauf-voll · lauf-frei · gpu-bank · band · profil · FOLGE: band vor lauf-voll — der Pool ist gefüllt, jeder Pass-Stempel des Laufs ist blind · FOLGE: band vor lauf-frei — der Pool ist gefüllt, jeder Pass-Stempel des Laufs ist blind
+  ✅ ohne Bühne → FOLGE: „buehne" fehlt vor dem ersten Messen (lauf-voll)
+  ✅ Dorf-Zug erst nach dem Umstellen → FOLGE: „dorf-aus" nach „umstellen" — die Ordnung ist boot · dorf-aus · fenster · umstellen · buehne · lauf-voll · lauf-frei · gpu-bank · band · profil · FOLGE: der Dorf-Zug ruht erst nach dem Umstellen — der Ort stand mit laufendem Zug
+  ✅ ruhige Wachen → grün
+  ✅ viele Tiere sind kein Befund → grün
+  ✅ der Tier-Zähler fehlt → TIERE lauf-voll: kein Tier-Zähler — die Messung steht ohne ihre Tiere
+  ✅ der Sichtkegel zählt NaN → TIERE band: sicht ist NaN
+  ✅ der Schatten-Wurf einer Kaskade zählt nicht → TIERE gpu-bank (Gier -0.88): schatten k1 ist undefined
+  ✅ die Arten fehlen → TIERE profil: keine Arten gezählt
+  ✅ vor dem Messen zählt der Zähler nicht → grün
+  ✅ Wetter dreht (Emotion) → WETTER lauf-voll: sunny → rainy durch emotion:sorrow (weather ← … ← dslRun ← trigger ← updatePlayerEmotions) · WETTER lauf-voll: das Wetter ist „rainy", die Bühne hält „sunny"
+  ✅ Wetter taut → WETTER lauf-frei: die Uhr des Auto-Zugs taut (17.6)
+  ✅ Pool läuft über → STEMPEL band: 927 verweigerte Abfragen (Pool 2048/2048) — jeder Pass-Stempel danach ist blind; Täter: PMREM.cubeUv 806
+  ✅ Dorf-Zug läuft → ORT gpu-bank (nach): Dorf-Zug läuft, der Ort will ruhend
+  ✅ Spieler gewandert → ORT profil (vor): der Spieler steht 40.0 m vom Messort -900 -850
+  ✅ Fenster kleiner → FENSTER lauf-voll (nach): 1280 × 720 statt 1920 × 1080
+  ✅ vor der Bühne zählt das Wetter nicht → grün
+  ✅ Nexus-Dorf unter dem Halt → WELTAKT lauf-voll: spawn_village durch nexus unter dem Halt (dslEval ← … ← dslRun ← _loopNexusUpdate)
+  ✅ verweigerte Welt-Akte sind grün → grün
+  ✅ Welt-Akt-Spion blind → WELTAKT lauf-voll: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+  ✅ Wache ohne Welt-Akt-Spion → WELTAKT lauf-voll: kein Welt-Akt-Spion (die Wache kennt `__weltaktBuch` nicht)
+  ✅ vor der Bühne zählen Welt-Akte nicht → grün
+  ✅ die Genesis-Folge → grün
+  ✅ Genesis mit einem Lauf der Wiese → FOLGE: unbekannter Schritt „lauf-voll"
+  ✅ Genesis gezählt an der Wiese (Ort-Wache) → ORT band (vor): aufgestellt am Ort wiese, nicht genesis · ORT band (vor): Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch] · ORT band (vor): Gier 0.000, der Blick des Orts -1.571 · ORT band (nach): aufgestellt am Ort wiese, nicht genesis · ORT band (nach): Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch] · ORT band (nach): Gier 0.000, der Blick des Orts -1.571
+  ✅ 0710-9: Genesis nicht gestellt → ORT band: NICHT GESTELLT — aufgestellt am Ort wiese, nicht genesis · Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch] · RAHMEN-ZIEL band: tex:r184-ausgabe 23.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+  ✅ 0710-9: das Rahmen-Ziel der Zerleg-Linse → ORT band: NICHT GESTELLT — aufgestellt am Ort wiese, nicht genesis · Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch] · RAHMEN-ZIEL band: tex:r184-ausgabe 23.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+  ✅ gestellter Ring ohne Rahmen-Ziel → grün
+  ✅ die Band schrieb keine Messung → BAND band: keine Messung (die Band schrieb keine Datei)
+  ✅ hängender /stop: Werkbank und Kind sterben → grün
+  ✅ Takt gedrosselt → TAKT a: Sitzung 5 bei 1640 MHz, Median 1700 MHz (±0.5 %) — der Vergleich ist blind (Täter: Takt) · TAKT b: Sitzung 5 bei 1640 MHz, Median 1700 MHz (±0.5 %) — der Vergleich ist blind (Täter: Takt)
+  ✅ ohne Takt → TAKT a: in 1 von 4 Sitzungen kein Takt (nvidia-smi) — der gleiche Takt ist nicht belegt · TAKT b: in 1 von 4 Sitzungen kein Takt (nvidia-smi) — der gleiche Takt ist nicht belegt
+  ✅ die nvidia-smi-Zeile → grün
+  ✅ Streuung im Soll → grün
+  ✅ eine Sitzung 0,3 ms daneben → STREUUNG a: Spanne 0.35 ms über dem Soll 0.1 ms (13.50 · 13.56 · 13.52 · 13.58 · 13.85)
+  ✅ zwei Sitzungen → STREUUNG: 2 Sitzungen — die Wiederholbarkeit braucht mindestens drei
+  ✅ Pose ohne Wert → STREUUNG b: in 1 von 5 Sitzungen kein Wert
+  ✅ die Spanne der Wiese (1110-3) → STREUUNG 0: Spanne 0.40 ms über dem Soll 0.1 ms (11.42 · 11.82 · 11.60 · 11.70)
+
+✅ SELBSTTEST GRÜN — die Folge-Regel und jede Wache nennen ihren Täter.
+=== STAND-TAKT — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest grün → grün
+  ✅ Selbsttest „der Cull-Gang in Ruhe (die Basis)" → rot: RUHE: archCull (tickArchitectureCulling) arbeitet im Stand — 105360 Einheiten in 30 von 30 Frames (Mittel 3512, max 3512): ein Fege-Takt rechnet seine Nachbarschaft neu, obwohl sich nichts änderte
+  ✅ Selbsttest „ein Ausreißer der Saum-Wache in Ruhe" → rot: RUHE: deckWache (_fernRingDeckWache) arbeitet im Stand — 128 Einheiten in 1 von 30 Frames (Mittel 4.27, max 128): ein Fege-Takt rechnet seine Nachbarschaft neu, obwohl sich nichts änderte
+  ✅ Selbsttest „stumpfe Linse (die Nah-Wiese zählt nichts)" → rot: STUMPF: mit gebrochener Wache zählt die Linse für nahWiese keine Arbeit — sie sähe den Täter nicht
+  ✅ Selbsttest „die Wache verschlief einen Wechsel" → rot: TREUE: archLod (_tickArchitectureLOD) änderte mit gebrochener Wache nach der Ruhe die Welt in 3 Gängen — die Wache verschlief eine Änderung (eine Eingabe, die der Stempel nicht kennt)
+  ✅ Selbsttest „ein Bau weckt den Cull nicht" → rot: WECKEN: ein Bau im Stand weckt archCull nicht — die Wache verschliefe die Welt
+  ✅ Selbsttest „der Bau bleibt ohne Stufe" → rot: WECKEN: der neue Bau trägt nach dem Wecken weder Stufe noch Gestalt (der Cull-Gang ging ihn nie)
+  ✅ Selbsttest „die Wache verschlief die Stufe des neuen Baums" → rot: TREUE: archLod (_tickArchitectureLOD) änderte mit gebrochener Wache nach dem Bau die Welt in 1 Gängen — die Wache verschlief eine Änderung (eine Eingabe, die der Stempel nicht kennt)
+  ✅ Selbsttest „ein Regler-Schritt weckt den Cull nicht" → rot: WECKEN: ein Regler-Schritt (der Cull-Radius) weckt archCull nicht — der Rand bliebe stehen
+  ✅ Selbsttest „nach dem Bau schläft die Wache nicht" → rot: WECKEN: nach dem Bau schläft die Wache nicht wieder (7020 Einheiten in Ruhe)
+  ✅ Selbsttest „starres Gehen (der Cull hält)" → rot: STARR: beim Gehen arbeitet archCull nicht — eine gehaltene Wahl wäre ein Loch
+  ✅ Selbsttest „der Ring geht beim Gehen in derselben Zelle" → rot: GEHEN: der Ring geht ohne Zellen-Wechsel (2490 Einheiten) — Gehen kostet mehr als die Änderung
+  ✅ Selbsttest „der Saum geht beim Gehen ohne neuen Anker" → rot: GEHEN: der Saum geht ohne neuen Anker (3840 Einheiten) — Gehen kostet mehr als die Änderung
+  ✅ Selbsttest „Gehen ohne Weg" → rot: BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran (Soll > 1 m)
+  ✅ Selbsttest „das Streaming verhungert nach der Ruhe" → rot: STROM: nach dem Sprung an (-300, -850) steht der Spieler-Chunk nach 40 Takten nicht — das Streaming verhungert
+  ✅ Selbsttest „ein Takt fragt die Wache nicht" → rot: CODE: _tickScatterLod fragt die Stand-Wache nicht (`_standRuht`)
+  ✅ Selbsttest „ein Takt meldet seinen Gang nicht" → rot: CODE: _tickNahStreu meldet seinen Gang nicht (`_standMeldet`)
+  ✅ Selbsttest „die Treue-Phase geht 6 Frames (die Streu 960 von 1 845 Zellen)" → rot: TREUE-LÜCKE: streuLod (_tickScatterLod) ging nach der Ruhe 960 von 1845 Einheiten seiner Runde — die Treue sah nur einen Teil der Welt
+  ✅ Selbsttest „die Treue nach dem Bau geht 6 Frames (der Saum 768 von 1 728 Punkten)" → rot: TREUE-LÜCKE: deckWache (_fernRingDeckWache) ging nach dem Bau 768 von 1728 Einheiten seiner Runde — die Treue sah nur einen Teil der Welt
+  ✅ Selbsttest „die Treue nach dem Bau nennt die Runde nicht" → rot: LEER: die Treue-Phase nach dem Bau nennt die Runde von archLod nicht
+  ✅ Selbsttest „der Täter der Streu in der zweiten Rundenhälfte bleibt ungesehen (6 Frames)" → rot: TREUE-TÄTER: die Treue-Phase sah die verschlafene Einheit von streuLod (_tickScatterLod) an Stelle 1734 von 1845 nicht (gegangen 960) — für die zweite Rundenhälfte ist die Treue blind · TREUE-LÜCKE: streuLod (_tickScatterLod) ging mit den Tätern 960 von 1845 Einheiten seiner Runde — die Treue sah nur einen Teil der Welt
+  ✅ Selbsttest „der Täter des Saums bleibt ungesehen" → rot: TREUE-TÄTER: die Treue-Phase sah die verschlafene Einheit von deckWache (_fernRingDeckWache) an Stelle 1727 von 1728 nicht (gegangen 1792) — für die zweite Rundenhälfte ist die Treue blind
+  ✅ Selbsttest „der Täter steht in der ersten Rundenhälfte" → rot: LEER: der Täter von streuLod steht an Stelle 400 von 1845 — nicht in der zweiten Rundenhälfte
+  ✅ Selbsttest „die Stufen-Wahl trägt keinen Täter (ihre Runde braucht mehrere Gänge)" → rot: LEER: kein Täter für archLod (_tickArchitectureLOD) — seine Runde (1638 Einheiten) braucht mehrere Gänge · TREUE: archLod (_tickArchitectureLOD) änderte mit gebrochener Wache mit den Tätern die Welt in 1 Gängen — die Wache verschlief eine Änderung (eine Eingabe, die der Stempel nicht kennt)
+  ✅ Selbsttest „der Täter weckt einen fremden Takt" → rot: TREUE: archCull (tickArchitectureCulling) änderte mit gebrochener Wache mit den Tätern die Welt in 2 Gängen — die Wache verschlief eine Änderung (eine Eingabe, die der Stempel nicht kennt)
+  ✅ Selbsttest „keine Täter-Probe" → rot: LEER: keine Täter-Probe der Treue
+  ✅ Selbsttest „die Runde der Stufen-Wahl wächst während der Treue-Phase" → rot: TREUE-LÜCKE: archLod (_tickArchitectureLOD) änderte nach der Ruhe seine Runde (1638 → 1702 Einheiten) — Einheiten hinter dem Cursor blieben ungesehen
+  ✅ Selbsttest „ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)" → rot: WECKEN: ein Wahrnehmungs-Schritt (LOD_DISTANCES, ohne Weckruf) weckt streuLod nicht — der Stempel liest die Wahrnehmung nicht
+  ✅ Selbsttest „ein Schreiber ohne Weckruf" → rot: SCHREIBER: _schmuggel schreibt architectures (Zeile 7) ohne _weltRegt() auf jedem Pfad — ungedeckt
+  ✅ Selbsttest „die Schreiber-Wand ist stumpf (ein Feld heißt anders)" → rot: STUMPF: die Schreiber-Wand sieht keinen Schreiber von scatterRegions — der bewachte Zustand heißt anders
+  ✅ Selbsttest „keine Ruhe" → rot: LEER: keine Ruhe-Phase gemessen
+  ✅ Selbsttest „keine Bruch-Phase" → rot: LEER: keine Bruch-Phase — die Linse ist ungeprüft
+  ✅ Selbsttest „Page-Error" → rot: PAGE-ERROR: TypeError: x
+  ✅ Schreiber-Wand am Stamm (voxelChunks 4 · waterCells 1 · architectures 4 · scatterRegions 2 · cells 1 · scatterHarvested 2 · nahWiese.kacheln 2 · nahStreu.kacheln 3 · zustand 3 · state[…] 0 Methoden, 17 Weckrufe) → jeder Pfad weckt
+  ✅ Selbsttest „ein Schreiber ohne Weckruf im Stamm" → rot: SCHREIBER: _schmuggelSchreiber schreibt architectures (Zeile 97715) ohne _weltRegt() auf jedem Pfad — ungedeckt über kein Rufer im Stamm
+  ✅ Mutations-Probe: 17 von 17 Weckrufen fallen gestrichen rot
+  ✅ Selbsttest „Weckruf _finalizeVoxelChunkBuild:33584 gestrichen" → rot: _finalizeVoxelChunkBuild schreibt voxelChunks
+  ✅ Selbsttest „Weckruf _finalizeVoxelChunkBuild:33608 gestrichen" → rot: _finalizeVoxelChunkBuild schreibt voxelChunks
+  ✅ Selbsttest „Weckruf _scatterRegionWork:57814 gestrichen" → rot: _scatterRegion schreibt scatterRegions, _scatterPass schreibt cells
+  ✅ Selbsttest Schreiber-Formen und ungedeckte Pfade: 44 von 44 rot beim Namen
+  ✅ Selbsttest: Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt, Schleifen und Leser bleiben grün
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== POST-KETTE — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Direktpfad stürzt" → rot: WEICHE: Direktpfad — TypeError: Invalid value used as weak map key
+  ✅ Selbsttest „Direktpfad ohne Tiefe" → rot: TIEFE: Direktpfad — der Direktpfad zeichnet ohne Tiefe (renderer.depth false)
+  ✅ Selbsttest „Leinwand-Tiefe in der Kette" → rot: TIEFE: Post-Kette zurück — die Post-Kette trägt eine Leinwand-Tiefe (renderer.depth true)
+  ✅ Selbsttest „GPU-Textur bleibt" → rot: TIEFE: Post-Kette zurück — die GPU-Textur der Leinwand-Tiefe lebt in der Post-Kette weiter
+  ✅ Selbsttest „Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)" → rot: RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: tex:r184-ausgabe 23.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+  ✅ Selbsttest „Rahmen-Ziel am Ende" → rot: RAHMEN-ZIEL: am Ende (nach Wasser und Godrays) — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: 1 Ziel(e) ohne Textur
+  ✅ Selbsttest „Direktpfad ohne Rahmen-Ziel (blind)" → rot: RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an, oder die Band nennt es nicht ({"ziele":0,"n":0,"mb":0}) — die Probe ist blind
+  ✅ Selbsttest „Rahmen-Ziel ungemessen" → rot: RAHMEN-ZIEL: Post-Kette — nicht gemessen (die Wand ist blind)
+  ✅ Selbsttest „Drift: das Ziel bleibt ohne r184s Hörer" → rot: RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: tex:r184-ausgabe 0.9 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+  ✅ Selbsttest „Drift: der Abschied fällt still" → rot: RAHMEN-ZIEL: ohne r184s Hörer fiel der Abschied STILL ([]) — die Drift bräche nur im Log · RAHMEN-ZIEL: 1 ERROR-Zeile(n) von `_rahmenZielAbschied` außerhalb der Drift-Probe: [AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt
+  ✅ Selbsttest „Drift: kein r184-Hörer zu finden (Vendor-Drift)" → rot: RAHMEN-ZIEL: am Leinwand-Ziel hängt kein r184-Abschied (`_frameBufferTargets.delete(`) — Vendor-Drift, die Probe ist blind
+  ✅ Selbsttest „Drift-Probe fehlt" → rot: RAHMEN-ZIEL: die Drift-Probe lief nicht (der zweite Abschied steht ohne Wand) · RAHMEN-ZIEL: 1 ERROR-Zeile(n) von `_rahmenZielAbschied` außerhalb der Drift-Probe: [AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt
+  ✅ Selbsttest „ERROR von _rahmenZielAbschied außerhalb der Drift" → rot: RAHMEN-ZIEL: 1 ERROR-Zeile(n) von `_rahmenZielAbschied` außerhalb der Drift-Probe: [AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt
+  ✅ Selbsttest „eine fremde ERROR-Zeile der Seite" → rot: KONSOLE: [AnazhRealm V18.536] [ERROR] Post-Processing fehlt
+  ✅ Selbsttest „Abbild fehlt" → rot: ABBILD: Post-Kette — kein Tiefen-Abbild (die Leser der Szenen-Tiefe lesen nichts)
+  ✅ Selbsttest „Abbild in voller Auflösung" → rot: ABBILD: Direktpfad — r32float 32×24 statt r32float 16×24 (halbe Breite, ganze Höhe)
+  ✅ Selbsttest „Abbild als 2×2-Block (die Zeile halbiert)" → rot: ABBILD: Direktpfad — r32float 16×12 statt r32float 16×24 (halbe Breite, ganze Höhe)
+  ✅ Selbsttest „Abbild leer" → rot: ABBILD: Post-Kette zurück — an der Bild-Mitte 1 statt der Kisten-Tiefe 0.98 (das Abbild trägt die Szene nicht)
+  ✅ Selbsttest „Wasser liest eine andere Tiefe (vec4-Weg)" → rot: WASSER: mit dem Abbild [60,90,80], mit r184s Viewport-Tiefe [75,118,105] (Soll ≤ 4 je Kanal) — das Wasser liest eine andere Tiefe
+  ✅ Selbsttest „Wasser-Probe blind" → rot: WASSER: mit und ohne Grund [60,90,80] / [60,90,80] — die Farbe hängt nicht an der Tiefe (die Probe ist blind)
+  ✅ Selbsttest „Wasser nicht umgehängt" → rot: WASSER: das Bühnen-Wasser wurde nicht umgehängt ([0,1]) — die Probe vergleicht nichts
+  ✅ Selbsttest „Wasser-Probe fehlt" → rot: WASSER: die Probe Abbild gegen r184s Viewport-Tiefe lief nicht
+  ✅ Selbsttest „Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)" → rot: SAUM: 14 von 30 Kanten-Pixeln links am Gegenstand weichen bis 25 Luma ab — das Abbild liest auf ungerader Leinwand den Nachbar-Block (ein heller Saum)
+  ✅ Selbsttest „Saum-Probe auf gerader Leinwand (blind)" → rot: SAUM: die Leinwand 320×240 ist nicht ungerade (die Probe ist blind)
+  ✅ Selbsttest „kein Gegenstand vor dem Wasser (blind)" → rot: SAUM: 0 Kanten-Pixel in 0 Paritäten — kein Gegenstand vor dem Wasser (die Probe ist blind)
+  ✅ Selbsttest „ferne Kiste vorn" → rot: TIEFE: Direktpfad — die Bild-Mitte ist [40,190,40], nicht die nahe rote Kiste (Tiefentest fehlt)
+  ✅ Selbsttest „Tiefen-Leser blind" → rot: WEICHE: Post-Kette — der Tiefen-Leser kopierte nie (die Wand ist blind für die Szenen-Tiefe)
+  ✅ Selbsttest „Fang ohne Direktpfad" → rot: TIEFE: Render-Fehler — die Post-Kette trägt eine Leinwand-Tiefe (renderer.depth true) · WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad
+  ✅ Selbsttest „GPU-Validierung" → rot: GPU: 1 Validierungs-Fehler: Attachment state mismatch
+  ✅ Selbsttest „Godrays unbedingt" → rot: SHADER: Ausgabe der Post-Kette: 29 unbedingte Abtastungen je Fragment (Budget ≤ 9) — eine Stufe zahlt auch, wenn sie nichts zeigt · SHADER: Ausgabe der Post-Kette: 4 Abtastungen in Zweigen (Budget ≥ 24) — eine Stufe steht nicht mehr hinter ihrer Stärke
+  ✅ Selbsttest „Shader blind" → rot: SHADER: kein Fragment der Ausgabe gefunden (die Linse ist blind)
+  ✅ Selbsttest „Bühne bricht ab" → rot: ABBRUCH: die Bühne brach ab — TypeError: x
+  ✅ Selbsttest „Godray-Zweig trägt nicht" → rot: GODRAYS: mit der Sonne im Bild ändern die Godrays 0 % der Pixel (Soll ≥ 2) — der Zweig trägt nicht
+  ✅ Selbsttest „Godray-Probe blind" → rot: GODRAYS: die Sonne im Bild gibt Stärke 0 (die Probe ist blind)
+
+✅ SELBSTTEST GRÜN — die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== ZIEL-ZENSUS — Selbsttest (ohne Browser) ===
+  ✅ sauberer Lauf → grün
+  ✅ Ziel ohne Leser → OHNE LESER: x:ohne-leser (rgba8unorm 64×64, 0.02 MB, anazhRealm.js · _probe) — geschrieben in probe, gelesen von keinem Pass in 4 Frames
+  ✅ Bloom in Leinwand-Größe → VOLLE AUFLÖSUNG: x:bloom (rgba16float 1920×1080, 15.82 MB) — ein niederfrequenter Effekt in Leinwand-Größe (1920×1080); ein Viertel der Pixel trüge dasselbe Bild · TEILBAR: output und x:bloom (rgba16float 1920×1080, je 15.82 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −15.82 MB · TEILBAR: TRAANode.resolve und x:bloom (rgba16float 1920×1080, je 15.82 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −15.82 MB
+  ✅ Tiefe ohne Nutzung → TIEFE OHNE LESER: x:tiefe-ohne (depth24plus 1920×1080, 7.91 MB) — angehängt in probe, keine Pipeline testet oder schreibt sie, kein Pass liest sie · TEILBAR: depth und x:tiefe-ohne (depth24plus 1920×1080, je 7.91 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −7.91 MB
+  ✅ doppelte Tiefe → DOPPELTE TIEFE: x:tiefe-kopie (depth24plus 1920×1080, 7.91 MB) ist eine Kopie von depth, die 4× gelesen wird, während die Quelle unverändert und frei lesbar ist · TEILBAR: depth und x:tiefe-kopie (depth24plus 1920×1080, je 7.91 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −7.91 MB
+  ✅ teilbares Paar → TEILBAR: x:paar-a und x:paar-b (rgba8unorm 128×128, je 0.06 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −0.06 MB
+  ✅ 32 bit mit 16-bit-Inhalt → FORMAT: x:f32 (rgba32float 64×64, 0.06 MB) trägt nur 16-bit-Inhalt — jeder Wert liegt exakt in rgba16float, die Hälfte reicht (−0.03 MB)
+  ✅ Textur ohne Erzeuger → ERZEUGER: #11 (r8unorm 16×16, 0 MB) trägt keinen Erzeuger — die Linse ist blind
+  ✅ blindes Bündel → ZENSUS: 3 Bündel ohne bekannten Inhalt — der Abgriff lief nicht ab Dokument-Start, die Linse ist blind
+  ✅ zu kurzes Fenster → ZENSUS: nur 2 Frames im Fenster — die Linse sieht keine Lebenszeit
+  ✅ Attrappe ohne Umleitungs-Marke → TIEFE OHNE LESER: x:attrappe (depth24plus 1×1, 0 MB) — geschrieben, nie gelesen
+  ✅ Szenen-Ziel in 64 bit auf einem rg11b10-Gerät → AUSGABE-FORMAT: output (rgba16float 1920×1080, 15.82 MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−7.91 MB; anazhRealm.js `_ausgabeFormat`)
+  ✅ ausgewiesenes Szenen-Ziel in 64 bit → TEILBAR: TRAANode.resolve und x:ausgabe (rgba16float 1920×1080, je 15.82 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −15.82 MB · AUSGABE-FORMAT: x:ausgabe (rgba16float 1920×1080, 15.82 MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−7.91 MB; anazhRealm.js `_ausgabeFormat`)
+  ✅ Attrappe mit Umleitungs-Marke → grün · UMLEITUNG: x:attrappe (depth24plus 1×1, 0 MB) — die Kopie hinein zeichnet der Stamm als Pass in x:abbild; die Textur ist eine Attrappe
+  ✅ Szenen-Ziel in rg11b10 → grün
+  ✅ Gerät ohne rg11b10ufloat-renderable → grün · ADAPTER: rg11b10ufloat-renderable fehlt auf diesem Gerät — output bleibt rgba16float 1920×1080 (15.82 MB, +7.91 MB gegen ein Gerät mit dem Feature)
+  ✅ Selbsttest „Täter im Zensus" → ZENSUS: OHNE LESER: kaskade0:farbe
+  ✅ Selbsttest „Farbe auf der GPU" → KARTE: die Farbe der Schatten-Karte trägt eine GPU-Textur — sie hat keinen Leser
+  ✅ Selbsttest „Farb-Anhang im Schatten-Pass" → KARTE: der Schatten-Pass zeichnet mit 1 Farb-Anhängen (Soll 0)
+  ✅ Selbsttest „Schatten fällt nicht" → KARTE: unter der Kiste ist es nur 1 dunkler als daneben (Soll ≥ 12) — der Schatten fällt nicht
+  ✅ Selbsttest „Hülle fehlt" → KARTE: der Schatten-Knoten der Bühne trägt die Hülle nicht (die Karte ohne Farbe ist blind)
+  ✅ Selbsttest „Bühne blind" → KARTE: die Schatten-Bühne lief nicht (die Wand ist blind für die Karte ohne Farbe)
+  ✅ Selbsttest „Vortiefe 32 bit" → VORTIEFE: die Geschichts-Tiefe trägt depth24plus, nicht depth16unorm
+  ✅ Selbsttest „Vortiefe leer" → VORTIEFE: die Vortiefe trägt den Verlauf der Ebene nicht (oben 1 · Mitte 1 · unten 1)
+  ✅ Selbsttest „Geschichte überschrieben" → VORTIEFE: die Farbe der Geschichte änderte sich ([0,0,0] statt [0.25,0.5,0.75])
+  ✅ Selbsttest „GPU-Validierung" → GPU: Attachment state mismatch
+  ✅ Selbsttest „Schmuggel blind" → SELBSTTEST: blind für TEILBAR
+  ✅ Selbsttest „Schmuggel bleibt" → SELBSTTEST: nach dem Abbau noch im Zensus: zensus-selbsttest:bloom
+  ✅ Selbsttest „Sonde lief nicht" → RUNDUNG: die Sonde lief nicht — das Gerät schreibt 11/11/10, und keiner weiß, wie es rundet
+  ✅ Selbsttest „Ausgleich verloren" → RUNDUNG: der Ausgleich [1,1,1] passt nicht zur Rundung „gegen null“ (Soll 1.00563/1.00563/1.01127)
+  ✅ Selbsttest „Ausgleich auf einem Gerät, das zum nächsten rundet" → RUNDUNG: der Ausgleich [1.0056328125,1.0056328125,1.011265625] passt nicht zur Rundung „zum nächsten“ (Soll 1.00000/1.00000/1.00000)
+  ✅ Selbsttest „anderer Vektor" → RUNDUNG: die Post-Kette liest einen anderen Vektor als den, den die Sonde setzt
+  ✅ Selbsttest „Ausgleich nicht verbraucht" → RUNDUNG: der Ausgleich ×2 hebt das Mittel des Ausgabe-Bilds nur um 0 Stufen (Soll ≥ 3) — die Post-Kette liest ihn nicht
+  ✅ Selbsttest „Rundungs-Probe blind" → RUNDUNG: die Probe lief nicht (die Wand ist blind für den Ausgleich)
+  ✅ Selbsttest „Quelle ohne Ausgleich" → RUNDUNG (Quelle): x
+  ✅ Quell-Wand der Rundung am Stamm → grün
+  ✅ Selbsttest „Ausgleich entfernt" → die Abtastung des Szenen-Bilds (`bild`) trägt den Ausgleich nicht (`.mul(u.ausgabeAusgleich)`)
+  ✅ Selbsttest „zweite Abtastung am Ausgleich vorbei" → das Szenen-Bild wird 2× abgetastet — nur EINMAL in `bild`, jede andere Abtastung umgeht den Ausgleich
+  ✅ Selbsttest „Sonde nicht gerufen" → `_ausgabeFormat` ruft die Sonde nicht (`_ausgabeSonde`)
+
+✅ SELBSTTEST GRÜN — das Urteil nennt jeden gebauten Täter beim Namen, der saubere Lauf bleibt grün.
+✅ sauber
+✅ Ablauf: No occlusion queries
+✅ Ablauf: ungültiger Befehlspuffer
+✅ Ablauf: geschluckt (GPU-Wache three)
+✅ Ablauf: weak set
+✅ Boot: ein Fehler
+✅ Bruch: incomplete
+✅ Ablauf: nicht ausgestiegen
+✅ Ablauf: Sicht blieb
+✅ Ablauf: nie gezählt
+✅ Ablauf: kein Wasser
+✅ Bruch: nie offen
+✅ Gift: nie gezeichnet
+✅ Gift: alle begonnen
+✅ Phase fehlt
+✅ Letzter: der vierte Weg
+✅ Letzter: nie letzter
+✅ Letzter: kein Null-Frame
+✅ Selbsttest Letzter blind
+✅ Selbsttest Bruch blind
+✅ Selbsttest Gift ohne weak set
+✅ Selbsttest fehlt
+✅ Abbruch
+
+✅ SELBSTTEST GRÜN — 23 Fälle: jeder Täter und jede vakuöse Phase beim Namen
+✅ SELBST-TEST: Literal genannt (schmuggel.cjs:1 "--enable-unsafe-webgpu) · Kommentar still (0)
+✅ gate:start-rezept: kein Skript trägt eigene WebGPU-Schalter · Rezept Linux 9 / Windows 5 Schalter
+✅ SELBST-TEST: beide Klingen feuern (Ratchet + Katalog), Kommentare zählen nicht
+ℹ️  Der typeof-Bestand sank (868 < 873) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).
+✅ DIE APPARAT-LINSE steht — 1/1 rohe .toString()-Zitate + 868/873 typeof-Existenz-Proben (beide Ratchets nur-sinkend), 22 Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert.
+✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)
+✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera; ein Stempel nur aus der Render-Id überlebt den verschachtelten Render)
+✅ SELBST-TEST: die Schatten-Stoff-Probe feuert (ohne den Block prüft jeder Bürger je Frame seinen Schlüssel)
+✅ SELBST-TEST: die Bundle-Wahrheits-Probe feuert (ohne den Block: Zeiger genullt, Bundle unter dem Override-Stoff)
+✅ DIE VENDOR-ANKER-WAND steht — 5 Fingerabdrücke gepinnt, 191 Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand 0/0/0 von 50), der Schatten-Stoff prüft im Stand 0 von 40 Bürgern, ein eigener Wechsel 1; die Haupt-Aufnahme verfolgt 10 von 10 Draws trotz Schatten-Render, 0 Bundles unter dem Override-Stoff.
+gate:betriebsgesetz GRÜN — Pflicht-OFFEN 4/5 · Stand 39/40 Zeilen · Siegel-Wand + Logbuch-Wand + Absenz-Wand stehen · Selbsttest feuert
+=== CI-DECKUNG — Selbsttest (ohne Datei) ===
+  ✅ Selbsttest „ohne Gruppe (er liefe N-fach)" → (G) N-FACH: „B" trägt keine Gruppe — er liefe in jeder der 2 Gruppen von „voll" · (G) LEER: „voll" Gruppe 2 trägt keinen Schritt (ein Läufer ohne Arbeit)
+  ✅ Selbsttest „Gruppe außerhalb der Matrix (er liefe nie)" → (G) VERLOREN: „B" trägt Gruppe 3, die Matrix von „voll" kennt 1, 2 — er liefe nie · (G) LEER: „voll" Gruppe 2 trägt keinen Schritt (ein Läufer ohne Arbeit)
+  ✅ Selbsttest „zwei Gruppen in einer Bedingung" → (G) UNKLAR: „B" trägt die Bedingung „matrix.gruppe == 1 || matrix.gruppe == 2" statt genau einer Gruppe · (G) LEER: „voll" Gruppe 2 trägt keinen Schritt (ein Läufer ohne Arbeit)
+  ✅ Selbsttest „eine Gruppe ohne Schritt" → (G) LEER: „voll" Gruppe 2 trägt keinen Schritt (ein Läufer ohne Arbeit)
+  ✅ Selbsttest „derselbe Schritt in zwei Gruppen" → (D) DOPPELT: „npm run gate:a" läuft 2× (voll/1, voll/2)
+  ✅ Selbsttest „ein Gate im Puls und in einer Voll-Gruppe" → (D) DOPPELT: „npm run gate:c" läuft 2× (puls/1, voll/1)
+  ✅ Selbsttest „fail-fast an" → (V) FAIL-FAST: „voll" strategy.fail-fast ist nicht false — eine rote Gruppe bräche die anderen ab
+  ✅ Selbsttest „Deckel über 45" → (V) DECKEL: „voll" timeout-minutes 60 (Soll 1–45 je Gruppe)
+  ✅ Selbsttest „npm ci fehlt" → (V) VORBEREITUNG: „voll" Schritt 4 ist nicht „npm ci" (A)
+  ✅ Selbsttest „Vorbereitung nur in Gruppe 1" → (V) VORBEREITUNG: „puls" „System-Libs" trägt eine Bedingung (matrix.gruppe == 1) — jede Gruppe braucht sie
+  ✅ Selbsttest „keine Matrix" → (V) MATRIX: „voll" strategy.matrix.gruppe ist keine Liste verschiedener Gruppen-Nummern (undefined) · (G) VERLOREN: „A" trägt Gruppe 1, die Matrix von „voll" kennt  — er liefe nie · (G) VERLOREN: „B" trägt Gruppe 2, die Matrix von „voll" kennt  — er liefe nie · (G) VERLOREN: „C" trägt Gruppe 1, die Matrix von „voll" kennt  — er liefe nie
+  ✅ Selbsttest „ein dritter Job neben puls und voll" → (V) JOB: „check" steht außerhalb von puls und voll — die Waage sähe ihn nicht
+  ✅ Selbsttest „voll unter einer anderen Bedingung" → (V) BEDINGUNG: „voll" läuft unter „github.ref == 'refs/heads/main'" statt der EINEN Voll-Bedingung (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]'))
+  ✅ Selbsttest „der Puls unter einer Bedingung" → (V) PULS: „puls" trägt die Bedingung „github.ref == 'refs/heads/main'" — der Puls läuft je Push, ohne Bedingung
+  ✅ Selbsttest „kein Job voll" → (V) LEER: kein Job „voll" in .github/workflows/check.yml
+  ✅ Selbsttest „bei der Teilung verloren" → verloren ["npm run gate:c"]
+  ✅ Selbsttest „bei der Teilung doppelt" → doppelt ["npm run gate:c"]
+  ✅ Selbsttest „in npm run check gewandert" → verloren []
+  ✅ Selbsttest „die Waage im Lot (grün)" → grün
+  ✅ Selbsttest „eine Voll-Gruppe über 11 min" → (T) WAAGE: „voll 1/2" trägt 12,0 min (Deckel 11,0 min je Voll-Gruppe) — der größte Schritt „A" 8,3 min
+  ✅ Selbsttest „der Puls über 2 min" → (T) WAAGE: „puls 1/1" trägt 2,5 min (Deckel 2,0 min je Push) — der größte Schritt „Lint" 2,2 min
+  ✅ Selbsttest „ein Schritt ohne Zeit" → (T) UNGEMESSEN: „B" (voll) trägt keine Zeit in spec/ci/ci-zeiten.json — messen (node scripts/ci-zeiten.cjs) oder mit „geschaetzt" und Quelle eintragen
+  ✅ Selbsttest „die Zeiten ohne Vorbereitung" → (T) ZEITEN: spec/ci/ci-zeiten.json trägt keine vorbereitung_s
+  ✅ Selbsttest „ein Schritt aus voll in den Puls gezogen" → (T) WAAGE: „puls 1/1" trägt 7,5 min (Deckel 2,0 min je Push) — der größte Schritt „B" 6,7 min
+  ✅ Selbsttest „das heutige check.yml (b5eb02e9)" → (T) WAAGE: „check" trägt 4,7 min (Deckel 2,0 min je Push) — der größte Schritt „Prettier-Format-Check" 2,1 min · (T) WAAGE: „erst-zeichnung" trägt 5,8 min (Deckel 2,0 min je Push) — der größte Schritt „Erst-Zeichnungs-Wand (echter Renderer — kein Frame trägt eine synchrone Pipeline der Welt)" 5,5 min · (T) WAAGE: „playtest 1/3" trägt 17,7 min (Deckel 2,0 min je Push) — der größte Schritt „Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)" 5,7 min · (T) WAAGE: „playtest 2/3" trägt 26,0 min (Deckel 2,0 min je Push) — der größte Schritt „Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)" 5,8 min · (T) WAAGE: „playtest 3/3" trägt 19,0 min (Deckel 2,0 min je Push) — der größte Schritt „Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)" 4,1 min
+  ✅ Selbsttest „ein neues Gate ohne Schritt und ohne Eintrag" → (W) WACHSAMKEIT: „gate:neu" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/neu.cjs)
+  ✅ Selbsttest „npm run check in keinem Workflow" → (W) WACHSAMKEIT: „gate:a" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/a.cjs --selftest · node scripts/a.cjs) · (W) WACHSAMKEIT: „gate:b" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/b.cjs) · (W) WACHSAMKEIT: „gate:c-beide" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/b.cjs) · (W) WACHSAMKEIT: „check: node --check a.js" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node --check a.js) · (W) WACHSAMKEIT: „check: node scripts/a.cjs --selftest" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/a.cjs --selftest) · (W) WACHSAMKEIT: „check: node scripts/a.cjs" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/a.cjs) · (W) WACHSAMKEIT: „check: node scripts/b.cjs" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/b.cjs)
+  ✅ Selbsttest „der Selbsttest eines Gates fehlt in check" → (W) WACHSAMKEIT: „gate:a" läuft in keinem Workflow und steht in keiner Ausnahme (fehlt: node scripts/a.cjs --selftest)
+  ✅ Selbsttest „die Ausnahme eines gefallenen Gates" → (A) STALE: die Ausnahme „gate:weg" nennt keine Wand mehr (package.json kennt sie nicht)
+  ✅ Selbsttest „die Ausnahme eines Gates, das schon läuft" → (A) STALE: „gate:c" läuft schon in der CI — die Ausnahme fällt
+  ✅ Selbsttest „eine Ausnahme ohne erlaubte Klasse" → (A) KLASSE: „gate:d" trägt die Klasse „später" — erlaubt: echte GPU nötig · Messwerkzeug, kein Urteil · Zeitfrist/Einschwingen > CI-Budget · rot an der Basis
+  ✅ Selbsttest „eine Ausnahme ohne Grund" → (A) GRUND: „gate:d" trägt keinen Grund (mindestens ein Satz: was die Wand braucht, warum nicht hier)
+  ✅ Selbsttest „ein Schritt, den npm run check schon fährt" → (R) REDUNDANT: „A allein" (check.yml/check) fährt nur, was schon „Statik" fährt
+  ✅ Selbsttest „|| true hinter dem Gate" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): „|| true" schluckt sein Rot (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): „|| true" schluckt sein Rot (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „|| exit 1 trägt das Rot weiter (grün)" → grün
+  ✅ Selbsttest „continue-on-error am Schritt" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): continue-on-error am Schritt (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): continue-on-error am Schritt (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „continue-on-error am Job" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): continue-on-error am Job „playtest" (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): continue-on-error am Job „playtest" (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „nur im nächtlichen Workflow (blockt keinen Merge)" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (nacht.yml/nacht): nacht.yml läuft nicht auf push/pull_request (blockt keinen Merge) (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (nacht.yml/nacht): nacht.yml läuft nicht auf push/pull_request (blockt keinen Merge) (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „vor einer Pipe ohne pipefail (Lehre 9)" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): vor einer Pipe ohne pipefail (das letzte Glied entscheidet) (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): vor einer Pipe ohne pipefail (das letzte Glied entscheidet) (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „Pipe unter shell: bash (pipefail) hält (grün)" → grün
+  ✅ Selbsttest „&&-Glied mitten im Schritt" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): Glied einer &&-Kette mitten im Schritt (errexit prüft nur ihr letztes Glied) (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): Glied einer &&-Kette mitten im Schritt (errexit prüft nur ihr letztes Glied) (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „&&-Kette als letzte Zeile hält (grün)" → grün
+  ✅ Selbsttest „set +e vor dem Gate" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): ohne errexit (set +e / Shell ohne -e) entscheidet nur der letzte Befehl (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): ohne errexit (set +e / Shell ohne -e) entscheidet nur der letzte Befehl (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „! kehrt das Rot um" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): „!" kehrt sein Rot um (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): „!" kehrt sein Rot um (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „eine Bedingung, die im Merge nie feuert" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): läuft nur unter „github.event_name == 'schedule'" (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): läuft nur unter „github.event_name == 'schedule'" (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „eine Gruppe außerhalb der Matrix" → (S) STUMM: „gate:c" läuft nur abgeschaltet — „C" (check.yml/playtest): Gruppe 7 steht in keiner Matrix (läuft nie) (fehlt: node scripts/c.cjs) · (S) STUMM: „gate:c-beide" läuft nur abgeschaltet — „C" (check.yml/playtest): Gruppe 7 steht in keiner Matrix (läuft nie) (fehlt: node scripts/c.cjs)
+  ✅ Selbsttest „ein Gate, das sein Rot selbst schluckt" → (S) STUMM IN SICH: „gate:c" schluckt sein eigenes Rot — „node scripts/c.cjs": „|| true" schluckt sein Rot · „true": läuft nur im Fehlerfall (nach ||) · (S) STUMM IN SICH: „gate:c-beide" schluckt sein eigenes Rot — „node scripts/c.cjs": „|| true" schluckt sein Rot · „true": läuft nur im Fehlerfall (nach ||)
+  ✅ Selbsttest „ein Teil von check hinter ; (npm fährt sh -c ohne errexit)" → (S) STUMM IN SICH: „check: node --check a.js" schluckt sein eigenes Rot — „node --check a.js": ohne errexit (set +e / Shell ohne -e) entscheidet nur der letzte Befehl
+  ✅ Selbsttest „der gute Stand" → grün
+  ✅ Selbsttest „eine check.yml ohne die Gruppe" → (P) PLAYTEST: der volle Playtest („npm run playtest") läuft in keiner Gruppe der vollen Batterie — erst der Integrator sähe sein Rot
+  ✅ Selbsttest „nur nächtlich (blockt keinen Merge)" → (P) PLAYTEST: der volle Playtest („npm run playtest") läuft in keiner Gruppe der vollen Batterie — erst der Integrator sähe sein Rot (nur „Nacht-Playtest" (nacht.yml/nacht): nacht.yml läuft nicht auf push/pull_request (blockt keinen Merge))
+  ✅ Selbsttest „nur im Puls" → (P) PLAYTEST: der volle Playtest („npm run playtest") läuft in keiner Gruppe der vollen Batterie — erst der Integrator sähe sein Rot (nur „Voller Playtest" (check.yml/puls Gruppe 1))
+  ✅ Selbsttest „nur der Schnell-Playtest" → (P) PLAYTEST: der volle Playtest („npm run playtest") läuft in keiner Gruppe der vollen Batterie — erst der Integrator sähe sein Rot
+  ✅ Selbsttest „ein nächtlicher Zwilling" → (P) ZWILLING: der volle Playtest läuft 2× („Voller Playtest" (check.yml/voll Gruppe 2) · „Nacht-Playtest" (nacht.yml/nacht)) — EIN Schritt trägt ihn
+  ✅ Selbsttest „nur der Zähler (kein Verdikt)" → (P) VERDIKT: „Voller Playtest" (check.yml/voll Gruppe 2) urteilt ohne das Verdikt „Alle Invarianten OK" — ein grüner Zähler reicht nicht (der letzte Befehl greift es aus dem Log, das tee aus dem Playtest schreibt)
+  ✅ Selbsttest „das Verdikt aus einem fremden Log" → (P) VERDIKT: „Voller Playtest" (check.yml/voll Gruppe 2) urteilt ohne das Verdikt „Alle Invarianten OK" — ein grüner Zähler reicht nicht (der letzte Befehl greift es aus dem Log, das tee aus dem Playtest schreibt)
+  ✅ Selbsttest „ohne pipefail" → (P) STUMM: „Voller Playtest" (check.yml/voll Gruppe 2) fährt den vollen Playtest abgeschaltet — vor einer Pipe ohne pipefail (das letzte Glied entscheidet)
+  ✅ Selbsttest „der Playtest mit || true" → (P) STUMM: „Voller Playtest" (check.yml/voll Gruppe 2) fährt den vollen Playtest abgeschaltet — „|| true" schluckt sein Rot · (P) VERDIKT: „Voller Playtest" (check.yml/voll Gruppe 2) urteilt ohne das Verdikt „Alle Invarianten OK" — ein grüner Zähler reicht nicht (der letzte Befehl greift es aus dem Log, das tee aus dem Playtest schreibt)
+  ✅ Selbsttest „continue-on-error am Schritt" → (P) STUMM: „Voller Playtest" (check.yml/voll Gruppe 2) fährt den vollen Playtest abgeschaltet — continue-on-error am Schritt
+  ✅ Selbsttest „eine geteilte Gruppe" → (P) EIGEN: der volle Playtest teilt Gruppe 1 mit „A" — er trägt eine eigene Gruppe
+✅ SELBSTTEST GRÜN — jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt.
+=== CI-DECKUNG — .github/workflows/check.yml ===
+  Gate-Schritte: 156 (alle Jobs) · puls 1: 7 · 2: 10 | voll 1: 11 · 2: 10 · 3: 13 · 4: 12 · 5: 15 · 6: 17 · 7: 14 · 8: 15 · 9: 15 · 10: 16 · 11: 1
+  Wände: 229 (gate:* und Teile von npm run check) · in der CI 226 · Ausnahmen 3 (rot an der Basis 1 · Zeitfrist/Einschwingen > CI-Budget 1 · echte GPU nötig 1) · ohne Workflow 0
+  Waage (Median samt Vorbereitung, min): puls 1/2 1,3 · puls 2/2 1,2 · voll 1/11 9,1 · voll 2/11 8,6 · voll 3/11 9,1 · voll 4/11 8,1 · voll 5/11 8,5 · voll 6/11 8,8 · voll 7/11 8,3 · voll 8/11 10,3 · voll 9/11 8,4 · voll 10/11 10,0 · voll 11/11 1,7
+✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 11 min); jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt.
+
+── KONFORMANZ (golden → heutiger Code) ──
+{
+  "blueprintReadable": true,
+  "blueprintSig": "valid",
+  "manifestReadable": true,
+  "manifestSig": "valid"
+}
+Golden-Dateien existieren — kein Mint (eingefroren).
+
+── Ω0 ROUND-TRIP-MATRIX (must-preserve: überlebt xZukunft?) ──
+{
+  "rt1_import": {
+    "ok": true,
+    "bpUnknownSurvives": true,
+    "matUnknownSurvives": true,
+    "matForeignTagSurvives": true
+  },
+  "rt1_importChecks": {
+    "importUsesAdmit": true,
+    "verifiesSignature": true,
+    "sievesTainted": true,
+    "appendsProvenance": true,
+    "rederivesRole": true
+  },
+  "rt2_snapshot": {
+    "serializeKeepsUnknown": true,
+    "serializeKeepsProvenance": true,
+    "deserializeKeepsUnknown": true,
+    "deserializeKeepsProvenance": true
+  },
+  "rt3_manifest": {
+    "accepted": true,
+    "unknownSurvives": true
+  },
+  "rt4_p2p": {
+    "stampKeepsUnknown": true,
+    "channelPassesOriginal": true
+  },
+  "riss2_gottmauer": {
+    "mineResist": 13,
+    "fit": 0.03875968992248061,
+    "yieldMult": 0.34,
+    "unbreakable": false
+  }
+}
+
+── BEFUNDE ──
+  (keine — die Taille ist dicht)
+=== DIE LINSE DES HAUS-FERNKÖRPERS (gate:haus-fern) ===
+  Häuser 64 (32 Kulturen × Samen 1/7): Wurf-IoU zu L0 Median 0.926 · min 0.879 · Umriss L1↔L2 Median 0.903 · min 0.843 · First quer 0/128 · Aufblähung Median -0.455 m · max -0.095 · Wand max -0.015 · Dach max -0.030 · Wurf-Kosten L2 Median 60
+  Türblatt am Scharnier (T, Soll ≤ 0.05 m): L0 192 Blätter, Abstand Median 0.000 · max 0.000 m · L1 192 Blätter, Abstand Median 0.000 · max 0.000 m · L2 keine Blätter
+  Ausstattung 7: feuerstelle/s1 Wurf 1.000/0.873 (1410/24 Dreiecke) · feuerstelle/s2 Wurf 1.000/0.878 (1410/24 Dreiecke) · marktstand/s1 Wurf 1.000/0.867 (2236/40 Dreiecke) · marktstand/s2 Wurf 1.000/0.860 (1980/30 Dreiecke) · marktstand/s3 Wurf 1.000/0.860 (2000/30 Dreiecke) · brunnen/s1 Wurf 1.000/0.895 (3322/40 Dreiecke) · brunnen/s2 Wurf 1.000/0.894 (3322/40 Dreiecke)
+  Selbsttest: der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T) · 44.0 s
+
+✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier.

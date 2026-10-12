@@ -1,0 +1,55 @@
+
+> anazhrealm@18.541.0 gate:regler-wirkt
+> node scripts/diag-regler-wirkt.cjs --selftest && node scripts/diag-regler-wirkt.cjs
+
+✅ SELBST-TEST Urteil: gleich grün · neu tot rot (a:x:3) · geheilt rot bis die Zeile fällt (a:x:2)
+✅ SELBST-TEST Täter (ov erreicht die Brücke nicht): 15/15 Regler der Art vehicle tot → rot (neu tot: vehicle:vehicle:dach, vehicle:vehicle:damping, vehicle:vehicle:fahrhoehe …) · ohne Täter 1 tot
+✅ SELBST-TEST Täter (ein Regler bricht den Bau): vehicle:vehicle:radstand BRICHT — radstand=2.2 an gt: 0 Teile (der Bau wirft oder liefert nichts) · radstand=3.4 an gt: 92013 nicht-endliche Werte (NaN/Inf) in den Puffern · andere BRICHT 0 · ohne Täter BRICHT 0
+✅ SELBST-TEST Ofen-Kanal (koerper im Host-Ofen): heil 8/8 wirken · Täter (der Ofen verliert den Wert) 8/8 tot → rot (neu tot: koerper:koerper:age, koerper:koerper:arms, koerper:koerper:gender …)
+✅ SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): koerper:koerper:height — BRICHT — height=1.15 an mensch: der Guss meldet ERROR: Mensch-Ofen kalt-Guss scheiterte (Täter: der Mensch-Bäcker wirft)
+Regler-wirkt: 113 PARAMS-Zeilen · 487 Bauten über die echte Brücke (Seed 1, erste Stufe je Art) · 26 Güsse im Host-Ofen der Werkstatt (klang ohne Bäcker, koerper, kreatur)
+  fachwerk    24 wirken ·   0 tot (von 24)
+  klang        0 wirken ·   7 tot (von 7)
+  koerper      8 wirken ·   0 tot (von 8)
+  phyto        9 wirken ·   0 tot (von 9)
+  porta       18 wirken ·   9 tot (von 27)
+  schmiede    17 wirken ·   1 tot (von 18)
+  tetrapoda    5 wirken ·   0 tot (von 5)
+  vehicle     14 wirken ·   1 tot (von 15)
+  TOT porta:gate:wave — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:tunnel — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:fractal — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:twist — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:swirl — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:reflect — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:fog — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1.6)
+  TOT porta:gate:temp — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:energy — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT vehicle:vehicle:grip — bewegt den Bau an keinem der 5 Rezepte (min 0.6 · max 1.4)
+  TOT schmiede:weapon:schaftR — bewegt den Bau an keinem der 21 Rezepte (min 0.01 · max 0.026)
+  TOT klang:klang:bpm — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:swing — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:darkness — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:color — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:flow — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:tension — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:space — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  BUDGET porta:gate:wMason — wMason=1 an drachentor L0: [{"feld":"draws","ist":14,"soll":13},{"feld":"tris","ist":55464,"soll":52000}]
+  BUDGET porta:gate:wMono — wMono=1 an drachentor L0: [{"feld":"draws","ist":14,"soll":13},{"feld":"tris","ist":55300,"soll":52000}]
+  BUDGET porta:gate:orders — orders=9 an drachentor L0: [{"feld":"tris","ist":54368,"soll":52000}]
+  BUDGET porta:gate:depth — depth=0 an drachentor L0: [{"feld":"tris","ist":54576,"soll":52000}]
+  BUDGET porta:gate:k — k=1 an drachentor L0: [{"feld":"tris","ist":70828,"soll":52000}]
+  BUDGET porta:gate:rise — rise=0.55 an drachentor L0: [{"feld":"tris","ist":67382,"soll":52000}]
+  BUDGET porta:gate:mass — mass=1 an drachentor L0: [{"feld":"tris","ist":59724,"soll":52000}]
+  BUDGET porta:gate:ruin — ruin=1 an drachentor L0: [{"feld":"draws","ist":14,"soll":13}]
+  BUDGET fachwerk:haus:storeys — storeys=12 an alemannisch L0: [{"feld":"tris","ist":150162,"soll":132000}]
+  BUDGET fachwerk:haus:bend — bend=1 an alemannisch L0: [{"feld":"tris","ist":159946,"soll":132000}]
+  BUDGET fachwerk:haus:doppel — doppel=1 an alemannisch L0: [{"feld":"tris","ist":155208,"soll":132000}]
+  BUDGET schmiede:weapon:griff — griff=0.46 an degen L0: [{"feld":"tris","ist":22344,"soll":22000}]
+  BUDGET koerper:koerper:tone — tone=1 an mensch: BUDGET-BRUCH mensch L0: [{"feld":"tris","ist":166840,"soll":166000}]
+  BUDGET koerper:koerper:hairVol — hairVol=2 an mensch: BUDGET-BRUCH mensch L0: [{"feld":"tris","ist":166520,"soll":166000}]
+❌ NEU ÜBER BUDGET: porta:gate:depth — depth=0 an drachentor L0: [{"feld":"tris","ist":54576,"soll":52000}]
+❌ NEU ÜBER BUDGET: porta:gate:k — k=1 an drachentor L0: [{"feld":"tris","ist":70828,"soll":52000}]
+❌ NEU ÜBER BUDGET: porta:gate:mass — mass=1 an drachentor L0: [{"feld":"tris","ist":59724,"soll":52000}]
+❌ NEU ÜBER BUDGET: porta:gate:orders — orders=9 an drachentor L0: [{"feld":"tris","ist":54368,"soll":52000}]
+❌ NEU ÜBER BUDGET: porta:gate:rise — rise=0.55 an drachentor L0: [{"feld":"tris","ist":67382,"soll":52000}]

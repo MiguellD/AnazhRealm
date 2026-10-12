@@ -1,0 +1,13 @@
+385 Bauten (7 Rezepte × 27 Regler × Rand + Rezept) — Maximum 256284 (maurentor orders=9)
+   256284  maurentor orders=9
+   242948  verkalkt orders=9
+   233664  maschine orders=9
+   230060  maurentor depth=0
+   213828  verkalkt depth=0
+   207904  maschine depth=0
+   195880  kathedrale wBraid=1
+   186316  maurentor realm=0
+   186316  maurentor realm=1
+   186316  maurentor ogee=1
+   185916  maurentor wBraid=1
+   185036  maurentor k=1

@@ -179,3 +179,34 @@ Auf dem Probe-Merge stehen alle vier Wände bei EXIT=0: porta-contract, asset-co
   - `welle-m-e-tor` (der Zweig)
   - `tor-vorher` (858ed586, Seite A der Messung)
   - `tor-probemerge` (Wegwerf, Probe-Merge auf a5f05612)
+
+## Nachtrag 12.10. — CI 38189585034 auf 50ea40aa ROT, Nachbesserung d2b0a731
+
+**ROT 1, `gate:regler-wirkt` (voll 10/11) — mein Fehler.**
+- Die Budget-Zeile `gate[0].tris` 52000 hielt nur die sieben Rezepte.
+- Die Wand fährt jeden Regler an seinen Rand (am drachentor) und fand fünf neue Brüche über 52000 (`nachbesserung/regler-wirkt-kopf.txt`): k=1 70 828 · rise=0,55 67 382 · mass=1 59 724 · depth=0 54 576 · orders=9 54 368.
+- Die Ratsche `reglerBudget` hat Soll 0: „jede Gestalt verlässt das Studio auf ihrer Budget-Zeile — auch am Rand jedes Reglers".
+
+**Die Hülle des Regler-Raums**, 7 Rezepte × 27 Regler × min/max = 385 Bauten in Node (`nachbesserung/regler-rand-*.txt`, `nachbesserung/regler-rand.cjs`):
+- nachher: Maximum **75 608** (ruine wBraid=1)
+- vorher: 256 284 (maurentor orders=9), schon über der alten Zeile 184000; ungesehen, weil die Wand den Rand nur am drachentor baut
+
+**Die Zeile heißt jetzt** `gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 0 } }`.
+- Das Band ist wieder offen: die Rezepte liegen darauf (≤ 51 096), der Rand der Regler noch darüber.
+- `render-config.json` und `manifest.json` sind per `MINT_NUR_DATEN=1` geprägt; nur render-config meldet „✔ neu", der Hash ist 510c8a7c (`nachbesserung/waende/mint-nur-daten-2.txt`).
+- Geometrie, Goldens v4, TOR_HUELLE und alle Genesis-Zahlen bleiben.
+- Auf d2b0a731 stehen alle bei EXIT=0 (`nachbesserung/waende/gates-exit.txt`):
+  - regler-wirkt: 95/113 wirken, 0 brechen, 18 tot = Ratsche 18
+  - check
+  - porta-contract
+  - asset-contract: „gate[0] 51096/76000 · Band 60000 (0.9×)"
+  - portal-gestalt
+  - worker-dichte
+  - lint
+
+**ROT 2, `gate:kampf-gefuehl` (voll 8/11, Schritt 75) — lokal nicht nachzubauen.**
+- Kopf 50ea40aa und Basis 858ed586 laufen beide EXIT=0 GRÜN (`nachbesserung/kampf-*.txt`).
+- Der Diff berührt nur porta-core und Goldens.
+- Ob der Schritt in der CI von d2b0a731 wiederkehrt, zeigt der nächste Lauf.
+
+**Status:** `welle-m-e-tor` **d2b0a731** (per `git ls-remote`), `[ci voll]`, CI ausstehend. ci-lokal (alle 156 Schritte) läuft auf denselben Bytes (`p3/tor/ci3`, Werkplatz).
