@@ -1361,7 +1361,63 @@
     // Das Fuß-Ziel EINES Beins zur Phase ph (rad) bei Fußweg S (m): {dz (m, + = vor der Ruhe-Lage), hub (0…1)}. Der
     // Schwung füllt 0 … 2π·(1 − tast), der Stand den Rest; ohne tast (oder 0,5) teilt π (byte-gleich zum Tier-Gang).
     // hubForm aus der Zeile Z (sonst GANG_GESETZ).
-    function gangFuss(ph, S, tast, Z) {
+    // DAS ABROLLEN DES FUSSES (K07, additiv — die Tiere lesen es nicht: ohne rollWinkel der Zeile oder ohne Reichweite R
+    // bleibt der Fuß flach, byte-gleich): ab fersenAb des Stands hebt sich die Ferse, der Fuß rollt über den Ballen
+    // (ballen × R vor dem Knöchel, der Knöchel knoechel × R über der Sohle) bis rollWinkel beim Abheben, der Winkel wächst
+    // quadratisch; im Schwung klingt er bis zur Mitte ab. Der Ballen steht, der Knöchel steigt um dy und rückt um dx vor
+    // (gangRolle) — das hintere Bein reicht weiter. Darum setzt der Fuß um den Versatz d hinter der Mitte des Fußwegs auf,
+    // so weit, dass die Senke beim Aufsetzen vorn der beim Abheben hinten gleicht (gangVersatz; Saunders 1953, Kerrigan
+    // 2001: die Ferse hebt die Senke des Doppel-Stands; Gard 2004: 4–5 cm). Vorher stand der Fuß flach bis zum Abheben,
+    // das Becken des Gehens sank um 0,137 L (11 cm), das Knie knickte tief ein.
+    function gangRolle(phi, R, Z) {
+        var lb = Z.ballen * R,
+            ha = Z.knoechel * R;
+        return { dx: lb * (1 - Math.cos(phi)) + ha * Math.sin(phi), dy: lb * Math.sin(phi) - ha * (1 - Math.cos(phi)) };
+    }
+    function gangRollt(Z, R) {
+        return !!(Z && Z.rollWinkel > 0 && Z.ballen > 0 && Z.knoechel >= 0 && Z.fersenAb >= 0 && Z.fersenAb < 1 && R > 0);
+    }
+    // Rf = die Reichweite, an der der Fuß gemessen ist (ohne: R) — die gebeugte Kette (geduckt) hat denselben Fuß
+    function gangVersatz(S, R, Z, Rf) {
+        if (!gangRollt(Z, R) || !(S > 0)) return 0;
+        var e = gangRolle(Z.rollWinkel, Rf > 0 ? Rf : R, Z);
+        var lo = 0,
+            hi = Math.min(S / 2, R);
+        for (var i = 0; i < 24; i++) {
+            var d = (lo + hi) / 2;
+            var a = Math.min(R, S / 2 - d),
+                b = Math.min(R, Math.abs(S / 2 + d - e.dx));
+            if (R - Math.sqrt(R * R - a * a) > R - e.dy - Math.sqrt(R * R - b * b)) lo = d;
+            else hi = d;
+        }
+        return (lo + hi) / 2;
+    }
+    // der Roll-Winkel zur Phase u (rad, 0 … 2π, der Schwung füllt 0 … sw)
+    function gangRollWinkel(u, sw, Z) {
+        var TAU = 2 * Math.PI;
+        if (u < sw) {
+            var t = Math.max(0, 1 - (2 * u) / sw);
+            return Z.rollWinkel * t * t;
+        }
+        var s = (u - sw) / (TAU - sw);
+        var q = s > Z.fersenAb ? (s - Z.fersenAb) / (1 - Z.fersenAb) : 0;
+        return Z.rollWinkel * q * q;
+    }
+    function gangFuss(ph, S, tast, Z, R, Rf) {
+        var F = gangFussFlach(ph, S, tast, Z);
+        if (!gangRollt(Z, R)) return F;
+        var TAU = 2 * Math.PI;
+        var u = ((ph % TAU) + TAU) % TAU;
+        var sw = tast > 0 && tast < 1 && tast !== 0.5 ? TAU * (1 - tast) : Math.PI;
+        var phi = gangRollWinkel(u, sw, Z),
+            e = gangRolle(phi, Rf > 0 ? Rf : R, Z);
+        F.dz += e.dx - gangVersatz(S, R, Z, Rf);
+        F.heb = e.dy;
+        F.rollDx = e.dx;
+        F.roll = phi;
+        return F;
+    }
+    function gangFussFlach(ph, S, tast, Z) {
         var TAU = 2 * Math.PI;
         var u = ((ph % TAU) + TAU) % TAU;
         var sw = tast > 0 && tast < 1 && tast !== 0.5 ? TAU * (1 - tast) : Math.PI;
@@ -1394,12 +1450,14 @@
     // Cheng 1990): beim Aufsetzen dieselbe Tiefe, zur Mitte des Stands federt das Bein um Δy = g·tc·(T/2π − tc/8)
     // (Kontaktzeit tc, Schritt-Dauer T, die sinusförmige Stand-Kraft trägt im Mittel das Gewicht), in der Flugphase steigt
     // es ballistisch um g·tf²/8. Der Wechsel folgt dem Tastgrad (tastgrad → tastgradLauf der Zeile Z).
-    function gangBecken(ph, S, tast, R, omega, Z, einheit) {
+    function gangBecken(ph, S, tast, R, omega, Z, einheit, Rf) {
         var TAU = 2 * Math.PI;
         if (!(S > 0) || !(R > 0)) return 0;
         var g = gangZahl(Z, "g") / (einheit > 0 ? einheit : 1);
         var sw = tast > 0 && tast < 1 ? TAU * (1 - tast) : Math.PI;
-        var halbS = Math.min(S / 2, R);
+        var rollt = gangRollt(Z, R),
+            versatz = rollt ? gangVersatz(S, R, Z, Rf) : 0;
+        var halbS = Math.min(S / 2 - versatz, R);
         var oben = R - Math.sqrt(R * R - halbS * halbS);
         var A = Z && Z.beckenHub > 0 ? Z.beckenHub * R : 0;
         var tg = gangZahl(Z, "tastgrad"),
@@ -1417,7 +1475,12 @@
             steht = true;
             var s = (u - sw) / (TAU - sw);
             var dz = Math.min(R, Math.abs(S / 2 - S * s));
-            geh = Math.max(geh, R - Math.sqrt(R * R - dz * dz));
+            if (rollt) {
+                // der rollende Fuß: sein Knöchel steht um dy höher und um dx weiter vorn (gangRolle), der Fußweg um d zurück
+                var e = gangRolle(gangRollWinkel(u, sw, Z), Rf > 0 ? Rf : R, Z);
+                dz = Math.min(R, Math.abs(S / 2 - S * s - versatz + e.dx));
+                geh = Math.max(geh, R - e.dy - Math.sqrt(R * R - dz * dz));
+            } else geh = Math.max(geh, R - Math.sqrt(R * R - dz * dz));
             lau = Math.max(lau, oben + dy * Math.sin(Math.PI * s));
         }
         if (!steht) {

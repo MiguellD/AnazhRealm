@@ -17760,33 +17760,39 @@ class AnazhRealm {
         const st = r._gangStand;
         const standL = !st || st[0],
             standR = !st || st[1];
+        // DER ROLLENDE FUSS (tetrapoda gangRolle, die Pose dieses Takts): der Lock hält den Fuß, wie er aufsetzte; im späten
+        // Stand steht sein Knöchel um heb höher und um dx (im Fußweg) weiter vorn — der Ballen bleibt, wo er stand
+        const rolle = r._gangRoll || [null, null];
         // EINE SCHWELLE (K07): R (`_gaitReich`) führt das Becken des Gesetzes und hält den stehenden Fuß. Liegt ein
         // gelockter Fuß jenseits von R (der Boden der Probe weicht vom Ruhe-Maß der Pose ab — die Verhältnisse 0,9951 bis
         // 0,9969 lösten 3 von 213 Stand-Takten beim Gehen), senkt sich das Becken um den Fehlbetrag; der Lock löst nur, wo
         // auch das nicht reicht (vorn/hinten jenseits von R oder mehr als 0,05 Bein — Stufe, Kante: dort tritt der Fuß).
         if (w >= 0.35 && r.hips && ik.wpl > 0) {
             let mehr = Math.max(
-                standL && ik.lockL.on ? this._gaitLockBedarf(r.legL, ik, ik.probeL, ik.lockL) : 0,
-                standR && ik.lockR.on ? this._gaitLockBedarf(r.legR, ik, ik.probeR, ik.lockR) : 0
+                standL && ik.lockL.on ? this._gaitLockBedarf(r.legL, ik, ik.probeL, ik.lockL, rolle[0]) : 0,
+                standR && ik.lockR.on ? this._gaitLockBedarf(r.legR, ik, ik.probeR, ik.lockR, rolle[1]) : 0
             );
             if (mehr > 0 && mehr <= 0.05 * (ik.l1 + ik.l2)) r.hips.position.y -= mehr / ik.wpl;
         }
-        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, standL, w);
-        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w);
+        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, standL, w, rolle[0]);
+        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w, rolle[1]);
     }
     // Der Fehlbetrag eines gelockten Fußes an R: wie weit das Becken sinken muss, damit die Kette ihn erreicht (0 = er
     // liegt in R; Infinity = er liegt vorn/hinten jenseits von R, kein Senken hilft).
-    _gaitLockBedarf(leg, ik, probe, lock) {
+    _gaitLockBedarf(leg, ik, probe, lock, rolle) {
         const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
         leg.hip.getWorldPosition(hv);
+        const rx = rolle && rolle.roll > 0 ? rolle.rollDx * ik.wpl : 0,
+            ry = rolle && rolle.roll > 0 ? rolle.heb * ik.wpl : 0;
         const vor =
-            ((lock.x - hv.x) * Math.sin(ik.yaw) + (lock.z - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl));
-        const unten = hv.y - (probe.g + ik.soleH);
+            ((lock.x - hv.x) * Math.sin(ik.yaw) + (lock.z - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) +
+            rx;
+        const unten = hv.y - (probe.g + ik.soleH) - ry;
         const R = AnazhRealm._gaitReich(ik.l1 + ik.l2);
         if (!Number.isFinite(unten) || Math.abs(vor) >= R) return Infinity;
         return Math.max(0, unten - Math.sqrt(R * R - vor * vor));
     }
-    _gaitLegIK(leg, ik, probe, lock, foot, imStand, w) {
+    _gaitLegIK(leg, ik, probe, lock, foot, imStand, w, rolle) {
         const av = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
         leg.ankle.getWorldPosition(av); // FK nach Pose+Becken (frische Ahnen-Matrizen)
         foot.x = av.x;
@@ -17813,8 +17819,12 @@ class AnazhRealm {
         const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
         leg.hip.getWorldPosition(hv);
         // der Vorlauf längs in das lotrechte Maß der Kette (das Becken ist längs ungleich skaliert, _gaitBeinMass)
-        const vor = ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl));
-        const unten = hv.y - (probe.g + ik.soleH);
+        // der rollende Fuß im Gang (rolle aus der Pose): der Knöchel über dem gehaltenen Ballen, die Sohle gekippt
+        const rollt = geht && rolle && rolle.roll > 0;
+        const vor =
+            ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) +
+            (rollt ? rolle.rollDx * ik.wpl : 0);
+        const unten = hv.y - (probe.g + ik.soleH) - (rollt ? rolle.heb * ik.wpl : 0);
         if (!(unten > 0.05)) {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
@@ -17826,7 +17836,7 @@ class AnazhRealm {
         const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
         leg.hip.rotation.x = res.hip;
         leg.knee.rotation.x = res.knee;
-        leg.ankle.rotation.x = -(res.hip + res.knee); // die Sohle bleibt eben
+        leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee); // die Sohle bleibt eben, der rollende Fuß kippt
     }
 
     _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions, gait) {
@@ -17940,6 +17950,7 @@ class AnazhRealm {
         let sw = Math.sin(walkPhase);
         r._gangSenke = 0;
         if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true; // ohne Gesetzes-Pose stehen beide Füße
+        if (r._gangRoll) r._gangRoll[0] = r._gangRoll[1] = null; // ohne Gesetzes-Pose steht die Sohle flach
         if (M && M.l1 > 0 && M.l2 > 0) {
             const core = window.__tetrapodaCore;
             const Z = this._gangZeile(true);
@@ -17948,8 +17959,13 @@ class AnazhRealm {
             const hubL = (gait.hub * M.L) / M.wpl;
             const L12 = M.l1 + M.l2;
             const R = AnazhRealm._gaitReich(L12);
-            const FL = core.gangFuss(walkPhase, Sl, tast, Z);
-            const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z);
+            // der Fuß rollt im späten Stand über den Ballen (tetrapoda gangRolle): sein Knöchel steigt um heb, die Sohle
+            // kippt um roll — die Fuß-IK hält den Ballen, nicht die Ferse (`_gaitLegIK`, `r._gangRoll`)
+            const FL = core.gangFuss(walkPhase, Sl, tast, Z, R);
+            const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z, R);
+            const roll = r._gangRoll || (r._gangRoll = [null, null]);
+            roll[0] = FL;
+            roll[1] = FR;
             // die Senke im Gelenk-Raum über der gestreckten Kette (die Schwere der Zeile im lotrechten Gelenk-Maß)
             const tief = L12 - R + core.gangBecken(walkPhase, Sl, tast, R, gait.omega, Z, M.wpl);
             r._gangSenke = tief;
@@ -17960,14 +17976,14 @@ class AnazhRealm {
             r._gangStand[1] = u(walkPhase + Math.PI) >= auf;
             // der Fuß unter der Hüfte: gehoben um seinen Hub, nie jenseits von R (der Schwung-Fuß faltet sich)
             const unten = (F, h) => Math.min(L12 - tief - h, Math.sqrt(Math.max(0, R * R - F.dz * F.dz)));
-            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, unten(FL, FL.hub * hubL));
-            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, unten(FR, FR.hub * hubL));
+            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, unten(FL, FL.hub * hubL + FL.heb));
+            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, unten(FR, FR.hub * hubL + FR.heb));
             add(r.legL.hip, "x", ikL.hip * w);
             add(r.legL.knee, "x", ikL.knee * w);
-            add(r.legL.ankle, "x", -(ikL.hip + ikL.knee) * w);
+            add(r.legL.ankle, "x", (FL.roll - ikL.hip - ikL.knee) * w);
             add(r.legR.hip, "x", ikR.hip * w);
             add(r.legR.knee, "x", ikR.knee * w);
-            add(r.legR.ankle, "x", -(ikR.hip + ikR.knee) * w);
+            add(r.legR.ankle, "x", (FR.roll - ikR.hip - ikR.knee) * w);
             // das Bein-Signal für Arme und Becken: −1, wenn das linke Bein vorn steht (Arm L schwingt gegen Bein L)
             sw = Math.max(-1, Math.min(1, (FR.dz - FL.dz) / Sl));
         }
@@ -102088,6 +102104,10 @@ AnazhRealm.GANG_FELDER = Object.freeze([
     "hubLauf",
     "hubForm",
     "beckenHub",
+    "rollWinkel",
+    "fersenAb",
+    "ballen",
+    "knoechel",
 ]);
 // DER SPRUNG DER LAGE IST KEIN LAUF (tetrapoda GANG_GESETZ.vMax, EINE Regel): das Tempo eines Leibs aus der Änderung
 // seiner Lage in dt — über vMax (Spawn, Teleport, Peer-Schnapp, ein Ruf an einen fernen Ort) null. Leser: der Lauf des

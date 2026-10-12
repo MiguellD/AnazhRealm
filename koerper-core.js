@@ -570,6 +570,17 @@
                             hubLauf: 0.3,
                             hubForm: 0.5,
                             beckenHub: 0.05,
+                            // DAS ABROLLEN (tetrapoda gangRolle/gangVersatz): ab
+                            // der Mitte des Stands hebt die Ferse, der Fuss rollt
+                            // bis 0.7 rad (40 Grad) ueber den Ballen; ballen und
+                            // knoechel sind der gebaute Fuss je Reichweite der
+                            // Kette (Ballen 0.46 E vor, Sohle 0.30 E unter dem
+                            // Knoechel bei 2.946 E Bein). Die Senke des Gehens
+                            // faellt so von 0.105 auf 0.047 R (Gard 2004: 4-5 cm).
+                            rollWinkel: 0.7,
+                            fersenAb: 0.5,
+                            ballen: 0.16,
+                            knoechel: 0.1,
                         },
                         // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
                         // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-

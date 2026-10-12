@@ -35,8 +35,10 @@ const SCHWELLE = 0.05;
 const KADENZ_GEHEN = 1.5; // Schritte/s bei 1,15 m/s (physio-pedia, Weidmann 1993)
 const TON_TOLERANZ = 0.15; // Töne = 2·v·t/Λ ± 15 %
 // das Becken in Beinlängen (Hub = höchste − tiefste Lage, Tiefe = Ruhe − tiefste Lage): Gehen (Gard 2004: 4–5 cm bei
-// 0,9 m Bein) und Laufen (Cavagna 1976, Lee & Farley 1998: Hub 6–10 cm, das Bein federt um 10–15 %)
-const BECKEN = { gehen: { hub: 0.07, tief: 0.15 }, laufen: { hub: 0.12, tief: 0.25 } };
+// 0,9 m Bein) und Laufen (Cavagna 1976, Lee & Farley 1998: Hub 6–10 cm, das Bein federt um 10–15 %). Die Tiefe des
+// Gehens als Ratsche 0,15 → 0,08 (K07, das Abrollen des Fußes): mit flachem Fuß sank das Becken um 0,137 L, das Knie
+// knickte tief ein (Bild k07n2-mensch-folge).
+const BECKEN = { gehen: { hub: 0.07, tief: 0.08 }, laufen: { hub: 0.12, tief: 0.25 } };
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -213,6 +215,16 @@ const LEIB = (k) => {
         w.y = sohle();
         return a.worldToLocal(w.clone());
     });
+    // DER KONTAKT DES FUSSES (K07, das Abrollen): Ferse (die Sohle unter dem Knöchel) und Ballen (ballen × R davor, im
+    // Gelenk-Maß des Knöchels) — der tiefere Punkt trägt. Rollt der Fuß über den Ballen, steht der Ballen; der Schlupf
+    // misst ihn, nie die steigende Ferse. Ohne Abrollen in der Zeile liegt der Ballen auf der Ferse (die Messung von vorher).
+    const zeileB = typeof r._gangZeile === "function" ? r._gangZeile(true) : null;
+    const massB = typeof r._gaitBeinMass === "function" ? r._gaitBeinMass(rig) : null;
+    const ballenL =
+        zeileB && zeileB.ballen > 0 && massB && core.gangReich
+            ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2)
+            : 0;
+    const lokalB = lokal.map((v) => v.clone().add(new T.Vector3(0, 0, ballenL)));
     const beinM =
         typeof r._gaitBeinMass === "function"
             ? r._gaitBeinMass(rig).L
@@ -266,7 +278,9 @@ const LEIB = (k) => {
                 ph0 = p.walkPhase;
             }
             leib.push(mesh.position.x);
-            knoechel.forEach((a, j) => spur[j].push(a.localToWorld(lokal[j].clone())));
+            knoechel.forEach((a, j) =>
+                spur[j].push([a.localToWorld(lokal[j].clone()), a.localToWorld(lokalB[j].clone())])
+            );
             if (i >= 60) {
                 const h = huefte();
                 hMin = Math.min(hMin, h);
@@ -284,10 +298,11 @@ const LEIB = (k) => {
             standTakte = 0;
         for (let j = 0; j < 2; j++) {
             let ymin = Infinity;
-            for (let i = 30; i < N; i++) ymin = Math.min(ymin, spur[j][i].y);
+            for (let i = 30; i < N; i++) ymin = Math.min(ymin, spur[j][i][0].y, spur[j][i][1].y);
             for (let i = 31; i < N; i++) {
-                const a = spur[j][i - 1],
-                    b = spur[j][i];
+                const k = spur[j][i][1].y < spur[j][i][0].y - 1e-4 ? 1 : 0;
+                const a = spur[j][i - 1][k],
+                    b = spur[j][i][k];
                 if (a.y > ymin + 0.05 * beinM || b.y > ymin + 0.05 * beinM) continue;
                 standTakte++;
                 wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
@@ -323,10 +338,15 @@ const LEIB = (k) => {
     mesh.rotation.y = rot0;
     const taeter =
         typeof r._gaitGesetz === "function" ? "_gaitGesetz (fx.bewegung.gang)" : "_gaitSchrittLen (schritt.kalib)";
+    // der flache Fuß (K07): ohne das Abrollen über den Ballen (tetrapoda gangRolle, fx.bewegung.gang rollWinkel) sinkt das
+    // Becken im Doppel-Stand so tief, wie ein flacher Fuß hinten und vorn die Kette verlangt — das Knie knickt ein
+    const gangZ = r._gangZeile ? r._gangZeile(true) : null;
     const beckenTaeter =
-        typeof core.gangBecken === "function"
-            ? "tetrapoda gangBecken (das Becken des Gesetzes)"
-            : "_animateHumanoidRig (Becken-Senke über beide Füße, der Schwung-Fuß zieht mit)";
+        typeof core.gangBecken !== "function"
+            ? "_animateHumanoidRig (Becken-Senke über beide Füße, der Schwung-Fuß zieht mit)"
+            : gangZ && gangZ.rollWinkel > 0
+              ? "tetrapoda gangBecken (das Becken des Gesetzes)"
+              : "tetrapoda gangFuss/gangBecken (der flache Fuß, kein Abrollen über den Ballen: gangRolle)";
     const loeserTaeter = "_gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)";
     return { zeilen, taeter, beckenTaeter, loeserTaeter };
 };
@@ -441,8 +461,11 @@ const STUDIO = (k) => {
         playPhysics(dt);
         character.updateMatrixWorld(true);
         ["ankle1", "ankle-1"].forEach((n, j) => {
-            parts[n].getWorldPosition(w);
-            spur[j].push({ x: w.x, y: w.y, z: w.z });
+            // Ferse und Ballen (K07, wie in der Welt): die Sohle footBelowAnkle unter dem Knöchel, der Ballen ballen × R davor
+            const ballenE = _GZ && _GZ.ballen > 0 && core && core.gangReich ? _GZ.ballen * core.gangReich(L1 + L2) : 0;
+            const f = parts[n].localToWorld(w.set(0, -footBelowAnkle, 0)).clone();
+            const b = parts[n].localToWorld(w.set(0, -footBelowAnkle, ballenE)).clone();
+            spur[j].push([f, b]);
         });
         leib.push({ x: character.position.x, z: character.position.z, y: character.position.y });
         if (i >= EIN) phase += (play.gaitPhase - phPrev + 1) % 1;
@@ -456,10 +479,11 @@ const STUDIO = (k) => {
         standTakte = 0;
     for (let j = 0; j < 2; j++) {
         let ymin = Infinity;
-        for (let i = EIN; i < N; i++) ymin = Math.min(ymin, spur[j][i].y);
+        for (let i = EIN; i < N; i++) ymin = Math.min(ymin, spur[j][i][0].y, spur[j][i][1].y);
         for (let i = EIN + 1; i < N; i++) {
-            const a = spur[j][i - 1],
-                b = spur[j][i];
+            const k = spur[j][i][1].y < spur[j][i][0].y - 1e-4 ? 1 : 0;
+            const a = spur[j][i - 1][k],
+                b = spur[j][i][k];
             if (a.y > ymin + 0.05 * bein || b.y > ymin + 0.05 * bein) continue;
             standTakte++;
             wegFuss += Math.hypot(b.x - a.x, b.z - a.z);
@@ -572,9 +596,15 @@ const STUDIO = (k) => {
             } else {
                 const gleich = (q) => typeof q === "number" && Math.abs(q - 1) <= 1e-6;
                 const taeter = [
-                    gleich(sw.mensch) ? null : "_gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt)",
-                    sw.becken === 1.62 ? null : "_animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt)",
-                    gleich(sw.tier) ? null : "_animateTierBaum (der Schritt des Tiers liest nicht die Schwere der Welt)",
+                    gleich(sw.mensch)
+                        ? null
+                        : "_gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt)",
+                    sw.becken === 1.62
+                        ? null
+                        : "_animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt)",
+                    gleich(sw.tier)
+                        ? null
+                        : "_animateTierBaum (der Schritt des Tiers liest nicht die Schwere der Welt)",
                     ...sw.zwillinge,
                 ].filter(Boolean);
                 const fmt = (q) => (typeof q === "number" ? q.toFixed(4) : q);
@@ -634,7 +664,9 @@ const STUDIO = (k) => {
             process.exit(1);
         }
         if (!schwereRot && !NUR_STUDIO) {
-            console.error("\n❌ SELBST-TEST ROT — die Zeile ohne die Schwere der Welt blieb grün: die Schwere-Wand ist vakuös.");
+            console.error(
+                "\n❌ SELBST-TEST ROT — die Zeile ohne die Schwere der Welt blieb grün: die Schwere-Wand ist vakuös."
+            );
             process.exit(1);
         }
         console.log(`\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);
