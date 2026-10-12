@@ -4215,6 +4215,33 @@
         sqrt: (a) => "sqrt(" + a + ")",
     });
 
+    // DAS LAUB-LICHT (K19): das Blatt lässt durch, was es weder spiegelt noch schluckt — Laubholz Durchlass ≈ Reflexion,
+    // Nadel Durchlass < Reflexion (PROSPECT-D: R(550 nm) ≈ 0,13, T beim dünnen Laubblatt ebenso). Die Rückseite eines
+    // besonnten Blatts strahlt die Albedo × tau (= T/R) × max(−N·L, 0) — dieselbe Lambert-Normierung wie die Vorderseite —,
+    // ein Anteil `g` des Durchlasses streut als Vorwärts-Keule um die Licht-Richtung: (n+1)/2 · max(V·(−L), 0)^n, über die
+    // Halbkugel energietreu wie der Lambert-Teil (Integral 1). Licht-Farbe und Schatten bringt der Leser aus seiner
+    // Licht-Kette (r184 `lightColor` trägt den Schatten der Kaskade, r128 `directLight.color` den der Schatten-Karte). Die
+    // Nadel erkennt der Leser an ihrer Atlas-Zelle (BLATT_ATLAS_WEDEL: u ≥ nadelAbU). Gegenlicht-Laub leuchtet. tau ist Gesetz
+    // (PROSPECT-D); die Keule (g, n) ist ein Modell-Regler, geeicht am Soll der Karte K19: Gegenlicht/Auflicht ≥ 1,3.
+    var LAUB_LICHT = Object.freeze({
+        tauLaub: 1.0,
+        tauNadel: 0.5,
+        keule: Object.freeze({ g: 0.7, n: 8 }), // Linse (werkbank licht --laub, aus 8 m, Sonne 20°): Eiche 0,30 → 1,33, Birke 1,19, Fichte 0,69
+        nadelAbU: BLATT_ATLAS_WEDEL.zelle * 0.25,
+    });
+    // DER EINE TERM über einer Algebra (wie `windAusschlag`): nl = N·L (vorzeichenbehaftet, N die gesehene Seite), vl =
+    // V·(−L), nadel 0…1. Rückgabe: der Faktor auf (Licht-Farbe × diffuse Lambert-Antwort des Stoffs).
+    function laubDurchlass(A, nl, vl, nadel) {
+        const L = LAUB_LICHT;
+        const tau = A.add(A.k(L.tauLaub), A.mul(A.k(L.tauNadel - L.tauLaub), nadel));
+        const hinten = A.max(A.mul(nl, A.k(-1)), A.k(0));
+        const keule = A.add(
+            A.k(1 - L.keule.g),
+            A.mul(A.k((L.keule.g * (L.keule.n + 1)) / 2), A.pow(A.max(vl, A.k(0.0001)), A.k(L.keule.n)))
+        );
+        return A.mul(A.mul(tau, hinten), keule);
+    }
+
     root.__phytoCore = {
         vn2: vn2,
         fbm2: fbm2,
@@ -4314,5 +4341,7 @@
         windAusschlag: windAusschlag, // K19 — DER EINE Wind-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
+        LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
+        laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

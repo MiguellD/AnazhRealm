@@ -33251,8 +33251,8 @@ class AnazhRealm {
             }
         }
         // SUBSURFACE-BACKLIT (detail > 0.4, laub): warmer Gegenlicht-Glow,
-        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha).
-        if (responseProfile && responseProfile.detail > 0.4) {
+        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha). Laub trägt das Laub-Licht (K19), nie ihn.
+        if (responseProfile && responseProfile.detail > 0.4 && opts.foliageLeaf !== true) {
             try {
                 const _Td = THREE.TSL;
                 const _wu = this.state.windUniforms;
@@ -33279,45 +33279,10 @@ class AnazhRealm {
                 if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
             }
         }
-        // Unlit-Silhouetten-Floor + Kanten-Grün (Vorlage `injectWind`): `output += albedo·pow(1−ndv,2.5)·0.55
-        // + vec3(0.09,0.15,0.04)·pow(1−ndv,4)·0.5` — bewusst sonnen-unabhängig (lebt im Schatten + nachts),
-        // der sonnen-gegatete Backlit ersetzt ihn nicht. NUR Laub (opts.foliageLeaf; der Impostor lichtet
-        // über den Normal-Atlas). Post-lighting auf outputNode, nie colorNode. Dazu ein kleiner nicht-
-        // direktionaler Ambient-Boden → die Unterkrone fällt auch face-on nie absolut schwarz.
-        if (opts.foliageLeaf === true) {
-            try {
-                const _Tf = THREE.TSL;
-                if (
-                    _Tf &&
-                    _Tf.normalWorld &&
-                    _Tf.cameraPosition &&
-                    _Tf.positionWorld &&
-                    _Tf.pow &&
-                    _Tf.abs &&
-                    mat.colorNode &&
-                    mat.colorNode.rgb !== undefined
-                ) {
-                    const _vdF = _Tf.normalize(_Tf.cameraPosition.sub(_Tf.positionWorld));
-                    const _ndv = _Tf.abs(_Tf.normalWorld.dot(_vdF)).clamp(0.0, 1.0);
-                    const _inv = _Tf.float(1.0).sub(_ndv);
-                    // Subsurface-Rim: die eigene Albedo, unbelichtet, an der Silhouette.
-                    const _rim = mat.colorNode.rgb.mul(_Tf.pow(_inv, _Tf.float(2.5))).mul(_Tf.float(0.55));
-                    // grünes Kanten-Glimmen (die zweite Vorlagen-Zeile).
-                    const _edge = _Tf
-                        .vec3(0.09, 0.15, 0.04)
-                        .mul(_Tf.pow(_inv, _Tf.float(4.0)))
-                        .mul(_Tf.float(0.5));
-                    // Ambient-Boden: eigene Albedo × 0.06, view- und sonnen-unabhängig.
-                    const _amb = mat.colorNode.rgb.mul(_Tf.float(0.06));
-                    const _outF = mat.outputNode || _Tf.output;
-                    mat.outputNode = _outF.add(_Tf.vec4(_rim.add(_edge).add(_amb), _Tf.float(0.0)));
-                    mat.userData = mat.userData || {};
-                    mat.userData.unlitSilhouetteFloor = true; // Linsen-Marker (diag-leaf-blades)
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__unlitFloorError = String((_e && _e.message) || _e);
-            }
-        }
+        // DAS LAUB-LICHT (K19): das Grammatik-Laub (Blatt-Karte und Klinge) lichtet mit dem EINEN Laub-Licht-Term des Foundry-
+        // Laubs (`_laubLichtStoff`, phyto-core `laubDurchlass`) — die unbelichtete Silhouetten-Aufhellung (die Fresnel-Kopie des
+        // Labors) und der sonnen-blinde Gegenlicht-Glow sind gefallen; die Klinge ist Laub, die Karte erkennt die Nadel am Atlas.
+        if (opts.foliageLeaf === true) this._laubLichtStoff(mat, opts.foliageBlade !== true);
         // SSE-Metrik + Dither-Crossfade NUR für Laub-Karten (`opts.foliageLeaf` trägt aH0/aH0L aus
         // `_buildTreeFoliageCardGeometry`; sonst attribute()-Crash). Dieselbe `uLodRef`-Quelle wie die CPU:
         //   vLodD  = |cam.xz − posWorld.xz| · min(uLodRef/aH0, 1) (großer Baum behält Detail länger;
@@ -77490,7 +77455,64 @@ class AnazhRealm {
         this._foundryMats[key] = mat;
         if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex"))
             this._baumWindStoff(mat, kind, baum);
+        if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
         return mat;
+    }
+
+    // DAS LAUB-LICHT IM STOFF (K19): jeder Laub-Stoff der Welt (Foundry-Laub und Blatt-Karte, das Grammatik-Laub) rechnet je
+    // direktem Licht den EINEN Laub-Licht-Term (phyto-core `laubDurchlass`, hier über der TSL-Algebra) in seiner Lichtung —
+    // das Lichtmodell des Standard-Stoffs (r184 PhysicalLightingModel), dessen `direct` nach der Physik des Stoffs den
+    // Durchlass der Rückseite addiert: `lightColor` trägt den Schatten der Kaskade, die Normierung ist die Lambert-Antwort der
+    // Vorderseite (diffuseColor/π ausgeschrieben — ein Fn-Aufruf ohne Layout baute seinen Rumpf erst im Compiler). Kein
+    // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `atlasNadel`: die Blatt-Karte erkennt die
+    // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); Klinge und Blatt-Geometrie sind Laub.
+    _laubLichtStoff(mat, atlasNadel) {
+        if (!mat || mat.isNodeMaterial !== true) throw new Error("_laubLichtStoff: kein Knoten-Stoff");
+        const T = THREE.TSL;
+        const K = AnazhRealm._laubLichtModell();
+        const ab = globalThis.__phytoCore.LAUB_LICHT.nadelAbU;
+        mat.setupLightingModel = () =>
+            new K(
+                atlasNadel
+                    ? T.select(T.attribute("uv", "vec2").x.greaterThanEqual(ab), T.float(1), T.float(0))
+                    : T.float(0)
+            );
+        const schluessel = mat.customProgramCacheKey;
+        mat.customProgramCacheKey = function () {
+            return schluessel.call(this) + (atlasNadel ? "|laubLicht:atlas" : "|laubLicht");
+        };
+        mat.userData = mat.userData || {};
+        mat.userData.laubLicht = atlasNadel ? "atlas" : "laub";
+        return mat;
+    }
+
+    // Das Lichtmodell des Laubs (K19): die Klasse ist die des Standard-Stoffs selbst (sein `setupLightingModel` liefert sie
+    // — die Bootstrap-Brücke reicht sie nicht als THREE-Symbol), erweitert um den Durchlass.
+    static _laubLichtModell() {
+        if (AnazhRealm._laubLichtK) return AnazhRealm._laubLichtK;
+        const T = THREE.TSL;
+        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
+        const A = AnazhRealm._windTsl(T);
+        const durchlass = globalThis.__phytoCore.laubDurchlass;
+        class LaubLicht extends Basis {
+            constructor(nadel) {
+                super();
+                this.nadel = nadel;
+            }
+            direct(e, builder) {
+                super.direct(e, builder);
+                const L = e.lightDirection;
+                const f = durchlass(A, T.normalView.dot(L), T.positionViewDirection.dot(L).negate(), this.nadel);
+                e.reflectedLight.directDiffuse.addAssign(
+                    e.lightColor
+                        .mul(f)
+                        .mul(T.diffuseColor.rgb)
+                        .mul(1 / Math.PI)
+                );
+            }
+        }
+        AnazhRealm._laubLichtK = LaubLicht;
+        return LaubLicht;
     }
 
     // Die Schlankheit der Karte (K19): EINE Uniform, das Mittel von δ über die Arten, deren Gestalt geliefert ist

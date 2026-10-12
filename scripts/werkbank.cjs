@@ -28,6 +28,8 @@
 //                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
 //                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
+//                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
 //                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]
@@ -2369,7 +2371,58 @@ async function starte() {
             process.exit(1);
         }
     }
-    else if (cmd === "licht") o = await rufe("/licht");
+    else if (cmd === "licht" && argv.includes("--laub")) {
+        // DAS LAUB IM GEGENLICHT (K19): je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
+        // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
+        const LL = require("./lib/licht-linsen.cjs");
+        if (argv.includes("--selbsttest")) {
+            const m = (v) => ({ verhaeltnis: v, gegen: { Y: v }, auf: { Y: 1 }, stoffe: "laub" });
+            const f = [
+                [LL.laubLichtUrteil({ welt: { eiche: m(1.4) } }).urteil, "GRUEN"],
+                [
+                    LL.laubLichtUrteil({ welt: { eiche: m(0.3) } }).befunde.join(),
+                    /eiche: Gegenlicht\/Auflicht 0\.3 < 1\.3/,
+                ],
+                [LL.laubLichtUrteil({ welt: { eiche: m(1.4) }, labor: { eiche: { verhaeltnis: 1.0 } } }).urteil, "ROT"],
+                [
+                    LL.laubLichtUrteil({ welt: { eiche: m(1.4) }, labor: { eiche: { verhaeltnis: 1.35 } } }).urteil,
+                    "GRUEN",
+                ],
+                [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
+                [LL.laubLichtUrteil({}).urteil, "ROT"],
+            ];
+            const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
+            console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);
+            process.exit(fehl.length ? 1 : 0);
+        }
+        const welt = {};
+        for (const art of String(opt("--laub", "eiche,birke")).split(",")) {
+            const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
+            const plan = (await rufe("/eval", { code: `const __o = { plan: true }; ${c}` })).ergebnis;
+            if (!plan || plan.fehler) {
+                welt[art] = plan || { fehler: "kein Plan" };
+                continue;
+            }
+            await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
+            const w = (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)} }; ${c}` }))
+                .ergebnis;
+            const ordner = opt("--ordner");
+            if (w && w.gegen)
+                for (const k of ["gegen", "auf"]) {
+                    if (ordner)
+                        fs.writeFileSync(
+                            path.join(ordner, `laub-${art}-${k}.png`),
+                            Buffer.from(w[k].png.split(",")[1], "base64")
+                        );
+                    delete w[k].png;
+                }
+            welt[art] = w;
+        }
+        const u = LL.laubLichtUrteil({ welt });
+        console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+        console.log(`LAUB-LICHT ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+        process.exit(u.urteil === "GRUEN" ? 0 : 1);
+    } else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });

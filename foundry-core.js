@@ -733,10 +733,27 @@ function injectWind(mat, foliage, isGrass, baum) {
                 "#include <color_fragment>",
                 "#include <color_fragment>\ndiffuseColor.rgb*=mix(vec3(1.0),uSeasonMul,vSeasW);\ndiffuseColor.rgb*=clamp(vec3(1.0)+vTintI,0.0,2.0);"
             ); // SAISON OHNE REBUILD + FIX v27: Per-Instanz-Tint (Baum: Positions-Hash; Gras: Licht x Feuchte x Jitter) -> kein Teppich-/Klon-Look mehr
-            sh.fragmentShader = sh.fragmentShader.replace(
-                "gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
-                "gl_FragColor = vec4( outgoingLight, diffuseColor.a );\nfloat _ndv=abs(dot(normalize(vNormal),normalize(vViewPosition)));\ngl_FragColor.rgb+=diffuseColor.rgb*pow(1.0-_ndv,2.5)*0.55;\ngl_FragColor.rgb+=vec3(0.09,0.15,0.04)*pow(1.0-_ndv,4.0)*0.5;"
-            );
+            if (isGrass)
+                sh.fragmentShader = sh.fragmentShader.replace(
+                    "gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
+                    "gl_FragColor = vec4( outgoingLight, diffuseColor.a );\nfloat _ndv=abs(dot(normalize(vNormal),normalize(vViewPosition)));\ngl_FragColor.rgb+=diffuseColor.rgb*pow(1.0-_ndv,2.5)*0.55;\ngl_FragColor.rgb+=vec3(0.09,0.15,0.04)*pow(1.0-_ndv,4.0)*0.5;"
+                );
+            // DAS LAUB-LICHT (K19, phyto-core `laubDurchlass`): jedes direkte Licht trägt nach der Physik des Stoffs den
+            // Durchlass des Blatts — die Rückseite eines besonnten Blatts leuchtet mit Albedo × tau × max(−N·L, 0) und der
+            // Vorwärts-Keule; Licht-Farbe und Schatten aus der Licht-Kette (directLight.color), dieselbe Lambert-Normierung
+            // wie RE_Direct_Physical. Derselbe Term ist der Laub-Stoff der Welt; die Fresnel-Aufhellung des Laubs ist gefallen.
+            else {
+                const LL = self.__phytoCore.LAUB_LICHT;
+                const term = self.__phytoCore.laubDurchlass(self.__phytoCore.WIND_GLSL, "_nl", "_vl", "_nadel");
+                sh.fragmentShader = sh.fragmentShader.replace(
+                    "#include <lights_physical_pars_fragment>",
+                    "#include <lights_physical_pars_fragment>\nvoid RE_Direct_Laub( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n RE_Direct_Physical( directLight, geometry, material, reflectedLight );\n float _nl = dot( geometry.normal, directLight.direction );\n float _vl = -dot( geometry.viewDir, directLight.direction );\n#ifdef USE_UV\n float _nadel = step( " +
+                        LL.nadelAbU.toFixed(4) +
+                        ", vUv.x );\n#else\n float _nadel = 0.0;\n#endif\n vec3 _irr = directLight.color * " +
+                        term +
+                        ";\n#ifndef PHYSICALLY_CORRECT_LIGHTS\n _irr *= PI;\n#endif\n reflectedLight.directDiffuse += _irr * RECIPROCAL_PI * material.diffuseColor;\n}\n#undef RE_Direct\n#define RE_Direct RE_Direct_Laub"
+                );
+            }
             // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Seite nach unten gewandt (die
             // Normale ist nach normal_fragment_begin seiten-gespiegelt) → heller und matter. Laub und Blüte, nie Gras;
             // dieselben Zahlen liest der Laub-Stoff der Welt.
@@ -756,7 +773,7 @@ function injectWind(mat, foliage, isGrass, baum) {
         }
     };
     mat.customProgramCacheKey = function () {
-        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v8unterseite") : "bark") + "_v9overlap";
+        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v9laublicht") : "bark") + "_v9overlap";
     };
     return mat;
 }
