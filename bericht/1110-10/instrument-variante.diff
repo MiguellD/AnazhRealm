@@ -1,0 +1,44 @@
+diff --git a/scripts/omen-messfolge.cjs b/scripts/omen-messfolge.cjs
+index 30ec05af..379d3e7d 100644
+--- a/scripts/omen-messfolge.cjs
++++ b/scripts/omen-messfolge.cjs
+@@ -79,7 +79,7 @@ const FOLGEN = {
+     ],
+     // DAS PROFI-BAND E (frozen-a1, 1110-9) richtet beide Orte unter Regler voll: Frame p95 und CPU-Takt p95 AUCH an der
+     // Genesis — der Lauf steht dort vor dem Band (der Pool füllt erst nach jedem Pass-Stempel).
+-    genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "band"],
++    genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "lauf-frei", "gpu-bank", "band"], // OMEN 1110-10: + Lauf frei und Bank an der Gier des Orts
+     // DAS MESS-DORF: der Dorf-Zug läuft (der Ort schaltet ihn beim Umstellen wieder an), das Band zählt Befehle, Dreiecke und
+     // VRAM des gebauten Dorfs.
+     dorf: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
+@@ -625,7 +625,7 @@ async function folge() {
+         } else if (hat("gpu-bank")) {
+             const bank = await schritt("gpu-bank", async () => {
+                 const je = {};
+-                for (const g of BANK_GIER) {
++                for (const g of ORT === "genesis" ? [BAND.ortGier(ort)] : BANK_GIER) {
+                     const b = await blick(g);
+                     const m = await mitTakt(() => R("/gpu-bank", { n: 12, runden: 3 }));
+                     je[String(g)] = m.b;
+@@ -638,7 +638,7 @@ async function folge() {
+                 return je;
+             });
+             aus.kurz.gpuBank = {};
+-            for (const g of BANK_GIER) {
++            for (const g of ORT === "genesis" ? [BAND.ortGier(ort)] : BANK_GIER) {
+                 const b = bank && bank[String(g)];
+                 if (abbruchVon(b)) aus.befunde.push(`SCHRITT gpu-bank (Gier ${g}): ${abbruchVon(b)}`);
+                 else aus.befunde.push(...tierUrteil(`gpu-bank (Gier ${g})`, b && b.tiere));
+@@ -976,9 +976,9 @@ async function selbsttest() {
+     pruefe("die Genesis-Folge", folgeUrteil(FOLGEN.genesis, FOLGEN.genesis), null);
+     pruefe("die Dorf-Folge", folgeUrteil(FOLGEN.dorf, FOLGEN.dorf), null);
+     pruefe(
+-        "Genesis mit einer Bank der Wiese",
+-        folgeUrteil(["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "gpu-bank", "band"], FOLGEN.genesis),
+-        /unbekannter Schritt „gpu-bank"/
++        "Genesis: Lauf frei nach der Bank (OMEN 1110-10)",
++        folgeUrteil(["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "gpu-bank", "lauf-frei", "band"], FOLGEN.genesis),
++        /„lauf-frei" nach „gpu-bank"/
+     );
+     pruefe(
+         "Genesis: Band vor dem Lauf",

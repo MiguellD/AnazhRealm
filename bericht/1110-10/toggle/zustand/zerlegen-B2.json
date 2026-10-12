@@ -1,0 +1,1758 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "serie": null,
+  "ladungen": 1
+ },
+ "inventur": {
+  "zensus": {
+   "klassen": [
+    {
+     "klasse": "fscatter:fichte:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 8,
+     "tris": 5992,
+     "je": {
+      "k0": 2,
+      "k1": 2,
+      "haupt": 4
+     },
+     "jeTris": {
+      "k0": 1058,
+      "k1": 1058,
+      "haupt": 3876
+     },
+     "inst": 4,
+     "exemplare": 2,
+     "dMin": 88,
+     "dMax": 88
+    },
+    {
+     "klasse": "f:fichte:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 6,
+     "tris": 12656,
+     "je": {
+      "k0": 2,
+      "haupt": 4
+     },
+     "jeTris": {
+      "k0": 2696,
+      "haupt": 9960
+     },
+     "inst": 10,
+     "exemplare": 3,
+     "dMin": 23,
+     "dMax": 47
+    },
+    {
+     "klasse": "f:tanne:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 6,
+     "tris": 16918,
+     "je": {
+      "k0": 2,
+      "haupt": 4
+     },
+     "jeTris": {
+      "k0": 3578,
+      "haupt": 13340
+     },
+     "inst": 14,
+     "exemplare": 6,
+     "dMin": 10,
+     "dMax": 36
+    },
+    {
+     "klasse": "f:eiche:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 5,
+     "tris": 5226,
+     "je": {
+      "k0": 2,
+      "haupt": 3
+     },
+     "jeTris": {
+      "k0": 1556,
+      "haupt": 3670
+     },
+     "inst": 5,
+     "exemplare": 2,
+     "dMin": 15,
+     "dMax": 23
+    },
+    {
+     "klasse": "spieler",
+     "stufe": null,
+     "art": null,
+     "cmd": 5,
+     "tris": 37964,
+     "je": {
+      "k0": 5
+     },
+     "jeTris": {
+      "k0": 37964
+     },
+     "inst": 0,
+     "exemplare": 0,
+     "dMin": null,
+     "dMax": null
+    },
+    {
+     "klasse": "streuSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 5,
+     "tris": 28540,
+     "je": {
+      "haupt": 5
+     },
+     "jeTris": {
+      "haupt": 28540
+     },
+     "inst": 5,
+     "exemplare": 1,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "f:strauch:L1",
+     "stufe": 1,
+     "art": "shrub",
+     "cmd": 4,
+     "tris": 9180,
+     "je": {
+      "k0": 2,
+      "haupt": 2
+     },
+     "jeTris": {
+      "k0": 6120,
+      "haupt": 3060
+     },
+     "inst": 6,
+     "exemplare": 2,
+     "dMin": 10,
+     "dMax": 22
+    },
+    {
+     "klasse": "f:birke:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 3,
+     "tris": 6820,
+     "je": {
+      "haupt": 2,
+      "k0": 1
+     },
+     "jeTris": {
+      "haupt": 5564,
+      "k0": 1256
+     },
+     "inst": 4,
+     "exemplare": 1,
+     "dMin": 5,
+     "dMax": 16
+    },
+    {
+     "klasse": "bodenSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 149839,
+     "je": {
+      "k0": 1,
+      "k1": 1,
+      "haupt": 1
+     },
+     "jeTris": {
+      "k0": 53648,
+      "k1": 53688,
+      "haupt": 42503
+     },
+     "inst": 1,
+     "exemplare": 1,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "formationenSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 5760,
+     "je": {
+      "k0": 1,
+      "k1": 1,
+      "haupt": 1
+     },
+     "jeTris": {
+      "k0": 2560,
+      "k1": 960,
+      "haupt": 2240
+     },
+     "inst": 1,
+     "exemplare": 1,
+     "dMin": 1238,
+     "dMax": 1238,
+     "inhalt": {
+      "k0": [
+       {
+        "klasse": "f:zacken:L0",
+        "stufe": 0,
+        "art": "rock",
+        "zellen": 8,
+        "tris": 2560,
+        "eintraege": [
+         201,
+         458,
+         518,
+         111,
+         197,
+         128,
+         297,
+         517
+        ]
+       }
+      ],
+      "k1": [
+       {
+        "klasse": "f:zacken:L0",
+        "stufe": 0,
+        "art": "rock",
+        "zellen": 3,
+        "tris": 960,
+        "eintraege": [
+         458,
+         518,
+         517
+        ]
+       }
+      ],
+      "haupt": [
+       {
+        "klasse": "f:zacken:L0",
+        "stufe": 0,
+        "art": "rock",
+        "zellen": 7,
+        "tris": 2240,
+        "eintraege": [
+         201,
+         458,
+         518,
+         111,
+         197,
+         297,
+         517
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "klasse": "fern-ring",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 17280,
+     "je": {
+      "haupt": 3
+     },
+     "jeTris": {
+      "haupt": 17280
+     },
+     "inst": 3,
+     "exemplare": 3,
+     "dMin": 1242,
+     "dMax": 1274
+    },
+    {
+     "klasse": "dsl-insel",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 9064,
+     "je": {
+      "haupt": 3
+     },
+     "jeTris": {
+      "haupt": 9064
+     },
+     "inst": 3,
+     "exemplare": 3,
+     "dMin": 1206,
+     "dMax": 1211
+    },
+    {
+     "klasse": "f:birke:L0",
+     "stufe": 0,
+     "art": "tree",
+     "cmd": 2,
+     "tris": 10954,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 10954
+     },
+     "inst": 2,
+     "exemplare": 1,
+     "dMin": 5,
+     "dMax": 5
+    },
+    {
+     "klasse": "f:tanne:L0",
+     "stufe": 0,
+     "art": "tree",
+     "cmd": 2,
+     "tris": 5348,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 5348
+     },
+     "inst": 2,
+     "exemplare": 1,
+     "dMin": 10,
+     "dMax": 10
+    },
+    {
+     "klasse": "f:strauch:L0",
+     "stufe": 0,
+     "art": "shrub",
+     "cmd": 2,
+     "tris": 8612,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 8612
+     },
+     "inst": 2,
+     "exemplare": 1,
+     "dMin": 10,
+     "dMax": 10
+    },
+    {
+     "klasse": "f:eiche:L0",
+     "stufe": 0,
+     "art": "tree",
+     "cmd": 2,
+     "tris": 6754,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 6754
+     },
+     "inst": 2,
+     "exemplare": 1,
+     "dMin": 18,
+     "dMax": 18
+    },
+    {
+     "klasse": "nahWiese:L1",
+     "stufe": 1,
+     "art": null,
+     "cmd": 2,
+     "tris": 29520,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 29520
+     },
+     "inst": 29,
+     "exemplare": 29,
+     "dMin": 2,
+     "dMax": 5
+    },
+    {
+     "klasse": "nahWiese:L2",
+     "stufe": 2,
+     "art": null,
+     "cmd": 2,
+     "tris": 25474,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 25474
+     },
+     "inst": 239,
+     "exemplare": 230,
+     "dMin": 5,
+     "dMax": 16
+    },
+    {
+     "klasse": "bauSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 2,
+     "tris": 5355,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 5355
+     },
+     "inst": 2,
+     "exemplare": 1,
+     "dMin": 1238,
+     "dMax": 1238,
+     "inhalt": {
+      "haupt": [
+       {
+        "klasse": "f:feuerstelle:L1",
+        "stufe": 1,
+        "art": "ausstattung",
+        "zellen": 18,
+        "tris": 5355,
+        "eintraege": [
+         129,
+         177,
+         112,
+         176,
+         198,
+         199,
+         200,
+         446,
+         447
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "klasse": "feld-pass",
+     "stufe": null,
+     "art": null,
+     "cmd": 2,
+     "tris": 13,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 13
+     },
+     "inst": 2,
+     "exemplare": 2,
+     "dMin": 1239,
+     "dMax": 1239
+    },
+    {
+     "klasse": "Render Pipeline",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 1,
+     "je": {
+      "OrthographicCamera": 1
+     },
+     "jeTris": {
+      "OrthographicCamera": 1
+     },
+     "inst": 0,
+     "exemplare": 0,
+     "dMin": null,
+     "dMax": null
+    },
+    {
+     "klasse": "TRAA",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 1,
+     "je": {
+      "OrthographicCamera": 1
+     },
+     "jeTris": {
+      "OrthographicCamera": 1
+     },
+     "inst": 0,
+     "exemplare": 0,
+     "dMin": null,
+     "dMax": null
+    },
+    {
+     "klasse": "bauWurf",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 240,
+     "je": {
+      "k0": 1
+     },
+     "jeTris": {
+      "k0": 240
+     },
+     "inst": 0,
+     "exemplare": 0,
+     "dMin": null,
+     "dMax": null,
+     "inhalt": {
+      "k0": [
+       {
+        "klasse": "f:feuerstelle:L3",
+        "stufe": 3,
+        "art": "ausstattung",
+        "zellen": 10,
+        "tris": 240,
+        "eintraege": [
+         129,
+         177,
+         110,
+         112,
+         176,
+         198,
+         199,
+         200,
+         446,
+         447
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "klasse": "fimp:atlas:L2",
+     "stufe": 2,
+     "art": null,
+     "cmd": 1,
+     "tris": 612,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 612
+     },
+     "inst": 306,
+     "exemplare": 219,
+     "dMin": 15,
+     "dMax": 156
+    },
+    {
+     "klasse": "himmel",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 1984,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 1984
+     },
+     "inst": 1,
+     "exemplare": 1,
+     "dMin": 0,
+     "dMax": 0
+    },
+    {
+     "klasse": "dorf-rauch",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 312,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 312
+     },
+     "inst": 26,
+     "exemplare": 10,
+     "dMin": 1248,
+     "dMax": 1249
+    },
+    {
+     "klasse": "himmel-sonne",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 480,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 480
+     },
+     "inst": 1,
+     "exemplare": 1,
+     "dMin": 395,
+     "dMax": 395
+    },
+    {
+     "klasse": "wasserSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 8234,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 8234
+     },
+     "inst": 1,
+     "exemplare": 1,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "farWater",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 2340,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 2340
+     },
+     "inst": 1,
+     "exemplare": 1,
+     "dMin": 22,
+     "dMax": 22
+    }
+   ],
+   "passe": {
+    "OrthographicCamera": {
+     "cmd": 2,
+     "tris": 2
+    },
+    "haupt": {
+     "cmd": 54,
+     "tris": 245089
+    },
+    "k0": {
+     "cmd": 19,
+     "tris": 110676
+    },
+    "k1": {
+     "cmd": 4,
+     "tris": 55706
+    }
+   },
+   "gesamt": {
+    "cmd": 79,
+    "tris": 411473
+   },
+   "unbenannt": 0
+  },
+  "passe": [
+   {
+    "name": "post",
+    "n": 1,
+    "tiefe": 0,
+    "eltern": null,
+    "kinder": [
+     "TRAA"
+    ]
+   },
+   {
+    "name": "TRAA",
+    "n": 1,
+    "tiefe": 1,
+    "eltern": "post",
+    "kinder": [
+     "haupt"
+    ]
+   },
+   {
+    "name": "haupt",
+    "n": 1,
+    "tiefe": 2,
+    "eltern": "TRAA",
+    "kinder": [
+     "k0",
+     "k1"
+    ]
+   },
+   {
+    "name": "k0",
+    "n": 1,
+    "tiefe": 3,
+    "eltern": "haupt",
+    "kinder": []
+   },
+   {
+    "name": "k1",
+    "n": 1,
+    "tiefe": 3,
+    "eltern": "haupt",
+    "kinder": []
+   }
+  ],
+  "knoten": {
+   "post": true,
+   "traa": true,
+   "tiefenkopie": true
+  },
+  "kette": {
+   "bloomStrength": {
+    "tiefe": 3,
+    "knoten": 1079,
+    "kante": "OperatorNode(+).bNode"
+   },
+   "godrayStrength": {
+    "tiefe": 3,
+    "knoten": 1079,
+    "kante": "OperatorNode(+).bNode"
+   },
+   "localContrast": {
+    "tiefe": 3,
+    "knoten": 1079,
+    "kante": "OperatorNode(+).bNode"
+   }
+  },
+  "schattenTakt": {
+   "k0": 2,
+   "k1": 12
+  },
+  "anatomie": {
+   "frames": 12,
+   "renderPaesse": [
+    {
+     "was": "haupt (Neustart)",
+     "n": 2,
+     "mb": 19.775,
+     "ziele": "rg11b10ufloat 1920×1080 load + depth24plus 1920×1080 load"
+    },
+    {
+     "was": "TRAA",
+     "n": 1,
+     "mb": 15.82,
+     "ziele": "rgba16float 1920×1080 clear"
+    },
+    {
+     "was": "haupt",
+     "n": 1,
+     "mb": 15.82,
+     "ziele": "rg11b10ufloat 1920×1080 clear + depth24plus 1920×1080 clear"
+    },
+    {
+     "was": "post",
+     "n": 1,
+     "mb": 7.91,
+     "ziele": "bgra8unorm 1920×1080 clear"
+    },
+    {
+     "was": "k0",
+     "n": 0.5,
+     "mb": 4,
+     "ziele": "depth16unorm 2048×2048 clear"
+    },
+    {
+     "was": "post (Neustart)",
+     "n": 1,
+     "mb": 3.955,
+     "ziele": "depth16unorm 1920×1080 load"
+    },
+    {
+     "was": "k1",
+     "n": 0.08,
+     "mb": 0.667,
+     "ziele": "depth16unorm 2048×2048 clear"
+    }
+   ],
+   "renderSumme": {
+    "n": 6.58,
+    "mb": 67.948
+   },
+   "ungestempelt": [
+    {
+     "was": "haupt [szene:tiefenabbild]",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "post [TRAA-Vortiefe]",
+     "n": 1,
+     "mb": 0
+    }
+   ],
+   "stempelBruch": [
+    {
+     "was": "haupt",
+     "n": 1,
+     "mb": 0
+    }
+   ],
+   "computePaesse": [],
+   "dispatches": 0,
+   "kopien": [
+    {
+     "was": "post: Textur TRAANode.resolve → TRAANode.history",
+     "n": 1,
+     "mb": 15.82
+    },
+    {
+     "was": "haupt: Textur depth → szene:tiefenabbild:bruch",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render",
+     "n": 0.08,
+     "mb": 0
+    },
+    {
+     "was": "ausserhalb: Puffer buffer_timestamp_resolve_render → buffer_timestamp_result_render",
+     "n": 0.08,
+     "mb": 0
+    }
+   ],
+   "kopienSumme": {
+    "n": 2.17,
+    "mb": 15.82
+   },
+   "hochladen": [
+    {
+     "was": "k0: Puffer bindingBufferundefined_UniformBuffer_#_(vertex)",
+     "n": 2.5,
+     "mb": 0.004
+    },
+    {
+     "was": "haupt: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+     "n": 17,
+     "mb": 0.003
+    },
+    {
+     "was": "haupt: Puffer bindingBufferundefined_UniformBuffer_#_(fragment)",
+     "n": 10,
+     "mb": 0
+    },
+    {
+     "was": "k0: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+     "n": 1.67,
+     "mb": 0
+    },
+    {
+     "was": "TRAA: Puffer bindingBuffer#_object_(vertex,fragment,compute)",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "k1: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+     "n": 0.17,
+     "mb": 0
+    }
+   ],
+   "hochladenSumme": {
+    "n": 32.33,
+    "mb": 0.007
+   },
+   "submits": 5.67,
+   "befehlsPuffer": 5.67,
+   "executeBundles": 1,
+   "bundles": 1,
+   "draws": [
+    {
+     "was": "haupt",
+     "n": 27,
+     "mb": 0
+    },
+    {
+     "was": "k0",
+     "n": 9.5,
+     "mb": 0
+    },
+    {
+     "was": "post",
+     "n": 2,
+     "mb": 0
+    },
+    {
+     "was": "TRAA",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "k1",
+     "n": 0.33,
+     "mb": 0
+    }
+   ],
+   "setPipeline": 29.75,
+   "setBindGroup": 66.08,
+   "anlegen": {
+    "createCommandEncoder": 5.67
+   },
+   "leinwand": 1
+  },
+  "leinwand": [
+   1920,
+   1080
+  ],
+  "kamera": {
+   "pos": [
+    -900,
+    26.3,
+    -850
+   ],
+   "blick": [
+    0,
+    0,
+    1
+   ]
+  },
+  "adapter": "nvidia pascal"
+ },
+ "schalter": {
+  "schalter": [
+   {
+    "id": "baum",
+    "titel": "Baum L0/L1 + Werfer",
+    "art": "klasse",
+    "klassen": [
+     "fscatter:fichte:L1",
+     "f:fichte:L1",
+     "f:tanne:L1",
+     "f:eiche:L1",
+     "f:birke:L1",
+     "f:birke:L0",
+     "f:tanne:L0",
+     "f:eiche:L0"
+    ],
+    "befehle": 34,
+    "sigma": true
+   },
+   {
+    "id": "boden",
+    "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
+    "art": "klasse",
+    "klassen": [
+     "bodenSatz",
+     "fern-ring"
+    ],
+    "befehle": 6,
+    "sigma": true
+   }
+  ],
+  "huellen": [],
+  "unbekannt": [],
+  "fehlend": []
+ },
+ "auswertung": {
+  "n": 12,
+  "runden": 4,
+  "gesamtMs": 13.1,
+  "gesamtCpuMs": 2.12,
+  "gesamtStempelMs": 0.14,
+  "stempelJePass": {
+   "post": 0.05,
+   "TRAA": 0.05,
+   "haupt": 0.01,
+   "k0": 0.02,
+   "k1": 0.01
+  },
+  "gpuGebunden": true,
+  "sigmaMs": 4.7,
+  "restMs": 8.4,
+  "leererFrameMs": null,
+  "wechselwirkungMs": null,
+  "zeilen": [
+   {
+    "id": "baum",
+    "titel": "Baum L0/L1 + Werfer",
+    "art": "klasse",
+    "sigma": true,
+    "deltaMs": 3.57,
+    "streuungMs": 0.07,
+    "spanneMs": [
+     3.33,
+     3.66
+    ],
+    "deltas": [
+     3.57,
+     3.57,
+     3.33,
+     3.66
+    ],
+    "anMs": 13.13,
+    "ausMs": 9.61,
+    "deltaCpuMs": 0.18,
+    "deltaStempelMs": 0.02,
+    "stempelAn": {
+     "post": 0.053,
+     "TRAA": 0.078,
+     "haupt": 0.007,
+     "k0": 0.018,
+     "k1": 0.008
+    },
+    "stempelAus": {
+     "post": 0.068,
+     "TRAA": 0.05,
+     "haupt": 0.008,
+     "k0": 0.01,
+     "k1": 0.008
+    },
+    "geschaltet": true,
+    "beleg": "Befehle 34→0 · 33 Objekte",
+    "klassen": [
+     "fscatter:fichte:L1",
+     "f:fichte:L1",
+     "f:tanne:L1",
+     "f:eiche:L1",
+     "f:birke:L1",
+     "f:birke:L0",
+     "f:tanne:L0",
+     "f:eiche:L0"
+    ],
+    "anteilPct": 27.2
+   },
+   {
+    "id": "boden",
+    "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
+    "art": "klasse",
+    "sigma": true,
+    "deltaMs": 1.13,
+    "streuungMs": 0.1,
+    "spanneMs": [
+     0.76,
+     1.27
+    ],
+    "deltas": [
+     1.27,
+     1.13,
+     0.76,
+     1.13
+    ],
+    "anMs": 13.1,
+    "ausMs": 12.03,
+    "deltaCpuMs": 0.24,
+    "deltaStempelMs": -0.11,
+    "stempelAn": {
+     "post": 0.053,
+     "TRAA": 0.05,
+     "haupt": 0.007,
+     "k0": 0.018,
+     "k1": 0.008
+    },
+    "stempelAus": {
+     "post": 0.049,
+     "TRAA": 0.05,
+     "haupt": 0.149,
+     "k0": 0.011,
+     "k1": 0.001
+    },
+    "geschaltet": true,
+    "beleg": "Befehle 6→0 · 4 Objekte",
+    "klassen": [
+     "bodenSatz",
+     "fern-ring"
+    ],
+    "anteilPct": 8.6
+   }
+  ],
+  "bildRauschenPct": null,
+  "zurueck": [],
+  "sekunden": 4.2,
+  "fenster": []
+ },
+ "roh": {
+  "n": 12,
+  "runden": 4,
+  "schalter": [
+   {
+    "id": "baum",
+    "runden": [
+     {
+      "an": {
+       "ms": 13.067,
+       "cpu": 2.158,
+       "stempel": 0.164,
+       "jePass": {
+        "post": 0.053,
+        "TRAA": 0.078,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 9.5,
+       "cpu": 1.808,
+       "stempel": 0.144,
+       "jePass": {
+        "post": 0.068,
+        "TRAA": 0.05,
+        "haupt": 0.008,
+        "k0": 0.01,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 9.617,
+       "cpu": 1.825,
+       "stempel": 0.127,
+       "jePass": {
+        "post": 0.052,
+        "TRAA": 0.05,
+        "haupt": 0.008,
+        "k0": 0.01,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 13.192,
+       "cpu": 2.117,
+       "stempel": 0.138,
+       "jePass": {
+        "post": 0.054,
+        "TRAA": 0.051,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 12.925,
+       "cpu": 2.125,
+       "stempel": 0.137,
+       "jePass": {
+        "post": 0.053,
+        "TRAA": 0.05,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 9.6,
+       "cpu": 2.05,
+       "stempel": 0.127,
+       "jePass": {
+        "post": 0.052,
+        "TRAA": 0.051,
+        "haupt": 0.008,
+        "k0": 0.01,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 9.617,
+       "cpu": 1.842,
+       "stempel": 0.127,
+       "jePass": {
+        "post": 0.052,
+        "TRAA": 0.05,
+        "haupt": 0.008,
+        "k0": 0.01,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 13.275,
+       "cpu": 1.917,
+       "stempel": 0.154,
+       "jePass": {
+        "post": 0.07,
+        "TRAA": 0.051,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 33,
+    "beleg": {
+     "befehleAn": 34,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 54,
+       "tris": 245089
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 106000
+      },
+      "k1": {
+       "cmd": 4,
+       "tris": 55706
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 31,
+       "tris": 185623
+      },
+      "k0": {
+       "cmd": 10,
+       "tris": 95856
+      },
+      "k1": {
+       "cmd": 2,
+       "tris": 54648
+      }
+     }
+    }
+   },
+   {
+    "id": "boden",
+    "runden": [
+     {
+      "an": {
+       "ms": 13.083,
+       "cpu": 2.133,
+       "stempel": 0.137,
+       "jePass": {
+        "post": 0.053,
+        "TRAA": 0.05,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 11.817,
+       "cpu": 1.8,
+       "stempel": 0.259,
+       "jePass": {
+        "post": 0.049,
+        "TRAA": 0.05,
+        "haupt": 0.149,
+        "k0": 0.011,
+        "k1": 0.001
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 12,
+       "cpu": 1.942,
+       "stempel": 0.253,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.049,
+        "haupt": 0.129,
+        "k0": 0.011,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 13.125,
+       "cpu": 2.108,
+       "stempel": 0.137,
+       "jePass": {
+        "post": 0.053,
+        "TRAA": 0.05,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 12.992,
+       "cpu": 1.9,
+       "stempel": 0.137,
+       "jePass": {
+        "post": 0.053,
+        "TRAA": 0.05,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 12.233,
+       "cpu": 2.125,
+       "stempel": 0.238,
+       "jePass": {
+        "post": 0.049,
+        "TRAA": 0.049,
+        "haupt": 0.128,
+        "k0": 0.011,
+        "k1": 0.001
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 12.067,
+       "cpu": 1.95,
+       "stempel": 0.236,
+       "jePass": {
+        "post": 0.049,
+        "TRAA": 0.05,
+        "haupt": 0.126,
+        "k0": 0.011,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 13.2,
+       "cpu": 2.258,
+       "stempel": 0.137,
+       "jePass": {
+        "post": 0.054,
+        "TRAA": 0.051,
+        "haupt": 0.007,
+        "k0": 0.018,
+        "k1": 0.008
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 4,
+    "beleg": {
+     "befehleAn": 6,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 54,
+       "tris": 245089
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 106000
+      },
+      "k1": {
+       "cmd": 4,
+       "tris": 55706
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 185306
+      },
+      "k0": {
+       "cmd": 18,
+       "tris": 57028
+      },
+      "k1": {
+       "cmd": 3,
+       "tris": 2018
+      }
+     }
+    }
+   }
+  ],
+  "fenster": [],
+  "abtastungenAn": 36,
+  "bildRauschenPct": null,
+  "zurueck": [],
+  "sekunden": 4.2
+ },
+ "selbsttest": null,
+ "stempel": {
+  "imZerlegen": 0,
+  "seitBoot": 0,
+  "warnung": 0,
+  "spitze": 86,
+  "pool": {
+   "stand": 0,
+   "max": 2048
+  }
+ }
+}

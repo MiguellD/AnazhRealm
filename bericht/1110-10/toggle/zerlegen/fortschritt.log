@@ -1,0 +1,5 @@
+07:41:49 A Seite 6ad641672bb635be
+07:43:59 A zerlegen exit=0 Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:      5,55 ms (49,5 %) Rest = Gesamt − Σ:   5,67 ms = leerer Frame 1,11 ms (Schalter leer) +
+07:44:07 B Seite 3960d575e001be8a
+07:46:35 B zerlegen exit=0 Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:      5,31 ms (40,4 %) Rest = Gesamt − Σ:   7,82 ms = leerer Frame 1,25 ms (Schalter leer) +
+07:46:42 ZERLEG ENDE

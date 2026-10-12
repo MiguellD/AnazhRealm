@@ -1,0 +1,17 @@
+07:53:34 Seite 3960d575e001be8a (soll 3960d575e001be8a)
+07:53:55 POOLSTOFFE START wiese
+07:54:39 SAMMLUNG "ergebnis": {  "stoffe": 43,  "arten": {   "MeshStandardNodeMaterial": 6,   "unknown": 17,   "fell": 3,   "fellSchale": 3,   "hair": 1,   "haut": 1,   "skin": 1,   "bark": 3,   "foliageTex": 1,   "schatten": 2,   "grass": 1,   "stem": 1,   "foliage": 1,   "straehneD": 2  } }, "ms": 2}
+07:55:16 wie stoffe "ergebnis": 43, "ms": 2} bank 12.98 12.98 12.96  takt 1695MHz 85C n64 prog 36/35/33/36
+07:55:55 aus stoffe "ergebnis": 43, "ms": 2} bank 11.73 11.72 11.74  takt 1683MHz 83C n61 prog 36/35/34/36
+07:56:31 wie stoffe "ergebnis": 43, "ms": 1} bank 12.1 12.09 12.1  takt 1683MHz 83C n60 prog 35/34/33/35
+07:57:13 pool2 stoffe "ergebnis": 43, "ms": 6} bank 12.88 12.91 12.93  takt 1695MHz 84C n64 prog 36/35/34/36
+07:57:51 wie stoffe "ergebnis": 43, "ms": 1} bank 12.61 12.6 12.6  takt 1683MHz 85C n62 prog 35/34/33/35
+07:58:29 aus stoffe "ergebnis": 43, "ms": 2} bank 12.81 12.79 12.79  takt 1695MHz 84C n63 prog 36/35/34/36
+07:59:06 wie stoffe "ergebnis": 43, "ms": 1} bank 12.13 12.11 12.12  takt 1683MHz 84C n60 prog 35/34/33/35
+07:59:45 pool2 stoffe "ergebnis": 43, "ms": 7} bank 12.9 12.92 12.92  takt 1695MHz 84C n64 prog 36/35/34/36
+08:00:24 wie stoffe "ergebnis": 43, "ms": 2} bank 12.56 12.58 12.58  takt 1683MHz 84C n62 prog 35/34/33/35
+08:01:03 aus stoffe "ergebnis": 43, "ms": 3} bank 12.83 12.83 12.81  takt 1695MHz 84C n64 prog 36/35/34/36
+08:01:40 wie stoffe "ergebnis": 43, "ms": 3} bank 12.13 12.14 12.13  takt 1683MHz 84C n61 prog 35/34/33/35
+08:02:19 pool2 stoffe "ergebnis": 43, "ms": 6} bank 12.92 12.92 12.94  takt 1695MHz 85C n64 prog 36/35/34/36
+08:02:58 wie stoffe "ergebnis": 43, "ms": 2} bank 12.59 12.58 12.6  takt 1683MHz 85C n63 prog 35/34/33/35
+08:03:05 POOLSTOFFE ENDE

@@ -1,0 +1,839 @@
+{
+ "folge": [
+  "boot",
+  "dorf-aus",
+  "fenster",
+  "umstellen",
+  "buehne",
+  "gpu-bank"
+ ],
+ "stand": {
+  "sha": "a0a05614e6296d40dfd1faf4a7239b81ff99cecf",
+  "zweig": "HEAD",
+  "schmutzig": true,
+  "version": "18.541.0"
+ },
+ "start": "2026-10-12T04:44:18.135Z",
+ "rechner": {
+  "name": "LAPTOP-4BN3RL0L",
+  "cpu": "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
+ },
+ "parameter": {
+  "port": 4490,
+  "seite": "http://localhost:4312",
+  "serie": null,
+  "ort": "buehne",
+  "fenster": [
+   1920,
+   1080
+  ],
+  "laufSek": 30,
+  "ein": 20,
+  "ruhe": 300,
+  "profilSek": 12,
+  "proben": 6
+ },
+ "schritte": [
+  {
+   "name": "boot",
+   "ergebnis": {
+    "spieler": [
+     36,
+     59.4,
+     0
+    ],
+    "chunks": 1,
+    "wetter": "sunny",
+    "saison": "summer",
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\werkbank-profil-4490-1791780258573",
+     "serieNeu": true,
+     "ladungen": 1
+    },
+    "zerstoert": 0,
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "gpuFehler": null
+   },
+   "ms": 36,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": 3,
+     "fest": false,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": false,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": true,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      36,
+      0
+     ],
+     "ort": null
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.541.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 9
+   }
+  },
+  {
+   "name": "dorf-aus",
+   "ergebnis": {
+    "ergebnis": true,
+    "ms": 4
+   },
+   "ms": 7,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": 3,
+     "fest": false,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": false,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      36,
+      0
+     ],
+     "ort": null
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.541.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 4
+   }
+  },
+  {
+   "name": "fenster",
+   "ergebnis": {
+    "fenster": [
+     1920,
+     1080
+    ],
+    "ms": 2
+   },
+   "ms": 4,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": 3,
+     "fest": false,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": false,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      36,
+      0
+     ],
+     "ort": null
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.541.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 5
+   }
+  },
+  {
+   "name": "umstellen",
+   "ergebnis": {
+    "ort": "buehne",
+    "pose": null,
+    "welt": {
+     "slug": "pruefbuehne",
+     "neu": true,
+     "id": "77f041c0-69e0-4657-a478-f06a1869c7ae"
+    },
+    "spieler": [
+     300,
+     0
+    ],
+    "takte": 121,
+    "chunks": 81,
+    "gier": 1.5708,
+    "dorfZug": false,
+    "ortTakt": [],
+    "ms": 14393
+   },
+   "ms": 14395,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 1,
+     "wetter": "sunny",
+     "uhr": -999999987.5,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "emotion:sorrow",
+       "stapel": "weather ← … ← dslRun ← trigger ← updatePlayerEmotions ← (anonym)",
+       "seq": 1,
+       "t": 11556,
+       "uhr": -999999990.4
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": true,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 1.5707963267948966,
+     "spieler": [
+      300,
+      0
+     ],
+     "ort": "buehne"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 0,
+     "sicht": 0,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {},
+     "artenSicht": {}
+    },
+    "version": "18.541.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "zweit",
+     "serie": null,
+     "ladungen": 2
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 3
+   }
+  },
+  {
+   "name": "buehne",
+   "ergebnis": {
+    "ergebnis": {
+     "saison": "summer",
+     "phase": 0.375,
+     "wetter": "sunny"
+    },
+    "ms": 2
+   },
+   "ms": 4,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 1,
+     "wetter": "sunny",
+     "uhr": -999999987.5,
+     "fest": true,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": true,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 1.5707963267948966,
+     "spieler": [
+      300,
+      0
+     ],
+     "ort": "buehne"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 0,
+     "sicht": 0,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {},
+     "artenSicht": {}
+    },
+    "version": "18.541.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "zweit",
+     "serie": null,
+     "ladungen": 2
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 2
+   }
+  },
+  {
+   "name": "gpu-bank",
+   "ergebnis": {
+    "ost": {
+     "gpuJeFrameMs": 6.545,
+     "cpuJeFrameMs": 0.925,
+     "werte": [
+      6.54,
+      6.55
+     ],
+     "chunks": 81,
+     "takt": {
+      "mhz": 1711.2,
+      "min": 1683,
+      "max": 1746,
+      "temp": 77.8,
+      "watt": 73.7,
+      "drossel": {
+       "0x0000000000000001": 21,
+       "0x0000000000000004": 15
+      },
+      "n": 36,
+      "baenke": 2
+     }
+    },
+    "west": {
+     "gpuJeFrameMs": 6.58,
+     "cpuJeFrameMs": 0.81,
+     "werte": [
+      6.57,
+      6.59
+     ],
+     "chunks": 81,
+     "takt": {
+      "mhz": 1704.1,
+      "min": 1683,
+      "max": 1733,
+      "temp": 80.2,
+      "watt": 72.9,
+      "drossel": {
+       "0x0000000000000001": 24,
+       "0x0000000000000004": 12
+      },
+      "n": 36,
+      "baenke": 2
+     }
+    },
+    "s4-hindernisse": {
+     "gpuJeFrameMs": 6.74,
+     "cpuJeFrameMs": 1.28,
+     "werte": [
+      6.74,
+      6.74
+     ],
+     "chunks": 89,
+     "takt": {
+      "mhz": 1704.1,
+      "min": 1683,
+      "max": 1759,
+      "temp": 81.8,
+      "watt": 72.8,
+      "drossel": {
+       "0x0000000000000004": 24,
+       "0x0000000000000001": 13
+      },
+      "n": 37,
+      "baenke": 2
+     }
+    },
+    "s5-bucht": {
+     "gpuJeFrameMs": 7.75,
+     "cpuJeFrameMs": 0.95,
+     "werte": [
+      7.75,
+      7.75
+     ],
+     "chunks": 93,
+     "takt": {
+      "mhz": 1695.8,
+      "min": 1670,
+      "max": 1721,
+      "temp": 83.1,
+      "watt": 72.9,
+      "drossel": {
+       "0x0000000000000001": 17,
+       "0x0000000000000004": 26
+      },
+      "n": 43,
+      "baenke": 2
+     }
+    }
+   },
+   "ms": 73255,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 4,
+     "wetter": "sunny",
+     "uhr": -999999914.3,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 2,
+       "t": 28727,
+       "uhr": -999999973.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "emotion:sorrow",
+       "stapel": "weather ← … ← dslRun ← trigger ← updatePlayerEmotions ← (anonym)",
+       "seq": 3,
+       "t": 48475,
+       "uhr": -999999964.6
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 4,
+       "t": 52749,
+       "uhr": -999999949.2
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 2,
+     "gehalten": true,
+     "blind": false,
+     "buch": [
+      {
+       "art": "verweigert",
+       "op": "creatures_emotion",
+       "quelle": "emotion:hope",
+       "seq": 1,
+       "t": 67627
+      },
+      {
+       "art": "verweigert",
+       "op": "skybox_color",
+       "quelle": "emotion:joy",
+       "seq": 2,
+       "t": 68184
+      }
+     ]
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 1.5707963267948966,
+     "spieler": [
+      300,
+      0
+     ],
+     "ort": "buehne"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 0,
+     "sicht": 0,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {},
+     "artenSicht": {}
+    },
+    "version": "18.541.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 1040,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "zweit",
+     "serie": null,
+     "ladungen": 2
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.541.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 3
+   },
+   "tiere": {
+    "gesamt": 0,
+    "sicht": 0,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {}
+   }
+  }
+ ],
+ "befunde": [],
+ "kurz": {
+  "gpuBank": {
+   "ost": {
+    "gpuJeFrameMs": 6.545,
+    "cpuJeFrameMs": 0.925,
+    "werte": [
+     6.54,
+     6.55
+    ],
+    "chunks": 81,
+    "takt": {
+     "mhz": 1711.2,
+     "min": 1683,
+     "max": 1746,
+     "temp": 77.8,
+     "watt": 73.7,
+     "drossel": {
+      "0x0000000000000001": 21,
+      "0x0000000000000004": 15
+     },
+     "n": 36,
+     "baenke": 2
+    }
+   },
+   "west": {
+    "gpuJeFrameMs": 6.58,
+    "cpuJeFrameMs": 0.81,
+    "werte": [
+     6.57,
+     6.59
+    ],
+    "chunks": 81,
+    "takt": {
+     "mhz": 1704.1,
+     "min": 1683,
+     "max": 1733,
+     "temp": 80.2,
+     "watt": 72.9,
+     "drossel": {
+      "0x0000000000000001": 24,
+      "0x0000000000000004": 12
+     },
+     "n": 36,
+     "baenke": 2
+    }
+   },
+   "s4-hindernisse": {
+    "gpuJeFrameMs": 6.74,
+    "cpuJeFrameMs": 1.28,
+    "werte": [
+     6.74,
+     6.74
+    ],
+    "chunks": 89,
+    "takt": {
+     "mhz": 1704.1,
+     "min": 1683,
+     "max": 1759,
+     "temp": 81.8,
+     "watt": 72.8,
+     "drossel": {
+      "0x0000000000000004": 24,
+      "0x0000000000000001": 13
+     },
+     "n": 37,
+     "baenke": 2
+    }
+   },
+   "s5-bucht": {
+    "gpuJeFrameMs": 7.75,
+    "cpuJeFrameMs": 0.95,
+    "werte": [
+     7.75,
+     7.75
+    ],
+    "chunks": 93,
+    "takt": {
+     "mhz": 1695.8,
+     "min": 1670,
+     "max": 1721,
+     "temp": 83.1,
+     "watt": 72.9,
+     "drossel": {
+      "0x0000000000000001": 17,
+      "0x0000000000000004": 26
+     },
+     "n": 43,
+     "baenke": 2
+    }
+   }
+  }
+ },
+ "urteil": "GRUEN",
+ "werkbankEnde": "stop",
+ "ende": "2026-10-12T04:45:53.200Z",
+ "werkbankLog": [
+  "[seite] 2026-10-12T04:44:19.478Z navigiert http://localhost:4312/index.html",
+  "WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489",
+  "[seite] 2026-10-12T04:44:25.152Z navigiert http://localhost:4312/index.html",
+  "[seite] 2026-10-12T04:45:52.795Z GESCHLOSSEN",
+  "[seite] 2026-10-12T04:45:52.855Z Browser getrennt",
+  "[werkbank] Ende mit 0"
+ ]
+}

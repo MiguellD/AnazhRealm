@@ -1,0 +1,5447 @@
+{
+ "zensus": {
+  "frames": 12,
+  "n": 12,
+  "leinwand": [
+   1920,
+   1080
+  ],
+  "blind": 0,
+  "pipeBlind": 0,
+  "ziele": [
+   {
+    "id": 0,
+    "name": "PMREM.cubeUv",
+    "erzeuger": {
+     "quelle": "r184 PMREMGenerator",
+     "methode": "_ensureSkyEnvironment"
+    },
+    "format": "rgba16float",
+    "w": 336,
+    "h": 128,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 344064,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 8,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 54,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 100,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 146,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 185,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 231,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 270,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 316,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 355,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 401,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 440,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 493,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "name": "PMREM.cubeUv:tiefe",
+    "erzeuger": {
+     "quelle": "r184 PMREMGenerator",
+     "methode": "_ensureSkyEnvironment"
+    },
+    "format": "depth24plus",
+    "w": 336,
+    "h": 128,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 172032,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": []
+   },
+   {
+    "id": 2,
+    "name": "himmel-umgebung",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_himmelUmgebungTex"
+    },
+    "format": "rgba8unorm-srgb",
+    "w": 128,
+    "h": 64,
+    "schichten": 1,
+    "mips": 8,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 43692,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 29,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 5
+     },
+     {
+      "s": 75,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 12
+     },
+     {
+      "s": 121,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 19
+     },
+     {
+      "s": 167,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 26
+     },
+     {
+      "s": 206,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 32
+     },
+     {
+      "s": 252,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 39
+     },
+     {
+      "s": 291,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 45
+     },
+     {
+      "s": 337,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 52
+     },
+     {
+      "s": 376,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 58
+     },
+     {
+      "s": 422,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 65
+     },
+     {
+      "s": 461,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 71
+     },
+     {
+      "s": 514,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 79
+     }
+    ]
+   },
+   {
+    "id": 3,
+    "name": "PMREM.cubeUv",
+    "erzeuger": {
+     "quelle": "r184 PMREMGenerator",
+     "methode": "_ensureSkyEnvironment"
+    },
+    "format": "rgba16float",
+    "w": 336,
+    "h": 128,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 344064,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": []
+   },
+   {
+    "id": 4,
+    "name": "PMREM.cubeUv:tiefe",
+    "erzeuger": {
+     "quelle": "r184 PMREMGenerator",
+     "methode": "_ensureSkyEnvironment"
+    },
+    "format": "depth24plus",
+    "w": 336,
+    "h": 128,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 172032,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": []
+   },
+   {
+    "id": 5,
+    "name": "output",
+    "erzeuger": {
+     "quelle": "r184 PassNode",
+     "methode": "_ensurePostProcessing"
+    },
+    "format": "rg11b10ufloat",
+    "w": 1920,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 8294400,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 3,
+      "f": 1,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 3
+     },
+     {
+      "s": 21,
+      "f": 1,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 5
+     },
+     {
+      "s": 22,
+      "f": 1,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 5
+     },
+     {
+      "s": 30,
+      "f": 1,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 2
+     },
+     {
+      "s": 42,
+      "f": 2,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 9
+     },
+     {
+      "s": 67,
+      "f": 2,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 12
+     },
+     {
+      "s": 68,
+      "f": 2,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 12
+     },
+     {
+      "s": 76,
+      "f": 2,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 8
+     },
+     {
+      "s": 88,
+      "f": 3,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 16
+     },
+     {
+      "s": 113,
+      "f": 3,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 19
+     },
+     {
+      "s": 114,
+      "f": 3,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 19
+     },
+     {
+      "s": 122,
+      "f": 3,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 15
+     },
+     {
+      "s": 134,
+      "f": 4,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 23
+     },
+     {
+      "s": 159,
+      "f": 4,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 26
+     },
+     {
+      "s": 160,
+      "f": 4,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 26
+     },
+     {
+      "s": 168,
+      "f": 4,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 22
+     },
+     {
+      "s": 180,
+      "f": 5,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 30
+     },
+     {
+      "s": 198,
+      "f": 5,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 32
+     },
+     {
+      "s": 199,
+      "f": 5,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 32
+     },
+     {
+      "s": 207,
+      "f": 5,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 29
+     },
+     {
+      "s": 219,
+      "f": 6,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 36
+     },
+     {
+      "s": 244,
+      "f": 6,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 39
+     },
+     {
+      "s": 245,
+      "f": 6,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 39
+     },
+     {
+      "s": 253,
+      "f": 6,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 35
+     },
+     {
+      "s": 265,
+      "f": 7,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 43
+     },
+     {
+      "s": 283,
+      "f": 7,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 45
+     },
+     {
+      "s": 284,
+      "f": 7,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 45
+     },
+     {
+      "s": 292,
+      "f": 7,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 42
+     },
+     {
+      "s": 304,
+      "f": 8,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 49
+     },
+     {
+      "s": 329,
+      "f": 8,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 52
+     },
+     {
+      "s": 330,
+      "f": 8,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 52
+     },
+     {
+      "s": 338,
+      "f": 8,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 48
+     },
+     {
+      "s": 350,
+      "f": 9,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 56
+     },
+     {
+      "s": 368,
+      "f": 9,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 58
+     },
+     {
+      "s": 369,
+      "f": 9,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 58
+     },
+     {
+      "s": 377,
+      "f": 9,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 55
+     },
+     {
+      "s": 389,
+      "f": 10,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 62
+     },
+     {
+      "s": 414,
+      "f": 10,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 65
+     },
+     {
+      "s": 415,
+      "f": 10,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 65
+     },
+     {
+      "s": 423,
+      "f": 10,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 61
+     },
+     {
+      "s": 435,
+      "f": 11,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 69
+     },
+     {
+      "s": 453,
+      "f": 11,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 71
+     },
+     {
+      "s": 454,
+      "f": 11,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 71
+     },
+     {
+      "s": 462,
+      "f": 11,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 68
+     },
+     {
+      "s": 474,
+      "f": 12,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 75
+     },
+     {
+      "s": 506,
+      "f": 12,
+      "art": "L",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 79
+     },
+     {
+      "s": 507,
+      "f": 12,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 79
+     },
+     {
+      "s": 515,
+      "f": 12,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 74
+     }
+    ]
+   },
+   {
+    "id": 6,
+    "name": "depth",
+    "erzeuger": {
+     "quelle": "r184 PassNode",
+     "methode": "_ensurePostProcessing"
+    },
+    "format": "depth24plus",
+    "w": 1920,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 8294400,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 4,
+      "f": 1,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 3
+     },
+     {
+      "s": 18,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 4
+     },
+     {
+      "s": 19,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 23,
+      "f": 1,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 5
+     },
+     {
+      "s": 24,
+      "f": 1,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 5
+     },
+     {
+      "s": 31,
+      "f": 1,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 2
+     },
+     {
+      "s": 38,
+      "f": 1,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 6
+     },
+     {
+      "s": 43,
+      "f": 2,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 9
+     },
+     {
+      "s": 64,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 11
+     },
+     {
+      "s": 65,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 69,
+      "f": 2,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 12
+     },
+     {
+      "s": 70,
+      "f": 2,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 12
+     },
+     {
+      "s": 77,
+      "f": 2,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 8
+     },
+     {
+      "s": 84,
+      "f": 2,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 13
+     },
+     {
+      "s": 89,
+      "f": 3,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 16
+     },
+     {
+      "s": 110,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 18
+     },
+     {
+      "s": 111,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 115,
+      "f": 3,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 19
+     },
+     {
+      "s": 116,
+      "f": 3,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 19
+     },
+     {
+      "s": 123,
+      "f": 3,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 15
+     },
+     {
+      "s": 130,
+      "f": 3,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 20
+     },
+     {
+      "s": 135,
+      "f": 4,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 23
+     },
+     {
+      "s": 156,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 25
+     },
+     {
+      "s": 157,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 161,
+      "f": 4,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 26
+     },
+     {
+      "s": 162,
+      "f": 4,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 26
+     },
+     {
+      "s": 169,
+      "f": 4,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 22
+     },
+     {
+      "s": 176,
+      "f": 4,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 27
+     },
+     {
+      "s": 181,
+      "f": 5,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 30
+     },
+     {
+      "s": 195,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 31
+     },
+     {
+      "s": 196,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 200,
+      "f": 5,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 32
+     },
+     {
+      "s": 201,
+      "f": 5,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 32
+     },
+     {
+      "s": 208,
+      "f": 5,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 29
+     },
+     {
+      "s": 215,
+      "f": 5,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 33
+     },
+     {
+      "s": 220,
+      "f": 6,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 36
+     },
+     {
+      "s": 241,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 38
+     },
+     {
+      "s": 242,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 246,
+      "f": 6,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 39
+     },
+     {
+      "s": 247,
+      "f": 6,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 39
+     },
+     {
+      "s": 254,
+      "f": 6,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 35
+     },
+     {
+      "s": 261,
+      "f": 6,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 40
+     },
+     {
+      "s": 266,
+      "f": 7,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 43
+     },
+     {
+      "s": 280,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 44
+     },
+     {
+      "s": 281,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 285,
+      "f": 7,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 45
+     },
+     {
+      "s": 286,
+      "f": 7,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 45
+     },
+     {
+      "s": 293,
+      "f": 7,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 42
+     },
+     {
+      "s": 300,
+      "f": 7,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 46
+     },
+     {
+      "s": 305,
+      "f": 8,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 49
+     },
+     {
+      "s": 326,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 51
+     },
+     {
+      "s": 327,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 331,
+      "f": 8,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 52
+     },
+     {
+      "s": 332,
+      "f": 8,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 52
+     },
+     {
+      "s": 339,
+      "f": 8,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 48
+     },
+     {
+      "s": 346,
+      "f": 8,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 53
+     },
+     {
+      "s": 351,
+      "f": 9,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 56
+     },
+     {
+      "s": 365,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 57
+     },
+     {
+      "s": 366,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 370,
+      "f": 9,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 58
+     },
+     {
+      "s": 371,
+      "f": 9,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 58
+     },
+     {
+      "s": 378,
+      "f": 9,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 55
+     },
+     {
+      "s": 385,
+      "f": 9,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 59
+     },
+     {
+      "s": 390,
+      "f": 10,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 62
+     },
+     {
+      "s": 411,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 64
+     },
+     {
+      "s": 412,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 416,
+      "f": 10,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 65
+     },
+     {
+      "s": 417,
+      "f": 10,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 65
+     },
+     {
+      "s": 424,
+      "f": 10,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 61
+     },
+     {
+      "s": 431,
+      "f": 10,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 66
+     },
+     {
+      "s": 436,
+      "f": 11,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 69
+     },
+     {
+      "s": 450,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 70
+     },
+     {
+      "s": 451,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 455,
+      "f": 11,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 71
+     },
+     {
+      "s": 456,
+      "f": 11,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 71
+     },
+     {
+      "s": 463,
+      "f": 11,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 68
+     },
+     {
+      "s": 470,
+      "f": 11,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 72
+     },
+     {
+      "s": 475,
+      "f": 12,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 75
+     },
+     {
+      "s": 503,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 78
+     },
+     {
+      "s": 504,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "kopie"
+     },
+     {
+      "s": 508,
+      "f": 12,
+      "art": "L",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 79
+     },
+     {
+      "s": 509,
+      "f": 12,
+      "art": "W",
+      "pass": "haupt",
+      "via": "tiefe",
+      "pid": 79
+     },
+     {
+      "s": 516,
+      "f": 12,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 74
+     },
+     {
+      "s": 523,
+      "f": 12,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 80
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "name": "TRAANode.vortiefe",
+    "erzeuger": {
+     "quelle": "vendor/TRAANode.js",
+     "methode": "_ensurePostProcessing"
+    },
+    "format": "depth24plus",
+    "w": 1,
+    "h": 1,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 4,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": []
+   },
+   {
+    "id": 8,
+    "name": "TRAANode.history",
+    "erzeuger": {
+     "quelle": "vendor/TRAANode.js",
+     "methode": "_ensurePostProcessing"
+    },
+    "format": "rgba16float",
+    "w": 1920,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 16588800,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 33,
+      "f": 1,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 2
+     },
+     {
+      "s": 35,
+      "f": 1,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 79,
+      "f": 2,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 8
+     },
+     {
+      "s": 81,
+      "f": 2,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 125,
+      "f": 3,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 15
+     },
+     {
+      "s": 127,
+      "f": 3,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 171,
+      "f": 4,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 22
+     },
+     {
+      "s": 173,
+      "f": 4,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 210,
+      "f": 5,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 29
+     },
+     {
+      "s": 212,
+      "f": 5,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 256,
+      "f": 6,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 35
+     },
+     {
+      "s": 258,
+      "f": 6,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 295,
+      "f": 7,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 42
+     },
+     {
+      "s": 297,
+      "f": 7,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 341,
+      "f": 8,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 48
+     },
+     {
+      "s": 343,
+      "f": 8,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 380,
+      "f": 9,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 55
+     },
+     {
+      "s": 382,
+      "f": 9,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 426,
+      "f": 10,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 61
+     },
+     {
+      "s": 428,
+      "f": 10,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 465,
+      "f": 11,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 68
+     },
+     {
+      "s": 467,
+      "f": 11,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     },
+     {
+      "s": 518,
+      "f": 12,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 74
+     },
+     {
+      "s": 520,
+      "f": 12,
+      "art": "W",
+      "pass": "post",
+      "via": "kopie",
+      "von": 10
+     }
+    ]
+   },
+   {
+    "id": 9,
+    "name": "TRAANode.history:tiefe",
+    "erzeuger": {
+     "quelle": "vendor/TRAANode.js",
+     "methode": "_ensurePostProcessing"
+    },
+    "format": "depth16unorm",
+    "w": 1920,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 4147200,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 32,
+      "f": 1,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 2
+     },
+     {
+      "s": 36,
+      "f": 1,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 6
+     },
+     {
+      "s": 37,
+      "f": 1,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 6
+     },
+     {
+      "s": 78,
+      "f": 2,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 8
+     },
+     {
+      "s": 82,
+      "f": 2,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 13
+     },
+     {
+      "s": 83,
+      "f": 2,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 13
+     },
+     {
+      "s": 124,
+      "f": 3,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 15
+     },
+     {
+      "s": 128,
+      "f": 3,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 20
+     },
+     {
+      "s": 129,
+      "f": 3,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 20
+     },
+     {
+      "s": 170,
+      "f": 4,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 22
+     },
+     {
+      "s": 174,
+      "f": 4,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 27
+     },
+     {
+      "s": 175,
+      "f": 4,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 27
+     },
+     {
+      "s": 209,
+      "f": 5,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 29
+     },
+     {
+      "s": 213,
+      "f": 5,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 33
+     },
+     {
+      "s": 214,
+      "f": 5,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 33
+     },
+     {
+      "s": 255,
+      "f": 6,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 35
+     },
+     {
+      "s": 259,
+      "f": 6,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 40
+     },
+     {
+      "s": 260,
+      "f": 6,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 40
+     },
+     {
+      "s": 294,
+      "f": 7,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 42
+     },
+     {
+      "s": 298,
+      "f": 7,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 46
+     },
+     {
+      "s": 299,
+      "f": 7,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 46
+     },
+     {
+      "s": 340,
+      "f": 8,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 48
+     },
+     {
+      "s": 344,
+      "f": 8,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 53
+     },
+     {
+      "s": 345,
+      "f": 8,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 53
+     },
+     {
+      "s": 379,
+      "f": 9,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 55
+     },
+     {
+      "s": 383,
+      "f": 9,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 59
+     },
+     {
+      "s": 384,
+      "f": 9,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 59
+     },
+     {
+      "s": 425,
+      "f": 10,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 61
+     },
+     {
+      "s": 429,
+      "f": 10,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 66
+     },
+     {
+      "s": 430,
+      "f": 10,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 66
+     },
+     {
+      "s": 464,
+      "f": 11,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 68
+     },
+     {
+      "s": 468,
+      "f": 11,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 72
+     },
+     {
+      "s": 469,
+      "f": 11,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 72
+     },
+     {
+      "s": 517,
+      "f": 12,
+      "art": "R",
+      "pass": "TRAA",
+      "via": "zeichnen",
+      "pid": 74
+     },
+     {
+      "s": 521,
+      "f": 12,
+      "art": "L",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 80
+     },
+     {
+      "s": 522,
+      "f": 12,
+      "art": "W",
+      "pass": "post",
+      "via": "tiefe",
+      "pid": 80
+     }
+    ]
+   },
+   {
+    "id": 10,
+    "name": "TRAANode.resolve",
+    "erzeuger": {
+     "quelle": "vendor/TRAANode.js",
+     "methode": "_ensurePostProcessing"
+    },
+    "format": "rgba16float",
+    "w": 1920,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 16588800,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 2,
+      "f": 1,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 2
+     },
+     {
+      "s": 34,
+      "f": 1,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 39,
+      "f": 1,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 1
+     },
+     {
+      "s": 41,
+      "f": 2,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 8
+     },
+     {
+      "s": 80,
+      "f": 2,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 85,
+      "f": 2,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 7
+     },
+     {
+      "s": 87,
+      "f": 3,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 15
+     },
+     {
+      "s": 126,
+      "f": 3,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 131,
+      "f": 3,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 14
+     },
+     {
+      "s": 133,
+      "f": 4,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 22
+     },
+     {
+      "s": 172,
+      "f": 4,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 177,
+      "f": 4,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 21
+     },
+     {
+      "s": 179,
+      "f": 5,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 29
+     },
+     {
+      "s": 211,
+      "f": 5,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 216,
+      "f": 5,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 28
+     },
+     {
+      "s": 218,
+      "f": 6,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 35
+     },
+     {
+      "s": 257,
+      "f": 6,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 262,
+      "f": 6,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 34
+     },
+     {
+      "s": 264,
+      "f": 7,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 42
+     },
+     {
+      "s": 296,
+      "f": 7,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 301,
+      "f": 7,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 41
+     },
+     {
+      "s": 303,
+      "f": 8,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 48
+     },
+     {
+      "s": 342,
+      "f": 8,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 347,
+      "f": 8,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 47
+     },
+     {
+      "s": 349,
+      "f": 9,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 55
+     },
+     {
+      "s": 381,
+      "f": 9,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 386,
+      "f": 9,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 54
+     },
+     {
+      "s": 388,
+      "f": 10,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 61
+     },
+     {
+      "s": 427,
+      "f": 10,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 432,
+      "f": 10,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 60
+     },
+     {
+      "s": 434,
+      "f": 11,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 68
+     },
+     {
+      "s": 466,
+      "f": 11,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 471,
+      "f": 11,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 67
+     },
+     {
+      "s": 473,
+      "f": 12,
+      "art": "W",
+      "pass": "TRAA",
+      "via": "farbe",
+      "pid": 74
+     },
+     {
+      "s": 519,
+      "f": 12,
+      "art": "R",
+      "pass": "post",
+      "via": "kopie"
+     },
+     {
+      "s": 524,
+      "f": 12,
+      "art": "R",
+      "pass": "post",
+      "via": "zeichnen",
+      "pid": 73
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "name": "kaskade0:tiefe",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_kaskadenZiele"
+    },
+    "format": "depth16unorm",
+    "w": 2048,
+    "h": 2048,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 8388608,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 5,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 44,
+      "f": 2,
+      "art": "W",
+      "pass": "k0",
+      "via": "tiefe",
+      "pid": 10
+     },
+     {
+      "s": 51,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 97,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 136,
+      "f": 4,
+      "art": "W",
+      "pass": "k0",
+      "via": "tiefe",
+      "pid": 24
+     },
+     {
+      "s": 143,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 182,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 221,
+      "f": 6,
+      "art": "W",
+      "pass": "k0",
+      "via": "tiefe",
+      "pid": 37
+     },
+     {
+      "s": 228,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 267,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 306,
+      "f": 8,
+      "art": "W",
+      "pass": "k0",
+      "via": "tiefe",
+      "pid": 50
+     },
+     {
+      "s": 313,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 352,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 391,
+      "f": 10,
+      "art": "W",
+      "pass": "k0",
+      "via": "tiefe",
+      "pid": 63
+     },
+     {
+      "s": 398,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 437,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 476,
+      "f": 12,
+      "art": "W",
+      "pass": "k0",
+      "via": "tiefe",
+      "pid": 76
+     },
+     {
+      "s": 490,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 12,
+    "name": "rausch-atlas",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_rauschAtlas"
+    },
+    "format": "rgba8unorm",
+    "w": 768,
+    "h": 256,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 786432,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 12,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 48,
+      "f": 2,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 10
+     },
+     {
+      "s": 58,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 94,
+      "f": 3,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 17
+     },
+     {
+      "s": 104,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 140,
+      "f": 4,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 24
+     },
+     {
+      "s": 150,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 189,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 225,
+      "f": 6,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 37
+     },
+     {
+      "s": 235,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 274,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 310,
+      "f": 8,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 50
+     },
+     {
+      "s": 320,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 359,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 395,
+      "f": 10,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 63
+     },
+     {
+      "s": 405,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 444,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 480,
+      "f": 12,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 76
+     },
+     {
+      "s": 487,
+      "f": 12,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 77
+     },
+     {
+      "s": 497,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 13,
+    "name": "kaskade1:tiefe",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_kaskadenZiele"
+    },
+    "format": "depth16unorm",
+    "w": 2048,
+    "h": 2048,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 8388608,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 6,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 52,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 90,
+      "f": 3,
+      "art": "W",
+      "pass": "k1",
+      "via": "tiefe",
+      "pid": 17
+     },
+     {
+      "s": 98,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 144,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 183,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 229,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 268,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 314,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 353,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 399,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 438,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 483,
+      "f": 12,
+      "art": "W",
+      "pass": "k1",
+      "via": "tiefe",
+      "pid": 77
+     },
+     {
+      "s": 491,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 14,
+    "name": "DFG_LUT",
+    "erzeuger": {
+     "quelle": "r184 (Umgebungs-Tafel)",
+     "methode": null
+    },
+    "format": "rg16float",
+    "w": 16,
+    "h": 16,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 1024,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 7,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 53,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 99,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 145,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 184,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 230,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 269,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 315,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 354,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 400,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 439,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 492,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 15,
+    "name": "kronen-streu:fern",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_wegeKarteEnsure"
+    },
+    "format": "r8unorm",
+    "w": 512,
+    "h": 512,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 262144,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 13,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 46,
+      "f": 2,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 10
+     },
+     {
+      "s": 59,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 92,
+      "f": 3,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 17
+     },
+     {
+      "s": 105,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 138,
+      "f": 4,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 24
+     },
+     {
+      "s": 151,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 190,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 223,
+      "f": 6,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 37
+     },
+     {
+      "s": 236,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 275,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 308,
+      "f": 8,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 50
+     },
+     {
+      "s": 321,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 360,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 393,
+      "f": 10,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 63
+     },
+     {
+      "s": 406,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 445,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 478,
+      "f": 12,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 76
+     },
+     {
+      "s": 485,
+      "f": 12,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 77
+     },
+     {
+      "s": 498,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 16,
+    "name": "kronen-streu:nah",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_wegeKarteEnsure"
+    },
+    "format": "r8unorm",
+    "w": 512,
+    "h": 512,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 262144,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 14,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 47,
+      "f": 2,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 10
+     },
+     {
+      "s": 60,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 93,
+      "f": 3,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 17
+     },
+     {
+      "s": 106,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 139,
+      "f": 4,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 24
+     },
+     {
+      "s": 152,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 191,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 224,
+      "f": 6,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 37
+     },
+     {
+      "s": 237,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 276,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 309,
+      "f": 8,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 50
+     },
+     {
+      "s": 322,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 361,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 394,
+      "f": 10,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 63
+     },
+     {
+      "s": 407,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 446,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 479,
+      "f": 12,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 76
+     },
+     {
+      "s": 486,
+      "f": 12,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 77
+     },
+     {
+      "s": 499,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "name": "wege-karte:fern",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_wegeKarteEnsure"
+    },
+    "format": "rg8unorm",
+    "w": 1024,
+    "h": 1024,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 2097152,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 15,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 49,
+      "f": 2,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 10
+     },
+     {
+      "s": 61,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 95,
+      "f": 3,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 17
+     },
+     {
+      "s": 107,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 141,
+      "f": 4,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 24
+     },
+     {
+      "s": 153,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 192,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 226,
+      "f": 6,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 37
+     },
+     {
+      "s": 238,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 277,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 311,
+      "f": 8,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 50
+     },
+     {
+      "s": 323,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 362,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 396,
+      "f": 10,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 63
+     },
+     {
+      "s": 408,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 447,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 481,
+      "f": 12,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 76
+     },
+     {
+      "s": 488,
+      "f": 12,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 77
+     },
+     {
+      "s": 500,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 18,
+    "name": "wege-karte:nah",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_wegeKarteEnsure"
+    },
+    "format": "rg8unorm",
+    "w": 1024,
+    "h": 1024,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 2097152,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 16,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 50,
+      "f": 2,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 10
+     },
+     {
+      "s": 62,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 96,
+      "f": 3,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 17
+     },
+     {
+      "s": 108,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 142,
+      "f": 4,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 24
+     },
+     {
+      "s": 154,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 193,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 227,
+      "f": 6,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 37
+     },
+     {
+      "s": 239,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 278,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 312,
+      "f": 8,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 50
+     },
+     {
+      "s": 324,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 363,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 397,
+      "f": 10,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 63
+     },
+     {
+      "s": 409,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 448,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 482,
+      "f": 12,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 76
+     },
+     {
+      "s": 489,
+      "f": 12,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 77
+     },
+     {
+      "s": 501,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 19,
+    "name": "szene:tiefenabbild",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_szeneTiefe"
+    },
+    "format": "r32float",
+    "w": 960,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 4147200,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 17,
+      "f": 1,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 4
+     },
+     {
+      "s": 25,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 5
+     },
+     {
+      "s": 63,
+      "f": 2,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 11
+     },
+     {
+      "s": 71,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 12
+     },
+     {
+      "s": 109,
+      "f": 3,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 18
+     },
+     {
+      "s": 117,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 19
+     },
+     {
+      "s": 155,
+      "f": 4,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 25
+     },
+     {
+      "s": 163,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 26
+     },
+     {
+      "s": 194,
+      "f": 5,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 31
+     },
+     {
+      "s": 202,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 32
+     },
+     {
+      "s": 240,
+      "f": 6,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 38
+     },
+     {
+      "s": 248,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 39
+     },
+     {
+      "s": 279,
+      "f": 7,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 44
+     },
+     {
+      "s": 287,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 45
+     },
+     {
+      "s": 325,
+      "f": 8,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 51
+     },
+     {
+      "s": 333,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 52
+     },
+     {
+      "s": 364,
+      "f": 9,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 57
+     },
+     {
+      "s": 372,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 58
+     },
+     {
+      "s": 410,
+      "f": 10,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 64
+     },
+     {
+      "s": 418,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 65
+     },
+     {
+      "s": 449,
+      "f": 11,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 70
+     },
+     {
+      "s": 457,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 71
+     },
+     {
+      "s": 502,
+      "f": 12,
+      "art": "W",
+      "pass": "haupt",
+      "via": "farbe",
+      "pid": 78
+     },
+     {
+      "s": 510,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 79
+     }
+    ]
+   },
+   {
+    "id": 20,
+    "name": "szene:tiefenabbild:bruch",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_tiefenAbbild"
+    },
+    "format": "depth24plus",
+    "w": 1,
+    "h": 1,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": true,
+    "bytes": 4,
+    "leinwand": false,
+    "umleitung": "szene:tiefenabbild",
+    "ereignisse": [
+     {
+      "s": 20,
+      "f": 1,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 66,
+      "f": 2,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 112,
+      "f": 3,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 158,
+      "f": 4,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 197,
+      "f": 5,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 243,
+      "f": 6,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 282,
+      "f": 7,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 328,
+      "f": 8,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 367,
+      "f": 9,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 413,
+      "f": 10,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 452,
+      "f": 11,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     },
+     {
+      "s": 505,
+      "f": 12,
+      "art": "W",
+      "pass": "haupt",
+      "via": "kopie",
+      "von": 6
+     }
+    ]
+   },
+   {
+    "id": 21,
+    "name": "laub-cluster-atlas",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_ensureFoliageClusterAtlas"
+    },
+    "format": "bc1-rgba-unorm-srgb",
+    "w": 2048,
+    "h": 512,
+    "schichten": 1,
+    "mips": 8,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": false,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 699040,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 9,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 45,
+      "f": 2,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 10
+     },
+     {
+      "s": 55,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 91,
+      "f": 3,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 17
+     },
+     {
+      "s": 101,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 137,
+      "f": 4,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 24
+     },
+     {
+      "s": 147,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 186,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 222,
+      "f": 6,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 37
+     },
+     {
+      "s": 232,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 271,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 307,
+      "f": 8,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 50
+     },
+     {
+      "s": 317,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 356,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 392,
+      "f": 10,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 63
+     },
+     {
+      "s": 402,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 441,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 477,
+      "f": 12,
+      "art": "R",
+      "pass": "k0",
+      "via": "zeichnen",
+      "pid": 76
+     },
+     {
+      "s": 484,
+      "f": 12,
+      "art": "R",
+      "pass": "k1",
+      "via": "zeichnen",
+      "pid": 77
+     },
+     {
+      "s": 494,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "name": "karte-albedo:atlas",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_impostorAtlasTexturen"
+    },
+    "format": "bc1-rgba-unorm-srgb",
+    "w": 128,
+    "h": 2048,
+    "schichten": 16,
+    "mips": 6,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": false,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 2795520,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 10,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 56,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 102,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 148,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 187,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 233,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 272,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 318,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 357,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 403,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 442,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 495,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 23,
+    "name": "karte-normal:atlas",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_impostorAtlasTexturen"
+    },
+    "format": "bc5-rg-unorm",
+    "w": 64,
+    "h": 1024,
+    "schichten": 16,
+    "mips": 5,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": false,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 1396736,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 11,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 3
+     },
+     {
+      "s": 57,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 9
+     },
+     {
+      "s": 103,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 16
+     },
+     {
+      "s": 149,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 23
+     },
+     {
+      "s": 188,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 30
+     },
+     {
+      "s": 234,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 36
+     },
+     {
+      "s": 273,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 43
+     },
+     {
+      "s": 319,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 49
+     },
+     {
+      "s": 358,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 56
+     },
+     {
+      "s": 404,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 62
+     },
+     {
+      "s": 443,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 69
+     },
+     {
+      "s": 496,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 75
+     }
+    ]
+   },
+   {
+    "id": 24,
+    "name": "welt-march-liste",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_weltMarchEnsure"
+    },
+    "format": "rgba32float",
+    "w": 4096,
+    "h": 8,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 524288,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 26,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 5
+     },
+     {
+      "s": 72,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 12
+     },
+     {
+      "s": 118,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 19
+     },
+     {
+      "s": 164,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 26
+     },
+     {
+      "s": 203,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 32
+     },
+     {
+      "s": 249,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 39
+     },
+     {
+      "s": 288,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 45
+     },
+     {
+      "s": 334,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 52
+     },
+     {
+      "s": 373,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 58
+     },
+     {
+      "s": 419,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 65
+     },
+     {
+      "s": 458,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 71
+     },
+     {
+      "s": 511,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 79
+     }
+    ]
+   },
+   {
+    "id": 25,
+    "name": "welt-march-kapseln",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_weltMarchEnsure"
+    },
+    "format": "rgba32float",
+    "w": 4096,
+    "h": 4,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 262144,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 27,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 5
+     },
+     {
+      "s": 73,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 12
+     },
+     {
+      "s": 119,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 19
+     },
+     {
+      "s": 165,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 26
+     },
+     {
+      "s": 204,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 32
+     },
+     {
+      "s": 250,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 39
+     },
+     {
+      "s": 289,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 45
+     },
+     {
+      "s": 335,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 52
+     },
+     {
+      "s": 374,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 58
+     },
+     {
+      "s": 420,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 65
+     },
+     {
+      "s": 459,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 71
+     },
+     {
+      "s": 512,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 79
+     }
+    ]
+   },
+   {
+    "id": 26,
+    "name": "feld-pass-panorama",
+    "erzeuger": {
+     "quelle": "anazhRealm.js",
+     "methode": "_feldPassEnsure"
+    },
+    "format": "rgba32float",
+    "w": 768,
+    "h": 160,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 1966080,
+    "leinwand": false,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 28,
+      "f": 1,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 5
+     },
+     {
+      "s": 74,
+      "f": 2,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 12
+     },
+     {
+      "s": 120,
+      "f": 3,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 19
+     },
+     {
+      "s": 166,
+      "f": 4,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 26
+     },
+     {
+      "s": 205,
+      "f": 5,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 32
+     },
+     {
+      "s": 251,
+      "f": 6,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 39
+     },
+     {
+      "s": 290,
+      "f": 7,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 45
+     },
+     {
+      "s": 336,
+      "f": 8,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 52
+     },
+     {
+      "s": 375,
+      "f": 9,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 58
+     },
+     {
+      "s": 421,
+      "f": 10,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 65
+     },
+     {
+      "s": 460,
+      "f": 11,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 71
+     },
+     {
+      "s": 513,
+      "f": 12,
+      "art": "R",
+      "pass": "haupt",
+      "via": "zeichnen",
+      "pid": 79
+     }
+    ]
+   },
+   {
+    "id": 27,
+    "name": null,
+    "erzeuger": null,
+    "format": "bgra8unorm",
+    "w": 1920,
+    "h": 1080,
+    "schichten": 1,
+    "mips": 1,
+    "proben": 1,
+    "dim": "2d",
+    "ziel": true,
+    "kopierbar": true,
+    "tiefe": false,
+    "bytes": 0,
+    "leinwand": true,
+    "umleitung": null,
+    "ereignisse": [
+     {
+      "s": 1,
+      "f": 1,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 1
+     },
+     {
+      "s": 40,
+      "f": 2,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 7
+     },
+     {
+      "s": 86,
+      "f": 3,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 14
+     },
+     {
+      "s": 132,
+      "f": 4,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 21
+     },
+     {
+      "s": 178,
+      "f": 5,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 28
+     },
+     {
+      "s": 217,
+      "f": 6,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 34
+     },
+     {
+      "s": 263,
+      "f": 7,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 41
+     },
+     {
+      "s": 302,
+      "f": 8,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 47
+     },
+     {
+      "s": 348,
+      "f": 9,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 54
+     },
+     {
+      "s": 387,
+      "f": 10,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 60
+     },
+     {
+      "s": 433,
+      "f": 11,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 67
+     },
+     {
+      "s": 472,
+      "f": 12,
+      "art": "W",
+      "pass": "post",
+      "via": "farbe",
+      "pid": 73
+     }
+    ]
+   }
+  ],
+  "erst": {
+   "offen": 0,
+   "warteMs": 2
+  },
+  "geraet": {
+   "rg11b10": true,
+   "ausgabe": "rg11b10ufloat",
+   "ausgabeId": 5
+  }
+ },
+ "lesen": [
+  {
+   "id": 0,
+   "gelesen": true,
+   "min": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "max": [
+    0.64453125,
+    0.82421875,
+    0.921875,
+    1
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 2,
+   "gelesen": true,
+   "min": [
+    128,
+    154,
+    150,
+    255
+   ],
+   "max": [
+    210,
+    234,
+    246,
+    255
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 3,
+   "gelesen": true,
+   "min": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "max": [
+    0.640625,
+    0.8203125,
+    0.921875,
+    1
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 8,
+   "gelesen": true,
+   "min": [
+    0.027740478515625,
+    0.03424072265625,
+    0.027496337890625,
+    1
+   ],
+   "max": [
+    1.3173828125,
+    1.07421875,
+    0.8125,
+    1
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 10,
+   "gelesen": true,
+   "min": [
+    0.027740478515625,
+    0.03424072265625,
+    0.027496337890625,
+    1
+   ],
+   "max": [
+    1.3173828125,
+    1.07421875,
+    0.8125,
+    1
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 12,
+   "gelesen": true,
+   "min": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "max": [
+    254,
+    254,
+    254,
+    254
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 14,
+   "gelesen": true,
+   "min": [
+    0.1470947265625,
+    0
+   ],
+   "max": [
+    1,
+    0.85205078125
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 15,
+   "gelesen": true,
+   "min": [
+    0
+   ],
+   "max": [
+    255
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 16,
+   "gelesen": true,
+   "min": [
+    0
+   ],
+   "max": [
+    255
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 17,
+   "gelesen": true,
+   "min": [
+    0,
+    0
+   ],
+   "max": [
+    206,
+    0
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 18,
+   "gelesen": true,
+   "min": [
+    0,
+    0
+   ],
+   "max": [
+    255,
+    0
+   ],
+   "f16exakt": null,
+   "f16maxAbs": null,
+   "f16maxRel": null,
+   "f16ueberlauf": null
+  },
+  {
+   "id": 19,
+   "gelesen": true,
+   "min": [
+    0.9186834692955017
+   ],
+   "max": [
+    1
+   ],
+   "f16exakt": false,
+   "f16maxAbs": 0.000244140625,
+   "f16maxRel": 0.0002642113639282434,
+   "f16ueberlauf": 0
+  },
+  {
+   "id": 24,
+   "gelesen": true,
+   "min": [
+    -1250.2222900390625,
+    -10.407041549682617,
+    -1028.27099609375,
+    -4126.93359375
+   ],
+   "max": [
+    68.01615905761719,
+    58.76163101196289,
+    21.255817413330078,
+    4528.6103515625
+   ],
+   "f16exakt": false,
+   "f16maxAbs": 1.70654296875,
+   "f16maxRel": 1,
+   "f16ueberlauf": 0
+  },
+  {
+   "id": 25,
+   "gelesen": true,
+   "min": [
+    -1246.947509765625,
+    -1.017715573310852,
+    -1024.328369140625,
+    -10693454
+   ],
+   "max": [
+    6.5,
+    41.72917938232422,
+    148,
+    10114363
+   ],
+   "f16exakt": false,
+   "f16maxAbs": 0.49951171875,
+   "f16maxRel": 0.0004745185409837978,
+   "f16ueberlauf": 67
+  },
+  {
+   "id": 26,
+   "gelesen": true,
+   "min": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "max": [
+    0.5637455582618713,
+    0.5835240483283997,
+    0.6737605333328247,
+    28016.1484375
+   ],
+   "f16exakt": false,
+   "f16maxAbs": 7.98828125,
+   "f16maxRel": 0.00046477115361517424,
+   "f16ueberlauf": 0
+  }
+ ],
+ "urteil": {
+  "rot": [],
+  "hinweis": [
+   "RUHT: PMREM.cubeUv:tiefe (depth24plus 336×128, 0.16 MB) — im Fenster weder gelesen noch geschrieben",
+   "RUHT: PMREM.cubeUv (rgba16float 336×128, 0.33 MB) — im Fenster weder gelesen noch geschrieben",
+   "RUHT: PMREM.cubeUv:tiefe (depth24plus 336×128, 0.16 MB) — im Fenster weder gelesen noch geschrieben",
+   "UMLEITUNG: szene:tiefenabbild:bruch (depth24plus 1×1, 0 MB) — die Kopie hinein zeichnet der Stamm als Pass in szene:tiefenabbild; die Textur ist eine Attrappe",
+   "KANAL: PMREM.cubeUv (rgba16float) — Kanal a=1 an diesem Ort konstant",
+   "KANAL: himmel-umgebung (rgba8unorm-srgb) — Kanal a=255 an diesem Ort konstant",
+   "KANAL: TRAANode.history (rgba16float) — Kanal a=1 an diesem Ort konstant",
+   "KANAL: TRAANode.resolve (rgba16float) — Kanal a=1 an diesem Ort konstant",
+   "KANAL: wege-karte:fern (rg8unorm) — Kanal g=0 an diesem Ort konstant",
+   "KANAL: wege-karte:nah (rg8unorm) — Kanal g=0 an diesem Ort konstant",
+   "FORMAT: szene:tiefenabbild — in 16 bit verlöre der Inhalt bis 0.000244 absolut (0.026 % relativ)",
+   "FORMAT: welt-march-liste — in 16 bit verlöre der Inhalt bis 1.71 absolut (100 % relativ)",
+   "FORMAT: welt-march-kapseln — in 16 bit verlöre der Inhalt bis 0.5 absolut (0.047 % relativ), 67 Werte über 65 504 (Überlauf)",
+   "FORMAT: feld-pass-panorama — in 16 bit verlöre der Inhalt bis 7.99 absolut (0.046 % relativ)"
+  ],
+  "zeilen": [
+   {
+    "id": 8,
+    "name": "TRAANode.history",
+    "form": "rgba16float 1920×1080",
+    "mb": 15.82,
+    "erzeuger": "vendor/TRAANode.js · _ensurePostProcessing",
+    "schreiber": "post (Kopie)",
+    "leser": "TRAA",
+    "letzterLeser": "TRAA (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 10,
+    "name": "TRAANode.resolve",
+    "form": "rgba16float 1920×1080",
+    "mb": 15.82,
+    "erzeuger": "vendor/TRAANode.js · _ensurePostProcessing",
+    "schreiber": "TRAA",
+    "leser": "post (Kopie), post",
+    "letzterLeser": "post (Frame 12)",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 11,
+    "name": "kaskade0:tiefe",
+    "form": "depth16unorm 2048×2048",
+    "mb": 8,
+    "erzeuger": "anazhRealm.js · _kaskadenZiele",
+    "schreiber": "k0",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 13,
+    "name": "kaskade1:tiefe",
+    "form": "depth16unorm 2048×2048",
+    "mb": 8,
+    "erzeuger": "anazhRealm.js · _kaskadenZiele",
+    "schreiber": "k1",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 5,
+    "name": "output",
+    "form": "rg11b10ufloat 1920×1080",
+    "mb": 7.91,
+    "erzeuger": "r184 PassNode · _ensurePostProcessing",
+    "schreiber": "haupt",
+    "leser": "haupt, TRAA",
+    "letzterLeser": "TRAA (Frame 12)",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 6,
+    "name": "depth",
+    "form": "depth24plus 1920×1080",
+    "mb": 7.91,
+    "erzeuger": "r184 PassNode · _ensurePostProcessing",
+    "schreiber": "haupt",
+    "leser": "haupt, haupt (Kopie), TRAA, post",
+    "letzterLeser": "post (Frame 12)",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 9,
+    "name": "TRAANode.history:tiefe",
+    "form": "depth16unorm 1920×1080",
+    "mb": 3.96,
+    "erzeuger": "vendor/TRAANode.js · _ensurePostProcessing",
+    "schreiber": "post",
+    "leser": "TRAA, post",
+    "letzterLeser": "post (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 19,
+    "name": "szene:tiefenabbild",
+    "form": "r32float 960×1080",
+    "mb": 3.96,
+    "erzeuger": "anazhRealm.js · _szeneTiefe",
+    "schreiber": "haupt",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 22,
+    "name": "karte-albedo:atlas",
+    "form": "bc1-rgba-unorm-srgb 128×2048×16",
+    "mb": 2.67,
+    "erzeuger": "anazhRealm.js · _impostorAtlasTexturen",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 17,
+    "name": "wege-karte:fern",
+    "form": "rg8unorm 1024×1024",
+    "mb": 2,
+    "erzeuger": "anazhRealm.js · _wegeKarteEnsure",
+    "schreiber": "—",
+    "leser": "haupt, k0, k1",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 18,
+    "name": "wege-karte:nah",
+    "form": "rg8unorm 1024×1024",
+    "mb": 2,
+    "erzeuger": "anazhRealm.js · _wegeKarteEnsure",
+    "schreiber": "—",
+    "leser": "haupt, k0, k1",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 26,
+    "name": "feld-pass-panorama",
+    "form": "rgba32float 768×160",
+    "mb": 1.88,
+    "erzeuger": "anazhRealm.js · _feldPassEnsure",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 23,
+    "name": "karte-normal:atlas",
+    "form": "bc5-rg-unorm 64×1024×16",
+    "mb": 1.33,
+    "erzeuger": "anazhRealm.js · _impostorAtlasTexturen",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 12,
+    "name": "rausch-atlas",
+    "form": "rgba8unorm 768×256",
+    "mb": 0.75,
+    "erzeuger": "anazhRealm.js · _rauschAtlas",
+    "schreiber": "—",
+    "leser": "haupt, k0, k1",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 21,
+    "name": "laub-cluster-atlas",
+    "form": "bc1-rgba-unorm-srgb 2048×512",
+    "mb": 0.67,
+    "erzeuger": "anazhRealm.js · _ensureFoliageClusterAtlas",
+    "schreiber": "—",
+    "leser": "haupt, k0, k1",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 24,
+    "name": "welt-march-liste",
+    "form": "rgba32float 4096×8",
+    "mb": 0.5,
+    "erzeuger": "anazhRealm.js · _weltMarchEnsure",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 0,
+    "name": "PMREM.cubeUv",
+    "form": "rgba16float 336×128",
+    "mb": 0.33,
+    "erzeuger": "r184 PMREMGenerator · _ensureSkyEnvironment",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 3,
+    "name": "PMREM.cubeUv",
+    "form": "rgba16float 336×128",
+    "mb": 0.33,
+    "erzeuger": "r184 PMREMGenerator · _ensureSkyEnvironment",
+    "schreiber": "—",
+    "leser": "—",
+    "letzterLeser": "—",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 15,
+    "name": "kronen-streu:fern",
+    "form": "r8unorm 512×512",
+    "mb": 0.25,
+    "erzeuger": "anazhRealm.js · _wegeKarteEnsure",
+    "schreiber": "—",
+    "leser": "haupt, k0, k1",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 16,
+    "name": "kronen-streu:nah",
+    "form": "r8unorm 512×512",
+    "mb": 0.25,
+    "erzeuger": "anazhRealm.js · _wegeKarteEnsure",
+    "schreiber": "—",
+    "leser": "haupt, k0, k1",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 25,
+    "name": "welt-march-kapseln",
+    "form": "rgba32float 4096×4",
+    "mb": 0.25,
+    "erzeuger": "anazhRealm.js · _weltMarchEnsure",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 1,
+    "name": "PMREM.cubeUv:tiefe",
+    "form": "depth24plus 336×128",
+    "mb": 0.16,
+    "erzeuger": "r184 PMREMGenerator · _ensureSkyEnvironment",
+    "schreiber": "—",
+    "leser": "—",
+    "letzterLeser": "—",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 4,
+    "name": "PMREM.cubeUv:tiefe",
+    "form": "depth24plus 336×128",
+    "mb": 0.16,
+    "erzeuger": "r184 PMREMGenerator · _ensureSkyEnvironment",
+    "schreiber": "—",
+    "leser": "—",
+    "letzterLeser": "—",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 2,
+    "name": "himmel-umgebung",
+    "form": "rgba8unorm-srgb 128×64",
+    "mb": 0.04,
+    "erzeuger": "anazhRealm.js · _himmelUmgebungTex",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 7,
+    "name": "TRAANode.vortiefe",
+    "form": "depth24plus 1×1",
+    "mb": 0,
+    "erzeuger": "vendor/TRAANode.js · _ensurePostProcessing",
+    "schreiber": "—",
+    "leser": "—",
+    "letzterLeser": "—",
+    "traegt": false,
+    "klassen": []
+   },
+   {
+    "id": 14,
+    "name": "DFG_LUT",
+    "form": "rg16float 16×16",
+    "mb": 0,
+    "erzeuger": "r184 (Umgebungs-Tafel)",
+    "schreiber": "—",
+    "leser": "haupt",
+    "letzterLeser": "haupt (Frame 12)",
+    "traegt": true,
+    "klassen": []
+   },
+   {
+    "id": 20,
+    "name": "szene:tiefenabbild:bruch",
+    "form": "depth24plus 1×1",
+    "mb": 0,
+    "erzeuger": "anazhRealm.js · _tiefenAbbild",
+    "schreiber": "haupt (Kopie)",
+    "leser": "—",
+    "letzterLeser": "—",
+    "traegt": false,
+    "klassen": []
+   }
+  ]
+ },
+ "selbst": null,
+ "rest": []
+}

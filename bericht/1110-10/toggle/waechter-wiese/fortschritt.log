@@ -1,0 +1,11 @@
+07:36:17 Seite 3960d575e001be8a (soll 3960d575e001be8a)
+07:36:38 WAECHTER START wiese
+07:36:41 ZAEHLUNG (Refreshs durch den Wächter in 60+20 Bildern): "ergebnis": "3× bodenSatz | kronen-streu:fern,kronen-streu:nah,rausch-atlas,wege-karte:fern,wege-karte:nah,fern-krone-nah,kaskade0:tiefe,kaskade1:tiefe,DFG_LUT,PMREM.cubeUv ;; 3× bodenSatz | kronen-streu:fern,kronen-streu:nah,rausch-atlas,wege-karte:fern,wege-karte:nah,fern-krone-nah ;; 3× ? | karte-albedo:atlas,karte-normal:atlas,kaskade0:tiefe,kaskade1:tiefe,DFG_LUT,PMREM.cubeUv,rausch-atlas ;; 2× streuSatz | kaskade0:tiefe,kaskade1:tiefe,DFG_LUT,PMREM.cubeUv", "ms": 2}
+07:37:12 waechter-an bank 12.12 12.14 12.15  takt 1708MHz 81C n60
+07:37:43 waechter-aus bank 12.2 12.21 12.21  takt 1695MHz 84C n61
+07:38:15 waechter-an bank 12.22 12.23 12.21  takt 1695MHz 85C n61
+07:38:46 waechter-aus bank 12.23 12.21 12.19  takt 1695MHz 84C n61
+07:39:17 waechter-an bank 12.19 12.2 12.19  takt 1695MHz 83C n61
+07:39:48 waechter-aus bank 12.2 12.19 12.2  takt 1695MHz 83C n61
+07:40:19 waechter-an bank 12.19 12.19 12.21  takt 1695MHz 83C n60
+07:40:26 WAECHTER ENDE

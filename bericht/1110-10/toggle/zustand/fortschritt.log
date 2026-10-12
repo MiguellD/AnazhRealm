@@ -1,0 +1,9 @@
+08:10:44 A Seite 6ad641672bb635be
+08:11:55 A zerlegen exit=0 Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:      4,31 ms (33,9 %) Rest = Gesamt − Σ:   8,41 ms 
+08:12:03 B Seite 3960d575e001be8a
+08:13:14 B zerlegen exit=0 Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:      4,45 ms (34,3 %) Rest = Gesamt − Σ:   8,52 ms 
+08:13:21 A2 Seite 6ad641672bb635be
+08:14:29 A2 zerlegen exit=0 Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:      3,05 ms (27,1 %) Rest = Gesamt − Σ:   8,19 ms 
+08:14:36 B2 Seite 3960d575e001be8a
+08:15:47 B2 zerlegen exit=0 Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:      4,70 ms (35,9 %) Rest = Gesamt − Σ:   8,40 ms 
+08:15:53 ZERLEG ENDE

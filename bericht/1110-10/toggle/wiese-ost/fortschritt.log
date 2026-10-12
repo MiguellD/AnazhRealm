@@ -1,0 +1,16 @@
+07:22:07 Seite 3960d575e001be8a (soll 3960d575e001be8a)
+07:22:28 TOGGLE START wiese ost
+07:23:00 wie "chunksNeu":1 bank 12.23 12.23 12.21  takt 1708MHz 81C n61 prog 33/32/31/33
+07:23:32 ohnePool "chunksNeu":1 bank 12.16 12.17 12.2  takt 1695MHz 85C n61 prog 34/33/32/34
+07:24:05 wie "chunksNeu":1 bank 12.47 12.45 12.46  takt 1683MHz 86C n62 prog 35/34/33/35
+07:24:37 pool2 "chunksNeu":1 bank 12.25 12.26 12.26  takt 1695MHz 84C n62 prog 37/36/35/37
+07:25:10 wie "chunksNeu":1 bank 12.44 12.42 12.44  takt 1695MHz 84C n62 prog 37/36/35/37
+07:25:41 ohnePool "chunksNeu":1 bank 12.29 12.3 12.28  takt 1695MHz 84C n61 prog 37/36/35/37
+07:26:14 wie "chunksNeu":1 bank 12.43 12.43 12.43  takt 1695MHz 83C n62 prog 39/38/37/39
+07:26:46 pool2 "chunksNeu":1 bank 12.37 12.34 12.37  takt 1695MHz 83C n62 prog 39/38/37/39
+07:27:18 wie "chunksNeu":1 bank 12.43 12.43 12.43  takt 1695MHz 83C n62 prog 39/38/37/39
+07:27:50 ohnePool "chunksNeu":1 bank 12.3 12.29 12.28  takt 1695MHz 83C n61 prog 39/38/37/39
+07:28:23 wie "chunksNeu":1 bank 12.44 12.43 12.43  takt 1695MHz 83C n62 prog 39/38/37/39
+07:28:55 pool2 "chunksNeu":1 bank 12.35 12.37 12.35  takt 1695MHz 83C n62 prog 39/38/37/39
+07:29:27 wie "chunksNeu":1 bank 12.43 12.47 12.47  takt 1695MHz 83C n62 prog 39/38/37/39
+07:29:34 TOGGLE ENDE
