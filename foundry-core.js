@@ -4530,6 +4530,31 @@ function phenotype(api, slim, trop, delta, leaf) {
     return core.treePhenotype(api, slim, trop, delta, leaf);
 }
 
+// DAS BYTE-RASTER AM AUSGANG (K20, der Re-Mint des Kerns; das Muster porta-core/fachwerk-core ausRaster): jede Zahl, die
+// buildInstance liefert, liegt auf einem Gitter, das kein letztes Bit erreicht — Attribute 2^-12, Normalen 2^-14, Lage
+// und Maß 2^-16, Drehung 2^-20; −0 → 0. Befund (spec/asset-contract/plattform-ratsche.json, Satz v1): sin/cos/hypot ±1
+// ULP kippten 18–29 der 43 Probe-Fälle, jede Zahl des Baums hängt an ihnen. Die Stoffe teilt der Kern über alle Bauten
+// — sie bleiben unberührt (ihre Farben tragen die Paletten-Bytes, die Bäume die Vertex-Farben).
+function __rasterZahl(x, q) {
+    return Math.round(x * q) / q + 0;
+}
+function __ausRaster(g) {
+    g.traverse(function (o) {
+        o.position.set(__rasterZahl(o.position.x, 65536), __rasterZahl(o.position.y, 65536), __rasterZahl(o.position.z, 65536));
+        o.scale.set(__rasterZahl(o.scale.x, 65536), __rasterZahl(o.scale.y, 65536), __rasterZahl(o.scale.z, 65536));
+        const q = o.quaternion;
+        q.set(__rasterZahl(q.x, 1048576), __rasterZahl(q.y, 1048576), __rasterZahl(q.z, 1048576), __rasterZahl(q.w, 1048576));
+        if (o.geometry && o.geometry.attributes) {
+            const A = o.geometry.attributes;
+            for (const name in A) {
+                const s = name === "normal" ? 16384 : 4096,
+                    arr = A[name].array;
+                for (let k = 0; k < arr.length; k++) arr[k] = __rasterZahl(arr[k], s);
+            }
+        }
+    });
+}
+
 // DIE WELT-SKALA EINER ART (wie der Wald pflanzt, placement): Meter je Vorlagen-Einheit — Skala 1 baut in Welt-Metern,
 // unter 1 bleibt sie (Gras, Fels), darüber trägt der Baum den Wald-Faktor treeScaleMul. Die EINE Formel für jeden Leser
 // im Kern (Wedel-Nadel, Schatten-Teil, das Welt-Maß des Wuchses).
@@ -4920,6 +4945,8 @@ function buildInstance(presetId, seed, lod, ov) {
     g.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(g);
     if (isFinite(box.min.y) && box.min.y > 0.002) g.position.y -= box.min.y;
+    __ausRaster(g);
+    g.updateMatrixWorld(true);
     subject = sS;
     SEED = sSeed;
     CURRENT = sCur;
