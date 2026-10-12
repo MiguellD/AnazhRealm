@@ -66,11 +66,11 @@ jobs:
               run: npm ci --no-audit --no-fund
 
             - name: Prettier-Format-Check
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 1
               run: npm run format:check
 
             - name: ESLint
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 1
               run: npm run lint
 
             - name: Syntax-Check JS-Dateien
@@ -108,8 +108,10 @@ jobs:
                   fi
                   echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
 
-            - name: Statik (npm run check — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
+            - name: Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
               if: matrix.gruppe == 1
+              # `npm run check` = `check:statik` + `gate:haus-fern` (V18.543): die ganze Statik trug je Push Median 105 s und
+              # samt Vorbereitung 2,05 min über dem Puls-Deckel 2 min - der Haus-Fernkörper (CI 36-45 s) läuft in Puls 2.
               # Die EINE Statik, dieselbe wie lokal: bis 09.10. stand `npm run check` in keinem Workflow — die Norm-Wände
               # (Verfassung, Studio-Vertrag, Altlasten, Apparat, Vendor-Anker, Betriebsgesetz, Taille, Start-Rezept …)
               # waren Wachsamkeit. Darin: die Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben, c1c1271-Klasse),
@@ -119,7 +121,14 @@ jobs:
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
               # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
-              run: npm run check
+              run: npm run check:statik
+
+            - name: Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check)
+              if: matrix.gruppe == 2
+              # Der letzte Teil der EINEN Statik (`npm run check`), am Gesetzbuch in Node (three-r128 + fachwerk-core): Wurf-Deckung,
+              # Wurf-Kosten, Sprung-Deckung, First-Achse, Aufblähung, Innen, Türblatt. CI 36-45 s (Puls 1 von 38212701381,
+              # 38208674431, 38211979506) - in Puls 2, damit Puls 1 unter seinem Deckel bleibt.
+              run: npm run gate:haus-fern
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
               if: matrix.gruppe == 2
@@ -357,11 +366,11 @@ jobs:
               run: npm run gate:schatten-bias
 
             - name: Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 5
               # Die Werkbank im Software-Holz mit Schatten (holz voll) an der 30-Grad-Rampe der Pruefbuehne, die Sonne am Terminator
               # (22 Grad aus Azimut 45, N.L -0,002): von oben je ein Schuss mit und ohne Schatten, gemessen nur auf der Rampe - ROT
               # beim Namen, wenn der Schatten die Rampe fleckig macht (main 2c8deda9: 11,7 % gegen 0,2 %). Lokal 78-119 s, CI 181 s
-              # (38180625147) - in Gruppe 2 neben gate:nah-fern (dasselbe Software-Holz), die Waage traegt ihn dort (Gruppe 5 11,0 min).
+              # (38180625147), Median 177 s - in Gruppe 5 (V18.543 gang-gesetz: Gruppe 2 trug mit dem Haus der Welt 405 s 11,9 min).
               run: npm run gate:schatten-terminator
 
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
@@ -401,7 +410,7 @@ jobs:
               run: npm run gate:pruefbuehne
 
             - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 2
               # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
               # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
               # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
@@ -549,7 +558,7 @@ jobs:
               run: npm run gate:pflanzen-nah
 
             - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 6
               # Integration W8 (Pruefer W8 (c)): im echten Spiel (foundry-ON, Null-Renderer) baut die Linse jede Art mit
               # Budget-Zeile auf jeder deklarierten Geometrie-Stufe - Flatten (Haus, Fahrzeug, Waffe, Tor, Baum, Strauch,
               # Fels, Boden-Streu) und Ofen (jede Gattung, der Mensch) - und verlangt phyto-core budgetSippen == die
@@ -875,7 +884,7 @@ jobs:
               run: npm run gate:vehicle-drive
 
             - name: Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 7
               # DER RITT DURCH DEN ECHTEN FRAME (_gameLoopTick: Akkumulator · Sim-Schritte · Interpolation · Frame-Tick,
               # wechselnde Frame-Zeiten 8–33 ms, headless foundry-ON): GT geradeaus, GT am Hang ohne Taste, Pferd —
               # Teleport-Zähler 0, Sim-Weg = Fahr-Weg, der Reiter sitzt (nie „in der Luft"), keine Gier ohne Lenkung.
@@ -917,7 +926,7 @@ jobs:
               run: npm run gate:nervensystem-schmiede
 
             - name: Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)
-              if: matrix.gruppe == 8
+              if: matrix.gruppe == 6
               # Headless (Null-Renderer, Produktions-Boot), gespielt wie ein Mensch: das Fadenkreuz geht über Gier und
               # Neigung durch die ECHTE Kamera aufs Ziel (1st und 3rd), geklickt wird über den EINEN Dispatcher.
               # Q8: Zone je Glied, hangab und klein je ≥ 8/10, Hit-Stop-Energie Keule ≠ Grossschwert, keine
@@ -1026,8 +1035,9 @@ jobs:
               if: matrix.gruppe == 9
               # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
-              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden (die Rad-
-              # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden (die Rad-
+              # Ebene steht auf dem Gesetz, Entscheid D1) · K6 das Tier am Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht
+              # wie daneben (K21, der EINE Boden-Leser). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
               run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
@@ -1064,8 +1074,12 @@ jobs:
               if: matrix.gruppe == 10
               # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
               # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
-              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
-              # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
+              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,05 (K07, Ratsche von 0,2). Derselbe Punkt am Spieler-Leib
+              # (animatePlayerSoul: Gehen 1,15, Laufen 5,16, Spitze 6,75 m/s) mit Kadenz, Schritt-Tönen, Becken (Hub/Tiefe
+              # in Beinlängen) und Lock-Lösern im Stand-Fenster (Soll 0), dazu das Körper-Studio (Schlupf, Becken-Hub)
+              # und die Schwere (Mensch und Wolf unter 1,62 m/s² nach der Schwere der Welt, Schritt und Becken aus EINER
+              # Zeile, kein Literal-Zwilling). --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt, feste
+              # Auslenkung) gleitet jede Pfote, die Zeile ohne die Schwere der Welt macht die Schwere-Wand rot.
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
@@ -1082,13 +1096,13 @@ jobs:
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
               # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
               # das Tier steht auf der Auflage der Bauten) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
-              # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
+              # gleitet nicht — Schlupf ≤ 0,05, Ratsche K07; ein Fuß an der Grenze seiner Kette hebt ab) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
               # wer läuft, wird ausgewertet). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 
             - name: Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 1
               # Headless (Null-Renderer, Produktions-Boot), Port KREATUR_KOSTEN_PORT: die Anim-Raten-Leiter, die Stand-Pose,
               # die Grobstufe des Menschen am echten Peer-Tick, Starr-Bindung + Körper-Kugel (Pose-Probe auch der Grobstufe:
               # ihre Knochen SIND die der feinen), schmale Puffer — und (W) der Werfer je Gestalt: je Art und Mensch nah und
@@ -1225,7 +1239,7 @@ jobs:
               run: npm run gate:scatter-lod
 
             - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 7
               run: npm run gate:leistungs-vertrag
 
             - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
@@ -1338,7 +1352,7 @@ jobs:
               run: npm run gate:werkstatt-weg
 
             - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 1
               # An vier Orten der Leben-Schau 2 je Pflanze acht Stellungen zu Fuß, im Ritt und im Ich-Auge: die Nah-Deckung
               # des Schirms je Täter-Klasse (scripts/lib/kamera-nah.cjs); der eingeschmuggelte Laub-Stoff und Fels müssen beim
               # Namen fallen, der Selbsttest nennt jeden Bruch und die statische Wand feuert am Vor-Stand.
@@ -1455,7 +1469,7 @@ jobs:
               run: npm run gate:ego-schatten
 
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 6
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) n Frames lang durch die Haken des Ziel-Zensus: jede GPU-Textur
               # mit Erzeuger, Schreibern und Lesern je Pass, keine Taeter-Klasse (ohne Leser, teilbar, volle Aufloesung fuer
               # niederfrequente Effekte, Tiefe ohne Leser oder doppelt, 32 bit mit 16-bit-Inhalt). Dazu eine Schatten-Buehne

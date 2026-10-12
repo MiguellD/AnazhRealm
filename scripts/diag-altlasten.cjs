@@ -921,6 +921,12 @@ const FORBIDDEN = [
     { token: "mEffDmgMax", fiel: "Welle L Q8" },
     { token: "mEffRefKg", fiel: "Welle L Q8 — die Wirkung ist Energie gegen keRefJ" },
     { token: "zugJouleRef", fiel: "Welle L Q8 — E = ableitenBogen(task).energie (die Studio-Energie)" },
+    // DER WIND LEBT IM STOFF (K19-N2): die Werkstatt-Formel las Schwung und Phase je Vertex; sie fiel, und mit ihr ihre
+    // Daten — der EINE Wind-Term liest die Gestalt (positionGeometry) und den Stempel aH0 (gate:pflanzen-nah WD).
+    { token: "aFlex", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
+    { token: "aPhase", fiel: "K19 — der Wind liest die Gestalt (`_baumWindStoff`)", auch: ["phyto-core.js"] },
+    { token: "_mergeAttributedGeometries", fiel: "K19 — ohne Wind-Attribute ein Zwilling von `_mergeGeometries`" },
+    { token: "useFlexAttr", fiel: "K19 — der Pflanzen-Stoff heißt `pflanzenStoff` (er liest kein aFlex)" },
     // KEIN DRITTER LEIB (Integration Welle L, Stufe kampf-maus, Gesetz #0): Klinge und Pfeil schätzten den Leib des Tiers je
     // selbst als 2 × Skala; das Grob-Tor liest den EINEN Leib (_kreaturLeib.reichweite, _trefferErreichbar). Die Gattung
     // eines Tiers liest jeder Leser aus _kreaturGattung (Herden-Zug, Analog-Zensus), nie aus einer eigenen Kette.
@@ -1067,6 +1073,12 @@ const FORBIDDEN = [
     { token: "bautenJeFrame", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
     { token: "this._portalLicht ", fiel: "K11 — das Szenen-Licht des Tors (ein Bürger des Licht-Pools)" },
     { token: "new THREE.PointLight(", fiel: "K11 — jedes Punktlicht ist ein Platz des Licht-Pools (`_lichtPoolTerm`)" },
+    // DER BODEN HAT EINEN LESER (K21): Nah-Wiese und Nah-Streu lasen die Karte nur beim Eigner — im 0,9-m-Rand-Streifen
+    // jedes Chunks fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). Fuß, Hang und Grün liest
+    // jeder Leser über `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn); der Eigner-Leser kehrt nicht zurück.
+    { token: "_chunkSurfaceAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
+    { token: "_chunkGruenAt", fiel: "K21 — `_bodenSichtAt(x, z, aus)` trägt den Grün-Kanal der gewinnenden Karte" },
+    { token: "_chunkKarteAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

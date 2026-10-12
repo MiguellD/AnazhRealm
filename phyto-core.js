@@ -326,7 +326,7 @@
         } else {
             grow([0, 0, 0], [0, 1, 0], trunkR, P.height * (P.conifer ? 0.2 : 0.3), 0, 0, -1, false);
         }
-        // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
+        // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
             s.sway0 = (s.sway0 / maxSway) * gain;
@@ -892,8 +892,8 @@
     // treu): ein Quad je Blatt (2 Dreiecke), die Achsen aus dir/up + Roll aus phase, die UV in
     // die Atlas-Zelle geroutet. REIN (plain Arrays raus) — der Aufrufer (Main + Portal) wickelt
     // sie in eine BufferGeometry + hängt sein Material an (das dieselben Attribute liest). Die
-    // Attribut-Namen matchen AnazhRealms Laub-Material: position/normal/color/aFlex/aPhase/uv.
-    // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, sway, phase}] (aus growSkeleton).
+    // Attribute: position/normal/color/uv — der Wind liest die Gestalt selbst (`windAusschlag`), kein Schwung-Attribut.
+    // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, phase}] (aus growSkeleton; phase dreht das Quad).
     // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3), cell (erzwingt die Zelle),
     //          kern (Atlas-Kern der Breitblatt-Zellen, `BLATT_ATLAS_BREIT.kern`; ohne = 1, die ganze Zelle) }.
     // Der Kern schneidet Quad UND UV um die Zellmitte gleich zu: jeder verbleibende Punkt liest dasselbe
@@ -910,8 +910,6 @@
         const positions = new Float32Array(M * 4 * 3);
         const normals = new Float32Array(M * 4 * 3);
         const colors = new Float32Array(M * 4 * 3);
-        const aFlex = new Float32Array(M * 4);
-        const aPhase = new Float32Array(M * 4);
         const uvs = new Float32Array(M * 4 * 2);
         const indices = new Uint32Array(M * 6);
         const corner = [
@@ -959,7 +957,6 @@
                 u1 = u0 + 0.25 * k,
                 v0 = 0.5 * (1 - k),
                 v1 = v0 + k;
-            const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
             const base = qi * 4;
             for (let i = 0; i < 4; i++) {
                 const cx = corner[i][0] * s,
@@ -974,8 +971,6 @@
                 colors[v3] = col[0];
                 colors[v3 + 1] = col[1];
                 colors[v3 + 2] = col[2];
-                aFlex[vw] = fx;
-                aPhase[vw] = ph + i * 0.3;
                 uvs[vw * 2] = i === 0 || i === 3 ? u0 : u1;
                 uvs[vw * 2 + 1] = i < 2 ? v0 : v1;
                 vw++;
@@ -988,7 +983,7 @@
             indices[iw++] = base + 3;
             qi++;
         }
-        return { positions, normals, colors, aFlex, aPhase, uvs, indices, count: qi };
+        return { positions, normals, colors, uvs, indices, count: qi };
     }
 
     // DIE LAGEN EINER KRONE (S3, 09.10.) — der Bau-Regler der Karten-Wahl: wie viele Karten-Lagen ein Kronen-Pixel trägt,
@@ -1113,10 +1108,10 @@
     // Licht als gekrümmte Fläche, nicht als bemalte Karte. Die Vorlage nimmt Karten NUR für
     // L1 (`useTexL = __lod===1`, Z.647); L0 sind Klingen — exakt diese Teilung stellt W4 her.
     // REIN (plain Arrays raus, kein THREE); die Attribute im SELBEN Layout wie
-    // `buildFoliageQuads` (position/normal/color/aFlex/aPhase/uv + indices — die Float32-Naht,
+    // `buildFoliageQuads` (position/normal/color/uv + indices — die Float32-Naht,
     // der Aufrufer wickelt sie identisch in eine BufferGeometry). Normalen = Face-Akkumulation
     // pro Blatt (das THREE-`computeVertexNormals`-Gesetz, ohne THREE).
-    // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
+    // `leaves`: [{pos, dir, up, scale, needle}] (aus growSkeleton).
     // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
     //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc},
     //           grund ([r,g,b] am Klingen-Grund — die Farbe läuft bis `grundBis` (Anteil der Länge) in leafColor; die
@@ -1140,8 +1135,6 @@
         const positions = new Float32Array(M * VPL * 3);
         const normals = new Float32Array(M * VPL * 3);
         const colors = new Float32Array(M * VPL * 3);
-        const aFlex = new Float32Array(M * VPL);
-        const aPhase = new Float32Array(M * VPL);
         const uvs = new Float32Array(M * VPL * 2);
         const indices = new Uint32Array(M * IPL);
         let vw = 0,
@@ -1165,8 +1158,6 @@
             const cx = l.pos[0],
                 cy = l.pos[1],
                 cz = l.pos[2];
-            const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
-            const ph = l.phase || 0;
             const base = vw;
             for (let i = 0; i <= SEG; i++) {
                 const s = i / SEG;
@@ -1200,8 +1191,6 @@
                 colors[v3] = cr[0];
                 colors[v3 + 1] = cr[1];
                 colors[v3 + 2] = cr[2];
-                aFlex[vw] = fx;
-                aPhase[vw] = ph;
                 uvs[vw * 2] = 0;
                 uvs[vw * 2 + 1] = s;
                 vw++;
@@ -1212,8 +1201,6 @@
                 colors[v3] = cr[0];
                 colors[v3 + 1] = cr[1];
                 colors[v3 + 2] = cr[2];
-                aFlex[vw] = fx;
-                aPhase[vw] = ph;
                 uvs[vw * 2] = 1;
                 uvs[vw * 2 + 1] = s;
                 vw++;
@@ -1267,13 +1254,11 @@
         // kompaktieren, falls Blätter übersprungen wurden (leere pos/dir)
         const out =
             bladeCount === M
-                ? { positions, normals, colors, aFlex, aPhase, uvs, indices }
+                ? { positions, normals, colors, uvs, indices }
                 : {
                       positions: positions.subarray(0, vw * 3).slice(),
                       normals: normals.subarray(0, vw * 3).slice(),
                       colors: colors.subarray(0, vw * 3).slice(),
-                      aFlex: aFlex.subarray(0, vw).slice(),
-                      aPhase: aPhase.subarray(0, vw).slice(),
                       uvs: uvs.subarray(0, vw * 2).slice(),
                       indices: indices.subarray(0, iw).slice(),
                   };
@@ -1489,17 +1474,12 @@
     // (Strebepfeiler), axiale Borke-Maserung (grain) + der barkA→barkB-Höhen-Gradient
     // (Fuß-dunkel → Wipfel-hell, wie die Vorlage `col=barkBase.lerp(barkTip, sun*..)`).
     // REIN + THREE-FREI: gibt pro Branch plain-Arrays zurück (der Consumer wickelt sie in
-    // BufferGeometry + merged). ATTRIBUT-VERTRAG des Consumers EXAKT: position/normal/color/
-    // aFlex/aPhase + index (kein uv — das Rinden-Material liest keins). Der Part bleibt
+    // BufferGeometry + merged). ATTRIBUT-VERTRAG des Consumers EXAKT: position/normal/color
+    // + index (kein uv — das Rinden-Material liest keins; der Wind liest die Gestalt selbst). Der Part bleibt
     // holz/cylinder → Tags unberührt (nur Vertex-Positionen/Farben ändern sich).
     // `branches`: [{ points:[{x,y,z,r}], isTrunk }]. `opts`: { radialSegs=6, totalH,
     //   barkColorA:[r,g,b] 0..1 (Fuß), barkColorB:[r,g,b] (Wipfel), flareAmp=0.45,
-    //   flareLobes=5 }. Rückgabe: [{ positions,normals,colors,aFlex,aPhase,indices }, ...].
-    function _barkHashPhase(a, b, c) {
-        let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
-        h = (h ^ (h >>> 13)) >>> 0;
-        return ((h * 0.00000000023283) % 1) * Math.PI * 2;
-    }
+    //   flareLobes=5 }. Rückgabe: [{ positions,normals,colors,indices }, ...].
     function buildBarkTubeArrays(branches, opts) {
         opts = opts || {};
         const radialSegs = opts.radialSegs || 6;
@@ -1526,8 +1506,6 @@
             const positions = new Float32Array(nV * 3);
             const normals = new Float32Array(nV * 3);
             const colors = new Float32Array(nV * 3);
-            const flex = new Float32Array(nV);
-            const phase = new Float32Array(nV);
             const indices = new Uint32Array((nP - 1) * radialSegs * 6);
             for (let i = 0; i < nP; i++) {
                 const p = pts[i];
@@ -1578,7 +1556,6 @@
                 const flareT = flareActive ? 1 - i / Math.max(1, Math.floor(nP * 0.18)) : 0;
                 const flareEase = flareT * flareT * (3 - 2 * flareT);
                 const flareAmp = dFlareAmp * flareEase;
-                const flexVal = Math.max(0, Math.min(1, p.y / totalH));
                 for (let j = 0; j < radialSegs; j++) {
                     const a = (j / radialSegs) * Math.PI * 2;
                     const ca = Math.cos(a);
@@ -1607,9 +1584,6 @@
                     colors[vIdx] = (bAr + (bBr - bAr) * hMix) * grain;
                     colors[vIdx + 1] = (bAg + (bBg - bAg) * hMix) * grain;
                     colors[vIdx + 2] = (bAb + (bBb - bAb) * hMix) * grain;
-                    const vF = i * radialSegs + j;
-                    flex[vF] = flexVal * (isTrunk ? 0.45 : 0.85);
-                    phase[vF] = _barkHashPhase(bi, i, j);
                 }
             }
             let triIdx = 0;
@@ -1628,7 +1602,7 @@
                     indices[triIdx++] = d;
                 }
             }
-            out.push({ positions, normals, colors, aFlex: flex, aPhase: phase, indices });
+            out.push({ positions, normals, colors, indices });
         }
         return out;
     }
@@ -4089,6 +4063,186 @@
         return { meshes: out, bericht: bericht };
     }
 
+    // DAS WIND-GESETZ DES BAUMS (K19, 12.10.) — EIN Term für Labor und Welt, die Antwort des Baums auf den Wind des
+    // EINEN Wetter-Gesetzes. Drei Glieder, jedes mit seiner Frequenz (SpeedTree: Stamm < Ast < Blatt):
+    //   STAMM  die Biegelinie des Kragträgers (ζ², ζ = Höhe über der Wurzel / H) — die Neigung folgt der Böe quasi-statisch,
+    //          das Pendel schwingt in der Eigenfrequenz f0 = kF · D / H² (Moore & Maguire 2004, Trees 18(2):195–203; kF
+    //          geeicht an der Fichte: 0,4 Hz bei D 0,5 m und H 30 m, Plenter H/D 60, waldwissen.net).
+    //   AST    der Hebel ρ (Abstand zur Stamm-Achse / H) schwingt mit ast.faktor · f0 und eigener Phase ψ.
+    //   BLATT  das Laub flattert längs seiner Normale, immer schneller als sein Ast (max(blatt.f, ueberAst · f_Ast)).
+    // Die Last folgt dem Wind U (die Wind-Zeile des Wetters: 0,06 ruhig · 0,35 Regen · 1 Sturm) mit dem Vogel-Exponenten
+    // (Widerstand ∝ u^(2+B), B ≈ −0,6 für umformende Kronen: Vogel 1989, Vollsinger 2005) — der Sturm biegt, die Brise
+    // regt nur das Laub (Flattern ∝ √U). Wie stark ein Glied in SEINER Frequenz schwingt, sagt das Böen-Spektrum: die
+    // Turbulenz trägt bei f die Energie S ∝ f^(−5/3) (Kolmogorov, von Kármán), die Antwort ∝ √S — ein gedrungener Stamm
+    // (f0 4 Hz) zittert nicht mit dem Hub der Fichte (0,4 Hz), er folgt der Böe. Die Böe selbst wandert (λ ≈ 164 m,
+    // Periode ≈ 15,7 s) — dieselben Zahlen lesen Gras, Streu und das Ohr der Welt (`AnazhRealm.WIND_BOE`).
+    // Die Formel rechnet über einer Algebra A (TSL im Welt-Stoff, GLSL-Text im Labor, Zahlen in der Linse — wie
+    // `_durchsichtGewicht`): EIN Term, drei Leser.
+    var WIND_GESETZ = Object.freeze({
+        kF: 720, // m/s — f0 = kF · D / H²
+        vogel: 1.4, // Last ∝ U^vogel (2 + B, B = −0,6)
+        stamm: Object.freeze({ neig: 0.035, pendel: 0.45 }), // Spitzen-Auslenkung / H bei Sturm · Pendel-Anteil um die Neigung
+        ast: Object.freeze({ faktor: 2.4, hub: 0.06, heben: 0.03 }), // f_Ast = faktor · f0 · Hub je Hebel · Heben je Hebel
+        blatt: Object.freeze({ f: 4.5, ueberAst: 1.5, hub: 0.035 }), // Hz · Abstand zum Ast · Hub (m) bei Sturm
+        spektrum: Object.freeze({ fRef: 0.4, exp: 5 / 6 }), // Antwort = min(1, (fRef / f)^exp) — fRef die Fichte, exp = ½ · 5/3
+        boe: Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 }), // g = sin(ω·t − k·(x·w))·amp + mitte
+        dbh: 1.3, // m — die Brusthöhe, in der D gemessen wird
+    });
+    // DER FUSS-DURCHMESSER DER GELIEFERTEN GESTALT: der erste Rinden-Strang ist der Stamm, seine Ringe liegen je R1 Ecken
+    // hintereinander (die Naht wiederholt die erste Ecke) und steigen; D ist der mittlere doppelte Abstand der Ring-Ecken
+    // von ihrer Mitte im Ring nächst der Höhe yT (Vorlagen-Einheiten). null, wenn der Strang keinen Ring trägt.
+    function stammDurchmesser(pos, yT) {
+        if (!pos || pos.length < 9) return null;
+        let R1 = 0;
+        for (let i = 1; i < 400 && i * 3 < pos.length; i++)
+            if (Math.hypot(pos[i * 3] - pos[0], pos[i * 3 + 1] - pos[1], pos[i * 3 + 2] - pos[2]) < 1e-3) {
+                R1 = i + 1;
+                break;
+            }
+        if (R1 < 4) return null;
+        const n = R1 - 1;
+        let best = -1,
+            bestD = Infinity,
+            yPrev = -Infinity;
+        for (let r = 0; (r + 1) * R1 <= pos.length / 3; r++) {
+            let y = 0;
+            for (let j = 0; j < n; j++) y += pos[(r * R1 + j) * 3 + 1];
+            y /= n;
+            if (y < yPrev - 1e-4) break;
+            yPrev = y;
+            if (Math.abs(y - yT) < bestD) {
+                bestD = Math.abs(y - yT);
+                best = r;
+            }
+        }
+        if (best < 0) return null;
+        let cx = 0,
+            cz = 0,
+            rr = 0;
+        for (let j = 0; j < n; j++) {
+            cx += pos[(best * R1 + j) * 3];
+            cz += pos[(best * R1 + j) * 3 + 2];
+        }
+        cx /= n;
+        cz /= n;
+        for (let j = 0; j < n; j++) rr += Math.hypot(pos[(best * R1 + j) * 3] - cx, pos[(best * R1 + j) * 3 + 2] - cz);
+        return (2 * rr) / n;
+    }
+    // Die Schlankheit δ = D / H einer gelieferten Gestalt (skalenfrei): D in Brusthöhe (dbh Meter Welt → dbh / skala in der
+    // Vorlage; der Kleinwuchs unter 4·dbh misst im ersten Viertel seiner Höhe — die Brusthöhe eines 1,6-m-Strauchs läge in
+    // seiner Spitze), H = ht (die Vorlagen-Höhe der Gestalt). Welt, Karte und Labor rechnen f0 = kF · δ / H_Welt je Baum.
+    function brustHoehe(ht, skala) {
+        return Math.min(WIND_GESETZ.dbh, 0.25 * ht * skala) / skala;
+    }
+    function windSchlankheit(barkPos, ht, skala) {
+        if (!(ht > 0) || !(skala > 0)) return null;
+        const D = stammDurchmesser(barkPos, brustHoehe(ht, skala));
+        return D > 0 ? D / ht : null;
+    }
+    // Dieselbe Schlankheit an der Stamm-ACHSE (K19, der Werkstatt-Baum trägt sein Skelett: Punkte { y, r } aufwärts, r der
+    // Radius) — D = 2 r, linear zwischen den Achsen-Punkten um dieselbe Brusthöhe. null ohne Achse.
+    function windSchlankheitAchse(punkte, ht, skala) {
+        if (!Array.isArray(punkte) || punkte.length < 2 || !(ht > 0) || !(skala > 0)) return null;
+        const yT = brustHoehe(ht, skala);
+        let r = null;
+        for (let i = 1; i < punkte.length; i++) {
+            const a = punkte[i - 1],
+                b = punkte[i];
+            if (b.y >= yT || i === punkte.length - 1) {
+                const t = b.y > a.y ? Math.max(0, Math.min(1, (yT - a.y) / (b.y - a.y))) : 0;
+                r = a.r + (b.r - a.r) * t;
+                break;
+            }
+        }
+        return r > 0 ? (2 * r) / ht : null;
+    }
+    // DER EINE TERM: e = { t, U, g (Böe), f0, H (m), zeta, rho, phi (Orts-Phase), psi (Ast-Phase) }, blatt (bool, JS).
+    // Rückgabe in Metern: quer (längs der Wind-Richtung), hoch (senkrecht), flattern (längs der Normale; 0 ohne Laub).
+    function windAusschlag(A, e, blatt) {
+        const W = WIND_GESETZ;
+        const TAU = 6.283185307179586;
+        const antwort = (f, fRef) =>
+            A.min(
+                A.k(1),
+                A.mul(A.k(Math.pow(fRef, W.spektrum.exp)), A.pow(A.max(f, A.k(0.001)), A.k(-W.spektrum.exp)))
+            );
+        const last = A.mul(A.pow(A.max(e.U, A.k(0)), A.k(W.vogel)), e.g);
+        const aStamm = antwort(e.f0, W.spektrum.fRef); // Ast: faktor · f0 gegen faktor · fRef — dieselbe Antwort
+        const fAst = A.mul(e.f0, A.k(W.ast.faktor));
+        const pendel = A.sin(A.add(A.mul(A.mul(A.k(TAU), e.f0), e.t), e.phi));
+        const stamm = A.mul(
+            A.mul(A.mul(e.H, A.mul(e.zeta, e.zeta)), A.mul(A.k(W.stamm.neig), last)),
+            A.add(A.k(1), A.mul(A.mul(A.k(W.stamm.pendel), aStamm), pendel))
+        );
+        const sAst = A.sin(A.add(A.mul(A.mul(A.k(TAU), fAst), e.t), A.add(e.phi, e.psi)));
+        const hebel = A.mul(A.mul(A.mul(e.H, e.rho), A.mul(last, sAst)), aStamm);
+        const out = {
+            quer: A.add(stamm, A.mul(A.mul(hebel, e.zeta), A.k(W.ast.hub))),
+            hoch: A.mul(hebel, A.k(W.ast.heben)),
+            flattern: A.k(0),
+        };
+        if (blatt) {
+            const fBl = A.max(A.k(W.blatt.f), A.mul(fAst, A.k(W.blatt.ueberAst)));
+            const sBl = A.sin(A.add(A.mul(A.mul(A.k(TAU), fBl), e.t), A.mul(e.psi, A.k(2.7))));
+            out.flattern = A.mul(
+                A.mul(A.mul(A.k(W.blatt.hub), A.sqrt(A.max(e.U, A.k(0)))), sBl),
+                antwort(fBl, W.blatt.f)
+            );
+        }
+        return out;
+    }
+    // Die Zahlen-Algebra des Terms (Linse, CPU).
+    var WIND_ZAHLEN = Object.freeze({
+        k: (n) => n,
+        add: (a, b) => a + b,
+        mul: (a, b) => a * b,
+        min: (a, b) => Math.min(a, b),
+        max: (a, b) => Math.max(a, b),
+        pow: (a, b) => Math.pow(a, b),
+        sin: (a) => Math.sin(a),
+        sqrt: (a) => Math.sqrt(a),
+    });
+    // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
+    var WIND_GLSL = Object.freeze({
+        k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
+        add: (a, b) => "(" + a + "+" + b + ")",
+        mul: (a, b) => "(" + a + "*" + b + ")",
+        min: (a, b) => "min(" + a + "," + b + ")",
+        max: (a, b) => "max(" + a + "," + b + ")",
+        pow: (a, b) => "pow(" + a + "," + b + ")",
+        sin: (a) => "sin(" + a + ")",
+        sqrt: (a) => "sqrt(" + a + ")",
+    });
+
+    // DAS LAUB-LICHT (K19): das Blatt lässt durch, was es weder spiegelt noch schluckt — Laubholz Durchlass ≈ Reflexion,
+    // Nadel Durchlass < Reflexion (PROSPECT-D: R(550 nm) ≈ 0,13, T beim dünnen Laubblatt ebenso). Die Rückseite eines
+    // besonnten Blatts strahlt die Albedo × tau (= T/R) × max(−N·L, 0) — dieselbe Lambert-Normierung wie die Vorderseite —,
+    // ein Anteil `g` des Durchlasses streut als Vorwärts-Keule um die Licht-Richtung: (n+1)/2 · max(V·(−L), 0)^n, über die
+    // Halbkugel energietreu wie der Lambert-Teil (Integral 1). Licht-Farbe und Schatten bringt der Leser aus seiner
+    // Licht-Kette (r184 `lightColor` trägt den Schatten der Kaskade, r128 `directLight.color` den der Schatten-Karte). Die
+    // Nadel erkennt der Leser an ihrer Atlas-Zelle (BLATT_ATLAS_WEDEL: u ≥ nadelAbU). Gegenlicht-Laub leuchtet. tau ist Gesetz
+    // (PROSPECT-D); die Keule (g, n) ist ein Modell-Regler, geeicht am Soll der Karte K19: Gegenlicht/Auflicht ≥ 1,3.
+    var LAUB_LICHT = Object.freeze({
+        tauLaub: 1.0,
+        tauNadel: 0.5,
+        // Linse (werkbank licht --laub, aus 8 m, die Sonne hinter der Kronen-Mitte, je Art das Exemplar am Messort Wiese):
+        // Eiche 1,47 · Birke 1,38 (Nadel: Fichte 1,11)
+        keule: Object.freeze({ g: 0.7, n: 8 }),
+        nadelAbU: BLATT_ATLAS_WEDEL.zelle * 0.25,
+    });
+    // DER EINE TERM über einer Algebra (wie `windAusschlag`): nl = N·L (vorzeichenbehaftet, N die gesehene Seite), vl =
+    // V·(−L), nadel 0…1. Rückgabe: der Faktor auf (Licht-Farbe × diffuse Lambert-Antwort des Stoffs).
+    function laubDurchlass(A, nl, vl, nadel) {
+        const L = LAUB_LICHT;
+        const tau = A.add(A.k(L.tauLaub), A.mul(A.k(L.tauNadel - L.tauLaub), nadel));
+        const hinten = A.max(A.mul(nl, A.k(-1)), A.k(0));
+        const keule = A.add(
+            A.k(1 - L.keule.g),
+            A.mul(A.k((L.keule.g * (L.keule.n + 1)) / 2), A.pow(A.max(vl, A.k(0.0001)), A.k(L.keule.n)))
+        );
+        return A.mul(A.mul(tau, hinten), keule);
+    }
+
     root.__phytoCore = {
         vn2: vn2,
         fbm2: fbm2,
@@ -4182,5 +4336,14 @@
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
         budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
+        WIND_GESETZ: WIND_GESETZ, // K19 — das Wind-Gesetz des Baums (f0 = kF·D/H², Stamm < Ast < Blatt, Last ∝ U^vogel)
+        stammDurchmesser: stammDurchmesser, // K19 — der Fuß-Durchmesser der gelieferten Gestalt (Ring des Stamm-Strangs)
+        windSchlankheit: windSchlankheit, // K19 — δ = D(Brusthöhe) / H der gelieferten Gestalt
+        windSchlankheitAchse: windSchlankheitAchse, // K19 — dasselbe δ an der Stamm-Achse eines Skeletts (Werkstatt-Baum)
+        windAusschlag: windAusschlag, // K19 — DER EINE Wind-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
+        WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
+        WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
+        LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
+        laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

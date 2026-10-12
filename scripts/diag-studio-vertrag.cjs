@@ -583,8 +583,24 @@ function validateManifest(m) {
         const spg = fxB.sprung;
         if (!spg || !Number.isFinite(spg.coyoteSec) || !Number.isFinite(spg.bufferSec))
             v.push("§8.2+ fx.bewegung.sprung unvollständig (coyoteSec/bufferSec)");
-        if (!fxB.schritt || !Number.isFinite(fxB.schritt.kalib))
-            v.push("§8.2+ fx.bewegung.schritt.kalib fehlt (Gang-Kalibrierung)");
+        if (!fxB.schritt || !Number.isFinite(fxB.schritt.taktCompound) || !Number.isFinite(fxB.schritt.klangTempoMin))
+            v.push("§8.2+ fx.bewegung.schritt unvollständig (taktCompound/klangTempoMin)");
+        // K07: die Zweibeiner-Zeile des EINEN Gang-Gesetzes (tetrapoda gangSchritt/gangFuss)
+        const gz = fxB.gang;
+        const GANG_FELDER = [
+            "schrittBasis",
+            "schrittFroude",
+            "tastgrad",
+            "tastgradLauf",
+            "laufFroude",
+            "maxWinkel",
+            "hub",
+            "hubLauf",
+            "hubForm",
+            "beckenHub",
+        ];
+        if (!gz || !GANG_FELDER.every((k) => Number.isFinite(gz[k])))
+            v.push(`§8.2+ fx.bewegung.gang unvollständig (${GANG_FELDER.join("/")})`);
         if (!Number.isFinite(fxB.aktionAusdauer)) v.push("§8.2+ fx.bewegung.aktionAusdauer fehlt (Maus-Arm-Aktion)");
     }
     if (m.arena) {
@@ -913,7 +929,7 @@ function validateManifest(m) {
         // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
         // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
         // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
-        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m\) \{[\s\S]*?\n {4}\}/);
+        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m, baum\) \{[\s\S]*?\n {4}\}/);
         if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm[0]))
             f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
         if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))

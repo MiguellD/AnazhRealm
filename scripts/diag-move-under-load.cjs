@@ -10,7 +10,7 @@
 //
 // DIE 3-FPS-SIMULATION: `_gameLoopTick(t)` wird mit künstlichen 330-ms-Zeit-
 // sprüngen getrieben (t += 330 je Tick = die 3-FPS-Realität des Schöpfers).
-// Der Fixed-Akkumulator klemmt korrekt auf FIXED_MAX_ACCUM (0,1 s/Frame) →
+// Der Takt ist an der Wurzel auf TAKT_DECKEL_S gedeckelt (0,1 s/Frame) →
 // die Sim läuft ~0,3× Echtzeit; 60 schwere Ticks = 6 s Sim-Zeit → bei Walk-
 // Speed mehrere Meter. Assertiert wird konservativ > 1 m.
 //
@@ -33,8 +33,12 @@
 //      getTerrainHeightAt) und fällt NIE ins Void (y bleibt weit über dem
 //      −120-Rescue). Erdung binnen 1 s ⇔ die Füße kleben am Feld ab Tick 1.
 //
+//  (d) DIE PAUSE (K21) — der Loop ruht 10 s, die Uhr läuft: im ersten Takt danach
+//      trägt kein Tier weiter als sein Sprint (Steuer-Gesetz) × TAKT_DECKEL_S
+//      (vorher Tempo × Pause: 40 m hier, 73 m bis 5 km im K07-Prüfer).
+//
 // --selftest: eine künstlich GEPINNTE Position (jeder Tick zurückgesetzt)
-// MUSS Garantie (a) rot machen — beweist, dass die Linse feuert (nicht blind).
+// MUSS Garantie (a) rot machen, der aufgehobene Takt-Deckel Garantie (d) — beweist, dass die Linse feuert.
 //   node scripts/diag-move-under-load.cjs [--selftest]   (npm run gate:move-under-load)
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
@@ -223,6 +227,63 @@ const server = http.createServer((req, res) => {
             // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
             s.voxelWorker = savedWorker;
 
+            // ── (d) DIE PAUSE (K21, Lehre 13): der Loop ruht 10 s (versteckter Tab, Debugger, Lade-Stau), die Uhr läuft.
+            // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
+            // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
+            // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.
+            const K = r.constructor;
+            const pauseLauf = (deckelAus) => {
+                resetSim(nearSpot);
+                s.keys = {};
+                const deckel = K.TAKT_DECKEL_S == null || !Number.isFinite(K.TAKT_DECKEL_S) ? 0.1 : K.TAKT_DECKEL_S;
+                const W = [];
+                for (let i = 0; i < 24 && W.length < 4; i++) {
+                    const a = (i * 2.399963) % (2 * Math.PI);
+                    const x = nearSpot.x + Math.sin(a) * 22;
+                    const z = nearSpot.z + Math.cos(a) * 22;
+                    if (!r._landAt(x, z)) continue;
+                    const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.3, z, "happy", "wolf", {
+                        precise: true,
+                        bodySize: 1,
+                    });
+                    if (!c) continue;
+                    c.userData.task = { name: "follow_player", args: { distance: 3 }, since: performance.now() / 1000 };
+                    W.push(c);
+                }
+                const ruhig = () => {
+                    for (const c of W) {
+                        c.userData._verhaltenAktion = null;
+                        c.userData._hopV = 0;
+                        c.userData._hopH = 0;
+                    }
+                };
+                let t = performance.now();
+                for (let k = 0; k < 40; k++) {
+                    ruhig();
+                    t += 1000 / 60;
+                    try {
+                        r._gameLoopTick(t);
+                    } catch (_e) {}
+                }
+                const vor = W.map((c) => [c.position.x, c.position.z]);
+                const vVor = W.map((c) => (c.userData._steuer ? c.userData._steuer.v : 0));
+                const grenze = W.map((c) => K._steuerGesetz().sprintTempo(r._kreaturHueftL(c)) * deckel);
+                const alt = K.TAKT_DECKEL_S;
+                if (deckelAus) K.TAKT_DECKEL_S = Infinity;
+                ruhig();
+                t += 10000; // DIE PAUSE: 10 s Wanduhr ohne Takt
+                try {
+                    r._gameLoopTick(t);
+                } catch (_e) {}
+                if (deckelAus) K.TAKT_DECKEL_S = alt;
+                const weg = W.map((c, i) => Math.hypot(c.position.x - vor[i][0], c.position.z - vor[i][1]));
+                for (const c of W) r.removeCreature(c);
+                const ueber = weg.filter((w, i) => !(w <= grenze[i] + 0.05)).length;
+                return { n: W.length, deckel, weg, grenze, vVor, ueber, max: Math.max(0, ...weg) };
+            };
+            o.d = pauseLauf(false);
+            if (selftest) o.dAus = pauseLauf(true);
+
             o.walkSpeed = s.speed || null;
             return o;
         }, SELFTEST);
@@ -267,12 +328,26 @@ const server = http.createServer((req, res) => {
             b.clipTicks === 0 && b.minY > -60,
             `(c) BODEN-GARANTIE (der V18.331-Nachfolger des BVH-Ankers): nie im Soliden (${b.clipTicks} Clip-Ticks), nie Void (minY ${b.minY.toFixed(1)})`
         );
+        const d = out.d;
+        const fmt = (a) => a.map((v) => v.toFixed(2)).join(" · ");
+        console.log(
+            `  (d) die Pause 10 s: ${d.n} Wölfe · Weg im ersten Takt ${fmt(d.weg)} m · Grenze (Sprint × Deckel ${d.deckel} s) ${fmt(d.grenze)} m · v vorher ${fmt(d.vVor)} m/s`
+        );
+        check(
+            d.n >= 3 && d.ueber === 0,
+            `(d) DIE PAUSE: kein Tier springt im ersten Takt weiter als Sprint × Takt-Deckel (max ${d.max.toFixed(2)} m, ${d.ueber}/${d.n} drüber — Täter: startEternalLoop, ungedeckeltes delta → updateCreatures)`
+        );
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
         if (SELFTEST) {
             const p = out.pinned;
             check(
                 !!p && p.movedXZ <= 1.0,
                 `SELBST-TEST: die gepinnte Position liest als KEINE Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m ≤ 1 m) — die Linse feuert`
+            );
+            const da = out.dAus;
+            check(
+                !!da && da.n >= 3 && da.ueber > 0,
+                `SELBST-TEST: ohne Takt-Deckel springen die Wölfe (max ${da ? da.max.toFixed(1) : "?"} m, ${da ? da.ueber : "?"}/${da ? da.n : "?"} drüber) — die Pausen-Linse feuert`
             );
         }
     }

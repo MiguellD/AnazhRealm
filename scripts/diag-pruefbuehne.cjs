@@ -24,6 +24,9 @@
 //       mittags aus; die Fenster-Glut nachts an, mittags aus; JEDER beleuchtete Stoff trägt den Pool (Bauer im Stamm und
 //       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
+//   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
+//       der Farbton des Bodens 1–3 m um das Feuer (25–45°, die Farbtemperatur des Gesetzes); `--bild` legt die Bilder aus
+//       2 m, aus 6 m und der Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12).
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -223,7 +226,7 @@ async function s4Probe(page, station, schein) {
 // Feuerstelle (der Satz `spawn_studio feuerstelle`), die Nacht steht still (Mitternacht, Sonne, das Wetter gehalten — Lehre 17),
 // das Auge 2 m vor dem Feuer. Gezählt wird jedes Licht ≤ 10 m um das Feuer, das ein Stoff liest — ein Punktlicht der Szene mit
 // Stärke oder ein Platz des Licht-Pools mit Stärke (`_leuchtPool`) —, einmal mit „Klang: AUS" (der Standard), einmal mit Klang;
-// dazu die Bestrahlung des Pools in 2 m (das EINE Gesetz (1 − d/R)^abfall, lineare Farbe nach Luminanz) gegen die der Nacht
+// dazu die Bestrahlung des Pools in 2 m (das EINE Gesetz fachwerk `lichtAbfall`, lineare Farbe nach Luminanz) gegen die der Nacht
 // selbst (`_waagrechtIrradianz`, dieselbe, die die Belichtung liest) und die Fenster-Glut des Zeitplans um Mitternacht und
 // Mittag (`atmoUniforms.fensterGlut`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
 // im Stamm (jede Methode, die einen beleuchteten Stoff baut, ruft `_leuchtStoff`) UND jedes beleuchteten Stoffs der Szene
@@ -350,8 +353,8 @@ async function s0Probe(page, station, schein) {
                     const eigen = Math.hypot(p.x - um.x, p.z - um.z) <= 1.5;
                     lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3), eigen });
                     if (!eigen) continue;
-                    // der Pool in 2 m: das EINE Gesetz (1 − d/R)^abfall, die Farbe nach Luminanz
-                    const ab = Math.pow(Math.max(0, 1 - 2 / p.reichweite), p.abfall);
+                    // der Pool in 2 m: das EINE Gesetz (fachwerk `lichtAbfall`: 1/d^abfall mit Kern und Saum), die Farbe nach Luminanz
+                    const ab = window.__fachwerkCore.lichtAbfall({ reichweiteM: p.reichweite, abfall: p.abfall, kernM: p.kern }, 2);
                     const lum = 0.2126 * p.farbe[0] + 0.7152 * p.farbe[1] + 0.0722 * p.farbe[2];
                     e2 += p.staerke * ab * lum;
                 }
@@ -722,6 +725,14 @@ const S0_NAH_INSTALL = () => {
 };
 const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
+// DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
+// ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 25–45°. Die Sättigung (HSV, Soll
+// der Karte ≤ 0,75) steht im Bericht und ist OFFEN, keine Wand: der Fuß der ACES-Kurve hält bei der Nacht-Belichtung 1,0
+// den Blau-Kanal eines feuerbeschienenen Bodens auf 0 (Soll erst ab dem ≈ 2,6-Fachen der Feuer-Stärke, dann brennt der
+// Steinring weiß aus — K11b, echte GPU). Der Selbsttest (`farbe`) gibt dem Platz des Feuers das Datum bis K11b: die
+// Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen.
+const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
+const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
     const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -912,9 +923,9 @@ async function lichtLauf() {
             }
             zeit(gestalt ? "die Gestalt steht" : "der Satz steht");
         }
-        for (const schein of SELBSTTEST && !ergebnis.sauber ? [false, true] : ergebnis.sauber ? [] : [false]) {
-            ergebnis[schein ? "schein" : "sauber"] = await phase(schein ? "Schein" : "Schuss", () =>
-                page.evaluate(async (schein, nahM) => {
+        for (const schein of SELBSTTEST && !ergebnis.sauber ? [false, "pool", "farbe"] : ergebnis.sauber ? [] : [false]) {
+            ergebnis[schein ? (schein === "pool" ? "schein" : "farbe") : "sauber"] = await phase(schein ? "Schein " + schein : "Schuss", () =>
+                page.evaluate(async (schein, nahM, palette) => {
                     const r = window.anazhRealm;
                     const s = r.state;
                     const T = window.THREE;
@@ -932,11 +943,27 @@ async function lichtLauf() {
                     const w = 640;
                     const h = 360;
                     const alt = r._leuchtTakt;
-                    if (schein)
+                    if (schein === "pool")
                         r._leuchtTakt = function () {
                             alt.call(this);
                             for (const u of this.state.atmoUniforms.lichtLage) u.value.w = 0;
                         };
+                    // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
+                    // der Nacht-Stärke von damals (nacht 12 statt des Datums) — die Farbe des Stoffs statt der Farbtemperatur
+                    if (schein === "farbe") {
+                        const nacht = window.__fachwerkCore.LICHT_GESETZ.feuer.zeit.nacht;
+                        const pal = new T.Color().set(palette.hex).multiplyScalar(palette.nacht / nacht);
+                        r._leuchtTakt = function () {
+                            alt.call(this);
+                            const A = this.state.atmoUniforms;
+                            for (let k = 0; k < A.lichtLage.length; k++) {
+                                const p = A.lichtLage[k].value;
+                                const c = A.lichtFarbe[k].value;
+                                if (p.w > 0 && Math.hypot(p.x - f.x, p.z - f.z) <= 1.5)
+                                    c.set(pal.r * c.x, pal.g * c.x, pal.b * c.x, c.w);
+                            }
+                        };
+                    }
                     const FC = window.__fachwerkCore;
                     const flAlt = FC.lichtFlackern;
                     FC.lichtFlackern = () => 0; // die Flamme steht still (der Schuss misst das Gesetz, nicht den Atem)
@@ -982,6 +1009,41 @@ async function lichtLauf() {
                                     nk++;
                                 }
                         }
+                    // DER FARBTON DES FEUERS (K11b): der Boden 1–3 m um die Feuerstelle (5 Ringe × 24 Winkel, 3×3 Pixel), die
+                    // mittlere Farbe der Ausgabe — Farbton (Grad) und Sättigung (HSV: (max − min) / max)
+                    const rgb = [0, 0, 0];
+                    let nt = 0;
+                    for (const rr of [1, 1.5, 2, 2.5, 3])
+                        for (let a = 0; a < 24; a++) {
+                            const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
+                            const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
+                            v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
+                            if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
+                            const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
+                            const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
+                            for (let dy = -1; dy <= 1; dy++)
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    const i = ((sy + dy) * w + sx + dx) * 4;
+                                    for (let c = 0; c < 3; c++) rgb[c] += u8[i + c] / 255;
+                                    nt++;
+                                }
+                        }
+                    let ton = null;
+                    if (nt) {
+                        const [R, G, B] = rgb.map((c) => c / nt);
+                        const mx = Math.max(R, G, B);
+                        const mn = Math.min(R, G, B);
+                        const dl = mx - mn;
+                        let hue = 0;
+                        if (dl > 0)
+                            hue = mx === R ? 60 * (((G - B) / dl + 6) % 6) : mx === G ? 60 * ((B - R) / dl + 2) : 60 * ((R - G) / dl + 4);
+                        ton = {
+                            hue: +hue.toFixed(1),
+                            sat: +(mx > 0 ? dl / mx : 0).toFixed(3),
+                            rgb: [R, G, B].map((c) => Math.round(c * 255)),
+                            punkte: nt / 9,
+                        };
+                    }
                     const pool = (r._leuchtPool && r._leuchtPool.plaetze) || [];
                     // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
                     const PL = rend._pipelines;
@@ -996,9 +1058,13 @@ async function lichtLauf() {
                     const img = ctx.createImageData(w, h);
                     img.data.set(u8.subarray(0, w * h * 4));
                     ctx.putImageData(img, 0, 0);
+                    const eigen = pool.find((p) => Math.hypot(p.x - f.x, p.z - f.z) <= 1.5);
                     return {
                         kreis: nk ? +(lk / nk).toFixed(4) : null,
                         punkte: nk / 9,
+                        ton,
+                        lichtFarbe: eigen ? eigen.farbe.map((c) => +(c / Math.max(...eigen.farbe)).toFixed(3)) : null,
+                        kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
                         belichtung: +rend.toneMappingExposure.toFixed(3),
                         pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
                         feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
@@ -1007,9 +1073,9 @@ async function lichtLauf() {
                         zaehl,
                         png: cv.toDataURL("image/png"),
                     };
-                }, schein, ECHT ? 0 : S0_NAH_M)
+                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
             );
-            zeit(schein ? "der Schein aufgenommen" : "das Feuer aufgenommen");
+            zeit(schein ? `der Schein (${schein}) aufgenommen` : "das Feuer aufgenommen");
         }
     } catch (e) {
         if (e && e.message === "FRIST")
@@ -1019,9 +1085,9 @@ async function lichtLauf() {
         throw e;
     }
     // das Beweisbild der Figur (nur mit `--bild`, kein Urteil): ein Wolf 2,3 m neben dem Feuer, der Spieler gegenüber, das Auge
-    // 5 m zurück — die Figur im Licht des Pools
+    // 5 m zurück — die Figur im Licht des Pools; dazu das Feuer aus 6 m (K11b: der Lichtkreis und sein Saum)
     if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
-        const png = await page.evaluate(async (nahM) => {
+        const pngs = await page.evaluate(async (nahM) => {
             const r = window.anazhRealm;
             const s = r.state;
             const f = window.__s0Feuer.position;
@@ -1054,13 +1120,31 @@ async function lichtLauf() {
             cv.width = 960;
             cv.height = 540;
             const ctx = cv.getContext("2d");
-            const img = ctx.createImageData(960, 540);
-            img.data.set(auf.u8.subarray(0, 960 * 540 * 4));
-            ctx.putImageData(img, 0, 0);
+            const bild = (a) => {
+                const img = ctx.createImageData(960, 540);
+                img.data.set(a.u8.subarray(0, 960 * 540 * 4));
+                ctx.putImageData(img, 0, 0);
+                return cv.toDataURL("image/png");
+            };
+            const figur = bild(auf);
             if (wolf) r.removeCreature(wolf);
-            return cv.toDataURL("image/png");
+            cam.position.set(f.x - 6, g(f.x - 6, f.z) + 1.7, f.z);
+            cam.lookAt(f.x, g(f.x, f.z) + 0.3, f.z + 1e-4);
+            cam.updateMatrixWorld(true);
+            await new Promise((res) => setTimeout(res, 700));
+            const nahLos6 = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM + 6) : null;
+            try {
+                for (let i = 0; i < 2; i++) {
+                    r._schattenAlleNeu();
+                    auf = await window.__ausgabeAufnahme(960, 540, 1);
+                }
+            } finally {
+                if (nahLos6) nahLos6();
+            }
+            return { figur, sechs: bild(auf) };
         }, ECHT ? 0 : S0_NAH_M);
-        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-figur.png", Buffer.from(png.split(",")[1], "base64"));
+        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-figur.png", Buffer.from(pngs.figur.split(",")[1], "base64"));
+        fs.writeFileSync(BILD.replace(/\.png$/, "") + "-6m.png", Buffer.from(pngs.sechs.split(",")[1], "base64"));
     }
     await browser.close();
     server.close();
@@ -1071,16 +1155,29 @@ async function lichtLauf() {
             befunde.push(`S0 Bild (${k}): ${e.fehler}`);
             continue;
         }
-        if (BILD) fs.writeFileSync(BILD.replace(/\.png$/, "") + (k === "schein" ? "-schein" : "") + ".png", Buffer.from(e.png.split(",")[1], "base64"));
+        if (BILD) fs.writeFileSync(BILD.replace(/\.png$/, "") + (k === "sauber" ? "" : "-" + k) + ".png", Buffer.from(e.png.split(",")[1], "base64"));
         delete e.png;
+        const wer = { sauber: "      ", schein: "SCHEIN (der Pool leer)", farbe: "SCHEIN (das Feuer bis K11b)" }[k];
         console.log(
-            `  S0 BILD ${k === "schein" ? "SCHEIN (der Pool leer)" : "      "}: Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${wer}: Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     if (sauber && !sauber.fehler && !(sauber.kreis >= S0_LUMA_2M))
         befunde.push(
             `S0 Bild: der Feuerkreis aus 2 m trägt Luma ${sauber.kreis} (Soll ≥ ${S0_LUMA_2M}) — das Licht der Feuerstelle ` +
                 "(fachwerk LICHT_GESETZ.feuer über `_leuchtStaerke` in den Licht-Pool `_lichtPoolTerm`) trägt den Boden nicht"
+        );
+    if (sauber && !sauber.fehler && !s0TonPasst(sauber.ton))
+        befunde.push(
+            `S0 Bild: der Boden 1–3 m um das Feuer trägt Farbton ${sauber.ton && sauber.ton.hue}° bei Sättigung ${sauber.ton && sauber.ton.sat} ` +
+                `(Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°) — die Lichtfarbe des Feuers (linear ${JSON.stringify(sauber.lichtFarbe)}) ` +
+                (sauber.kelvin == null
+                    ? "ist die Glut-Palette des Datums (fachwerk LICHT_GESETZ.feuer `farbe`), keine Farbtemperatur (`kelvin` fehlt)"
+                    : `aus ${sauber.kelvin} K (fachwerk LICHT_GESETZ.feuer \`kelvin\` über \`lichtFarbe\`) mit ihrem Abfall (\`lichtAbfall\`)`)
+        );
+    if (sauber && !sauber.fehler && sauber.ton && !(sauber.ton.sat <= S0_TON.satMax))
+        console.log(
+            `    OFFEN S0 Bild: Sättigung ${sauber.ton.sat} (Soll der Karte ≤ ${S0_TON.satMax}) — der Fuß der ACES-Kurve bei der Nacht-Belichtung ${sauber.belichtung}`
         );
     let pass = befunde.length === 0 && !pageErr;
     for (const bf of befunde) console.log(`    ⛔ ${bf}`);
@@ -1090,7 +1187,12 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 BILD (der Pool leer): ${getroffen ? `getroffen — der Kreis fällt ${sauber.kreis} → ${sc.kreis} (unter ${S0_LUMA_2M}): der Licht-Pool trägt ihn` : "BLIND"}`
         );
-        pass = pass && getroffen;
+        const fb = ergebnis.farbe;
+        const farbGetroffen = !!fb && !fb.fehler && !s0TonPasst(fb.ton);
+        console.log(
+            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — der Boden 1–3 m fällt auf Farbton ${fb.ton && fb.ton.hue}° bei Sättigung ${fb.ton && fb.ton.sat}: die Farbtemperatur trägt ihn` : "BLIND"}`
+        );
+        pass = pass && getroffen && farbGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : "swiftshader"} · Holz ${HOLZ})\n`

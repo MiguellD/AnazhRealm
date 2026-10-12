@@ -87,9 +87,15 @@ check(
     "package.json trägt gate:dritter-spiegel",
     ((pkg.scripts || {})["gate:dritter-spiegel"] || "").includes("diag-dritter-spiegel")
 );
+// `npm run check` ruft Teil-Skripte (V18.543: check:statik + gate:haus-fern) — gelesen wird der aufgelöste Text
+const skripte = pkg.scripts || {};
+const aufgeloest = (text, tiefe) =>
+    String(text || "").replace(/npm run ([\w:.-]+)/g, (m, n) =>
+        tiefe < 8 && typeof skripte[n] === "string" ? aufgeloest(skripte[n], tiefe + 1) : m
+    );
 check(
     "npm run check prüft feld-wgsl.js (node --check)",
-    ((pkg.scripts || {}).check || "").includes("node --check feld-wgsl.js")
+    aufgeloest(skripte.check, 0).includes("node --check feld-wgsl.js")
 );
 const markerAnzahl = wgsl.split(MARKER).length - 1;
 check(`Selbsttest-Marker "${MARKER}" genau 1× im WGSL`, markerAnzahl === 1, `gefunden ${markerAnzahl}×`);
