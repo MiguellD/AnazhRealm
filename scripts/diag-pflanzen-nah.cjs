@@ -553,6 +553,31 @@ function windLeserUrteil(quellen) {
         v.push("anazhRealm.js: der Schatten-Zwilling des Werkstatt-Baums steht im Wind still (_treeShadowTwinMaterial)");
     return v;
 }
+// (LL) DAS LAUB-LICHT (K19) hat seine Leser: das Lichtmodell der Welt rechnet phyto-core `laubDurchlass`, jeder Laub-Stoff
+// trägt es (Foundry-Laub und Blatt-Karte, das Grammatik-Laub, die ferne Karte mit der Nadel ihrer Schicht), das Labor
+// lichtet mit demselben Term; die Fresnel-Aufhellung lebt nur noch im Gras des Labors.
+function laubLichtLeserUrteil(quellen) {
+    const v = [];
+    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const welt = code(quellen["anazhRealm.js"]);
+    const rumpfVon = (name) => {
+        const k = welt.indexOf("\n    " + name + "(");
+        return k < 0 ? "" : welt.slice(k, welt.indexOf("\n    }\n", k));
+    };
+    if (!/__phytoCore\.laubDurchlass\b/.test(rumpfVon("static _laubLichtModell")))
+        v.push("anazhRealm.js: das Lichtmodell des Laubs rechnet laubDurchlass nicht (_laubLichtModell)");
+    if (!/this\._laubLichtStoff\(mat, kind === "foliageTex"\)/.test(rumpfVon("_foundryTreeMaterial")))
+        v.push("anazhRealm.js: das Foundry-Laub trägt das Laub-Licht nicht (_foundryTreeMaterial)");
+    if (!/this\._laubLichtStoff\(/.test(rumpfVon("_applyVegetationResponse")))
+        v.push("anazhRealm.js: das Grammatik-Laub trägt das Laub-Licht nicht (_applyVegetationResponse)");
+    if (!/this\._laubLichtStoff\(mat, \(\) => this\._karteNadel\(/.test(welt))
+        v.push("anazhRealm.js: die ferne Karte trägt das Laub-Licht nicht (_karteNadel)");
+    const labor = code(quellen["foundry-core.js"]);
+    if (!/__phytoCore\.laubDurchlass\(/.test(labor)) v.push("foundry-core.js: das Labor-Laub lichtet ohne laubDurchlass");
+    if ((labor.match(/pow\(1\.0-_ndv,2\.5\)\*0\.55/g) || []).length > 1 || !/if \(isGrass\)\s*sh\.fragmentShader/.test(labor))
+        v.push("foundry-core.js: die Fresnel-Aufhellung lebt außerhalb des Grases");
+    return v;
+}
 
 (async () => {
     const fails = [];
@@ -640,7 +665,8 @@ function windLeserUrteil(quellen) {
     const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");
     fails.push(
         ...unterseiteUrteil(quellen),
-        ...windLeserUrteil(Object.assign({ "worlds/terrain/phytogenesis.js": laborBestand }, quellen))
+        ...windLeserUrteil(Object.assign({ "worlds/terrain/phytogenesis.js": laborBestand }, quellen)),
+        ...laubLichtLeserUrteil(quellen)
     );
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
     // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
@@ -765,6 +791,13 @@ function windLeserUrteil(quellen) {
     st.push([
         "Wurf-Teil ohne Wind",
         windMit(/(\n    _foundryTreeMaterial\([\s\S]*?)\|\| kind === "schatten"/, "$1"),
+    ]);
+    st.push([
+        "Laub-Licht-Leser entfernt",
+        laubLichtLeserUrteil({
+            "anazhRealm.js": quellen["anazhRealm.js"].replace("this._laubLichtStoff(mat, kind === \"foliageTex\")", "this.X(mat)"),
+            "foundry-core.js": quellen["foundry-core.js"],
+        }).length >= 1,
     ]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
