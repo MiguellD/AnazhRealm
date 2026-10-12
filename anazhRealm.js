@@ -31817,8 +31817,8 @@ class AnazhRealm {
             // _dayNightApplyHemiUndLuft).
             terrainMoonRim: TSL.uniform(0.0),
             // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz der Welt-Ort (xyz) mit der Reichweite (w, 0 = leer), die
-            // lineare Farbe × Stärke (rgb) mit dem Abfall (a) und der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
-            // Himmel fehlt — das Licht des Auges) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
+            // lineare Farbe × Stärke (rgb) mit dem Abfall (a), der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
+            // Himmel fehlt — das Licht des Auges) und der Kern der Quelle (k², K11b `lichtAbfall`) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
             // Quellen baut kein Programm. Der Welt-Ort gilt jedem Renderer der Seite (der Stoff rechnet ihn mit der Kamera
             // SEINES Renderers in den Blick-Raum). Dazu die Glut der wachen Fenster (lineare Farbe × Glut des Zeitplans).
             // EIN Schreiber: `_leuchtTakt`.
@@ -31829,6 +31829,7 @@ class AnazhRealm {
                 TSL.uniform(new THREE.Vector4(0, 0, 0, 2))
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
@@ -32547,10 +32548,13 @@ class AnazhRealm {
     }
 
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
-    // Platz ein Zweig mit der Rechnung des Labors — der Abfall des r128-Punktlichts (1 − d/R)^abfall, die Stärke schon durch
-    // LEGACY_LICHT (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Abfall des Labors ist nah an der Quelle
-    // beschränkt (eine Flamme ist keine Punkt-Singularität: r184s 1/d² legte die Steine am Bett auf das Zehnfache ihrer Glut, und
-    // das Licht des Auges lag mit 1/d an der Wand weiß) und fällt an der Reichweite stetig auf 0. Der Welt-Ort des Platzes geht
+    // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
+    // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
+    // (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
+    // der Quelle (eine Flamme ist keine Punkt-Singularität: r184s nacktes 1/d² legte die Steine am Bett auf das Zehnfache ihrer
+    // Glut, und das Licht des Auges lag mit 1/d an der Wand weiß), weit draußen fällt das Feuer mit 1/d² (bis K11b mit dem
+    // Legacy-Abfall des r128-Labors (1 − d/R)^abfall: in 4 m noch 31 % — der Boden glühte über mehrere Meter), und an der
+    // Reichweite stetig auf 0. Der Welt-Ort des Platzes geht
     // mit `cameraViewMatrix` (der Kamera DES zeichnenden Renderers) in den Blick-Raum. Die BEDINGUNG liest `positionView` und
     // `normalView` (EINE Variable je Programm: r184 baut das Leuchten VOR der Lichtung — zuerst im Zweig gelesen, stünde ihre
     // Zuweisung nur dort, die Falle des Lichts des Auges): eine Reichweite, ein Gewicht (der Himmels-Ersatz), die Fläche in ihr
@@ -32568,6 +32572,7 @@ class AnazhRealm {
             const lage = atmo.lichtLage[k];
             const farbe = atmo.lichtFarbe[k];
             const ersatz = atmo.lichtErsatz[k];
+            const kern = atmo.lichtKern[k];
             const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
             const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
             const d = Lv.length();
@@ -32578,7 +32583,8 @@ class AnazhRealm {
                 .and(N.dot(Lv).greaterThan(0));
             const L = Lv.div(d);
             const nl = N.dot(L).clamp();
-            const abst = d.div(lage.w).oneMinus().clamp().pow(farbe.a);
+            const q = d.div(lage.w).pow2();
+            const abst = q.pow2().oneMinus().clamp().pow2().mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
             const beitrag = farbe.rgb
                 .mul(nl.mul(abst).mul(gewicht))
                 .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
@@ -54118,7 +54124,8 @@ class AnazhRealm {
     }
 
     // DAS LICHT DES TORS (K11): das Lab-portalLight ist ein Bürger des Licht-Pools — das wache Tor (das nächste aktive) trägt
-    // sein Emitter-Datum aus porta GLUT_GESETZ (Farbe, Reichweite, Abfall, Höhe am Spring-Punkt) und die Stärke des Labors
+    // sein Emitter-Datum aus porta GLUT_GESETZ (Farbe, Reichweite, Abfall, Höhe am Spring-Punkt; der Kern des Abfalls ist
+    // der halbe Bogen der Membran, K11b) und die Stärke des Labors
     // `glutIntensity(act, puls)`; der Licht-Takt liest es (`_leuchtQuellen`). Kein Szenen-Licht (bis K11 ein PointLight, das
     // beim ersten Tor in die Szene trat und dort auf 0 blieb). Ohne waches Tor kein Licht.
     _tickPortalLicht(rec) {
@@ -54135,10 +54142,11 @@ class AnazhRealm {
             this._portalLeuchte ||
             (this._portalLeuchte = {
                 quelle: "tor",
-                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay },
+                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay, kernM: 0 },
                 masse: 1,
                 phase: 0,
             });
+        q.L.kernM = 0.5 * mu.spanW * sc; // der Kern des Abfalls (fachwerk `lichtAbfall`): die Membran leuchtet als Fläche, ihr halber Bogen
         q.x = e.position.x;
         q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
         q.z = e.position.z;
@@ -92974,7 +92982,7 @@ class AnazhRealm {
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
     // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
     // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
-    // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes (1 − d/R)^abfall).
+    // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes, fachwerk `lichtAbfall`).
     // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
     // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
     // die EINE Übersetzung Labor → Welt sie trägt wie jede Quelle. Unter dem Himmel ist es aus (`_augenLeuchte` null).
@@ -92986,7 +92994,7 @@ class AnazhRealm {
         const B = AnazhRealm.BELICHTUNG;
         const A = AnazhRealm.AUGEN_LICHT;
         const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
-        const abstKarte = Math.pow(1 - A.karteM / A.reichweiteM, A.abfall);
+        const abstKarte = globalThis.__fachwerkCore.lichtAbfall(A, A.karteM);
         const I = ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) / (k * abstKarte);
         if (!(I > 1e-4)) {
             this._augenLeuchte = null;
@@ -92996,7 +93004,7 @@ class AnazhRealm {
             this._augenLeuchte ||
             (this._augenLeuchte = {
                 quelle: "auge",
-                L: { farbe: A.farbe, staerke: 0, reichweiteM: A.reichweiteM, abfall: A.abfall, ersatz: true },
+                L: { kelvin: A.kelvin, staerke: 0, reichweiteM: A.reichweiteM, abfall: A.abfall, kernM: A.kernM, ersatz: true },
                 masse: 1,
                 phase: 0,
             });
@@ -93011,7 +93019,7 @@ class AnazhRealm {
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
     // Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
-    // Stärke, Reichweite, Abfall, lineare Farbe, Himmels-Ersatz, Blende).
+    // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
     _leuchtTakt() {
         const st = this.state;
         const atmo = st.atmoUniforms;
@@ -93019,7 +93027,7 @@ class AnazhRealm {
         if (!atmo || !cam) return; // vor der Welt: kein Stoff liest den Pool
         const LP = AnazhRealm.LICHT_POOL;
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
-        atmo.fensterGlut.value.set(LG.fenster.farbe).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
+        this._lichtLinear(LG.fenster, atmo.fensterGlut.value).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
         const pool =
             this._leuchtPool ||
             (this._leuchtPool = {
@@ -93077,6 +93085,7 @@ class AnazhRealm {
                 lage.set(0, 0, 0, 0);
                 farbe.set(0, 0, 0, 0);
                 atmo.lichtErsatz[k].value = 0;
+                atmo.lichtKern[k].value = 0;
                 continue;
             }
             const L = q.L;
@@ -93087,9 +93096,13 @@ class AnazhRealm {
                 q.z = cp.z;
             }
             lage.set(q.x, q.y, q.z, L.reichweiteM);
-            c.set(L.farbe);
-            farbe.set(c.r * I, c.g * I, c.b * I, L.abfall);
+            this._lichtLinear(L, c);
+            // der Bezug des Abfalls in 1 m (fachwerk `lichtAbfall`): der Stoff rechnet (d² + k²)^(−abfall/2), die Stärke trägt (1 + k²)^(abfall/2)
+            const k2 = L.kernM * L.kernM;
+            const In = I * Math.pow(1 + k2, L.abfall / 2);
+            farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
             atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
+            atmo.lichtKern[k].value = k2;
             pool.plaetze.push({
                 quelle: q.quelle,
                 x: q.x,
@@ -93098,11 +93111,22 @@ class AnazhRealm {
                 staerke: I,
                 reichweite: L.reichweiteM,
                 abfall: L.abfall,
+                kern: L.kernM,
                 farbe: [c.r, c.g, c.b],
                 ersatz: !!L.ersatz,
                 blende: pool.blende[k],
             });
         }
+    }
+
+    // DIE LICHTFARBE einer Quelle, linear, in die Farbe `c` (K11b): ein Wärmestrahler trägt seine Farbtemperatur (`kelvin`,
+    // fachwerk `lichtFarbe` über den Planck-Ort) — das Feuer, die Glut, die Laterne, die Fenster und das Licht des Auges. Das
+    // Tor ist kein Wärmestrahler: sein Datum (porta GLUT_GESETZ) trägt die Farbe als sRGB-Absicht, die das FARB-GESETZ linear
+    // rechnet. Ein Datum ohne beides ist ein Bruch des Vertrags (laut, kein stiller Ersatz).
+    _lichtLinear(L, c) {
+        if (L.kelvin > 0) return c.setRGB(...globalThis.__fachwerkCore.lichtFarbe(L.kelvin));
+        if (L.farbe == null) throw new Error("_lichtLinear: die Leuchtquelle trägt weder kelvin noch farbe");
+        return c.set(L.farbe);
     }
 
     // DIE STÄRKE einer Quelle zur Wind-Zeit t (K11): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
@@ -93207,8 +93231,8 @@ class AnazhRealm {
     }
 
     // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
-    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall (1 − d/R)^abfall rechnet der Stoff wie das
-    // Labor (`_lichtPoolTerm`). So trifft jeder Abstand das Labor.
+    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall rechnet der Stoff nach dem Gesetz (fachwerk
+    // `lichtAbfall` in `_lichtPoolTerm`: 1/d^abfall mit Kern und Saum, K11b) — in 1 m trifft er die Stärke des Datums.
     _laborLichtStaerke(I) {
         return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
     }
@@ -101676,16 +101700,18 @@ AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
 // Helligkeit wie am Tag — die 18-%-Karte in `karteM` das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge
 // adaptiert an sein Licht). Es ist ein Platz des Licht-Pools mit Himmels-Ersatz (K11) und fällt nach dem EINEN Punktlicht-
-// Gesetz (1 − d/R)^abfall: mit `abfall` 1 zeigt die Wand in 0,3 m 1,09× die Karte in 2 m (ihre Maserung), in 10 m 56 %, in
-// 15 m 28 %, und an `reichweiteM` fällt es stetig auf 0. Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
-// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz. `farbe` warmweiß (~4500 K, sRGB) — eine
-// Flamme (0xffc489) tönte den Fels orange; der Himmel am Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis
-// `umkreisM`, neu nach `neuM` Metern Weg.
+// Gesetz (fachwerk `lichtAbfall`, K11b): mit `abfall` 1 und dem weiten Kern `kernM` 8 (ein Schein, keine Flamme) zeigt die
+// Wand in 0,3 m 1,03× die Karte in 2 m (ihre Maserung), in 10 m 57 %, in 15 m 23 % (bis K11b, Legacy-Abfall (1 − d/R):
+// 1,09× · 56 % · 28 %), und an `reichweiteM` fällt es stetig auf 0. Werkbank 11.10., echte GPU, Auge 11: mit 1/d ohne
+// Kern lag die Wand in 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz. `kelvin` 4 750 —
+// warmweiß, derselbe Farbort wie bis K11b das Hex 0xffe2c6 (eine Flamme, 0xffc489, tönte den Fels orange); der Himmel am Auge
+// (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
 AnazhRealm.AUGEN_LICHT = Object.freeze({
     karteM: 2,
     abfall: 1,
+    kernM: 8,
     reichweiteM: 20,
-    farbe: 0xffe2c6,
+    kelvin: 4750,
     umkreisM: 4,
     neuM: 0.25,
 });
