@@ -38450,9 +38450,7 @@ class AnazhRealm {
                 .and(nahX.not().or(traegt(TX)))
                 .and(nahZ.not().or(traegt(TZ)))
                 .and(nahX.and(nahZ).not().or(traegt(TXZ)));
-            const saum = sicher
-                .not()
-                .and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
+            const saum = sicher.not().and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
             material.maskNode = sicher.not();
             // die Weiche: der Strahl bis zur um `nahtWeiche` gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|)
             const pv = TSL.positionView;
@@ -38460,7 +38458,9 @@ class AnazhRealm {
             const nW = TSL.normalWorldGeometry;
             const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
             const dt = TSL.min(
-                TSL.float(F.nahtWeiche).mul(TSL.abs(nW.y)).div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)),
+                TSL.float(F.nahtWeiche)
+                    .mul(TSL.abs(nW.y))
+                    .div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)),
                 TSL.float(F.nahtWeicheMax)
             );
             const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);

@@ -676,7 +676,8 @@ const server = http.createServer((req, res) => {
             const durchSeite = {}; // ebenso der Durchstich: je Kante:Regel [Zahl, größte Höhe über dem Deck]
             const muendung9 = [0, 0]; // der Einschnitt am Saum (Höhle, Kanal): [Punkte, größte Höhe des Rings über dem Deck]
             const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
-            const morphF = r.state.atmoUniforms && r.state.atmoUniforms.geomorph ? r.state.atmoUniforms.geomorph.value : 0;
+            const morphF =
+                r.state.atmoUniforms && r.state.atmoUniforms.geomorph ? r.state.atmoUniforms.geomorph.value : 0;
             const morphMemo = new Map();
             const gemorpht = (m) => {
                 const A = m.geometry.attributes;
@@ -798,7 +799,8 @@ const server = http.createServer((req, res) => {
                 };
                 const punkte = [];
                 for (let i = 0; i < 7; i++)
-                    for (let j = 0; j < 7; j++) punkte.push([cx * span9 + 3 + i * 6.2, cz * span9 + 3 + j * 6.2, "innen"]);
+                    for (let j = 0; j < 7; j++)
+                        punkte.push([cx * span9 + 3 + i * 6.2, cz * span9 + 3 + j * 6.2, "innen"]);
                 // je Kante in Voxel-Kanten der Stufe (0,03 … 1,6 s, innen und außen): die erste Vertex-Spalte liegt in der ersten
                 // Voxel-Spalte, die Glättung schiebt sie bis über deren Rand
                 const s9 = r._voxelChunkConfig(e.lod || 0).step;
@@ -818,7 +820,8 @@ const server = http.createServer((req, res) => {
                         if (yc === null) {
                             loch9[0]++;
                             lochSeite[seite] = (lochSeite[seite] || 0) + 1;
-                            if (lochOrte.length < 6) lochOrte.push(`(${x.toFixed(2)}|${z.toFixed(2)}) ${cx},${cz} L${e.lod || 0}`);
+                            if (lochOrte.length < 6)
+                                lochOrte.push(`(${x.toFixed(2)}|${z.toFixed(2)}) ${cx},${cz} L${e.lod || 0}`);
                         }
                     }
                     if (zelleVon(x, z)) {
@@ -967,9 +970,18 @@ const server = http.createServer((req, res) => {
                         if (!r._forestDartSteht(d, gx, gz, cellDarts) || (fd < 1 && d.keep >= fd)) continue;
                         const rad = r._kronenRadiusFuer(d.sp, d.s);
                         if (!(rad > 0)) continue;
-                        for (let j = Math.max(0, Math.floor(d.z - rad - z0)); j <= Math.min(N - 1, Math.ceil(d.z + rad - z0)); j++)
-                            for (let i = Math.max(0, Math.floor(d.x - rad - x0)); i <= Math.min(N - 1, Math.ceil(d.x + rad - x0)); i++)
-                                if ((x0 + i + 0.5 - d.x) ** 2 + (z0 + j + 0.5 - d.z) ** 2 <= rad * rad) deck[j * N + i] = 1;
+                        for (
+                            let j = Math.max(0, Math.floor(d.z - rad - z0));
+                            j <= Math.min(N - 1, Math.ceil(d.z + rad - z0));
+                            j++
+                        )
+                            for (
+                                let i = Math.max(0, Math.floor(d.x - rad - x0));
+                                i <= Math.min(N - 1, Math.ceil(d.x + rad - x0));
+                                i++
+                            )
+                                if ((x0 + i + 0.5 - d.x) ** 2 + (z0 + j + 0.5 - d.z) ** 2 <= rad * rad)
+                                    deck[j * N + i] = 1;
                     }
             const core = globalThis.__phytoCore;
             const fbm = (px, pz) => r._forestFbm(px, pz);
@@ -1153,7 +1165,9 @@ const server = http.createServer((req, res) => {
             !!out.lochZelle &&
             out.lochZelle[0] > 0,
         `regel=${out.regel} verworfen=${(out.loch || [])[1]} loch=${(out.loch || [])[0]} seiten=${JSON.stringify(out.lochSeite || {})} orte=${JSON.stringify(out.lochOrte || [])} geomorph=${out.morph} selbsttest-zelle=${(out.lochZelle || []).join("/")}` +
-            (out.regel === true ? "" : " — TÄTER: der maskNode hat keinen CPU-Spiegel (`_fernRingRegel`), die ganze Zelle verwirft")
+            (out.regel === true
+                ? ""
+                : " — TÄTER: der maskNode hat keinen CPU-Spiegel (`_fernRingRegel`), die ganze Zelle verwirft")
     );
     check(
         "9: DIE NAHT — kein Durchstich: wo der Ring zeichnet, liegt er nicht über dem Deck (im Saum um die Weiche gesenkt — er weicht dem Chunk in die Tiefe); Selbsttest: ohne die Karte sticht seine Sehne durch (> 2 %)",

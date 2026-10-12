@@ -577,7 +577,10 @@ function realismus() {
             console.log(`    ⛔ ${k}: ${taeter[k]}`);
         }
         if (stoer) console.log(`    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km²`);
-        if (last) console.log(`    Selbsttest-Last (+40 noise2D je Spalte): ${last.noise2DAlle} noise2D (Ebene ${last.noise2DEbene})`);
+        if (last)
+            console.log(
+                `    Selbsttest-Last (+40 noise2D je Spalte): ${last.noise2DAlle} noise2D (Ebene ${last.noise2DEbene})`
+            );
     }
     const JSON_ZIEL = JSON_AUS;
     if (JSON_ZIEL)
