@@ -343,19 +343,20 @@ function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
 // =============================================================================
 
 // V18.321 (mirror von `_terrainColumnContext`) — DER SPALTEN-KONTEXT: die rein-2D-Arbeit
-// (Makro-Oberfläche [61 %] + Roughness-Region + Canyon-Maske + Hydro-Carve/See) hängt NUR von
+// (Makro-Oberfläche [61 %] + Roughness-Region + Höhlen-Mündung + Hydro-Carve/See) hängt NUR von
 // (x,z) ab; einmal pro Spalte berechnet, vom per-Voxel `terrainBaseDensityCol` über das ganze
 // y-Band gelesen = byte-identisch, ~3× weniger Arbeit. MUSS bit-identisch zur Main.
+const SPALTEN_HANG = { hang: 0 };
 function terrainColumnContext(x, z) {
-    const surf = G.hoehe(state, x, z, true);
+    const surf = G.hoehe(state, x, z, true, SPALTEN_HANG);
     const base = state.baseHeight || 0;
     // DAS WILDNIS-GEWICHT der Spalte (Mirror): Rauheit und Höhlen-Hülle wiegen mit ihm; 0 → kein noise3D.
     const wild = state.erbgut.wildnis;
     let ceilOffset = -24;
     if (wild > 0) {
-        // Die Decke bleibt unter dem Boden (Mirror): die Täler sind das Flussnetz, die Canyon-Maske fiel (K16).
+        // Die Decke bleibt unter dem Boden (Mirror), die Mündung ist Gesetz (gelaende-core `hoehlenMund`, K16).
         const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
-        ceilOffset = surf < waterLevelD + 1 ? -24 : -16;
+        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(SPALTEN_HANG.hang);
     }
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
@@ -754,6 +755,7 @@ function hydroDistAt(x, z) {
     const bj0 = Math.floor((z - h.originZ) / bs);
     let best = Infinity;
     let bestHw = 0;
+    let bestRand = Infinity;
     for (let dj = -1; dj <= 1; dj++) {
         for (let di = -1; di <= 1; di++) {
             const bi = bi0 + di;
@@ -770,11 +772,15 @@ function hydroDistAt(x, z) {
                 if (t < 0) t = 0;
                 else if (t > 1) t = 1;
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                if (dist < best) {
+                // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
+                // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
+                const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                // der nächste RAND, nie die nächste Mittellinie — bit-identisch zum Main (K16, U1)
+                const rand = dist - Math.max(1, hw);
+                if (rand < bestRand) {
+                    bestRand = rand;
                     best = dist;
-                    // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
-                    // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
-                    bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    bestHw = hw;
                 }
             }
         }

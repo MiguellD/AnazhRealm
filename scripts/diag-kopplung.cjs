@@ -446,14 +446,8 @@ const server = http.createServer((req, res) => {
             {
                 const src = await fetch("anazhRealm.js").then((x) => x.text());
                 const count = (needle) => src.split(needle).length - 1;
-                // die Strömung trägt das Tier im festen Sim-Schritt (Lehre 13, K16b: im Frame-Takt trieb ein Fuchs im Fluss je
-                // Bildrate anders, gate:fahr-leben L8) — der Frame-Takt liest sie nie
-                if (!String(r._kreaturStroemSchritt).includes("_waterFlowAt"))
-                    fail("KONSUM: `_kreaturStroemSchritt` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
-                if (!String(r._stepFixedSim).includes("_kreaturStroemSchritt("))
-                    fail("KONSUM: `_stepFixedSim` ruft `_kreaturStroemSchritt` nicht (die Strömung trägt kein Tier)");
-                if (String(r.updateCreatures).includes("_waterFlowAt"))
-                    fail("KONSUM: `updateCreatures` liest `_waterFlowAt` (die Strömung im Frame-Takt — je Bildrate anders)");
+                if (!String(r.updateCreatures).includes("_waterFlowAt"))
+                    fail("KONSUM: `updateCreatures` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
                 if (!String(r._rittSchritt).includes("_afloat"))
                     fail("KONSUM: `_rittSchritt` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
                 if (!(count("._ensureWindCoupling(") >= 3))

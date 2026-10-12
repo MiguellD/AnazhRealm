@@ -20695,15 +20695,13 @@ class AnazhRealm {
             regionSize: globalThis.__gelaendeCore.GRUND.kachel, // Region-Kantenlänge in m (um den Welt-Ursprung; der Grund des Kerns)
             cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
             fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
-            // Fluss-Schwelle adaptiv: max(absoluter Boden, Anteil des größten
-            // Durchflusses) — robust über verschiedene Seeds (anderes Relief →
-            // andere Max-Akkumulation). Eine Zelle ist Fluss ab dieser Akkum.
-            riverThresholdMin: 60, // absoluter Boden (Zell-Zahl)
-            riverThresholdFrac: 0.04, // Anteil der Max-Akkumulation
             minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
             // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
-            widthMin: 3, // Fluss-Mindestbreite in m
-            widthK: 0.32, // Breiten-Faktor: width = widthMin + widthK·√Akkumulation
+            // DIE BREITE (K16) aus dem Einzugsgebiet A des Netzes (km²): width = widthMin + widthK · A^widthExp — die Bankvoll-
+            // Breite der hydraulischen Geometrie (Dunne & Leopold 1978, W ∝ A^0,37: 0,16 km² ≈ 4,4 m, 25 km² ≈ 17 m).
+            widthMin: 2,
+            widthK: 4.7,
+            widthExp: 0.37,
             // Gegen die ECHTE Voxel-Surface getunt (steilstes Fluss-Segment ~0.5): Wasserfall = Lauf steiler
             // als 0.4 UND in Summe ≥ 6 m Absturz (`_hydroExtractWaterfalls` verschmilzt Kaskaden per run-merge).
             waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
@@ -20714,6 +20712,9 @@ class AnazhRealm {
             // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
             carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
             carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
+            // DER KANAL IN DER AUE (K16): die Bett-Tiefe ist höchstens kanalTiefe — die Aue des Gelände-Gesetzes ist das
+            // Hochwasser-Bett, der Kanal liegt in ihr, nie als Graben unter ihr (am 30-m-Raster: keine Senke > 1 m).
+            kanalTiefe: 0.8,
             // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
             // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
             spiegelFreibord: 0.25,
@@ -20738,12 +20739,10 @@ class AnazhRealm {
             dammBreite: 2.6, // m hinter der Krone des Kanals
             dammFreibord: 0.2, // m über dem Spiegel, mindestens
             // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
-            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihrer Akkumulation trägt
-            // (an der Schwelle quellBreite der vollen, ab der doppelten Schwelle die volle) — Breite und Tiefe wachsen aus dem
-            // Gesetz, nichts bricht aus dem Nichts.
+            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihres Einzugsgebiets trägt
+            // — Breite und Tiefe wachsen aus dem Gesetz, nichts bricht aus dem Nichts.
             quellBett: 1.2,
             quellWeitung: 0.25,
-            quellBreite: 0.25,
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
         });
@@ -21810,26 +21809,6 @@ class AnazhRealm {
         if (!(dv > 0) || !st.playerVel || (st.player && st.player.mountedArch != null)) return;
         const v = st.playerVel;
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
-    }
-
-    // DIE STRÖMUNG IM SIM-SCHRITT (K16b, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): ein schwimmender Leib
-    // (`_kreaturSchwimmt` über dem Boden unter ihm, `_koerperBodenUnter` — nie der Boden-Cache des Frame-Takts) treibt je
-    // Schritt mit der EINEN Strömung (`_waterFlowAt`, dieselbe wie beim Spieler und im Klang). Vorher trieb ihn der
-    // Frame-Takt um flow · delta: ein gestoßener Fuchs im Fluss stand nach 20 Sim-Schritten je Bildrate 1,9 mm anders
-    // (gate:fahr-leben L8 — bis K16 lag sein Wasser im See der Mess-Wiese, ohne Strömung). Billig zuerst: ohne Strömung an
-    // seinem Ort (O(1) über die Fluss-Buckets) fragt kein Leib nach Boden und Wasser.
-    _kreaturStroemSchritt(dt) {
-        const wesen = this.state.creatures;
-        if (!wesen || !wesen.length || !(dt > 0)) return;
-        for (const c of wesen) {
-            if (!c || !c.userData || !c.position) continue;
-            const fl = this._waterFlowAt(c.position.x, c.position.z);
-            if (!fl) continue;
-            const boden = this._koerperBodenUnter(c.position.x, c.position.y, c.position.z);
-            if (this._kreaturSchwimmt(c, boden) === null) continue;
-            c.position.x += fl.x * dt;
-            c.position.z += fl.z * dt;
-        }
     }
 
     // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
@@ -23896,7 +23875,16 @@ class AnazhRealm {
             const pz0 = creature.position.z;
             creature.position.x += Math.sin(steuer.gier) * steuer.v * delta;
             creature.position.z += Math.cos(steuer.gier) * steuer.v * delta;
-            // Die STRÖMUNG trägt den schwimmenden Leib im festen Sim-Schritt (`_kreaturStroemSchritt`), nie hier im Frame-Takt.
+            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
+            // Land-Läufer nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim
+            // Spieler).
+            if (waterSurface !== null) {
+                const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
+                if (_fl) {
+                    creature.position.x += _fl.x * delta;
+                    creature.position.z += _fl.z * delta;
+                }
+            }
             // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
             // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
             // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
@@ -27349,13 +27337,13 @@ class AnazhRealm {
         this._voxelWorkerSyncWorldgenState();
     }
 
-    // Globales Wasser-Y-Band: top = max(state.waterLevel, jeder See-Spiegel, jeder Fluss-Spiegel) + 10 m, bottom =
-    // waterLevel − 10 m (reicht, weil die Iso nur die OBERE Wassergrenze rendert). Cells außerhalb werden ohne
+    // Globales Wasser-Y-Band: top = der höchste Spiegel JEDES Wasser-Körpers (waterLevel, jeder See, jeder Punkt jedes Flusses)
+    // + 10 m, bottom = waterLevel − 10 m (reicht, weil die Iso nur die OBERE Wassergrenze rendert). Cells außerhalb werden ohne
     // Density-Sample klassifiziert (above=AIR, below=WATER) — dieselbe Regel wie der OOB-Live-Compute in
-    // `_buildVoxelChunkWaterIsoSurface` → nahtfrei. DER FLUSS GEHÖRT INS BAND (K16b): bis hier hob nur ein See das Band;
-    // seit der Landform im Kern trägt die Heimat keinen See (die Seen sind die Senken des Flussnetzes), das Band endete
-    // 10 m über dem Meer, und jeder Fluss darüber blieb in jeder Zelle LUFT — die Welt zeichnete keinen Fluss, der Körper
-    // stand im Fluss des Gesetzes trocken (gate:wasser-leben F5: 44 von 56 Quellen ohne Wasser auf 16 m).
+    // `_buildVoxelChunkWaterIsoSurface` → nahtfrei. DER FLUSS GEHÖRT HINEIN (K16): das Band kannte nur die Seen; seit die
+    // Landform im Gelände-Gesetz liegt, steigen die Flüsse in die Täler des Mittelgebirges (Spiegel bis 55 m), das Band endete
+    // bei 23,7 m (der höchste See + 10) — der Zell-Bau ließ jede Fluss-Zelle darüber AIR: in der Heimat 344 von 549 Fluss-
+    // Segmenten ohne gezeichnetes Wasser (am Bach -744/-872 Wasser-Meshes 0, die Quellen trocken).
     _computeHydroBand() {
         const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         let topY = wl;
@@ -27364,8 +27352,8 @@ class AnazhRealm {
             if (Array.isArray(h.lakes))
                 for (const lake of h.lakes) if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
             if (Array.isArray(h.rivers))
-                for (const f of h.rivers)
-                    for (const p of f.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
+                for (const fluss of h.rivers)
+                    for (const p of fluss.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
         };
         hebe(this.state.hydrosphere);
         // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
@@ -27563,8 +27551,9 @@ class AnazhRealm {
     // DIE EINE 2D-HÖHE der Welt: das Gelände-Gesetzbuch (gelaende-core.js `hoehe` — der Term-Auswerter des Erbguts,
     // der Wildnis-Term, der Makro-Anker) an der Lage dieser Welt. Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
     // Fern-Ring, Spawn-Ort, Erosion); der voxel-worker ruft DASSELBE Gesetzbuch mit seinem Zustand (kein Spiegel).
-    _terrainMacroSurfaceY(x, z, includeDetail = true) {
-        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail);
+    // `aus` (optional) trägt den Hang der Fläche (`hang`, tan) — der Spalten-Kontext liest ihn für die Höhlen-Mündung.
+    _terrainMacroSurfaceY(x, z, includeDetail = true, aus) {
+        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail, aus);
     }
 
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
@@ -27679,7 +27668,7 @@ class AnazhRealm {
     // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
 
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
-    // Kosten, eroR, Canyon-Maske, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
+    // Kosten, eroR, Höhlen-Mündung, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
     // `_terrainBaseDensityAtCol` liest sie byte-identisch. Die Basis-Dichte OHNE voxelEdits ist
     // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur das
     // Kugel-Delta drauf. MUSS bit-identisch im Worker (`terrainColumnContext`).
@@ -27693,18 +27682,19 @@ class AnazhRealm {
         const L = this._gelaende();
         const n = L.noise;
         const base = this.state.terrainBaseHeight || 0;
-        const surf = this._terrainMacroSurfaceY(x, z);
+        const mess = this._spaltenHang || (this._spaltenHang = { hang: 0 });
+        const surf = this._terrainMacroSurfaceY(x, z, true, mess);
         // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
         // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
         const wild = (this._erbgutCache || this._erbgut()).wildnis;
         let ceilOffset = -24;
         if (wild > 0) {
-            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss). DIE TÄLER SIND DAS
-            // FLUSSNETZ (K16, gelaende-core T2): die Canyon-Maske (2D, λ 154 m) hob die Decke bis 8 m ÜBER den Boden, die
-            // Höhle brach als Grube ohne Abfluss durch — am gebauten Boden 15,2 Senken > 1 m je km², ohne sie 4,5
-            // (gate:worker-dichte, Band GEBAUTER BODEN).
+            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss): die Höhle bricht
+            // nie als Grube durch die Wiese (die Canyon-Maske fiel, K16). DIE MÜNDUNG ist Gesetz (gelaende-core
+            // `hoehlenMund`): wo die Flanke Fels trägt, hebt ihr Gewicht die Decke über den Boden — der Mund steht im Fels.
             const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-            ceilOffset = surf < waterLevelD + 1 ? -24 : -16;
+            const G = globalThis.__gelaendeCore;
+            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(mess.hang);
         }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
@@ -27955,6 +27945,7 @@ class AnazhRealm {
         const bj0 = Math.floor((z - h.originZ) / bs);
         let best = Infinity;
         let bestHw = 0;
+        let bestRand = Infinity;
         for (let dj = -1; dj <= 1; dj++) {
             for (let di = -1; di <= 1; di++) {
                 const bi = bi0 + di;
@@ -27971,14 +27962,112 @@ class AnazhRealm {
                     if (t < 0) t = 0;
                     else if (t > 1) t = 1;
                     const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                    if (dist < best) {
+                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    // der nächste RAND (Abstand minus die Halbbreite, wie die Leser sie nehmen), nie die nächste Mittellinie
+                    // (K16, U1): zwischen zwei Segmenten ungleicher Breite sprang sonst die Halbbreite und mit ihr die Feuchte
+                    // (0,83 → 0,44 in 2 cm, 213/−890) — so ist jedes Band das Maximum der Segmente, stetig
+                    const rand = dist - Math.max(1, hw);
+                    if (rand < bestRand) {
+                        bestRand = rand;
                         best = dist;
-                        bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                        bestHw = hw;
                     }
                 }
             }
         }
         return { dist: best, halfW: bestHw };
+    }
+
+    // DIE FLÜSSE UNTER EINEM ABDRUCK (K16, die Fern-Farbe): ein Fern-Punkt steht für eine Fläche der Kante `F` (`fussM`,
+    // `_fernFarbeMasche`), die Netz-Flüsse liegen schmaler darunter (Bett ab 2 m, die Bank 4,5 m, die Krone wenige Meter).
+    // Je Segment in Reichweite (die Buckets bis F/2 weiter): der Abstand `dist`, die Halbbreite `hw`, die Weite `kappa` von
+    // der Kanal-Kante zur Krone, der Spiegel `sp` und das Mittel der Kronen-Blende `mu` über den Abdruck (`_kastenMittel`
+    // quer zum Segment) — die Leser (Feuchte, Pfad, Schlick, Strand) falten ihre Bänder genauso und nehmen das Maximum der
+    // Segmente: stetig im Ort. Befund 12.10. (gate:fern-ring Band 10): neun Punkt-Abtastungen je Masche trafen die schmalen
+    // Bänder oder nicht — mit den Netz-Flüssen stieg der Streifen-Index 0,47 → 0,54 (dieselbe Welt ohne Fluss-Bänder 0,33).
+    // Der Abdruck wächst, wenn mehr Segmente unter ihm liegen, als er fasst (verdoppelt) — bis 12.10. kappte er still bei 32
+    // (1 052 von 1,82 Mio. Rufen, Prüfung K16: ein Fern-Punkt bis 1 300 m Abdruck über einem dichten Netz verlor Bänder).
+    static _flussAbdruckWachse(A) {
+        for (const k of ["dist", "hw", "kappa", "sp", "mu"]) {
+            const neu = new Float64Array(A[k].length * 2);
+            neu.set(A[k]);
+            A[k] = neu;
+        }
+    }
+
+    _flussAbdruck(x, z, F) {
+        const A =
+            this._flussAbdruckMemo ||
+            (this._flussAbdruckMemo = {
+                x: NaN,
+                z: NaN,
+                F: NaN,
+                h: null,
+                bereit: false,
+                n: 0,
+                seg: [],
+                dist: new Float64Array(32),
+                hw: new Float64Array(32),
+                kappa: new Float64Array(32),
+                sp: new Float64Array(32),
+                mu: new Float64Array(32),
+            });
+        const h = this._hydroFor(x, z);
+        const bereit = !!(h && h.ready && h.riverBuckets);
+        if (A.x === x && A.z === z && A.F === F && A.h === h && A.bereit === bereit) return A;
+        A.x = x;
+        A.z = z;
+        A.F = F;
+        A.h = h;
+        A.bereit = bereit;
+        A.n = 0;
+        if (!bereit) return A;
+        const HC = AnazhRealm.HYDROSPHERE;
+        const reich = AnazhRealm.FEUCHTE.flussReichweite;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi0 = Math.floor((x - h.originX) / bs);
+        const bj0 = Math.floor((z - h.originZ) / bs);
+        // jedes Segment steht in den Buckets seiner um die Feuchte-Reichweite erweiterten Box (`_hydroBuildCarveIndex`) —
+        // der Abdruck reicht F/2 weiter
+        const nb = Math.ceil(F / 2 / bs);
+        for (let bj = bj0 - nb; bj <= bj0 + nb; bj++) {
+            if (bj < 0 || bj >= bd) continue;
+            for (let bi = bi0 - nb; bi <= bi0 + nb; bi++) {
+                if (bi < 0 || bi >= bd) continue;
+                const list = h.riverBuckets[bj * bd + bi];
+                if (!list) continue;
+                for (let s = 0; s < list.length; s++) {
+                    const seg = list[s];
+                    const ex = seg.bx - seg.ax;
+                    const ez = seg.bz - seg.az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                    if (t < 0) t = 0;
+                    else if (t > 1) t = 1;
+                    const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / HC.bankNeigung);
+                    if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
+                    let schon = false;
+                    for (let k = 0; k < A.n; k++)
+                        if (A.seg[k] === seg) {
+                            schon = true;
+                            break;
+                        }
+                    if (schon) continue;
+                    if (A.n === A.dist.length) AnazhRealm._flussAbdruckWachse(A); // keine Kappe: jedes Segment unter dem Abdruck zählt
+                    const n = A.n++;
+                    A.seg[n] = seg;
+                    A.dist[n] = dist;
+                    A.hw[n] = hw;
+                    A.kappa[n] = kappa;
+                    A.sp[n] = seg.sA + (seg.sB - seg.sA) * t;
+                    A.mu[n] = AnazhRealm._kastenMittel(AnazhRealm._stammUfer, dist, F, hw, kappa);
+                }
+            }
+        }
+        return A;
     }
 
     // Γ1 (genese-plan) — die GENESE-Version der Welt: fehlend = 1 (Legacy —
@@ -27991,17 +28080,32 @@ class AnazhRealm {
     // Das Feuchte-Feld, abgeleitet aus der HYDROSPHÄRE (Terrain → Wasser → Feuchte → Leben), nicht aus
     // Noise. Lebt am Genese-Leser (Spawn/Scatter/Boden), NICHT in worldFieldAt (Bucket-Walk nicht in den
     // Hot-Path; der Höhen-Term braucht surfY). max() aus (a) Fluss-Nähe (smoothstep über die Segment-
-    // Distanz) und (b) Höhe über dem Wasserspiegel (feuchte Niederungen).
-    _feuchteAt(x, z, surfY) {
+    // Distanz) und (b) Höhe über dem Wasserspiegel (feuchte Niederungen). `fussM` (optional, die Fern-Farbe): die Kante der
+    // Fläche, für die der Punkt steht — dann trägt jedes Fluss-Band sein Mittel über sie (`_flussAbdruck`).
+    _feuchteAt(x, z, surfY, fussM) {
         if (this._genVersion() < 2) return 0;
         const F = AnazhRealm.FEUCHTE;
-        const r = this._hydroDistAt(x, z);
+        const ab = fussM > 0 ? this._flussAbdruck(x, z, fussM) : null;
         let fluss = 0;
-        if (Number.isFinite(r.dist)) {
-            const inner = Math.max(1, r.halfW);
-            const outer = inner + F.flussReichweite;
-            const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
-            fluss = t * t * (3 - 2 * t);
+        if (ab) {
+            for (let i = 0; i < ab.n; i++) {
+                const m = AnazhRealm._kastenMittel(
+                    AnazhRealm._stammFeuchte,
+                    ab.dist[i],
+                    fussM,
+                    Math.max(1, ab.hw[i]),
+                    F.flussReichweite
+                );
+                if (m > fluss) fluss = m;
+            }
+        } else {
+            const r = this._hydroDistAt(x, z);
+            if (Number.isFinite(r.dist)) {
+                const inner = Math.max(1, r.halfW);
+                const outer = inner + F.flussReichweite;
+                const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+                fluss = t * t * (3 - 2 * t);
+            }
         }
         let hoehe = 0;
         const sy = Number.isFinite(surfY) ? surfY : this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
@@ -28014,20 +28118,50 @@ class AnazhRealm {
                 return t * t * (3 - 2 * t) * F.hoeheGewicht;
             };
             hoehe = band(sy - uf.see);
-            if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
+            if (ab) for (let i = 0; i < ab.n; i++) hoehe = Math.max(hoehe, ab.mu[i] * band(sy - ab.sp[i]));
+            else if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
 
     // Pfad-Feld: Fluss-Bänke sind getrampelte Erde — knapp außerhalb der Wasserkante (dist ∈ [halfW,
     // halfW+bankW]) auf niedriger Bank (0..5 m über dem Spiegel) → Pfad ∈ [0,1]. Render-only (Boden-
-    // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch.
-    _pathFieldAt(x, z, surfY) {
+    // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch. `fussM` (optional, die
+    // Fern-Farbe): die Bank trägt ihr Mittel über die Fläche des Punkts (`_flussAbdruck`), je Bezug.
+    _pathFieldAt(x, z, surfY, fussM) {
         if (this._genVersion() < 2) return 0;
+        const bankW = 4.5;
+        const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
+        if (fussM > 0 && Number.isFinite(surfY)) {
+            const ab = this._flussAbdruck(x, z, fussM);
+            if (!ab.n) return 0;
+            const uf = { see: 0, fluss: null, ufer: 0 };
+            this._waterLevelAt(x, z, uf);
+            const nSee = niedrig(surfY - uf.see);
+            let p = 0;
+            for (let i = 0; i < ab.n; i++) {
+                const inner = Math.max(1, ab.hw[i]);
+                const mSee = nSee
+                    ? AnazhRealm._kastenMittel(AnazhRealm._stammPfad, ab.dist[i], fussM, inner, bankW) * nSee
+                    : 0;
+                const mFluss = niedrig(surfY - ab.sp[i])
+                    ? AnazhRealm._kastenMittel(
+                          AnazhRealm._stammPfadUfer,
+                          ab.dist[i],
+                          fussM,
+                          inner,
+                          bankW,
+                          ab.hw[i],
+                          ab.kappa[i]
+                      )
+                    : 0;
+                p = Math.max(p, mSee, mFluss);
+            }
+            return p;
+        }
         const r = this._hydroDistAt(x, z);
         if (!Number.isFinite(r.dist)) return 0;
         const inner = Math.max(1, r.halfW);
-        const bankW = 4.5;
         const d = r.dist - inner;
         if (d < 0 || d > bankW) return 0;
         const band = 1 - d / bankW;
@@ -28036,7 +28170,6 @@ class AnazhRealm {
         // Kronen-Blende
         const uf = { see: 0, fluss: null, ufer: 0 };
         this._waterLevelAt(x, z, uf);
-        const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
         let w = niedrig(surfY - uf.see);
         if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
         return band * band * w;
@@ -29110,7 +29243,7 @@ class AnazhRealm {
         mix(earth, ss(0.25, 0.85, f.lebendig));
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
-        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
+        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y, fussM) : 0;
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
@@ -29139,20 +29272,28 @@ class AnazhRealm {
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
-        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet.
+        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet. Mit `fussM` trägt jedes Fluss-Band das Mittel
+        // seiner Kronen-Blende über die Fläche (`_flussAbdruck`, je Segment sein Spiegel) statt der Punkt-Probe.
         const uf = { see: 0, fluss: null, ufer: 0 };
         this._waterLevelAt(x, z, uf);
+        const ab = fussM > 0 ? this._flussAbdruck(x, z, fussM) : null;
         const aboveWater = y - uf.see;
-        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
         if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-        mix(sed, schlick);
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
         // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
         // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
         const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
-        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
+        let flussStrand = false;
+        if (ab)
+            for (let i = 0; i < ab.n; i++) {
+                schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+                if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
+            }
+        mix(sed, schlick);
+        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
@@ -29161,6 +29302,8 @@ class AnazhRealm {
                 const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
                 let shoreBlend = glocke(aboveWater);
                 if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
+                if (ab)
+                    for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
                 mix(sand, shoreBlend * intensity);
             }
             // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
@@ -29170,7 +29313,7 @@ class AnazhRealm {
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
         // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
-        const pathF = this._pathFieldAt(x, z, y);
+        const pathF = this._pathFieldAt(x, z, y, fussM);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         out[0] = c[0];
         out[1] = c[1];
@@ -33954,21 +34097,15 @@ class AnazhRealm {
             const ctx = this._hydroInit(origin);
             this._hydroMarkOcean(ctx);
             this._hydroPriorityFlood(ctx);
-            this._hydroFlowDirection(ctx);
-            this._hydroAccumulate(ctx);
             const lakes = this._hydroExtractLakes(ctx);
-            const rivers = this._hydroExtractRivers(ctx);
+            const rivers = this._hydroNetzFluesse(ctx);
             // Jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe (`voxelY`): geroutet wird auf der glatten
             // Makro-Surface, Wasserfälle leben aber an den echten Klippen — das Ribbon hängt am Voxel-Relief.
             this._hydroSampleRiverSurfaces(rivers);
             // Der Spiegel jedes Fluss-Punkts (stromab nie steigend, quer waagrecht) — das Bett folgt ihm (Carve).
             this._hydroRiverSpiegel(ctx, rivers);
             const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
-            // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
-            // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
-            // es; undrainedLand > 0 wäre ein Algorithmus-Bug.
-            const { dim, surf, waterLevel, flowTo, lakeOf, isOcean } = ctx;
-            let undrainedLand = 0;
+            const { dim, surf, waterLevel, lakeOf, isOcean } = ctx;
             let landCells = 0;
             let lakeCells = 0;
             let seaCells = 0;
@@ -33987,7 +34124,6 @@ class AnazhRealm {
                 const j = (idx / dim) | 0;
                 if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
                 landCells++;
-                if (flowTo[idx] < 0) undrainedLand++;
             }
             // Diagnostik: steilstes Fluss-Segment der Voxel-Surface (Tuning-Anker für `waterfallSlope`) +
             // Netz-Vermessung (Fluss-Längen, See-Größen: echte Flüsse oder Pfützen-Kette?).
@@ -34000,10 +34136,13 @@ class AnazhRealm {
             let riverMaxDrop = 0;
             let riverPointsTotal = 0;
             let riverLenMax = 0;
+            // die Breite des kleinsten vollen Flusses (Leser: die Quell-Hülle der Wasser-Linse)
+            let bettMin = Infinity;
             for (let ri = 0; ri < rivers.length; ri++) {
                 const pts = rivers[ri].points;
                 riverPointsTotal += pts.length;
                 if (pts.length > riverLenMax) riverLenMax = pts.length;
+                for (const p of pts) if (p.quelle === 1 && p.width < bettMin) bettMin = p.width;
                 for (let k = 0; k + 1 < pts.length; k++) {
                     const a = pts[k];
                     const b = pts[k + 1];
@@ -34043,8 +34182,7 @@ class AnazhRealm {
                     landCells,
                     lakeCells,
                     seaCells,
-                    undrainedLand,
-                    maxAccum: Math.round(ctx.maxAccum),
+                    bettMin: Number.isFinite(bettMin) ? Math.round(bettMin * 100) / 100 : null,
                     waterLevel: Math.round(waterLevel),
                     surfMin: Math.round(surfMin),
                     surfMax: Math.round(surfMax),
@@ -35522,9 +35660,6 @@ class AnazhRealm {
             surf,
             isOcean: null,
             filled: null,
-            flowTo: null,
-            accum: null,
-            maxAccum: 0,
             lakeOf: null,
         };
     }
@@ -35695,73 +35830,6 @@ class AnazhRealm {
         ctx.filled = filled;
     }
 
-    // Phase 3 — Flow-Direction (D8): jede Land-Zelle zeigt zum Nachbarn mit kleinster Füllhöhe; das ε
-    // garantiert, dass er echt tiefer liegt (ein Abfluss existiert immer). Rand + Meer: flowTo = -1.
-    _hydroFlowDirection(ctx) {
-        const { dim, filled, isOcean } = ctx;
-        const n = dim * dim;
-        const flowTo = new Int32Array(n).fill(-1);
-        const NB = [
-            [-1, -1],
-            [0, -1],
-            [1, -1],
-            [-1, 0],
-            [1, 0],
-            [-1, 1],
-            [0, 1],
-            [1, 1],
-        ];
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                const idx = i + j * dim;
-                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
-                if (border || isOcean[idx]) continue; // Auslass (Rand/Ozean)
-                // Steilstes GEFÄLLE (drop/Distanz, √2-Penalty für Diagonalen) statt steilster Drop — sonst
-                // bevorzugt D8 Diagonalen und die Drainage bekommt eine Vorzugsrichtung.
-                const fHere = filled[idx];
-                let bestN = -1;
-                let bestSlope = 0;
-                for (let k = 0; k < 8; k++) {
-                    const ni = i + NB[k][0];
-                    const nj = j + NB[k][1];
-                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                    const nidx = ni + nj * dim;
-                    const drop = fHere - filled[nidx];
-                    if (drop <= 0) continue; // nur bergab
-                    const slope = NB[k][0] !== 0 && NB[k][1] !== 0 ? drop / Math.SQRT2 : drop;
-                    if (slope > bestSlope) {
-                        bestSlope = slope;
-                        bestN = nidx;
-                    }
-                }
-                flowTo[idx] = bestN;
-            }
-        }
-        ctx.flowTo = flowTo;
-    }
-
-    // Phase 4 — Flow-Accumulation: Zellen absteigend nach Füllhöhe; jede gibt ihre Akkumulation an
-    // flowTo weiter (echt tiefer → später verarbeitet, also final vor dem Weiterreichen).
-    // A[idx] = Drainage durch die Zelle.
-    _hydroAccumulate(ctx) {
-        const { dim, filled, flowTo } = ctx;
-        const n = dim * dim;
-        const accum = new Float64Array(n).fill(1);
-        const order = new Array(n);
-        for (let i = 0; i < n; i++) order[i] = i;
-        // absteigend nach Füllhöhe; Gleichstand nach Index → deterministisch
-        order.sort((a, b) => filled[b] - filled[a] || a - b);
-        let maxAccum = 0;
-        for (let o = 0; o < n; o++) {
-            const idx = order[o];
-            const t = flowTo[idx];
-            if (t >= 0) accum[t] += accum[idx];
-            if (accum[idx] > maxAccum) maxAccum = accum[idx];
-        }
-        ctx.accum = accum;
-        ctx.maxAccum = maxAccum;
-    }
-
     // Phase 5a — Seen: Komponenten der aufgefüllten Zellen (filled > surf, über Meereshöhe). Je See:
     // Füll-Level (≈ Überlauf-Höhe), Boden, Rand-Höhe, Bounding-Box, Zell-Indizes (für die See-Plane).
     _hydroExtractLakes(ctx) {
@@ -35858,129 +35926,86 @@ class AnazhRealm {
         return lakes;
     }
 
-    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwelle. Flüsse fließen durch Seen HINDURCH
-    // (Conduit = Durchfluss-Zelle, See oder nicht): die Polylinie folgt `flowTo` vom Quell-Hang über die
-    // See-Kette zum Meer (das ε routet durchs Becken). See-Punkte tragen `inLake: true` + Füllstand als
-    // `y` (Renderer + Carve überspringen sie). Breite w = widthMin + widthK·√A.
-    _hydroExtractRivers(ctx) {
-        const { dim, cell, originX, originZ, filled, accum, flowTo, lakeOf, isOcean } = ctx;
+    // Phase 5b — DIE FLÜSSE SIND DAS NETZ DES GESETZES (K16): die Läufe der Ebenen 0 und 1 aus gelaende-core
+    // (`flussLaeufe`) — dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites (bis K16 eine D8-
+    // Akkumulation auf der geglätteten Makro-Fläche: ihr Kanal fräste den gebauten Boden quer durch Hänge und Ebenen, 3,94
+    // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied Punkte im Zell-Abstand, gleich verteilt auf
+    // dem Segment (ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des Gesetzes (stromab streng fallend), die
+    // Breite aus dem Einzugsgebiet (`_flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter
+    // Lauf). Ein Lauf endet am Meer, am See (`mouth` "see", `seeY` sein Spiegel), als Zufluss auf der Rinne seines
+    // Hauptlaufs ("zufluss") oder am Rand der Kachel.
+    _hydroNetzFluesse(ctx) {
+        const { dim, cell, originX, originZ, size, filled, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
-        const n = dim * dim;
-        // adaptive Fluss-Schwelle: ein Bruchteil des größten Durchflusses der
-        // Welt, mit einem absoluten Boden — robust über verschiedene Seeds
-        // (anderes Relief → andere Max-Akkumulation).
-        const threshold = Math.max(HC.riverThresholdMin, ctx.maxAccum * HC.riverThresholdFrac);
-        const isSea = (idx) => isOcean[idx] === 1;
-        // ein Conduit trägt echten Durchfluss — auch eine See-Zelle (der
-        // Fluss fliesst durch den See HINDURCH, statt an ihm zu enden).
-        const isConduit = (idx) => !isSea(idx) && accum[idx] >= threshold;
-        // Quelle = LAND-Conduit ohne Land-Conduit stromauf. Seen sind für die Suche transparent (der ε-Flow-
-        // Baum eines Beckens verzweigt fein → sonst Geister-Quellen); hasUpstream überspringt See-Zellen,
-        // ein See ohne Land-Zufluss startet seinen Fluss am Auslass.
-        const isLandConduit = (idx) => isConduit(idx) && lakeOf[idx] < 0;
-        const hasUpstream = new Uint8Array(n);
-        for (let idx = 0; idx < n; idx++) {
-            if (!isLandConduit(idx)) continue;
-            let cur = flowTo[idx];
-            for (let g = 0; g < HC.maxRiverPoints && cur >= 0 && lakeOf[cur] >= 0; g++) {
-                cur = flowTo[cur];
-            }
-            if (cur >= 0 && isLandConduit(cur)) hasUpstream[cur] = 1;
-        }
-        const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
-        const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
-        // DER LAUF (W-F5, Gegenprüfung 07.10., Runde 3): je Zelle die Länge ihres längsten Laufs stromauf bis zu einer Quelle
-        // — die Quelle wächst mit ihm. Fließt ein See in die Quelle (ein Abfluss) oder der Lauf durch einen See, trägt er das
-        // Wasser des Sees mit: dort ist der Lauf unendlich (ein Abfluss beginnt in der Breite seines Durchflusses).
-        const lauf = new Float64Array(n).fill(-1);
-        for (let src = 0; src < n; src++) {
-            if (!isLandConduit(src) || hasUpstream[src]) continue;
-            let s = 0;
-            for (const [di, dj] of [
-                [-1, -1],
-                [0, -1],
-                [1, -1],
-                [-1, 0],
-                [1, 0],
-                [-1, 1],
-                [0, 1],
-                [1, 1],
-            ]) {
-                const ni = (src % dim) + di;
-                const nj = ((src / dim) | 0) + dj;
-                if (
-                    ni >= 0 &&
-                    nj >= 0 &&
-                    ni < dim &&
-                    nj < dim &&
-                    flowTo[ni + nj * dim] === src &&
-                    lakeOf[ni + nj * dim] >= 0
-                )
-                    s = Infinity;
-            }
-            let cur = src;
-            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
-                if (lakeOf[cur] >= 0) s = Infinity;
-                if (lauf[cur] >= s) break; // ein früherer Lauf trug hier (und stromab) schon mehr
-                lauf[cur] = s;
-                const t = flowTo[cur];
-                if (t < 0 || isSea(t)) break;
-                s += Math.hypot(wx(t) - wx(cur), wz(t) - wz(cur));
-                cur = t;
-            }
-        }
+        const laeufe = globalThis.__gelaendeCore.flussLaeufe(
+            this._gelaende(),
+            originX,
+            originZ,
+            originX + size,
+            originZ + size
+        );
+        const zelle = (x, z) => {
+            const i = Math.floor((x - originX) / cell);
+            const j = Math.floor((z - originZ) / cell);
+            return i >= 0 && j >= 0 && i < dim && j < dim ? i + j * dim : -1;
+        };
         const rivers = [];
-        for (let src = 0; src < n; src++) {
-            if (!isLandConduit(src) || hasUpstream[src]) continue;
-            const points = [];
-            let cur = src;
-            let mouth = "border";
-            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
-                const t = flowTo[cur];
-                let fx = 0;
-                let fz = 0;
-                if (t >= 0) {
-                    fx = wx(t) - wx(cur);
-                    fz = wz(t) - wz(cur);
-                    const L = Math.hypot(fx, fz) || 1;
-                    fx /= L;
-                    fz /= L;
+        for (const lf of laeufe) {
+            let lauf = lf.quelle ? 0 : Infinity;
+            let points = [];
+            let mouth = null;
+            let seeY = NaN;
+            const abschluss = (m) => {
+                if (points.length >= 2) {
+                    const rv = { points, mouth: m };
+                    if (m === "see" && Number.isFinite(seeY)) rv.seeY = seeY;
+                    rivers.push(rv);
                 }
-                // DIE QUELLE wächst aus dem Gesetz (W-F5): jede beginnt als das Rinnsal (quellBett) und weitet sich stromab um
-                // quellWeitung je Meter Lauf, bis sie die Breite ihrer Akkumulation trägt (an der Schwelle quellBreite, ab der
-                // doppelten Schwelle die volle); die Tiefe folgt dem Anteil (`AnazhRealm._flussTiefe`). Je Zelle aus Lauf und
-                // Akkumulation: geteilte Unterläufe sind breiten-gleich. Bis V18.531 sprang jede Quelle in voller Breite aus dem
-                // Boden (8,2–11,9 m, 2,36 m tief); bis 5040e8f7 wer an seiner ersten Zelle schon mehr als die Schwelle sammelte
-                // (die Quelle −456/872: 11,75 m breit, 1,62 m tief).
-                const voll = HC.widthMin + HC.widthK * Math.sqrt(accum[cur]);
-                const quelle = Math.min(
-                    1,
-                    Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold),
-                    (HC.quellBett + HC.quellWeitung * lauf[cur]) / voll
-                );
-                points.push({
-                    x: wx(cur),
-                    z: wz(cur),
-                    // y = hydrologische Füllhöhe: fällt entlang flowTo STRIKT monoton, auch durch einen See (ε≈0.01 →
-                    // die See-Strecke ist nahezu flach).
-                    y: filled[cur],
-                    width: voll * quelle,
-                    quelle,
-                    flowX: fx,
-                    flowZ: fz,
-                    inLake: lakeOf[cur] >= 0,
-                });
-                if (t < 0) {
-                    mouth = "border";
-                    break;
+                points = [];
+            };
+            for (let g = 0; g < lf.glieder.length && !mouth; g++) {
+                const gl = lf.glieder[g];
+                const ex = gl.bx - gl.ax;
+                const ez = gl.bz - gl.az;
+                const len = Math.hypot(ex, ez) || 1;
+                const n = Math.max(1, Math.ceil(len / cell));
+                const voll = AnazhRealm._flussBreite(gl.A);
+                const bis = g === lf.glieder.length - 1 ? n : n - 1;
+                for (let m = 0; m <= bis; m++) {
+                    const t = m / n;
+                    const x = gl.ax + ex * t;
+                    const z = gl.az + ez * t;
+                    const idx = zelle(x, z);
+                    if (idx < 0) {
+                        abschluss("border");
+                        continue;
+                    }
+                    if (isOcean[idx]) {
+                        mouth = "sea";
+                        break;
+                    }
+                    if (lakeOf[idx] >= 0) {
+                        mouth = "see";
+                        seeY = filled[idx];
+                        break;
+                    }
+                    const s = lauf + len * t;
+                    const quelle = Math.min(1, (HC.quellBett + HC.quellWeitung * s) / voll);
+                    points.push({
+                        x,
+                        z,
+                        y: gl.ba + (gl.bb - gl.ba) * t,
+                        width: voll * quelle,
+                        quelle,
+                        flowX: ex / len,
+                        flowZ: ez / len,
+                        inLake: false,
+                    });
                 }
-                if (isSea(t)) {
-                    mouth = "sea";
-                    break;
-                }
-                cur = t;
+                lauf += len;
             }
-            if (points.length >= 2) rivers.push({ points, mouth });
+            const ende = { meer: "sea", see: "see", muendung: "zufluss" };
+            abschluss(mouth || ende[lf.ende] || "border");
         }
         return rivers;
     }
@@ -36105,6 +36130,7 @@ class AnazhRealm {
             let unten = -Infinity;
             if (e < P.length) unten = P[e].inLake ? P[e].y : S.get(schluessel(P[e]));
             else if (rv.mouth === "sea") unten = ctx.waterLevel;
+            else if (rv.mouth === "see" && Number.isFinite(rv.seeY)) unten = rv.seeY;
             for (let i = k; i < e; i++) {
                 const key = schluessel(P[i]);
                 S.set(key, Math.min(oben, Math.max(unten, S.get(key))));
@@ -36112,6 +36138,89 @@ class AnazhRealm {
             // Der Abfluss beginnt bündig mit seinem See (sonst schnitte der Kanal den Becken-Rand auf den tieferen Lauf
             // und das See-Wasser stünde als Wand darüber); die Stufe liegt im ersten Segment.
             if (Number.isFinite(oben)) S.set(schluessel(P[k]), oben);
+        }
+        // (4) DIE FRÄSE DES BREITEREN (K16, W-F5): die Ufer eines Zuflusses liest `ziel` ungefräst — liegt er im Kanal oder
+        // auf der Böschung eines BREITEREN Flusses, schneidet dessen Fräse den Boden unter ihn, und sein Wasser stand darüber
+        // (am Ursprung 0,5–2,9 m tief statt des Rinnsals; im Kanal des Stamms hob es dessen Spiegel bis 0,71 m). Je Segment
+        // des breiteren (die breitesten zuerst — ihr Spiegel steht dann fest) trägt jeder schmalere Punkt eines anderen Laufs
+        // in seiner Reichweite höchstens die Kanal-Fläche des Segments (die Gestalt von `_hydrosphereCarveAt`) minus seinem
+        // Freibord, nie weniger als den Spiegel des breiteren. Danach wieder stromab nie steigend.
+        {
+            const sN = HC.bankNeigung;
+            const sK = HC.bankKruemmung;
+            const fuss = HC.bankRundung;
+            const zelle = (x, z) =>
+                Math.round((x - ctx.originX) / ctx.cell - 0.5) + "," + Math.round((z - ctx.originZ) / ctx.cell - 0.5);
+            const raster = new Map();
+            for (const [key, p] of punkte) {
+                const zk = zelle(p.x, p.z);
+                if (!raster.has(zk)) raster.set(zk, []);
+                raster.get(zk).push(key);
+            }
+            const stromab = (kp, kz, n) => {
+                for (let k = naechster.get(kp), g = 0; k !== undefined && g < n; k = naechster.get(k), g++)
+                    if (k === kz) return true;
+                return false;
+            };
+            const segmente = [...naechster.entries()].sort(
+                (a, b) => (punkte.get(b[0]).width || 0) - (punkte.get(a[0]).width || 0)
+            );
+            let gekappt = false;
+            for (const [ka, kb] of segmente) {
+                const a = punkte.get(ka);
+                const b = punkte.get(kb);
+                if (!b) continue;
+                const hwA = (a.width || HC.widthMin) * 0.5;
+                const hwB = (b.width || HC.widthMin) * 0.5;
+                const dA = AnazhRealm._flussTiefe(a);
+                const dB = AnazhRealm._flussTiefe(b);
+                const weit = Math.max(hwA + dA / sN, hwB + dB / sN) + HC.dammBreite + HC.bankWeite;
+                const nZ = Math.ceil(weit / ctx.cell) + 1;
+                const ia = Math.round((a.x - ctx.originX) / ctx.cell - 0.5);
+                const ja = Math.round((a.z - ctx.originZ) / ctx.cell - 0.5);
+                const ex = b.x - a.x;
+                const ez = b.z - a.z;
+                const len2 = ex * ex + ez * ez || 1;
+                for (let dj = -nZ; dj <= nZ; dj++)
+                    for (let di = -nZ; di <= nZ; di++) {
+                        const liste = raster.get(ia + di + "," + (ja + dj));
+                        if (!liste) continue;
+                        for (const kp of liste) {
+                            if (kp === ka || kp === kb) continue;
+                            const p = punkte.get(kp);
+                            let t = ((p.x - a.x) * ex + (p.z - a.z) * ez) / len2;
+                            t = t < 0 ? 0 : t > 1 ? 1 : t;
+                            const halfW = hwA + (hwB - hwA) * t;
+                            if (!((p.width || HC.widthMin) * 0.5 < halfW)) continue;
+                            const D = dA + (dB - dA) * t;
+                            const dK = halfW + D / sN;
+                            const dist = Math.hypot(p.x - (a.x + ex * t), p.z - (a.z + ez * t));
+                            if (dist >= dK + HC.dammBreite + HC.bankWeite) continue;
+                            const spiegel = S.get(ka) + (S.get(kb) - S.get(ka)) * t;
+                            if (!(S.get(kp) > spiegel)) continue;
+                            if (stromab(kp, ka, nZ + 2)) continue; // der eigene Lauf mündet hier
+                            const B = spiegel - (1 - HC.spiegelFreibord) * D;
+                            const u0 = dist - halfW;
+                            let flaeche =
+                                u0 <= -fuss
+                                    ? B
+                                    : u0 < fuss
+                                      ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss)
+                                      : B + sN * u0;
+                            if (dist > dK) flaeche += sK * (dist - dK) * (dist - dK);
+                            const grenze = Math.max(spiegel, flaeche - HC.spiegelFreibord * AnazhRealm._flussTiefe(p));
+                            if (S.get(kp) > grenze) {
+                                S.set(kp, grenze);
+                                gekappt = true;
+                            }
+                        }
+                    }
+            }
+            if (gekappt)
+                for (const key of nachHoehe) {
+                    const n = naechster.get(key);
+                    if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+                }
         }
         for (const rv of rivers) for (const p of rv.points) p.S = p.inLake ? p.y : S.get(schluessel(p));
     }
@@ -36700,8 +36809,10 @@ class AnazhRealm {
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
-        // Die Regler initialisiert der persistierte Atmosphäre-Wert (Settings-Slider, überlebt Reload), sonst Default.
+        // uEmotion ist der Kopplungs-Haken (0 = neutral). Die Regler initialisiert der persistierte Atmosphäre-
+        // Wert (Settings-Slider, überlebt Reload), sonst Default.
         const atmoW = this.state.atmosphere || {};
+        const uEmotion = uniform(0.0);
         // Mindest-Wasser-Dicke (Meter optischer Weg): Fragmente darunter fallen per alphaTest (der 16-m-Atlas-
         // Spiegel blutet minimal über Voxel-Grate → flaches Blatt); tiefes Wasser bleibt. Default 0 (der
         // Durchlass macht dünnes Wasser schon durchsichtig), live über setWaterCull.
@@ -36898,9 +37009,9 @@ class AnazhRealm {
         const whitewater = smoothstep(float(1.2), float(3.2), aSlopeV).mul(
             float(0.25).add(riverS1.mul(0.75).mul(detailFade))
         );
-        // Kein Schaum ohne Gesetz-Grund: bis K16b hob die Stimmung des Spielers (V14-Haken, Ruhe 0,39 · Hoffnung 0,06 an der
-        // Ankunft) den Schaum auf JEDER Wasser-Fläche um 0,05 — 18,8 % des ruhigen Flusses weiß (gate:wasser-leben B1).
-        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater), 0.0, 1.0);
+        // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
+        // im Wasser); default 0 = exakt das alte Bild.
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
@@ -36987,6 +37098,8 @@ class AnazhRealm {
             irr: uIrr,
             sunCol: uSunCol,
             light: uLight,
+            // emotion ist der V14-Haken.
+            emotion: uEmotion,
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
@@ -38327,6 +38440,93 @@ class AnazhRealm {
             dach: (T, boden) => T.mix(boden, krone.rgb.mul(su.uSeasonMul), dach),
         });
         if (!material || !material.colorNode) throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
+        // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um den
+        // SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe weiter
+        // (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
+        const bauZoneRad = Math.min(
+            schalen[0].aussen,
+            ((targetRing + 0.5) * cfg.span * Math.SQRT2 + F.reanchorDist) * (1 + (F.seite * 2 * Math.PI) / W)
+        );
+        // DER RING WEICHT DEM GEBAUTEN (K16, die Naht): wo ein gezeichneter Chunk steht (`_chunkGezeichnet`), verwirft der Ring
+        // sein Fragment (`maskNode`) — die Masken-Karte trägt je Chunk der Bau-Zone ein Texel um den Anker, `_fernRingMaske`
+        // schreibt sie, sobald sich der gezeichnete Bestand ändert. Bis 12.10. tauchte der Ring dort 2 m (an der Naht 0,2 m)
+        // unter das Gesetz, und das Gebaute deckte ihn per Tiefe: über jeder Höhlen-Mündung (der gebaute Boden 10–62 m unter dem
+        // Gesetz) stand er als glatte Platte mit Sägezahn-Kante (Bild platte-ring-an/-aus, K16-nb3), und an der Naht stach
+        // seine Sehne durch den Chunk (gate:fern-ring Band 9, voller 5 × 5-Satz 2,79 %).
+        const maskeN = 2 * Math.ceil(bauZoneRad / cfg.span) + 3;
+        const maskeDaten = new Uint8Array(maskeN * maskeN * 4);
+        const maskeTex = new THREE.DataTexture(maskeDaten, maskeN, maskeN, THREE.RGBAFormat, THREE.UnsignedByteType);
+        maskeTex.name = "fern-ring-maske";
+        maskeTex.magFilter = THREE.NearestFilter;
+        maskeTex.minFilter = THREE.NearestFilter;
+        maskeTex.generateMipmaps = false;
+        maskeTex.needsUpdate = true;
+        const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
+        // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
+        // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
+        // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
+        // Laplace-Runde, λ 0,5) schiebt jeden Vertex um höchstens eine halbe Kante über seine Voxel-Spalte hinaus. Das Deck
+        // beginnt also zwischen ox − ½ s und ox + 1½ s und endet zwischen ox + span − ½ s und ox + span + 1½ s. Sicher getragen
+        // ist die Zelle ohne diese Bänder; ein Band nur, wenn der Nachbar dort gebaut ist und dieselbe Stufe trägt (dann
+        // teilen beide die Vertex-Spalte; über die Stufen-Grenze trägt das Deck nicht sicher — Morph-Kappe, Höhlen-Zweige).
+        // Dort verwirft der Ring (2). Im SAUM — den Bändern am Rand des Gebauten, innen wie außen — zeichnet er und WEICHT dem
+        // Chunk in die Tiefe (`nahtWeiche`, senkrecht über die Ring-Normale auf den Strahl, gekappt `nahtWeicheMax`): wo das
+        // Deck fehlt, trägt der Ring, wo es steht, gewinnt es (1). Die Kante s der Stufe trägt die Karte im Grün-Kanal (× 10).
+        // Bis 12.10. verwarf die ganze Zelle: an der −X- und −Z-Kante des Gebauten zeichnete niemand (Prüfung: 47 von 52
+        // Punkten 5 cm innen ohne Deck, im Bild eine blaue Linie über die Bau-Kante; die Glättung trug Reste bis 1,9 m innen).
+        {
+            const zelleF = TSL.floor(TSL.positionWorld.xz.div(cfg.span));
+            const lokal = TSL.positionWorld.xz.sub(zelleF.mul(cfg.span));
+            const zelle = zelleF.sub(uMaskeZelle0);
+            const lies = (dx, dz) => {
+                const z = zelle.add(TSL.vec2(dx, dz));
+                const drin = z.x
+                    .greaterThanEqual(0)
+                    .and(z.y.greaterThanEqual(0))
+                    .and(z.x.lessThan(maskeN))
+                    .and(z.y.lessThan(maskeN));
+                const t = TSL.textureLoad(maskeTex, TSL.ivec2(TSL.clamp(z, TSL.vec2(0), TSL.vec2(maskeN - 1))));
+                const b = drin.and(t.x.greaterThan(0.5));
+                return { b, s: TSL.select(b, t.y.mul(25.5), TSL.float(0)) };
+            };
+            const N = {};
+            let w = TSL.float(0);
+            for (let dx = -1; dx <= 1; dx++)
+                for (let dz = -1; dz <= 1; dz++) {
+                    N[`${dx},${dz}`] = lies(dx, dz);
+                    w = TSL.max(w, N[`${dx},${dz}`].s);
+                }
+            const T00 = N["0,0"];
+            // je Achse das untere Band (bis 1½ s) und das obere (ab span − ½ s)
+            const untenX = lokal.x.lessThan(w.mul(1.5));
+            const untenZ = lokal.y.lessThan(w.mul(1.5));
+            const nahX = untenX.or(lokal.x.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
+            const nahZ = untenZ.or(lokal.y.greaterThan(TSL.float(cfg.span).sub(w.mul(0.5))));
+            const wahl = (a, b, c) => ({ b: TSL.select(a, b.b, c.b), s: TSL.select(a, b.s, c.s) });
+            const TX = wahl(untenX, N["-1,0"], N["1,0"]);
+            const TZ = wahl(untenZ, N["0,-1"], N["0,1"]);
+            const TXZ = wahl(untenX, wahl(untenZ, N["-1,-1"], N["-1,1"]), wahl(untenZ, N["1,-1"], N["1,1"]));
+            const traegt = (T) => T.b.and(T.s.equal(T00.s));
+            const sicher = T00.b
+                .and(nahX.not().or(traegt(TX)))
+                .and(nahZ.not().or(traegt(TZ)))
+                .and(nahX.and(nahZ).not().or(traegt(TXZ)));
+            const saum = sicher.not().and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
+            material.maskNode = sicher.not();
+            // die Weiche: der Strahl bis zur um `nahtWeiche` gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|)
+            const pv = TSL.positionView;
+            const lang = pv.length();
+            const nW = TSL.normalWorldGeometry;
+            const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
+            const dt = TSL.min(
+                TSL.float(F.nahtWeiche)
+                    .mul(TSL.abs(nW.y))
+                    .div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)),
+                TSL.float(F.nahtWeicheMax)
+            );
+            const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
+            material.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
+        }
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const per = schalen[s].per;
@@ -38371,13 +38571,9 @@ class AnazhRealm {
             // Bis zu diesem Radius (Chunk-Ziel-Zone + Blende) tragen die Schale-0-Reihen das VOLLE Gesetz
             // leicht gesenkt → wahres Terrain deckt jedes Chunk-Loch (s. _fernRingRefresh).
             deckZoneRad: (targetRing + 0.5) * cfg.span,
-            // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um
-            // den SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe
-            // weiter (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
-            bauZoneRad: Math.min(
-                schalen[0].aussen,
-                ((targetRing + 0.5) * cfg.span * Math.SQRT2 + F.reanchorDist) * (1 + (F.seite * 2 * Math.PI) / W)
-            ),
+            bauZoneRad, // die Bau-Zone (oben)
+            // die Masken-Karte des Gebauten (`maskNode`, `_fernRingMaske`): je Texel 255 = ein gezeichneter Chunk
+            maske: { tex: maskeTex, daten: maskeDaten, n: maskeN, uZelle0: uMaskeZelle0, schluessel: "" },
             vollY: new Float32Array(off).fill(NaN),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
@@ -38424,7 +38620,8 @@ class AnazhRealm {
                 F: AnazhRealm.FOREST,
                 baseH: 0,
                 fbm: (px, pz) => this._forestFbm(px, pz),
-                feuchteAt: (px, pz, sy) => this._feuchteAt(px, pz, sy),
+                // die Nische liest die Feuchte unter demselben Abdruck (`fussM`, `_flussAbdruck`)
+                feuchteAt: (px, pz, sy) => this._feuchteAt(px, pz, sy, this._fernNischeCtx.fussM),
             });
         // Der Bestand unter dem Fußabdruck (phyto-core `forestBestand`: ohne fussM die Zahlen von forestStandDensity und
         // forestGeburt) — die feine Bestands-Oktave (λ 26 m) faltete die Deckung jeder Masche (Streifen-Index der Deckung 0,82–1,09).
@@ -38597,41 +38794,76 @@ class AnazhRealm {
         return out;
     }
 
-    // DIE LAGE EINES RING-PUNKTS ZUM GEBAUTEN (K16, die Naht): 0 frei · 1 frei, ein Nachbar gebaut (die Naht draußen) · 2 gebaut,
-    // ein Nachbar frei (die Naht drinnen) · 3 gebaut ringsum. Nachbarn = die acht Punkte der Schale um ihn; die Frage stellt nur
-    // die Bau-Zone (`bauZoneRad`: wo ein Chunk stehen kann).
-    _fernRingLage(fr, p) {
-        if (p.s !== 0 || !(p.rad <= fr.bauZoneRad)) return 0;
+    // AN DER NAHT (K16): trägt ein gebauter Chunk den Ring-Punkt oder einen der acht Punkte der Schale um ihn, liegt der Punkt
+    // auf dem vollen Gesetz (`_fernRingY`). Die Frage stellt nur die Bau-Zone (`bauZoneRad`: wo ein Chunk stehen kann).
+    _fernRingNaht(fr, p) {
+        if (p.s !== 0 || !(p.rad <= fr.bauZoneRad)) return false;
+        if (this._chunkDecktRing(p.x, p.z)) return true;
         const W = AnazhRealm.FERN_RING.winkel;
         const sh = fr.schalen[0];
         const ai = p.li - p.row * W;
-        const selbst = this._chunkDecktRing(p.x, p.z);
         const o = this._fernRingOrtTmp || (this._fernRingOrtTmp = {});
         for (let dr = -1; dr <= 1; dr++) {
             const row = p.row + dr;
-            if (row < 0) continue; // innen steht der Spieler: dort gibt es keinen Nachbarn
+            if (row < 0 || row >= sh.reihen) continue; // innen steht der Spieler: dort gibt es keinen Nachbarn
             for (let da = -1; da <= 1; da++) {
                 if (!dr && !da) continue;
-                let gedeckt = false;
-                if (row < sh.reihen) {
-                    AnazhRealm._fernRingOrt(fr, sh, row, (ai + da + W) % W, o);
-                    gedeckt = this._chunkDecktRing(o.x, o.z);
-                }
-                if (selbst && !gedeckt) return 2;
-                if (!selbst && gedeckt) return 1;
+                AnazhRealm._fernRingOrt(fr, sh, row, (ai + da + W) % W, o);
+                if (this._chunkDecktRing(o.x, o.z)) return true;
             }
         }
-        return selbst ? 3 : 0;
+        return false;
+    }
+
+    // DIE REGEL DES maskNode, ihr CPU-Spiegel (K16, die Naht; die Herleitung steht am Stoff in `_fernRingEnsure`): 2 = der Ring
+    // verwirft (ein Deck trägt sicher), 1 = Saum (der Ring zeichnet und weicht dem Chunk um `nahtWeiche` in die Tiefe), 0 = frei.
+    // Leser: gate:fern-ring Band 9 (das Loch, der Durchstich) — dieselbe Rechnung wie der Knoten, Texel für Texel.
+    _fernRingRegel(fr, x, z) {
+        const M = fr.maske;
+        const span = this._voxelChunkConfig().span;
+        const ci = Math.floor(x / span);
+        const cj = Math.floor(z / span);
+        const lx = x - ci * span;
+        const lz = z - cj * span;
+        const i = ci - M.uZelle0.value.x;
+        const j = cj - M.uZelle0.value.y;
+        const T = (a, b) => {
+            const drin = a >= 0 && b >= 0 && a < M.n && b < M.n;
+            const k = (b * M.n + a) * 4;
+            const g = drin && M.daten[k] / 255 > 0.5;
+            return { b: g, s: g ? (M.daten[k + 1] / 255) * 25.5 : 0 };
+        };
+        let w = 0;
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) w = Math.max(w, T(i + dx, j + dz).s);
+        const T00 = T(i, j);
+        const untenX = lx < w * 1.5;
+        const untenZ = lz < w * 1.5;
+        const nahX = untenX || lx > span - w * 0.5;
+        const nahZ = untenZ || lz > span - w * 0.5;
+        const ix = untenX ? -1 : 1;
+        const jz = untenZ ? -1 : 1;
+        const TX = T(i + ix, j);
+        const TZ = T(i, j + jz);
+        const TXZ = T(i + ix, j + jz);
+        const traegt = (t) => t.b && t.s === T00.s;
+        const sicher = T00.b && (!nahX || traegt(TX)) && (!nahZ || traegt(TZ)) && (!(nahX && nahZ) || traegt(TXZ));
+        if (sicher) return 2;
+        return T00.b || (nahX && TX.b) || (nahZ && TZ.b) || (nahX && nahZ && TXZ.b) ? 1 : 0;
     }
 
     // Der Ring weicht dem Gebauten: trägt ein GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring
-    // dort nicht (keine zweite Terrain-Wahrheit über/unter Edits). Sichtbar = Mesh + jede Eltern-Stufe
-    // (Region-Bundles blenden als Gruppe).
+    // dort nicht (keine zweite Terrain-Wahrheit über/unter Edits) — die Masken-Karte des Rings (`_fernRingMaske`,
+    // `maskNode`) verwirft dort sein Fragment.
     _chunkDecktRing(x, z) {
         const st = this.state;
         if (!st.voxelChunks || st.voxelChunks.size === 0) return false;
         const { span } = this._voxelChunkConfig();
-        const e = st.voxelChunks.get(`${Math.floor(x / span)},${Math.floor(z / span)}`);
+        return this._chunkGezeichnet(st.voxelChunks.get(`${Math.floor(x / span)},${Math.floor(z / span)}`));
+    }
+
+    // Zeichnet dieser Chunk-Eintrag Boden? Gebaut, nicht leer, sichtbar = Mesh + jede Eltern-Stufe (Region-Bundles blenden
+    // als Gruppe). Leser: `_chunkDecktRing` und die Masken-Karte des Rings.
+    _chunkGezeichnet(e) {
         if (!e || e.empty || !e.mesh) return false;
         let o = e.mesh;
         while (o) {
@@ -38639,6 +38871,45 @@ class AnazhRealm {
             o = o.parent;
         }
         return true;
+    }
+
+    // DIE MASKE DES GEBAUTEN (K16, `maskNode` des Rings): je Chunk der Bau-Zone um den Anker ein Texel, 255 wo ein gezeichneter
+    // Chunk steht (`_chunkGezeichnet`). Neu geschrieben nur, wenn sich die Chunk-Menge regt (`_weltRegt(true)`) oder der Anker
+    // wandert; hochgeladen nur, wenn ein Texel sich ändert.
+    _fernRingMaske(fr) {
+        const M = fr.maske;
+        const st = this.state;
+        const chunks = st.voxelChunks;
+        const schluessel = `${this._bodenRegung | 0}|${chunks ? chunks.size : 0}|${fr.anchorX}|${fr.anchorZ}`;
+        if (M.schluessel === schluessel) return;
+        M.schluessel = schluessel;
+        const { span } = this._voxelChunkConfig();
+        const h = (M.n - 1) / 2;
+        const i0 = Math.floor(fr.anchorX / span) - h;
+        const j0 = Math.floor(fr.anchorZ / span) - h;
+        // je Texel: Rot 255 = gezeichnet, Grün = die Voxel-Kante seiner Stufe × 10 (die Breite des Saums, `_fernRingRegel`)
+        const neu = M.neu || (M.neu = new Uint8Array(M.n * M.n * 2));
+        neu.fill(0);
+        if (chunks)
+            for (const [key, e] of chunks) {
+                if (!this._chunkGezeichnet(e)) continue;
+                const k = key.indexOf(",");
+                const i = Number(key.slice(0, k)) - i0;
+                const j = Number(key.slice(k + 1)) - j0;
+                if (i < 0 || j < 0 || i >= M.n || j >= M.n) continue;
+                neu[(j * M.n + i) * 2] = 255;
+                neu[(j * M.n + i) * 2 + 1] = Math.round(this._voxelChunkConfig(e.lod || 0).step * 10);
+            }
+        let anders = M.uZelle0.value.x !== i0 || M.uZelle0.value.y !== j0;
+        for (let q = 0; q < M.n * M.n; q++)
+            if (M.daten[q * 4] !== neu[q * 2] || M.daten[q * 4 + 1] !== neu[q * 2 + 1]) {
+                M.daten[q * 4] = neu[q * 2];
+                M.daten[q * 4 + 1] = neu[q * 2 + 1];
+                anders = true;
+            }
+        if (!anders) return;
+        M.uZelle0.value.set(i0, j0);
+        M.tex.needsUpdate = true;
     }
 
     // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
@@ -38669,43 +38940,20 @@ class AnazhRealm {
     }
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
-    // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingLage`): wo ein gebauter Chunk den Punkt oder einen
-    // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung); unter
-    // dem Gebauten ringsum taucht er `unterGebaut`, an der Naht drinnen nur `unterSaum` (`_fernRingUnterGebaut`). Bis K16 tauchte
-    // jeder gedeckte Punkt 2 m, und die Masche über die Chunk-Kante zog den Ring draußen mit hinab (Stufe p95 2,05 m, gate:fern-
-    // ring Band 9).
+    // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingNaht`): wo ein gebauter Chunk den Punkt oder einen
+    // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung) —
+    // die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er nicht (die Masken-Karte,
+    // `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte ihn per Tiefe — über jeder
+    // Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
-        const lage = this._fernRingLage(fr, p);
-        if (lage > 0) {
+        if (this._fernRingNaht(fr, p)) {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
         let y = law < wl ? wl - F.wasserDrop : law;
         if (p.row === 0) y -= F.saumDrop;
-        if (lage >= 2) y = this._fernRingUnterGebaut(p.x, p.z, y - (lage === 3 ? F.unterGebaut : F.unterSaum));
         return y;
-    }
-
-    // DER RING UNTER DEM GEBAUTEN (K16, der Saum): unter einem gebauten Chunk liegt der Ring `u` (schon gesenkt: `unterGebaut`
-    // ringsum, `unterSaum` an der Naht — das Surface-Nets-Netz weicht ±0,5 m vom Gesetz, das Gebaute deckt ihn per Tiefe) und
-    // unter jeder Grabung, die die Säule senkt (Kugel-Kappe des carve-Edits, 1 m Luft). Bis K16 tauchte er −60 m: jede Ring-
-    // Masche an der Kante des Gebauten fiel als 60-m-Schlitz ab — der gebaute Boden stand als Platte über einer Grube.
-    _fernRingUnterGebaut(x, z, u) {
-        const meta = this.state.worldMeta;
-        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
-        if (!edits) return u;
-        for (let i = 0; i < edits.length; i++) {
-            const e = edits[i];
-            if (!e || e.mode !== "carve") continue;
-            const dx = x - e.x;
-            const dz = z - e.z;
-            const r2 = e.r * e.r - dx * dx - dz * dz;
-            if (r2 <= 0) continue;
-            const boden = e.y - Math.sqrt(r2) - 1;
-            if (boden < u) u = boden;
-        }
-        return u;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -38907,26 +39155,30 @@ class AnazhRealm {
     // ===== DER FELD-ZEICHNER =====
     // Ein voller Fern-Ring-Refresh (Boot + Re-Anker) und der Feld-Pass lesen die Höhen der Ferne aus dem EINEN Gelände-
     // Gesetzbuch (gelaende-core `hoehe`, K16: das Flussnetz ist memoisierter Zustand je Saat — ein WGSL-Spiegel des
-    // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task höchstens
-    // `FELD_SCHEIBE` Punkte, der Spiel-Takt läuft dazwischen weiter (Streaming ist heilig).
+    // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task so viele Punkte, wie das
+    // Takt-Budget des Streamings trägt (`_voxelStreamBudgetMs`, der Regler atmet es), mindestens 16 — nie eine feste Zahl
+    // (bis K16 fest 1 500 je Task: bei 25 µs je Spalte 37 ms am Stück auf dem Haupt-Thread, Lehre 14).
     _feldZeichnerHoehen(punkte, includeDetail) {
         const n = (punkte.length / 2) | 0;
         const werte = new Float32Array(n);
-        const SCHEIBE = AnazhRealm.FELD_SCHEIBE;
         let k = 0;
         return new Promise((fertig) => {
             const scheibe = () => {
-                const ende = Math.min(n, k + SCHEIBE);
-                for (; k < ende; k++)
+                const budget = this.state._voxelStreamBudgetMs;
+                const frist = performance.now() + (Number.isFinite(budget) && budget > 0 ? budget : 4);
+                const mindest = k + 16;
+                for (; k < n; k++) {
                     werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail);
+                    if (k >= mindest && (k & 15) === 0 && performance.now() > frist) {
+                        k++;
+                        break;
+                    }
+                }
                 if (k < n) setTimeout(scheibe, 0);
                 else fertig(werte);
             };
             scheibe();
         });
-    }
-    static get FELD_SCHEIBE() {
-        return 1500;
     }
 
     // Zeichen-Device des Feld-Panoramas: ZUERST das des Renderers (r184 WebGPUBackend, geteilt), sonst lazy ein eigenes
@@ -40938,6 +41190,7 @@ class AnazhRealm {
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
         for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
         fr.uDachMitte.value.set(playerPos.x, playerPos.z); // das Dach folgt der Mitte der Bäume (der Spieler, XZ)
+        this._fernRingMaske(fr); // der Ring weicht dem Gebauten (`maskNode`)
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
@@ -40972,6 +41225,7 @@ class AnazhRealm {
             this._queueGeometryDispose(m.geometry);
         }
         if (fr.material && typeof fr.material.dispose === "function") fr.material.dispose();
+        if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
             this.state.camera.far = this._fernRingCamFarAlt;
@@ -41632,6 +41886,9 @@ class AnazhRealm {
                       z: this.state.playerMesh.position.z,
                   }
                 : { x: 0, y: 5, z: 0 },
+            // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
+            bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
@@ -41836,6 +42093,8 @@ class AnazhRealm {
                 id: a.id,
                 type: a.type,
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
+                // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
+                ueberGrund: this._ueberGrund(a.position),
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
                 // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
@@ -45453,7 +45712,8 @@ class AnazhRealm {
         // Gewachsene Baupläne MÜSSEN VOR `_loadStateRestoreArchitectures` in state.blueprints landen, sonst
         // läuft spawnArchitecture in einen unbekannten Type-Builder (jeder grown_*-Baum wäre verloren).
         this._loadStateRestoreGrownBlueprints(state);
-        this._loadStateRestoreArchitectures(state);
+        // nach der Welt (Saat, Erbgut, Gesetz) und vor den Bauten: ein Save eines alten Bodens zieht um
+        this._loadStateRestoreArchitectures(state, this._bodenUmzug(state));
         this._loadStateRestoreHotbarAndInventory(state);
         this._loadStateRestoreEmotionsAndDsl(state);
         this._loadStateRestoreWorldRules(state);
@@ -45995,7 +46255,66 @@ class AnazhRealm {
         }
     }
 
-    _loadStateRestoreArchitectures(state) {
+    // Die Höhe eines gespeicherten Orts über dem Boden des Gesetzes (cm-genau; undefined ohne Boden).
+    _ueberGrund(p) {
+        const g = p ? this._voxelSurfaceY(p.x, p.z) : NaN;
+        return Number.isFinite(g) && Number.isFinite(p.y) ? Math.round((p.y - g) * 100) / 100 : undefined;
+    }
+
+    // DER BODEN-UMZUG (K16, Schöpfer-Entscheid §5.4): ein Save einer anderen Boden-Generation (vor K16: keine) schrieb seine
+    // Höhen auf einen Boden, den es nicht mehr gibt (Basis → K16 im Umkreis ±500 m: |Δh| p50 37,7 m). Jeder Bau und der
+    // Spieler stehen nach dem Laden auf dem Boden des Gesetzes in ihrer Höhe über Grund — `ueberGrund` des Saves, sonst die
+    // Fuß-Höhe, auf der jeder Bau und jeder Spieler gesetzt wird (`PLAYER_FOOT_OFFSET`). Liefert die neuen Höhen je Bau-Index
+    // (null: derselbe Boden) und nennt die Zahl (`state.bodenUmzug`, Log): wie viele Bauten sich bewegen, um wie viel.
+    _bodenUmzug(state) {
+        const gen = globalThis.__gelaendeCore.BODEN_GENERATION;
+        if (!state || state.bodenGeneration === gen) return null;
+        const fuss = AnazhRealm.PLAYER_FOOT_OFFSET;
+        const hoehen = new Map();
+        const dh = [];
+        const liste = Array.isArray(state.architectures) ? state.architectures : [];
+        for (let i = 0; i < liste.length; i++) {
+            const a = liste[i];
+            const p = a && a.position;
+            if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) continue;
+            const g = this._voxelSurfaceY(p.x, p.z);
+            if (!Number.isFinite(g)) continue;
+            const y = g + (Number.isFinite(a.ueberGrund) ? a.ueberGrund : fuss);
+            hoehen.set(i, y);
+            dh.push(Number.isFinite(p.y) ? Math.abs(y - p.y) : 0);
+        }
+        let spieler = null;
+        const pm = this.state.playerMesh;
+        if (pm && state.playerPosition) {
+            const g = this._voxelSurfaceY(pm.position.x, pm.position.z);
+            if (Number.isFinite(g)) {
+                const y = g + (Number.isFinite(state.spielerUeberGrund) ? state.spielerUeberGrund : fuss);
+                spieler = Math.round((y - pm.position.y) * 100) / 100;
+                pm.position.y = y;
+            }
+        }
+        dh.sort((p, q) => p - q);
+        const q = (f) =>
+            dh.length ? Math.round(dh[Math.min(dh.length - 1, Math.floor(f * dh.length))] * 100) / 100 : 0;
+        const bericht = {
+            von: Number.isFinite(state.bodenGeneration) ? state.bodenGeneration : 0,
+            nach: gen,
+            bauten: dh.length,
+            bewegt: dh.filter((d) => d > 0.05).length,
+            dhP50: q(0.5),
+            dhMax: q(1),
+            spieler,
+        };
+        this.state.bodenUmzug = bericht;
+        this.log(
+            `BODEN-UMZUG: ${bericht.bewegt} von ${bericht.bauten} Bauten stehen auf dem Boden der Generation ${gen} ` +
+                `(|Δh| p50 ${bericht.dhP50} m, max ${bericht.dhMax} m), der Spieler ${spieler} m`,
+            "INFO"
+        );
+        return hoehen;
+    }
+
+    _loadStateRestoreArchitectures(state, umzug) {
         if (!Array.isArray(state.architectures) || !this.state.scene) return;
         for (const old of this.state.architectures) {
             // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei),
@@ -46013,11 +46332,14 @@ class AnazhRealm {
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // Das neue Array ist ein neuer Bestand: die Nachbarschaft der Blocker (`_blockerNetz`) baut sich bei der nächsten Frage
         // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
-        for (const a of state.architectures) {
+        for (let i = 0; i < state.architectures.length; i++) {
+            const a = state.architectures[i];
             if (!a || typeof a.type !== "string" || !a.position) continue;
             // DER BAUPLAN-UMZUG: ein gefallener Bauplan steht als sein Erbe wieder auf (glut_var* → glutbrunnen).
             const typ = AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type;
-            const entry = this.spawnArchitecture(typ, a.position, {
+            // DER BODEN-UMZUG: auf einem neuen Boden steht der Bau in seiner Höhe über Grund (`_bodenUmzug`)
+            const ort = umzug && umzug.has(i) ? { x: a.position.x, y: umzug.get(i), z: a.position.z } : a.position;
+            const entry = this.spawnArchitecture(typ, ort, {
                 seed: a.seed,
                 scale: a.scale,
                 id: a.id,
@@ -95280,7 +95602,6 @@ class AnazhRealm {
         if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
-        this._kreaturStroemSchritt(dt);
         this._leibKontakte();
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
@@ -99638,6 +99959,21 @@ class AnazhRealm {
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
             this.state.hydroSurfaceUniforms.time.value = currentTime;
         }
+        // `uEmotion` füttern: die Stimmung hebt den Schaum (s. `_ensureHydroSurfaceMaterial`) — positive
+        // Gefühle beleben das Wasser, Trauer dämpft.
+        if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.emotion) {
+            const em = this.state.player && this.state.player.emotions;
+            const vital = em
+                ? Math.max(
+                      0,
+                      Math.min(
+                          1,
+                          (em.joy || 0) * 0.6 + (em.peace || 0) * 0.5 + (em.hope || 0) * 0.3 - (em.sorrow || 0) * 0.5
+                      )
+                  )
+                : 0;
+            this.state.hydroSurfaceUniforms.emotion.value = vital;
+        }
         // V8.28 6.G4.b D — Wind. uWindTime läuft kontinuierlich,
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
@@ -100807,8 +101143,8 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // 150–500 m tiefe Dreiecke); `schalen[i].aussen`
 // = Außenradius (Schale 1 ab Voxel-Ring-Kante + `randPad`); `snap` = grobes Welt-Gitter je Schale
 // (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren nie); `saumDrop` = Tauchkante der
-// innersten Reihe; `unterGebaut` / `unterSaum` = die Senkung unter dem Gebauten ringsum / an der Naht drinnen (0: die
-// Masche über die Chunk-Kante liegt auf dem vollen Gesetz, K16); `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
+// innersten Reihe (im Gebauten zeichnet der Ring nicht: die Masken-Karte, `_fernRingMaske`); `wasserDrop` = Wasser-Klemme;
+// `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
 // vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt im
@@ -100840,11 +101176,11 @@ AnazhRealm.FERN_RING = Object.freeze({
     ]),
     randPad: 40,
     saumDrop: 6,
-    unterGebaut: 2,
-    // An der Naht drinnen: tiefer als das Gebaute vom Gesetz weicht (gate:fern-ring Band 9: chunk-eigen-p95 0,108 m nach dem
-    // Fall der Canyon-Maske; 0,15 m stach 2,02 % durch), flacher als die Masche über die Kante draußen trägt (0,3 m: Bias
-    // −0,198 m, 0,2 m: −0,132 m bei 1,76 % Durchstich).
-    unterSaum: 0.2,
+    // DIE WEICHE IM SAUM DES GEBAUTEN (`_fernRingRegel` 1): so tief (m, senkrecht) weicht der Ring dem Chunk in der ersten
+    // Voxel-Spalte am Rand des Gebauten — über der Sehne des Rings (Ring 3 mit Stufe 1 an der Bau-Kante: Naht p95 1,3 m, max 4,3 m) und der Abweichung des Chunks
+    // (±0,4 m); längs des Strahls gekappt (`nahtWeicheMax`), damit der streifende Blick nicht ferne Hänge durch den Saum zieht.
+    nahtWeiche: 6,
+    nahtWeicheMax: 24,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,
@@ -101040,7 +101376,55 @@ AnazhRealm._flussTiefe = function (p) {
     const HC = AnazhRealm.HYDROSPHERE;
     const q = p.quelle;
     if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
-    return (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q;
+    return Math.min(HC.kanalTiefe, (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q);
+};
+// DIE VOLLE BREITE eines Flusses aus seinem Einzugsgebiet A (m², das Netz des Gelände-Gesetzes): widthMin + widthK ·
+// (A in km²)^widthExp. Leser: `_hydroNetzFluesse`.
+AnazhRealm._flussBreite = function (A) {
+    const HC = AnazhRealm.HYDROSPHERE;
+    return HC.widthMin + HC.widthK * Math.pow(Math.max(0, A) / 1e6, HC.widthExp);
+};
+// DER KASTEN QUER ZUM FLUSS (K16, `_flussAbdruck`): das Mittel eines Ufer-Bands b(|u|) über [d − F/2, d + F/2] (u der
+// Abstand quer zum Segment, d der des Punkts) aus der Stammfunktion des Bands C(s) = ∫₀ˢ b — exakt für ein gerades
+// Segment, stetig in d, für F → 0 der Punkt-Wert b(d). Die Stammfunktionen stehen neben ihren Bändern.
+AnazhRealm._kastenMittel = function (C, d, F, p, q, r, s) {
+    const a = d - F / 2;
+    const b = d + F / 2;
+    return (a >= 0 ? C(b, p, q, r, s) - C(a, p, q, r, s) : C(b, p, q, r, s) + C(-a, p, q, r, s)) / F;
+};
+// die Kronen-Blende (`_hydroRiverAt`): 1 bis zur Kanal-Kante `hw`, smoothstep auf 0 über `kappa` bis zur Krone
+AnazhRealm._stammUfer = function (s, hw, kappa) {
+    let w = (s - hw) / kappa;
+    w = w < 0 ? 0 : w > 1 ? 1 : w;
+    return Math.min(s, hw) + kappa * (w - w * w * w + (w * w * w * w) / 2);
+};
+// das Fluss-Band der Feuchte (`_feuchteAt`): 1 bis `inner`, smoothstep auf 0 über `reich`
+AnazhRealm._stammFeuchte = function (s, inner, reich) {
+    const q = s < inner ? inner : s > inner + reich ? inner + reich : s;
+    const v = (inner + reich - q) / reich;
+    return Math.min(s, inner) + reich * (0.5 - v * v * v + (v * v * v * v) / 2);
+};
+// die Bank (`_pathFieldAt`): (1 − (u − inner) / bank)² auf [inner, inner + bank]
+AnazhRealm._stammPfad = function (s, inner, bank) {
+    let q = (s - inner) / bank;
+    q = q < 0 ? 0 : q > 1 ? 1 : q;
+    return (bank * (1 - (1 - q) * (1 - q) * (1 - q))) / 3;
+};
+// die Bank × die Kronen-Blende (`_pathFieldAt` über dem Fluss-Spiegel): auf [inner, Ende] ein Polynom 5. Grades —
+// Gauß-Legendre mit drei Knoten ist exakt
+AnazhRealm._stammPfadUfer = function (s, inner, bank, hw, kappa) {
+    const e = Math.min(s, inner + bank, hw + kappa);
+    if (!(e > inner)) return 0;
+    const m = (inner + e) / 2;
+    const h = (e - inner) / 2;
+    const f = (u) => {
+        const b = 1 - (u - inner) / bank;
+        let w = (u - hw) / kappa;
+        w = w < 0 ? 0 : w > 1 ? 1 : w;
+        return b * b * (1 - w * w * (3 - 2 * w));
+    };
+    const k = h * Math.sqrt(0.6);
+    return h * ((5 / 9) * f(m - k) + (8 / 9) * f(m) + (5 / 9) * f(m + k));
 };
 
 // Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des

@@ -578,13 +578,15 @@ async function probe(arg) {
                 for (let dx = -84; dx <= 84; dx += 4) if (dx * dx + dz * dz <= 84 * 84 && nass(x + dx, z + dz)) return false;
             return true;
         };
-        // Nie auf der Lichtung der Genesis-Plattform (40 m): dort wächst nach dem Gesetz nichts (`_naturSetzen`), die Birke
-        // des Absenders fiele als Lichtung statt als Ort — seit K16 ist die Heimat trocken und wäre der erste Kandidat.
-        const g0 = r._genesisMitte();
         let ort = null;
+        // K16 (das Flussnetz-Gelände): die Plattform selbst ist trocken (das nächste Wasser 292 m) — der Ort liegt außerhalb
+        // ihrer Lichtung (`_grundrissVon`, + 30 m für die Kronen des Satzes), sonst pflanzt der Absender nichts.
+        const platz = st.architectures.find((a) => a && a.type === "start_plattform");
+        const licht = platz && r._grundrissVon(platz);
+        const frei = (x, z) =>
+            !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
-            if (Math.hypot(x - g0.x, z - g0.z) < 40) continue;
-            if (r._landAt(x, z, 1) && trockenUm(x, z)) {
+            if (frei(x, z) && r._landAt(x, z, 1) && trockenUm(x, z)) {
                 ort = { x, z };
                 break;
             }
@@ -807,10 +809,8 @@ async function probe(arg) {
             if (s === null || !Number.isFinite(s)) return !(r._atlasWaterLevelAt(x, z, -1e9) > -Infinity);
             return !(s < r._koerperWasser(x, z, s) + mg) && !(s < r._atlasWaterLevelAt(x, z, s) + mg);
         };
-        // das Wasser ist das des Gesetzes (`__wasserOrt("ufer")`, scripts/lib/orte-des-gesetzes.cjs): die Heimat trägt seit
-        // K16 im 200-m-Umkreis kein Wasser, die Stichprobe hatte 0 nasse Punkte (die Vorbedingung fiel)
-        const wo = window.__wasserOrt("ufer");
-        const w0 = wo ? { x: wo.wasser.x, z: wo.wasser.z } : null;
+        // das nächste Wasser des Gesetzes (K16: 292 m von der Plattform, die 200-m-Suche fand keins — die Stichprobe war trocken)
+        const w0 = r._findNearestWaterPoint(P.x, P.z, 800);
         const zentren = [ort, P].concat(w0 ? [w0] : []);
         let seed = 12345;
         const rnd = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
@@ -1303,7 +1303,6 @@ async function probe(arg) {
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
-    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;

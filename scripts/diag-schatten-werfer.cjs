@@ -1164,16 +1164,13 @@ function probe(selbsttest) {
                 if (L) L.fit = fit;
             }
         };
-        // Die Zellen urteilen frisch: ein Abschnitt, der in derselben Lage gewählt wurde, ruht (`_satzAbschnittSteht`, Welle
-        // C) und hielte das Urteil des Gesetzes aus w9(null). Bis K16 brach die Höhlen-Sicht jeden Halt (jeder Satz trug
-        // Höhlen-Zellen); die Landform im Kern versiegelt die Höhlen 16 m unter dem Boden, kein Satz trägt eine — der
-        // Selbsttest lief vakuös (Zellen falsch 0 bei Kapsel-Schnitt 812).
-        if (abweichung === "zellen") {
+        if (abweichung === "zellen")
             r._chunkSatzPass = function (kamera, nach, k, S2) {
+                // die gehaltene Wahl gilt nicht (Welle C: steht Lage und Stand, zeichnet der Abschnitt, wie er lag — der
+                // Leser urteilte nie, S10 war blind, sobald kein Satz seit dem Haupt-Urteil wuchs: „Zellen falsch 0")
+                for (const sz of this.state.chunkSaetze.values()) for (const a of sz.abschnitte.values()) a.wahl = null;
                 return ohneKapsel(S2.lage, () => P._chunkSatzPass.call(this, kamera, nach, k, S2));
             };
-            r._satzAbschnittSteht = () => false;
-        }
         if (abweichung === "werfer")
             r._werferWahlPass = function (m, L, ab) {
                 return ohneKapsel(L, () => P._werferWahlPass.call(this, m, L, ab));
@@ -1283,11 +1280,6 @@ function probe(selbsttest) {
             return res;
         } finally {
             delete r._chunkSatzPass;
-            delete r._satzAbschnittSteht;
-            // die Wahl der alten Box hält nicht nach (sonst urteilten die folgenden Leser über ihre Zellen)
-            if (abweichung === "zellen")
-                for (const sz of st.chunkSaetze ? st.chunkSaetze.values() : [])
-                    for (const ab of sz.abschnitte.values()) ab.wahl = null;
             delete r._werferWahlPass;
             delete r._instanzWahlPass;
             if (bg) {

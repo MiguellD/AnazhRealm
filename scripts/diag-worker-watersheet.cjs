@@ -93,29 +93,20 @@ const server = http.createServer((req, res) => {
         }
     });
 
-    // Zu echtem Wasser steuern: ein NATÜRLICHES Wasserfeld (Ozean/See) finden
-    // (submerges Atlas-Wasser), den Spieler dorthin setzen + die Welt darum streamen
-    // (der Worker baut die Chunks + liefert die waterCells). Dann der Vergleich.
+    // Zu echtem Wasser steuern: den See AUS DER WELT (`__wasserOrte`, die EINE Orts-Probe des Wassers) — den Spieler
+    // dorthin setzen + die Welt darum streamen (der Worker baut die Chunks + liefert die waterCells). Dann der Vergleich.
+    // K16: die Flüsse sind das Netz des Gelände-Gesetzes, ihr Kanal liegt höchstens 0,8 m in der Aue — der Spiral-Scan
+    // nach 1,5 m Atlas-Wasser im 1400-m-Kreis um den Spieler fand keins mehr (er las den tiefen Kanal der alten Welt).
+    await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
     const steer = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const s = r.state;
         if (!s || !s.playerMesh) return { err: "kein Spieler" };
         const px = s.playerMesh.position.x,
             pz = s.playerMesh.position.z;
-        // Spiral-Scan nach der NÄCHSTEN submergten Wasser-Spalte (Atlas-Wasser über Terrain).
-        let spot = null;
-        for (let radius = 0; radius <= 1400 && !spot; radius += 30) {
-            for (let a = 0; a < 360 && !spot; a += 15) {
-                const rad = (a * Math.PI) / 180;
-                const x = px + Math.cos(rad) * radius;
-                const z = pz + Math.sin(rad) * radius;
-                const L = r._atlasWaterLevelAt(x, z, -Infinity);
-                if (!(L > -Infinity)) continue;
-                const t = r.getTerrainHeightAt(x, z);
-                if (Number.isFinite(t) && t < L - 1.5) spot = { x, z, L };
-            }
-        }
-        if (!spot) return { err: "kein natürliches Wasser im 1400-m-Radius gefunden" };
+        const O = window.__wasserOrte({ mess: [px, pz] });
+        if (!O || !O.see) return { err: "kein See in der Welt (`__wasserOrte`)" };
+        const spot = { x: O.see.x, z: O.see.z, L: O.see.level };
         // Spieler ans Wasser (Body-frei seit V18.331 — nur die Mesh-Position treibt das Streaming).
         s.playerMesh.position.set(spot.x, spot.L + 3, spot.z);
         // Streaming-Pump: der Worker baut die Chunks um den Spieler + liefert waterCells.

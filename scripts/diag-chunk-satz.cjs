@@ -282,8 +282,6 @@ function check(name, ok, detail) {
     page.setDefaultTimeout(280000);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    // die Orte des Gesetzes (See, Fluss, Meer — scripts/lib/orte-des-gesetzes.cjs): (i) wächst den Wasser-Satz am See
-    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
         // dieselbe „Code ohne Kommentare“-Quelle wie der Playtest (Absenz-Greps treffen nie Zitate)
@@ -708,13 +706,15 @@ function check(name, ok, detail) {
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
             // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
-            // am Wasser-Satz: doppelte Kapazität, derselbe Inhalt, derselbe Mesh.
+            // am kleinsten Satz des Rings (der Tausch ist EIN Weg für jeden Satz; am Mess-Ort der K16-Landform steht kein
+            // Wasser im Ring — die Probe hing an einem 12-Vertex-Wasserfleck der alten Welt): doppelte Kapazität, derselbe
+            // Inhalt, derselbe Mesh.
             res.wachsen = null;
-            // Der Wasser-Satz steht am See des Gesetzes (`__wasserChunk("see")`): seit K16 trägt der Ring der Heimat kein
-            // Oberflächen-Wasser (die Seen sind die Senken des Flussnetzes) — bis zum Wasser-Band der Flüsse trug ihn eine
-            // einzige Aquifer-Zelle 53 m unter dem Boden (Chunk 4,4, y −4), danach fand (i) keinen Satz.
-            if (!(s.chunkSaetze && s.chunkSaetze.get("wasser")) && window.__wasserChunk("see")) r._tickChunkSatz();
-            const ws = s.chunkSaetze ? s.chunkSaetze.get("wasser") : null;
+            let ws = null;
+            let wsName = null;
+            for (const [name, sa] of s.chunkSaetze ? s.chunkSaetze : [])
+                if (sa && sa.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
+                    ((ws = sa), (wsName = String(name).split("|")[0]));
             if (ws) {
                 const altMesh = ws.mesh,
                     altGeom = ws.geom,
@@ -724,6 +724,7 @@ function check(name, ok, detail) {
                 r._tickChunkSatz();
                 const ab = abschnitteVon(ws);
                 res.wachsen = {
+                    satz: wsName,
                     derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene,
                     getauscht: ws.geom !== altGeom && ws.mesh.geometry === ws.geom,
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,

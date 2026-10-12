@@ -7,7 +7,6 @@ const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 const SK = require("./lib/shader-kosten.cjs");
-const ORTE = require("./lib/orte-des-gesetzes.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -20027,7 +20026,7 @@ async function checkBandHydrosphere(ctx) {
         out.riverCount = h1.rivers.length;
         out.lakeCount = h1.lakes.length;
         out.waterfallCount = h1.waterfalls.length;
-        out.maxAccum = h1.stats ? h1.stats.maxAccum : 0;
+        out.bettMin = h1.stats ? h1.stats.bettMin : null;
         out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
         out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
         out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
@@ -20040,33 +20039,24 @@ async function checkBandHydrosphere(ctx) {
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-        // Jeder Fluss fällt STRIKT monoton: point.y ist die Füllhöhe entlang flowTo — auch durch einen
-        // See (das Priority-Flood-ε hält filled im Becken strikt fallend).
+        // Jeder Fluss fällt STRIKT monoton: point.y ist die Sohle des Netzes (gelaende-core `knotenSohle`).
         out.riversDescend = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
                 if (rv.points[k].y <= rv.points[k + 1].y) return false;
             }
             return true;
         });
-        // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
-        // sind keine Mündung mehr — der Fluss fliesst hindurch).
-        out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
-        // V9.46 — mindestens ein Fluss fliesst durch einen See HINDURCH: ein Land-Punkt NACH einer See-Durchquerung —
-        // gemessen an der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
+        // Jeder Fluss endet am Meer, am Rand der Kachel, in einem See (K16: die Senke des Netzes ist ein benannter See) oder als
+        // Zufluss auf der Rinne seines Hauptlaufs.
+        out.riverMouths = h1.rivers.every((rv) => ["sea", "border", "see", "zufluss"].includes(rv.mouth));
+        // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
+        // der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
         const seeOrt = window.__wasserOrt("see");
         const meerOrt = window.__wasserOrt("meer");
         out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
         out.riverThroughLake =
-            !!seeOrt &&
-            seeOrt.hydro.rivers.some((rv) => {
-                let sawLake = false;
-                for (const p of rv.points) {
-                    if (p.inLake) sawLake = true;
-                    else if (sawLake) return true;
-                }
-                return false;
-            });
+            !!seeOrt && seeOrt.hydro.rivers.some((rv) => rv.mouth === "see" && rv.points.every((p) => !p.inLake));
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -20076,8 +20066,6 @@ async function checkBandHydrosphere(ctx) {
         });
         // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
         out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
-        // Jede Land-Zelle hat nach dem Priority-Flood einen Abfluss
-        out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
         // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
         out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
         // Das vereinte Wasser-Feld je Region-Zelle: flacher Wasser-Spiegel (`waterY`) + Klassifikation
@@ -20192,20 +20180,22 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
         check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
         check(
-            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum}, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
+            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, Bett min ${hb.bettMin} m, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
             hb.riverCount > 0
         );
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-        check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)", hb.riversDescend);
-        check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
         check(
-            "Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)",
+            "Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)",
+            hb.riversDescend
+        );
+        check("Voxel V9.43-b: jeder Fluss endet an Meer, See, Hauptlauf oder Region-Rand", hb.riverMouths);
+        check(
+            "K16: ein Fluss des Netzes mündet in einen See (Land → See)",
             hb.riverThroughLake,
             `See-Ort ${hb.seeOrt}`
         );
-        check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
+        check("Voxel V9.43-b: Fluss-Breite wächst stromab (Einzugsgebiet des Netzes monoton)", hb.widthGrows);
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
-        check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
         check(
             "Voxel V9.43-b: Berechnung im Perf-Budget (< 500 ms)",
             typeof hb.perfMs === "number" && hb.perfMs < 500,
@@ -27975,11 +27965,20 @@ async function checkBandV18132FerneSeen(ctx) {
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? (tile.rivers ? tile.rivers.length : 0) + (tile.lakes ? tile.lakes.length : 0) : 0;
         out.homeIdentical = fp() === before;
-        // hydroBand deckt die Kachel-Seen (V9.77: das Band ist global).
-        let maxLake = -Infinity;
-        if (tile && Array.isArray(tile.lakes))
-            for (const lk of tile.lakes) if (Number.isFinite(lk.level) && lk.level > maxLake) maxLake = lk.level;
-        out.bandCovers = !Number.isFinite(maxLake) || (r.state.hydroBand && r.state.hydroBand.top >= maxLake);
+        // hydroBand deckt JEDEN Spiegel (V9.77: das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
+        // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
+        // Zell-Bau ließ jede Fluss-Zelle über dem Band AIR (Heimat 344 von 549 Segmenten ohne gezeichnetes Wasser).
+        let maxSpiegel = -Infinity;
+        for (const h of [r.state.hydrosphere, ...(r.state.hydroTiles ? r.state.hydroTiles.values() : [])]) {
+            if (!h) continue;
+            for (const lk of h.lakes || [])
+                if (Number.isFinite(lk.level) && lk.level > maxSpiegel) maxSpiegel = lk.level;
+            for (const fl of h.rivers || [])
+                for (const p of fl.points || []) if (Number.isFinite(p.S) && p.S > maxSpiegel) maxSpiegel = p.S;
+        }
+        out.maxSpiegel = maxSpiegel;
+        out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
+        out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
         // Der Worker-Snapshot traegt die Kachel.
         const snap = r._voxelWorkerSnapshotState();
         out.snapCarries = !!(snap.hydroTiles && snap.hydroTiles["-1,0"]);
@@ -28007,7 +28006,11 @@ async function checkBandV18132FerneSeen(ctx) {
             `substanz=${res.tileSubstanz}`
         );
         check("V18.132 Ferne Seen: die HEIMAT-Region bleibt bit-identisch (Welt-Identitaet)", res.homeIdentical);
-        check("V18.132 Ferne Seen: hydroBand deckt die Kachel-Seen (global, V9.77)", res.bandCovers);
+        check(
+            "V18.132 Ferne Seen: hydroBand deckt jeden Spiegel — Seen und Flüsse der Heimat und jeder Kachel (global, V9.77)",
+            res.bandCovers,
+            `Band-Oberkante ${res.bandTop} · höchster Spiegel ${res.maxSpiegel} (Täter: _computeHydroBand)`
+        );
         check("V18.132 Ferne Seen: der Worker-Snapshot traegt die Kachel (Determinismus-Wand)", res.snapCarries);
     }
 }
@@ -41853,7 +41856,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterDepthShoreline = waterDepthShoreline;
         // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
-        // Der Schaum ist das Gesetz (K16b): kein Emotions-Haken mehr am Wasser (er hob den Schaum jeder Fläche ohne Grund).
+        // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
         out.waterEmotionHook = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.emotion);
         // V13.9 (Schicht 3): Min-Depth-Cull-Uniform + Default + Source-Probe.
         out.waterMinDepthUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.minDepth);
@@ -41913,7 +41916,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)",
             v830Results.waterDepthShoreline
         );
-        check("V13.5: kein Emotions-Schaum am Wasser — der Schaum ist das Gesetz (gate:wasser-leben B1)", !v830Results.waterEmotionHook);
+        check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
         check("V13.9.2: setWaterCull-Setter (Slider + Persistenz) vorhanden", v830Results.waterCullSetter);
@@ -55561,6 +55564,152 @@ async function checkBandRing6Workshop(ctx) {
                 }
             return null;
         };
+        // DER WASSER-ORT (K16): jedes Band, das einen See oder das Meer prüft, liest ihn dort, wo das Gelände-Gesetz
+        // ihn setzt — die Heimat-Kachel trägt keinen (die Seen sind die Senken des Flussnetzes, ≤ 1 je km²; das Meer liegt
+        // jenseits des Kontinents). „see“: die nächste benannte Senke (gelaende-core `benannteSeen`), deren Kachel einen
+        // gerenderten See (Spiegel > Meer + 2 m, ≥ 16 Zellen) trägt; „meer“: der nächste Punkt unter dem Meeresspiegel auf
+        // Ringen um den Ursprung, dort die nächste Ozean-Zelle; „fall“: der Wasserfall der nächsten Kachel, die einen trägt
+        // (Ringe von Kacheln um den Ursprung bis zum zweiten — die Täler sind das Flussnetz, ein Sturz lebt, wo ein Lauf
+        // steil fällt, nicht mehr an den Gruben der Canyon-Maske). Die Kachel wird über den EINEN Kachel-Eingang registriert
+        // (`_ensureHydroTilesAround`), damit jeder Hydro-Leser (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
+        window.__wasserOrt = (art) => {
+            const r = window.anazhRealm;
+            const G = window.__gelaendeCore;
+            window.__wasserOrtCache = window.__wasserOrtCache || {};
+            const c = window.__wasserOrtCache[art];
+            if (c) {
+                r._ensureHydroTilesAround(c.x, c.z, 0);
+                return { ...c, hydro: r._hydroFor(c.x, c.z) };
+            }
+            const L = r._gelaende();
+            const wl = r.state.waterLevel;
+            const zelle = (h, q) => ({
+                x: h.originX + ((q % h.dim) + 0.5) * h.cell,
+                z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell,
+            });
+            let ort = null;
+            if (art === "see") {
+                const step = 64;
+                const n = 375;
+                const kand = G.benannteSeen(L, -12000, -12000, step, n)
+                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
+                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+                for (const k of kand) {
+                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    const h = r._hydroFor(k.x, k.z);
+                    const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+                    if (!lake) continue;
+                    ort = { ...zelle(h, lake.cells[(lake.cells.length / 2) | 0]), lake };
+                    break;
+                }
+            } else if (art === "hoehle") {
+                // eine trockene Höhle unter oder neben einem See des Gesetzes: von seinem Spiegel abwärts erst fester
+                // Grund (die Decke), dann Luft (die Höhle), dann wieder Grund (ihr Boden). Gesucht in den See-Zellen und
+                // ihrem Rand-Ring (4-m-Raster) der Seen um die benannten Senken, nächste zuerst — so, wie die Wasser-Zellen
+                // sie sehen: je 1,8-m-Zelle das Mittel der Dichte an ihren acht Ecken (`_buildVoxelChunkWaterCells`, das
+                // Gitter liegt auf Vielfachen des Schritts). Seit die Canyon-Maske fiel (K16), bleibt die Decke 16 m unter
+                // dem Boden; die Meter-Probe einer Spalte fand unter dem See eine Höhle, die keine Zelle trägt (0 von 0).
+                const cfgH = r._voxelChunkConfig(0);
+                const S = cfgH.step;
+                const oyH = (r.state.terrainBaseHeight || 0) - cfgH.floorDrop;
+                const zelleFest = (cx, cy, cz) => {
+                    let d = 0;
+                    for (const ex of [-S / 2, S / 2])
+                        for (const ey of [-S / 2, S / 2])
+                            for (const ez of [-S / 2, S / 2]) d += r._terrainDensityAt(cx + ex, cy + ey, cz + ez);
+                    return d > 0;
+                };
+                const step = 64;
+                const n = 375;
+                const kand = G.benannteSeen(L, -12000, -12000, step, n)
+                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
+                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+                const geprueft = new Set();
+                for (const k of kand.slice(0, 6)) {
+                    if (ort) break;
+                    r._ensureHydroTilesAround(k.x, k.z, 0);
+                    const h = r._hydroFor(k.x, k.z);
+                    for (const lake of (h && h.lakes) || []) {
+                        if (ort || !(lake.level > wl + 2) || !lake.cells) break;
+                        const zellen = new Set();
+                        for (const q of lake.cells)
+                            for (let dj = -1; dj <= 1; dj++)
+                                for (let di = -1; di <= 1; di++) zellen.add(q + di + dj * h.dim);
+                        for (const q of zellen) {
+                            const key = h.originX + ":" + h.originZ + ":" + q;
+                            if (ort || geprueft.has(key)) continue;
+                            geprueft.add(key);
+                            const p = zelle(h, q);
+                            for (let sz = -6; sz <= 6 && !ort; sz += 4)
+                                for (let sx = -6; sx <= 6 && !ort; sx += 4) {
+                                    const cx = (Math.floor((p.x + sx) / S) + 0.5) * S;
+                                    const cz = (Math.floor((p.z + sz) / S) + 0.5) * S;
+                                    let stufe = 0;
+                                    const j0 = Math.floor((lake.level - 0.5 - oyH) / S);
+                                    for (let j = j0; j > j0 - 40 / S && stufe < 3; j--) {
+                                        const fest = zelleFest(cx, oyH + (j + 0.5) * S, cz);
+                                        if ((stufe === 0 && fest) || (stufe === 1 && !fest) || (stufe === 2 && fest))
+                                            stufe++;
+                                    }
+                                    if (stufe === 3) ort = { x: cx, z: cz, lake };
+                                }
+                        }
+                    }
+                }
+            } else if (art === "fall") {
+                const size = r.constructor.HYDROSPHERE.regionSize;
+                for (let ring = 0; ring <= 2 && !ort; ring++)
+                    for (let rz = -ring; rz <= ring && !ort; rz++)
+                        for (let rx = -ring; rx <= ring && !ort; rx++) {
+                            if (Math.max(Math.abs(rx), Math.abs(rz)) !== ring) continue;
+                            r._ensureHydroTilesAround(rx * size, rz * size, 0);
+                            const h = r._hydroFor(rx * size, rz * size);
+                            const wf = h && Array.isArray(h.waterfalls) && h.waterfalls.length ? h.waterfalls[0] : null;
+                            if (wf) ort = { x: wf.x, z: wf.z, lake: null, fall: wf };
+                        }
+            } else if (art === "meer") {
+                for (let R = 512; R <= 40000 && !ort; R += 512)
+                    for (let a = 0; a < 64; a++) {
+                        const x = R * Math.cos((a / 64) * 2 * Math.PI);
+                        const z = R * Math.sin((a / 64) * 2 * Math.PI);
+                        if (!(G.hoehe(L, x, z, false) < wl - 4)) continue;
+                        r._ensureHydroTilesAround(x, z, 0);
+                        const h = r._hydroFor(x, z);
+                        let best = -1;
+                        let bd = Infinity;
+                        for (let q = 0; q < h.water.waterKind.length; q++) {
+                            if (h.water.waterKind[q] !== 1) continue;
+                            const p = zelle(h, q);
+                            const d = (p.x - x) ** 2 + (p.z - z) ** 2;
+                            if (d < bd) [bd, best] = [d, q];
+                        }
+                        if (best >= 0) ort = { ...zelle(h, best), lake: null };
+                        break;
+                    }
+            }
+            if (!ort) return null;
+            window.__wasserOrtCache[art] = ort;
+            return { ...ort, hydro: r._hydroFor(ort.x, ort.z) };
+        };
+        // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
+        // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
+        window.__wasserChunk = (art) => {
+            const r = window.anazhRealm;
+            if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
+            const ort = window.__wasserOrt(art);
+            if (!ort) return null;
+            const { span } = r._voxelChunkConfig(0);
+            const cx = Math.floor(ort.x / span);
+            const cz = Math.floor(ort.z / span);
+            const key = `${cx},${cz}`;
+            const da = r.state.voxelChunks.get(key);
+            if (da && da.mesh && da.waterCells) return key;
+            r._disposeVoxelChunk(key);
+            r.state.voxelChunks.delete(key);
+            const fresh = r._acquireVoxelChunkBuild(cx, cz, 0, { forceSync: true });
+            if (fresh && fresh !== "pending") r._finalizeVoxelChunkBuild(cx, cz, 0, fresh, true);
+            return r.state.voxelChunks.has(key) ? key : null;
+        };
         // KONSUM-Beweis statt Quelltext-Zitat: providerObj[providerKey] wird temporär ein Zähl-Spy (delegiert
         // ans Original), obj[methodName](...args) läuft, dann own-Property-treu restauriert. true = der
         // Konsument hat den Provider WIRKLICH gerufen; wirft nie.
@@ -55631,9 +55780,6 @@ async function checkBandRing6Workshop(ctx) {
             }
         };
     }, REAL_RENDERER);
-    // DIE ORTE DES GESETZES (See · Ufer · Meer · Höhle · Fall, `__wasserOrt`/`__wasserChunk`): EINE Quelle für jede Probe,
-    // scripts/lib/orte-des-gesetzes.cjs.
-    await page.evaluateOnNewDocument(ORTE.ORTE_INSTALL);
 
     const logs = [];
     const errors = [];

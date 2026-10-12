@@ -563,7 +563,9 @@ function stationVerdict(s) {
                 `hangfuss-unter: der Wagen liegt ${hf.unterMax.toFixed(2)} m unter der Ebene seiner Räder (${hf.unterN} Schritte > 0,05 m) — eine Kontakt-Antwort ohne Erdung`
             );
         if (!(hf.schubMax <= STATION.versetztM))
-            out.push(`hangfuss-schub: der Kontakt-Löser versetzt den Wagen in EINEM Schritt ${hf.schubMax.toFixed(2)} m`);
+            out.push(
+                `hangfuss-schub: der Kontakt-Löser versetzt den Wagen in EINEM Schritt ${hf.schubMax.toFixed(2)} m`
+            );
         if (!(hf.weg >= STATION.wegM)) out.push(`hangfuss-steht: mit W nur ${hf.weg.toFixed(2)} m gefahren`);
     }
     // L3–L5 DER STOSS (0710-2): ein Stoß hat eine Folge — Rückprall am Fels, der Gegner bekommt seinen Impuls, ein Ereignis
@@ -726,9 +728,9 @@ function stationVerdict(s) {
     if (!sp) out.push("spalt keine Probe");
     else if (!(sp.rand - sp.grund >= STATION.randM))
         out.push(`spalt vakuös (Rand ${(sp.rand || 0).toFixed(1)} m, Grund ${(sp.grund || 0).toFixed(1)} m)`);
-    else if (!(sp.xMax > -899.5 && sp.yMin < sp.rand - STATION.fallM))
+    else if (!(sp.vor > 4.5 && sp.yMin < sp.rand - STATION.fallM))
         out.push(
-            `spalt-wand: der Wagen hält an der Kante (bis x ${sp.xMax.toFixed(2)}, tiefste Höhe ${sp.yMin.toFixed(2)} m bei Rand ${sp.rand.toFixed(2)} m) — eine unsichtbare Wand`
+            `spalt-wand: der Wagen hält an der Kante (${sp.vor.toFixed(2)} m über die Kante, tiefste Höhe ${sp.yMin.toFixed(2)} m bei Rand ${sp.rand.toFixed(2)} m) — eine unsichtbare Wand`
         );
     return out;
 }
@@ -885,20 +887,16 @@ async function probeLeben(expected) {
         const ws = r._atlasWaterLevelAt(a, b, hh(a, b)); // der Spiegel des Gesetzes (wie gate:vehicle-drive)
         return Number.isFinite(ws) && ws > hh(a, b) - 0.3;
     };
-    // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x — auf der nächsten
-    // Ebene des Gesetzes zur Mess-Wiese (`__ebenOrt`, scripts/lib/orte-des-gesetzes.cjs): seit der Landform im Kern (K16)
-    // liegt die Mess-Wiese an einem Hang (Spanne 34,8 m in ± 40 m), Gasse und Strecke lagen schräg (L8 der Bär 0,07 m, L9 die
-    // Haut des Reiters durch die Tür). Die Strecke beginnt 36 m vor der Mitte der Ebene; Hang, Klippe, Querhang und Wasser
-    // sucht die Probe weiter um die Mess-Wiese (`mo`).
+    // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x — und EBEN: die
+    // Mess-Wiese war eben, seit K16 liegt sie am Hang (quer 0,31 m je m, die Strecke von damals 0,21 m Stufe je 2 m). Der
+    // nächste Ring (32 m, bis 512 m) mit einer Strecke, deren Stufe ≤ 0,16 m je 2 m und deren Quergefälle ≤ 0,05 m je m
+    // ist, darin die kleinste Stufe.
     const mo = expected.messort;
-    const eb = window.__ebenOrt({ nahe: mo, halb: 40, spanne: 3 });
-    const mf = eb ? [eb.x - 36, eb.z] : mo;
-    res.ebene = eb;
     let start = null;
-    for (let ring = 0; ring <= 4; ring++)
+    for (let ring = 0; ring <= 16 && !start; ring++)
         for (let k = 0; k < (ring ? 8 : 1); k++) {
-            const cx = mf[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
-            const cz = mf[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
+            const cx = mo[0] + Math.cos((k * Math.PI) / 4) * ring * 32;
+            const cz = mo[1] + Math.sin((k * Math.PI) / 4) * ring * 32;
             let trocken = true;
             let stufe = 0;
             for (const dz of [-3, 0, 3]) {
@@ -910,7 +908,11 @@ async function probeLeben(expected) {
                     vor = hx;
                 }
             }
-            if (trocken && (!start || stufe < start.stufe)) start = { x: cx, z: cz, stufe };
+            let quer = 0;
+            for (let s = 0; s <= 36 && trocken; s++)
+                quer = Math.max(quer, Math.abs(hh(cx + s * 2, cz + 3) - hh(cx + s * 2, cz - 3)) / 6);
+            if (trocken && stufe <= 0.16 && quer <= 0.05 && (!start || stufe < start.stufe))
+                start = { x: cx, z: cz, stufe, quer };
         }
     res.start = start;
     if (!start) {
@@ -1337,7 +1339,15 @@ async function probeLeben(expected) {
             }
             geraeumt = n;
         };
-        const klippenBahn = (k) => ({ sx: k.sx, sz: k.sz, ux: Math.sin(k.fahrt), uz: Math.cos(k.fahrt), len: 32, quer: 6, n: 0 });
+        const klippenBahn = (k) => ({
+            sx: k.sx,
+            sz: k.sz,
+            ux: Math.sin(k.fahrt),
+            uz: Math.cos(k.fahrt),
+            len: 32,
+            quer: 6,
+            n: 0,
+        });
         if (kl) {
             bahnWache = klippenBahn(kl);
             const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
@@ -1360,7 +1370,15 @@ async function probeLeben(expected) {
                 for (let i = 0; i < 60; i++) frame(i);
                 r._stepFixedSim = P2;
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
-                S.klippe = { sprung, luft, schritte, ueberGrund: unterGrund, fall: kl.fall, geraeumt, wache: bahnWache.n };
+                S.klippe = {
+                    sprung,
+                    luft,
+                    schritte,
+                    ueberGrund: unterGrund,
+                    fall: kl.fall,
+                    geraeumt,
+                    wache: bahnWache.n,
+                };
                 weg(g2);
             }
             bahnWache = klippenBahn(kl);
@@ -1392,7 +1410,14 @@ async function probeLeben(expected) {
                 r._stepFixedSim = P7;
                 const eb = r._rittEbene(g4, g4.position.x, g4.position.z, g4._rideYaw);
                 const bodenY = eb ? eb.y : hh(g4.position.x, g4.position.z);
-                S.absteigen = { imFlug, hoehe, ueberBoden: g4.position.y - 0.5 - bodenY, sprung: sprungAb, geraeumt, wache: bahnWache.n };
+                S.absteigen = {
+                    imFlug,
+                    hoehe,
+                    ueberBoden: g4.position.y - 0.5 - bodenY,
+                    sprung: sprungAb,
+                    geraeumt,
+                    wache: bahnWache.n,
+                };
                 r.removeArchitecture(g4);
             }
             bahnWache = null;
@@ -1488,7 +1513,8 @@ async function probeLeben(expected) {
                     const pz = zz + uz * s;
                     const h0 = hh(px, pz);
                     if (!Number.isFinite(h0) || nass(px, pz)) return false;
-                    if (s > 0 && Math.abs(h0 - hh(px - ux, pz - uz)) > 0.25) return false;
+                    if (s > 0 && Math.abs(h0 - hh(px - ux, pz - uz)) > 0.08) return false;
+                    if (Math.abs(hh(px + uz * 2, pz - ux * 2) - hh(px - uz * 2, pz + ux * 2)) / 4 > 0.05) return false;
                 }
                 for (const e of st.architectures) {
                     if (!e || !e.position || !e.blockerAABBs) continue;
@@ -1503,10 +1529,10 @@ async function probeLeben(expected) {
                 }
                 return true;
             };
-            for (let ring = 0; ring <= 6; ring++)
+            for (let ring = 0; ring <= 20; ring++)
                 for (let k = 0; k < (ring ? 12 : 1); k++) {
-                    const x = mf[0] + Math.cos((k * Math.PI) / 6) * ring * 24;
-                    const zz = mf[1] + Math.sin((k * Math.PI) / 6) * ring * 24;
+                    const x = mo[0] + Math.cos((k * Math.PI) / 6) * ring * 24;
+                    const zz = mo[1] + Math.sin((k * Math.PI) / 6) * ring * 24;
                     for (let d = 0; d < 8; d++) {
                         const a = (d * Math.PI) / 4;
                         if (frei(x, zz, Math.sin(a), Math.cos(a))) return { x, z: zz, fahrt: a };
@@ -1574,33 +1600,17 @@ async function probeLeben(expected) {
             hindernis.weg(ziel);
             return { tief, abstand, nah, schritte, vorn };
         };
-        // jede Teil-Box in IHREM Rahmen (`box.obb`, D5 — so lösen Kapsel und Hülle, `_resolveCapsuleVsAABB`/
-        // `_resolveHuelleVsAABB`), nie als Welt-AABB: ein gedrehtes Teil reicht als Welt-AABB weiter als es selbst (an der
-        // 45°-Gasse seit K16 las die am Wagen gehaltene Kapsel „1,68 m im Wagen“). Rückgabe [Rechteck, px, pz] im Rahmen.
-        const boxRahmen = (b, px, pz) => {
-            const ob = b.obb;
-            if (!ob) return [b, px, pz];
-            const dx = px - ob.cx;
-            const dz = pz - ob.cz;
-            return [
-                { minX: -ob.hx, maxX: ob.hx, minZ: -ob.hz, maxZ: ob.hz },
-                dx * ob.c - dz * ob.s,
-                dx * ob.s + dz * ob.c,
-            ];
-        };
-        const boxTiefe = (boxes, px0, pz0) => {
+        const boxTiefe = (boxes, px, pz) => {
             let t = 0;
-            for (const b0 of boxes || []) {
-                const [b, px, pz] = boxRahmen(b0, px0, pz0);
+            for (const b of boxes || []) {
                 if (px < b.minX || px > b.maxX || pz < b.minZ || pz > b.maxZ) continue;
                 t = Math.max(t, Math.min(px - b.minX, b.maxX - px, pz - b.minZ, b.maxZ - pz));
             }
             return t;
         };
-        const boxAbstand = (boxes, px0, pz0) => {
+        const boxAbstand = (boxes, px, pz) => {
             let a = Infinity;
-            for (const b0 of boxes || []) {
-                const [b, px, pz] = boxRahmen(b0, px0, pz0);
+            for (const b of boxes || []) {
                 const dx = Math.max(b.minX - px, 0, px - b.maxX);
                 const dz = Math.max(b.minZ - pz, 0, pz - b.maxZ);
                 a = Math.min(a, Math.hypot(dx, dz));
@@ -1887,7 +1897,15 @@ async function probeLeben(expected) {
             for (const cr of (st.creatures || []).slice())
                 if (cr && cr.position && Math.hypot(cr.position.x - L.ort[0], cr.position.z - L.ort[1]) < 30)
                     r.removeCreature(cr);
-            const m = { ziel: !!ziel, unterMax: 0, unterN: 0, schubMax: 0, kontakte: 0, xMax: -Infinity, yMin: Infinity };
+            const m = {
+                ziel: !!ziel,
+                unterMax: 0,
+                unterN: 0,
+                schubMax: 0,
+                kontakte: 0,
+                vor: -Infinity,
+                yMin: Infinity,
+            };
             m.y0 = gL._fahr ? gL._fahr.y : NaN;
             const zug = {};
             const PC = r._stepCharacter;
@@ -1930,7 +1948,11 @@ async function probeLeben(expected) {
                 if (!fz || !Number.isFinite(fz.y)) return;
                 m.schubMax = Math.max(m.schubMax, zug.schub);
                 if (zug.schub > 1e-3) m.kontakte++;
-                m.xMax = Math.max(m.xMax, gL.position.x);
+                // wie weit der Wagen längs seiner Fahrt über den Ort hinaus kam
+                m.vor = Math.max(
+                    m.vor,
+                    (gL.position.x - L.ort[0]) * Math.sin(L.gier) + (gL.position.z - L.ort[1]) * Math.cos(L.gier)
+                );
                 m.yMin = Math.min(m.yMin, fz.y);
             };
             st.playerVel.setValue(Math.sin(L.gier) * L.v0, st.playerVel.y(), Math.cos(L.gier) * L.v0);
@@ -1967,19 +1989,6 @@ async function probeLeben(expected) {
             },
             150
         );
-        // L2 DIE SPALTKANTE: 11,4 m/s in +x auf den Rand des 23-m-Spalts (−904/−975) — der Wagen stand in EINEM Schritt (11,44 →
-        // 0,19 m/s), Gas danach 0,00 m, der Bug über der Kante. Soll: er fährt über die Kante und FÄLLT.
-        // Der Spalt ist der Prüf-Spalt (`__pruefSpalt`, gegraben mit dem Verb des Spielers): seit die Canyon-Maske fiel (K16),
-        // trägt die Welt keinen Spalt mehr — der feste Ort lag an einem Hang (Rand 67,7 m, Grund 63,2 m, vakuös).
-        const PS = window.__pruefSpalt({ nahe: expected.messort });
-        S.spalt = PS && PS.rand
-            ? await lebenFahrt({ ort: [PS.rand.x, PS.rand.z], start: [PS.rand.x - 8, PS.rand.z], gier: Math.PI / 2, v0: 11.4 }, 150)
-            : null;
-        if (S.spalt) {
-            S.spalt.rand = hh(PS.rand.x, PS.rand.z);
-            S.spalt.grund = Math.min(hh(PS.x0, PS.rand.z), hh(PS.x0 + 1, PS.rand.z));
-            S.spalt.ort = [PS.rand.x, PS.rand.z];
-        }
         // L3–L5 DER STOSS (Leben-Schau 07.10.: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je in
         // EINEM Frame, kein Rückprall, der Gegner bewegt sich nicht, keine Rückmeldung): der GT fährt mit W aus 9 m Anlauf
         // in der freien Gasse auf das Hindernis, das NICHT gehalten wird. Kontakt = der erste Schritt, in dem der Kontakt-
@@ -2224,17 +2233,16 @@ async function probeLeben(expected) {
                 }
                 return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
-            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), je Teil-Box in ihrem
-            // Rahmen (`boxRahmen`)
+            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse gemessen
             const kapselAbstand = (e) => {
                 const pmP = st.playerMesh.position;
                 let d = Infinity;
-                for (const b0 of e.blockerAABBs) {
-                    const [b, px, pz] = boxRahmen(b0, pmP.x, pmP.z);
-                    const ix = Math.max(b.minX - px, 0, px - b.maxX);
-                    const iz = Math.max(b.minZ - pz, 0, pz - b.maxZ);
+                for (const b of e.blockerAABBs) {
+                    const ix = Math.max(b.minX - pmP.x, 0, pmP.x - b.maxX);
+                    const iz = Math.max(b.minZ - pmP.z, 0, pmP.z - b.maxZ);
                     const aussen = Math.hypot(ix, iz);
-                    const innen = aussen > 0 ? 0 : Math.min(px - b.minX, b.maxX - px, pz - b.minZ, b.maxZ - pz);
+                    const innen =
+                        aussen > 0 ? 0 : Math.min(pmP.x - b.minX, b.maxX - pmP.x, pmP.z - b.minZ, b.maxZ - pmP.z);
                     d = Math.min(d, aussen > 0 ? aussen : -innen);
                 }
                 return d - 0.35;
@@ -2536,20 +2544,32 @@ async function probeLeben(expected) {
         // seiner Schwimm-Linie liegt (die EINE Wasser-Regel der Tiere, V18.536: `_kreaturSchwimmt` über dem Grund des Gesetzes,
         // die Sohle um seine Wasserlinie unter dem Spiegel, `_kreaturSchwimmLinie`). Vorher setzte der Sim-Schritt die Höhe
         // eines gleitenden Leibs auf den Boden, auch im Wasser.
+        // STILLES Wasser (`_waterFlowAt` null auf der ganzen Bahn): die Strömung trägt ein schwimmendes Tier im Frame-Takt
+        // (`updateCreatures`), wie sein Steuer-Schritt, den die Probe stillstellt — sie prüft den Stoß, nicht die Drift. Seit
+        // K16 liegt im 240-m-Kreis nur ein Fluss (−686,7/−796,1, die Drift quer 0,12 m in 20 Schritten): L8 las dort
+        // 1,9 mm je Bildrate, am stillen Wasser 368 m weiter 0 m.
+        // Der Ort: der See AUS DER WELT (`__wasserOrte`, K16) — die Flüsse des Gelände-Netzes tragen höchstens 0,8 m Kanal,
+        // im 480-m-Kreis um den Messort stand kein tiefes Wasser mehr; gesucht wird um die tiefste Stelle des Sees.
         {
             let ort = null;
-            for (let ring = 0; ring <= 60 && !ort; ring++)
+            const seeO = window.__wasserOrte({ mess: mo }).see;
+            const mitte = seeO ? [seeO.x, seeO.z] : null;
+            for (let ring = 0; mitte && ring <= 120 && !ort; ring++)
                 for (let k = 0; k < Math.max(1, ring * 6) && !ort; k++) {
                     const w = (k / Math.max(1, ring * 6)) * Math.PI * 2;
-                    const x = mo[0] + Math.cos(w) * ring * 4;
-                    const zz = mo[1] + Math.sin(w) * ring * 4;
+                    const x = mitte[0] + Math.cos(w) * ring * 4;
+                    const zz = mitte[1] + Math.sin(w) * ring * 4;
                     const boden = hh(x, zz);
                     const sp = Number.isFinite(boden) ? r._koerperWasser(x, zz, boden) : -Infinity;
                     if (Number.isFinite(sp) && Number.isFinite(boden) && sp - boden > 1.2) {
-                        // 4 m Fahrt in +x bleiben im tiefen Wasser
+                        // 4 m Fahrt in +x bleiben im tiefen, stillen Wasser
                         let tief = true;
                         for (let d = 0; d <= 4 && tief; d++)
-                            if (!(r._koerperWasser(x + d, zz, hh(x + d, zz)) - hh(x + d, zz) > 1)) tief = false;
+                            if (
+                                !(r._koerperWasser(x + d, zz, hh(x + d, zz)) - hh(x + d, zz) > 1) ||
+                                r._waterFlowAt(x + d, zz)
+                            )
+                                tief = false;
                         if (tief) ort = { x, z: zz, spiegel: sp };
                     }
                 }
@@ -2644,7 +2664,12 @@ async function probeLeben(expected) {
                     A._steuerGesetz = steuerRoh;
                     st.maxCreatures = kappeS;
                 }
-            } else S.schwimmer = { fehler: "kein tiefes Wasser im Umkreis 240 m" };
+            } else
+                S.schwimmer = {
+                    fehler: mitte
+                        ? `kein tiefes, stilles Wasser im Umkreis 480 m um den See ${mitte.join("/")}`
+                        : "kein See in der Welt (`__wasserOrte`)",
+                };
         }
         // L9 DER REITER IM WAGEN (0710-4 Klasse 4): je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
         // quer zur Fahrt (die Maus ist nicht der Wagen), einschwingen — dann die HAUT des Reiters: jede Ecke jedes sichtbaren
@@ -2828,6 +2853,88 @@ async function probeLeben(expected) {
                 gier: +Math.abs(w1.rotation.y).toFixed(4),
             };
         }
+        // L2 DIE SPALTKANTE: 11,4 m/s in +x auf den Rand des 23-m-Spalts (−904/−975) — der Wagen stand in EINEM Schritt (11,44 →
+        // 0,19 m/s), Gas danach 0,00 m, der Bug über der Kante. Soll: er fährt über die Kante und FÄLLT.
+        // Seit K16 (die Canyon-Maske fiel) liegt an −904/−975 kein Spalt mehr, sondern ein Hang (0,6 m je m) mit einer Eiche
+        // (−904,5/−976) in der Bahn, und im Kilometer um die Mess-Wiese trägt keine Kante einen stetigen Anlauf (die nächste,
+        // −1394/−950 in −z, fällt 11,2 m, ihr Anlauf springt 1,27 m je m). Der Ort kommt aus dem Gesetz: die Kliffs trägt das
+        // Schicht-Gesetz, `schichtOrt` nennt die Treppe am stärksten Tafelland-Tal im 16-km-Feld um die Wiese; um sie herum
+        // (4-m-Ringe, bis 400 m, je Ort die vier Achsen) die nächste Kante, hinter der der Boden 6–7 m weiter mindestens
+        // STATION.randM + 1 tiefer liegt, davor 8 m trockener, stetiger Anlauf (≤ 0,5 m je m) — und, wenn die Welt dort steht
+        // (240 Frames), kein Blocker in ±2,5 m von 10 m davor bis 8 m dahinter.
+        // L2 läuft ZULETZT: die Suche trägt den Spieler zum Schicht-Ort (Kilometer fort), danach streamt die Welt um die
+        // Wiese neu — vor L8 gefahren, las der Lockstep dort 0,4 mm je Bildrate (0 ohne die Reise).
+        const kante = await (async () => {
+            const GK = globalThis.__gelaendeCore;
+            const so = GK.schichtOrt(r._gelaende(), mo[0] - 8000, mo[1] - 8000, mo[0] + 8000, mo[1] + 8000);
+            if (!so) return null;
+            const frei = (kx, kz, ux, uz) => {
+                for (const e of st.architectures) {
+                    if (!e || !e.position || !e.blockerAABBs || Math.hypot(e.position.x - kx, e.position.z - kz) > 40)
+                        continue;
+                    for (const b of e.blockerAABBs) {
+                        const cx = (b.minX + b.maxX) / 2 - kx;
+                        const cz = (b.minZ + b.maxZ) / 2 - kz;
+                        const l = cx * ux + cz * uz;
+                        const q = Math.abs(cx * uz - cz * ux);
+                        const h = Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / 2;
+                        if (l > -10 - h && l < 8 + h && q < 2.5 + h) return false;
+                    }
+                }
+                return true;
+            };
+            const ACHSEN = [
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1],
+            ];
+            let geladen = 0;
+            for (let ring = 0; ring <= 100; ring++)
+                for (let k = 0; k < (ring ? 8 * ring : 1); k++) {
+                    const a = ring ? (k / (8 * ring)) * Math.PI * 2 : 0;
+                    const kx = Math.round(so.x + Math.cos(a) * ring * 4);
+                    const kz = Math.round(so.z + Math.sin(a) * ring * 4);
+                    const rand = hh(kx, kz);
+                    if (!Number.isFinite(rand)) continue;
+                    for (const [ux, uz] of ACHSEN) {
+                        const grund = Math.min(hh(kx + ux * 6, kz + uz * 6), hh(kx + ux * 7, kz + uz * 7));
+                        if (!(rand - grund >= expected.randM + 1)) continue;
+                        let ok = !nass(kx, kz);
+                        for (let s0 = 1; s0 <= 8 && ok; s0++)
+                            ok =
+                                !nass(kx - ux * s0, kz - uz * s0) &&
+                                Math.abs(hh(kx - ux * s0, kz - uz * s0) - hh(kx - ux * (s0 - 1), kz - uz * (s0 - 1))) <=
+                                    0.5;
+                        if (!ok || geladen >= 6) continue;
+                        // die Welt an der Kante steht (Chunks und Streu), dann erst urteilt die Blocker-Wache
+                        st.playerMesh.position.set(kx, rand + 2, kz);
+                        for (let i = 0; i < 240; i++) frame(i);
+                        geladen++;
+                        if (frei(kx, kz, ux, uz)) return { x: kx, z: kz, ux, uz, grund, so };
+                    }
+                }
+            return null;
+        })();
+        S.spalt = kante
+            ? await lebenFahrt(
+                  {
+                      ort: [kante.x, kante.z],
+                      start: [kante.x - kante.ux * 8, kante.z - kante.uz * 8],
+                      gier: Math.atan2(kante.ux, kante.uz),
+                      v0: 11.4,
+                  },
+                  150
+              )
+            : null;
+        if (S.spalt) {
+            S.spalt.randX = kante.x;
+            S.spalt.randZ = kante.z;
+            S.spalt.achse = [kante.ux, kante.uz];
+            S.spalt.schichtOrt = [kante.so.x, kante.so.z];
+            S.spalt.rand = hh(kante.x, kante.z);
+            S.spalt.grund = kante.grund;
+        }
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -2898,7 +3005,7 @@ async function probeLeben(expected) {
             huelleTeil: { tief: 0.0, abstand: 0.2, nah: 0.03 },
             pflicht: { satz: "bruch", ebene: "bruch" },
             hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
-            spalt: { rand: 32.4, grund: 15, xMax: -896, yMin: 18 },
+            spalt: { rand: 32.4, grund: 15, vor: 8, yMin: 18 },
             stossFels: { kontakt: 40, vVor: 6.5, vNach: -1.3, vMinNach: -1.3, ereignisse: 1, ruck: 3, zielWeg: 0 },
             stossWagen: { kontakt: 40, vVor: 6.5, vNach: 2.3, vMinNach: 2.3, ereignisse: 1, ruck: 3, zielWeg: 2.1 },
             stossBaer: { kontakt: 40, vVor: 6.5, vNach: 5.0, vMinNach: 5.0, ereignisse: 1, ruck: 2, zielWeg: 3.2 },
@@ -2967,10 +3074,10 @@ async function probeLeben(expected) {
             ],
             [
                 "Spaltkante: der Wagen steht bei x −904,09 (11,7 → 0,17 m/s, Leben-Schau: 11,44 → 0,19)",
-                { spalt: { rand: 32.4, grund: 15, xMax: -904.09, yMin: 32.42 } },
+                { spalt: { rand: 32.4, grund: 15, vor: -0.09, yMin: 32.42 } },
                 "spalt-wand",
             ],
-            ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, xMax: -896, yMin: 18 } }, "spalt vakuös"],
+            ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, vor: 8, yMin: 18 } }, "spalt vakuös"],
             [
                 "Fels: 10,41 → 0,16 m/s in EINEM Frame, kein Rückprall (Leben-Schau 07.10.)",
                 {
@@ -3403,7 +3510,6 @@ async function probeLeben(expected) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: softwareWebGpuArgs() });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;
@@ -3413,7 +3519,9 @@ async function probeLeben(expected) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
-    const out = await page.evaluate(probeLeben, { messort });
+    // die Orte des Wassers aus der Welt (L10: der See, `__wasserOrte`)
+    await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
+    const out = await page.evaluate(probeLeben, { messort, randM: STATION.randM });
     await browser.close();
     server.close();
 
@@ -3574,10 +3682,10 @@ async function probeLeben(expected) {
     );
     const L2 = S.spalt;
     check(
-        "L2 Spaltkante (am Prüf-Spalt, 11,4 m/s in +x): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
+        "L2 Spaltkante (die nächste Kante am Schicht-Ort des Gesetzes, 11,4 m/s über sie): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
         !hat("kern") && !hat("spalt"),
         L2
-            ? `Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · bis x ${L2.xMax.toFixed(2)} · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
+            ? `Kante ${L2.randX}/${L2.randZ} in (${L2.achse.join(", ")}) · Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · ${L2.vor.toFixed(2)} m über die Kante · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
             : "keine Probe"
     );
     const z2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");

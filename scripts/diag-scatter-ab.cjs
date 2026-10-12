@@ -30,7 +30,6 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const ORTE = require("./lib/orte-des-gesetzes.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.SCATTER_AB_PORT || 4409);
@@ -66,7 +65,6 @@ const server = http.createServer((req, res) => {
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
     });
-    await page.evaluateOnNewDocument(ORTE.ORTE_INSTALL);
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -95,9 +93,9 @@ const server = http.createServer((req, res) => {
             // ── (1) KORPUS: Regionen klassifizieren (Signal-unabhängig — direkte Welt-Reads) ──
             const classify = (rx, rz) => {
                 let shore = 0,
-                    wet = 0,
                     steep = 0,
                     river = 0,
+                    nass = 0,
                     nulls = 0,
                     probes = 0;
                 for (let gz = 8; gz < SC.regionM; gz += 16) {
@@ -112,33 +110,21 @@ const server = http.createServer((req, res) => {
                             continue;
                         }
                         if (Math.abs(sy - (wy + 0.4)) < 3) shore++;
+                        if (!r._landAt(x, z, 0.4)) nass++;
                         const sl = r._slopeAt ? r._slopeAt(x, z) : 0;
                         if (sl > 1.2) steep++;
-                        let fluss = false;
                         if (typeof r._hydroRiverAt === "function") {
                             const rv = r._hydroRiverAt(x, z);
-                            fluss = !!(rv && (rv.strength > 0.3 || rv.centerness > 0.3));
-                            if (fluss) river++;
+                            if (rv && (rv.strength > 0.3 || rv.centerness > 0.3)) river++;
                         }
-                        // stilles Wasser (See, Meer) — das Fluss-Bett hält seine eigene Wand (`_hydroRiverAt`), dort
-                        // trägt das Wasser-Verdikt keine Wahl
-                        if (sy < wy - 0.2 && !fluss) wet++;
                     }
                 }
-                return { shore, wet, steep, river, nulls, probes };
+                return { shore, steep, river, nass, nulls, probes };
             };
-            // Die Kandidaten: die Spieler-Region und ihre Nachbarn, dann die Regionen um den See des Gesetzes
-            // (`__wasserOrt("see")`, scripts/lib/orte-des-gesetzes.cjs — die Heimat trägt seit K16 keinen See; ohne ihn
-            // zählte die Ufer-Klasse trockene Fluss-Sohlen, und der Selbst-Test fand kein Wasser, das er wegnehmen konnte).
-            const see = window.__wasserOrt("see");
-            const zentren = [[pRegX, pRegZ]];
-            if (see) zentren.push([Math.floor(see.x / SC.regionM), Math.floor(see.z / SC.regionM)]);
             const candidates = [];
-            zentren.forEach(([zx, zz], zi) => {
-                for (let dz = -2; dz <= 2; dz++)
-                    for (let dx = -2; dx <= 2; dx++)
-                        candidates.push({ rx: zx + dx, rz: zz + dz, d: zi * 100 + Math.abs(dx) + Math.abs(dz) });
-            });
+            for (let dz = -2; dz <= 2; dz++)
+                for (let dx = -2; dx <= 2; dx++)
+                    candidates.push({ rx: pRegX + dx, rz: pRegZ + dz, d: Math.abs(dx) + Math.abs(dz) });
             candidates.sort((a, b) => a.d - b.d);
             const corpus = [];
             let haveShore = 0,
@@ -147,8 +133,7 @@ const server = http.createServer((req, res) => {
             for (const c of candidates) {
                 if (corpus.length >= 6) break;
                 const cl = classify(c.rx, c.rz);
-                // Ufer = Land am Spiegel UND Wasser in der Region (nass ≥ 4): nur dort trägt das Wasser-Verdikt eine Wahl
-                const isShore = cl.shore >= 8 && cl.wet >= 4,
+                const isShore = cl.shore >= 8,
                     isSteep = cl.steep >= 20,
                     isRiver = cl.river >= 4;
                 const want =
@@ -226,7 +211,10 @@ const server = http.createServer((req, res) => {
             o.totalCells = o.diffs.reduce((s2, d) => s2 + (d.cellsA || 0), 0);
             // ── (4) SELBST-TEST: injiziert-falsches Verdikt → der Diff MUSS feuern ──
             {
-                const c = corpus.find((cc) => cc.cl.shore >= 8 && cc.cl.wet >= 4) || corpus[0];
+                // die Region, in der das Wasser-Verdikt am meisten entscheidet (die meisten nassen Proben, `_landAt`): seit K16
+                // trägt die Heimat keinen See, das Ufer liegt am Fluss-Kanal: in (1,0) (9 nasse Proben) traf kein Streu-Wurf
+                // das Wasser, in (0,1) (16) feuert die Störung
+                const c = corpus.reduce((m, cc) => (cc.cl.nass > m.cl.nass ? cc : m), corpus[0]);
                 const a = buildAt(c, true);
                 const orig = r._landAt;
                 r._landAt = () => true; // die Störung: Wasser existiert nicht mehr
@@ -253,7 +241,7 @@ const server = http.createServer((req, res) => {
     );
     for (const c of out.corpus)
         console.log(
-            `    (${c.rx},${c.rz})  shore ${c.shore} · nass ${c.wet} · steep ${c.steep} · river ${c.river} · null ${c.nulls}/${c.probes}`
+            `    (${c.rx},${c.rz})  shore ${c.shore} · steep ${c.steep} · river ${c.river} · nass ${c.nass} · null ${c.nulls}/${c.probes}`
         );
     console.log(`  Mess-Bound max|field.height − exakt|: ${out.bound} m über ${out.cellsCompared} Zellen`);
     console.log(

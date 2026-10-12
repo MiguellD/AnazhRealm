@@ -21,7 +21,6 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const ORTE = require("./lib/orte-des-gesetzes.cjs");
 
 const PORT = Number(process.env.LUFT_PORT || 4594);
 const SELFTEST = process.argv.includes("--selftest");
@@ -85,13 +84,38 @@ function probe(stoerung) {
     out.tKante = +Math.exp((-K * kante) / out.sichtSonne).toFixed(3);
     out.tFern = +Math.exp((-K * fernKante) / out.sichtSonne).toFixed(4);
     // Unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera (Welle L, W-L-d; bis V18.531 die Augen des
-    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des Sees des Gesetzes (`__wasserOrt("see")`,
-    // scripts/lib/orte-des-gesetzes.cjs — die Heimat trägt seit K16 keinen See).
-    const see = window.__wasserOrt("see");
+    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des Sees, wo das Gelände-Gesetz ihn setzt — die
+    // Heimat-Kachel trägt seit K16 keinen (die Seen sind die Senken des Flussnetzes): die nächste benannte Senke (gelaende-core
+    // `benannteSeen`), deren Kachel einen gerenderten See trägt (Spiegel > Meer + 2 m, ≥ 16 Zellen), über den EINEN
+    // Kachel-Eingang (`_ensureHydroTilesAround`).
+    let h = null;
+    let see = null;
+    {
+        const n = 375;
+        const kand = window.__gelaendeCore
+            .benannteSeen(r._gelaende(), -12000, -12000, 64, n)
+            .map((k) => ({ x: -12000 + (k % n) * 64, z: -12000 + ((k / n) | 0) * 64 }))
+            .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+        for (const k of kand) {
+            r._ensureHydroTilesAround(k.x, k.z, 0);
+            const hk = r._hydroFor(k.x, k.z);
+            const l = hk && hk.lakes.find((s) => s.level > st.waterLevel + 2 && s.cells && s.cells.length >= 16);
+            if (l) {
+                h = hk;
+                see = l;
+                break;
+            }
+        }
+    }
     const cam = st.camera;
-    if (see && see.lake && cam) {
+    if (see && cam) {
+        const c = see.cells[0];
         const camAlt = cam.position.clone();
-        cam.position.set(see.x, see.lake.level - 3, see.z);
+        cam.position.set(
+            h.originX + ((c % h.dim) + 0.5) * h.cell,
+            see.level - 3,
+            h.originZ + (Math.floor(c / h.dim) + 0.5) * h.cell
+        );
         cam.updateMatrixWorld(true);
         r._applyDayNightToScene();
         out.sichtWasser = Math.round(r._luftSichtM(augeY));
@@ -154,7 +178,6 @@ function urteil(S) {
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
     });
-    await page.evaluateOnNewDocument(ORTE.ORTE_INSTALL);
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

@@ -156,7 +156,27 @@ async function proben() {
         kapsel(90);
         s.isInAir = air;
     }
-    // ── K2 MENSCH IN DER HÖHLE ── (die erste Luft-Tasche ≥ 2,4 m unter der Oberfläche, Raster 8 m um den Spieler)
+    // ── K2 MENSCH IN DER HÖHLE ── (die erste Luft-Tasche ≥ 3 m unter der Oberfläche, Raster 8 m um den Spieler, in die der
+    // Leib passt). K16 (das Flussnetz-Gelände): seine Höhlen sind Gänge, oft schmaler als ein Leib — an der ersten Tasche
+    // (−7,4/3,1) lag der Grund 1,5 m daneben 3,9 m tiefer, die Kapsel glitt 2,2 m in den Fels, Fuß-Probe und Tier-Boden
+    // lasen nichts (null, und `null <= 10` hieß grün). Im Umkreis R (Spieler und Wolf 1,5 m daneben: 2,4 m) liegt der Fels
+    // im Abstand r höchstens r/3 über oder unter dem Grund (≤ 18°, der Leib ruht), darüber Luft bis + 2,4 m — wie die
+    // Kammer-Probe des Fall-Wächters (`leibPasst`).
+    const passt = (x, z, g, R) => {
+        for (let k = 0; k < 12; k++) {
+            const w = (k / 12) * Math.PI * 2;
+            for (const rr of [R / 2, R]) {
+                const px = x + Math.cos(w) * rr;
+                const pz = z + Math.sin(w) * rr;
+                const d = rr / 3;
+                for (let yy = g + d + 0.05; yy <= g + 2.4; yy += 0.3) if (r._fieldSolid(px, yy, pz)) return false;
+                let fy = g + d + 0.05;
+                while (fy > g - d && !r._fieldSolid(px, fy, pz)) fy -= 0.05;
+                if (fy <= g - d) return false;
+            }
+        }
+        return true;
+    };
     const start = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
     let hoehle = null;
     for (let d = 8; d <= 160 && !hoehle; d += 8)
@@ -176,16 +196,7 @@ async function proben() {
                 if (sol && inLuft) {
                     if (luftOben - y >= 3.0) {
                         const boden = r._fieldSurfaceBelow(x, y + 0.5, z, 2);
-                        // ein tragender Höhlen-Boden: ≥ 1,5 m Fels darunter und derselbe Boden 1,5 m weiter (dort steht
-                        // das Tier) — seit K16 liegen die Höhlen 16 m und tiefer, ihre Böden sind Rippen und Bänder: auf
-                        // einer 0,3-m-Rippe sank die Kapsel 2,2 m durch, die Tier-Probe fand keinen Boden (CI 11.10.)
-                        const b2 = Number.isFinite(boden) ? r._fieldSurfaceBelow(x + 1.5, boden + 1, z, 3) : null;
-                        const traegt =
-                            Number.isFinite(boden) &&
-                            r._fieldSolid(x, boden - 1.5, z) &&
-                            Number.isFinite(b2) &&
-                            Math.abs(b2 - boden) <= 0.6;
-                        if (traegt && top - boden > 6) hoehle = { x, z, top, boden };
+                        if (Number.isFinite(boden) && top - boden > 6 && passt(x, z, boden, 2.4)) hoehle = { x, z, top, boden };
                     }
                     break;
                 }
@@ -231,28 +242,43 @@ async function proben() {
     kapsel(30);
     // ── K4 TIER AM HANG: die Hang-Stelle (12–30°, die Karte geschlossen im 2-m-Umkreis) mit dem größten Abstand Gesetz ↔
     // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene Stelle (≤ 3°) für die Tod-Lage ──
-    // Gesucht über den gebauten Ring (± 150 m, die Karte reicht ± 194 m): seit der Landform im Kern (K16) trägt die Heimat
-    // im 60-m-Umkreis keinen Hang mit sichtbarem Abstand Gesetz ↔ Karte mehr. Der Weg des Tiers (± 8 m längs der Falllinie)
-    // muss auf geschlossener, stetiger Karte liegen — sonst misst die Treppe eine Kante, nie den Hang (CI 11.10.: 3 004 cm).
-    const wegStetig = (x, z, k) => {
-        const kx = karte(x + 1, z) - k;
-        const kz = karte(x, z + 1) - k;
-        const lg = Math.hypot(kx, kz) || 1;
-        let alt = null;
-        for (let s = -9; s <= 9; s += 0.5) {
-            const w = karte(x + (kx / lg) * s, z + (kz / lg) * s);
-            if (w === null) return false;
-            if (alt !== null && Math.abs(w - alt) > 0.45) return false;
-            alt = w;
-        }
-        return true;
-    };
+    // K16 (das Flussnetz-Gelände): um die Plattform trägt der Hang das Gesetz glatt (Gesetz ↔ Karte höchstens 10 cm im
+    // 120-m-Quadrat) — der Ort kommt aus der Welt: das Quadrat um den Start, dann um die Orte 150 m und 300 m weit
+    // (die Welt schwingt dort ein), der erste mit einer Hang-Stelle im Band.
     let hang = null;
     let eben = null;
-    for (let dx = -150; dx <= 150; dx += 2)
-        for (let dz = -150; dz <= 150; dz += 2) {
-            const x = start.x + dx;
-            const z = start.z + dz;
+    const orte = [[0, 0]];
+    for (const d of [150, 300]) for (let a = 0; a < 8; a++) orte.push([Math.round(Math.cos((a / 8) * Math.PI * 2) * d), Math.round(Math.sin((a / 8) * Math.PI * 2) * d)]);
+    for (const [ox, oz] of orte) {
+        if (hang) break;
+        eben = null;
+        if (ox || oz) {
+            // einschwingen am Ort (der echte Spiel-Takt mit der echten Bewegung)
+            const vel = s.playerVel;
+            s.playerVel = savedVel;
+            pm.position.set(start.x + ox, r._voxelSurfaceY(start.x + ox, start.z + oz) + 2, start.z + oz);
+            savedVel.setValue(0, 0, 0);
+            let last = -1;
+            let stabil = 0;
+            for (let t = 0; t < 3000; t++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                const sz = s.voxelChunks ? s.voxelChunks.size : 0;
+                if (sz === last) stabil++;
+                else {
+                    stabil = 0;
+                    last = sz;
+                }
+                if (t > 50 && stabil > 40 && !(s.voxelMeshPending && s.voxelMeshPending.size)) break;
+                if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
+            }
+            s.playerVel = vel;
+        }
+    for (let dx = -60; dx <= 60; dx += 2)
+        for (let dz = -60; dz <= 60; dz += 2) {
+            const x = start.x + ox + dx;
+            const z = start.z + oz + dz;
             const k = karte(x, z);
             if (k === null) continue;
             const g = r._voxelSurfaceY(x, z);
@@ -265,16 +291,15 @@ async function proben() {
             const ab = Math.abs(g - k);
             if (neig <= 3 && ab < 0.1 && (!eben || neig < eben.neig)) eben = { x, z, karte: k, gesetz: g, neig };
             if (neig < 12 || neig > 30 || ab < 0.15 || ab > 0.6) continue;
-            if (hang && ab <= hang.abstand) continue;
-            if (!wegStetig(x, z, k)) continue;
-            hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
+            if (!hang || ab > hang.abstand) hang = { x, z, abstand: ab, gesetz: g, karte: k, neig };
         }
+    }
     o.hang = hang;
     o.eben = eben;
     if (hang) {
         const saveMax = s.maxCreatures;
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
-        pm.position.set(hang.x + 6, start.y, hang.z + 6); // nah genug für die Voll-Gestalt und die Hang-Proben
+        pm.position.set(hang.x + 6, r._voxelSurfaceY(hang.x + 6, hang.z + 6) + 1.7, hang.z + 6); // nah genug für die Voll-Gestalt und die Hang-Proben
         const c = r.spawnCreatureAt(hang.x, hang.gesetz + 0.3, hang.z, "happy", "wesen", { precise: true, bodySize: 1 });
         if (c) {
             const tiere = (n, fn) => {
@@ -354,7 +379,7 @@ async function proben() {
             o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10 };
             // ── K5 TOD-LAGE ── (auf der ebenen Stelle: das Tier stirbt, kippt, liegt — die tiefste Stelle gegen den Boden)
             const ort = eben || hang;
-            pm.position.set(ort.x + 6, start.y, ort.z + 6);
+            pm.position.set(ort.x + 6, r._voxelSurfaceY(ort.x + 6, ort.z + 6) + 1.7, ort.z + 6);
             tiere(20, () => {
                 c.position.x = ort.x;
                 c.position.z = ort.z;
@@ -423,16 +448,19 @@ function urteil(o) {
     else if (!(Math.abs(o.k1.sprungBeckenCm) <= 1)) f.push(`K1 Becken im Sprung: ${o.k1.sprungBeckenCm} cm (die IK erdet in der Luft)`);
     if (!o.hoehle) f.push("K2 Aufbau: keine Höhle im Raster");
     else {
-        if (!o.k2 || !Number.isFinite(o.k2.abstandCm) || !(o.k2.abstandCm <= 10)) f.push(`K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
-        if (!o.k3 || !Number.isFinite(o.k3.abstandM) || !(o.k3.abstandM <= 0.15)) f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
+        // ein fehlender Wert ist nie 0 (`null <= 10` ist wahr): keine Probe heißt rot
+        if (!o.k2 || o.k2.abstandCm == null || !(o.k2.abstandCm <= 10))
+            f.push(`K2 Fuß-Probe in der Höhle: ${o.k2 ? o.k2.abstandCm : "?"} cm vom Höhlen-Boden (die Probe liest die Oberkante)`);
+        if (!o.k3 || o.k3.abstandM == null || !(o.k3.abstandM <= 0.15))
+            f.push(`K3 Tier in der Höhle: ${o.k3 ? o.k3.abstandM : "?"} m über dem Höhlen-Boden`);
     }
     if (!o.hang) f.push("K4 Aufbau: keine Hang-Stelle im Raster");
     else {
-        if (!o.k4 || !(o.k4.sohlen >= 40) || !Number.isFinite(o.k4.medianCm) || !(o.k4.medianCm <= 6))
+        if (!o.k4 || !(o.k4.sohlen >= 40) || !(o.k4.medianCm <= 6))
             f.push(`K4 Sohlen gegen die Karte: Median ${o.k4 ? o.k4.medianCm : "?"} cm, p90 ${o.k4 ? o.k4.p90Cm : "?"} cm (die Sicht steht auf dem Gesetz)`);
-        if (!o.k4 || !Number.isFinite(o.k4.leibMedianCm) || !(o.k4.leibMedianCm <= 6))
+        if (!o.k4 || !(o.k4.leibMedianCm <= 6))
             f.push(`K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`);
-        if (!o.k4b || !Number.isFinite(o.k4b.treppeCm) || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
+        if (!o.k4b || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
             f.push(

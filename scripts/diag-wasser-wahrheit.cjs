@@ -69,7 +69,6 @@ const server = http.createServer((req, res) => {
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
     });
-    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     let out = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -171,12 +170,21 @@ const server = http.createServer((req, res) => {
             }
 
             // ── FIXTURE 2 (F2) — DIE RIM-WAND: −Inf liefert an Land neben Wasser KEIN Wasser ──
-            // Echte Region: eine atlas-LAND-Spalte mit Wasser-Körper im 3×3, ohne Fluss — in der Kachel des Sees des
-            // Gesetzes (`__wasserOrt("see")`, scripts/lib/orte-des-gesetzes.cjs: die Heimat trägt seit K16 keinen See).
+            // Echte Region: eine atlas-LAND-Spalte mit Wasser-Körper im 3×3, ohne Fluss. Seit K16 sind die Seen die
+            // benannten Senken des Flussnetzes (selten): die Heimat-Kachel trägt nicht immer ein Ufer — gesucht wird in den
+            // Kacheln bis zum zweiten Ring, die nahen zuerst (wie Klang-Zensus und `__wasserOrt`).
             let shore = null;
-            {
-                const seeOrt = window.__wasserOrt("see");
-                const h = seeOrt ? seeOrt.hydro : null;
+            const kachel = AR.HYDROSPHERE.regionSize;
+            const ringe = [];
+            for (let rx = -2; rx <= 2; rx++) for (let rz = -2; rz <= 2; rz++) ringe.push([rx, rz]);
+            ringe.sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
+            const gesehen = new Set();
+            for (const [rx, rz] of ringe) {
+                if (shore) break;
+                r._ensureHydroTilesAround(rx * kachel, rz * kachel, 0);
+                const h = r._hydroFor(rx * kachel, rz * kachel);
+                if (!h || gesehen.has(h)) continue;
+                gesehen.add(h);
                 if (h && h.ready && h.water && h.water.waterKind) {
                     const wK = h.water.waterKind;
                     const wY = h.water.waterY;
@@ -203,7 +211,7 @@ const server = http.createServer((req, res) => {
                 }
             }
             o.shore = shore;
-            if (!shore) fail("F2: keine Rim-Ufer-Spalte in der Kachel des Sees des Gesetzes gefunden (Welt ohne Ufer?)");
+            if (!shore) fail("F2: keine Rim-Ufer-Spalte in den Kacheln bis Ring 2 gefunden (Welt ohne Ufer?)");
             else {
                 const lInf = r._atlasWaterLevelAt(shore.px, shore.pz, -Infinity);
                 const lUnder = r._atlasWaterLevelAt(shore.px, shore.pz, shore.rim - 5);
