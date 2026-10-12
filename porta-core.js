@@ -62,7 +62,9 @@
             kindStages: { gate: [0] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
-                gate: { 0: { tris: 184000, band: 60000, draws: 13, schatten: 0 }, fernform: "gesetz" },
+                // 1110-9 (das Detail-Gesetz der Röhren und Ringe): das Tor-L0 erreicht sein Band 60 000 — das Feld fällt, tris
+                // (die Ratsche, gemessen 51 096 am drachentor) IST das Band
+                gate: { 0: { tris: 52000, draws: 13, schatten: 0 }, fernform: "gesetz" },
                 gestalten: {},
             },
         },
@@ -204,7 +206,7 @@
     // folgt EINEM Sehnen-Fehler `TOR_DETAIL.sehneM`: längs so viele Segmente, wie die Krümmung der Kurve braucht (∫ √(κ / 8ε) ds,
     // verteilt nach der Krümmung — gerade Läufe tragen wenige, enge Bögen viele), um den Umfang so viele, wie der Radius
     // braucht (π / acos(1 − ε / r)); die Zahl des Aufrufers ist die Höchst-Teilung. Gemessen 12.10. (OMEN, die sieben Tore
-    // in Node): bei ε = 1 cm trägt das schwerste Tor 49 026 statt 150 200 Dreiecke (drachentor), alle ≤ 60 000 (Band-Zeile).
+    // in Node): bei ε = 1 cm trägt das schwerste Tor 51 096 statt 150 200 Dreiecke (drachentor), alle ≤ 60 000 (Band-Zeile).
     var TOR_DETAIL = { sehneM: 0.01, laengsM: 1, umfangMin: 3, ringMin: 8, proben: 256 };
     function umfangTeilung(r, hoechst) {
         var n = Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - TOR_DETAIL.sehneM / r)));
@@ -583,15 +585,16 @@
     // Pfosten ausserhalb der Oeffnung (±rimAx, 0,1 m bis zur Kaempferlinie) und ihre Tiefe, darueber Aussenkante und
     // Tiefe des Rahmens; dazu die Oberkante — auf den cm nach aussen gerundet. Bis dahin baute der Wirt die Gestalt beim
     // ersten Spawn jeder Gestalt synchron auf dem Haupt-Thread nach. Gemintet und gemessen von gate:porta-contract
-    // (scripts/lib/tor-huelle.cjs, Mint-Treue je Zahl); der Bau liest sie nie.
+    // (scripts/lib/tor-huelle.cjs, Mint-Treue je Zahl); der Bau liest sie nie. 1110-9 (das Detail-Gesetz der Röhren und
+    // Ringe): zehn Zahlen neu geprägt, je 1–2 cm nach innen (drachentor/geisttor obenX, maschine pfostenX, vier Oberkanten).
     // prettier-ignore
     var TOR_HUELLE = {
-        drachentor: { seiten: [[2.7, 1.62, 2.69, 1.61], [2.7, 1.62, 2.69, 1.61]], oberkante: 8.01 },
-        kathedrale: { seiten: [[3.29, 2.81, 3.27, 2.81], [3.29, 2.81, 3.27, 2.8]], oberkante: 8.57 },
-        maschine: { seiten: [[2.67, 1.33, 2.66, 1.33], [2.67, 1.33, 2.66, 1.33]], oberkante: 7.14 },
-        geisttor: { seiten: [[2.36, 1.35, 2.36, 1.35], [2.36, 1.35, 2.36, 1.35]], oberkante: 7.4 },
-        verkalkt: { seiten: [[2.61, 1.81, 2.6, 1.81], [2.61, 1.81, 2.6, 1.81]], oberkante: 7.36 },
-        ruine: { seiten: [[5.78, 1.87, 4.18, 1.87], [5.29, 1.87, 4.18, 1.86]], oberkante: 6.83 },
+        drachentor: { seiten: [[2.7, 1.62, 2.67, 1.61], [2.7, 1.62, 2.67, 1.61]], oberkante: 8.01 },
+        kathedrale: { seiten: [[3.29, 2.81, 3.27, 2.81], [3.29, 2.81, 3.27, 2.8]], oberkante: 8.56 },
+        maschine: { seiten: [[2.66, 1.33, 2.66, 1.33], [2.66, 1.33, 2.66, 1.33]], oberkante: 7.13 },
+        geisttor: { seiten: [[2.36, 1.35, 2.34, 1.35], [2.36, 1.35, 2.34, 1.35]], oberkante: 7.4 },
+        verkalkt: { seiten: [[2.61, 1.81, 2.6, 1.81], [2.61, 1.81, 2.6, 1.81]], oberkante: 7.35 },
+        ruine: { seiten: [[5.78, 1.87, 4.18, 1.87], [5.29, 1.87, 4.18, 1.86]], oberkante: 6.81 },
         maurentor: { seiten: [[2.93, 1.75, 2.92, 1.75], [2.93, 1.75, 2.92, 1.75]], oberkante: 7.03 },
     };
 
