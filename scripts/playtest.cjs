@@ -38188,8 +38188,14 @@ async function checkBandWahrerAnblickLaub(ctx) {
         const out = {};
 
         // (A) CONSUM Source-Probes
+        // Die Maserung lebt im Kern (phyto-core buildBarkTubeArrays); die Welt-Tube ruft ihn (K19: der Inline-Zwilling fiel).
         const tubeSrc = window.__codeOf(r._buildTreeTubeGeometry);
-        out.barkGrain = /grainFreq/.test(tubeSrc) && /Math\.sin\(i \* grainFreq\)/.test(tubeSrc);
+        const kernTube = globalThis.__phytoCore && globalThis.__phytoCore.buildBarkTubeArrays;
+        const kernSrc = typeof kernTube === "function" ? window.__codeOf(kernTube) : "";
+        out.barkGrain =
+            /_core\.buildBarkTubeArrays\(/.test(tubeSrc) &&
+            /grainFreq/.test(kernSrc) &&
+            /Math\.sin\(i \* grainFreq\)/.test(kernSrc);
         const cardSrc = window.__codeOf(r._buildTreeFoliageCardGeometry);
         out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
         out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
