@@ -1,0 +1,21 @@
+[
+ {
+  "blick": "d30",
+  "satz": "30 m vor der maschine, 30° von oben (26 m waagrecht, 15 m hoch): der Ring über Klang und Plattform, die Tore auf L0 wie im Ring",
+  "w": 1920,
+  "h": 1080,
+  "koerperPx": 67738,
+  "wurfPx": 11864,
+  "rauschPx": 53,
+  "dc": {
+   "voll": 84,
+   "leer": 38,
+   "koerper": 66,
+   "wurf": 38
+  },
+  "dreiecke": {
+   "voll": 362625,
+   "leer": 255419
+  }
+ }
+]

@@ -1,0 +1,21 @@
+[
+ {
+  "blick": "d2.6",
+  "satz": "2,6 m vor der maschine (Innenseite), Blick auf Bogen und Membran",
+  "w": 1920,
+  "h": 1080,
+  "koerperPx": 1113023,
+  "wurfPx": 66403,
+  "rauschPx": 1,
+  "dc": {
+   "voll": 87,
+   "leer": 19,
+   "koerper": 79,
+   "wurf": 19
+  },
+  "dreiecke": {
+   "voll": 315528,
+   "leer": 122646
+  }
+ }
+]

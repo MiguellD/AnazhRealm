@@ -1,0 +1,25 @@
+12:49:56 d2.6 nachher undefined
+12:50:29 WT-d2.6-nachher exit=0 {"blick":"d2.6","satz":"2,6 m vor der maschine (Innenseite), Blick auf Bogen und Membran","w":1920,"h":1080,"koerperPx":1113023,"wurfPx":66403,"rauschPx":1,"dc":{"voll":87,"leer":19,"koerper":79,"wurf
+12:50:29 d2.6 vorher {"entsorgt":76,"gesetzt":0,"zustand":"vorher","schatten":0,"flats":14,"tore":8,"offen":0,"zwillinge":0,"stufe0Wirft":33}
+12:50:49 WT-d2.6-vorher exit=0 {"blick":"d2.6","satz":"2,6 m vor der maschine (Innenseite), Blick auf Bogen und Membran","w":1920,"h":1080,"koerperPx":1054217,"wurfPx":5714,"rauschPx":2,"dc":{"voll":100,"leer":19,"koerper":85,"wurf
+12:50:49 d2.6 nachher2 {"entsorgt":71,"gesetzt":0,"zustand":"nachher","schatten":3,"flats":8,"tore":8,"offen":0,"zwillinge":5,"stufe0Wirft":4}
+12:51:10 WT-d2.6-nachher2 exit=0 {"blick":"d2.6","satz":"2,6 m vor der maschine (Innenseite), Blick auf Bogen und Membran","w":1920,"h":1080,"koerperPx":1088743,"wurfPx":25426,"rauschPx":1,"dc":{"voll":96,"leer":21,"koerper":81,"wurf
+12:51:10 d2.6 vorher2 {"entsorgt":76,"gesetzt":0,"zustand":"vorher","schatten":0,"flats":14,"tore":8,"offen":0,"zwillinge":0,"stufe0Wirft":33}
+12:51:30 WT-d2.6-vorher2 exit=0 {"blick":"d2.6","satz":"2,6 m vor der maschine (Innenseite), Blick auf Bogen und Membran","w":1920,"h":1080,"koerperPx":1112153,"wurfPx":26617,"rauschPx":6,"dc":{"voll":102,"leer":21,"koerper":87,"wur
+12:51:30 d11 nachher {"entsorgt":71,"gesetzt":0,"zustand":"nachher","schatten":3,"flats":7,"tore":8,"offen":0,"zwillinge":5,"stufe0Wirft":4}
+12:52:06 WT-d11-nachher exit=0 {"blick":"d11","satz":"der Spieler-Stand in der Ring-Mitte (Plattform), Blick +z: maschine und verkalkt in 11 m","w":1920,"h":1080,"koerperPx":440489,"wurfPx":11173,"rauschPx":1407,"dc":{"voll":102,"l
+12:52:06 d11 vorher {"entsorgt":76,"gesetzt":0,"zustand":"vorher","schatten":0,"flats":14,"tore":8,"offen":0,"zwillinge":0,"stufe0Wirft":33}
+12:52:22 WT-d11-vorher exit=0 {"blick":"d11","satz":"der Spieler-Stand in der Ring-Mitte (Plattform), Blick +z: maschine und verkalkt in 11 m","w":1920,"h":1080,"koerperPx":440910,"wurfPx":11301,"rauschPx":1037,"dc":{"voll":104,"l
+12:52:23 d11 nachher2 {"entsorgt":71,"gesetzt":0,"zustand":"nachher","schatten":3,"flats":7,"tore":8,"offen":0,"zwillinge":5,"stufe0Wirft":4}
+12:52:39 WT-d11-nachher2 exit=0 {"blick":"d11","satz":"der Spieler-Stand in der Ring-Mitte (Plattform), Blick +z: maschine und verkalkt in 11 m","w":1920,"h":1080,"koerperPx":437838,"wurfPx":10816,"rauschPx":1117,"dc":{"voll":102,"l
+12:52:39 d11 vorher2 {"entsorgt":76,"gesetzt":0,"zustand":"vorher","schatten":0,"flats":14,"tore":8,"offen":0,"zwillinge":0,"stufe0Wirft":33}
+12:52:55 WT-d11-vorher2 exit=0 {"blick":"d11","satz":"der Spieler-Stand in der Ring-Mitte (Plattform), Blick +z: maschine und verkalkt in 11 m","w":1920,"h":1080,"koerperPx":436585,"wurfPx":11601,"rauschPx":1317,"dc":{"voll":104,"l
+12:52:56 d30 nachher {"entsorgt":71,"gesetzt":0,"zustand":"nachher","schatten":3,"flats":7,"tore":8,"offen":0,"zwillinge":5,"stufe0Wirft":4}
+12:53:37 WT-d30-nachher exit=0 {"blick":"d30","satz":"30 m vor der maschine, 30° von oben (26 m waagrecht, 15 m hoch): der Ring über Klang und Plattform, die Tore auf L0 wie im Ring","w":1920,"h":1080,"koerperPx":67564,"wurfPx":1
+12:53:37 d30 vorher {"entsorgt":76,"gesetzt":0,"zustand":"vorher","schatten":0,"flats":14,"tore":8,"offen":0,"zwillinge":0,"stufe0Wirft":10}
+12:53:52 WT-d30-vorher exit=0 {"blick":"d30","satz":"30 m vor der maschine, 30° von oben (26 m waagrecht, 15 m hoch): der Ring über Klang und Plattform, die Tore auf L0 wie im Ring","w":1920,"h":1080,"koerperPx":67524,"wurfPx":1
+12:53:52 d30 nachher2 {"entsorgt":28,"gesetzt":0,"zustand":"nachher","schatten":3,"flats":3,"tore":8,"offen":0,"zwillinge":2,"stufe0Wirft":0}
+12:54:07 WT-d30-nachher2 exit=0 {"blick":"d30","satz":"30 m vor der maschine, 30° von oben (26 m waagrecht, 15 m hoch): der Ring über Klang und Plattform, die Tore auf L0 wie im Ring","w":1920,"h":1080,"koerperPx":67446,"wurfPx":1
+12:54:07 d30 vorher2 {"entsorgt":30,"gesetzt":0,"zustand":"vorher","schatten":0,"flats":6,"tore":8,"offen":0,"zwillinge":0,"stufe0Wirft":10}
+12:54:21 WT-d30-vorher2 exit=0 {"blick":"d30","satz":"30 m vor der maschine, 30° von oben (26 m waagrecht, 15 m hoch): der Ring über Klang und Plattform, die Tore auf L0 wie im Ring","w":1920,"h":1080,"koerperPx":67738,"wurfPx":1
+12:54:21 INWELT-WURF4 ENDE

@@ -1,0 +1,21 @@
+[
+ {
+  "blick": "d11",
+  "satz": "der Spieler-Stand in der Ring-Mitte (Plattform), Blick +z: maschine und verkalkt in 11 m",
+  "w": 1920,
+  "h": 1080,
+  "koerperPx": 440489,
+  "wurfPx": 11173,
+  "rauschPx": 1407,
+  "dc": {
+   "voll": 102,
+   "leer": 27,
+   "koerper": 94,
+   "wurf": 27
+  },
+  "dreiecke": {
+   "voll": 454628,
+   "leer": 192680
+  }
+ }
+]

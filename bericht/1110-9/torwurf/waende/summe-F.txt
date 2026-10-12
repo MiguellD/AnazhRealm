@@ -1,0 +1,20 @@
+format:check EXIT=0 11s
+lint EXIT=0 7s
+check EXIT=1 66s
+gate:worker-dichte EXIT=0 13s
+gate:tor-fern EXIT=0 41s
+gate:haus-fern EXIT=0 45s
+gate:porta-contract EXIT=0 10s
+gate:asset-contract EXIT=0 219s
+gate:regler-wirkt EXIT=0 126s
+gate:nervensystem-porta EXIT=0 18s
+gate:nervensystem-schmiede EXIT=0 18s
+gate:nervensystem-fachwerk EXIT=0 19s
+gate:portal-gestalt EXIT=0 17s
+gate:portal-membran EXIT=0 27s
+gate:blocker-netz EXIT=0 26s
+gate:kollision-bild EXIT=0 24s
+gate:studio-vertrag EXIT=0 1s
+playtest:fast EXIT=0 26s
+playtest EXIT=0 92s
+ENDE
