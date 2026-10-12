@@ -1012,6 +1012,11 @@
       "geschaetzt": "lokal 23–31 s in 6 Läufen (11.10., OMEN i7-8750H, Software-Holz: Start 3–6 s, Umstellen 10–17 s, Linse 4–15 s); seit der Integration V18.542 je Ort zwei Runden und die Upload-Probe im Hauptbild: lokal 40–47 s (12.10., Software-Holz unter Last: Start 6–8 s, Umstellen 15 s, Linse 12–26 s), das Anderthalbfache; der CI-Läufer bootet die Mess-Wiese etwa dreimal langsamer (gate:verdeckungs-abfrage: 100 s)",
       "lauf": "npm run gate:nah-fern"
     },
+    "Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)": {
+      "s": 110,
+      "geschaetzt": "lokal 55 s (12.10., OMEN i7-8750H, Node 24: K über die Regler-Hülle 385 Listen samt Gitter, W/I an 7 Rezepten, Selbsttest an 3); der CI-Läufer rechnet Node-Geometrie etwa doppelt so lang (gate:haus-fern, Node allein)",
+      "lauf": "npm run gate:tor-fern"
+    },
     "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
       "s": 10,
       "n": 5,

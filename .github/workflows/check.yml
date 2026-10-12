@@ -1257,6 +1257,10 @@ jobs:
               if: matrix.gruppe == 4
               run: npm run gate:kopplung
 
+            - name: Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)
+              if: matrix.gruppe == 4
+              run: npm run gate:tor-fern
+
             - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
               if: matrix.gruppe == 6
               run: npm run gate:worker-watersheet

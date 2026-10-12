@@ -44,8 +44,8 @@
     var STUDIO_VERTRAG = 1; // G4.3 — EINE Versions-Semantik (v1.1 ist Adressierungs-Norm, kein Block-Bruch)
 
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag) ──
-    // Tore tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind Sache
-    // des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
+    // Tore zeigen NUR Stufe 0 (fein) und werfen aus der NUR-WURF-Stufe 3 (1110-9); L1=L0-Grade + L2-Auto-Impostor
+    // sind Sache des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
     // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
     // Hülle über alle Tore (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel
     // (Haushalt, offen solange tris darüber liegt), draws = Draws je Tor und Pass nach der Wirts-Regel: das
@@ -914,6 +914,7 @@
         gateParams: gateParams,
         buildInstance: buildInstance,
         huelle: huelle,
+        huelleGruppe: huelleGruppe,
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze)
         messen: messen,
         MESSEN_VIS: MESSEN_VIS,
