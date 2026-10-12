@@ -37420,10 +37420,16 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
         out.slopeOrderScree = !!G && G.screeLo < G.screeHi;
         out.screeBeforeRock = !!G && G.screeLo < G.rockLo;
+        // Der Fels-Ton ist das Gesetz (K17, gelaende-core `felsBasis` über `FELS_STOFF`), kein Tint der Geologie mehr.
+        const FS = A.FELS_STOFF;
         out.tintsAreRgb =
             !!G &&
-            Array.isArray(G.rockTint) &&
-            G.rockTint.length === 3 &&
+            !("rockTint" in G) &&
+            !!FS &&
+            Array.isArray(FS.basis.basis) &&
+            FS.basis.basis.length === 3 &&
+            Array.isArray(FS.mittel) &&
+            FS.mittel.length === 3 &&
             Array.isArray(G.mossTint) &&
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
@@ -37533,7 +37539,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
     check("Ω-OPSIS S1 (A4) Geröll-Schwellen geordnet (screeLo < screeHi)", res.slopeOrderScree === true);
     check("Ω-OPSIS S1 (A5) Geröll beginnt vor Fels (screeLo < rockLo)", res.screeBeforeRock === true);
-    check("Ω-OPSIS S1 (A6) rockTint + mossTint sind RGB-Tripel", res.tintsAreRgb === true);
+    check("Ω-OPSIS S1 (A6) Fels-Stoff (Basis + Mittel) und mossTint sind RGB-Tripel, kein rockTint-Zwilling", res.tintsAreRgb === true);
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
 
     check("Ω-OPSIS S1 (B1) CONSUM: Toon-Builder ruft _terrainGeologyAlbedo", res.toonCallsGeology === true);

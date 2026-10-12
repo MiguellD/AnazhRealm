@@ -24708,7 +24708,7 @@ class AnazhRealm {
                 1
             )
         );
-        this._bodenFarbeUnterFels(geom);
+        this._felsStoff(geom);
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -29151,28 +29151,62 @@ class AnazhRealm {
             colors[i * 3 + 2] = out[2];
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-        this._bodenFarbeUnterFels(geom);
+        this._felsStoff(geom);
     }
 
-    // UNTER FELS WÄCHST NICHTS (K02a, Auge 11 bei 762/−138): die Boden-Farbe ist eine Funktion von (x, z) — Wiese, Feuchte,
-    // Schnee liegen auf der Säule —, und der Höhlen-Boden 25 m unter der Wiese trug ihr Grün (der Stoff liest daraus noch
-    // seine Wiese, `_terrainGeologyAlbedo`). Was den Himmel nicht sieht, ist Fels: die Farbe fällt mit der Himmels-Sicht
-    // (`aHimmel`, `_himmelsSicht`) auf den Stein der Palette (`BODEN_FARBE.rock`) — an der Mündung ein Saum, in der Höhle
-    // Stein; unter dem Himmel (aHimmel 1) bleibt jede Zahl, wie sie war. Beide Bau-Wege rufen es: der synchrone über
+    // DER FELS HAT STOFF (K17; davor K02a „unter Fels wächst nichts"): die Boden-Farbe ist eine Funktion von (x, z) — Wiese,
+    // Feuchte, Schnee liegen auf der Säule. Wo das Netz Fels ist, trägt der Vertex den Fels-Stoff des Gesetzes (gelaende-core
+    // `felsFarbe`: Bänke nach Höhe und Einfallen, die Verwitterungsrinde an konvexen Kanten aus der Krümmung des Netzes
+    // (`felsKruemmung`), Mulden dunkel, Flechte am trockenen Licht, Moos am feuchten Sims): was den Himmel nicht sieht
+    // (1 − `aHimmel`, die Höhle; an der Mündung ein Saum) und was steil steht (die Steile der Vertex-Normale über die
+    // Schwellen von `TERRAIN_GEOLOGY`: Fels ganz, Geröll halb — dieselben Gewichte, mit denen der Shader nur noch die
+    // feinen Bänke auflegt). Bis K17 lag in der Höhle EIN Palette-Stein (σ der Leuchtdichte 0 über 64 576 Vertices) und
+    // auf dem Kliff die Säule (2 526 von 6 504 steilen Vertices grün). Beide Bau-Wege rufen es: der synchrone über
     // `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht (`_buildVoxelChunkDataFromWorkerMesh`).
-    _bodenFarbeUnterFels(geom) {
+    _felsStoff(geom) {
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
-        if (!col || !him) return;
-        const fels = AnazhRealm.BODEN_FARBE.rock;
+        const nor = geom.attributes.normal;
+        const pos = geom.attributes.position;
+        if (!col || !him || !nor || !pos)
+            throw new Error("_felsStoff: der Boden trägt nicht color · aHimmel · normal · position (fail-closed)");
+        const GK = globalThis.__gelaendeCore;
+        const FS = AnazhRealm.FELS_STOFF;
+        const G = AnazhRealm.TERRAIN_GEOLOGY;
         const C = col.array;
         const H = him.array;
-        for (let i = 0; i < H.length; i++) {
-            const t = 1 - H[i];
-            if (!(t > 0)) continue;
-            C[3 * i] += (fels[0] - C[3 * i]) * t;
-            C[3 * i + 1] += (fels[1] - C[3 * i + 1]) * t;
-            C[3 * i + 2] += (fels[2] - C[3 * i + 2]) * t;
+        const N = nor.array;
+        const P = pos.array;
+        const n = H.length;
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        // Das Gewicht des Stoffs je Vertex: die Höhle oder die Steile, je das größere.
+        const W = new Float32Array(n);
+        let jeder = false;
+        for (let i = 0; i < n; i++) {
+            const st = 1 - N[3 * i + 1];
+            const wr = ss(G.rockLo, G.rockHi, st);
+            const w = Math.max(1 - H[i], wr + 0.5 * ss(G.screeLo, G.screeHi, st) * (1 - wr));
+            W[i] = w;
+            if (w > 0) jeder = true;
+        }
+        if (!jeder) return;
+        const K = GK.felsKruemmung(P, N, geom.index ? geom.index.array : null, n);
+        const t = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+            const w = W[i];
+            if (!(w > 0)) continue;
+            const x = P[3 * i],
+                y = P[3 * i + 1],
+                z = P[3 * i + 2];
+            const fe = H[i] > 0 ? this._feuchteAt(x, z, y) : 0;
+            GK.felsFarbe(FS.basis, x, y, z, N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], H[i], fe, FS.fuss, t);
+            C[3 * i] += (t[0] - C[3 * i]) * w;
+            C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
+            C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
         }
         col.needsUpdate = true;
     }
@@ -29636,13 +29670,8 @@ class AnazhRealm {
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
-            screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
+            screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band; Geröll = halb Fels, `_felsStoff`)
             screeHi: 0.48,
-            rockTint: P.rock,
-            rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
-            //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
-            rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
-            screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
             mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
             gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
             mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
@@ -29653,6 +29682,24 @@ class AnazhRealm {
             //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
             //                  statt eines toten uniformen Sheens unterm Sky-IBL.
         });
+    }
+
+    // DER FELS-STOFF DER WELT (K17): das EINE Gesetz (gelaende-core `FELS`, `felsFarbe`) mit dem Stein der Boden-Palette als
+    // Grundton (`felsBasis`: die dunkle Lage und die helle Bank aus ihm), der Kante des Nah-Netzes (1,8 m: was es nicht trägt,
+    // trägt sein Mittel) und dem Mittel für die Ferne (`felsMittel`). Ohne den Kern bricht der Boden laut (Kern-Pflicht).
+    static get FELS_STOFF() {
+        if (AnazhRealm._felsStoffMemo) return AnazhRealm._felsStoffMemo;
+        const GK = globalThis.__gelaendeCore;
+        if (!GK || typeof GK.felsFarbe !== "function" || typeof GK.felsKruemmung !== "function" || !GK.FELS)
+            AnazhRealm._kernPflichtBruch("gelaende:felsFarbe");
+        const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
+        AnazhRealm._felsStoffMemo = Object.freeze({
+            gesetz: GK.FELS,
+            basis,
+            fuss: 1.8,
+            mittel: Object.freeze(GK.felsMittel(basis)),
+        });
+        return AnazhRealm._felsStoffMemo;
     }
 
     // Terrain-Mikro-Relief (Bump): ein Noise-Höhengradient kippt die geflattete Normale fein → der Boden
@@ -31176,6 +31223,7 @@ class AnazhRealm {
             geomorph: true,
             wegeKarte: true,
             himmelsSicht: true, // die Verdeckung des Himmels-Lichts und die Normale der Höhle (`_buildPbrNodeMaterial`)
+            felsImVertex: true, // die Vertex-Farbe IST der Fels-Stoff (`_felsStoff`), der Shader legt nur die feinen Bänke auf
         });
         // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
         // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
@@ -31594,7 +31642,8 @@ class AnazhRealm {
                             _Ta,
                             _bodenVc || albedoNode,
                             _Ta.positionWorld,
-                            _terrRough
+                            _terrRough,
+                            opts.felsImVertex === true
                         );
                         // DAS DACH ÜBER DEM BODEN (`opts.dach`, der Fern-Ring): eine Schicht, die über die fertige Boden-Albedo
                         // fällt — dort, wo keine Bäume mehr stehen, das Kronendach des Waldes. Der Boden darunter ist derselbe Stoff.
@@ -32262,7 +32311,7 @@ class AnazhRealm {
     // (rohe Geometrie-Normale) → Fels/Geröll bricht durch; FLACH + FEUCHT (dampEarth im Basis-Albedo) →
     // Moos. smoothstep-Konkurrenz, per-Fragment (kein Vertex-Trapez). Render-only; Fehler → der
     // unveränderte Albedo.
-    _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
+    _terrainGeologyAlbedo(_T, albedo, wp, roughOut, felsImVertex) {
         try {
             if (!_T || !_T.smoothstep || !_T.normalWorldGeometry || !_T.vec3 || !_T.mix || !_T.float) return albedo;
             const G = AnazhRealm.TERRAIN_GEOLOGY;
@@ -32276,17 +32325,25 @@ class AnazhRealm {
                 .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
                 .mul(_T.float(1.0).sub(_rockW));
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
-            // FELS-FARBE regional konsistent: die Basis-Luminanz tönt den kühlen
-            // Stein (so bleibt Gipfel-Fels heller, Glut-Hang wärmer), gebändert vom
-            // Schichtungs-Noise (Sediment-Strata in Welt-Y).
-            const _lum = albedo.x.mul(0.3).add(albedo.y.mul(0.59)).add(albedo.z.mul(0.11));
-            const _stone = _T.vec3(G.rockTint[0], G.rockTint[1], G.rockTint[2]);
-            const _bandN = _ra.raum(_T.vec3(wp.x.mul(0.05), wp.y.mul(0.6), wp.z.mul(0.05)));
-            let _rockCol = _T.mix(_stone, _T.vec3(_lum, _lum, _lum), _T.float(G.rockLumMix));
-            _rockCol = _rockCol.mul(_T.float(1.0).add(_bandN.mul(_T.float(G.rockBand))));
-            const _screeCol = _T.mix(albedo, _rockCol, _T.float(G.screeMix));
-            // Konkurrenz: erst Geröll, dann Fels (Fels dominiert die Mischung).
-            let _out = _T.mix(albedo, _screeCol, _screeW.mul(_gRock));
+            // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
+            // IST die Vertex-Farbe der Fels — `_felsStoff` hat Bänke, Kanten, Mulden, Flechte und Moos aus dem Gesetz
+            // aufgelegt; die Ferne (Fern-Ring) trägt sein Mittel (`FELS_STOFF.mittel`). Der EINE Detail-Term: die Bänke
+            // unter der Masche, eine Probe im Rausch-Atlas — flach gestreckt, dicht in der Schicht-Höhe des Gesetzes
+            // (Einfallen gegen das Streichen, Mächtigkeit `FELS.bank`). Bis K17 tönte hier ein Zwilling den Palette-Stein
+            // mit der Säulen-Luminanz (rockTint · rockLumMix · rockBand): auf dem Kliff stand die Wiese im Vertex.
+            const FS = AnazhRealm.FELS_STOFF;
+            const FG = FS.gesetz;
+            const _schichtY = wp.y.add(
+                wp.x
+                    .mul(Math.cos(FG.streichen))
+                    .add(wp.z.mul(Math.sin(FG.streichen)))
+                    .mul(Math.tan(FG.einfall))
+            );
+            const _bandN = _ra.raum(_T.vec3(wp.x.mul(FG.fein.xz), _schichtY.mul(1 / FG.bank), wp.z.mul(FG.fein.xz)));
+            const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
+            const _rockCol = _felsGrund.mul(_T.float(1.0).add(_bandN.mul(_T.float(FG.fein.kontrast))));
+            // Das Geröll ist halb Fels (dasselbe Gewicht wie `_felsStoff` am Vertex); der Fels dominiert die Mischung.
+            let _out = _T.mix(albedo, _rockCol, _screeW.mul(_gRock).mul(0.5));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber

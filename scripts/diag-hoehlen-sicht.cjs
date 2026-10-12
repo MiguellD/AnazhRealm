@@ -32,7 +32,9 @@
 //       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
 //       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß);
-//   (k) WIESE UNTER FELS — jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette (`_bodenFarbeUnterFels`), vorher
+//   (k) DER FELS HAT STOFF (K17) — jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff (gelaende-core
+//       `felsFarbe` über `_felsStoff`: Bänke, Kanten, Mulden, Flechte, Moos), Streuung σ/Mittel ≥ 0,08, Albedo ≤ 0,30; vorher
+//       die eine graue Masse des Palette-Steins (Auge-Runde V18.540 bei 762/−138), davor
 //       das Grün der Wiese 25 m über ihm.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
@@ -45,6 +47,11 @@ const PFLICHT = ["wiese", "hang", "muendung", "hoehle", "hinaus"];
 // Natürliche Mündungen je km² im Mittelgebirge (Karte K16): die Welt trägt die Höhlen sichtbar.
 const MUENDUNGEN_JE_KM2 = 1;
 const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
+// (k) Der Fels-Stoff (K17): höchstens 1 % der Fels-Vertices ohne das Gesetz (Summen-Reihenfolge der Krümmung an den
+// Satz-Nähten), Streuung σ/Mittel der Leuchtdichte ≥ 0,08 (die gleichförmige Masse liegt bei 0), Albedo ≤ 0,30 (nordstern §1).
+const FELS_FREMD_ANTEIL = 0.01;
+const FELS_STREUUNG_MIN = 0.08;
+const FELS_ALBEDO_MAX = 0.3;
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
@@ -164,15 +171,34 @@ function urteil(b) {
                     "als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)"
             );
     }
-    // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette
+    // (k) DER FELS HAT STOFF (K17): jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff des
+    // Gesetzes (gelaende-core `felsFarbe`) — nie die Farbe der Säule, nie EINE graue Masse, im Natur-Band
     const wf = b.wieseUnterFels;
     if (!wf || !(wf.ohneHimmel > 0))
         v.push("LEER: (k) Wiese unter Fels: kein Höhlen-Vertex ohne Himmel im Boden-Satz (die Wand prüfte nichts)");
-    else if (wf.fremd > 0)
+    else {
+        if (wf.fremd > wf.ohneHimmel * FELS_FREMD_ANTEIL)
+            v.push(
+                `WIESE UNTER FELS: ${wf.fremd} von ${wf.ohneHimmel} Höhlen-Vertices ohne Himmel tragen nicht den Fels-Stoff ` +
+                    `(${wf.gruen} davon grün), zuerst ${JSON.stringify(wf.erst)} — die Farbe der Säule oder ein Zwilling liegt ` +
+                    "auf dem Höhlen-Fels (`_felsStoff` liest gelaende-core `felsFarbe`)"
+            );
+        if (!(wf.streuung >= FELS_STREUUNG_MIN))
+            v.push(
+                `MASSE: der Höhlen-Fels ist gleichförmig — Streuung der Leuchtdichte σ/Mittel ${wf.streuung} über ` +
+                    `${wf.ohneHimmel} Vertices (mindestens ${FELS_STREUUNG_MIN}: Bänke, Kanten, Mulden des Fels-Stoffs)`
+            );
+        if (!(wf.albedo <= FELS_ALBEDO_MAX))
+            v.push(`ALBEDO: der Höhlen-Fels liegt bei Y ${wf.albedo} (linear), über dem Natur-Band ${FELS_ALBEDO_MAX}`);
+    }
+    const kl = b.kliff;
+    if (!kl || !(kl.steil > 0))
+        v.push("LEER: (k) Kliff: kein steiler Vertex unter dem Himmel im Boden-Satz (die Wand prüfte keinen Kliff-Stoff)");
+    else if (kl.fremd > kl.steil * FELS_FREMD_ANTEIL)
         v.push(
-            `WIESE UNTER FELS: ${wf.fremd} von ${wf.ohneHimmel} Höhlen-Vertices ohne Himmel tragen nicht den Stein der Palette ` +
-                `(${wf.gruen} davon grün), zuerst ${JSON.stringify(wf.erst)} — die Farbe der Säule (Wiese, Feuchte, Schnee) ` +
-                "liegt auf dem Höhlen-Boden (`_bodenFarbeUnterFels`)"
+            `KLIFF OHNE STOFF: ${kl.fremd} von ${kl.steil} steilen Vertices unter dem Himmel tragen nicht den Fels-Stoff ` +
+                `(${kl.gruen} davon grün), zuerst ${JSON.stringify(kl.erst)} — der Vertex trägt die Säule, der Fels lebt nur ` +
+                "als Farbton im Shader (`_felsStoff`)"
         );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
@@ -265,7 +291,8 @@ function selbsttest() {
         ],
         gedaechtnis: { vor: 0, nach: 6, imBild: 6 },
         code: { passLiest: true, abschnittLiest: true, hinausLiest: true, himmelLiest: true, normaleHoehle: true },
-        wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
+        wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
+        kliff: { steil: 300, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
             augeInHoehle: true,
             hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, amAuge: 0, abfall: 0 },
@@ -393,6 +420,15 @@ function selbsttest() {
             /WIESE UNTER FELS: 650 von 700 Höhlen-Vertices ohne Himmel .*420 davon grün/,
         ],
         ["Fels ohne Höhle", (b) => (b.wieseUnterFels.ohneHimmel = 0), /LEER: \(k\) Wiese unter Fels/],
+        // (k) K17: der Höhlen-Fels von Auge 11 (762/−138) war EINE graue Masse — jeder Vertex der Stein der Palette
+        ["Masse", (b) => (b.wieseUnterFels.streuung = 0), /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/],
+        ["Fels zu hell", (b) => (b.wieseUnterFels.albedo = 0.5), /ALBEDO: der Höhlen-Fels liegt bei Y 0\.5/],
+        [
+            "Kliff ohne Stoff",
+            (b) => Object.assign(b.kliff, { fremd: 280, gruen: 90, erst: { p: [700, 30, -120] } }),
+            /KLIFF OHNE STOFF: 280 von 300 steilen Vertices/,
+        ],
+        ["Kein Kliff", (b) => (b.kliff.steil = 0), /LEER: \(k\) Kliff/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -983,27 +1019,73 @@ const server = http.createServer((req, res) => {
                 if (HA) for (const i of mundV) ms += HA.getX(i);
                 hl.muendMittel = mundV.size ? +(ms / mundV.size).toFixed(3) : null;
                 aus.himmel = hl;
-                // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) trägt den Stein der Palette
-                // (`BODEN_FARBE.rock`, je Kanal auf 0,002) — nie die Farbe der Säule über ihm
+                // (k) DER FELS HAT STOFF (K17): jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) und jeder Kliff-Vertex
+                // (aHimmel ≥ 0,999, Steile ≥ rockHi: das Gewicht des Fels-Stoffs ist dort 1) trägt die Farbe, die das Gesetz
+                // für IHN rechnet — gelaende-core `felsFarbe` mit seiner Krümmung (`felsKruemmung` über das Netz des Satzes),
+                // seiner Himmels-Sicht und Feuchte (`_feuchteAt`), je Kanal auf 0,002 —, nie die Farbe der Säule; dazu die
+                // Streuung der Leuchtdichte über den Höhlen-Fels (die Masse liegt bei 0) und seine Albedo.
                 const CA = geo && geo.attributes.color;
-                const fels = A.BODEN_FARBE.rock;
-                const wf = { ohneHimmel: 0, fremd: 0, gruen: 0, erst: null };
-                if (HA && CA)
+                const NA = geo && geo.attributes.normal;
+                const GK = window.__gelaendeCore;
+                const G = A.TERRAIN_GEOLOGY;
+                const FS = A.FELS_STOFF;
+                const wf = { ohneHimmel: 0, fremd: 0, gruen: 0, erst: null, streuung: null, albedo: null };
+                const kl = { steil: 0, fremd: 0, gruen: 0, erst: null };
+                if (HA && CA && NA && GK && typeof GK.felsFarbe === "function") {
+                    const nV = PA.count;
+                    const P3 = new Float32Array(nV * 3),
+                        N3 = new Float32Array(nV * 3);
+                    for (let i = 0; i < nV; i++) {
+                        P3[3 * i] = PA.getX(i);
+                        P3[3 * i + 1] = PA.getY(i);
+                        P3[3 * i + 2] = PA.getZ(i);
+                        N3[3 * i] = NA.getX(i);
+                        N3[3 * i + 1] = NA.getY(i);
+                        N3[3 * i + 2] = NA.getZ(i);
+                    }
+                    const KR = GK.felsKruemmung(P3, N3, geo.index ? geo.index.array : null, nV);
+                    const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
+                    const fuss = FS ? FS.fuss : 1.8;
+                    const soll = [0, 0, 0];
+                    const pruefe = (i, him, z) => {
+                        const x = P3[3 * i],
+                            y = P3[3 * i + 1],
+                            zz = P3[3 * i + 2];
+                        const fe = him > 0 ? r._feuchteAt(x, zz, y) : 0;
+                        GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll);
+                        const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
+                        if (Math.max(...c.map((q, j) => Math.abs(q - soll[j]))) <= 0.002) return c;
+                        z.fremd++;
+                        if (c[1] - (c[0] + c[2]) / 2 > 0) z.gruen++;
+                        if (!z.erst)
+                            z.erst = {
+                                p: [x, y, zz].map((q) => +q.toFixed(1)),
+                                c: c.map((q) => +q.toFixed(3)),
+                                soll: soll.map((q) => +q.toFixed(3)),
+                            };
+                        return c;
+                    };
+                    const Ys = [];
                     for (const i of hoehleV) {
                         if (HA.getX(i) > 0.001) continue;
                         wf.ohneHimmel++;
-                        const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
-                        if (Math.max(...c.map((q, j) => Math.abs(q - fels[j]))) <= 0.002) continue;
-                        wf.fremd++;
-                        if (c[1] - (c[0] + c[2]) / 2 > 0) wf.gruen++;
-                        if (!wf.erst)
-                            wf.erst = {
-                                p: [PA.getX(i), PA.getY(i), PA.getZ(i)].map((q) => +q.toFixed(1)),
-                                c: c.map((q) => +q.toFixed(3)),
-                                fels: fels.map((q) => +q.toFixed(3)),
-                            };
+                        const c = pruefe(i, 0, wf);
+                        Ys.push(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
                     }
+                    if (Ys.length) {
+                        const m = Ys.reduce((a, q) => a + q, 0) / Ys.length;
+                        const s = Math.sqrt(Ys.reduce((a, q) => a + (q - m) * (q - m), 0) / Ys.length);
+                        wf.albedo = +m.toFixed(3);
+                        wf.streuung = m > 0 ? +(s / m).toFixed(3) : 0;
+                    }
+                    for (let i = 0; i < nV; i++) {
+                        if (HA.getX(i) < 0.999 || 1 - N3[3 * i + 1] < G.rockHi) continue;
+                        kl.steil++;
+                        pruefe(i, HA.getX(i), kl);
+                    }
+                }
                 aus.wieseUnterFels = wf;
+                aus.kliff = kl;
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
@@ -1117,8 +1199,15 @@ const server = http.createServer((req, res) => {
     const wu = befund.wieseUnterFels;
     if (wu)
         console.log(
-            `  (k) Wiese unter Fels: ${wu.ohneHimmel} Höhlen-Vertices ohne Himmel, ${wu.fremd} nicht Stein (${wu.gruen} grün)` +
+            `  (k) Fels-Stoff Höhle: ${wu.ohneHimmel} Vertices ohne Himmel, ${wu.fremd} ohne das Gesetz (${wu.gruen} grün), ` +
+                `Albedo Y ${wu.albedo}, Streuung σ/Mittel ${wu.streuung}` +
                 (wu.erst ? `, zuerst ${JSON.stringify(wu.erst)}` : "")
+        );
+    const kf = befund.kliff;
+    if (kf)
+        console.log(
+            `  (k) Fels-Stoff Kliff: ${kf.steil} steile Vertices unter dem Himmel, ${kf.fremd} ohne das Gesetz (${kf.gruen} grün)` +
+                (kf.erst ? `, zuerst ${JSON.stringify(kf.erst)}` : "")
         );
     const v = urteil(befund);
     if (v.length) {

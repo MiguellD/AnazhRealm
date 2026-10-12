@@ -1349,8 +1349,248 @@
         return { zellen: c, pediment: r3(ped / c), schutt: r3(schutt / c), ruhe: r3(ruhe / c), kliff: r3(kliff / c) };
     }
 
+    // ── DER FELS-STOFF (K17): EIN Gesetz für das Aussehen des Felsens — der Welt-Boden (Kliff, Schutthang, Höhle), das
+    // Gelände-Studio und die Fels-Gestalten der Foundry (Findling, Felsbogen, Felsturm, Säulen, Schutt) lesen es. Das
+    // Schicht-Gesetz (T5) sagt, WO Kliff und Schutthang liegen; der Stoff sagt, WIE sie aussehen: Bänke nach Höhe und
+    // Einfallen, Korn, die Verwitterungsrinde an konvexen Kanten (aus der Krümmung), Mulden dunkel, Flechte am
+    // trockenen Licht, Moos am feuchten Sims. Alle Farben LINEAR (FARB-GESETZ); Fels liegt im Natur-Band ≤ 0,30
+    // (nordstern §4.1, e-education PSU earth103). `fuss` ist die Kante des Netzes, das die Farbe trägt (m): was es nicht
+    // auflöst (Wellenlänge < 2 · fuss), trägt sein Mittel — die feinen Bänke trägt dann der EINE Detail-Term im Shader
+    // (`FELS.fein`, eine Probe im Rausch-Atlas), Lehre 19.
+    const FELS = Object.freeze({
+        einfall: 0.07, // Einfallen der Bänke (rad, ≈ 4°: flach lagernd wie die Tafelberge des Schicht-Gesetzes)
+        streichen: 0.6, // Streich-Richtung (rad gegen +x)
+        bank: 0.9, // mittlere Mächtigkeit einer Bank (m)
+        bankStreu: 0.5, // ± Anteil der Mächtigkeit je Bank
+        bankKontrast: 0.22, // Helligkeit je Bank ±
+        akzentAnteil: 0.25, // Anteil der hellen (sandigen) Bänke
+        paket: 5.5, // Mächtigkeit eines Bank-Pakets (m): die groben Lagen, die das 1,8-m-Netz trägt
+        paketKontrast: 0.2,
+        fuge: 0.55, // Abdunklung der Schicht-Fuge zur dunklen Lage
+        fugeBreite: 0.08, // Anteil der Bank, den die Fuge je Seite trägt
+        kanteHell: 0.6, // die Verwitterungsrinde: Mischung zum gebleichten Stein an konvexen Kanten
+        kanteK: [0.08, 0.6], // Krümmung (1/m): von … bis voll
+        muldeDunkel: 0.5,
+        muldeK: [0.06, 0.5],
+        bleiche: 1.75, // der gebleichte Stein = Basis × bleiche
+        flechte: [0.27, 0.26, 0.15], // Krustenflechte, grau-grün-gelb (sRGB 0x8e8c6c)
+        flechteDeckung: 0.6,
+        flechteLambda: 2.4, // m
+        moos: [0.069, 0.111, 0.019], // Moos (sRGB 0x4a5e26)
+        moosDeckung: 0.75,
+        moosLambda: 3.4, // m
+        grundMax: 0.22, // der Grundton höchstens (Y linear): der Fels bleibt im Natur-Band ≤ 0,30
+        korn: 0.12, // ± je Korn (Vertex-Hash, wo das Netz es trägt: die Gestalten)
+        kornLambda: 0.12, // m
+        // Der EINE Detail-Term im Boden-Shader: die Bänke unter der Masche, eine Probe im Rausch-Atlas, gestreckt in der
+        // Waagerechten (`fein.xz` je m), dicht in der Höhe (1 / bank) — ± `fein.kontrast`.
+        fein: Object.freeze({ xz: 0.05, kontrast: 0.2 }),
+    });
+    const FELS_SAAT = saatHash("fels-stoff");
+    // Trägt ein Netz der Kante `fuss` die Wellenlänge λ? 1 = ganz (fuss ≤ λ/4), 0 = nur ihr Mittel (fuss ≥ λ/2).
+    const traegt = (lambda, fuss) => 1 - glatt(0.25 * lambda, 0.5 * lambda, fuss > 0 ? fuss : 0);
+    // Wert-Rauschen [0, 1] im Gitter der Kante 1 (trilinear, geglättet) — rein, deterministisch, ohne Saat-Strom.
+    function wert3(x, y, z, sh) {
+        const ix = Math.floor(x),
+            iy = Math.floor(y),
+            iz = Math.floor(z);
+        let fx = x - ix,
+            fy = y - iy,
+            fz = z - iz;
+        fx = fx * fx * (3 - 2 * fx);
+        fy = fy * fy * (3 - 2 * fy);
+        fz = fz * fz * (3 - 2 * fz);
+        const e = (i, j, k) => zufall(sh, ix + i, iy + j, iz + k);
+        const x00 = e(0, 0, 0) + (e(1, 0, 0) - e(0, 0, 0)) * fx;
+        const x10 = e(0, 1, 0) + (e(1, 1, 0) - e(0, 1, 0)) * fx;
+        const x01 = e(0, 0, 1) + (e(1, 0, 1) - e(0, 0, 1)) * fx;
+        const x11 = e(0, 1, 1) + (e(1, 1, 1) - e(0, 1, 1)) * fx;
+        const y0 = x00 + (x10 - x00) * fy;
+        const y1 = x01 + (x11 - x01) * fy;
+        return y0 + (y1 - y0) * fz;
+    }
+    // Die drei Töne eines Felsens aus seinem Grundton (linear): die dunkle Lage und die helle, sandige Bank. Der Grundton
+    // liegt im Natur-Band: über `FELS.grundMax` (Leuchtdichte Y) sinken alle drei Töne gemeinsam — mit Bänken, Rinde und
+    // Flechte bleibt der Fels ≤ 0,30 (ein heller Sandstein-Ton der Palette war Y 0,33).
+    function felsBasis(basis, dunkel, akzent) {
+        const Y = 0.2126 * basis[0] + 0.7152 * basis[1] + 0.0722 * basis[2];
+        const f = Y > FELS.grundMax ? FELS.grundMax / Y : 1;
+        const b = [basis[0] * f, basis[1] * f, basis[2] * f];
+        return Object.freeze({
+            basis: b,
+            dunkel: dunkel ? [dunkel[0] * f, dunkel[1] * f, dunkel[2] * f] : [b[0] * 0.45, b[1] * 0.45, b[2] * 0.45],
+            akzent: akzent ? [akzent[0] * f, akzent[1] * f, akzent[2] * f] : [b[0] * 1.35, b[1] * 1.28, b[2] * 1.18],
+        });
+    }
+    // Die Bank an der Schicht-Höhe s (m): ihre Helligkeit, ob sie hell (sandig) ist, und die Lage in ihr (0..1).
+    function bankAn(s, aus) {
+        const F = FELS;
+        const k = Math.floor(s / F.bank);
+        // Die Mächtigkeit streut je Bank: die Grenze der Bank k wandert um ± bankStreu/2 · bank (stetig in s).
+        const grenze = (i) => (i + (zufall(FELS_SAAT, i, 7, 0) - 0.5) * F.bankStreu) * F.bank;
+        const kk = s < grenze(k) ? k - 1 : s >= grenze(k + 1) ? k + 1 : k;
+        const a = grenze(kk);
+        const b = grenze(kk + 1);
+        aus.lage = b > a ? (s - a) / (b - a) : 0.5;
+        aus.hell = 1 + F.bankKontrast * (2 * zufall(FELS_SAAT, kk, 3, 0) - 1);
+        aus.akzent = zufall(FELS_SAAT, kk, 5, 0) < F.akzentAnteil ? 1 : 0;
+        return aus;
+    }
+    const _bank = { lage: 0, hell: 1, akzent: 0 };
+    // DIE FELS-FARBE an einem Punkt (linear, nach `out`): B = `felsBasis`; (x, y, z) die Lage (m, Welt oder Gestalt); n die
+    // Normale; `krumm` die mittlere Krümmung (1/m, > 0 konvex — `felsKruemmung`); `himmel` die Himmels-Sicht (0 Höhle …
+    // 1 frei); `feucht` 0..1; `fuss` die Kante des tragenden Netzes (m).
+    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out) {
+        const F = FELS;
+        // Schicht-Höhe: die Bänke fallen mit dem Einfallen gegen die Streich-Richtung.
+        const s = y + Math.tan(F.einfall) * (x * Math.cos(F.streichen) + z * Math.sin(F.streichen));
+        let r = B.basis[0],
+            g = B.basis[1],
+            b = B.basis[2];
+        // Bank-Pakete (grob) — ihr Mittel ist 1.
+        const tp = traegt(F.paket, fuss);
+        if (tp > 0) {
+            const kp = Math.floor(s / F.paket);
+            const m = 1 + tp * F.paketKontrast * (2 * zufall(FELS_SAAT, kp, 11, 0) - 1);
+            r *= m;
+            g *= m;
+            b *= m;
+        }
+        // Bänke (fein): Helligkeit, helle Bank, Fuge zur dunklen Lage — wo das Netz sie nicht trägt, ihr Mittel (die
+        // Fugen dunkeln im Mittel um 2 · fugeBreite · fuge · ½, die hellen Bänke heben um akzentAnteil).
+        const tb = traegt(F.bank, fuss);
+        const bk = bankAn(s, _bank);
+        const akz = tb * bk.akzent + (1 - tb) * F.akzentAnteil;
+        r += (B.akzent[0] - r) * akz * 0.6;
+        g += (B.akzent[1] - g) * akz * 0.6;
+        b += (B.akzent[2] - b) * akz * 0.6;
+        const hell = tb * bk.hell + (1 - tb);
+        r *= hell;
+        g *= hell;
+        b *= hell;
+        const fb = F.fugeBreite;
+        const inFuge = bk.lage < fb ? 1 - bk.lage / fb : bk.lage > 1 - fb ? (bk.lage - (1 - fb)) / fb : 0;
+        const fuge = (tb * inFuge * inFuge + (1 - tb) * fb * (2 / 3)) * F.fuge;
+        r += (B.dunkel[0] - r) * fuge;
+        g += (B.dunkel[1] - g) * fuge;
+        b += (B.dunkel[2] - b) * fuge;
+        // Korn (Vertex-Hash) — nur, wo das Netz es trägt; sein Mittel ist 1.
+        const tk = traegt(F.kornLambda * 4, fuss);
+        if (tk > 0) {
+            const q = 1 / F.kornLambda;
+            const m = 1 + tk * F.korn * (2 * zufall(FELS_SAAT, Math.floor(x * q), Math.floor(y * q), Math.floor(z * q)) - 1);
+            r *= m;
+            g *= m;
+            b *= m;
+        }
+        // Die Kante: konvex hellt die Verwitterungsrinde auf, die Mulde dunkelt.
+        const k = krumm > 0 || krumm < 0 ? krumm : 0;
+        const ke = glatt(F.kanteK[0], F.kanteK[1], k) * F.kanteHell;
+        if (ke > 0) {
+            r += (B.basis[0] * F.bleiche - r) * ke;
+            g += (B.basis[1] * F.bleiche - g) * ke;
+            b += (B.basis[2] * F.bleiche - b) * ke;
+        }
+        const md = 1 - glatt(F.muldeK[0], F.muldeK[1], -k) * F.muldeDunkel;
+        r *= md;
+        g *= md;
+        b *= md;
+        // Flechte am trockenen Licht, Moos am feuchten Sims — beide nur unter dem Himmel, in Flecken.
+        const h = himmel > 0 ? (himmel < 1 ? himmel : 1) : 0;
+        const fe = feucht > 0 ? (feucht < 1 ? feucht : 1) : 0;
+        if (h > 0) {
+            const up = ny > 0 ? ny : 0;
+            const tf = traegt(F.flechteLambda, fuss);
+            const pf =
+                tf * glatt(0.5, 0.72, wert3(x / F.flechteLambda, y / F.flechteLambda, z / F.flechteLambda, FELS_SAAT ^ 0x51)) +
+                (1 - tf) * 0.27;
+            const wf = F.flechteDeckung * pf * h * (1 - 0.7 * fe) * glatt(-0.3, 0.4, ny);
+            r += (F.flechte[0] - r) * wf;
+            g += (F.flechte[1] - g) * wf;
+            b += (F.flechte[2] - b) * wf;
+            const tm = traegt(F.moosLambda, fuss);
+            const pm =
+                tm * glatt(0.45, 0.7, wert3(x / F.moosLambda, y / F.moosLambda, z / F.moosLambda, FELS_SAAT ^ 0xa3)) +
+                (1 - tm) * 0.32;
+            const wm = F.moosDeckung * pm * h * fe * glatt(0.15, 0.7, up);
+            r += (F.moos[0] - r) * wm;
+            g += (F.moos[1] - g) * wm;
+            b += (F.moos[2] - b) * wm;
+        }
+        out[0] = r;
+        out[1] = g;
+        out[2] = b;
+        return out;
+    }
+    // Die mittlere Krümmung je Vertex (1/m, > 0 konvex) eines indizierten Netzes: je Kante (i, j) −2 n_i · (p_j − p_i) /
+    // |p_j − p_i|², gemittelt — auf einer Kugel vom Radius ρ genau 1/ρ. P, N: Float32-Felder (xyz), I: Index (oder null).
+    function felsKruemmung(P, N, I, n, out) {
+        const K = out || new Float32Array(n);
+        const c = new Uint16Array(n);
+        K.fill(0, 0, n);
+        if (!I) return K;
+        const kante = (i, j) => {
+            const dx = P[3 * j] - P[3 * i],
+                dy = P[3 * j + 1] - P[3 * i + 1],
+                dz = P[3 * j + 2] - P[3 * i + 2];
+            const l2 = dx * dx + dy * dy + dz * dz;
+            if (!(l2 > 1e-12)) return;
+            K[i] += (-2 * (N[3 * i] * dx + N[3 * i + 1] * dy + N[3 * i + 2] * dz)) / l2;
+            c[i]++;
+        };
+        for (let t = 0; t + 2 < I.length; t += 3) {
+            const a = I[t],
+                b = I[t + 1],
+                d = I[t + 2];
+            kante(a, b);
+            kante(a, d);
+            kante(b, a);
+            kante(b, d);
+            kante(d, a);
+            kante(d, b);
+        }
+        for (let i = 0; i < n; i++) if (c[i]) K[i] /= c[i];
+        return K;
+    }
+    // Ein ganzes Netz durch den Stoff (die Gestalten der Foundry, der Werkstatt-Stein): C ← felsFarbe je Vertex.
+    // o = { himmel (1), feucht (0,3), fuss (die mittlere Kante, sonst aus dem Netz) }.
+    function felsNetz(B, P, N, I, n, o, C) {
+        const K = felsKruemmung(P, N, I, n);
+        let fuss = o && o.fuss > 0 ? o.fuss : 0;
+        if (!fuss && I && I.length >= 3) {
+            let s = 0,
+                m = 0;
+            for (let t = 0; t + 2 < I.length && m < 600; t += 3, m++) {
+                const a = I[t],
+                    b = I[t + 1];
+                s += Math.hypot(P[3 * b] - P[3 * a], P[3 * b + 1] - P[3 * a + 1], P[3 * b + 2] - P[3 * a + 2]);
+            }
+            fuss = m ? s / m : 0;
+        }
+        const him = o && o.himmel != null ? o.himmel : 1;
+        const fe = o && o.feucht != null ? o.feucht : 0.3;
+        const tmp = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], him, fe, fuss, tmp);
+            C[3 * i] = tmp[0];
+            C[3 * i + 1] = tmp[1];
+            C[3 * i + 2] = tmp[2];
+        }
+        return C;
+    }
+    // Das Mittel des Stoffs (die Ferne, wo kein Netz eine Bank trägt): ein senkrechter Fels unter dem Himmel.
+    function felsMittel(B, feucht) {
+        return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0]);
+    }
+
     root.__gelaendeCore = Object.freeze({
         LINSE: LINSE,
+        FELS: FELS,
+        felsBasis: felsBasis,
+        felsFarbe: felsFarbe,
+        felsKruemmung: felsKruemmung,
+        felsNetz: felsNetz,
+        felsMittel: felsMittel,
         statistik: statistik,
         hangBaender: hangBaender,
         VERSION: VERSION,
