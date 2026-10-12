@@ -1396,9 +1396,9 @@
     });
     // DIE BENANNTEN LANDSCHAFTEN: je Preset nur die Regler, die es vom Gesetz abweichen lässt (der Rest ist def). Jede
     // trägt ihr Bild aus Nordstern §4.1 und steht im Natur-Korridor der Linse: kein Ziel rot, das Tafelland trägt das
-    // Schicht-Gesetz — die Studio-Probe (gate:gelaende-studio) drückt jeden Knopf und verlangt es an ihrer Saat; gemessen
-    // auch an den drei Saaten der Gelände-Linse (θ je Preset 0,5–0,55: unter dem Standard 0,45 fiel das gemessene θ an
-    // einzelnen Saaten unter 0,3). Leser: die Preset-Knöpfe des Studios.
+    // Schicht-Gesetz — die Studio-Probe (gate:gelaende-studio) drückt jeden Knopf und verlangt es an ihrer Saat, die
+    // Gelände-Linse (gate:gelaende-realismus, `presetsAnSaaten`) an ihren drei Saaten (θ je Preset 0,5–0,55: bei θ 0,3
+    // fällt die Küste an zwei der drei Saaten aus dem Korridor, Senken und Flint). Leser: die Preset-Knöpfe des Studios.
     const LANDFORM_PRESETS = Object.freeze([
         Object.freeze({
             id: "mittelgebirge",

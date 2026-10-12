@@ -478,6 +478,71 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
         imBudget: alle <= SPALTEN_BUDGET.alle && ebenen <= SPALTEN_BUDGET.ebenen,
     };
 }
+// Das Schicht-Gesetz am Schicht-Ort auf 2-m-Raster, 600 m: das Tafelland ist ein ORT (Stil-Feld λ 5,2 km), der Kern nennt
+// ihn im Umkreis von 8 km (16 × 16 km — in 4 × 4 km fehlt er zwei von drei Welten); ohne Ort: der Ursprung. Gezählt wird im
+// Tafelland selbst (Stil ≥ 0,8 der Großform), nicht im Wald daneben. Leser: die Saaten und die Presets der Gelände-Linse.
+function schichtAm(G, Z, L) {
+    const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -8000, -8000, 8000, 8000) : null;
+    const ox = ort ? ort.x : 0;
+    const oz = ort ? ort.z : 0;
+    const fn = 301;
+    const HF = new Float64Array(fn * fn);
+    const maske = new Uint8Array(fn * fn);
+    for (let j = 0; j < fn; j++)
+        for (let i = 0; i < fn; i++) {
+            HF[i + j * fn] = G.hoehe(L, ox - 300 + i * 2, oz - 300 + j * 2, true);
+            if (ort && typeof G.grossform === "function")
+                maske[i + j * fn] = G.grossform(L, ox - 300 + i * 2, oz - 300 + j * 2).stil >= 0.8 ? 1 : 0;
+            else maske[i + j * fn] = 1;
+        }
+    return { ort, ox, oz, schicht: Z.hangBaender(HF, fn, 2, maske) };
+}
+// DIE PRESETS AN DEN DREI SAATEN (K16b): jede benannte Landschaft (`LANDFORM_PRESETS`) als EIN Plan je Saat der Linse
+// (`planLage` — dieselbe Lage, die die Welt aus dem Plan gebiert), dieselbe Statistik und dasselbe Urteil wie die Saaten;
+// das Schicht-Gesetz am Schicht-Ort des Presets (ohne Ort: null, es gilt dort nicht). Das Urteil spricht `presetBefunde`
+// (dieselbe Wand wie die Knöpfe der Studio-Probe): kein Ziel false, und je Saat trägt mindestens eine Landschaft das
+// Schicht-Gesetz. Ein Gesetz ohne Presets (`--wurzel` vor K16b) trägt keine — dann misst das Bein nichts und sagt es.
+function presetsAnSaaten(K, Z, n, SCHRITT, AUSSEN, RAND) {
+    const G = K.G;
+    if (!Array.isArray(G.LANDFORM_PRESETS) || typeof G.planLage !== "function") {
+        console.log("\n  Presets: das gemessene Gesetz trägt keine (LANDFORM_PRESETS, planLage) — das Bein misst nichts");
+        return { befunde: [], je: [] };
+    }
+    const befunde = [];
+    const je = [];
+    for (const saat of REALISMUS_SAATEN) {
+        const liste = [];
+        for (const P of G.LANDFORM_PRESETS) {
+            const plan = { art: G.PLAN_ART, v: G.PLAN_VERSION, saat, regler: P.regler };
+            const L = G.planLage(plan, K.SimplexNoise);
+            const H = new Array(n * n);
+            for (let j = 0; j < n; j++)
+                for (let i = 0; i < n; i++) H[i + j * n] = G.hoehe(L, -AUSSEN + i * SCHRITT, -AUSSEN + j * SCHRITT, true);
+            const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
+            const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
+            const { ort, schicht } = schichtAm(G, Z, L);
+            const urteil = Z.urteil(st, ort ? schicht : null);
+            liste.push({ id: P.id, traegt: true, urteil });
+            je.push({
+                saat,
+                preset: P.id,
+                urteil,
+                senken1mJeKm2: st.senken1mJeKm2,
+                theta: st.flint.theta,
+                r2: st.flint.r2,
+                hammond: st.hammond.sanft,
+                dorfplaetze: st.dorfplaetze,
+                schicht: ort ? { kliff: schicht.kliff, schutt: schicht.schutt, pediment: schicht.pediment } : null,
+            });
+            const z = (k) => (urteil[k] === true ? "✓" : urteil[k] === false ? "✗" : "–");
+            console.log(
+                `    ${saat.padEnd(24)} ${P.id.padEnd(14)} senken ${z("senken")} · flint ${z("flint")} · hammond ${z("hammond")} · dorfplaetze ${z("dorfplaetze")} · schicht ${z("schicht")} (Senken ${st.senken1mJeKm2}/km² · θ ${st.flint.theta} R² ${st.flint.r2} · Hammond ${st.hammond.sanft} · Plätze ${st.dorfplaetze})`
+            );
+        }
+        for (const b of presetBefunde(liste)) befunde.push(`${saat}: ${b}`);
+    }
+    return { befunde, je };
+}
 function realismus() {
     // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
     // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
@@ -511,23 +576,7 @@ function realismus() {
         const kosten = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us);
         const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
         const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
-        // Das Schicht-Gesetz am Schicht-Ort auf 2-m-Raster, 600 m: das Tafelland ist ein ORT (Stil-Feld λ 5,2 km), der Kern
-        // nennt ihn im Umkreis von 8 km (16 × 16 km — in 4 × 4 km fehlt er zwei von drei Welten); ohne Ort: der Ursprung.
-        const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -8000, -8000, 8000, 8000) : null;
-        const ox = ort ? ort.x : 0;
-        const oz = ort ? ort.z : 0;
-        const fn = 301;
-        const HF = new Float64Array(fn * fn);
-        // Gezählt wird im Tafelland selbst (Stil ≥ 0,8 der Großform), nicht im Wald daneben.
-        const maske = new Uint8Array(fn * fn);
-        for (let j = 0; j < fn; j++)
-            for (let i = 0; i < fn; i++) {
-                HF[i + j * fn] = G.hoehe(L, ox - 300 + i * 2, oz - 300 + j * 2, true);
-                if (ort && typeof G.grossform === "function")
-                    maske[i + j * fn] = G.grossform(L, ox - 300 + i * 2, oz - 300 + j * 2).stil >= 0.8 ? 1 : 0;
-                else maske[i + j * fn] = 1;
-            }
-        const schicht = Z.hangBaender(HF, fn, 2, maske);
+        const { ort, ox, oz, schicht } = schichtAm(G, Z, L);
         // Der Korridor ist EINE Quelle (`urteil`/`KORRIDOR` im Kern — dieselbe Zahl-Leiste wie im Studio); die Wand verlangt
         // jedes Ziel, auch das Schicht-Gesetz (ohne Schicht-Ort: null = rot), und die Kosten je Spalte (K16).
         const urteil = { ...Z.urteil(st, ort ? schicht : null), kosten: kosten.imBudget };
@@ -578,11 +627,24 @@ function realismus() {
                 `    Selbsttest-Last (+40 noise2D je Spalte): ${last.noise2DAlle} noise2D (Ebene ${last.noise2DEbene})`
             );
     }
+    let presets = null;
+    if (!SELBSTTEST) {
+        console.log("\n  DIE PRESETS an den drei Saaten (je Preset EIN Plan, dieselbe Statistik, dasselbe Urteil):");
+        presets = presetsAnSaaten(K, Z, n, SCHRITT, AUSSEN, RAND);
+        for (const b of presets.befunde) {
+            rot = true;
+            console.log(`    ⛔ ${b}`);
+        }
+    }
     const JSON_ZIEL = JSON_AUS;
     if (JSON_ZIEL)
         fs.writeFileSync(
             JSON_ZIEL,
-            JSON.stringify({ zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten }, null, 1)
+            JSON.stringify(
+                { zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten, presets: presets && presets.je },
+                null,
+                1
+            )
         );
     if (SELBSTTEST) {
         const blind = welten.some(
@@ -594,7 +656,7 @@ function realismus() {
         return blind ? 1 : 0;
     }
     console.log(
-        `\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten"}\n`
+        `\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten, jedes Preset an jeder Saat"}\n`
     );
     return rot ? 1 : 0;
 }
