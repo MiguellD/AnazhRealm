@@ -1,0 +1,22 @@
+09:08:25 SERIE START A=a0a05614 (3960d575e001be8a) B=welle-m-birke ef5bd38c+Arbeitsbaum (f842fa19bae52606)
+09:11:00 w1A exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5 cmds 81 tris 514k 1726MHz · frei p50/p95 16.6/16.9 CPU p95 4.5 cmds 67 tris 416k 1713MHz · bank 0: 13.22 1715MHz · bank -0.88: 12.13 1714MHz · band ROT vram 112.4
+09:14:05 w2B exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.4 cmds 77 tris 468k 1702MHz · frei p50/p95 16.6/16.8 CPU p95 5.9 cmds 64 tris 382k 1703MHz · bank 0: 12.35 1696MHz · bank -0.88: 10.46 1727MHz · band ROT vram 111.9
+09:17:11 w3A exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.5 cmds 81 tris 514k 1709MHz · frei p50/p95 16.6/16.8 CPU p95 5 cmds 67 tris 415k 1703MHz · bank 0: 13.11 1721MHz · bank -0.88: 12.18 1727MHz · band ROT vram 112.5
+09:20:16 w4B exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.8 cmds 77 tris 468k 1729MHz · frei p50/p95 16.6/16.8 CPU p95 5.3 cmds 77 tris 463k 1709MHz · bank 0: 11.63 1727MHz · bank -0.88: 10.51 1702MHz · band ROT vram 112
+09:23:21 w5A exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.7 cmds 81 tris 514k 1700MHz · frei p50/p95 16.6/16.8 CPU p95 5.1 cmds 67 tris 415k 1703MHz · bank 0: 13.17 1702MHz · bank -0.88: 12.19 1721MHz · band ROT vram 112.5
+09:26:29 w6B exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.7 cmds 78 tris 473k 1735MHz · frei p50/p95 16.6/16.8 CPU p95 5.9 cmds 76 tris 460k 1710MHz · bank 0: 11.6 1714MHz · bank -0.88: 10.33 1721MHz · band ROT vram 112
+09:29:37 w7A exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.6 cmds 82 tris 519k 1718MHz · frei p50/p95 16.6/16.8 CPU p95 5.2 cmds 67 tris 415k 1703MHz · bank 0: 13.28 1708MHz · bank -0.88: 12.07 1708MHz · band ROT vram 113.3
+09:32:45 w8B exit=0 urteil "GRUEN" · voll p50/p95 16.6/16.8 CPU p95 5.8 cmds 78 tris 473k 1718MHz · frei p50/p95 16.6/16.8 CPU p95 5.2 cmds 64 tris 384k 1704MHz · bank 0: 12.42 1696MHz · bank -0.88: 10.58 1696MHz · band ROT vram 111.9
+09:34:21 l1B LINSE Instanzen 746 · ohne Bild 0 · perf 1.235 · {}
+09:34:29 l1B ZERLEGEN Gesamt (alles an): 11,99 baum • 2,53 0,08 boden • 1,22 0,02 
+09:35:51 l2A LINSE Instanzen 721 · ohne Bild 43 · perf 1.249 · {"f:birke Stufe 2":{"n":2,"dMin":4.92,"dL":4.85},"f:strauch Stufe 2":{"n":4,"dMin":21.75,"dL":27.18},"f:strauch Stufe 3":{"n":4,"dMin":21.75,"dL":27.18},"f:tanne Stufe 2":{"n":6,"dMin":32.29,"dL":28.07},"f:tanne Stufe 3":{"n":3,"dMin":32.29,"dL":28.07},
+09:35:58 l2A ZERLEGEN Gesamt (alles an): 13,13 baum • 3,40 0,13 boden • 1,08 0,09 
+09:37:20 l3B LINSE Instanzen 746 · ohne Bild 0 · perf 1.231 · {}
+09:38:37 l4A LINSE Instanzen 806 · ohne Bild 40 · perf 1.231 · {"f:birke Stufe 2":{"n":2,"dMin":4.92,"dL":4.78},"f:strauch Stufe 3":{"n":4,"dMin":21.75,"dL":26.77},"f:strauch Stufe 2":{"n":4,"dMin":21.75,"dL":26.77},"f:tanne Stufe 2":{"n":4,"dMin":32.29,"dL":27.66},"f:tanne Stufe 3":{"n":2,"dMin":32.29,"dL":27.66},
+09:39:57 l5B LINSE Instanzen 882 · ohne Bild 0 · perf 1.233 · {}
+09:41:18 l6A LINSE Instanzen 807 · ohne Bild 37 · perf 1.198 · {"f:tanne Stufe 2":{"n":4,"dMin":32.29,"dL":26.93},"f:tanne Stufe 3":{"n":2,"dMin":32.29,"dL":26.93},"f:birke Stufe 2":{"n":2,"dMin":4.92,"dL":4.66},"f:tanne Stufe 1":{"n":2,"dMin":18.96,"dL":15.01},"f:eiche Stufe 2":{"n":2,"dMin":23.21,"dL":27.81},"f:e
+09:42:35 l7B LINSE Instanzen 927 · ohne Bild 0 · perf 1.194 · {}
+09:43:55 l8B LINSE Instanzen 1063 · ohne Bild 0 · perf 1.189 · {}
+09:45:15 l9B LINSE Instanzen 882 · ohne Bild 0 · perf 1.254 · {}
+09:46:32 l10B LINSE Instanzen 883 · ohne Bild 0 · perf 1.198 · {}
+09:46:46 SERIE ENDE

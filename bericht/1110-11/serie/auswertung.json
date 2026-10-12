@@ -1,0 +1,366 @@
+{
+ "wiese": {
+  "A": [
+   {
+    "n": "w1A",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 13.22,
+     "-0.88": 12.13
+    },
+    "bankMhz": {
+     "0": 1714.5,
+     "-0.88": 1714
+    },
+    "p50f": 16.6,
+    "p95f": 16.9,
+    "cpu95f": 4.5,
+    "mhzf": 1712.8,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5,
+    "ewmaV": 2.52,
+    "cmds": 81,
+    "tris": 513.575,
+    "vram": 112.4,
+    "band": "ROT",
+    "tiere": 11
+   },
+   {
+    "n": "w3A",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 13.11,
+     "-0.88": 12.18
+    },
+    "bankMhz": {
+     "0": 1720.5,
+     "-0.88": 1727
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5,
+    "mhzf": 1702.8,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.5,
+    "ewmaV": 2.83,
+    "cmds": 81,
+    "tris": 513.621,
+    "vram": 112.5,
+    "band": "ROT",
+    "tiere": 11
+   },
+   {
+    "n": "w5A",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 13.17,
+     "-0.88": 12.19
+    },
+    "bankMhz": {
+     "0": 1701.5,
+     "-0.88": 1720.5
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5.1,
+    "mhzf": 1702.6,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.7,
+    "ewmaV": 2.83,
+    "cmds": 81,
+    "tris": 513.817,
+    "vram": 112.5,
+    "band": "ROT",
+    "tiere": 11
+   },
+   {
+    "n": "w7A",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 13.28,
+     "-0.88": 12.07
+    },
+    "bankMhz": {
+     "0": 1708,
+     "-0.88": 1708
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5.2,
+    "mhzf": 1702.5,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.6,
+    "ewmaV": 2.8,
+    "cmds": 82,
+    "tris": 518.885,
+    "vram": 113.3,
+    "band": "ROT",
+    "tiere": 11
+   }
+  ],
+  "B": [
+   {
+    "n": "w2B",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 12.35,
+     "-0.88": 10.46
+    },
+    "bankMhz": {
+     "0": 1695.5,
+     "-0.88": 1727
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5.9,
+    "mhzf": 1703.1,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.4,
+    "ewmaV": 2.59,
+    "cmds": 77,
+    "tris": 468.141,
+    "vram": 111.9,
+    "band": "ROT",
+    "tiere": 11
+   },
+   {
+    "n": "w4B",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 11.63,
+     "-0.88": 10.51
+    },
+    "bankMhz": {
+     "0": 1727,
+     "-0.88": 1701.5
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5.3,
+    "mhzf": 1708.6,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.8,
+    "ewmaV": 2.67,
+    "cmds": 77,
+    "tris": 467.892,
+    "vram": 112,
+    "band": "ROT",
+    "tiere": 11
+   },
+   {
+    "n": "w6B",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 11.6,
+     "-0.88": 10.33
+    },
+    "bankMhz": {
+     "0": 1714,
+     "-0.88": 1720.5
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5.9,
+    "mhzf": 1709.5,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.7,
+    "ewmaV": 3.05,
+    "cmds": 78,
+    "tris": 473.362,
+    "vram": 112,
+    "band": "ROT",
+    "tiere": 11
+   },
+   {
+    "n": "w8B",
+    "urteil": "GRUEN",
+    "bank": {
+     "0": 12.42,
+     "-0.88": 10.58
+    },
+    "bankMhz": {
+     "0": 1695.5,
+     "-0.88": 1695.5
+    },
+    "p50f": 16.6,
+    "p95f": 16.8,
+    "cpu95f": 5.2,
+    "mhzf": 1704.1,
+    "p50v": 16.6,
+    "p95v": 16.8,
+    "cpu95v": 5.8,
+    "ewmaV": 3.1,
+    "cmds": 78,
+    "tris": 473.373,
+    "vram": 111.9,
+    "band": "ROT",
+    "tiere": 11
+   }
+  ]
+ },
+ "genesis": {
+  "A": [],
+  "B": []
+ },
+ "dorf": {
+  "A": [],
+  "B": []
+ },
+ "buehne": {},
+ "urteile": [],
+ "zW": [
+  {
+   "name": "gpu-bank 0 ms",
+   "a": 13.195,
+   "b": 11.99,
+   "d": -1.205
+  },
+  {
+   "name": "gpu-bank 0 MHz",
+   "a": 1711.25,
+   "b": 1704.75,
+   "d": -6.5
+  },
+  {
+   "name": "gpu-bank -0.88 ms",
+   "a": 12.155000000000001,
+   "b": 10.485,
+   "d": -1.6700000000000017
+  },
+  {
+   "name": "gpu-bank -0.88 MHz",
+   "a": 1717.25,
+   "b": 1711,
+   "d": -6.25
+  },
+  {
+   "name": "frei Frame p50",
+   "a": 16.6,
+   "b": 16.6,
+   "d": 0
+  },
+  {
+   "name": "frei Frame p95",
+   "a": 16.8,
+   "b": 16.8,
+   "d": 0
+  },
+  {
+   "name": "frei CPU-Takt p95",
+   "a": 5.05,
+   "b": 5.6,
+   "d": 0.5499999999999998
+  },
+  {
+   "name": "voll Frame p50",
+   "a": 16.6,
+   "b": 16.6,
+   "d": 0
+  },
+  {
+   "name": "voll Frame p95",
+   "a": 16.8,
+   "b": 16.8,
+   "d": 0
+  },
+  {
+   "name": "voll CPU-Takt p95",
+   "a": 5.55,
+   "b": 5.75,
+   "d": 0.20000000000000018
+  },
+  {
+   "name": "voll render-EWMA",
+   "a": 2.815,
+   "b": 2.86,
+   "d": 0.04499999999999993
+  },
+  {
+   "name": "Befehle (Lauf voll, Mittel)",
+   "a": 81,
+   "b": 77.5,
+   "d": -3.5
+  },
+  {
+   "name": "Dreiecke k (Lauf voll, Mittel)",
+   "a": 513.719,
+   "b": 470.7515,
+   "d": -42.96750000000003
+  },
+  {
+   "name": "VRAM MB (Band)",
+   "a": 112.5,
+   "b": 111.95,
+   "d": -0.5499999999999972
+  }
+ ],
+ "zG": [
+  {
+   "name": "frei Frame p50",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "frei Frame p95",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "frei CPU-Takt p95",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "voll Frame p50",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "voll Frame p95",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "voll CPU-Takt p95",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "voll render-EWMA",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "Befehle (Lauf voll, Mittel)",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "Dreiecke k (Lauf voll, Mittel)",
+   "a": null,
+   "b": null,
+   "d": null
+  },
+  {
+   "name": "VRAM MB (Band)",
+   "a": null,
+   "b": null,
+   "d": null
+  }
+ ]
+}

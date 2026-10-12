@@ -1,0 +1,10 @@
+
+===== KOPPLUNGS-LINSE (Strömung · Gleiten · Wind · Gras) =====
+
+  F1 Strömung: Schwimmer 1.80 m · Land 0.0000 m · Boot 1.80 m · k=0 → 0.0000 m
+  F2 Gleiten: 45°-Wand 50 % Absichts-Tempo (frei 12.00 m → Wand 6.00 m) · Voll-Stopp-Kontrolle 0 % · Steilhang-Rutsch 6.44 m
+  F3 Wind: quer-invariant + richtungs-getrieben · Drift seeded/langsam
+  F4 Gras: Biegung links -0.115 / rechts +0.115 · Tick Slot 0 = Spieler
+
+  ✅ ALLE KOPPLUNGS-INVARIANTEN OK — Strömung advektiert Schwimmer (nie Land), Wände gleiten (PM_ClipVelocity), Steilhang rutscht, Wind hat EINE Richtung, Gras weicht aus
+

@@ -1,0 +1,101 @@
+{
+ "ergebnis": {
+  "proben": 721,
+  "ohneBild": 43,
+  "namen": {
+   "f:birke Stufe 2": {
+    "n": 2,
+    "dMin": 4.92,
+    "dL": 4.85
+   },
+   "f:strauch Stufe 2": {
+    "n": 4,
+    "dMin": 21.75,
+    "dL": 27.18
+   },
+   "f:strauch Stufe 3": {
+    "n": 4,
+    "dMin": 21.75,
+    "dL": 27.18
+   },
+   "f:tanne Stufe 2": {
+    "n": 6,
+    "dMin": 32.29,
+    "dL": 28.07
+   },
+   "f:tanne Stufe 3": {
+    "n": 3,
+    "dMin": 32.29,
+    "dL": 28.07
+   },
+   "f:eiche Stufe 2": {
+    "n": 4,
+    "dMin": 22.08,
+    "dL": 27.06
+   },
+   "f:eiche Stufe 3": {
+    "n": 2,
+    "dMin": 22.08,
+    "dL": 27.06
+   },
+   "impostor#fimp:atlas Stufe karte": {
+    "n": 4,
+    "dMin": 14.18,
+    "dL": 17.71
+   },
+   "f:fichte Stufe 2": {
+    "n": 4,
+    "dMin": 37.28,
+    "dL": 28.97
+   },
+   "f:fichte Stufe 3": {
+    "n": 2,
+    "dMin": 37.28,
+    "dL": 27.54
+   },
+   "f:eiche Stufe 1": {
+    "n": 2,
+    "dMin": 18.27,
+    "dL": 14.69
+   },
+   "fscatter:fichte:2:1#0 Stufe 2": {
+    "n": 1,
+    "dMin": 87.62,
+    "dL": 26.64
+   },
+   "fscatter:fichte:2:1#1 Stufe 2": {
+    "n": 1,
+    "dMin": 87.62,
+    "dL": 26.64
+   },
+   "fscatter:fichte:2:1#2 Stufe 3": {
+    "n": 1,
+    "dMin": 87.62,
+    "dL": 26.64
+   },
+   "fscatter:fichte:1:1#0 Stufe 2": {
+    "n": 1,
+    "dMin": 88.1,
+    "dL": 28.43
+   },
+   "fscatter:fichte:1:1#1 Stufe 2": {
+    "n": 1,
+    "dMin": 88.1,
+    "dL": 29.91
+   },
+   "fscatter:fichte:1:1#2 Stufe 3": {
+    "n": 1,
+    "dMin": 88.1,
+    "dL": 28.43
+   }
+  },
+  "perf": 1.249,
+  "fenster": {
+   "l0Aus": 12,
+   "l1Ein": 8,
+   "l1Aus": 26,
+   "karteEin": 18
+  }
+ },
+ "ms": 6
+}

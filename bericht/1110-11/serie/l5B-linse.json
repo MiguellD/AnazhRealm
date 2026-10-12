@@ -1,0 +1,15 @@
+{
+ "ergebnis": {
+  "proben": 882,
+  "ohneBild": 0,
+  "namen": {},
+  "perf": 1.233,
+  "fenster": {
+   "l0Aus": 12,
+   "l1Ein": 8,
+   "l1Aus": 26,
+   "karteEin": 18
+  }
+ },
+ "ms": 5
+}

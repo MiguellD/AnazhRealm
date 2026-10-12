@@ -1,0 +1,9 @@
+09:02:57 gate:vendor-anker EXIT=0 2s
+09:03:04 gate:kopplung EXIT=0 7s
+09:03:13 gate:kamera-treue EXIT=0 8s
+09:03:35 gate:sicht-arbeit EXIT=0 22s
+09:04:36 gate:foundry-crossfade EXIT=0 61s
+09:05:24 gate:scatter-lod EXIT=0 48s
+09:07:17 check EXIT=0 113s
+09:07:43 playtest:fast EXIT=0 26s
+WAENDE ENDE
