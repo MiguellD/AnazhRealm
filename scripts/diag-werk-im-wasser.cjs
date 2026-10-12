@@ -2124,7 +2124,9 @@ async function weltOrte(A) {
         const w = r._atlasWaterLevelAt(x, z, g);
         return w > g ? w - g : -Infinity;
     };
-    const nass = (x, z) => tiefe(x, z) > 0;
+    // nass ist, was die Proben nass nennen (`_nassAt`: Körper-Wasser über dem Boden, ohne Fels darüber; vor dem Strömen
+    // das Wasser des Atlas) — das Atlas-Wasser allein fand Flüsse, an denen kein Körper-Wasser steht
+    const nass = (x, z) => tiefe(x, z) > 0 && r._nassAt(x, z);
     const out = { fluss: null, ufer: null, eiche: null, see: null, seeUfer: null, rampe: null };
     // 1) der Fluss: der nächste gerade Querschnitt 2–14 m (das Kriterium der Damm-Probe), auf Ringen um die Mess-Wiese
     for (let R = 0; R <= A.R && !out.fluss; R += 6) {
