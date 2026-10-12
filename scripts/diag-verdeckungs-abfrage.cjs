@@ -65,7 +65,8 @@ function urteil(out) {
     if (A && A.z) {
         if (!A.aufgesessen) v.push("ABLAUF VAKUÖS: nicht aufgesessen");
         if (!A.ausgestiegen) v.push("ABLAUF VAKUÖS: nicht ausgestiegen");
-        if (!(A.sicht && A.sicht.vorher !== A.sicht.nachher)) v.push(`ABLAUF VAKUÖS: die Sicht wechselte nicht (${JSON.stringify(A.sicht)})`);
+        if (!(A.sicht && A.sicht.vorher !== A.sicht.nachher))
+            v.push(`ABLAUF VAKUÖS: die Sicht wechselte nicht (${JSON.stringify(A.sicht)})`);
         if (!(A.z.gezaehlt > 0)) v.push("ABLAUF VAKUÖS: kein Stellvertreter gezählt (der Berg-Cull fragte nie)");
         if (!(A.z.wasser > 0)) v.push("ABLAUF VAKUÖS: kein Wasser gezeichnet");
     }
@@ -87,12 +88,14 @@ function urteil(out) {
     // der Selbsttest am echten Frame: ohne die Hüllen fallen die Täter beim Namen
     const S = out.selbst;
     if (S) {
-        const hat = (p, re) => !!p && [p.gpu, p.wache, p.seite].some((m) => Object.keys(m || {}).some((k) => re.test(k)));
+        const hat = (p, re) =>
+            !!p && [p.gpu, p.wache, p.seite].some((m) => Object.keys(m || {}).some((k) => re.test(k)));
         if (!hat(S.bruch, /ended with incomplete occlusion query/))
             v.push("SELBSTTEST VAKUÖS: der Bruch ohne Hülle nennt „ended with incomplete occlusion query“ nicht");
         if (!hat(S.gift, /No occlusion queries are active/))
             v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „No occlusion queries are active“ nicht");
-        if (!hat(S.gift, /weak set/)) v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „Invalid value used in weak set“ nicht");
+        if (!hat(S.gift, /weak set/))
+            v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „Invalid value used in weak set“ nicht");
         if (!S.letzter || ![S.letzter.gpu, S.letzter.wache].some((m) => Object.keys(m || {}).length > 0))
             v.push("SELBSTTEST VAKUÖS: der Letzte ohne Hülle nennt keine Meldung");
     } else if (!out.abbruch) v.push("SELBSTTEST fehlt");
@@ -117,7 +120,11 @@ function selbsttest() {
             letzter: { gpu: {}, wache: {}, seite: {}, z: { letzter: 4, nullFrames: 4, begonnen: 4 } },
         },
         selbst: {
-            bruch: { gpu: { "Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0": 20 } },
+            bruch: {
+                gpu: {
+                    "Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0": 20,
+                },
+            },
             gift: { gpu: { "No occlusion queries are active.": 20 }, seite: { "Invalid value used in weak set": 20 } },
             letzter: { gpu: { "No occlusion queries are active.": 4 } },
         },
@@ -131,7 +138,8 @@ function selbsttest() {
         ],
         [
             "Ablauf: ungültiger Befehlspuffer",
-            (o) => (o.phasen.ablauf.gpu['[Invalid CommandBuffer from CommandEncoder "renderContext_6"] is invalid'] = 4),
+            (o) =>
+                (o.phasen.ablauf.gpu['[Invalid CommandBuffer from CommandEncoder "renderContext_6"] is invalid'] = 4),
             /ABLAUF GPU-VALIDIERUNG 4×: \[Invalid CommandBuffer .*renderContext_6/,
         ],
         [
@@ -144,17 +152,33 @@ function selbsttest() {
             (o) => (o.phasen.ablauf.seite["Invalid value used in weak set"] = 3),
             /ABLAUF SEITENFEHLER 3×: Invalid value used in weak set/,
         ],
-        ["Boot: ein Fehler", (o) => (o.phasen.boot.gpu["Destroyed texture"] = 1), /BOOT GPU-VALIDIERUNG 1×: Destroyed texture/],
+        [
+            "Boot: ein Fehler",
+            (o) => (o.phasen.boot.gpu["Destroyed texture"] = 1),
+            /BOOT GPU-VALIDIERUNG 1×: Destroyed texture/,
+        ],
         [
             "Bruch: incomplete",
             (o) => (o.phasen.bruch.gpu["Render pass ended with incomplete occlusion query index 0"] = 20),
             /BRUCH GPU-VALIDIERUNG 20×: Render pass ended with incomplete occlusion query/,
         ],
-        ["Ablauf: nicht ausgestiegen", (o) => (o.phasen.ablauf.ausgestiegen = false), /ABLAUF VAKUÖS: nicht ausgestiegen/],
-        ["Ablauf: Sicht blieb", (o) => (o.phasen.ablauf.sicht.nachher = "third"), /ABLAUF VAKUÖS: die Sicht wechselte nicht/],
+        [
+            "Ablauf: nicht ausgestiegen",
+            (o) => (o.phasen.ablauf.ausgestiegen = false),
+            /ABLAUF VAKUÖS: nicht ausgestiegen/,
+        ],
+        [
+            "Ablauf: Sicht blieb",
+            (o) => (o.phasen.ablauf.sicht.nachher = "third"),
+            /ABLAUF VAKUÖS: die Sicht wechselte nicht/,
+        ],
         ["Ablauf: nie gezählt", (o) => (o.phasen.ablauf.z.gezaehlt = 0), /ABLAUF VAKUÖS: kein Stellvertreter gezählt/],
         ["Ablauf: kein Wasser", (o) => (o.phasen.ablauf.z.wasser = 0), /ABLAUF VAKUÖS: kein Wasser/],
-        ["Bruch: nie offen", (o) => (o.phasen.bruch.z.bruchOffen = 0), /BRUCH VAKUÖS: kein Pass-Bruch bei offener Abfrage/],
+        [
+            "Bruch: nie offen",
+            (o) => (o.phasen.bruch.z.bruchOffen = 0),
+            /BRUCH VAKUÖS: kein Pass-Bruch bei offener Abfrage/,
+        ],
         ["Gift: nie gezeichnet", (o) => (o.phasen.gift.z.gift = 0), /GIFT VAKUÖS: der Stellvertreter zeichnete nie/],
         ["Gift: alle begonnen", (o) => (o.phasen.gift.z.begonnen = 20), /GIFT VAKUÖS: gezählt 20, begonnen 20/],
         ["Phase fehlt", (o) => delete o.phasen.gift, /GIFT: Phase fehlt/],
@@ -164,7 +188,11 @@ function selbsttest() {
             /LETZTER GPU-VALIDIERUNG 4×: No occlusion queries are active/,
         ],
         ["Letzter: nie letzter", (o) => (o.phasen.letzter.z.letzter = 0), /LETZTER VAKUÖS: kein Frame endete/],
-        ["Letzter: kein Null-Frame", (o) => (o.phasen.letzter.z.nullFrames = 0), /LETZTER VAKUÖS: kein Frame mit Zähler 0/],
+        [
+            "Letzter: kein Null-Frame",
+            (o) => (o.phasen.letzter.z.nullFrames = 0),
+            /LETZTER VAKUÖS: kein Frame mit Zähler 0/,
+        ],
         ["Selbsttest Letzter blind", (o) => (o.selbst.letzter.gpu = {}), /SELBSTTEST VAKUÖS: der Letzte ohne Hülle/],
         ["Selbsttest Bruch blind", (o) => (o.selbst.bruch.gpu = {}), /SELBSTTEST VAKUÖS: der Bruch ohne Hülle/],
         ["Selbsttest Gift ohne weak set", (o) => (o.selbst.gift.seite = {}), /SELBSTTEST VAKUÖS: .*weak set/],
@@ -234,7 +262,9 @@ function sammlerInstall() {
         GPUAdapter.prototype.requestDevice = async function (d) {
             const dev = await rd.call(this, d);
             try {
-                dev.addEventListener("uncapturederror", (ev) => buche("gpu", (ev.error && ev.error.message) || ev.error));
+                dev.addEventListener("uncapturederror", (ev) =>
+                    buche("gpu", (ev.error && ev.error.message) || ev.error)
+                );
             } catch (_e) {}
             return dev;
         };
@@ -304,7 +334,17 @@ async function verdeckungPhase(opts) {
             }
     // die Zähler: begonnene Abfragen, Pass-Brüche (bei offener Abfrage), gezählte Objekte, Wasser-, Gift-Draws, Frames, die
     // mit dem Stellvertreter L endeten, und Null-Frames danach
-    const z = { begonnen: 0, bruch: 0, bruchOffen: 0, gezaehlt: 0, wasser: 0, gift: 0, letzter: 0, nullFrames: 0, renders: 0 };
+    const z = {
+        begonnen: 0,
+        bruch: 0,
+        bruchOffen: 0,
+        gezaehlt: 0,
+        wasser: 0,
+        gift: 0,
+        letzter: 0,
+        nullFrames: 0,
+        renders: 0,
+    };
     const RP = GPURenderPassEncoder.prototype;
     const bQ = RP.beginOcclusionQuery;
     RP.beginOcclusionQuery = function (i) {
@@ -378,23 +418,38 @@ async function verdeckungPhase(opts) {
                 const ws = r._atlasWaterLevelAt(x, zz, hh(x, zz));
                 return Number.isFinite(ws) && ws > hh(x, zz) - 0.3;
             };
-            // der Bach der Mess-Wiese: der nächste Fluss-Punkt zum Messort
+            // der Bach der Mess-Wiese: der nächste Fluss-Punkt zum Messort, der Wasser trägt — quer zum Lauf mindestens 2 m
+            // nass (K16: der nächste Punkt des Flussnetzes ist oft eine trockene Rinne der Ebene 2; dort zeichnet kein Wasser)
             const [mx, mz] = opts.messort;
             r._ensureHydroTilesAround(mx, mz, 200);
             const h = r._hydroFor(mx, mz);
             let P = null,
                 fl = null,
                 pi = -1;
+            const traegt = (f, i) => {
+                const q = f.points[i];
+                if (!nass(q.x, q.z)) return false;
+                const a0 = f.points[Math.max(0, i - 1)],
+                    b0 = f.points[Math.min(f.points.length - 1, i + 1)];
+                const l0 = Math.hypot(b0.x - a0.x, b0.z - a0.z) || 1;
+                const qx = -(b0.z - a0.z) / l0,
+                    qz = (b0.x - a0.x) / l0;
+                let w = 0;
+                for (const sg of [1, -1])
+                    for (let k = 0.5; k < 15 && nass(q.x + qx * sg * k, q.z + qz * sg * k); k += 0.5) w += 0.5;
+                return w >= 2;
+            };
             for (const f of (h && h.rivers) || [])
                 f.points.forEach((q, i) => {
                     const d = Math.hypot(q.x - mx, q.z - mz);
-                    if (!P || d < P.d) {
+                    if ((!P || d < P.d) && traegt(f, i)) {
                         P = { x: q.x, z: q.z, d };
                         fl = f;
                         pi = i;
                     }
                 });
-            if (!P || P.d > 300) throw new Error(`kein Bach an der Mess-Wiese (${P ? Math.round(P.d) + " m" : "keine Hydrosphäre"})`);
+            if (!P || P.d > 300)
+                throw new Error(`kein Bach an der Mess-Wiese (${P ? Math.round(P.d) + " m" : "keine Hydrosphäre"})`);
             const a = fl.points[Math.max(0, pi - 1)],
                 b = fl.points[Math.min(fl.points.length - 1, pi + 1)];
             const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
@@ -455,7 +510,8 @@ async function verdeckungPhase(opts) {
                 return n;
             };
             const f = r._ensureAssetFoundry();
-            const bereit = () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
+            const bereit = () =>
+                f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
             const tOrt = performance.now();
             const dlW = performance.now() + (opts.ortMs || 180000);
             while (performance.now() < dlW && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit())) {
@@ -583,7 +639,8 @@ async function verdeckungPhase(opts) {
     aus.wache = {};
     if (W.n > wacheVor)
         for (const m of W.meldungen)
-            if (!kopfVor.has(m.kopf)) aus.wache[`${m.quelle}: ${m.kopf}`] = (aus.wache[`${m.quelle}: ${m.kopf}`] || 0) + 1;
+            if (!kopfVor.has(m.kopf))
+                aus.wache[`${m.quelle}: ${m.kopf}`] = (aus.wache[`${m.quelle}: ${m.kopf}`] || 0) + 1;
     aus.wacheN = W.n - wacheVor;
     return aus;
 }
@@ -601,7 +658,10 @@ async function verdeckungPhase(opts) {
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     const out = { phasen: {} };
     try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
             while (performance.now() - t0 < 300000) {
@@ -620,7 +680,11 @@ async function verdeckungPhase(opts) {
                     st.hydrosphere &&
                     st.hydrosphere.ready
                 )
-                    return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
+                    return {
+                        ok: true,
+                        ms: Math.round(performance.now() - t0),
+                        webgpu: st.renderer.backend.isWebGPUBackend === true,
+                    };
                 await new Promise((res) => setTimeout(res, 100));
             }
             return { ok: false };
@@ -662,7 +726,9 @@ async function verdeckungPhase(opts) {
         for (const phase of ["bruch", "gift", "letzter"]) {
             const p = await page.evaluate(verdeckungPhase, { phase, messort, roh: true });
             out.selbst[phase] = p;
-            log(`SELBSTTEST ${phase} ohne Hülle: ${JSON.stringify(p.gpu)} · Seite ${JSON.stringify(p.seite)} · Wache ${p.wacheN}`);
+            log(
+                `SELBSTTEST ${phase} ohne Hülle: ${JSON.stringify(p.gpu)} · Seite ${JSON.stringify(p.seite)} · Wache ${p.wacheN}`
+            );
         }
     } catch (e) {
         out.abbruch = (e && e.message) || String(e);

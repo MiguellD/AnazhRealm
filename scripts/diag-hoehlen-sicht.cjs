@@ -665,19 +665,33 @@ const server = http.createServer((req, res) => {
             });
             // der Blick hinaus: das Auge tief im Gang hinter dem Mund (Höhlen-Luft, Fels darüber), der Blick durch den Mund auf
             // die Mündung gegenüber (sonst 100 m hinaus, 6 m hinab) — je Mündung (die der Blicke zuerst) ein Kandidat
-            const hinausVon = (m) => {
+            // die Paare (Mund m, Mund q gegenüber): q liegt vor m (30–200 m), wendet ihm den Mund zu, und der Blick aus m
+            // fällt gerade in q hinein (quer und Höhe klein gegen den Abstand) — der Strahl aus der Höhle läuft unter dem Fels,
+            // tritt durch m hinaus und trifft die Höhlen-Zellen hinter q; die besten vier, dann jede Mündung allein
+            const paare = [];
+            for (const m of mundListe)
+                for (const q of mundListe) {
+                    const vor = (q.x - m.x) * m.dx + (q.z - m.z) * m.dz;
+                    if (q === m || !(vor > 30 && vor < 200) || !(q.dx * m.dx + q.dz * m.dz < 0)) continue;
+                    const quer = Math.abs((q.x - m.x) * m.dz - (q.z - m.z) * m.dx);
+                    paare.push({ m, q, wert: (quer + Math.abs(q.y - m.y)) / vor });
+                }
+            paare.sort((a, b) => a.wert - b.wert);
+            const hinausVon = (m, q) => {
                 const e = Math.min(m.tief - 2, 24);
-                const q = gegenueber(m, true) || gegenueber(m, false);
                 return {
                     mund: m,
                     spieler: [m.x - m.dx * e, m.y - 1.5, m.z - m.dz * e],
                     auge: [m.x - m.dx * e, m.y, m.z - m.dz * e],
-                    ziel: q ? [q.x, q.y, q.z] : [m.x + m.dx * 100, m.y - 6, m.z + m.dz * 100],
+                    ziel: q
+                        ? [q.x - q.dx * Math.min(q.tief - 2, 8), q.y, q.z - q.dz * Math.min(q.tief - 2, 8)]
+                        : [m.x + m.dx * 100, m.y - 6, m.z + m.dz * 100],
                 };
             };
-            const hinausKandidaten = muendung
-                ? [muendung, ...mundListe.filter((m) => m !== muendung)].slice(0, 4).map(hinausVon)
-                : [];
+            const hinausKandidaten = [
+                ...paare.slice(0, 4).map((p) => hinausVon(p.m, p.q)),
+                ...(muendung ? [hinausVon(muendung, partner)] : []),
+            ].slice(0, 5);
 
             // ── (b)–(e) je Blick: das Hauptbild aus dem Auge (die Spiel-Kamera an den Blick gestellt), dann die Kaskade
             // (Stellvertreter-Licht, schräg, über dem Ziel) — beide über den EINEN Chokepoint

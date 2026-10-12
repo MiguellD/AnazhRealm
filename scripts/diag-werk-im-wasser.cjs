@@ -852,7 +852,11 @@ async function probe(A) {
                 // die Rampe (A.rampe: Ort am Wasserrand und Fahrt-Richtung, dieselbe in jedem Lauf): 26 m trockener Anlauf
                 // (Stufen ≤ 0,35 m), dann Wasser ohne Insel, das flach (je m höchstens A.rampeStufe tiefer — eine Furt, ein
                 // Strand, kein Steilufer) bis A.ansaugTief steigt
+                if (!A.rampe)
+                    throw new Error("keine Rampe in tiefes Wasser am Ufer von See und Fluss (Orte aus der Welt)");
                 const [px, pz, ux, uz] = A.rampe;
+                // die Rampe liegt, wo die Welt sie trägt (am See): dorthin strömen, das Bild zeichnet ihr Wasser
+                await stroemen(px, pz, 120);
                 const t0 = sichtbar(px, pz);
                 if (!(t0 > 0 && t0 <= 0.3)) throw new Error(`die Rampe beginnt nicht am Wasserrand (${t0} m Wasser)`);
                 let vor = null;
@@ -1030,6 +1034,8 @@ async function probe(A) {
         // ── F: der Wagen in der Furt ──
         if (soll("wagen"))
             try {
+                // zurück an den Fluss (die Rampe lag am See)
+                await stroemen(X, Z, 240);
                 const hh = (a, b) => r.getTerrainHeightAt(a, b);
                 let furt = A.furt
                     ? { x: A.furt[0], z: A.furt[1], ux: A.furt[2], uz: A.furt[3], tiefe: NaN, hub: NaN }
@@ -1407,14 +1413,23 @@ async function probe(A) {
         //    Wieder-Strömen), dann laufen die Takte. ──
         if (soll("rand"))
             try {
-                const [X, Z] = A.rand.ort;
-                const [hx, hz] = A.rand.haus;
+                if (!A.rand.ufer || !A.rand.see) throw new Error("kein See mit Ufer in der Welt (Orte aus der Welt)");
                 const SG = r.constructor._siedlungGesetz();
                 const nH = SG.nHMin + ((A.rand.seed >>> 24) % SG.nHSpan);
                 const plan = await r._foundryRequestSettlement({ seed: A.rand.seed, nH });
                 let mx = 0;
                 let mz = 0;
                 const slots = (plan && plan.slots) || [];
+                // der Anker so, dass das Haus des Plans, das am weitesten zum See weist, am Seeufer steht (das Rand-Haus)
+                const [hx, hz] = A.rand.ufer;
+                const ul = Math.hypot(A.rand.see[0] - hx, A.rand.see[1] - hz) || 1;
+                const ux0 = (A.rand.see[0] - hx) / ul;
+                const uz0 = (A.rand.see[1] - hz) / ul;
+                let sRand = null;
+                for (const sl of slots)
+                    if (!sRand || sl.x * ux0 + sl.z * uz0 > sRand.x * ux0 + sRand.z * uz0) sRand = sl;
+                const X = hx - (sRand ? sRand.x : 0);
+                const Z = hz - (sRand ? sRand.z : 0);
                 for (const sl of slots) ((mx += sl.x / slots.length), (mz += sl.z / slots.length));
                 let planR = 0;
                 for (const sl of slots) {
@@ -2089,6 +2104,134 @@ function selbsttest() {
 }
 
 // `--nur hain,zensus,satz,wagen` und `--furt x,z,ux,uz` (der Vergleich an DERSELBEN Furt) — Werkbank-Fragen, das Gate fährt alle.
+// DIE ORTE AUS DER WELT (K16): der Fluss (gerader Querschnitt 2–14 m), sein Ufer, der See (die benannte Senke des
+// Gelände-Gesetzes, deren Kachel einen See trägt — wie `__wasserOrt`), sein Ufer und die Rampe in tiefes Wasser — gesucht am
+// Gesetz der Welt (Hydrosphäre, Wasser des Atlas über dem Boden) nächst der Mess-Wiese, nie als Literal der alten Welt (die
+// Orte von V18.540 lagen nach der neuen Landform im Trockenen: Hain, Furt, Rampe, Damm, Uferhäuser, See und Seerand).
+async function weltOrte(A) {
+    const dl = performance.now() + 120000;
+    while (
+        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
+        performance.now() < dl
+    )
+        await new Promise((res) => setTimeout(res, 200));
+    const r = window.anazhRealm;
+    const G = window.__gelaendeCore;
+    const [MX, MZ] = A.mess;
+    const tiefe = (x, z) => {
+        const g = r._voxelSurfaceY(x, z);
+        if (!Number.isFinite(g)) return -Infinity;
+        const w = r._atlasWaterLevelAt(x, z, g);
+        return w > g ? w - g : -Infinity;
+    };
+    const nass = (x, z) => tiefe(x, z) > 0;
+    const out = { fluss: null, ufer: null, eiche: null, see: null, seeUfer: null, rampe: null };
+    // 1) der Fluss: der nächste gerade Querschnitt 2–14 m (das Kriterium der Damm-Probe), auf Ringen um die Mess-Wiese
+    for (let R = 0; R <= A.R && !out.fluss; R += 6) {
+        if (R % 192 === 0) r._ensureHydroTilesAround(MX, MZ, R);
+        const n = R ? Math.ceil((2 * Math.PI * R) / 6) : 1;
+        for (let k = 0; k < n && !out.fluss; k++) {
+            const x = Math.round(MX + R * Math.cos((k / n) * 2 * Math.PI));
+            const z = Math.round(MZ + R * Math.sin((k / n) * 2 * Math.PI));
+            const rv = r._hydroRiverAt(x, z);
+            if (!rv || !(rv.centerness > 0.7) || !nass(x, z)) continue;
+            const fm = Math.hypot(rv.flowX, rv.flowZ);
+            if (!(fm > 1e-6) || Math.max(Math.abs(rv.flowX), Math.abs(rv.flowZ)) / fm < 0.94) continue;
+            const quer = Math.abs(rv.flowX) > Math.abs(rv.flowZ) ? [0, 1] : [1, 0];
+            const rand = [];
+            for (const sg of [1, -1]) {
+                let k2 = 0;
+                while (k2 < 30 && nass(x + quer[0] * sg * (k2 + 0.5), z + quer[1] * sg * (k2 + 0.5))) k2 += 0.5;
+                rand.push(k2);
+            }
+            const breite = rand[0] + rand[1];
+            if (!(breite > 2 && breite < 14)) continue;
+            out.fluss = { x, z, quer, breite };
+            // das Ufer: 4 m hinter der Wasserkante auf der Seite zur Mess-Wiese; die Bau-Eiche 12 m weiter landein
+            const sg = (MX - x) * quer[0] + (MZ - z) * quer[1] >= 0 ? 1 : -1;
+            const k0 = sg === 1 ? rand[0] : rand[1];
+            out.ufer = [x + quer[0] * sg * (k0 + 4), z + quer[1] * sg * (k0 + 4)];
+            out.eiche = [x + quer[0] * sg * (k0 + 16), z + quer[1] * sg * (k0 + 16)];
+        }
+    }
+    // 2) der See: die nächste benannte Senke, deren Kachel einen gerenderten See trägt (Spiegel > Meer + 2 m, ≥ 16 Zellen)
+    const L = r._gelaende();
+    const wl = r.state.waterLevel;
+    const step = 64;
+    const n = 375;
+    const kand = G.benannteSeen(L, -12000, -12000, step, n)
+        .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
+        .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
+    for (const k of kand) {
+        r._ensureHydroTilesAround(k.x, k.z, 0);
+        const h = r._hydroFor(k.x, k.z);
+        const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+        if (!lake) continue;
+        // die tiefste Zelle des Sees ist seine Mitte
+        let best = null;
+        for (const q of lake.cells) {
+            const x = h.originX + ((q % h.dim) + 0.5) * h.cell;
+            const z = h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell;
+            const t = tiefe(x, z);
+            if (!best || t > best.t) best = { x, z, t };
+        }
+        if (!best || !(best.t > 1.5)) continue;
+        out.see = { x: best.x, z: best.z, tiefe: +best.t.toFixed(2), level: lake.level };
+        // das Ufer: in der Richtung zur Mess-Wiese (sonst der ersten von 16) die Wasserkante, 4 m landein
+        const a0 = Math.atan2(MZ - best.z, MX - best.x);
+        for (let j = 0; j < 16 && !out.seeUfer; j++) {
+            const a = a0 + (j * Math.PI) / 8;
+            for (let d = 2; d <= 400; d += 1) {
+                const x = best.x + Math.cos(a) * d;
+                const z = best.z + Math.sin(a) * d;
+                if (nass(x, z)) continue;
+                out.seeUfer = [+(x + Math.cos(a) * 4).toFixed(1), +(z + Math.sin(a) * 4).toFixed(1)];
+                out.seeRand = { winkel: +(((a * 180) / Math.PI + 360) % 360).toFixed(0) };
+                break;
+            }
+        }
+        break;
+    }
+    // 3) die Rampe: am Ufer von See und Fluss (Ringe bis 90 m um beide) eine Wasserkante (0–0,3 m), davor 26 m trocken und eben
+    //    (Stufen ≤ 0,35 m), dahinter Wasser, das je m höchstens A.rampeStufe tiefer wird, bis A.ansaugTief — die Prüfung von A
+    const pruefe = (px, pz, ux, uz) => {
+        const t0 = tiefe(px, pz);
+        if (!(t0 > 0 && t0 <= 0.3)) return false;
+        let vor = null;
+        for (let s = 2; s <= 28; s++) {
+            const h = r.getTerrainHeightAt(px - ux * s, pz - uz * s);
+            if (!Number.isFinite(h) || nass(px - ux * s, pz - uz * s) || (vor !== null && Math.abs(h - vor) > 0.35))
+                return false;
+            vor = h;
+        }
+        let tVor = t0;
+        for (let s = 1; s <= 40; s++) {
+            const t = tiefe(px + ux * s, pz + uz * s);
+            if (!(t > 0) || t - tVor > A.rampeStufe) return false;
+            if (t >= A.ansaugTief) return true;
+            tVor = t;
+        }
+        return false;
+    };
+    const mitten = [out.see && [out.see.x, out.see.z], out.fluss && [out.fluss.x, out.fluss.z]].filter(Boolean);
+    for (const [cx, cz] of mitten) {
+        for (let d = 0; d <= 160 && !out.rampe; d += 2)
+            for (let k = 0; k < 64 && !out.rampe; k++) {
+                const px = Math.round(cx + Math.cos((k * Math.PI) / 32) * d);
+                const pz = Math.round(cz + Math.sin((k * Math.PI) / 32) * d);
+                const t = tiefe(px, pz);
+                if (!(t > 0 && t <= 0.3)) continue;
+                for (let j = 0; j < 16 && !out.rampe; j++) {
+                    const ux = Math.cos((j * Math.PI) / 8);
+                    const uz = Math.sin((j * Math.PI) / 8);
+                    if (pruefe(px, pz, ux, uz)) out.rampe = [px, pz, ux, uz];
+                }
+            }
+        if (out.rampe) break;
+    }
+    return out;
+}
+
 function argListe(name) {
     const i = process.argv.indexOf(name);
     return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].split(",") : null;
@@ -2136,16 +2279,22 @@ async function lauf() {
             window.__anazhHeadlessNullRenderer = true;
         });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        // die Orte aus der Welt (K16): Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
+        const ORTE = await page.evaluate(weltOrte, { mess: [-900, -850], R: 1500, rampeStufe: 0.25, ansaugTief: 1.3 });
+        befund.orte = ORTE;
+        console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
+        if (!ORTE.fluss || !ORTE.see)
+            throw new Error("ORTE LEER: kein Fluss (2–14 m) oder kein See nächst der Mess-Wiese");
         const out = await page.evaluate(probe, {
-            ort: [-872, -1127],
-            eiche: [-856, -1127],
+            ort: ORTE.ufer,
+            eiche: ORTE.eiche,
             takte: 1200,
             hainMin: SCHWELLE.hainMin,
             tiefeStamm: SCHWELLE.tiefeStamm,
             tiefeFundament: SCHWELLE.tiefeFundament,
             suchR: 90,
             // A: die Rampe am Ufer der Furt (Wasserrand, Fahrt-Richtung): 5° bis 1,3 m, dahinter der Fluss bis 1,4 m
-            rampe: [-923, -1073, -0.7071067811865475, 0.7071067811865476],
+            rampe: ORTE.rampe,
             ansaugTief: 1.3, // A: so tief wird das Wasser an der Rampe (über dem Dach des GT, 1,2 m)
             rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
@@ -2153,14 +2302,18 @@ async function lauf() {
             huelleMs: 60000,
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,
-            satzNah: [
-                [-872, -1127],
-                [-935, -1070],
-            ],
-            satzFern: [[-906, -634]],
+            satzNah: [ORTE.ufer, [ORTE.fluss.x, ORTE.fluss.z]],
+            satzFern: [ORTE.seeUfer],
             dorfMs: 30000, // E: so lange darf das Dorf im See brauchen, bis es sich meldet
             // R: das Dorf des Nexus am Seerand (Gegenprüfung Runde 3) — Same, Ort, das Haus am Rand, Fenster, Takte
-            rand: { seed: 1500797043, ort: [-1138, -1060], haus: [-1129, -1099], winkel: 200, R: 60, takte: 600 },
+            rand: {
+                seed: 1500797043,
+                ufer: ORTE.seeUfer,
+                see: [ORTE.see.x, ORTE.see.z],
+                winkel: ORTE.seeRand ? ORTE.seeRand.winkel : 200,
+                R: 60,
+                takte: 600,
+            },
             nur: argListe("--nur"),
             furt: argListe("--furt") ? argListe("--furt").map(Number) : null,
         });
@@ -2183,7 +2336,10 @@ async function lauf() {
                     timeout: 120000,
                 });
                 const D = { takte: 1200, R: 40 };
-                const bau = await p2.evaluate(dammProbe, Object.assign({ phase: "bau", ort: [-935, -1070] }, D));
+                const bau = await p2.evaluate(
+                    dammProbe,
+                    Object.assign({ phase: "bau", ort: [befund.orte.fluss.x, befund.orte.fluss.z] }, D)
+                );
                 if (bau.fehler) befund.damm = bau;
                 else {
                     await p2.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
