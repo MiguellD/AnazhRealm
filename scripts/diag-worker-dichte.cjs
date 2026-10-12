@@ -667,14 +667,17 @@ function realismus() {
 // Regler, der das Raster nicht ändert, ist TOT) —, exportiert den Plan (die Bytes des Downloads), legt ihn durch die
 // Welt-Tür (Welt-Tor „Ersetzen" — die Tür, durch die jede Datei zur Welt wird) und misst nach dem Reload in der Welt
 // denselben Makro-Abdruck (64×64, ±852 m, mit und ohne Detail) und dieselbe Statistik (`_terrainMacroSurfaceY` auf dem
-// Raster des Studios). Studio = Welt byte-gleich, sonst ROT beim Namen. Davor zwei Wände der Bedienung:
+// Raster des Studios). Studio = Welt byte-gleich, sonst ROT beim Namen. Dazu vier Wände der Bedienung:
+//   DER START: das Studio öffnet auf A, und der Entwurf nennt sichtbar, was die Welt trägt und kein Plan (Rampe, Basis);
 //   A = DIE GEBAUTE WELT: das Studio steht über einer Welt, die kein Plan beschreibt (Basis 7 m, eine Rampe im Erbgut) —
 //       unter A zeigt es dieselbe Welt (Makro-Abdruck und Statistik wie die Welt selbst), nie eine Projektion auf einen Plan;
 //   DIE PRESETS (`LANDFORM_PRESETS`): jeder Knopf legt seine Regler in den Entwurf, kein Ziel fällt aus dem Natur-Korridor
-//       (`urteil` false), und mindestens eine Landschaft trägt das Schicht-Gesetz (Kliff über Schutthang über Pediment).
+//       (`urteil` false), und mindestens eine Landschaft trägt das Schicht-Gesetz (Kliff über Schutthang über Pediment);
+//   DER SCHNEE (EIN Farb-Gesetz): nach dem Import malt die Karte des Plans je Rasterzelle den Schnee, den die Boden-Farbe der
+//       Welt trägt (`_bodenFarbeAt`), in der Farbe der Boden-Palette.
 // Der Selbsttest: das Studio rechnet den Abdruck eines um EINEN Schritt verstellten Plans — die Welt MUSS sich von ihm
-// unterscheiden (die Linse sieht einen Schritt); ein Preset außerhalb des Korridors und Presets ohne Schicht-Gesetz MÜSSEN
-// rot werden.
+// unterscheiden (die Linse sieht einen Schritt); ein Preset außerhalb des Korridors und Presets ohne Schicht-Gesetz, ein
+// Start auf B mit verschwiegener Abweichung und eine Karte ohne Schnee MÜSSEN rot werden.
 //   --studio [--selftest] [--json datei]
 // Die Befunde der Preset-Wand (rein — der Selbsttest füttert sie mit einem Täter).
 function presetBefunde(liste) {

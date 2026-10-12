@@ -1515,7 +1515,7 @@
     "Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)": {
       "s": 100,
       "lauf": "npm run gate:gelaende-studio",
-      "geschaetzt": "K16b N1 11.10.: lokal 84 s (Ryzen AI 9 HX 370, fremde Welt + A + 18 Regler + Export + 4 Presets + Welt-Tor + Selbsttest; vorher 69 s), CI-Laeufer ~1,2x"
+      "geschaetzt": "K16b 12.10.: lokal 57-61 s mit Start- und Schnee-Wand (Ryzen AI 9 HX 370 unter Last von Nachbar-Agenten; N1 11.10.: 84 s), CI-Laeufer ~1,2x"
     },
     "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
       "s": 3,
