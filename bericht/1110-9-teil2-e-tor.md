@@ -154,6 +154,8 @@ Wo die Silhouette wandert, zeigen `bilder/xor-*-koerper.jpg` (rot nur vorher, gr
 
 ## Lehren für die Linsen
 
+**Für die Gangtafel:** Das wahre Maß eines Asset-Budgets ist die Regler-Hülle, nicht die Rezepte. Beim Tor sind das 7 Rezepte × 27 Regler × min/max = 385 Bauten; ihr Maximum (75 608) setzt die Budget-Zeile, die sieben Rezepte allein (51 096) täuschen (siehe Nachtrag).
+
 Fünf Fallen, jede verfälschte eine Zahl dieser Karte:
 - **Bild-A/B über zwei Sitzungen hat einen Boden unter 0,98.** Die Tor-Geometrie wird deshalb in EINER Welt getauscht. `geo.cjs` zieht und setzt je Mesh; JSON trägt `drawRange.count = Infinity` als `null`, ohne Rückführung zeichnet die Gruppe nichts.
 - **Pflanzen driften ohne Takt.** Laub und sein Schatten wandern zwischen zwei Schüssen, 6 000 Pixel je Schuss bei 30 m. Für Masken-Schüsse sind sie aus, wie die Lehre 0710-2.
