@@ -26,7 +26,7 @@
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
-//   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,12
+//   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,05
 //             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
 //   ferngang  (Welle LF) laufende Hirsche in der Grobstufen-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
 //             in ≥ 95 % der laufenden Takte (nie ein Standbild, nie eingefrorene Knochen)
@@ -2894,7 +2894,7 @@ function urteil(name, z) {
             ["Wolf", z.schlupf.wolf],
             ["Hirsch", z.schlupf.hirsch],
         ])
-            soll(sl !== null && sl <= 0.12, `Stand-Schlupf am Querhang: ${wer} ${sl} (Soll ≤ 0,12, Ratsche K07)`);
+            soll(sl !== null && sl <= 0.05, `Stand-Schlupf am Querhang: ${wer} ${sl} (Soll ≤ 0,05, Ratsche K07)`);
     }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }

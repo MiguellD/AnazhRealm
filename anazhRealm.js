@@ -18735,7 +18735,18 @@ class AnazhRealm {
         // Ein Leib, der laufen WILL und steht (der Wunsch ohne Weg), wiegte sonst im Lauf-Takt, und die stehenden Pfoten
         // knickten die Knie nach (gemessen am stehenden Wolf: Knie-Falte 0,16 rad statt < 0,05).
         g.schritt = (g.schritt || 0) + ((st > 0.002 ? 1 : 0) - (g.schritt || 0)) * (dt > 0 ? 1 - Math.exp(-4 * dt) : 1);
-        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
+        // DER TAKT DES LEIBS (K07): der Kreis-Mittelwert der vier Bein-Phasen, je um ihren Versatz im Muster (im doppelten
+        // Takt: Wiegen und Federn schwingen je Tritt) — im Muster gleich dem Takt des ersten Beins; ein Bein, das an der
+        // Grenze seiner Kette abhebt (seine Phase springt auf den Schwung-Anfang), schüttelt den Rumpf nicht
+        const offL = phGesetz || [0, Math.PI * 0.75, Math.PI * 1.5, Math.PI * 0.25];
+        let cL = 0,
+            sL = 0;
+        for (let k = 0; k < 4; k++) {
+            cL += Math.cos(2 * (g.ph[k] - offL[k]));
+            sL += Math.sin(2 * (g.ph[k] - offL[k]));
+        }
+        const takt2 = Math.atan2(sL, cL) + 2 * offL[0];
+        let roll = Math.sin(takt2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.
         roll += (Number(P.bodyZ) || 0) * fadeMul;
@@ -18769,8 +18780,7 @@ class AnazhRealm {
             // getrennt am Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn, Lab: spineX·bob·sin(ph·2))
             // wird auf wolf.rotation.x verdichtet.
             const bob = (Number(P.bob) || 0) * fadeMul;
-            T.wolf.rotation.x =
-                (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob * g.schritt + g.bissRumpf;
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(takt2) * bob * g.schritt + g.bissRumpf;
             T.wolf.rotation.y = drehY;
         }
         // PD-Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige
@@ -19042,7 +19052,20 @@ class AnazhRealm {
                     bz = BM.b[1] * skala;
                 const la = Math.hypot(ay, az),
                     lb = Math.hypot(by, bz);
-                const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, Math.hypot(ty, tz)));
+                const dZiel = Math.hypot(ty, tz);
+                // DIE GRENZE DES BEINS (K07, die hintere Extremlage): ein gehaltener Fuß — im Stand oder spät im Schwung
+                // wartend —, den die Kette nicht mehr erreicht, hebt ab: sein Schwung beginnt im nächsten Takt (die Phase
+                // springt auf den Schwung-Anfang, die Kopplung führt sie zurück). Vorher hielt der Anker ihn bis zum Ende
+                // der Phase, die IK klemmte, die Pfote schleifte dem Leib nach (am Querhang 0,08 des Leib-Wegs; im Folgen
+                // mit nachlaufender Phase bis 0,96 m hinter der Hüfte). Das Maß ist die Kette selbst — eine Schätzung vor
+                // der IK lag 4–9 cm neben ihr —, um den Weg des Leibs in einem Bild (1/60 s) vorausgedacht: der Fuß hebt,
+                // bevor er schleift, nicht ein Bild danach (nie um den Weg einer Raten-Stufe: der Stand schrumpfte dort
+                // auf ein Drittel).
+                if (!stand && dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
+                    const u = ((g.ph[i] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                    if (u >= 0.7 * Math.PI) g.ph[i] += 2 * Math.PI - u;
+                }
+                const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
                 const gam = Math.acos(Math.max(-1, Math.min(1, (d * d - la * la - lb * lb) / (2 * la * lb))));
                 const thK = (BM.phi0 < 0 ? -gam : gam) - BM.phi0;
                 const cK = Math.cos(thK),
