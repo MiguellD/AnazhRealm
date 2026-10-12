@@ -836,8 +836,9 @@ function validateManifest(m) {
     // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
     // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
     // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt). Eine
-    // EINSTUFIGE Art (nur Stufe 0 — Tor, Fahrzeug) liefert keine Karten-Stufe: ihre Fernkarte backt der Wirt aus
-    // Stufe 0 (Studio-Vertrag B2, „L2-Auto-Impostor ist Sache des Wirts").
+    // EINSTUFIGE Art (nur Stufe 0 gezeigt — Tor, Fahrzeug) liefert keine Karten-Stufe: ihre Fernkarte backt der Wirt aus
+    // Stufe 0 (Studio-Vertrag B2, „L2-Auto-Impostor ist Sache des Wirts"). Eine NUR-WURF-Stufe zählt nicht: sie kommt
+    // nie ins Bild (das Tor [0, 3], 1110-9).
     const kartenUrteil = (src, bud) => {
         const kp = src.match(/AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
         if (!kp) return ["KIND_POLICY im Stamm nicht gefunden"];
@@ -846,10 +847,11 @@ function validateManifest(m) {
             const { budget, kindStages } = bud[datei];
             for (const k in kindStages) {
                 const st = kindStages[k];
+                const gezeigt = st.filter((s) => !(budget[k] && budget[k][s] && budget[k][s].nurWurf === true));
                 const letzte = budget[k] && budget[k][st[st.length - 1]];
                 const karte = !!(letzte && letzte.karte === true);
                 const imp = new RegExp("\\n\\s*" + k + ": Object\\.freeze\\(\\{[^}]*impostor: true").test(kp[1]);
-                if (karte ? !imp : imp && st.length > 1)
+                if (karte ? !imp : imp && gezeigt.length > 1)
                     f.push(
                         `${k}: Studio-Karte ${karte ? "ja" : "nein"} ≠ Host-Impostor ${imp ? "ja" : "nein"} (${datei})`
                     );

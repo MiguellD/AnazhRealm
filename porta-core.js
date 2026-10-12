@@ -69,7 +69,7 @@
                 // 1110-9 (der Wurf aus der gröberen Stufe, Nordstern M4): die Stufe 0 wirft nicht mehr selbst — ihr Wurf ist
                 // die NUR-WURF-Stufe 3, die Hüllen-Liste des Tors (huelle, N5) als EIN Gitter; dieselbe Liste ist die Fernform.
                 // tris der Stufe 3 = die Regler-Hülle (Rezepte × Regler × Rand, gate:regler-wirkt fährt auch die Stufe 3).
-                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 3 }, 3: { tris: 14000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 3 }, 3: { tris: 15000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
                 gestalten: {},
             },
         },
@@ -265,7 +265,10 @@
     // am Genesis-Ring: 6,4 × 17 cm, OMEN 12.10.). Jede Zahl liegt auf dem Raster 2^-12; Kapsel und Kasten sitzen `einzugM`
     // innerhalb des Gezeichneten (der Werfer bleibt unter der Haut: keine Akne, kein Peter-Panning). Die Stufe 3 IST diese
     // Liste als Gitter (`huelleGruppe`), die Fernform liest dieselbe Liste (`__fern`).
-    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6 };
+    // DIE ROLLEN (N5): jedes feine Teil trägt "wurf" — es wirft nur (die NUR-WURF-Stufe ist die GANZE Liste); die Fernform
+    // des Welt-March liest nur "sicht": EIN Rahmen-Strang über alle Ordnungen (höchstens `sichtGlieder` Kapseln) und der
+    // Sockel — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
+    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 18, sichtGliedM: 1.2 };
     function hRaster(v) {
         return Math.round(v * 4096) / 4096 + 0;
     }
@@ -273,9 +276,9 @@
         var c = m && m.color ? m.color : null;
         return c ? [hRaster(c.r), hRaster(c.g), hRaster(c.b)] : [0.5, 0.5, 0.5];
     }
-    function hKapsel(H, a, b, r, m) {
-        if (!H || !(2 * r >= HUELLE_GESETZ.dickeM - 1e-9)) return;
-        H.push({ art: "kapsel", a: [hRaster(a.x), hRaster(a.y), hRaster(a.z)], b: [hRaster(b.x), hRaster(b.y), hRaster(b.z)], r: hRaster(r - HUELLE_GESETZ.einzugM), farbe: hFarbe(m), rolle: "sicht" });
+    function hKapsel(H, a, b, r, m, rolle) {
+        if (!H || !(rolle === "sicht" || 2 * r >= HUELLE_GESETZ.dickeM - 1e-9)) return;
+        H.push({ art: "kapsel", a: [hRaster(a.x), hRaster(a.y), hRaster(a.z)], b: [hRaster(b.x), hRaster(b.y), hRaster(b.z)], r: hRaster(r - HUELLE_GESETZ.einzugM), farbe: hFarbe(m), rolle: rolle || "wurf" });
     }
     // Die Kette entlang derselben Kurve, die die Röhre trägt (CatmullRom centripetal durch `pts`), geteilt nach dem Sehnen-
     // Fehler der Hülle (∫ √(κ / 8ε) ds, höchstens `laengsM` je Glied; der Winkel per atan2 wie das Detail-Gesetz).
@@ -301,14 +304,14 @@
             vor = pt;
         }
     }
-    function hKasten(H, x0, y0, z0, x1, y1, z1, m) {
+    function hKasten(H, x0, y0, z0, x1, y1, z1, m, rolle) {
         if (!H) return;
         var e = HUELLE_GESETZ.einzugM, hx = (x1 - x0) / 2 - e, hy = (y1 - y0) / 2 - e, hz = (z1 - z0) / 2 - e;
         // ein Kasten fällt erst als Stab (zwei Maße unter dickeM): eine Platte wirft mit ihrer Breite (die 1,8-cm-Hölzer der
         // Tür sind 10 cm tief — unter tiefer Sonne trägt die Tiefe den Wurf, geisttor 1 006 ungedeckte Wurf-Pixel bei 25°)
         var mass3 = [x1 - x0, y1 - y0, z1 - z0].sort(function (p, q) { return p - q; });
-        if (!(mass3[1] >= HUELLE_GESETZ.dickeM - 1e-9)) return;
-        H.push({ art: "box", c: [hRaster((x0 + x1) / 2), hRaster((y0 + y1) / 2), hRaster((z0 + z1) / 2)], h: [hRaster(hx), hRaster(hy), hRaster(hz)], farbe: hFarbe(m), rolle: "sicht" });
+        if (rolle !== "sicht" && !(mass3[1] >= HUELLE_GESETZ.dickeM - 1e-9)) return;
+        H.push({ art: "box", c: [hRaster((x0 + x1) / 2), hRaster((y0 + y1) / 2), hRaster((z0 + z1) / 2)], h: [hRaster(hx), hRaster(hy), hRaster(hz)], farbe: hFarbe(m), rolle: rolle || "wurf" });
     }
     // Ein Holz (barBetween: Kasten Länge × Dicke `th` in der Ebene × 0,1 m Tiefe) als Kasten um seine vier Ecken in der Ebene
     // (die Hölzer der Tür stehen achsparallel: der Kasten ist exakt), Tiefe ±0,05 m um z. Als Kapsel (r = th / 2) fehlte ihm
@@ -316,6 +319,18 @@
     function hBalken(H, x0, y0, x1, y1, z, th, m) {
         var dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 0.01, nx = (-dy / l) * th * 0.5, ny = (dx / l) * th * 0.5;
         hKasten(H, Math.min(x0 + nx, x0 - nx, x1 + nx, x1 - nx), Math.min(y0 + ny, y0 - ny, y1 + ny, y1 - ny), z - 0.05, Math.max(x0 + nx, x0 - nx, x1 + nx, x1 - nx), Math.max(y0 + ny, y0 - ny, y1 + ny, y1 - ny), z + 0.05, m);
+    }
+    // Der Fern-Strang (rolle "sicht"): die Kurve gleichmäßig in Glieder von ~`sichtGliedM`, höchstens `sichtGlieder`.
+    function hSichtStrang(H, pts, r, m, dz) {
+        if (!H || pts.length < 2) return;
+        var kurve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
+        var n = Math.max(2, Math.min(HUELLE_GESETZ.sichtGlieder, Math.ceil(hRaster(kurve.getLength() / HUELLE_GESETZ.sichtGliedM))));
+        var vor = kurve.getPointAt(0);
+        for (var q = 1; q <= n; q++) {
+            var pt = kurve.getPointAt(q / n);
+            hKapsel(H, new THREE.Vector3(vor.x, vor.y, vor.z + (dz || 0)), new THREE.Vector3(pt.x, pt.y, pt.z + (dz || 0)), r, m, "sicht");
+            vor = pt;
+        }
     }
     // Der Kasten um ein gebautes Mesh (Stein, Stufe, Podest, Schutt): seine Ecken in der Lage des Tors (Rotation, Ort).
     function hUm(H, me, m) {
@@ -568,6 +583,7 @@
       // --- gluehende Apertur-Kante (Trichter) ---
       var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));hKette(HU,rimPts,0.04,rimMat,0);
 
+      if(HU){var sR=orders*jambW*0.5,sZ=(orders-1)*depthStep+frameDepth*(1+(orders-1)*0.18)*0.5,sM=(p.wBraid>Math.max(p.wMason,p.wMono))?bmatG:fmat;hSichtStrang(HU,offsetFull(sR),Math.min(sR,sZ),sM,0);var sx=0,sy0=baseY,sz=0;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.max(sx,(fullW+0.4+(sN-1)*0.7)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.max(sz,(baseDepth+(sN-1)*0.7)/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.max(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.max(sz,(baseDepth+0.3)/2);}if(sx>0)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
       return {gate:gate,D:D,leafL:leafL,leafR:leafR,leafLB:leafLB,leafRB:leafRB,rimMat:rimMat};
     }
 

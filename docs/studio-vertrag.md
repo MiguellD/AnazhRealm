@@ -347,8 +347,10 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   (0..1, fehlt = 0) schneidet die zwei Stirnen quer zum First mit derselben Neigung: von (1 − walm) der Höhe an der Stirn
   bis zum First, der um walm × Tiefe kürzer wird (walm 1 über einem Quadrat: die Pyramide).
 - `kapsel`: die Strecke `a → b` mit Radius `r` (Kuppel, Rundbau, Zwiebel).
-- `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle`: `"fest"` (die Kollision), `"sicht"` (das
-  Fernbild) oder `"beide"`.
+- `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle` trennt die Leser der EINEN Liste: `"fest"`
+  (die Kollision), `"sicht"` (das Fernbild des Welt-March — höchstens 24 Teile je Liste, die Kosten-Grenze: je Pixel
+  läuft der March über alle Teile seines Eintrags), `"wurf"` (nur die NUR-WURF-Stufe: ihr Gitter ist die GANZE Liste, der
+  March liest das Teil nie — das Tor, 1110-9: das Geflecht als Band, Steine, Hölzer) oder `"beide"` (fest und sicht).
 - **EINE Quelle je Gesetzbuch:** die reine Kern-Funktion `huelle(rezeptId, seed, ov)` (fachwerk: der grundriss-treue
   Fernkörper `koerperListe`, die Ausstattung aus ihrer Grundform); dieselbe Liste trägt die NUR-WURF-Stufe als Beipack
   `__fern`, und ihr Gitter IST diese Liste. Die Kollision (`__huelle`, Welle L) trägt dieselbe Form (rolle `fest`).
