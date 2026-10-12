@@ -1830,6 +1830,7 @@ function selbsttest() {
         rand: {
             haeuser: 9,
             randHaus: "haus_provenzalisch #600 (-1129.0/-1099.0)",
+            deckel: { max: 48, autosVor: 27, autosNach: 57, ueber: 9 },
             invalidierungen: 0,
             ca: 0,
             nass0: 2858,
@@ -1959,7 +1960,8 @@ function selbsttest() {
             (b) => (b.rand.nass1 = 2637),
             /R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte 2858 → 2637/,
         ],
-        ["R leer", (b) => (b.rand.randHaus = null), /R LEER/],
+        // K16: der Gesamtlauf warf das Haus am Seerand über den Nexus-Deckel — R LEER nennt den Deckel mit seinen Zahlen
+        ["R leer", (b) => (b.rand.randHaus = null), /R LEER: .*Nexus-Deckel 48, autonome Bauten 27 → 57/],
         [
             "E Wunsch-Zahl der Kreaturen (Befund am Kopf f5b331ae)",
             (b) => (b.setzen.faelle[0].chat = "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"),
