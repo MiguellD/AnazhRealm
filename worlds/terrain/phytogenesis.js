@@ -5278,6 +5278,9 @@ init();
             // leuchtet (fachwerk `feuer`: Glut, Flamme, Herdfeuer), trägt die Stärke — die Welt webt emissiveNode = Farbe ×
             // leucht. Stoffe ohne das Feld (Pflanzen, jede andere Glut) bleiben byte-alt.
             if (zweitKern && mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
+            // DAS LEUCHTQUELLEN-GESETZ reist mit (K11, must-ignore): ein Stoff, der nach einem Zeitplan glüht (fachwerk `glas`:
+            // das wache Fenster), trägt den Namen seines Emitter-Datums (LICHT_GESETZ) — die Welt webt ihm die Glut der Tageszeit.
+            if (zweitKern && mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht;
             if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
                 out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
                 out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;

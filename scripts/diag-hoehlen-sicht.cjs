@@ -33,7 +33,9 @@
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
 //       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß). Es ist
 //       EIN Term des Boden-Stoffs (`_buildPbrNodeMaterial`, gewichtet mit 1 − `aHimmel`), seine Stärke die geteilte Uniform
-//       `atmoUniforms.augenLicht`; die Wand zählt dazu die Wesen in Höhlen-Luft (sie tragen es nicht);
+//       `_augenLeuchte`, ein Platz des Licht-Pools mit Himmels-Ersatz (K11): der Boden reicht dem Pool seine Himmels-Sicht,
+//       `_lichtPoolTerm` ist das EINE Punktlicht-Gesetz des Stamms (der Abfall des Labors); die Wand zählt dazu die Wesen in
+//       Höhlen-Luft (ohne Himmels-Sicht tragen sie es nicht);
 //   (l) SZENEN-LICHT (K15, OMEN 1110-3): unter freiem Himmel trägt jedes Licht der Szene Licht — ein Licht auf Stärke 0
 //       steht trotzdem im Licht-Hash JEDES beleuchteten Stoffs und kostet in jedem Fragment (das Punkt-Licht des Auges ab
 //       Boot: 0,48 ms je Frame auf der GTX 1060, wo es nicht leuchtete);
@@ -121,19 +123,19 @@ function urteil(b) {
         );
     if (!c.augenTerm)
         v.push(
-            "CODE: der Boden-Stoff (`_buildPbrNodeMaterial`) trägt den Term des Lichts des Auges nicht (`atmoUniforms.augenLicht` " +
-                "× (1 − `aHimmel`)) — die Höhle ist schwarz oder ein Szenen-Licht trägt es überall"
+            "CODE: der Boden-Stoff (`_buildPbrNodeMaterial`) reicht dem Licht-Pool seine Himmels-Sicht nicht (`_leuchtStoff` mit " +
+                "`aHimmel`, der Himmels-Ersatz `lichtErsatz` im Term) — die Höhle ist schwarz oder das Licht des Auges trägt überall"
         );
     if (c.augenTerm && !c.augenVorZweig)
         v.push(
-            "CODE: der Term des Lichts des Auges liest `normalView`/`positionViewDirection` nicht in der Bedingung seines " +
+            "CODE: der Licht-Pool (`_lichtPoolTerm`) liest `normalView`/`positionView` nicht in der Bedingung seines " +
                 "Zweigs (`select`), sondern erst im Zweig — r184 baut das " +
                 "Emissiv VOR der Lichtung, die Variable stünde nur im Zweig: unter dem Himmel lichtet der Boden mit der Normale 0 " +
                 "(schwarz)"
         );
     if (c.augenTerm && c.augenTslFremd)
         v.push(
-            `CODE: der Term des Lichts des Auges liest \`${c.augenTslFremd}\` — \`three/tsl\` der Seite kennt den Namen nicht ` +
+            `CODE: der Licht-Pool liest \`${c.augenTslFremd}\` — \`three/tsl\` der Seite kennt den Namen nicht ` +
                 "(undefined, der Graph bricht, der Boden ist schwarz)"
         );
     const al = b.augenLicht;
@@ -144,7 +146,7 @@ function urteil(b) {
             fr = al.frei;
         if (ho.I === null)
             v.push(
-                `LICHT DES AUGES: der Boden-Stoff trägt kein Licht des Auges (\`atmoUniforms.augenLicht\` fehlt) — die Ich-Sicht ` +
+                `LICHT DES AUGES: das Licht des Auges ist kein Platz des Licht-Pools (\`_leuchtQuellen\` liest \`_augenLeuchte\` nicht) — die Ich-Sicht ` +
                     `in der Höhle ${JSON.stringify(ho.auge)} ist schwarz (kein Himmel, keine Sonne, kein Licht)`
             );
         else {
@@ -164,15 +166,22 @@ function urteil(b) {
                 );
         }
     }
-    // (j) BLENDUNG: das Licht fällt nicht mit dem Abstand — die Wand in Armlänge zeigt ihre Maserung wie die Karte in 2 m
-    if (al && al.hoehle && Number.isFinite(al.hoehle.abfall)) {
-        const q = Math.pow(2 / 0.3, al.hoehle.abfall);
+    // (j) BLENDUNG: das Licht fällt nah nicht steil — die Wand in Armlänge zeigt ihre Maserung wie die Karte in 2 m (das EINE
+    // Punktlicht-Gesetz, der Abfall des Labors (1 − d/R)^abfall; r184s 1/d legte die Wand weiß)
+    if (al && al.hoehle && Number.isFinite(al.hoehle.abfall) && al.hoehle.R > 2) {
+        const R = al.hoehle.R;
+        const q = Math.pow((1 - 0.3 / R) / (1 - 2 / R), al.hoehle.abfall);
         if (q > 1.5)
             v.push(
-                `BLENDUNG: das Licht des Auges fällt mit 1/d^${al.hoehle.abfall} — die Wand in 0,3 m ist ${q.toFixed(1)}× heller ` +
-                    "als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)"
+                `BLENDUNG: das Licht des Auges fällt mit (1 − d/R)^${al.hoehle.abfall} — die Wand in 0,3 m ist ${q.toFixed(1)}× ` +
+                    "heller als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)"
             );
     }
+    if (!c.poolLabor)
+        v.push(
+            "PUNKTLICHT-GESETZ: der Licht-Pool (`_lichtPoolTerm`) rechnet nicht den Abfall des Labors (1 − d/R)^abfall, oder ein " +
+                "zweiter Term ruft die BRDF eines Punktlichts (`_punktLichtBrdf`) — zwei Punktlicht-Gesetze im Stamm"
+        );
     // (l) SZENEN-LICHT: unter freiem Himmel trägt jedes DIREKTE Licht der Szene Licht (r184 sammelt jedes sichtbare Licht in
     // den Licht-Hash jedes beleuchteten Stoffs — ein direktes Licht auf 0 rechnet trotzdem seine BRDF in jedem Fragment;
     // Umgebung und Halbkugel addieren nur eine Bestrahlung und stehen im Bericht)
@@ -300,11 +309,12 @@ function selbsttest() {
             augenTerm: true,
             augenVorZweig: true,
             augenTslFremd: null,
+            poolLabor: true,
         },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
             augeInHoehle: true,
-            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, abfall: 0 },
+            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, abfall: 1, R: 20 },
             frei: { auge: [-1041, 30, -738], h: 1, I: 0, soll: 0 },
             wesenInHoehle: 0,
         },
@@ -397,7 +407,7 @@ function selbsttest() {
         [
             "kein Licht des Auges",
             (b) => (b.augenLicht.hoehle.I = null),
-            /LICHT DES AUGES: der Boden-Stoff trägt kein Licht des Auges .* in der Höhle \[-1041,9,-738\]/,
+            /LICHT DES AUGES: das Licht des Auges ist kein Platz des Licht-Pools .* in der Höhle \[-1041,9,-738\]/,
         ],
         [
             "Licht aus in der Höhle",
@@ -410,17 +420,19 @@ function selbsttest() {
             /LICHT DES AUGES: in der Höhle Stärke 3, das Gesetz verlangt 30/,
         ],
         ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
-        ["Stoff ohne Augen-Term", (b) => (b.code.augenTerm = false), /CODE: der Boden-Stoff .* trägt den Term/],
+        ["Stoff ohne Himmels-Sicht im Pool", (b) => (b.code.augenTerm = false), /CODE: der Boden-Stoff .* reicht dem Licht-Pool/],
+        // (j) K11: das Licht des Auges und jede Leuchtquelle fallen nach EINEM Gesetz
+        ["zwei Punktlicht-Gesetze", (b) => (b.code.poolLabor = false), /PUNKTLICHT-GESETZ: der Licht-Pool/],
         // die zwei Fallen der Werkbank 11.10. (echte GPU): die Mündung schwarz (Helligkeit 60 statt 123)
         [
             "Normale im Zweig",
             (b) => (b.code.augenVorZweig = false),
-            /CODE: der Term .* liest `normalView`\/`positionViewDirection` nicht in der Bedingung seines Zweigs/,
+            /CODE: der Licht-Pool .* liest `normalView`\/`positionView` nicht in der Bedingung seines Zweigs/,
         ],
         [
             "fremder TSL-Name",
             (b) => (b.code.augenTslFremd = "diffuseContribution"),
-            /CODE: der Term .* liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
+            /CODE: der Licht-Pool liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
         ],
         // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
@@ -442,11 +454,11 @@ function selbsttest() {
         ],
         ["Szenen-Licht ungezählt", (b) => (b.szenenLicht = null), /LEER: \(l\) Szenen-Licht/],
         ["Licht ohne Höhle", (b) => (b.augenLicht.augeInHoehle = false), /LEER: \(j\) Licht des Auges/],
-        // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): mit 1/d lag die Wand in 0,2 m weiß ohne Maserung
+        // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): steil am Auge lag die Wand in 0,2 m weiß ohne Maserung
         [
             "geblendet",
-            (b) => (b.augenLicht.hoehle.abfall = 1),
-            /BLENDUNG: das Licht des Auges fällt mit 1\/d\^1 — .* 6\.7×/,
+            (b) => (b.augenLicht.hoehle.abfall = 5),
+            /BLENDUNG: das Licht des Auges fällt mit \(1 − d\/R\)\^5 — .* 1\.6×/,
         ],
         // (k) der Befund von Auge 11: der Höhlen-Boden 25 m unter der Wiese trug ihr Grün
         [
@@ -971,7 +983,7 @@ const server = http.createServer((req, res) => {
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
-            // dann der Himmel am Auge und die Stärke des Terms (die Uniform `atmoUniforms.augenLicht` = Farbe × Stärke) gegen
+            // dann der Himmel am Auge und die Stärke seines Platzes im Licht-Pool (`_augenLeuchte`, in der Zahl des Labors × LEGACY_LICHT) gegen
             // sein Gesetz (AUGEN_LICHT, die Belichtung des Takts); (l) unter freiem Himmel jedes Licht der Szene, wie r184 es
             // sammelt (sichtbar, in den Ebenen der Kamera)
             {
@@ -981,13 +993,14 @@ const server = http.createServer((req, res) => {
                     cam.position.set(p[0], p[1], p[2]);
                     cam.updateMatrixWorld(true);
                     r._applyDayNightToScene();
-                    const au = st.atmoUniforms && st.atmoUniforms.augenLicht;
-                    const farbe = A ? new T.Color(A.farbe) : null;
+                    const imPool = /this\._augenLeuchte\b/.test(window.__codeOf(r._leuchtQuellen || ""));
+                    const au = r._augenLeuchte;
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
                     const soll =
                         A && Number.isFinite(h)
-                            ? ((1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall)) / k
+                            ? ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) /
+                              (k * Math.pow(1 - A.karteM / A.reichweiteM, A.abfall))
                             : null;
                     const lichter = [];
                     st.scene.traverseVisible((o) => {
@@ -1008,9 +1021,10 @@ const server = http.createServer((req, res) => {
                     return {
                         auge: p.map((v) => +v.toFixed(1)),
                         h: Number.isFinite(h) ? +h.toFixed(3) : null,
-                        I: au && farbe && farbe.r > 0 ? +(au.value.r / farbe.r).toFixed(3) : null,
+                        I: !imPool ? null : au ? +(au.L.staerke * r.constructor.LEGACY_LICHT).toFixed(3) : 0,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
                         abfall: A ? A.abfall : null,
+                        R: A ? A.reichweiteM : null,
                         lichter,
                     };
                 };
@@ -1057,20 +1071,32 @@ const server = http.createServer((req, res) => {
                 /himmelsSicht:\s*true/.test(code(r._getVoxelChunkMaterial)) &&
                 /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr);
             aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
-            aus.code.augenTerm = /\.augenLicht\b/.test(pbr) && /_hS\.oneMinus\(\)/.test(pbr);
+            const pool = code(r._lichtPoolTerm);
+            aus.code.augenTerm =
+                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr) &&
+                /lichtErsatz/.test(pool);
+            // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Labors, und nur er ruft die BRDF eines Punktlichts
+            const P = Object.getPrototypeOf(r);
+            const brdfRufer = Object.getOwnPropertyNames(P).filter(
+                (n) => n !== "constructor" && typeof P[n] === "function" && /this\._punktLichtBrdf\(/.test(code(P[n]))
+            );
+            aus.code.poolLabor =
+                /\.oneMinus\(\)\s*\.clamp\(\)\s*\.pow\(farbe\.a\)/.test(pool) &&
+                !/reciprocal\(\)/.test(pool) &&
+                brdfRufer.length === 1 &&
+                brdfRufer[0] === "_lichtPoolTerm";
             // die zwei Fallen des Terms (Werkbank 11.10., echte GPU — der Null-Renderer baut keinen Graph): die geteilten
             // Variablen VOR dem Zweig gelesen — in der BEDINGUNG des `select` (r184 baut sie vor dem `if`; ein Fn-Rumpf mit
             // If fiel, der Stoff-Graph sah ihn nicht: Integration V18.541) —, und nur Namen, die `three/tsl` der Seite kennt
             const def = (n) => {
-                const m = new RegExp("const\\s+" + n.replace(/\$/g, "\\$") + "\\s*=\\s*([^;]+);").exec(pbr);
+                const m = new RegExp("const\\s+" + n.replace(/\$/g, "\\$") + "\\s*=\\s*([^;]+);").exec(pool);
                 return m ? m[1] : "";
             };
-            const aufloesen = (t) => t.replace(/[\w$]+/g, (w) => (/^_/.test(w) && def(w) ? "(" + def(w) + ")" : w));
-            const sel = /emissiveNode\s*=\s*_Te\.select\(\s*([\w$]+)/.exec(pbr);
-            const bedingung = sel ? aufloesen(aufloesen(def(sel[1]))) : "";
-            aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionViewDirection\b/.test(bedingung);
-            const em = pbr.slice(Math.max(0, pbr.indexOf("const _uAuge")));
-            const fremd = em.slice(0, 4000).match(/\b(diffuseContribution|specularColorBlended)\b/);
+            const aufloesen = (t) => t.replace(/[\w$]+/g, (w) => (def(w) ? "(" + def(w) + ")" : w));
+            const sel = /Te\.select\(\s*([\w$]+)/.exec(pool);
+            const bedingung = sel ? aufloesen(aufloesen(aufloesen(def(sel[1])))) : "";
+            aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionView\b/.test(bedingung);
+            const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
             aus.code.augenTslFremd = fremd ? fremd[1] : null;
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));

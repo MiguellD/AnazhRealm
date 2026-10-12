@@ -77,7 +77,12 @@ const FOLGEN = {
         "band",
         "profil",
     ],
-    genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
+    // DAS PROFI-BAND E (frozen-a1, 1110-9) richtet beide Orte unter Regler voll: Frame p95 und CPU-Takt p95 AUCH an der
+    // Genesis — der Lauf steht dort vor dem Band (der Pool füllt erst nach jedem Pass-Stempel).
+    genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "band"],
+    // DAS MESS-DORF: der Dorf-Zug läuft (der Ort schaltet ihn beim Umstellen wieder an), das Band zählt Befehle, Dreiecke und
+    // VRAM des gebauten Dorfs.
+    dorf: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
     // DER TOGGLE-ORT (1110-6): die Prüfbühne richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter 0,3 ms —
     // die lange Bank je Pose (haushalt.json `bank`, `posen`), bei festen Stellgrößen des Reglers (`stell`).
     buehne: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "gpu-bank"],
@@ -404,6 +409,7 @@ function laufKurz(l) {
         dreiecke: l.dreiecke ? { mittel: l.dreiecke.mittel, max: l.dreiecke.max } : null,
         vramMB: l.vramMB ? l.vramMB.jetzt : null,
         stempelGueltig: l.stempel ? l.stempel.gueltig : null,
+        takt: l.takt || null,
         wetter: l.wetterHalt ? l.wetterHalt.urteil : null,
         ruhe: l.ruhe ? l.ruhe.ruhig : null,
     };
@@ -549,7 +555,12 @@ async function folge() {
         };
         const mitTieren = (k) => (k ? Object.assign(k, { tiere: tiereZuletzt() }) : { tiere: tiereZuletzt() });
         const hat = (n) => FOLGE.includes(n);
-        const lauf = (regler) => R("/lauf", { sek: P.laufSek, ein: P.ein, ruhe: P.ruhe, regler, tiere: "frei" });
+        // Der Lauf trägt seinen Takt wie die Bank (1110-9: CPU-Takt und Frame p95 unter dem Leistungs-Deckel der GPU).
+        const lauf = async (regler) => {
+            const { b, takt } = await mitTakt(() => R("/lauf", { sek: P.laufSek, ein: P.ein, ruhe: P.ruhe, regler, tiere: "frei" }));
+            if (b && typeof b === "object") b.takt = takt;
+            return b;
+        };
         if (hat("lauf-voll")) aus.kurz.laufVoll = mitTieren(laufKurz(await schritt("lauf-voll", () => lauf("voll"))));
         if (hat("lauf-frei")) aus.kurz.laufFrei = mitTieren(laufKurz(await schritt("lauf-frei", () => lauf("frei"))));
         // DIE BANK je Blick (Gier 0 und −0,88: der ferne Schatten nimmt je Blick andere Gruppen mit), danach steht der Blick
@@ -958,14 +969,21 @@ async function selbsttest() {
         /WELTAKT lauf-voll: kein Welt-Akt-Spion/
     );
     pruefe("vor der Bühne zählen Welt-Akte nicht", wachenUrteil("umstellen", wache(), dorf, ort, false), null);
-    // DER GENESIS-RING (0910-1): seine Folge ist die eigene, kurze (Boot · Ort · Bühne · Band); ein Lauf an der Wiese, der
-    // „genesis" heißt, fällt an der Ort-Wache und an der Aufzeichnung der Band — und ein liegen gelassenes Rahmen-Ziel des
-    // Direktpfads (0710-9 B: `band --ort genesis` nach `zerlegen` in derselben Sitzung) beim Namen.
+    // DER GENESIS-RING (0910-1): seine Folge ist die eigene (Boot · Ort · Bühne · Lauf voll · Band — seit 1110-9 richtet E dort
+    // auch Frame und CPU-Takt); eine Bank der Wiese an der Genesis fällt beim Namen, ein Lauf an der Wiese, der „genesis"
+    // heißt, an der Ort-Wache und an der Aufzeichnung der Band — und ein liegen gelassenes Rahmen-Ziel des Direktpfads
+    // (0710-9 B: `band --ort genesis` nach `zerlegen` in derselben Sitzung) beim Namen.
     pruefe("die Genesis-Folge", folgeUrteil(FOLGEN.genesis, FOLGEN.genesis), null);
+    pruefe("die Dorf-Folge", folgeUrteil(FOLGEN.dorf, FOLGEN.dorf), null);
     pruefe(
-        "Genesis mit einem Lauf der Wiese",
-        folgeUrteil(["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "band"], FOLGEN.genesis),
-        /unbekannter Schritt „lauf-voll"/
+        "Genesis mit einer Bank der Wiese",
+        folgeUrteil(["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "gpu-bank", "band"], FOLGEN.genesis),
+        /unbekannter Schritt „gpu-bank"/
+    );
+    pruefe(
+        "Genesis: Band vor dem Lauf",
+        folgeUrteil(["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band", "lauf-voll"], FOLGEN.genesis),
+        /„lauf-voll" nach „band"/
     );
     {
         const g = BAND.ladeSpec("genesis").ort;

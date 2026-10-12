@@ -3871,6 +3871,8 @@
             (mp && mp.webe ? "|w:" + mp.webe : "") +
             (R.em ? "|e:" + R.em.map((v) => v.toFixed(2)).join(",") + "@" + R.emI.toFixed(2) : "") +
             (mp && typeof mp.leucht === "number" ? "|l:" + mp.leucht.toFixed(2) : "") +
+            // der Zeitplan des Leuchtquellen-Gesetzes (K11): ein waches Fenster ist ein anderer Stoff als ein Glas ohne Licht
+            (mp && typeof mp.licht === "string" ? "|li:" + mp.licht : "") +
             (R.look && mp && Array.isArray(mp.color) && mp.color.length === 3
                 ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
                 : "") +
@@ -4022,6 +4024,9 @@
         if (S.glut > 0 !== T.glut > 0) return Infinity;
         const a = S.mat || {},
             b = T.mat || {};
+        // der Zeitplan eines Leuchtquellen-Stoffs (K11, `mat.licht`) ist eine Seh-Funktion: das wache Fenster faltet nie ins
+        // Schlaf-Glas
+        if ((a.licht || "") !== (b.licht || "")) return Infinity;
         const n = (v, d) => (typeof v === "number" ? v : d);
         let d =
             Math.abs(n(a.roughness, 0.7) - n(b.roughness, 0.7)) + 2 * Math.abs(n(a.metalness, 0) - n(b.metalness, 0));

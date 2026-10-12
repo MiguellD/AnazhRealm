@@ -585,8 +585,9 @@ sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.near=1; sun.shadow.camera.f
 sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26; sun.shadow.bias=-0.0004;
 scene.add(sun); const hemi=new THREE.HemisphereLight(0xbcd2f0,0x4d4636,0.62); const amb=new THREE.AmbientLight(0xffffff,0.22); scene.add(hemi); scene.add(amb);
 // ════ Tageszeiten ════
-// V18.491.228 — Lab Tageszeiten ← ZEIT_GESETZ fail-soft; Host none (ZEIT_VIS).
-// fire.intensity + glas glut stay LOCAL (not part of ZEIT table).
+// V18.491.228 — Lab Tageszeiten ← ZEIT_GESETZ fail-soft; Host: das Licht (ZEIT_VIS, K11).
+// Herdfeuer und Fenster-Glut lesen das Leuchtquellen-Gesetz des Kerns (FC.LICHT_GESETZ) — dasselbe Datum wie die Welt.
+const _LG=FC.LICHT_GESETZ, _FEU=_LG.feuer, _FEN=_LG.fenster; let _feuerZeit=_FEU.zeit.mittag;   // der Lichtstrom des Herdfeuers zur Tageszeit (setZeit), das Flackern im Bild-Takt
 const _ZG=(FC&&FC.ZEIT_GESETZ)||(window.__fachwerkCore&&window.__fachwerkCore.ZEIT_GESETZ)||null;
 function _zeitPart(k,fb){ const s=_ZG&&_ZG[k]; if(!s) return {p:fb.p.slice(),c:fb.c,i:fb.i,h:fb.h,a:fb.a,bg:fb.bg};
   return { p:(Array.isArray(s.p)&&s.p.length===3)?[s.p[0],s.p[1],s.p[2]]:fb.p.slice(),
@@ -596,13 +597,13 @@ const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0
   morgen:_zeitPart('morgen',{p:[34,14,20],c:0xffd9a8,i:1.7,h:0.55,a:0.26,bg:0xc8baa0}),
   abend:_zeitPart('abend',{p:[-32,12,-14],c:0xff9a55,i:1.45,h:0.48,a:0.22,bg:0xb0876a}),
   nacht:_zeitPart('nacht',{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c}) };
-function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); fire.intensity=(t==='nacht'?3.0:t==='abend'?2.2:1.6);
-  const glut=(t==='nacht')?0.85:(t==='abend')?0.42:0;                                        // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake
+function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); _feuerZeit=_FEU.zeit[t]||_FEU.zeit.mittag;
+  const glut=_FEN.zeit[t]||0;                                                                 // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake (LICHT_GESETZ.fenster)
   for(const gm of [M.glas, M.glasfern, (typeof _MM!=='undefined')&&_MM.glas, (typeof _MM!=='undefined')&&_MM.glasfern]){ if(!gm) continue;
-    gm.emissive=gm.emissive||new THREE.Color(0); gm.emissive.set(glut?0xffb45e:0x000000); gm.emissiveIntensity=glut; } }
+    gm.emissive=gm.emissive||new THREE.Color(0); gm.emissive.set(glut?_FEN.farbe:0x000000); gm.emissiveIntensity=glut; } }
 const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),new THREE.MeshStandardMaterial({color:0x4a5238,roughness:1}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const fire=new THREE.PointLight(0xff7a35,1.6,9,2); scene.add(fire);
+const fire=new THREE.PointLight(_FEU.farbe,_FEU.staerke,_FEU.reichweiteM,_FEU.abfall); scene.add(fire);   // das Herdfeuer: LICHT_GESETZ.feuer
 
 // ════════════════ Subsystem-UI (einmal angelegt) ════════════════
 const ORDER=['fundament','geruest','riegel','streben','zimmermann','gefache','giebel','dachwerk','dachdeckung','boeden','innenwaende','herd','treppe','tueren','fenster','moebel','anbau','balkon','kuppel','portikus','hof','dachAlt','arkade','turm','zinnen','veranda','vorkragung','pilotis','terrasse','rundbau'];
@@ -661,7 +662,7 @@ function buildAusstattungLab(id, lodSt){
   scene.add(houseGroup);
   const bb=new THREE.Box3().setFromObject(houseGroup);
   D={W:bb.max.x-bb.min.x, D:bb.max.z-bb.min.z, ridgeY:Math.max(1.4, bb.max.y), baseY:0, eaveY:bb.max.y}; P={};
-  fire.position.set(0, id==='feuerstelle'?0.35:-60, 0);
+  fire.position.set(0, id==='feuerstelle'?_FEU.hoeheM:-60, 0);
   const inf=document.getElementById('lodInfo'); if(inf){ inf.style.display='block';
     inf.textContent=FC.AUSSTATTUNG[id].lab+' · Gestalt '+(1+((SEED>>>0)%V))+'/'+V+' · Stufe '+stufe+'\n'+dc+' Rollen-Meshes · '+(tris|0).toLocaleString('de-DE')+' Dreiecke'; }
 }
@@ -918,7 +919,7 @@ function walkUpdate(dt){
 let last=performance.now();
 function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(mode==='walk')walkUpdate(dt);
-  fire.intensity=1.4+Math.sin(now*0.008)*0.25+Math.random()*0.1;
+  fire.intensity=_FEU.staerke*_feuerZeit*(1+_FEU.flacker.amp*FC.lichtFlackern(_FEU,now/1000,0));   // die Flamme atmet in 6–10 Hz (LICHT_GESETZ.feuer.flacker, dasselbe Gesetz wie die Welt)
   { const nw=performance.now();
   for(let k=dorfBlend.length-1;k>=0;k--){ const B3=dorfBlend[k], f=Math.min(1,(nw-B3.t0)/240);
     B3.m.material.opacity=f; if(f>=1){ B3.m.material.dispose(); B3.m.material=B3.shared; dorfBlend.splice(k,1); } }

@@ -356,6 +356,14 @@ jobs:
               # echten Renderer (Boden-IoU kleiner Werfer, Akne-Platten, Zähne) fährt der OMEN: diag-schatten-bias.cjs --echt.
               run: npm run gate:schatten-bias
 
+            - name: Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)
+              if: matrix.gruppe == 2
+              # Die Werkbank im Software-Holz mit Schatten (holz voll) an der 30-Grad-Rampe der Pruefbuehne, die Sonne am Terminator
+              # (22 Grad aus Azimut 45, N.L -0,002): von oben je ein Schuss mit und ohne Schatten, gemessen nur auf der Rampe - ROT
+              # beim Namen, wenn der Schatten die Rampe fleckig macht (main 2c8deda9: 11,7 % gegen 0,2 %). Lokal 78-119 s, CI 181 s
+              # (38180625147) - in Gruppe 2 neben gate:nah-fern (dasselbe Software-Holz), die Waage traegt ihn dort (Gruppe 5 11,0 min).
+              run: npm run gate:schatten-terminator
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 6
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
@@ -379,7 +387,7 @@ jobs:
               # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
               run: npm run gate:worker-dichte
 
-            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
+            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
               # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
@@ -387,7 +395,19 @@ jobs:
               # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
               # Dazu die S4-Probe: die sechs Hindernis-Koerper der Saat (stationen.json s4-hindernisse) stehen je Teil
               # mit ihrer Blocker-Box <= 0,1 m an der Spec und im Blocker-Netz; der Selbsttest rueckt die Mauer 0,5 m.
+              # Dazu die S0-Probe (K11): die Feuerstelle des Menschen leuchtet nachts aus dem Licht-Pool (mit und ohne Klang),
+              # die Laterne eines Plans nachts an und mittags aus, die Fenster-Glut nach dem Zeitplan, JEDER beleuchtete Stoff
+              # (Bauer im Stamm, Stoffe der Buehne und der Wildnis) traegt den Pool, EIN Punktlicht-Gesetz, kein Szenen-Licht.
               run: npm run gate:pruefbuehne
+
+            - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
+              if: matrix.gruppe == 5
+              # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
+              # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
+              # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
+              # in 0,75 / 1,25 / 1,75 m um das Feuer traegt Luma >= 0,15 (K11 Abnahme). Der Selbsttest leert den Licht-Pool:
+              # der Kreis faellt unter die Schwelle und nennt den Pool.
+              run: npm run gate:pruefbuehne-licht
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
               if: matrix.gruppe == 6
@@ -1292,7 +1312,7 @@ jobs:
               run: npm run gate:seam
 
             - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 4
               # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
               # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT.
               run: npm run gate:mp-sync
