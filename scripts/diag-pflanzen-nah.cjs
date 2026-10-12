@@ -223,7 +223,7 @@ function bluetenUrteil(fall, T) {
                 ok =
                     uv[(k + 2 * i) * 2] === 0 &&
                     uv[(k + 2 * i + 1) * 2] === 1 &&
-                    Math.abs(uv[(k + 2 * i) * 2 + 1] - i / (KLINGE - 1)) < 1e-6;
+                    Math.abs(uv[(k + 2 * i) * 2 + 1] - i / (KLINGE - 1)) <= 1 / 8192; // das Byte-Raster am Ausgang: 2^-12
             if (!ok) continue;
             const g = (Y(t.col, k) + Y(t.col, k + 1)) / 2,
                 s = (Y(t.col, k + 2 * KLINGE - 2) + Y(t.col, k + 2 * KLINGE - 1)) / 2;
