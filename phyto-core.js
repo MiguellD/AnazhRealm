@@ -824,7 +824,7 @@
                     );
                 lin[o + 3] = a;
             }
-        const ms = impostorMips(lin, W, H, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true });
+        const ms = impostorMips(lin, W, H, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true, glatt: true });
         const mips = ms.stufen.map((st) => ({ data: st.data, width: st.w, height: st.h }));
         // Unter einem Texel je Zelle: die Box (gerade Alpha), bis 1×1.
         let t = mips[mips.length - 1];
@@ -854,8 +854,8 @@
     }
 
     // DIE FRACHT DES BLATT-ATLAS (05.10.): was der Wirt als Textur laedt, je Format EINE Stufe desselben Bilds —
-    //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC1-sRGB (der Karten-Codec bc1Kodiere: 8 B je 4×4, Alpha an 128 —
-    //         der alphaTest des Laub-Stoffs schneidet an derselben Stelle), bis die Zelle KARTEN_GESETZ.minSeite misst;
+    //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC3-sRGB (K20: bc3Kodiere, 16 B je 4×4 — die glatte Alpha der Kette reist mit;
+    //         der alphaTest des Laub-Stoffs schneidet zwischen den Texeln), bis die Zelle KARTEN_GESETZ.minSeite misst;
     //   rgba  die Kette ab Stufe 1 (256er-Zelle) — der Wirt ohne BC laedt die Bytes von gestern (1,3 MB statt 5,3 MB).
     // DIE FRACHT IST VORMULTIPLIZIERT, in JEDEM Format (das Karten-Gesetz, KARTEN_GESETZ): BC1 kann es nicht anders —
     // sein Index 3 ist transparent SCHWARZ —, die rgba-Kette traegt dasselbe Gesetz (rgb · alpha, linear; ein Texel
@@ -867,7 +867,7 @@
     // (das Buch) und der Wirt, der vor dem Buch malt (`_ensureFoliageClusterAtlas`). Ohne Bild → null.
     function blattAtlasFracht(bild, mitBc) {
         if (!bild || !Array.isArray(bild.mips) || bild.mips.length < 2) return null;
-        const r = bild.mips.slice(1).map((m) => {
+        const vor = (m) => {
             const d = new Uint8Array(m.data);
             for (let i = 0; i < d.length; i += 4) {
                 const a = d[i + 3];
@@ -875,15 +875,20 @@
                 for (let k = 0; k < 3; k++) d[i + k] = a ? linZuSrgb8((LIN_AUS_SRGB8[d[i + k]] * a) / 255) : 0;
             }
             return { data: d, width: m.width, height: m.height };
-        });
+        };
+        const r = bild.mips.slice(1).map(vor);
         const out = { wert: bild.wert, rgba: { breite: r[0].width, hoehe: r[0].height, mips: r }, bc: null };
         if (mitBc !== false) {
+            // BC3 (K20): die glatte Alpha der Kette reist mit (BC1 schnitt sie an 128 auf ein Bit), die Farbe
+            // vormultipliziert wie die rgba-Kette. Die Kette endet, bevor eine Zellzeile unter vier Blöcke fällt: der
+            // Vier-Farben-Block trägt die vormultiplizierte Farbe von Texeln sehr verschiedener Deckung nicht (die 8er-Zelle
+            // las 7 % zu dunkel, gate:pflanzen-nah (F)); jenseits liest die Welt die letzte Stufe — die L1 endet bei λ ≈ 3.
             const bc = [];
             for (const m of bild.mips) {
-                if (m.width / 4 < KARTEN_GESETZ.minSeite || m.height < KARTEN_GESETZ.minSeite) break;
-                bc.push({ data: bc1Kodiere(m.data, m.width, m.height), width: m.width, height: m.height });
+                if (m.width / 4 < 4 * KARTEN_GESETZ.minSeite || m.height < 4 * KARTEN_GESETZ.minSeite) break;
+                bc.push({ data: bc3Kodiere(vor(m).data, m.width, m.height), width: m.width, height: m.height });
             }
-            out.bc = { breite: bild.breite, hoehe: bild.hoehe, mips: bc };
+            out.bc = { format: "bc3", breite: bild.breite, hoehe: bild.hoehe, mips: bc };
         }
         return out;
     }
@@ -2814,7 +2819,7 @@
     // LINEAR. Die Schicht trägt sRGB (bc1-rgba-unorm-srgb / rgba8unorm-srgb, die GPU dekodiert): der Codec mittelt
     // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
     // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
-    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64 };
+    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64, glaette: 4, glaetteBis: 2 };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
         const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
@@ -2874,7 +2879,7 @@
 
     // DECKUNGSTREUE MIPS der Albedo: Stufe 0 binarisiert an der Schwelle (opak → rgb, 255 · sonst 0,0,0,0). Jede
     // tiefere Stufe liest den ECHTEN Deckungsanteil ihres Stufe-0-Fußabdrucks und macht je Ansicht genau so viele
-    // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über eine feste Permutation) — eine Box-Mip
+    // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über die Deckung der Nachbarschaft) — eine Box-Mip
     // dünnt die Krone sonst unter dem alphaTest aus. Die Farbe ist das alpha-gewichtete LINEARE Mittel des
     // Fußabdrucks; Eingang linear (der Bäcker), jede Stufe sRGB-kodiert (DER FARBRAUM oben).
     // EIN Mip-Gesetz für jede Karte (S7: auch der EINE Blatt-Atlas, bakeLeafAtlasBild — sein eigener Mip-Weg mit
@@ -2884,12 +2889,16 @@
     //            Schwarz), ein nicht gewählter Texel trägt das Mittel seiner deckenden Kinder bzw. `blut`, Alpha 0;
     //   alphaRoh Stufe 0 behält ihr Eingangs-Alpha (die Kantenglättung des Malers, nah vergrößert), gezählt wird
     //            die Deckung an der Schwelle wie immer.
+    //   glatt    die Alpha jeder tieferen Stufe ist die skalierte Deckung (Castaño): genau die gewählten Texel tragen
+    //            die Schwelle, der Rest fällt stetig — die Kante liegt zwischen den Texeln (K20; braucht blut).
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
     function impostorMips(rgba, w, h, V, schwelle, nStufen, opt) {
         const thr = (schwelle == null ? KARTEN_GESETZ.schwelle : schwelle) * 255;
         const quer = !!(opt && opt.quer),
             blut = opt && opt.blut ? opt.blut.map((x) => linZuSrgb8(x)) : null,
-            roh0 = !!(opt && opt.alphaRoh);
+            roh0 = !!(opt && opt.alphaRoh),
+            glatt = !!(opt && opt.glatt);
+        if (glatt && !blut) throw new Error("impostorMips: glatt braucht blut (die Farbe jedes deckenden Texels)");
         const hA = quer ? h : (h / V) | 0,
             wA = quer ? (w / V) | 0 : w;
         const n0 = w * h;
@@ -2957,15 +2966,42 @@
             // Texel i der Ansicht v: übereinander zusammenhängend, nebeneinander zeilenweise je Zelle
             const tex = quer ? (v, i) => ((i / nwA) | 0) * nw + v * nwA + (i % nwA) : (v, i) => v * nA + i;
             const schluessel = new Float64Array(nA),
-                sortiert = new Float64Array(nA);
+                sortiert = new Float64Array(nA),
+                dicht = new Float64Array(nA),
+                weich = new Float64Array(nA);
+            const fuss = 1 << (2 * k); // Stufe-0-Texel je Texel dieser Stufe
             let opakK = 0;
             for (let v = 0; v < V; v++) {
                 let positiv = 0;
+                // DIE DECKUNG DES TEXELS (K20, 12.10.): der Box-Anteil c seines Stufe-0-Fußabdrucks, geglättet über die
+                // Nachbarschaft (`KARTEN_GESETZ.glaette` binomiale 3×3-Gänge je Stufe — zwei Texel der Stufe, das Büschel
+                // statt des Blatts, wo das Blatt unter wenige Pixel fällt). Die Wahl hält die Büschel zusammen: ein Texel
+                // im dichten Zweig gewinnt gegen einen vereinzelten, die Lücke zwischen zwei Blättern füllt sich. Der
+                // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
+                // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
+                for (let i = 0; i < nA; i++) dicht[i] = ta[tex(v, i)] / fuss;
+                const gaenge = k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
+                for (let gang = 0; gang < gaenge; gang++) {
+                    for (let i = 0; i < nA; i++) {
+                        const ix = i % nwA,
+                            iy = (i / nwA) | 0;
+                        let nb = 0;
+                        for (let dy = -1; dy <= 1; dy++)
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const x = Math.min(nwA - 1, Math.max(0, ix + dx)),
+                                    y = Math.min(nhA - 1, Math.max(0, iy + dy));
+                                nb += dicht[y * nwA + x] * (dx ? 1 : 2) * (dy ? 1 : 2);
+                            }
+                        weich[i] = nb / 16;
+                    }
+                    dicht.set(weich);
+                }
                 for (let i = 0; i < nA; i++) {
                     const s = ta[tex(v, i)];
-                    if (s > 0) positiv++;
-                    // Rang: Deckung zuerst, Gleichstand über die Bijektion i·φ mod 2^20 (deterministisch, ortsgestreut)
-                    schluessel[i] = s * 1048576 + (Math.imul(i, 0x9e3779b1) & 0xfffff);
+                    // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
+                    // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
+                    schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
+                    if (schluessel[i] > 0) positiv++;
                 }
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
                 if (blut)
@@ -2985,8 +3021,17 @@
                 sortiert.set(schluessel);
                 sortiert.sort();
                 const grenze = sortiert[nA - M];
+                // GLATT (Castaño 2010, Mip-Wahl mit Erhalt der Deckung): die Alpha ist die Deckung des Texels, so skaliert,
+                // dass genau die M gewählten Texel die Schwelle tragen — der Filter liest eine stetige Kante (der Umriss
+                // liegt zwischen den Texeln, nicht auf ihrem Raster), und die Deckung an der Schwelle ist die der Stufe 0.
+                const sigma = grenze > 0 ? thr / 255 / grenze : 0;
                 for (let i = 0; i < nA; i++) {
                     const o = tex(v, i);
+                    if (glatt) {
+                        if (schluessel[i] > 0) data[o * 4 + 3] = Math.min(255, Math.round(schluessel[i] * sigma * 255));
+                        if (schluessel[i] >= grenze && schluessel[i] > 0) opakK++;
+                        continue;
+                    }
                     if (schluessel[i] >= grenze && ta[o] > 0) {
                         data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
                         data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
@@ -3374,10 +3419,51 @@
         return out;
     }
 
-    // Der Rückweg für die Linse (gate:asset-contract BC-Rundlauf): "bc1" → rgba · "bc5" → rg (2 B je Texel).
+    // BC3 (K20, 12.10.): die Farbe als BC1-Block im 4-Farben-Modus (jeder Texel deckend kodiert — BC3 liest den
+    // Farb-Block immer so), die Alpha als BC4-Block davor (16 B je 4×4). Für die Fracht mit STETIGER Alpha (die glatte
+    // Mip-Kette des Blatt-Atlas): BC1 trägt ein Bit und schnitt die Kante zurück auf das Texel-Raster.
+    function bc3Kodiere(rgba, w, h) {
+        const bw = Math.ceil(w / 4),
+            bh = Math.ceil(h / 4);
+        const deckend = new Uint8Array(rgba);
+        for (let i = 3; i < deckend.length; i += 4) deckend[i] = 255;
+        const farbe = bc1Kodiere(deckend, w, h);
+        const out = new Uint8Array(bw * bh * 16);
+        const a = new Uint8Array(16);
+        for (let by = 0; by < bh; by++)
+            for (let bx = 0; bx < bw; bx++) {
+                for (let j = 0; j < 16; j++) {
+                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
+                        y = Math.min(h - 1, by * 4 + (j >> 2));
+                    a[j] = rgba[(y * w + x) * 4 + 3];
+                }
+                const b = by * bw + bx;
+                bc4Block(a, out, b * 16);
+                out.set(farbe.subarray(b * 8, b * 8 + 8), b * 16 + 8);
+            }
+        return out;
+    }
+
+    // Der Rückweg für die Linse (gate:asset-contract BC-Rundlauf): "bc1"/"bc3" → rgba · "bc5" → rg (2 B je Texel).
     function bcDekodiere(buf, w, h, fmt) {
         const bw = Math.ceil(w / 4),
             bh = Math.ceil(h / 4);
+        if (fmt === "bc3") {
+            const n = bw * bh;
+            const farbe = new Uint8Array(n * 8),
+                alpha = new Uint8Array(n * 16);
+            for (let b = 0; b < n; b++) {
+                farbe.set(buf.subarray(b * 16 + 8, b * 16 + 16), b * 8);
+                // der Alpha-Block als erster Kanal eines BC5-Blocks (der zweite bleibt leer)
+                alpha.set(buf.subarray(b * 16, b * 16 + 8), b * 16);
+            }
+            // Der Farb-Block im 4-Farben-Modus: BC1 dekodiert c0 ≤ c1 als 3-Farben-Modus — BC3 nie. Die Kodierung schreibt
+            // ohne Transparenz c0 ≥ c1 (Gleichheit = eine Farbe, beide Lesarten gleich).
+            const out = bcDekodiere(farbe, w, h, "bc1");
+            const rg = bcDekodiere(alpha, w, h, "bc5");
+            for (let i = 0; i < w * h; i++) out[i * 4 + 3] = rg[i * 2];
+            return out;
+        }
         if (fmt === "bc1") {
             const out = new Uint8Array(w * h * 4);
             const p = new Int32Array(16);
@@ -4127,7 +4213,7 @@
         treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         bakeLeafAtlasBild: bakeLeafAtlasBild, // das Textur-Bild des EINEN Atlas: blutend, Zell-Mittel gleich, deckungstreue Mips, `wert`
-        blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC1 ab Stufe 0, rgba ab Stufe 1 (05.10.)
+        blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC3 ab Stufe 0 (K20), rgba ab Stufe 1 (05.10.)
         BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
@@ -4158,6 +4244,7 @@
         normalMips: normalMips,
         bc1Kodiere: bc1Kodiere,
         bc5Kodiere: bc5Kodiere,
+        bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
         karteKodiere: karteKodiere,
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes

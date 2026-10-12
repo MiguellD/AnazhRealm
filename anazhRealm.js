@@ -66228,11 +66228,14 @@ class AnazhRealm {
         if (!fracht || !fracht.rgba) throw new Error("KERN-PFLICHT: der Blatt-Atlas lieferte kein Bild");
         let tex;
         if (bc && fracht.bc && fracht.bc.mips.length) {
+            // BC3 (K20): die glatte Alpha der Mip-Kette (phyto-core `impostorMips` glatt) — BC1 trug ein Bit.
+            if (fracht.bc.format !== "bc3")
+                throw new Error("KERN-PFLICHT: die Blatt-Fracht ist nicht BC3 (" + fracht.bc.format + ")");
             tex = new THREE.CompressedTexture(
                 fracht.bc.mips,
                 fracht.bc.breite,
                 fracht.bc.hoehe,
-                THREE.RGBA_S3TC_DXT1_Format
+                THREE.RGBA_S3TC_DXT5_Format
             );
         } else {
             tex = new THREE.DataTexture(
@@ -74037,7 +74040,7 @@ class AnazhRealm {
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
-            // (`__phytoCore.blattAtlasFracht`, 05.10.: BC1 ab Stufe 0 für den Wirt mit BC, rgba ab Stufe 1 ohne) und reicht
+            // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
             // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
             if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);

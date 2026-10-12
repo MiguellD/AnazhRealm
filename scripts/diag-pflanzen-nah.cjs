@@ -31,7 +31,12 @@
 //      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
 //      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
-//  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC1 ab Stufe 0, rgba ab
+//  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
+//      alphaTest 0,5, das Pixel als Mittel der Halton-Unterproben der zeitlichen Auflösung; Δ-Luma (Laub gegen Himmel)
+//      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX (50 % von vorher 0,166), die
+//      Deckung je λ 1…3 = Stufe 0 ± 0,1 (nah = fern). Konsum-Leser: der Laub-Stoff (`_blattAtlasProbe`).
+//  (H) HÖHEN-ZENSUS je Art (K20): der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
+//  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC3 ab Stufe 0, rgba ab
 //      Stufe 1), das Labor das blutende Bild. Je Format, Zelle und Zell-Größe (≥ FRACHT_MIN_ZELLE px) wird die GPU
 //      nachgerechnet (sRGB-Dekodierung je Texel, bilinear linear, alphaTest 0,5) und der EINE Leser der Welt angewandt
 //      (gefiltertes rgb ÷ alpha ÷ wert): Luminanz und Deckung der Welt = Labor (± FRACHT_TOL). Dazu die Quelle: der Leser
@@ -371,11 +376,11 @@ function frachtReihen(bild, bcLeser) {
     const bc = fr.bc.mips.map((m) => ({
         width: m.width,
         height: m.height,
-        data: PC.bcDekodiere(m.data, m.width, m.height, "bc1"),
+        data: PC.bcDekodiere(m.data, m.width, m.height, fr.bc.format || "bc1"),
     }));
     return {
         labor: stufen(bild.mips, false),
-        welt: { bc1: stufen(bc, bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
+        welt: { bc: stufen(bc, bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
     };
 }
 function frachtUrteil(R) {
@@ -404,6 +409,212 @@ function frachtUrteil(R) {
 }
 // Die Quelle des Lesers: `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest nur er (geschrieben wird es
 // in `_ensureFoliageClusterAtlas`).
+// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20, 12.10.): die Zelle des Atlas als Karte auf dem Schirm
+// (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
+// zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
+// Pixel der Krone, die beim ½-Pixel-Versatz ihre Deckung wechseln. Die Mittelsicht: λ = 1 … 3 (die 512er-Zelle auf
+// 256 … 64 Pixel); die Kopfzahl ist die Krone der Eichen-L1 auf 25 m (1080p, 75°). Die Deckung je λ steht daneben.
+const KORN_LAMBDA = [1, 1.5, 2, 2.5, 3];
+// Die Unterproben der zeitlichen Auflösung: Halton (2, 3), 8 Stück — der Jitter der TRAANode (r184).
+const KORN_HALTON = [];
+for (let i = 1; i <= 8; i++) {
+    const h = (b) => {
+        let f = 1,
+            r = 0,
+            n = i;
+        while (n > 0) {
+            f /= b;
+            r += f * (n % b);
+            n = Math.floor(n / b);
+        }
+        return r;
+    };
+    KORN_HALTON.push([h(2), h(3)]);
+}
+// Die Schwelle des Laub-Stoffs je Schirm-Ort: der alphaTest 0,5 (die Welt zeichnet ohne Raster-Schwelle).
+const kornSchwelle = () => 0.5;
+// Vorher (integ-probe 858ed586, Rang-Mips mit Orts-Hash, BC1): 0,166 an der Eichen-Krone auf 25 m (λ 1,58) — Ziel ≤ 50 %.
+const KORN_MAX = 0.083;
+function kornReihe(mips, zBasis) {
+    // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
+    const stufeA = (m, c, u, v) => {
+        const W = m.width,
+            H = m.height,
+            d = m.data;
+        const x = ((c + u) / 4) * W - 0.5,
+            y = v * H - 0.5;
+        const x0 = Math.floor(x),
+            y0 = Math.floor(y),
+            fx = x - x0,
+            fy = y - y0;
+        let a = 0;
+        for (let q = 0; q < 4; q++) {
+            const dx = q & 1,
+                dy = q >> 1;
+            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
+            a += w * d[(Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4 + 3];
+        }
+        return a / 255;
+    };
+    const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
+    return (lambda) => {
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
+        const l = Math.max(0, lambda - versatz),
+            l0 = Math.min(mips.length - 1, Math.floor(l)),
+            l1 = Math.min(mips.length - 1, l0 + 1),
+            f = l - Math.floor(l);
+        const probe = (c, u, v) => {
+            const a0 = stufeA(mips[l0], c, u, v);
+            return l1 === l0 || f === 0 ? a0 : a0 + (stufeA(mips[l1], c, u, v) - a0) * f;
+        };
+        // Das Pixel, wie die zeitliche Auflösung es ruhend zeigt: das Mittel über die Halton-Unterproben (TRAANode).
+        const pixel = (c, px, py, schwelle) => {
+            let k = 0;
+            for (const [hx, hy] of KORN_HALTON)
+                if (probe(c, (px + hx) / N, (py + hy) / N) >= schwelle(px + hx, py + hy)) k++;
+            return k / KORN_HALTON.length;
+        };
+        const zellen = [];
+        for (let c = 0; c < 4; c++) {
+            let wechsel = 0,
+                krone = 0,
+                deckt = 0;
+            for (let j = 0; j < N; j++)
+                for (let i = 0; i < N; i++) {
+                    const k1 = pixel(c, i, j, kornSchwelle),
+                        k2 = pixel(c, i + 0.5, j + 0.5, kornSchwelle);
+                    deckt += k1;
+                    krone += Math.max(k1, k2);
+                    wechsel += Math.abs(k1 - k2);
+                }
+            zellen.push({ flimmern: krone ? wechsel / krone : 0, deckung: deckt / (N * N) });
+        }
+        return { lambda, N, zellen };
+    };
+}
+// Die Reihen je Format der Welt (die Fracht, wie die GPU sie liest) — `fr` = blattAtlasFracht(bild, true).
+function kornReihen(fr, bcFmt) {
+    const bc = fr.bc.mips.map((m) => ({
+        width: m.width,
+        height: m.height,
+        data: PC.bcDekodiere(m.data, m.width, m.height, bcFmt),
+    }));
+    return {
+        bc: kornReihe(bc, bc[0].width / 4),
+        rgba: kornReihe(fr.rgba.mips, fr.rgba.mips[0].width / 4),
+    };
+}
+// λ der Krone auf `dist` m: die Zelle der Karte in der Welt (Kante ÷ kern × Skala) auf dem Schirm (1080 px, 75°).
+function kronenLambda(T, skala, dist) {
+    const kante = kartenKante(T);
+    if (!kante) return null;
+    const zelleM = (kante / PC.BLATT_ATLAS_BREIT.kern) * skala;
+    const pxJeM = 1080 / (2 * dist * Math.tan((37.5 * Math.PI) / 180));
+    return Math.log2(PC.BLATT_ATLAS_ZELLE / (zelleM * pxJeM));
+}
+function kornUrteil(reihen, lambdaKrone, deckungLabor) {
+    const v = [],
+        m = {};
+    for (const [fmt, r] of Object.entries(reihen)) {
+        const kopf = r(lambdaKrone);
+        m[fmt] = kopf.zellen[0].flimmern;
+        if (kopf.zellen[0].flimmern > KORN_MAX)
+            v.push(
+                `Korn ${fmt}: die Eichen-Krone auf 25 m (λ ${lambdaKrone.toFixed(2)}, ${kopf.N} px) flimmert ${kopf.zellen[0].flimmern.toFixed(3)} > ${KORN_MAX}`
+            );
+        for (const lam of KORN_LAMBDA) {
+            const s = r(lam);
+            s.zellen.forEach((z, c) => {
+                if (deckungLabor && Math.abs(z.deckung - deckungLabor[c]) > 0.1)
+                    v.push(
+                        `Korn ${fmt} Zelle ${c} λ ${lam}: Deckung ${z.deckung.toFixed(3)} ≠ Stufe 0 ${deckungLabor[c].toFixed(3)} (± 0,1)`
+                    );
+            });
+            m[`${fmt}@${lam}`] = s.zellen.map((z) => `${z.flimmern.toFixed(3)}/${z.deckung.toFixed(2)}`).join(" ");
+        }
+    }
+    return { v, m };
+}
+// (H) DER HÖHEN-ZENSUS (K20): die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
+// (phyto-core forestTreeSize); der Altbestand sind die herrschenden Bäume (Größe p75 … p98 über die Bestandsdichte).
+// Die Spannen der Natur (Steckbriefe; nordstern §4.5): Buche 30–45, Fichte 30–50, Stieleiche 15–35, Birke 15–25 m.
+// H/D: Höhe durch den Stamm-Durchmesser in Brusthöhe (1,3 m Welt) — scale-frei, Bestand 40–100.
+const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
+const HD_BESTAND = [40, 100];
+function altbestandGroesse() {
+    let a = 0x2545f491;
+    const rng = () => {
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const s = [];
+    for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
+    s.sort((x, y) => x - y);
+    return [s[Math.floor(0.75 * s.length)], s[Math.floor(0.98 * s.length)]];
+}
+function stammDurchmesser(T, yWelt, skala) {
+    const y = yWelt / skala;
+    let sx = 0,
+        sz = 0,
+        n = 0;
+    const pts = [];
+    for (const t of T) {
+        if (t.kind !== "bark") continue;
+        for (let i = 0; i + 2 < t.pos.length; i += 3)
+            if (Math.abs(t.pos[i + 1] - y) < 0.15) {
+                const x = t.pos[i],
+                    z = t.pos[i + 2];
+                if (Math.hypot(x, z) > 2) continue; // nur der Stamm um die Achse
+                pts.push([x, z]);
+                sx += x;
+                sz += z;
+                n++;
+            }
+    }
+    if (!n) return 0;
+    const mx = sx / n,
+        mz = sz / n;
+    // der Median der Abstände zur Achse: ein tief ansetzender Ast im Fenster verschiebt ihn nicht
+    const r = pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort((p, q) => p - q)[pts.length >> 1];
+    return 2 * r * skala;
+}
+function hoehenUrteil(roh, skala) {
+    const v = [],
+        m = {};
+    const [s0, s1] = altbestandGroesse();
+    for (const [art, sp] of Object.entries(HOEHE_SPANNE)) {
+        const f = roh[`${art}-s1-L0`];
+        if (!f) {
+            v.push(`Höhe: ${art} nicht gebaut`);
+            continue;
+        }
+        const h1 = hoehe(f.T) * skala(art);
+        const lo = h1 * s0,
+            hi = h1 * s1;
+        const D = stammDurchmesser(f.T, 1.3, skala(art));
+        const hd = D > 0 ? h1 / D : 0;
+        m[art] = `${lo.toFixed(1)}–${hi.toFixed(1)} m (Größe 1: ${h1.toFixed(1)} m) · H/D ${hd.toFixed(0)}`;
+        if (lo < sp[0] - 0.5 || hi > sp[1] + 0.5)
+            v.push(`Höhe ${art}: Altbestand ${lo.toFixed(1)}–${hi.toFixed(1)} m außerhalb ${sp[0]}–${sp[1]} m`);
+        if (!(hd >= HD_BESTAND[0] && hd <= HD_BESTAND[1]))
+            v.push(`H/D ${art}: ${hd.toFixed(0)} außerhalb ${HD_BESTAND.join("–")}`);
+    }
+    m.groesse = `${s0.toFixed(2)}–${s1.toFixed(2)}`;
+    return { v, m };
+}
+
+// Die Deckung der Stufe 0 je Zelle (das Labor-Bild, alphaTest 0,5) — der Maßstab „nah = fern".
+function deckungStufe0(bild) {
+    const m = bild.mips[0],
+        Z = m.width / 4,
+        out = [0, 0, 0, 0];
+    for (let y = 0; y < m.height; y++)
+        for (let x = 0; x < m.width; x++) if (m.data[(y * m.width + x) * 4 + 3] >= 128) out[Math.min(3, (x / Z) | 0)]++;
+    return out.map((n) => n / (Z * m.height));
+}
+
 function leserUrteil(quelle) {
     const v = [];
     const text = quelle.replace(/\/\/[^\n]*/g, ""); // Kommentare zitieren (Lehre 6) — gezählt wird Code
@@ -442,7 +653,8 @@ function leserUrteil(quelle) {
         for (const p of baeume) await fall(p, 0, 1);
         for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
-        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub")) for (const l of [0, 1]) await fall(p, l, 1);
+        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub"))
+            for (const l of [0, 1]) await fall(p, l, 1);
         for (const p of Object.keys(buch).filter((x) => art(x) === "flower"))
             for (const s of [1, 2]) await fall(p, 0, s);
     });
@@ -501,13 +713,40 @@ function leserUrteil(quelle) {
     fails.push(...frachtUrteil(fracht), ...leserUrteil(quellen["anazhRealm.js"]));
     const fz = (s) => s.zellen.map((z) => z.Y.toFixed(3)).join("/");
     console.log(
-        "Fracht (Y je Zelle 0/1/2/3 ÷ wert, Labor | BC1 | rgba):\n" +
+        "Fracht (Y je Zelle 0/1/2/3 ÷ wert, Labor | BC3 | rgba):\n" +
             fracht.labor
                 .map((L) => {
-                    const b = fracht.welt.bc1.find((s) => s.Z === L.Z),
+                    const b = fracht.welt.bc.find((s) => s.Z === L.Z),
                         r = fracht.welt.rgba.find((s) => s.Z === L.Z);
                     return `  Zelle ${L.Z} px: ${fz(L)} | ${b ? fz(b) : "—"} | ${r ? fz(r) : "—"}`;
                 })
+                .join("\n")
+    );
+
+    // (Z) das Kanten-Flimmern der Laub-Karte in der Mittelsicht, je Format der Welt.
+    const eicheL1 = roh["eiche-s1-L1"];
+    const lamKrone = eicheL1 ? kronenLambda(eicheL1.T, skala("eiche"), 25) : null;
+    const frK = PC.blattAtlasFracht(bild, true);
+    const dk0 = deckungStufe0(bild);
+    let korn = null;
+    if (lamKrone == null) fails.push("Korn: die Eichen-L1 trägt keine Laub-Karte");
+    else {
+        korn = kornUrteil(kornReihen(frK, frK.bc.format || "bc1"), lamKrone, dk0);
+        fails.push(...korn.v);
+        console.log(
+            `Korn (Δ-Luma beim ½-Pixel-Versatz / Deckung, Zelle 0 1 2 3; Stufe 0 ${dk0.map((x) => x.toFixed(2)).join(" ")}):\n` +
+                `  Eichen-Krone auf 25 m (λ ${lamKrone.toFixed(2)}): bc ${korn.m.bc.toFixed(3)} · rgba ${korn.m.rgba.toFixed(3)} (≤ ${KORN_MAX})\n` +
+                KORN_LAMBDA.map((l) => `  λ ${l}: bc ${korn.m["bc@" + l]} | rgba ${korn.m["rgba@" + l]}`).join("\n")
+        );
+    }
+
+    // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
+    const hz = hoehenUrteil(roh, skala);
+    fails.push(...hz.v);
+    console.log(
+        `Höhen (Altbestand, Größe ${hz.m.groesse}):\n` +
+            Object.keys(HOEHE_SPANNE)
+                .map((a) => `  ${a}: ${hz.m[a]} (Natur ${HOEHE_SPANNE[a].join("–")} m)`)
                 .join("\n")
     );
 
@@ -590,11 +829,29 @@ function leserUrteil(quelle) {
                 })
             ).v.length > 0,
         ]);
-    st.push(["BC1 gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
+    st.push(["BC gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
     st.push([
         "Leser teilt nicht durch alpha",
         leserUrteil(quellen["anazhRealm.js"].replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
     ]);
+    // Korn: jede Stufe ab 1 je Texel gegen ein Hash-Raster binär geschnitten (die Deckung im Mittel gleich) — die Linse
+    // muss das Flimmern nennen.
+    if (lamKrone != null) {
+        const kornig = (mips) =>
+            mips.map((m, k) => {
+                if (k === 0) return m;
+                const d = new Uint8Array(m.data);
+                for (let i = 0; i < d.length; i += 4) {
+                    const h = ((Math.imul(i >> 2, 0x9e3779b1) >>> 0) % 251) + 2;
+                    d[i + 3] = d[i + 3] >= h ? 255 : 0;
+                }
+                return { width: m.width, height: m.height, data: d };
+            });
+        const r = {
+            rgba: kornReihe(kornig(frK.rgba.mips), frK.rgba.mips[0].width / 4),
+        };
+        st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
+    }
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
