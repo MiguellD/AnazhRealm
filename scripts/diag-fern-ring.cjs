@@ -178,7 +178,7 @@ const server = http.createServer((req, res) => {
                 const voll = r._terrainMacroSurfaceY(sx, sz, true);
                 law = law + (voll - law) * w - 0.3 * w;
             }
-            let expY = law < wl ? wl - F.wasserDrop : law;
+            let expY = law < wl ? wl - r._fernRingWasserTiefe() : law;
             if (row === 0) expY -= F.saumDrop;
             // DER RING WEICHT DEM GEBAUTEN (gespiegelt): trägt ein gebauter,
             // sichtbarer Chunk die Säule, taucht der Zone-Vertex −60 (die
@@ -210,6 +210,64 @@ const server = http.createServer((req, res) => {
         // SELBSTTEST: die verfälschte Erwartung (law + 0.5) MUSS rot fallen.
         const pf = probeAll(0.5);
         res.selftestRed = pf.bad === 60;
+
+        // ===== (2c) DAS EINE WASSER (1110-2, die Ufer-Klumpen): unter dem Fern-Wasser trägt der Ring kein zweites =====
+        // Lebt das Fern-Wasser, liegt jeder nasse Ring-Punkt unter dessen tiefstem Tal (Spiegel − FAR_WATER.drop − Hub);
+        // ein Punkt darüber zeigt sich in jedem tiefen Tal als dunkler Klumpen. Der Ring dieser Probe trägt ein Fern-Wasser
+        // als Stellvertreter, wenn die Seite keins gebaut hat (der Null-Renderer streamt nicht); die nassen Punkte setzt die
+        // EINE Naht (`_fernRingWasserNeu`). Der Hub liest die Wind-Zeile des Gesetzes (Konsum: ein anderer Wind im Gesetz
+        // ändert ihn im Verhältnis). Selbsttest: die alte Regel (Spiegel − wasserDrop) MUSS rot fallen.
+        {
+            const wlW = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const FW = r.constructor.FAR_WATER;
+            const fwAlt = r.state.farWater;
+            const zaehlen = () => {
+                const tal = wlW - FW.drop - r.constructor._wasserHubM();
+                let nass = 0,
+                    klumpen = 0,
+                    hoechster = -Infinity;
+                for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++) {
+                    if (!(fr.farbLaw[g] < wlW)) continue;
+                    const pp = r._fernRingPunkt(fr, g);
+                    if (pp.s === 0 && pp.row === 0) continue; // die Saum-Tauchkante liegt ohnehin tiefer
+                    const y = fr.meshes[pp.s].geometry.attributes.position.getY(pp.li);
+                    nass++;
+                    if (y > tal + 1e-3) klumpen++;
+                    if (y > hoechster) hoechster = y;
+                }
+                return { nass, klumpen, tal: +tal.toFixed(2), hoechster: +hoechster.toFixed(2) };
+            };
+            const tiefe0 = Object.getPrototypeOf(r)._fernRingWasserTiefe;
+            try {
+                if (!fwAlt || !fwAlt.mesh) r.state.farWater = { mesh: { stellvertreter: true } };
+                fr.wasserTiefe = undefined;
+                r._fernRingWasserNeu(fr);
+                res.wasser = zaehlen();
+                // der eingespielte Täter: der Ring trägt sein eigenes Wasser 0,4 m unter dem Spiegel
+                r._fernRingWasserTiefe = () => F.wasserDrop;
+                fr.wasserTiefe = undefined;
+                r._fernRingWasserNeu(fr);
+                res.wasserAlt = zaehlen();
+            } finally {
+                if (r._fernRingWasserTiefe !== tiefe0) delete r._fernRingWasserTiefe;
+                r.state.farWater = fwAlt;
+                fr.wasserTiefe = undefined;
+                r._fernRingWasserNeu(fr);
+            }
+            // der Hub liest den Wind: das Gesetz mit doppelter Wind-Zeile hebt ihn im Verhältnis
+            const G0 = r.constructor.Gesetz;
+            const hub0 = r.constructor._wasserHubM();
+            const WG = G0("terrain:WASSER_GESETZ", null);
+            let hubW = null;
+            try {
+                r.constructor.Gesetz = (pfad, fb) =>
+                    pfad === "terrain:WASSER_GESETZ" ? Object.assign({}, WG, { wind: [WG.wind[0] * 2, WG.wind[1] * 2] }) : G0(pfad, fb);
+                hubW = r.constructor._wasserHubM();
+            } finally {
+                r.constructor.Gesetz = G0;
+            }
+            res.hub = { hub: +hub0.toFixed(3), wind: WG.wind, hubDoppelterWind: hubW == null ? null : +hubW.toFixed(3) };
+        }
 
         // ===== (3) RE-ZENTRIEREN: 400 m Teleport + Ticks pumpen =====
         const oldAnchorX = fr.anchorX;
@@ -527,6 +585,26 @@ const server = http.createServer((req, res) => {
         `bad=${out.probesBad} worst=${out.probesWorst && out.probesWorst.toFixed(4)}`
     );
     check("SELBSTTEST: die verfälschte Erwartung (law + 0.5) fällt rot (60/60)", out.selftestRed === true);
+    const ww = out.wasser || {};
+    const wa = out.wasserAlt || {};
+    check(
+        "2c: DAS EINE WASSER — unter dem Fern-Wasser liegt jeder nasse Ring-Punkt unter dessen tiefstem Tal (keine Klumpen)",
+        ww.nass > 0 && ww.klumpen === 0,
+        `${ww.nass} nasse Punkte, Klumpen ${ww.klumpen}, tiefstes Tal ${ww.tal} m, höchster Ring-Punkt ${ww.hoechster} m` +
+            (ww.klumpen ? " — TÄTER: der Ring trägt ein zweites Wasser über dem Tal des Fern-Wassers" : "") +
+            (ww.nass > 0 ? "" : " — keine nassen Punkte: die Probe wäre leer")
+    );
+    check(
+        "2c SELBSTTEST: die alte Regel (Spiegel − wasserDrop) fällt rot beim Namen",
+        wa.klumpen > 0,
+        `alt: ${wa.klumpen} von ${wa.nass} nassen Punkten über dem tiefsten Tal (${wa.tal} m), höchster ${wa.hoechster} m`
+    );
+    const hb = out.hub || {};
+    check(
+        "2c: DER HUB liest die Wind-Zeile des Gesetzes (doppelter Wind, doppelter Hub)",
+        hb.hub > 0 && hb.hubDoppelterWind != null && Math.abs(hb.hubDoppelterWind / hb.hub - 2) < 1e-6,
+        `Hub ${hb.hub} m bei Wind ${JSON.stringify(hb.wind)}, mit doppeltem Wind ${hb.hubDoppelterWind} m`
+    );
     check(
         "3: RE-ZENTRIEREN — der Anker wandert QUANTISIERT nach 400-m-Teleport",
         out.anchorMoved === true && out.anchorQuantized === true
