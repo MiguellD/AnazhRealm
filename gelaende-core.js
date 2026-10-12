@@ -861,6 +861,10 @@
     // Mund steht im Fels. Gemessen (Mündungs-Suche nach dem Kriterium der Höhlen-Sicht, 4 km², drei Saaten): 5 · 1 · 14
     // Mündungen je km². Leser: der Spalten-Kontext der Dichte in Stamm und Worker (`ceilOffset`), die Höhlen-Sicht.
     const HOEHLEN_MUND = Object.freeze({ von: 40, bis: 50, hub: 24 });
+    // DIE BODEN-GENERATION (K16): die Zahl des Gelände-Gesetzes, unter dem ein Save seine Höhen schrieb. Ein Save einer anderen
+    // Generation (vor K16: keine) zieht beim Laden um — jeder Bau und der Spieler stehen auf dem Boden dieses Gesetzes in ihrer
+    // Höhe über Grund (Stamm `_bodenUmzug`). Jeder Schnitt, der den Boden bewegt, zählt sie hoch.
+    const BODEN_GENERATION = 1;
     const MUND_TAN_VON = Math.tan((HOEHLEN_MUND.von * Math.PI) / 180);
     const MUND_TAN_BIS = Math.tan((HOEHLEN_MUND.bis * Math.PI) / 180);
     function hoehlenMund(hang) {
@@ -1289,6 +1293,7 @@
         hoehe: hoehe,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,
+        BODEN_GENERATION: BODEN_GENERATION,
         erbgutNormal: erbgutNormal,
         wildnisY: wildnisY,
         termY: termY,

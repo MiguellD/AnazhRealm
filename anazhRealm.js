@@ -41660,6 +41660,9 @@ class AnazhRealm {
                       z: this.state.playerMesh.position.z,
                   }
                 : { x: 0, y: 5, z: 0 },
+            // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
+            bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
@@ -41864,6 +41867,8 @@ class AnazhRealm {
                 id: a.id,
                 type: a.type,
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
+                // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
+                ueberGrund: this._ueberGrund(a.position),
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
                 // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den
@@ -45481,7 +45486,8 @@ class AnazhRealm {
         // Gewachsene Baupläne MÜSSEN VOR `_loadStateRestoreArchitectures` in state.blueprints landen, sonst
         // läuft spawnArchitecture in einen unbekannten Type-Builder (jeder grown_*-Baum wäre verloren).
         this._loadStateRestoreGrownBlueprints(state);
-        this._loadStateRestoreArchitectures(state);
+        // nach der Welt (Saat, Erbgut, Gesetz) und vor den Bauten: ein Save eines alten Bodens zieht um
+        this._loadStateRestoreArchitectures(state, this._bodenUmzug(state));
         this._loadStateRestoreHotbarAndInventory(state);
         this._loadStateRestoreEmotionsAndDsl(state);
         this._loadStateRestoreWorldRules(state);
@@ -46023,7 +46029,66 @@ class AnazhRealm {
         }
     }
 
-    _loadStateRestoreArchitectures(state) {
+    // Die Höhe eines gespeicherten Orts über dem Boden des Gesetzes (cm-genau; undefined ohne Boden).
+    _ueberGrund(p) {
+        const g = p ? this._voxelSurfaceY(p.x, p.z) : NaN;
+        return Number.isFinite(g) && Number.isFinite(p.y) ? Math.round((p.y - g) * 100) / 100 : undefined;
+    }
+
+    // DER BODEN-UMZUG (K16, Schöpfer-Entscheid §5.4): ein Save einer anderen Boden-Generation (vor K16: keine) schrieb seine
+    // Höhen auf einen Boden, den es nicht mehr gibt (Basis → K16 im Umkreis ±500 m: |Δh| p50 37,7 m). Jeder Bau und der
+    // Spieler stehen nach dem Laden auf dem Boden des Gesetzes in ihrer Höhe über Grund — `ueberGrund` des Saves, sonst die
+    // Fuß-Höhe, auf der jeder Bau und jeder Spieler gesetzt wird (`PLAYER_FOOT_OFFSET`). Liefert die neuen Höhen je Bau-Index
+    // (null: derselbe Boden) und nennt die Zahl (`state.bodenUmzug`, Log): wie viele Bauten sich bewegen, um wie viel.
+    _bodenUmzug(state) {
+        const gen = globalThis.__gelaendeCore.BODEN_GENERATION;
+        if (!state || state.bodenGeneration === gen) return null;
+        const fuss = AnazhRealm.PLAYER_FOOT_OFFSET;
+        const hoehen = new Map();
+        const dh = [];
+        const liste = Array.isArray(state.architectures) ? state.architectures : [];
+        for (let i = 0; i < liste.length; i++) {
+            const a = liste[i];
+            const p = a && a.position;
+            if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) continue;
+            const g = this._voxelSurfaceY(p.x, p.z);
+            if (!Number.isFinite(g)) continue;
+            const y = g + (Number.isFinite(a.ueberGrund) ? a.ueberGrund : fuss);
+            hoehen.set(i, y);
+            dh.push(Number.isFinite(p.y) ? Math.abs(y - p.y) : 0);
+        }
+        let spieler = null;
+        const pm = this.state.playerMesh;
+        if (pm && state.playerPosition) {
+            const g = this._voxelSurfaceY(pm.position.x, pm.position.z);
+            if (Number.isFinite(g)) {
+                const y = g + (Number.isFinite(state.spielerUeberGrund) ? state.spielerUeberGrund : fuss);
+                spieler = Math.round((y - pm.position.y) * 100) / 100;
+                pm.position.y = y;
+            }
+        }
+        dh.sort((p, q) => p - q);
+        const q = (f) =>
+            dh.length ? Math.round(dh[Math.min(dh.length - 1, Math.floor(f * dh.length))] * 100) / 100 : 0;
+        const bericht = {
+            von: Number.isFinite(state.bodenGeneration) ? state.bodenGeneration : 0,
+            nach: gen,
+            bauten: dh.length,
+            bewegt: dh.filter((d) => d > 0.05).length,
+            dhP50: q(0.5),
+            dhMax: q(1),
+            spieler,
+        };
+        this.state.bodenUmzug = bericht;
+        this.log(
+            `BODEN-UMZUG: ${bericht.bewegt} von ${bericht.bauten} Bauten stehen auf dem Boden der Generation ${gen} ` +
+                `(|Δh| p50 ${bericht.dhP50} m, max ${bericht.dhMax} m), der Spieler ${spieler} m`,
+            "INFO"
+        );
+        return hoehen;
+    }
+
+    _loadStateRestoreArchitectures(state, umzug) {
         if (!Array.isArray(state.architectures) || !this.state.scene) return;
         for (const old of this.state.architectures) {
             // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei),
@@ -46041,11 +46106,14 @@ class AnazhRealm {
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // Das neue Array ist ein neuer Bestand: die Nachbarschaft der Blocker (`_blockerNetz`) baut sich bei der nächsten Frage
         // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
-        for (const a of state.architectures) {
+        for (let i = 0; i < state.architectures.length; i++) {
+            const a = state.architectures[i];
             if (!a || typeof a.type !== "string" || !a.position) continue;
             // DER BAUPLAN-UMZUG: ein gefallener Bauplan steht als sein Erbe wieder auf (glut_var* → glutbrunnen).
             const typ = AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type;
-            const entry = this.spawnArchitecture(typ, a.position, {
+            // DER BODEN-UMZUG: auf einem neuen Boden steht der Bau in seiner Höhe über Grund (`_bodenUmzug`)
+            const ort = umzug && umzug.has(i) ? { x: a.position.x, y: umzug.get(i), z: a.position.z } : a.position;
+            const entry = this.spawnArchitecture(typ, ort, {
                 seed: a.seed,
                 scale: a.scale,
                 id: a.id,

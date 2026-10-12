@@ -515,6 +515,78 @@ function realismus() {
     return rot ? 1 : 0;
 }
 
+// ── DER GEBAUTE BODEN (K16, Prüfung 1, `--gebaut`): dieselbe Linse (`statistik`) am Boden, den der Spieler betritt
+// (`_voxelSurfaceY`: Gesetz, Höhle, Hydrosphären-Kanal und See-Becken) neben der Makro-Höhe des Gesetzbuchs, Boot-Saat,
+// 2 × 2 km um den Ursprung (die Heimat-Kachel der Hydrosphäre), 30 m. Die Makro-Wand (`--realismus`) ist grün, während der
+// gebaute Boden rot ist: 3,94–11,05 Senken > 1 m je km², 1–3 Dorfplätze (Prüfung 1, gegenmessung-3saaten-1110f.json). Ziel:
+// Senken > 1 m ≤ 1 je km², ≥ 3 Dorfplätze. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (das Flag des Hydro-Baus
+// unterdrückt ihn), ohne den Kanal grün → der Kanal (zweites Flussnetz `_hydroExtractRivers` → `_hydrosphereCarveAt`).
+async function gebaut(page, fehler) {
+    const b = await boote(page);
+    if (!b.ok) {
+        console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
+        return 1;
+    }
+    const out = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const t0 = performance.now();
+        while (!(r.state.hydrosphere && r.state.hydrosphere.ready) && performance.now() - t0 < 60000) {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {
+                /* der Boot reift */
+            }
+            await new Promise((res) => setTimeout(res, 16));
+        }
+        r._gameLoopTick = () => {}; // die Welt steht still
+        const G = window.__gelaendeCore;
+        const wl = r.state.waterLevel;
+        const S = 30,
+            n = 67,
+            x0 = -990;
+        const raster = (f) => {
+            const H = new Array(n * n);
+            for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) H[i + j * n] = f(x0 + i * S, x0 + j * S);
+            return H;
+        };
+        const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
+        const voll = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+        r._hydroComputing = true;
+        const ohne = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+        r._hydroComputing = false;
+        const kurz = (st) => ({
+            senken: st.senken1mJeKm2,
+            dorf: st.dorfplaetze,
+            minima: st.minimaJeKm2,
+            theta: st.flint.theta,
+            r2: st.flint.r2,
+        });
+        return {
+            seed: r.state.worldMeta.seed,
+            hydro: !!(r.state.hydrosphere && r.state.hydrosphere.ready),
+            voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
+            ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
+            makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
+        };
+    });
+    const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
+    console.log(`\n========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat ${out.seed}, 2 × 2 km, 30 m) =========`);
+    for (const k of ["voll", "ohneKanal", "makro"])
+        console.log(`  ${k}: Senken>1m ${out[k].senken}/km² · Dorfplätze ${out[k].dorf} · Minima ${out[k].minima}/km² · θ ${out[k].theta} R² ${out[k].r2}`);
+    let rot = !out.hydro || !!fehler();
+    if (!out.hydro) console.log("  ⛔ LEER: die Hydrosphäre stand nicht (die Linse mäße den Boden ohne Wasser)");
+    if (!gruen(out.voll)) {
+        rot = true;
+        console.log(
+            gruen(out.ohneKanal)
+                ? "  ⛔ der Hydrosphären-Kanal fräst den Boden: ohne ihn grün — ein zweites Flussnetz (`_hydroExtractRivers` → `_hydrosphereCarveAt`) statt des Netzes im Gesetzbuch"
+                : "  ⛔ der Boden ohne Kanal ist rot: Höhle oder Gesetz (`_terrainBaseDensityAtCol`)"
+        );
+    }
+    console.log(`\n${rot ? "⛔ GEBAUTER BODEN ROT" : "✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor"}\n`);
+    return rot ? 1 : 0;
+}
+
 (async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
     await new Promise((r) => server.listen(PORT, r));
@@ -544,6 +616,7 @@ function realismus() {
     });
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
 
+    if (argv.includes("--gebaut")) process.exit(await gebaut(page, () => pageErr));
     console.log("\n========= DER DICHTE-SPIEGEL — Main _voxelEditedDensityGrid == Worker computeDensityGrid =========");
     const berichte = [];
     let rot = false;

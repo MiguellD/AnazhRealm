@@ -95,6 +95,10 @@ const OBERKANTE_BENANNT = {
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
     _archFundamentBox: [["getTerrainHeightAt"], "Bauwerk: das Podest eines Hauses (kein Leib)"],
     _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
+    _bodenUmzug: [
+        ["_voxelSurfaceY"],
+        "Platzierung: ein Save eines alten Bodens setzt Bauten und Spieler auf die Oberfläche des neuen (K16)",
+    ],
 };
 
 // DIE QUELLEN-WAND (AST): je Körper-Schritt die Rufe eines Dach-Lesers (Täter) und ob er einen Boden-Leser ruft; jeder
