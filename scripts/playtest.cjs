@@ -38876,21 +38876,27 @@ async function checkBandKonvergenzTierBaum(ctx) {
             }
             out.arten[art] = a;
         }
-        // (3) CONSUM — der Chokepoint geht den CPG-Gang: das KNIE faltet (die
-        // Lab-Mathe legt das Leben in die Unter-Gelenke, die Wurzel schwingt
-        // subtil), das diagonale Gegenbein zieht negativ. Das Gang-Gesetz (Welle 5)
-        // misst die Geschwindigkeit aus dem WEG des Leibs: der Leib läuft wie im
-        // Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s), gewertet wird die zweite
-        // Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet nicht.
+        // (3) CONSUM — der Chokepoint geht den Gang: das KNIE faltet (die
+        // Lab-Mathe legt das Leben in die Unter-Gelenke) und das Gegenbein schwingt.
+        // Das Gang-Gesetz (Welle 5) misst die Geschwindigkeit aus dem WEG des Leibs:
+        // der Leib läuft wie im Spiel (1,6 m/s, 60 Takte je Sekunde, 1 s) in seine
+        // Blickrichtung (Blick +x, Lauf +x — wie gate:tier-gang), gewertet wird die
+        // zweite Hälfte; ein STEHENDER Leib (derselbe Aufruf ohne Weg) faltet und
+        // schwingt nicht. Bis K07 lief der Leib quer zu seinem Blick, und das Gegenbein
+        // musste beim Knie-Maximum negativ stehen — ein Zeichen des Querlaufs: längs
+        // des Blicks stand es schon vor K07 bei +0,05, seit dem weltfesten Anker (K07)
+        // bei +0,97 rad. Die Takt-Lage der Beine richtet gate:tier-gang am Pfoten-Schlupf.
         const trabLauf = (v) => {
             const g2 = r._buildCreatureGroup("wolf");
             if (!g2 || !g2.userData._tierBaum) return null;
             const T = g2.userData._tierBaum.teile;
             if (!T.flL || !T.legFR) return (r._disposeSoulGroup(g2), null);
+            g2.rotation.y = Math.PI / 2;
             let t = 0.5,
                 knieMin = Infinity,
                 knieMax = -Infinity,
-                gegenBeiKnieMax = 0;
+                gegenMin = Infinity,
+                gegenMax = -Infinity;
             for (let i = 0; i < 60; i++) {
                 g2.position.x += v / 60;
                 t += 1 / 60;
@@ -38898,18 +38904,17 @@ async function checkBandKonvergenzTierBaum(ctx) {
                 if (i < 30) continue;
                 const k = T.flL.rotation.x;
                 knieMin = Math.min(knieMin, k);
-                if (k > knieMax) {
-                    knieMax = k;
-                    gegenBeiKnieMax = T.legFR.rotation.x;
-                }
+                knieMax = Math.max(knieMax, k);
+                gegenMin = Math.min(gegenMin, T.legFR.rotation.x);
+                gegenMax = Math.max(gegenMax, T.legFR.rotation.x);
             }
             r._disposeSoulGroup(g2);
-            return { falte: knieMax - knieMin, gegen: gegenBeiKnieMax };
+            return { falte: knieMax - knieMin, gegen: gegenMax - gegenMin };
         };
         const lauf = trabLauf(1.6);
         const stand = trabLauf(0);
         out.trabZahlen = { lauf, stand };
-        out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen < 0 && stand.falte < 0.05);
+        out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen > 0.3 && stand.falte < 0.05 && stand.gegen < 0.05);
         // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
         // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
         // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
@@ -38962,8 +38967,9 @@ async function checkBandKonvergenzTierBaum(ctx) {
     }
     const tz = res && res.trabZahlen;
     const f3 = (x) => (x && Number.isFinite(x.falte) ? x.falte.toFixed(2) : "?");
+    const g3 = (x) => (x && Number.isFinite(x.gegen) ? x.gegen.toFixed(2) : "?");
     check(
-        `KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal; Knie-Falte Lauf ${f3(tz && tz.lauf)} > 0,3, Stand ${f3(tz && tz.stand)} < 0,05)`,
+        `KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (Knie-Falte Lauf ${f3(tz && tz.lauf)} > 0,3, Stand ${f3(tz && tz.stand)} < 0,05; Gegenbein-Schwung Lauf ${g3(tz && tz.lauf)} > 0,3, Stand ${g3(tz && tz.stand)} < 0,05)`,
         res && res.trab === true
     );
     check(
@@ -54498,18 +54504,25 @@ async function checkBandRing5Soul(ctx) {
         const statusEl = document.getElementById("status-soul");
         out.statusBarShowsLabel = statusEl && /Wolf/.test(statusEl.textContent || "");
 
-        // V2-Animation: Beine/Flügel reagieren auf walkPhase + isMoving.
-        // Wir lassen walkPhase manuell vorrücken und prüfen, dass
-        // Mensch-Beine ihre rotation.x ändern.
+        // V2-Animation: die Beine des Menschen gehen nach dem EINEN Gang-Gesetz (K07). Der Schritt kommt aus dem EINEN
+        // Gang-Tick (`_gaitTick`, derselbe Chokepoint wie Peer und Bewohner): 1 s Gehen mit 1,15 m/s, die Beine müssen
+        // ihre rotation.x ändern. Ohne Schritt (kein gait) schwingt seit K07 kein Bein mehr — der Sinus um einen 3,4-m-
+        // Schritt fiel; der direkte Aufruf ohne gait maß diesen Zwilling.
         r.applyPlayerSoul("human");
         const humanGroup = currentMesh();
         const leftLegRotInitial = humanGroup.userData.parts.leftLeg.rotation.x;
-        // Direkter Aufruf der Animations-Funktion mit isMoving=true
-        // umgeht die isMoving-Detection (player ruht im Test).
         const def = r.playerSoulDefs.human;
-        def.animate(humanGroup, 0, Math.PI / 2, true);
-        const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
-        out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
+        const gangHalter = { walkPhase: 0 };
+        let leftLegAusschlag = 0;
+        for (let i = 0; i < 60; i++) {
+            const gait = r._gaitTick(humanGroup, gangHalter, 1.15, 1 / 60, null);
+            def.animate(humanGroup, i / 60, gangHalter.walkPhase, true, false, undefined, gait);
+            leftLegAusschlag = Math.max(
+                leftLegAusschlag,
+                Math.abs(humanGroup.userData.parts.leftLeg.rotation.x - leftLegRotInitial)
+            );
+        }
+        out.humanWalkAnimationMoves = leftLegAusschlag > 0.1;
 
         // Die FLÜGEL-Rolle flattert im Idle durch den EINEN Kern (_animateCompoundMotion) über den echten
         // Spieler-Pfad (geflügelte Custom-Seele als Literal-Fixture). Emotionen NEUTRALISIEREN — Warmup-

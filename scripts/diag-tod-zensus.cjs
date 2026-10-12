@@ -67,11 +67,15 @@ function todZensus(r, T, taeter) {
     const o = { taeter: taeter || null };
     try {
         // der Ort: Spieler P, Tier A 2 m vor ihm, Tier B 40 m — dieselbe Linie, damit ein Blick beide fasst; nach dem Wechsel
-        // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben.
+        // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben: die gezeichnete
+        // Boden-Karte (`_bodenSichtAt`) liegt dort, höchstens 0,3 m neben dem Gesetz. Vor K07 las der Stand-Leser im Rand-Streifen
+        // der Chunk-Zeile z = 0 (der Start) und ohne Karte den Träger — |Sicht − Gesetz| = 0 war dort geschenkt; ehrlich gelesen
+        // liegt die beste 42-m-Linie um den Start bei 0,23 m.
         const trocken = (x, z) => {
             if (!r._landAt(x, z)) return false;
             const gy = r.getTerrainHeightAt(x, z);
-            return Number.isFinite(gy) && Math.abs(r._standSicht(x, z, gy, false) - gy) < 0.15;
+            const k = r._bodenSichtAt(x, z);
+            return Number.isFinite(gy) && Number.isFinite(k) && Math.abs(k - gy) < 0.3;
         };
         let ort = null;
         for (let ring = 0; ring < 12 && !ort; ring++)
