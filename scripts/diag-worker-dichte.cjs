@@ -1012,6 +1012,64 @@ async function studioProbe() {
         if (welt.seed !== plan.saat) befunde.push(`die Welt trägt die Saat ${welt.seed} statt ${plan.saat}`);
         if (!gleich) befunde.push("Makro-Abdruck Welt ≠ Studio — der Plan reiste nicht bit-gleich");
         if (!statGleich) befunde.push("Statistik Welt ≠ Studio");
+        // DER SCHNEE DER KARTE IST DER SCHNEE DER WELT (EIN Farb-Gesetz): je Zelle des Rasters die Boden-Farbe der Welt
+        // (`_bodenFarbeAt` an der Höhe, die sie baut) gegen den Schnee, den die Karte des exportierten Plans malt. Widerspruch:
+        // die Karte malt Schnee (≥ 0,6), die Welt nicht — oder die Welt trägt Schnee (Luminanz ≥ 0,6 des Paletten-Schnees),
+        // die Karte nicht (< 0,4). Die Karte malt in der Farbe der Palette (`terrain:PORTAL_GROUND`.schnee).
+        const schneeVergleich = (n, schritt, x0, karte) => {
+                const r = window.anazhRealm;
+                const L = r._gelaende();
+                const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+                const lS = lum(r.constructor.BODEN_FARBE.schnee);
+                const PG = r.constructor.Gesetz("terrain:PORTAL_GROUND", null);
+                const out = [0, 0, 0];
+                let welt = 0;
+                let karteOhneWelt = 0;
+                let weltOhneKarte = 0;
+                for (let j = 0; j < n; j++)
+                    for (let i = 0; i < n; i++) {
+                        const k = i + j * n;
+                        const x = x0 + i * schritt;
+                        const z = x0 + j * schritt;
+                        const h = r._terrainMacroSurfaceY(x, z, true);
+                        if (!(h > L.waterLevel)) continue;
+                        r._bodenFarbeAt(x, h, z, out);
+                        const w = lum(out) >= 0.6 * lS;
+                        const kk = karte ? karte[k] / 255 : 0;
+                        if (w) welt++;
+                        if (kk >= 0.6 && !w) karteOhneWelt++;
+                        if (kk < 0.4 && w) weltOhneKarte++;
+                    }
+                return { welt, karteOhneWelt, weltOhneKarte, palette: PG && PG.schnee };
+            };
+        const R0 = studio.zustand.raster;
+        const sch = await page.evaluate(schneeVergleich, R0.n, R0.schritt, R0.x0, studio.zustand.schneeKarte);
+        const hexZahl = (v) => (typeof v === "number" ? v : parseInt(String(v).replace(/^#|^0x/i, ""), 16));
+        const pn = hexZahl(sch.palette);
+        const kf = studio.zustand.schneeFarbe;
+        sch.farbeGleich = !!kf && kf[0] === ((pn >> 16) & 255) && kf[1] === ((pn >> 8) & 255) && kf[2] === (pn & 255);
+        out.schnee = sch;
+        console.log(
+            `  Schnee: Welt ${sch.welt} Zellen · Karte ohne Welt ${sch.karteOhneWelt} · Welt ohne Karte ${sch.weltOhneKarte} · Farbe der Karte ${kf ? kf.join(",") : "—"} ${sch.farbeGleich ? "=" : "≠"} Palette ${sch.palette}`
+        );
+        if (!studio.zustand.schneeKarte) befunde.push("die Karte nennt ihren Schnee nicht (schneeKarte) — die Schnee-Wand bliebe blind");
+        else if (sch.welt < 30) befunde.push(`die Welt des Plans trägt zu wenig Schnee (${sch.welt} Zellen) — die Schnee-Wand bliebe ungeprüft`);
+        if (sch.karteOhneWelt + sch.weltOhneKarte > 0.01 * Math.max(1, sch.welt))
+            befunde.push(
+                `die Karte zeigt anderen Schnee als die Welt: ${sch.karteOhneWelt} Zellen Schnee ohne Welt, ${sch.weltOhneKarte} Zellen Welt-Schnee ohne Karte (von ${sch.welt}) — makro-worker faerbe ≠ schnee des Kerns`
+            );
+        if (!sch.farbeGleich) befunde.push(`die Karte malt Schnee in ${kf} statt der Palette der Welt (${sch.palette})`);
+        if (SELBSTTEST) {
+            // die Schnee-Wand mit einem Täter: eine Karte, die keinen Schnee malt, MUSS jeden Welt-Schnee als Widerspruch nennen
+            const leer = new Array(R0.n * R0.n).fill(0);
+            const t = await page.evaluate(schneeVergleich, R0.n, R0.schritt, R0.x0, leer);
+            const schneeSieht = sch.welt >= 30 && t.weltOhneKarte === t.welt;
+            out.schneeSelbsttest = { schneeSieht, weltOhneKarte: t.weltOhneKarte };
+            console.log(
+                `  SELBSTTEST: die Schnee-Wand ${schneeSieht ? `nennt eine Karte ohne Schnee (${t.weltOhneKarte} Zellen Welt-Schnee ohne Karte)` : "BLIEB BLIND"}`
+            );
+            if (!schneeSieht) befunde.push("SELBSTTEST: die Schnee-Wand sieht eine Karte ohne Schnee nicht");
+        }
         if (SELBSTTEST) {
             const sieht = welt.makroSha !== studio.shaSchritt && studio.shaSchritt !== studio.zustand.makroSha;
             out.selbsttest = { sieht };

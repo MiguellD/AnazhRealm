@@ -112,6 +112,10 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
     function workerStart() {
         const url = new URL("makro-worker.js" + (V ? "?v=" + V : ""), SKRIPT).href;
         st.worker = new Worker(url);
+        // EIN Farb-Gesetz: die Karte malt den Schnee in der Farbe, die die Welt dem Boden gibt (die Boden-Palette des Gesetzbuchs)
+        const PG = st.realm.constructor.Gesetz("terrain:PORTAL_GROUND", null);
+        if (!PG || PG.schnee == null) throw new Error("Gelände-Studio: terrain:PORTAL_GROUND.schnee fehlt (KERN-PFLICHT)");
+        st.worker.postMessage({ art: "farbe", schnee: PG.schnee });
         st.worker.onmessage = (ev) => {
             const m = ev.data;
             if (m.stufe === "abdruck" || (m.stufe === "fehler" && st.abdruck.has(m.id))) {
@@ -716,6 +720,8 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                     schicht: (e.schicht && e.schicht.baender) || null,
                     raster: v.raster || null,
                     abweichung: st.abweichung.slice(),
+                    schneeKarte: v.schneeKarte ? Array.from(v.schneeKarte) : null,
+                    schneeFarbe: v.schneeFarbe || null,
                     fehler: e.fehler || null,
                 };
             },

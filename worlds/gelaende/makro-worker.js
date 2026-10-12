@@ -79,7 +79,16 @@ const STUFEN = [
 ];
 const FELS = [124, 114, 104];
 const KLIFF = [92, 84, 78];
-const SCHNEE = [240, 243, 247];
+// DER SCHNEE DER KARTE IST DER SCHNEE DER WELT (EIN Farb-Gesetz, K16b): die Farbe ist die Palette des Bodens
+// (`terrain:PORTAL_GROUND`.schnee, das Studio reicht sie beim Start), der Anteil ist `schnee` des Kerns an der Höhe — dieselbe
+// Funktion, mit der die Welt jede Boden-Farbe mischt (`_bodenFarbeAt`, Worker `attachFieldColors`), ohne eigene Dämpfung.
+// Ohne die Farbe der Welt malt die Karte nichts (fail-closed: der Grund steht im Feld).
+let SCHNEE = null;
+function hexRgb(v) {
+    const n = typeof v === "number" ? v : parseInt(String(v).replace(/^#|^0x/i, ""), 16);
+    if (!Number.isFinite(n)) throw new Error(`die Schnee-Farbe der Welt ist kein Hex (${v})`);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
 const SEICHT = [84, 156, 168];
 const TIEF = [20, 48, 82];
 const glatt = (a, b, v) => {
@@ -110,7 +119,9 @@ const LICHT = (() => {
         return { x: Math.sin(a) * flach, z: -Math.cos(a) * flach, y: hoch, w };
     });
 })();
-function faerbe(H, n, schritt, L) {
+// `schneeAus` (optional, n×n): der Schnee, den das Bild je Land-Zelle malt (0…255) — kein zweiter Rechner neben dem Bild.
+function faerbe(H, n, schritt, L, schneeAus) {
+    if (!SCHNEE) throw new Error("die Karte kennt die Schnee-Farbe der Welt nicht (terrain:PORTAL_GROUND.schnee)");
     const wl = L.waterLevel;
     const px = new Uint8ClampedArray(n * n * 4);
     const c = [0, 0, 0];
@@ -163,8 +174,9 @@ function faerbe(H, n, schritt, L) {
                     c[q] += (FELS[q] - c[q]) * fels;
                     c[q] += (KLIFF[q] - c[q]) * kliff;
                 }
-                const sn = G.schnee(L, h) * (1 - 0.7 * kliff);
+                const sn = G.schnee(L, h);
                 for (let q = 0; q < 3; q++) c[q] += (SCHNEE[q] - c[q]) * sn;
+                if (schneeAus) schneeAus[k] = Math.round(255 * sn);
                 const s = 0.3 + 0.95 * licht;
                 c[0] *= s;
                 c[1] *= s;
@@ -223,7 +235,8 @@ async function rechne(id, spur, abbild, stufen) {
     const R = RASTER.voll;
     const H = await raster(L, R, id, spur);
     if (!H) return;
-    const px = faerbe(H, R.n, R.schritt, L);
+    const schneeKarte = new Uint8Array(R.n * R.n);
+    const px = faerbe(H, R.n, R.schritt, L, schneeKarte);
     const benannt = G.benannteSeen(L, R.x0, R.x0, R.schritt, R.n);
     const statistik = G.statistik(H, R.n, R.schritt, L.waterLevel, benannt, RAND);
     const voll = {
@@ -234,6 +247,9 @@ async function rechne(id, spur, abbild, stufen) {
         px,
         statistik,
         urteil: G.urteil(statistik, null),
+        // der Schnee, den die Karte malt, je Zelle (0…255) — die Studio-Probe hält ihn gegen die Boden-Farbe der Welt
+        schneeKarte,
+        schneeFarbe: SCHNEE.slice(),
         rasterSha: await sha(H),
         makroSha: await makroSha(L),
     };
@@ -252,6 +268,10 @@ async function rechne(id, spur, abbild, stufen) {
 
 self.onmessage = (ev) => {
     const m = ev.data || {};
+    if (m.art === "farbe") {
+        SCHNEE = hexRgb(m.schnee);
+        return;
+    }
     if (m.art === "abdruck") {
         // Der Abdruck einer beliebigen Lage (die Probe: ein Schritt am Regler MUSS ihn ändern).
         try {
