@@ -272,7 +272,7 @@
     // Stoffs (Mauer, Geflecht-Hülle oder Monolith — im werfenden Körper; höchstens `sichtGlieder` Kapseln) und der
     // Sockel, EINBESCHRIEBEN: die kleinste Standfläche aus Stufen und Podest über ihre größte Tiefe (die Hüllbox der Stufen
     // lag über den unteren Tritten und beschattete sie — in EINER Welt auf 2,6 m 26k → 69k px Schatten) — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
-    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03 };
+    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03, kastenM: 0.032 };
     function hRaster(v) {
         return Math.round(v * 4096) / 4096 + 0;
     }
@@ -366,20 +366,52 @@
         }
         hKasten(H, lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], m);
     }
-    // Ein Stein des Bogens (das Viereck `q` = [innen A, innen B, außen B, außen A] in xy, um `z` `d` tief): EINBESCHRIEBENE
-    // Kapseln von Fuge zu Fuge. Liegt die Achse in xy, trägt der Ring seine Ecken quer (z) und seine Flächen radial (0,866 r):
-    // r = min(w / √3, d / 2); ein breiterer Stein trägt Glieder radial nebeneinander (Abstand ≤ √3 r), ein tieferer übereinander
-    // (Abstand ≤ r) — so deckt die Hülle den Stein ohne Lücke und steht nirgends aus ihm.
-    function hStein(H, q, z, d, m) {
-        if (!H) return;
-        var S3 = Math.sqrt(3), w = (q[3].distanceTo(q[0]) + q[2].distanceTo(q[1])) / 2, r = Math.min(w / S3, d / 2);
+    // Der Abstand eines Punkts (x, y) zum konvexen Viereck `q` in xy (0 = drinnen).
+    function hAussen(q, x, y) {
+        var drin = false, best = Infinity, i, j;
+        for (i = 0, j = 3; i < 4; j = i++) {
+            var A = q[i], B = q[j];
+            if (A.y > y !== B.y > y && x < ((B.x - A.x) * (y - A.y)) / (B.y - A.y) + A.x) drin = !drin;
+            var ex = B.x - A.x, ey = B.y - A.y, t = Math.max(0, Math.min(1, ((x - A.x) * ex + (y - A.y) * ey) / Math.max(1e-12, ex * ex + ey * ey)));
+            best = Math.min(best, Math.hypot(x - (A.x + t * ex), y - (A.y + t * ey)));
+        }
+        return drin ? 0 : best;
+    }
+    // Die Steine EINER Seite einer Ordnung (die Vierecke `steine` = [innen A, innen B, außen B, außen A] in xy, Fuge an Fuge in
+    // Kettenfolge, um `z` `d` tief): steht der achsparallele Kasten eines Steins höchstens `kastenM` (der halbe Texel der nahen
+    // Kaskade) aus ihm, IST er sein Kasten; die übrigen tragen EINBESCHRIEBENE Kapseln von Fuge zu Fuge. Liegt die Achse in xy,
+    // trägt der Ring seine Ecken quer (z) und seine Flächen radial (0,866 r): r = min(w / √3, d / 2), breiter radial nebeneinander
+    // (Abstand ≤ √3 r), tiefer übereinander (Abstand ≤ r). Je Kachel EIN Lauf über die Kette: Nachbarn teilen die Fuge, die
+    // Kappe dazwischen fällt (`huelleGeometrie`); ein Kasten oder ein fehlender Stein bricht den Lauf. (Die Hüllbox eines
+    // gedrehten Steins stand an der Schulter bis 81 cm aus ihm; Kapseln je Stein trugen 20 Dreiecke je Kachel.)
+    function hSteinKette(H, steine, z, d, m) {
+        if (!H || !steine.length) return;
+        var S3 = Math.sqrt(3), lauf = [], s0, q;
+        for (s0 = 0; s0 < steine.length; s0++) {
+            q = steine[s0];
+            var x0 = Math.min(q[0].x, q[1].x, q[2].x, q[3].x), x1 = Math.max(q[0].x, q[1].x, q[2].x, q[3].x);
+            var y0 = Math.min(q[0].y, q[1].y, q[2].y, q[3].y), y1 = Math.max(q[0].y, q[1].y, q[2].y, q[3].y);
+            var ue = Math.max(hAussen(q, x0, y0), hAussen(q, x1, y0), hAussen(q, x0, y1), hAussen(q, x1, y1));
+            if (ue <= HUELLE_GESETZ.kastenM) {
+                hKasten(H, x0, y0, z - d / 2, x1, y1, z + d / 2, m);
+                lauf.push(null);
+            } else lauf.push(q);
+        }
+        var erst = null;
+        for (s0 = 0; s0 < lauf.length && !erst; s0++) erst = lauf[s0];
+        if (!erst) return;
+        var w = (erst[3].distanceTo(erst[0]) + erst[2].distanceTo(erst[1])) / 2, r = Math.min(w / S3, d / 2);
         var nW = Math.max(1, Math.ceil((w - S3 * r) / (S3 * r) - 1e-9) + 1), nZ = Math.max(1, Math.ceil((d - 2 * r) / r - 1e-9) + 1);
         for (var i = 0; i < nW; i++)
             for (var k = 0; k < nZ; k++) {
                 var f = nW > 1 ? ((S3 / 2) * r + (i * (w - S3 * r)) / (nW - 1)) / w : 0.5;
                 var zz = nZ > 1 ? z - d / 2 + r + (k * (d - 2 * r)) / (nZ - 1) : z;
-                var a = q[0].clone().lerp(q[3], f), b = q[1].clone().lerp(q[2], f);
-                hKapsel(H, new THREE.Vector3(a.x, a.y, zz), new THREE.Vector3(b.x, b.y, zz), r, m);
+                for (s0 = 0; s0 < lauf.length; s0++) {
+                    q = lauf[s0];
+                    if (!q) continue;
+                    var A = q[0].clone().lerp(q[3], f), B = q[1].clone().lerp(q[2], f);
+                    hKapsel(H, new THREE.Vector3(A.x, A.y, zz), new THREE.Vector3(B.x, B.y, zz), r, m);
+                }
             }
     }
     // Ein gedrehter Kasten (Schutt; Kanten `sx · sy · sz` in seinem Raum, Lage `me.matrix`): einbeschriebene Kapseln entlang der
@@ -553,15 +585,16 @@
         var outOff=o*jambW, dep=frameDepth*(1+o*0.18), dens=(o===0?1:(o===1?0.7:0.5));
         var zoffs=(o===0)?[0]:[o*depthStep,-o*depthStep];                       // symmetrisch um z=0 → beidseitig durchgehbar
         for(var zi=0;zi<zoffs.length;zi++){var zO=zoffs[zi];
-          if(p.wMason>0.03){var rad=jambW*p.wMason;
+          if(p.wMason>0.03){var rad=jambW*p.wMason,steinL=[],steinR=[];
             for(i=0;i<Nh-1;i++){
               var inA=new THREE.Vector3(sp[i].x+nrm[i][0]*outOff,sp[i].y+nrm[i][1]*outOff,0);
               var inB=new THREE.Vector3(sp[i+1].x+nrm[i+1][0]*outOff,sp[i+1].y+nrm[i+1][1]*outOff,0);
               var ouA=new THREE.Vector3(sp[i].x+nrm[i][0]*(outOff+rad),sp[i].y+nrm[i][1]*(outOff+rad),0);
               var ouB=new THREE.Vector3(sp[i+1].x+nrm[i+1][0]*(outOff+rad),sp[i+1].y+nrm[i+1][1]*(outOff+rad),0);
-              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var qb=quadBlock([inA,inB,ouB,ouA],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qb);hStein(HU,[inA,inB,ouB,ouA],qb.position.z,dep,fmat);}
-              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var mA=inA.clone();mA.x*=-1;var mB=inB.clone();mB.x*=-1;var oA=ouA.clone();oA.x*=-1;var oB=ouB.clone();oB.x*=-1;var qm=quadBlock([mB,mA,oA,oB],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qm);hStein(HU,[mB,mA,oA,oB],qm.position.z,dep,fmat);}
+              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var qb=quadBlock([inA,inB,ouB,ouA],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qb);steinL.push([inA,inB,ouB,ouA]);}
+              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var mA=inA.clone();mA.x*=-1;var mB=inB.clone();mB.x*=-1;var oA=ouA.clone();oA.x*=-1;var oB=ouB.clone();oB.x*=-1;var qm=quadBlock([mB,mA,oA,oB],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qm);steinR.push([mB,mA,oA,oB]);}
             }
+            if(HU){hSteinKette(HU,steinL,zO,dep,fmat);hSteinKette(HU,steinR.reverse(),zO,dep,fmat);}
           }
           if(p.wBraid>0.03&&(o<2||orders<3)){
             var oc=offsetFull(outOff+jambW*0.5),Fb=new THREE.CatmullRomCurve3(oc,false,'centripetal').getSpacedPoints(280);
