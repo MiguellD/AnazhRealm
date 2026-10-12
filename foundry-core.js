@@ -4657,8 +4657,8 @@ function deriveParamsPlant(pre) {
         P.totBruch = 0.42 + IR() * 0.26;
         P.crown = "kahl";
     }
-    // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Höhe der Größe 1,
-    // `ph.hd` die Schlankheit H/D seines Standorts) und die Welt-Skala, mit der der Wald ihn pflanzt — phyto-core
+    // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Wipfel-Höhe der Größe 1,
+    // mit dem Höhen-Wurf seiner Gestalt; `ph.hd` die Schlankheit H/D seines Standorts) und die Welt-Skala, mit der der Wald ihn pflanzt — phyto-core
     // `growSkeleton` lässt ihn so hoch und so schlank wachsen. Kein Wurf (der Zufalls-Strom bleibt).
     if (ph.kind === "tree" && ph.hoeheM > 0 && ph.hd > 0 && !ph.tot) {
         P.hoeheM = ph.hoeheM * (P.height / ph.height); // das Individuum: derselbe Höhen-Wurf wie seine Gestalt

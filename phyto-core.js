@@ -75,8 +75,8 @@
         const k = lerp(13, 22, P.slim);
         const D = Math.pow((P.height / k) * 2, 1.5);
         const trunkForm = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
-        // DAS WELT-MASS (K20, 12.10.): ein Baum, dessen Phänotyp sein Maß in Metern trägt (`P.hoeheM` die Höhe der
-        // Größe 1, `P.hd` die Schlankheit H/D seines Standorts, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
+        // DAS WELT-MASS (K20, 12.10.): ein Baum, dessen Phänotyp sein Maß in Metern trägt (`P.hoeheM` die Wipfel-Höhe des
+        // Individuums in der Größe 1 — das Laub steht 1–2,5 m darüber —, `P.hd` die Schlankheit H/D seines Standorts, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
         // der Welt so hoch und so schlank: der Stamm misst H/hd (Bestand 40–100, der Solitär gedrungener —
         // waldwissen, McMahon 1973), die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-
         // Einheiten las H/D 13–18 für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-
@@ -1801,7 +1801,10 @@
             for (let j = 1; j <= n; j++) {
                 const t0 = (j - 1) / n,
                     t1 = j / n;
-                const b = j === n ? q.p1 : [lerp(q.p0[0], q.p1[0], t1), lerp(q.p0[1], q.p1[1], t1), lerp(q.p0[2], q.p1[2], t1)];
+                const b =
+                    j === n
+                        ? q.p1
+                        : [lerp(q.p0[0], q.p1[0], t1), lerp(q.p0[1], q.p1[1], t1), lerp(q.p0[2], q.p1[2], t1)];
                 segs.push(
                     Object.assign({}, q, {
                         p0: a,
