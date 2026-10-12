@@ -16361,16 +16361,7 @@ class AnazhRealm {
         // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
         // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
         const { uniform, vec3, float, max, positionLocal, positionWorld } = TSL;
-        if (!this.state.windUniforms) {
-            this.state.windUniforms = {
-                uWindTime: uniform(0.0),
-                uWindStrength: uniform(0.12),
-                // V16.2 — Sonnen-Richtung für Gegenlicht-Translucency (vom
-                // _dayNightApplyDirectionalLight-Sync gespeist, EINE Quelle).
-                uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
-            };
-        }
-        const wu = this.state.windUniforms;
+        const wu = this._windUniformsEnsure();
         // Die Höhen-Referenz des Farb-Gradients ist ein UNIFORM (GRASS_BLADE_H; die
         // Studio-Halm-Geometrie, die eine eigene Höhe mitbrachte, fiel mit dem Halm-Mesh).
         if (!wu.uBladeH) wu.uBladeH = uniform(AnazhRealm.GRASS_BLADE_H);
@@ -31682,6 +31673,21 @@ class AnazhRealm {
     // sind geteilte Singletons an geteilten Materialien — per-Objekt-Variation
     // reist in dieser Welt IMMER als Attribut/Instanz-Daten, nie als Uniform.
     // Idempotent (setGroup ist ein Setter); ohne renderGroup-Export byte-alt. ═══
+    // DER WIND-SATZ (EINE Stelle legt ihn an): Wind-Uhr, Wind-Stärke und die Richtung des aktiven Körpers (`uSunDir`,
+    // Sonne oder Mond — `_dayNightApplyDirectionalLight` schreibt sie mit dem Richtlicht). Gras (Gegenlicht) und Boden
+    // (Gegenlicht-Glanz, die Zuwendung des Schattens) lesen ihn; er reist als EIN renderGroup-Buffer.
+    _windUniformsEnsure() {
+        if (!this.state.windUniforms) {
+            const { uniform } = THREE.TSL;
+            this.state.windUniforms = this._uniformHeimatTeilen({
+                uWindTime: uniform(0.0),
+                uWindStrength: uniform(0.12),
+                uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
+            });
+        }
+        return this.state.windUniforms;
+    }
+
     _uniformHeimatTeilen(satz) {
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
         const rg = TSL && TSL.renderGroup;
@@ -32461,6 +32467,20 @@ class AnazhRealm {
                     // n.transformDirection(MATRIX) rechnet Vᵀ·n (Sicht → Welt, three's normalWorld) und verdoppelte den
                     // Fehler (Normal-Sonde 06.10.: Kugel-Pixel 24 Grauwerte neben three's eigener Normale).
                     mat.normalNode = _Tn.cameraViewMatrix.transformDirection(_Tn.normalize(_baseN));
+                    // DIE ZUWENDUNG DES SCHATTENS (1110-5, die Hang-Akne): die 2,5D-Lichtung schattiert jede Fläche, als sähe
+                    // sie senkrecht zum Himmel — ob die Sonne sie trifft, entschied am Terminator allein der Schatten-Test, und
+                    // der rauscht dort (der Normal-Versatz folgt der geflatteten Normale, nicht der Fläche). Gemessen an einer
+                    // ebenen 30°-Rampe im Software-Holz (holz voll), Sonne 22° aus Azimut 45°, N·L −0,002: 11,7 % der Rampe
+                    // fleckig gegen 0,2 % ohne Schatten (gate:schatten-terminator). Jetzt trägt der empfangene Schatten die Zuwendung der WAHREN
+                    // Normale (dieselbe, aus der die Lichtung mischt) zur Richtung des aktiven Körpers: abgewandt im Schatten,
+                    // der Saum am Terminator (N·L 0 … `zuwendungSaum`, ~5° Sonne) weich.
+                    const _nWahr = _hS ? _Tn.normalWorldGeometry : _nGeo;
+                    const _zu = _Tn.smoothstep(
+                        _Tn.float(0.0),
+                        _Tn.float(AnazhRealm.SCHATTEN_KASKADE.zuwendungSaum),
+                        _Tn.dot(_Tn.normalize(_nWahr), this._windUniformsEnsure().uSunDir)
+                    );
+                    mat.receivedShadowNode = (schatten) => schatten.mul(_zu);
                 }
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
@@ -106192,7 +106212,9 @@ AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
 // (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Den Versatz trägt die
-// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN).
+// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN);
+// darum trägt der Boden die Zuwendung seiner wahren Normale selbst (`receivedShadowNode`, 1110-5): abgewandt im Schatten,
+// über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     texelM: Object.freeze([0.17, 0.47]),
     bezugAspekt: 16 / 9,
@@ -106202,6 +106224,7 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     luftM: 4,
     normalTexel: 0.5,
     tiefeTexel: 0.75,
+    zuwendungSaum: 0.08,
 });
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:

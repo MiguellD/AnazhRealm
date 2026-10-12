@@ -356,6 +356,14 @@ jobs:
               # echten Renderer (Boden-IoU kleiner Werfer, Akne-Platten, Zähne) fährt der OMEN: diag-schatten-bias.cjs --echt.
               run: npm run gate:schatten-bias
 
+            - name: Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)
+              if: matrix.gruppe == 2
+              # Die Werkbank im Software-Holz mit Schatten (holz voll) an der 30-Grad-Rampe der Pruefbuehne, die Sonne am Terminator
+              # (22 Grad aus Azimut 45, N.L -0,002): von oben je ein Schuss mit und ohne Schatten, gemessen nur auf der Rampe - ROT
+              # beim Namen, wenn der Schatten die Rampe fleckig macht (main 2c8deda9: 11,7 % gegen 0,2 %). Lokal 78-119 s, CI 181 s
+              # (38180625147) - in Gruppe 2 neben gate:nah-fern (dasselbe Software-Holz), die Waage traegt ihn dort (Gruppe 5 11,0 min).
+              run: npm run gate:schatten-terminator
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 6
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
@@ -1304,7 +1312,7 @@ jobs:
               run: npm run gate:seam
 
             - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 4
               # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
               # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT.
               run: npm run gate:mp-sync
