@@ -357,6 +357,10 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
   (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
   `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
+- **Das Maß des Baums (K20):** jeder gewachsene Bau (Rezept-Art Baum oder Strauch) trägt den Beipack `__mass`
+  (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
+  `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
+  ihn, fail-closed (KERN-PFLICHT).
 - Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
   (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).
 

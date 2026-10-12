@@ -78060,8 +78060,20 @@ class AnazhRealm {
         return mesh;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
-    // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl.
+    // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl. DIE SICHTHÖHE EINES BAUMS (K20): ohne den Hub seines Schafts (Beipack
+    // `__mass`, phyto-core schaftHub) — die Stufen vereinfachen die Krone, und die wuchs in der Form-Höhe; die ganze Höhe
+    // samt Schaft hielt jede Stufe weiter (Mess-Wiese 82 → 89 Befehle, die Tannen-L1 bis 67 statt 36 m). Ein Baum ohne
+    // sein Maß ist ein KERN-PFLICHT-Bruch, nie die Höhe samt Schaft.
     _foundryGruppenHoehe(group, preset) {
+        // gewachsen ist, was das Skelett-Gesetz baut (Rezept-Art Baum oder Strauch) — nicht jede Karten-Art (Wagen, Tor)
+        const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
+        let hub = 0;
+        if (rec && (rec.kind === "tree" || rec.kind === "shrub")) {
+            const m = group._mass;
+            if (!m || !Number.isFinite(m.schaftHub))
+                return AnazhRealm._kernPflichtBruch("phyto:__mass (" + preset + ")");
+            hub = m.schaftHub;
+        }
         let minY = Infinity,
             maxY = -Infinity;
         for (const ch of group.children) {
@@ -78074,7 +78086,7 @@ class AnazhRealm {
         }
         const wsM = preset ? this._foundryWorldScaleMatrix(preset) : null;
         const ws = wsM && wsM.elements ? wsM.elements[0] || 1 : 1;
-        return maxY > minY ? Math.max(0.1, (maxY - minY) * ws) : 0.1;
+        return maxY > minY ? Math.max(0.1, (maxY - minY - hub) * ws) : 0.1;
     }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
@@ -105781,7 +105793,7 @@ AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
 // — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`).
-AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern" });
+AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern", __mass: "_mass" });
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
 AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });

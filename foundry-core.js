@@ -305,7 +305,7 @@ const PORTAL_RENDER_CONFIG = {
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
         // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an gebauten L0/L1-Paaren — 24
         // gerasterte Ansichten, kronen-linse —; dazu haelt jede Stufe und ihre Karte je Blick-Hebung das Bild von V18.536,
-        // Wand D gegen spec/asset-contract/v1/bild-v18536.json),
+        // Wand D gegen spec/asset-contract/v1/bild-tafel.json),
         // ringToleranz (tree[1], W6 05.10.: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so
         // viele Baumhoehen von der Strecke seiner Nachbarn abweichen; 0,001 = 0,7 px an der L1-Nahkante, __ringBahn),
         // wurf (tree[1], W6 05.10.: der Wurf-Teil — Rinden-Straenge ab durchmesserM Welt-Durchmesser werfen, feinere,
@@ -1265,6 +1265,7 @@ function growTreeNodes(P) {
         if (__gsR && __gsR.segs && __gsR.segs.length) {
             P._trunkR = __gsR.trunkR;
             P._D = 2 * __gsR.trunkR;
+            P._schaftHub = __gsR.schaftHub; // der Hub des Schafts (K20), der Beipack `__mass` trägt ihn zum Wirt
             return __gsR;
         }
     }
@@ -4938,6 +4939,10 @@ function buildInstance(presetId, seed, lod, ov) {
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
             else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
+            // DAS MASS DES BAUMS (K20, Beipack `__mass`, must-ignore): der Hub, um den der Schaft die Krone trägt (phyto-core
+            // schaftHub, Vorlagen-Einheiten auf dem Byte-Raster). Der Wirt misst die Sichthöhe der SSE-Stufenwahl ohne ihn: das
+            // Detail, das eine Stufe vereinfacht, ist die Krone, und sie wuchs in der Form-Höhe (der Hub kostete 7 Befehle).
+            if (Number.isFinite(P._schaftHub)) g.userData.__mass = { schaftHub: __rasterZahl(P._schaftHub, 65536) };
         }
     } catch (e) {
         console.warn("Instanz", presetId, e);

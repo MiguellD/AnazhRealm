@@ -336,7 +336,9 @@
         } else {
             grow([0, 0, 0], [0, 1, 0], trunkR, P.height * (P.conifer ? 0.2 : 0.3), 0, 0, -1, false);
         }
-        if (weltMass) schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala);
+        // DER HUB DES SCHAFTS reist mit (K20, das Welt-Maß): die Krone wuchs in der Form-Höhe, der Schaft trägt sie um `schaftHub`
+        // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
+        const schaft = weltMass ? schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala) : 0;
         // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -354,7 +356,7 @@
             leaves.length = 0;
             for (const _k of kp) leaves.push(_k);
         }
-        return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta };
+        return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
     }
 
     // ── MODUL-HELFER (für die Asset-Montage, geteilt von den Bau-Funktionen unten) ──
@@ -1761,7 +1763,8 @@
     // Schaft (die Buche trägt ihre Krone im oberen Drittel). Der gestreckte Schaft behält die Ring-Teilung seines
     // Wuchses (je gestrecktem Strang so viele Teile, wie er länger wurde — der Wurzelanlauf bleibt rund). Der Schaft
     // wächst nur: ein Baum, dessen Wipfel schon höher steht, bleibt, wie er wuchs (ein gestauchter Schaft zog die Krone
-    // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal.
+    // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal. Rückgabe: der Hub ziel − h0
+    // (Vorlagen-Einheiten; 0, wo der Schaft nicht wächst).
     function schaftHub(segs, leaves, runMeta, ziel) {
         let h0 = 0,
             yb = Infinity;
@@ -1773,9 +1776,9 @@
             const m = runMeta[s.runId];
             if (m && m.parentRun === 0) yb = Math.min(yb, s.p0[1]);
         }
-        if (!(yb > 1e-6) || !(h0 > yb)) return;
+        if (!(yb > 1e-6) || !(h0 > yb)) return 0;
         const dh = ziel - h0;
-        if (!(dh > 0)) return;
+        if (!(dh > 0)) return 0;
         const streck = (yb + dh) / yb;
         const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
         const vorher = segs.map((q) => (q.runId === 0 ? laenge(q) : 0));
@@ -1818,6 +1821,7 @@
                 a = b;
             }
         });
+        return dh;
     }
 
     function treePhenotype(api, slim, trop, delta, leaf) {

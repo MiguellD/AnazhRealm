@@ -852,6 +852,28 @@ function leserUrteil(quelle) {
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
     }
+    // (H) an kranken Kopien des Zensus (K20): die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
+    // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
+    {
+        const verzerrt = (T, ky, kxz) =>
+            T.map((t) => {
+                if (!t.pos) return t;
+                const p = Float32Array.from(t.pos);
+                for (let i = 0; i < p.length; i += 3) {
+                    p[i] *= kxz;
+                    p[i + 1] *= ky;
+                    p[i + 2] *= kxz;
+                }
+                return Object.assign({}, t, { pos: p });
+            });
+        const krank = (ky, kxz) => {
+            const r2 = Object.assign({}, roh);
+            if (roh["buche-s1-L0"]) r2["buche-s1-L0"] = Object.assign({}, roh["buche-s1-L0"], { T: verzerrt(roh["buche-s1-L0"].T, ky, kxz) });
+            return hoehenUrteil(r2, skala).v;
+        };
+        st.push(["Höhe gestaucht (Buche × 0,6)", krank(0.6, 1).some((x) => /^Höhe buche:/.test(x))]);
+        st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
+    }
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 

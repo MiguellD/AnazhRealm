@@ -5468,8 +5468,8 @@ init();
             // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
             // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
             // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
-            // kein Teil. Andere Gestalten tragen die Felder nie.
-            for (const __bp of ["__huelle", "__fern"])
+            // kein Teil. Andere Gestalten tragen die Felder nie. Der Baum trägt sein Maß (`__mass`, K20: der Hub des Schafts).
+            for (const __bp of ["__huelle", "__fern", "__mass"])
                 if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
                     meshes.push({ kind: __bp, huelle: g.userData[__bp] });
         } catch (e) {
