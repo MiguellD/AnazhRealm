@@ -1676,7 +1676,8 @@ function wasserSichtNetz() {
 // Breite und Tiefe über dem Boden des Gesetzes) und das BILD (das gezeichnete Sheet, `__wasserSichtNetz`).
 // GESPEIST ist eine Quelle, die das Gesetz breiter als das Rinnsal beginnt (ein Abfluss) UND an deren Ursprung wirklich See-
 // Wasser steht (Körper-Wasser, das der See- oder Meeres-Spiegel des Gesetzes trägt, bis 10 m um den Ursprung): ihr Wasser
-// kommt nicht aus dem Nichts.
+// kommt nicht aus dem Nichts. GESPEIST ist auch eine Quelle IM KANAL eines breiteren Flusses (ihr Wasser ist seins) — sie darf
+// seinen Spiegel nie heben (BUCKEL).
 // Jede andere ist eine QUELLE im Sinn des Gesetzes, und das Wasser des FLUSSES (das Körper-Wasser im Kanal ihres EIGENEN
 // Laufs bis zur Krone; ein See, ein anderer Fluss daneben zählt nie) darf auf ihrem ersten Segment nicht breiter sein als die
 // HÜLLE des Gesetzes und am Ursprung nicht
@@ -1734,7 +1735,10 @@ function wasserQuelle(opts) {
         unsichtbarBreite = 0,
         phantomBreite = 0,
         querschnitte = 0,
-        verdeckt = 0;
+        verdeckt = 0,
+        imKanal = 0,
+        buckel = 0,
+        buckelMax = 0;
     const breiten0 = [],
         tiefen0 = [],
         beispiele = [],
@@ -1765,8 +1769,8 @@ function wasserQuelle(opts) {
             // der Kanal DIESER Quelle: bis zur Krone ihrer eigenen Segmente (der gezeichnete Spiegel liegt auf dem
             // 1,8-m-Gitter, ein Spiegel-Vergleich auf 2 cm trennte nicht mehr; ein Nachbar-Fluss zählte als eigenes Wasser)
             const eigenSeg = [];
-            const eigen = (px, pz) => {
-                for (const [a, b, krA, krB] of eigenSeg) {
+            const kanalVon = (segs) => (px, pz) => {
+                for (const [a, b, krA, krB] of segs) {
                     const ex = b.x - a.x,
                         ez = b.z - a.z,
                         l2 = ex * ex + ez * ez || 1;
@@ -1775,6 +1779,10 @@ function wasserQuelle(opts) {
                 }
                 return false;
             };
+            const eigen = kanalVon(eigenSeg);
+            // das erste Segment allein (der SPRUNG misst die Quelle, K16): an einer Biegung läuft der Querschnitt längs des
+            // nächsten Segments, und dessen Wasser zählte als Breite der Quelle (2104/6616: 18,75 m bei s = 12 m)
+            const eigen0 = (px, pz) => kanalVon(eigenSeg.slice(0, 1))(px, pz);
             for (let i = 0; i + 1 < P.length; i++) {
                 if (P[i + 1].inLake || (traeger.get(P[i + 1].x + "," + P[i + 1].z) || 0) > 1) break;
                 // die Krone des Gesetzes, längs des Segments zwischen seinen Punkten (wie `_hydroRiverAt`)
@@ -1793,16 +1801,23 @@ function wasserQuelle(opts) {
                 const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
                 const nx = -(b.z - a.z) / L,
                     nz = (b.x - a.x) / L;
-                for (let t = 0; t < L && s <= 48; t += 2, s += 2)
-                    lauf.push(
-                        Object.assign(
-                            sicht.quer(a.x + ((b.x - a.x) * t) / L, a.z + ((b.z - a.z) * t) / L, nx, nz, 15, eigen),
-                            { s, seg: i }
-                        )
-                    );
+                for (let t = 0; t < L && s <= 48; t += 2, s += 2) {
+                    const x = a.x + ((b.x - a.x) * t) / L,
+                        z = a.z + ((b.z - a.z) * t) / L;
+                    lauf.push(Object.assign(sicht.quer(x, z, nx, nz, 15, eigen), { s, seg: i, x, z, nx, nz }));
+                }
             }
             if (!lauf.length)
-                lauf.push(Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15, eigen), { s: 0, seg: 0 }));
+                lauf.push(
+                    Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15, eigen), {
+                        s: 0,
+                        seg: 0,
+                        x: P[0].x,
+                        z: P[0].z,
+                        nx: -fz,
+                        nz: fx,
+                    })
+                );
             quellen++;
             const q0 = lauf[0];
             breiten0.push(q0.breiteQ);
@@ -1822,15 +1837,53 @@ function wasserQuelle(opts) {
                     r._waterLevelAt(x, z, uf);
                     seeNah = uf.see > r._voxelSurfaceY(x, z) + 0.05;
                 }
-            const gespeistJa = abfluss && seeNah;
+            // IM KANAL (K16): der Ursprung liegt im Kanal eines BREITEREN Flusses (bis zu dessen Krone, nie auf dem eigenen
+            // Lauf) — sein Wasser ist das Wasser des breiteren (gespeist). Es darf dessen Spiegel nie heben: BUCKEL ist das
+            // Körper-Wasser am Ursprung über dem höchsten Spiegel der deckenden Segmente (vor K16 hob ein Zufluss, der in der Aue
+            // des Stamms begann, den Stamm mit dem Spiegel seiner ungefrästen Ufer, bis 1,36 m). Gedeckt heißt wie in
+            // `_hydroRiverAt`: der Abstand zum SEGMENT bis zu seiner Krone, Breite und Spiegel längs des Segments.
+            const eigenePunkte = new Set(P.slice(0, 4).map((p) => p.x + "," + p.z));
+            let kanalS = -Infinity;
+            for (const rw of h.rivers)
+                for (let i = 0; i + 1 < rw.points.length; i++) {
+                    const a = rw.points[i],
+                        b = rw.points[i + 1];
+                    if (a.inLake || b.inLake || !Number.isFinite(a.S) || !Number.isFinite(b.S)) continue;
+                    if (eigenePunkte.has(a.x + "," + a.z) || eigenePunkte.has(b.x + "," + b.z)) continue;
+                    const ex = b.x - a.x,
+                        ez = b.z - a.z,
+                        l2 = ex * ex + ez * ez || 1;
+                    const t = Math.max(0, Math.min(1, ((P[0].x - a.x) * ex + (P[0].z - a.z) * ez) / l2));
+                    if (!(a.width + (b.width - a.width) * t > P[0].width)) continue;
+                    const kr =
+                        window.__wasserKroneVon(r, a) +
+                        (window.__wasserKroneVon(r, b) - window.__wasserKroneVon(r, a)) * t;
+                    if (Math.hypot(P[0].x - (a.x + ex * t), P[0].z - (a.z + ez * t)) > kr) continue;
+                    const sp = a.S + (b.S - a.S) * t;
+                    if (sp > kanalS) kanalS = sp;
+                }
+            const imKanalJa = kanalS > -Infinity;
+            if (imKanalJa) {
+                imKanal++;
+                const y0 = r._voxelSurfaceY(P[0].x, P[0].z);
+                const hub = r._koerperWasser(P[0].x, P[0].z, y0) - kanalS;
+                if (hub > 0.05) {
+                    buckel++;
+                    if (hub > buckelMax) buckelMax = hub;
+                    if (beispiele.length < (o.beispiele || 6))
+                        beispiele.push(["buckel", R(P[0].x, 0), R(P[0].z, 0), R(hub)]);
+                }
+            }
+            const gespeistJa = (abfluss && seeNah) || imKanalJa;
             if (gespeistJa) gespeist++;
             let ueber = null;
             if (!gespeistJa)
                 for (const q of lauf) {
                     if (q.seg > 0) break; // die Quelle ist ihr erstes Segment; dahinter trägt der Fluss seine Punkt-Breiten
                     const hl = huelle(q.s);
-                    if (q.breiteQ > hl.breite || (q.s === 0 && q.tiefeMitte > hl.tiefe)) {
-                        ueber = q;
+                    const q1 = eigenSeg.length > 1 ? sicht.quer(q.x, q.z, q.nx, q.nz, 15, eigen0) : q;
+                    if (q1.breiteQ > hl.breite || (q.s === 0 && q1.tiefeMitte > hl.tiefe)) {
+                        ueber = Object.assign({}, q, { breiteQ: q1.breiteQ, tiefeMitte: q1.tiefeMitte });
                         break;
                     }
                 }
@@ -1883,6 +1936,9 @@ function wasserQuelle(opts) {
     return {
         quellen,
         gespeist,
+        imKanal,
+        buckel,
+        buckelMax: R(buckelMax),
         regionen: regionen.length,
         huelle0: [R(h0.breite), R(h0.tiefe)],
         spruenge,
@@ -2464,6 +2520,12 @@ function wasserOrte(opts) {
                 const h = r._hydroFor(x, z);
                 if (h && h.ready && regionen.indexOf(h) < 0) regionen.push(h);
                 da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
+                // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
+                if (da) {
+                    r._ensureHydroTilesAround(x, z, 1024);
+                    for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
+                        if (t && t.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                }
             }
         }
     let kd = Infinity;
@@ -2485,11 +2547,56 @@ function wasserOrte(opts) {
                 const x = h.originX + (ci + 0.5) * h.cell;
                 const z = h.originZ + (cj + 0.5) * h.cell;
                 const d = Math.hypot(x - MX, z - MZ);
-                // den Vorzug hat die Land-Spalte, deren Boden (das Gesetz der Dichte) unter dem Meer liegt — dort trägt der
-                // Küsten-Aquifer Wasser über Atlas-Land (die Probe K12 misst ihn); sonst die nächste Küste
-                const tief = r._voxelSurfaceY(x, z) < wl - 1.2;
-                const dw = tief ? d : d + 1e6;
-                if (dw < kd) ((kd = dw), (aus.kueste = [R1(x), R1(z)]));
+                if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]));
+            }
+    }
+    // die TASCHE (K16): Atlas-Land mit Boden unter dem Meer liegt nur jenseits des 3×3-Rands (am Rand füllt der Atlas die
+    // Spalte selbst bis zum Spiegel) — dort zeichnet das Sheet den Küsten-Aquifer, und dort misst die Probe K12. Je Land-Zelle
+    // ohne Wasser im 3×3 und mit Meer in 6 Zellen 8 × 8 Proben; die Zelle mit den meisten Proben unter dem Meer (gleich viele:
+    // die nähere), dort die tiefste. Die neue Landform trägt sie selten (vorher suchte die Wahl die Nachbar-Zelle des Meeres
+    // mit Boden unter dem Meer − 1,2 m: die gibt es am Rand nie — 0 Küsten-Spalten, K12 LEER).
+    let besteZahl = 0,
+        besteD = Infinity;
+    for (const h of regionen) {
+        const wK = h.water && h.water.waterKind;
+        if (!wK || wK.indexOf(1) < 0) continue;
+        const D = h.dim;
+        for (let cj = 1; cj < D - 1; cj++)
+            for (let ci = 1; ci < D - 1; ci++) {
+                if (wK[ci + cj * D] !== 0) continue;
+                let rand = false,
+                    meer = false;
+                for (let dj = -1; dj <= 1 && !rand; dj++)
+                    for (let di = -1; di <= 1; di++) {
+                        const k = wK[ci + di + (cj + dj) * D];
+                        if (k === 1 || k === 2) rand = true;
+                    }
+                if (rand) continue;
+                for (let dj = -6; dj <= 6 && !meer; dj++)
+                    for (let di = -6; di <= 6; di++) {
+                        const ni = ci + di,
+                            nj = cj + dj;
+                        if (ni >= 0 && nj >= 0 && ni < D && nj < D && wK[ni + nj * D] === 1) meer = true;
+                    }
+                if (!meer) continue;
+                let zahl = 0,
+                    tiefst = null;
+                for (let a = 0; a < 8; a++)
+                    for (let b = 0; b < 8; b++) {
+                        const x = h.originX + (ci + (a + 0.5) / 8) * h.cell,
+                            z = h.originZ + (cj + (b + 0.5) / 8) * h.cell;
+                        const g = r._voxelSurfaceY(x, z);
+                        if (!(g < wl - 0.05) || r._atlasWaterLevelAt(x, z, g) > -Infinity) continue;
+                        zahl++;
+                        if (!tiefst || g < tiefst[2]) tiefst = [x, z, g];
+                    }
+                if (!zahl) continue;
+                const d = Math.hypot(tiefst[0] - MX, tiefst[1] - MZ);
+                if (zahl > besteZahl || (zahl === besteZahl && d < besteD)) {
+                    besteZahl = zahl;
+                    besteD = d;
+                    aus.kueste = [R1(tiefst[0]), R1(tiefst[1])];
+                }
             }
     }
     return aus;

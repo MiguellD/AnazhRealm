@@ -136,6 +136,11 @@ function urteil(b) {
                 );
             if (q.trocken > 0)
                 v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
+            if (!(q.buckel <= 0))
+                v.push(
+                    `F5 BUCKEL: ${q.buckel} von ${q.imKanal} Quellen im Kanal eines breiteren Flusses heben dessen Spiegel ` +
+                        `(bis ${q.buckelMax} m) — der Zufluss nahm den Spiegel seiner ungefrästen Ufer`
+                );
             if (!(q.unsichtbarBreite <= 0))
                 v.push(
                     `F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf ${q.unsichtbarBreite} m Breite (Summe je Punkt, in ` +
@@ -483,6 +488,9 @@ function selbsttest() {
         quelle: {
             quellen: 64,
             gespeist: 19,
+            imKanal: 5,
+            buckel: 0,
+            buckelMax: 0,
             huelle0: [2.83, 0.35],
             spruenge: 0,
             trocken: 0,
@@ -611,6 +619,8 @@ function selbsttest() {
         ["FP LEER", (b) => (b.kanal.zellen = 0)],
         ["F5 SPRUNG", (b) => Object.assign(b.quelle, { spruenge: 43, breiteMax: 12.75, tiefeMax: 1.73 })],
         ["F5 TROCKEN", (b) => (b.quelle.trocken = 1)],
+        // K16: 4 von 5 Quellen im Kanal eines breiteren Flusses hoben dessen Spiegel (−312/1688 um 1,0 m, 664/9032 um 1,36 m)
+        ["F5 BUCKEL", (b) => Object.assign(b.quelle, { buckel: 4, buckelMax: 1.36 })],
         ["F5 UNSICHTBAR", (b) => Object.assign(b.quelle, { unsichtbar: 487, unsichtbarBreite: 1200.5 })],
         ["F5 PHANTOM", (b) => Object.assign(b.quelle, { phantom: 2, phantomBreite: 0.5 })],
         ["F5 LEER", (b) => (b.quelle.quellen = 16)],

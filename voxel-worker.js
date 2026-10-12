@@ -755,6 +755,7 @@ function hydroDistAt(x, z) {
     const bj0 = Math.floor((z - h.originZ) / bs);
     let best = Infinity;
     let bestHw = 0;
+    let bestRand = Infinity;
     for (let dj = -1; dj <= 1; dj++) {
         for (let di = -1; di <= 1; di++) {
             const bi = bi0 + di;
@@ -771,11 +772,15 @@ function hydroDistAt(x, z) {
                 if (t < 0) t = 0;
                 else if (t > 1) t = 1;
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                if (dist < best) {
+                // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
+                // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
+                const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                // der nächste RAND, nie die nächste Mittellinie — bit-identisch zum Main (K16, U1)
+                const rand = dist - Math.max(1, hw);
+                if (rand < bestRand) {
+                    bestRand = rand;
                     best = dist;
-                    // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
-                    // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
-                    bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    bestHw = hw;
                 }
             }
         }

@@ -27942,6 +27942,7 @@ class AnazhRealm {
         const bj0 = Math.floor((z - h.originZ) / bs);
         let best = Infinity;
         let bestHw = 0;
+        let bestRand = Infinity;
         for (let dj = -1; dj <= 1; dj++) {
             for (let di = -1; di <= 1; di++) {
                 const bi = bi0 + di;
@@ -27958,9 +27959,15 @@ class AnazhRealm {
                     if (t < 0) t = 0;
                     else if (t > 1) t = 1;
                     const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                    if (dist < best) {
+                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    // der nächste RAND (Abstand minus die Halbbreite, wie die Leser sie nehmen), nie die nächste Mittellinie
+                    // (K16, U1): zwischen zwei Segmenten ungleicher Breite sprang sonst die Halbbreite und mit ihr die Feuchte
+                    // (0,83 → 0,44 in 2 cm, 213/−890) — so ist jedes Band das Maximum der Segmente, stetig
+                    const rand = dist - Math.max(1, hw);
+                    if (rand < bestRand) {
+                        bestRand = rand;
                         best = dist;
-                        bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                        bestHw = hw;
                     }
                 }
             }
@@ -36042,6 +36049,89 @@ class AnazhRealm {
             // Der Abfluss beginnt bündig mit seinem See (sonst schnitte der Kanal den Becken-Rand auf den tieferen Lauf
             // und das See-Wasser stünde als Wand darüber); die Stufe liegt im ersten Segment.
             if (Number.isFinite(oben)) S.set(schluessel(P[k]), oben);
+        }
+        // (4) DIE FRÄSE DES BREITEREN (K16, W-F5): die Ufer eines Zuflusses liest `ziel` ungefräst — liegt er im Kanal oder
+        // auf der Böschung eines BREITEREN Flusses, schneidet dessen Fräse den Boden unter ihn, und sein Wasser stand darüber
+        // (am Ursprung 0,5–2,9 m tief statt des Rinnsals; im Kanal des Stamms hob es dessen Spiegel bis 0,71 m). Je Segment
+        // des breiteren (die breitesten zuerst — ihr Spiegel steht dann fest) trägt jeder schmalere Punkt eines anderen Laufs
+        // in seiner Reichweite höchstens die Kanal-Fläche des Segments (die Gestalt von `_hydrosphereCarveAt`) minus seinem
+        // Freibord, nie weniger als den Spiegel des breiteren. Danach wieder stromab nie steigend.
+        {
+            const sN = HC.bankNeigung;
+            const sK = HC.bankKruemmung;
+            const fuss = HC.bankRundung;
+            const zelle = (x, z) =>
+                Math.round((x - ctx.originX) / ctx.cell - 0.5) + "," + Math.round((z - ctx.originZ) / ctx.cell - 0.5);
+            const raster = new Map();
+            for (const [key, p] of punkte) {
+                const zk = zelle(p.x, p.z);
+                if (!raster.has(zk)) raster.set(zk, []);
+                raster.get(zk).push(key);
+            }
+            const stromab = (kp, kz, n) => {
+                for (let k = naechster.get(kp), g = 0; k !== undefined && g < n; k = naechster.get(k), g++)
+                    if (k === kz) return true;
+                return false;
+            };
+            const segmente = [...naechster.entries()].sort(
+                (a, b) => (punkte.get(b[0]).width || 0) - (punkte.get(a[0]).width || 0)
+            );
+            let gekappt = false;
+            for (const [ka, kb] of segmente) {
+                const a = punkte.get(ka);
+                const b = punkte.get(kb);
+                if (!b) continue;
+                const hwA = (a.width || HC.widthMin) * 0.5;
+                const hwB = (b.width || HC.widthMin) * 0.5;
+                const dA = AnazhRealm._flussTiefe(a);
+                const dB = AnazhRealm._flussTiefe(b);
+                const weit = Math.max(hwA + dA / sN, hwB + dB / sN) + HC.dammBreite + HC.bankWeite;
+                const nZ = Math.ceil(weit / ctx.cell) + 1;
+                const ia = Math.round((a.x - ctx.originX) / ctx.cell - 0.5);
+                const ja = Math.round((a.z - ctx.originZ) / ctx.cell - 0.5);
+                const ex = b.x - a.x;
+                const ez = b.z - a.z;
+                const len2 = ex * ex + ez * ez || 1;
+                for (let dj = -nZ; dj <= nZ; dj++)
+                    for (let di = -nZ; di <= nZ; di++) {
+                        const liste = raster.get(ia + di + "," + (ja + dj));
+                        if (!liste) continue;
+                        for (const kp of liste) {
+                            if (kp === ka || kp === kb) continue;
+                            const p = punkte.get(kp);
+                            let t = ((p.x - a.x) * ex + (p.z - a.z) * ez) / len2;
+                            t = t < 0 ? 0 : t > 1 ? 1 : t;
+                            const halfW = hwA + (hwB - hwA) * t;
+                            if (!((p.width || HC.widthMin) * 0.5 < halfW)) continue;
+                            const D = dA + (dB - dA) * t;
+                            const dK = halfW + D / sN;
+                            const dist = Math.hypot(p.x - (a.x + ex * t), p.z - (a.z + ez * t));
+                            if (dist >= dK + HC.dammBreite + HC.bankWeite) continue;
+                            const spiegel = S.get(ka) + (S.get(kb) - S.get(ka)) * t;
+                            if (!(S.get(kp) > spiegel)) continue;
+                            if (stromab(kp, ka, nZ + 2)) continue; // der eigene Lauf mündet hier
+                            const B = spiegel - (1 - HC.spiegelFreibord) * D;
+                            const u0 = dist - halfW;
+                            let flaeche =
+                                u0 <= -fuss
+                                    ? B
+                                    : u0 < fuss
+                                      ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss)
+                                      : B + sN * u0;
+                            if (dist > dK) flaeche += sK * (dist - dK) * (dist - dK);
+                            const grenze = Math.max(spiegel, flaeche - HC.spiegelFreibord * AnazhRealm._flussTiefe(p));
+                            if (S.get(kp) > grenze) {
+                                S.set(kp, grenze);
+                                gekappt = true;
+                            }
+                        }
+                    }
+            }
+            if (gekappt)
+                for (const key of nachHoehe) {
+                    const n = naechster.get(key);
+                    if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+                }
         }
         for (const rv of rivers) for (const p of rv.points) p.S = p.inLake ? p.y : S.get(schluessel(p));
     }
