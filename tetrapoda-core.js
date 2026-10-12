@@ -1330,7 +1330,9 @@
     // Froude-Zahl Fr = v̂² vom Gehen (tastgrad) zum Laufen (tastgradLauf), wo die Zeile ihn nennt (laufFroude = die Fr der
     // Mitte des Wechsels; Alexander 2004: Gehen 0,55–0,7, Laufen ≈ 0,39, der Wechsel bei Fr ≈ 0,5). Zurück kommt auch der
     // Tastgrad (tast), den gangFuss als Anteil des Stands am Zyklus liest, und der Hub des Schwungs (× L) — er wandert mit
-    // demselben Wechsel zu hubLauf, wo die Zeile ihn nennt (der laufende Fuß schwingt hoch, der gehende knapp).
+    // demselben Wechsel zu hubLauf, wo die Zeile ihn nennt (der laufende Fuß schwingt hoch, der gehende knapp). Die Schwere g
+    // der Zeile ist die EINE Schwere des Gangs (Schritt und Becken lesen sie; der Wirt setzt die seiner Welt) — ohne Schwere
+    // (g ≤ 0) trägt kein Bein: kein Gang, der Leib schwebt.
     function gangZahl(Z, k) {
         return Z && typeof Z[k] === "number" ? Z[k] : GANG_GESETZ[k];
     }
@@ -1338,9 +1340,10 @@
         var G = Z || GANG_GESETZ;
         var tast = gangZahl(G, "tastgrad"),
             hub = gangZahl(G, "hub");
-        if (!(v > gangZahl(G, "stand")) || !(L > 0)) return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub };
+        var g = gangZahl(G, "g");
+        if (!(v > gangZahl(G, "stand")) || !(L > 0) || !(g > 0)) return { omega: 0, S: 0, schritt: 0, tast: tast, hub: hub };
         var vv = Math.min(v, gangZahl(G, "vMax"));
-        var vh = vv / Math.sqrt(gangZahl(G, "g") * L);
+        var vh = vv / Math.sqrt(g * L);
         var sMax = 2 * L * Math.tan(gangZahl(G, "maxWinkel"));
         var lamF = L * (gangZahl(G, "schrittBasis") + gangZahl(G, "schrittFroude") * vh);
         if (G.tastgradLauf > 0 && G.laufFroude > 0) {
@@ -1376,18 +1379,25 @@
             hub: Math.pow(Math.sin(halb ? u : (u * Math.PI) / sw), gangZahl(Z, "hubForm")),
         };
     }
+    // DIE REICHWEITE DER BEIN-KETTE (K07, additiv — EINE Schwelle für Welt und Studio): knapp unter der gestreckten Kette
+    // (das Knie schnappt nie durch); an ihr führt gangBecken das Becken, an ihr hält die Fuß-IK des Wirts den stehenden Fuß.
+    function gangReich(kette) {
+        return 0.995 * kette;
+    }
     // DAS BECKEN DES GESETZES (K07, additiv — die Tiere lesen es nicht): die Senke des Beckens (≥ 0, im Maß von S und R)
     // zur Phase ph des ersten Beins, das zweite um π versetzt. R = die Reichweite der Bein-Kette (dieselbe Schwelle, an der
-    // die Fuß-IK des Wirts den stehenden Fuß hält), omega der Takt (rad/s), g die Schwere im Maß des Wirts. Nur STEHENDE
+    // die Fuß-IK des Wirts den stehenden Fuß hält), omega der Takt (rad/s); die Schwere ist die der Zeile Z (dieselbe, die
+    // gangSchritt liest), einheit = Meter je Maß-Einheit des Wirts (ohne: Meter) — nie eine zweite Zahl. Nur STEHENDE
     // Füße tragen das Becken — der Schwung-Fuß faltet sich, er zieht es nie hinab. GEHEN (das umgekehrte Pendel): so tief,
     // dass jeder stehende Fuß reicht (tief im Doppel-Stand, R − √(R² − (S/2)²)), über der Mitte des Stands höchstens um
     // beckenHub·R gehoben (das Knie bleibt im Stand leicht gebeugt — Gard 2004: 4–5 cm). LAUFEN (das Feder-Bein, McMahon &
     // Cheng 1990): beim Aufsetzen dieselbe Tiefe, zur Mitte des Stands federt das Bein um Δy = g·tc·(T/2π − tc/8)
     // (Kontaktzeit tc, Schritt-Dauer T, die sinusförmige Stand-Kraft trägt im Mittel das Gewicht), in der Flugphase steigt
     // es ballistisch um g·tf²/8. Der Wechsel folgt dem Tastgrad (tastgrad → tastgradLauf der Zeile Z).
-    function gangBecken(ph, S, tast, R, omega, g, Z) {
+    function gangBecken(ph, S, tast, R, omega, Z, einheit) {
         var TAU = 2 * Math.PI;
         if (!(S > 0) || !(R > 0)) return 0;
+        var g = gangZahl(Z, "g") / (einheit > 0 ? einheit : 1);
         var sw = tast > 0 && tast < 1 ? TAU * (1 - tast) : Math.PI;
         var halbS = Math.min(S / 2, R);
         var oben = R - Math.sqrt(R * R - halbS * halbS);
@@ -2930,6 +2940,7 @@
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
         gangBecken: gangBecken,
+        gangReich: gangReich,
         gangPhaseHaelt: gangPhaseHaelt,
         STEUER_GESETZ: STEUER_GESETZ,
         tempoEinheit: tempoEinheit,

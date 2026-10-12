@@ -14,8 +14,9 @@
 //   Cavagna 1976, Lee & Farley 1998) und die LOCK-LÖSER im Stand-Fenster (Soll 0: der stehende Fuß löst nie an der
 //   Reichweite, die das Gesetz ihm selbst gibt).
 //   DAS KÖRPER-STUDIO (K07): derselbe Schlupf am Menschen des Labors im Spiel-Modus (STUDIO, unten) — geduckt, gehen, Sprint.
+//   DIE SCHWERE (K07): Mensch und Tier gehen nach der Schwere der Welt, Schritt und Becken aus EINER Zeile (SCHWERE, unten).
 //   --selftest: das Gang-Gesetz gestubbt (fester Takt, feste Auslenkung — der Vor-Welle-Gang) → der Schlupf steigt
-//   über die Schwelle, die Linse feuert.
+//   über die Schwelle, die Linse feuert; die Zeile ohne die Schwere der Welt → die Schwere-Wand feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
 const puppeteer = require("puppeteer");
@@ -330,6 +331,77 @@ const LEIB = (k) => {
     return { zeilen, taeter, beckenTaeter, loeserTaeter };
 };
 
+// DIE SCHWERE DES GANGS (K07, dieselbe Linse): Schritt und Becken lesen die Schwere der Welt (state.gravity, die DSL setzt
+// sie) aus EINER Zeile, Mensch und Tier. Unter der Mond-Schwere (1,62 m/s²) gleicht der Takt des Menschen beim Laufen und
+// der des Wolfs im Schritt gangSchritt mit dieser Schwere, das Becken des Menschen bekommt dieselbe Zeile (der Spion am
+// Kern liest ihre Schwere), und kein Zwilling steht als Literal im Wirt (die Schwere als Zahl im Rig, ein Trab-Muster neben
+// MOTION.phases im Tier-Gang). --selftest: die Zeile ohne die Schwere der Welt (der Vor-K07-Gang) → ROT.
+const SCHWERE = (k) => {
+    const r = window.anazhRealm,
+        s = r.state,
+        A = r.constructor;
+    const core = window.__tetrapodaCore;
+    const G_MOND = 1.62;
+    const rig = s.playerMesh.userData.rig;
+    if (!rig) return { fehler: "Spieler ohne Rig" };
+    const block = A._bewegungsBlock("gang", A.GANG_FELDER);
+    const zeileEcht = r._gangZeile;
+    if (k.stub) r._gangZeile = (mensch) => (mensch ? block : undefined);
+    const beckenEcht = core.gangBecken;
+    const beckenG = [];
+    core.gangBecken = function (...a) {
+        const Z = a.find((x) => x && typeof x === "object");
+        beckenG.push(Z && typeof Z.g === "number" ? Z.g : null);
+        return beckenEcht.apply(this, a);
+    };
+    const g0 = s.gravity;
+    const o = {};
+    try {
+        s.gravity = -G_MOND;
+        const L = r._gaitBeinMass(rig).L;
+        const gait = r._gaitGesetz(rig, 5.16);
+        o.mensch = gait.omega / core.gangSchritt(5.16, L, Object.assign({}, block, { g: G_MOND })).omega;
+        r._animateHumanoidRig(rig, 1000, 1, true, false, null, gait);
+        o.becken = beckenG.length ? beckenG[beckenG.length - 1] : "nie gerufen";
+        // der Wolf im Schritt (0,5 m/s — schneller deckelt der Bein-Winkel den Schritt bei jeder Schwere) durch seinen Chokepoint
+        const pm = s.playerMesh.position;
+        const saveMax = s.maxCreatures;
+        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
+        const cr = r.spawnCreatureAt(pm.x + 40, 30, pm.z + 40, "happy", "wesen", { precise: true, bodySize: 1 });
+        s.maxCreatures = saveMax;
+        if (!cr || !cr.userData._tierBaum) o.tier = "kein Wolf";
+        else {
+            cr.userData.task = { name: "wait", args: {}, since: 0 };
+            cr.rotation.set(0, Math.PI / 2, 0);
+            cr.userData._animFade = 1;
+            const roles = r._motionRolesForSoul(cr.userData.soul);
+            for (let i = 0, t = 0; i < 90; i++) {
+                cr.position.x += 0.5 / 60;
+                r._animateCompoundMotion(cr, roles, (t += 1 / 60), 0, true, null);
+            }
+            const gg = cr.userData._tierBaum._gang;
+            const soll = core.gangSchritt(gg.v, cr.userData._tierBaum.beinL * (cr.scale.x || 1), { g: G_MOND }).omega;
+            o.tier = soll > 0 ? gg.omega / soll : "kein Takt";
+            r.removeCreature(cr);
+        }
+    } finally {
+        s.gravity = g0;
+        core.gangBecken = beckenEcht;
+        r._gangZeile = zeileEcht;
+    }
+    // die Zwillinge als Literal (kommentar-gestrippt, das __codeOf-Muster)
+    const codeOf = (fn) =>
+        String(fn)
+            .replace(/\/\/.*$/gm, "")
+            .replace(/\/\*[\s\S]*?\*\//g, "");
+    o.zwillinge = [];
+    if (/\b9\.81\b/.test(codeOf(r._animateHumanoidRig)) || /\b9\.81\b/.test(codeOf(r._gaitGesetz)))
+        o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
+    if (/\[\s*0\s*,\s*Math\.PI\s*\*/.test(codeOf(r._animateTierBaum)))
+        o.zwillinge.push("_animateTierBaum: ein Trab-Muster als Literal neben MOTION.phases");
+    return o;
+};
+
 // DAS KÖRPER-STUDIO (K07): derselbe Mensch im Labor (worlds/koerperstudio, Spiel-Modus) — die Taste geht, playInput
 // und playPhysics ziehen den Leib mit festem Takt 1/60 s über ebenen Boden (die Park-Boxen ruhen), je Takt das Fuß-
 // gelenk beider Beine in der Welt. Derselbe Schlupf (Weg des Stand-Fußes / Weg des Leibs, Stand = unterste 5 % der
@@ -432,6 +504,7 @@ const STUDIO = (k) => {
         window.__anazhHeadlessNullRenderer = true;
     });
     let rot = 0;
+    let schwereRot = false;
     try {
         if (!NUR_STUDIO) {
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
@@ -491,6 +564,28 @@ const STUDIO = (k) => {
                     if (!ok) rot++;
                 }
             }
+            const sw = await page.evaluate(SCHWERE, { stub: SELBST });
+            if (sw.fehler) {
+                console.log("  ❌ Schwere:", sw.fehler);
+                rot++;
+                schwereRot = true;
+            } else {
+                const gleich = (q) => typeof q === "number" && Math.abs(q - 1) <= 1e-6;
+                const taeter = [
+                    gleich(sw.mensch) ? null : "_gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt)",
+                    sw.becken === 1.62 ? null : "_animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt)",
+                    gleich(sw.tier) ? null : "_animateTierBaum (der Schritt des Tiers liest nicht die Schwere der Welt)",
+                    ...sw.zwillinge,
+                ].filter(Boolean);
+                const fmt = (q) => (typeof q === "number" ? q.toFixed(4) : q);
+                console.log(
+                    `  ${taeter.length ? "❌" : "✅"} Schwere 1,62 m/s² · Takt Mensch ${fmt(sw.mensch)} × Gesetz · Becken-Zeile g ${sw.becken} · Takt Wolf ${fmt(sw.tier)} × Gesetz · Literal-Zwillinge ${sw.zwillinge.length}${taeter.length ? " — Täter: " + taeter.join(" · ") : ""}`
+                );
+                if (taeter.length) {
+                    rot++;
+                    schwereRot = true;
+                }
+            }
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
         const sb = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: softwareWebGpuArgs() });
@@ -536,6 +631,10 @@ const STUDIO = (k) => {
     if (SELBST) {
         if (rot === 0) {
             console.error("\n❌ SELBST-TEST ROT — mit gestubbtem Gang-Gesetz glitt keine Pfote: die Linse ist vakuös.");
+            process.exit(1);
+        }
+        if (!schwereRot && !NUR_STUDIO) {
+            console.error("\n❌ SELBST-TEST ROT — die Zeile ohne die Schwere der Welt blieb grün: die Schwere-Wand ist vakuös.");
             process.exit(1);
         }
         console.log(`\n✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (${rot} Läufe über ${SCHWELLE}).`);

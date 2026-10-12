@@ -20,7 +20,7 @@ function ankleYFromAngles(hx,kr){return -(L1+L2*Math.cos(kr))*Math.cos(hx)+L2*Ma
 var G_BUEHNE=44;
 var _TC=window.__tetrapodaCore,_GZ0=window.__koerperCore.bewegung&&window.__koerperCore.bewegung.gang;
 // jedes Feld der Zeile ist Pflicht (fehlt eines, faehrt kein stiller Tier-Gang); das Becken traegt tetrapoda gangBecken
-if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangPhaseHaelt + koerper fx.bewegung.gang');
+if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangReich!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangReich/gangPhaseHaelt + koerper fx.bewegung.gang');
 var _GZ=Object.assign({},_GZ0,{g:G_BUEHNE,vMax:Infinity});
 function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(2*Math.PI),omega:gs.omega,S:gs.S,tast:gs.tast,hubE:gs.hub*Lg};}
 // der Fuss zur Studio-Phase ph (0..1, der Stand zuerst wie anklePhase): die Phase des Gesetzes beginnt mit dem Schwung;
@@ -1878,8 +1878,8 @@ function playGait(dt,t){
   standY=_mix(standY,standYBase*0.66,cb);                                               // crouch-tiefe
   // DAS BECKEN DES GESETZES (K07): tetrapoda gangBecken wie in der Welt -- nur die stehenden Fuesse senken es, an der
   // Reichweite R der (geduckt gebeugten) Kette; im Lauf federt das Bein, in der Flugphase steigt der Leib ballistisch
-  var Rk=0.995*(L1+L2)*_mix(1,0.66,cb),phG=2*Math.PI*((ph+1-gs.tast)%1);
-  standY=_mix(standY,-(Rk-_TC.gangBecken(phG,gs.S/cs,gs.tast,Rk,gs.omega,G_BUEHNE/cs,_GZ)),moveB)+lk*0.95;   // + LANDE-KOMPRESSION
+  var Rk=_TC.gangReich((L1+L2)*_mix(1,0.66,cb)),phG=2*Math.PI*((ph+1-gs.tast)%1);
+  standY=_mix(standY,-(Rk-_TC.gangBecken(phG,gs.S/cs,gs.tast,Rk,gs.omega,_GZ,cs)),moveB)+lk*0.95;   // + LANDE-KOMPRESSION
   var pL=ph,pR=(ph+0.5)%1;
   var fL=gangFussStudio(pL,gs,standY,cs),fR=gangFussStudio(pR,gs,standY,cs);
   // PER-FOOT GROUND-ADAPTIVE IK (Uncharted-stil): jeder fuss sampelt seinen support an seiner geplanten XZ

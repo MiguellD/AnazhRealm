@@ -17512,9 +17512,20 @@ class AnazhRealm {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         if (!core || typeof core.gangSchritt !== "function")
             return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
-        const Z = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
-        return core.gangSchritt(v, this._gaitBeinMass(rig).L, Z);
+        return core.gangSchritt(v, this._gaitBeinMass(rig).L, this._gangZeile(true));
+    }
+    // DIE ZEILE DES GANGS IN DER WELT (K07): das Gang-Gesetz misst Froude-Zahl und Becken an der Schwere der Welt
+    // (`state.gravity`, die DSL setzt sie) — Mensch und Tier lesen sie aus EINER Zeile, Schritt und Becken aus derselben
+    // (der Mensch: fx.bewegung.gang, das Tier: GANG_GESETZ). Vorher las der Schritt GANG_GESETZ.g, das Becken ein Literal
+    // 9,81, und eine Welt mit anderer Schwere ging wie die Erde. Memo je Schwere und Block.
+    _gangZeile(mensch) {
+        const g = -this.state.gravity;
+        const Z = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
+        let m = this._gangZeileMemo;
+        if (!m || m.g !== g || m.Z !== Z)
+            m = this._gangZeileMemo = { g, Z, mensch: Object.assign({}, Z, { g }), tier: { g } };
+        return mensch ? m.mensch : m.tier;
     }
     // Die Bein-Maße des Rigs, einmal vermessen: Ober- und Unterschenkel im Gelenk-Raum (l1, l2), die Welt-Skala der
     // Hüfte lotrecht (wpl) und längs (wz — das Becken des Menschen ist ungleich skaliert, 0,93 quer und längs: ein
@@ -17931,7 +17942,7 @@ class AnazhRealm {
         if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true; // ohne Gesetzes-Pose stehen beide Füße
         if (M && M.l1 > 0 && M.l2 > 0) {
             const core = window.__tetrapodaCore;
-            const Z = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
+            const Z = this._gangZeile(true);
             const tast = gait.tast;
             const Sl = S / M.wz; // der Fußweg längs, im Gelenk-Raum
             const hubL = (gait.hub * M.L) / M.wpl;
@@ -17939,8 +17950,8 @@ class AnazhRealm {
             const R = AnazhRealm._gaitReich(L12);
             const FL = core.gangFuss(walkPhase, Sl, tast, Z);
             const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z);
-            // die Senke im Gelenk-Raum über der gestreckten Kette (die Schwere im lotrechten Gelenk-Maß)
-            const tief = L12 - R + core.gangBecken(walkPhase, Sl, tast, R, gait.omega, 9.81 / M.wpl, Z);
+            // die Senke im Gelenk-Raum über der gestreckten Kette (die Schwere der Zeile im lotrechten Gelenk-Maß)
+            const tief = L12 - R + core.gangBecken(walkPhase, Sl, tast, R, gait.omega, Z, M.wpl);
             r._gangSenke = tief;
             const auf = 2 * Math.PI * (1 - tast);
             const u = (p) => ((p % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
@@ -18683,21 +18694,16 @@ class AnazhRealm {
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
         let g = tb._gang;
-        // Der Gang-Phasen-Seed liest das Gesetz (P.phases je MOTION-Preset: Trab/Pass/Stand) und seedet bei
-        // Profil-Wechsel neu (wie Lab emo.set). Der walkPhase-Versatz (Desync je Kreatur) bleibt; ohne
-        // phases-Feld bleibt der Trab-Seed.
+        // Der Gang-Phasen-Seed liest das Gesetz (P.phases je MOTION-Preset: Trab/Pass/Stand — jede Zeile trägt es, ein
+        // Muster ohne Zeile ist ein Bruch, kein zweiter Trab im Wirt) und seedet bei Profil-Wechsel neu (wie Lab emo.set).
+        // Der walkPhase-Versatz (Desync je Kreatur) bleibt; das gesetzte Muster wohnt am Gang (g.off), der Takt des Leibs
+        // liest es dort.
         const phGesetz = Array.isArray(P.phases) && P.phases.length === 4 ? P.phases : null;
-        if (!g) {
-            const off = phGesetz || [0, Math.PI * 0.75, Math.PI * 1.5, Math.PI * 0.25];
-            g = tb._gang = {
-                ph: [walkPhase + off[0], walkPhase + off[1], walkPhase + off[2], walkPhase + off[3]],
-                lastT: t,
-                profil: name,
-            };
-        } else if (g.profil !== name) {
-            if (phGesetz) {
-                for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + phGesetz[pi];
-            }
+        if (!phGesetz) return AnazhRealm._kernPflichtBruch("tetrapoda:MOTION." + name + ".phases");
+        if (!g || g.profil !== name) {
+            g = tb._gang = g || { ph: [0, 0, 0, 0], lastT: t };
+            for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + phGesetz[pi];
+            g.off = phGesetz;
             g.profil = name;
         }
         // dtWeg = die echte Uhr-Spanne seit der letzten Auswertung (die Raten-Leiter wertet ferne Wesen nur jeden 2./4.
@@ -18712,16 +18718,19 @@ class AnazhRealm {
         // DAS GANG-GESETZ (Welle 5, tetrapoda gangSchritt): Takt und Hüft-Auslenkung folgen dem WEG des Leibs — die
         // Geschwindigkeit misst der Chokepoint selbst (Lage-Änderung je Uhr-Schritt, geglättet; jeder Halter — Welt,
         // Peer, Werkstatt — läuft durch ihn), die Bein-Länge trägt der Guss (tb.beinL × Körpergröße). Vorher kam der
-        // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0.
+        // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0. Ein
+        // SPRUNG der Lage ist kein Lauf (`_lageTempo`): die Pfoten setzen am neuen Ort — vorher las der Gang einen Ruf über
+        // 20 m als Lauf mit 8,5 m/s, und die Anker am alten Ort zogen die Beine 20 m zurück (gate:koerper-stand K5).
         const lage = group.position;
         if (dtWeg > 0 && Number.isFinite(g.lageX)) {
-            const vRoh = Math.hypot(lage.x - g.lageX, lage.z - g.lageZ) / dtWeg;
-            g.v = (g.v || 0) + (Math.min(vRoh, core.GANG_GESETZ.vMax) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
+            const vLage = AnazhRealm._lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
+            if (vLage === null) g.fuss = null;
+            g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
         }
         g.lageX = lage.x;
         g.lageZ = lage.z;
         const skala = group.scale.x || 1;
-        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala);
+        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala, this._gangZeile(false));
         g.omega = gs.omega; // der Takt des Gangs — die Raten-Leiter tastet ihn nie gröber als ein Viertel ab
         const st = gs.S * fadeMul;
         const freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
@@ -18737,8 +18746,9 @@ class AnazhRealm {
         g.schritt = (g.schritt || 0) + ((st > 0.002 ? 1 : 0) - (g.schritt || 0)) * (dt > 0 ? 1 - Math.exp(-4 * dt) : 1);
         // DER TAKT DES LEIBS (K07): der Kreis-Mittelwert der vier Bein-Phasen, je um ihren Versatz im Muster (im doppelten
         // Takt: Wiegen und Federn schwingen je Tritt) — im Muster gleich dem Takt des ersten Beins; ein Bein, das an der
-        // Grenze seiner Kette abhebt (seine Phase springt auf den Schwung-Anfang), schüttelt den Rumpf nicht
-        const offL = phGesetz || [0, Math.PI * 0.75, Math.PI * 1.5, Math.PI * 0.25];
+        // Grenze seiner Kette abhebt (seine Phase springt auf den Schwung-Anfang), schüttelt den Rumpf nicht. Der Versatz
+        // ist das Muster, mit dem die Beine gesetzt wurden (g.off).
+        const offL = g.off;
         let cL = 0,
             sL = 0;
         for (let k = 0; k < 4; k++) {
@@ -23330,8 +23340,7 @@ class AnazhRealm {
         const alt = ud._laufLage;
         if (!alt) ud._laufLage = { x: p.x, z: p.z };
         else if (delta > 0) {
-            let v = Math.hypot(p.x - alt.x, p.z - alt.z) / delta;
-            if (!(v <= tc.GANG_GESETZ.vMax)) v = 0;
+            const v = AnazhRealm._lageTempo(p.x - alt.x, p.z - alt.z, delta) || 0;
             const lv = ud._laufV || 0;
             ud._laufV = lv + (v - lv) * (1 - Math.exp(-6 * Math.min(0.1, delta)));
             alt.x = p.x;
@@ -102044,10 +102053,17 @@ AnazhRealm.GANG_FELDER = Object.freeze([
     "hubForm",
     "beckenHub",
 ]);
-// Die Reichweite R der Bein-Kette (K07, EINE Schwelle): an ihr führt tetrapoda gangBecken das Becken, an ihr hält die
-// Fuß-IK den stehenden Fuß (`_gaitLegIK`, `_gaitLockBedarf`) — knapp unter der gestreckten Kette (das Knie schnappt nie durch).
+// DER SPRUNG DER LAGE IST KEIN LAUF (tetrapoda GANG_GESETZ.vMax, EINE Regel): das Tempo eines Leibs aus der Änderung
+// seiner Lage in dt — über vMax (Spawn, Teleport, Peer-Schnapp, ein Ruf an einen fernen Ort) null. Leser: der Lauf des
+// Leibs (`_kreaturLaufTakt`) und der Gang der Pfoten (`_animateTierBaum`).
+AnazhRealm._lageTempo = function (dx, dz, dt) {
+    const v = Math.hypot(dx, dz) / dt;
+    return v <= globalThis.__tetrapodaCore.GANG_GESETZ.vMax ? v : null;
+};
+// Die Reichweite R der Bein-Kette (K07, EINE Schwelle — tetrapoda gangReich, dieselbe im Körper-Studio): an ihr führt
+// tetrapoda gangBecken das Becken, an ihr hält die Fuß-IK den stehenden Fuß (`_gaitLegIK`, `_gaitLockBedarf`).
 AnazhRealm._gaitReich = function (kette) {
-    return 0.995 * kette;
+    return globalThis.__tetrapodaCore.gangReich(kette);
 };
 // Der EINE Bewegungs-Block-Leser: luft (Beschleunigungs-/Brems-Kurven), sprung (Coyote-/Buffer-
 // Fenster), schritt (Compound-Takt, Klang-Schwelle), gang (die Zweibeiner-Zeile des Gang-Gesetzes) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder
