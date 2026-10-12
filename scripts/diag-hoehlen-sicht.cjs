@@ -193,7 +193,9 @@ function urteil(b) {
     }
     const kl = b.kliff;
     if (!kl || !(kl.steil > 0))
-        v.push("LEER: (k) Kliff: kein steiler Vertex unter dem Himmel im Boden-Satz (die Wand prüfte keinen Kliff-Stoff)");
+        v.push(
+            "LEER: (k) Kliff: kein steiler Vertex unter dem Himmel im Boden-Satz (die Wand prüfte keinen Kliff-Stoff)"
+        );
     else if (kl.fremd > kl.steil * FELS_FREMD_ANTEIL)
         v.push(
             `KLIFF OHNE STOFF: ${kl.fremd} von ${kl.steil} steilen Vertices unter dem Himmel tragen nicht den Fels-Stoff ` +
@@ -421,7 +423,11 @@ function selbsttest() {
         ],
         ["Fels ohne Höhle", (b) => (b.wieseUnterFels.ohneHimmel = 0), /LEER: \(k\) Wiese unter Fels/],
         // (k) K17: der Höhlen-Fels von Auge 11 (762/−138) war EINE graue Masse — jeder Vertex der Stein der Palette
-        ["Masse", (b) => (b.wieseUnterFels.streuung = 0), /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/],
+        [
+            "Masse",
+            (b) => (b.wieseUnterFels.streuung = 0),
+            /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/,
+        ],
         ["Fels zu hell", (b) => (b.wieseUnterFels.albedo = 0.5), /ALBEDO: der Höhlen-Fels liegt bei Y 0\.5/],
         [
             "Kliff ohne Stoff",

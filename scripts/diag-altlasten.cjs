@@ -1102,6 +1102,13 @@ const FORBIDDEN = [
         ["kontinentBasis", "die Prominenz-Basis der Schneegrenze"],
         ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
     ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
+    // K17 — DER FELS HAT STOFF: das EINE Fels-Gesetz (gelaende-core `felsFarbe` · `felsNetz`) färbt Boden und Gestalten
+    ...[
+        ["_bodenFarbeUnterFels", "der Palette-Stein unter Fels (die Höhle trägt den Fels-Stoff, `_felsStoff`)"],
+        ["rockTint", "der Fels-Tint des Shaders (der Vertex trägt den Fels-Stoff, die Ferne `FELS_STOFF.mittel`)"],
+        ["rockLumMix", "die Säulen-Luminanz auf dem Fels"],
+        ["_shadeRock", "die Hex-Abschattung des Werkstatt-Steins (die Töne leitet `felsBasis` ab)"],
+    ].map(([token, kern]) => ({ token, fiel: `K17 — ${kern}` })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1412,9 +1419,7 @@ const ZWILLINGE = [
 // selbst als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
-    const wurzel = fs
-        .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
+    const wurzel = fs.readdirSync(root).filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js");
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))
