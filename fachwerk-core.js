@@ -5018,7 +5018,231 @@
             fences: lay.fences,
             felder: lay.felder,
             staende: lay.staende,
+            // DIE LATERNEN reisen (K10 × K11): ihr Leser ist das Leuchtquellen-Gesetz der Welt (`_laternenLesen`).
+            laternen: lay.laternen,
         };
+    }
+
+    // ── DER ORT AUF DEM GELÄNDE (K10, Plan v2) — ortPlan(plan, origin, ctx): der Export (2D, plan-lokal) auf der Gelände-
+    //    Funktion der Welt-Zelle. ctx = { hoeheAt(x, z) } liest die Höhe an einem WELT-Ort (das ctx-Muster von phyto
+    //    `planForestCell`: der Wirt reicht seine Lese-Funktion, der Kern rechnet). Die Reihenfolge ist das Gesetz: der PLATZ
+    //    liegt auf dem Median seines Grunds; jeder WEG trägt ein Höhen-Profil (geglättet über `glaettM`, am Platz und an den
+    //    Knoten der früheren Wege gepinnt, das Gefälle gekappt auf `gefaelle`); jedes HAUS steht auf der Höhe seiner Gasse (der
+    //    Weg-Punkt vor seiner Tür, sonst der Median seines Grundrisses), sein Vorplatz trägt die halbe Diele (zwei Stufen statt
+    //    einer Schwelle von 0,55 m). Ausgabe: der Plan mit `version: 2`, `ort` {x, z}, je Slot `y` (der Boden des Hauses,
+    //    absolut) und `hang` (plattform · hanghaus · stelzen: die Spanne des Grunds unter dem Grundriss), die Wege mit `ys`, der
+    //    Platz und die Laternen mit `y`, und `erdbau[]` — die Splats des ERDBAU-Terms (gelaende-core `erdbauNormal`): `platte`
+    //    {cx, cz, phi, ex, ez, y} und `trasse` {x0, z0, y0, x1, z1, y1, w}, absolut in Welt-Koordinaten, in der Reihenfolge
+    //    ihrer Auswertung (Wege, Platz, je Haus Grundriss und Vorplatz). REIN: derselbe Plan + derselbe Ort + dieselbe Höhe ⇒
+    //    byte-derselbe Plan v2 (gate:settlement, Plan-Hash Studio = Welt). Leser: der Wirt (`_ortPlanSetzen`).
+    var ORT_GESETZ = {
+        glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
+        gefaelle: 0.12, // die Fuß-Gasse (Nordstern §6: Fuß ≤ 12 %)
+        saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
+        vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür
+        gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
+        hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
+        hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
+    };
+    function ortPlan(plan, origin, ctx) {
+        if (!plan || !Array.isArray(plan.slots) || !origin || !ctx || typeof ctx.hoeheAt !== "function")
+            throw new Error("fachwerk ortPlan: Plan, Ort und ctx.hoeheAt sind Pflicht");
+        var O = ORT_GESETZ;
+        var ox = Number(origin.x);
+        var oz = Number(origin.z);
+        if (!isFinite(ox) || !isFinite(oz)) throw new Error("fachwerk ortPlan: der Ort ist keine Zahl");
+        var r6 = function (v) {
+            return Math.round(v * 1e6) / 1e6;
+        };
+        var H = function (x, z) {
+            var h = ctx.hoeheAt(ox + x, oz + z);
+            if (!isFinite(h)) throw new Error("fachwerk ortPlan: keine Höhe an " + r6(ox + x) + "/" + r6(oz + z));
+            return h;
+        };
+        var median = function (a) {
+            var b = a.slice().sort(function (p, q) {
+                return p - q;
+            });
+            var n = b.length;
+            return n % 2 ? b[(n - 1) / 2] : 0.5 * (b[n / 2 - 1] + b[n / 2]);
+        };
+        // die Höhen eines gedrehten Rechtecks (plan-lokal, im Rahmen des Hauses: welt = mitte + (lx·c + lz·s, −lx·s + lz·c))
+        var rechteck = function (cx, cz, phi, ex, ez) {
+            var c = Math.cos(phi);
+            var s = Math.sin(phi);
+            var out = [];
+            for (var i = 0; i < 5; i++)
+                for (var j = 0; j < 5; j++) {
+                    var lx = ex * (i / 2 - 1);
+                    var lz = ez * (j / 2 - 1);
+                    out.push(H(cx + lx * c + lz * s, cz - lx * s + lz * c));
+                }
+            return out;
+        };
+        var erdbau = [];
+        // 1) DER PLATZ
+        var pz = plan.platz;
+        var platzY = null;
+        if (pz && isFinite(pz.cx) && isFinite(pz.cz) && isFinite(pz.ex) && isFinite(pz.ez))
+            platzY = r6(median(rechteck(pz.cx, pz.cz, pz.phi || 0, pz.ex, pz.ez)));
+        var imPlatz = function (x, z) {
+            if (platzY === null) return false;
+            var c = Math.cos(pz.phi || 0);
+            var s = Math.sin(pz.phi || 0);
+            var dx = x - pz.cx;
+            var dz = z - pz.cz;
+            return Math.abs(dx * c - dz * s) <= pz.ex + 1 && Math.abs(dx * s + dz * c) <= pz.ez + 1;
+        };
+        // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
+        var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
+        var wege = [];
+        var roads = Array.isArray(plan.roads) ? plan.roads : [];
+        var k;
+        for (var ri = 0; ri < roads.length; ri++) {
+            var rd = roads[ri];
+            var pts = rd && Array.isArray(rd.pts) ? rd.pts : [];
+            var hw = (isFinite(rd.w) ? rd.w : 3) / 2;
+            var n = pts.length;
+            var sw = [];
+            var roh = [];
+            var pin = [];
+            for (k = 0; k < n; k++) {
+                sw.push(k ? sw[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z) : 0);
+                roh.push(H(pts[k].x, pts[k].z));
+                pin.push(null);
+                if (imPlatz(pts[k].x, pts[k].z)) {
+                    pin[k] = platzY;
+                    continue;
+                }
+                var best = Infinity;
+                for (var q = 0; q < profil.length; q++) {
+                    var d = Math.hypot(pts[k].x - profil[q][0], pts[k].z - profil[q][1]);
+                    if (d <= Math.max(1.5, profil[q][3]) && d < best) {
+                        best = d;
+                        pin[k] = profil[q][2];
+                    }
+                }
+            }
+            var ys = [];
+            for (k = 0; k < n; k++) {
+                if (pin[k] !== null) {
+                    ys.push(pin[k]);
+                    continue;
+                }
+                var sum = 0;
+                var cnt = 0;
+                for (var m = 0; m < n; m++)
+                    if (Math.abs(sw[m] - sw[k]) <= O.glaettM) {
+                        sum += roh[m];
+                        cnt++;
+                    }
+                ys.push(sum / cnt);
+            }
+            for (k = 1; k < n; k++)
+                if (pin[k] === null) {
+                    var g = O.gefaelle * (sw[k] - sw[k - 1]);
+                    ys[k] = Math.min(ys[k - 1] + g, Math.max(ys[k - 1] - g, ys[k]));
+                }
+            for (k = n - 2; k >= 0; k--)
+                if (pin[k] === null) {
+                    var g2 = O.gefaelle * (sw[k + 1] - sw[k]);
+                    ys[k] = Math.min(ys[k + 1] + g2, Math.max(ys[k + 1] - g2, ys[k]));
+                }
+            for (k = 0; k < n; k++) {
+                ys[k] = r6(ys[k]);
+                profil.push([pts[k].x, pts[k].z, ys[k], hw]);
+            }
+            for (k = 1; k < n; k++)
+                erdbau.push({
+                    art: "trasse",
+                    x0: r6(ox + pts[k - 1].x),
+                    z0: r6(oz + pts[k - 1].z),
+                    y0: ys[k - 1],
+                    x1: r6(ox + pts[k].x),
+                    z1: r6(oz + pts[k].z),
+                    y1: ys[k],
+                    w: r6(2 * (hw + O.saumM)),
+                });
+            wege.push(Object.assign({}, rd, { ys: ys }));
+        }
+        var naechsterWeg = function (x, z, weit) {
+            var y = null;
+            var bd = Infinity;
+            for (var q = 0; q < profil.length; q++) {
+                var d = Math.hypot(x - profil[q][0], z - profil[q][1]);
+                if (d <= profil[q][3] + weit && d < bd) {
+                    bd = d;
+                    y = profil[q][2];
+                }
+            }
+            return y;
+        };
+        if (platzY !== null)
+            erdbau.push({
+                art: "platte",
+                cx: r6(ox + pz.cx),
+                cz: r6(oz + pz.cz),
+                phi: r6(pz.phi || 0),
+                ex: r6(pz.ex + O.saumM),
+                ez: r6(pz.ez + O.saumM),
+                y: platzY,
+            });
+        // 3) DIE HÄUSER
+        var slots = [];
+        for (var si = 0; si < plan.slots.length; si++) {
+            var sl = plan.slots[si];
+            var ob = sl.obb;
+            var tu = sl.tuer;
+            var c0 = Math.cos(sl.phi || 0);
+            var s0 = Math.sin(sl.phi || 0);
+            var grund = ob ? rechteck(ob.cx, ob.cz, ob.phi || 0, ob.ex, ob.ez) : [H(sl.x, sl.z)];
+            var y = null;
+            if (tu && isFinite(tu.x) && isFinite(tu.z)) {
+                var lz0 = tu.z - O.vorplatzM;
+                y = naechsterWeg(sl.x + tu.x * c0 + lz0 * s0, sl.z - tu.x * s0 + lz0 * c0, O.gasseM);
+            }
+            if (y === null) y = r6(median(grund));
+            var spanne = 0;
+            for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
+            var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
+            if (ob)
+                erdbau.push({
+                    art: "platte",
+                    cx: r6(ox + ob.cx),
+                    cz: r6(oz + ob.cz),
+                    phi: r6(ob.phi || 0),
+                    ex: r6(ob.ex + O.saumM),
+                    ez: r6(ob.ez + O.saumM),
+                    y: y,
+                });
+            if (tu && isFinite(tu.x) && isFinite(tu.z) && isFinite(tu.w)) {
+                var lzv = tu.z - O.vorplatzM / 2;
+                erdbau.push({
+                    art: "platte",
+                    cx: r6(ox + sl.x + tu.x * c0 + lzv * s0),
+                    cz: r6(oz + sl.z - tu.x * s0 + lzv * c0),
+                    phi: r6(sl.phi || 0),
+                    ex: r6(tu.w / 2 + O.saumM),
+                    ez: r6(O.vorplatzM / 2),
+                    y: r6(y + (isFinite(tu.y) ? tu.y : 0) / 2),
+                });
+            }
+            slots.push(Object.assign({}, sl, { y: y, hang: hang }));
+        }
+        // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund)
+        var laternen = (Array.isArray(plan.laternen) ? plan.laternen : []).map(function (l) {
+            var yl = naechsterWeg(l.x, l.z, 2);
+            return Object.assign({}, l, { y: yl === null ? r6(H(l.x, l.z)) : yl });
+        });
+        return Object.assign({}, plan, {
+            version: 2,
+            ort: { x: ox, z: oz },
+            slots: slots,
+            roads: wege,
+            platz: platzY === null ? plan.platz : Object.assign({}, pz, { y: platzY }),
+            laternen: laternen,
+            erdbau: erdbau,
+        });
     }
 
     // ── KAMIN-RAUCH (.105/.106) — Partikel-Feel als DATEN: Host + Lab lesen
@@ -5138,6 +5362,8 @@
         AUSSTATTUNG: AUSSTATTUNG,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
+        ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
+        ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,
         BEGEH_GESETZ: BEGEH_GESETZ,

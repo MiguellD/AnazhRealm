@@ -85,6 +85,8 @@ const state = {
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
     // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
     erbgut: null,
+    // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null
+    erdbau: null,
 };
 
 self.onmessage = function (e) {
@@ -231,6 +233,8 @@ function applyStateSnapshot(snap) {
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
+    // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
+    if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal(snap.erdbau);
 }
 
 function applyStateDelta(delta) {

@@ -24544,6 +24544,8 @@ class AnazhRealm {
             // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
             // rechnet dieselben Zahlen, nie eine eigene Ableitung.
             erbgut: this._erbgut(),
+            // DER ERDBAU DER ORTE (K10): die Splat-Liste in der Reihenfolge der Orte — der Worker legt sie in die Normalform
+            erdbau: this._erdbauRoh(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
@@ -24882,9 +24884,17 @@ class AnazhRealm {
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
     // und Pad ±1 Cell → die Box deckt den Mesh-Footprint konservativ.
     _chunkFootprintEditFrei(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        // der Erdbau eines Orts (K10) formt den Boden wie ein Edit: sein Umkreis liest nie alte Bytes der Platte
+        const E = this._erdbauLage();
+        if (E) {
+            const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+            for (let a = Math.floor(((cx - 1) * span) / Z); a <= Math.floor(((cx + 2) * span) / Z); a++)
+                for (let b = Math.floor(((cz - 1) * span) / Z); b <= Math.floor(((cz + 2) * span) / Z); b++)
+                    if (E.zellen.has((a + 32768) * 65536 + (b + 32768))) return false;
+        }
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
         if (!edits || !edits.length) return true;
-        const { span } = this._voxelChunkConfig();
         const loX = (cx - 1) * span,
             hiX = (cx + 2) * span,
             loZ = (cz - 1) * span,
@@ -27906,8 +27916,129 @@ class AnazhRealm {
             get regionSize() {
                 return AnazhRealm.HYDROSPHERE.regionSize;
             },
+            get erdbau() {
+                return realm._erdbauLage();
+            },
         };
         return this._gelaendeLage;
+    }
+
+    // DER ERDBAU DER ORTE (K10, Welt = Funktion + Abweichungen): `worldMeta.erdbau` trägt je Ort (Schlüssel) die Splats seines
+    // Plans v2 (fachwerk `ortPlan`); die Gelände-Funktion liest sie als letzten Term (gelaende-core `erdbauY`) — Stamm und
+    // voxel-worker dieselbe Liste in derselben Reihenfolge (die Reihenfolge, in der die Orte entstanden). Reist im Snapshot
+    // (worldMeta) und zum Gast; jeder Peer, der denselben Akt ausführt, legt denselben Erdbau.
+    _erdbauRoh() {
+        const wm = this.state.worldMeta;
+        const E = wm && wm.erdbau && typeof wm.erdbau === "object" ? wm.erdbau : null;
+        const out = [];
+        if (!E) return out;
+        for (const k of Object.keys(E)) if (Array.isArray(E[k])) for (const p of E[k]) out.push(p);
+        return out;
+    }
+    // Die Normalform des Erdbaus (gemerkt je Stand; null = kein Ort) — die Gelände-Lage liest sie je Höhe.
+    _erdbauLage() {
+        const wm = this.state.worldMeta;
+        const roh = wm ? wm.erdbau : undefined;
+        if (this._erdbauGemerkt === true && this._erdbauGemerktRoh === roh && this._erdbauGemerktStand === this._erdbauStand)
+            return this._erdbauNorm;
+        this._erdbauNorm = globalThis.__gelaendeCore.erdbauNormal(this._erdbauRoh());
+        this._erdbauGemerkt = true;
+        this._erdbauGemerktRoh = roh;
+        this._erdbauGemerktStand = this._erdbauStand;
+        return this._erdbauNorm;
+    }
+    // Ein Ort legt seinen Erdbau (einmal je Schlüssel): die Gelände-Funktion, ihre Caches, der Worker, die Chunks und Felder im
+    // Umkreis folgen, und der Wald plant den Ort frei (das Dart-Memo fällt). Fail-closed: eine fremde Splat-Art wirft, bevor
+    // die Welt sie trägt.
+    _erdbauSetzen(key, splats) {
+        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
+        if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
+        const G = globalThis.__gelaendeCore;
+        G.erdbauNormal(splats);
+        wm.erdbau[key] = splats;
+        this._erdbauStand = (this._erdbauStand || 0) + 1;
+        if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
+        if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
+        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        this._forestDartMemo = null;
+        if (this.state.voxelWorker) {
+            this.state.voxelWorkerStateGen++;
+            this.state.voxelWorker.postMessage({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
+        }
+        let x0 = Infinity;
+        let x1 = -Infinity;
+        let z0 = Infinity;
+        let z1 = -Infinity;
+        for (const p of splats) {
+            const r = p.art === "platte" ? Math.hypot(p.ex, p.ez) : p.w / 2;
+            const xs = p.art === "platte" ? [p.cx] : [p.x0, p.x1];
+            const zs = p.art === "platte" ? [p.cz] : [p.z0, p.z1];
+            for (const x of xs) {
+                x0 = Math.min(x0, x - r);
+                x1 = Math.max(x1, x + r);
+            }
+            for (const z of zs) {
+                z0 = Math.min(z0, z - r);
+                z1 = Math.max(z1, z + r);
+            }
+        }
+        const cx = (x0 + x1) / 2;
+        const cz = (z0 + z1) / 2;
+        const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + G.ERDBAU.reichweiteM;
+        if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
+        const { span } = this._voxelChunkConfig();
+        for (let a = Math.floor((cx - rad) / span); a <= Math.floor((cx + rad) / span); a++)
+            for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
+                this.state.grassDirtyChunks.add(`${a},${b}`);
+        this._remeshVoxelChunksAround(cx, cz, rad);
+        this._invalidateWaterCapsAround(cx, cz, rad);
+        this._invalidateBakedRegionsAround(cx, cz, rad);
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        return true;
+    }
+    // DER ORT AUF DEM GELÄNDE (K10): der Export des Studios (2D) wird am Anker zum Plan v2 — dieselbe Formel, die das Studio
+    // rechnet (fachwerk `ortPlan`), über DIESELBE Gelände-Funktion (`_terrainMacroSurfaceY`, das Gesetz samt dem Erdbau früherer
+    // Orte); sein Erdbau liegt, bevor das erste Haus steht. Ein Plan, der schon v2 ist, bleibt. Leser: der Akt
+    // (`spawnSettlement`) und das Auto-Dorf (`_autoSettlementSpawnCell`); die Slot-Quelle liest `slot.y`.
+    _ortPlanSetzen(plan, origin) {
+        if (plan && plan.version === 2) return plan;
+        // je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als Gelände)
+        const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
+        const ple = this._ortPlaene || (this._ortPlaene = new Map());
+        if (ple.has(key)) return ple.get(key);
+        const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, {
+            hoeheAt: (x, z) => this._terrainMacroSurfaceY(x, z, true),
+        });
+        this._erdbauSetzen(key, v2.erdbau);
+        ple.set(key, v2);
+        return v2;
+    }
+    // Trägt der Grund an (x, z) eine Krone vom Radius T, ohne einen Ort zu berühren? (der Erdbau ist der reservierte Grund:
+    // Grundrisse, Vorplätze, Platz, Gassen). Leser: der Wald-Plan (phyto `planForestCell`, ctx.ortFrei).
+    _ortFrei(x, z, T) {
+        const E = this._erdbauLage();
+        if (!E) return true;
+        const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+        const liste = E.zellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        if (!liste) return true;
+        for (const i of liste) {
+            const p = E.splats[i];
+            let d;
+            if (p.platte) {
+                const dx = x - p.cx;
+                const dz = z - p.cz;
+                const u = Math.max(0, Math.abs(dx * p.c - dz * p.s) - p.ex);
+                const v = Math.max(0, Math.abs(dx * p.s + dz * p.c) - p.ez);
+                d = Math.hypot(u, v);
+            } else {
+                let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+                q = q < 0 ? 0 : q > 1 ? 1 : q;
+                d = Math.max(0, Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q)) - p.hw);
+            }
+            if (d < T) return false;
+        }
+        return true;
     }
 
     // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
@@ -73703,6 +73834,8 @@ class AnazhRealm {
                               ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
                               : 0,
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
+                      // der Ort vor dem Wald (K10): keine Krone über dem Grund eines Orts (`_ortFrei`, der Erdbau)
+                      ortFrei: (x, z, T) => this._ortFrei(x, z, T),
                   })
                 : [];
         if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
@@ -74607,29 +74740,15 @@ class AnazhRealm {
         return out;
     }
 
-    // DER ERSATZ-ORT (Leben-Schau 07.10.: „dorf 7 18" an der Plattform setzte 13 Häuser, 12 von 25 Slots fielen — Klippe,
-    // Wasser, Bau-Wand): fällt ein Slot an seinem Ort, sucht er in seiner Nachbarschaft weiter, statt zu fallen. Die
-    // Versätze liegen im Rahmen des Hauses (Gier `phi`): entlang der Gasse (±x) und nach hinten (+z, weg von der Haustür
-    // an der Front −z — die Gasse bleibt frei), in drei Ringen zu je einem halben Haus (mindestens 2 m). Deterministisch.
-    static _slotErsatzVersaetze(slot) {
-        const obb = slot && slot.obb;
-        const groesse = obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) ? Math.max(obb.ex, obb.ez) : 3;
-        const schritt = Math.max(2, 0.5 * groesse);
-        const D = Math.SQRT1_2;
-        const richtungen = [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [D, D],
-            [-D, D],
-        ];
-        const out = [];
-        for (let k = 1; k <= 3; k++) for (const [x, z] of richtungen) out.push([x * k * schritt, z * k * schritt]);
-        return out;
-    }
-
     _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
+        // DER BODEN DES PLANS (K10): der Slot trägt seine Höhe `y` aus dem Plan v2 (fachwerk `ortPlan`, `_ortPlanSetzen`) — die
+        // Welt erfindet keine Höhe mehr: die hMax-Suche über das Raster, das Podest, die Klippen-Wand und die Ersatz-Orte fielen,
+        // der Erdbau des Orts trägt das Haus. Ein Slot ohne y fällt geschlossen und laut.
+        if (!Number.isFinite(slot.y)) {
+            this.log(`SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`, "ERROR");
+            return false;
+        }
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
         const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
         const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
@@ -74640,10 +74759,9 @@ class AnazhRealm {
         const obb = slot.obb;
         const tu = slot.tuer;
         // DER GRUNDRISS DES SLOTS (haus-lokal): das obb des Exports um seine Mitte — die obb-Mitte (Siedlungs-Rahmen wie
-        // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}; Ecken, Podest
-        // und Grundriss liegen um IHN (Welle L: vorher um den Ursprung ragte das Podest hinter dem Haus hervor, der Hof vorn
-        // stand ohne Grundriss). Ohne obb (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes
-        // Werks an der Wurzel aus den Optionen liest (`_werkGrundriss`).
+        // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}. Ohne obb
+        // (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes Werks an der Wurzel aus den
+        // Optionen liest (`_werkGrundriss`).
         let fundament = null;
         if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
             const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
@@ -74655,54 +74773,14 @@ class AnazhRealm {
             (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
                 ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
                 : null);
-        const raster = fundament ? AnazhRealm._fundamentRaster(fundament, tu) : null;
-        // Trägt der Ort (wx, wz) das Haus? Die Wände je Ort: Wasser, Klippe (Raster), Bau. Gibt { hMax } oder null.
-        const traegt = (wx, wz) => {
-            // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der
-            // Wand jedes Werks) — die Mitte auf dem Trockenen trug bis V18.537 ein Haus, dessen Fundament im Fluss stand.
-            if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? AnazhRealm.FUNDAMENT_SOCKEL_M : 0)) return null;
-            // Die Höhe urteilt über den FOOTPRINT: das Raster des Fundaments (`_fundamentRaster`: Fläche ≤ 2 m samt Kanten und
-            // der Vorplatz der Haustür — er hebt nur die Basis, die Tür liegt nie im Hang) + Zentrum; Basis = MAX (kein Punkt
-            // im Berg), Δh > SIEDLUNG.fundamentMaxDh → der Ort fällt GESCHLOSSEN (kein schwebendes Haus). Der Eintrag trägt
-            // `fundament` {ex,ez}; Podest + Blocker leiten die Tiefe LIVE aus dem Feld ab. Ohne obb (fremder Export):
-            // Punkt-Höhe (must-ignore).
-            const hMitte = this.getTerrainHeightAt(wx, wz);
-            let hMax = hMitte;
-            let hMin = hMitte;
-            if (raster) {
-                for (const [lx, lz, flaeche] of raster) {
-                    const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
-                    if (!Number.isFinite(h)) continue;
-                    if (h > hMax) hMax = h;
-                    if (flaeche && h < hMin) hMin = h;
-                }
-                // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Ort.
-                const S = AnazhRealm._siedlungGesetz();
-                if (!S || hMax - hMin > S.fundamentMaxDh) return null; // die Klippen-Wand (fail-closed)
-            }
-            // DIE BAU-WAND: kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand (_bauFrei).
-            if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, hMax)) return null;
-            return { hMax };
-        };
-        let wx = origin.x + slot.x;
-        let wz = origin.z + slot.z;
-        let ort = traegt(wx, wz);
-        if (!ort) {
-            for (const [lx, lz] of AnazhRealm._slotErsatzVersaetze(slot)) {
-                const ex = origin.x + slot.x + lx * rc + lz * rs;
-                const ez = origin.z + slot.z - lx * rs + lz * rc;
-                ort = traegt(ex, ez);
-                if (ort) {
-                    wx = ex;
-                    wz = ez;
-                    if (so && so.zaehler) so.zaehler.ersatz++;
-                    break;
-                }
-            }
-        }
-        if (!ort) return false;
-        const { hMax } = ort;
-        const wy = hMax + 0.5;
+        const wx = origin.x + slot.x;
+        const wz = origin.z + slot.z;
+        // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
+        // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
+        // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
+        if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? AnazhRealm.FUNDAMENT_SOCKEL_M : 0)) return false;
+        if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
+        const wy = slot.y + 0.5; // der Bauplan-Boden liegt 0,5 m unter dem Ursprung (`_archEntryWorldMatrix` baseY)
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
         const entry = this.spawnArchitecture(
@@ -74821,17 +74899,16 @@ class AnazhRealm {
     }
     _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
+        plan = this._ortPlanSetzen(plan, origin); // der Ort auf dem Gelände (K10): jeder Slot trägt seinen Boden
         const f = this._foundry;
         let placed = 0;
         let skipped = 0;
         let mx = 0;
         let mz = 0;
         const haeuser = [];
-        const zaehler = { ersatz: 0 };
-        const so2 = Object.assign({}, so, { zaehler });
         for (const slot of plan.slots) {
-            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot oder an seinem Ersatz-Ort daneben
-            const haus = this._spawnSettlementSlot(slot, origin, f, so2);
+            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10)
+            const haus = this._spawnSettlementSlot(slot, origin, f, so);
             if (haus) {
                 placed++;
                 haeuser.push(haus);
@@ -74844,7 +74921,6 @@ class AnazhRealm {
         return {
             placed,
             skipped,
-            ersatz: zaehler.ersatz,
             name: plan.name || null,
             groesse: plan.groesse || null,
             mitte,
@@ -75039,6 +75115,8 @@ class AnazhRealm {
             }
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
+            // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt
+            plan = this._ortPlanSetzen(plan, anchor);
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -75504,6 +75582,8 @@ class AnazhRealm {
             // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
             // Alle Leser fragen nur Existenz (truthy).
             wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
+            // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker, sein Erdbau liegt, bevor das erste Haus steht
+            plan = this._ortPlanSetzen(plan, anchor);
             this._autoSettlementQueue = { plan, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
             // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
             // materialisieren budgetiert über die Ticks).
