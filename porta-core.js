@@ -62,9 +62,11 @@
             kindStages: { gate: [0] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
-                // 1110-9 (das Detail-Gesetz der Röhren und Ringe): das Tor-L0 erreicht sein Band 60 000 — das Feld fällt, tris
-                // (die Ratsche, gemessen 51 096 am drachentor) IST das Band
-                gate: { 0: { tris: 52000, draws: 13, schatten: 0 }, fernform: "gesetz" },
+                // 1110-9 (das Detail-Gesetz der Röhren und Ringe): tris ist die Hülle der Rezepte UND des Rands jedes Reglers
+                // (gate:regler-wirkt, Ratsche reglerBudget Soll 0) — gemessen 75 608 an ruine wBraid=1 (vorher 256 284 an
+                // maurentor orders=9, über der alten Zeile 184 000); die sieben Rezepte selbst tragen ≤ 51 096 und liegen auf
+                // dem Band, der Rand der Regler noch darüber
+                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 0 }, fernform: "gesetz" },
                 gestalten: {},
             },
         },
