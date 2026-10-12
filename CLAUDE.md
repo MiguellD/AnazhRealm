@@ -111,7 +111,7 @@ EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff · WA
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes (5,79 px je Strähne an
-Armlänge, A1 11.10.) · B Pfad ohne Bruch · C Ort auf dem Gelände · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis).
+Armlänge, A1 11.10.) · C Ort auf dem Gelände · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis); B fiel V18.543.
 
 ## Architektur (die Karte)
 
