@@ -20026,7 +20026,7 @@ async function checkBandHydrosphere(ctx) {
         out.riverCount = h1.rivers.length;
         out.lakeCount = h1.lakes.length;
         out.waterfallCount = h1.waterfalls.length;
-        out.maxAccum = h1.stats ? h1.stats.maxAccum : 0;
+        out.bettMin = h1.stats ? h1.stats.bettMin : null;
         out.riverMaxSlope = h1.stats ? h1.stats.riverMaxSlope : 0;
         out.riverMaxDrop = h1.stats ? h1.stats.riverMaxDrop : 0;
         out.riverLenMax = h1.stats ? h1.stats.riverLenMax : 0;
@@ -20039,33 +20039,23 @@ async function checkBandHydrosphere(ctx) {
             JSON.stringify(h1.rivers) === JSON.stringify(h2.rivers) &&
             JSON.stringify(h1.lakes) === JSON.stringify(h2.lakes) &&
             JSON.stringify(h1.waterfalls) === JSON.stringify(h2.waterfalls);
-        // Jeder Fluss fällt STRIKT monoton: point.y ist die Füllhöhe entlang flowTo — auch durch einen
-        // See (das Priority-Flood-ε hält filled im Becken strikt fallend).
+        // Jeder Fluss fällt STRIKT monoton: point.y ist die Sohle des Netzes (gelaende-core `knotenSohle`).
         out.riversDescend = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
                 if (rv.points[k].y <= rv.points[k + 1].y) return false;
             }
             return true;
         });
-        // V9.46 — jeder Fluss endet an Meer oder Region-Rand (Seen
-        // sind keine Mündung mehr — der Fluss fliesst hindurch).
-        out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border");
-        // V9.46 — mindestens ein Fluss fliesst durch einen See HINDURCH: ein Land-Punkt NACH einer See-Durchquerung —
-        // gemessen an der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
+        // Jeder Fluss endet am Meer, am Rand der Kachel oder in einem See (K16: die Senke des Netzes ist ein benannter See).
+        out.riverMouths = h1.rivers.every((rv) => rv.mouth === "sea" || rv.mouth === "border" || rv.mouth === "see");
+        // K16 — ein Fluss mündet in den See des Wasser-Orts (Land → See), sein Spiegel endet auf dem des Sees — gemessen an
+        // der Kachel des Wasser-Orts (`__wasserOrt`: die Heimat trägt seit K16 keinen See).
         const seeOrt = window.__wasserOrt("see");
         const meerOrt = window.__wasserOrt("meer");
         out.seeOrt = seeOrt ? `${Math.round(seeOrt.x)},${Math.round(seeOrt.z)}` : "keiner";
         out.meerOrt = meerOrt ? `${Math.round(meerOrt.x)},${Math.round(meerOrt.z)}` : "keiner";
         out.riverThroughLake =
-            !!seeOrt &&
-            seeOrt.hydro.rivers.some((rv) => {
-                let sawLake = false;
-                for (const p of rv.points) {
-                    if (p.inLake) sawLake = true;
-                    else if (sawLake) return true;
-                }
-                return false;
-            });
+            !!seeOrt && seeOrt.hydro.rivers.some((rv) => rv.mouth === "see" && rv.points.every((p) => !p.inLake));
         // Flow-Accumulation stromab monoton → Breite wächst
         out.widthGrows = h1.rivers.every((rv) => {
             for (let k = 0; k + 1 < rv.points.length; k++) {
@@ -20075,8 +20065,6 @@ async function checkBandHydrosphere(ctx) {
         });
         // Jeder See: Füll-Level über dem Boden, unter (≈) der Rand-Höhe
         out.lakesValid = h1.lakes.every((lk) => lk.level > lk.floorY && lk.level <= lk.rimY + 1.5);
-        // Jede Land-Zelle hat nach dem Priority-Flood einen Abfluss
-        out.allDrained = !!h1.stats && h1.stats.undrainedLand === 0;
         // Worldgen-Verdrahtung — state.hydrosphere ist gesetzt
         out.wired = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
         // Das vereinte Wasser-Feld je Region-Zelle: flacher Wasser-Spiegel (`waterY`) + Klassifikation
@@ -20191,20 +20179,19 @@ async function checkBandHydrosphere(ctx) {
         check("Voxel V9.43-b: state.hydrosphere ist im State deklariert", hb.stateDeclared);
         check("Voxel V9.43-b: liefert {ready, rivers[], lakes[], waterfalls[], dim, cell}", hb.shape);
         check(
-            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, maxAccum ${hb.maxAccum}, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
+            `Voxel V9.43-b: das Netz trägt Flüsse (${hb.riverCount} Flüsse, ${hb.lakeCount} Seen, ${hb.waterfallCount} Wasserfälle, Bett min ${hb.bettMin} m, längster Fluss ${hb.riverLenMax} Pkt / Σ ${hb.riverPointsTotal}, größter See ${hb.lakeCellsMax} / Σ ${hb.lakeCells} Zellen, steilstes Segment ${hb.riverMaxSlope})`,
             hb.riverCount > 0
         );
         check("Voxel V9.43-b: das Netz ist deterministisch (zwei Läufe byte-identisch)", hb.deterministic);
-        check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, durch Seen)", hb.riversDescend);
-        check("Voxel V9.43-b: jeder Fluss endet an Meer oder Region-Rand", hb.riverMouths);
+        check("Voxel V9.43-b: jeder Fluss steigt strikt monoton ab (Quelle → Mündung, die Sohle des Netzes)", hb.riversDescend);
+        check("Voxel V9.43-b: jeder Fluss endet an Meer, See oder Region-Rand", hb.riverMouths);
         check(
-            "Voxel V9.46: ein Fluss fliesst durch einen See hindurch (Land → See → Land)",
+            "K16: ein Fluss des Netzes mündet in einen See (Land → See)",
             hb.riverThroughLake,
             `See-Ort ${hb.seeOrt}`
         );
-        check("Voxel V9.43-b: Fluss-Breite wächst stromab (Flow-Accumulation monoton)", hb.widthGrows);
+        check("Voxel V9.43-b: Fluss-Breite wächst stromab (Einzugsgebiet des Netzes monoton)", hb.widthGrows);
         check("Voxel V9.43-b: jeder See — Füll-Level über dem Boden, unter der Rand-Höhe", hb.lakesValid);
-        check("Voxel V9.43-b: jede Land-Zelle hat nach dem Priority-Flood einen Abfluss", hb.allDrained);
         check(
             "Voxel V9.43-b: Berechnung im Perf-Budget (< 500 ms)",
             typeof hb.perfMs === "number" && hb.perfMs < 500,

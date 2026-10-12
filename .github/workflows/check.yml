@@ -372,7 +372,8 @@ jobs:
               if: matrix.gruppe == 1
               # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
               # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
-              # muss die Senken rot faerben.
+              # muss die Senken rot faerben. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
+              # > 1 m und Dorfplaetze am Boden des Spielers mit Kanal und See; der Selbsttest legt die alte Bett-Tiefe auf.
               run: npm run gate:gelaende-realismus
 
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)

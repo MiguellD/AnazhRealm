@@ -516,74 +516,139 @@ function realismus() {
 }
 
 // ── DER GEBAUTE BODEN (K16, Prüfung 1, `--gebaut`): dieselbe Linse (`statistik`) am Boden, den der Spieler betritt
-// (`_voxelSurfaceY`: Gesetz, Höhle, Hydrosphären-Kanal und See-Becken) neben der Makro-Höhe des Gesetzbuchs, Boot-Saat,
-// 2 × 2 km um den Ursprung (die Heimat-Kachel der Hydrosphäre), 30 m. Die Makro-Wand (`--realismus`) ist grün, während der
-// gebaute Boden rot ist: 3,94–11,05 Senken > 1 m je km², 1–3 Dorfplätze (Prüfung 1, gegenmessung-3saaten-1110f.json). Ziel:
-// Senken > 1 m ≤ 1 je km², ≥ 3 Dorfplätze. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (das Flag des Hydro-Baus
-// unterdrückt ihn), ohne den Kanal grün → der Kanal (zweites Flussnetz `_hydroExtractRivers` → `_hydrosphereCarveAt`).
+// (`_voxelSurfaceY`: Gesetz, Höhle, Hydrosphären-Kanal und See-Becken) neben der Makro-Höhe des Gesetzbuchs, je Saat der
+// Realismus-Wand (die Boot-Saat und zwei frische: Regenesis der Ströme, die Hydrosphäre neu), 2 × 2 km um den Ursprung (die
+// Heimat-Kachel der Hydrosphäre), 30 m. Die Makro-Wand (`--realismus`) war grün, während der gebaute Boden rot war: 3,94–
+// 11,05 Senken > 1 m je km², 1–3 Dorfplätze (Prüfung 1, gegenmessung-3saaten-1110f.json). Ziel je Saat: Senken > 1 m ≤ 1 je
+// km², ≥ 3 Dorfplätze, und die Hydrosphäre trägt Flüsse. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (das Flag
+// des Hydro-Baus unterdrückt ihn) — ohne den Kanal grün → der Kanal (`_hydroNetzFluesse` → `_hydrosphereCarveAt`). Mit
+// `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 · Breite, ohne `kanalTiefe`) MUSS die
+// Boot-Saat rot färben.
 async function gebaut(page, fehler) {
     const b = await boote(page);
     if (!b.ok) {
         console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
         return 1;
     }
-    const out = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        const t0 = performance.now();
-        while (!(r.state.hydrosphere && r.state.hydrosphere.ready) && performance.now() - t0 < 60000) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {
-                /* der Boot reift */
+    const { alle, stoerung } = await page.evaluate(
+        async (saaten, selbst) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const t0 = performance.now();
+            while (!(s.hydrosphere && s.hydrosphere.ready) && performance.now() - t0 < 60000) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    /* der Boot reift */
+                }
+                await new Promise((res) => setTimeout(res, 16));
             }
-            await new Promise((res) => setTimeout(res, 16));
-        }
-        r._gameLoopTick = () => {}; // die Welt steht still
-        const G = window.__gelaendeCore;
-        const wl = r.state.waterLevel;
-        const S = 30,
-            n = 67,
-            x0 = -990;
-        const raster = (f) => {
-            const H = new Array(n * n);
-            for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) H[i + j * n] = f(x0 + i * S, x0 + j * S);
-            return H;
-        };
-        const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
-        const voll = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
-        r._hydroComputing = true;
-        const ohne = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
-        r._hydroComputing = false;
-        const kurz = (st) => ({
-            senken: st.senken1mJeKm2,
-            dorf: st.dorfplaetze,
-            minima: st.minimaJeKm2,
-            theta: st.flint.theta,
-            r2: st.flint.r2,
-        });
-        return {
-            seed: r.state.worldMeta.seed,
-            hydro: !!(r.state.hydrosphere && r.state.hydrosphere.ready),
-            voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
-            ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
-            makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
-        };
-    });
+            r._gameLoopTick = () => {}; // die Welt steht still
+            const G = window.__gelaendeCore;
+            const wl = s.waterLevel;
+            const S = 30,
+                n = 67,
+                x0 = -990;
+            const raster = (f) => {
+                const H = new Array(n * n);
+                for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) H[i + j * n] = f(x0 + i * S, x0 + j * S);
+                return H;
+            };
+            const kurz = (st) => ({
+                senken: st.senken1mJeKm2,
+                dorf: st.dorfplaetze,
+                minima: st.minimaJeKm2,
+                theta: st.flint.theta,
+                r2: st.flint.r2,
+            });
+            const bootSaat = s.worldMeta.seed;
+            const bootMacro = s.worldMeta.macro;
+            // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
+            // Hydrosphäre der Saat (ihre Kacheln fallen)
+            const regenesis = (saat, macro) => {
+                s.worldMeta.seed = saat;
+                r._voxelNoise = null;
+                if (macro !== undefined) s.worldMeta.macro = macro;
+                else delete s.worldMeta.macro;
+                s.hydroTiles = new Map();
+                s.hydrosphere = r._computeHydrosphere();
+            };
+            const out = [];
+            for (const saat of [bootSaat, ...saaten.filter((x) => x !== bootSaat)]) {
+                if (saat !== bootSaat) regenesis(saat, undefined);
+                const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
+                const voll = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+                r._hydroComputing = true;
+                const ohne = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+                r._hydroComputing = false;
+                const h = s.hydrosphere;
+                out.push({
+                    seed: saat,
+                    hydro: !!(h && h.ready),
+                    fluesse: h && h.rivers ? h.rivers.length : 0,
+                    voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
+                    ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
+                    makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
+                });
+            }
+            if (s.worldMeta.seed !== bootSaat) regenesis(bootSaat, bootMacro);
+            let stoerung = null;
+            if (selbst) {
+                // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue)
+                const A = r.constructor;
+                const HC = A.HYDROSPHERE;
+                const tiefe = A._flussTiefe;
+                A._flussTiefe = (p) => (HC.carveBedMin + (HC.carveBedK * p.width) / p.quelle) * p.quelle;
+                s.hydrosphere = r._computeHydrosphere();
+                const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
+                const gestoert = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) =>
+                    Number.isFinite(v) ? v : Hm[k]
+                );
+                A._flussTiefe = tiefe;
+                s.hydrosphere = r._computeHydrosphere();
+                stoerung = kurz(G.statistik(gestoert, n, S, wl, [], 0));
+            }
+            return { alle: out, stoerung };
+        },
+        REALISMUS_SAATEN,
+        SELBSTTEST
+    );
     const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
-    console.log(`\n========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat ${out.seed}, 2 × 2 km, 30 m) =========`);
-    for (const k of ["voll", "ohneKanal", "makro"])
-        console.log(`  ${k}: Senken>1m ${out[k].senken}/km² · Dorfplätze ${out[k].dorf} · Minima ${out[k].minima}/km² · θ ${out[k].theta} R² ${out[k].r2}`);
-    let rot = !out.hydro || !!fehler();
-    if (!out.hydro) console.log("  ⛔ LEER: die Hydrosphäre stand nicht (die Linse mäße den Boden ohne Wasser)");
-    if (!gruen(out.voll)) {
-        rot = true;
+    let rot = !!fehler();
+    for (const out of alle) {
         console.log(
-            gruen(out.ohneKanal)
-                ? "  ⛔ der Hydrosphären-Kanal fräst den Boden: ohne ihn grün — ein zweites Flussnetz (`_hydroExtractRivers` → `_hydrosphereCarveAt`) statt des Netzes im Gesetzbuch"
-                : "  ⛔ der Boden ohne Kanal ist rot: Höhle oder Gesetz (`_terrainBaseDensityAtCol`)"
+            `\n========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat ${out.seed}, 2 × 2 km, 30 m, ${out.fluesse} Flüsse) =========`
         );
+        for (const k of ["voll", "ohneKanal", "makro"])
+            console.log(
+                `  ${k}: Senken>1m ${out[k].senken}/km² · Dorfplätze ${out[k].dorf} · Minima ${out[k].minima}/km² · θ ${out[k].theta} R² ${out[k].r2}`
+            );
+        if (!out.hydro || !out.fluesse) {
+            rot = true;
+            console.log(
+                "  ⛔ LEER: die Hydrosphäre stand nicht oder trägt keinen Fluss (die Linse mäße den Boden ohne Wasser)"
+            );
+        }
+        if (!gruen(out.voll)) {
+            rot = true;
+            console.log(
+                gruen(out.ohneKanal)
+                    ? "  ⛔ der Hydrosphären-Kanal fräst den Boden: ohne ihn grün (`_hydroNetzFluesse` → `_hydrosphereCarveAt`)"
+                    : "  ⛔ der Boden ohne Kanal ist rot: Höhle oder Gesetz (`_terrainBaseDensityAtCol`)"
+            );
+        }
     }
-    console.log(`\n${rot ? "⛔ GEBAUTER BODEN ROT" : "✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor"}\n`);
+    if (SELBSTTEST) {
+        const st = stoerung;
+        const blind = !st || (st.senken <= 1 && st.dorf >= 3);
+        console.log(
+            `\n  Selbsttest-Störung (Bett-Tiefe des alten Gesetzes, Saat ${alle[0].seed}): Senken>1m ${st ? st.senken : "–"}/km² · Dorfplätze ${st ? st.dorf : "–"} → ${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Störung färbt den Boden rot"}`
+        );
+        if (blind) rot = true;
+    }
+    console.log(
+        `\n${rot ? "⛔ GEBAUTER BODEN ROT" : `✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor, ${alle.length} Saaten`}\n`
+    );
     return rot ? 1 : 0;
 }
 

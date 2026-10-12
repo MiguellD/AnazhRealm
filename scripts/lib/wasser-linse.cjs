@@ -1689,7 +1689,7 @@ function wasserSichtNetz() {
 // HÜLLE des Gesetzes und am Ursprung nicht
 // tiefer (dahinter trägt der Fluss die Breiten seiner Punkte, Biegungen weiten den Querschnitt): das Rinnsal (quellBett)
 // plus quellWeitung je Meter Lauf, das Wasser bis zur Krone (Bett-Tiefe je Breite höchstens die des kleinsten vollen Flusses
-// dieser Welt, die Schwelle aus maxAccum; Neigung bankNeigung); Mess-Körnung zwei Proben
+// dieser Welt, `stats.bettMin`; Neigung bankNeigung); Mess-Körnung zwei Proben
 // (0,5 m) in der Breite, 5 cm in der Tiefe (in der Mitte des Laufs). Ein SPRUNG ist ein Querschnitt über der Hülle (am
 // Ursprung: die Quelle bricht aus dem Nichts). Eine Quelle ohne Körper-Wasser auf ihren ersten 16 m ist TROCKEN (nie grün).
 // Unsichtbar/Phantom je PUNKT (`quer`: Breite des Bilds gegen Breite des Körpers), summiert über alle Quell-Läufe.
@@ -1706,8 +1706,7 @@ function wasserQuelle(opts) {
     const qBett = Number.isFinite(HC.quellBett) ? HC.quellBett : 1.2;
     const G = Number.isFinite(HC.quellWeitung) ? HC.quellWeitung : 0.25;
     const huelleVon = (h) => {
-        const thr = Math.max(HC.riverThresholdMin, ((h.stats && h.stats.maxAccum) || 0) * HC.riverThresholdFrac);
-        const bett = HC.widthMin + HC.widthK * Math.sqrt(thr);
+        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : HC.widthMin;
         const dRel = HC.carveBedMin / bett + HC.carveBedK;
         const huelle = (s) => {
             const w = qBett + G * Math.max(0, s);

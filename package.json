@@ -65,7 +65,7 @@
         "gate:wasser-wahrheit": "node scripts/diag-wasser-wahrheit.cjs",
         "gate:kopplung": "node scripts/diag-kopplung.cjs",
         "gate:worker-watersheet": "node scripts/diag-worker-watersheet.cjs",
-        "gate:gelaende-realismus": "node scripts/diag-worker-dichte.cjs --realismus --selftest && node scripts/diag-worker-dichte.cjs --realismus",
+        "gate:gelaende-realismus": "node scripts/diag-worker-dichte.cjs --realismus --selftest && node scripts/diag-worker-dichte.cjs --realismus && node scripts/diag-worker-dichte.cjs --gebaut --selftest",
         "gate:worker-dichte": "node scripts/diag-worker-dichte.cjs --selftest",
         "gate:wasser-leben": "node scripts/diag-wasser-leben.cjs --selftest && node scripts/diag-wasser-leben.cjs",
         "gate:werk-im-wasser": "node scripts/diag-werk-im-wasser.cjs --selftest && node scripts/diag-werk-im-wasser.cjs",

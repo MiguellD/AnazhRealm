@@ -20693,15 +20693,13 @@ class AnazhRealm {
             regionSize: 2048, // Region-Kantenlänge in m (um den Welt-Ursprung)
             cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
             fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
-            // Fluss-Schwelle adaptiv: max(absoluter Boden, Anteil des größten
-            // Durchflusses) — robust über verschiedene Seeds (anderes Relief →
-            // andere Max-Akkumulation). Eine Zelle ist Fluss ab dieser Akkum.
-            riverThresholdMin: 60, // absoluter Boden (Zell-Zahl)
-            riverThresholdFrac: 0.04, // Anteil der Max-Akkumulation
             minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
             // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
-            widthMin: 3, // Fluss-Mindestbreite in m
-            widthK: 0.32, // Breiten-Faktor: width = widthMin + widthK·√Akkumulation
+            // DIE BREITE (K16) aus dem Einzugsgebiet A des Netzes (km²): width = widthMin + widthK · A^widthExp — die Bankvoll-
+            // Breite der hydraulischen Geometrie (Dunne & Leopold 1978, W ∝ A^0,37: 0,16 km² ≈ 4,4 m, 25 km² ≈ 17 m).
+            widthMin: 2,
+            widthK: 4.7,
+            widthExp: 0.37,
             // Gegen die ECHTE Voxel-Surface getunt (steilstes Fluss-Segment ~0.5): Wasserfall = Lauf steiler
             // als 0.4 UND in Summe ≥ 6 m Absturz (`_hydroExtractWaterfalls` verschmilzt Kaskaden per run-merge).
             waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
@@ -20712,6 +20710,9 @@ class AnazhRealm {
             // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
             carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
             carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
+            // DER KANAL IN DER AUE (K16): die Bett-Tiefe ist höchstens kanalTiefe — die Aue des Gelände-Gesetzes ist das
+            // Hochwasser-Bett, der Kanal liegt in ihr, nie als Graben unter ihr (am 30-m-Raster: keine Senke > 1 m).
+            kanalTiefe: 0.8,
             // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
             // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
             spiegelFreibord: 0.25,
@@ -20736,12 +20737,10 @@ class AnazhRealm {
             dammBreite: 2.6, // m hinter der Krone des Kanals
             dammFreibord: 0.2, // m über dem Spiegel, mindestens
             // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
-            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihrer Akkumulation trägt
-            // (an der Schwelle quellBreite der vollen, ab der doppelten Schwelle die volle) — Breite und Tiefe wachsen aus dem
-            // Gesetz, nichts bricht aus dem Nichts.
+            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihres Einzugsgebiets trägt
+            // — Breite und Tiefe wachsen aus dem Gesetz, nichts bricht aus dem Nichts.
             quellBett: 1.2,
             quellWeitung: 0.25,
-            quellBreite: 0.25,
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
         });
@@ -33891,21 +33890,15 @@ class AnazhRealm {
             const ctx = this._hydroInit(origin);
             this._hydroMarkOcean(ctx);
             this._hydroPriorityFlood(ctx);
-            this._hydroFlowDirection(ctx);
-            this._hydroAccumulate(ctx);
             const lakes = this._hydroExtractLakes(ctx);
-            const rivers = this._hydroExtractRivers(ctx);
+            const rivers = this._hydroNetzFluesse(ctx);
             // Jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe (`voxelY`): geroutet wird auf der glatten
             // Makro-Surface, Wasserfälle leben aber an den echten Klippen — das Ribbon hängt am Voxel-Relief.
             this._hydroSampleRiverSurfaces(rivers);
             // Der Spiegel jedes Fluss-Punkts (stromab nie steigend, quer waagrecht) — das Bett folgt ihm (Carve).
             this._hydroRiverSpiegel(ctx, rivers);
             const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
-            // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
-            // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
-            // es; undrainedLand > 0 wäre ein Algorithmus-Bug.
-            const { dim, surf, waterLevel, flowTo, lakeOf, isOcean } = ctx;
-            let undrainedLand = 0;
+            const { dim, surf, waterLevel, lakeOf, isOcean } = ctx;
             let landCells = 0;
             let lakeCells = 0;
             let seaCells = 0;
@@ -33924,7 +33917,6 @@ class AnazhRealm {
                 const j = (idx / dim) | 0;
                 if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
                 landCells++;
-                if (flowTo[idx] < 0) undrainedLand++;
             }
             // Diagnostik: steilstes Fluss-Segment der Voxel-Surface (Tuning-Anker für `waterfallSlope`) +
             // Netz-Vermessung (Fluss-Längen, See-Größen: echte Flüsse oder Pfützen-Kette?).
@@ -33937,10 +33929,13 @@ class AnazhRealm {
             let riverMaxDrop = 0;
             let riverPointsTotal = 0;
             let riverLenMax = 0;
+            // die Breite des kleinsten vollen Flusses (Leser: die Quell-Hülle der Wasser-Linse)
+            let bettMin = Infinity;
             for (let ri = 0; ri < rivers.length; ri++) {
                 const pts = rivers[ri].points;
                 riverPointsTotal += pts.length;
                 if (pts.length > riverLenMax) riverLenMax = pts.length;
+                for (const p of pts) if (p.quelle === 1 && p.width < bettMin) bettMin = p.width;
                 for (let k = 0; k + 1 < pts.length; k++) {
                     const a = pts[k];
                     const b = pts[k + 1];
@@ -33980,8 +33975,7 @@ class AnazhRealm {
                     landCells,
                     lakeCells,
                     seaCells,
-                    undrainedLand,
-                    maxAccum: Math.round(ctx.maxAccum),
+                    bettMin: Number.isFinite(bettMin) ? Math.round(bettMin * 100) / 100 : null,
                     waterLevel: Math.round(waterLevel),
                     surfMin: Math.round(surfMin),
                     surfMax: Math.round(surfMax),
@@ -35459,9 +35453,6 @@ class AnazhRealm {
             surf,
             isOcean: null,
             filled: null,
-            flowTo: null,
-            accum: null,
-            maxAccum: 0,
             lakeOf: null,
         };
     }
@@ -35632,73 +35623,6 @@ class AnazhRealm {
         ctx.filled = filled;
     }
 
-    // Phase 3 — Flow-Direction (D8): jede Land-Zelle zeigt zum Nachbarn mit kleinster Füllhöhe; das ε
-    // garantiert, dass er echt tiefer liegt (ein Abfluss existiert immer). Rand + Meer: flowTo = -1.
-    _hydroFlowDirection(ctx) {
-        const { dim, filled, isOcean } = ctx;
-        const n = dim * dim;
-        const flowTo = new Int32Array(n).fill(-1);
-        const NB = [
-            [-1, -1],
-            [0, -1],
-            [1, -1],
-            [-1, 0],
-            [1, 0],
-            [-1, 1],
-            [0, 1],
-            [1, 1],
-        ];
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                const idx = i + j * dim;
-                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
-                if (border || isOcean[idx]) continue; // Auslass (Rand/Ozean)
-                // Steilstes GEFÄLLE (drop/Distanz, √2-Penalty für Diagonalen) statt steilster Drop — sonst
-                // bevorzugt D8 Diagonalen und die Drainage bekommt eine Vorzugsrichtung.
-                const fHere = filled[idx];
-                let bestN = -1;
-                let bestSlope = 0;
-                for (let k = 0; k < 8; k++) {
-                    const ni = i + NB[k][0];
-                    const nj = j + NB[k][1];
-                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                    const nidx = ni + nj * dim;
-                    const drop = fHere - filled[nidx];
-                    if (drop <= 0) continue; // nur bergab
-                    const slope = NB[k][0] !== 0 && NB[k][1] !== 0 ? drop / Math.SQRT2 : drop;
-                    if (slope > bestSlope) {
-                        bestSlope = slope;
-                        bestN = nidx;
-                    }
-                }
-                flowTo[idx] = bestN;
-            }
-        }
-        ctx.flowTo = flowTo;
-    }
-
-    // Phase 4 — Flow-Accumulation: Zellen absteigend nach Füllhöhe; jede gibt ihre Akkumulation an
-    // flowTo weiter (echt tiefer → später verarbeitet, also final vor dem Weiterreichen).
-    // A[idx] = Drainage durch die Zelle.
-    _hydroAccumulate(ctx) {
-        const { dim, filled, flowTo } = ctx;
-        const n = dim * dim;
-        const accum = new Float64Array(n).fill(1);
-        const order = new Array(n);
-        for (let i = 0; i < n; i++) order[i] = i;
-        // absteigend nach Füllhöhe; Gleichstand nach Index → deterministisch
-        order.sort((a, b) => filled[b] - filled[a] || a - b);
-        let maxAccum = 0;
-        for (let o = 0; o < n; o++) {
-            const idx = order[o];
-            const t = flowTo[idx];
-            if (t >= 0) accum[t] += accum[idx];
-            if (accum[idx] > maxAccum) maxAccum = accum[idx];
-        }
-        ctx.accum = accum;
-        ctx.maxAccum = maxAccum;
-    }
-
     // Phase 5a — Seen: Komponenten der aufgefüllten Zellen (filled > surf, über Meereshöhe). Je See:
     // Füll-Level (≈ Überlauf-Höhe), Boden, Rand-Höhe, Bounding-Box, Zell-Indizes (für die See-Plane).
     _hydroExtractLakes(ctx) {
@@ -35795,129 +35719,86 @@ class AnazhRealm {
         return lakes;
     }
 
-    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwelle. Flüsse fließen durch Seen HINDURCH
-    // (Conduit = Durchfluss-Zelle, See oder nicht): die Polylinie folgt `flowTo` vom Quell-Hang über die
-    // See-Kette zum Meer (das ε routet durchs Becken). See-Punkte tragen `inLake: true` + Füllstand als
-    // `y` (Renderer + Carve überspringen sie). Breite w = widthMin + widthK·√A.
-    _hydroExtractRivers(ctx) {
-        const { dim, cell, originX, originZ, filled, accum, flowTo, lakeOf, isOcean } = ctx;
+    // Phase 5b — DIE FLÜSSE SIND DAS NETZ DES GESETZES (K16): die Läufe der Ebenen 0 und 1 aus gelaende-core
+    // (`flussLaeufe`) — dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites (bis K16 eine D8-
+    // Akkumulation auf der geglätteten Makro-Fläche: ihr Kanal fräste den gebauten Boden quer durch Hänge und Ebenen, 3,94
+    // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied Punkte im Zell-Abstand, gleich verteilt auf
+    // dem Segment (ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des Gesetzes (stromab streng fallend), die
+    // Breite aus dem Einzugsgebiet (`_flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter
+    // Lauf). Ein Lauf endet am Meer, am See (`mouth` "see", `seeY` sein Spiegel) oder am Rand der Kachel.
+    _hydroNetzFluesse(ctx) {
+        const { dim, cell, originX, originZ, size, filled, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
-        const n = dim * dim;
-        // adaptive Fluss-Schwelle: ein Bruchteil des größten Durchflusses der
-        // Welt, mit einem absoluten Boden — robust über verschiedene Seeds
-        // (anderes Relief → andere Max-Akkumulation).
-        const threshold = Math.max(HC.riverThresholdMin, ctx.maxAccum * HC.riverThresholdFrac);
-        const isSea = (idx) => isOcean[idx] === 1;
-        // ein Conduit trägt echten Durchfluss — auch eine See-Zelle (der
-        // Fluss fliesst durch den See HINDURCH, statt an ihm zu enden).
-        const isConduit = (idx) => !isSea(idx) && accum[idx] >= threshold;
-        // Quelle = LAND-Conduit ohne Land-Conduit stromauf. Seen sind für die Suche transparent (der ε-Flow-
-        // Baum eines Beckens verzweigt fein → sonst Geister-Quellen); hasUpstream überspringt See-Zellen,
-        // ein See ohne Land-Zufluss startet seinen Fluss am Auslass.
-        const isLandConduit = (idx) => isConduit(idx) && lakeOf[idx] < 0;
-        const hasUpstream = new Uint8Array(n);
-        for (let idx = 0; idx < n; idx++) {
-            if (!isLandConduit(idx)) continue;
-            let cur = flowTo[idx];
-            for (let g = 0; g < HC.maxRiverPoints && cur >= 0 && lakeOf[cur] >= 0; g++) {
-                cur = flowTo[cur];
-            }
-            if (cur >= 0 && isLandConduit(cur)) hasUpstream[cur] = 1;
-        }
-        const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
-        const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
-        // DER LAUF (W-F5, Gegenprüfung 07.10., Runde 3): je Zelle die Länge ihres längsten Laufs stromauf bis zu einer Quelle
-        // — die Quelle wächst mit ihm. Fließt ein See in die Quelle (ein Abfluss) oder der Lauf durch einen See, trägt er das
-        // Wasser des Sees mit: dort ist der Lauf unendlich (ein Abfluss beginnt in der Breite seines Durchflusses).
-        const lauf = new Float64Array(n).fill(-1);
-        for (let src = 0; src < n; src++) {
-            if (!isLandConduit(src) || hasUpstream[src]) continue;
-            let s = 0;
-            for (const [di, dj] of [
-                [-1, -1],
-                [0, -1],
-                [1, -1],
-                [-1, 0],
-                [1, 0],
-                [-1, 1],
-                [0, 1],
-                [1, 1],
-            ]) {
-                const ni = (src % dim) + di;
-                const nj = ((src / dim) | 0) + dj;
-                if (
-                    ni >= 0 &&
-                    nj >= 0 &&
-                    ni < dim &&
-                    nj < dim &&
-                    flowTo[ni + nj * dim] === src &&
-                    lakeOf[ni + nj * dim] >= 0
-                )
-                    s = Infinity;
-            }
-            let cur = src;
-            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
-                if (lakeOf[cur] >= 0) s = Infinity;
-                if (lauf[cur] >= s) break; // ein früherer Lauf trug hier (und stromab) schon mehr
-                lauf[cur] = s;
-                const t = flowTo[cur];
-                if (t < 0 || isSea(t)) break;
-                s += Math.hypot(wx(t) - wx(cur), wz(t) - wz(cur));
-                cur = t;
-            }
-        }
+        const laeufe = globalThis.__gelaendeCore.flussLaeufe(
+            this._gelaende(),
+            originX,
+            originZ,
+            originX + size,
+            originZ + size
+        );
+        const zelle = (x, z) => {
+            const i = Math.floor((x - originX) / cell);
+            const j = Math.floor((z - originZ) / cell);
+            return i >= 0 && j >= 0 && i < dim && j < dim ? i + j * dim : -1;
+        };
         const rivers = [];
-        for (let src = 0; src < n; src++) {
-            if (!isLandConduit(src) || hasUpstream[src]) continue;
-            const points = [];
-            let cur = src;
-            let mouth = "border";
-            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
-                const t = flowTo[cur];
-                let fx = 0;
-                let fz = 0;
-                if (t >= 0) {
-                    fx = wx(t) - wx(cur);
-                    fz = wz(t) - wz(cur);
-                    const L = Math.hypot(fx, fz) || 1;
-                    fx /= L;
-                    fz /= L;
+        for (const lf of laeufe) {
+            let lauf = lf.quelle ? 0 : Infinity;
+            let points = [];
+            let mouth = null;
+            let seeY = NaN;
+            const abschluss = (m) => {
+                if (points.length >= 2) {
+                    const rv = { points, mouth: m };
+                    if (m === "see" && Number.isFinite(seeY)) rv.seeY = seeY;
+                    rivers.push(rv);
                 }
-                // DIE QUELLE wächst aus dem Gesetz (W-F5): jede beginnt als das Rinnsal (quellBett) und weitet sich stromab um
-                // quellWeitung je Meter Lauf, bis sie die Breite ihrer Akkumulation trägt (an der Schwelle quellBreite, ab der
-                // doppelten Schwelle die volle); die Tiefe folgt dem Anteil (`AnazhRealm._flussTiefe`). Je Zelle aus Lauf und
-                // Akkumulation: geteilte Unterläufe sind breiten-gleich. Bis V18.531 sprang jede Quelle in voller Breite aus dem
-                // Boden (8,2–11,9 m, 2,36 m tief); bis 5040e8f7 wer an seiner ersten Zelle schon mehr als die Schwelle sammelte
-                // (die Quelle −456/872: 11,75 m breit, 1,62 m tief).
-                const voll = HC.widthMin + HC.widthK * Math.sqrt(accum[cur]);
-                const quelle = Math.min(
-                    1,
-                    Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold),
-                    (HC.quellBett + HC.quellWeitung * lauf[cur]) / voll
-                );
-                points.push({
-                    x: wx(cur),
-                    z: wz(cur),
-                    // y = hydrologische Füllhöhe: fällt entlang flowTo STRIKT monoton, auch durch einen See (ε≈0.01 →
-                    // die See-Strecke ist nahezu flach).
-                    y: filled[cur],
-                    width: voll * quelle,
-                    quelle,
-                    flowX: fx,
-                    flowZ: fz,
-                    inLake: lakeOf[cur] >= 0,
-                });
-                if (t < 0) {
-                    mouth = "border";
-                    break;
+                points = [];
+            };
+            for (let g = 0; g < lf.glieder.length && !mouth; g++) {
+                const gl = lf.glieder[g];
+                const ex = gl.bx - gl.ax;
+                const ez = gl.bz - gl.az;
+                const len = Math.hypot(ex, ez) || 1;
+                const n = Math.max(1, Math.ceil(len / cell));
+                const voll = AnazhRealm._flussBreite(gl.A);
+                // die Mündung eines Zuflusses (t0 > 0): ihr Punkt, dann die Punkte des Hauptlaufs stromab von ihr
+                const m0 = gl.t0 > 0 ? Math.floor(gl.t0 * n) + 1 : 0;
+                const bis = g === lf.glieder.length - 1 ? n : n - 1;
+                for (let m = gl.t0 > 0 ? m0 - 1 : 0; m <= bis; m++) {
+                    const t = gl.t0 > 0 && m === m0 - 1 ? gl.t0 : m / n;
+                    const x = gl.ax + ex * t;
+                    const z = gl.az + ez * t;
+                    const idx = zelle(x, z);
+                    if (idx < 0) {
+                        abschluss("border");
+                        continue;
+                    }
+                    if (isOcean[idx]) {
+                        mouth = "sea";
+                        break;
+                    }
+                    if (lakeOf[idx] >= 0) {
+                        mouth = "see";
+                        seeY = filled[idx];
+                        break;
+                    }
+                    const s = lauf + len * (t - (gl.t0 > 0 ? gl.t0 : 0));
+                    const quelle = Math.min(1, (HC.quellBett + HC.quellWeitung * s) / voll);
+                    points.push({
+                        x,
+                        z,
+                        y: gl.ba + (gl.bb - gl.ba) * t,
+                        width: voll * quelle,
+                        quelle,
+                        flowX: ex / len,
+                        flowZ: ez / len,
+                        inLake: false,
+                    });
                 }
-                if (isSea(t)) {
-                    mouth = "sea";
-                    break;
-                }
-                cur = t;
+                lauf += len * (1 - (gl.t0 > 0 ? gl.t0 : 0));
             }
-            if (points.length >= 2) rivers.push({ points, mouth });
+            abschluss(mouth || (lf.ende === "meer" ? "sea" : lf.ende === "see" ? "see" : "border"));
         }
         return rivers;
     }
@@ -36042,6 +35923,7 @@ class AnazhRealm {
             let unten = -Infinity;
             if (e < P.length) unten = P[e].inLake ? P[e].y : S.get(schluessel(P[e]));
             else if (rv.mouth === "sea") unten = ctx.waterLevel;
+            else if (rv.mouth === "see" && Number.isFinite(rv.seeY)) unten = rv.seeY;
             for (let i = k; i < e; i++) {
                 const key = schluessel(P[i]);
                 S.set(key, Math.min(oben, Math.max(unten, S.get(key))));
@@ -101140,7 +101022,13 @@ AnazhRealm._flussTiefe = function (p) {
     const HC = AnazhRealm.HYDROSPHERE;
     const q = p.quelle;
     if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
-    return (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q;
+    return Math.min(HC.kanalTiefe, (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q);
+};
+// DIE VOLLE BREITE eines Flusses aus seinem Einzugsgebiet A (m², das Netz des Gelände-Gesetzes): widthMin + widthK ·
+// (A in km²)^widthExp. Leser: `_hydroNetzFluesse`.
+AnazhRealm._flussBreite = function (A) {
+    const HC = AnazhRealm.HYDROSPHERE;
+    return HC.widthMin + HC.widthK * Math.pow(Math.max(0, A) / 1e6, HC.widthExp);
 };
 
 // Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des

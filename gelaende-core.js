@@ -536,6 +536,7 @@
             b,
             stil,
             reach,
+            von: kn, // der Knoten des Segments (die Mündung eines Zuflusses folgt ihm stromab: `flussLaeufe`)
         };
     }
     function zelle(N, k, ci, cj) {
@@ -719,7 +720,7 @@
             const v = bed + d * 0.05;
             if (v < bv) {
                 bv = v;
-                best = { x: s.ax + s.ex * t, z: s.az + s.ez * t, bed };
+                best = { x: s.ax + s.ex * t, z: s.az + s.ez * t, bed, von: s.von, t };
             }
         }
         if (best) return best;
@@ -804,6 +805,81 @@
                 }
             }
         return out;
+    }
+    // DAS WASSER LIEST DAS NETZ (K16): die Fluss-Läufe der Ebenen 0 und 1, die das Rechteck [x0, x1) × [z0, z1) berühren —
+    // dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites. Ein Lauf beginnt an einer Quelle (ein
+    // Knoten ohne Oberlieger seiner Ebene: `quelle`) oder, liegen alle Oberlieger jenseits der Reichweite, an ihrem Rand,
+    // und folgt dem Unterlieger; ein Zufluss (Ebene 1) mündet ins Netz der Ebene 0 und folgt ihm weiter (das Glied ab der
+    // Mündung trägt das Segment des Hauptlaufs mit `t0`, so trägt der geteilte Unterlauf dieselben Punkte). Er endet an
+    // der Senke (`ende` "see" ein benannter See, "meer") oder jenseits der Reichweite ("rand"). Je Glied die Enden, die
+    // Sohlen (`knotenSohle`, stromab streng fallend) und das Einzugsgebiet A in m². Ohne Wildnis-Term (eine Bühne): [].
+    function flussLaeufe(L, x0, z0, x1, z1) {
+        const T = L.erbgut && L.erbgut.terme;
+        if (!T || !T.length || T[0].art !== "wildnis") return [];
+        const N = netzFuer(L);
+        const drin = (kn) => {
+            const S = 2 * N.S[kn.k];
+            return kn.x >= x0 - S && kn.x < x1 + S && kn.z >= z0 - S && kn.z < z1 + S;
+        };
+        const glied = (kn, t0) => {
+            const f = knotenFluss(N, kn);
+            const t = f || kn.aus;
+            return {
+                ax: kn.x,
+                az: kn.z,
+                bx: t.x,
+                bz: t.z,
+                ba: knotenSohle(N, kn),
+                bb: f ? knotenSohle(N, f) : t.bed,
+                A: knotenA(N, kn) * N.S[kn.k] * N.S[kn.k],
+                t0,
+            };
+        };
+        const laeufe = [];
+        for (let k = 0; k <= 1; k++) {
+            const S = N.S[k];
+            for (let j = Math.floor((z0 - 2 * S) / S) - 1; j <= Math.floor((z1 + 2 * S) / S) + 1; j++)
+                for (let i = Math.floor((x0 - 2 * S) / S) - 1; i <= Math.floor((x1 + 2 * S) / S) + 1; i++) {
+                    const kn = knoten(N, k, i, j);
+                    if (!drin(kn)) continue;
+                    let oben = 0;
+                    let obenDrin = 0;
+                    for (let dj = -1; dj <= 1; dj++)
+                        for (let di = -1; di <= 1; di++) {
+                            if (!di && !dj) continue;
+                            const m = knoten(N, k, i + di, j + dj);
+                            if (knotenFluss(N, m) !== kn) continue;
+                            oben++;
+                            if (drin(m)) obenDrin++;
+                        }
+                    if (obenDrin) continue;
+                    const glieder = [];
+                    let ende = "rand";
+                    let c = kn;
+                    for (let g = 0; g < 256; g++) {
+                        let f = knotenFluss(N, c);
+                        if (!f && c.k === 0) {
+                            ende = c.senke === 2 ? "meer" : "see";
+                            break;
+                        }
+                        glieder.push(glied(c, 0));
+                        if (!f) {
+                            // die Mündung des Zuflusses: weiter auf dem Segment des Hauptlaufs ab ihrem Punkt
+                            const a = c.aus;
+                            if (!a.von) {
+                                ende = "see";
+                                break;
+                            }
+                            glieder.push(glied(a.von, a.t));
+                            f = knotenFluss(N, a.von);
+                        }
+                        if (!drin(f)) break;
+                        c = f;
+                    }
+                    if (glieder.length) laeufe.push({ k, quelle: oben === 0, glieder, ende });
+                }
+        }
+        return laeufe;
     }
     // Der Schicht-Ort eines Feldes: die Mitte der Treppe am stärksten Tafelland-Tal (ein Ebene-0-Segment mit Stil, von
     // seiner Rinne quer um Aue + Pediment + drei Schichten versetzt) — Leser: die Gelände-Linse (Schicht-Gesetz) und das
@@ -1302,6 +1378,7 @@
         grossform: (L, x, z) => grossform(netzFuer(L), x, z),
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
+        flussLaeufe: flussLaeufe,
         schichtOrt: schichtOrt,
         kachelSchluessel: kachelSchluessel,
     });
