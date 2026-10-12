@@ -58765,22 +58765,25 @@ class AnazhRealm {
         if (!preset) return roh;
         const krone = AnazhRealm.FOREST.crown[species];
         const seedInt = this._forestSeedInt();
-        // Gedächtnis je Zelle (rein in Welt-Same, Zelle, Art, Größe): der Stufen-Takt fragt jede Zelle je Takt.
-        if (this._streuSameSeed !== seedInt || !this._streuSame || this._streuSame.size > 16384) {
+        // Gedächtnis je Zelle (rein im Stand des Wald-Gesetzes `_forestDartStand`, Zelle, Art, Größe): der Stufen-Takt
+        // fragt jede Zelle je Takt.
+        const stand = this._forestDartStand(seedInt);
+        if (this._streuSameStand !== stand || !this._streuSame || this._streuSame.size > 16384) {
             this._streuSame = new Map();
-            this._streuSameSeed = seedInt;
+            this._streuSameStand = stand;
         }
         const mk = cellX + "," + cellZ + "," + variantIndex + "," + species + "," + tf.scale;
         const hat = this._streuSame.get(mk);
         if (hat !== undefined) return hat;
-        const same = this._foundryGestaltSame(
-            roh,
-            preset,
-            () =>
-                krone > 0 &&
-                this._forestStehtFrei(tf.x, tf.z, krone * tf.scale, (gx, gz) => this._forestCellDarts(gx, gz, seedInt))
-        );
-        this._streuSame.set(mk, same);
+        let vorlaeufig = false;
+        const same = this._foundryGestaltSame(roh, preset, () => {
+            if (!(krone > 0)) return false;
+            vorlaeufig = !this._forestGesetzWahr(); // vor dem Worldgen: die Antwort gilt, gemerkt wird sie nicht
+            return this._forestStehtFrei(tf.x, tf.z, krone * tf.scale, (gx, gz) =>
+                this._forestCellDarts(gx, gz, seedInt)
+            );
+        });
+        if (!vorlaeufig) this._streuSame.set(mk, same);
         return same;
     }
 
@@ -73873,20 +73876,58 @@ class AnazhRealm {
         return () => 0;
     }
 
+    // DIE WAHRHEIT DES WALDS (K20): die Darts lesen Boden, Wasser und Feuchte (`_voxelSurfaceY`, `_atlasWaterLevelAt`,
+    // `_feuchteAt` — Erosion, Flüsse und Seen der Hydro-Kachel ihres Orts). Vor dem Worldgen (keine Heimat-Hydrosphäre)
+    // gibt es sie nicht: jede Antwort des Walds ist dann vorläufig und wird nie gemerkt (`_forestCellDarts`), die Gestalt
+    // des Orts wartet (`_foundryGestaltFor` → null, wie auf ein kaltes Buch).
+    _forestGesetzWahr() {
+        const h = this.state.hydrosphere;
+        return !!(h && h.ready);
+    }
+
+    // DER STAND DES WALD-GESETZES (K20): die Darts sind eine Funktion von Welt-Same, Arten-Satz (die Arten des Buchs,
+    // `_forestExtraSpecies`) und Hydrosphäre. Ein neuer Same, ein neues Buch, eine neue Hydrosphäre (der Welt-Regen) oder neue
+    // Arten (`_foundryAutoRegisterSpecies` leert das Gedächtnis) legen ein neues Dart-Gedächtnis an — seine Nummer IST der
+    // Stand. Wer eine Antwort des Walds merkt (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt
+    // `_scatterFoundrySeed`), merkt sie an diesem Stand, nie an der Reihenfolge: der Zweit-Boot fragte den gesetzten Baum,
+    // bevor die Wasser-Wahrheit seines Orts stand, und seine Gestalt blieb die eines anderen Walds (A1-Eiche bei −740/−1190:
+    // Gestalt 1 statt 2; gate:fernwald E).
+    _forestDartStand(seedInt) {
+        const buch = this._foundry ? this._foundry.recipes || null : null;
+        const hydro = this.state.hydrosphere || null;
+        if (
+            !this._forestDartMemo ||
+            this._forestDartMemoSeed !== seedInt ||
+            this._forestDartMemoBuch !== buch ||
+            this._forestDartMemoHydro !== hydro
+        ) {
+            this._forestDartMemo = new Map();
+            this._forestDartMemoSeed = seedInt;
+            this._forestDartMemoBuch = buch;
+            this._forestDartMemoHydro = hydro;
+            this._forestDartGen = (this._forestDartGen || 0) + 1;
+        }
+        return this._forestDartGen;
+    }
+
     // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
     _forestCellDarts(cx, cz, seedInt) {
         // Zell-Memo über Aufrufe: jeder Chunk liest ±2 Rand-Zellen (~4× Redundanz), und die Dart-Generierung
         // (`_voxelSurfaceY`-Scan + Slope + Feuchte) dominiert die Plant-Zeit. Seed-gebunden (Welt-Wechsel
-        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot.
-        let memo = this._forestDartMemo;
-        if (!memo || this._forestDartMemoSeed !== seedInt) {
-            memo = this._forestDartMemo = new Map();
-            this._forestDartMemoSeed = seedInt;
-        }
+        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie
+        // der Chunk-Bau (`_acquireVoxelChunkBuild`) steht die Hydro-Kachel der Zelle vor der Frage; vor dem Worldgen ist die
+        // Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis.
         const memoKey = cx + "," + cz;
-        const hit = memo.get(memoKey);
-        if (hit) return hit;
+        let memo = null;
+        if (this._forestGesetzWahr()) {
+            this._forestDartStand(seedInt);
+            memo = this._forestDartMemo;
+            const hit = memo.get(memoKey);
+            if (hit) return hit;
+            const C = AnazhRealm.FOREST.cell;
+            this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C);
+        }
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
@@ -73924,6 +73965,10 @@ class AnazhRealm {
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                   })
                 : [];
+        if (!memo) {
+            out.vorlaeufig = true;
+            return out;
+        }
         if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
         memo.set(memoKey, out);
         return out;
@@ -78865,25 +78910,37 @@ class AnazhRealm {
     }
     // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt das Wald-Gesetz an seinem Ort
     // (`_forestStehtFrei`, die eigene Krone FOREST.crown × Größe) — auch der aus dem Speicher geladene und der gesetzte, sein
-    // Same bleibt; gemerkt am Eintrag (flüchtig, nie im Snapshot), solange Lage, Same und Art bleiben. Ein Datensatz ohne Lage
-    // (die Streu-Zelle) trägt den Samen seines Orts schon (`_scatterFoundrySeed`).
+    // Same bleibt; gemerkt am Eintrag (flüchtig, nie im Snapshot), solange Lage, Same, Art und der Stand des Wald-Gesetzes
+    // (`_forestDartStand`) bleiben. Ein Datensatz ohne Lage (die Streu-Zelle) trägt den Samen seines Orts schon
+    // (`_scatterFoundrySeed`).
     _foundryGestaltFor(entry, preset) {
         const p = entry && entry.position;
         if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);
+        const seedInt = this._forestSeedInt();
+        const stand = this._forestDartStand(seedInt);
+        const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
+        const T = krone > 0 ? krone * (entry.scale || 1) : 0;
         let m = entry._ortSame;
-        if (!(m && m.x === p.x && m.z === p.z && m.seed === entry.seed && m.preset === preset)) {
-            const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
-            const seedInt = this._forestSeedInt();
-            const same = this._foundryGestaltSame(
-                entry.seed,
-                preset,
-                () =>
-                    krone > 0 &&
-                    this._forestStehtFrei(p.x, p.z, krone * (entry.scale || 1), (gx, gz) =>
-                        this._forestCellDarts(gx, gz, seedInt)
-                    )
-            );
-            m = entry._ortSame = { x: p.x, z: p.z, seed: entry.seed, preset, same };
+        if (!(
+            m &&
+            m.stand === stand &&
+            m.x === p.x &&
+            m.z === p.z &&
+            m.T === T &&
+            m.seed === entry.seed &&
+            m.preset === preset
+        )) {
+            let wartet = false;
+            const same = this._foundryGestaltSame(entry.seed, preset, () => {
+                if (!(T > 0)) return false;
+                if (!this._forestGesetzWahr()) {
+                    wartet = true;
+                    return false;
+                }
+                return this._forestStehtFrei(p.x, p.z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
+            });
+            if (wartet) return null; // die Gestalt wartet auf die Wahrheit ihres Orts (nie gemerkt)
+            m = entry._ortSame = { stand, x: p.x, z: p.z, T, seed: entry.seed, preset, same };
         }
         return this._foundryVariantFor(m.same, preset);
     }
