@@ -62,7 +62,11 @@
             kindStages: { gate: [0] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
-                gate: { 0: { tris: 184000, band: 60000, draws: 13, schatten: 0 }, fernform: "gesetz" },
+                // 1110-9 (das Detail-Gesetz der Röhren und Ringe): tris ist die Hülle der Rezepte UND des Rands jedes Reglers
+                // (gate:regler-wirkt, Ratsche reglerBudget Soll 0) — gemessen 75 608 an ruine wBraid=1 (vorher 256 284 an
+                // maurentor orders=9, über der alten Zeile 184 000); die sieben Rezepte selbst tragen ≤ 51 096 und liegen auf
+                // dem Band, der Rand der Regler noch darüber
+                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 0 }, fernform: "gesetz" },
                 gestalten: {},
             },
         },
@@ -199,11 +203,62 @@
         return { stich: d.rise, schub: d.thrustNorm, dicke: d.jambW, streckung: d.aspect };
     }
 
-    // ═══ Geometrie-Hilfen (byte-treu, Z.46–51) ═══
+    // ═══ DAS DETAIL-GESETZ der Röhren und Ringe (1110-9, das Tor-L0 auf seiner Band-Zeile) ═══
+    // Röhren und Ringe tragen 95 % der Dreiecke eines Tors (die Strähnen allein 28 × 240 × 6 × 2 = 80 640). Ihre Teilung
+    // folgt EINEM Sehnen-Fehler `TOR_DETAIL.sehneM`: längs so viele Segmente, wie die Krümmung der Kurve braucht (∫ √(κ / 8ε) ds,
+    // verteilt nach der Krümmung — gerade Läufe tragen wenige, enge Bögen viele), um den Umfang so viele, wie der Radius
+    // braucht (π / acos(1 − ε / r)); die Zahl des Aufrufers ist die Höchst-Teilung. Gemessen 12.10. (OMEN, die sieben Tore
+    // in Node): bei ε = 1 cm trägt das schwerste Tor 51 096 statt 150 200 Dreiecke (drachentor), alle ≤ 60 000 (Band-Zeile).
+    var TOR_DETAIL = { sehneM: 0.01, laengsM: 1, umfangMin: 3, ringMin: 8, proben: 256 };
+    function umfangTeilung(r, hoechst) {
+        var n = Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - TOR_DETAIL.sehneM / r)));
+        return Math.max(TOR_DETAIL.umfangMin, Math.min(hoechst, n));
+    }
+    // Die Kurve, umparametrisiert nach der Krümmungs-Dichte: TubeGeometry tastet gleichmäßig in u (getPointAt,
+    // getTangentAt) und trifft so im Raum dort dicht, wo die Kurve sich biegt.
+    function sehnenKurve(kurve, hoechst) {
+        var N = TOR_DETAIL.proben, L = kurve.getLength(), ds = L / N, eps = TOR_DETAIL.sehneM;
+        var dichte = [0], summe = 0, t0 = kurve.getTangentAt(0), kreuz = new THREE.Vector3(), i;
+        for (i = 1; i <= N; i++) {
+            var t1 = kurve.getTangentAt(i / N);
+            // der Winkel gut konditioniert (atan2 aus Kreuz und Skalar; acos des Skalars nahe 1 verstärkte das ULP-Rauschen der
+            // Kurve, die Wurzel darüber kippte die Teilung — die Plattform-Probe: 7 Fälle), unter 1e-9 gerade
+            var w = Math.atan2(kreuz.crossVectors(t0, t1).length(), t0.dot(t1));
+            var k = (w < 1e-9 ? 0 : w) / ds;
+            // höchstens `laengsM` je Segment auch im geraden Lauf: die Pfosten tragen Ringe (die gemintete Tor-Hülle misst die
+            // Ecken — ohne sie sah sie einen Pfosten 37 cm schmaler als gezeichnet, maschine)
+            summe += Math.max(Math.sqrt(k / (8 * eps)), 1 / TOR_DETAIL.laengsM) * ds;
+            dichte.push(summe);
+            t0 = t1;
+        }
+        var n = Math.max(2, Math.min(hoechst, Math.ceil(summe) + 1));
+        var bogen = function (u) {
+            var z = u * summe, lo = 0, hi = N;
+            while (hi - lo > 1) {
+                var mi = (lo + hi) >> 1;
+                if (dichte[mi] <= z) lo = mi;
+                else hi = mi;
+            }
+            var d = dichte[hi] - dichte[lo];
+            return Math.min(1, (lo + (d > 0 ? (z - dichte[lo]) / d : 0)) / N);
+        };
+        var c = new THREE.Curve();
+        c.getPoint = function (u, ziel) { return kurve.getPointAt(bogen(u), ziel); };
+        c.getPointAt = c.getPoint;
+        c.getTangentAt = function (u, ziel) { return kurve.getTangentAt(bogen(u), ziel); };
+        c.getTangent = c.getTangentAt;
+        return { kurve: c, n: n };
+    }
+    // Ein Ring: der Kreis R trägt die Krümmung 1 / R (∫ = 2π √(R / 8ε)), mindestens `ringMin` Seiten (die Rosette bleibt rund).
+    function ringGeometrie(R, r, umfangHoechst, laengsHoechst) {
+        var laengs = Math.ceil(2 * Math.PI * Math.sqrt(R / (8 * TOR_DETAIL.sehneM)));
+        return new THREE.TorusGeometry(R, r, umfangTeilung(r, umfangHoechst), Math.max(TOR_DETAIL.ringMin, Math.min(laengsHoechst, laengs)));
+    }
+    // ═══ Geometrie-Hilfen (byte-treu, Z.46–51; Röhren und Ringe teilen nach dem Detail-Gesetz) ═══
     // prettier-ignore
-    function tubeMesh(pts,r,m,seg,rad){return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts,false,'centripetal'),seg||140,r,rad||8,false),m);}
+    function tubeMesh(pts,r,m,seg,rad){var sk=sehnenKurve(new THREE.CatmullRomCurve3(pts,false,'centripetal'),seg||140);return new THREE.Mesh(new THREE.TubeGeometry(sk.kurve,sk.n,r,umfangTeilung(r,rad||8),false),m);}
     // prettier-ignore
-    function torusMesh(R,r,m,x,y,z){var me=new THREE.Mesh(new THREE.TorusGeometry(R,r,8,20),m);me.position.set(x,y,z);return me;}
+    function torusMesh(R,r,m,x,y,z){var me=new THREE.Mesh(ringGeometrie(R,r,8,20),m);me.position.set(x,y,z);return me;}
     // prettier-ignore
     function barBetween(x0,y0,x1,y1,m,z,th){var dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||0.01;var b=new THREE.Mesh(new THREE.BoxGeometry(len,th||0.04,0.1),m);b.position.set((x0+x1)/2,(y0+y1)/2,z);b.rotation.z=Math.atan2(dy,dx);return b;}
     // prettier-ignore
@@ -365,7 +420,7 @@
       if(p.wMono*p.mass>0.05){var pw=fullW+0.5,ph=0.2+0.3*p.mass;                                // 3) Tech-Podest mit Leuchtnaht
         var pl=new THREE.Mesh(new THREE.BoxGeometry(pw,ph,baseDepth+0.3),fmat);pl.position.set(0,baseY-ph/2,baseZ);pl.castShadow=pl.receiveShadow=true;gate.add(pl);
         var seam=new THREE.Mesh(new THREE.BoxGeometry(pw*0.9,0.03,baseDepth*0.25),rimMat);seam.position.set(0,baseY-ph+0.05,baseZ+baseDepth*0.25);gate.add(seam);}
-      if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=new THREE.Mesh(new THREE.TorusGeometry(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat);rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);  // 4) Leuchtende Dais
+      if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=new THREE.Mesh(ringGeometrie(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat);rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);  // 4) Leuchtende Dais
         var disc=new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,40),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide}));disc.material.userData.__seh="glut";disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
       if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);}}  // 5) Schutt
 
@@ -532,15 +587,16 @@
     // Pfosten ausserhalb der Oeffnung (±rimAx, 0,1 m bis zur Kaempferlinie) und ihre Tiefe, darueber Aussenkante und
     // Tiefe des Rahmens; dazu die Oberkante — auf den cm nach aussen gerundet. Bis dahin baute der Wirt die Gestalt beim
     // ersten Spawn jeder Gestalt synchron auf dem Haupt-Thread nach. Gemintet und gemessen von gate:porta-contract
-    // (scripts/lib/tor-huelle.cjs, Mint-Treue je Zahl); der Bau liest sie nie.
+    // (scripts/lib/tor-huelle.cjs, Mint-Treue je Zahl); der Bau liest sie nie. 1110-9 (das Detail-Gesetz der Röhren und
+    // Ringe): zehn Zahlen neu geprägt, je 1–2 cm nach innen (drachentor/geisttor obenX, maschine pfostenX, vier Oberkanten).
     // prettier-ignore
     var TOR_HUELLE = {
-        drachentor: { seiten: [[2.7, 1.62, 2.69, 1.61], [2.7, 1.62, 2.69, 1.61]], oberkante: 8.01 },
-        kathedrale: { seiten: [[3.29, 2.81, 3.27, 2.81], [3.29, 2.81, 3.27, 2.8]], oberkante: 8.57 },
-        maschine: { seiten: [[2.67, 1.33, 2.66, 1.33], [2.67, 1.33, 2.66, 1.33]], oberkante: 7.14 },
-        geisttor: { seiten: [[2.36, 1.35, 2.36, 1.35], [2.36, 1.35, 2.36, 1.35]], oberkante: 7.4 },
-        verkalkt: { seiten: [[2.61, 1.81, 2.6, 1.81], [2.61, 1.81, 2.6, 1.81]], oberkante: 7.36 },
-        ruine: { seiten: [[5.78, 1.87, 4.18, 1.87], [5.29, 1.87, 4.18, 1.86]], oberkante: 6.83 },
+        drachentor: { seiten: [[2.7, 1.62, 2.67, 1.61], [2.7, 1.62, 2.67, 1.61]], oberkante: 8.01 },
+        kathedrale: { seiten: [[3.29, 2.81, 3.27, 2.81], [3.29, 2.81, 3.27, 2.8]], oberkante: 8.56 },
+        maschine: { seiten: [[2.66, 1.33, 2.66, 1.33], [2.66, 1.33, 2.66, 1.33]], oberkante: 7.13 },
+        geisttor: { seiten: [[2.36, 1.35, 2.34, 1.35], [2.36, 1.35, 2.34, 1.35]], oberkante: 7.4 },
+        verkalkt: { seiten: [[2.61, 1.81, 2.6, 1.81], [2.61, 1.81, 2.6, 1.81]], oberkante: 7.35 },
+        ruine: { seiten: [[5.78, 1.87, 4.18, 1.87], [5.29, 1.87, 4.18, 1.86]], oberkante: 6.81 },
         maurentor: { seiten: [[2.93, 1.75, 2.92, 1.75], [2.93, 1.75, 2.92, 1.75]], oberkante: 7.03 },
     };
 
