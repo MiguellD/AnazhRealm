@@ -706,6 +706,8 @@ class AnazhRealm {
                 lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
                 // Welle 5 Klang — die Klang-Welt (klang:UMWELT), lazy in initSymphony. Runtime-only, NIE im Save.
                 umwelt: null, // { kern, bus, graph, ring, glut, letzteMischung, rufSaat, lage, mix }
+                // Leben-Schau 2 — die Stimme der Fahrt (klang:FAHRT), nur im Sattel (_fahrtKlangTick). Runtime-only.
+                fahrt: null, // { entry, stimme }
             },
             player: {
                 // Avatar-Name (Default "Schöpfer"), editierbar, persistiert in localStorage; der LLM-System-Prompt
@@ -1555,6 +1557,14 @@ class AnazhRealm {
         return Array.isArray(v) || (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
     }
 
+    // DIE EINE ZAHL AUS FREMDER HAND (Draht, DSL-Programm): eine endliche Zahl oder NaN, nie still die 0. Über den Draht
+    // reist NaN als null (JSON), und `Number(null) === 0` (Lehre 17) — ein ortloser Mitspieler stand so im Ursprung, eine
+    // ortlose Sicht-Kreatur bei 0/0/0. null, leer, Wahrheitswert, Liste, Objekt sind keine Zahl; ein Zahl-Text gilt.
+    _fremdeZahl(v) {
+        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+        return Number.isFinite(n) ? n : NaN;
+    }
+
     // DER EINE ZAHLEN-LESER der Orte (Koordinate, Radius, Abstand, Spanne): fehlt die Zahl (`v == null`), gilt ihr
     // dokumentierter Default — hat sie keinen, fehlt der Ort; steht sie da und ist keine endliche Zahl (Text, leer,
     // Wahrheitswert, Liste), gibt es den Ort nicht. Nie still die 0 oder die Untergrenze (Lehre 17: `Number(null) === 0`;
@@ -1565,7 +1575,7 @@ class AnazhRealm {
             if (def == null) throw this._dslKeinOrt(op, `${op}: ${was} fehlt`);
             return def;
         }
-        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+        const n = this._fremdeZahl(v);
         if (!Number.isFinite(n)) throw this._dslKeinOrt(op, `${op}: ${was} „${this._dslZeig(v)}“ ist keine Zahl`);
         return Math.min(hi, Math.max(lo, n));
     }
@@ -5726,6 +5736,10 @@ class AnazhRealm {
 
     initP2PSync(roomId, opts = {}) {
         const p2p = this.state.p2p;
+        // DIE TÜR TRÄGT DIE ABSICHT (K04): wer sie ruft, will verbunden sein — vor jedem Erfolg, damit der close-Zweig
+        // und `_p2pScheduleReconnect` auch einen gescheiterten Erst-Aufbau heilen. Aus geht es nur über den Knopf
+        // (`enabled = false` + shutdown); der Transport-Zustand bleibt `connected`.
+        p2p.enabled = true;
         if (p2p.ws) this.shutdownP2PSync();
         // Φ5 (V18.189) — beim ersten P2P-Init die getragenen Welten laden
         // (idempotent — _loadPinnedManifest setzt nur die Map einmal pro
@@ -7043,6 +7057,12 @@ class AnazhRealm {
             if (!e || typeof e.id !== "string") continue;
             const key = peerId + ":" + e.id;
             seen.add(key);
+            // Ein Ort aus dem Draht ohne Zahl ist kein Ort (NaN reist als null, bis hierher `+e.x || 0`): keine
+            // Sicht-Kopie im Ursprung, eine bestehende hält ihr letztes Ziel.
+            const ex = this._fremdeZahl(e.x);
+            const ey = this._fremdeZahl(e.y);
+            const ez = this._fremdeZahl(e.z);
+            if (!Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) continue;
             let rc = remote.get(key);
             if (!rc) {
                 const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
@@ -7052,15 +7072,16 @@ class AnazhRealm {
                 // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
                 const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
-                mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
+                mesh.position.set(ex, ey, ez);
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
                 remote.set(key, rc);
             }
-            rc.tx = +e.x || 0;
-            rc.ty = +e.y || 0;
-            rc.tz = +e.z || 0;
-            rc.tyaw = +e.yaw || 0;
+            rc.tx = ex;
+            rc.ty = ey;
+            rc.tz = ez;
+            const eyaw = this._fremdeZahl(e.yaw);
+            rc.tyaw = Number.isFinite(eyaw) ? eyaw : rc.tyaw || 0;
             // die Lage eines Gefallenen (fremdes Datum: nur vier endliche Zahlen gelten)
             rc.tq = Array.isArray(e.q) && e.q.length === 4 && e.q.every((v) => Number.isFinite(v)) ? e.q : null;
             rc.lastSeen = nowSec;
@@ -7213,8 +7234,8 @@ class AnazhRealm {
     // Gecacht + im Multi-User-Bereich sichtbar (Vision-Mechanik sichtbar,
     // V9.95-c — der Schöpfer sieht das Makrosystem, nicht nur den Raum).
     _p2pMsgStats(msg, p2p) {
-        const rooms = Number(msg.rooms);
-        const peers = Number(msg.peers);
+        const rooms = this._fremdeZahl(msg.rooms);
+        const peers = this._fremdeZahl(msg.peers);
         if (!Number.isFinite(rooms) || !Number.isFinite(peers)) return;
         p2p.brokerStats = { rooms, peers, at: Date.now() };
         if (typeof document !== "undefined") {
@@ -7350,10 +7371,12 @@ class AnazhRealm {
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
         const entry = this._p2pEnsurePeerEntry(pid);
-        const x = Number(msg.x);
-        const y = Number(msg.y);
-        const z = Number(msg.z);
-        const yaw = Number(msg.yaw);
+        // Ein Ort aus dem Draht ohne Zahl ist kein Ort (NaN reist als null): der ortlos geborene Mitspieler bleibt ohne
+        // Ort und unsichtbar, statt in den Ursprung zu springen.
+        const x = this._fremdeZahl(msg.x);
+        const y = this._fremdeZahl(msg.y);
+        const z = this._fremdeZahl(msg.z);
+        const yaw = this._fremdeZahl(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
         const nowMs = performance.now();
         // Lockstep: treibt der Ghost diesen Peer (frisch gesteppt), wird pos zur AUTORITÄT des
@@ -7616,9 +7639,11 @@ class AnazhRealm {
         if (entry) return entry;
         entry = {
             peerId,
-            x: 0,
-            y: 0,
-            z: 0,
+            // DER ORT IST UNBEKANNT, nie 0 (K04): bis die erste Position kommt (pos oder Lockstep-Schritt) steht der Peer
+            // nirgends — `_p2pUpdatePeer` zeigt ihn erst mit endlichem Ort (vorher stand er sichtbar im Weltursprung).
+            x: NaN,
+            y: NaN,
+            z: NaN,
             yaw: 0,
             mesh: null,
             // meshKind: "placeholder" (Cone+Sphere) | "soul" (Built-in) | "soul-custom" (bodyParts-Seele).
@@ -7654,7 +7679,10 @@ class AnazhRealm {
         };
         p2p.peers.set(peerId, entry);
         entry.mesh = this._p2pBuildPlaceholderMesh(peerId);
-        if (entry.mesh) entry.mesh.name = "p2p-spieler";
+        if (entry.mesh) {
+            entry.mesh.name = "p2p-spieler";
+            entry.mesh.visible = false; // unsichtbar geboren — _p2pUpdatePeer zeigt ihn an seinem Ort
+        }
         if (entry.mesh && this.state.scene) this.state.scene.add(entry.mesh);
         return entry;
     }
@@ -7722,6 +7750,7 @@ class AnazhRealm {
             this._disposeSoulGroup(entry.mesh);
         }
         group.name = "p2p-spieler";
+        group.visible = false; // unsichtbar geboren — _p2pUpdatePeer zeigt ihn an seinem Ort
         this.state.scene.add(group);
         entry.mesh = group;
         entry.meshKind = kind;
@@ -7789,6 +7818,7 @@ class AnazhRealm {
         const shown = entry.dwellingIn ? `${baseName} · wohnt in ${entry.dwellingIn}` : baseName;
         const label = this._p2pBuildNameLabel(shown, fingerprint);
         if (label && this.state.scene) {
+            label.visible = false; // unsichtbar geboren — _p2pUpdatePeer zeigt es über dem Kopf
             this.state.scene.add(label);
             entry.nameLabel = label;
         }
@@ -7853,6 +7883,12 @@ class AnazhRealm {
         // RECONNECT #3 — erst die interpolierte Vergangenheit samplen (nur
         // Nicht-Lockstep-Snaps, s. _p2pSampleSnapBuf), dann zeichnen.
         this._p2pSampleSnapBuf(entry, nowSec * 1000);
+        // DIE EINE SICHT DES MITSPIELERS (K04): sichtbar ist er erst mit einem Ort — Leib und Schild, gleich welcher
+        // Gestalt (Platzhalter, Seele, Schild werden unsichtbar geboren). Ohne Ort gibt es nichts zu zeichnen.
+        const ortBekannt = Number.isFinite(entry.x) && Number.isFinite(entry.y) && Number.isFinite(entry.z);
+        mesh.visible = ortBekannt;
+        if (entry.nameLabel) entry.nameLabel.visible = ortBekannt;
+        if (!ortBekannt) return;
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
         // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (die EINE
         // Wasser-Wahrheit am Körper) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem
@@ -8340,7 +8376,10 @@ class AnazhRealm {
             ls.buf.splice(0, drop);
             ls.bufStart += drop;
         }
-        if (msg.a && Number.isFinite(msg.a.s) && Number.isFinite(msg.a.x)) ls.anchor = msg.a;
+        // Der Anker seedet den Ghost-Ort: alle drei Achsen endlich (eine null-Achse — das JSON-Bild von NaN — stand als 0).
+        const a = msg.a;
+        const ankerOrt = !!a && Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z);
+        if (ankerOrt && Number.isFinite(a.s)) ls.anchor = a;
     }
 
     // GHOST-SWAP: die KOMPLETTE Charakter-Sim-Oberfläche Spieler↔Ghost tauschen, den EINEN
@@ -8574,8 +8613,6 @@ class AnazhRealm {
         // UI auf gespeicherten Stand setzen
         urlInput.value = this.state.p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL;
         if (roomInput) roomInput.value = this.state.p2p.roomOverride || "";
-        toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
-        toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
         this.p2pUpdateStatus();
         urlInput.addEventListener("change", () => {
             this.state.p2p.url = urlInput.value.trim() || AnazhRealm.P2P_DEFAULT_WS_URL;
@@ -8611,17 +8648,14 @@ class AnazhRealm {
                 }
             });
         }
+        // Der Knopf liest die EINE Absicht: an → aus (der einzige Ausgang), aus → die Tür (sie setzt die Absicht selbst).
+        // Seine Beschriftung zeichnet p2pUpdateStatus aus derselben Absicht.
         toggle.addEventListener("click", () => {
             if (this.state.p2p.enabled) {
                 this.state.p2p.enabled = false;
                 this.shutdownP2PSync();
-                toggle.setAttribute("aria-pressed", "false");
-                toggle.textContent = "Aktivieren";
             } else {
-                this.state.p2p.enabled = true;
                 this.initP2PSync(null);
-                toggle.setAttribute("aria-pressed", "true");
-                toggle.textContent = "Deaktivieren";
             }
             this.p2pPersist();
             this.p2pUpdateStatus();
@@ -8730,6 +8764,13 @@ class AnazhRealm {
     }
 
     p2pUpdateStatus() {
+        // Der Knopf zeigt die EINE Absicht (`enabled`), wer immer sie gesetzt hat — Knopf, Boot, Raum-Wechsel, Rejoin.
+        const toggle = document.getElementById("p2p-toggle");
+        if (toggle) {
+            const an = this.state.p2p.enabled === true;
+            toggle.setAttribute("aria-pressed", an ? "true" : "false");
+            toggle.textContent = an ? "Deaktivieren" : "Aktivieren";
+        }
         const statusEl = document.getElementById("p2p-status");
         if (statusEl) {
             const p = this.state.p2p;
@@ -9966,6 +10007,7 @@ class AnazhRealm {
         // mit dem geschlossenen ctx.
         s.lofi = null;
         s.umwelt = null;
+        s.fahrt = null; // die Stimme der Fahrt starb mit dem Kontext
         s.masterGain = null;
         s.spitze = null;
     }
@@ -9975,7 +10017,7 @@ class AnazhRealm {
     // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
     // Hör-Ring · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
-    // UMWELT.ohr.probenJeFrame Ring-Proben + ohr.bautenJeFrame Bauten-Prüfungen, die Mischung im Takt ohr.mischSek;
+    // UMWELT.ohr.probenJeFrame Ring-Proben, die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt ohr.mischSek;
     // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
     // (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linse: gate:klang-zensus.
     _umweltKlangBauen(ctx, masterGain, UM) {
@@ -10006,7 +10048,6 @@ class AnazhRealm {
         return Object.assign(um, {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
-            glut: { idx: 0, laufend: new Map(), fertig: new Map() },
             letzteMischung: -Infinity,
             rufSaat: saat || 1,
             lage: null,
@@ -10080,7 +10121,6 @@ class AnazhRealm {
         const p = this.state.playerMesh.position;
         const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
         this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame);
-        this._umweltGlutSweep(um, p.x, p.z, O.bautenJeFrame);
         const jetzt = s.ctx.currentTime;
         if (jetzt - um.letzteMischung < O.mischSek) return;
         const dt = Number.isFinite(um.letzteMischung) ? jetzt - um.letzteMischung : 0;
@@ -10167,32 +10207,6 @@ class AnazhRealm {
         for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer))
             if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
         return true;
-    }
-
-    // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
-    // tauscht die Kandidaten (abgebaute Bauten fallen spätestens nach einem Umlauf). Die Stärke ist die Substanz: die
-    // Brenn-Fläche der Teile (Material „glut"), je Bauplan gemerkt.
-    _umweltGlutSweep(um, px, pz, n) {
-        const archs = this.state.architectures;
-        const N = Array.isArray(archs) ? archs.length : 0;
-        const G = um.glut;
-        const U = AnazhRealm._umweltGesetz().UMWELT;
-        const H = U.stimmen.glut.hoerweiteM + U.ohr.glutRandM;
-        const lim = Math.min(n, N);
-        for (let k = 0; k < lim; k++) {
-            if (G.idx >= N) {
-                G.idx = 0;
-                G.fertig = G.laufend;
-                G.laufend = new Map();
-            }
-            const e = archs[G.idx++];
-            if (!e || !e.position) continue;
-            const dx = e.position.x - px;
-            const dz = e.position.z - pz;
-            if (dx * dx + dz * dz > H * H) continue;
-            const a = this._glutFlaeche(e);
-            if (a > 0) G.laufend.set(e, a);
-        }
     }
 
     // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
@@ -10304,16 +10318,16 @@ class AnazhRealm {
                 fall.pan = d > 1e-3 ? pan((wfall.x - px) / d, (wfall.z - pz) / d) : 0;
             }
         }
-        // Die nächste Glut (Kandidaten des Umlaufs).
+        // Die nächste Glut — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche, gestempelt beim Eintritt;
+        // jenseits der Hörweite schweigt das Gesetz). Bis K11 lief ein Umlauf über alle Bauten (48 je Frame, nur mit Klang).
         const glut = { d: Infinity, flaeche: 0, pan: 0 };
-        for (const quelle of [um.glut.fertig, um.glut.laufend]) {
-            for (const [e, a] of quelle) {
-                const d = Math.hypot(e.position.x - px, e.position.z - pz);
-                if (d < glut.d) {
-                    glut.d = d;
-                    glut.flaeche = a;
-                    glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
-                }
+        for (const e of this._blockerMit("glut")) {
+            if (!e.position) continue;
+            const d = Math.hypot(e.position.x - px, e.position.z - pz);
+            if (d < glut.d) {
+                glut.d = d;
+                glut.flaeche = this._glutFlaeche(e);
+                glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
             }
         }
         return {
@@ -10509,7 +10523,7 @@ class AnazhRealm {
     // Peer) liest EINE Kern-Zahl (fx.bewegung.schritt.taktCompound), skaliert über die Emotions-Brücke
     // (freq-Ratio des koerper-Bewegungsprofils; ohne Emotionen Faktor 1). Fail-closed (Kern-Pflicht).
     _compoundTaktHz(emotions) {
-        let hz = AnazhRealm._bewegungsBlock("schritt", ["kalib", "taktCompound"]).taktCompound;
+        let hz = AnazhRealm._bewegungsBlock("schritt", ["taktCompound", "klangTempoMin"]).taktCompound;
         if (emotions) {
             const mpv = this._koerperMotionProfile(true, emotions);
             const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
@@ -10550,7 +10564,9 @@ class AnazhRealm {
         }
         const T = AnazhRealm.SCHRITT_KLANG;
         const phase = Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0;
-        const halb = Math.floor(phase / Math.PI);
+        // der Ton fällt, wenn ein Fuß aufsetzt: bei der Phase des Aufsetzens des Gang-Gesetzes (je Bein um π versetzt)
+        const auf = halter._gait && Number.isFinite(halter._gait.auf) ? halter._gait.auf : 0;
+        const halb = Math.floor((phase - auf) / Math.PI);
         if (!grounded || underwater || !(speed > T.tempoMin) || k.halb === null || halb < k.halb) {
             k.halb = halb; // ankern OHNE Ereignis (Stand/Luft/Schwimmen/Phasen-Reset)
             return;
@@ -10652,6 +10668,35 @@ class AnazhRealm {
         if (!s.enabled || !s.ctx) return;
         this._lofiTick();
         this._umweltKlangTick();
+        this._fahrtKlangTick();
+    }
+
+    // DIE STIMME DER FAHRT (Leben-Schau 2, fahr-bahn — Befund: Fahren war stumm): im Sattel eines Gesetz-Wagens klingt seine
+    // Fahrt aus dem Gesetzbuch (klang:FAHRT — der Motor aus der Zünd-Folge seiner Drehzahl im Gang, das Abrollen aus dem
+    // Tempo; die Quellen baut klang-core `fahrtStimme`) auf dem Welt-Master. Der Wirt reicht nur die Lage: das Tempo des
+    // Fahr-Zustands, die Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-
+    // Tasten (W, rückwärts S), den Flug. Absteigen oder ein Wagen-Wechsel stoppt sie. Kosten: eine Stimme, nur im Sattel.
+    _fahrtKlangTick() {
+        const s = this.state.symphony;
+        const pl = this.state.player;
+        const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
+        const fz =
+            e && e.id === pl.mountedArch && e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
+        if (s.fahrt && (!fz || s.fahrt.entry !== e)) {
+            s.fahrt.stimme.stop(s.ctx.currentTime);
+            s.fahrt = null;
+        }
+        if (!fz) return;
+        if (!s.fahrt) s.fahrt = { entry: e, stimme: AnazhRealm._umweltGesetz().kern.fahrtStimme(s.ctx, s.masterGain) };
+        const S = AnazhRealm._fahrSchrittGesetz().S;
+        const FT = AnazhRealm.FAHR_TASTEN;
+        const keys = this.state.keys;
+        const gas = keys[FT.gas.tasten[0]] || (keys[FT.bremse.tasten[0]] && fz.vlong <= S.bremsV) ? 1 : 0;
+        const vmax = e._fahrSatz.vmax;
+        s.fahrt.stimme.anwenden(
+            { v: fz.vlong, vmax, rueckVmax: vmax * S.rueckVmax, gas, luft: !!fz.luft },
+            s.ctx.currentTime
+        );
     }
 
     // ### Lofi-Pad-Schicht ###
@@ -16328,31 +16373,11 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         if (this.state._grassMat) return this.state._grassMat;
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshStandardNodeMaterial !== "function") {
-            // Defensive (Bootstrap-Bruch): klassisches Standard OHNE Wind. Im WebGPU-required-Normalbetrieb
-            // (V12.0-a) nie erreicht.
-            this.state._grassMat = new THREE.MeshStandardMaterial({
-                color: 0x5fa743,
-                side: THREE.DoubleSide,
-                roughness: 1,
-                metalness: 0,
-            });
-            return this.state._grassMat;
-        }
         // Natives MeshStandardNodeMaterial (rau, nicht-metallisch): die WebGPU-Lighting-Pipeline rechnet Licht +
         // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
         // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
         const { uniform, vec3, float, max, positionLocal, positionWorld } = TSL;
-        if (!this.state.windUniforms) {
-            this.state.windUniforms = {
-                uWindTime: uniform(0.0),
-                uWindStrength: uniform(0.12),
-                // V16.2 — Sonnen-Richtung für Gegenlicht-Translucency (vom
-                // _dayNightApplyDirectionalLight-Sync gespeist, EINE Quelle).
-                uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
-            };
-        }
-        const wu = this.state.windUniforms;
+        const wu = this._windUniformsEnsure();
         // Die Höhen-Referenz des Farb-Gradients ist ein UNIFORM (GRASS_BLADE_H; die
         // Studio-Halm-Geometrie, die eine eigene Höhe mitbrachte, fiel mit dem Halm-Mesh).
         if (!wu.uBladeH) wu.uBladeH = uniform(AnazhRealm.GRASS_BLADE_H);
@@ -16435,6 +16460,7 @@ class AnazhRealm {
         // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
         // Graph hängt nur an geteilten Wind-Uniforms + Attributen — equals()-Bahn.
         this._materialObserverDiaet(mat);
+        this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;
     }
@@ -16768,11 +16794,13 @@ class AnazhRealm {
     // DIE ZEICHEN ÜBER DEM LEIB (die Aura des Auftrags, das Sprite der Traglast) räumen — der EINE Weg für den Abschied
     // (removeCreature) und den Fall (_kreaturFaellt: ein Leichnam trägt keinen Auftrag, keine Last). Die Textur ist geteilt
     // (_getCreatureTaskAuraTexture, lebt mit der Realm-Klasse) — nur das Material geht, aufgeschoben (V10.0-j.e, das
-    // Submit-Rennen unter WebGPU); sonst bliebe das Sprite als Geist im Heap.
-    _leibZeichenFrei(creature) {
+    // Submit-Rennen unter WebGPU); sonst bliebe das Sprite als Geist im Heap. `nur` räumt EIN Zeichen ("taskAura" |
+    // "carryingSprite"): das Ende eines Auftrags (_refreshCreatureTaskAura) und einer Traglast (_refreshCreatureCarryingVisual)
+    // gehen DENSELBEN Weg (K13 — vorher räumten beide in eigenen Kopien dieses Codes).
+    _leibZeichenFrei(creature, nur = null) {
         const ud = creature && creature.userData;
         if (!ud) return;
-        for (const feld of ["taskAura", "carryingSprite"]) {
+        for (const feld of nur ? [nur] : ["taskAura", "carryingSprite"]) {
             const z = ud[feld];
             if (!z) continue;
             if (this.state.scene) this.state.scene.remove(z);
@@ -17515,35 +17543,51 @@ class AnazhRealm {
     // Rein RENDER-seitig — kein Snapshot-/Worker-/Sim-Pfad liest diese Zahlen.
     // Linse: gate:koerper-bewegung.
 
-    // WEG-PHASE (distance-matched): Phase ∝ zurückgelegte Distanz / Schrittlänge, wie entry._ridePhase.
-    // Eine 2π-Phase = 2 Schritte ⇒ rad/s = π·v/Schritt; die Schritt-Distanz bleibt konstant (kein Skaten).
-    _gaitPhaseRate(speed, schritt) {
-        const v = Number(speed);
-        const s = Number(schritt);
-        if (!(v > 0) || !(s > 1e-3)) return 0;
-        return (Math.PI * v) / s;
+    // DAS EINE GANG-GESETZ DES ZWEIBEINERS (K07): Takt, Fußweg und Tastgrad aus tetrapoda `gangSchritt` — dieselbe Formel,
+    // nach der die Tiere gehen — mit der Zweibeiner-Zeile fx.bewegung.gang; L = die GEBAUTE Beinlänge (einmal am Rig
+    // vermessen, Welt-Maß aus der Gelenk-Skala). Die Phase bleibt weg-getrieben (2π je Doppelschritt Λ, ω = 2π·v/Λ).
+    // Vorher eichte ein Faktor des Schritt-Blocks (4,0 × Bein ≈ 3,4 m je Schritt) den Takt auf 5,5 rad/s beim Basistempo:
+    // beim Gehen 0,34 Schritte/s, zwei Schritt-Töne in sechs Sekunden, der Fuß glitt 130 % des Wegs.
+    _gaitGesetz(rig, speed) {
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        if (!core || typeof core.gangSchritt !== "function")
+            return AnazhRealm._kernPflichtBruch("tetrapoda:gangSchritt");
+        const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
+        return core.gangSchritt(v, this._gaitBeinMass(rig).L, this._gangZeile(true));
     }
-    // Schrittlänge aus der GEBAUTEN Beinlänge (einmal am Rig vermessen, Welt-Maß aus der Gelenk-Skala).
-    // Der Kalibrierfaktor wohnt im Gesetzbuch (fx.bewegung.schritt.kalib via _bewegungsBlock): er eicht
-    // auf ~5.5 rad/s bei state.speed 6 — ein anatomischer Schritt gäbe beim übermenschlich schnellen
-    // Welt-Läufer ~25 rad/s Bein-Wirbel.
-    _gaitSchrittLen(rig) {
-        if (!rig) return 3.4;
-        if (Number.isFinite(rig._schritt)) return rig._schritt;
-        let bein = 0;
-        try {
-            if (rig.legL && rig.legL.hip && rig.legL.knee && rig.legL.ankle) {
-                const sv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
-                rig.legL.hip.getWorldScale(sv);
-                const wpl = Math.abs(sv.y) || 1;
-                bein = (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) * wpl;
-            }
-        } catch (_e) {
-            bein = 0;
+    // DIE ZEILE DES GANGS IN DER WELT (K07): das Gang-Gesetz misst Froude-Zahl und Becken an der Schwere der Welt
+    // (`state.gravity`, die DSL setzt sie) — Mensch und Tier lesen sie aus EINER Zeile, Schritt und Becken aus derselben
+    // (der Mensch: fx.bewegung.gang, das Tier: GANG_GESETZ). Vorher las der Schritt GANG_GESETZ.g, das Becken ein Literal
+    // 9,81, und eine Welt mit anderer Schwere ging wie die Erde. Memo je Schwere und Block.
+    _gangZeile(mensch) {
+        const g = -this.state.gravity;
+        const Z = AnazhRealm._bewegungsBlock("gang", AnazhRealm.GANG_FELDER);
+        let m = this._gangZeileMemo;
+        if (!m || m.g !== g || m.Z !== Z)
+            m = this._gangZeileMemo = { g, Z, mensch: Object.assign({}, Z, { g }), tier: { g } };
+        return mensch ? m.mensch : m.tier;
+    }
+    // Die Bein-Maße des Rigs, einmal vermessen: Ober- und Unterschenkel im Gelenk-Raum (l1, l2), die Welt-Skala der
+    // Hüfte lotrecht (wpl) und längs (wz — das Becken des Menschen ist ungleich skaliert, 0,93 quer und längs: ein
+    // Fußweg in Metern ist längs ein anderes Maß im Gelenk-Raum als lotrecht, sonst kurzt die Pose den Stand um 7 % und
+    // der Fuß gleitet), die Beinlänge in Metern (L = (l1 + l2)·wpl — die L, an der das Gang-Gesetz die Schrittlänge misst).
+    _gaitBeinMass(rig) {
+        if (rig && rig._beinMass) return rig._beinMass;
+        let l1 = 0,
+            l2 = 0,
+            wpl = 0,
+            wz = 0;
+        if (rig && rig.legL && rig.legL.hip && rig.legL.knee && rig.legL.ankle) {
+            const sv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
+            rig.legL.hip.getWorldScale(sv);
+            wpl = Math.abs(sv.y) || 1;
+            wz = Math.abs(sv.z) || wpl;
+            l1 = rig.legL.knee.position.length();
+            l2 = rig.legL.ankle.position.length();
         }
-        const kalib = AnazhRealm._bewegungsBlock("schritt", ["kalib"]).kalib;
-        rig._schritt = bein > 0.1 ? Math.min(6, Math.max(0.8, kalib * bein)) : 3.4;
-        return rig._schritt;
+        const M = { l1, l2, wpl, wz, L: (l1 + l2) * wpl };
+        if (rig && M.L > 0.1) rig._beinMass = M;
+        return M;
     }
     // POSEN-BLEND: w(speed) exp-geglättet statt hartem isMoving-Schnitt — Rampe 0.25→0.55 m/s, k=10,
     // plus harte ±0.2-Steilheits-Wand je Tick. NaN-Wände VOR dem Gedächtnis.
@@ -17597,10 +17641,37 @@ class AnazhRealm {
         const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
-        halter.walkPhase = (halter.walkPhase || 0) + d * this._gaitPhaseRate(v, this._gaitSchrittLen(rig)) * emoF;
+        const gs = this._gaitGesetz(rig, v);
+        const g =
+            halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
+        // DER STEHENDE FUSS HÄLT (K07, tetrapoda `gangPhaseHaelt`): ändert sich die Zeile (Tempo, Gangart, Emotion), setzt
+        // sich die Phase so, dass das stehende Bein sein Fuß-Ziel behält; aus dem Stand (S0 = 0) setzt das nähere Bein in
+        // der Mitte seines Stands ein (der Anlauf). Vorher lief die Phase weiter: der gelockte Fuß lag nach dem Tempo-Sprung
+        // hinter dem Ziel des Laufs, das Becken reichte ihn nicht, der Lock löste (je 1 Löser bei 5,16 und 6,75 m/s).
+        const S1 = gs.S / emoF;
+        if (gs.omega > 0) {
+            const steht = !(halter._gaitW > 0.05) || !(g.S > 0);
+            const S0 = steht ? 0 : g.S;
+            if (steht || Math.abs(S0 - S1) > 1e-9 || g.tast !== gs.tast)
+                halter.walkPhase = window.__tetrapodaCore.gangPhaseHaelt(
+                    Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0,
+                    S0,
+                    g.tast,
+                    S1,
+                    gs.tast
+                );
+        }
+        halter.walkPhase = (halter.walkPhase || 0) + d * gs.omega * emoF;
         halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
-        const g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null });
         g.w = halter._gaitW;
+        // das Fuß-Ziel des Gesetzes: der Fußweg im Stand (die Emotion reist als Kadenz — bei gleichem Weg kürzt sie den
+        // Schritt, der Fuß im Stand bleibt stehen), der Tastgrad, die Phase des Aufsetzens (2π·(1 − Tastgrad)), die Beinlänge
+        g.S = S1;
+        g.tast = gs.tast;
+        g.hub = gs.hub;
+        g.auf = 2 * Math.PI * (1 - gs.tast);
+        g.omega = gs.omega * emoF;
+        g.L = this._gaitBeinMass(rig).L;
         // ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel — der
         // Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-
         // Wahrheit selbst (fail-closed via _bewegungsKoeff, kurzgeschlossen).
@@ -17616,9 +17687,99 @@ class AnazhRealm {
         if (ikC) ikC.lockL.on = ikC.lockR.on = false;
         return g;
     }
+    // DER GEZEICHNETE BODEN AM WELT-PUNKT (K07, der Chunk-Rand): je Punkt die OBERSTE tragende Fläche aller Meshe, die dort
+    // zeichnen — das Gesetz der Boden-Karte (`_bodenKarteAusMesh`) über die Chunk-Naht hinweg. Am unteren Rand jedes Chunks
+    // (je Achse ein halber Zellen-Schritt, 0,9 m) zeichnet das Mesh des NACHBARN (Surface-Nets: die Fläche zwischen seiner
+    // letzten und der ersten eigenen Zelle gehört ihm); die Karte des Eigners ist dort leer oder trägt nur, was er darunter
+    // zeichnet (einen Höhlen-Boden 60 m tiefer), und die Naht der Meshe liegt zwischen zwei Punkten des Rasters. Darum nimmt
+    // jede Ecke der Raster-Zelle das Maximum aus Eigner und unteren Nachbarn: die Karten einer Stufe tasten dasselbe Raster der
+    // Welt ab (Ursprung Chunk − Schritt, Abstand Schritt/Teilung, der Chunk ein Vielfaches davon), ihr Saum reicht zwei Schritte
+    // herüber. Vorher las der Stand-Leser nur die Karte des Eigners und fiel im Streifen auf den Träger: 4,9 % der Fläche, ein
+    // Netz aus 0,9-m-Streifen, auf dem Pfoten und Füße auf der Höhe des Leibs standen (am 30°-Hang 86 von 869 Stand-Pfoten im
+    // Trab 12–22 cm über dem Boden, ein stehender Wolf hangauf mit den Hinterpfoten 0,40 m — gate:koerper-stand K6). null ohne
+    // Karte (fern, ungebaut) oder ohne Boden an einer Ecke. DER EINE LESER DES GEZEICHNETEN BODENS (K21): Stand-Leser, Nah-Wiese
+    // (Fuß, Hang, Grün) und Nah-Streu (Fuß, Hang) lesen nur ihn — bis K21 lasen Wiese und Streu nur die Karte des Eigners, im
+    // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt den
+    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt; welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
+    _bodenSichtAt(x, z, aus) {
+        const vc = this.state.voxelChunks;
+        if (!vc) return null;
+        const span = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const e = vc.get(`${cx},${cz}`);
+        const lod = e ? e.lod || 0 : 0;
+        const cfg = this._voxelChunkConfig(lod);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const n = cfg.dim * T; // Raster-Abstände je Chunk
+        const gx = Math.floor(x / h);
+        const gz = Math.floor(z / h);
+        let a = -Infinity,
+            b = -Infinity,
+            c = -Infinity,
+            d = -Infinity;
+        let ga = 0,
+            gb = 0,
+            gc = 0,
+            gd = 0;
+        for (let q = 0; q < 4; q++) {
+            const ax = cx - (q & 1);
+            const az = cz - (q >> 1);
+            const E = q === 0 ? e : vc.get(`${ax},${az}`);
+            const m = E && (E.lod || 0) === lod ? E.surfMap : null;
+            if (!m) continue;
+            const i = gx - ax * n + T;
+            const j = gz - az * n + T;
+            if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) continue;
+            const o = i + j * M;
+            const g = aus ? E.gruenMap : null;
+            if (m[o] > a) {
+                a = m[o];
+                ga = g ? g[o] : 0;
+            }
+            if (m[o + 1] > b) {
+                b = m[o + 1];
+                gb = g ? g[o + 1] : 0;
+            }
+            if (m[o + M] > c) {
+                c = m[o + M];
+                gc = g ? g[o + M] : 0;
+            }
+            if (m[o + M + 1] > d) {
+                d = m[o + M + 1];
+                gd = g ? g[o + M + 1] : 0;
+            }
+        }
+        if (!(a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity)) return null;
+        const fu = x / h - gx;
+        const fv = z / h - gz;
+        if (aus) aus.gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
+        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
+    }
+    // DIE KARTEN DES BODEN-LESERS über einem Rechteck (Welt-XZ): jeder Chunk, dessen Karte `_bodenSichtAt` dort liest — der
+    // Eigner und, in den ersten zwei Zellen-Schritten des Chunks (so weit reicht der Saum einer Karte herüber), seine unteren
+    // Nachbarn. Map Schlüssel → Karte (ein leerer Chunk mit undefined: baut er später Boden, ist das ein Neubau); null,
+    // solange einer davon noch keine Karte hat — die Kachel wartet auf ihren GANZEN Boden, nie nach Streaming-Reihenfolge.
+    _bodenSichtChunks(x0, z0, x1, z1) {
+        const vc = this.state.voxelChunks;
+        if (!vc) return null;
+        const cfg = this._voxelChunkConfig(0);
+        const out = new Map();
+        for (let cz = Math.floor((z0 - 2 * cfg.step) / cfg.span); cz <= Math.floor(z1 / cfg.span); cz++) {
+            for (let cx = Math.floor((x0 - 2 * cfg.step) / cfg.span); cx <= Math.floor(x1 / cfg.span); cx++) {
+                const k = `${cx},${cz}`;
+                const e = vc.get(k);
+                if (!e || !(e.surfMap || e.empty)) return null;
+                out.set(k, e.surfMap);
+            }
+        }
+        return out;
+    }
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
     // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
-    // Definition); sonst die Boden-Karte des Chunks (`_chunkSurfaceAt`, bilinear, das gezeichnete Mesh) — solange sie im
+    // Definition); sonst die Boden-Karte (`_bodenSichtAt`, bilinear, das gezeichnete Mesh) — solange sie im
     // STAND_SICHT_BAND um den Träger liegt. Außerhalb (Höhle, Überhang: die Karte trägt die Oberkante der Säule) liest er das
     // GESETZ AM PUNKT — den Boden unter dem Körper ab dem Träger (`_koerperBodenUnter`: abwärts, der Hang zwei Meter hinauf),
     // im selben Band. Prüfung 2 K02a: dort trug der Träger JEDEN Punkt — die Pfoten des Wolfs am Wandfuß standen auf der
@@ -17626,14 +17787,10 @@ class AnazhRealm {
     // in die Wand laufende Wolf stand auf seinem 0,5-m-Grund-Cache 0,55 m unter dem Hang. Die Kosten folgen den Körpern
     // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
-    // Stoß-Schritt, die Tod-Lage.
+    // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
-        const span = this._voxelChunkConfig(0).span;
-        const cx = Math.floor(x / span);
-        const cz = Math.floor(z / span);
-        const e = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
-        const k = e && e.surfMap ? this._chunkSurfaceAt(e, cx, cz, x, z) : null;
+        const k = this._bodenSichtAt(x, z);
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         const band = AnazhRealm.STAND_SICHT_BAND;
         if (!Number.isFinite(k)) return traegerY;
@@ -17671,6 +17828,7 @@ class AnazhRealm {
             const tv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
             L.hip.getWorldScale(tv);
             const wpl = Math.abs(tv.y) || 0;
+            const wz = Math.abs(tv.z) || wpl;
             const l1 = L.knee.position.length() * wpl;
             const l2 = L.ankle.position.length() * wpl;
             if (!(l1 > 0.02) || !(l2 > 0.02)) return null;
@@ -17680,6 +17838,7 @@ class AnazhRealm {
                 l1,
                 l2,
                 wpl,
+                wz,
                 soleH,
                 hang: 0,
                 soleY: 0,
@@ -17723,16 +17882,49 @@ class AnazhRealm {
         if (drop < -0.3 * reach) drop = -0.3 * reach;
         if (drop < -0.005 && r.hips && ik.wpl > 0) r.hips.position.y += drop / ik.wpl;
         if (r.spine) r.spine.rotation.x += ik.hang * 0.35;
-        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, Math.sin(walkPhase), w);
-        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, Math.sin(walkPhase + Math.PI), w);
+        // der Stand jedes Beins kommt aus dem Gang-Gesetz (die Pose dieses Takts, _animateHumanoidRig)
+        const st = r._gangStand;
+        const standL = !st || st[0],
+            standR = !st || st[1];
+        // DER ROLLENDE FUSS (tetrapoda gangRolle, die Pose dieses Takts): der Lock hält den Fuß, wie er aufsetzte; im späten
+        // Stand steht sein Knöchel um heb höher und um dx (im Fußweg) weiter vorn — der Ballen bleibt, wo er stand
+        const rolle = r._gangRoll || [null, null];
+        // EINE SCHWELLE (K07): R (`_gaitReich`) führt das Becken des Gesetzes und hält den stehenden Fuß. Liegt ein
+        // gelockter Fuß jenseits von R (der Boden der Probe weicht vom Ruhe-Maß der Pose ab — die Verhältnisse 0,9951 bis
+        // 0,9969 lösten 3 von 213 Stand-Takten beim Gehen), senkt sich das Becken um den Fehlbetrag; der Lock löst nur, wo
+        // auch das nicht reicht (vorn/hinten jenseits von R oder mehr als 0,05 Bein — Stufe, Kante: dort tritt der Fuß).
+        if (w >= 0.35 && r.hips && ik.wpl > 0) {
+            let mehr = Math.max(
+                standL && ik.lockL.on ? this._gaitLockBedarf(r.legL, ik, ik.probeL, ik.lockL, rolle[0]) : 0,
+                standR && ik.lockR.on ? this._gaitLockBedarf(r.legR, ik, ik.probeR, ik.lockR, rolle[1]) : 0
+            );
+            if (mehr > 0 && mehr <= 0.05 * (ik.l1 + ik.l2)) r.hips.position.y -= mehr / ik.wpl;
+        }
+        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, standL, w, rolle[0]);
+        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w, rolle[1]);
     }
-    _gaitLegIK(leg, ik, probe, lock, foot, sinPh, w) {
+    // Der Fehlbetrag eines gelockten Fußes an R: wie weit das Becken sinken muss, damit die Kette ihn erreicht (0 = er
+    // liegt in R; Infinity = er liegt vorn/hinten jenseits von R, kein Senken hilft).
+    _gaitLockBedarf(leg, ik, probe, lock, rolle) {
+        const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
+        leg.hip.getWorldPosition(hv);
+        const rx = rolle && rolle.roll > 0 ? rolle.rollDx * ik.wpl : 0,
+            ry = rolle && rolle.roll > 0 ? rolle.heb * ik.wpl : 0;
+        const vor =
+            ((lock.x - hv.x) * Math.sin(ik.yaw) + (lock.z - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) +
+            rx;
+        const unten = hv.y - (probe.g + ik.soleH) - ry;
+        const R = AnazhRealm._gaitReich(ik.l1 + ik.l2);
+        if (!Number.isFinite(unten) || Math.abs(vor) >= R) return Infinity;
+        return Math.max(0, unten - Math.sqrt(R * R - vor * vor));
+    }
+    _gaitLegIK(leg, ik, probe, lock, foot, imStand, w, rolle) {
         const av = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
         leg.ankle.getWorldPosition(av); // FK nach Pose+Becken (frische Ahnen-Matrizen)
         foot.x = av.x;
         foot.z = av.z;
         const geht = w >= 0.35;
-        const stance = geht ? sinPh > 0.1 : true; // Idle: beide Füße geplantet
+        const stance = geht ? imStand : true; // Idle: beide Füße geplantet
         if (!stance) {
             lock.on = false;
             return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
@@ -17752,20 +17944,25 @@ class AnazhRealm {
         }
         const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
         leg.hip.getWorldPosition(hv);
-        const vor = (tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw);
-        const unten = hv.y - (probe.g + ik.soleH);
+        // der Vorlauf längs in das lotrechte Maß der Kette (das Becken ist längs ungleich skaliert, _gaitBeinMass)
+        // der rollende Fuß im Gang (rolle aus der Pose): der Knöchel über dem gehaltenen Ballen, die Sohle gekippt
+        const rollt = geht && rolle && rolle.roll > 0;
+        const vor =
+            ((tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw)) * (ik.wpl / (ik.wz || ik.wpl)) +
+            (rollt ? rolle.rollDx * ik.wpl : 0);
+        const unten = hv.y - (probe.g + ik.soleH) - (rollt ? rolle.heb * ik.wpl : 0);
         if (!(unten > 0.05)) {
             lock.on = false;
             return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
         }
-        if (geht && Math.hypot(vor, unten) > (ik.l1 + ik.l2) * 0.98) {
+        if (geht && Math.hypot(vor, unten) > AnazhRealm._gaitReich(ik.l1 + ik.l2) + 1e-6) {
             lock.on = false;
             return; // das Ziel entläuft der Reichweite → Lock löst, die Pose übernimmt
         }
         const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
         leg.hip.rotation.x = res.hip;
         leg.knee.rotation.x = res.knee;
-        leg.ankle.rotation.x = -(res.hip + res.knee); // die Sohle bleibt eben
+        leg.ankle.rotation.x = (rollt ? rolle.roll : 0) - (res.hip + res.knee); // die Sohle bleibt eben, der rollende Fuß kippt
     }
 
     _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions, gait) {
@@ -17867,30 +18064,74 @@ class AnazhRealm {
             }
             // V18.491.142 KPMUL_VIS.host=map-alpha — map-α reads kpMul; still no MOTION_RIG_MAP kpMul row (Vertrag .87 Map-Verbot).
         }
+        // DIE BEINE AUF DAS ZIEL DES GESETZES (K07): jeder Fuß folgt tetrapoda `gangFuss` — im Stand wandert er am Boden
+        // mit genau dem Tempo des Leibs zurück (er steht in der Welt), im Schwung kehrt er gehoben nach vorn —, Hüfte, Knie
+        // und Knöchel stellt die Zwei-Knochen-IK auf dieses Ziel (die Sohle bleibt eben). Das Becken trägt tetrapoda
+        // `gangBecken` (dasselbe im Körper-Studio): nur die STEHENDEN Füße senken es, an der Reichweite R, an der die Fuß-IK
+        // den stehenden Fuß hält (`_gaitReich`, EINE Schwelle); der Schwung-Fuß faltet sich unter R (vorher zog er das
+        // Becken über beide Füße hinab: im Lauf 46 cm, an der Spitze 77 cm). Derselbe Pfad trägt den lokalen Avatar, den
+        // Peer und jeden Bewohner mit Rig; vorher schwangen die Beine ±0,5 rad als Sinus um einen 3,4-m-Schritt.
+        const S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
+        const M = S > 0 ? this._gaitBeinMass(r) : null;
+        let sw = Math.sin(walkPhase);
+        r._gangSenke = 0;
+        if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true; // ohne Gesetzes-Pose stehen beide Füße
+        if (r._gangRoll) r._gangRoll[0] = r._gangRoll[1] = null; // ohne Gesetzes-Pose steht die Sohle flach
+        if (M && M.l1 > 0 && M.l2 > 0) {
+            const core = window.__tetrapodaCore;
+            const Z = this._gangZeile(true);
+            const tast = gait.tast;
+            const Sl = S / M.wz; // der Fußweg längs, im Gelenk-Raum
+            const hubL = (gait.hub * M.L) / M.wpl;
+            const L12 = M.l1 + M.l2;
+            const R = AnazhRealm._gaitReich(L12);
+            // der Fuß rollt im späten Stand über den Ballen (tetrapoda gangRolle): sein Knöchel steigt um heb, die Sohle
+            // kippt um roll — die Fuß-IK hält den Ballen, nicht die Ferse (`_gaitLegIK`, `r._gangRoll`)
+            const FL = core.gangFuss(walkPhase, Sl, tast, Z, R);
+            const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z, R);
+            const roll = r._gangRoll || (r._gangRoll = [null, null]);
+            roll[0] = FL;
+            roll[1] = FR;
+            // die Senke im Gelenk-Raum über der gestreckten Kette (die Schwere der Zeile im lotrechten Gelenk-Maß)
+            const tief = L12 - R + core.gangBecken(walkPhase, Sl, tast, R, gait.omega, Z, M.wpl);
+            r._gangSenke = tief;
+            const auf = 2 * Math.PI * (1 - tast);
+            const u = (p) => ((p % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            r._gangStand = r._gangStand || [false, false];
+            r._gangStand[0] = u(walkPhase) >= auf;
+            r._gangStand[1] = u(walkPhase + Math.PI) >= auf;
+            // der Fuß unter der Hüfte: gehoben um seinen Hub, nie jenseits von R (der Schwung-Fuß faltet sich)
+            const unten = (F, h) => Math.min(L12 - tief - h, Math.sqrt(Math.max(0, R * R - F.dz * F.dz)));
+            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, unten(FL, FL.hub * hubL + FL.heb));
+            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, unten(FR, FR.hub * hubL + FR.heb));
+            add(r.legL.hip, "x", ikL.hip * w);
+            add(r.legL.knee, "x", ikL.knee * w);
+            add(r.legL.ankle, "x", (FL.roll - ikL.hip - ikL.knee) * w);
+            add(r.legR.hip, "x", ikR.hip * w);
+            add(r.legR.knee, "x", ikR.knee * w);
+            add(r.legR.ankle, "x", (FR.roll - ikR.hip - ikR.knee) * w);
+            // das Bein-Signal für Arme und Becken: −1, wenn das linke Bein vorn steht (Arm L schwingt gegen Bein L)
+            sw = Math.max(-1, Math.min(1, (FR.dz - FL.dz) / Sl));
+        }
         if (w > 0.001) {
-            // ── GEHEN ×w — Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag +0.4).
-            // Knie beugt NACH HINTEN (+, wie die Sitz-Pose); negativ wäre Hyperextension (Vogel-Knie).
-            const sw = Math.sin(walkPhase);
+            // ── GEHEN ×w — Arme gegen die Beine, Becken-Roll/Yaw + Brust-Gegendreh im Takt des Bein-Signals.
             const wa = w * amp;
-            add(r.legL.hip, "x", 0.5 * sw * wa);
-            add(r.legR.hip, "x", 0.5 * Math.sin(walkPhase + Math.PI) * wa);
-            add(r.legL.knee, "x", 0.85 * Math.max(0, Math.sin(walkPhase + 0.4)) * wa);
-            add(r.legR.knee, "x", 0.85 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)) * wa);
             // Arme gegen die Beine (Arm L mit Bein R)
             add(r.armL.shoulder, "x", -0.4 * sw * wa);
             add(r.armR.shoulder, "x", 0.4 * sw * wa);
             add(r.armL.elbow, "x", (-0.3 - 0.2 * Math.max(0, -sw) * amp) * w);
             add(r.armR.elbow, "x", (-0.3 - 0.2 * Math.max(0, sw) * amp) * w);
-            // Becken-Roll/Yaw + Brust-Gegendreh
-            add(r.hips, "z", 0.05 * sw * wa);
-            add(r.hips, "y", 0.07 * sw * wa);
+            // Rumpf-Roll/Yaw über dem Becken + Brust-Gegendreh: das Becken trägt die Beine und dreht nicht mit (eine
+            // Becken-Drehung schwenkte die Bein-Kette um die Hüfte, der Stand-Fuß glitt 8 cm je Schritt seitlich)
+            add(r.spine, "z", 0.05 * sw * wa);
+            add(r.spine, "y", 0.07 * sw * wa);
             add(r.chest, "y", -0.06 * sw * wa);
         }
-        // CoM-Bob (doppelte Frequenz) — absolut über der EINMAL gecachten Basis;
-        // ×w: der Bob klingt beim Stopp aus, statt eingefroren stehenzubleiben.
+        // Die Becken-Senke des Gangs — absolut über der EINMAL gecachten Basis;
+        // ×w: sie klingt beim Stopp aus, statt eingefroren stehenzubleiben.
         if (r.hips) {
             if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
-            r.hips.position.y = r._baseHipY + Math.abs(Math.cos(walkPhase)) * 0.3 * (r.kh || 1) * amp * w;
+            r.hips.position.y = r._baseHipY - r._gangSenke * w;
         }
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
@@ -18343,6 +18584,7 @@ class AnazhRealm {
         // Die Seh-Klasse des Gesetzbuchs reist mit (das Budget-Gesetz faltet nur innerhalb EINER, `_ofenBudget`).
         if (mat.userData && mat.userData.__seh) out.mat.seh = mat.userData.__seh;
         if (mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
+        if (mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht; // K11 (Brücke)
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
@@ -18578,7 +18820,8 @@ class AnazhRealm {
         let VA = group.userData && group.userData._verhaltenAktion;
         if (VA) {
             const nowS = this.state.creatureAnimationTime; // die Kreatur-Uhr, an der updateCreatures die Aktion stempelt
-            if (nowS >= VA.bis || !VA.def) {
+            // (ein Biss, der noch nicht geschnappt hat, fällt erst im Schnappen — die Landung trägt den Kopf: _kreaturBissTakt)
+            if ((nowS >= VA.bis && !VA.biss) || !VA.def) {
                 group.userData._verhaltenAktion = null;
                 VA = null;
             } else if (VA.def.profil) {
@@ -18595,21 +18838,16 @@ class AnazhRealm {
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
         let g = tb._gang;
-        // Der Gang-Phasen-Seed liest das Gesetz (P.phases je MOTION-Preset: Trab/Pass/Stand) und seedet bei
-        // Profil-Wechsel neu (wie Lab emo.set). Der walkPhase-Versatz (Desync je Kreatur) bleibt; ohne
-        // phases-Feld bleibt der Trab-Seed.
+        // Der Gang-Phasen-Seed liest das Gesetz (P.phases je MOTION-Preset: Trab/Pass/Stand — jede Zeile trägt es, ein
+        // Muster ohne Zeile ist ein Bruch, kein zweiter Trab im Wirt) und seedet bei Profil-Wechsel neu (wie Lab emo.set).
+        // Der walkPhase-Versatz (Desync je Kreatur) bleibt; das gesetzte Muster wohnt am Gang (g.off), der Takt des Leibs
+        // liest es dort.
         const phGesetz = Array.isArray(P.phases) && P.phases.length === 4 ? P.phases : null;
-        if (!g) {
-            const off = phGesetz || [0, Math.PI * 0.75, Math.PI * 1.5, Math.PI * 0.25];
-            g = tb._gang = {
-                ph: [walkPhase + off[0], walkPhase + off[1], walkPhase + off[2], walkPhase + off[3]],
-                lastT: t,
-                profil: name,
-            };
-        } else if (g.profil !== name) {
-            if (phGesetz) {
-                for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + phGesetz[pi];
-            }
+        if (!phGesetz) return AnazhRealm._kernPflichtBruch("tetrapoda:MOTION." + name + ".phases");
+        if (!g || g.profil !== name) {
+            g = tb._gang = g || { ph: [0, 0, 0, 0], lastT: t };
+            for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + phGesetz[pi];
+            g.off = phGesetz;
             g.profil = name;
         }
         // dtWeg = die echte Uhr-Spanne seit der letzten Auswertung (die Raten-Leiter wertet ferne Wesen nur jeden 2./4.
@@ -18624,16 +18862,19 @@ class AnazhRealm {
         // DAS GANG-GESETZ (Welle 5, tetrapoda gangSchritt): Takt und Hüft-Auslenkung folgen dem WEG des Leibs — die
         // Geschwindigkeit misst der Chokepoint selbst (Lage-Änderung je Uhr-Schritt, geglättet; jeder Halter — Welt,
         // Peer, Werkstatt — läuft durch ihn), die Bein-Länge trägt der Guss (tb.beinL × Körpergröße). Vorher kam der
-        // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0.
+        // Takt aus dem Gefühls-Profil (Freude 3,2 rad/s bei 0,06 rad Schritt, jede Geschwindigkeit): Schlupf 1,0. Ein
+        // SPRUNG der Lage ist kein Lauf (`_lageTempo`): die Pfoten setzen am neuen Ort — vorher las der Gang einen Ruf über
+        // 20 m als Lauf mit 8,5 m/s, und die Anker am alten Ort zogen die Beine 20 m zurück (gate:koerper-stand K5).
         const lage = group.position;
         if (dtWeg > 0 && Number.isFinite(g.lageX)) {
-            const vRoh = Math.hypot(lage.x - g.lageX, lage.z - g.lageZ) / dtWeg;
-            g.v = (g.v || 0) + (Math.min(vRoh, core.GANG_GESETZ.vMax) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
+            const vLage = AnazhRealm._lageTempo(lage.x - g.lageX, lage.z - g.lageZ, dtWeg);
+            if (vLage === null) g.fuss = null;
+            g.v = (g.v || 0) + ((vLage || 0) - (g.v || 0)) * (1 - Math.exp(-8 * dt));
         }
         g.lageX = lage.x;
         g.lageZ = lage.z;
         const skala = group.scale.x || 1;
-        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala);
+        const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala, this._gangZeile(false));
         g.omega = gs.omega; // der Takt des Gangs — die Raten-Leiter tastet ihn nie gröber als ein Viertel ab
         const st = gs.S * fadeMul;
         const freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
@@ -18647,7 +18888,19 @@ class AnazhRealm {
         // Ein Leib, der laufen WILL und steht (der Wunsch ohne Weg), wiegte sonst im Lauf-Takt, und die stehenden Pfoten
         // knickten die Knie nach (gemessen am stehenden Wolf: Knie-Falte 0,16 rad statt < 0,05).
         g.schritt = (g.schritt || 0) + ((st > 0.002 ? 1 : 0) - (g.schritt || 0)) * (dt > 0 ? 1 - Math.exp(-4 * dt) : 1);
-        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
+        // DER TAKT DES LEIBS (K07): der Kreis-Mittelwert der vier Bein-Phasen, je um ihren Versatz im Muster (im doppelten
+        // Takt: Wiegen und Federn schwingen je Tritt) — im Muster gleich dem Takt des ersten Beins; ein Bein, das an der
+        // Grenze seiner Kette abhebt (seine Phase springt auf den Schwung-Anfang), schüttelt den Rumpf nicht. Der Versatz
+        // ist das Muster, mit dem die Beine gesetzt wurden (g.off).
+        const offL = g.off;
+        let cL = 0,
+            sL = 0;
+        for (let k = 0; k < 4; k++) {
+            cL += Math.cos(2 * (g.ph[k] - offL[k]));
+            sL += Math.sin(2 * (g.ph[k] - offL[k]));
+        }
+        const takt2 = Math.atan2(sL, cL) + 2 * offL[0];
+        let roll = Math.sin(takt2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.
         roll += (Number(P.bodyZ) || 0) * fadeMul;
@@ -18681,8 +18934,7 @@ class AnazhRealm {
             // getrennt am Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn, Lab: spineX·bob·sin(ph·2))
             // wird auf wolf.rotation.x verdichtet.
             const bob = (Number(P.bob) || 0) * fadeMul;
-            T.wolf.rotation.x =
-                (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob * g.schritt + g.bissRumpf;
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(takt2) * bob * g.schritt + g.bissRumpf;
             T.wolf.rotation.y = drehY;
         }
         // PD-Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige
@@ -18808,7 +19060,21 @@ class AnazhRealm {
                 fz = vHuefte.z + vorZ * vor;
             const u = ((ph % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
             const imStand = stand || u >= Math.PI;
-            if (imStand && !L.an && !(L.tritt >= 0)) pfoteHier(K, L, fx, fz, BM);
+            // der WELTFESTE ANKER (K07): ein gehender Fuß setzt auf, wo das Gesetz ihn hinstellt — sein Ziel am Ende des
+            // Schwungs ist in der Welt stetig (die Hermite-Enden laufen mit der Stand-Rate); die Sohle des letzten Takts
+            // lag mit den alten Gelenken am NEUEN Leib, der Anker sprang je Aufsetzen um v·dt nach vorn (am Wolf 1,6 m/s
+            // 2,7 cm bei 60 fps, unter der Raten-Leiter das Vierfache — gate:tier-gang Schlupf 0,07–0,13). Ein stehendes Tier
+            // lässt die Pfote, wo sie steht.
+            if (imStand && !L.an && !(L.tritt >= 0)) {
+                if (stand || !g.legInit) pfoteHier(K, L, fx, fz, BM);
+                else {
+                    // die Pfote setzt, wo die Landung in der Welt stand (unten), sonst auf das Ziel des Gesetzes
+                    L.x = L.land ? L.lx : fx;
+                    L.z = L.land ? L.lz : fz;
+                    L.an = true;
+                }
+                L.land = false;
+            }
             if (imStand && L.an && !(L.tritt >= 0) && !tritt) {
                 const fern = stand
                     ? Math.hypot(fx - L.x, fz - L.z) > 0.15 * BM.h * skala
@@ -18851,6 +19117,18 @@ class AnazhRealm {
                     fx = L.ax + (fx - L.ax) * w;
                     fz = L.az + (fz - L.az) * w;
                 }
+                // DIE LANDUNG STEHT IN DER WELT (K07): ab 0,85 π hält die sinkende Pfote den Punkt, an dem sie aufsetzt — das
+                // Ziel des Gesetzes lief dort mit dem Leib, wo Phase und Leib im Folgen voneinander abwichen (bis auf die
+                // Hälfte), und die Pfote strich die letzten 3 cm über den Boden (am Querhang 64 % des Wolf-Schlupfs)
+                if (!L.an && u >= 0.85 * Math.PI) {
+                    if (!L.land) {
+                        L.land = true;
+                        L.lx = fx;
+                        L.lz = fz;
+                    }
+                    fx = L.lx;
+                    fz = L.lz;
+                } else L.land = false;
             }
             const Z = ziele[i];
             Z[0] = fx;
@@ -18928,7 +19206,20 @@ class AnazhRealm {
                     bz = BM.b[1] * skala;
                 const la = Math.hypot(ay, az),
                     lb = Math.hypot(by, bz);
-                const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, Math.hypot(ty, tz)));
+                const dZiel = Math.hypot(ty, tz);
+                // DIE GRENZE DES BEINS (K07, die hintere Extremlage): ein gehaltener Fuß — im Stand oder spät im Schwung
+                // wartend —, den die Kette nicht mehr erreicht, hebt ab: sein Schwung beginnt im nächsten Takt (die Phase
+                // springt auf den Schwung-Anfang, die Kopplung führt sie zurück). Vorher hielt der Anker ihn bis zum Ende
+                // der Phase, die IK klemmte, die Pfote schleifte dem Leib nach (am Querhang 0,08 des Leib-Wegs; im Folgen
+                // mit nachlaufender Phase bis 0,96 m hinter der Hüfte). Das Maß ist die Kette selbst — eine Schätzung vor
+                // der IK lag 4–9 cm neben ihr —, um den Weg des Leibs in einem Bild (1/60 s) vorausgedacht: der Fuß hebt,
+                // bevor er schleift, nicht ein Bild danach (nie um den Weg einer Raten-Stufe: der Stand schrumpfte dort
+                // auf ein Drittel).
+                if (!stand && dZiel > la + lb - (g.v || 0) * Math.min(dt, 1 / 60) && fl[i].an && !(fl[i].tritt >= 0)) {
+                    const u = ((g.ph[i] % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                    if (u >= 0.7 * Math.PI) g.ph[i] += 2 * Math.PI - u;
+                }
+                const d = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
                 const gam = Math.acos(Math.max(-1, Math.min(1, (d * d - la * la - lb * lb) / (2 * la * lb))));
                 const thK = (BM.phi0 < 0 ? -gam : gam) - BM.phi0;
                 const cK = Math.cos(thK),
@@ -18942,8 +19233,11 @@ class AnazhRealm {
                 z1 = 0;
                 z2 = thK;
                 // die Pfote faltet im Schwung und streckt sich, bevor sie den Boden erreicht (hub²: beim steilen Hub
-                // stünde die gefaltete Sohle sonst noch in den untersten Zentimetern schräg und striche über den Boden)
-                z3 = -(thH + thK) + hub * hub * GG.falte;
+                // stünde die gefaltete Sohle sonst noch in den untersten Zentimetern schräg und striche über den Boden; K07:
+                // hub⁴ — mit hub² drehte die Pfote in den untersten 3 cm noch 0,05–0,09 rad je Takt um die Handwurzel, ihr
+                // Aufsetz-Punkt fegte 0,5–1,4 cm je Takt über den Boden, Schlupf 0,06–0,085 beim Schritt)
+                const h2 = hub * hub;
+                z3 = -(thH + thK) + h2 * h2 * GG.falte;
                 if (stand) {
                     // die Gewichts-Unruhe des Stands (Lab-Mathe, t-Sinus; tension skaliert sie) auf der IK
                     const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
@@ -19102,6 +19396,16 @@ class AnazhRealm {
                 wrap: wrap2,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
                 leibV: AnazhRealm._leibVolumen(klon, group2),
+                // die RUHE der Gestalt (`_gestaltRuhe`): die benannten Glieder der Vorlage, die nie ein Gang bewegt
+                ruhe:
+                    t0.ruheTeile ||
+                    (t0.ruheTeile = (() => {
+                        const R = {};
+                        t0.root.traverse((n) => {
+                            if ((n.isGroup || n.isBone) && n.name) R[n.name] = n;
+                        });
+                        return R;
+                    })()),
             };
             this._gelenkStufe(group2, 0);
             return group2;
@@ -19450,9 +19754,8 @@ class AnazhRealm {
     _tickKreaturVerhalten(creature, i, nowS) {
         const ud = creature.userData;
         if (!ud) return;
-        // der Ansprung eines Bisses (_kreaturBissAnsatz) spielt zu Ende — auch in Hetze und Flucht
-        const AB = ud._verhaltenAktion;
-        if (AB && AB.bissAkt && nowS < AB.bis) return;
+        // der Ansprung eines Bisses (_kreaturBissAnsatz) spielt zu Ende — auch in Hetze und Flucht, bis zur Landung
+        if (this._kreaturAnsprungOffen(creature)) return;
         const z = ud._motionZustand;
         if (z === "flucht" || z === "schwimmen" || z === "hetzen") {
             ud._verhaltenAktion = null;
@@ -20616,7 +20919,7 @@ class AnazhRealm {
     // (λ = 2π/k ≈ 164 m, Periode 2π/omega ≈ 15,7 s). `_windSwayOffset` (Gras/Streu/Laub im Shader) und `_windBoeAt`
     // (der Wind am Ohr, klang:UMWELT) lesen dieselben Zahlen.
     static get WIND_BOE() {
-        return Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 });
+        return globalThis.__phytoCore.WIND_GESETZ.boe; // die Zahlen leben im Wind-Gesetz des Kerns (K19) — das Labor liest sie dort
     }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
@@ -22161,8 +22464,7 @@ class AnazhRealm {
         const ud = creature && creature.userData;
         if (!ud) return false;
         const now = this.state.creatureAnimationTime;
-        const A0 = ud._verhaltenAktion;
-        if (A0 && A0.bissAkt && now < A0.bis) return false; // ein Ansprung läuft
+        if (this._kreaturAnsprungOffen(creature)) return false; // ein Ansprung läuft
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
         const spalt = this._kreaturBissSpalt(creature, ziel);
         if (spalt === null || spalt > this._kreaturBissReich(creature)) return false;
@@ -22180,26 +22482,43 @@ class AnazhRealm {
             bissAkt: true,
             biss: { ziel: ziel || null, quelle, dmg },
         };
-        if (def.hop === true) this.creatureJump(creature);
+        if (def.hop === true) this.creatureJump(creature, true);
         this._feelCreatureAction(creature, "attack", 1);
         return true;
     }
 
+    // DER OFFENE ANSPRUNG (K13) — die EINE Frage aller Biss-Wege (Ansatz, Schnappen, Wunsch, Verhaltens-Takt): ein Ansprung ist
+    // offen, solange seine Geste läuft (Kreatur-Uhr < bis) oder sein Biss noch nicht geschnappt hat und der Leib noch nicht
+    // steht (der Hüpfer in der Luft) — die Landung gehört zum Sprung.
+    _kreaturAnsprungOffen(creature) {
+        const ud = creature && creature.userData;
+        const A0 = ud && ud._verhaltenAktion;
+        if (!A0 || !A0.bissAkt) return false;
+        if (this.state.creatureAnimationTime < A0.bis) return true;
+        return !!A0.biss && (ud._hopH > 0 || ud._hopV > 0);
+    }
+
     // DAS SCHNAPPEN (je Kreatur-Takt, solange ein Ansprung offen ist — nach der Lage und der Pose des Takts): berührt der Kopf
     // den Leib des Ziels (_kreaturBissKontakt), beißt das Tier EINMAL — der Schaden durch das Tor des Ziels (damagePlayer /
-    // damageCreature), der Stoß durch das EINE Impuls-Gesetz (_bissStoss). Ein Ziel, das stirbt oder fort ist, und das Ende der
-    // Geste schließen den Biss ohne Schaden.
+    // damageCreature), der Stoß durch das EINE Impuls-Gesetz (_bissStoss). Ein Ziel, das stirbt oder fort ist, schließt den Biss
+    // ohne Schaden, ebenso das Ende des Ansprungs (_kreaturAnsprungOffen): DIE LANDUNG ZÄHLT NOCH (K13) — der Takt, in dem der
+    // Leib aufsetzt, trägt den Kopf auf den Leib; vorher schloss die Uhr der Geste den Biss in genau diesem Takt, bevor der Kopf
+    // ihn berührte (ein ruhiger Fuchs: der Spalt −0,03 m im Landungs-Takt, kein Biss).
     _kreaturBissTakt(creature) {
         const ud = creature.userData;
         const A0 = ud && ud._verhaltenAktion;
         const B = A0 && A0.biss;
         if (!B) return;
         const ziel = B.ziel;
-        if (this.state.creatureAnimationTime >= A0.bis || (ziel && this.state.creatures.indexOf(ziel) === -1)) {
+        if (ziel && this.state.creatures.indexOf(ziel) === -1) {
             A0.biss = null; // ins Leere
             return;
         }
         if (!this._kreaturBissKontakt(creature, ziel)) {
+            if (!this._kreaturAnsprungOffen(creature)) {
+                A0.biss = null; // gelandet, ins Leere
+                return;
+            }
             const m = this._kreaturMaul(creature, this._bissMaulKon || (this._bissMaulKon = {}));
             if (m) this._kreaturBissKopf(creature, A0, m, ziel);
             return;
@@ -22285,7 +22604,9 @@ class AnazhRealm {
         const m = maul || this._kreaturMaul(creature, this._bissMaulRad || (this._bissMaulRad = {}));
         if (!m) return null;
         const kopfOben =
-            Math.max(m.ay, m.by) + m.r + (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature) : 0);
+            Math.max(m.ay, m.by) +
+            m.r +
+            (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature, true) : 0);
         if (!ziel) {
             const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
             if (K.y0 > kopfOben) return Infinity;
@@ -22842,13 +23163,7 @@ class AnazhRealm {
         const hue = task ? AnazhRealm.CREATURE_TASK_AURA_HUE[task.name] : null;
         const aura = creature.userData && creature.userData.taskAura;
         if (hue === null || hue === undefined) {
-            // Task wander → Aura entfernen. Textur NICHT disposen (shared).
-            if (aura) {
-                if (this.state.scene) this.state.scene.remove(aura);
-                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
-                if (aura.material) this._queueDispose(aura.material);
-                creature.userData.taskAura = null;
-            }
+            this._leibZeichenFrei(creature, "taskAura"); // Task wander → die Aura geht (die geteilte Textur bleibt)
             return;
         }
         // Aura existiert → nur Hue aktualisieren über Material-Color-Setter
@@ -22886,13 +23201,7 @@ class AnazhRealm {
         const carrying = ud.carrying;
         const oldSprite = ud.carryingSprite;
         if (!carrying) {
-            // Kein Träger-State → Sprite entfernen.
-            if (oldSprite) {
-                if (this.state.scene) this.state.scene.remove(oldSprite);
-                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
-                if (oldSprite.material) this._queueDispose(oldSprite.material);
-                ud.carryingSprite = null;
-            }
+            this._leibZeichenFrei(creature, "carryingSprite"); // keine Traglast → das Sprite geht
             return;
         }
         // Material-Farbe ermitteln — dominantes Material aus carrying.materials.
@@ -23129,8 +23438,7 @@ class AnazhRealm {
         const alt = ud._laufLage;
         if (!alt) ud._laufLage = { x: p.x, z: p.z };
         else if (delta > 0) {
-            let v = Math.hypot(p.x - alt.x, p.z - alt.z) / delta;
-            if (!(v <= tc.GANG_GESETZ.vMax)) v = 0;
+            const v = AnazhRealm._lageTempo(p.x - alt.x, p.z - alt.z, delta) || 0;
             const lv = ud._laufV || 0;
             ud._laufV = lv + (v - lv) * (1 - Math.exp(-6 * Math.min(0.1, delta)));
             alt.x = p.x;
@@ -23825,7 +24133,7 @@ class AnazhRealm {
                 const VA = udW._verhaltenAktion;
                 const now = this.state.creatureAnimationTime;
                 const B = VA && VA.biss;
-                if (B && now < VA.bis) {
+                if (B && this._kreaturAnsprungOffen(creature)) {
                     // DER ANSPRUNG (Welle LF kampf, Posten 5): solange der Biss nicht geschnappt hat, trägt der Sprung den Kopf
                     // auf das Ziel — derselbe Weg wie die Hetze (_kreaturJagdZug): der Wunsch zeigt auf es, das Ankunfts-Gesetz
                     // im Sprint der Gestalt plus dem Lauf des Ziels von ihm fort hält ihn dort, wo der Kopf über der
@@ -24830,7 +25138,6 @@ class AnazhRealm {
     // (r164 hat webgl-legacy/WebGLNodeBuilder entfernt → NodeMaterials laufen
     // nur auf WebGPU). `kind`-Param gestrichen.
     _configureRenderer(renderer) {
-        this._augenLichtRegistrieren(renderer);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
         renderer.setClearColor(0x000000, 1);
@@ -24865,6 +25172,9 @@ class AnazhRealm {
                 const puffer = n && n.node;
                 if (puffer && puffer.isBufferNode && typeof puffer.setName === "function")
                     puffer.setName(assignBuffer ? "instanzMatrix" : "instanzMatrixVor");
+                // DER URSPRUNG DER INSTANZ (`_instanzMitteNode`, das Maß der Blende): r184 legt den InstancedMeshNode je
+                // Bau neu an (`setupPosition`, auch im Schattenpass) und baut die Matrix dort VOR jedem Fragment-Knoten
+                if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;
                 return n;
             };
             IN.__anazhName = true;
@@ -25511,17 +25821,20 @@ class AnazhRealm {
     // (freude.tempoMul). Der Abflug ist die Parabel v0 = √(2·g·h) mit dem g des Gang-Gesetzes; der Takt in updateCreatures
     // trägt sie ON TOP der geerdeten Lage (die Erdung bleibt die Wahrheit). Eine Aktion mit `hop` (bound, pounce) zündet
     // ihn (_tickKreaturVerhalten) — kein Abflug in m/s daneben (der alte `def.hop` war ein Zwilling: der frohe Sprung stieg
-    // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu.
-    creatureJump(creature) {
+    // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu. `ansprung`: der Sprung eines Bisses (_kreaturSprungHoehe).
+    creatureJump(creature, ansprung = false) {
         const ud = creature && creature.userData;
         if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
-        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * this._kreaturSprungHoehe(creature));
+        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * this._kreaturSprungHoehe(creature, ansprung));
         return true;
     }
     // DIE HÖHE DES SPRUNGS (m) — das Freude-Gesetz, die EINE Quelle (creatureJump, die Flugzeit des Ansprungs
-    // _kreaturSprungZeit): froh hopHochM, sonst hopBasisM.
-    _kreaturSprungHoehe(creature) {
+    // _kreaturSprungZeit, die Höhe, die ein Biss erreicht): froh hopHochM, sonst hopBasisM. DER ANSPRUNG EINES BISSES ist kein
+    // Freuden-Sprung (K13): er springt den Grund-Hüpfer, wie froh der Jäger auch ist — vorher trug ein froher Fuchs den Kopf
+    // 1,2 m hoch über das Kitz (Spalt 0,12–0,19 m, 4 von 12 Ansprüngen ins Leere; gate:kampf-gefuehl T15 wackelte je Boot).
+    _kreaturSprungHoehe(creature, ansprung = false) {
         const F = AnazhRealm._verhaltenGesetz().freude;
+        if (ansprung) return F.hopBasisM;
         const froh = this.state.creatureEmotions[this.state.creatures.indexOf(creature)] === "happy";
         return froh ? F.hopHochM : F.hopBasisM;
     }
@@ -25531,7 +25844,10 @@ class AnazhRealm {
     _kreaturSprungZeit(creature) {
         const BG = AnazhRealm._bissGesetz();
         if (BG.geste.hop !== true) return BG.dauer;
-        return Math.max(BG.dauer, 2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature)) / AnazhRealm._hopSchwere()));
+        return Math.max(
+            BG.dauer,
+            2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature, true)) / AnazhRealm._hopSchwere())
+        );
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -27011,7 +27327,15 @@ class AnazhRealm {
             `Die Welt versteht: ${dsl.map((p) => q(p.example)).join(" · ")}`,
             `System: ${this.chatSystemPatterns.map((p) => q(p.example)).join(" · ")}`,
             `Tasten: WASD laufen · 1–9 Hotbar · ${tasten.join(" · ")}`,
+            `Fahren: ${this._fahrTastenZeile()}`,
         ];
+    }
+
+    // Die Fahr-Tasten als EINE Zeile (die Tafel AnazhRealm.FAHR_TASTEN, die die Eingabe liest): die Hilfe und der Tacho.
+    _fahrTastenZeile() {
+        return Object.values(AnazhRealm.FAHR_TASTEN)
+            .map((t) => `${t.zeigen} ${t.label}`)
+            .join(" · ");
     }
 
     // Beschreibung → DSL-Programm. Vier bekannte Pattern + Catch-All als
@@ -28372,39 +28696,6 @@ class AnazhRealm {
             }
         }
         return { hoehe: map, gruen };
-    }
-
-    // Bilineare Höhe des gerenderten Bodens aus der Boden-Karte (`entry.surfMap`, s. `_bodenKarteAusMesh`).
-    // null bei fehlender Karte / NaN-Ecke (kein Boden: Wand, Höhle, außerhalb) — der Aufrufer entscheidet.
-    _chunkSurfaceAt(entry, cx, cz, x, z) {
-        return this._chunkKarteAt(entry, entry && entry.surfMap, cx, cz, x, z);
-    }
-
-    // Der Grün-Kanal der Boden-Karte (0 = kein Wiesen-Boden, 1 = Wiese) am Ort, bilinear; null ohne Karte.
-    _chunkGruenAt(entry, cx, cz, x, z) {
-        const g = this._chunkKarteAt(entry, entry && entry.gruenMap, cx, cz, x, z);
-        return g === null ? null : g / 255;
-    }
-
-    _chunkKarteAt(entry, m, cx, cz, x, z) {
-        if (!m) return null;
-        const cfg = this._voxelChunkConfig(entry.lod || 0);
-        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
-        const h = cfg.step / T;
-        const M = T * (cfg.dim + 3) + 1;
-        const u = (x - (cx * cfg.span - cfg.step)) / h;
-        const v = (z - (cz * cfg.span - cfg.step)) / h;
-        const i0 = Math.floor(u);
-        const k0 = Math.floor(v);
-        if (i0 < 0 || k0 < 0 || i0 >= M - 1 || k0 >= M - 1) return null;
-        const a = m[i0 + k0 * M];
-        const b = m[i0 + 1 + k0 * M];
-        const c = m[i0 + (k0 + 1) * M];
-        const d = m[i0 + 1 + (k0 + 1) * M];
-        if (!(Number.isFinite(a) && Number.isFinite(b) && Number.isFinite(c) && Number.isFinite(d))) return null;
-        const fu = u - i0;
-        const fv = v - k0;
-        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
@@ -31201,6 +31492,21 @@ class AnazhRealm {
     // sind geteilte Singletons an geteilten Materialien — per-Objekt-Variation
     // reist in dieser Welt IMMER als Attribut/Instanz-Daten, nie als Uniform.
     // Idempotent (setGroup ist ein Setter); ohne renderGroup-Export byte-alt. ═══
+    // DER WIND-SATZ (EINE Stelle legt ihn an): Wind-Uhr, Wind-Stärke und die Richtung des aktiven Körpers (`uSunDir`,
+    // Sonne oder Mond — `_dayNightApplyDirectionalLight` schreibt sie mit dem Richtlicht). Gras (Gegenlicht) und Boden
+    // (Gegenlicht-Glanz, die Zuwendung des Schattens) lesen ihn; er reist als EIN renderGroup-Buffer.
+    _windUniformsEnsure() {
+        if (!this.state.windUniforms) {
+            const { uniform } = THREE.TSL;
+            this.state.windUniforms = this._uniformHeimatTeilen({
+                uWindTime: uniform(0.0),
+                uWindStrength: uniform(0.12),
+                uSunDir: uniform(new THREE.Vector3(1, 1, 1).normalize()),
+            });
+        }
+        return this.state.windUniforms;
+    }
+
     _uniformHeimatTeilen(satz) {
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
         const rg = TSL && TSL.renderGroup;
@@ -31329,6 +31635,21 @@ class AnazhRealm {
             // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
             // _dayNightApplyHemiUndLuft).
             terrainMoonRim: TSL.uniform(0.0),
+            // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz der Welt-Ort (xyz) mit der Reichweite (w, 0 = leer), die
+            // lineare Farbe × Stärke (rgb) mit dem Abfall (a), der Himmels-Ersatz (0 | 1: ein Licht, das nur trägt, wo der
+            // Himmel fehlt — das Licht des Auges) und der Kern der Quelle (k², K11b `lichtAbfall`) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`): ein Wechsel der
+            // Quellen baut kein Programm. Der Welt-Ort gilt jedem Renderer der Seite (der Stoff rechnet ihn mit der Kamera
+            // SEINES Renderers in den Blick-Raum). Dazu die Glut der wachen Fenster (lineare Farbe × Glut des Zeitplans).
+            // EIN Schreiber: `_leuchtTakt`.
+            lichtLage: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 0, 0))
+            ),
+            lichtFarbe: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 0, 2))
+            ),
+            lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
             // R5_STRUCTURE_TEXTURE.microBoost (1.3); `_applySubstanceResponse` liest ihn live.
@@ -31345,8 +31666,8 @@ class AnazhRealm {
 
     // Das Antwort-Profil emergiert aus den 10 Substanz-Tags (eine weitere LESART der Substanz-Wahrheit):
     // glanz = härte+dichte (Rim/Specular) · tiefe = dichte (AO) · glimmen = magieleitung + wärmeleitung·
-    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · wiegen =
-    // lebendig·(1−dichte)·zähigkeit (Wind) · detail = max(lebendig·(1−dichte), magieleitung·transparent).
+    // brennbar (Emissiv) · waerme = lebendig (Rim-Ton) · glas = transparent (Fresnel) · detail =
+    // max(lebendig·(1−dichte), magieleitung·transparent). Den Wind trägt kein Tag: er ist das Wind-Gesetz des Baums (K19).
     // Nimmt ein Material oder ein tags-Objekt. Darunter die FEATURE-Gewichte (Antennen → Render-Hebel):
     _substanceResponseProfile(materialOrTags) {
         let tags = null;
@@ -31368,7 +31689,6 @@ class AnazhRealm {
         };
         const haerte = t("härte");
         const dichte = t("dichte");
-        const zaehigkeit = t("zähigkeit");
         const magieleitung = t("magieleitung");
         const transparent = t("transparent");
         const brennbar = t("brennbar");
@@ -31380,8 +31700,7 @@ class AnazhRealm {
         const glimmen = Math.min(1, magieleitung * 0.55 + waermeleitung * brennbar * 0.6);
         const waerme = lebendig;
         const glas = transparent;
-        // 2 clever-gauss-Achsen (Λ.3 + Λ.6):
-        const wiegen = lebendig * (1 - dichte) * zaehigkeit;
+        // die clever-gauss-Achse (Λ.6):
         const detail = Math.max(lebendig * (1 - dichte), magieleitung * transparent);
         return {
             glanz,
@@ -31389,7 +31708,6 @@ class AnazhRealm {
             glimmen,
             waerme,
             glas,
-            wiegen,
             detail,
             micro: 0.5 + 0.5 * tiefe,
             rim: 0.4 + 0.6 * Math.max(glanz, glas * 0.9),
@@ -31579,7 +31897,7 @@ class AnazhRealm {
                         }
                         if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                     } else if (
-                        !opts.useFlexAttr &&
+                        !opts.pflanzenStoff &&
                         typeof this._terrainGeologyAlbedo === "function" &&
                         _Ta.positionWorld
                     ) {
@@ -31596,15 +31914,22 @@ class AnazhRealm {
                             _Ta.positionWorld,
                             _terrRough
                         );
-                        // DAS DACH ÜBER DEM BODEN (`opts.dach`, der Fern-Ring): eine Schicht, die über die fertige Boden-Albedo
-                        // fällt — dort, wo keine Bäume mehr stehen, das Kronendach des Waldes. Der Boden darunter ist derselbe Stoff.
-                        const _alb = _geo && typeof opts.dach === "function" ? opts.dach(_Ta, _geo) : _geo;
+                        // DAS DACH ÜBER DEM BODEN: der Fern-Ring trägt sein Dach jenseits der Bäume (`opts.dach`, K16); der
+                        // Chunk-Boden (Wege-Karte) trägt dort, wo kein echter Wald zeichnet, das Kronendach des Fern-Rings
+                        // (`_fernKroneNahMisch`, 0910-8) — dieselbe Boden-Farbe je Ort nah und fern.
+                        const _alb = !_geo
+                            ? _geo
+                            : typeof opts.dach === "function"
+                              ? opts.dach(_Ta, _geo)
+                              : opts.wegeKarte === true
+                                ? this._fernKroneNahMisch(_Ta, _geo)
+                                : _geo;
                         if (_alb) {
                             albedoNode = _alb;
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
-                    } else if (opts.useFlexAttr && _Ta.vec4) {
+                    } else if (opts.pflanzenStoff && _Ta.vec4) {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —
                         // sonst fällt sie aus `_T.output` und die Krone wäscht zur reinen Licht-Farbe.
                         let _alpha = _Ta.float(1.0);
@@ -31691,13 +32016,15 @@ class AnazhRealm {
                                         // des gesetzten Waldes lebt auf der CPU (`_archKartenHorizont`).
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
-                                            distNode: _Ta.sqrt(_hl2),
+                                            // die Distanz zur ACHSE der Instanz (der Anker, `_dA`), wie das Studio-
+                                            // Billboard (`vCD` aus `instanceMatrix[3]`), nie zum Fragment des Quads
+                                            distNode: _dA,
                                             visHeightNode: _karte.w.abs(),
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
                                                 .select(_Ta.float(1.0), _Ta.float(0.0)),
                                         });
-                                        if (_keepFin) {
+                                        {
                                             _alpha = _alpha.mul(_keepFin);
                                             // der Stoff trägt die Maske: die Instanz-Wahl darf ihr Fenster lesen
                                             // (`_instanzFensterGilt`)
@@ -31762,32 +32089,38 @@ class AnazhRealm {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _ecke.mul(_rahmen.x).mul(_sInst);
-                                    // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, Gewicht (y/H)² = uv.y² — ein eigenes
-                                    // aFlex-Attribut wäre ein weiterer Vertex-Puffer (WebGPU: höchstens 8))
-                                    let _swayX = _Ta.float(0.0);
-                                    let _swayZ = _Ta.float(0.0);
-                                    if (!this.state.windUniforms && typeof this._grassInstanceMat === "function")
-                                        this._grassInstanceMat();
-                                    const _wu = this.state.windUniforms;
-                                    if (_wu && _wu.uWindTime && opts.useFlexAttr) {
-                                        const _fx = _uv.y.mul(_uv.y); // das Wind-Gewicht y² (die Kronenspitze pendelt)
-                                        // Der Impostor liest DIESELBE Richtungs-Quelle uWindDir wie Baum/Gras → die ferne Karte wogt im
-                                        // Gleichtakt mit dem nahen Laub (kein Richtungs-Riss am 40-m-Crossfade).
-                                        const _wcu = this._ensureWindCoupling(_Ta);
-                                        const _phSpatial =
-                                            _wcu && _wcu.uWindDir
-                                                ? _axis.x
-                                                      .mul(_wcu.uWindDir.x)
-                                                      .add(_axis.z.mul(_wcu.uWindDir.y))
-                                                      .mul(_Ta.float(0.228))
-                                                : _axis.x.mul(_Ta.float(0.18)).add(_axis.z.mul(_Ta.float(0.14)));
-                                        const _ph = _wu.uWindTime.mul(_Ta.float(1.1)).add(_phSpatial);
-                                        _swayX = _Ta.sin(_ph).mul(_fx).mul(_Ta.float(0.22));
-                                        _swayZ = _Ta
-                                            .cos(_ph.mul(_Ta.float(0.7)))
-                                            .mul(_fx)
-                                            .mul(_Ta.float(0.13));
-                                    }
+                                    // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
+                                    // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
+                                    // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
+                                    // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
+                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter.
+                                    if (!this.state.windUniforms) this._grassInstanceMat();
+                                    const _wu = this._ensureWindCoupling(_Ta);
+                                    const _WB = AnazhRealm.WIND_BOE;
+                                    const _Hk = _rahmen.y.mul(_sInst).max(0.5);
+                                    const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
+                                    const _wK = globalThis.__phytoCore.windAusschlag(
+                                        AnazhRealm._windTsl(_Ta),
+                                        {
+                                            t: _wu.uWindTime,
+                                            U: _wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
+                                            g: _Ta
+                                                .sin(_wu.uWindTime.mul(_WB.omega).sub(_ortK.mul(_WB.k)))
+                                                .mul(_WB.amp)
+                                                .add(_WB.mitte),
+                                            f0: this._karteWindDelta()
+                                                .mul(globalThis.__phytoCore.WIND_GESETZ.kF)
+                                                .div(_Hk),
+                                            H: _Hk,
+                                            zeta: _uv.y,
+                                            rho: _Ta.float(0),
+                                            phi: _ortK.mul(-_WB.k),
+                                            psi: _Ta.float(0),
+                                        },
+                                        false
+                                    );
+                                    const _swayX = _wu.uWindDir.x.mul(_wK.quer);
+                                    const _swayZ = _wu.uWindDir.y.mul(_wK.quer);
                                     mat.positionNode = _Ta.vec3(
                                         _axis.x.add(_lz.mul(_off)).add(_swayX),
                                         _axisY,
@@ -31795,12 +32128,16 @@ class AnazhRealm {
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
-                                    // Der Atlas deklariert sich der Diät (equals() sieht Textur-Knoten nie): Schicht-Upload und Wachsen
-                                    // ändern die Wache, der Atlas-Wächter refresht EINMAL.
-                                    mat._anazhAtlasTexe = [_at.wache];
+                                    // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
                                     _wired = true;
+                                    // DAS LAUB-LICHT DER KARTE (K19): die ferne Stufe lichtet mit dem EINEN Laub-Licht-Term der
+                                    // nahen (phyto-core `laubDurchlass`) über der Normale des Normal-Atlas; die Nadel trägt ihre
+                                    // Schicht (`_karteNadel`). Bis K19 leuchtete die nahe Krone im Gegenlicht, ihre Karte nicht.
+                                    this._laubLichtStoff(mat, () => this._karteNadel(_Ta).element(_schicht.toInt()));
                                 }
                             } catch (_e) {
+                                // der Bruch der Blende fällt nie in die Fernstufen-Geometrie: er bricht den Bau
+                                if (_e && _e.blende === true) throw _e;
                                 if (typeof window !== "undefined")
                                     window.__impostorAtlasError = String((_e && _e.message) || _e);
                             }
@@ -31890,10 +32227,10 @@ class AnazhRealm {
             }
             this._applySubstanceResponse(mat, responseProfile, { albedoNode });
         }
-        // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne useFlexAttr).
-        // Vegetation (useFlexAttr) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
+        // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
+        // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
         // voll sonnen-lit, ACES wüsche die Krone teal/weiß.
-        if (opts.vertexColors && !opts.useFlexAttr && !opts.vertexColorAlbedo) {
+        if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
                 const _aun = this.state.atmoUniforms;
@@ -31968,6 +32305,20 @@ class AnazhRealm {
                     // n.transformDirection(MATRIX) rechnet Vᵀ·n (Sicht → Welt, three's normalWorld) und verdoppelte den
                     // Fehler (Normal-Sonde 06.10.: Kugel-Pixel 24 Grauwerte neben three's eigener Normale).
                     mat.normalNode = _Tn.cameraViewMatrix.transformDirection(_Tn.normalize(_baseN));
+                    // DIE ZUWENDUNG DES SCHATTENS (1110-5, die Hang-Akne): die 2,5D-Lichtung schattiert jede Fläche, als sähe
+                    // sie senkrecht zum Himmel — ob die Sonne sie trifft, entschied am Terminator allein der Schatten-Test, und
+                    // der rauscht dort (der Normal-Versatz folgt der geflatteten Normale, nicht der Fläche). Gemessen an einer
+                    // ebenen 30°-Rampe im Software-Holz (holz voll), Sonne 22° aus Azimut 45°, N·L −0,002: 11,7 % der Rampe
+                    // fleckig gegen 0,2 % ohne Schatten (gate:schatten-terminator). Jetzt trägt der empfangene Schatten die Zuwendung der WAHREN
+                    // Normale (dieselbe, aus der die Lichtung mischt) zur Richtung des aktiven Körpers: abgewandt im Schatten,
+                    // der Saum am Terminator (N·L 0 … `zuwendungSaum`, ~5° Sonne) weich.
+                    const _nWahr = _hS ? _Tn.normalWorldGeometry : _nGeo;
+                    const _zu = _Tn.smoothstep(
+                        _Tn.float(0.0),
+                        _Tn.float(AnazhRealm.SCHATTEN_KASKADE.zuwendungSaum),
+                        _Tn.dot(_Tn.normalize(_nWahr), this._windUniformsEnsure().uSunDir)
+                    );
+                    mat.receivedShadowNode = (schatten) => schatten.mul(_zu);
                 }
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
@@ -31975,6 +32326,9 @@ class AnazhRealm {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
+            // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
+            // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
+            // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
                 try {
@@ -31992,14 +32346,119 @@ class AnazhRealm {
             }
         }
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
-        // Laub (useFlexAttr) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
+        // Laub (pflanzenStoff) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
+        // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
+        this._leuchtStoff(mat, null, opts.himmelsSicht ? THREE.TSL.attribute("aHimmel", "float") : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
         mat.userData.pbrRoughness = params.roughness;
         mat.userData.pbrMetalness = params.metalness;
         return mat;
+    }
+
+    // DAS LEUCHTQUELLEN-GESETZ IM STOFF (K11): JEDER beleuchtete Stoff der Welt trägt den Licht-Pool als Term seines Leuchtens
+    // — der Stoff-Bau `_buildPbrNodeMaterial` (und mit ihm jeder Toon-Aufruf), der Foundry-Stoff `_foundryTreeMaterial` und
+    // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
+    // die Wand: die S0-Probe der Mess-Bühne (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
+    // Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
+    // (`atmoUniforms.fensterGlut`); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
+    // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
+    // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
+    // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
+    // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
+    _leuchtStoff(mat, mp, himmel) {
+        if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
+        const Te = THREE.TSL;
+        const atmo = this._ensureAtmoUniforms();
+        mat.userData = mat.userData || {};
+        if (mp && (mp.seh === "glut" || mp.leucht > 0)) {
+            mat.userData.lichtPool = "quelle";
+            return mat;
+        }
+        let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
+        if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
+        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        mat.userData.lichtPool = true;
+        return mat;
+    }
+
+    // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
+    // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
+    // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
+    // (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
+    // der Quelle (eine Flamme ist keine Punkt-Singularität: r184s nacktes 1/d² legte die Steine am Bett auf das Zehnfache ihrer
+    // Glut, und das Licht des Auges lag mit 1/d an der Wand weiß), weit draußen fällt das Feuer mit 1/d² (bis K11b mit dem
+    // Legacy-Abfall des r128-Labors (1 − d/R)^abfall: in 4 m noch 31 % — der Boden glühte über mehrere Meter), und an der
+    // Reichweite stetig auf 0. Der Welt-Ort des Platzes geht
+    // mit `cameraViewMatrix` (der Kamera DES zeichnenden Renderers) in den Blick-Raum. Die BEDINGUNG liest `positionView` und
+    // `normalView` (EINE Variable je Programm: r184 baut das Leuchten VOR der Lichtung — zuerst im Zweig gelesen, stünde ihre
+    // Zuweisung nur dort, die Falle des Lichts des Auges): eine Reichweite, ein Gewicht (der Himmels-Ersatz), die Fläche in ihr
+    // und ihm zugewandt. Die Blick-Richtung rechnet der Zweig aus `positionView`. WAS DER ZWEIG KOSTET (berichtigt beim Merge
+    // V18.542 aus der Quelle, nicht aus der Annahme „WGSL select wertet beide Seiten aus"): r184s `select` ist ein
+    // ConditionalNode und schreibt außerhalb von `uniformFlow` ein `if`/`else` ins WGSL, kein WGSL-`select` — das erzeugte
+    // Boden-Fragment (`werkbank shader --stoff boden`) trägt je Platz `if (Bedingung) { Lambert + GGX } else { 0 }` und kein
+    // `select(`. Jedes Fragment zahlt also die Bedingung je Platz (Ort in den Blick-Raum, Abstand, N·L); die BRDF zahlt eine
+    // Welle der GPU nur, wenn eines ihrer Fragmente den Zweig nimmt.
+    _lichtPoolTerm(Te, atmo, himmel) {
+        const N = Te.normalView;
+        const P = Te.positionView;
+        let summe = null;
+        for (let k = 0; k < atmo.lichtLage.length; k++) {
+            const lage = atmo.lichtLage[k];
+            const farbe = atmo.lichtFarbe[k];
+            const ersatz = atmo.lichtErsatz[k];
+            const kern = atmo.lichtKern[k];
+            const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
+            const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
+            const d = Lv.length();
+            const bedingung = lage.w
+                .greaterThan(0)
+                .and(gewicht.greaterThan(0))
+                .and(d.lessThan(lage.w))
+                .and(N.dot(Lv).greaterThan(0));
+            const L = Lv.div(d);
+            const nl = N.dot(L).clamp();
+            const q = d.div(lage.w).pow2();
+            const abst = q
+                .pow2()
+                .oneMinus()
+                .clamp()
+                .pow2()
+                .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
+            const beitrag = farbe.rgb
+                .mul(nl.mul(abst).mul(gewicht))
+                .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
+            const term = Te.select(bedingung, beitrag, Te.vec3(0));
+            summe = summe ? summe.add(term) : term;
+        }
+        return summe;
+    }
+
+    // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,
+    // BRDF_GGX und F_Schlick tragen kein Layout (ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler, der Stoff-Graph
+    // sieht ihn nicht), D_GGX und V_GGX_SmithCorrelated tragen ihres; die Stoff-Werte aus `diffuseColor` · `metalness` ·
+    // `specularColor` · `specularF90` (wie r184 sie mischt — `three/tsl` der Seite kennt `diffuseContribution`/
+    // `specularColorBlended` nicht). N, L, V normiert im Blick-Raum, `nl` = N·L geklemmt.
+    _punktLichtBrdf(Te, N, L, V, nl) {
+        const alb = Te.diffuseColor.rgb;
+        const met = Te.metalness;
+        const a = Te.roughness.pow2();
+        const f0 = Te.mix(Te.specularColor, alb, met);
+        const H = L.add(V).normalize();
+        const vh = V.dot(H).clamp();
+        const nv = N.dot(V).clamp();
+        const nh = N.dot(H).clamp();
+        const fres = Te.exp2(vh.mul(-5.55473).sub(6.98316).mul(vh)); // r184 F_Schlick: 2^((−5,55473 · V·H − 6,98316) · V·H)
+        const F = f0.mul(fres.oneMinus()).add(Te.specularF90.mul(fres));
+        const glanz = F.mul(Te.V_GGX_SmithCorrelated({ alpha: a, dotNL: nl, dotNV: nv })).mul(
+            Te.D_GGX({ alpha: a, dotNH: nh })
+        );
+        return alb
+            .mul(met.oneMinus())
+            .mul(1 / Math.PI)
+            .add(glanz); // r184 BRDF_Lambert + GGX
     }
 
     // DER RAUSCH-ATLAS (Welle G, der Boden-Stoff): das RAUSCH-GESETZ als EINE Textur, gelesen von zwei Knoten-Bauern, die
@@ -32473,6 +32932,15 @@ class AnazhRealm {
                     // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
                     uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
                     uKamAuge: _T.uniform(new THREE.Vector3()),
+                    // DIE NAH-KUGEL der Durchsicht um das Auge (Leben-Schau 2, 09.10.): ihr Radius je Stoff-Art — x Laub,
+                    // y Rinde, z Boden (die wiegende Nah-Streu) — `_kamZielSetzen`; −Saum heißt: nichts fällt.
+                    uKamNah: _T.uniform(
+                        new THREE.Vector3(
+                            -AnazhRealm.KAMERA_DURCHSICHT.saumM,
+                            -AnazhRealm.KAMERA_DURCHSICHT.saumM,
+                            -AnazhRealm.KAMERA_DURCHSICHT.saumM
+                        )
+                    ),
                 };
             }
         } catch (_e) {
@@ -32484,6 +32952,49 @@ class AnazhRealm {
         return u;
     }
 
+    // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
+    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus ihrer Instanz-
+    // Matrix (der Haken an `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen der Ursprung des
+    // Objekts. Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
+    // gemessen löste sich die ferne Krone eines nahen Baums auf, und die Stufen-Wahl musste dafür die zweite Stufe
+    // zeichnen (1110-11: die Birke in 5 m stand doppelt, 0,6–2,7 ms GPU an der Mess-Wiese).
+    _instanzMitteNode(T) {
+        if (this._instanzMitteKnoten) return this._instanzMitteKnoten;
+        // die Knoten-Basis exportiert window.THREE nicht — sie ist die Oberklasse des InstanceNode (r184 `class … extends Node`)
+        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
+        if (!N || N.type !== "Node" || !T.varying || !T.modelWorldMatrix || !T.vec4) {
+            const text =
+                "URSPRUNG DER INSTANZ: r184 Node (über InstanceNode) · varying · modelWorldMatrix fehlen (Vendor-Drift)";
+            this.log(text, "ERROR");
+            throw new Error(text);
+        }
+        class InstanzMitte extends N {
+            constructor() {
+                super("vec2");
+            }
+            setup(builder) {
+                const m = builder.__anazhInstanzMatrix;
+                const lokal = m ? T.vec4(m.element(3).xyz, 1.0) : T.vec4(0.0, 0.0, 0.0, 1.0);
+                return T.modelWorldMatrix.mul(lokal).xz;
+            }
+        }
+        this._instanzMitteKnoten = T.varying(new InstanzMitte(), "vInstanzMitte");
+        return this._instanzMitteKnoten;
+    }
+
+    // DER BRUCH DER BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied (ein Uniform des LOD-Satzes, ein TSL-Knoten, die
+    // Distanz der Karte, der Kanal des Stoffs), bricht der Bau des Stoffs LAUT beim Namen. Bis hierher gab die Blende still
+    // null zurück (ihr catch legte den Fehler in eine Fenster-Variable, die niemand las), und jeder Aufrufer zeichnete weiter:
+    // der Baum-Stoff ohne Maske (L0 und Band-L1 deckungsgleich voll, die Instanz-Wahl ohne Fenster), die Karte ohne
+    // Ausblendung, die Blatt-Karte ohne Stufen-Blende — gate:foundry-crossfade (9) DIE LAUTE BLENDE.
+    _blendeBruch(was) {
+        const text = "BLENDE: " + was + " — kein Stoff zeichnet ohne seine Maske";
+        this.log(text, "ERROR");
+        const e = new Error(text);
+        e.blende = true;
+        return e;
+    }
+
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
     // ihr entsprechen (Linse `gate:foundry-crossfade`); Zahlen aus uLodD0/uLodD1/uLodFade/uLodFade0 +
     // `_ensureLodUniforms`. opts.impostor → fin-Einblendung (lod=2) aus opts.distNode × Wahrnehmungs-k;
@@ -32492,24 +33003,23 @@ class AnazhRealm {
     _lodCrossfadeMaskNode(T, opts) {
         try {
             const _lu = this._ensureLodUniforms();
-            if (
-                !T ||
-                !_lu ||
-                !_lu.uLodRef ||
-                !_lu.uLodMaskOn ||
-                !_lu.uDitherT ||
-                !T.float ||
-                !T.fract ||
-                !T.screenCoordinate ||
-                !T.step ||
-                !T.mix ||
-                !_lu.uLodD0 ||
-                !_lu.uLodD1 ||
-                !_lu.uLodFade ||
-                !_lu.uLodFade0 ||
-                !_lu.uLodPerf
-            )
-                return null;
+            if (!T || !_lu)
+                throw this._blendeBruch(!T ? "TSL fehlt" : "der LOD-Uniform-Satz fehlt (_ensureLodUniforms)");
+            const _fehlt = [
+                "uLodRef",
+                "uLodMaskOn",
+                "uDitherT",
+                "uLodD0",
+                "uLodD1",
+                "uLodFade",
+                "uLodFade0",
+                "uLodPerf",
+            ]
+                .filter((k) => !_lu[k])
+                .concat(
+                    ["float", "fract", "screenCoordinate", "step", "mix"].filter((k) => !T[k]).map((k) => "TSL." + k)
+                );
+            if (_fehlt.length) throw this._blendeBruch("es fehlt " + _fehlt.join(" · "));
             // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
             // `_ensureLodUniforms`-Seed + `_loopRender`-Spiegel): Rampen-Kanten als Knoten-Mathe.
             const _edge1 = _lu.uLodD1.sub(_lu.uLodFade); // D1 − FADE
@@ -32528,7 +33038,7 @@ class AnazhRealm {
                 // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
-                if (!_dist) return null;
+                if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
                 let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
@@ -32547,14 +33057,15 @@ class AnazhRealm {
             // so maskiert der Schattenpass jede Stufe, wie das Auge sie sieht — jede Stufe wirft genau dort, wo sie
             // gezeichnet wird.
             const _auge = _lu.uLodAuge;
-            if (!T.attribute || !T.positionWorld || !_auge || !T.length || !T.vec2) return null;
+            if (!T.attribute || !_auge || !T.length || !T.vec2)
+                throw this._blendeBruch("die 3D-Stufen-Maske: TSL.attribute · uLodAuge · TSL.length · TSL.vec2 fehlen");
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (_lodPerfMul).
-            const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z))).mul(
-                _lu.uLodPerf
-            );
+            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (_lodPerfMul) — vom Auge zum
+            // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
+            const _mitte = this._instanzMitteNode(T);
+            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
@@ -32576,27 +33087,34 @@ class AnazhRealm {
             const _keep = T.mix(T.float(1.0), _stageKeep, _masked);
             return T.mix(T.float(1.0), _keep, _lu.uLodMaskOn);
         } catch (_e) {
-            if (typeof window !== "undefined") window.__foundryCrossfadeError = String((_e && _e.message) || _e);
-            return null;
+            throw _e && _e.blende === true
+                ? _e
+                : this._blendeBruch("der Bau der Maske scheiterte: " + ((_e && _e.message) || _e));
         }
     }
 
     // DIE DURCHSICHT DER KAMERA (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): eine Pflanze zwischen Auge und Spieler
     // ist durchsichtig, statt die Kamera zu halten — der Profi-Weg für Laub (kein Wald ist für eine Kamera mit 9,6 m Arm frei:
     // die Kronen-Hülle hielt die Verfolger-Kamera am Wagendach). Was zwischen Auge (`uKamAuge`) und Ziel (`uKamZiel.xyz`,
-    // `_kamZielSetzen`) näher als der Radius `uKamZiel.w` am Sicht-Strahl liegt, fällt — die EINE Formel
-    // `_durchsichtGewicht`; über den Saum KAMERA_DURCHSICHT.saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen
-    // wie die Stufen-Blende (`__phytoCore.lodDitherIGN`, rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die
-    // weiche Kante). Im 1st ist das Ziel das Auge selbst: nichts fällt. Rückgabe: der bool-Knoten für `maskNode` (true =
-    // behalten) — der Schatten-Pass liest ihn nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen
-    // Schatten.
-    _kameraDurchsichtNode(T) {
+    // `_kamZielSetzen`) näher als der Radius `uKamZiel.w` am Sicht-Strahl liegt, fällt, und ebenso, was in der NAH-KUGEL um
+    // das Auge liegt (Radius `uKamNah` je Stoff-Art: x Laub, y Rinde, z Boden — Leben-Schau 2, 09.10.: das Rohr um den
+    // Sicht-Strahl ließ die Krone um die Linse stehen) — die EINE Formel `_durchsichtGewicht`; über den Saum
+    // KAMERA_DURCHSICHT.saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen wie die Stufen-Blende
+    // (`__phytoCore.lodDitherIGN`, rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die weiche Kante). `art` ∈
+    // "laub" · "rinde" · "boden" (die wiegende Nah-Streu: Blume, Farn, Gestrüpp, Schilf): je Art EIN Knoten
+    // (`_kamDurchKnoten`, die Linse erkennt ihn). Rückgabe: der bool-Knoten für `maskNode` (true = behalten) — der
+    // Schatten-Pass liest ihn nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen Schatten.
+    _kameraDurchsichtNode(T, art) {
+        const knoten = this._kamDurchKnoten || (this._kamDurchKnoten = {});
+        const a = art === "rinde" || art === "boden" ? art : "laub";
+        if (knoten[a]) return knoten[a];
         const lu = this._ensureLodUniforms();
         if (
             !T ||
             !lu ||
             !lu.uKamAuge ||
             !lu.uKamZiel ||
+            !lu.uKamNah ||
             !lu.uDitherT ||
             !T.positionWorld ||
             !T.screenCoordinate ||
@@ -32614,28 +33132,34 @@ class AnazhRealm {
             dot: (a, b) => T.dot(a, b),
             len: (a) => T.length(a),
             max: (a, b) => a.max(b),
+            min: (a, b) => a.min(b),
             clamp01: (a) => a.clamp(0.0, 1.0),
         };
-        const w = AnazhRealm._durchsichtGewicht(A, T.positionWorld, lu.uKamAuge, lu.uKamZiel.xyz, lu.uKamZiel.w);
+        const n = a === "rinde" ? lu.uKamNah.y : a === "boden" ? lu.uKamNah.z : lu.uKamNah.x;
+        const w = AnazhRealm._durchsichtGewicht(A, T.positionWorld, lu.uKamAuge, lu.uKamZiel.xyz, lu.uKamZiel.w, n);
         const fc = T.screenCoordinate;
         const dh = T.fract(
             T.float(52.9829189)
                 .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
                 .add(lu.uDitherT)
         );
-        return w.greaterThan(dh);
+        knoten[a] = w.greaterThan(dh);
+        return knoten[a];
     }
 
     // DIE EINE FORMEL DER DURCHSICHT (Gegenprüfung Runde 2): das Gewicht w ∈ [0, 1], mit dem ein Punkt p steht (0 fällt
-    // ganz, 1 steht; der Stoff vergleicht es mit dem Rauschen) — Auge E, Ziel Z, Radius r. DURCHSICHTIG IST NUR, WAS ZWISCHEN
-    // AUGE UND ZIEL LIEGT: näher als r am Sicht-Strahl (QUER, über den Saum KAMERA_DURCHSICHT.saumM ausgeblendet) UND vor
-    // der Ebene des Ziels (VOR, über denselben Saum vor ihr ausgeblendet) — der Strahl des Fadenkreuzes beginnt auf dieser
-    // Ebene (`_fadenkreuzStrahl`), was er trifft, steht. Die Kugel um das Ziel fiel: sie schnitt im 1st (das Ziel ist das
-    // Auge) die Rinde bis 1,1 m vom Auge (7 von 8 Anläufen an einen Stamm, das Auge 0,01–1,24 m von ihm: ein Loch im Baum,
-    // an dem man steht) und in 3rd den Stamm VOR dem Spieler um die Brust. Im 1st ist die Strecke leer: nichts fällt.
-    // Sie rechnet über einer Algebra A: TSL-Knoten im Stoff (`_kameraDurchsichtNode`), Zahlen in der Linse
-    // (`DURCHSICHT_ZAHLEN`, gate:ankunft LK) — EINE Formel.
-    static _durchsichtGewicht(A, p, E, Z, r) {
+    // ganz, 1 steht; der Stoff vergleicht es mit dem Rauschen) — Auge E, Ziel Z, Radius r, Nah-Radius n. DURCHSICHTIG IST,
+    // WAS ZWISCHEN AUGE UND ZIEL LIEGT: näher als r am Sicht-Strahl (QUER, über den Saum KAMERA_DURCHSICHT.saumM
+    // ausgeblendet) UND vor der Ebene des Ziels (VOR, über denselben Saum vor ihr ausgeblendet) — der Strahl des Fadenkreuzes
+    // beginnt auf dieser Ebene (`_fadenkreuzStrahl`), was er trifft, steht. Die Kugel um das Ziel fiel: sie schnitt im 1st
+    // (das Ziel ist das Auge) die Rinde bis 1,1 m vom Auge (7 von 8 Anläufen an einen Stamm, das Auge 0,01–1,24 m von ihm:
+    // ein Loch im Baum, an dem man steht) und in 3rd den Stamm VOR dem Spieler um die Brust. Im 1st ist die Strecke leer.
+    // UND DURCHSICHTIG IST, WAS IN DER NAH-KUGEL UM DAS AUGE LIEGT (NAH: näher als n am Auge, über denselben Saum
+    // ausgeblendet; Leben-Schau 2, 09.10.: das Rohr allein ließ die Krone um die Linse stehen — die Kamera in der Eichenkrone
+    // am Ufer, im Ich-Auge ein Strauch vor dem Gesicht). Der Schreiber (`_kamZielSetzen`) hält die Kugel in 3rd vor der Ebene
+    // des Ziels, n = −Saum heißt: nichts fällt. Sie rechnet über einer Algebra A: TSL-Knoten im Stoff
+    // (`_kameraDurchsichtNode`), Zahlen in den Linsen (`DURCHSICHT_ZAHLEN`, gate:ankunft LK, gate:kamera-laub) — EINE Formel.
+    static _durchsichtGewicht(A, p, E, Z, r, n) {
         const S = A.k(AnazhRealm.KAMERA_DURCHSICHT.saumM);
         const ez = A.sub(Z, E);
         const pe = A.sub(p, E);
@@ -32645,7 +33169,32 @@ class AnazhRealm {
         const t = A.clamp01(A.div(s, Lm));
         const quer = A.clamp01(A.div(A.sub(A.len(A.sub(pe, A.mul(ez, t))), r), S));
         const vor = A.clamp01(A.sub(A.k(1), A.div(A.sub(L, s), S)));
-        return A.max(quer, vor);
+        const nah = A.clamp01(A.div(A.sub(A.len(pe), n), S));
+        return A.min(A.max(quer, vor), nah);
+    }
+
+    // STEHT DER TREFFER IM BILD? (ein Raycaster-Treffer { point, object, face }): trägt sein Stoff die Durchsicht der Kamera
+    // (`maskNode` = der Knoten seiner Art), steht er mit dem Gewicht der EINEN Formel über der Mitte des Saums (die Werte, die
+    // `_kamZielSetzen` der GPU schrieb) — die Probe durch die Bildmitte trifft nie, was das Bild nicht zeigt (Laub in der
+    // Nah-Kugel des Ich-Auges). Jeder andere Stoff steht.
+    _durchsichtSteht(h) {
+        const kn = this._kamDurchKnoten;
+        const k = this.state._kamZiel;
+        if (!h || !kn || !k || !h.object) return true;
+        const m = h.object.material;
+        const mat = Array.isArray(m) ? m[(h.face && h.face.materialIndex) || 0] : m;
+        const mk = mat ? mat.maskNode : null;
+        const n = !mk ? null : mk === kn.laub ? k.nl : mk === kn.rinde ? k.nr : mk === kn.boden ? k.nb : null;
+        if (n === null) return true;
+        const w = AnazhRealm._durchsichtGewicht(
+            AnazhRealm.DURCHSICHT_ZAHLEN,
+            h.point,
+            { x: k.ex, y: k.ey, z: k.ez },
+            { x: k.x, y: k.y, z: k.z },
+            k.r,
+            n
+        );
+        return w >= 0.5;
     }
 
     _applyVegetationResponse(mat, opts, responseProfile) {
@@ -32653,67 +33202,16 @@ class AnazhRealm {
             if (!mat.userData) mat.userData = {};
             mat.userData.useInstanceTint = true;
         }
-        // Wind-Sway (wiegen > 0.05): positionNode-Sway über windUniforms.uWindTime (EINE Welt-Quelle mit dem
-        // Gras); die Krone wiegt mehr (aFlex²/crownLin) + aperiodisches Flattern. NICHT für den Impostor —
-        // er trägt seinen eigenen positionNode, den dieser Sway überschriebe.
-        if (responseProfile && responseProfile.wiegen > 0.05 && !opts.impostorAtlas) {
-            try {
-                const _Tw = THREE.TSL;
-                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
-                    this._grassInstanceMat();
-                }
-                const _wu = this.state.windUniforms;
-                if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
-                    const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
-                    // Der Baum liest DIESELBE Richtungs-Quelle uWindDir wie Gras/Streu/Impostor: Orts-Term =
-                    // dot(worldXZ, windDir) × 0.228 (= |0.18, 0.14|). Ohne uWindDir: der feste Baum.
-                    const _wcu = this._ensureWindCoupling(_Tw);
-                    const _phaseSpatial =
-                        _wcu && _wcu.uWindDir
-                            ? _Tw.positionWorld.x
-                                  .mul(_wcu.uWindDir.x)
-                                  .add(_Tw.positionWorld.z.mul(_wcu.uWindDir.y))
-                                  .mul(_Tw.float(0.228))
-                            : _Tw.positionWorld.x.mul(_Tw.float(0.18)).add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
-                    const _phase = _wu.uWindTime.mul(_Tw.float(1.1)).add(_phaseSpatial);
-                    let _crownFactor;
-                    let _flutterShift;
-                    if (opts.useFlexAttr === true && _Tw.attribute) {
-                        const _aFlex = _Tw.attribute("aFlex", "float").clamp(0.0, 1.0);
-                        const _aPhase = _Tw.attribute("aPhase", "float");
-                        _crownFactor = _aFlex.mul(_aFlex);
-                        _flutterShift = _aPhase;
-                    } else {
-                        const _crownLin = _Tw.positionLocal.y.mul(_Tw.float(0.5)).add(_Tw.float(0.5)).clamp(0.0, 1.0);
-                        _crownFactor = _crownLin.mul(_crownLin);
-                        _flutterShift = _Tw.float(0.0);
-                    }
-                    const _swayMag = _Tw.float(_sway * 0.32).mul(_crownFactor);
-                    const _offsetX = _Tw.sin(_phase.add(_flutterShift)).mul(_swayMag);
-                    const _offsetZ = _Tw
-                        .cos(_phase.mul(_Tw.float(0.7)).add(_flutterShift))
-                        .mul(_swayMag.mul(_Tw.float(0.6)));
-                    const _flutterPhase = _wu.uWindTime
-                        .mul(_Tw.float(6.5))
-                        .add(_Tw.positionWorld.y.mul(_Tw.float(2.3)))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.9)))
-                        .add(_flutterShift.mul(_Tw.float(1.3)));
-                    const _flutter = _Tw.sin(_flutterPhase).mul(_swayMag).mul(_Tw.float(0.18));
-                    const _flutterZ = _Tw
-                        .cos(_flutterPhase.mul(_Tw.float(0.83)))
-                        .mul(_swayMag)
-                        .mul(_Tw.float(0.14));
-                    mat.positionNode = _Tw.positionLocal.add(
-                        _Tw.vec3(_offsetX.add(_flutter), _Tw.float(0.0), _offsetZ.add(_flutterZ))
-                    );
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__windSwayError = String((_e && _e.message) || _e);
-            }
-        }
+        // DER WIND DES WERKSTATT-BAUMS (K19): der Grammatik-Baum (`_buildTreeSkeletonLeaves`) trägt den EINEN Wind-Term der
+        // Foundry-Pflanze (`_baumWindStoff`): Höhe und Schlankheit aus seinem Skelett (`opts.baumWind`, `_skelettWindDaten`),
+        // die Welt-Höhe aus dem Instanz-Stempel aH0, die Last aus der Wind-Zeile des Wetters. Was kein Skelett trägt (Holz,
+        // Leder, Fleisch der Bauteile), steht im Wind: bis K19 bog die Tag-Achse `wiegen` jedes lebendige Bauteil mit eigener
+        // Sinus-Formel ohne Wind-Zeile (der Sturm sah aus wie die Brise). Die Karte (impostorAtlas) trägt ihren eigenen Term.
+        if (opts.baumWind && !opts.impostorAtlas)
+            this._baumWindStoff(mat, opts.foliageLeaf === true ? "foliage" : "bark", opts.baumWind);
         // SUBSURFACE-BACKLIT (detail > 0.4, laub): warmer Gegenlicht-Glow,
-        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha).
-        if (responseProfile && responseProfile.detail > 0.4) {
+        // post-lighting auf outputNode (kein colorNode-Eingriff, CLAUDE.md-Gotcha). Laub trägt das Laub-Licht (K19), nie ihn.
+        if (responseProfile && responseProfile.detail > 0.4 && opts.foliageLeaf !== true) {
             try {
                 const _Td = THREE.TSL;
                 const _wu = this.state.windUniforms;
@@ -32740,80 +33238,52 @@ class AnazhRealm {
                 if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
             }
         }
-        // Unlit-Silhouetten-Floor + Kanten-Grün (Vorlage `injectWind`): `output += albedo·pow(1−ndv,2.5)·0.55
-        // + vec3(0.09,0.15,0.04)·pow(1−ndv,4)·0.5` — bewusst sonnen-unabhängig (lebt im Schatten + nachts),
-        // der sonnen-gegatete Backlit ersetzt ihn nicht. NUR Laub (opts.foliageLeaf; der Impostor lichtet
-        // über den Normal-Atlas). Post-lighting auf outputNode, nie colorNode. Dazu ein kleiner nicht-
-        // direktionaler Ambient-Boden → die Unterkrone fällt auch face-on nie absolut schwarz.
-        if (opts.foliageLeaf === true) {
-            try {
-                const _Tf = THREE.TSL;
-                if (
-                    _Tf &&
-                    _Tf.normalWorld &&
-                    _Tf.cameraPosition &&
-                    _Tf.positionWorld &&
-                    _Tf.pow &&
-                    _Tf.abs &&
-                    mat.colorNode &&
-                    mat.colorNode.rgb !== undefined
-                ) {
-                    const _vdF = _Tf.normalize(_Tf.cameraPosition.sub(_Tf.positionWorld));
-                    const _ndv = _Tf.abs(_Tf.normalWorld.dot(_vdF)).clamp(0.0, 1.0);
-                    const _inv = _Tf.float(1.0).sub(_ndv);
-                    // Subsurface-Rim: die eigene Albedo, unbelichtet, an der Silhouette.
-                    const _rim = mat.colorNode.rgb.mul(_Tf.pow(_inv, _Tf.float(2.5))).mul(_Tf.float(0.55));
-                    // grünes Kanten-Glimmen (die zweite Vorlagen-Zeile).
-                    const _edge = _Tf
-                        .vec3(0.09, 0.15, 0.04)
-                        .mul(_Tf.pow(_inv, _Tf.float(4.0)))
-                        .mul(_Tf.float(0.5));
-                    // Ambient-Boden: eigene Albedo × 0.06, view- und sonnen-unabhängig.
-                    const _amb = mat.colorNode.rgb.mul(_Tf.float(0.06));
-                    const _outF = mat.outputNode || _Tf.output;
-                    mat.outputNode = _outF.add(_Tf.vec4(_rim.add(_edge).add(_amb), _Tf.float(0.0)));
-                    mat.userData = mat.userData || {};
-                    mat.userData.unlitSilhouetteFloor = true; // Linsen-Marker (diag-leaf-blades)
-                }
-            } catch (_e) {
-                if (typeof window !== "undefined") window.__unlitFloorError = String((_e && _e.message) || _e);
-            }
-        }
+        // DAS LAUB-LICHT (K19): das Grammatik-Laub (Blatt-Karte und Klinge) lichtet mit dem EINEN Laub-Licht-Term des Foundry-
+        // Laubs (`_laubLichtStoff`, phyto-core `laubDurchlass`) — die unbelichtete Silhouetten-Aufhellung (die Fresnel-Kopie des
+        // Labors) und der sonnen-blinde Gegenlicht-Glow sind gefallen; die Klinge ist Laub, die Karte erkennt die Nadel am Atlas.
+        if (opts.foliageLeaf === true) this._laubLichtStoff(mat, opts.foliageBlade !== true);
         // SSE-Metrik + Dither-Crossfade NUR für Laub-Karten (`opts.foliageLeaf` trägt aH0/aH0L aus
         // `_buildTreeFoliageCardGeometry`; sonst attribute()-Crash). Dieselbe `uLodRef`-Quelle wie die CPU:
-        //   vLodD  = |cam.xz − posWorld.xz| · min(uLodRef/aH0, 1) (großer Baum behält Detail länger;
-        //            posWorld enthält die Instanz-Transform); vLodDL = dasselbe mit aH0L (Blatt-Sichthöhe).
+        //   vLodD  = |Auge.xz − Ursprung der Instanz.xz| · min(uLodRef/aH0, 1) (großer Baum behält Detail länger;
+        //            `_instanzMitteNode`, Studio `_iw`); vLodDL = dasselbe mit aH0L (Blatt-Sichthöhe).
         // Der Discard faltet in die Alpha (alphaTest cullt); uLodMaskOn=0 oder NAH-Band → keep=1, byte-gleich.
         if (opts.foliageLeaf === true) {
             try {
                 const _Tl = THREE.TSL;
                 const _lu = this._ensureLodUniforms();
-                if (
-                    _Tl &&
-                    _lu &&
-                    _lu.uLodRef &&
-                    _lu.uLodAuge &&
-                    _Tl.attribute &&
-                    _Tl.positionWorld &&
-                    _Tl.vec2 &&
-                    _Tl.vec4 &&
-                    _Tl.float &&
-                    _Tl.length &&
-                    _Tl.screenCoordinate &&
-                    _Tl.fract &&
-                    _Tl.step &&
-                    _Tl.mix &&
-                    mat.colorNode &&
-                    mat.colorNode.rgb !== undefined &&
-                    mat.colorNode.a !== undefined
-                ) {
+                const _fehlt = [
+                    ["TSL", _Tl],
+                    ["der LOD-Uniform-Satz", _lu],
+                    ["uLodRef", _lu && _lu.uLodRef],
+                    ["uLodAuge", _lu && _lu.uLodAuge],
+                    [
+                        "die Farbe mit Alpha",
+                        mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined,
+                    ],
+                ]
+                    .concat(
+                        [
+                            "attribute",
+                            "vec2",
+                            "vec4",
+                            "float",
+                            "length",
+                            "screenCoordinate",
+                            "fract",
+                            "step",
+                            "mix",
+                        ].map((k) => ["TSL." + k, _Tl && _Tl[k]])
+                    )
+                    .filter((x) => !x[1])
+                    .map((x) => x[0]);
+                if (_fehlt.length) throw this._blendeBruch("die Blatt-Karte: es fehlt " + _fehlt.join(" · "));
+                {
                     const _aH0 = _Tl.attribute("aH0", "float");
                     const _aH0L = _Tl.attribute("aH0L", "float");
-                    const _pw = _Tl.positionWorld;
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
-                    // xz-Distanz Kamera → Vertex-Weltposition (die Instanz-Transform steckt in
-                    // positionWorld → per-Instanz korrekt, ohne den modelWorldMatrix-Ursprung).
-                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z))).mul(_lu.uLodPerf);
+                    // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
+                    const _mitte = this._instanzMitteNode(_Tl);
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y))).mul(_lu.uLodPerf);
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
                     const _lkL = _ref.div(_aH0L.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
@@ -32854,7 +33324,9 @@ class AnazhRealm {
                     mat.userData.lodCrossfade = true; // Marker für das Test-Band (kein Verhalten)
                 }
             } catch (_e) {
-                if (typeof window !== "undefined") window.__lodCrossfadeError = String((_e && _e.message) || _e);
+                throw _e && _e.blende === true
+                    ? _e
+                    : this._blendeBruch("die Blatt-Karte: " + ((_e && _e.message) || _e));
             }
         }
         return mat;
@@ -32863,17 +33335,7 @@ class AnazhRealm {
     _buildToonNodeMaterial(opts = {}) {
         // PBR ist die EINE Material-Wahrheit: dieser Aufruf baut IMMER PBR (roughness/metalness aus den
         // Material-Tags); der Name bleibt für die ~14 Aufrufstellen — kein Toon-Zwilling.
-        const pbr = typeof this._buildPbrNodeMaterial === "function" ? this._buildPbrNodeMaterial(opts) : null;
-        if (pbr) return pbr;
-        // Sicherheits-Fallback (nur falls r184/MeshStandardNodeMaterial fehlt — in der
-        // vendored r184 nie der Fall): ein schlichtes lit Material, kein Toon mehr.
-        const params = {};
-        if (opts.color !== undefined) params.color = opts.color;
-        if (opts.side !== undefined) params.side = opts.side;
-        if (opts.transparent !== undefined) params.transparent = opts.transparent;
-        if (opts.opacity !== undefined) params.opacity = opts.opacity;
-        if (opts.vertexColors) params.vertexColors = true;
-        return new THREE.MeshStandardNodeMaterial(params);
+        return this._buildPbrNodeMaterial(opts);
     }
 
     // ===== ATLAS §11 · VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits =====
@@ -33064,8 +33526,8 @@ class AnazhRealm {
         const entry = {
             mesh: fresh.mesh,
             waterCells: fresh.waterCells || null,
-            // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Gras/Streu/Deko
-            // lesen sie via `_chunkSurfaceAt`.
+            // Die Boden-Karte (der GERENDERTE Boden, `_bodenKarteAusMesh`, beide Pfade): Stand, Gras und Streu
+            // lesen sie über den EINEN Leser `_bodenSichtAt` (am Chunk-Rand die Karte des Nachbarn).
             surfMap: fresh.surfMap || null,
             gruenMap: fresh.gruenMap || null,
             lod,
@@ -33799,9 +34261,15 @@ class AnazhRealm {
     // Segment-AABB-Test gegen `entry.blockerAABBs`; liefert den NÄCHSTEN Treffer { hit, x, y, z, nx, ny,
     // nz } (Welt-Koords + Außen-Normale). Für Grab/Graben/Platzieren/Decke/Kamera. `o.durchPflanzen`: der Strahl geht durch
     // die Hülle einer Pflanze (Box mit `pflanze`, `_populateBlockerAABBs`) — der Strahl der 3rd-Kamera: eine Pflanze hält sie
-    // nie, sie wird durchsichtig (`_kameraDurchsichtNode`).
+    // nie, sie wird durchsichtig (`_kameraDurchsichtNode`). `o.radius` (DIE KUGEL DER KAMERA, K06): der Wurf einer Kugel vom
+    // Radius r — jede Box um r aufgeblasen (`_segmentKugelBox`); das Gelände fragt EINEN Mittelstrahl (trifft er, hält die
+    // Mitte vor der Ebene des Treffers (r + 2 cm) / cos θ) und den Ring der Kugel (4 Punkte, je r quer zum Strahl) nur an der
+    // Stelle, an der sie stehen soll; berührt ein Punkt dort Fels, geht er allein rückwärts (wachsende Schritte, Bisektion),
+    // bis der ganze Ring frei ist. `t` ist die Stelle der MITTE: sie steht absolut r vor jeder Fläche. Der Gelände-Marsch
+    // endet einen Schritt hinter dem Bau-Treffer. `o.gelaende === false` fragt nur die Bauten.
     _fieldRaycast(sx, sy, sz, ex, ey, ez, o) {
         const durchPflanzen = !!(o && o.durchPflanzen);
+        const rad = o && o.radius > 0 ? o.radius : 0;
         const dx = ex - sx,
             dy = ey - sy,
             dz = ez - sz;
@@ -33811,32 +34279,7 @@ class AnazhRealm {
         const ux = dx / len,
             uy = dy / len,
             uz = dz / len;
-        // (1) TERRAIN — DDA durchs Dichtefeld: erster solider Punkt, dann Bisektion + Gradient.
-        const step = 0.2;
-        let bestT = Infinity;
-        let prevSolid = this._fieldSolid(sx, sy, sz);
-        if (!prevSolid) {
-            for (let d = step; d <= len; d += step) {
-                const px = sx + ux * d,
-                    py = sy + uy * d,
-                    pz = sz + uz * d;
-                if (this._fieldSolid(px, py, pz)) {
-                    // Grenze zwischen d−step (Luft) und d (Solid) → bisektion auf die Oberfläche.
-                    let lo = d - step,
-                        hi = d;
-                    for (let b = 0; b < 8; b++) {
-                        const mid = (lo + hi) / 2;
-                        if (this._fieldSolid(sx + ux * mid, sy + uy * mid, sz + uz * mid)) hi = mid;
-                        else lo = mid;
-                    }
-                    bestT = hi / len;
-                    break;
-                }
-            }
-        } else {
-            bestT = 0; // Start schon im Soliden
-        }
-        // (2) STRUKTUREN — Segment vs solide Part-AABBs (Slab-Methode), nähester Treffer. Gefragt wird die Nachbarschaft der
+        // (1) STRUKTUREN zuerst — Segment vs solide Part-AABBs (Slab-Methode), nähester Treffer. Gefragt wird die Nachbarschaft der
         // Blocker (`_blockerNetz`): nur die Einträge der Zellen, die die Hülle des Segments überdeckt (dazu die Riesen-Zelle),
         // je Eintrag der Nah-Cull wie immer, je Box ihre Hülle vor dem Slab — eine Box, deren Hülle die des Segments nicht
         // berührt, schneidet es nie (die Marge 1e-6 m trägt die Rundung des Slabs und seinen Kehrwert 1e9). Den Gleichstand
@@ -33851,7 +34294,7 @@ class AnazhRealm {
         if (arches && arches.length) {
             const N = this._blockerNetz();
             const frage = ++N.frage;
-            const M = 1e-6;
+            const M = 1e-6 + rad; // die Kugel: die Hülle des Segments um r weiter
             const qx0 = Math.min(sx, ex) - M,
                 qx1 = Math.max(sx, ex) + M,
                 qy0 = Math.min(sy, ey) - M,
@@ -33890,7 +34333,10 @@ class AnazhRealm {
                             bx.minZ > qz1
                         )
                             continue;
-                        const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
+                        const hitInfo =
+                            rad > 0
+                                ? this._segmentKugelBox(sx, sy, sz, dx, dy, dz, bx, rad)
+                                : this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
                         if (
                             hitInfo &&
                             (hitInfo.t < structHitT ||
@@ -33901,6 +34347,119 @@ class AnazhRealm {
                             sSeq = seq;
                             sBox = bi;
                         }
+                    }
+                }
+            }
+        }
+        // (2) TERRAIN — DDA durchs Dichtefeld: erster solider Punkt, dann Bisektion + Gradient. Der Gradient liest den Punkt
+        // der Fläche (gx/gy/gz), nicht die Stelle der Kugel-Mitte. Der Marsch endet einen Schritt hinter dem Bau-Treffer
+        // (billige Filter zuerst, Lehre 25): ein Fels dahinter verliert gegen ihn, ein Fels davor fällt in den Schritt.
+        const step = 0.2;
+        let bestT = Infinity;
+        let gx = sx,
+            gy = sy,
+            gz = sz;
+        let normale = null;
+        const marsch = (bis) => {
+            for (let d = step; d <= bis; d += step) {
+                if (this._fieldSolid(sx + ux * d, sy + uy * d, sz + uz * d)) {
+                    // Grenze zwischen d−step (Luft) und d (Solid) → bisektion auf die Oberfläche.
+                    let lo = d - step,
+                        hi = d;
+                    for (let b = 0; b < 8; b++) {
+                        const mid = (lo + hi) / 2;
+                        if (this._fieldSolid(sx + ux * mid, sy + uy * mid, sz + uz * mid)) hi = mid;
+                        else lo = mid;
+                    }
+                    return hi;
+                }
+            }
+            return Infinity;
+        };
+        if (!(o && o.gelaende === false)) {
+            if (this._fieldSolid(sx, sy, sz)) {
+                bestT = 0; // Start schon im Soliden
+            } else {
+                const d = marsch(structHitT < Infinity ? Math.min(len, structHitT * len + step) : len);
+                if (d < Infinity) {
+                    gx = sx + ux * d;
+                    gy = sy + uy * d;
+                    gz = sz + uz * d;
+                    bestT = Math.max(0, d - rad) / len;
+                    if (rad > 0) {
+                        // DIE KUGEL AN DER EBENE DES TREFFERS: ihre Mitte hält (r + 2 cm) / cos θ vor ihm (θ der Einfall gegen die
+                        // Normale), am Hang also weiter als r — dieselbe Normale ist die des Ergebnisses
+                        normale = this._fieldGradient(gx, gy, gz, {});
+                        const cos = -(ux * normale.x + uy * normale.y + uz * normale.z);
+                        if (cos > 0.05) bestT = Math.max(0, d - (rad + 0.02) / cos) / len;
+                    }
+                }
+                if (rad > 0) {
+                    // DER RING DER KUGEL (K06, Prüfung 1: vier Eckstrahlen marschierten auch ohne Treffer die volle Armlänge,
+                    // Feld-Proben je 3rd-Bild 35 → 156): zwei Einheits-Achsen quer zum Strahl (p1 = u × Achse, p2 = u × p1), je
+                    // ±r, gefragt nur an der Stelle, an der die Mitte stehen soll (der nähere Treffer von Bau und Gelände). Ein
+                    // Ring-Punkt, der schon am Start im Fels liegt, sagt nichts (die Kugel streift ihn am Start) — erst ein
+                    // berührender Punkt fragt seinen Start.
+                    const ax = Math.abs(uy) > 0.9 ? 1 : 0;
+                    const ay = 1 - ax;
+                    let p1x = -uz * ay,
+                        p1y = uz * ax,
+                        p1z = ux * ay - uy * ax;
+                    const n1 = Math.hypot(p1x, p1y, p1z) || 1;
+                    p1x /= n1;
+                    p1y /= n1;
+                    p1z /= n1;
+                    const p2x = uy * p1z - uz * p1y,
+                        p2y = uz * p1x - ux * p1z,
+                        p2z = ux * p1y - uy * p1x;
+                    const amStart = [null, null, null, null];
+                    // der Punkt k des Rings an der Stelle dd: Fels, der nicht schon an seinem Start liegt
+                    const punktFest = (k, dd) => {
+                        const a = k === 0 ? rad : k === 1 ? -rad : 0;
+                        const b = k === 2 ? rad : k === 3 ? -rad : 0;
+                        const qx = p1x * a + p2x * b,
+                            qy = p1y * a + p2y * b,
+                            qz = p1z * a + p2z * b;
+                        const px = sx + ux * dd + qx,
+                            py = sy + uy * dd + qy,
+                            pz = sz + uz * dd + qz;
+                        if (!this._fieldSolid(px, py, pz)) return false;
+                        if (amStart[k] === null) amStart[k] = this._fieldSolid(sx + qx, sy + qy, sz + qz);
+                        if (amStart[k]) return false;
+                        gx = px;
+                        gy = py;
+                        gz = pz;
+                        return true;
+                    };
+                    // der untere Punkt zuerst (der Boden), dann die Seiten, der obere zuletzt
+                    const folge = p2y > 0 ? [3, 0, 1, 2] : [2, 0, 1, 3];
+                    let stelle = Math.min(bestT, structHitT, 1) * len;
+                    for (let runde = 0; runde < 4 && stelle > 0; runde++) {
+                        let k = -1;
+                        for (const j of folge)
+                            if (punktFest(j, stelle)) {
+                                k = j;
+                                break;
+                            }
+                        if (k < 0) break;
+                        // der berührende Punkt allein rückwärts: wachsende Schritte bis frei, dann die Bisektion auf 5 cm (am Start
+                        // ist er frei, jeder Punkt dort ist sein eigener Start); danach fragt die nächste Runde den ganzen Ring
+                        normale = null;
+                        let hi = stelle,
+                            w = 0.2,
+                            lo = Math.max(0, hi - w);
+                        while (lo > 0 && punktFest(k, lo)) {
+                            hi = lo;
+                            w *= 2;
+                            lo = Math.max(0, hi - w);
+                        }
+                        while (hi - lo > 0.05) {
+                            const mid = (lo + hi) / 2;
+                            if (punktFest(k, mid)) hi = mid;
+                            else lo = mid;
+                        }
+                        stelle = lo;
+                        bestT = lo / len;
                     }
                 }
             }
@@ -33921,12 +34480,54 @@ class AnazhRealm {
             out.x = sx + dx * bestT;
             out.y = sy + dy * bestT;
             out.z = sz + dz * bestT;
-            const g = this._fieldGradient(out.x, out.y, out.z, {});
+            const g =
+                normale ||
+                (rad > 0 ? this._fieldGradient(gx, gy, gz, {}) : this._fieldGradient(out.x, out.y, out.z, {}));
             out.nx = g.x;
             out.ny = g.y;
             out.nz = g.z;
         }
         return out;
+    }
+
+    // DIE BOX FÜR DIE KUGEL (K06, `_fieldRaycast` mit `radius`): der Schnitt der Strecke mit der Box, um r aufgeblasen — die
+    // Mitte der Kugel betritt sie, wo die Kugel die Box berührt (an Kanten und Ecken hält sie etwas früher als die runde
+    // Hülle). Beginnt die Strecke schon in der aufgeblasenen Box (die Kugel streift sie am Start), hält die Mitte r vor der Box
+    // selbst, entlang der Strecke — der Weg von ihr fort ist frei, an ihr entlang endet er nie auf ihrer Fläche.
+    _segmentKugelBox(sx, sy, sz, dx, dy, dz, b, r) {
+        const q =
+            this._kugelBox ||
+            (this._kugelBox = {
+                minX: 0,
+                maxX: 0,
+                minZ: 0,
+                maxZ: 0,
+                topY: 0,
+                botY: 0,
+                obb: null,
+                ob: { cx: 0, cz: 0, c: 1, s: 0, hx: 0, hz: 0 },
+            });
+        q.minX = b.minX - r;
+        q.maxX = b.maxX + r;
+        q.minZ = b.minZ - r;
+        q.maxZ = b.maxZ + r;
+        q.topY = b.topY + r;
+        q.botY = b.botY - r;
+        const ob = b.obb;
+        if (ob) {
+            q.ob.cx = ob.cx;
+            q.ob.cz = ob.cz;
+            q.ob.c = ob.c;
+            q.ob.s = ob.s;
+            q.ob.hx = ob.hx + r;
+            q.ob.hz = ob.hz + r;
+            q.obb = q.ob;
+        } else q.obb = null;
+        const h = this._segmentAABB(sx, sy, sz, dx, dy, dz, q);
+        if (!h || h.t > 0) return h;
+        const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
+        if (g) g.t = Math.max(0, g.t - r / Math.sqrt(dx * dx + dy * dy + dz * dz));
+        return g;
     }
 
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
@@ -35244,12 +35845,16 @@ class AnazhRealm {
         }
     }
 
-    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen und „rauch", wenn er einen Kamin trägt.
+    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen, „rauch", wenn er einen Kamin trägt,
+    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), und „licht", wenn er eine Leuchtquelle ist
+    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`).
     _blockerNamen(entry) {
         const out = [];
         const a = entry.affordances;
         if (a && typeof a === "object") for (const k in a) if (a[k]) out.push(k);
         if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
+        if (this._glutFlaeche(entry) > 0) out.push("glut");
+        if (this._lichtDatum(entry)) out.push("licht");
         return out;
     }
 
@@ -37078,19 +37683,25 @@ class AnazhRealm {
     // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (Kronen-Licht,
     // Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
     // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
-    // Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe
-    // Wiese bei jedem Besuch. Gibt die Büschel-Liste zurück oder null, solange ein Chunk unter der Kachel
-    // noch keine Boden-Karte hat.
+    // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
+    // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
+    // zurück oder null, solange ein Chunk, den die Kachel liest (`_bodenSichtChunks`), noch keine Boden-Karte hat.
     _nahWieseKachelBueschel(tx, tz) {
         const NW = AnazhRealm.NAH_WIESE;
         const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
         const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
         const GS = AnazhRealm.GRASS_SLOPE;
-        const cfg = this._voxelChunkConfig(0);
         const seedInt = this._forestSeedInt();
         const x0 = tx * NW.kachel;
         const z0 = tz * NW.kachel;
+        // der Jitter trägt einen Büschel 0,34 m über die Kachel hinaus
+        if (!this._bodenSichtChunks(x0 - 0.34, z0 - 0.34, x0 + NW.kachel + 0.34, z0 + NW.kachel + 0.34)) return null;
         const cl = (v) => Math.max(0, Math.min(1, v));
+        const boden = (px, pz) => {
+            const v = this._bodenSichtAt(px, pz);
+            return v === null ? NaN : v;
+        };
+        const grund = {};
         const out = [];
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
@@ -37109,24 +37720,14 @@ class AnazhRealm {
                 const sk = 0.7 + w() * 0.7;
                 const rot = w() * Math.PI * 2;
                 const ordnung = w();
-                const cx = Math.floor(x / cfg.span);
-                const cz = Math.floor(z / cfg.span);
-                const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
-                if (!entry || !entry.surfMap) {
-                    if (entry && entry.empty) continue;
-                    return null; // der Boden steht noch nicht — die Kachel wartet
-                }
-                const y = this._chunkSurfaceAt(entry, cx, cz, x, z);
+                const y = this._bodenSichtAt(x, z, grund);
                 if (y === null) continue;
-                const gruen = this._chunkGruenAt(entry, cx, cz, x, z) || 0;
-                if (gruen <= 0) continue;
+                const gruen = grund.gruen;
+                if (!(gruen > 0)) continue;
                 if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 const L = this._canopyLightAt(x, z, y, m);
-                const hang = this._slopeAt(x, z, (px, pz) => {
-                    const v = this._chunkSurfaceAt(entry, cx, cz, px, pz);
-                    return v === null ? NaN : v;
-                });
+                const hang = this._slopeAt(x, z, boden);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
                 // Unter einer echten Krone liegt Laub, kaum ein Halm (15 %) — dieselbe Kronen-Karte wie der Boden.
@@ -37223,7 +37824,6 @@ class AnazhRealm {
                 this._nahWieseSenken(v, stufe, fl);
             }
         }
-        const cfg = this._voxelChunkConfig(0);
         let gebaut = 0;
         for (const w of wunsch) {
             if (nw.kacheln.has(w.key)) continue;
@@ -37236,25 +37836,12 @@ class AnazhRealm {
                 nw.offen++;
                 continue;
             }
-            const chunks = new Set();
-            for (const [ex, ez] of [
-                [0, 0],
-                [1, 0],
-                [0, 1],
-                [1, 1],
-            ]) {
-                const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
-                const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
-                chunks.add(`${cx},${cz}`);
-            }
-            const chunkKarten = new Map();
-            for (const ck of chunks) {
-                const e = st.voxelChunks.get(ck);
-                chunkKarten.set(ck, e ? e.surfMap : undefined);
-            }
-            // die Kennungen des gezeichneten Wassers, das die Büschel lasen (ihr Jitter reicht 0,34 m über die Kachel)
+            // die Karten und die Kennungen des gezeichneten Wassers, die die Büschel lasen (ihr Jitter reicht 0,34 m über die
+            // Kachel): dasselbe Rechteck wie im Bau der Büschel
             const x0 = w.tx * NW.kachel - 0.34;
             const z0 = w.tz * NW.kachel - 0.34;
+            const chunkKarten = this._bodenSichtChunks(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
+            const chunks = new Set(chunkKarten.keys());
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
@@ -37500,10 +38087,11 @@ class AnazhRealm {
     // · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
-    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei, kein
-    // Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band stehen im Wasser — im GEZEICHNETEN (`_koerperWasser`).
-    // Rückgabe { items, chunks, wasser } (`wasser`: die Kennungen des gezeichneten Wassers, das die Kachel las,
-    // `_wasserKennungen`) oder null, solange ein Chunk unter der Kachel noch keine Boden-Karte hat.
+    // Ernte-Identität `gi|gj|art|i` bleibt). Fuß und Hang auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am
+    // Chunk-Rand die Karte des Nachbarn), Pfade bleiben frei, kein Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band
+    // stehen im Wasser — im GEZEICHNETEN (`_koerperWasser`). Rückgabe { items, chunks, wasser } (`chunks`: die Karten, die
+    // die Kachel las, `_bodenSichtChunks`; `wasser`: die Kennungen des gezeichneten Wassers, `_wasserKennungen`) oder null,
+    // solange einer dieser Chunks noch keine Boden-Karte hat.
     _nahStreuKachel(tx, tz, arten) {
         const NS = AnazhRealm.NAH_STREU;
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
@@ -37512,30 +38100,24 @@ class AnazhRealm {
         // Die Nah-Streu ist ein Wurf des Feldes: trägt die Wildnis die Kachel nicht, bleibt sie leer (und liest kein Wasser).
         if (!this._wildnisTraegt((tx + 0.5) * NS.kachel, (tz + 0.5) * NS.kachel))
             return { items: [], chunks: new Map(), wasser: [] };
-        const span = this._voxelChunkConfig(0).span;
         const seedInt = this._forestSeedInt();
         const last = this._effectiveFoliageDensity();
         const Z = NS.zelle;
         const n = Math.round(NS.kachel / Z);
-        const items = [];
-        const chunks = new Map();
-        const ort = (x, z) => {
-            const cx = Math.floor(x / span);
-            const cz = Math.floor(z / span);
-            const ck = `${cx},${cz}`;
-            return { e: this.state.voxelChunks ? this.state.voxelChunks.get(ck) : null, cx, cz, ck };
+        const K = NS.kachel;
+        // jede Pflanze steht in der Kachel (Zell-Mitte ± halbe Zelle): ihr Boden sind die Karten dieses Rechtecks
+        const chunks = this._bodenSichtChunks(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
+        if (!chunks) return null; // der Boden steht noch nicht — die Kachel wartet
+        const boden = (px, pz) => {
+            const v = this._bodenSichtAt(px, pz);
+            return v === null ? NaN : v;
         };
+        const items = [];
         for (let gj = tz * n; gj < tz * n + n; gj++) {
             for (let gi = tx * n; gi < tx * n + n; gi++) {
                 const x = (gi + 0.5) * Z;
                 const z = (gj + 0.5) * Z;
-                const o = ort(x, z);
-                if (!o.e || !o.e.surfMap) {
-                    if (o.e && o.e.empty) continue;
-                    return null; // der Boden steht noch nicht — die Kachel wartet
-                }
-                chunks.set(o.ck, o.e.surfMap);
-                const y = this._chunkSurfaceAt(o.e, o.cx, o.cz, x, z);
+                const y = this._bodenSichtAt(x, z);
                 if (y === null) continue;
                 if (this._pfadFeldAt(x, z, y) > 0.5) continue; // Ufer-Pfad und Siedlungs-Weg bleiben frei (Labor: trailAt < 3 m)
                 const feucht = this._feuchteAt(x, z, y);
@@ -37552,10 +38134,7 @@ class AnazhRealm {
                     feucht,
                     ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,
-                    hang: this._slopeAt(x, z, (px, pz) => {
-                        const v = this._chunkSurfaceAt(o.e, o.cx, o.cz, px, pz);
-                        return v === null ? NaN : v;
-                    }),
+                    hang: this._slopeAt(x, z, boden),
                 };
                 for (let a = 0; a < arten.length; a++) {
                     const A = arten[a];
@@ -37579,22 +38158,15 @@ class AnazhRealm {
                         const rot = w() * Math.PI * 2;
                         const same = (w() * 4294967296) >>> 0;
                         const ordnung = w();
-                        const op = ort(px, pz);
-                        if (!op.e || !op.e.surfMap) {
-                            if (op.e && op.e.empty) continue; // ein leerer Chunk trägt keine Fläche
-                            return null; // der Nachbar-Boden steht noch nicht — die Kachel wartet (nie nach Streaming-Reihenfolge)
-                        }
-                        const py = this._chunkSurfaceAt(op.e, op.cx, op.cz, px, pz);
+                        const py = this._bodenSichtAt(px, pz);
                         if (py === null) continue;
                         if (!A.zeile.ufer && py < this._koerperWasser(px, pz, py) + 0.1) continue;
-                        chunks.set(op.ck, op.e.surfMap);
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
                         this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
                     }
                 }
             }
         }
-        const K = NS.kachel;
         return { items, chunks, wasser: this._wasserKennungen(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K) };
     }
 
@@ -37645,7 +38217,7 @@ class AnazhRealm {
     _streuSatzArt(a) {
         const mat = a.mat;
         const u = mat.userData || {};
-        if (mat.map || u.foundryKind === "foliageTex" || mat._anazhAtlasTexe)
+        if (mat.map || u.foundryKind === "foliageTex" || u.foundryKind === "schatten" || u.impostorBillboard === true)
             throw new Error(
                 `_streuSatzArt(${a.name}): der Stoff liest eine Karte (uv) — der Streu-Satz trägt sie nicht`
             );
@@ -38068,7 +38640,7 @@ class AnazhRealm {
                     P.hits.length = 0;
                     P.mesh.raycast(rc, P.hits);
                     for (const h of P.hits)
-                        if (!best || h.distance < best.d)
+                        if ((!best || h.distance < best.d) && this._durchsichtSteht(h))
                             best = { d: h.distance, key, senke: a.key, name: a.preset, id: b.ids[i], point: h.point };
                 }
         }
@@ -38878,7 +39450,7 @@ class AnazhRealm {
         }
     }
 
-    // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
+    // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach unter dem Spiegel (`_fernRingWasserTiefe`), die innerste Reihe jeder
     // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingNaht`): wo ein gebauter Chunk den Punkt oder einen
     // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung) —
     // die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er nicht (die Masken-Karte,
@@ -38890,9 +39462,47 @@ class AnazhRealm {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
-        let y = law < wl ? wl - F.wasserDrop : law;
+        let y = law < wl ? wl - this._fernRingWasserTiefe() : law;
         if (p.row === 0) y -= F.saumDrop;
         return y;
+    }
+
+    // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
+    // Fern-Wasser (`_ensureFarWaterSheet`), liegt der Spiegel des Rings unter dessen tiefstem Tal — der Spiegel − `drop` −
+    // der Hub (`_wasserHubM`) —, und jenseits davon ist er der Ozean; ohne Fern-Wasser (Holz nah, kienspan) ist er die
+    // Fläche (− `wasserDrop`). Bis hier lag er immer 0,4 m unter dem Spiegel: das Fern-Wasser (− 0,35 m, Hub bis 4,42 m)
+    // zeigte in jedem tiefen Tal die flache Ring-Fläche im dunklen Fern-Blau (die Meeres-Station: die dunklen Klumpen).
+    _fernRingWasserTiefe() {
+        const fw = this.state.farWater;
+        if (!fw || !fw.mesh) return AnazhRealm.FERN_RING.wasserDrop;
+        return AnazhRealm.FAR_WATER.drop + AnazhRealm._wasserHubM() + 0.1;
+    }
+
+    // Wechselt die Tiefe des Ring-Wassers (das Fern-Wasser kommt oder geht), setzt der Ring jeden nassen Punkt neu — durch
+    // die EINE Setz-Naht, mit dem Gesetz, das er dem Punkt zuletzt gab (`farbLaw`, kein neues Gesetz).
+    _fernRingWasserNeu(fr) {
+        const tiefe = this._fernRingWasserTiefe();
+        if (fr.wasserTiefe === tiefe) return 0;
+        fr.wasserTiefe = tiefe;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        const dirty = [false, false, false];
+        let n = 0;
+        const bis = Math.min(fr.totalVerts, fr.cursor);
+        for (let g = 0; g < bis; g++) {
+            if (!(fr.farbLaw[g] < wl)) continue;
+            const p = this._fernRingPunkt(fr, g);
+            this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl);
+            dirty[p.s] = true;
+            n++;
+        }
+        for (let s = 0; s < fr.meshes.length; s++) {
+            if (!dirty[s]) continue;
+            const geo = fr.meshes[s].geometry;
+            geo.attributes.position.needsUpdate = true;
+            AnazhRealm._fernRingAttributeHoch(geo);
+            geo.computeVertexNormals();
+        }
+        return n;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -38968,14 +39578,140 @@ class AnazhRealm {
         geo.attributes.aKrone.needsUpdate = true;
     }
 
-    // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die offenen Ring-Farben, dann der
-    // Farb-Job des Feld-Passes. Über dem Frame-Budget das knappe Maß; nie null — mindestens `mindestJeTakt` Punkte.
+    // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die Fern-Krone des nahen Bodens (das
+    // Quadrat um den Spieler), dann die offenen Ring-Farben, dann der Farb-Job des Feld-Passes. Über dem Frame-Budget das
+    // knappe Maß; nie null — die Krone und der Ring je mindestens `mindestJeTakt` Punkte. Als Letzte im Budget verhungerte die
+    // Krone hinter dem Ring: nach dem Wechsel an die Wiese stand ihre Karte nach dem Einschwingen noch leer (`bereit` 0,
+    // gemessen 11.10.).
     _fernFarbTakt(fr) {
         const K = AnazhRealm.FERN_FARBE;
         const ende = performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt);
+        this._fernKroneNahTakt(ende, K.mindestJeTakt);
         const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
         const fp = this.state.feldPass;
         if (fp && fp.farbJob) this._feldPassFaerben(fp, ende, rest);
+    }
+
+    // DIE FERN-KRONE DES NAHEN BODENS (0910-8, „die weiße Masse“): der Fern-Ring trägt den Wald als Kronendach × Deckung
+    // (`_fernFarbeTeile`), aber unter dem Chunk-Quadrat deckt ihn der Boden-Satz. Der gezeichnete Wald endet am Laub-Radius
+    // des Reglers (gemessen 11.10. an der Wiese: dichte Kronen bis 120 m bei Laub-Radius 115, bis 200 m bei 235) und ab 384 m
+    // vom Auge (die Karte des Baums); dazwischen trug NIEMAND den Wald — der Boden-Satz zeigte nackten Boden, aus 420 m Höhe das
+    // ganze Quadrat (das weiße Quadrat im Oliv des Panoramas). Jetzt liest der Boden-Satz dort, wo kein echter Wald zeichnet,
+    // DIESELBEN Teile wie der Fern-Ring (`_fernFarbeTeile` an ganzzahligen Punkten; der Ring liest sie über sein Gedächtnis,
+    // die Karte daneben — ihre Füllung je Chunk-Wechsel verdrängte sonst die Ring-Punkte) aus einer Karte über dem Quadrat
+    // und mischt zum Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — wie der Ring-Stoff, eine Formel.
+    // Die Kronenfarbe reist sRGB-kodiert in 8 Bit (linear lägen 0,03–0,1 in 8–25 Stufen), die Deckung linear im Alpha.
+    // Die Karte füllt sich im Fern-Farb-Budget und tauscht erst, wenn sie ganz steht (`bereit`); bis dahin mischt nichts.
+    static get FERN_KRONE_NAH() {
+        return Object.freeze({ N: 64, rand: 3, saumM: 30, sichtM: 384 });
+    }
+    _fernKroneNahEnsure() {
+        const st = this.state;
+        if (st.fernKroneNah) return st.fernKroneNah;
+        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!TSL || !TSL.uniform) return null;
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        const daten = new Uint8Array(K.N * K.N * 4);
+        const tex = new THREE.DataTexture(daten, K.N, K.N, THREE.RGBAFormat, THREE.UnsignedByteType);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.generateMipmaps = false;
+        tex.name = "fern-krone-nah";
+        tex.needsUpdate = true;
+        const U = this._uniformHeimatTeilen({
+            mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+            groesse: TSL.uniform(1),
+            bereit: TSL.uniform(0),
+            waldR: TSL.uniform(0),
+            spieler: TSL.uniform(new THREE.Vector2(0, 0)),
+        });
+        st.fernKroneNah = { N: K.N, tex, daten, puffer: new Uint8Array(K.N * K.N * 4), U, job: null, anker: null };
+        return st.fernKroneNah;
+    }
+
+    // Der Takt der Karte: Wald-Radius und Spieler je Takt; die Karte liegt auf dem Chunk-Quadrat — ihre Mitte ist die Mitte
+    // des Chunks unter dem Spieler (die Mitte des Rings), ihre Größe (2·Ring + 1 + rand)·span: der Rand von rand/2 Chunks je
+    // Seite trägt das neue Quadrat, solange sie nach einem Chunk-Wechsel neu füllt. Der Anker auf einem Raster von einem
+    // Viertel der Karte lag bis 59 m neben der Mitte des Quadrats, weiter als sein Rand von 43 m: aus 420 m blieb am Rand des
+    // Quadrats ein Streifen von 22 m blass (11.10.). Sie füllt sich, bis die Frist `ende` steht — mindestens `mindest` Punkte
+    // je Takt.
+    _fernKroneNahTakt(ende, mindest) {
+        const st = this.state;
+        const k = st.fernKroneNah || this._fernKroneNahEnsure();
+        const pm = st.playerMesh;
+        if (!k || !pm) return;
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        k.U.waldR.value = Number.isFinite(st.foliageRadius) ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        k.U.spieler.value.set(pm.position.x, pm.position.z);
+        const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        const span = this._voxelChunkConfig().span;
+        const groesse = span * (2 * ring + 1 + K.rand);
+        const mx = (Math.floor(pm.position.x / span) + 0.5) * span;
+        const mz = (Math.floor(pm.position.z / span) + 0.5) * span;
+        const a = k.anker;
+        if (!k.job && (!a || a.x !== mx || a.z !== mz || a.groesse !== groesse)) k.job = { mx, mz, groesse, i: 0 };
+        const j = k.job;
+        if (!j) return;
+        const N = k.N;
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const t = k.teile || (k.teile = new Float32Array(7));
+        const sRGB = (c) => {
+            const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+            return Math.round(v * 255);
+        };
+        let n = 0;
+        while (j.i < N * N && (n++ < mindest || performance.now() < ende)) {
+            const ix = j.i % N;
+            const iz = (j.i / N) | 0;
+            const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
+            const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
+            const law = this._terrainMacroSurfaceY(x, z, false);
+            const o = j.i * 4;
+            // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
+            if (law < wl) k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
+            else {
+                this._fernFarbeTeile(x, law, z, t);
+                k.puffer[o] = sRGB(t[3]);
+                k.puffer[o + 1] = sRGB(t[4]);
+                k.puffer[o + 2] = sRGB(t[5]);
+                k.puffer[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
+            }
+            j.i++;
+        }
+        if (j.i < N * N) return;
+        k.daten.set(k.puffer);
+        k.tex.needsUpdate = true;
+        k.U.mitte.value.set(j.mx, j.mz);
+        k.U.groesse.value = j.groesse;
+        k.U.bereit.value = 1;
+        k.anker = { x: j.mx, z: j.mz, groesse: j.groesse };
+        k.job = null;
+    }
+
+    // Die Mischung im Boden-Stoff (TSL): wo kein echter Wald zeichnet — jenseits des Laub-Radius vom Spieler (mit Saum)
+    // oder jenseits der Karten-Sicht des Baums vom Auge —, trägt der Boden das Kronendach × Saison nach der Deckung, wie der
+    // Fern-Ring. Ohne Karte, Saison oder TSL bricht der Boden-Stoff laut.
+    _fernKroneNahMisch(_T, alb) {
+        const k = this._fernKroneNahEnsure();
+        const su = this._ensureSeasonUniforms();
+        if (!k || !su || !su.uSeasonMul || !_T.texture || !_T.positionWorld || !_T.cameraPosition)
+            throw new Error("Fern-Krone (nah): der Boden-Stoff braucht Karte, Saison-Uniform und TSL");
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        const xz = _T.positionWorld.xz;
+        const uv = xz.sub(k.U.mitte).div(k.U.groesse).add(0.5);
+        const s = _T.texture(k.tex, uv);
+        const innen = _T.step(_T.max(uv.x.sub(0.5).abs(), uv.y.sub(0.5).abs()), _T.float(0.5));
+        const dSp = xz.sub(k.U.spieler).length();
+        const dAuge = _T.positionWorld.sub(_T.cameraPosition).length();
+        const ohneWald = _T.max(
+            _T.smoothstep(k.U.waldR, k.U.waldR.add(K.saumM), dSp),
+            _T.smoothstep(_T.float(K.sichtM - K.saumM), _T.float(K.sichtM), dAuge)
+        );
+        const w = s.a.mul(ohneWald).mul(k.U.bereit).mul(innen);
+        return _T.mix(alb, s.rgb.mul(su.uSeasonMul), w);
     }
 
     // DIE EINE DECK-FORMEL (CPU-Refresh UND GPU-Maler mischen durch sie — kein
@@ -41135,10 +41871,13 @@ class AnazhRealm {
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
         if (fr.cursor === 0) this._fernRingGpuMal(fr);
         this._fernRingRefresh(F.refreshVertsProTick);
+        // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
+        this._fernRingWasserNeu(fr);
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
-        // DAS FERN-FARB-BUDGET: offene Ring-Farben (nah zuerst), dann der Farb-Job des Feld-Passes.
+        // DAS FERN-FARB-BUDGET: die Fern-Krone des nahen Bodens, die offenen Ring-Farben (nah zuerst), dann der Farb-Job des
+        // Feld-Passes.
         this._fernFarbTakt(fr);
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
         // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
@@ -51917,10 +52656,10 @@ class AnazhRealm {
     // oder Objekt-Schmuggel in die Zustell-Kette legen.
     _sanitizePose(p) {
         if (!p || typeof p !== "object") return null;
-        const x = Number(p.x);
-        const y = Number(p.y);
-        const z = Number(p.z);
-        const yaw = Number(p.yaw);
+        const x = this._fremdeZahl(p.x);
+        const y = this._fremdeZahl(p.y);
+        const z = this._fremdeZahl(p.z);
+        const yaw = this._fremdeZahl(p.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return null;
         const c = (v) => Math.max(-1e6, Math.min(1e6, v));
         return { x: c(x), y: c(y), z: c(z), yaw: Math.max(-Math.PI * 2, Math.min(Math.PI * 2, yaw)) };
@@ -53326,7 +54065,10 @@ class AnazhRealm {
                 }
             }
         }
-        if (reg.size === 0) return;
+        if (reg.size === 0) {
+            this._tickPortalLicht(null); // kein Tor, kein Licht des Tors (mit dem letzten fällt sein Platz im Licht-Pool)
+            return;
+        }
         // ── pro Frame: Atem + Hindurchgehen ──
         const reach = AnazhRealm.PORTAL_REACH_M;
         for (const rec of reg.values()) {
@@ -53443,37 +54185,34 @@ class AnazhRealm {
         this._tickPortalLicht(naeh);
     }
 
+    // DAS LICHT DES TORS (K11): das Lab-portalLight ist ein Bürger des Licht-Pools — das wache Tor (das nächste aktive) trägt
+    // sein Emitter-Datum aus porta GLUT_GESETZ (Farbe, Reichweite, Abfall, Höhe am Spring-Punkt; der Kern des Abfalls ist
+    // der halbe Bogen der Membran, K11b) und die Stärke des Labors
+    // `glutIntensity(act, puls)`; der Licht-Takt liest es (`_leuchtQuellen`). Kein Szenen-Licht (bis K11 ein PointLight, das
+    // beim ersten Tor in die Szene trat und dort auf 0 blieb). Ohne waches Tor kein Licht.
     _tickPortalLicht(rec) {
-        // V18.491.126 GLUT_GESETZ — Lab+Host portal PointLight (fail-soft Literale).
-        let li = this._portalLicht;
         if (!rec) {
-            if (li) li.intensity = 0;
+            this._portalLeuchte = null;
             return;
         }
         const PC = globalThis.__portaCore;
-        const G = (PC && PC.GLUT_GESETZ) || {};
-        if (!li) {
-            // Lab-Werte (porta.js / GLUT_GESETZ: PointLight color, Reichweite, decay).
-            li = this._portalLicht = new THREE.PointLight(
-                G.color != null ? G.color : 0xffd9a0,
-                0,
-                G.dist != null ? G.dist : 14,
-                G.decay != null ? G.decay : 2
-            );
-            li.castShadow = false;
-            this.state.scene.add(li);
-        }
+        const G = PC.GLUT_GESETZ;
         const e = rec.entry;
         const mu = rec.tor.mu;
         const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-        const ySpring = G.ySpring != null ? G.ySpring : 0.55;
-        li.position.set(e.position.x, e.position.y - 0.5 + mu.springY * ySpring * sc, e.position.z);
-        const pulse = rec.u && rec.u.pulse ? rec.u.pulse.value : 1;
-        // V18.491.160 GLUT_GESETZ cold fallback fail-soft (i0/iOpen/pulseBase/pulseAmp; live glutIntensity first)
-        li.intensity =
-            PC && typeof PC.glutIntensity === "function"
-                ? PC.glutIntensity(rec._act, pulse)
-                : ((G.i0 || 0.3) + rec._act * (G.iOpen || 3.4)) * ((G.pulseBase || 0.8) + (G.pulseAmp || 0.28) * pulse);
+        const q =
+            this._portalLeuchte ||
+            (this._portalLeuchte = {
+                quelle: "tor",
+                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay, kernM: 0 },
+                masse: 1,
+                phase: 0,
+            });
+        q.L.kernM = 0.5 * mu.spanW * sc; // der Kern des Abfalls (fachwerk `lichtAbfall`): die Membran leuchtet als Fläche, ihr halber Bogen
+        q.x = e.position.x;
+        q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
+        q.z = e.position.z;
+        q.L.staerke = PC.glutIntensity(rec._act, rec.u && rec.u.pulse ? rec.u.pulse.value : 1);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
@@ -53718,6 +54457,7 @@ class AnazhRealm {
                 metalness: 0,
             });
             mat.opacityNode = THREE.TSL.attribute("aRauchDeck", "float");
+            this._leuchtStoff(mat, null); // der Rauch streut das Licht des Feuers (K11, der Licht-Pool)
             const mesh = AnazhRealm._instanzMesh(geo, mat, cap);
             mesh.name = "dorf-rauch";
             mesh.userData.inventar = "dorf-rauch"; // Identitäts-Stempel (gate:asset-inventory: Welt-Substanz)
@@ -55381,6 +56121,147 @@ class AnazhRealm {
         entry._rideRoll = Math.max(-kl, Math.min(kl, eb.wank));
     }
 
+    // DER PLATZ, DEN DIE WELT WÄHLT (Leben-Schau 2, fahr-bahn — Befund: der Vorschau-GT am Garage-Tor stand 38° steil und
+    // 40° gewankt auf dem Felsblock, W 3 s brachte 0,08 m; der Ort lag 8 m radial hinter dem Tor, ohne Neigungs- und Fels-
+    // Probe). Ein Wagen, den die Welt hinstellt (`spawnArchitecture` ohne präzisen Ort: die Vorschau, „bau mir einen gt",
+    // der Nexus), steht auf fahrbarem Grund (`_fahrPlatzFrei`); ist der gewünschte Ort keiner, wandert er zum nächsten in
+    // Ringen um ihn (vehicle-core FAHR.platz: Schritt und Radius; je Ring der Umfang in Schritten, ab der Fahrt-Richtung —
+    // deterministisch, jeder Peer gleich). Ein präziser Ort (Wiederherstellen, Mitspieler, das Phantom, die Linsen) bleibt
+    // bit-treu. Trägt kein Ort im Radius, stellt die Welt den Wagen nicht hin (false; die Wurzel sagt „platz", das Log nennt
+    // den Grund) — nie still auf den Fels. → true, wenn der Wagen steht (oder kein Studio-Wagen ist). Die Suche selbst ist
+    // ein Weg in Schritten (`_fahrPlatzWege`): die Wurzel geht ihn ganz, die Vorschau im Takt (`_ensurePortalPreview`).
+    _fahrPlatzSuche(entry) {
+        const weg = this._fahrPlatzWege(entry);
+        let r = weg.next();
+        while (!r.done) r = weg.next();
+        return r.value;
+    }
+
+    // Der Weg der Platz-Suche: je Ort ein Schritt (yield), am Ende true (der Wagen steht dort, Lage und Gier am Eintrag) oder
+    // false (kein Platz im Radius).
+    *_fahrPlatzWege(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (!fzg || !fzg.drive || !fzg.drive.huelle) return true;
+        entry._fahrAchseX = true; // Studio-Wagen: Bug +x (die Aufstandspunkte lesen das Gesetz)
+        const prof = this._vehicleProfile(entry);
+        const G = prof ? this._fahrSatz(entry, prof) : null;
+        if (!G) return true;
+        const P = AnazhRealm._fahrPlatzGesetz().P;
+        const k = this._fahrHuelleBau(entry, G);
+        const ry = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
+        const x0 = entry.position.x;
+        const z0 = entry.position.z;
+        const grund = this._fahrPlatzFrei(entry, G, k, x0, z0, ry);
+        if (!grund) return true;
+        for (let r = 0; r <= P.suchRadiusM + 1e-9; r += P.suchSchrittM) {
+            const n = r === 0 ? 1 : Math.max(8, Math.round((2 * Math.PI * r) / P.suchSchrittM));
+            for (let i = 0; i < n; i++) {
+                yield r;
+                const a = ry + (i / n) * 2 * Math.PI;
+                const x = x0 + Math.sin(a) * r;
+                const z = z0 + Math.cos(a) * r;
+                for (let j = r === 0 ? 1 : 0; j < P.richtungen; j++) {
+                    const rj = ry + (j / P.richtungen) * 2 * Math.PI;
+                    const g = this._fahrPlatzFrei(entry, G, k, x, z, rj);
+                    // zu steil ist der Grund, nicht die Richtung: die Fallinie der Ebene trägt keine Drehung weiter
+                    if (g === "steil") break;
+                    if (g) continue;
+                    entry.position.x = x;
+                    entry.position.z = z;
+                    entry.rotationY = rj - Math.PI / 2; // Studio-Wagen: Template-Gier = Fahrt − π/2
+                    this._blockerBewegt(entry); // im Bestand meldet er den neuen Platz (vor dem Eintritt: nichts zu melden)
+                    this.log(
+                        `Fahr-Platz: ${entry.type} steht ${r} m weiter auf fahrbarem Grund (dort: ${grund}).`,
+                        "INFO"
+                    );
+                    return true;
+                }
+            }
+        }
+        this.log(
+            `Fahr-Platz: kein fahrbarer Grund im Umkreis von ${P.suchRadiusM} m um (${x0.toFixed(1)}, ${z0.toFixed(1)}) — die Welt stellt ${entry.type} nicht hin (dort: ${grund}).`,
+            "WARN"
+        );
+        return false;
+    }
+
+    // Steht der Wagen bei (x, z) in Fahrt-Richtung `ry` frei, und hat er eine BAHN? null = ja, sonst der Grund beim Namen:
+    // der Stand dort (`_fahrStandFrei`) und derselbe Stand je bahnLaengen Wagenlängen vor und hinter ihm (vehicle-core
+    // FAHR.platz) — er fährt in beide Richtungen los, ohne sofort anzustoßen. Die billige Probe zuerst (Lehre 25): die Ebene der
+    // Räder an allen drei (vehicle-core fahrPlatz), erst dann die Welt des Wirts.
+    _fahrPlatzFrei(entry, G, k, x, z, ry) {
+        const { vc, P } = AnazhRealm._fahrPlatzGesetz();
+        const L = (k.bug - k.heck) * P.bahnLaengen;
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        const boden = this._werkBoden(entry);
+        const wo = (s) => (s === 0 ? "" : ` ${s > 0 ? "vor" : "hinter"} ihm`);
+        const ebenen = [];
+        for (const s of [0, 1, -1]) {
+            const pl = vc.fahrPlatz(G, boden, x + fX * L * s, z + fZ * L * s, ry - Math.PI / 2);
+            if (!pl.ok) return pl.grund + wo(s);
+            ebenen.push(pl.eb);
+        }
+        for (let i = 0; i < 3; i++) {
+            const s = [0, 1, -1][i];
+            const g = this._fahrStandFrei(entry, k, x + fX * L * s, z + fZ * L * s, ry, ebenen[i]);
+            if (g) return g + wo(s);
+        }
+        return null;
+    }
+
+    // Der STAND bei (x, z) auf der Ebene `eb` seiner Räder (vehicle-core fahrPlatz auf dem Boden des Werks, `_werkBoden` —
+    // derselbe, auf dem `_fahrzeugStand` ihn danach abstellt und der Ritt ihn fährt; `_fahrPlatzFrei` fragt sie) in der Welt
+    // des Wirts: E steigt ein (kein Tor reicht mit seiner E-Reichweite an einen Platz, von dem aus der Spieler
+    // einsteigt — sonst betritt E das Tor: „bau mir einen gt" stand 5,3 m vor welt_portal), die Hülle steht auf dem Land
+    // eines Werks (`_landAt`: die Mitte, dann die vier Ecken), keine Wand des Geländes unter der Hülle (5 × 3 Punkte — der
+    // Fels, der in den Wagen ragt), keine Box eines Baus, Baums oder Wagens im Band der Hülle (der EINE Struktur-Löser mit der
+    // Hülle als Körper, wie im Ritt), der Spieler nicht unter dem Wagen. Die Wand ist die des Kontakts (`_fahrGelaendeWand`
+    // ohne Fahrt-Richtung: jede steile Fläche zählt). Die billigen Proben zuerst (Lehre 25).
+    _fahrStandFrei(entry, k, x, z, ry, eb) {
+        const torFrei = AnazhRealm.PORTAL_REACH_M + AnazhRealm.MOUNT_RANGE_M;
+        for (const t of this._blockerMit("isPortal"))
+            if (t.position && (t.position.x - x) ** 2 + (t.position.z - z) ** 2 < torFrei * torFrei) return "tor";
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        const qX = Math.cos(ry);
+        const qZ = -Math.sin(ry);
+        if (!this._landAt(x, z)) return "wasser";
+        for (const l of [k.bug, k.heck])
+            for (const q of [-k.hw, k.hw]) if (!this._landAt(x + l * fX + q * qX, z + l * fZ + q * qZ)) return "wasser";
+        const tS = Math.tan(eb.steig);
+        const tW = Math.tan(eb.wank);
+        for (let i = 0; i <= 4; i++) {
+            const l = k.heck + ((k.bug - k.heck) * i) / 4;
+            for (const q of [-k.hw, 0, k.hw]) {
+                const px = x + l * fX + q * qX;
+                const pz = z + l * fZ + q * qZ;
+                if (this._fahrGelaendeWand(px, pz, eb.y + tS * l + tW * q, k, 0, 0)) return "fels";
+            }
+        }
+        const pm = this.state.playerMesh;
+        if (pm && pm.position) {
+            const dx = pm.position.x - (x + fX * k.mitte);
+            const dz = pm.position.z - (z + fZ * k.mitte);
+            const rS = AnazhRealm.PLAYER_WALL_RADIUS;
+            if (Math.abs(dx * fX + dz * fZ) < k.hl + rS && Math.abs(dx * qX + dz * qZ) < k.hw + rS) return "spieler";
+        }
+        k.fX = fX;
+        k.fZ = fZ;
+        k.qX = qX;
+        k.qZ = qZ;
+        k.unten = eb.y + k.stufe;
+        k.oben = eb.y + k.dach;
+        k.schub.length = 0;
+        k.schubQuelle.length = 0;
+        const pos = this._fahrPlatzPos || (this._fahrPlatzPos = { x: 0, z: 0 });
+        pos.x = x;
+        pos.z = z;
+        this._stepCharacterStructures(pos, 0, 0, 0, k);
+        this._stepCharacterIslands(pos, 0, 0, 0, k);
+        return k.schub.length ? "bau" : null;
+    }
+
     // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)
     // trägt +x nach (cos φ, −sin φ), also φ = Fahrt − π/2; ein Teile-Werk fährt in +z (φ = Fahrt).
     _rittGier(entry, fahrtYaw) {
@@ -55592,12 +56473,14 @@ class AnazhRealm {
                 continue;
             }
             // DER GESTOSSENE WAGEN RUTSCHT (das EINE Impuls-Gesetz): die Handbremse hält ihn, sein Hüllen-Kontakt trägt den
-            // Stoß weiter (Bauwerke, Wagen, Leiber), seine Blocker ziehen mit.
+            // Stoß weiter (Bauwerke, Wagen, Leiber), seine Blocker ziehen mit. Ohne Fahrer tritt keiner die Bremse: im Kern ist
+            // `brake` unter bremsV der Rückwärtsgang (die Taste S) — der leere Wagen fuhr damit rückwärts in den Spieler (K12:
+            // mit dem Rückwärtsgang des Kerns 0,67 m tief, gate:fahr-leben L6).
             const rutscht = Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs;
             if (rutscht) {
                 const x0 = fz.x;
                 const z0 = fz.z;
-                vc.fahrKraefte(fz, { brake: 1, hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
+                vc.fahrKraefte(fz, { hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
                 entry._rideYaw = fz.yaw + Math.PI / 2;
                 const k = this._fahrHuelle(entry);
                 if (k) {
@@ -56052,11 +56935,43 @@ class AnazhRealm {
         pl.liftingField = { active: best > 0, strength: best };
     }
 
+    // DER TACHO (Leben-Schau 2, fahr-bahn — Befund: im Spiel kein Tacho, die Probefahrt zeigt ihn): im Sattel eines Gesetz-
+    // Wagens zeigt #fahr-tacho die km/h seines Fahr-Zustands (|vlong| × vehicle:FAHR.kmh — dieselbe Zahl wie der Tacho der
+    // Probefahrt) und darunter die Fahr-Tasten (`_fahrTastenZeile`); ohne Ritt ist er fort. Das DOM wird nur geschrieben,
+    // wenn die Zahl oder die Sichtbarkeit wechselt.
+    _fahrAnzeige() {
+        if (typeof document === "undefined") return;
+        const el = this._fahrTachoEl || (this._fahrTachoEl = document.getElementById("fahr-tacho"));
+        if (!el) return;
+        const pl = this.state.player;
+        const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
+        const fz = e && e._fahrSatz && e._fahr && e.id === pl.mountedArch ? e._fahr : null;
+        if (!fz) {
+            if (!el.hidden) el.hidden = true;
+            this._fahrTachoKmh = null;
+            return;
+        }
+        const proKmh = AnazhRealm._fahrSchrittGesetz().vc.FAHR.kmh;
+        if (!Number.isFinite(proKmh)) return AnazhRealm._kernPflichtBruch("vehicle:FAHR.kmh");
+        const kmh = Math.round(Math.abs(fz.vlong) * proKmh);
+        if (el.hidden) {
+            const t = el.querySelector(".fahr-tacho-tasten");
+            if (t) t.textContent = this._fahrTastenZeile();
+            el.hidden = false;
+        }
+        if (kmh !== this._fahrTachoKmh) {
+            this._fahrTachoKmh = kmh;
+            const z = el.querySelector("[data-kmh]");
+            if (z) z.textContent = String(kmh);
+        }
+    }
+
     // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._tickMountedMovement(dt);
+        this._fahrAnzeige();
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
@@ -59185,8 +60100,8 @@ class AnazhRealm {
                 const top = trunkPts[trunkPts.length - 1];
                 foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
             } else {
-                // Die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/needle/sway/phase) — daraus baut
-                // `__phytoCore.buildFoliageQuads` die Krone. Der `_lean`-Shear trifft die Position (Card: dir/up).
+                // Die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/needle/phase — phase dreht die Karte) — daraus
+                // baut `__phytoCore.buildFoliageQuads` die Krone. Der `_lean`-Shear trifft die Position (Card: dir/up).
                 const phytoLeaves = [];
                 for (const l of phyto.leaves) {
                     const lp = _lean({ x: l.pos[0], y: l.pos[1], z: l.pos[2], r: 0 });
@@ -59197,7 +60112,6 @@ class AnazhRealm {
                         up: l.up ? [l.up[0], l.up[1], l.up[2]] : [0, 1, 0],
                         scale: l.scale,
                         needle: !!l.needle,
-                        sway: l.sway,
                         phase: l.phase,
                     });
                 }
@@ -65624,8 +66538,7 @@ class AnazhRealm {
     }
 
     // EINE bark-BufferGeometry aus dem Skeleton (Polylinien): Ring von 6 Vertices je Punkt, zu Quads
-    // verbunden, Radius = radii[i]; lobed flare am Stamm-Fuß; Per-Vertex flex (höhen-relative
-    // Wind-Empfindlichkeit) + phase (aperiodischer Hash-Versatz). Alle Äste zu EINER Geometrie gemerged.
+    // verbunden, Radius = radii[i]; lobed flare am Stamm-Fuß. Alle Äste zu EINER Geometrie gemerged.
     _buildTreeTubeGeometry(skeleton, opts) {
         if (!skeleton || !Array.isArray(skeleton.branches) || skeleton.branches.length === 0) return null;
         const radialSegs = (opts && opts.radialSegs) || 6;
@@ -65644,191 +66557,29 @@ class AnazhRealm {
             bBb = (_bB & 0xff) / 255;
         // Die Ring-Tube-Mathematik lebt in `phyto-core.js` (`globalThis.__phytoCore.buildBarkTubeArrays`) —
         // Main + Worker + Portal lesen EINE Formel. Plain-Arrays je Branch, hier in BufferGeometry gewickelt
-        // (Vertrag EXAKT: position/normal/color/aFlex/aPhase + index) + gemerged; ohne phyto-core Inline-Pfad.
+        // (Vertrag EXAKT: position/normal/color + index; der Wind liest die Gestalt, `_baumWindStoff`) + gemerged.
+        // Ohne Kern kein stiller Inline-Zwilling: lauter Bruch (KERN-PFLICHT).
         const _core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        if (_core && typeof _core.buildBarkTubeArrays === "function") {
-            const snippets = _core.buildBarkTubeArrays(skeleton.branches, {
-                radialSegs,
-                totalH,
-                barkColorA: [bAr, bAg, bAb],
-                barkColorB: [bBr, bBg, bBb],
-                flareAmp: skeleton.flareAmp || 0.45,
-                flareLobes: skeleton.flareLobes || 5,
-            });
-            if (Array.isArray(snippets) && snippets.length > 0) {
-                const geomListCore = [];
-                for (let si = 0; si < snippets.length; si++) {
-                    const s = snippets[si];
-                    const g = new THREE.BufferGeometry();
-                    g.setAttribute("position", new THREE.BufferAttribute(s.positions, 3));
-                    g.setAttribute("normal", new THREE.BufferAttribute(s.normals, 3));
-                    g.setAttribute("color", new THREE.BufferAttribute(s.colors, 3));
-                    g.setAttribute("aFlex", new THREE.BufferAttribute(s.aFlex, 1));
-                    g.setAttribute("aPhase", new THREE.BufferAttribute(s.aPhase, 1));
-                    g.setIndex(new THREE.BufferAttribute(s.indices, 1));
-                    geomListCore.push(g);
-                }
-                if (geomListCore.length > 0) return this._mergeAttributedGeometries(geomListCore, ["aFlex", "aPhase"]);
-            }
-        }
-        // pcg-Hash für aperiodische Phase pro Vertex (deterministisch aus
-        // (branchIdx, pointIdx, radialIdx)) → benachbarte Vertices flattern
-        // verschieden im Wind-Shader (Plan Ω-W „aperiodisches Flattern").
-        const hashPhase = (a, b, c) => {
-            let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
-            h = (h ^ (h >>> 13)) >>> 0;
-            return ((h * 0.00000000023283) % 1) * Math.PI * 2;
-        };
-        // Sammeln pro Branch ein eigenes BufferGeometry-Snippet, am Ende
-        // mergen (geteiltes Material via vertexColors).
+        if (!_core || typeof _core.buildBarkTubeArrays !== "function")
+            throw new Error("KERN-PFLICHT: phyto-core buildBarkTubeArrays fehlt (die Rinde des Werkstatt-Baums)");
+        const snippets = _core.buildBarkTubeArrays(skeleton.branches, {
+            radialSegs,
+            totalH,
+            barkColorA: [bAr, bAg, bAb],
+            barkColorB: [bBr, bBg, bBb],
+            flareAmp: skeleton.flareAmp || 0.45,
+            flareLobes: skeleton.flareLobes || 5,
+        });
         const geomList = [];
-        for (let bi = 0; bi < skeleton.branches.length; bi++) {
-            const br = skeleton.branches[bi];
-            const pts = br.points;
-            if (!Array.isArray(pts) || pts.length < 2) continue;
-            const nP = pts.length;
-            const nV = nP * radialSegs;
-            const positions = new Float32Array(nV * 3);
-            const normals = new Float32Array(nV * 3);
-            const colors = new Float32Array(nV * 3);
-            const flex = new Float32Array(nV);
-            const phase = new Float32Array(nV);
-            const indices = new Uint32Array((nP - 1) * radialSegs * 6);
-            // Pro Punkt: Tangent → perpendicular basis → Ring von radialSegs
-            // Vertices. Per-Vertex normal = radial, color = holz-tint·brightness,
-            // flex = relative Höhe im Baum (Stamm-Spitzen flexen mehr).
-            for (let i = 0; i < nP; i++) {
-                const p = pts[i];
-                // Tangent: forward-diff am Anfang/Ende, central in der Mitte.
-                let tx, ty, tz;
-                if (i === 0) {
-                    tx = pts[1].x - p.x;
-                    ty = pts[1].y - p.y;
-                    tz = pts[1].z - p.z;
-                } else if (i === nP - 1) {
-                    tx = p.x - pts[i - 1].x;
-                    ty = p.y - pts[i - 1].y;
-                    tz = p.z - pts[i - 1].z;
-                } else {
-                    tx = pts[i + 1].x - pts[i - 1].x;
-                    ty = pts[i + 1].y - pts[i - 1].y;
-                    tz = pts[i + 1].z - pts[i - 1].z;
-                }
-                const tlen = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
-                tx /= tlen;
-                ty /= tlen;
-                tz /= tlen;
-                // Perpendicular basis: nutze Welt-Up als Referenz; bei fast
-                // vertikalem Tangent (|dot| > 0.99) auf Welt-X umschalten.
-                let upX = 0,
-                    upY = 1,
-                    upZ = 0;
-                if (Math.abs(ty) > 0.99) {
-                    upX = 1;
-                    upY = 0;
-                    upZ = 0;
-                }
-                // binormal = cross(tangent, up); normal = cross(binormal, tangent).
-                let bx = ty * upZ - tz * upY;
-                let by = tz * upX - tx * upZ;
-                let bz = tx * upY - ty * upX;
-                let blen = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
-                bx /= blen;
-                by /= blen;
-                bz /= blen;
-                let nx = by * tz - bz * ty;
-                let ny = bz * tx - bx * tz;
-                let nz = bx * ty - by * tx;
-                // Flare am Stamm-Fuß (Plan §3.3): nur isTrunk + erste ~15%
-                // der Polylinie. amp+lobes pro Spezies (SPECIES_TREE_PARAMS).
-                let radius = p.r;
-                if (br.isTrunk && i < Math.max(2, Math.floor(nP * 0.18))) {
-                    const flareT = 1 - i / Math.max(1, Math.floor(nP * 0.18));
-                    const ease = flareT * flareT * (3 - 2 * flareT); // smoothstep
-                    const amp = skeleton.flareAmp || 0.45;
-                    // lobed multiplier wird pro Vertex (mit Ring-Winkel) angewandt.
-                    radius = p.r * (1 + amp * ease * 0.4); // average flare (Lobes-Variation kommt unten)
-                }
-                const lobes = skeleton.flareLobes || 5;
-                const flareActive = br.isTrunk && i < Math.max(2, Math.floor(nP * 0.18));
-                const flareT = flareActive ? 1 - i / Math.max(1, Math.floor(nP * 0.18)) : 0;
-                const flareEase = flareT * flareT * (3 - 2 * flareT);
-                const flareAmp = (skeleton.flareAmp || 0.45) * flareEase;
-                // flex aus Welt-Höhe relativ zur Baum-Höhe (Spitzen flexen mehr).
-                const flexVal = Math.max(0, Math.min(1, p.y / totalH));
-                for (let j = 0; j < radialSegs; j++) {
-                    const a = (j / radialSegs) * Math.PI * 2;
-                    const ca = Math.cos(a);
-                    const sa = Math.sin(a);
-                    // lobed radius: r_eff = radius * (1 + flareAmp * sin(j·lobes·2π/radialSegs))
-                    // → mehrere Rippen am Stamm-Sockel
-                    const lobedMul = 1 + flareAmp * Math.sin((j * lobes * 2 * Math.PI) / radialSegs);
-                    const rEff = radius * (flareActive ? lobedMul : 1.0);
-                    // Position
-                    const vx = p.x + (nx * ca + bx * sa) * rEff;
-                    const vy = p.y + (ny * ca + by * sa) * rEff;
-                    const vz = p.z + (nz * ca + bz * sa) * rEff;
-                    // Normal (radial nach außen)
-                    const vnx = nx * ca + bx * sa;
-                    const vny = ny * ca + by * sa;
-                    const vnz = nz * ca + bz * sa;
-                    const vIdx = (i * radialSegs + j) * 3;
-                    positions[vIdx] = vx;
-                    positions[vIdx + 1] = vy;
-                    positions[vIdx + 2] = vz;
-                    normals[vIdx] = vnx;
-                    normals[vIdx + 1] = vny;
-                    normals[vIdx + 2] = vnz;
-                    // RINDEN-MASERUNG: axiale Borke-Bänder (sin über den Polylinien-Index i) + radialer Streifen (über j);
-                    // Stamm gröber als Äste. Billig, deterministisch, per-Vertex.
-                    const grainFreq = br.isTrunk ? 2.1 : 3.6;
-                    const grain =
-                        1 -
-                        0.15 * (Math.sin(i * grainFreq) * 0.5 + 0.5) -
-                        0.08 * (Math.sin(j * 1.9 + i * 0.5) * 0.5 + 0.5);
-                    // Rinden-Farbe: barkA (Fuß) → barkB (Wipfel) über die Vertex-Höhe gelerpt (wie buildTube
-                    // barkBase→barkTip), × grain. tintT ist KEINE Helligkeits-Skala — der Gradient trägt das selbst.
-                    const hMix = Math.max(0, Math.min(1, p.y / totalH));
-                    colors[vIdx] = (bAr + (bBr - bAr) * hMix) * grain;
-                    colors[vIdx + 1] = (bAg + (bBg - bAg) * hMix) * grain;
-                    colors[vIdx + 2] = (bAb + (bBb - bAb) * hMix) * grain;
-                    // flex + phase: pro Vertex (höher → mehr flex, Hash-Phase)
-                    const vF = i * radialSegs + j;
-                    flex[vF] = flexVal * (br.isTrunk ? 0.45 : 0.85); // Stamm flext weniger, Äste mehr
-                    phase[vF] = hashPhase(bi, i, j);
-                }
-            }
-            // Indizes: pro Quad zwei Triangles (radialSegs wraps around).
-            let triIdx = 0;
-            for (let i = 0; i < nP - 1; i++) {
-                for (let j = 0; j < radialSegs; j++) {
-                    const j1 = (j + 1) % radialSegs;
-                    const a = i * radialSegs + j;
-                    const b = i * radialSegs + j1;
-                    const c = (i + 1) * radialSegs + j;
-                    const d = (i + 1) * radialSegs + j1;
-                    indices[triIdx++] = a;
-                    indices[triIdx++] = c;
-                    indices[triIdx++] = b;
-                    indices[triIdx++] = b;
-                    indices[triIdx++] = c;
-                    indices[triIdx++] = d;
-                }
-            }
+        for (const s of snippets) {
             const g = new THREE.BufferGeometry();
-            g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-            g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
-            g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-            g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-            g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
-            g.setIndex(new THREE.BufferAttribute(indices, 1));
+            g.setAttribute("position", new THREE.BufferAttribute(s.positions, 3));
+            g.setAttribute("normal", new THREE.BufferAttribute(s.normals, 3));
+            g.setAttribute("color", new THREE.BufferAttribute(s.colors, 3));
+            g.setIndex(new THREE.BufferAttribute(s.indices, 1));
             geomList.push(g);
         }
-        if (geomList.length === 0) return null;
-        // Mergen über `_mergeGeometries` — der V18.213-Helper. Erweitern um
-        // aFlex+aPhase: per-Vertex-Custom-Attribute durch denselben Vertex-
-        // Konkat-Pfad (eine flat-Concat über alle Branch-Geoms).
-        return this._mergeAttributedGeometries(geomList, ["aFlex", "aPhase"]);
+        return geomList.length ? this._mergeGeometries(geomList) : null;
     }
 
     // Der Blatt-Atlas kommt aus phyto-core — kein Parallel-Painter: das Atlas-BILD (`bakeLeafAtlasBild`, W5) ist
@@ -65981,7 +66732,7 @@ class AnazhRealm {
     }
 
     // NAHER BAUM (LOD0): 30-Vert-Superformel-Blatt-Klingen aus den Nicht-Nadel-Phyto-Blättern über
-    // `__phytoCore.buildLeafBlades` (Attribute wie die Karten: position/normal/color/aFlex/aPhase/uv +
+    // `__phytoCore.buildLeafBlades` (Attribute wie die Karten: position/normal/color/uv +
     // aH0/aH0L). Nadeln bleiben Spray-Quads (Einzel-Nadeln trügen beim 480er-Blatt-Budget die Deckung
     // nicht). null (kein Kern/Blätter/THREE) → der Aufrufer bleibt beim Karten-Pfad.
     _buildTreeFoliageBladeGeometry(skeleton) {
@@ -66014,8 +66765,6 @@ class AnazhRealm {
         g.setAttribute("position", new THREE.BufferAttribute(q.positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(q.normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(q.aFlex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
         g.setIndex(new THREE.BufferAttribute(q.indices, 1));
         // KUPPEL-NORMALE auch für die Klingen (22.07.): die Core-cup-Normalen litten
@@ -66037,7 +66786,7 @@ class AnazhRealm {
         if (!fo) return null;
         // Laub-Geometrie aus phyto-core (`buildFoliageQuads`): ein Quad je Blatt (Achse aus dir/up, Roll aus
         // phase, UV in die Atlas-Zelle); hier nur in BufferGeometry gewickelt + WebGPU-Material (liest
-        // position/normal/color/aFlex/aPhase/uv). Kein phyto-Blatt (lod2, Alt-Skelett) → Anker-Pfad unten.
+        // position/normal/color/uv). Kein phyto-Blatt (lod2, Alt-Skelett) → Anker-Pfad unten.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         if (
             core &&
@@ -66066,8 +66815,6 @@ class AnazhRealm {
                 g.setAttribute("position", new THREE.BufferAttribute(q.positions, 3));
                 g.setAttribute("normal", new THREE.BufferAttribute(q.normals, 3));
                 g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
-                g.setAttribute("aFlex", new THREE.BufferAttribute(q.aFlex, 1));
-                g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
                 // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
@@ -66115,11 +66862,6 @@ class AnazhRealm {
         cy /= aN;
         cz /= aN;
         cy += totalH * 0.05; // leicht nach oben
-        const hashPhase = (a, b) => {
-            let h = (a * 73856093) ^ (b * 19349663);
-            h = (h ^ (h >>> 13)) >>> 0;
-            return ((h * 0.00000000023283) % 1) * Math.PI * 2;
-        };
         // Cluster aus K Karten je Anchor füllt das Kronen-VOLUMEN (eine Karte je Anchor las als Stachel).
         // Jede Karte card{cross} (8 Verts + 12 Indizes), im Volumen gejittert (teils zur Mitte), mit
         // Größen-Varianz + Drehung um y. LOD1/2 dünnen über cardsPerAnchor (der LOD trägt die FPS).
@@ -66128,8 +66870,6 @@ class AnazhRealm {
         const positions = new Float32Array(M * 8 * 3);
         const normals = new Float32Array(M * 8 * 3);
         const colors = new Float32Array(M * 8 * 3);
-        const flex = new Float32Array(M * 8);
-        const phase = new Float32Array(M * 8);
         // Ω-O14 (wahreranblick §8.5) — per-Ecke UV [0..1], damit das Laub-Material eine
         // weiche BLATT-Alpha-Maske rechnen kann (die harten Rechteck-Ecken wegclippen →
         // die Krone liest als Laub, nicht als Karten-Stapel). Ecken: 0,1,2,3.
@@ -66212,8 +66952,6 @@ class AnazhRealm {
                 // Eck-Halbbreiten (Blatt-Form): unten ±hw, oben ±tw.
                 const lxs = [-hw, hw, tw, -tw];
                 const lys = [-hh, -hh, hh, hh];
-                const phBase = hashPhase(ai, kk);
-                const flexBase = Math.max(0.5, Math.min(1, ay / totalH));
                 const base = cardIdx * 8;
                 // Quad 1 (Tangente t1=(cR,0,−sR))
                 for (let c = 0; c < 4; c++) {
@@ -66226,8 +66964,6 @@ class AnazhRealm {
                     colors[v3] = cr;
                     colors[v3 + 1] = cg;
                     colors[v3 + 2] = cb;
-                    flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
-                    phase[vWrite] = phBase + c * 0.7;
                     uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.25;
                     uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
@@ -66243,8 +66979,6 @@ class AnazhRealm {
                     colors[v3] = cr;
                     colors[v3 + 1] = cg;
                     colors[v3 + 2] = cb;
-                    flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
-                    phase[vWrite] = phBase + 1.7 + c * 0.7;
                     uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.25;
                     uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
@@ -66267,8 +67001,6 @@ class AnazhRealm {
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
         // Kuppel-Normale vom Kronen-Boden (facing-unabhängig, s. Helper).
@@ -66343,8 +67075,6 @@ class AnazhRealm {
         const positions = new Float32Array(vCount * 3);
         const normals = new Float32Array(vCount * 3);
         const colors = new Float32Array(vCount * 3);
-        const flex = new Float32Array(vCount); // 0 → statisch (verdeckt → Sway unsichtbar)
-        const phase = new Float32Array(vCount);
         const uvs = new Float32Array(vCount * 2);
         // Kern-Farbe: das DUNKLE Innen-Grün (tiefer Kronen-Schatten) — die instanceColor (per-Spawn)
         // moduliert es wie die Karten, so matcht der Kern den Baum.
@@ -66376,8 +67106,6 @@ class AnazhRealm {
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
-        g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
         ico.dispose();
         g.computeBoundingBox();
@@ -66481,76 +67209,33 @@ class AnazhRealm {
 
     // Das EINE geteilte, OPAKE Schatten-Zwilling-Material (kein Alpha-Test/vertexColors/useInstanceTint →
     // nur position+normal; Instanz-Feld, nicht serialisiert). Der Zwilling rendert nie im Farb-Pass
-    // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide.
-    _treeShadowTwinMaterial() {
-        if (this._treeShadowTwinMat) return this._treeShadowTwinMat;
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
-        const m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+    // (SHADOW_TWIN_LAYER); die opake Signatur hält den Schatten solide. Der Zwilling schwingt mit seiner Krone (K19): EIN
+    // Stoff je Baum-Gestalt (`baumWind` aus `_skelettWindDaten`, derselbe Wind-Term wie der Wurf-Teil der Foundry-L1), EIN
+    // Programm für alle; jeder trägt den Licht-Pool (K11, `_leuchtStoff` im Leuchten, der Wind im positionNode).
+    _treeShadowTwinMaterial(baumWind) {
+        if (!this._treeShadowTwinMats) this._treeShadowTwinMats = new Map();
+        const key = baumWind ? baumWind.ht + "/" + baumWind.delta : "still";
+        let m = this._treeShadowTwinMats.get(key);
+        if (m) return m;
+        m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        this._leuchtStoff(m, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         m.userData.shadowTwin = true;
-        this._treeShadowTwinMat = m;
+        this._baumWindStoff(m, "schatten", baumWind || null);
+        this._treeShadowTwinMats.set(key, m);
         return m;
     }
 
-    // Mergt N Geometries inklusive Custom-Attribute (z. B. aFlex + aPhase) — attribut-bewusster Spiegel
-    // zu _mergeGeometries. Erwartet identische Attribut-Sets (alle indexed oder alle nicht); non-indexed.
-    _mergeAttributedGeometries(geometries, customAttrs) {
-        if (!Array.isArray(geometries) || geometries.length === 0) return null;
-        let totalVerts = 0;
-        for (const g of geometries) {
-            if (!g || !g.attributes || !g.attributes.position) return null;
-            const idx = g.index;
-            totalVerts += idx ? idx.count : g.attributes.position.count;
-        }
-        if (totalVerts === 0) return null;
-        const posOut = new Float32Array(totalVerts * 3);
-        const norOut = new Float32Array(totalVerts * 3);
-        const colOut = new Float32Array(totalVerts * 3);
-        const customOut = {};
-        for (const attr of customAttrs || []) customOut[attr] = new Float32Array(totalVerts);
-        let cursor = 0;
-        for (const g of geometries) {
-            const posIn = g.attributes.position.array;
-            const norIn = g.attributes.normal ? g.attributes.normal.array : null;
-            const colIn = g.attributes.color ? g.attributes.color.array : null;
-            const customIn = {};
-            for (const attr of customAttrs || []) {
-                customIn[attr] = g.attributes[attr] ? g.attributes[attr].array : null;
-            }
-            const idx = g.index ? g.index.array : null;
-            const vCount = idx ? idx.length : g.attributes.position.count;
-            for (let i = 0; i < vCount; i++) {
-                const srcIdx = idx ? idx[i] : i;
-                const o3 = (cursor + i) * 3;
-                const s3 = srcIdx * 3;
-                posOut[o3] = posIn[s3];
-                posOut[o3 + 1] = posIn[s3 + 1];
-                posOut[o3 + 2] = posIn[s3 + 2];
-                if (norIn) {
-                    norOut[o3] = norIn[s3];
-                    norOut[o3 + 1] = norIn[s3 + 1];
-                    norOut[o3 + 2] = norIn[s3 + 2];
-                }
-                if (colIn) {
-                    colOut[o3] = colIn[s3];
-                    colOut[o3 + 1] = colIn[s3 + 1];
-                    colOut[o3 + 2] = colIn[s3 + 2];
-                }
-                for (const attr of customAttrs || []) {
-                    if (customIn[attr]) customOut[attr][cursor + i] = customIn[attr][srcIdx];
-                }
-            }
-            cursor += vCount;
-        }
-        const merged = new THREE.BufferGeometry();
-        merged.setAttribute("position", new THREE.BufferAttribute(posOut, 3));
-        merged.setAttribute("normal", new THREE.BufferAttribute(norOut, 3));
-        merged.setAttribute("color", new THREE.BufferAttribute(colOut, 3));
-        for (const attr of customAttrs || []) {
-            merged.setAttribute(attr, new THREE.BufferAttribute(customOut[attr], 1));
-        }
-        merged.computeBoundingBox();
-        merged.computeBoundingSphere();
-        return merged;
+    // DIE WIND-DATEN DES WERKSTATT-BAUMS (K19): ht = die Skelett-Höhe (die Vorlage steht in Metern, die Instanz-Skala trägt
+    // aH0), δ an der Stamm-Achse (phyto-core `windSchlankheitAchse`, dieselbe Brusthöhe wie die Foundry-Gestalt). null ohne
+    // Stamm-Achse: der Baum steht still (sichtbar, nie ein geratener Wert).
+    _skelettWindDaten(skel) {
+        const ht = skel && Number.isFinite(skel.totalH) && skel.totalH > 0 ? skel.totalH : 0;
+        const stamm =
+            ht > 0 && Array.isArray(skel.branches)
+                ? skel.branches.find((b) => b && b.isTrunk && Array.isArray(b.points))
+                : null;
+        const delta = stamm ? globalThis.__phytoCore.windSchlankheitAchse(stamm.points, ht, 1) : null;
+        return delta > 0 ? { ht: +ht.toFixed(2), delta: +delta.toFixed(4), an: 1 } : null;
     }
 
     // Baut aus dem Skeleton beide Leaves (bark + foliage) als merged Geometries. Materialien:
@@ -66567,15 +67252,25 @@ class AnazhRealm {
             if (imp) return { leaves: [imp] };
         }
         const leaves = [];
+        // DER WIND (K19): Höhe und Schlankheit des Skeletts — Rinde, Laub, Kern und Zwilling tragen sie im Stoff
+        // (`_baumWindStoff` über `opts.baumWind`), die Welt-Höhe jedes Teils im Stempel aH0: `_stampFoliageVisHeights` trägt
+        // die Vorlage, die Instanz-Fassade (`_lodInstanceFacade`, je Slot gestempelt) Vorlage × Instanz-Skala.
+        const baumWind = this._skelettWindDaten(skel);
+        const totalH = Math.max(1, skel.totalH || 10);
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
         if (barkGeom) {
             const holzMat = this.state.materials && this.state.materials.holz;
-            // useFlexAttr → der Wind-Sway in _buildToonNodeMaterial liest die gebackenen aFlex/aPhase statt der
-            // crownLin-Schätzung. `bark:true` weckt die Rinden-Maserung in _buildPbrNodeMaterial (Faser +
-            // härte-Risse aus dem holz-Tag). DoubleSide: die Tube-Wicklung macht die Außenflächen back-facing —
-            // FrontSide cullte sie (der Stamm las konkav).
-            const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide };
+            // `bark:true` weckt die Rinden-Maserung in _buildPbrNodeMaterial (Faser + härte-Risse aus dem holz-Tag).
+            // DoubleSide: die Tube-Wicklung macht die Außenflächen back-facing — FrontSide cullte sie (der Stamm las konkav).
+            this._stampFoliageVisHeights(barkGeom, totalH);
+            const barkMatOpts = {
+                vertexColors: true,
+                pflanzenStoff: true,
+                bark: true,
+                side: THREE.DoubleSide,
+                baumWind,
+            };
             if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
             const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
@@ -66597,9 +67292,10 @@ class AnazhRealm {
             const foliageMatOpts = {
                 vertexColors: true,
                 useInstanceTint: true,
-                useFlexAttr: true,
+                pflanzenStoff: true,
                 foliageLeaf: true, // Ω-O14: weiche Blatt-Alpha-Maske (alphaTest) statt harter Karte
                 side: THREE.DoubleSide,
+                baumWind,
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
             // Klingen-Material: DIESELBE Opts-Signatur + `foliageBlade` → eigenes geteiltes
@@ -66623,10 +67319,12 @@ class AnazhRealm {
             if (this.state.foliageOpaqueCore !== false && (skel.lodLevel | 0) === 0) {
                 const coreGeom = this._buildTreeFoliageCoreGeometry(skel);
                 if (coreGeom) {
+                    this._stampFoliageVisHeights(coreGeom, totalH);
                     const coreMat = this._sharedFoliageMaterial({
                         vertexColors: true,
                         useInstanceTint: true,
-                        useFlexAttr: true,
+                        pflanzenStoff: true,
+                        baumWind,
                     });
                     coreLeaf = {
                         geom: coreGeom,
@@ -66642,7 +67340,8 @@ class AnazhRealm {
             let twinLeaf = null;
             if (this.state.foliageShadowTwin !== false && (skel.lodLevel | 0) <= 1) {
                 const twinGeom = this._buildTreeShadowTwinGeometry(skel);
-                const twinMat = twinGeom && this._treeShadowTwinMaterial();
+                if (twinGeom) this._stampFoliageVisHeights(twinGeom, totalH);
+                const twinMat = twinGeom && this._treeShadowTwinMaterial(baumWind);
                 if (twinGeom && twinMat) {
                     twinLeaf = {
                         geom: twinGeom,
@@ -66700,16 +67399,8 @@ class AnazhRealm {
             mat: null,
             haengend: 0,
             verworfen: 0,
-            gen: 0, // Textur-Generation (jedes Wachsen +1)
-            wache: null, // die Diät-Wache des Materials (`mat._anazhAtlasTexe`)
         };
-        const at = this._kartenAtlas;
-        at.wache = {
-            get version() {
-                return at.gen + ":" + (at.map ? at.map.version : -1) + ":" + (at.nmap ? at.nmap.version : -1);
-            },
-        };
-        return at;
+        return this._kartenAtlas;
     }
 
     // Das Schicht-Format: BC nur über das WebGPU-Feature (WebGL2 kennt BC5 nur über Erweiterungen — dort rgba8).
@@ -66806,7 +67497,6 @@ class AnazhRealm {
         at.map = map;
         at.nmap = nmap;
         at.cap = cap;
-        at.gen++;
         if (at.mapNode) {
             at.mapNode.value = map;
             at.nmapNode.value = nmap;
@@ -66860,6 +67550,7 @@ class AnazhRealm {
             _flat: null,
         };
         at.zellen.set(key, z);
+        this._karteNadel(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
         const rend = this.state && this.state.renderer;
         if (rend && !rend._isHeadlessNull) {
@@ -66919,7 +67610,7 @@ class AnazhRealm {
         const matOpts = {
             vertexColors: true,
             useInstanceTint: true, // konstante Kronenfarbe je Baum über die LODs
-            useFlexAttr: true, // Wind-Sway liest aFlex (Kronenspitze wiegt)
+            pflanzenStoff: true, // Vertex-Albedo im colorNode, echte Normale, keine Geologie; Wind: `windAusschlag` über uv.y
             impostorAtlas: true,
             side: THREE.DoubleSide,
         };
@@ -67227,7 +67918,7 @@ class AnazhRealm {
             return result;
         }
         // SKELETON-Pfad: ein Bauplan mit `_skeleton` wird einmalig zu zwei organischen Geometries gebaut
-        // (bark-Tube + foliage), Per-Vertex aFlex + aPhase für den Wind-Shader. `bp.parts` bleibt UNVERÄNDERT
+        // (bark-Tube + foliage), ihr Stoff trägt den EINEN Wind-Term (`_baumWindStoff`). `bp.parts` bleibt UNVERÄNDERT
         // → computeCompoundTags + Snapshot-Re-Growth wie zuvor.
         if (bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
             if (!this.state.archMergedGeomCache) this.state.archMergedGeomCache = new Map();
@@ -67455,8 +68146,8 @@ class AnazhRealm {
             mat.userData.sharedFoliage = true;
             // OBSERVER-DIÄT: die sharedFoliage-Singletons hängen NUR an geteilten Sätzen (Atmo/LOD/Wind,
             // renderGroup) + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/instanceColor.
-            // Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der ATLAS-WÄCHTER
-            // (mat._anazhAtlasTexe).
+            // Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der Textur-Wächter
+            // (`_diaetVorTextur`).
             this._materialObserverDiaet(mat);
             this.state._foliageMatCache.set(sig, mat);
         }
@@ -70313,11 +71004,14 @@ class AnazhRealm {
                 })());
             const mat =
                 this._archFundMat ||
-                (this._archFundMat = new THREE.MeshStandardNodeMaterial({
-                    color: 0x7a7168,
-                    roughness: 1,
-                    metalness: 0,
-                })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
+                (this._archFundMat = this._leuchtStoff(
+                    new THREE.MeshStandardNodeMaterial({
+                        color: 0x7a7168,
+                        roughness: 1,
+                        metalness: 0,
+                    }),
+                    null
+                )); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz), der Licht-Pool (K11) das Feuer
             const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
             AnazhRealm._instanzZahl(mesh, 0);
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
@@ -71000,7 +71694,10 @@ class AnazhRealm {
         // scene.environment nie diffus, die Wege-Kisten standen im Schatten schwarz.
         const mat =
             this._stlWegeMat ||
-            (this._stlWegeMat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
+            (this._stlWegeMat = this._leuchtStoff(
+                new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }),
+                null
+            )); // der Licht-Pool (K11)
         const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
@@ -71202,6 +71899,7 @@ class AnazhRealm {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
+        this._laternen = null; // die Laternen der Pläne fallen mit ihren Marken (der Rebuild liest sie neu, `_laternenLesen`)
     }
 
     _archInstanceAdd(entry, flat, opts) {
@@ -71976,7 +72674,9 @@ class AnazhRealm {
                 }
             }
         }
-        // DER STAND (W5): ein Studio-Fahrzeug parkt auf der Ebene seiner vier Räder (Höhe · Nick · Wank).
+        // DER PLATZ (Leben-Schau 2): wählt die Welt den Ort (dieselbe Weiche wie die Spieler-Klemme), steht ein Wagen auf
+        // fahrbarem Grund; ein präziser Ort bleibt bit-treu. DER STAND (W5): er parkt auf der Ebene seiner vier Räder.
+        if (_playerClamp && !this._fahrPlatzSuche(entry)) return nein("platz");
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
@@ -74031,10 +74731,11 @@ class AnazhRealm {
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
     // über `spawnArchitecture` (Bauplan `brunnen_dorf`). Aufrufer: `spawnSettlement` ·
     // `_autoSettlementSpawnCell` · Reload-Rebuild (so.nurWege — Brunnen sind persistierte Architektur).
-    // Konsum: fences/felder/trees/staende/brunnen; unkonsumiert (export-stripped): mauer/laternen/fluss.
+    // Konsum: fences/felder/trees/staende/brunnen/laternen (das Licht, `_laternenLesen`); unkonsumiert (export-stripped): mauer/fluss.
     _spawnSettlementErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        this._laternenLesen(plan, origin, so && so.key ? so.key : null); // die Laternen leuchten (K11, LICHT_GESETZ.laterne)
         if (so && so.nurWege) return;
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         let n = 0;
@@ -74544,6 +75245,22 @@ class AnazhRealm {
             this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
         }
     }
+    // DER WUNSCH-ORT DER VORSCHAU vor einem Tor des Genesis-Rings: ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der
+    // Ring steht um ihn); `blick` ist die Richtung vom Ring hinaus (sin, cos). Wo ein Wagen dann steht, entscheidet das
+    // Platz-Gesetz (`_fahrPlatzSuche`). Leser: `_ensurePortalPreview` und die Fahr-Linse (gate:fahr-leben P: an jedem Tor).
+    // → { x, y, z, blick } oder null (kein Boden).
+    _portalVorschauOrt(portal) {
+        const M = this._genesisMitte();
+        const px = portal.position.x || 0;
+        const pz = portal.position.z || 0;
+        const len = Math.hypot(px - M.x, pz - M.z) || 1;
+        const ox = px + ((px - M.x) / len) * 8;
+        const oz = pz + ((pz - M.z) / len) * 8;
+        const y = this.getTerrainHeightAt(ox, oz);
+        if (!Number.isFinite(y)) return null;
+        return { x: ox, y: y + 0.5, z: oz, blick: Math.atan2(px - M.x, pz - M.z) };
+    }
+
     // PORTAL-PREVIEW: EIN Preview je Studio-Tor (~8 m radial vor welt_<worldKey>), sichtbar vorm iframe.
     // Doppelt idempotent (worldMeta.portalPreview<Key> + Existenz-Probe auf id); Foundry kalt → Skip + EIN
     // Await-Book je worldKey, nächster Tick retry. Typen: fachwerk→haus_alemannisch, garage→fahrzeug_gt,
@@ -74589,15 +75306,8 @@ class AnazhRealm {
                 });
             return;
         }
-        // ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der Ring steht um ihn).
-        const M = this._genesisMitte();
-        const px = portal.position.x || 0;
-        const pz = portal.position.z || 0;
-        const len = Math.hypot(px - M.x, pz - M.z) || 1;
-        const ox = px + ((px - M.x) / len) * 8;
-        const oz = pz + ((pz - M.z) / len) * 8;
-        const y = this.getTerrainHeightAt(ox, oz);
-        if (!Number.isFinite(y)) return;
+        const ort = this._portalVorschauOrt(portal);
+        if (!ort) return;
         // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
         const seed =
             worldKey === "fachwerk"
@@ -74610,6 +75320,9 @@ class AnazhRealm {
                       ? 49180
                       : 49170;
         const opts = { silent: true, autonomous: true, id, seed };
+        // Der Vorschau-Wagen schaut vom Ring hinaus in die Welt (Studio-Wagen: Template-Gier = Fahrt − π/2); wo er steht,
+        // entscheidet das Platz-Gesetz (`_fahrPlatzSuche` in spawnArchitecture: der nächste fahrbare Grund mit Bahn).
+        if (worldKey === "garage") opts.rotationY = ort.blick - Math.PI / 2;
         // Nur fachwerk/haus_*: die Vorschau trägt ihre Prägung (studioOv: Stil, Verband, Geschosse, Maße, Dach) — der
         // Bau des Gesetzbuchs liest sie, fremde Schlüssel ignoriert er. Der Stempel gewinnt: ein Eintrag ohne studioOv
         // bleibt; ov nur bei Neu-Spawn.
@@ -74626,12 +75339,40 @@ class AnazhRealm {
                 fluegelSide: 1,
             });
         }
-        const entry = this.spawnArchitecture(type, { x: ox, y: y + 0.5, z: oz }, opts);
+        // DER PLATZ DES VORSCHAU-WAGENS IM TAKT: die Suche des Platz-Gesetzes (`_fahrPlatzWege`) läuft vor dem Bau, je Takt
+        // höchstens FAHR_PLATZ_JE_TAKT Orte (die Ring-Suche kostete am Garage-Tor bis 0,66 s in EINEM Takt); der Wagen entsteht
+        // dort, wo sie endet — die Wurzel prüft den Ort dann in einem Schritt. Kein Platz: dieses Tor bleibt ohne Vorschau.
+        if (this._fahrzeugGesetzFor({ type })) {
+            const wege = (this._vorschauPlatzWege = this._vorschauPlatzWege || Object.create(null));
+            let job = wege[worldKey];
+            if (!job) {
+                const probe = { type, position: { x: ort.x, y: ort.y, z: ort.z }, rotationY: opts.rotationY, scale: 1 };
+                job = wege[worldKey] = { probe, weg: this._fahrPlatzWege(probe), ende: null };
+            }
+            for (let i = 0; i < AnazhRealm.FAHR_PLATZ_JE_TAKT && job.ende === null; i++) {
+                const r = job.weg.next();
+                if (r.done) job.ende = r.value;
+            }
+            if (job.ende === null) return;
+            delete wege[worldKey];
+            if (!job.ende) {
+                fertig[worldKey] = true;
+                return;
+            }
+            ort.x = job.probe.position.x;
+            ort.z = job.probe.position.z;
+            opts.rotationY = job.probe.rotationY;
+        }
+        // die Absage der Wurzel beim Namen: findet das Platz-Gesetz keinen fahrbaren Grund, steht dieses Tor ohne Vorschau —
+        // einmal (die Suche liefe sonst in jedem Takt neu)
+        let absage = null;
+        opts.absage = (g) => (absage = g);
+        const entry = this.spawnArchitecture(type, { x: ort.x, y: ort.y, z: ort.z }, opts);
         if (entry) {
             wm[metaKey] = true;
             fertig[worldKey] = true;
             this.log(`Portal-Preview ${worldKey}: ${type} ~8 m vor ${portalType}.`, "INFO");
-        }
+        } else if (absage === "platz") fertig[worldKey] = true;
     }
 
     // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (~22 m), Previews über
@@ -76392,7 +77133,8 @@ class AnazhRealm {
             g.meshes.push(o);
             g.verts += n;
         };
-        cr.updateMatrixWorld(true);
+        // jede Lage der Zerlegung liest die RUHE der Gestalt (`_gestaltRuhe`), nie den laufenden Rahmen des Tiers
+        const ruhe = this._gestaltRuhe(cr);
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
@@ -76435,13 +77177,17 @@ class AnazhRealm {
                     const stueck = {
                         geometry: { attributes: attribute },
                         material: o.material,
-                        matrixWorld: new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, inv).multiply(o.bindMatrix),
+                        matrixWorld: new THREE.Matrix4().multiplyMatrices(ruhe(bone), inv).multiply(o.bindMatrix),
                     };
                     zuGruppe(ankerVon(bone), stueck, liste.length);
                 }
                 return;
             }
-            zuGruppe(ankerVon(o.parent), o, o.geometry.attributes.position.count);
+            zuGruppe(
+                ankerVon(o.parent),
+                { geometry: o.geometry, material: o.material, matrixWorld: ruhe(o) },
+                o.geometry.attributes.position.count
+            );
         });
         if (gruppen.size === 0) return null;
         const zielVon = (a) => {
@@ -76465,7 +77211,34 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
+        for (const [a, g] of gruppen) g.ruhe = ruhe(a);
         return { gruppen, wurzel, gattung: this._kreaturGattung(cr) };
+    }
+
+    // DIE RUHE DER GESTALT (K07): die Welt-Matrix jedes Knotens der Gestalt, wie die Gattung RUHT — jedes benannte Glied in
+    // der Lage seiner Vorlage (der Ofen-Guss, den nie ein Gang bewegt: `_tierBaum.ruhe`), der Leib im Ursprung mit Größe 1,
+    // alles andere in seiner eigenen Lage. Zerlegung und Kapsel-Passung (Treffer-Volumen, Fern-Bild) lesen sie, nie den
+    // laufenden Rahmen: vorher passte der Fit am ERSTEN Tier seiner Gattung, wo und wie es gerade stand — mitten im Schritt
+    // (verschmolzene Glieder trugen ihren Winkel, der Rumpf des Wolfs 0,18 Lab-Einheiten), an seiner Welt-Lage, in seiner
+    // Größe —, und welches Tier zuerst kam, entschied die Bake-Uhr (performance.now). Der Biss liest diese Kapseln
+    // (_kreaturMaul): der Jagd-Kreislauf schwankte bei gleichem Code von Lauf zu Lauf (gate:kreatur-takt gestalt). Die
+    // laufende Pose bleibt unberührt — die Ruhe wird gerechnet, nie gestellt.
+    _gestaltRuhe(cr) {
+        const tb = cr.userData && cr.userData._tierBaum;
+        const R = tb ? tb.ruhe : null;
+        if (tb && !R) throw new Error("Gestalt ohne Ruhe: _tierBaum.ruhe fehlt (der EINE Bau ist _buildCreatureGroup)");
+        const memo = new Map();
+        const eins = new THREE.Matrix4();
+        const welt = (n) => {
+            if (!n || n === cr) return eins;
+            let m = memo.get(n);
+            if (m) return m;
+            const v = R && n.name && tb.teile[n.name] === n && R[n.name] ? R[n.name] : n;
+            m = new THREE.Matrix4().compose(v.position, v.quaternion, v.scale).premultiply(welt(n.parent));
+            memo.set(n, m);
+            return m;
+        };
+        return welt;
     }
 
     // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
@@ -76484,12 +77257,12 @@ class AnazhRealm {
     }
 
     // Die Glied-Kapsel im Anker-Raum, EINMAL je Gattung × Glied gepasst (der Schlüssel des Fern-Satzes): das Fern-Bild
-    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung.
-    _gliedKapselMemo(key, anker, meshes) {
+    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung — die Gruppe der
+    // Zerlegung (_kreaturGliederGruppen) trägt ihre Stücke und ihren Anker in der Ruhe der Gestalt (`_gestaltRuhe`).
+    _gliedKapselMemo(key, gruppe) {
         const memo = this._gliedKapseln || (this._gliedKapseln = new Map());
         if (memo.has(key)) return memo.get(key);
-        anker.updateMatrixWorld(true);
-        const k = this._gliedKapselFit(meshes, new THREE.Matrix4().copy(anker.matrixWorld).invert());
+        const k = this._gliedKapselFit(gruppe.meshes, new THREE.Matrix4().copy(gruppe.ruhe).invert());
         memo.set(key, k);
         return k;
     }
@@ -76506,13 +77279,7 @@ class AnazhRealm {
         for (const [a, g] of G.gruppen) {
             a.updateMatrixWorld(true);
             const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-            const meshes = g.meshes;
-            const handle = this._weltKapselSpawn(
-                key,
-                a.matrixWorld,
-                () => this._gliedKapselMemo(key, a, meshes),
-                einblenden
-            );
+            const handle = this._weltKapselSpawn(key, a.matrixWorld, () => this._gliedKapselMemo(key, g), einblenden);
             if (!handle) {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
@@ -76548,7 +77315,7 @@ class AnazhRealm {
             for (const [a, g] of G.gruppen) {
                 const name = a === G.wurzel ? "" : a.name;
                 const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
-                if (this._gliedKapselMemo(key, a, g.meshes)) namen.push({ name, key });
+                if (this._gliedKapselMemo(key, g)) namen.push({ name, key });
             }
             namenMemo.set(gattung, namen);
         }
@@ -76724,7 +77491,7 @@ class AnazhRealm {
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
-    _foundryTreeMaterial(kind, mp, wiegen) {
+    _foundryTreeMaterial(kind, mp, wiegen, baum) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -76753,7 +77520,10 @@ class AnazhRealm {
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
         const key =
-            globalThis.__phytoCore.budgetStoff(kind, mp) + (xfade ? "|xf" : "") + (wiegen === true ? "|wiegt" : "");
+            globalThis.__phytoCore.budgetStoff(kind, mp) +
+            (xfade ? "|xf" : "") +
+            (wiegen === true ? "|wiegt" : "") +
+            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -76780,360 +77550,549 @@ class AnazhRealm {
         // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
         // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
         const rendM = this.state && this.state.renderer;
-        try {
-            const MatK =
-                ccSoll && rendM && !rendM._isHeadlessNull
-                    ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
-                    : T.MeshStandardNodeMaterial;
-            mat = new MatK({
-                roughness: rough,
-                metalness: metal,
-                flatShading: flat,
-                side: sideDouble ? T.DoubleSide : T.FrontSide,
-            });
-            if (MatK !== T.MeshStandardNodeMaterial) {
-                mat.clearcoat = ccSoll.cc;
-                mat.clearcoatRoughness = ccSoll.ccr;
-            }
-            // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
-            // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); einen Schatten
-            // wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Eine dünne Scheibe zeichnet beide
-            // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
-            // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
-            if (R.op < 1) {
-                mat.transparent = true;
-                mat.opacity = R.op;
-                mat.depthWrite = false;
-                mat.forceSinglePass = true;
-            }
-            if (env !== 1) mat.envMapIntensity = env;
-            if (emis) {
-                mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
-                mat.emissiveIntensity = emisI;
-            }
-            // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
-            // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
-            // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
-            // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
-            if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
-            // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
-            // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
-            // `_foundryBuildGroup` garantiert das color-Attribut.
-            const vcol = TSL.attribute("color", "vec3");
-            // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
-            // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
-            // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
-            if (mp && typeof mp.leucht === "number" && mp.leucht > 0) mat.emissiveNode = vcol.mul(mp.leucht);
-            // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
-            // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
-            // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
-            const _suF =
-                kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
-            const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
-            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
-            // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
-            // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
-            const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
-            const laubFarbe = _BU
-                ? TSL.mix(
-                      laubFarbe0,
-                      TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
-                          _BU.hell
-                      ),
-                      TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
-                  )
-                : laubFarbe0;
-            if (isBark) {
-                // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
-                // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
-                // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
-                mat.colorNode = TSL.vec4(vcol, 1.0);
-            } else if (kind === "foliageTex") {
-                // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
-                // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
-                // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
-                // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
-                // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-                const atl = this._blattAtlasProbe(TSL);
-                if (atl) {
-                    const tex = atl.tex;
-                    // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
-                    // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                    // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
-                    mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
-                    mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
-                    mat.transparent = false;
-                    // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
-                    // (heute statisch nach dem Mint; ein künftiger Live-Re-Bake
-                    // bleibt fail-closed sichtbar statt still eingefroren).
-                    mat._anazhAtlasTexe = [tex];
-                } else {
-                    // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
-                    mat.colorNode = TSL.vec4(laubFarbe, 1.0);
-                }
-            } else if (kind === "schatten") {
-                // DER SCHATTEN-STOFF (S3, das EINE Wurf-Gesetz E1): der Schatten-Teil einer Stufe zeichnet nur in den Kaskaden
-                // (SHADOW_TWIN_LAYER) — seine Alpha ist max(aDeckt, Atlas-Alpha): das Gerüst deckt ganz (aDeckt 1), die Karte
-                // schneidet ihre Blattform aus dem EINEN Atlas (aDeckt 0). Die Alpha lebt in colorNode, nie in opacityNode:
-                // der r184-Schattenpass liest colorNode.a · map.a · maskShadowNode (Lehre 26). EIN Programm für jeden
-                // statischen Wurf (Baum-Teil, die Haus-Stufe 3 mit aDeckt 1).
-                const atl = this._blattAtlasProbe(TSL);
-                const deckt = TSL.attribute("aDeckt", "float");
-                mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
-                mat.alphaTest = 0.5;
+        const MatK =
+            ccSoll && rendM && !rendM._isHeadlessNull
+                ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
+                : T.MeshStandardNodeMaterial;
+        mat = new MatK({
+            roughness: rough,
+            metalness: metal,
+            flatShading: flat,
+            side: sideDouble ? T.DoubleSide : T.FrontSide,
+        });
+        if (MatK !== T.MeshStandardNodeMaterial) {
+            mat.clearcoat = ccSoll.cc;
+            mat.clearcoatRoughness = ccSoll.ccr;
+        }
+        // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
+        // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); einen Schatten
+        // wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Eine dünne Scheibe zeichnet beide
+        // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
+        // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
+        if (R.op < 1) {
+            mat.transparent = true;
+            mat.opacity = R.op;
+            mat.depthWrite = false;
+            mat.forceSinglePass = true;
+        }
+        if (env !== 1) mat.envMapIntensity = env;
+        if (emis) {
+            mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
+            mat.emissiveIntensity = emisI;
+        }
+        // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
+        // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
+        // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
+        // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
+        if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
+        // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
+        // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
+        // `_foundryBuildGroup` garantiert das color-Attribut.
+        const vcol = TSL.attribute("color", "vec3");
+        // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
+        // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
+        // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
+        if (mp && typeof mp.leucht === "number" && mp.leucht > 0) mat.emissiveNode = vcol.mul(mp.leucht);
+        // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
+        // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
+        // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
+        const _suF =
+            kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
+        const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
+        // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
+        // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
+        const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
+        const laubFarbe = _BU
+            ? TSL.mix(
+                  laubFarbe0,
+                  TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
+                      _BU.hell
+                  ),
+                  TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
+              )
+            : laubFarbe0;
+        if (isBark) {
+            // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
+            // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
+            // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
+            mat.colorNode = TSL.vec4(vcol, 1.0);
+        } else if (kind === "foliageTex") {
+            // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
+            // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
+            // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
+            // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
+            // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
+            const atl = this._blattAtlasProbe(TSL);
+            if (atl) {
+                // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
+                // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
+                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
+                mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
+                mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                 mat.transparent = false;
-                if (atl) mat._anazhAtlasTexe = [atl.tex];
-            } else if (klasseLook) {
-                // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
-                // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
-                // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
-                // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
-                // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
-                mat.colorNode = TSL.vec4(vcol, 1.0);
-                try {
-                    const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-                    const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-                    const schale = kind === "fellSchale";
-                    const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
-                    const L =
-                        kind === "skin" || kind === "haut"
-                            ? kkC && kkC.HAUT_LOOK
-                            : kind === "hair"
-                              ? kkC && kkC.HAAR_LOOK
-                              : kind === "fell"
-                                ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
-                                : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
-                    if (L && TSL.normalView && TSL.positionViewDirection && TSL.float && TSL.vec3) {
-                        const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
-                        const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
-                        let add = null;
-                        const term = (farbe, knoten) => {
-                            const t = TSL.vec3(farbe[0], farbe[1], farbe[2]).mul(knoten);
-                            add = add ? add.add(t) : t;
-                        };
-                        if (strand) {
-                            const tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
-                            const tonL = tonA
-                                ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
-                                : null;
-                            const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
-                            // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
-                            // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
-                            // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
-                            // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
-                            // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
-                            // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
-                            const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
-                            if (schale) {
-                                const t = aS.x;
-                                const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
-                                const zelle = TSL.floor(p);
-                                const h1 = TSL.fract(
-                                    TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453)
-                                );
-                                const h2 = TSL.fract(
-                                    TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
-                                );
-                                const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
-                                    .sub(0.5)
-                                    .mul(0.4);
-                                const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
-                                const radius = aS.y
-                                    .sqrt()
-                                    .mul(0.62)
-                                    .mul(TSL.float(1.0).sub(t.mul(0.75)));
-                                const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
-                                const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
-                                mat.opacityNode = TSL.max(haar, wolle);
-                                mat.alphaTest = 0.5;
-                                const FS = AnazhRealm.FELL_SCHALE;
-                                mat.colorNode = TSL.vec4(
-                                    vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
-                                    1.0
-                                );
-                            }
-                            const sT = schale
-                                ? aS.x
-                                : tonL !== null
-                                  ? vcol
-                                        .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                        .div(tonL)
-                                        .sub(wA)
-                                        .div(Math.max(1e-3, 1 - wA))
-                                        .clamp(0.0, 1.0)
-                                  : TSL.float(1.0);
-                            if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
-                                term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
-                            if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
-                                term(L.specFarbe, ndv.max(0.0).pow(L.specPow).mul(sT).mul(L.specAmt));
-                        } else {
-                            if (Number.isFinite(L.sssPow) && Array.isArray(L.sssFarbe))
-                                term(L.sssFarbe, rim.pow(L.sssPow).mul(L.sssAmt));
-                            if (Number.isFinite(L.rimPow) && Array.isArray(L.rimFarbe))
-                                term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
-                            if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
-                                term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
-                            // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
-                            // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
-                            // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
-                            const mf = L.microFur;
-                            if (
-                                mf &&
-                                Array.isArray(mf.farbe) &&
-                                TSL.positionLocal &&
-                                TSL.floor &&
-                                TSL.fract &&
-                                TSL.sin &&
-                                TSL.step
-                            ) {
-                                const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
-                                const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
-                                term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
-                            }
-                        }
-                        if (add) mat.emissiveNode = add;
-                        // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
-                        // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
-                        if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
-                            const w = ndv
-                                .max(0.0)
-                                .mul(L.wrap)
-                                .add(1.0 - L.wrap);
-                            mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
-                        }
-                        // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
-                        // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
-                        // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
-                        // Die haut-Hülle des Menschen bleibt still.
-                        const at = L.atem;
-                        if (
-                            at &&
-                            (kind === "fell" || kind === "skin") &&
-                            TSL.positionLocal &&
-                            TSL.normalLocal &&
-                            TSL.mx_noise_float &&
-                            TSL.time
-                        ) {
-                            mat.positionNode = TSL.positionLocal.add(
-                                TSL.normalLocal.mul(
-                                    TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(
-                                        at.amp
-                                    )
-                                )
-                            );
-                        }
-                    }
-                } catch (_eL) {
-                    /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
-                }
-            } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
-                // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
-                // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt.
-                const wf =
-                    mp.webe === "knit"
-                        ? 90.0
-                        : mp.webe === "wool"
-                          ? 70.0
-                          : mp.webe === "denim"
-                            ? 160.0
-                            : mp.webe === "cotton"
-                              ? 140.0
-                              : 24.0;
-                const wa =
-                    mp.webe === "knit"
-                        ? 0.1
-                        : mp.webe === "wool"
-                          ? 0.08
-                          : mp.webe === "leather"
-                            ? 0.05
-                            : mp.webe === "rubber"
-                              ? 0.03
-                              : 0.06;
-                const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
-                mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
             } else {
-                // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
-                // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
+                // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
                 mat.colorNode = TSL.vec4(laubFarbe, 1.0);
             }
-            // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
-            // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
-            // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
-            // unverändert. Die Klassen-Look-Familie (Kreatur/Mensch, aLodLevel=0 → Maske = Identität) bleibt
-            // maskenfrei — sonst nur tote Attribut-Reads + Warnungen auf ungestempelten Geometrien.
-            if (xfade && !klasseLook) {
-                const _keepX = this._lodCrossfadeMaskNode(TSL, {
-                    foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
-                });
-                if (_keepX) {
-                    // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
-                    // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
-                    // ohne die Maske des Passes schnitte ein Loch.
-                    let kanal = null;
-                    if (mat.opacityNode) {
-                        mat.opacityNode = mat.opacityNode.mul(_keepX);
-                        kanal = "deckung";
-                    } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
-                        mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
-                        kanal = "farbe";
+        } else if (kind === "schatten") {
+            // DER SCHATTEN-STOFF (S3, das EINE Wurf-Gesetz E1): der Schatten-Teil einer Stufe zeichnet nur in den Kaskaden
+            // (SHADOW_TWIN_LAYER) — seine Alpha ist max(aDeckt, Atlas-Alpha): das Gerüst deckt ganz (aDeckt 1), die Karte
+            // schneidet ihre Blattform aus dem EINEN Atlas (aDeckt 0). Die Alpha lebt in colorNode, nie in opacityNode:
+            // der r184-Schattenpass liest colorNode.a · map.a · maskShadowNode (Lehre 26). EIN Programm für jeden
+            // statischen Wurf (Baum-Teil, die Haus-Stufe 3 mit aDeckt 1).
+            const atl = this._blattAtlasProbe(TSL);
+            const deckt = TSL.attribute("aDeckt", "float");
+            mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
+            mat.alphaTest = 0.5;
+            mat.transparent = false;
+        } else if (klasseLook) {
+            // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
+            // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
+            // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
+            // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
+            // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
+            mat.colorNode = TSL.vec4(vcol, 1.0);
+            try {
+                const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+                const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+                const schale = kind === "fellSchale";
+                const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
+                const L =
+                    kind === "skin" || kind === "haut"
+                        ? kkC && kkC.HAUT_LOOK
+                        : kind === "hair"
+                          ? kkC && kkC.HAAR_LOOK
+                          : kind === "fell"
+                            ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
+                            : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
+                if (L && TSL.normalView && TSL.positionViewDirection && TSL.float && TSL.vec3) {
+                    const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
+                    const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
+                    let add = null;
+                    const term = (farbe, knoten) => {
+                        const t = TSL.vec3(farbe[0], farbe[1], farbe[2]).mul(knoten);
+                        add = add ? add.add(t) : t;
+                    };
+                    if (strand) {
+                        const tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
+                        const tonL = tonA
+                            ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
+                            : null;
+                        const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
+                        // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
+                        // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
+                        // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
+                        // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
+                        // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
+                        // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
+                        const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
+                        if (schale) {
+                            const t = aS.x;
+                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
+                            const zelle = TSL.floor(p);
+                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453));
+                            const h2 = TSL.fract(
+                                TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
+                            );
+                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
+                                .sub(0.5)
+                                .mul(0.4);
+                            const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
+                            const radius = aS.y
+                                .sqrt()
+                                .mul(0.62)
+                                .mul(TSL.float(1.0).sub(t.mul(0.75)));
+                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
+                            const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
+                            mat.opacityNode = TSL.max(haar, wolle);
+                            mat.alphaTest = 0.5;
+                            const FS = AnazhRealm.FELL_SCHALE;
+                            mat.colorNode = TSL.vec4(
+                                vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
+                                1.0
+                            );
+                        }
+                        const sT = schale
+                            ? aS.x
+                            : tonL !== null
+                              ? vcol
+                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                    .div(tonL)
+                                    .sub(wA)
+                                    .div(Math.max(1e-3, 1 - wA))
+                                    .clamp(0.0, 1.0)
+                              : TSL.float(1.0);
+                        if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
+                            term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
+                        if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
+                            term(L.specFarbe, ndv.max(0.0).pow(L.specPow).mul(sT).mul(L.specAmt));
+                    } else {
+                        if (Number.isFinite(L.sssPow) && Array.isArray(L.sssFarbe))
+                            term(L.sssFarbe, rim.pow(L.sssPow).mul(L.sssAmt));
+                        if (Number.isFinite(L.rimPow) && Array.isArray(L.rimFarbe))
+                            term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
+                        if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
+                            term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
+                        // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
+                        // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
+                        // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
+                        const mf = L.microFur;
+                        if (
+                            mf &&
+                            Array.isArray(mf.farbe) &&
+                            TSL.positionLocal &&
+                            TSL.floor &&
+                            TSL.fract &&
+                            TSL.sin &&
+                            TSL.step
+                        ) {
+                            const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
+                            const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
+                            term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
+                        }
                     }
-                    if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5;
-                    mat.userData = mat.userData || {};
-                    if (kanal) {
-                        mat.userData.foundryCrossfade = true;
-                        mat.userData.foundryCrossfadeKanal = kanal;
+                    if (add) mat.emissiveNode = add;
+                    // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
+                    // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
+                    if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
+                        const w = ndv
+                            .max(0.0)
+                            .mul(L.wrap)
+                            .add(1.0 - L.wrap);
+                        mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
+                    }
+                    // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
+                    // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
+                    // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
+                    // Die haut-Hülle des Menschen bleibt still.
+                    const at = L.atem;
+                    if (
+                        at &&
+                        (kind === "fell" || kind === "skin") &&
+                        TSL.positionLocal &&
+                        TSL.normalLocal &&
+                        TSL.mx_noise_float &&
+                        TSL.time
+                    ) {
+                        mat.positionNode = TSL.positionLocal.add(
+                            TSL.normalLocal.mul(
+                                TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(at.amp)
+                            )
+                        );
                     }
                 }
+            } catch (_eL) {
+                /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
             }
-            // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
-            // der Kreaturen und Menschen) wird zwischen Auge und Spieler durchsichtig (`_kameraDurchsichtNode`) — im maskNode,
-            // den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
-            if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
-                const _durch = this._kameraDurchsichtNode(TSL);
-                if (_durch) {
-                    mat.maskNode = _durch;
-                    mat.maskShadowNode = TSL.bool(true);
-                }
-            }
-            // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
-            // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
-            // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
-            // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
-            if (kind === "grass") {
-                if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
-                const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
-                const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
-                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
-            } else if (wiegen === true) {
-                // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
-                // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
-                // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
-                // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
-                // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
-                // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
-                // Klein-Vegetations-Zwillings.
-                if (!this.state.windUniforms) this._grassInstanceMat();
-                const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
-                if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
-            }
-            mat.userData = mat.userData || {};
-            mat.userData.foundryKind = kind;
-            mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
-        } catch (_e) {
-            mat = new T.MeshStandardMaterial({ vertexColors: true, side: sideDouble ? T.DoubleSide : T.FrontSide });
+        } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
+            // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
+            // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt.
+            const wf =
+                mp.webe === "knit"
+                    ? 90.0
+                    : mp.webe === "wool"
+                      ? 70.0
+                      : mp.webe === "denim"
+                        ? 160.0
+                        : mp.webe === "cotton"
+                          ? 140.0
+                          : 24.0;
+            const wa =
+                mp.webe === "knit"
+                    ? 0.1
+                    : mp.webe === "wool"
+                      ? 0.08
+                      : mp.webe === "leather"
+                        ? 0.05
+                        : mp.webe === "rubber"
+                          ? 0.03
+                          : 0.06;
+            const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
+            mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
+        } else {
+            // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
+            // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
+            mat.colorNode = TSL.vec4(laubFarbe, 1.0);
         }
+        // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
+        // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
+        // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
+        // unverändert. Die Klassen-Look-Familie (Kreatur/Mensch, aLodLevel=0 → Maske = Identität) bleibt
+        // maskenfrei — sonst nur tote Attribut-Reads + Warnungen auf ungestempelten Geometrien.
+        if (xfade && !klasseLook) {
+            const _keepX = this._lodCrossfadeMaskNode(TSL, {
+                foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
+            });
+            {
+                // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
+                // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
+                // ohne die Maske des Passes schnitte ein Loch.
+                let kanal = null;
+                if (mat.opacityNode) {
+                    mat.opacityNode = mat.opacityNode.mul(_keepX);
+                    kanal = "deckung";
+                } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
+                    mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
+                    kanal = "farbe";
+                } else
+                    throw this._blendeBruch(
+                        `der Stoff „${kind}" trägt keinen Kanal für die Maske (Deckung oder Farbe mit Alpha)`
+                    );
+                // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
+                // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
+                // der Nacht (`_leuchtStoff`) blieb unsichtbar
+                if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5 * R.op;
+                mat.userData = mat.userData || {};
+                mat.userData.foundryCrossfade = true;
+                mat.userData.foundryCrossfadeKanal = kanal;
+            }
+        }
+        // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
+        // der Kreaturen und Menschen) wird zwischen Auge und Spieler und in der Nah-Kugel um das Auge durchsichtig
+        // (`_kameraDurchsichtNode` seiner Art: der wiegende Stoff der Nah-Streu ist Boden, sonst Rinde oder Laub) — im
+        // maskNode, den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
+        if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
+            const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");
+            if (_durch) {
+                mat.maskNode = _durch;
+                mat.maskShadowNode = TSL.bool(true);
+            }
+        }
+        // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
+        // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
+        // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
+        // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
+        if (kind === "grass") {
+            if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+            const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
+            const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
+            if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+        } else if (wiegen === true) {
+            // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
+            // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
+            // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
+            // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
+            // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
+            // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
+            // Klein-Vegetations-Zwillings.
+            if (!this.state.windUniforms) this._grassInstanceMat();
+            const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
+            if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+        }
+        // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
+        this._leuchtStoff(mat, mp);
+        mat.userData = mat.userData || {};
+        mat.userData.foundryKind = kind;
+        mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
         // Observer-Diät auch für die Masken-Familie: ihr Graph hängt an Vertex-Farben + Stempel-Attributen
         // (aLodLevel/aH0/aH0L — equals sieht Attribut-Versionen), geteilten LOD-Uniforms (renderGroup) und dem
-        // statischen Blatt-Atlas. Der Fallback (MeshStandardMaterial, kein setupObserver) bleibt unberührt.
+        // statischen Blatt-Atlas. Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden
+        // Fehler und baute einen Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
         this._materialObserverDiaet(mat);
         this._foundryMats[key] = mat;
+        // der Wurf-Teil (kind "schatten") trägt denselben Wind wie das Bild seiner Stufe; der Wurf eines Baus steht (an 0)
+        if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
+            this._baumWindStoff(mat, kind, baum);
+        if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
         return mat;
+    }
+
+    // DAS LAUB-LICHT IM STOFF (K19): jeder Laub-Stoff der Welt (Foundry-Laub und Blatt-Karte, das Grammatik-Laub) rechnet je
+    // direktem Licht den EINEN Laub-Licht-Term (phyto-core `laubDurchlass`, hier über der TSL-Algebra) in seiner Lichtung —
+    // das Lichtmodell des Standard-Stoffs (r184 PhysicalLightingModel), dessen `direct` nach der Physik des Stoffs den
+    // Durchlass der Rückseite addiert: `lightColor` trägt den Schatten der Kaskade, die Normierung ist die Lambert-Antwort der
+    // Vorderseite (diffuseColor/π ausgeschrieben — ein Fn-Aufruf ohne Layout baute seinen Rumpf erst im Compiler). Kein
+    // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `nadel`: true — die Blatt-Karte erkennt die
+    // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); false — Klinge und Blatt-Geometrie sind Laub; eine Funktion — die
+    // ferne Karte liest die Nadel ihrer Schicht (`_karteNadel`), der Knoten entsteht je Programm-Bau.
+    _laubLichtStoff(mat, nadel) {
+        if (!mat || mat.isNodeMaterial !== true) throw new Error("_laubLichtStoff: kein Knoten-Stoff");
+        const T = THREE.TSL;
+        const K = AnazhRealm._laubLichtModell();
+        const ab = globalThis.__phytoCore.LAUB_LICHT.nadelAbU;
+        const art = typeof nadel === "function" ? "karte" : nadel === true ? "atlas" : "laub";
+        mat.setupLightingModel = () =>
+            new K(
+                art === "karte"
+                    ? nadel()
+                    : art === "atlas"
+                      ? T.select(T.attribute("uv", "vec2").x.greaterThanEqual(ab), T.float(1), T.float(0))
+                      : T.float(0)
+            );
+        const schluessel = mat.customProgramCacheKey;
+        const at = art === "karte" ? this._impostorAtlas() : null;
+        mat.customProgramCacheKey = function () {
+            return (
+                schluessel.call(this) +
+                (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) +
+                (at && at.nadelU ? ":" + at.nadelU.array.length : "")
+            );
+        };
+        mat.userData = mat.userData || {};
+        mat.userData.laubLicht = art;
+        return mat;
+    }
+
+    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (foundry-core fx.conifer der Zelle), sonst 0 — EINE
+    // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
+    // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
+    _karteNadel(T, z) {
+        const at = this._impostorAtlas();
+        const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
+        if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
+        let n = at.nadelU ? at.nadelU.array.length : 0;
+        if (n < Math.max(at.n, 1)) {
+            const alt = at.nadelU ? at.nadelU.array : [];
+            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
+            const a = new Array(n).fill(0);
+            for (let i = 0; i < alt.length; i++) a[i] = alt[i];
+            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
+            if (at.mat) at.mat.needsUpdate = true;
+        }
+        if (z) {
+            const rec = tab[z.preset];
+            at.nadelU.array[z.idx] = rec && rec.fx && rec.fx.conifer ? 1 : 0;
+        }
+        return at.nadelU;
+    }
+
+    // Das Lichtmodell des Laubs (K19): die Klasse ist die des Standard-Stoffs selbst (sein `setupLightingModel` liefert sie
+    // — die Bootstrap-Brücke reicht sie nicht als THREE-Symbol), erweitert um den Durchlass.
+    static _laubLichtModell() {
+        if (AnazhRealm._laubLichtK) return AnazhRealm._laubLichtK;
+        const T = THREE.TSL;
+        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
+        const A = AnazhRealm._windTsl(T);
+        const durchlass = globalThis.__phytoCore.laubDurchlass;
+        class LaubLicht extends Basis {
+            constructor(nadel) {
+                super();
+                this.nadel = nadel;
+            }
+            direct(e, builder) {
+                super.direct(e, builder);
+                const L = e.lightDirection;
+                const f = durchlass(A, T.normalView.dot(L), T.positionViewDirection.dot(L).negate(), this.nadel);
+                e.reflectedLight.directDiffuse.addAssign(
+                    e.lightColor
+                        .mul(f)
+                        .mul(T.diffuseColor.rgb)
+                        .mul(1 / Math.PI)
+                );
+            }
+        }
+        AnazhRealm._laubLichtK = LaubLicht;
+        return LaubLicht;
+    }
+
+    // Die Schlankheit der Karte (K19): EINE Uniform, das Mittel von δ über die Arten, deren Gestalt geliefert ist
+    // (`_baumWindDaten` misst sie, phyto-core `windSchlankheit`) — die Karte zeichnet jede Art aus EINEM Stoff und kennt
+    // ihre Art nur als Atlas-Schicht. Vor der ersten Gestalt ist δ 0 (f0 0: die Karte neigt sich mit der Böe, ohne Pendel).
+    _karteWindDelta() {
+        if (!this._karteWindU) this._karteWindU = THREE.TSL.uniform(0);
+        return this._karteWindU;
+    }
+
+    // DIE WIND-DATEN EINER ART (K19) für den Stoff ihrer Gruppe, gemessen an der GELIEFERTEN Gestalt: die Vorlagen-Höhe
+    // (die Wurzel liegt bei y = 0 — ζ = y / ht), die Schlankheit δ = D(Brusthöhe) / ht des Stamm-Strangs (phyto-core
+    // `windSchlankheit` mit der Welt-Skala der Art) und ob sie im Wind steht (Baum und Strauch; der liegende Stamm, der
+    // Stumpf, Fels und Bau stehen still). Bis K19 kam δ aus dem Buch-Phänotyp — das Totholz (gebrochene Krone) schwang
+    // 42 % zu langsam.
+    _baumWindDaten(preset, meshes) {
+        const rec = this._foundryRecipeFor(preset);
+        if (!rec || rec.panel !== "plant") return null;
+        const an = rec.kind === "tree" || rec.kind === "shrub" ? 1 : 0;
+        if (!an) return null;
+        let top = 0,
+            rinde = null;
+        for (const m of meshes || []) {
+            const pa = m && m.position && m.position.array;
+            if (!pa) continue;
+            if (!rinde && m.kind === "bark") rinde = pa;
+            for (let i = 1; i < pa.length; i += 3) if (pa[i] > top) top = pa[i];
+        }
+        if (!(top > 0)) return null;
+        const skala = this._foundryWorldScaleMatrix(preset).elements[5];
+        const delta = globalThis.__phytoCore.windSchlankheit(rinde, top, skala);
+        if (!(delta > 0)) throw new Error("_baumWindDaten: " + preset + " liefert keinen Stamm-Ring für den Wind");
+        if (!this._windDeltaJeArt) this._windDeltaJeArt = new Map();
+        if (!this._windDeltaJeArt.has(preset)) {
+            this._windDeltaJeArt.set(preset, delta);
+            let s = 0;
+            for (const d of this._windDeltaJeArt.values()) s += d;
+            this._karteWindDelta().value = s / this._windDeltaJeArt.size;
+        }
+        return { ht: top, delta, an };
+    }
+
+    // Die TSL-Algebra des Wind-Terms (phyto-core `windAusschlag`) — Rinde, Laub und Karte der Welt rechnen über ihr.
+    static _windTsl(T) {
+        return {
+            k: (n) => T.float(n),
+            add: (a, b) => a.add(b),
+            mul: (a, b) => a.mul(b),
+            min: (a, b) => T.min(a, b),
+            max: (a, b) => T.max(a, b),
+            pow: (a, b) => T.pow(a, b),
+            sin: (a) => T.sin(a),
+            sqrt: (a) => T.sqrt(a),
+        };
+    }
+
+    // DER WIND IM PFLANZEN-STOFF (K19): Rinde und Laub jeder Foundry-Pflanze tragen den EINEN Wind-Term (phyto-core
+    // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
+    // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
+    // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
+    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
+    // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
+    // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
+    // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
+    // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
+    // trägt er nicht: sein Hub (WIND_GESETZ.blatt.hub 0,035 m im Sturm) liegt unter dem Kaskaden-Texel (wurf 0,17 m).
+    // Jeder Wurf zeichnet aus EINEM Programm (der eines Baus mit an 0).
+    _baumWindStoff(mat, kind, baum) {
+        if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
+        if (!this.state.windUniforms) this._grassInstanceMat();
+        const T = THREE.TSL;
+        const wu = this._ensureWindCoupling(T);
+        const WG = globalThis.__phytoCore.WIND_GESETZ;
+        const B = AnazhRealm.WIND_BOE;
+        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
+        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
+        const A = AnazhRealm._windTsl(T);
+        const pG = T.positionGeometry;
+        const pW = T.positionWorld;
+        const ht = uB.x.max(1e-3);
+        const H = T.attribute("aH0", "float").max(0.5);
+        const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
+        const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
+            .mul(B.amp)
+            .add(B.mitte);
+        const e = {
+            t: wu.uWindTime,
+            U: wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
+            g,
+            f0: uB.y.mul(WG.kF).div(H),
+            H,
+            zeta: pG.y.div(ht),
+            rho: T.length(pG.xz).div(ht),
+            phi: ort.mul(-B.k),
+            psi: pG.x.mul(1.7).add(pG.y.mul(0.9)).add(pG.z.mul(1.3)).div(ht).mul(6.2832),
+        };
+        const laub = kind === "foliage" || kind === "foliageTex";
+        const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
+        const quer = w.quer.mul(uB.z);
+        let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
+        if (laub) off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
+        mat.positionNode = T.positionLocal.add(off);
+        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
-    _foundryBuildMesh(m) {
+    _foundryBuildMesh(m, baum) {
         if (!m || !m.position || !m.position.array) return null;
         // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
         // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
@@ -77190,7 +78149,7 @@ class AnazhRealm {
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
-            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null));
         }
         // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
         // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
@@ -77241,6 +78200,8 @@ class AnazhRealm {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
         let group = null;
+        // die Wind-Daten der Art (K19): Rinde und Laub ihrer Gestalt tragen sie im Stoff (`_baumWindStoff`)
+        const baum = stage && stage.preset ? this._baumWindDaten(stage.preset, meshes) : null;
         try {
             group = new T.Group();
             for (const m of meshes) {
@@ -77253,7 +78214,7 @@ class AnazhRealm {
                     if (feld && m.huelle && typeof m.huelle === "object") group[feld] = m.huelle;
                     continue;
                 }
-                const mesh = this._foundryBuildMesh(m);
+                const mesh = this._foundryBuildMesh(m, baum);
                 if (mesh) group.add(mesh);
             }
         } catch (_e) {
@@ -79322,7 +80283,7 @@ class AnazhRealm {
             : this.spawnArchitecture(name, position, absage ? Object.assign({}, opts, { absage }) : opts);
     }
 
-    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | "wasser" | false) — der EINE Leser von
+    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | "wagen" | "wasser" | false) — der EINE Leser von
     // Grundriss und Krone; `_naturSetzen` setzt danach, das Bau-Phantom färbt sich danach. NATUR WEICHT DEM WASSER (Schau-2
     // wasser-wahrheit): ein benannter Wurf steht nie, wo sein Fuß kein Land ist (`_stammFussLand`: die Achse und der
     // Fuß-Kreis, 5 cm über dem Spiegel — der Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am
@@ -79332,7 +80293,30 @@ class AnazhRealm {
         if (!position) return false;
         const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
         if (g) return g;
+        if (this._imWagen(position.x, position.z, 0.8)) return "wagen";
         return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;
+    }
+
+    // Liegt (x, z) in der Hülle eines Studio-Wagens (+ `rand`, der Stamm; eine Krone darf über das Dach)? Ein Wagen ist Bau,
+    // nie Natur — aber kein Grundriss: er fährt, kein Haus räumt (`_grundrissRaeumen`) die Natur aus ihm, nur die Natur-Wand
+    // (`_naturWand`) wirft keinen Baum in ihn (K12 Fahr-Bahn — Befund: nach dem Platz des Vorschau-GT setzte die Wald-Schlange,
+    // `_tickPendingVegSpawns`, eine Tanne 2,1 m vor seinen Ursprung, in die Hülle; W 2 s brachte 0,08 m). Je Frage zählt die
+    // lebende Lage der Wagen (das Blocker-Netz, wenige je Welt).
+    _imWagen(x, z, rand) {
+        for (const w of this._blockerMit("moveable")) {
+            if (!w._fahrAchseX || !w.position) continue;
+            const dx = x - w.position.x;
+            const dz = z - w.position.z;
+            const u = this._fahrUmriss(w);
+            if (dx * dx + dz * dz > (Math.max(u.bug, -u.heck) + u.hw + rand) ** 2) continue;
+            const ry = Number.isFinite(w._rideYaw)
+                ? w._rideYaw
+                : (Number.isFinite(w.rotationY) ? w.rotationY : 0) + Math.PI / 2;
+            const l = dx * Math.sin(ry) + dz * Math.cos(ry);
+            const q = dx * Math.cos(ry) - dz * Math.sin(ry);
+            if (l >= u.heck - rand && l <= u.bug + rand && Math.abs(q) <= u.hw + rand) return true;
+        }
+        return false;
     }
 
     // Steht der Fuß eines Stamms an (x, z) auf dem Land? Die Achse und acht Punkte auf dem Fuß-Kreis (`STAMM_FUSS_M`) fragen
@@ -81958,8 +82942,9 @@ class AnazhRealm {
         this._tmpRaycaster.set(F.o, F.d);
         this._tmpRaycaster.far = 30;
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
-        if (!intersects.length) return null;
-        const hit = intersects[0];
+        // getroffen wird, was das Bild zeigt: Laub in der Nah-Kugel des Ich-Auges ist durchsichtig (`_durchsichtSteht`)
+        const hit = intersects.find((h) => this._durchsichtSteht(h));
+        if (!hit) return null;
         // Instanced-Treffer: instanceId → Eintrag via slotEntry (Streu trägt null).
         if (hit.object && hit.object.isInstancedMesh && typeof hit.instanceId === "number") {
             const key = hit.object.userData && hit.object.userData.archInstanceKey;
@@ -82296,7 +83281,10 @@ class AnazhRealm {
         const p = this.state.player;
         const sw = p && p._swing;
         if (!sw) return;
-        const rawDt = Math.min(0.1, Math.max(0, currentTime - (Number.isFinite(sw.lastT) ? sw.lastT : currentTime)));
+        const rawDt = Math.min(
+            AnazhRealm.TAKT_DECKEL_S,
+            Math.max(0, currentTime - (Number.isFinite(sw.lastT) ? sw.lastT : currentTime))
+        );
         sw.lastT = currentTime;
         const tVor = sw.t;
         sw.t += rawDt * this._hitStopFactor(currentTime);
@@ -83224,7 +84212,10 @@ class AnazhRealm {
         const creatures = this.state.creatures || [];
         for (let i = list.length - 1; i >= 0; i--) {
             const pf = list[i];
-            const dt = Math.min(0.1, Math.max(0, nowSec - (Number.isFinite(pf.lastT) ? pf.lastT : nowSec)));
+            const dt = Math.min(
+                AnazhRealm.TAKT_DECKEL_S,
+                Math.max(0, nowSec - (Number.isFinite(pf.lastT) ? pf.lastT : nowSec))
+            );
             pf.lastT = nowSec;
             if (nowSec - pf.born > B.maxFlugSec) {
                 this._pfeilDespawn(pf);
@@ -83839,31 +84830,55 @@ class AnazhRealm {
         // _kampfZielAbstand; dazu der Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
         // die Klinge reichte 2,46 m: am Hang 9 Schwünge, 0 Treffer, kein Hinweis. Steht das Tier unter dem Fadenkreuz
         // jenseits der Klinge, nennt der Spieler-Kanal beim Drücken die Reichweite (der Klick bleibt ein Luftschlag).
-        const creaturePick = this._pickCreatureAtCrosshair();
+        // DIE EINE ABSICHT DES KLICKS (K13 Runde 2): das Fadenkreuz nennt das Verb, der Schwung-Kegel richtet nur den Hieb.
+        // Ein Leib auf dem Strahl vor dem Bauwerk heißt hieb; sonst nennt das Ziel des Strahls sein Verb — das Bauwerk abbau,
+        // die Blüte pflücken, der Boden vor einem Grab-Gerät graben. Liegt dieses Ziel in Arm-Länge (FORAGE.reach ab dem Anfang
+        // des Strahls, dieselbe Länge, die der Streu-Pick fasst), gilt es; liegt es dahinter oder fehlt es, wählt der Kegel
+        // (_kampfKegelZiel) das Tier in Klingen-Reichweite, und der Klick wird sein Hieb. Vorher maß der Kegel den Kamera-Abstand
+        // seines Punkts NEBEN dem Strahl gegen das Bauwerk AUF ihm, und Blüte und Boden fragte er nie: Abbau, Pflücken und Graben
+        // neben einem ruhigen Wildtier schlugen das Tier (Langschwert, Blick −0,5 rad: abbau → hieb 35,5). Steht das Tier unter dem
+        // Fadenkreuz jenseits der Klinge, bleibt der Klick ein Luftschlag mit dem Hinweis — nie ein Pflücken oder Graben dahinter.
         const pick = this._pickArchitectureAtCrosshair();
         let verb = null;
         let zuWeit = null;
-        if (creaturePick && creaturePick.point) {
-            const K = AnazhRealm._arenaGesetz().schwung;
-            const pmB = this.state.playerMesh;
-            const pt = creaturePick.point;
-            const R = this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {}));
-            const nahDist = pmB ? this._kampfZielAbstand(R, pt) : Infinity;
-            const creatureDist = this.state.camera.position.distanceTo(pt);
+        let creaturePick = null;
+        let ort = null; // der Punkt des Ziels auf dem Strahl (Bauwerk · Blüte · Boden)
+        let flora = null;
+        let boden = null;
+        const pmB = this.state.playerMesh;
+        const R = pmB ? this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {})) : null;
+        const klinge = R ? R.reach + AnazhRealm._arenaGesetz().schwung.bladeRadiusM : 0;
+        const unter = pmB ? this._pickCreatureAtCrosshair() : null;
+        if (unter && unter.point) {
+            const creatureDist = this.state.camera.position.distanceTo(unter.point);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-            const klinge = R.reach + K.bladeRadiusM;
             if (creatureDist <= archDist) {
-                if (nahDist <= klinge) verb = "hieb";
+                const nahDist = this._kampfZielAbstand(R, unter.point);
+                verb = "hieb";
+                if (nahDist <= klinge) creaturePick = unter;
                 else zuWeit = { d: nahDist, klinge };
             }
         }
-        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in Arm-Laenge wird GEPFLUECKT (wer auf die
-        // Bluete zielt, will sie — kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
-        const flora = !verb && !(pick && pick.entry) ? this._pickScatterAtCrosshair() : null;
         if (!verb) {
-            if (pick && pick.entry) verb = "abbau";
-            else if (flora) verb = "pfluecken";
-            else verb = this._geraetGraebt(this._heldImplementBlueprint()) ? "graben" : "hieb";
+            if (pick && pick.entry) {
+                verb = "abbau";
+                ort = pick.point;
+            } else if ((flora = this._pickScatterAtCrosshair())) {
+                // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter
+                verb = "pfluecken";
+                ort = flora.point;
+            } else if (this._geraetGraebt(this._heldImplementBlueprint())) {
+                verb = "graben";
+                boden = this._raycastWorldHit(30);
+                if (boden.hit) ort = boden;
+            }
+            const F = ort ? this._fadenkreuzStrahl() : null;
+            const inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
+            const tier = pmB && !inArm ? this._kampfKegelZiel(R, klinge) : null;
+            if (tier) {
+                verb = "hieb";
+                creaturePick = tier;
+            } else if (!verb) verb = "hieb";
         }
         const pV = this.state.player;
         if (gehalten) {
@@ -83887,14 +84902,14 @@ class AnazhRealm {
                 );
             }
             // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
-            return this._playerAttackCreature(verb === "hieb" && !zuWeit ? creaturePick : null);
+            return this._playerAttackCreature(creaturePick);
         }
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (verb === "abbau") return this._strikeArchitecture(pick.entry);
         if (verb === "pfluecken") return this._harvestScatterPick(flora);
-        const target = this._raycastWorldHit(30);
+        const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
             return false;
@@ -83984,6 +84999,56 @@ class AnazhRealm {
         while (node && !creatureByMesh.has(node)) node = node.parent;
         const creature = node ? creatureByMesh.get(node) : null;
         return creature ? { creature, point: intersects[0].point } : null;
+    }
+
+    // DER SCHWUNG-KEGEL DER ZIEL-WAHL (K13, schmiede ARENA.schwung.zielKegelUntenRad — Welt und Arena-Lab lesen dieselbe Zeile):
+    // liegt kein Leib unter dem Fadenkreuz, wählt der Hieb den Leib im Sektor, den die Klinge fegt — von der Schulter im Stand (den
+    // Ausfall tritt der Hieb erst nach dem Ziel an: _kampfKlingenAchse) jeder Punkt der Treffer-Gestalt (Enden und Mitte jeder
+    // Glied-Kapsel, _kreaturTrefferGlieder) in der Reichweite der Klinge (im Ausfall gemessen wie das Verb-Tor:
+    // _kampfZielAbstand), dessen Gier höchstens arcHalfRad neben dem Fadenkreuz liegt und
+    // dessen Neigung höchstens zielKegelUntenRad darunter (nie darüber, nie hinter dem Rücken). Gewählt wird das lebende Tier,
+    // dessen Punkt dem Fadenkreuz am nächsten liegt (der Winkel), und dieser Punkt: durch ihn geht die Klinge
+    // (_kampfZielMerken). Das Grob-Tor (_trefferErreichbar) filtert jeden Leib außer Reichweite, bevor die Gestalt rechnet.
+    // Rückgabe { creature, point } oder null.
+    _kampfKegelZiel(R, klinge) {
+        const cs = this.state.creatures;
+        const F = this._fadenkreuzStrahl();
+        const pm = this.state.playerMesh;
+        if (!F || !pm || !Array.isArray(cs) || !cs.length) return null;
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const S = this._kampfSchulter(R, pm.rotation.y, 0, 0, 0, this._kegelS || (this._kegelS = {}));
+        const gF = Math.atan2(F.d.x, F.d.z);
+        const nF = Math.asin(Math.max(-1, Math.min(1, F.d.y)));
+        const P = this._kegelP || (this._kegelP = new THREE.Vector3());
+        let best = null;
+        let bestW = Infinity;
+        for (const c of cs) {
+            if (!c || !this._trefferErreichbar(c, S.x, S.z, klinge)) continue;
+            // ein Begleiter (ein Auftrag des Spielers: folgen, warten, sammeln) wird nie im Kegel gewählt — wer ihn schlagen
+            // will, zielt auf ihn; sonst träfe das Pflücken neben dem folgenden Hund den Hund
+            const auftrag = this._getCreatureTask(c);
+            if (auftrag && auftrag.name !== "wander") continue;
+            const gl = this._kreaturTrefferGlieder(c);
+            if (!gl) continue;
+            c.updateMatrixWorld(true);
+            for (const g of gl) {
+                for (let k = 0; k <= 2; k++) {
+                    P.copy(g.a)
+                        .lerp(g.b, k / 2)
+                        .applyMatrix4(g.anker.matrixWorld);
+                    const h = Math.hypot(P.x - S.x, P.z - S.z);
+                    let dg = Math.atan2(P.x - S.x, P.z - S.z) - gF;
+                    dg = Math.atan2(Math.sin(dg), Math.cos(dg));
+                    const dn = Math.atan2(P.y - S.y, h) - nF;
+                    if (Math.abs(dg) > K.arcHalfRad || dn > 0 || dn < -K.zielKegelUntenRad) continue;
+                    const w = Math.hypot(dg, dn);
+                    if (w >= bestW || this._kampfZielAbstand(R, P) > klinge) continue;
+                    bestW = w;
+                    best = { creature: c, point: P.clone() };
+                }
+            }
+        }
+        return best;
     }
 
     // Welle 6.H Phase 2F.3 — Inventar-Konsum für Konsumables. Findet ersten
@@ -87461,16 +88526,9 @@ class AnazhRealm {
     // die Farbe immer. DoubleSide (Blatt/Tube dünn/gewickelt, wie die Welt).
     _workshopPreviewFoliageMat() {
         if (this._wsPreviewFoliageMat) return this._wsPreviewFoliageMat;
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
         const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.82, metalness: 0 });
-        try {
-            const TSL = THREE.TSL;
-            if (TSL && TSL.attribute && TSL.vec4) {
-                mat.colorNode = TSL.vec4(TSL.attribute("color", "vec3"), 1.0);
-            }
-        } catch (_e) {
-            /* kein color-Attribut → Default-Albedo (kein Crash) */
-        }
+        mat.colorNode = THREE.TSL.vec4(THREE.TSL.attribute("color", "vec3"), 1.0);
+        this._leuchtStoff(mat, null); // jeder beleuchtete Stoff trägt den Licht-Pool (K11)
         this._wsPreviewFoliageMat = mat;
         return mat;
     }
@@ -92007,55 +93065,281 @@ class AnazhRealm {
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
     // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
-    // Anteil des Himmels, der fehlt (`_himmelAmAuge`), und ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem
-    // Abstand, mit Abfall in `AUGEN_LICHT.karteM`) dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte). Unter
-    // dem Himmel steht es auf 0 — sein Graph überspringt sich dann (`_augenLichtRegistrieren`), die Welt zahlt es nur in der
-    // Höhle.
+    // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
+    // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
+    // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes, fachwerk `lichtAbfall`).
+    // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
+    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
+    // die EINE Übersetzung Labor → Welt sie trägt wie jede Quelle. Unter dem Himmel ist es aus (`_augenLeuchte` null).
     _dayNightApplyAugenLicht() {
         const st = this.state;
-        const L = st.augenLicht;
-        if (!L) return;
         const cam = st.camera;
         const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
         st.himmelAmAuge = h;
-        if (cam) L.position.copy(cam.position);
         const B = AnazhRealm.BELICHTUNG;
         const A = AnazhRealm.AUGEN_LICHT;
         const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
-        const I = (1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall) * (1 / k);
-        L.intensity = I > 1e-4 ? I : 0;
-        L.updateMatrixWorld();
+        const abstKarte = globalThis.__fachwerkCore.lichtAbfall(A, A.karteM);
+        const I = ((1 - h) * ((B.zielKarte * Math.PI) / 0.18)) / (k * abstKarte);
+        if (!(I > 1e-4)) {
+            this._augenLeuchte = null;
+            return;
+        }
+        const q =
+            this._augenLeuchte ||
+            (this._augenLeuchte = {
+                quelle: "auge",
+                L: {
+                    kelvin: A.kelvin,
+                    staerke: 0,
+                    reichweiteM: A.reichweiteM,
+                    abfall: A.abfall,
+                    kernM: A.kernM,
+                    ersatz: true,
+                },
+                masse: 1,
+                phase: 0,
+            });
+        q.L.staerke = I / AnazhRealm.LEGACY_LICHT;
     }
 
-    // Die Klasse des Lichts des Auges: ein Punkt-Licht (r184 rechnet es wie jedes andere), mit eigenem Knoten
-    // (`_augenLichtRegistrieren`). Einmal je Seite.
-    static _augenLichtKlasse() {
-        if (!AnazhRealm._AugenLicht) AnazhRealm._AugenLicht = class AugenLicht extends THREE.PointLight {};
-        return AnazhRealm._AugenLicht;
-    }
-
-    // Der Knoten des Lichts des Auges (r184 vendor/three.webgpu.min.js gelesen: AnalyticLightNode.setup baut die direkte
-    // Lichtung über `lightsNode.setupDirectLight`, die Farbe ist eine Uniform aus Farbe × Stärke, je Frame). Er ist der
-    // PointLightNode, nur hinter einer Bedingung auf diese Uniform: steht das Licht auf 0 (unter dem Himmel), überspringt jedes
-    // Programm seinen Term — die Welt zahlt das Licht nur, wo es leuchtet, und die Licht-Menge (der Programm-Schlüssel) bleibt
-    // dieselbe. Der Null-Renderer hat keinen Licht-Graph; ein echter ohne Knoten-Bibliothek ist ein Vendor-Bruch (laut).
-    _augenLichtRegistrieren(renderer) {
-        if (!renderer || renderer._isHeadlessNull) return;
-        const lib = renderer.library;
-        if (!lib || typeof lib.getLightNodeClass !== "function" || typeof lib.addLight !== "function")
-            throw new Error("_augenLichtRegistrieren: r184-Renderer ohne Licht-Bibliothek (Vendor-Drift)");
-        const Klasse = AnazhRealm._augenLichtKlasse();
-        if (lib.getLightNodeClass(Klasse)) return;
-        const Punkt = lib.getLightNodeClass(THREE.PointLight);
-        if (!Punkt) throw new Error("_augenLichtRegistrieren: r184 kennt keinen PointLightNode (Vendor-Drift)");
-        const TSL = THREE.TSL;
-        class AugenLichtNode extends Punkt {
-            setup(builder) {
-                const c = this.colorNode;
-                TSL.If(c.x.add(c.y).add(c.z).greaterThan(0), () => Punkt.prototype.setup.call(this, builder));
+    // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
+    // Die Plätze gehen an die Leuchtquellen, deren Reichweite dem Auge am nächsten kommt (`_leuchtQuellen`: das Licht des
+    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis, die Laternen der Pläne, das wache Tor; neu gewählt je `wahlS`
+    // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
+    // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
+    // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
+    // Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
+    // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
+    // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
+    _leuchtTakt() {
+        const st = this.state;
+        const atmo = st.atmoUniforms;
+        const cam = st.camera;
+        if (!atmo || !cam) return; // vor der Welt: kein Stoff liest den Pool
+        const LP = AnazhRealm.LICHT_POOL;
+        const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
+        this._lichtLinear(LG.fenster, atmo.fensterGlut.value).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
+        const pool =
+            this._leuchtPool ||
+            (this._leuchtPool = {
+                t: -Infinity,
+                uhr: -Infinity,
+                x: NaN,
+                y: NaN,
+                z: NaN,
+                wahl: [],
+                halter: new Array(LP.plaetze).fill(null),
+                blende: new Float32Array(LP.plaetze),
+                plaetze: [],
+            });
+        const cp = cam.position;
+        const jetzt = performance.now() / 1000;
+        const schritt = Math.max(0, jetzt - pool.uhr) / LP.blendeS;
+        pool.uhr = jetzt;
+        if (jetzt - pool.t >= LP.wahlS || !(Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM)) {
+            pool.t = jetzt;
+            pool.x = cp.x;
+            pool.y = cp.y;
+            pool.z = cp.z;
+            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM);
+            q.sort((a, b) => a.rang - b.rang);
+            pool.wahl = q.slice(0, LP.plaetze);
+        }
+        // die Plätze: gewählt bleibt und blendet ein, abgewählt blendet aus, der freie Platz nimmt die nächste Gewählte
+        const H = pool.halter;
+        for (let k = 0; k < H.length; k++) {
+            const neu = H[k] && pool.wahl.find((w) => w.id === H[k].id);
+            if (neu) {
+                H[k] = neu;
+                pool.blende[k] = Math.min(1, pool.blende[k] + schritt);
+            } else if (H[k]) {
+                pool.blende[k] = Math.max(0, pool.blende[k] - schritt);
+                if (pool.blende[k] === 0) H[k] = null;
             }
         }
-        lib.addLight(AugenLichtNode, Klasse);
+        for (const w of pool.wahl) {
+            if (H.some((h) => h && h.id === w.id)) continue;
+            const frei = H.indexOf(null);
+            if (frei < 0) break;
+            H[frei] = w;
+            pool.blende[frei] = Math.min(1, schritt);
+        }
+        const c = this._leuchtC || (this._leuchtC = new THREE.Color());
+        const t = this._windZeit();
+        pool.plaetze.length = 0;
+        for (let k = 0; k < H.length; k++) {
+            const q = H[k];
+            const lage = atmo.lichtLage[k].value;
+            const farbe = atmo.lichtFarbe[k].value;
+            const I = q ? this._leuchtStaerke(q, t) * pool.blende[k] : 0;
+            if (!(I > 0)) {
+                lage.set(0, 0, 0, 0);
+                farbe.set(0, 0, 0, 0);
+                atmo.lichtErsatz[k].value = 0;
+                atmo.lichtKern[k].value = 0;
+                continue;
+            }
+            const L = q.L;
+            // das Licht des Auges folgt ihm je Bild
+            if (q.quelle === "auge") {
+                q.x = cp.x;
+                q.y = cp.y;
+                q.z = cp.z;
+            }
+            lage.set(q.x, q.y, q.z, L.reichweiteM);
+            this._lichtLinear(L, c);
+            // der Bezug des Abfalls in 1 m (fachwerk `lichtAbfall`): der Stoff rechnet (d² + k²)^(−abfall/2), die Stärke trägt (1 + k²)^(abfall/2)
+            const k2 = L.kernM * L.kernM;
+            const In = I * Math.pow(1 + k2, L.abfall / 2);
+            farbe.set(c.r * In, c.g * In, c.b * In, L.abfall);
+            atmo.lichtErsatz[k].value = L.ersatz ? 1 : 0;
+            atmo.lichtKern[k].value = k2;
+            pool.plaetze.push({
+                quelle: q.quelle,
+                x: q.x,
+                y: q.y,
+                z: q.z,
+                staerke: I,
+                reichweite: L.reichweiteM,
+                abfall: L.abfall,
+                kern: L.kernM,
+                farbe: [c.r, c.g, c.b],
+                ersatz: !!L.ersatz,
+                blende: pool.blende[k],
+            });
+        }
+    }
+
+    // DIE LICHTFARBE einer Quelle, linear, in die Farbe `c` (K11b): ein Wärmestrahler trägt seine Farbtemperatur (`kelvin`,
+    // fachwerk `lichtFarbe` über den Planck-Ort) — das Feuer, die Glut, die Laterne, die Fenster und das Licht des Auges. Das
+    // Tor ist kein Wärmestrahler: sein Datum (porta GLUT_GESETZ) trägt die Farbe als sRGB-Absicht, die das FARB-GESETZ linear
+    // rechnet. Ein Datum ohne beides ist ein Bruch des Vertrags (laut, kein stiller Ersatz).
+    _lichtLinear(L, c) {
+        if (L.kelvin > 0) return c.setRGB(...globalThis.__fachwerkCore.lichtFarbe(L.kelvin));
+        if (L.farbe == null) throw new Error("_lichtLinear: die Leuchtquelle trägt weder kelvin noch farbe");
+        return c.set(L.farbe);
+    }
+
+    // DIE STÄRKE einer Quelle zur Wind-Zeit t (K11): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
+    _leuchtStaerke(q, t) {
+        const L = q.L;
+        const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
+        return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
+    }
+
+    // DIE LEUCHTQUELLEN um das Auge (x, y, z) im Umkreis R (K11), je mit stabiler Kennung (`id`) und Rang (der Abstand des
+    // Auges zur Kugel ihrer Reichweite, 0 in ihr — dann der Abstand selbst, das Nächste zuerst): das Licht des Auges
+    // (`_augenLeuchte`, am Auge: Rang 0), jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim Eintritt)
+    // mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist es ihres
+    // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
+    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laternen der Pläne (`_laternenLesen`, Zellen)
+    // und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
+    _leuchtQuellen(x, y, z, R) {
+        const out = [];
+        const t = this._windZeit();
+        const nimm = (id, q) => {
+            const d = Math.hypot(q.x - x, q.y - y, q.z - z);
+            if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
+            out.push(Object.assign(q, { id, rang: Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+        };
+        const auge = this._augenLeuchte;
+        if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
+        const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
+        const bezug = (Math.PI / 4) * bett * bett;
+        for (const e of this._blockerMit("licht")) {
+            const p = e.position;
+            if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
+            const L = this._lichtDatum(e);
+            if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
+            const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
+            nimm(e, {
+                quelle: e.type,
+                x: p.x,
+                y: p.y - 0.5 + (L.hoeheM || 0) * sk,
+                z: p.z,
+                L,
+                masse: a > 0 ? a / bezug : sk * sk,
+                phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
+            });
+        }
+        const LZ = this._laternen;
+        if (LZ) {
+            const Z = AnazhRealm.LICHT_POOL.zelleM;
+            for (let i = Math.floor((x - R) / Z); i <= Math.floor((x + R) / Z); i++)
+                for (let j = Math.floor((z - R) / Z); j <= Math.floor((z + R) / Z); j++)
+                    for (const l of LZ.zellen.get(i + "," + j) || []) nimm(l, Object.assign({}, l));
+        }
+        const tor = this._portalLeuchte;
+        if (tor) nimm(tor, Object.assign({}, tor));
+        return out;
+    }
+
+    // DER LESER DER LATERNEN (K11 ↔ K10): `laternen[]` eines Siedlungs-Plans (fachwerk exportSettlement, je Laterne x/z
+    // plan-lokal) wird Leuchtquelle mit dem Datum LICHT_GESETZ.laterne — der Kopf `hoeheM` über dem Boden des Gesetzes —, je
+    // Plan einmal (der Schlüssel der Siedlung, wie die Wege), abgelegt in Zellen von `LICHT_POOL.zelleM` (die Wahl liest nur die
+    // Zellen um das Auge, nie alle Laternen der Welt). Gerufen aus dem EINEN Hebe-Chokepoint `_spawnSettlementErlebnis`.
+    _laternenLesen(plan, origin, key) {
+        if (!plan || !Array.isArray(plan.laternen) || plan.laternen.length === 0) return 0;
+        const LZ = this._laternen || (this._laternen = { zellen: new Map(), schluessel: new Set() });
+        if (key) {
+            if (LZ.schluessel.has(key)) return 0;
+            LZ.schluessel.add(key);
+        }
+        const L = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
+        const Z = AnazhRealm.LICHT_POOL.zelleM;
+        let n = 0;
+        for (const l of plan.laternen) {
+            if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
+            const wx = origin.x + l.x;
+            const wz = origin.z + l.z;
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (!Number.isFinite(wy)) continue;
+            const zk = Math.floor(wx / Z) + "," + Math.floor(wz / Z);
+            const liste = LZ.zellen.get(zk) || [];
+            liste.push({ quelle: "laterne", x: wx, y: wy + L.hoeheM, z: wz, L, masse: 1, phase: 0 });
+            LZ.zellen.set(zk, liste);
+            n++;
+        }
+        return n;
+    }
+
+    // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
+    // Gesetzbuch fachwerk, synchron geladen — die Feuerstelle trägt LICHT_GESETZ.feuer, dasselbe Rezept, das das Buch der Welt
+    // reist: recipes.json), sonst für jede Glut (Brenn-Fläche > 0) das Herdfeuer des Gesetzbuchs. null: keine Leuchtquelle.
+    _lichtDatum(entry) {
+        const L = this._lichtDatumDerGestalt(entry);
+        if (L) return L;
+        return this._glutFlaeche(entry) > 0 ? globalThis.__fachwerkCore.LICHT_GESETZ.feuer : null;
+    }
+
+    // Das Emitter-Datum der Studio-Gestalt eines Eintrags (`fx.licht` ihres Rezepts) oder null.
+    _lichtDatumDerGestalt(entry) {
+        const FC = globalThis.__fachwerkCore;
+        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
+        const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
+        return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
+    }
+
+    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
+    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall rechnet der Stoff nach dem Gesetz (fachwerk
+    // `lichtAbfall` in `_lichtPoolTerm`: 1/d^abfall mit Kern und Saum, K11b) — in 1 m trifft er die Stärke des Datums.
+    _laborLichtStaerke(I) {
+        return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
+    }
+
+    // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
+    // auf der Tag-Achse der Welt: der Nacht-Anteil der Sonne (`_nachtAnteil`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
+    // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
+    _lichtZeitplan(z) {
+        if (!z) return 1;
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const n = this._nachtAnteil(this._sonnenWinkel(t));
+        const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
+        return n <= 0.5
+            ? z.mittag + (daemmer - z.mittag) * (n / 0.5)
+            : daemmer + (z.nacht - daemmer) * ((n - 0.5) / 0.5);
     }
 
     // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
@@ -94162,16 +95446,12 @@ class AnazhRealm {
         this.initWorldFusionUI();
         // Auto-Connect, wenn der Spieler die Verbindung aktiv gelassen hat oder worldMeta.role host/guest
         // ist (welt-intrinsischer Modus); ensureWorldMeta lief schon, die worldId ist Raum-Default.
-        if (this.state.worldMeta) {
-            const role = this.state.worldMeta.role;
-            if (role === "host" || role === "guest") {
-                this.state.p2p.enabled = true;
-                this.state.p2p.role = role;
-                // Guests bekamen vom Importer hostInfo.url ins localStorage
-                // gespeichert; p2pLoadPersisted oben hat das schon aufgenommen.
-            }
-        }
-        if (this.state.p2p.enabled) {
+        // Die Absicht setzt die Tür selbst (initP2PSync); Guests bekamen vom Importer hostInfo.url ins localStorage
+        // gespeichert, p2pLoadPersisted oben hat das schon aufgenommen.
+        const weltRolle = this.state.worldMeta ? this.state.worldMeta.role : null;
+        const weltVerbunden = weltRolle === "host" || weltRolle === "guest";
+        if (weltVerbunden) this.state.p2p.role = weltRolle;
+        if (this.state.p2p.enabled || weltVerbunden) {
             this.initP2PSync(null);
         }
         try {
@@ -94520,15 +95800,6 @@ class AnazhRealm {
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
-        // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): von Anfang an in der Szene — die Licht-Menge jedes Programms
-        // bleibt dieselbe (kein Neubau der Pipelines, keine Bundle-Lücke, wenn das Auge eine Höhle betritt); unter dem
-        // Himmel steht es auf 0 und sein Graph überspringt sich.
-        const AL = AnazhRealm.AUGEN_LICHT;
-        const augenLicht = new (AnazhRealm._augenLichtKlasse())(AL.farbe, 0, AL.reichweiteM, AL.abfall);
-        augenLicht.castShadow = false;
-        augenLicht.name = "augenLicht";
-        scene.add(augenLicht);
-        this.state.augenLicht = augenLicht;
         // DIE LUFT (`scene.fogNode`): die EINE Luftperspektive für jedes Material; Farbe, Extinktion und Sonne
         // synct _applyDayNightToScene. Ungebautes deckt der Fern-Ring (Loch-Deckel), nie ein Nebel-Kokon.
         this._luftEnsure();
@@ -94653,7 +95924,7 @@ class AnazhRealm {
             } else if (action === "cancelBuild" || event.key === "Escape") {
                 if (this.state.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
-            } else if (event.code === "KeyE") {
+            } else if (event.code === AnazhRealm.FAHR_TASTEN.einsteigen.code) {
                 // E toggelt Mount/Dismount für moveable-Architekturen, nur außerhalb des Werkstatt-Drawers (dort ist
                 // E der Rotate-Modus). Ein Portal in Reichweite schlägt das Reiten (_tryEnterPortalAtPlayer zuerst).
                 if (this.state.uiActiveDrawer !== "werkstatt") {
@@ -94981,7 +96252,15 @@ class AnazhRealm {
             // undefined → NaN in delta/frameMs vergiftet die frameMs-EWMA für immer (der Regler säße still im
             // Totband). Bewacht von `gate:regler-sim`.
             const t = Number.isFinite(time) ? time : performance.now();
-            const delta = Math.max(0.001, (t - lastTime) / 1000);
+            // DIE WANDUHR UND DER SPIEL-TAKT (K21, Lehre 13): EINE Obergrenze des Takts, HIER an der Wurzel. Eine Pause
+            // (versteckter Tab, Debugger, Lade-Stau) ist eine Pause — die Welt läuft danach mit höchstens EINEM Schritt
+            // von `TAKT_DECKEL_S` weiter (vorher trug der ungedeckelte Takt jedes laufende Tier um Tempo × Pause: 73 m bis
+            // 5 km, `gate:move-under-load` (d)). `delta` (der Spiel-Takt) liest jede Bewegung: Fix-Schritt, Tiere, Ritt,
+            // Rauch, Wetter-Zug. Die Wanduhr lesen nur, die sie benannt brauchen: `wandDelta` das Mess-Instrument
+            // (Perf-Sinn, HUD, Flugschreiber — der Frame dauerte so lange) und das Foundry-Laden (die Welt lädt mit der
+            // Wanduhr); `currentTime` als Zeitstempel (Tageszeit mit eigener Tab-Schlaf-Grenze, Drosseln, Netz-Anker).
+            const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
+            const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const currentTime = t / 1000;
 
@@ -95211,13 +96490,13 @@ class AnazhRealm {
                 this._loopErrorBoundary(err);
             }
 
-            // Frame-Ende: Perf-Sense falten (EWMA) + PID-Regler treiben; frameMs = delta·1000 (fängt auch den
+            // Frame-Ende: Perf-Sense falten (EWMA) + PID-Regler treiben; frameMs = wandDelta·1000 (fängt auch den
             // Block-Spike eines Sync-Builds). LÄUFT IMMER, auch nach einem abgefangenen Frame-Fehler.
             // Unter der GPU-Leine zählt der Abstand zwischen GERENDERTEN Frames — der Regler, das HUD und der Flugschreiber
             // sähen sonst den 60-Hz-Takt der Simulation, wo die GPU weniger Bilder schafft.
             // Die Faltung steht unter derselben Fehler-Grenze wie der Frame (V18.278: ein werfender Frame-Schritt —
             // auch updateFps — erstarrt den Loop nicht, er wird gezählt).
-            const _fms = this._gpuLeineFrameMs(delta * 1000);
+            const _fms = this._gpuLeineFrameMs(wandDelta * 1000);
             if (_fms != null) {
                 try {
                     this.updateFps(_fms / 1000);
@@ -95227,9 +96506,9 @@ class AnazhRealm {
                 }
             }
             // Ingest-Takt ebenfalls auf der LÄUFT-IMMER-Seite: im try-Block hungerte ein persistenter
-            // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `delta` (s) treibt eine
+            // Phasen-Fehler den Drain für immer aus. Sekunden-normalisiert: `wandDelta` (s) treibt eine
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
-            this._tickFoundryIngest(delta);
+            this._tickFoundryIngest(wandDelta);
 
             // Deferierter Avatar-Bau: nach ein paar gerenderten Frames EINMAL bauen — der ~1.9-s-Skin-Bau hängt
             // einen Frame, nicht den Boot. Eigenes try/catch (darf den Loop nicht reißen); headless setzt
@@ -95547,7 +96826,7 @@ class AnazhRealm {
     }
 
     // Der AKKUMULATOR (Fiedler): sammelt die echte Frame-Zeit, steppt die Sim in FIXED_DT-Häppchen,
-    // geklemmt gegen den Spiral-of-Death (FIXED_MAX_ACCUM pro Frame + FIXED_MAX_STEPS hart). Die
+    // geklemmt gegen den Spiral-of-Death (der Takt kommt gedeckelt aus dem Loop, `TAKT_DECKEL_S`, + FIXED_MAX_STEPS hart). Die
     // Sim-Position wird VOR den Schritten wiederhergestellt (der Render setzte mesh evtl. auf die
     // interpolierte) + `_fixedPrevPos` für die Interpolation gemerkt. Gibt die Schritt-Zahl zurück.
     _loopFixedStep(realDt, currentTime) {
@@ -95570,8 +96849,8 @@ class AnazhRealm {
         // prev = die Sim-Position VOR diesem Frame (für die Render-Interpolation)
         if (!st._fixedPrevPos) st._fixedPrevPos = mesh.position.clone();
         else st._fixedPrevPos.copy(mesh.position);
-        // den Akkumulator füllen — die per-Frame-Zeit gegen einen Hitch geklemmt (kein Spiral-of-Death)
-        st._fixedAccumulator = (st._fixedAccumulator || 0) + Math.min(realDt, AnazhRealm.FIXED_MAX_ACCUM);
+        // den Akkumulator füllen — der Takt ist an der Wurzel gedeckelt (`TAKT_DECKEL_S` in startEternalLoop, kein Spiral-of-Death)
+        st._fixedAccumulator = (st._fixedAccumulator || 0) + realDt;
         let simTime = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : currentTime;
         let steps = 0;
         while (st._fixedAccumulator >= FIXED_DT && steps < AnazhRealm.FIXED_MAX_STEPS) {
@@ -95618,27 +96897,40 @@ class AnazhRealm {
     // `_blockerComputePartAABB`), gegen die jeder Löser im Rahmen der Box rechnet — auch `_resolveHuelleVsAABB`.
     _fahrHuelle(entry) {
         if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
-        if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
+        return this._fahrHuelleBau(entry, entry._fahrSatz);
+    }
+    // DER UMRISS eines Wagens im Fahrt-Rahmen (m): Bug, Heck, halbe Breite, Dach — ein Studio-Wagen aus dem Gesetz seiner
+    // Hülle (vehicle-core exportDrive.huelle × Größe), sonst aus der Gestalt des Bauplans. Leser: die Hülle des Ritts und des
+    // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imWagen`: kein Wurf der Natur in einem Wagen).
+    _fahrUmriss(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
-        let bug, heck, hw, dach;
-        if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX) {
-            bug = h.noseX * sc;
-            heck = h.tailX * sc;
-            hw = h.bw * sc;
-            dach = (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc;
-        } else {
-            const bp = this.state.blueprints && this.state.blueprints[entry.type];
-            const ext = bp ? this._compoundVisualExtent(bp) : null;
-            const halb = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-            bug = halb;
-            heck = -halb;
-            hw = ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6;
-            dach = ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5;
-        }
+        if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX)
+            return {
+                bug: h.noseX * sc,
+                heck: h.tailX * sc,
+                hw: h.bw * sc,
+                dach: (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc,
+            };
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const ext = bp ? this._compoundVisualExtent(bp) : null;
+        const halb = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
+        return {
+            bug: halb,
+            heck: -halb,
+            hw: ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6,
+            dach: ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5,
+        };
+    }
+
+    // Die Hülle aus dem Gesetz (je Eintrag einmal, `mountArchitecture` setzt sie frisch): der Ritt liest sie über
+    // `_fahrHuelle`, der Platz eines Wagens, den die Welt hinstellt (`_fahrPlatzFrei`), schon vor der ersten Fahrt.
+    _fahrHuelleBau(entry, G) {
+        if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
+        const { bug, heck, hw, dach } = this._fahrUmriss(entry);
         // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
-        const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * entry._fahrSatz.radR;
+        const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * G.radR;
         // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
         // Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
         const umriss = [];
@@ -95771,6 +97063,26 @@ class AnazhRealm {
     // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
     // den Leib eines Wesens (`_kreaturLeib`, D2: derselbe Leib, mit dem das Tier gegen jede Hülle löst). Was die Hülle
     // schiebt, nimmt der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
+    // DIE WAND DES GELÄNDES an einem Punkt (px, pz) der Hülle über der Ebene `yE` ihrer Räder — EINE Regel für den Kontakt
+    // der Hülle (`_fahrHuelleKontakt`) und den Platz eines Wagens (`_fahrStandFrei`): Feld über Ebene + Rad-Stufe ist eine
+    // Wand, wenn seine Fläche steiler steht als die Ebenen-Klammer des Kerns (ein Hang, den die Räder nehmen, hebt den Wagen —
+    // er hält ihn nicht) und, in Fahrt (wx, wz ≠ 0), dem Wagen zugewandt ist; Feld auf Brust-Höhe ist immer eine Wand.
+    // Liefert den Kontakt-Punkt {x, y, z} oder null.
+    _fahrGelaendeWand(px, pz, yE, k, wx, wz) {
+        const ctx = this._terrainColumnContext(px, pz);
+        const yS = yE + k.stufe + 0.02;
+        if (this._fieldSolid(px, yS, pz, ctx)) {
+            const n = this._fahrHuelleN || (this._fahrHuelleN = {});
+            this._fieldGradient(px, yS, pz, n);
+            const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
+            if (!(n.mag > 1e-6) || (n.y < steilY && ((wx === 0 && wz === 0) || n.x * wx + n.z * wz < 0)))
+                return { x: px, z: pz, y: yS };
+        }
+        const brust = Math.min(k.dach, 1.2);
+        if (this._fieldSolid(px, yE + brust, pz, ctx)) return { x: px, z: pz, y: yE + brust };
+        return null;
+    }
+
     _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt, meldet = true) {
         const fz = entry._fahr;
         const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
@@ -95786,9 +97098,6 @@ class AnazhRealm {
             const dz = pz - z0;
             return fz.y + tS * (dx * fX + dz * fZ) + tW * (dx * qX + dz * qZ);
         };
-        const brust = Math.min(k.dach, 1.2);
-        const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
-        const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
         // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
         // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht) UND dem
         // Wagen zugewandt ist, oder Feld auf Brust-Höhe. Zeigt die Fläche in die Fahrt, ist sie die Rückseite einer Kuppe
@@ -95802,15 +97111,8 @@ class AnazhRealm {
                 if (nx * wx + nz * wz <= 0) continue; // nur, wohin die Hülle fährt
                 const px = ox + p.l * fX + p.q * qX;
                 const pz = oz + p.l * fZ + p.q * qZ;
-                const e = ebene(px, pz);
-                const ctx = this._terrainColumnContext(px, pz);
-                const yS = e + k.stufe + 0.02;
-                if (this._fieldSolid(px, yS, pz, ctx)) {
-                    this._fieldGradient(px, yS, pz, nrmW);
-                    if (!(nrmW.mag > 1e-6) || (nrmW.y < steilY && nrmW.x * wx + nrmW.z * wz < 0))
-                        return { x: px, z: pz, y: yS };
-                }
-                if (this._fieldSolid(px, e + brust, pz, ctx)) return { x: px, z: pz, y: e + brust };
+                const w = this._fahrGelaendeWand(px, pz, ebene(px, pz), k, wx, wz);
+                if (w) return w;
             }
             return null;
         };
@@ -96741,13 +98043,14 @@ class AnazhRealm {
                 z.vlat = -v.x() * syF - v.z() * cyF;
                 vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
                 const keys = this.state.keys;
+                const FT = AnazhRealm.FAHR_TASTEN; // die EINE Tafel der Fahr-Tasten (Hilfe und Tacho nennen sie)
                 vc.fahrKraefte(
                     z,
                     {
-                        throttle: keys["w"] ? 1 : 0,
-                        brake: keys["s"] ? 1 : 0,
-                        steer: (keys["a"] ? 1 : 0) - (keys["d"] ? 1 : 0),
-                        hand: !!keys["shift"],
+                        throttle: keys[FT.gas.tasten[0]] ? 1 : 0,
+                        brake: keys[FT.bremse.tasten[0]] ? 1 : 0,
+                        steer: (keys[FT.lenken.tasten[0]] ? 1 : 0) - (keys[FT.lenken.tasten[1]] ? 1 : 0),
+                        hand: !!keys[FT.handbremse.tasten[0]],
                         tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
                     },
                     fahrG,
@@ -97527,14 +98830,29 @@ class AnazhRealm {
 
     // DAS ZIEL DER KAMERA (`uKamZiel` und `state._kamZiel`, Leben-Schau 07.10. L-Kamera): wohin das Auge blickt — 3rd der
     // Blickpunkt (die Brust, zu Fuß um die Schulter versetzt), mit dem Radius, bis zu dem eine Pflanze um den Sicht-Strahl durchsichtig wird (zu Fuß KAMERA_DURCHSICHT.fussM,
-    // im Ritt rittM: der Wagen ist breiter als der Leib); 1st das Auge selbst (die Strecke ist leer, nichts wird
-    // durchsichtig). Die Durchsicht (`_durchsichtGewicht`) und der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) lesen
+    // im Ritt rittM: der Wagen ist breiter als der Leib); 1st das Auge selbst (die Strecke ist leer). Dazu die NAH-KUGEL um
+    // das Auge (`uKamNah`, Leben-Schau 2, 09.10.): `nahLaub`, `nahRinde`, `nahBoden` je Stoff-Art (`_kameraDurchsichtNode`)
+    // — in 3rd hält der Schreiber jede Kugel samt Saum vor der Ebene des Ziels (der Stamm vor dem Spieler steht, der Strahl
+    // des Fadenkreuzes beginnt auf ihr und trifft nie Durchsichtiges; Infinity heißt: bis an diese Ebene), −Saum heißt:
+    // nichts fällt. Die Durchsicht (`_durchsichtGewicht`) und der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) lesen
     // dasselbe Ziel. Der EINE Schreiber ist `_loopCamera`, je Bild nach dem Setzen der Kamera.
-    _kamZielSetzen(x, y, z, r) {
-        const k = this.state._kamZiel || (this.state._kamZiel = { ex: 0, ey: 0, ez: 0, x: 0, y: 0, z: 0, r: 0 });
+    _kamZielSetzen(x, y, z, r, nahLaub, nahRinde, nahBoden) {
+        const k =
+            this.state._kamZiel ||
+            (this.state._kamZiel = { ex: 0, ey: 0, ez: 0, x: 0, y: 0, z: 0, r: 0, nl: 0, nr: 0, nb: 0 });
         // das Auge, für das das Ziel gilt: die eben gesetzte Spieler-Kamera — eine Sonde, die die Kamera selbst stellt, hat
         // kein Ziel (ihr Strahl beginnt an ihr, ihr Bild schneidet nur die Strecke des Spielers)
         const c = this.state.camera.position;
+        const S = AnazhRealm.KAMERA_DURCHSICHT.saumM;
+        const L = Math.hypot(x - c.x, y - c.y, z - c.z);
+        const deckel = L > 1e-4 ? L - S : Infinity; // in 3rd endet die Kugel samt Saum vor der Ebene des Ziels
+        const radius = (n) => {
+            const v = typeof n === "number" && !Number.isNaN(n) ? Math.min(n, deckel) : -S;
+            return Number.isFinite(v) ? Math.max(-S, v) : -S;
+        };
+        const nl = radius(nahLaub);
+        const nr = radius(nahRinde);
+        const nb = radius(nahBoden);
         k.ex = c.x;
         k.ey = c.y;
         k.ez = c.z;
@@ -97542,9 +98860,13 @@ class AnazhRealm {
         k.y = y;
         k.z = z;
         k.r = r;
+        k.nl = nl;
+        k.nr = nr;
+        k.nb = nb;
         const lu = this.state.lodUniforms;
         if (lu && lu.uKamZiel) lu.uKamZiel.value.set(x, y, z, r);
         if (lu && lu.uKamAuge) lu.uKamAuge.value.set(c.x, c.y, c.z);
+        if (lu && lu.uKamNah) lu.uKamNah.value.set(nl, nr, nb);
     }
 
     _loopCamera(currentTime) {
@@ -97608,52 +98930,73 @@ class AnazhRealm {
                     camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
                     camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
                 }
-                // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
-                const minCamY = player.position.y - 0.2;
+                // DIE KAMERA HAT EINEN LEIB (K06, WE-05/FZ-07): eine Kugel vom Radius `fx.bewegung.kamera.armRadiusM`
+                // (koerper-core). Sie steht nie unter dem SICHTBAREN Boden: der Deckel liest die Boden-Karte des gezeichneten
+                // Mesh (`_standSicht` ohne Träger) + r, an der Wunsch-Stelle und an der Stelle nach dem Arm — solange die Karte
+                // im STAND_SICHT_BAND über den Füßen oder der Kamera liegt (darüber trägt sie die Oberkante der Säule: Höhle,
+                // Überhang); auf einem Bau dessen Oberkante, ohne Karte der Träger. Das Gesetz fragt nur der Wurf (die Kugel
+                // hält r vor jeder Fläche): der Deckel tastet nie das Feld (Prüfung 1: der Stand-Leser der Füße las am 30°-Hang
+                // je Bild das Gesetz unter der Kamera). Vorher die Füße − 0,2 m, das Gesetz statt des Bildes (Lehre 22: der
+                // Boden des Mesh liegt bis 0,6 m über ihm): R-CAM unterBoden 9 von 50.
+                const KAM = AnazhRealm._bewegungsBlock("kamera", ["armRadiusM", "armRuhe"]);
+                const kr = KAM.armRadiusM;
+                const fussY = player.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+                const aufBau = this.state._kapselStruktur === true;
+                const boden = (x, z, y) => {
+                    if (aufBau) return fussY + kr;
+                    const k = this._standSicht(x, z, NaN, false);
+                    if (!Number.isFinite(k)) return fussY + kr;
+                    return k - Math.max(fussY, y) <= AnazhRealm.STAND_SICHT_BAND ? k + kr : -Infinity;
+                };
+                const minCamY = boden(camX, camZ, camY);
                 if (camY < minCamY) camY = minCamY;
-                // Pitch-Wunsch-Höhe (nach Boden-Clamp, VOR der Kollision) als State spiegeln: der Playtest prüft die
-                // Pitch-Inversion daran deterministisch (die Kollision hängt von der Umgebung ab).
+                // Pitch-Wunsch-Höhe (nach Boden-Deckel, VOR der Kollision) als State spiegeln: der Playtest prüft die
+                // Pitch-Inversion daran deterministisch (die Kollision hängt von der Umgebung ab), den Deckel an `_kamBodenY`.
                 this.state._cameraDesiredY = camY;
-                // Kamera-Kollision: Strahl vom Blickziel zur Wunsch-Position; trifft er Boden oder Bau, rückt die Kamera an
-                // den Treffer (15 % Puffer) — eine Lösung für Loch, Wand und Bauwerk. EINE PFLANZE HÄLT SIE NIE (Leben-Schau
-                // 07.10. L-Kamera, Gegenprüfung Runde 1): der Strahl geht `durchPflanzen`, und was von einer Pflanze zwischen
-                // Auge und Spieler liegt, wird durchsichtig (`_kameraDurchsichtNode`). Die Kronen-Hülle (5167fd85) hielt die
-                // Verfolger-Kamera in 641 von 2400 Fahr-Proben unter 3 m (am Wagendach, 137 Sprünge > 2 m) und die Kamera zu
-                // Fuß in 43 % der Proben in Baumnähe auf dem 2-m-Minimum — ein Wald ist für eine Kamera mit 9,6 m Arm nie frei.
+                this.state._kamBodenY = minCamY;
+                // Kamera-Kollision: der Wurf der Kugel vom Blickziel zur Wunsch-Position (`_fieldRaycast` mit `radius`: Boxen
+                // und gedrehte Boxen um r aufgeblasen, das Gelände Mittelstrahl + Ring der Kugel an ihrer Stelle) — der Arm
+                // hält absolut r vor dem ersten Treffer (vorher 0,85 × Treffer: an einem 1-m-Arm 0,15 m vor dem Fels, in Ecken
+                // streifte die Linse die Wand). EINE PFLANZE HÄLT SIE NIE (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): der Wurf geht
+                // `durchPflanzen`, und was von einer Pflanze zwischen Auge und Spieler liegt, wird durchsichtig
+                // (`_kameraDurchsichtNode`). Die Kronen-Hülle (5167fd85) hielt die Verfolger-Kamera in 641 von 2400 Fahr-Proben
+                // unter 3 m (am Wagendach, 137 Sprünge > 2 m) und die Kamera zu Fuß in 43 % der Proben in Baumnähe auf dem
+                // 2-m-Minimum — ein Wald ist für eine Kamera mit 9,6 m Arm nie frei.
                 const bx = player.position.x;
                 const by = player.position.y + 1.0;
                 const bz = player.position.z;
-                const sf = this.state.scaleFactor || 1;
-                const strahl = (ax, ay, az, ex, ey, ez) => {
-                    if (!this.state.tmpVec1) return 1;
-                    const rs = this.setVec(this.state.tmpVec1, ax / sf, ay / sf, az / sf);
-                    const re = this.setVec(this.state.tmpVec2, ex / sf, ey / sf, ez / sf);
-                    const hp = this._runRaycast(
-                        rs,
-                        re,
-                        (cb, hit) => {
-                            if (!hit) return null;
-                            const p = cb.get_m_hitPointWorld();
-                            return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
-                        },
-                        { durchPflanzen: true }
-                    );
-                    const ganz = Math.hypot(ex - ax, ey - ay, ez - az);
-                    return hp && ganz > 1e-6
-                        ? Math.min(1, (0.85 * Math.hypot(hp.x - ax, hp.y - ay, hp.z - az)) / ganz)
-                        : 1;
-                };
                 // DIE SCHULTER (Gegenprüfung Runde 1: das Fadenkreuz stand in 3rd auf dem Kopf der Figur): zu Fuß blickt die
                 // Kamera über die rechte Schulter — Auge und Blickziel stehen KAMERA_SCHULTER_M rechts (Bildschirm-rechts
                 // = (−cos Gier, 0, sin Gier)), die Figur steht links der Bildmitte, das Fadenkreuz trifft daneben die Welt.
-                // Steht rechts eine Wand, rückt die Schulter vor ihr ein. Der Ritt blickt auf die Kabine (der Wagen).
+                // Steht rechts eine Wand, rückt die Schulter vor ihr ein: die Bauten um r aufgeblasen (der Wurf ohne
+                // Gelände-Strahl), der Fels als Feld-Punkt am Rand der Kugel (bis zu 5 Proben, Bisektion) — die Strahlen des
+                // Frames gehören dem Arm. Der Ritt blickt auf die Kabine (der Wagen).
                 let sx = 0;
                 let sz = 0;
                 if (!_fahrRitt) {
                     const S = AnazhRealm.KAMERA_SCHULTER_M;
                     const rx = -Math.cos(this.state.yaw);
                     const rz = Math.sin(this.state.yaw);
-                    const s = S * strahl(bx, by, bz, bx + rx * S, by, bz + rz * S);
+                    const fest = (s) => this._fieldSolid(bx + rx * (s + kr), by, bz + rz * (s + kr));
+                    let s =
+                        S *
+                        this._fieldRaycast(bx, by, bz, bx + rx * S, by, bz + rz * S, {
+                            durchPflanzen: true,
+                            radius: kr,
+                            gelaende: false,
+                        }).t;
+                    if (fest(s)) {
+                        let lo = 0;
+                        let hi = s;
+                        if (fest(0)) hi = 0;
+                        else
+                            for (let i = 0; i < 3; i++) {
+                                const mid = (lo + hi) / 2;
+                                if (fest(mid)) hi = mid;
+                                else lo = mid;
+                            }
+                        s = lo;
+                    }
                     sx = rx * s;
                     sz = rz * s;
                 }
@@ -97664,29 +99007,45 @@ class AnazhRealm {
                 camZ += sz;
                 // DER GLEITENDE ARM: ein Hindernis zieht die Kamera sofort heran (sie steht nie in Boden oder Bau), frei
                 // fährt sie gleitend hinaus — der Rest 1 − Ruhe^dt je Bild, im Ritt die Ruhe des Kern-Gesetzes
-                // (`kamera.posEase`, mit der die Probefahrt-Kamera ihrer Stelle folgt), zu Fuß KAMERA_ARM_RUHE.
-                const t = strahl(tx, ty, tz, camX, camY, camZ);
+                // (`kamera.posEase`, mit der die Probefahrt-Kamera ihrer Stelle folgt), zu Fuß `fx.bewegung.kamera.armRuhe`.
+                // Der Wurf kostet den Mittelstrahl und frei 4 Proben des Rings (berührt er, die Bisektion) — diag-kamera-laub zählt
+                // die Feld-Proben je 3rd-Bild.
+                const wurf = this._fieldRaycast(tx, ty, tz, camX, camY, camZ, { durchPflanzen: true, radius: kr });
+                const t = wurf.t;
                 const armDt = Math.min(0.1, Math.max(0.0001, currentTime - (this.state._kamArmT || currentTime)));
                 this.state._kamArmT = currentTime;
                 let arm = this.state._kamArm;
                 if (!(arm >= 0) || t <= arm) arm = t;
                 else {
                     const ruhe =
-                        _fahrRitt && _fahrRitt.kam && _fahrRitt.kam.posEase > 0
-                            ? _fahrRitt.kam.posEase
-                            : AnazhRealm.KAMERA_ARM_RUHE;
+                        _fahrRitt && _fahrRitt.kam && _fahrRitt.kam.posEase > 0 ? _fahrRitt.kam.posEase : KAM.armRuhe;
                     arm += (t - arm) * (1 - Math.pow(ruhe, armDt));
                 }
                 this.state._kamArm = arm;
-                camera.position.set(tx + (camX - tx) * arm, ty + (camY - ty) * arm, tz + (camZ - tz) * arm);
+                const kx = tx + (camX - tx) * arm;
+                const kz = tz + (camZ - tz) * arm;
+                const ky = ty + (camY - ty) * arm;
+                camera.position.set(kx, Math.max(ky, boden(kx, kz, ky)), kz);
                 camera.lookAt(tx, ty, tz);
                 const KD = AnazhRealm.KAMERA_DURCHSICHT;
                 // Das Ziel ist der Blickpunkt T (Integration V18.536, Gelb 1 der dritten v1-Gegenprüfung): die Ebene des
                 // Fadenkreuz-Strahls steht senkrecht zum Blick und der Strahl beginnt bei jedem Arm an T. Mit der Brust B als
                 // Ziel stand die Ebene senkrecht zu B − Kamera, der Strahl begann 0,36/Arm Meter hinter T (Arm 0,5 m vor einer
                 // Hauswand: 0,52–0,78 m tot, eine Kreatur dort in 1 von 5 verfehlt). Die Brust liegt höchstens
-                // KAMERA_SCHULTER_M (0,6 m) neben T, innerhalb des Durchsicht-Radius `fussM` (0,9 m).
-                this._kamZielSetzen(tx, ty, tz, _fahrRitt ? KD.rittM : KD.fussM);
+                // KAMERA_SCHULTER_M (0,6 m) neben T, innerhalb des Durchsicht-Radius `fussM` (0,9 m). DER FREIRAUM DER KAMERA
+                // (Leben-Schau 2, 09.10.): Laub und Rinde fallen bis an die Ebene des Ziels — die Kamera schwebt frei, kein
+                // Leib steht an ihr, und in der Krone (die Eiche am Ufer, die Weide über dem Wagen) füllte das Laub zwischen
+                // Linse und Figur das Bild; die Boden-Streu (Blume, Farn, Gestrüpp) nur in der Nähe der Linse (bodenM, im
+                // Ritt bodenRittM), die Wiese zwischen Kamera und Figur bleibt.
+                this._kamZielSetzen(
+                    tx,
+                    ty,
+                    tz,
+                    _fahrRitt ? KD.rittM : KD.fussM,
+                    Infinity,
+                    Infinity,
+                    _fahrRitt ? KD.bodenRittM : KD.bodenM
+                );
             } else {
                 // View-Height-Smoothing (à la Source `SmoothViewOnStairs`): Füße/Kollision rasten hart auf den Boden,
                 // das AUGE gleitet gedämpft nach → der Körper federt Stufen/Buckel ab. Nur am Boden glätten; in der
@@ -97736,9 +99095,11 @@ class AnazhRealm {
                 );
                 camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
                 this.state._kamArm = undefined; // der Arm der 3rd-Kamera beginnt beim Wechsel frei
-                // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, keine Pflanze wird durchsichtig, der Strahl des
-                // Fadenkreuzes beginnt am Auge
-                this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0);
+                // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, der Strahl des Fadenkreuzes beginnt am Auge; die
+                // Nah-Kugel nimmt Laub und Boden-Streu (KAMERA_DURCHSICHT.ichM — ein Strauch, eine Krone, durch die der Leib
+                // geht), die Rinde, an der der Leib steht, bleibt ganz
+                const KD1 = AnazhRealm.KAMERA_DURCHSICHT;
+                this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0, KD1.ichM, -KD1.saumM, KD1.ichM);
             }
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -99644,12 +101005,12 @@ class AnazhRealm {
         return !fenster || this._instanzFenster(g, i, L);
     }
 
-    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge irgendwo auf der Instanz etwas? Die Maske misst je Fragment die
-    // Distanz vom Auge in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (Stufen: je Vertex, Skelett-Metrik aH0, Blatt-Metrik aH0L;
-    // die Karte: vom Kamera-Ort zum Fragment ihres Quads, Sichthöhe |aKarte.w|, ein negativer Stempel = verdeckt, sie
-    // blendet voll). Die Vertices einer Instanz liegen in XZ höchstens `w` um ihre Achse (die Weite der Gestalt × die Norm
-    // des XZ-Blocks der Matrix + was eine Schräglage aus der Höhe trägt + der Wind-Saum; die Karte: ihre Halbbreite ×
-    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Das Auge der
+    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge auf der Instanz etwas? Die Maske misst je INSTANZ die Distanz vom
+    // Auge zu ihrem Ursprung in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (`_instanzMitteNode`, Studio `_iw`; Stufen:
+    // Skelett-Metrik aH0, Blatt-Metrik aH0L; die Karte: zu ihrem Anker, Sichthöhe |aKarte.w|, ein negativer Stempel =
+    // verdeckt, sie blendet voll) — das Intervall ist der Punkt der Instanz, nur der Halt macht es breit; das Urteil fällt
+    // `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Bis 1110-11 maß die Maske je Fragment und das Fenster über die
+    // Weite der Gestalt: die L1 einer Birke in 5 m (Krone 10 m) behielt ihre fernen Äste und wurde ganz gezeichnet. Das Auge der
     // Maske hält wie jeder Ort der Lage um den halben Halt (`_blendeHaelt`) — die Distanz trägt den Halt als Rand (`L.halt`,
     // wie `_passTrifft`): eine gehaltene Wahl verliert nichts, solange das Auge atmet.
     _instanzFenster(g, i, L) {
@@ -99665,26 +101026,13 @@ class AnazhRealm {
         if (g.wahlStufe === "karte") {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];
-            const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
             const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
-            const dSmin = (Math.max(0, d - halt) + s * ak[i * 4 + 1]) * L.perf * k,
-                dSmax = (d + halt + s * ak[i * 4 + 1]) * L.perf * k;
+            const dSmin = Math.max(0, d - halt) * L.perf * k,
+                dSmax = (d + halt) * L.perf * k;
             return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
         }
-        const weite = this._instanzWeite(geo);
-        const p = a[o],
-            q = a[o + 8],
-            r = a[o + 2],
-            s = a[o + 10];
-        const F = p * p + q * q + r * r + s * s;
-        const det = p * s - q * r;
-        const norm = Math.sqrt(0.5 * (F + Math.sqrt(Math.max(0, F * F - 4 * det * det))));
-        const w =
-            weite.r * norm +
-            weite.y * Math.sqrt(a[o + 4] * a[o + 4] + a[o + 6] * a[o + 6]) +
-            AnazhRealm.PASS_WAHL.pflanzeRandM;
-        const dMin = Math.max(0, d - w - halt) * L.perf,
-            dMax = (d + w + halt) * L.perf;
+        const dMin = Math.max(0, d - halt) * L.perf,
+            dMax = (d + halt) * L.perf;
         const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
         const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, false);
@@ -99732,29 +101080,6 @@ class AnazhRealm {
         if (stufe === 3) return dSmin < K.l1Aus;
         if (stufe === "karte") return verdeckt === true || dSmax > K.karteEin;
         return true;
-    }
-
-    // Die Weite einer Gestalt um ihre Achse (größter XZ-Abstand eines Vertex) und ihre größte Höhe |y|, je Positions-Puffer
-    // einmal gerechnet (die Fassaden einer Gestalt teilen ihn).
-    _instanzWeite(geo) {
-        const pos = geo.attributes.position;
-        const W = this._wahlWeiten || (this._wahlWeiten = new WeakMap());
-        let w = W.get(pos);
-        if (!w) {
-            let r2 = 0,
-                y = 0;
-            for (let j = 0; j < pos.count; j++) {
-                const px = pos.getX(j),
-                    pz = pos.getZ(j);
-                const v = px * px + pz * pz;
-                if (v > r2) r2 = v;
-                const ay = Math.abs(pos.getY(j));
-                if (ay > y) y = ay;
-            }
-            w = { r: Math.sqrt(r2), y };
-            W.set(pos, w);
-        }
-        return w;
     }
 
     // Kaskaden-Index einer Schatten-Kamera (die EINE Map ohne CSM = 0), sonst −1.
@@ -99994,6 +101319,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
+        // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
+        this._leuchtTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: die Render-Objekte (auch die mit noch
@@ -100410,7 +101737,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.540.0";
+AnazhRealm.VERSION = "18.543.0";
 // Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
 // räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
 // `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
@@ -100439,20 +101766,29 @@ AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
 // nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
 AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
-// Helligkeit wie am Tag — die 18-%-Karte das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge adaptiert an sein
-// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 blendet es bis
-// `reichweiteM` aus (bei 10 m 94 %, 15 m 70 %, 18 m 12 %). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
-// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz; ohne Abfall trägt der Fels in jeder
-// Nähe seine Maserung. `farbe` warmweiß (~4500 K, sRGB) — eine Flamme (0xffc489) tönte den Fels orange; der Himmel am
-// Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
+// Helligkeit wie am Tag — die 18-%-Karte in `karteM` das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge
+// adaptiert an sein Licht). Es ist ein Platz des Licht-Pools mit Himmels-Ersatz (K11) und fällt nach dem EINEN Punktlicht-
+// Gesetz (fachwerk `lichtAbfall`, K11b): mit `abfall` 1 und dem weiten Kern `kernM` 8 (ein Schein, keine Flamme) zeigt die
+// Wand in 0,3 m 1,03× die Karte in 2 m (ihre Maserung), in 10 m 57 %, in 15 m 23 % (bis K11b, Legacy-Abfall (1 − d/R):
+// 1,09× · 56 % · 28 %), und an `reichweiteM` fällt es stetig auf 0. Werkbank 11.10., echte GPU, Auge 11: mit 1/d ohne
+// Kern lag die Wand in 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz. `kelvin` 4 750 —
+// warmweiß, derselbe Farbort wie bis K11b das Hex 0xffe2c6 (eine Flamme, 0xffc489, tönte den Fels orange); der Himmel am Auge
+// (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
 AnazhRealm.AUGEN_LICHT = Object.freeze({
     karteM: 2,
-    abfall: 0,
+    abfall: 1,
+    kernM: 8,
     reichweiteM: 20,
-    farbe: 0xffe2c6,
+    kelvin: 4750,
     umkreisM: 4,
     neuM: 0.25,
 });
+// DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
+// Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
+// am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
+// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt). Die Laternen der
+// Pläne liegen in Zellen von `zelleM` Metern (die Wahl liest nur die Zellen um das Auge).
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5, zelleM: 32 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
@@ -101148,8 +102484,8 @@ AnazhRealm.LAUB_STREU = Object.freeze({
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
 // (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Wasser =
 // das Fern-Blau als sRGB-Absicht (FARB-GESETZ: 0x265273 → linear), flach auf dem Spiegel.
-// DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für offene Ring-Farben und den Feld-Farb-Job, über dem
-// Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte; `memo` = eine Generation des Fern-Farb-Gedächtnisses
+// DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für die Fern-Krone des nahen Bodens, offene Ring-Farben und
+// den Feld-Farb-Job, über dem Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte (Krone und Ring je); `memo` = eine Generation des Fern-Farb-Gedächtnisses
 // (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
@@ -101466,12 +102802,37 @@ AnazhRealm._fahrSchrittGesetz = function () {
         ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
             (f) => typeof vc[f] === "function"
         ) &&
-        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps"].every((k) => Number.isFinite(S[k]))
+        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) =>
+            Number.isFinite(S[k])
+        )
     ) {
         AnazhRealm._fahrSchrittMemo = { vc, S };
         return AnazhRealm._fahrSchrittMemo;
     }
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.schritt/fahrSchritt");
+};
+// Der EINE Platz-Leser (Leben-Schau 2, fahr-bahn): das Platz-Gesetz eines Wagens, den die Welt hinstellt (vehicle-core
+// fahrPlatz + FAHR.platz: Anfahrt-Anteil, Such-Schritt, Such-Radius). Fail-closed: ein Kern ohne Platz-Gesetz bricht laut,
+// nie stellt die Welt einen Wagen still ungeprüft hin. Memo je Kern-Objekt.
+AnazhRealm._fahrPlatzGesetz = function () {
+    const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+    const memo = AnazhRealm._fahrPlatzMemo;
+    if (memo && memo.vc === vc) return memo;
+    const P = vc && vc.FAHR && vc.FAHR.platz;
+    if (
+        P &&
+        typeof vc.fahrPlatz === "function" &&
+        typeof vc.fahrPlatzGrenze === "function" &&
+        ["anfahrAnteil", "bahnLaengen", "suchRadiusM", "suchSchrittM", "richtungen"].every((k) =>
+            Number.isFinite(P[k])
+        ) &&
+        P.suchSchrittM > 0 &&
+        P.richtungen >= 1
+    ) {
+        AnazhRealm._fahrPlatzMemo = { vc, P };
+        return AnazhRealm._fahrPlatzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.platz/fahrPlatz");
 };
 // Der EINE Kampf-Koeffizienten-Leser: hpMax/damage/knockback/defense aus PRESETS.mensch.fx.kampf,
 // Formel base + dichte-Tag·dichte + härte-Tag·haerte. Fail-closed.
@@ -101548,8 +102909,38 @@ AnazhRealm._parkourGesetz = function () {
     } catch (_e) {}
     return null;
 };
+// Die Zweibeiner-Zeile des EINEN Gang-Gesetzes (fx.bewegung.gang): jedes Feld ist Pflicht — fehlt eines (der Lauf-Wechsel,
+// der Hub des Laufs, das Becken), bricht der Leser, statt still die Tier-Form zu fahren (K07).
+AnazhRealm.GANG_FELDER = Object.freeze([
+    "schrittBasis",
+    "schrittFroude",
+    "tastgrad",
+    "tastgradLauf",
+    "laufFroude",
+    "maxWinkel",
+    "hub",
+    "hubLauf",
+    "hubForm",
+    "beckenHub",
+    "rollWinkel",
+    "fersenAb",
+    "ballen",
+    "knoechel",
+]);
+// DER SPRUNG DER LAGE IST KEIN LAUF (tetrapoda GANG_GESETZ.vMax, EINE Regel): das Tempo eines Leibs aus der Änderung
+// seiner Lage in dt — über vMax (Spawn, Teleport, Peer-Schnapp, ein Ruf an einen fernen Ort) null. Leser: der Lauf des
+// Leibs (`_kreaturLaufTakt`) und der Gang der Pfoten (`_animateTierBaum`).
+AnazhRealm._lageTempo = function (dx, dz, dt) {
+    const v = Math.hypot(dx, dz) / dt;
+    return v <= globalThis.__tetrapodaCore.GANG_GESETZ.vMax ? v : null;
+};
+// Die Reichweite R der Bein-Kette (K07, EINE Schwelle — tetrapoda gangReich, dieselbe im Körper-Studio): an ihr führt
+// tetrapoda gangBecken das Becken, an ihr hält die Fuß-IK den stehenden Fuß (`_gaitLegIK`, `_gaitLockBedarf`).
+AnazhRealm._gaitReich = function (kette) {
+    return globalThis.__tetrapodaCore.gangReich(kette);
+};
 // Der EINE Bewegungs-Block-Leser: luft (Beschleunigungs-/Brems-Kurven), sprung (Coyote-/Buffer-
-// Fenster), schritt (Gang-Kalibrierfaktor) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder
+// Fenster), schritt (Compound-Takt, Klang-Schwelle), gang (die Zweibeiner-Zeile des Gang-Gesetzes) aus fx.bewegung.<block>. Fail-closed: Block fehlt oder
 // ein Pflicht-Feld (felder) nicht-finit → Bruch, nie Misch-Gesetz. Memo nur im Erfolgs-Fall.
 AnazhRealm._bewegungsBlock = function (block, felder) {
     const memo = AnazhRealm._bewegungsBlockMemo || (AnazhRealm._bewegungsBlockMemo = Object.create(null));
@@ -101622,7 +103013,10 @@ AnazhRealm._umweltGesetz = function () {
         kern.tierRufSpielen &&
         kern.tierRufPegel &&
         kern.substanzKlang &&
-        kern.SUBSTANZ
+        kern.SUBSTANZ &&
+        kern.fahrtStimme &&
+        kern.fahrtMischung &&
+        kern.FAHRT
     ) {
         AnazhRealm._umweltGesetzMemo = { UMWELT: U, kern };
         return AnazhRealm._umweltGesetzMemo;
@@ -101862,6 +103256,7 @@ AnazhRealm._arenaGesetz = function () {
         a.bogen &&
         Number.isFinite(a.schwung.dauerProSqrtI) &&
         Number.isFinite(a.schwung.windupFrac) &&
+        Number.isFinite(a.schwung.zielKegelUntenRad) &&
         Number.isFinite(a.gefuehl.wucht) &&
         Number.isFinite(a.gefuehl.pProKb) &&
         Number.isFinite(a.bogen.muendungM)
@@ -103003,7 +104398,8 @@ AnazhRealm.ERBGUT_PROTOKOLL = 1;
 // DIE WELTGRENZE: was beim Wechsel der Welt aus der alten reist — beim Namen, sonst nichts (gate:weltgrenze).
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
-//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug) —
+//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug,
+//                die Lichter: Laternen der Pläne, das wache Tor, der Licht-Pool, der ihre Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
 AnazhRealm.WELT_GRENZE = Object.freeze({
     geburt: Object.freeze(["visibility", "creator"]),
@@ -103017,6 +104413,9 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_autoSettlementRejected",
         "_autoSettlementStartHopeless",
         "_stlWegeKeys",
+        "_laternen",
+        "_portalLeuchte",
+        "_leuchtPool",
     ]),
 });
 
@@ -103056,6 +104455,17 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     swapHands: "KeyG",
     // Das Gespräch (Leben-Schau 07.10., L3): Enter öffnet den Chat, Enter im Feld sendet und gibt die Welt zurück.
     chat: "Enter",
+});
+// DIE FAHR-TASTEN (Leben-Schau 2, fahr-bahn — Befund: in der Tastenliste fehlten E und die Handbremse): die EINE Tafel, die
+// die Eingabe liest (E im keydown-Hörer, Gas · Bremse · Lenkung · Handbremse im Fahr-Schritt) und die Hilfe (`_hilfeZeilen`)
+// und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben w/a/s/d über
+// PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
+AnazhRealm.FAHR_TASTEN = Object.freeze({
+    einsteigen: Object.freeze({ code: "KeyE", zeigen: "E", label: "einsteigen/aussteigen" }),
+    gas: Object.freeze({ tasten: Object.freeze(["w"]), zeigen: "W", label: "Gas" }),
+    bremse: Object.freeze({ tasten: Object.freeze(["s"]), zeigen: "S", label: "Bremse/rückwärts" }),
+    lenken: Object.freeze({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", label: "lenken" }),
+    handbremse: Object.freeze({ tasten: Object.freeze(["shift"]), zeigen: "Shift", label: "Handbremse" }),
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
@@ -104679,6 +106089,7 @@ AnazhRealm._llmFuenferModell = function (model) {
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
     haus: "im Grundriss eines Hauses wächst nichts",
+    wagen: "in einem Wagen wächst nichts",
     wasser: "im Wasser steht nichts, am Ufer schon",
 });
 // DIE GRÜNDE DES ERGEBNIS-SATZES (`_ergebnisSatz`, Schau-2 Runde 3): jeder Wurf, der nicht steht, trägt einen — die Wand
@@ -104695,6 +106106,7 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
     seele: "die Welt kennt diese Seele nicht",
     gestalt: "die Gestalt ließ sich nicht gießen",
     buehne: "die Welt hat noch keine Bühne",
+    platz: "kein fahrbarer Grund in Reichweite, die Welt stellt den Wagen nicht hin",
     unbenannt: "ohne benannten Grund (das Log der Welt nennt ihn)",
 });
 // DER FUSS EINES STAMMS (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): der Kreis um die Achse, auf dem eine Pflanze steht
@@ -104746,11 +106158,13 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
-// V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). FIXED_MAX_ACCUM
-// klemmt die per-Frame-Zeit gegen den Spiral-of-Death (ein 2-s-Hitch akkumuliert nicht 120 Steps);
+// V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
+// die EINE Obergrenze des Spiel-Takts, an der Wurzel in startEternalLoop: ein 2-s-Hitch akkumuliert nicht
+// 120 Steps, eine 10-s-Pause trägt kein Tier 40 m weit (jede Bewegung liest den gedeckelten Takt, nie die
+// Wanduhr; die Anzeige-Uhren von Schwung und Pfeil deckeln ihren Stempel-Abstand mit derselben Zahl);
 // FIXED_MAX_STEPS ist die harte Obergrenze pro Frame (überschüssige Zeit fällt weg → kein Einhol-Sturm).
 AnazhRealm.FIXED_DT = 1 / 60;
-AnazhRealm.FIXED_MAX_ACCUM = 0.1;
+AnazhRealm.TAKT_DECKEL_S = 0.1;
 AnazhRealm.FIXED_MAX_STEPS = 8;
 // Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock): Tag-Nacht-Uhr und
 // Emotions-Cross-Fade driften die Himmelsfarbe, jede Regeneration rendert einen PMREM-Pass (teuer
@@ -104978,7 +106392,9 @@ AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
 // (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Den Versatz trägt die
-// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN).
+// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN);
+// darum trägt der Boden die Zuwendung seiner wahren Normale selbst (`receivedShadowNode`, 1110-5): abgewandt im Schatten,
+// über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     texelM: Object.freeze([0.17, 0.47]),
     bezugAspekt: 16 / 9,
@@ -104988,6 +106404,7 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     luftM: 4,
     normalTexel: 0.5,
     tiefeTexel: 0.75,
+    zuwendungSaum: 0.08,
 });
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:
@@ -105015,9 +106432,10 @@ AnazhRealm.PASS_WAHL = Object.freeze({
 });
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
-// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
-// hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()` (2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt
-// ihn (vorher nur der Saum 2 m: am Bildrand fehlte ein gehobenes Viertel).
+// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`), beides × die
+// Wind-Zeile des Gesetzes (w0 + w1 · Wind). Der Hub hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()`
+// (4,42 m im Sturm; ohne den Wind rechnete er 2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt ihn (vorher nur der
+// Saum 2 m: am Bildrand fehlte ein gehobenes Viertel), das Wasser des Fern-Rings liegt darunter (`_fernRingWasserTiefe`).
 AnazhRealm.WASSER_WELLE = Object.freeze({
     duenung: Object.freeze([1.4, 0.7, 0.34]),
     oktave: 0.4,
@@ -105032,7 +106450,10 @@ AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;
     const duenung = 0.5 * (W.duenung[0] + W.duenung[1] + W.duenung[2]);
     const kraeusel = W.kraeusel * Math.max(1 + W.oktave - W.mitte, W.mitte) * W.kraeuselDecke;
-    return duenung + kraeusel;
+    // der Wind des Gesetzes skaliert beides (Amplitude × (w0 + w1 · Wind), Wind 0 ruhig … 1 Sturm)
+    const WG =
+        AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+    return (duenung + kraeusel) * (WG.wind[0] + WG.wind[1]);
 };
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.
 AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);
@@ -105072,6 +106493,9 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
+// DER PLATZ DES VORSCHAU-WAGENS im Takt (`_ensurePortalPreview`): so viele Orte der Platz-Suche (`_fahrPlatzWege`) je Takt —
+// je Ort eine Ebene der Räder (4 Proben des Bodens, ~0,13 ms), an einem tragenden Ort die Bahn und die Welt.
+AnazhRealm.FAHR_PLATZ_JE_TAKT = 6;
 // Offener Flügel-Winkel der Welt-Tore (Nähe öffnet): wohnt NUR im porta-Gesetzbuch
 // (__portaCore.TUER_GESETZ.offen — Shell UND Welt lesen die EINE Quelle); Leser fail-closed nach dem
 // _sprintMulGesetz-Muster (Gesetz() memoisiert je Pfad).
@@ -105086,7 +106510,8 @@ AnazhRealm._tuerOffenRad = function () {
 // seine Vendor-Bahn. Sie läuft im direkten Draw UND im Bundle-Replay (r184 ruft needsRefresh je verfolgtem Bürger).
 //  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
 //      Mutation → genau EIN Refresh.
-//  (2) Atlas-Wächter: lebende Canvas-Atlanten deklarieren sich an mat._anazhAtlasTexe → Bake → EIN Refresh.
+//  (2) gefallen in (6): die Erklärung der Atlanten an die Diät (Integration V18.542) — wer eine Textur liest, muss sich
+//      nicht mehr erklären, der Textur-Wächter sieht jede.
 //  (3) DIE KAMERA-TREUE: Beobachter UND geteilte Bindegruppe (render · frame: cameraViewMatrix ·
 //      cameraProjectionMatrix · uLodAuge) hängen in r184 am PROGRAMM (NodeBuilderState), und jedes Objekt mit eigener
 //      Geometrie hat sein eigenes (gemessen 04.10. an der Mess-Wiese: 218 von 234 Programmen sind Diät-Programme).
@@ -105124,6 +106549,13 @@ AnazhRealm._tuerOffenRad = function () {
 //      Mess-Wiese, laufender Loop): vier Wechsel, 118 Fehler. Je Render-Objekt merkt die Diät Id und Version dieser
 //      Texturen; nach dem Gang (der den Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel EINEN Refresh nach sich,
 //      die Bindung folgt der Textur — für JEDEN Größenwechsel, den des Fensters eingeschlossen.
+//      JEDE TEXTUR DES PROGRAMMS (Integration V18.542, die weiße Masse): r184 lädt eine Textur nur im Binde-Gang eines
+//      Render-Objekts hoch (`Bindings._update`: SampledTexture.update → updateTexture), und den fährt nur ein Refresh. Der
+//      Wächter sah nur die Vorher-Knoten, die Atlanten erklärten sich selbst (der Atlas-Wächter (2)); die Daten-Bilder des
+//      Boden-Stoffs erklärte niemand: in der stehenden Welt (Mess-Wiese, Software-Holz) hob ein Schreiber die Version der
+//      Fern-Krone, der Wege-Karte (nah und fern) und der Kronen-Streu, und die GPU hielt 20 Takte lang die alte (die
+//      Version der GPU 3 gegen 4, 20 gegen 21, 17 gegen 18) — hochgeladen nur, wenn zufällig ein Chunk den Satz änderte.
+//      Jetzt merkt die Diät Id und Version JEDES Textur-Knotens der Bindegruppen (und der Vorher-Knoten) je Render-Objekt.
 AnazhRealm._diaetGang = function (ro, nbs) {
     const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
     const vor = [],
@@ -105140,11 +106572,17 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         const b0 = g.bindings && g.bindings[0];
         if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
     }
-    // (6) die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden)
+    // (6) JEDE Textur des Programms: die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden), und
+    // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber hebt oder dessen Wert
+    // ein Wachsen tauscht) — die Knoten sind die des Programms, jedes seiner Render-Objekte bindet dieselben.
     const texturen = nbs.updateBeforeNodes.filter((n) => n.isTextureNode === true);
+    for (const g of ro.getBindings())
+        for (const b of g.bindings)
+            if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
+                texturen.push(b.textureNode);
     return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen };
 };
-// (6) Wechselte eine Textur eines Vorher-Knotens (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
+// (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
     const nbs = ro.getNodeBuilderState();
     const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
@@ -105222,12 +106660,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             return true;
         }
     }
-    const mat =
-        ro && ro.material && ro.material.isShadowPassMaterial !== true
-            ? ro.material
-            : obj && obj.material && !Array.isArray(obj.material)
-              ? obj.material
-              : null;
     // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
     // Render-Objekt — der erste Pass, der eine Änderung sieht (die Kaskade), verbraucht sie, und ein Pass, der ein Attribut
     // allein liest (die Normale im Hauptbild), lädt es nie hoch. Gemessen am werfenden Bau-Satz (echte GPU, Dorf der
@@ -105255,21 +106687,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         if (g.length !== i) {
             g.length = i;
             anders = true;
-        }
-        if (anders) return true;
-    }
-    const texe = mat ? mat._anazhAtlasTexe : null;
-    if (texe) {
-        if (d === null) d = obs.getRenderObjectData(ro);
-        const va = d._anazhAtlasVs || (d._anazhAtlasVs = []);
-        let anders = va.length !== texe.length;
-        va.length = texe.length;
-        for (let i = 0; i < texe.length; i++) {
-            const v = texe[i] ? texe[i].version : -1;
-            if (va[i] !== v) {
-                va[i] = v;
-                anders = true;
-            }
         }
         if (anders) return true;
     }
@@ -105908,7 +107325,17 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // DIE DURCHSICHT DER KAMERA (`_durchsichtGewicht`): zwischen Auge und Ziel (`_kamZielSetzen`) wird eine Pflanze um den
 // Sicht-Strahl bis zum Radius durchsichtig und über den Saum ausgedithert, quer zum Strahl wie vor der Ebene des Ziels (m)
 // — zu Fuß der Leib (Schultern ± 0,25 m, der Kopf 0,7 m über der Brust), im Ritt der Wagen (4,5 × 1,9 m um die Kabine).
-AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({ fussM: 0.9, rittM: 2.0, saumM: 0.6 });
+// Dazu die NAH-KUGEL um das Auge (Leben-Schau 2, 09.10.: in allen drei Spuren füllte Laub, Strauch oder Ast die Linse): in
+// 3rd fallen Laub und Rinde bis an die Ebene des Ziels (der Freiraum der Kamera), die Boden-Streu bis bodenM (im Ritt
+// bodenRittM); im Ich-Auge Laub und Boden-Streu bis ichM — die Rinde, an der der Leib steht, bleibt.
+AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({
+    fussM: 0.9,
+    rittM: 2.0,
+    saumM: 0.6,
+    bodenM: 2.0,
+    bodenRittM: 3.0,
+    ichM: 0.8,
+});
 // Die Zahlen-Algebra der EINEN Durchsichts-Formel (`_durchsichtGewicht`): Skalare oder {x, y, z} — die Linse rechnet damit,
 // was der Stoff rechnet.
 AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
@@ -105919,13 +107346,11 @@ AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
     dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
     len: (a) => Math.hypot(a.x, a.y, a.z),
     max: (a, b) => Math.max(a, b),
+    min: (a, b) => Math.min(a, b),
     clamp01: (a) => Math.min(1, Math.max(0, a)),
 });
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
-// Der gleitende Arm der 3rd-Kamera zu Fuß: der Rest je Sekunde, den er nach einem Hindernis noch vor sich hat (wie die
-// Probefahrt-Kamera des Labors, vehicle-core `kamera.posEase`) — nach 0,1 s 47 %, nach 0,5 s 96 % hinaus.
-AnazhRealm.KAMERA_ARM_RUHE = 0.0016;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
@@ -106038,7 +107463,7 @@ AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
 AnazhRealm.SCHRITT_KLANG = Object.freeze({
     get tempoMin() {
         // m/s — darunter (Mikro-Rutsch im Stand) feuert kein Schritt
-        return AnazhRealm._bewegungsBlock("schritt", ["kalib", "klangTempoMin"]).klangTempoMin;
+        return AnazhRealm._bewegungsBlock("schritt", ["taktCompound", "klangTempoMin"]).klangTempoMin;
     },
     maxProTick: 2, // Frame-Hänger feuern keinen Burst-Schwall (max 2 Füße/Frame)
     gainDeckel: 0.12, // absolute Decke jedes Bursts (unter dem Kampf-Treffer)

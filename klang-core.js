@@ -407,9 +407,9 @@
         // Eingangs-Spielraum, ueberabtastung gegen Aliasing der Saettigung.
         spitze: { linearBisDb: -6, deckeDb: -1, kopfraumDb: 12, punkte: 8193, ueberabtastung: "4x" },
         // DAS OHR des Wirts — Kosten je Frame, nie die Weltgroesse: der Hoer-Ring (Mitte + radien × richtungen,
-        // Meter) wird mit probenJeFrame Punkten je Frame abgetastet, die Glut-Bauten mit bautenJeFrame Eintraegen
-        // je Frame (Hoerweite + glutRandM); die Mischung laeuft im Takt mischSek (Sekunden).
-        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, bautenJeFrame: 48, glutRandM: 20, mischSek: 0.1 },
+        // Meter) wird mit probenJeFrame Punkten je Frame abgetastet (die Glut liest der Wirt aus seinem Verzeichnis); die
+        // Mischung laeuft im Takt mischSek (Sekunden).
+        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1 },
         stimmen: {
             // Wind ueber offenem Land: v = vMin + (vMax − vMin)·windFeld, vEff = v·Boee am Ohr.
             wind:   { textur: ["wind"], sr: 22050, sek: 9.7, saat: 11, quellen: 2, spreizung: 0.6, filter: "bandpass",
@@ -1187,6 +1187,134 @@
         return { quelle: src, hz: hz };
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DIE FAHRT (Leben-Schau 2, fahr-bahn, 10.10.; rein additiv) — der Klang eines
+    //  Wagens folgt seiner Fahrt (Befund: Fahren war stumm).
+    //   MOTOR: ein Viertakter zuendet je Kurbel-Umdrehung zylinder/2-mal — sein
+    //     Grundton ist die Zuend-Folge f = Upm/60 · zylinder/2 (V8: Leerlauf
+    //     800/min → 53 Hz, Begrenzer 6800/min → 453 Hz); dazu die halbe Ordnung
+    //     (f/2, das Grummeln der ungleichen Zuend-Abstaende). Die Drehzahl folgt
+    //     dem Tempo im Gang: gaenge gleich weite Tempo-Baender bis vmax, im ersten
+    //     vom Leerlauf, in jedem weiteren von schaltUpm zum Begrenzer; rueckwaerts
+    //     EIN Band bis zum Rueckwaerts-Deckel. Saegezahn (alle Harmonischen) durch
+    //     einen Tiefpass, der mit der Last oeffnet; Pegel aus Leerlauf, Last (Gas)
+    //     und Drehzahl.
+    //   ABROLLEN: das Reifen-Fahrbahn-Rauschen — seine Leistung waechst etwa mit
+    //     v³–v⁴ (30–40 dB je Dekade; exponent 1,75 = 35 dB/Dekade), sein Band
+    //     steigt mit dem Tempo. Das Rauschen ist eine Perioden-Welle (harmonische
+    //     Teiltoene der Grundfrequenz grundHz mit Saat-Phasen, Amplitude ∝ 1/√k):
+    //     der Haupt-Thread rechnet keinen Sample, nur die Teilton-Tafel.
+    //   IM FLUG greift kein Reifen: das Abrollen schweigt.
+    //  fahrtMischung(lage) ist rein (die Linse rechnet nach), fahrtStimme baut
+    //  die Quellen (Lab, Welt, Linse: derselbe Graph).
+    // ═══════════════════════════════════════════════════════════════════════
+    // prettier-ignore
+    var FAHRT = {
+        zylinder: 8, leerlaufUpm: 800, begrenzerUpm: 6800, schaltUpm: 3600, gaenge: 3,
+        motor: { leerDb: -32, lastDb: -20, upmDb: 6, halbeOrdnungDb: -8, hzBasis: 320, hzLast: 1600, hzObertoene: 3, q: 0.8 },
+        abrollen: { refDb: -26, vRef: 15, exponent: 1.75, vMin: 0.3, hzBasis: 260, hzProMs: 45, q: 0.7,
+                    grundHz: 1.5, teiltoene: 1024, saat: 131 },
+        rampeSek: 0.06, abklangSek: 0.08
+    };
+    // Die Drehzahl (Upm) zu Tempo v (m/s, rueckwaerts negativ) und den Deckeln vmax/rueckVmax (m/s).
+    function fahrtUpm(v, vmax, rueckVmax) {
+        var F = FAHRT, a = Math.abs(v), spanne = F.begrenzerUpm - F.leerlaufUpm;
+        if (!(vmax > 0)) return F.leerlaufUpm;
+        if (v < 0) return F.leerlaufUpm + spanne * Math.min(1, a / Math.max(0.1, rueckVmax || vmax * 0.32));
+        var band = vmax / F.gaenge, g = Math.min(F.gaenge, Math.floor(a / band) + 1);
+        var u = Math.min(1, (a - (g - 1) * band) / band);
+        if (a >= vmax) return F.begrenzerUpm;
+        return g === 1 ? F.leerlaufUpm + spanne * u : F.schaltUpm + (F.begrenzerUpm - F.schaltUpm) * u;
+    }
+    // lage = { v, vmax, rueckVmax, gas (0..1), luft } → { upm, motorHz, motorDb, motorFilterHz, rollDb, rollHz }
+    function fahrtMischung(lage) {
+        var F = FAHRT, M = F.motor, R = F.abrollen, L = lage || {};
+        var zahl = function (x, d) { return typeof x === "number" && isFinite(x) ? x : d; };
+        var v = zahl(L.v, 0), a = Math.abs(v), gas = Math.max(0, Math.min(1, zahl(L.gas, 0)));
+        var upm = fahrtUpm(v, zahl(L.vmax, 0), zahl(L.rueckVmax, 0));
+        var hz = (upm / 60) * (F.zylinder / 2);
+        var anteil = (upm - F.leerlaufUpm) / (F.begrenzerUpm - F.leerlaufUpm);
+        var rollDb = L.luft || a < R.vMin ? -Infinity : R.refDb + 20 * R.exponent * Math.log10(a / R.vRef);
+        return {
+            upm: upm, motorHz: hz,
+            motorDb: M.leerDb + (M.lastDb - M.leerDb) * gas + M.upmDb * anteil,
+            motorFilterHz: Math.max(M.hzBasis + M.hzLast * gas, hz * M.hzObertoene),
+            rollDb: rollDb, rollHz: R.hzBasis + R.hzProMs * a
+        };
+    }
+    // fahrtStimme(ctx, ausgang) → { anwenden(lage, t), stop(t), zensus(), knoten } — die Stimme EINES Wagens: zwei
+    // Motor-Oszillatoren (Saegezahn f, Sinus f/2) → Tiefpass → Gain, das Abrollen (Perioden-Welle) → Bandpass → Gain.
+    // Pegel: dB am Bus fuer die Quelle mit RMS 1 (der Saegezahn traegt 1/√3, der Sinus 1/√2 — ausgeglichen).
+    function fahrtStimme(ctx, ausgang) {
+        var F = FAHRT, M = F.motor, R = F.abrollen, knoten = new WeakSet(), letzte = null, an = true;
+        var dbZuGain = function (db, rms) { return db === -Infinity ? 0 : Math.pow(10, db / 20) / rms; };
+        var t0 = ctx.currentTime;
+        var saege = ctx.createOscillator(), halb = ctx.createOscillator(), halbG = ctx.createGain();
+        saege.type = "sawtooth";
+        halb.type = "sine";
+        halbG.gain.value = Math.pow(10, M.halbeOrdnungDb / 20) * (Math.sqrt(1 / 3) / Math.SQRT1_2);
+        var tief = ctx.createBiquadFilter(), motorG = ctx.createGain();
+        tief.type = "lowpass";
+        tief.Q.value = M.q;
+        motorG.gain.value = 0;
+        saege.connect(tief);
+        halb.connect(halbG);
+        halbG.connect(tief);
+        tief.connect(motorG);
+        motorG.connect(ausgang);
+        // das Abrollen: die Teilton-Tafel (Saat-Phasen, ∝ 1/√k, auf RMS 1 geeicht), die Welle laeuft ohne Normalisierung
+        var n = R.teiltoene, re = new Float32Array(n + 1), im = new Float32Array(n + 1), rnd = umweltRng(R.saat), summe = 0;
+        for (var k = 1; k <= n; k++) {
+            var amp = 1 / Math.sqrt(k), ph = rnd() * 2 * Math.PI;
+            re[k] = amp * Math.cos(ph);
+            im[k] = amp * Math.sin(ph);
+            summe += amp * amp;
+        }
+        var eich = 1 / Math.sqrt(summe / 2);
+        for (var j = 1; j <= n; j++) { re[j] *= eich; im[j] *= eich; }
+        var welle = ctx.createPeriodicWave(re, im, { disableNormalization: true });
+        var roll = ctx.createOscillator(), band = ctx.createBiquadFilter(), rollG = ctx.createGain();
+        roll.setPeriodicWave(welle);
+        roll.frequency.value = R.grundHz;
+        band.type = "bandpass";
+        band.Q.value = R.q;
+        rollG.gain.value = 0;
+        roll.connect(band);
+        band.connect(rollG);
+        rollG.connect(ausgang);
+        var quellen = [saege, halb, roll];
+        quellen.forEach(function (q) { knoten.add(q); q.start(t0); });
+        return {
+            knoten: knoten,
+            anwenden: function (lage, t) {
+                if (!an) return;
+                var zeit = typeof t === "number" ? t : ctx.currentTime, m = (letzte = fahrtMischung(lage));
+                saege.frequency.setTargetAtTime(m.motorHz, zeit, F.rampeSek);
+                halb.frequency.setTargetAtTime(m.motorHz / 2, zeit, F.rampeSek);
+                tief.frequency.setTargetAtTime(m.motorFilterHz, zeit, F.rampeSek);
+                motorG.gain.setTargetAtTime(dbZuGain(m.motorDb, Math.sqrt(1 / 3)), zeit, F.rampeSek);
+                band.frequency.setTargetAtTime(m.rollHz, zeit, F.rampeSek);
+                rollG.gain.setTargetAtTime(dbZuGain(m.rollDb, 1), zeit, F.rampeSek);
+            },
+            stop: function (t) {
+                if (!an) return;
+                an = false;
+                var zeit = typeof t === "number" ? t : ctx.currentTime;
+                [motorG, rollG].forEach(function (g) { g.gain.cancelScheduledValues(zeit); g.gain.setTargetAtTime(0, zeit, F.abklangSek); });
+                var alle = [halbG, tief, motorG, band, rollG];
+                quellen.forEach(function (q, i) {
+                    q.stop(zeit + 8 * F.abklangSek);
+                    if (i === 0) q.onended = function () { alle.concat(quellen).forEach(function (nd) { try { nd.disconnect(); } catch (_e) {} }); };
+                });
+            },
+            zensus: function () {
+                return { name: "fahrt", gesetz: "klang:FAHRT", an: an, quellen: an ? quellen.length : 0,
+                         upm: letzte ? letzte.upm : null, motorHz: letzte ? letzte.motorHz : null,
+                         motorDb: letzte ? letzte.motorDb : null, rollDb: letzte ? letzte.rollDb : null };
+            }
+        };
+    }
+
     root.__klangCore = {
         VERSION: VERSION,
         progressionDeg: progressionDeg,
@@ -1208,6 +1336,11 @@
         tierRufSpielen: tierRufSpielen,
         SUBSTANZ: SUBSTANZ,
         substanzKlang: substanzKlang,
+        // Leben-Schau 2 (rein additiv) — die Stimme der Fahrt
+        FAHRT: FAHRT,
+        fahrtUpm: fahrtUpm,
+        fahrtMischung: fahrtMischung,
+        fahrtStimme: fahrtStimme,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,

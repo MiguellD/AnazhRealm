@@ -57,7 +57,7 @@ function statisch(src) {
         // die Liste darf über Zeilen laufen (Prettier bricht sie mit Schluss-Komma um)
         lesen = m ? JSON.parse(m[1].replace(/,\s*\]$/, "]")) : null;
     } catch (_e) {}
-    const bau = methode(src, "_foundryBuildMesh(m) {");
+    const bau = methode(src, "_foundryBuildMesh(m, baum) {");
     const gelesen = new Set();
     if (bau) {
         const code = strip(bau);

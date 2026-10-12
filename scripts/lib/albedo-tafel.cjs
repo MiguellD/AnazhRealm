@@ -37,11 +37,35 @@ const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Fels", "Boden", "Haus", "Metall/Lack"
 // DIE STUDIOS des Labors (r128): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
 const STUDIOS = {
-    terrain: { pfad: "worlds/terrain/index.html", szene: "scene", renderer: "renderer", ausgabe: "composer", wurzel: "subject" },
+    terrain: {
+        pfad: "worlds/terrain/index.html",
+        szene: "scene",
+        renderer: "renderer",
+        ausgabe: "composer",
+        wurzel: "subject",
+    },
     garage: { pfad: "worlds/garage/index.html", szene: "scene", renderer: "R", ausgabe: null, wurzel: "vehicle" },
-    portale: { pfad: "worlds/portale/index.html", szene: "scene", renderer: "renderer", ausgabe: "composer", wurzel: "gate" },
-    schmiede: { pfad: "worlds/schmiede/index.html", szene: "scene", renderer: "R", ausgabe: "composer", wurzel: "weapon" },
-    fachwerk: { pfad: "worlds/fachwerk/index.html", szene: "scene", renderer: "renderer", ausgabe: null, wurzel: "houseGroup" },
+    portale: {
+        pfad: "worlds/portale/index.html",
+        szene: "scene",
+        renderer: "renderer",
+        ausgabe: "composer",
+        wurzel: "gate",
+    },
+    schmiede: {
+        pfad: "worlds/schmiede/index.html",
+        szene: "scene",
+        renderer: "R",
+        ausgabe: "composer",
+        wurzel: "weapon",
+    },
+    fachwerk: {
+        pfad: "worlds/fachwerk/index.html",
+        szene: "scene",
+        renderer: "renderer",
+        ausgabe: null,
+        wurzel: "houseGroup",
+    },
     koerperstudio: {
         pfad: "worlds/koerperstudio/index.html",
         szene: "scene",
@@ -49,7 +73,13 @@ const STUDIOS = {
         ausgabe: "composer",
         wurzel: "character",
     },
-    tetrapoda: { pfad: "worlds/tetrapoda/index.html", szene: "scene", renderer: "renderer", ausgabe: "composer", wurzel: "wolf" },
+    tetrapoda: {
+        pfad: "worlds/tetrapoda/index.html",
+        szene: "scene",
+        renderer: "renderer",
+        ausgabe: "composer",
+        wurzel: "wolf",
+    },
 };
 
 function ladeTafel(p) {
@@ -78,14 +108,17 @@ function tafelPruefen(t) {
         const W = z.welt || {};
         try {
             new RegExp(W.klasse);
-            if (!W.klasse || !W.klasse.startsWith("^") || !W.klasse.endsWith("$")) f.push(`${z.id}: welt.klasse ohne Anker ^…$`);
+            if (!W.klasse || !W.klasse.startsWith("^") || !W.klasse.endsWith("$"))
+                f.push(`${z.id}: welt.klasse ohne Anker ^…$`);
         } catch (_e) {
             f.push(`${z.id}: welt.klasse ist kein Regex`);
         }
         const ex = W.exemplar || {};
-        if (!["architektur", "tier", "spieler", "boden"].includes(ex.typ)) f.push(`${z.id}: welt.exemplar.typ unbekannt`);
+        if (!["architektur", "tier", "spieler", "boden"].includes(ex.typ))
+            f.push(`${z.id}: welt.exemplar.typ unbekannt`);
         if ((ex.typ === "architektur" || ex.typ === "tier") && !ex.name) f.push(`${z.id}: welt.exemplar.name fehlt`);
-        if (ex.radius !== undefined && !(zahl(ex.radius) && ex.radius > 0)) f.push(`${z.id}: welt.exemplar.radius ist keine Zahl > 0`);
+        if (ex.radius !== undefined && !(zahl(ex.radius) && ex.radius > 0))
+            f.push(`${z.id}: welt.exemplar.radius ist keine Zahl > 0`);
         for (const sel of [L.stoff, W.stoff])
             if (sel)
                 for (const k of ["r", "mt", "cc"])
@@ -94,21 +127,30 @@ function tafelPruefen(t) {
         const ist = z.ist;
         if (ist !== null && ist !== undefined) {
             for (const s of ["labor", "welt"])
-                if (!ist[s] || !zahl(ist[s].Y) || typeof ist[s].rgb !== "string") f.push(`${z.id}: ist.${s} {Y, rgb} fehlt`);
+                if (!ist[s] || !zahl(ist[s].Y) || typeof ist[s].rgb !== "string")
+                    f.push(`${z.id}: ist.${s} {Y, rgb} fehlt`);
             if (!zahl(ist.verhaeltnis)) f.push(`${z.id}: ist.verhaeltnis fehlt`);
-            else if (ist.labor && ist.welt && Math.abs(ist.verhaeltnis - ist.labor.Y / ist.welt.Y) > 1e-3 * ist.verhaeltnis)
+            else if (
+                ist.labor &&
+                ist.welt &&
+                Math.abs(ist.verhaeltnis - ist.labor.Y / ist.welt.Y) > 1e-3 * ist.verhaeltnis
+            )
                 f.push(`${z.id}: ist.verhaeltnis ${ist.verhaeltnis} ist nicht Labor/Welt`);
         }
-        if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche)) f.push(`${z.id}: ratsche ist weder null noch Zahl`);
+        if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
+            f.push(`${z.id}: ratsche ist weder null noch Zahl`);
     }
     for (const g of PFLICHT_GRUPPEN)
         if (!(t.zeilen || []).some((z) => z.gruppe === g)) f.push(`die Klasse ${g} trägt keine Zeile`);
     for (const [s, k] of Object.entries(t.karten || {})) {
         if (!STUDIOS[s]) f.push(`karten.${s}: Studio unbekannt`);
-        if (k.ist !== null && k.ist !== undefined && !(zahl(k.ist.kL) && k.ist.kL > 0)) f.push(`karten.${s}: ist.kL fehlt`);
-        if (k.ratsche !== null && k.ratsche !== undefined && !zahl(k.ratsche)) f.push(`karten.${s}: ratsche ist keine Zahl`);
+        if (k.ist !== null && k.ist !== undefined && !(zahl(k.ist.kL) && k.ist.kL > 0))
+            f.push(`karten.${s}: ist.kL fehlt`);
+        if (k.ratsche !== null && k.ratsche !== undefined && !zahl(k.ratsche))
+            f.push(`karten.${s}: ratsche ist keine Zahl`);
     }
-    for (const s of Object.keys(STUDIOS)) if (!(t.karten || {})[s]) f.push(`karten.${s} fehlt (jedes Studio misst seine Karte)`);
+    for (const s of Object.keys(STUDIOS))
+        if (!(t.karten || {})[s]) f.push(`karten.${s} fehlt (jedes Studio misst seine Karte)`);
     if (t.gemessen !== null && t.gemessen !== undefined && (!t.gemessen.labor || !t.gemessen.welt))
         f.push("gemessen braucht {labor, welt} (Gerät, Datum, Ort der beiden Seiten)");
     return f;
@@ -131,8 +173,10 @@ function tafelUrteil(t, messung) {
         const L = messung.labor && messung.labor[z.id];
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
-        if (!L || !zahl(L.Y) || !(L.Y > 0)) rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
-        if (!W || !zahl(W.Y) || !(W.Y > 0)) rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
+        if (!L || !zahl(L.Y) || !(L.Y > 0))
+            rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
+        if (!W || !zahl(W.Y) || !(W.Y > 0))
+            rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
         if (L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
@@ -155,7 +199,10 @@ function tafelUrteil(t, messung) {
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
             e.imSoll = e.abweichung <= sollA;
             if (zahl(k.ratsche) && e.abweichung > k.ratsche + randA)
-                rot.push({ art: "ratsche", text: `Karte ${s}: k·L ${m.kL} (|ln| ${e.abweichung} zu 0,3147) über der Ratsche ${k.ratsche}` });
+                rot.push({
+                    art: "ratsche",
+                    text: `Karte ${s}: k·L ${m.kL} (|ln| ${e.abweichung} zu 0,3147) über der Ratsche ${k.ratsche}`,
+                });
         }
         karten.push(e);
     }
@@ -166,7 +213,11 @@ function tafelUrteil(t, messung) {
         rot,
         zeilen,
         karten,
-        soll: { zeilen: `${imSoll}/${zeilen.length}`, karten: `${kartenImSoll}/${karten.length}`, toleranz: t.toleranz },
+        soll: {
+            zeilen: `${imSoll}/${zeilen.length}`,
+            karten: `${kartenImSoll}/${karten.length}`,
+            toleranz: t.toleranz,
+        },
     };
 }
 
@@ -203,9 +254,19 @@ function tafelTabelle(u) {
     const z = [];
     const pad = (s, n) => String(s).padEnd(n);
     const lpad = (s, n) => String(s).padStart(n);
-    z.push(`ALBEDO LABOR ↔ WELT ${u.urteil} · im Soll (±${Math.round(u.soll.toleranz * 100)} %): ${u.soll.zeilen} Zeilen, ${u.soll.karten} Karten`);
+    z.push(
+        `ALBEDO LABOR ↔ WELT ${u.urteil} · im Soll (±${Math.round(u.soll.toleranz * 100)} %): ${u.soll.zeilen} Zeilen, ${u.soll.karten} Karten`
+    );
     z.push("");
-    z.push(pad("Zeile", 14) + pad("Klasse", 12) + lpad("Labor Y", 9) + lpad("Welt Y", 9) + lpad("L/W", 8) + lpad("Ratsche", 9) + "  Soll  Labor rgb · Welt rgb");
+    z.push(
+        pad("Zeile", 14) +
+            pad("Klasse", 12) +
+            lpad("Labor Y", 9) +
+            lpad("Welt Y", 9) +
+            lpad("L/W", 8) +
+            lpad("Ratsche", 9) +
+            "  Soll  Labor rgb · Welt rgb"
+    );
     for (const e of u.zeilen)
         z.push(
             pad(e.id, 14) +
@@ -219,7 +280,13 @@ function tafelTabelle(u) {
                 ` ${(e.labor && e.labor.rgb) || "–"} · ${(e.welt && e.welt.rgb) || "–"}`
         );
     z.push("");
-    z.push(pad("Karte (18 %)", 16) + lpad("k·L", 8) + lpad("/0,3147", 9) + lpad("Ratsche", 9) + "  Soll  Ausgabe-Pixel (Welt 173)");
+    z.push(
+        pad("Karte (18 %)", 16) +
+            lpad("k·L", 8) +
+            lpad("/0,3147", 9) +
+            lpad("Ratsche", 9) +
+            "  Soll  Ausgabe-Pixel (Welt 173)"
+    );
     for (const k of u.karten)
         z.push(
             pad(k.studio, 16) +
@@ -278,7 +345,12 @@ function laborAlbedo(o) {
         };
         const karte = new T.Mesh(
             new T.PlaneGeometry(2, 2),
-            new T.MeshStandardMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0, side: T.DoubleSide })
+            new T.MeshStandardMaterial({
+                color: new T.Color(0.18, 0.18, 0.18),
+                roughness: 1,
+                metalness: 0,
+                side: T.DoubleSide,
+            })
         );
         const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
         const cam = new T.PerspectiveCamera(35, W / H, 0.01, 4000);
@@ -360,9 +432,15 @@ function laborAlbedo(o) {
                     window.__stoffPasst(L.stoff || null, stoffOf(m)) &&
                     (!nur.length || nur.includes(m)) &&
                     !ohne.includes(m);
-                const sel = alleMeshes.filter((x) => alt.vis.get(x) && wurzel && unter(x, wurzel) && matsOf(x).some(passtMat));
+                const sel = alleMeshes.filter(
+                    (x) => alt.vis.get(x) && wurzel && unter(x, wurzel) && matsOf(x).some(passtMat)
+                );
                 if (!sel.length) {
-                    ergebnisse.push({ id: z.id, pixel: 0, fehler: "kein Zug mit passendem Stoff unter " + (L.wurzel || o.studio.wurzel) });
+                    ergebnisse.push({
+                        id: z.id,
+                        pixel: 0,
+                        fehler: "kein Zug mit passendem Stoff unter " + (L.wurzel || o.studio.wurzel),
+                    });
                     continue;
                 }
                 // Gemischte Züge (Material-Liste): die fremden Stoffe des Zugs sind für den Schuss unsichtbar.
@@ -395,7 +473,15 @@ function laborAlbedo(o) {
                 alt.matVis.clear();
                 for (const [m, v] of alt.metall) m.metalness = v;
                 alt.metall.clear();
-                const stoffe = [...new Set(sel.flatMap((x) => matsOf(x).filter(passtMat).map((m) => JSON.stringify(stoffOf(m)))))];
+                const stoffe = [
+                    ...new Set(
+                        sel.flatMap((x) =>
+                            matsOf(x)
+                                .filter(passtMat)
+                                .map((m) => JSON.stringify(stoffOf(m)))
+                        )
+                    ),
+                ];
                 ergebnisse.push(
                     Object.assign(window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id), {
                         id: z.id,
@@ -471,7 +557,11 @@ function laborKarte(o) {
         const vis = new Map(alle.map((x) => [x, x.visible]));
         const alt = { fog: sc.fog, tm: R.toneMapping, rt: R.getRenderTarget() };
         const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
-        const out = { studio: o.studioId, belichtung: R.toneMappingExposure, physikalisch: !!R.physicallyCorrectLights };
+        const out = {
+            studio: o.studioId,
+            belichtung: R.toneMappingExposure,
+            physikalisch: !!R.physicallyCorrectLights,
+        };
         try {
             for (const x of alle) x.visible = false;
             sc.add(karte);
@@ -532,7 +622,160 @@ function laborKarte(o) {
     })();
 }
 
+// DIE LABOR-SEITE DER LAUB-LICHT-LINSE (K19, phyto-core `laubDurchlass`, foundry-core RE_Direct_Laub): das Laub des Subjekts
+// (foliageMat · foliageMatTex) aus `abstand` m (Augenhöhe 1,7 m, Blick auf die Kronen-Mitte), der Key allein ohne Schatten (Rim · Fill ·
+// Back · Hemi · Umgebung schweigen), einmal HINTER der Krone (seine Höhe = die Peilung vom Auge zur Kronen-Mitte), einmal
+// hinter dem Auge — wie die Welt-Seite `__laubGegenlicht` unter `nurSonne`. Gezählt jedes Pixel, das beide Lagen zeichnen,
+// das Mittel der linearen Luma (Halb-Float, ungetont).
+function laborLaubGegenlicht(o) {
+    o = o || {};
+    const T = window.THREE;
+    const g = (n) => new Function(`return typeof ${n} !== "undefined" ? ${n} : undefined;`)();
+    const R = g(o.studio.renderer),
+        sc = g(o.studio.szene),
+        wurzel = g(o.studio.wurzel),
+        key = g("keyLight");
+    const gl = R.getContext();
+    gl.getExtension("EXT_color_buffer_float");
+    const W = o.w || 320,
+        H = o.h || 240;
+    const laubStoffe = [g("foliageMat"), g("foliageMatTex")].filter(Boolean);
+    const laub = [],
+        alle = [];
+    sc.traverse((x) => {
+        if (!(x.isMesh || x.isPoints || x.isLine || x.isSprite)) return;
+        alle.push(x);
+        let unter = false;
+        for (let p = x; p; p = p.parent) if (p === wurzel) unter = true;
+        if (unter && laubStoffe.includes(x.material)) laub.push(x);
+    });
+    if (!laub.length || !key) return { fehler: !key ? "kein keyLight" : "kein Laub am Subjekt" };
+    wurzel.updateMatrixWorld(true);
+    const box = new T.Box3();
+    for (const x of laub) box.expandByObject(x);
+    const mitte = box.getCenter(new T.Vector3());
+    const fuss = new T.Vector3().setFromMatrixPosition(wurzel.matrixWorld);
+    // Der Labor-Baum steht in seinem Mass (die Vorlage, nicht das Exemplar der Welt): mit `weltHoehe` rückt das Auge im
+    // Verhältnis der Höhen heran — dieselbe Peilung, dieselbe Sonnen-Höhe wie die Welt-Seite.
+    const abstand = (o.abstand || 8) * (o.weltHoehe > 0 ? (box.max.y - fuss.y) / o.weltHoehe : 1);
+    const auge = new T.Vector3(fuss.x, fuss.y + 1.7, fuss.z + abstand);
+    const elev = Math.max(
+        (5 * Math.PI) / 180,
+        Math.atan2(mitte.y - auge.y, Math.hypot(mitte.x - auge.x, mitte.z - auge.z))
+    );
+    const cam = new T.PerspectiveCamera(o.fov || 75, W / H, 0.05, 400);
+    cam.position.copy(auge);
+    cam.lookAt(mitte);
+    cam.updateMatrixWorld(true);
+    const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
+    const lichter = [];
+    sc.traverse((x) => {
+        if (x.isLight) lichter.push([x, x.intensity]);
+    });
+    const alt = {
+        fog: sc.fog,
+        bg: sc.background,
+        env: sc.environment,
+        tm: R.toneMapping,
+        kp: key.position.clone(),
+        kt: key.target.position.clone(),
+        ks: key.castShadow,
+        vis: new Map(alle.map((x) => [x, x.visible])),
+    };
+    const lies = () => {
+        const px = new Float32Array(W * H * 4);
+        gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, px);
+        return px;
+    };
+    const dh = new T.Vector3(auge.x - fuss.x, 0, auge.z - fuss.z).normalize();
+    const schuss = (gegen) => {
+        const sd = dh
+            .clone()
+            .multiplyScalar((gegen ? -1 : 1) * Math.cos(elev))
+            .add(new T.Vector3(0, Math.sin(elev), 0))
+            .normalize();
+        key.target.position.copy(mitte);
+        key.position.copy(mitte.clone().add(sd.multiplyScalar(20)));
+        key.target.updateMatrixWorld(true);
+        key.updateMatrixWorld(true);
+        R.setRenderTarget(rt);
+        R.setClearColor(0x000000, 0);
+        R.clear();
+        R.render(sc, cam);
+        const px = lies();
+        R.setRenderTarget(null);
+        return px;
+    };
+    try {
+        for (const x of alle) x.visible = !!alt.vis.get(x) && laub.includes(x);
+        for (const [l, i] of lichter) l.intensity = l === key ? i : 0;
+        sc.fog = null;
+        sc.background = null;
+        sc.environment = null;
+        key.castShadow = false; // der Stoff allein, wie die Welt-Seite unter `nurSonne`
+        R.toneMapping = T.NoToneMapping;
+        schuss(true);
+        const ge = schuss(true),
+            au = schuss(false);
+        let sg = 0,
+            sa = 0,
+            n = 0;
+        for (let i = 0; i < W * H; i++)
+            if (ge[i * 4 + 3] > 0 && au[i * 4 + 3] > 0) {
+                sg += 0.2126 * ge[i * 4] + 0.7152 * ge[i * 4 + 1] + 0.0722 * ge[i * 4 + 2];
+                sa += 0.2126 * au[i * 4] + 0.7152 * au[i * 4 + 1] + 0.0722 * au[i * 4 + 2];
+                n++;
+            }
+        // das Bild je Lage (sRGB, Rest magenta; WebGL liest von unten)
+        const png = (px) => {
+            const cv = document.createElement("canvas");
+            cv.width = W;
+            cv.height = H;
+            const cx = cv.getContext("2d");
+            const img = cx.createImageData(W, H);
+            const enc = (v) =>
+                Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+            for (let y = 0; y < H; y++)
+                for (let x = 0; x < W; x++) {
+                    const i = ((H - 1 - y) * W + x) * 4,
+                        q = (y * W + x) * 4;
+                    const da = px[i + 3] > 0;
+                    img.data[q] = da ? enc(px[i]) : 255;
+                    img.data[q + 1] = da ? enc(px[i + 1]) : 0;
+                    img.data[q + 2] = da ? enc(px[i + 2]) : 255;
+                    img.data[q + 3] = 255;
+                }
+            cx.putImageData(img, 0, 0);
+            return cv.toDataURL("image/png");
+        };
+        return {
+            bilder: o.bilder ? { gegen: png(ge), auf: png(au) } : undefined,
+            abstand: +abstand.toFixed(1),
+            sonneGrad: +((elev * 180) / Math.PI).toFixed(1),
+            hoehe: +(box.max.y - fuss.y).toFixed(1),
+            pixel: n,
+            gegen: { Y: n ? +(sg / n).toFixed(4) : null },
+            auf: { Y: n ? +(sa / n).toFixed(4) : null },
+            verhaeltnis: n && sa > 0 ? +(sg / sa).toFixed(3) : null,
+        };
+    } finally {
+        for (const x of alle) x.visible = alt.vis.get(x);
+        for (const [l, i] of lichter) l.intensity = i;
+        sc.fog = alt.fog;
+        sc.background = alt.bg;
+        sc.environment = alt.env;
+        R.toneMapping = alt.tm;
+        key.position.copy(alt.kp);
+        key.target.position.copy(alt.kt);
+        key.castShadow = alt.ks;
+        key.target.updateMatrixWorld(true);
+        key.updateMatrixWorld(true);
+        rt.dispose();
+    }
+}
+
 const LABOR_INSTALL =
+    `window.__laborLaub = ${laborLaubGegenlicht.toString()};` +
     `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
     `window.__stoffPasst = ${stoffPasst.toString()};` +
     `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +

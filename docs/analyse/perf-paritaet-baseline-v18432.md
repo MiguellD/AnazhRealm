@@ -38,4 +38,5 @@ AnazhRealm-Spalte ist ein HALB-WELT-Artefakt. Der H4-Warmup wartet jetzt determi
 - VRAM-Proxy: ~2,46x Studio (alle LOD-Stufen + Impostor-Atlanten resident) — Band <= 4x
 
 Die Baender sind TREND-Faenge (Entgleisung), keine Punkt-Schwellen; Asset-Budget bleibt
-das harte +-2-%-Gate. Nightly in playtest-full.yml (per-push zu schwer, ~4 min).
+das harte +-2-%-Gate. Die Wand (gate:perf-parity) steht seit 10.10. mit Klasse ROT in den AUSNAHMEN von
+gate:ci-deckung (scripts/diag-ci-deckung.cjs); der naechtliche Workflow, in dem sie lief, fiel mit K18 (11.10.).

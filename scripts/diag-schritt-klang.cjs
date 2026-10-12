@@ -26,7 +26,7 @@
 //  (E) STIMME-AUS-WAND: Symphonie aus ⇒ die Ereignisse ZÄHLEN, der
 //      Klang-Aufruf (_playSchrittOneShot) unterbleibt; Symphonie an ⇒
 //      genau EIN Aufruf je Ereignis.
-//  (S) SELBST-TESTS (die Linse feuert): (S1) _gaitPhaseRate ≡ 0 gestubbt ⇒
+//  (S) SELBST-TESTS (die Linse feuert): (S1) das Gang-Gesetz (_gaitGesetz) mit ω ≡ 0 gestubbt ⇒
 //      trotz Tempo + Boden 0 Schritte — die Ereignisse hängen an der
 //      PHASE, nicht an der Zeit (die „keine eigene Uhr"-Messung ist nicht
 //      blind). (S2) Terrain ≡ stein gestubbt, aber Wasserspiegel über dem
@@ -122,7 +122,7 @@ const server = http.createServer((req, res) => {
                 "_schrittMaterialAt",
                 "_schrittKlangParams",
                 "_playSchrittOneShot",
-                "_gaitPhaseRate",
+                "_gaitGesetz",
                 "_terrainMaterialAt",
                 "_koerperWasser",
                 "animatePlayerSoul",
@@ -321,12 +321,12 @@ const server = http.createServer((req, res) => {
             sym.ctx = savedSym.ctx;
             sym.masterGain = savedSym.masterGain;
 
-            // ── (S1) SELBST-TEST: Phasen-Rate ≡ 0 ⇒ trotz Tempo + Boden 0 Schritte ──
-            const savedRate = r._gaitPhaseRate;
-            r._gaitPhaseRate = () => 0;
+            // ── (S1) SELBST-TEST: Gang-Gesetz mit ω ≡ 0 ⇒ trotz Tempo + Boden 0 Schritte ──
+            const savedRate = r._gaitGesetz;
+            r._gaitGesetz = () => ({ omega: 0, S: 0, schritt: 0, tast: 0.5, hub: 0 });
             frisch();
             const laufStub = fahre(6, 1.0, 1400);
-            r._gaitPhaseRate = savedRate; // restaurieren (Gate-Hook-Lehre)
+            r._gaitGesetz = savedRate; // restaurieren (Gate-Hook-Lehre)
             o.s1Phase = laufStub.ph1 - laufStub.ph0;
             o.checks.s1LinseFeuert = o.s1Phase === 0 && z().schritte === 0;
 
@@ -392,7 +392,7 @@ const server = http.createServer((req, res) => {
         check(c.dSchwelleHaelt, "(D) unter LAND_DIP_MIN_SPEED keine Landung (der Hopser bleibt stumm)");
         check(c.eStummZaehlt, `(E) Stimme AUS: Ereignisse zählen (${out.stummSchritte}), der Klang-Aufruf unterbleibt (0 Aufrufe)`);
         check(c.eAnRuft, `(E) Stimme AN: genau EIN Aufruf je Ereignis (${out.anCalls}/${out.anSchritte})`);
-        check(c.s1LinseFeuert, "SELBST-TEST (S1): _gaitPhaseRate ≡ 0 gestubbt ⇒ 0 Schritte — die Ereignisse hängen an der PHASE, nicht an der Zeit");
+        check(c.s1LinseFeuert, "SELBST-TEST (S1): _gaitGesetz mit ω ≡ 0 gestubbt ⇒ 0 Schritte — die Ereignisse hängen an der PHASE, nicht an der Zeit");
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(

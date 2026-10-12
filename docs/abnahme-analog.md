@@ -1,7 +1,8 @@
 # Abnahme Analog (Pflicht A–E)
 
-> Die Frozen-Liste (`docs/PFLICHT-OFFEN.md`) setzt fünf Einträge: A Kreaturen · B Bäume ·
-> C Architektur + Streu · D Wiese · E das Beweis-Paket. Hier steht je Klasse die Code-Wahrheit,
+> Die Frozen-Liste (`docs/PFLICHT-OFFEN.md`) setzte bis 11.10. A Kreaturen · B Bäume ·
+> C Architektur + Streu · D Wiese · E das Beweis-Paket; B und C fielen mit dem Beweis-Satz A1 (unten,
+> § A1), D in V18.508. Hier steht je Klasse die Code-Wahrheit,
 > darunter die Messung (Bild-Paare + Zahlen, dieselbe Sonde). **Stand 30.09. (V18.496):
 > Schöpfer-Wort „am Ende AAA-Niveau, nicht Kapseln" — nah und mittel ist das Studio-Mesh mit
 > seiner LOD-Kette die Gestalt, das Analog-Feld trägt nur fern (und bis ein Mesh steht). Offen:
@@ -430,3 +431,39 @@ frische Welt, 360 s wachsen): Boden-Blick 1,0 % der Pixel über 8 Stufen (0,02 %
 L2-Karte fehlt: 2–5 von 112 Karten nach 8 min). Was swiftshader nicht zeigt: wie viel 28 852 gesparte Befehle und
 688 gesparte Pipelines auf dem Schöpfer-Holz bringen — das misst der nächste Flugschreiber-Trace, dessen dc jetzt
 die echten Draws zählt.
+
+## A1 — der Beweis-Satz A–C aus dem Ausgabe-Pfad (11.10., V18.541 `2c8deda9`, Radeon 890M)
+
+Die Bilder aaa8–aaa10 kamen aus einem linearen, ungetonten Render-Target. A1 schießt dieselben Klassen auf der echten
+GPU durch den Ausgabe-Pfad (`node scripts/werkbank.cjs start --echt`, 1920×1080 bei DPR 1, `scripts/lib/ausgabe-aufnahme.cjs`,
+Bühne Mittag · Sonne · Sommer, Wetter-Uhr eingefroren, Tiere gehalten, Loop ruht je Schuss). Ort: die Mess-Wiese
+(`umstellen --ort wiese`); Wolf, Eiche und Haus (`haus_fraenkisch`) stehen auf flachen, trockenen Plätzen, die Eiche für
+die Fern-Linie auf einer offenen Kuppe. Je Schuss steht der Spieler an der Kamera (Ring, Stufe, Cull folgen ihm) und
+wartet, bis die Stufe serviert ist und die Mesh-Zone steht; die Blick-Linie ist frei, geprüft mit 5 Strahlen gegen die
+echte Szene nach dem Stellen. Zahlen: `werkbank zaehlen --alle` an derselben Pose (Befehle · Dreiecke je Pass und Klasse).
+Bilder und je Bild ein JSON (Pose, Bühnen-Stand, Stufe, Mesh-Zone, Zählung): `artifacts/a1-beweis/` im Arbeitsbaum des Laufs.
+
+| Schuss | Stufe | Dreiecke der Klasse (Hauptbild) | Bild: Befehle / Dreiecke gesamt | Mesh-Zone ungebaut |
+| --- | --- | --- | --- | --- |
+| Wolf · Armlänge (1,8 m) | L0 nah | 55 422 (Haut 28 710 · Fell 26 712), Schatten-Zwilling 5 756 | 78 / 445 177 | 0 / 217 |
+| Wolf · 50 m | Grobstufe (Grenze 35 m ± 10 %) | 6 026 | 65 / 318 098 | 0 / 330 |
+| Wolf · 80 m | im Spiel die Glieder-Kapseln des Feldes: `_tickKreaturZiegel` blendet das Studio-Mesh jenseits `KREATUR_NAH_MESH.aus` (74 m) aus. Der Schuss erzwang die Grobstufe per Sonde (`setze(true)`), er ist KEIN Spiel-Bild und belegt nur die Stufe | (6 026 erzwungen) | 58 / 399 268 | 0 / 268 |
+| Eiche · 2,6 m | L0 | 6 754 | 23 / 213 928 | 0 / 82 |
+| Eiche · 15 m | L0 serviert (d0 12 m, der Abstands-Zuschlag hält sie), L1 im Überblenden | 6 754 + 1 510 | 38 / 250 877 | 0 / 84 |
+| Eiche · 22 m | L1 | 1 510 | 32 / 231 405 | 0 / 57 |
+| Eiche · 80 m | L2 = die Karte im EINEN Atlas (`fimp:atlas`, 1 Befehl für 492 Karten) | 1 652 alle Karten | 28 / 243 922 | 0 / 103 |
+| Haus · 8,8 m | L0 | 69 968 (im `bauSatz`) | 62 / 385 728 | 0 / 211 |
+| Haus · 19 m (Ring d0–d1) | L1, die Flächen-Stufe | 17 984 (25,7 % von L0) | 66 / 400 565 | 0 / 272 |
+
+**Fell ↔ Haut** (Wolf auf Armlänge, drei Ausgabe-Aufnahmen: alles · Fell-Schalen aus · Wolf aus, auf den Pixeln, die beide
+Stufen zeigen): hell 124,0 ↔ 127,0 (0,976).
+
+**Die Kopf-Strähne** (Messname „px je Strähne an Armlänge"): die Zeile `headGroup` des fellStreu-Gesetzes trägt 30 Strähnen,
+Länge 0,045 und Dicke 0,005 Lab-Einheiten; der Kopf steht in der Welt bei Skala 1/3 — 15 × 1,67 mm. Am Armlängen-Schuss steht
+der Kopf 1,82 m vor der Kamera (75° senkrecht, 1080 px): 386 px je m, die Strähne 5,79 px lang und 0,64 px dick (die Zahl
+2,8 mm aus dem Kommentar der Schalen gäbe 1,08 px). Die Kopf-Zeile liegt damit NICHT unter dem Pixel — A bleibt offen mit
+diesem Rest; B und C fallen mit diesem Satz.
+
+Im Bild: der Wolf mit Pelz und hellem Brustlatz, der Kopf als glatte Haut ohne Strähnen; die Eiche mit Stamm-Gabel und
+Krone bei 15 und 22 m, bei 80 m ihre Karte hinter der Kuppe; das Fachwerkhaus mit Backstein-Erdgeschoss bei 8,8 m, bei
+19 m die Flächen-Stufe mit Gefach und Schornstein — und am Hang steht sein Sockel frei (das ist der neue Eintrag C).

@@ -838,10 +838,12 @@ async function kosten(page, stubs) {
                 return Reflect.get(t, k, rcv);
             },
         });
-        const altSweep = P._umweltGlutSweep;
-        if (stubs && stubs.alleBauten && altSweep) {
-            P._umweltGlutSweep = function (um, px, pz) {
-                return altSweep.call(this, um, px, pz, 1e9);
+        // der Zwilling der Glut (S4): statt des Verzeichnisses (`_blockerMit("glut")`) ein Umlauf über ALLE Bauten
+        const altMit = P._blockerMit;
+        if (stubs && stubs.alleBauten && altMit) {
+            P._blockerMit = function (name) {
+                if (name !== "glut") return altMit.call(this, name);
+                return this.state.architectures.filter((e) => e && this._glutFlaeche(e) > 0);
             };
         }
         const lauf = async (n) => {
@@ -880,7 +882,7 @@ async function kosten(page, stubs) {
             st.architectures = altArchs;
             P.symphonyTick = altTick;
             for (const fn of Object.keys(alt)) P[fn] = alt[fn];
-            if (altSweep) P._umweltGlutSweep = altSweep;
+            if (altMit) P._blockerMit = altMit;
         }
         const wachsen = [];
         for (const k of Object.keys(vor)) if (nach[k] > vor[k] * 1.25 + 2) wachsen.push(`${k} ${vor[k]} → ${nach[k]} (${wer[k] || "?"})`);

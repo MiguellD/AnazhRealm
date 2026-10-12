@@ -184,8 +184,8 @@ probe(
     /const spalt = this\._kreaturBissRadial\(creature, ziel\);/
 );
 probe(
-    "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h))",
-    /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* this\._kreaturSprungHoehe\(creature\)\)[\s\S]{0,600}return froh \? F\.hopHochM : F\.hopBasisM;/
+    "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h)); der Ansprung eines Bisses springt den Grund-Hüpfer (K13)",
+    /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* this\._kreaturSprungHoehe\(creature, ansprung\)\)[\s\S]{0,1200}if \(ansprung\) return F\.hopBasisM;[\s\S]{0,300}return froh \? F\.hopHochM : F\.hopBasisM;/
 );
 probe("eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)", /def\.hop === true\) this\.creatureJump\(/);
 

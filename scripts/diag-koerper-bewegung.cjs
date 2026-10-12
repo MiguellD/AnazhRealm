@@ -6,8 +6,8 @@
 // Die Linse hält die vier Gang-Gesetze am ECHTEN Chokepoint (animatePlayerSoul
 // / _animateHumanoidRig / updateCreatures), headless/Null-Renderer:
 //
-//  (A) WEG-PHASE (distance-matched): doppelte Geschwindigkeit ⇒ ~doppelte
-//      Phasen-Rate UND konstante Schritt-DISTANZ (±10 %) — gemessen am
+//  (A) WEG-PHASE (distance-matched): die Phasen-Rate und die Schritt-DISTANZ
+//      folgen dem Gang-Gesetz (K07: Λ(v) wächst mit dem Tempo, ±10 %) — gemessen am
 //      ECHTEN Konsumenten (animatePlayerSoul mit gestubbter playerVel),
 //      nicht nur an der puren Formel. Der Sprint skatet nie mehr.
 //  (B) ZWEI-KNOCHEN-IK pur: Ziel in Reichweite ⇒ Fußfehler < 1 cm
@@ -111,8 +111,8 @@ const server = http.createServer((req, res) => {
                 A = r.constructor;
             const o = { checks: {} };
             for (const fn of [
-                "_gaitPhaseRate",
-                "_gaitSchrittLen",
+                "_gaitGesetz",
+                "_gaitBeinMass",
                 "_gaitBlendStep",
                 "_twoBoneIK",
                 "_slopePitch",
@@ -180,11 +180,16 @@ const server = http.createServer((req, res) => {
                 o.checks.pitchPur = p30 < 0 && Math.abs(Math.abs(o.pitchPurDeg) - 30) <= 5;
                 o.checks.pitchNaNWand = r._slopePitch(NaN, 0, 2) === 0 && r._slopePitch(1, 0, 0) === 0;
             }
-            // ── Phasen-Rate pur: Proportionalität ──
-            o.checks.ratePur =
-                Math.abs(r._gaitPhaseRate(6, 3.4) / r._gaitPhaseRate(3, 3.4) - 2) < 1e-9 &&
-                r._gaitPhaseRate(0, 3.4) === 0 &&
-                r._gaitPhaseRate(NaN, 3.4) === 0;
+            // ── Das Gang-Gesetz pur (K07): ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
+            {
+                const rg = s.playerMesh && s.playerMesh.userData && s.playerMesh.userData.rig;
+                const g3 = rg ? r._gaitGesetz(rg, 3) : null;
+                o.checks.ratePur =
+                    !!g3 &&
+                    Math.abs(g3.omega - (2 * Math.PI * 3) / g3.schritt) < 1e-9 &&
+                    r._gaitGesetz(rg, 0).omega === 0 &&
+                    r._gaitGesetz(rg, NaN).omega === 0;
+            }
 
             // ── Spieler-Konsumenten-Bühne: human-Rig + gestubbte Velocity ──
             const p = s.player;
@@ -220,12 +225,22 @@ const server = http.createServer((req, res) => {
             o.phaseRate1 = d1;
             o.phaseRate2 = d2;
             o.rateRatio = d1 > 0 ? d2 / d1 : 0;
-            o.checks.aRateVerdoppelt = o.rateRatio > 1.8 && o.rateRatio < 2.2;
+            // K07: die Phasen-Rate folgt ω = 2π·v/Λ(v) des Gang-Gesetzes (nicht mehr ∝ v bei festem Schritt)
+            {
+                const rgR = s.playerMesh.userData.rig;
+                o.rateSoll = r._gaitGesetz(rgR, 6).omega / r._gaitGesetz(rgR, 3).omega;
+            }
+            o.checks.aRateVerdoppelt = o.rateRatio > 1 && Math.abs(o.rateRatio / o.rateSoll - 1) <= 0.1;
             const sd1 = d1 > 0 ? 3 / (d1 / Math.PI) : 0; // Weg je Schritt bei v=3
             const sd2 = d2 > 0 ? 6 / (d2 / Math.PI) : 0; // Weg je Schritt bei v=6
             o.schritt1 = sd1;
             o.schritt2 = sd2;
-            o.checks.aSchrittKonstant = sd1 > 0 && Math.abs(sd2 / sd1 - 1) <= 0.1;
+            // K07: der Schritt folgt dem Gang-Gesetz (Λ/2 wächst mit dem Tempo) — gemessen am Konsumenten ± 10 %
+            const rgA = s.playerMesh.userData.rig;
+            const soll1 = r._gaitGesetz(rgA, 3).schritt / 2,
+                soll2 = r._gaitGesetz(rgA, 6).schritt / 2;
+            o.checks.aSchrittKonstant =
+                sd1 > 0 && Math.abs(sd1 / soll1 - 1) <= 0.1 && Math.abs(sd2 / soll2 - 1) <= 0.1 && sd2 > sd1;
 
             // ── (C) POSEN-BLEND stetig am Konsumenten (Schwellen-Sprung) ──
             const blendLauf = () => {
@@ -427,8 +442,8 @@ const server = http.createServer((req, res) => {
         check(c.konsumTier, "KONSUM: updateCreatures liest die Hang-Proben (_creatureSlopeProben)");
         check(c.konsumRigIK, "KONSUM: _animateHumanoidRig wendet das Fuß-IK an (_gaitApplyFussIK)");
         check(c.ratePur, "(A) Phasen-Rate ∝ Tempo (pur: 2× Tempo = exakt 2× Rate, NaN-Wand)");
-        check(c.aRateVerdoppelt, `(A) KONSUM: doppelte Geschwindigkeit ⇒ ~doppelte Phasen-Rate (${out.rateRatio.toFixed(2)}×)`);
-        check(c.aSchrittKonstant, "(A) KONSUM: die Schritt-DISTANZ bleibt konstant (±10 %) — kein Skating");
+        check(c.aRateVerdoppelt, `(A) KONSUM: doppelte Geschwindigkeit ⇒ die Phasen-Rate des Gang-Gesetzes (${out.rateRatio.toFixed(2)}× ≈ Soll ${out.rateSoll.toFixed(2)}×)`);
+        check(c.aSchrittKonstant, `(A) KONSUM: die Schritt-DISTANZ ist die des Gang-Gesetzes (±10 %: ${out.schritt1.toFixed(2)} m bei 3 m/s, ${out.schritt2.toFixed(2)} m bei 6 m/s) — kein Skating`);
         check(c.ikErreichbar, `(B) IK: Ziel in Reichweite ⇒ Fußfehler < 1 cm (max ${(out.ikMaxErr * 100).toFixed(3)} cm)`);
         check(c.ikGestreckt, "(B) IK: außer Reichweite ⇒ gestreckt RICHTUNG Ziel (knee=0, finite)");
         check(c.ikNaNWand, "(B) IK: Ziel im Hüftpunkt / NaN-Eingabe ⇒ neutrale Zahlen, nie NaN");
