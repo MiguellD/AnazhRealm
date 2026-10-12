@@ -175,7 +175,11 @@ function albedoSicht(opts) {
                         const off = ex.versatz || [8, 8];
                         const x = pp.x + off[0],
                             zz = pp.z + off[1];
-                        e = r.spawnArchitecture(ex.name, { x, y: r._voxelSurfaceY(x, zz) + 0.5, z: zz }, { seed: ex.seed || 7 });
+                        e = r.spawnArchitecture(
+                            ex.name,
+                            { x, y: r._voxelSurfaceY(x, zz) + 0.5, z: zz },
+                            { seed: ex.seed || 7 }
+                        );
                         gesetzt = true;
                     }
                     if (e) {
@@ -201,7 +205,9 @@ function albedoSicht(opts) {
                         const off = ex.versatz || [-8, 4];
                         const x = pp.x + off[0],
                             zz = pp.z + off[1];
-                        c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, zz) + 0.5, zz, "happy", ex.name, { precise: true });
+                        c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, zz) + 0.5, zz, "happy", ex.name, {
+                            precise: true,
+                        });
                         gesetzt = true;
                     }
                     if (c) {
@@ -243,7 +249,14 @@ function albedoSicht(opts) {
             const zahl = (i) => (t.length > i && /^-?\d/.test(t[i]) ? Number(t[i]) : null);
             const cc = /\|cc:([\d.]+)@/.exec(k);
             const v = /\|v:([a-z]+)/.exec(k);
-            return { kind: t[0], r: zahl(1), mt: zahl(2), cc: cc ? Number(cc[1]) : 0, seh: v ? v[1] : null, schluessel: k };
+            return {
+                kind: t[0],
+                r: zahl(1),
+                mt: zahl(2),
+                cc: cc ? Number(cc[1]) : 0,
+                seh: v ? v[1] : null,
+                schluessel: k,
+            };
         };
         const matsOf = (m) => (Array.isArray(m.material) ? m.material : [m.material]).filter(Boolean);
         const lichtAlt = [];
@@ -370,9 +383,17 @@ function albedoSicht(opts) {
                     const z = ex.zeile;
                     const w = z.welt || {};
                     const kre = new RegExp(w.klasse || "^$");
-                    const passt = (m) => kre.test(kl.get(m)) && matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
+                    const passt = (m) =>
+                        kre.test(kl.get(m)) &&
+                        matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
                     let sel = meshes.filter((m) => visAlt.get(m) && passt(m));
-                    const e = { id: z.id, name: z.id, klasse: w.klasse, exemplar: w.exemplar || null, gesetzt: ex.gesetzt };
+                    const e = {
+                        id: z.id,
+                        name: z.id,
+                        klasse: w.klasse,
+                        exemplar: w.exemplar || null,
+                        gesetzt: ex.gesetzt,
+                    };
                     const um = ex.pos || pp;
                     // DAS EXEMPLAR, nicht die Klasse: eine Instanz-Gruppe zählt, wenn ihre nächste Instanz im Umkreis des
                     // Exemplars steht (L0 und L1 einer Art tragen sonst je ein anderes Exemplar ins Bild), ein Satz mit
@@ -386,7 +407,12 @@ function albedoSicht(opts) {
                         }
                     if (w.blick !== "oben") sel = sel.filter((m) => ziele.has(m));
                     if (!sel.length) {
-                        ergebnisse.push(Object.assign(e, { pixel: 0, fehler: "kein Zug der Klasse mit passendem Stoff am Exemplar" }));
+                        ergebnisse.push(
+                            Object.assign(e, {
+                                pixel: 0,
+                                fehler: "kein Zug der Klasse mit passendem Stoff am Exemplar",
+                            })
+                        );
                         continue;
                     }
                     // Der Tafel-Blick ist der des Labors (Öffnung 35°, Seiten wie das Ziel) — die Spiel-Kamera öffnet 75°.
@@ -403,11 +429,16 @@ function albedoSicht(opts) {
                     } else {
                         const bb = new T.Box3();
                         for (const zz of ziele.values())
-                            bb.expandByPoint(zz.c.clone().addScalar(zz.rad)).expandByPoint(zz.c.clone().addScalar(-zz.rad));
+                            bb.expandByPoint(zz.c.clone().addScalar(zz.rad)).expandByPoint(
+                                zz.c.clone().addScalar(-zz.rad)
+                            );
                         const c = bb.getCenter(new T.Vector3());
                         const rad = Math.max(0.4, bb.getSize(new T.Vector3()).length() / 2);
                         for (const d of window.__tafelBlicke)
-                            stellungen.push([c.clone().addScaledVector(new T.Vector3(d[0], d[1], d[2]).normalize(), rad * 2.6), c]);
+                            stellungen.push([
+                                c.clone().addScaledVector(new T.Vector3(d[0], d[1], d[2]).normalize(), rad * 2.6),
+                                c,
+                            ]);
                     }
                     const stoffe = new Set();
                     for (const m of sel)
@@ -453,7 +484,9 @@ function albedoSicht(opts) {
                 const sk = await schuss((m) => m === karte);
                 ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
             } else {
-                const klassen = [...new Set(kl.values())].filter((k) => !/^(wasser$|himmel|spieler$|p2p-spieler$|UNBENANNT:)/.test(k));
+                const klassen = [...new Set(kl.values())].filter(
+                    (k) => !/^(wasser$|himmel|spieler$|p2p-spieler$|UNBENANNT:)/.test(k)
+                );
                 for (const k of klassen) {
                     if (nur && !nur.test(k)) continue;
                     let z = null;
@@ -933,9 +966,13 @@ function nahFernUrteil(messung, band) {
         );
     const up = messung && messung.upload;
     if (up && up.ruhig !== true)
-        befunde.push(`NAH-FERN Upload: der Boden-Satz ruhte in ${up.versuche} Versuchen nie drei Takte — die Probe ist blind`);
+        befunde.push(
+            `NAH-FERN Upload: der Boden-Satz ruhte in ${up.versuche} Versuchen nie drei Takte — die Probe ist blind`
+        );
     if (up && !(up.bilder >= 3))
-        befunde.push(`NAH-FERN Upload: ${up.bilder} von 3 Bildern gezeichnet (die GPU-Leine hielt) — die Probe ist blind`);
+        befunde.push(
+            `NAH-FERN Upload: ${up.bilder} von 3 Bildern gezeichnet (die GPU-Leine hielt) — die Probe ist blind`
+        );
     if (up && !(up.texe && up.texe.length))
         befunde.push("NAH-FERN Upload: kein Daten-Bild des Boden-Stoffs gefunden — die Probe ist blind");
     for (const u of (up && up.texe) || [])
@@ -1113,7 +1150,7 @@ function laubGegenlicht(opts) {
             hoehe: +hoehe.toFixed(1),
             d: +ziel.d.toFixed(1),
         };
-        const schuss = async (gegen) => {
+        const schuss = async (gegen, nurSonne) => {
             // Die Sonne: Höhe `elev`, Azimut hinter der Krone (gegen) oder hinter dem Auge (auf).
             const sd = dh
                 .clone()
@@ -1128,6 +1165,13 @@ function laubGegenlicht(opts) {
             cam.position.copy(auge);
             cam.lookAt(mitte);
             cam.updateMatrixWorld(true);
+            // `nurSonne`: Himmel (die EINE Umgebung) und Schatten schweigen — der Vergleich mit dem Labor misst den Stoff unter EINEM Licht.
+            const envAlt = sc.environmentIntensity;
+            const schattenAlt = dl.castShadow;
+            if (nurSonne) {
+                sc.environmentIntensity = 0;
+                dl.castShadow = false; // der Stoff allein: kein Schatten, kein Himmel
+            }
             let px = null;
             for (let k = 0; k < 3; k++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -1138,6 +1182,8 @@ function laubGegenlicht(opts) {
                 rend.setRenderTarget(null);
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             }
+            sc.environmentIntensity = envAlt;
+            dl.castShadow = schattenAlt;
             const zeile = W * 4;
             const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
             const cv = document.createElement("canvas");
@@ -1174,21 +1220,27 @@ function laubGegenlicht(opts) {
             bundles();
             if (luftU) luftU.beta.value = 0;
             // Gezählt wird jedes Pixel, das BEIDE Lagen zeichnen (die Stufen-Blende der Nachbarn wechselt ihr Dither je Bild).
-            const g = await schuss(true);
-            const a = await schuss(false);
-            let sg = 0,
-                sa = 0,
-                n = 0;
-            for (let i = 0; i < W * H; i++)
-                if (g.Yp[i] >= 0 && a.Yp[i] >= 0) {
-                    sg += g.Yp[i];
-                    sa += a.Yp[i];
-                    n++;
-                }
-            out.pixel = n;
-            out.gegen = { Y: n ? +(sg / n).toFixed(4) : null, png: g.png };
-            out.auf = { Y: n ? +(sa / n).toFixed(4) : null, png: a.png };
-            out.verhaeltnis = n && sa > 0 ? +(sg / sa).toFixed(3) : null;
+            const paar = (g, a) => {
+                let sg = 0,
+                    sa = 0,
+                    n = 0;
+                for (let i = 0; i < W * H; i++)
+                    if (g.Yp[i] >= 0 && a.Yp[i] >= 0) {
+                        sg += g.Yp[i];
+                        sa += a.Yp[i];
+                        n++;
+                    }
+                return {
+                    pixel: n,
+                    gegen: { Y: n ? +(sg / n).toFixed(4) : null, png: g.png },
+                    auf: { Y: n ? +(sa / n).toFixed(4) : null, png: a.png },
+                    verhaeltnis: n && sa > 0 ? +(sg / sa).toFixed(3) : null,
+                };
+            };
+            Object.assign(out, paar(await schuss(true), await schuss(false)));
+            // Dasselbe nur unter der Sonne (Himmel still) — die Seite, die das Labor gegenmisst (`laborLaubGegenlicht`).
+            const s = paar(await schuss(true, true), await schuss(false, true));
+            out.sonne = { pixel: s.pixel, gegen: { Y: s.gegen.Y }, auf: { Y: s.auf.Y }, verhaeltnis: s.verhaeltnis };
             out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");
         } finally {
             for (const m of alle) m.visible = visAlt.get(m);
@@ -1221,14 +1273,16 @@ function laubLichtUrteil(messung, band) {
         }
         const lab = messung.labor && messung.labor[art];
         const lv = lab && lab.verhaeltnis > 0 ? lab.verhaeltnis : null;
-        zeilen.push({ art, welt: w.verhaeltnis, labor: lv, gegen: w.gegen.Y, auf: w.auf.Y });
+        // Das Labor misst unter EINEM Licht (Key allein): gegen die Welt-Seite nur unter der Sonne, wo gemessen.
+        const ws = w.sonne && w.sonne.verhaeltnis > 0 ? w.sonne.verhaeltnis : w.verhaeltnis;
+        zeilen.push({ art, welt: w.verhaeltnis, weltSonne: ws, labor: lv, gegen: w.gegen.Y, auf: w.auf.Y });
         if (w.verhaeltnis < band.glanz)
             befunde.push(
                 `LAUB-LICHT ${art}: Gegenlicht/Auflicht ${w.verhaeltnis} < ${band.glanz} (Luma ${w.gegen.Y} / ${w.auf.Y}, Stoffe ${w.stoffe}) — das Laub leuchtet nicht`
             );
-        if (lv != null && Math.abs(w.verhaeltnis / lv - 1) > band.labor)
+        if (lv != null && Math.abs(ws / lv - 1) > band.labor)
             befunde.push(
-                `LAUB-LICHT ${art}: Welt ${w.verhaeltnis} gegen Labor ${lv} — mehr als ±${band.labor * 100} %`
+                `LAUB-LICHT ${art}: Welt ${ws} gegen Labor ${lv} (nur Sonne) — mehr als ±${band.labor * 100} %`
             );
     }
     if (!zeilen.length && !befunde.length) befunde.push("LAUB-LICHT: keine Art gemessen");
