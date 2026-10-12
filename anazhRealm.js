@@ -17647,6 +17647,27 @@ class AnazhRealm {
         if (ikC) ikC.lockL.on = ikC.lockR.on = false;
         return g;
     }
+    // DER GEZEICHNETE BODEN AM WELT-PUNKT (K07, der Chunk-Rand): die Boden-Karte des Chunks, der den Punkt besitzt — am
+    // unteren Rand jedes Chunks (je Achse ein halber Zellen-Schritt, 0,9 m) zeichnet das Mesh des NACHBARN (Surface-Nets:
+    // die Fläche zwischen seiner letzten und der ersten eigenen Zelle gehört ihm), die eigene Karte ist dort leer; dort liest
+    // die Karte des Nachbarn (ihr Saum reicht zwei Schritte herüber). Vorher fiel der Stand-Leser dort auf den Träger: 4,9 %
+    // der Fläche, ein Netz aus 0,9-m-Streifen, auf dem Pfoten und Füße auf der Höhe des Leibs standen (ein stehender Wolf
+    // hangauf am 30°-Hang: die Hinterpfoten 0,40 m über dem Boden — gate:koerper-stand K6). null ohne Karte (fern, ungebaut).
+    _bodenSichtAt(x, z) {
+        const vc = this.state.voxelChunks;
+        if (!vc) return null;
+        const span = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        for (let n = 0; n < 4; n++) {
+            const ax = cx - (n & 1);
+            const az = cz - (n >> 1);
+            const e = vc.get(`${ax},${az}`);
+            const k = e && e.surfMap ? this._chunkSurfaceAt(e, ax, az, x, z) : null;
+            if (Number.isFinite(k)) return k;
+        }
+        return null;
+    }
     // DER STAND-LESER DER SICHT (Q4 Erdung, Entscheid a der Leben-Synthese): die Sim steht auf dem Gesetz, die Sicht auf
     // dem, was das Auge sieht. Steht der Körper auf einem Bauwerk (`struktur`), trägt dessen Oberkante (eben per
     // Definition); sonst die Boden-Karte des Chunks (`_chunkSurfaceAt`, bilinear, das gezeichnete Mesh) — solange sie im
@@ -17657,14 +17678,10 @@ class AnazhRealm {
     // in die Wand laufende Wolf stand auf seinem 0,5-m-Grund-Cache 0,55 m unter dem Hang. Die Kosten folgen den Körpern
     // unter Fels (nur dort tastet das Feld); ohne Karte (fern, ungebaut) trägt der Träger. Leser: Fuß-IK des Menschen
     // (`_gaitBodenY`) und des Tiers (`_kreaturFussBoden`), Tier-Lage (`_creatureSlopeProben`, die Mitte im Frame-Takt), der
-    // Stoß-Schritt, die Tod-Lage.
+    // Stoß-Schritt, die Tod-Lage. Die Karte am Punkt liest `_bodenSichtAt` (am Chunk-Rand die des Nachbarn).
     _standSicht(x, z, traegerY, struktur) {
         if (struktur === true) return traegerY;
-        const span = this._voxelChunkConfig(0).span;
-        const cx = Math.floor(x / span);
-        const cz = Math.floor(z / span);
-        const e = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
-        const k = e && e.surfMap ? this._chunkSurfaceAt(e, cx, cz, x, z) : null;
+        const k = this._bodenSichtAt(x, z);
         if (!Number.isFinite(traegerY)) return Number.isFinite(k) ? k : NaN;
         const band = AnazhRealm.STAND_SICHT_BAND;
         if (!Number.isFinite(k)) return traegerY;
