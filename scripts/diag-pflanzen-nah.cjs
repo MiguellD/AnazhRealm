@@ -418,10 +418,11 @@ function leserUrteil(quelle) {
     return v;
 }
 
-// (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windBaum · windAusschlag) gegen die gelieferte
+// (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
 // Gestalt und seine Leser:
 //   f0   je Baum-Art (L0, Gestalt 1): f0 = kF · D / H² mit D = Stamm-Durchmesser in 1,3 m Welt-Höhe (der Ring des Stamm-
-//        Strangs) und H = Welt-Höhe — gegen das f0, das der Welt-Stoff aus dem Buch rechnet (kF · δ / H, `windBaum`): ± F0_TOL.
+//        Strangs, gemessen von DIESER Linse) und H = Welt-Höhe — gegen das f0, das der Welt-Stoff rechnet (kF · δ / H, δ aus
+//        der gelieferten Gestalt über `windSchlankheit`, den Leser von `_baumWindDaten`): ± F0_TOL.
 //   GLIED der Ausschlag je Glied (Stamm-Spitze, Ast-Hebel, Blatt) über 20 s: Sturm (Wind-Zeile 1) zu Brise (0,06) ≥ STURM_BRISE,
 //        und die Leiter der Frequenzen Stamm < Ast < Blatt.
 //   LESER der EINE Term hat seine Leser — Rinde und Laub der Welt (`_baumWindStoff`, gerufen aus `_foundryTreeMaterial`), die
@@ -462,7 +463,8 @@ function gliedAusschlag(f0, H, U) {
     }
     return m;
 }
-function windUrteil(fall, T, skala, s) {
+// `deltaMul` (Selbsttest): eine Welt, die ein falsches δ liest.
+function windUrteil(fall, T, skala, deltaMul) {
     const v = [];
     const H = hoehe(T) * skala;
     const D = stammDurchmesser(T, 1.3 / skala);
@@ -470,7 +472,10 @@ function windUrteil(fall, T, skala, s) {
     const Dw = D * skala;
     const W = PC.WIND_GESETZ;
     const f0mess = (W.kF * Dw) / (H * H);
-    const f0welt = (W.kF * PC.windBaum(s, 1).delta) / H;
+    const rinde = T.find((t) => t.kind === "bark");
+    const dWelt = PC.windSchlankheit(rinde && rinde.pos, hoehe(T), skala);
+    if (!(dWelt > 0)) return { v: [`${fall}: die Welt findet keinen Stamm-Ring (windSchlankheit)`], m: {} };
+    const f0welt = (W.kF * dWelt * (deltaMul || 1)) / H;
     if (Math.abs(f0welt / f0mess - 1) > F0_TOL)
         v.push(
             `${fall}: f0 der Welt ${f0welt.toFixed(2)} Hz ≠ Gesetz ${f0mess.toFixed(2)} Hz (D ${Dw.toFixed(2)} m, H ${H.toFixed(1)} m)`
@@ -507,9 +512,24 @@ function windLeserUrteil(quellen) {
     if ((welt.match(/__phytoCore\.windAusschlag\(/g) || []).length < 2)
         v.push("anazhRealm.js: die Karte liest den Wind-Term nicht");
     if (/_Ta\.sin\(_ph\)\.mul\(_fx\)/.test(welt)) v.push("anazhRealm.js: die Karte pendelt mit eigener Formel");
+    const j = welt.indexOf("\n    _baumWindDaten(");
+    const daten = j < 0 ? "" : welt.slice(j, welt.indexOf("\n    }\n", j));
+    if (!/__phytoCore\.windSchlankheit\(/.test(daten))
+        v.push("anazhRealm.js: _baumWindDaten misst δ nicht an der gelieferten Gestalt (windSchlankheit)");
     const labor = code(quellen["foundry-core.js"]);
     if (!/__phytoCore\.windAusschlag\(/.test(labor)) v.push("foundry-core.js: das Labor liest den Wind-Term nicht");
-    if (/_theta=clamp\(_sw\*uWindStrength/.test(labor)) v.push("foundry-core.js: das Labor biegt mit eigener Formel");
+    // die Halm-Biegung (Gras, Blumen-Stiel) bleibt; der Baum darf sie nicht lesen
+    const h = labor.indexOf("\nfunction halmBiegung(");
+    const ohneHalm = h < 0 ? labor : labor.slice(0, h) + labor.slice(labor.indexOf("\n}\n", h));
+    if (/_theta=clamp\(_sw\*uWindStrength/.test(ohneHalm))
+        v.push("foundry-core.js: das Labor biegt mit eigener Formel");
+    const baeume = (labor.match(/,\s*(true|false),\s*false,\s*true\s*\)/g) || []).length;
+    if (baeume < 4) v.push(`foundry-core.js: nur ${baeume} von 4 Baum-Stoffen (Rinde ×2, Laub ×2) lesen den Baum-Wind`);
+    const bestand = code(quellen["worlds/terrain/phytogenesis.js"] || "");
+    if ((bestand.match(/windStempel\(geo,/g) || []).length < 4)
+        v.push("phytogenesis.js: der Bestand des Labors trägt den Wind-Stempel nicht an jedem Klon");
+    if (!/WIND\.uWindBaum\.value\.set\(/.test(bestand))
+        v.push("phytogenesis.js: die Einzel-Ansicht trägt den Baum nicht als uWindBaum");
     return v;
 }
 
@@ -556,7 +576,7 @@ function windLeserUrteil(quellen) {
         else if (kind === "tree") {
             u = rindeUrteil(k, f.T, fx.barkType || (fx.conifer ? "conifer" : "oak"), f.presetId !== "totholz");
             if (f.seed === 1) {
-                const w = windUrteil(k, f.T, skala(f.presetId), buch[f.presetId].s);
+                const w = windUrteil(k, f.T, skala(f.presetId));
                 u.v.push(...w.v);
                 Object.assign(u.m, w.m);
             }
@@ -595,7 +615,12 @@ function windLeserUrteil(quellen) {
         "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
         "anazhRealm.js": fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8"),
     };
-    fails.push(...unterseiteUrteil(quellen), ...windLeserUrteil(quellen));
+    // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle)
+    const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");
+    fails.push(
+        ...unterseiteUrteil(quellen),
+        ...windLeserUrteil(Object.assign({ "worlds/terrain/phytogenesis.js": laborBestand }, quellen))
+    );
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
     // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
     const fracht = frachtReihen(bild);
@@ -696,26 +721,14 @@ function windLeserUrteil(quellen) {
         "Leser teilt nicht durch alpha",
         leserUrteil(quellen["anazhRealm.js"].replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
     ]);
-    if (eiche) {
-        const dick = eiche.T.map((t) => {
-            if (t.kind !== "bark") return t;
-            const p = Float32Array.from(t.pos);
-            for (let i = 0; i < p.length; i += 3) {
-                p[i] *= 3;
-                p[i + 2] *= 3;
-            }
-            return Object.assign({}, t, { pos: p });
-        });
-        st.push([
-            "Stamm ×3 dick (f0 gegen das Gesetz)",
-            windUrteil("dick", dick, skala("eiche"), buch.eiche.s).v.length > 0,
-        ]);
-    }
+    if (eiche)
+        st.push(["Welt-δ ×0,5 (f0 gegen das Gesetz)", windUrteil("halb", eiche.T, skala("eiche"), 0.5).v.length > 0]);
     st.push([
         "Wind-Leser entfernt",
         windLeserUrteil({
             "anazhRealm.js": quellen["anazhRealm.js"].replace(/__phytoCore\.windAusschlag\(/g, "X("),
             "foundry-core.js": quellen["foundry-core.js"],
+            "worlds/terrain/phytogenesis.js": laborBestand,
         }).length >= 2,
     ]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));

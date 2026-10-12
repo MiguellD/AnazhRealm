@@ -4086,46 +4086,97 @@
 
     // DAS WIND-GESETZ DES BAUMS (K19, 12.10.) — EIN Term für Labor und Welt, die Antwort des Baums auf den Wind des
     // EINEN Wetter-Gesetzes. Drei Glieder, jedes mit seiner Frequenz (SpeedTree: Stamm < Ast < Blatt):
-    //   STAMM  die Biegelinie des Kragträgers (ζ², ζ = Höhe über der Wurzel / H) — Neigung plus Pendel in der
-    //          Eigenfrequenz f0 = kF · D / H² (Moore & Maguire 2004, Trees 18(2):195–203; kF geeicht an der Fichte:
-    //          0,4 Hz bei D 0,5 m und H 30 m, Plenter H/D 60, waldwissen.net).
+    //   STAMM  die Biegelinie des Kragträgers (ζ², ζ = Höhe über der Wurzel / H) — die Neigung folgt der Böe quasi-statisch,
+    //          das Pendel schwingt in der Eigenfrequenz f0 = kF · D / H² (Moore & Maguire 2004, Trees 18(2):195–203; kF
+    //          geeicht an der Fichte: 0,4 Hz bei D 0,5 m und H 30 m, Plenter H/D 60, waldwissen.net).
     //   AST    der Hebel ρ (Abstand zur Stamm-Achse / H) schwingt mit ast.faktor · f0 und eigener Phase ψ.
     //   BLATT  das Laub flattert längs seiner Normale, immer schneller als sein Ast (max(blatt.f, ueberAst · f_Ast)).
     // Die Last folgt dem Wind U (die Wind-Zeile des Wetters: 0,06 ruhig · 0,35 Regen · 1 Sturm) mit dem Vogel-Exponenten
     // (Widerstand ∝ u^(2+B), B ≈ −0,6 für umformende Kronen: Vogel 1989, Vollsinger 2005) — der Sturm biegt, die Brise
-    // regt nur das Laub (Flattern ∝ √U). Die Formel rechnet über einer Algebra A (TSL im Welt-Stoff, GLSL-Text im Labor,
-    // Zahlen in der Linse — wie `_durchsichtGewicht`): EIN Term, drei Leser.
+    // regt nur das Laub (Flattern ∝ √U). Wie stark ein Glied in SEINER Frequenz schwingt, sagt das Böen-Spektrum: die
+    // Turbulenz trägt bei f die Energie S ∝ f^(−5/3) (Kolmogorov, von Kármán), die Antwort ∝ √S — ein gedrungener Stamm
+    // (f0 4 Hz) zittert nicht mit dem Hub der Fichte (0,4 Hz), er folgt der Böe. Die Böe selbst wandert (λ ≈ 164 m,
+    // Periode ≈ 15,7 s) — dieselben Zahlen lesen Gras, Streu und das Ohr der Welt (`AnazhRealm.WIND_BOE`).
+    // Die Formel rechnet über einer Algebra A (TSL im Welt-Stoff, GLSL-Text im Labor, Zahlen in der Linse — wie
+    // `_durchsichtGewicht`): EIN Term, drei Leser.
     var WIND_GESETZ = Object.freeze({
         kF: 720, // m/s — f0 = kF · D / H²
         vogel: 1.4, // Last ∝ U^vogel (2 + B, B = −0,6)
         stamm: Object.freeze({ neig: 0.035, pendel: 0.45 }), // Spitzen-Auslenkung / H bei Sturm · Pendel-Anteil um die Neigung
         ast: Object.freeze({ faktor: 2.4, hub: 0.06, heben: 0.03 }), // f_Ast = faktor · f0 · Hub je Hebel · Heben je Hebel
         blatt: Object.freeze({ f: 4.5, ueberAst: 1.5, hub: 0.035 }), // Hz · Abstand zum Ast · Hub (m) bei Sturm
+        spektrum: Object.freeze({ fRef: 0.4, exp: 5 / 6 }), // Antwort = min(1, (fRef / f)^exp) — fRef die Fichte, exp = ½ · 5/3
+        boe: Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 }), // g = sin(ω·t − k·(x·w))·amp + mitte
+        dbh: 1.3, // m — die Brusthöhe, in der D gemessen wird
     });
-    // Die Eigenfrequenz-Größen einer Art aus ihrem Buch: Höhe und Fuß-Durchmesser des Phänotyps (dasselbe McMahon-Gesetz,
-    // mit dem der Stamm wächst — `grow`: k = lerp(13, 22, slim), D = (2H/k)^1,5) als Schlankheit δ = D / H (skalenfrei).
-    // Die Welt rechnet f0 je Baum aus δ und seiner Höhe: f0 = kF · δ / H.
-    function windBaum(s, trunkMul) {
-        const ph = treePhenotype(s.api, s.slim, s.trop, s.delta, s.leaf);
-        const H = ph.height;
-        const k = 13 + 9 * s.slim;
-        const D = 2 * Math.min(Math.max(Math.pow((H / k) * 2, 1.5) * 0.5, 0.07), 1.25) * (trunkMul || 1);
-        return { H: H, D: D, delta: D / H };
+    // DER FUSS-DURCHMESSER DER GELIEFERTEN GESTALT: der erste Rinden-Strang ist der Stamm, seine Ringe liegen je R1 Ecken
+    // hintereinander (die Naht wiederholt die erste Ecke) und steigen; D ist der mittlere doppelte Abstand der Ring-Ecken
+    // von ihrer Mitte im Ring nächst der Höhe yT (Vorlagen-Einheiten). null, wenn der Strang keinen Ring trägt.
+    function stammDurchmesser(pos, yT) {
+        if (!pos || pos.length < 9) return null;
+        let R1 = 0;
+        for (let i = 1; i < 400 && i * 3 < pos.length; i++)
+            if (Math.hypot(pos[i * 3] - pos[0], pos[i * 3 + 1] - pos[1], pos[i * 3 + 2] - pos[2]) < 1e-3) {
+                R1 = i + 1;
+                break;
+            }
+        if (R1 < 4) return null;
+        const n = R1 - 1;
+        let best = -1,
+            bestD = Infinity,
+            yPrev = -Infinity;
+        for (let r = 0; (r + 1) * R1 <= pos.length / 3; r++) {
+            let y = 0;
+            for (let j = 0; j < n; j++) y += pos[(r * R1 + j) * 3 + 1];
+            y /= n;
+            if (y < yPrev - 1e-4) break;
+            yPrev = y;
+            if (Math.abs(y - yT) < bestD) {
+                bestD = Math.abs(y - yT);
+                best = r;
+            }
+        }
+        if (best < 0) return null;
+        let cx = 0,
+            cz = 0,
+            rr = 0;
+        for (let j = 0; j < n; j++) {
+            cx += pos[(best * R1 + j) * 3];
+            cz += pos[(best * R1 + j) * 3 + 2];
+        }
+        cx /= n;
+        cz /= n;
+        for (let j = 0; j < n; j++) rr += Math.hypot(pos[(best * R1 + j) * 3] - cx, pos[(best * R1 + j) * 3 + 2] - cz);
+        return (2 * rr) / n;
+    }
+    // Die Schlankheit δ = D / H einer gelieferten Gestalt (skalenfrei): D in Brusthöhe (dbh Meter Welt → dbh / skala in der
+    // Vorlage; der Kleinwuchs unter 4·dbh misst im ersten Viertel seiner Höhe — die Brusthöhe eines 1,6-m-Strauchs läge in
+    // seiner Spitze), H = ht (die Vorlagen-Höhe der Gestalt). Welt, Karte und Labor rechnen f0 = kF · δ / H_Welt je Baum.
+    function windSchlankheit(barkPos, ht, skala) {
+        if (!(ht > 0) || !(skala > 0)) return null;
+        const D = stammDurchmesser(barkPos, Math.min(WIND_GESETZ.dbh, 0.25 * ht * skala) / skala);
+        return D > 0 ? D / ht : null;
     }
     // DER EINE TERM: e = { t, U, g (Böe), f0, H (m), zeta, rho, phi (Orts-Phase), psi (Ast-Phase) }, blatt (bool, JS).
     // Rückgabe in Metern: quer (längs der Wind-Richtung), hoch (senkrecht), flattern (längs der Normale; 0 ohne Laub).
     function windAusschlag(A, e, blatt) {
         const W = WIND_GESETZ;
         const TAU = 6.283185307179586;
+        const antwort = (f, fRef) =>
+            A.min(
+                A.k(1),
+                A.mul(A.k(Math.pow(fRef, W.spektrum.exp)), A.pow(A.max(f, A.k(0.001)), A.k(-W.spektrum.exp)))
+            );
         const last = A.mul(A.pow(A.max(e.U, A.k(0)), A.k(W.vogel)), e.g);
+        const aStamm = antwort(e.f0, W.spektrum.fRef); // Ast: faktor · f0 gegen faktor · fRef — dieselbe Antwort
         const fAst = A.mul(e.f0, A.k(W.ast.faktor));
         const pendel = A.sin(A.add(A.mul(A.mul(A.k(TAU), e.f0), e.t), e.phi));
         const stamm = A.mul(
             A.mul(A.mul(e.H, A.mul(e.zeta, e.zeta)), A.mul(A.k(W.stamm.neig), last)),
-            A.add(A.k(1), A.mul(A.k(W.stamm.pendel), pendel))
+            A.add(A.k(1), A.mul(A.mul(A.k(W.stamm.pendel), aStamm), pendel))
         );
         const sAst = A.sin(A.add(A.mul(A.mul(A.k(TAU), fAst), e.t), A.add(e.phi, e.psi)));
-        const hebel = A.mul(A.mul(e.H, e.rho), A.mul(last, sAst));
+        const hebel = A.mul(A.mul(A.mul(e.H, e.rho), A.mul(last, sAst)), aStamm);
         const out = {
             quer: A.add(stamm, A.mul(A.mul(hebel, e.zeta), A.k(W.ast.hub))),
             hoch: A.mul(hebel, A.k(W.ast.heben)),
@@ -4134,7 +4185,10 @@
         if (blatt) {
             const fBl = A.max(A.k(W.blatt.f), A.mul(fAst, A.k(W.blatt.ueberAst)));
             const sBl = A.sin(A.add(A.mul(A.mul(A.k(TAU), fBl), e.t), A.mul(e.psi, A.k(2.7))));
-            out.flattern = A.mul(A.mul(A.k(W.blatt.hub), A.sqrt(A.max(e.U, A.k(0)))), sBl);
+            out.flattern = A.mul(
+                A.mul(A.mul(A.k(W.blatt.hub), A.sqrt(A.max(e.U, A.k(0)))), sBl),
+                antwort(fBl, W.blatt.f)
+            );
         }
         return out;
     }
@@ -4143,10 +4197,22 @@
         k: (n) => n,
         add: (a, b) => a + b,
         mul: (a, b) => a * b,
+        min: (a, b) => Math.min(a, b),
         max: (a, b) => Math.max(a, b),
         pow: (a, b) => Math.pow(a, b),
         sin: (a) => Math.sin(a),
         sqrt: (a) => Math.sqrt(a),
+    });
+    // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
+    var WIND_GLSL = Object.freeze({
+        k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
+        add: (a, b) => "(" + a + "+" + b + ")",
+        mul: (a, b) => "(" + a + "*" + b + ")",
+        min: (a, b) => "min(" + a + "," + b + ")",
+        max: (a, b) => "max(" + a + "," + b + ")",
+        pow: (a, b) => "pow(" + a + "," + b + ")",
+        sin: (a) => "sin(" + a + ")",
+        sqrt: (a) => "sqrt(" + a + ")",
     });
 
     root.__phytoCore = {
@@ -4243,8 +4309,10 @@
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
         budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
         WIND_GESETZ: WIND_GESETZ, // K19 — das Wind-Gesetz des Baums (f0 = kF·D/H², Stamm < Ast < Blatt, Last ∝ U^vogel)
-        windBaum: windBaum, // K19 — Höhe, Fuß-Durchmesser und Schlankheit δ einer Art aus ihrem Buch
+        stammDurchmesser: stammDurchmesser, // K19 — der Fuß-Durchmesser der gelieferten Gestalt (Ring des Stamm-Strangs)
+        windSchlankheit: windSchlankheit, // K19 — δ = D(Brusthöhe) / H der gelieferten Gestalt
         windAusschlag: windAusschlag, // K19 — DER EINE Wind-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
+        WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

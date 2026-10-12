@@ -65,6 +65,8 @@ const WIND = {
     uWindStrength: { value: 0.0 },
     uWindDir: { value: new THREE.Vector3(1, 0, 0.35).normalize() },
     uGust: { value: 1.0 },
+    // der Baum der Einzel-Ansicht (K19): Vorlagen-Höhe · Schlankheit δ · Welt-Skala — der Bestand trägt sie je Klon (aWindB)
+    uWindBaum: { value: new THREE.Vector3(1, 0, 1) },
 };
 
 const SEASON = {
@@ -601,9 +603,66 @@ const PORTAL_RENDER_CONFIG = {
     impostor: { views: 8, cellW: 128, cellH: 256 },
 };
 
-function injectWind(mat, foliage, isGrass) {
+// DIE HALM-BIEGUNG des Labors (Gras, Blumen-Stiel): der Halm kippt starr um seinen Fuß. Der Baum liest sie nicht mehr
+// (K19: `baumWindGlsl`); die Wiese der Welt liest ihr eigenes Gesetz (`_windSwayOffset`).
+function halmBiegung(foliage) {
+    return (
+        "vec2 _wd=normalize(uWindDir.xz+vec2(1e-4));\nfloat _travel=dot(_wd,_iw)*0.030 - uTime*1.15;\nfloat _gust=(0.55+0.45*sin(_travel)+0.16*sin(_travel*0.5+1.3))*uGust;\nfloat _theta=clamp(_sw*uWindStrength*_gust*0.9,-1.5,1.5);\nfloat _R=max(transformed.y,0.0);\nfloat _cc=cos(_theta),_ss=sin(_theta);\n#ifdef USE_INSTANCING\n vec3 _ix=normalize(instanceMatrix[0].xyz); vec3 _iz=normalize(instanceMatrix[2].xyz);\n vec2 _wdL=vec2(dot(vec3(_wd.x,0.0,_wd.y),_ix),dot(vec3(_wd.x,0.0,_wd.y),_iz));\n#else\n vec2 _wdL=_wd;\n#endif\ntransformed.x+=_wdL.x*(_R*_ss);\ntransformed.z+=_wdL.y*(_R*_ss);\ntransformed.y-=_R*(1.0-_cc);\n" +
+        (foliage
+            ? "float _fl=sin(_travel*3.1+_ph*0.8)+0.6*sin(_travel*5.7+_ph*2.3); transformed+=normal*_fl*0.05*min(uWindStrength*1.7,1.9)*(_sw*0.35+0.55); transformed.x+=_wdL.x*_fl*0.035*(_sw*0.4+0.4); transformed.z+=_wdL.y*_fl*0.035*(_sw*0.4+0.4);\n"
+            : "")
+    );
+}
+// DER WIND DES BAUMS IM LABOR (K19): derselbe Term wie Rinde und Laub der Welt (phyto-core `windAusschlag`, hier über der
+// GLSL-Algebra WIND_GLSL) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile (uWindStrength: 0,06
+// ruhig · 1 Sturm), die wandernde Böe aus WIND_GESETZ.boe, f0 = kF · δ / H mit H = Vorlagen-Höhe × Welt-Skala. Der
+// Bestand trägt Höhe und δ je Klon (aWindB, `windStempel` in phytogenesis), die Einzel-Ansicht als Uniform (uWindBaum).
+// Ein Klon ohne Stempel steht still (sichtbar, nie ein geratener Wert).
+function baumWindGlsl(foliage) {
+    const PC = self.__phytoCore,
+        W = PC.WIND_GESETZ,
+        B = W.boe,
+        G = PC.WIND_GLSL;
+    const e = {
+        t: "uTime",
+        U: "uWindStrength",
+        g: "_wG",
+        f0: "_wF0",
+        H: "_wHm",
+        zeta: "_wZeta",
+        rho: "_wRho",
+        phi: "_wPhi",
+        psi: "_wPsi",
+    };
+    const w = self.__phytoCore.windAusschlag(G, e, foliage);
+    return (
+        "#ifdef USE_INSTANCING\n float _wHt=max(aWindB.x,1e-3); float _wDl=aWindB.y; float _wSk=_isy; float _wAn=step(0.001,aWindB.x); vec3 _wPw=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz; vec3 _ix=normalize(instanceMatrix[0].xyz); vec3 _iz=normalize(instanceMatrix[2].xyz);\n#else\n float _wHt=max(uWindBaum.x,1e-3); float _wDl=uWindBaum.y; float _wSk=max(uWindBaum.z,1e-3); float _wAn=1.0; vec3 _wPw=(modelMatrix*vec4(transformed,1.0)).xyz; vec3 _ix=vec3(1.0,0.0,0.0); vec3 _iz=vec3(0.0,0.0,1.0);\n#endif\n" +
+        "vec2 _wd=normalize(uWindDir.xz+vec2(1e-4)); vec2 _wdL=vec2(dot(vec3(_wd.x,0.0,_wd.y),_ix),dot(vec3(_wd.x,0.0,_wd.y),_iz));\n" +
+        "float _wHm=max(_wHt*_wSk,0.5); float _wOrt=dot(_wPw.xz,_wd); float _wG=sin(uTime*" +
+        G.k(B.omega) +
+        "-_wOrt*" +
+        G.k(B.k) +
+        ")*" +
+        G.k(B.amp) +
+        "+" +
+        G.k(B.mitte) +
+        "; float _wF0=_wDl*" +
+        G.k(W.kF) +
+        "/_wHm; float _wZeta=transformed.y/_wHt; float _wRho=length(transformed.xz)/_wHt; float _wPhi=-_wOrt*" +
+        G.k(B.k) +
+        "; float _wPsi=(transformed.x*1.7+transformed.y*0.9+transformed.z*1.3)/_wHt*6.2832;\n" +
+        "float _wQ=" +
+        w.quer +
+        "*_wAn/_wSk; float _wHo=" +
+        w.hoch +
+        "*_wAn/_wSk;\ntransformed.x+=_wdL.x*_wQ; transformed.z+=_wdL.y*_wQ; transformed.y+=_wHo;\n" +
+        (foliage ? "transformed+=normalize(normal)*(" + w.flattern + "*_wAn/_wSk);\n" : "")
+    );
+}
+function injectWind(mat, foliage, isGrass, baum) {
     mat.onBeforeCompile = function (sh) {
         sh.uniforms.uTime = WIND.uTime;
+        if (baum) sh.uniforms.uWindBaum = WIND.uWindBaum;
         sh.uniforms.uWindStrength = WIND.uWindStrength;
         sh.uniforms.uWindDir = WIND.uWindDir;
         sh.uniforms.uGust = WIND.uGust;
@@ -616,6 +675,7 @@ function injectWind(mat, foliage, isGrass) {
         sh.vertexShader = sh.vertexShader.replace(
             "#include <common>",
             "#include <common>\nattribute vec3 aWind;\nattribute vec3 aCenter;\nattribute float aType;\nattribute float aLodLevel;\nattribute float aH0;\nattribute float aH0L;\nuniform float uTime,uWindStrength,uGust,uLeafPresence,uBloom,uLodRef;\nuniform vec3 uWindDir;\nvarying float vLod;\nvarying float vLodD;\nvarying float vLodDL;" +
+                (baum ? "\nattribute vec2 aWindB;\nuniform vec3 uWindBaum;" : "") +
                 (foliage
                     ? "\nvarying float vSeasW;\nvarying vec3 vTintI;" + (isGrass ? "\nattribute vec3 aTintI;" : "")
                     : "")
@@ -632,10 +692,7 @@ function injectWind(mat, foliage, isGrass) {
                         ? "vTintI=aTintI;\n"
                         : "#ifdef USE_INSTANCING\n{float _th=fract(sin(dot(_iw,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(_iw,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);}\n#else\n vTintI=vec3(0.0);\n#endif\n"
                     : "") /* FIX v27: Baum-Tint aus hash(Weltposition) — identisch fuer L0/L1 UND das Billboard (gleicher Hash im Impostor-Shader) -> die Kronenfarbe eines Baums bleibt ueber alle LOD-Stufen konstant; kompaktierungssicher; Studio (non-instanced) exakt neutral */ +
-                "vec2 _wd=normalize(uWindDir.xz+vec2(1e-4));\nfloat _travel=dot(_wd,_iw)*0.030 - uTime*1.15;\nfloat _gust=(0.55+0.45*sin(_travel)+0.16*sin(_travel*0.5+1.3))*uGust;\nfloat _theta=clamp(_sw*uWindStrength*_gust*0.9,-1.5,1.5);\nfloat _R=max(transformed.y,0.0);\nfloat _cc=cos(_theta),_ss=sin(_theta);\n#ifdef USE_INSTANCING\n vec3 _ix=normalize(instanceMatrix[0].xyz); vec3 _iz=normalize(instanceMatrix[2].xyz);\n vec2 _wdL=vec2(dot(vec3(_wd.x,0.0,_wd.y),_ix),dot(vec3(_wd.x,0.0,_wd.y),_iz));\n#else\n vec2 _wdL=_wd;\n#endif\ntransformed.x+=_wdL.x*(_R*_ss);\ntransformed.z+=_wdL.y*(_R*_ss);\ntransformed.y-=_R*(1.0-_cc);\n" +
-                (foliage
-                    ? "float _fl=sin(_travel*3.1+_ph*0.8)+0.6*sin(_travel*5.7+_ph*2.3); transformed+=normal*_fl*0.05*min(uWindStrength*1.7,1.9)*(_sw*0.35+0.55); transformed.x+=_wdL.x*_fl*0.035*(_sw*0.4+0.4); transformed.z+=_wdL.y*_fl*0.035*(_sw*0.4+0.4);\n"
-                    : "") +
+                (baum ? baumWindGlsl(foliage) : halmBiegung(foliage)) +
                 (isGrass
                     ? "float _gd=distance(cameraPosition.xz,_iw); transformed=mix(aCenter,transformed,1.0-smoothstep(44.0,58.0,_gd));\n"
                     : "")
@@ -793,7 +850,9 @@ function buildMaterials() {
             normalMap: barkNormalTex,
             normalScale: new THREE.Vector2(0.85, 0.85),
         }),
-        false
+        false,
+        false,
+        true
     );
     barkMatBirch = injectWind(
         new THREE.MeshStandardMaterial({
@@ -803,10 +862,14 @@ function buildMaterials() {
             normalMap: barkNormalTex,
             normalScale: new THREE.Vector2(0.1, 0.1),
         }),
-        false
+        false,
+        false,
+        true
     );
     foliageMat = injectWind(
         new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide }),
+        true,
+        false,
         true
     );
     foliageMatTex = injectWind(
@@ -817,6 +880,8 @@ function buildMaterials() {
             side: THREE.DoubleSide,
             alphaTest: 0.5,
         }),
+        true,
+        false,
         true
     ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt den WERT um sein Mittel `wert` (bakeLeafAtlasBild; color = 1/wert teilt ihn heraus), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
     grassMat = injectWind(

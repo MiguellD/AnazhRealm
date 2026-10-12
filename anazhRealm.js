@@ -20643,7 +20643,7 @@ class AnazhRealm {
     // (λ = 2π/k ≈ 164 m, Periode 2π/omega ≈ 15,7 s). `_windSwayOffset` (Gras/Streu/Laub im Shader) und `_windBoeAt`
     // (der Wind am Ohr, klang:UMWELT) lesen dieselben Zahlen.
     static get WIND_BOE() {
-        return Object.freeze({ omega: 0.4, k: 0.0384, amp: 0.45, mitte: 0.7 });
+        return globalThis.__phytoCore.WIND_GESETZ.boe; // die Zahlen leben im Wind-Gesetz des Kerns (K19) — das Labor liest sie dort
     }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
@@ -32254,15 +32254,7 @@ class AnazhRealm {
                                     const _Hk = _rahmen.y.mul(_sInst).max(0.5);
                                     const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
                                     const _wK = globalThis.__phytoCore.windAusschlag(
-                                        {
-                                            k: (n) => _Ta.float(n),
-                                            add: (a, b) => a.add(b),
-                                            mul: (a, b) => a.mul(b),
-                                            max: (a, b) => _Ta.max(a, b),
-                                            pow: (a, b) => _Ta.pow(a, b),
-                                            sin: (a) => _Ta.sin(a),
-                                            sqrt: (a) => _Ta.sqrt(a),
-                                        },
+                                        AnazhRealm._windTsl(_Ta),
                                         {
                                             t: _wu.uWindTime,
                                             U: _wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
@@ -32270,8 +32262,8 @@ class AnazhRealm {
                                                 .sin(_wu.uWindTime.mul(_WB.omega).sub(_ortK.mul(_WB.k)))
                                                 .mul(_WB.amp)
                                                 .add(_WB.mitte),
-                                            f0: _Ta
-                                                .float(globalThis.__phytoCore.WIND_GESETZ.kF * this._karteWindDelta())
+                                            f0: this._karteWindDelta()
+                                                .mul(globalThis.__phytoCore.WIND_GESETZ.kF)
                                                 .div(_Hk),
                                             H: _Hk,
                                             zeta: _uv.y,
@@ -77501,38 +77493,58 @@ class AnazhRealm {
         return mat;
     }
 
-    // Die Schlankheit der Karte (K19): das Mittel von δ über die Baum-Arten des Buchs (phyto-core `windBaum`) — die Karte
-    // zeichnet jede Art aus EINEM Stoff und kennt ihre Art nur als Atlas-Schicht.
+    // Die Schlankheit der Karte (K19): EINE Uniform, das Mittel von δ über die Arten, deren Gestalt geliefert ist
+    // (`_baumWindDaten` misst sie, phyto-core `windSchlankheit`) — die Karte zeichnet jede Art aus EINEM Stoff und kennt
+    // ihre Art nur als Atlas-Schicht. Vor der ersten Gestalt ist δ 0 (f0 0: die Karte neigt sich mit der Böe, ohne Pendel).
     _karteWindDelta() {
-        if (this._karteWindDeltaWert) return this._karteWindDeltaWert;
-        const rs = (this._foundry && this._foundry.recipes) || {};
-        let s = 0,
-            n = 0;
-        for (const p in rs) {
-            const r = rs[p];
-            if (!r || r.kind !== "tree" || !r.s) continue;
-            s += globalThis.__phytoCore.windBaum(r.s, 1).delta;
-            n++;
-        }
-        if (!n) throw new Error("_karteWindDelta: kein Baum im Buch — die Karte baut erst mit dem Buch");
-        return (this._karteWindDeltaWert = s / n);
+        if (!this._karteWindU) this._karteWindU = THREE.TSL.uniform(0);
+        return this._karteWindU;
     }
 
-    // DIE WIND-DATEN EINER ART (K19) für den Stoff ihrer Gruppe: die Vorlagen-Höhe der gelieferten Gestalt (die Wurzel liegt
-    // bei y = 0 — ζ = y / ht), die Schlankheit δ aus ihrem Buch (phyto-core `windBaum`, dasselbe McMahon-Gesetz, mit dem der
-    // Stamm wächst) und ob sie im Wind steht (Baum und Strauch; der liegende Stamm, der Stumpf, Fels und Bau stehen still).
+    // DIE WIND-DATEN EINER ART (K19) für den Stoff ihrer Gruppe, gemessen an der GELIEFERTEN Gestalt: die Vorlagen-Höhe
+    // (die Wurzel liegt bei y = 0 — ζ = y / ht), die Schlankheit δ = D(Brusthöhe) / ht des Stamm-Strangs (phyto-core
+    // `windSchlankheit` mit der Welt-Skala der Art) und ob sie im Wind steht (Baum und Strauch; der liegende Stamm, der
+    // Stumpf, Fels und Bau stehen still). Bis K19 kam δ aus dem Buch-Phänotyp — das Totholz (gebrochene Krone) schwang
+    // 42 % zu langsam.
     _baumWindDaten(preset, meshes) {
         const rec = this._foundryRecipeFor(preset);
-        if (!rec || !rec.s || rec.panel !== "plant") return null;
-        let top = 0;
+        if (!rec || rec.panel !== "plant") return null;
+        const an = rec.kind === "tree" || rec.kind === "shrub" ? 1 : 0;
+        if (!an) return null;
+        let top = 0,
+            rinde = null;
         for (const m of meshes || []) {
             const pa = m && m.position && m.position.array;
             if (!pa) continue;
+            if (!rinde && m.kind === "bark") rinde = pa;
             for (let i = 1; i < pa.length; i += 3) if (pa[i] > top) top = pa[i];
         }
         if (!(top > 0)) return null;
-        const wb = globalThis.__phytoCore.windBaum(rec.s, 1);
-        return { ht: top, delta: wb.delta, an: rec.kind === "tree" || rec.kind === "shrub" ? 1 : 0 };
+        const skala = this._foundryWorldScaleMatrix(preset).elements[5];
+        const delta = globalThis.__phytoCore.windSchlankheit(rinde, top, skala);
+        if (!(delta > 0)) throw new Error("_baumWindDaten: " + preset + " liefert keinen Stamm-Ring für den Wind");
+        if (!this._windDeltaJeArt) this._windDeltaJeArt = new Map();
+        if (!this._windDeltaJeArt.has(preset)) {
+            this._windDeltaJeArt.set(preset, delta);
+            let s = 0;
+            for (const d of this._windDeltaJeArt.values()) s += d;
+            this._karteWindDelta().value = s / this._windDeltaJeArt.size;
+        }
+        return { ht: top, delta, an };
+    }
+
+    // Die TSL-Algebra des Wind-Terms (phyto-core `windAusschlag`) — Rinde, Laub und Karte der Welt rechnen über ihr.
+    static _windTsl(T) {
+        return {
+            k: (n) => T.float(n),
+            add: (a, b) => a.add(b),
+            mul: (a, b) => a.mul(b),
+            min: (a, b) => T.min(a, b),
+            max: (a, b) => T.max(a, b),
+            pow: (a, b) => T.pow(a, b),
+            sin: (a) => T.sin(a),
+            sqrt: (a) => T.sqrt(a),
+        };
     }
 
     // DER WIND IM PFLANZEN-STOFF (K19): Rinde und Laub jeder Foundry-Pflanze tragen den EINEN Wind-Term (phyto-core
@@ -77549,16 +77561,9 @@ class AnazhRealm {
         const wu = this._ensureWindCoupling(T);
         const WG = globalThis.__phytoCore.WIND_GESETZ;
         const B = AnazhRealm.WIND_BOE;
-        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0.08, baum ? baum.an : 0));
-        const A = {
-            k: (n) => T.float(n),
-            add: (a, b) => a.add(b),
-            mul: (a, b) => a.mul(b),
-            max: (a, b) => T.max(a, b),
-            pow: (a, b) => T.pow(a, b),
-            sin: (a) => T.sin(a),
-            sqrt: (a) => T.sqrt(a),
-        };
+        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
+        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
+        const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
         const pW = T.positionWorld;
         const ht = uB.x.max(1e-3);
