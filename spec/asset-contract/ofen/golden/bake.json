@@ -172,9 +172,9 @@
   },
   "wolf-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 13660,
-   "tris": 26864,
-   "sha256": "bfe0d8d79866c7a2c950458ae9fe09710e4c449677cc571654955ce871d0e79c"
+   "verts": 13164,
+   "tris": 26304,
+   "sha256": "df55c89919b2a18c18f1a626a0aa3f7a1e2f09b691da12627e2690e90581c8fd"
   },
   "wolf-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -273,7 +273,7 @@
    "sha256": "6cd4e10586a5fb3cb8c10e1292dde7b88dd879f144a033fad88d513d811ba477"
   },
   "wolf-L0|beipack": {
-   "sha256": "3638d297f824864bd5cc036f46fc0b994e7d642d387dc05ffceff8825c52494d"
+   "sha256": "3435383a0ba5e30176c2341f0971960b75efefb3476862185a3e77ab208cae54"
   },
   "wolf-L1|fell|wolf": {
    "meshes": 1,
@@ -604,9 +604,9 @@
   },
   "fox-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 14236,
-   "tris": 28040,
-   "sha256": "da67f2821b99c53f9ffc393ba524adbc3e29c9f31d0895d56c67174236ab478e"
+   "verts": 13530,
+   "tris": 27056,
+   "sha256": "4d09a8c81314d2580298c3a9bc01785ddd216b784fc37c43e8adcc3b8ff07454"
   },
   "fox-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -711,7 +711,7 @@
    "sha256": "2f64a2248b0b94f9d3fc3e5df7775a49bf6e564b8390ba413b4bb5bb9556a5e7"
   },
   "fox-L0|beipack": {
-   "sha256": "31bb41323638d5932f4264fb72ab9ab990714eb18c6d8a4aae4deab9c9073741"
+   "sha256": "5c7f3f0db080647e63654c9b48cabbd52970d7f8993e6014f9119e6b7b1eb5b4"
   },
   "fox-L1|fell|wolf": {
    "meshes": 1,
@@ -1012,9 +1012,9 @@
   },
   "bear-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 14674,
-   "tris": 28904,
-   "sha256": "2f71332ef6e7a1650c67017a4b5ed24b9842663ca1692f494a2e6b53036fc060"
+   "verts": 14309,
+   "tris": 28604,
+   "sha256": "cc922acbe139a657aa6c380c7c054b6d50d8c9c53ac72730d8b3df31b7927384"
   },
   "bear-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1095,7 +1095,7 @@
    "sha256": "86ece91669214ffdecb3146c40c19c2ce2404cb49d7dc5431e542cee47598d24"
   },
   "bear-L0|beipack": {
-   "sha256": "5f909f61a57af7fd7b597da0adb2c5a739246ccdf99a699a2fd47372bdd9668a"
+   "sha256": "0a0f07bf6b2461490f002107ce0e333fa49eb2ae2583ce5d3523a1d64fcb9d0e"
   },
   "bear-L1|fell|wolf": {
    "meshes": 1,
@@ -1348,9 +1348,9 @@
   },
   "deer-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 12984,
-   "tris": 25632,
-   "sha256": "1331ae6740edd472f60a2263663f7d1e5ebcab46a4733e40fc4f45f1cf4cb334"
+   "verts": 12714,
+   "tris": 25424,
+   "sha256": "4a9f77c6af61592992f4e932a4e1d342948b67f31c3fa42b5797feb8280e1207"
   },
   "deer-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1434,7 +1434,7 @@
    "sha256": "0f0ecebf5d7d50a304104d1dec257e7bdec65fc9b19b37b632d93aba743dca85"
   },
   "deer-L0|beipack": {
-   "sha256": "280a3ee7ac7e330a067e3936d5f7e979c39b6c8afe8e4cced20a823a5c0e1073"
+   "sha256": "c8a95775a9d381db8fe882fce016cde5b3c1f3a9155d71e074ccec435c9efdf1"
   },
   "deer-L1|fell|wolf": {
    "meshes": 1,
