@@ -1047,11 +1047,8 @@ async function starte() {
             if (Number.isFinite(k.uhr)) {
                 const st = r.state;
                 if (st.world) st.world.timeOfDay = k.uhr;
-                st.timeOfDay = k.uhr;
-                st._skyEnvLastRegenMs = -Infinity;
-                if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-                if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(false);
-                if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
+                r.setTimeOfDay(k.uhr, "human");
                 for (let i = 0; i < 20 && typeof r._leuchtTakt === "function"; i++) {
                     r._leuchtTakt();
                     await new Promise((ok) => setTimeout(ok, 50));

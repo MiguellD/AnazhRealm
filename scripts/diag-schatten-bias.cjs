@@ -362,20 +362,15 @@ async function probe(cfg) {
         }
         rend.setAnimationLoop(null);
     };
-    // DIE SONNE: Bühne (Sonne, Sommer, Wetter gehalten), dann die Tageszeit — und der Himmel als Licht folgt ihr SOFORT (sonst
-    // malte der Loop ihn im ersten Werfer-Halt nach der Drift-Schwelle neu: LEER und MIT trugen verschiedene Himmel, das
-    // „strömte"-Maß verwarf das ganze Bild — der erste Werfer je Sonne war vakuös).
+    // DIE SONNE: Bühne (Sonne, Sommer, Wetter gehalten), dann die Tageszeit über den Pfad des Spielers — der Himmel als Licht
+    // folgt dem Sprung im selben Anwenden (`_himmelSprung`; sonst malte der Loop ihn im ersten Werfer-Halt nach der
+    // Drift-Schwelle neu: LEER und MIT trugen verschiedene Himmel, der erste Werfer je Sonne war vakuös).
     const sonne = async (zeit) => {
         window.__buehne();
         zeitFest = zeit;
-        st.timeOfDay = zeit;
         if (st.world) st.world.timeOfDay = zeit;
-        r._applyDayNightToScene();
-        await halten(6);
-        st._skyEnvLastRegenMs = -Infinity;
-        r._ensureSkyEnvironment(false);
-        r._applyDayNightToScene();
-        await halten(4);
+        r.setTimeOfDay(zeit, "human");
+        await halten(10);
     };
     let mitGras = false; // der Nachtrag (G) misst mit der Nah-Wiese im Bild, jeder andere Schuss ohne
     // Die Nah-Wiese hat keine Sammel-Gruppe mehr (S3 wiese-gestalten): jede Senke ist ihr eigener oberster Knoten, und ein

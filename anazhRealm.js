@@ -16649,7 +16649,7 @@ class AnazhRealm {
     // Darum eine prozedurale Sky-Env (kein HDRI): Gradient Zenit → Horizont → Boden aus der live
     // `nebulaColor`, PMREM-gefiltert. Feature-detected + try/catch (Fehler → environment null);
     // regeneriert nur bei Farb-Drift, nie pro Frame.
-    _ensureSkyEnvironment(force) {
+    _ensureSkyEnvironment(force, sprung) {
         const st = this.state;
         if (typeof THREE === "undefined" || !st.scene || !st.renderer) return false;
         if (!st.rendererReady) return false; // das Env-Sampling braucht den initialisierten Renderer
@@ -16670,15 +16670,17 @@ class AnazhRealm {
         // Idle-Freeze-Wand: die Tag-Nacht-Uhr driftet die Himmelsfarbe auch im Stehen; jede Regeneration
         // mit NEUER Texture-Identität ließ WebGPU die Pipelines aller env-samplenden PBR-Materialien neu
         // kompilieren (Multi-Sekunden-Stall). Darum (a) SKY_ENV_REGEN_MIN_MS deckelt die Rate, (b) das
-        // Render-Target wird wiederverwendet (unten) → stabile Texture-Identität.
+        // Render-Target wird wiederverwendet (unten) → stabile Texture-Identität. Die Raten-Drossel gilt dem GLEITEN (der
+        // Gang der Uhr, ein Wetter-Übergang); ein SPRUNG (`sprung`: ein Schreiber der Uhr außer ihrem Gang, `_uhrSetzen`) malt
+        // beim ersten Drift — bis K10 hielt die Drossel den Sprung auf Mitternacht 6 s mit der Bestrahlung des Tags (2,32 statt 0,22).
         const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
         const drift = last ? Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) : Infinity;
         if (
             !force &&
             last &&
-            (drift < 0.04 || nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS)
+            (drift < 0.04 || (!sprung && nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS))
         ) {
-            return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
+            return true; // Farbe stabil ODER gleitend und eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
             const tex = this._himmelUmgebungTex();
@@ -93037,6 +93039,14 @@ class AnazhRealm {
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiUndLuft(angle, tint, sunDir);
+        // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
+        // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
+        // malte `_dayNightApplySkybox` sie vor der Luft — die Nacht nach einem Sprung trug den Horizont des Tags (intern
+        // gedrosselt: regeneriert nur bei Farb-Drift; ein Einmal-Fehlschlag versucht es nicht erneut). Ein Sprung des Himmels
+        // (`_himmelSprung`, gesetzt vom Uhr-Schreiber) geht an der Raten-Drossel vorbei, EINMAL.
+        const sprung = this._himmelSprung === true;
+        this._himmelSprung = false;
+        if (!this.state._skyEnvFailed) this._ensureSkyEnvironment(false, sprung);
         this._dayNightApplyWaterMaterials(lightDir);
         this._dayNightApplyBelichtung();
         this._dayNightApplyAugenLicht();
@@ -93316,9 +93326,6 @@ class AnazhRealm {
             // bewölkt), Regen 0.9 (Overcast). Der FBM-Wolken-Layer liest sie als Schwellen-Senker.
             u.cloudCover.value = Math.min(1, this._weatherBlendedValue(0.12, 0.9)); // D5a: [0,1]-Konsument clampt lokal
         }
-        // Ω-OPSIS §7 — die Sky-Env-Map mit der frischen Himmelsfarbe nachziehen (intern
-        // gedrosselt: regeneriert nur bei Farb-Drift). Einmal-Fehlschlag → nicht erneut versuchen.
-        if (!this.state._skyEnvFailed) this._ensureSkyEnvironment();
     }
 
     // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor), das Wetter
@@ -94257,6 +94264,8 @@ class AnazhRealm {
             );
             return false;
         }
+        // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`)
+        if (quelle !== "uhr" && v !== this.state.timeOfDay) this._himmelSprung = true;
         this.state.timeOfDay = v;
         return true;
     }
