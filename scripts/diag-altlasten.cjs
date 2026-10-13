@@ -1863,7 +1863,7 @@ function scanNormalWand(srcRoh) {
 // DIE NACHBESSERUNG 4 (13.10., am Kopf 53b2c1d7 ROT mit 2 Uhr-Deckeln): ein Bau, der in einer Schleife auf die Uhr wartet,
 // geht nach dem Deckel mit halben Daten weiter — `_foundryPrefetchLibrary` wartete 2 s auf das Studio-Buch und wärmte danach
 // ohne Rezepte (gate:post-kette rot mit FOUNDRY WARM, je nach Takt), `_foundryAwaitBook` pollte. Beide warten jetzt auf das
-// EREIGNIS des Buchs (`buchDa`, `_foundryIngestBook` erfüllt es).
+// EREIGNIS des Buchs (`buchDa`, `_foundryIngestBook` erfüllt es) — gate:post-kette danach 2/2 ohne FOUNDRY WARM.
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
