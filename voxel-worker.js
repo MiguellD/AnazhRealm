@@ -2164,7 +2164,7 @@ function attachFieldColors(positions) {
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`, dieselbe Funktion wie Main `_bodenFarbeAt`).
-        mix(snow, G.schnee(state, y));
+        mix(snow, G.schnee(state, y, x, z));
         // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
         // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.
         const uf = { see: 0, fluss: null, ufer: 0 };

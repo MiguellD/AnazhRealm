@@ -231,6 +231,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
@@ -268,7 +269,7 @@ async function probe(K) {
     const f = r._ensureAssetFoundry();
     const dl = performance.now() + 90000;
     while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.zacken)) await pause(100);
-    const MW = { x: -913.7, z: -890 };
+    const MW = K.mess; // die Mess-Wiese aus EINER Quelle (spec/profiband/haushalt.json), nie ihre Abschrift
     st.playerMesh.position.set(MW.x, r._voxelSurfaceY(MW.x, MW.z) + 1.8, MW.z);
     let stabil = 0,
         last = -1;
@@ -637,6 +638,7 @@ async function probe(K) {
             timeout: 180000,
         });
         befund = await page.evaluate(probe, {
+            mess: messort("wiese"),
             R: 150,
             SEITE_M,
             OBEN_ANTEIL,

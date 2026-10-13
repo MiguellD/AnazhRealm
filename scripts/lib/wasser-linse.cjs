@@ -1,3 +1,4 @@
+const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 // wasser-linse.cjs — DIE WASSER-LINSE der Leben-Prüfung (Welle L, Klassen Q6 + Q7): drei Proben, die den Defekt beim
 // NAMEN nennen und den Chokepoint selbst rufen (nie einen Stub). Befund 06.10. (sichtbares Fenster, echte Radeon,
 // artifacts/profiband/leben/befund-wasser-fluss.md): der Fluss steigt bergauf (14,3 % der 2-m-Schritte), wölbt sich
@@ -17,7 +18,7 @@
 //   window.__wasserRegen(o)          Q7-Regen: der Sturm-Regen der Welt allein auf Schwarz — Schlieren und Neigung
 //
 // Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL; Gate: scripts/diag-wasser-leben.cjs.
-"use strict";
+("use strict");
 
 // ── Q7-Gestalt ──
 function wasserFluss() {
@@ -2452,7 +2453,9 @@ function wasserOrte(opts) {
     const r = window.anazhRealm;
     const st = r.state;
     const G = window.__gelaendeCore;
-    const [MX, MZ] = o.mess || [-900, -850];
+    const mitte = o.mess || window.__messWiese; // der Messort aus spec/profiband/haushalt.json (welt-orte.cjs)
+    if (!mitte) throw new Error("__wasserOrte: keine Mitte (weder opts.mess noch __messWiese)");
+    const [MX, MZ] = mitte;
     const wl = st.waterLevel || 0;
     const R1 = (v) => Math.round(v * 10) / 10;
     const tiefe = (x, z) => {
@@ -2622,6 +2625,7 @@ function wasserOrte(opts) {
 
 module.exports = {
     WASSER_INSTALL:
+        WELT_ORTE_INSTALL +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +

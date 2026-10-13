@@ -92,6 +92,7 @@ function selbsttest() {
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
         },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -469,7 +470,8 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
-const MESS = { x: -900, z: -850 };
+const { messort } = require("./lib/welt-orte.cjs");
+const MESS = messort("wiese");
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

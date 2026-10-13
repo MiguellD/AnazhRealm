@@ -94,7 +94,29 @@ const FORBIDDEN = [
     { token: "0x241712", fiel: "BOOT-LITERAL-ABSCHIED — das Haar zieht aus der HAIR_COLORS-Palette" },
     // DIAL-ZWILLINGS-ABSCHIED 18.07. — die Literal-Kopien der Pflanzen-Tafel:
     // die EINE Quelle ist foundry-core PRESETS (__terrainCore.PHYTO_PRESETS,
-    // Leser _phytoStudioDials); nur SPECIES_PALETTE_DEFAULT (neutral) lebt.
+    // Leser _phytoArt).
+    // K24 (13.10.) — die zweite Baum-Grammatik des Stamms ist gefallen: der gefühlte Baum (Richter) wächst aus der
+    // Rezept-Zeile der Art im Gesetzbuch (_phytoArt) und der EINEN Ableitung treeParams, wie der gesehene.
+    {
+        token: "SPECIES_GRAMMAR",
+        fiel: "K24 — der Richter wächst aus treeParams der Art (_phytoArt), keine Stamm-Grammatik",
+    },
+    { token: "_phytoDialsFor", fiel: "K24 — der dritte Dial-Zwilling (Grammatik-Krone → P)" },
+    { token: "_phytoStudioDials", fiel: "K24 — die Art liest _phytoArt, ihr Phänotyp artPhaenotyp" },
+    { token: "_ensureVariantSeedPool", fiel: "K24 — der Pool wächst je Art (_variantSeedsFor)" },
+    { token: "_generateVariantSeedPool", fiel: "K24 — der Pool wächst je Art (_variantSeedsFor)" },
+    { token: "skeleton.grammar", fiel: "K24 — das Laub der Art am Skelett heißt skeleton.laub (aus P)" },
+    // K24-N1 (13.10.) — der stille Ersatz der Skelett-Leser ist gefallen: jede Größe schreibt der EINE Erzeuger aus treeParams
+    // der Art, die Wand `_skelettPflicht` bricht laut, wo eine fehlt.
+    {
+        token: "SPECIES_PALETTE_DEFAULT",
+        fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz",
+    },
+    { token: "DEFAULT_TREE_FLARE", fiel: "K24-N1 — der Wurzelanlauf ist P.flare der Art, die Rippen STAMM_RIPPEN" },
+    { token: "foliageScale", fiel: "K24-N1 — ein nie geschriebenes Skelett-Feld, die Leser setzten still 1" },
+    { token: "totalH || 10", fiel: "K24-N1 — die Höhe des Skeletts ist P.height, kein Ersatz" },
+    { token: "flareAmp || 0.45", fiel: "K24-N1 — der Farn mit Anlauf 0 bekam still 0,45" },
+    { token: 'test(sp) ? "oak"', fiel: "K24-N1 — die Blatt-Form ist P.leafShape der Art, nie ihr Name" },
     { token: "SPECIES_PHYTO_DIALS", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Studio-Tafel führt (gefühlt == gesehen)" },
     { token: "SPECIES_PALETTE_GIGANT", fiel: "DIAL-ZWILLINGS-ABSCHIED — der Gigant trägt den mammut-Ton der Tafel" },
     { token: "SPECIES_PALETTE[", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Art-Palette wohnt in der Studio-Tafel" },
@@ -503,6 +525,15 @@ const FORBIDDEN = [
     { token: "const uSkyCol ", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
     { token: "skyCol: uSkyCol", fiel: "Welle 5 — der Spiegel liest die Himmels-Umgebung" },
     { token: "WG.tief", fiel: "Welle 5 — der Wasser-Körper ist R∞ = 0,33·b_b/(wK+b_b) (WASSER_GESETZ.koerperStreu)" },
+    {
+        token: "_fernFlussFarbe",
+        fiel: "K16 — der Fluss der Ferne ist der Wasser-Anteil aNass, gezeichnet mit _wasserBlick",
+    },
+    {
+        token: "FERN_FARBE.wasser",
+        fiel: "K16 — die Ferne trägt den Wasser-Körper des Gesetzes (_wasserKoerper), kein Fern-Blau",
+    },
+    { token: "0.0196, 0.0863, 0.1706", fiel: "K16 — das Fern-Blau 0x265273 fiel, R∞ aus WASSER_GESETZ" },
     { token: "ctx.getLevel(", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
     { token: "getLevel: (", fiel: "Welle 5 — der Sheet-Kontext trägt getDach, keinen Live-Pegel" },
     { token: "_studioGround", fiel: "Welle 5 — die Boden-Palette liegt synchron im Terrain-Namensraum (BODEN_FARBE)" },
@@ -1284,6 +1315,12 @@ const ZWILLINGE = [
         fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
     },
     {
+        fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
+        gesetzbuch: "phyto-core.js",
+        verboten: ["foundry-core.js", "anazhRealm.js"],
+        fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
+    },
+    {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
         verboten: ["foundry-core.js", "anazhRealm.js"],
@@ -1851,14 +1888,15 @@ function scanNormalWand(srcRoh) {
 // DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
-// deriveParamsPlant liest dieselbe Abbildung. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot
-// mit Zeile; fehlt ein Anker, ist die Abbildung aus emitTree oder deriveParamsPlant gewandert.
+// deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
+// (K24). Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot mit Zeile; fehlt ein Anker, ist die
+// Abbildung aus emitTree gewandert oder deriveParamsPlant reicht dem Gesetz eine andere als die rohe Stufe.
 const STUFEN_ANKER = [
     "__lod = lod;",
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "const rezept = stufenRezept(ph.kind, __lod);",
+    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -1930,6 +1968,107 @@ function scanHuellenFormWand(dateien) {
                 `Hüllen-Form-Wand: ${name}:${zeile} gibt dem Wirt die alte Hüllen-Zeile (boxen) — die EINE Form trägt teile (N5, _huelleVon)`
             );
         }
+    }
+    return errs;
+}
+// DIE ORTS-WAND (K16, Koordinator 13.10.): eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
+// einen Ort der Welt, in der sie geschrieben wurde — die Landform des Kerns verschob ihn, und drei Gruppen der CI wurden rot
+// (der Biss am Hang, der Baum im Haus, die Ankunft im Ursprung). Der Ort kommt aus der Welt (die nächste ebene Stelle, der
+// nächste See, `_weltBetreten`), oder die Zeile ist als Bühnen-Station deklariert: `// BÜHNE: <Grund>` auf ihr oder in den
+// zwei Zeilen darüber (der Grund sagt, warum der Ort nichts trägt — eigene Szene, Mechanik, nur der Abstand zählt).
+// Gelesen wird der Code ohne Kommentare; rot mit Datei:Zeile.
+// DIE KLASSE, nicht der Aufruf (Prüfung K16 Runde 2): der Ort reist selten als Literal IM Aufruf — er steht als Orts-
+// Tabelle (`{ id: "ufer", x: -872, z: -1127 }`, kamera-laub), als Versatz-Liste (`[[-50, 60], [30, 0]]` um den Start,
+// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -900, z: -850 }`, `o.mess || [-900, -850]`) und wird erst Zeilen
+// später gesetzt. In einer Setz-Probe (die Datei setzt Spieler, Kamera oder Tier: `.position.set(`, `.position.x =`,
+// `spawnCreatureAt(`) ist darum JEDES Orts-Paar aus Zahlen-Literalen rot — ein Objekt mit x und z, ein Paar als Wert,
+// Vorgabe oder Glied einer Liste —, sobald es weiter als `ORT_NAH_M` vom Ursprung seines Bezugs zeigt (darunter liegt die
+// Mechanik am gelesenen Ort: der Wolf 1,3 m vor dem Reh). Ein Bau-Ort (`spawnArchitecture`, `spawnSettlement`) trägt das
+// Platz-Gesetz des Stamms und ist nicht gemeint. Der Messort der Band-Serie kommt aus EINER Quelle (spec/profiband/
+// haushalt.json, `scripts/lib/messort.cjs`), nie als Abschrift.
+const ORT_LIT = String.raw`-?\d+(?:\.\d+)?`;
+const ORT_MITTE = String.raw`(?:[^,;()]|\((?:[^()]|\([^()]*\))*\))*?`;
+const ORT_NAH_M = 20;
+const ORTS_MUSTER = [
+    new RegExp(
+        String.raw`\b(?:playerMesh|pm|camera|cam|kam|kamera|character|tier|wolf|reh|creature|kreatur|phantom)\.position\.set\(\s*${ORT_LIT}\s*,${ORT_MITTE},\s*${ORT_LIT}\s*\)`,
+        "g"
+    ),
+    new RegExp(String.raw`\bspawnCreatureAt\(\s*${ORT_LIT}\s*,${ORT_MITTE},\s*${ORT_LIT}\s*[,)]`, "g"),
+    new RegExp(String.raw`\b(?:playerMesh|pm)\.position\.[xz]\s*=\s*${ORT_LIT}\s*;`, "g"),
+];
+const ORT_SENKE = /\.position\.(?:set\s*\(|[xz]\s*=(?!=))|\bspawnCreatureAt\s*\(/;
+const ORT_BAU = /\b(?:spawnArchitecture|spawnSettlement|_spawnSettlementFromExport|materializePortalHall)\s*\(/;
+const ORTS_PAARE = [
+    // die Orts-Tabelle und die Messort-Konstante: ein Objekt mit x und z aus Literalen
+    new RegExp(String.raw`\{[^{}]*?\bx\s*:\s*(${ORT_LIT})\s*,(?:[^{}]*?,)?\s*z\s*:\s*(${ORT_LIT})\s*[,}]`, "g"),
+    // das Paar als Wert, Vorgabe oder Listen-Glied (die Versatz-Liste) — nur unter einem Orts-Namen (`ORT_NAME`): ein Paar
+    // unter `hue`, `dolch` oder `SONNEN` ist ein Band, kein Ort
+    new RegExp(String.raw`(?:[=:(,[]|\|\||\?\?)\s*\[\s*(${ORT_LIT})\s*,\s*(${ORT_LIT})\s*\]`, "g"),
+];
+// ein Orts-Name ist ein Wort-Glied (ganz, am Anfang vor einem Groß-Glied, oder ein Groß-Glied im camelCase): `ortR`, `mess`,
+// `startOrte`, `MESS_ORT` — nie ein Teil (`SEEDS`, `sorted`); die Wasser-Wörter fehlen bewusst (in klang tragen `ufer` und
+// `fluss` Frequenz-Bänder, die Orte des Wassers liefert `__wasserOrte`)
+const ORT_WORT =
+    "ort|orte|mess|messort|spieler|start|ziel|pos|anker|stelle|lichtung|hang|versatz|station|wiese|platz|kandidat|kandidaten";
+const ORT_NAME = {
+    test: (n) =>
+        new RegExp(String.raw`^(?:${ORT_WORT})$`, "i").test(n) ||
+        new RegExp(String.raw`^(?:${ORT_WORT})[A-Z0-9_]`).test(n) ||
+        new RegExp(String.raw`^(?:${ORT_WORT.toUpperCase()})_`).test(n) ||
+        new RegExp(
+            String.raw`[a-z0-9](?:${ORT_WORT.replace(/(^|\|)(\w)/g, (_, a, b) => a + b.toUpperCase())})(?:[A-Z0-9_]|$)`
+        ).test(n),
+};
+// der Name, unter dem ein Paar steht: der Schlüssel oder die Bindung direkt davor, im Listen-Glied die der Liste (die
+// erste offene Klammer rückwärts), in der Vorgabe (`a.mess || [...]`) der linke Name
+function ortsName(code, i) {
+    let tiefe = 0;
+    let j = i;
+    const kopf = code.slice(Math.max(0, i - 80), i + 2);
+    const direkt = /([A-Za-z_$][\w$]*)\s*(?:[:=]|\|\||\?\?)\s*\[?$/.exec(kopf.replace(/\s+$/, ""));
+    if (direkt) return direkt[1];
+    for (; j > 0 && i - j < 4000; j--) {
+        const c = code[j];
+        if (c === "]") tiefe++;
+        else if (c === "[") {
+            if (tiefe === 0) break;
+            tiefe--;
+        }
+    }
+    const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
+    return m ? m[1] : "";
+}
+function scanOrtsWand(dateien) {
+    const errs = [];
+    for (const [name, src] of dateien) {
+        if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
+        const code = stripComments(src);
+        const roh = src.split("\n");
+        const zeilen = code.split("\n");
+        const buehne = (zeile) => /\/\/\s*BÜHNE:\s*\S/.test(roh.slice(Math.max(0, zeile - 3), zeile).join("\n"));
+        for (const re of ORTS_MUSTER)
+            for (const m of code.matchAll(re)) {
+                const zeile = code.slice(0, m.index).split("\n").length;
+                if (buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} setzt an ein Zahlen-Literal (${m[0].replace(/\s+/g, " ").slice(0, 60)}) — der Ort kommt aus der Welt, oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
+        if (!ORT_SENKE.test(code)) continue;
+        for (const re of ORTS_PAARE)
+            for (const m of code.matchAll(re)) {
+                if (Math.max(Math.abs(Number(m[1])), Math.abs(Number(m[2]))) < ORT_NAH_M) continue;
+                if (re === ORTS_PAARE[1] && !ORT_NAME.test(ortsName(code, m.index))) continue;
+                // die Zeile des Paars selbst (das Listen-Glied beginnt mit dem Komma der Zeile davor)
+                const at = re === ORTS_PAARE[1] ? m.index + m[0].lastIndexOf("[") : m.index;
+                const zeile = code.slice(0, at).split("\n").length;
+                const vor = zeilen[zeile - 1].slice(0, at - code.lastIndexOf("\n", at - 1) - 1 + m[0].length);
+                if (ORT_BAU.test(vor) || buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} trägt einen Ort als Zahlen-Paar (${m[0].replace(/\s+/g, " ").trim().slice(0, 60)}) in einer Setz-Probe — der Ort kommt aus der Welt, oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
     }
     return errs;
 }
@@ -2114,13 +2253,16 @@ function main() {
         const ohne = scanStufenWand(
             kern
                 .replace("__lod = stufenRezept(P.kind, stufe);", "")
-                .replace("const rezept = stufenRezept(ph.kind, __lod);", "const rezept = __lod;")
+                .replace(
+                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
+                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre);'
+                )
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
             ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /stufenRezept\(ph\.kind, __lod\);` steht 0×/.test(e));
+            ohne.some((e) => /SEED, __lod, pre\);` steht 0×/.test(e));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);
@@ -2169,6 +2311,51 @@ function main() {
         }
         console.log(
             `✅ SELBST-TEST: die Hüllen-Form-Wand feuert (${wirt.length} Wirts-Dateien, ${huelleRot[0]} · Kurzform erkannt)`
+        );
+        // Die Orts-Wand: ein eingeschmuggelter Satz an ein Zahlen-Literal wird beim Namen und der Zeile genannt; derselbe Satz
+        // als Bühnen-Station deklariert, und ein Ort aus der Welt, bleiben still; die Gates von heute stehen grün.
+        // Die KLASSE (Prüfung K16 Runde 2): die drei Formen der echten Täter — die Orts-Tabelle (kamera-laub), die
+        // Versatz-Liste (kampf-gefuehl), die Messort-Konstante samt Vorgabe (sicht-arbeit, wasser-linse) — werden in einer
+        // Setz-Probe beim Namen rot; ein Frequenz-Band unter `ufer`, ein Bau-Anker im Aufruf und ein Paar ohne Setzen bleiben
+        // still.
+        const SETZT = "pm.position.set(o.x, 0, o.z);\n";
+        const ortsRot = scanOrtsWand([
+            ["scripts/o.cjs", "const r = window.anazhRealm;\nr.state.playerMesh.position.set(512, 40, -300);\n"],
+            ["scripts/p.cjs", 'r.spawnCreatureAt(80, r.getTerrainHeightAt(80, 80) + 1, -80, "calm");\n'],
+            ["scripts/t.cjs", 'const ORTE = [\n    { id: "ufer", x: -872, z: -1127 },\n];\n' + SETZT],
+            ["scripts/v.cjs", "const ortR = [\n    [-14, 14],\n    [70, 0],\n].find(eben);\n" + SETZT],
+            ["scripts/m.cjs", "const MESS = { x: -900, z: -850 };\n" + SETZT],
+            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-900, -850];\n" + SETZT],
+        ]);
+        const ortsStill = scanOrtsWand([
+            ["scripts/q.cjs", "// BÜHNE: eigene Szene\npm.position.set(512, 40, -300);\n"],
+            ["scripts/u.cjs", "const O = r.__ebeneStelle();\npm.position.set(O.x, O.y, O.z);\n"],
+            ["scripts/k.cjs", "const BAND = { ufer: [60, 900], SEEDS: [7, 12345] };\n" + SETZT],
+            ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
+            ["scripts/w.cjs", "const MESS = { x: -900, z: -850 };\n"],
+        ]);
+        const ortsHeute = scanOrtsWand(gateDateien(root));
+        const ortsFeuert =
+            ortsRot.length === 6 &&
+            /o\.cjs:2 /.test(ortsRot[0]) &&
+            /p\.cjs:1 /.test(ortsRot[1]) &&
+            /t\.cjs:2 /.test(ortsRot[2]) &&
+            /v\.cjs:3 /.test(ortsRot[3]) &&
+            /m\.cjs:1 /.test(ortsRot[4]) &&
+            /d\.cjs:1 /.test(ortsRot[5]) &&
+            ortsStill.length === 0 &&
+            ortsHeute.length === 0;
+        if (!ortsFeuert) {
+            console.log(
+                "❌ SELBST-TEST: die Orts-Wand feuert nicht (oder steht heute rot)",
+                ortsRot,
+                ortsStill,
+                ortsHeute
+            );
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Orts-Wand feuert (${ortsRot[0].split(" setzt")[0]} · spawnCreatureAt, Orts-Tabelle, Versatz-Liste, Messort-Konstante und Vorgabe erkannt; BÜHNE, Welt-Ort, Band, Bau-Anker und Paar ohne Setzen still; ${gateDateien(root).length} Gate-Dateien heute grün)`
         );
         // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
@@ -2261,6 +2448,7 @@ function main() {
         .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
         .concat(checkAliasArten());
     if (errs.length) {
@@ -2269,7 +2457,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 

@@ -241,7 +241,17 @@ const server = http.createServer((req, res) => {
             }
             if (feld === feld) law = feld;
             else if (naht) law = r._terrainMacroSurfaceY(sx, sz, true);
-            let expY = law < wl ? wl - r._fernRingWasserTiefe() : law;
+            // das Wasser des Punkts ist das Wasser des Bodens (`_fernNass`: Kanal, See, Meer)
+            const nass = {};
+            const nassHier = r._fernNass(sx, sz, law, wl, nass);
+            let expY = nassHier ? nass.spiegel - r._fernRingWasserTiefe() : nass.y;
+            // der Fluss in der Masche: das Mittel aus Boden und Spiegel nach seinem Anteil (`_fernRingY`, Band 14)
+            if (!nassHier) {
+                const pf = r._fernRingPunkt(fr, gIdx).fuss;
+                const fl = {};
+                const c = r._fernFlussDeckung(sx, sz, pf ? Math.max(pf.ht, pf.hr) : 0, fl);
+                if (c > 0 && fl.spiegel === fl.spiegel) expY += (fl.spiegel - expY) * c;
+            }
             if (row === 0) expY -= F.saumDrop;
             // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
             // Masken-Karte, Band 9).
@@ -290,7 +300,7 @@ const server = http.createServer((req, res) => {
                 let nass0 = 0;
                 for (let g = 0; g < bis; g++) {
                     const h = fr.farbLaw[g];
-                    if (h < wl0) nass0++;
+                    if (fr.nass[g]) nass0++;
                     if (h === h) hs.push(h);
                 }
                 if (nass0 < 50 && hs.length) {
@@ -303,17 +313,23 @@ const server = http.createServer((req, res) => {
             const FW = r.constructor.FAR_WATER;
             const fwAlt = r.state.farWater;
             const zaehlen = () => {
-                const tal = wlW - FW.drop - r.constructor._wasserHubM();
+                // je Punkt SEIN Spiegel (Meer, See, Fluss: `_fernNass` über die EINE Setz-Formel `_fernRingY`)
+                const hub = FW.drop + r.constructor._wasserHubM();
+                const aus = {};
+                let tal = Infinity;
                 let nass = 0,
                     klumpen = 0,
                     hoechster = -Infinity;
                 for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++) {
-                    if (!(fr.farbLaw[g] < wlW)) continue;
+                    if (!fr.nass[g]) continue;
                     const pp = r._fernRingPunkt(fr, g);
                     if (pp.s === 0 && pp.row === 0) continue; // die Saum-Tauchkante liegt ohnehin tiefer
                     const y = geosVon(fr)[pp.s].attributes.position.getY(pp.li);
+                    r._fernRingY(fr, pp, fr.farbLaw[g], wlW, aus);
+                    const talP = aus.spiegel - hub;
+                    if (talP < tal) tal = talP;
                     nass++;
-                    if (y > tal + 1e-3) klumpen++;
+                    if (y > talP + 1e-3) klumpen++;
                     if (y > hoechster) hoechster = y;
                 }
                 return { nass, klumpen, tal: +tal.toFixed(2), hoechster: +hoechster.toFixed(2) };
@@ -321,6 +337,10 @@ const server = http.createServer((req, res) => {
             const tiefe0 = Object.getPrototypeOf(r)._fernRingWasserTiefe;
             try {
                 if (!fwAlt || !fwAlt.mesh) r.state.farWater = { mesh: { stellvertreter: true } };
+                // der Spiegel der Probe nässt jenseits der Kacheln (dort ist er das Meer): die EINE Naht setzt die Punkte neu
+                if (wlW !== wl0)
+                    for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
+                        if (fr.farbLaw[g] < wlW) r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wlW);
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
                 res.wasser = zaehlen();
@@ -336,8 +356,7 @@ const server = http.createServer((req, res) => {
                 // die Punkte, die nur der Spiegel der Probe nässte, liegen wieder auf ihrem Gesetz
                 if (wlW !== wl0)
                     for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
-                        if (fr.farbLaw[g] < wlW && !(fr.farbLaw[g] < wl0))
-                            r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wl0);
+                        if (fr.farbLaw[g] < wlW) r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wl0);
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
             }
@@ -1286,7 +1305,7 @@ const server = http.createServer((req, res) => {
             const core = globalThis.__phytoCore;
             const fbm = (px, pz) => r._forestFbm(px, pz);
             const wl = r.state.waterLevel;
-            const t = new Float32Array(7);
+            const t = new Float32Array(8);
             let g = 0;
             let ng = 0;
             let a = 0;
@@ -1324,6 +1343,124 @@ const server = http.createServer((req, res) => {
             res.dachAlt = na ? alt / na : NaN;
         } catch (e11) {
             res.dachErr = String((e11 && e11.stack) || e11).slice(0, 400);
+        }
+        // ===== (14) DAS WASSER DES RINGS IST DAS WASSER DES BODENS (K16, die Naht) =====
+        // Der SEE (ein Wasser-Körper über dem Meer, `_atlasWaterLevelAt` → koerper): der Ring liegt unter seinem Spiegel. Der
+        // FLUSS (4–17 m, schmaler als die Masche): der Ring-Punkt trägt den Anteil c der Masche, den sein Wasser deckt
+        // (`_fernFlussDeckung`, Kasten-Filter über die halbe Maschen-Kante), als Wasser-Anteil aNass (der Ring-Stoff zeichnet ihn
+        // mit dem Blick des Wassers, `_wasserBlick`) — |aNass − c| ≤ 0,05; seine Boden-Farbe ist das Land der Masche ohne
+        // Fern-Blau (Abstand ≤ 0,01, sonst ein Zwilling der Wasser-Farbe); seine Höhe ist das Mittel der sichtbaren Fläche,
+        // Boden × (1 − c) + Spiegel × c (≤ 0,05 m; die Naht-Punkte tragen das Feld bzw. das volle Gesetz und zählen nicht).
+        // Selbsttest: die alte Regel (kein Anteil, keine Senkung) verfehlt jeden deutlichen Fluss-Punkt.
+        try {
+            const frW = r.state.fernRing;
+            for (let t = 0; t < 400 && frW.cursor < frW.totalVerts; t++) r._fernRingRefresh(4096);
+            r._fernRingFaerben(frW, performance.now() + 60000, frW.totalVerts);
+            const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const w = {
+                see: 0,
+                verdeckt: 0,
+                fluss: 0,
+                sichtbar: 0,
+                abweichung: 0,
+                zwilling: 0,
+                hoehe: 0,
+                hoeheN: 0,
+                alt: 0,
+                altHoehe: 0,
+                hebMax: 0,
+                ohneAttribut: 0,
+                offen: frW.farbN,
+                orte: [],
+            };
+            const geos = geosVon(frW);
+            const aus = {};
+            const nass = {};
+            const fl = {};
+            const land = new Float32Array(8);
+            const randV = frW.teilung && frW.teilung.randV;
+            const saum = r.constructor.FERN_RING.saumDrop;
+            for (let g = 0; g < frW.totalVerts; g++) {
+                const p = r._fernRingPunkt(frW, g);
+                r._atlasWaterLevelAt(p.x, p.z, -Infinity, aus);
+                if (Number.isFinite(aus.koerper) && aus.koerper > wl + 0.5) {
+                    w.see++;
+                    if (!(geos[p.s].attributes.position.getY(p.li) < aus.koerper)) w.verdeckt++;
+                }
+                if (frW.nass[g]) continue;
+                const hs = p.fuss ? Math.max(p.fuss.ht, p.fuss.hr) : 0;
+                const c = r._fernFlussDeckung(p.x, p.z, hs, fl);
+                if (!(c >= 0.05)) continue;
+                w.fluss++;
+                if (c >= 0.25) w.sichtbar++;
+                const attr = geos[p.s].attributes.aNass;
+                const an = attr ? attr.getX(p.li) : NaN;
+                if (!attr) w.ohneAttribut++;
+                if (!(Math.abs(an - c) <= 0.05)) {
+                    w.abweichung++;
+                    if (w.orte.length < 4) w.orte.push([Math.round(p.x), Math.round(p.z), +c.toFixed(2), +an.toFixed(2)]);
+                }
+                if (c > 0.05 && Math.abs(0 - c) > 0.05) w.alt++;
+                r._fernFarbeMasche(p.x, frW.farbLaw[g], p.z, land, p.fuss);
+                const col = geos[p.s].attributes.color;
+                const d = Math.hypot(col.getX(p.li) - land[0], col.getY(p.li) - land[1], col.getZ(p.li) - land[2]);
+                if (p.fuss && d > 0.01) w.zwilling++;
+                const naht = (p.s === 0 && randV && randV[p.li]) || r._fernRingNaht(frW, p);
+                if (naht || !(fl.spiegel === fl.spiegel)) continue;
+                r._fernNass(p.x, p.z, frW.farbLaw[g], wl, nass);
+                const boden = nass.y - (p.row === 0 ? saum : 0);
+                const soll = boden + (fl.spiegel - (p.row === 0 ? saum : 0) - boden) * c;
+                const y = geos[p.s].attributes.position.getY(p.li);
+                w.hoeheN++;
+                if (Math.abs(y - soll) > 0.05) w.hoehe++;
+                if (Math.abs(boden - soll) > 0.05) w.altHoehe++;
+                w.hebMax = Math.max(w.hebMax, Math.abs(soll - boden));
+            }
+            // DIE FLUSS-KARTE (je Fragment im Fern-Fenster, `_flussKarteMalen`): die Mitte jedes Segments im Fenster trägt das
+            // Wasser (≥ 0,8), 2 Texel jenseits seiner Kante nichts (≤ 0,08).
+            w.karteMitte = 0;
+            w.karteMitteFehl = 0;
+            w.karteDanebenFehl = 0;
+            w.karteFehlt = false;
+            const wk = r.state.wegeKarte;
+            const fs1 = wk && wk.stufen[1];
+            if (!fs1 || !fs1.fluss || !fs1.zentriert) w.karteFehlt = true;
+            else {
+                const t = fs1.S.texelM;
+                const N = fs1.N;
+                const x0w = fs1.mitteX - fs1.S.fensterM / 2;
+                const z0w = fs1.mitteZ - fs1.S.fensterM / 2;
+                const lies = (x, z) => {
+                    const i = Math.floor((x - x0w) / t);
+                    const j = Math.floor((z - z0w) / t);
+                    return i < 2 || j < 2 || i >= N - 2 || j >= N - 2 ? NaN : fs1.fluss.daten[j * N + i] / 255;
+                };
+                const h = r.state.hydrosphere;
+                const gesehen = new Set();
+                for (const list of (h && h.riverBuckets) || []) {
+                    for (const seg of list || []) {
+                        if (gesehen.has(seg)) continue;
+                        gesehen.add(seg);
+                        const hw = (seg.hwA + seg.hwB) / 2;
+                        if (hw < 2 * t) continue;
+                        const mx = (seg.ax + seg.bx) / 2;
+                        const mz = (seg.az + seg.bz) / 2;
+                        const m = lies(mx, mz);
+                        if (!(m === m)) continue;
+                        w.karteMitte++;
+                        if (m < 0.8) w.karteMitteFehl++;
+                        const l = Math.hypot(seg.bx - seg.ax, seg.bz - seg.az) || 1;
+                        const nx = -(seg.bz - seg.az) / l;
+                        const nz = (seg.bx - seg.ax) / l;
+                        const aussen = r._fernFlussDeckung(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 0);
+                        const d = lies(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t));
+                        if (aussen === 0 && d > 0.08) w.karteDanebenFehl++;
+                    }
+                }
+            }
+            res.binnen = w;
+        } catch (e14) {
+            res.binnenErr = String((e14 && e14.stack) || e14).slice(0, 400);
         }
         r._fernRingDispose();
         res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
@@ -1505,11 +1642,7 @@ const server = http.createServer((req, res) => {
     );
     check(
         "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet; Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
-        !!out.muendung &&
-            out.muendung[0] === 0 &&
-            out.feldOffen === 0 &&
-            out.feldOhne === 0 &&
-            out.muendungAlt > 0,
+        !!out.muendung && out.muendung[0] === 0 && out.feldOffen === 0 && out.feldOhne === 0 && out.muendungAlt > 0,
         `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} ohne-flaeche=${out.feldOhne} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
     );
     check(
@@ -1547,6 +1680,35 @@ const server = http.createServer((req, res) => {
             tt.proben >= 1000 && tt.stich === 0 && tt.loch === 0 && tt.selbstStich > 0 && tt.selbstLoch > 0,
             `proben=${tt.proben} stich=${tt.stich} loch=${tt.loch} klassen(frei/naht/getragen)=${JSON.stringify(tt.n || null)} orte=${JSON.stringify(tt.orte || [])} selbsttest stich=${tt.selbstStich} loch=${tt.selbstLoch}` +
                 (tt.proben ? "" : " — TÄTER: die Schale 0 hat keine Teilung (`fr.teilung`, `_fernRingTeilung`)")
+        );
+        const w = out.binnen || {};
+        check(
+            "14: DAS WASSER DES RINGS IST DAS WASSER DES BODENS — ein See liegt über dem Ring; ein Fluss trägt seinen Anteil der Masche als Wasser-Anteil aNass (≤ 0,05, gezeichnet mit dem Blick des Wassers), seine Boden-Farbe ohne Fern-Blau (≤ 0,01) und seine Höhe als Mittel aus Boden und Spiegel (≤ 0,05 m); Selbsttest: die alte Regel (kein Anteil, keine Senkung) verfehlt den Fluss",
+            w.fluss >= 20 &&
+                w.sichtbar >= 5 &&
+                w.abweichung === 0 &&
+                w.zwilling === 0 &&
+                w.hoehe === 0 &&
+                w.hoeheN >= 10 &&
+                w.verdeckt === 0 &&
+                w.alt >= w.fluss * 0.5 &&
+                !w.karteFehlt &&
+                w.karteMitte >= 10 &&
+                w.karteMitteFehl === 0 &&
+                w.karteDanebenFehl === 0,
+            `see=${w.see} verdeckt=${w.verdeckt} fluss=${w.fluss} deutlich(>=0,25)=${w.sichtbar} abweichung=${w.abweichung} zwilling=${w.zwilling} hoehe=${w.hoehe}/${w.hoeheN} offen=${w.offen} orte=${JSON.stringify(w.orte || [])} selbsttest-alt=${w.alt} alt-hoehe=${w.altHoehe} hub-max=${w.hebMax.toFixed(3)} m karte(mitte/fehl/daneben)=${w.karteMitte}/${w.karteMitteFehl}/${w.karteDanebenFehl}` +
+                (w.karteFehlt ? " — TÄTER: die Wege-Karte trägt keine Fluss-Schicht (`_flussKarteMalen`)" : "") +
+                (out.binnenErr ? ` err=${out.binnenErr}` : "") +
+                (w.verdeckt > 0
+                    ? " — TÄTER: `_fernNass` legt den Ring über den See (`_atlasWaterLevelAt` koerper)"
+                    : "") +
+                (w.ohneAttribut > 0
+                    ? " — TÄTER: der Ring trägt keinen Wasser-Anteil (aNass fehlt, `_fernRingSchreibe`)"
+                    : w.abweichung > 0
+                      ? " — TÄTER: der Wasser-Anteil folgt nicht dem Kasten-Filter (`_fernFlussTeil`)"
+                      : "") +
+                (w.zwilling > 0 ? " — TÄTER: die Boden-Farbe mischt eine Fern-Wasser-Farbe ein (Zwilling des Wasser-Körpers)" : "") +
+                (w.hoehe > 0 ? " — TÄTER: der Ring trägt den Fluss nicht in der Höhe (`_fernRingY`, Kasten-Mittel zum Spiegel)" : "")
         );
     }
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");

@@ -447,6 +447,7 @@ const STUDIO = (k) => {
     play.posY = play.smY = 0.05;
     play.onGround = true;
     play.slide = 0;
+    // BÜHNE: die Gang-Bühne der Probe (eigene Ebene, kein Weltboden)
     character.position.set(0, 0.05, 0);
     const cs = character.scale.x || 1;
     const bein = (L1 + L2) * cs;

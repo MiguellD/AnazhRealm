@@ -224,6 +224,7 @@ function seitenPruefer() {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
                 // das Altfeld eines Spielstands von vor K16 (der Ein-Massiv-Anker fiel) — es reist nie in Welt B
                 macro: { herkunft: T },
+                // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                 voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, strength: 48, mode: "carve", herkunft: T }],
                 settlementCells: { [T]: { seed: 7, nH: 3, x: 12345, z: 12345 }, start: { herkunft: T } },
                 genesisPortalRing: T,

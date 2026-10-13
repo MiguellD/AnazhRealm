@@ -13234,7 +13234,7 @@ class AnazhRealm {
         // fresh (kein worldId aus einem Save) → heutige Genese-Version: alle neuen Spieler teilen Seed UND
         // genVersion; eine GELADENE Welt ohne Feld bleibt Legacy (fehlend → 1, _genVersion).
         // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
-        // Grammar (SPECIES_GRAMMAR) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
+        // Wuchs aus dem Gesetz (_phytoArt → treeParams) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
         // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
         if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
         // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
@@ -13480,8 +13480,8 @@ class AnazhRealm {
         const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
         // Jede NEUE Welt wird mit der heutigen Genese-Version geboren; bestehende Welten (Feld fehlt → 1)
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
-        // Genese-Konstante: bei fresh sofort gepinnt, alte Welten migrieren lazy (_ensureVariantSeedPool).
-        const variantSeed = this._generateVariantSeedPool(seed);
+        // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
+        const variantSeed = {};
         return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9, variantSeed };
     }
 
@@ -22357,7 +22357,7 @@ class AnazhRealm {
             if (Math.abs(e.position.x - p.x) > er || Math.abs(e.position.z - p.z) > er) continue;
             for (let b = 0; b < boxes.length; b++) {
                 const box = boxes[b];
-                if (!(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue;
+                if (box.gedeckt === true || !(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue; // die Fuge trägt nie
                 if (
                     p.x < box.minX - reich ||
                     p.x > box.maxX + reich ||
@@ -28248,23 +28248,26 @@ class AnazhRealm {
                 d -= hallCarve * caveEnv * 72;
             }
         }
-        if (ctx.hydroActive) {
-            // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
-            // dem Kanal (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken danach.
-            const kn = ctx.hydroCarve;
-            if (kn) {
-                const dL = kn.L - y;
-                let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-                const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-                const dP = kn.P - y;
-                hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-                d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-            }
-            const lk = ctx.lake;
-            if (lk) {
-                const flatD = lk.bedY - y;
-                d = d * (1 - lk.w) + flatD * lk.w;
-            }
+        if (ctx.hydroActive) d = AnazhRealm._gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+        return d;
+    }
+
+    // DIE FORM DES GEWÄSSERS (EINE Formel für die Dichte des Chunks und die Fläche der Ferne, `_fernNass`): der Fluss-Kanal
+    // `kn` (`_hydrosphereCarveAt`) als weiches Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal
+    // (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken `lk` danach. `d` ist die Dichte
+    // an der Höhe `y` (die Fläche − y); mit y = 0 und d = der Höhe einer Spalte ist das Ergebnis ihre Fläche.
+    static _gewaesserForm(d, y, kn, lk) {
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
+        if (lk) {
+            const flatD = lk.bedY - y;
+            d = d * (1 - lk.w) + flatD * lk.w;
         }
         return d;
     }
@@ -28551,6 +28554,7 @@ class AnazhRealm {
         let best = Infinity;
         let bestHw = 0;
         let bestRand = Infinity;
+        let bestSp = NaN;
         for (let dj = -1; dj <= 1; dj++) {
             for (let di = -1; di <= 1; di++) {
                 const bi = bi0 + di;
@@ -28576,11 +28580,12 @@ class AnazhRealm {
                         bestRand = rand;
                         best = dist;
                         bestHw = hw;
+                        bestSp = seg.sA + (seg.sB - seg.sA) * t;
                     }
                 }
             }
         }
-        return { dist: best, halfW: bestHw };
+        return { dist: best, halfW: bestHw, spiegel: bestSp };
     }
 
     // DIE FLÜSSE UNTER EINEM ABDRUCK (K16, die Fern-Farbe): ein Fern-Punkt steht für eine Fläche der Kante `F` (`fussM`,
@@ -29840,7 +29845,7 @@ class AnazhRealm {
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
         // in `attachFieldColors`).
-        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y));
+        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
@@ -32203,10 +32208,21 @@ class AnazhRealm {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
                             // das Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
                             // derselbe Stoff; der Ring reicht seine Ecken-Krone (`opts.kroneVertex`) für den Ort jenseits der Karte.
-                            const _alb =
+                            let _alb =
                                 opts.wegeKarte === true
                                     ? this._fernKroneNahMisch(_Ta, _geo, opts.kroneVertex || null)
                                     : _geo;
+                            // DAS WASSER DES RINGS (K16, die Naht des Wassers): der Anteil des Wassers (`opts.wasserVertex`,
+                            // aNass) ist kein Boden — er wirft zurück, was der Wasser-Stoff zurückwirft (`_wasserBlick`: der
+                            // Körper R∞ im Licht des Orts, der Himmel × Fresnel, der Glanz; dieselben Uniforms), der Boden
+                            // trägt den Rest. Bis K16 mischte der Ring ein Fern-Blau in die Boden-Farbe (Luma 4,8× zu hell).
+                            if (opts.wasserVertex) {
+                                // im Fern-Fenster die Fluss-Karte je Fragment, jenseits der Kasten-Anteil des Punkts
+                                const _fk = this._flussKarteNode(_Ta);
+                                const _nass = _Ta.mix(opts.wasserVertex, _fk.wert, _fk.imFenster).clamp(0.0, 1.0);
+                                _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
+                                mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
+                            }
                             albedoNode = _alb;
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
@@ -35089,7 +35105,8 @@ class AnazhRealm {
     // LAND neben einem Körper (3×3) → dessen Spiegel, wenn `terrainTopY < rim` (Mulde bis zum Terrain
     // gefüllt, keine Ufer-Wand), sonst trocken. `terrainTopY` reicht der Aufrufer (Density-Grid bzw.
     // `_voxelSurfaceY`); Rückgabe -Infinity = „hier nie Wasser".
-    _atlasWaterLevelAt(x, z, terrainTopY) {
+    // `aus` (optional) bekommt den Spiegel der Wasser-KÖRPER ohne den Fluss: `aus.koerper` (Meer, See; −Infinity = keiner).
+    _atlasWaterLevelAt(x, z, terrainTopY, aus) {
         let level = -Infinity;
         let inRegion = false;
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -35143,6 +35160,7 @@ class AnazhRealm {
             const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
             level = waterLevel;
         }
+        if (aus) aus.koerper = level;
         const river = this._hydroRiverAt(x, z);
         if (river && river.surfaceY > level) {
             // Auch beim Fluss: `_hydroRiverAt` trifft die volle Carve-Breite inkl. Bank-Rampe, deren surfaceY
@@ -35805,6 +35823,7 @@ class AnazhRealm {
     // die Kollision seiner Randparts.
     _blockerStampReach(entry) {
         if (!entry || !entry.blockerAABBs) return;
+        this._blockerFugen(entry.blockerAABBs);
         let r = 0;
         for (const b of entry.blockerAABBs) {
             r = Math.max(
@@ -35817,6 +35836,70 @@ class AnazhRealm {
         }
         entry._blockerReach = r;
         this._blockerNetzSetzen(entry);
+    }
+
+    // DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt — sie beginnt höchstens
+    // PLAYER_GROUND_SNAP über ihr, steigt über sie, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius
+    // der Kapsel —, ist keine Fläche: die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, der Pfosten unter dem Bogen. Sie
+    // trägt keinen Leib (`gedeckt`; die Auflage der Kapsel `_resolveCapsuleVsAABB` und die des Tiers `_kreaturAuflage`
+    // übergehen sie). Eine Treppe bleibt Treppe: die nächste Stufe deckt nie die Mitte der vorigen. Gedrehte Boxen messen im
+    // Rahmen der deckenden (`obb`). Vorher stand jeder Leib, der einen Baum berührte, auf der ersten Stamm-Fuge in der Box
+    // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, jede der 2803 Fugen trug).
+    _blockerFugen(boxes) {
+        const R = AnazhRealm.PLAYER_WALL_RADIUS;
+        const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
+        const E = this._fugenEcken || (this._fugenEcken = new Float64Array(10));
+        // die vier Ecken und die Mitte der Grundfläche (gedreht: aus der obb)
+        const ecken = (a) => {
+            const ob = a.obb;
+            if (ob) {
+                for (let i = 0; i < 4; i++) {
+                    const lx = i & 1 ? ob.hx : -ob.hx;
+                    const lz = i & 2 ? ob.hz : -ob.hz;
+                    E[2 * i] = ob.cx + lx * ob.c + lz * ob.s;
+                    E[2 * i + 1] = ob.cz - lx * ob.s + lz * ob.c;
+                }
+                E[8] = ob.cx;
+                E[9] = ob.cz;
+                return;
+            }
+            E[0] = E[4] = a.minX;
+            E[2] = E[6] = a.maxX;
+            E[1] = E[3] = a.minZ;
+            E[5] = E[7] = a.maxZ;
+            E[8] = (a.minX + a.maxX) / 2;
+            E[9] = (a.minZ + a.maxZ) / 2;
+        };
+        // liegt (x, z) in der Grundfläche von b, um `rand` erweitert?
+        const innen = (b, x, z, rand) => {
+            const ob = b.obb;
+            if (!ob) return x >= b.minX - rand && x <= b.maxX + rand && z >= b.minZ - rand && z <= b.maxZ + rand;
+            const dx = x - ob.cx;
+            const dz = z - ob.cz;
+            return Math.abs(dx * ob.c - dz * ob.s) <= ob.hx + rand && Math.abs(dx * ob.s + dz * ob.c) <= ob.hz + rand;
+        };
+        for (const a of boxes) {
+            let gedeckt = false;
+            let eckenDa = false;
+            for (const b of boxes) {
+                if (b === a || !(b.botY <= a.topY + SNAP) || !(b.topY > a.topY)) continue;
+                if (!eckenDa) {
+                    ecken(a);
+                    eckenDa = true;
+                }
+                if (!innen(b, E[8], E[9], 0)) continue;
+                if (
+                    innen(b, E[0], E[1], R) &&
+                    innen(b, E[2], E[3], R) &&
+                    innen(b, E[4], E[5], R) &&
+                    innen(b, E[6], E[7], R)
+                ) {
+                    gedeckt = true;
+                    break;
+                }
+            }
+            a.gedeckt = gedeckt;
+        }
     }
 
     // DIE NACHBARSCHAFT DER BLOCKER (0710-7): ein Gitter aus Zellen (AnazhRealm.BLOCKER_ZELLE m) über die Hülle jedes Eintrags
@@ -37483,6 +37566,45 @@ class AnazhRealm {
     // Der EINE Wasser-Shader für alle Iso-Wasser-Meshes (Ozean + See + Fluss): `aWave` ∈ [0,1]
     // (Ozean-Anteil, skaliert die Wellen; weich 0 am Ufer → kein Küsten-Riss), `aFlow` (Gefälle-
     // Tangente, die Strömung trägt das Bild stromab). Sonne/Licht/Fog speist `_applyDayNightToScene`.
+    // DER WASSER-KÖRPER (K16, die Naht des Wassers): was die optisch tiefe Wassersäule zurückstreut, R∞ = 0,33 · b_b / (a + b_b)
+    // je Kanal (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m) — EINE Formel
+    // für den Wasser-Stoff und jeden Fern-Leser (Ring, Feld-Pass). Bis K16 trug die Ferne ein eigenes Fern-Blau
+    // (`FERN_FARBE.wasser`, 0x265273): der Fluss im Ring 4,8× heller als der gebaute (Luma 0,255 gegen 0,053).
+    static _wasserKoerper(WG) {
+        return WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu));
+    }
+
+    // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
+    // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
+    // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
+    _wasserBlick(TSL, WG, o) {
+        const { float, vec3, normalize, reflect, max, dot, pow, clamp, texture, equirectUV } = TSL;
+        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
+        const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
+        const fres = float(WG.fresnel[0]).add(
+            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
+        );
+        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
+        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
+        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
+        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
+        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
+        const _R = reflect(o.viewDir.negate(), o.n);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
+        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
+        // (Rayleigh-Farbe sunCol × ihre Stärke light).
+        const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
+        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const eigen = o.koerper
+            .mul(o.irr)
+            .mul(float(1.0).sub(o.T))
+            .mul(float(1.0).sub(fres))
+            .add(himmel.mul(fres))
+            .add(glanz);
+        return { eigen, fres };
+    }
+
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
@@ -37562,7 +37684,7 @@ class AnazhRealm {
         // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
         // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
-        const koerperAlbedo = vec3(...WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu)));
+        const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
         // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
         // + Himmels-Umgebung + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
@@ -37791,32 +37913,16 @@ class AnazhRealm {
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
-        const ndvW = clamp(dot(nFlow, viewDir), 0.0, 1.0);
-        const fres = float(WG.fresnel[0]).add(
-            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
-        );
-        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
-        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
-        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
-        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
-        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
-        const _R = reflect(viewDir.negate(), nFlow);
-        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
-        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
-        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
-        // (Rayleigh-Farbe uSunCol × ihre Stärke uLight).
-        const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
-        const glanz = uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight);
-        // Was das Wasser selbst zurückwirft: der Körper im Licht des Orts (Volumen-Albedo × E/π), soweit er den
-        // Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Der Schaum ist eine
-        // diffuse weiße Fläche im selben Licht, er deckt (fw).
-        const eigen = koerperAlbedo
-            .mul(uIrr)
-            .mul(float(1.0).sub(T))
-            .mul(float(1.0).sub(fres))
-            .add(himmel.mul(fres))
-            .add(glanz);
+        const { eigen, fres } = this._wasserBlick(TSL, WG, {
+            n: nFlow,
+            viewDir,
+            T,
+            koerper: koerperAlbedo,
+            irr: uIrr,
+            sunCol: uSunCol,
+            sunDir: uSunDir,
+            light: uLight,
+        });
         const fw = foamD.mul(0.7);
         // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
         // α = 1 − T·(1−F)·(1−fw) und C = (fw·Schaum + (1−fw)·eigen) / α — am Ufer scheint der Grund (α → F),
@@ -39163,11 +39269,15 @@ class AnazhRealm {
                 side: THREE.DoubleSide,
                 wegeKarte: true,
                 kroneVertex: TSL.attribute("aKrone", "vec4"),
+                wasserVertex: TSL.attribute("aNass", "float"),
             });
         const material = stoff();
         const stoffNaht = stoff();
         if (!material || !material.colorNode || !stoffNaht || !stoffNaht.colorNode)
             throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
+        // Die Fabrik schluckt Fehler ihres Albedo-Zweigs still — der Ring prüft seinen Wasser-Anteil selbst (K16, laut).
+        if (!material.emissiveNode || !stoffNaht.emissiveNode)
+            throw new Error("Fern-Ring: der Blick des Wassers (aNass, `_fernWasserBlickNode`) fehlt im Ring-Stoff");
         // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um den
         // SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe weiter
         // (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
@@ -39288,6 +39398,7 @@ class AnazhRealm {
             geo.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("aKrone", new THREE.Float32BufferAttribute(new Float32Array(per * 4), 4));
+            geo.setAttribute("aNass", new THREE.Float32BufferAttribute(new Float32Array(per), 1));
             geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setIndex(indices);
             geos.push(geo);
@@ -39300,7 +39411,8 @@ class AnazhRealm {
         const voll0 = geos[0].index.array;
         const teil = (index) => {
             const g = new THREE.BufferGeometry();
-            for (const k of ["position", "color", "aKrone", "normal"]) g.setAttribute(k, geos[0].attributes[k]);
+            for (const k of ["position", "color", "aKrone", "aNass", "normal"])
+                g.setAttribute(k, geos[0].attributes[k]);
             g.setIndex(new THREE.BufferAttribute(index, 1));
             return g;
         };
@@ -39339,6 +39451,7 @@ class AnazhRealm {
             // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
             farbOffen: new Uint8Array(off),
             farbLaw: new Float32Array(off),
+            nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser (`_fernNass`)
             farbN: 0,
             farbMin: off,
             refreshed: 0, // Budget-Zähler (Linse)
@@ -39358,8 +39471,12 @@ class AnazhRealm {
     // Sommer-Konstante neben dem Studio-Laub (ohne Art, ohne Saison) ist gefallen. Die Saison legt der Leser auf.
     // `fuss` (optional, `_fernFarbeMasche`): die Masche, für die der Punkt steht — dann das Mittel über sie. `fussM` (die
     // Abtastung einer Masche): ihre Kante in Metern — die Nische trägt darunter das Mosaik-Mittel (phyto-core `forestNische`).
+    // DAS WASSER DES FLUSSES (K16): die Masche (oder der Punkt ohne Abtastung) trägt den Anteil, den der Fluss deckt
+    // (`_fernFlussDeckung`), als Wasser-Farbe ohne Krone — dieselbe Farbe, die ein nasser Ring-Punkt trägt.
     _fernFarbeTeile(x, y, z, out, fuss, fussM) {
-        if (fuss) return this._fernFarbeMasche(x, y, z, out, fuss);
+        if (fuss)
+            return this._fernFlussTeil(x, z, this._fernFarbeMasche(x, y, z, out, fuss), Math.max(fuss.ht, fuss.hr));
+        if (fussM === undefined) return this._fernFlussTeil(x, z, this._fernFarbeTeile(x, y, z, out, null, 0), 0);
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (
             !core ||
@@ -39431,7 +39548,8 @@ class AnazhRealm {
         if (this._fernLaubLin) return this._fernLaubLin;
         const c = new THREE.Color();
         this._fernLaubLin = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"].map((art) => {
-            const d = this._phytoStudioDials(art);
+            const a = this._phytoArt(art);
+            const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
             if (!d || !Number.isFinite(d.leafCol)) throw new Error("Fern-Farbe: Studio-Laubfarbe fehlt für " + art);
             c.setHex(d.leafCol);
             return [c.r, c.g, c.b];
@@ -39443,17 +39561,18 @@ class AnazhRealm {
     // die Saison (`saison` = `_saisonMul` der laufenden Phase — dieselbe Zahl, die `uSeasonMul` trägt) zur Deckung.
     // `out` = [r, g, b] (linear).
     _fernFarbeAt(x, y, z, wet, out, saison, fuss) {
-        const K = AnazhRealm.FERN_FARBE;
+        const R = this._fernWasserKoerper();
         if (wet) {
-            out[0] = K.wasser[0];
-            out[1] = K.wasser[1];
-            out[2] = K.wasser[2];
+            out[0] = R[0];
+            out[1] = R[1];
+            out[2] = R[2];
             return out;
         }
-        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(7)), fuss);
-        out[0] = t[0] + (t[3] * saison.r - t[0]) * t[6];
-        out[1] = t[1] + (t[4] * saison.g - t[1]) * t[6];
-        out[2] = t[2] + (t[5] * saison.b - t[2]) * t[6];
+        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(8)), fuss);
+        const c = t[7];
+        out[0] = (t[0] + (t[3] * saison.r - t[0]) * t[6]) * (1 - c) + R[0] * c;
+        out[1] = (t[1] + (t[4] * saison.g - t[1]) * t[6]) * (1 - c) + R[1] * c;
+        out[2] = (t[2] + (t[5] * saison.b - t[2]) * t[6]) * (1 - c) + R[2] * c;
         return out;
     }
 
@@ -39464,7 +39583,7 @@ class AnazhRealm {
     // 0,035 … 0,128) — jede Masche zog als radialer Streifen um den Spieler. Das Mittel ist exakt für jede Saison s:
     // Deckung ā = ⟨a⟩, Krone k' = ⟨k·a⟩/ā, Boden c' = (⟨c⟩ − ⟨c·a⟩)/(1 − ā), also c' + (k'·s − c')·ā = ⟨c + (k·s − c)·a⟩.
     _fernFarbeMasche(x, y, z, out, fuss) {
-        const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(7));
+        const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(8));
         const S = this._fernMascheSumme || (this._fernMascheSumme = new Float64Array(10));
         S.fill(0);
         const dx = x - fuss.ax;
@@ -39822,11 +39941,13 @@ class AnazhRealm {
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
-        const wet = law < wl;
         const geo = fr.geos[p.s];
         const pos = geo.attributes.position;
         if (p.s === 0 && (pos.getX(p.li) !== p.x || pos.getZ(p.li) !== p.z)) fr.xzGen++; // die Teilung folgt der Lage
-        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
+        const nass = this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
+        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl, nass), p.z);
+        const wet = nass.y < nass.spiegel;
+        fr.nass[p.g] = wet ? 1 : 0;
         // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
@@ -39853,7 +39974,8 @@ class AnazhRealm {
     // ohne die Loch-Senkung) — die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er
     // nicht (die Masken-Karte, `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte
     // ihn per Tiefe — über jeder Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
-    _fernRingY(fr, p, law, wl) {
+    // Das Wasser des Punkts ist das Wasser des Bodens (`_fernNass`: Kanal, See, Meer; `nass` trägt Fläche und Spiegel).
+    _fernRingY(fr, p, law, wl, nass) {
         const F = AnazhRealm.FERN_RING;
         const rand = fr.teilung.randV;
         const f = p.s === 0 && rand && rand[p.li] ? fr.feldY[p.g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
@@ -39862,9 +39984,89 @@ class AnazhRealm {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
-        let y = law < wl ? wl - this._fernRingWasserTiefe() : law;
+        const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
+        const wet = this._fernNass(p.x, p.z, law, wl, aus);
+        let y = wet ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
+        // DIE HÖHE DES FLUSSES (K16, die Naht des Wassers): der Punkt steht für seine Masche — wo ein Fluss sie zum Anteil c
+        // deckt (`_fernFlussDeckung`, derselbe Kasten-Filter, der den Wasser-Anteil aNass trägt), liegt er auf dem Mittel der
+        // sichtbaren Fläche: Boden × (1 − c) + der Spiegel des Flusses × c. Ein ganz getauchter Punkt riss Gruben in den Ring
+        // (Werkbank 13.10.), ein nie getauchter trug den Fluss nur als Farbe auf der Bank (Prüfung 13.10.).
+        if (!wet) {
+            const fl = this._fernRingFluss || (this._fernRingFluss = { spiegel: NaN });
+            const c = this._fernFlussDeckung(p.x, p.z, p.fuss ? Math.max(p.fuss.ht, p.fuss.hr) : 0, fl);
+            if (c > 0 && fl.spiegel === fl.spiegel) y += (fl.spiegel - y) * c;
+        }
         if (p.row === 0) y -= F.saumDrop;
         return y;
+    }
+
+    // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
+    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (`_gewaesserForm`: Kanal, Damm, See-Becken),
+    // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer und See; jenseits der Kacheln der
+    // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
+    // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Der FLUSS taucht keinen Punkt: sein Kanal (4–17 m) ist
+    // schmaler als die Masche der Ferne, sein Wasser trägt die Fern-Farbe als Anteil der Masche (`_fernFlussDeckung`) —
+    // ein getauchter Punkt riss Gruben in den Ring (Werkbank 13.10.). Bis K16 nässte jeder Fern-Leser (Ring, Kronen-Karte,
+    // Feld-Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
+    _fernNass(x, z, law, wl, aus) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready || this._hydroComputing) {
+            aus.y = law;
+            aus.spiegel = wl;
+            return law < wl;
+        }
+        const y = AnazhRealm._gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
+        aus.y = y;
+        this._atlasWaterLevelAt(x, z, y, aus);
+        aus.spiegel = aus.koerper;
+        return y < aus.spiegel;
+    }
+
+    // DER FLUSS IN DER MASCHE (K16, die Naht): der Anteil einer Masche (halbe Kante `hs` m; 0 = ein Punkt), den das Wasser
+    // eines Flusses deckt — der Querschnitt als Kasten-Filter: die Überdeckung von [d − hs, d + hs] mit dem Wasser
+    // [−halbe Breite, +halbe Breite] des nächsten Segments (`_hydroDistAt`).
+    _fernFlussDeckung(x, z, hs, aus) {
+        const fl = this._hydroDistAt(x, z);
+        if (aus) aus.spiegel = fl.spiegel;
+        if (!(fl.dist < Infinity)) return 0;
+        const w = fl.halfW;
+        if (!(hs > 0)) return fl.dist <= w ? 1 : 0;
+        return Math.max(0, Math.min(fl.dist + hs, w) - Math.max(fl.dist - hs, -w)) / (2 * hs);
+    }
+    // Der Anteil des Wassers in die Teile (Slot 7): das Wasser trägt keine Krone; seine Farbe ist der Blick des Wassers im
+    // Ring-Stoff (`_wasserBlick`) bzw. der Wasser-Körper im Feld-Pass (`_fernFarbeAt`), nie eine Fern-Konstante.
+    _fernFlussTeil(x, z, out, hs) {
+        const c = this._fernFlussDeckung(x, z, hs);
+        out[7] = c;
+        if (c > 0) out[6] *= 1 - c;
+        return out;
+    }
+    // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
+    // des Wasser-Stoffs (`hydroSurfaceUniforms`, EIN Schreiber `_dayNightApplyWaterMaterials`). Ohne Wasser-Stoff bricht er laut.
+    _fernWasserBlickNode(_T) {
+        this._ensureHydroSurfaceMaterial();
+        const U = this.state.hydroSurfaceUniforms;
+        if (!U || !U.irr || !U.sunCol || !U.sunDir || !U.light)
+            throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        return this._wasserBlick(_T, WG, {
+            n: _T.vec3(0.0, 1.0, 0.0),
+            viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
+            T: _T.float(0.0),
+            koerper: _T.vec3(...this._fernWasserKoerper()),
+            irr: U.irr,
+            sunCol: U.sunCol,
+            sunDir: U.sunDir,
+            light: U.light,
+        }).eigen;
+    }
+    // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff).
+    _fernWasserKoerper() {
+        if (this._fernWasserR) return this._fernWasserR;
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG));
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
@@ -39889,7 +40091,7 @@ class AnazhRealm {
         let n = 0;
         const bis = Math.min(fr.totalVerts, fr.cursor);
         for (let g = 0; g < bis; g++) {
-            if (!(fr.farbLaw[g] < wl)) continue;
+            if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl);
             dirty[p.s] = true;
@@ -39916,8 +40118,10 @@ class AnazhRealm {
     // ihn). Die Saison legt der Ring-Stoff auf (`uSeasonMul`), das Gedächtnis bleibt über das Jahr gültig.
     _fernRingTeile(x, z, law, wet, rechnen, fuss) {
         if (wet) {
-            const w = AnazhRealm.FERN_FARBE.wasser;
-            return this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0]));
+            const w = this._fernWasserKoerper();
+            return (
+                this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0, 1]))
+            );
         }
         // Schnapp-Punkte sind ganzzahlig, |x|, |z| < 2^21 m; die Maschen-Breite (Viertel-Oktaven) steht über 2^44 — eindeutig.
         const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
@@ -39926,7 +40130,7 @@ class AnazhRealm {
         if (f) return f;
         f = m.alt.get(key) || null;
         if (!f && !rechnen) return null;
-        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(7), fuss);
+        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(8), fuss);
         // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
         // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
         if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
@@ -39941,15 +40145,13 @@ class AnazhRealm {
     // mindestens `mindest` Punkte (nie verhungert). Liefert den Rest des Mindest-Kontingents.
     _fernRingFaerben(fr, ende, mindest) {
         if (!fr.farbN) return mindest;
-        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let n = 0;
         let g = fr.farbMin;
         for (; g < fr.totalVerts && fr.farbN > 0; g++) {
             if (!fr.farbOffen[g]) continue;
             const p = this._fernRingPunkt(fr, g);
-            const law = fr.farbLaw[g];
-            const f = this._fernRingTeile(p.x, p.z, law, law < wl, true, p.fuss);
+            const f = this._fernRingTeile(p.x, p.z, fr.farbLaw[g], fr.nass[g] === 1, true, p.fuss);
             AnazhRealm._fernRingSchreibe(fr.geos[p.s], p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
@@ -39966,7 +40168,8 @@ class AnazhRealm {
         return Math.max(0, mindest - n);
     }
 
-    // Die Teile in die zwei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung).
+    // Die Teile in die drei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung), aNass = der Anteil
+    // des Wassers (der Ring-Stoff zeichnet ihn mit dem Blick des Wassers, `_wasserBlick`).
     // Die Reihen einer Schale (inner → aussen, geometrisch): der Reihen-Faktor q ist 1 + `seite` × die Winkel-Breite 2π/W —
     // die Masche ist radial höchstens `seite`-mal so tief wie breit, an jedem Radius.
     static _fernRingReihen(inner, aussen) {
@@ -39978,10 +40181,12 @@ class AnazhRealm {
     static _fernRingSchreibe(geo, li, t) {
         geo.attributes.color.setXYZ(li, t[0], t[1], t[2]);
         geo.attributes.aKrone.setXYZW(li, t[3], t[4], t[5], t[6]);
+        geo.attributes.aNass.setX(li, t[7]);
     }
     static _fernRingAttributeHoch(geo) {
         geo.attributes.color.needsUpdate = true;
         geo.attributes.aKrone.needsUpdate = true;
+        geo.attributes.aNass.needsUpdate = true;
     }
 
     // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die Fern-Krone des nahen Bodens (das
@@ -40063,7 +40268,7 @@ class AnazhRealm {
         if (!j) return;
         const N = k.N;
         const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
-        const t = k.teile || (k.teile = new Float32Array(7));
+        const t = k.teile || (k.teile = new Float32Array(8));
         const sRGB = (c) => {
             const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
             return Math.round(v * 255);
@@ -40074,12 +40279,13 @@ class AnazhRealm {
             const iz = (j.i / N) | 0;
             const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
             const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
-            const law = this._terrainMacroSurfaceY(x, z, false);
+            const nass = k.nass || (k.nass = { y: 0, spiegel: 0 });
             const o = j.i * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
-            if (law < wl) k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
+            if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false), wl, nass))
+                k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
             else {
-                this._fernFarbeTeile(x, law, z, t);
+                this._fernFarbeTeile(x, nass.y, z, t);
                 k.puffer[o] = sRGB(t[3]);
                 k.puffer[o + 1] = sRGB(t[4]);
                 k.puffer[o + 2] = sRGB(t[5]);
@@ -40190,9 +40396,33 @@ class AnazhRealm {
             fr.zoneVerts = rows * F.winkel;
         }
         if (!fr.zoneVerts) return;
+        // DIE EDIT-WACHE (K16, VOR der Stand-Wache): ein Edit schreibt das Feld um — die Feld-Fläche des Rands
+        // (`_fernRingFeldY`) fällt nur an den Ecken um den neuen Edit (Radius + 4 m), und die Edit-Generation weckt die
+        // Wache. Vorher stand die Prüfung hinter der Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-
+        // Cursor +0), und weckte sie später ein Chunk-Wechsel, löschte sie alle 1 081 Rand-Flächen.
+        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const edN = Array.isArray(ed) ? ed.length : 0;
+        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
+            const rand = fr.teilung && fr.teilung.randV;
+            if (fr.feldEdits === ed && edN > (fr.feldEditsN | 0) && rand) {
+                for (let k = fr.feldEditsN | 0; k < edN; k++) {
+                    const e = ed[k];
+                    if (!e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) continue;
+                    const r2 = ((Number(e.r) || 0) + 4) ** 2;
+                    for (let i = 0; i < fr.zoneVerts; i++) {
+                        const p = this._fernRingPunkt(fr, i);
+                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 <= r2) fr.feldY[p.g] = NaN;
+                    }
+                }
+            } else fr.feldY.fill(NaN);
+            fr.feldEdits = ed;
+            fr.feldEditsN = edN;
+            fr.feldEditGen = (fr.feldEditGen | 0) + 1;
+        }
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
-        // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
-        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
+        // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
+        // schläft die Wache.
+        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
@@ -40203,14 +40433,6 @@ class AnazhRealm {
             fr.deckLaw = new Float64Array(fr.zoneVerts).fill(NaN);
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
-        }
-        // die Feld-Fläche des Rands (`_fernRingFeldY`) gilt je Edit-Stand: ein Edit schreibt das Feld um
-        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        const edN = Array.isArray(ed) ? ed.length : 0;
-        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
-            fr.feldEdits = ed;
-            fr.feldEditsN = edN;
-            fr.feldY.fill(NaN);
         }
         const pos = fr.geos[0].attributes.position;
         let neu = false;
@@ -40817,8 +41039,30 @@ class AnazhRealm {
                 "    var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
                 "    if (e < 0.0) { sV = -sV; }\n" +
                 "    let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "    let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
-                "    if (pT.a <= 0.0) { return vec4<f32>(0.0); }\n" +
+                "    // DIE SILHOUETTE BILINEAR (K16): vier Texel um den Strahl (Texel-Mitten, der Azimut umlaufend), nur die\n" +
+                "    // Treffer tragen Farbe und Distanz; der Himmel beginnt, wo ihre Deckung unter die Hälfte fällt — die\n" +
+                "    // nächste Texel-Lesung zeigte jenseits 8 km Zinnen (je Texel 0,47° ≈ 6,7 px bei 1080p/75°).\n" +
+                "    let W = i32(dim.x);\n" +
+                "    let H = i32(dim.y);\n" +
+                "    let fx = u * f32(dim.x) - 0.5;\n" +
+                "    let fy = v * f32(dim.y) - 0.5;\n" +
+                "    let tx = fx - floor(fx);\n" +
+                "    let ty = fy - floor(fy);\n" +
+                "    let x0 = ((i32(floor(fx)) % W) + W) % W;\n" +
+                "    let x1 = (x0 + 1) % W;\n" +
+                "    let y0 = clamp(i32(floor(fy)), 0, H - 1);\n" +
+                "    let y1 = clamp(i32(floor(fy)) + 1, 0, H - 1);\n" +
+                "    let p00 = textureLoad(pano, vec2<i32>(x0, y0), 0);\n" +
+                "    let p10 = textureLoad(pano, vec2<i32>(x1, y0), 0);\n" +
+                "    let p01 = textureLoad(pano, vec2<i32>(x0, y1), 0);\n" +
+                "    let p11 = textureLoad(pano, vec2<i32>(x1, y1), 0);\n" +
+                "    let w00 = (1.0 - tx) * (1.0 - ty) * select(0.0, 1.0, p00.a > 0.0);\n" +
+                "    let w10 = tx * (1.0 - ty) * select(0.0, 1.0, p10.a > 0.0);\n" +
+                "    let w01 = (1.0 - tx) * ty * select(0.0, 1.0, p01.a > 0.0);\n" +
+                "    let w11 = tx * ty * select(0.0, 1.0, p11.a > 0.0);\n" +
+                "    let deck = w00 + w10 + w01 + w11;\n" +
+                "    if (deck < 0.5) { return vec4<f32>(0.0); }\n" +
+                "    let pT = (p00 * w00 + p10 * w10 + p01 * w01 + p11 * w11) / deck;\n" +
                 "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
                 "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
                 "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
@@ -41043,13 +41287,13 @@ class AnazhRealm {
         const k0 = job.k;
         let ende = job.n;
         for (let k = job.k; k < ende; k++) {
-            const law = job.werte[k];
-            const wet = law < wl;
-            const y = wet ? wl : law;
             // die Masche des Texels (`_fernFarbeMasche`): Azimut-Breite am Radius, die radiale Zeile des Felds
             const P = AnazhRealm.FELD_PASS;
             const px = job.punkte[k * 2];
             const pz = job.punkte[k * 2 + 1];
+            const nass = job.nass || (job.nass = { y: 0, spiegel: 0 });
+            const wet = this._fernNass(px, pz, job.werte[k], wl, nass);
+            const y = wet ? nass.spiegel : nass.y;
             const fuss = job.fuss || (job.fuss = { ax: job.ankerX, az: job.ankerZ, ht: 0, hr: 0 });
             fuss.ht = (Math.PI * Math.hypot(px - job.ankerX, pz - job.ankerZ)) / P.az;
             fuss.hr =
@@ -41909,6 +42153,26 @@ class AnazhRealm {
             "    let k = (u32(iy) * u32(S.feldAz) + u32(ix)) * 4u;\n" +
             "    return vec4<f32>(feld[k], feld[k + 1u], feld[k + 2u], feld[k + 3u]);\n" +
             "}\n" +
+            // DAS FELD IST EINE FLÄCHE, KEIN KASTEN-GITTER (K16, die Horizont-Zinnen): der Strahl liest Höhe und Farbe bilinear
+            // zwischen den vier Texel-Mitten (Azimut umlaufend, radial geklemmt). Bis K16 las er den nächsten Texel: jeder
+            // Texel (1,875° × 667 m) stand als Kasten mit ebenem Dach und senkrechter Wand — die Silhouette trug Zinnen.
+            "fn feldAn(rel: vec2<f32>, r: f32) -> vec4<f32> {\n" +
+            "    let PI = 3.14159265358979;\n" +
+            "    let nAz = i32(S.feldAz);\n" +
+            "    let fx = (atan2(rel.y, rel.x) / (2.0 * PI) + 0.5) * S.feldAz - 0.5;\n" +
+            "    let fy = clamp((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad - 0.5, 0.0, S.feldRad - 1.0);\n" +
+            "    let x0 = floor(fx);\n" +
+            "    let y0 = floor(fy);\n" +
+            "    let tx = fx - x0;\n" +
+            "    let ty = fy - y0;\n" +
+            "    let ix0 = ((i32(x0) % nAz) + nAz) % nAz;\n" +
+            "    let ix1 = (ix0 + 1) % nAz;\n" +
+            "    let iy0 = i32(y0);\n" +
+            "    let iy1 = min(iy0 + 1, i32(S.feldRad) - 1);\n" +
+            "    let a = mix(feldTexel(ix0, iy0), feldTexel(ix1, iy0), tx);\n" +
+            "    let b = mix(feldTexel(ix0, iy1), feldTexel(ix1, iy1), tx);\n" +
+            "    return mix(a, b, ty);\n" +
+            "}\n" +
             "@compute @workgroup_size(64)\n" +
             "fn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n" +
             "    let idx = gid.x;\n" +
@@ -41940,10 +42204,7 @@ class AnazhRealm {
             "        let r = length(rel);\n" +
             "        if (r < S.rMin) { tVor = t; continue; }\n" +
             "        if (r > S.rMax) { break; }\n" +
-            "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
-            "        let ix = i32(clamp(u, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
-            "        let iy = clamp(i32((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
-            "        let h = feldTexel(ix, iy);\n" +
+            "        let h = feldAn(rel, r);\n" +
             "        if (pos.y <= h.x) {\n" +
             "            var aB = tVor;\n" +
             "            var bB = t;\n" +
@@ -41954,10 +42215,7 @@ class AnazhRealm {
             "                let pm = camPos + dir * m;\n" +
             "                let relM = pm.xz - vec2<f32>(S.ankerX, S.ankerZ);\n" +
             "                let rM = length(relM);\n" +
-            "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
-            "                let ixM = i32(clamp(uM, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
-            "                let iyM = clamp(i32((rM - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
-            "                let hM = feldTexel(ixM, iyM);\n" +
+            "                let hM = feldAn(relM, rM);\n" +
             "                if (pm.y <= hM.x) { bB = m; tFein = m; hF = hM; } else { aB = m; }\n" +
             "            }\n" +
             "            pano[o] = hF.y; pano[o + 1u] = hF.z; pano[o + 2u] = hF.w; pano[o + 3u] = tFein;\n" +
@@ -57781,48 +58039,23 @@ class AnazhRealm {
     // Varianten-Pool: Map<species, string[]> mit VARIANTS_PER_SPECIES Seeds je Spezies — PURE STRINGS
     // (frozen, reisen im Snapshot, P2P string-gleich, kein Float-Drift). Fehlt worldMeta.variantSeed,
     // lazy deterministisch aus dem Welt-Seed; danach Cache.
-    // Grammatik (_growTreeBlueprint): Laub NIE auf Primärästen, nur an Ebene-2-Enden; tag-neutral über
+    // Der Wuchs (_growTreeBlueprint) liest die Art aus dem Gesetzbuch (_phytoArt); tag-neutral über
     // materialKonsistenz (Stamm holz, Krone laub); Stream `-veg-grammatik` (re-rollt keinen anderen).
-    _ensureVariantSeedPool() {
-        if (!this.state.worldMeta) return null;
-        const existing = this.state.worldMeta.variantSeed;
-        if (existing && typeof existing === "object") {
-            // Pool aus älterer Welt deckt evtl. nicht alle heutigen SPECIES_GRAMMAR: fehlende Spezies lazy
-            // ergänzen (gleiches Seed-Schema); existierende Pools bleiben UNANGETASTET (bit-identischer Wuchs).
-            const speciesNow = Object.keys(AnazhRealm.SPECIES_GRAMMAR || {});
-            const N = AnazhRealm.VARIANTS_PER_SPECIES;
-            const worldSeed = this.state.worldMeta.seed || "anazh-realm-seed";
-            let added = 0;
-            for (const sp of speciesNow) {
-                if (!Array.isArray(existing[sp]) || existing[sp].length !== N) {
-                    const variants = new Array(N);
-                    for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${sp}-var${i}`;
-                    existing[sp] = variants;
-                    added++;
-                }
-            }
-            if (added > 0 && typeof this.log === "function") {
-                this.log(`V18.217: ${added} Spezies in den Varianten-Pool ergänzt (lazy)`, "DBG");
-            }
-            return existing;
-        }
-        const pool = this._generateVariantSeedPool(this.state.worldMeta.seed || "anazh-realm-seed");
-        this.state.worldMeta.variantSeed = pool;
-        return pool;
-    }
-
-    // Pure Pool-Generierung aus dem Welt-Seed (kein state, nur SPECIES_GRAMMAR + VARIANTS_PER_SPECIES).
-    // Der species-Name ist Teil des Seed-Suffixes → eine neue Spezies verschiebt keine bestehende Bahn.
-    _generateVariantSeedPool(worldSeed) {
-        const pool = {};
+    _variantSeedsFor(species) {
+        const wm = this.state.worldMeta;
+        if (!wm) return null;
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const species = Object.keys(AnazhRealm.SPECIES_GRAMMAR || {});
-        for (const sp of species) {
-            const variants = new Array(N);
-            for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${sp}-var${i}`;
-            pool[sp] = variants;
-        }
-        return pool;
+        if (!wm.variantSeed || typeof wm.variantSeed !== "object") wm.variantSeed = {};
+        const pool = wm.variantSeed;
+        // Eine bestehende Zeile bleibt UNANGETASTET (bit-identischer Wuchs); eine neue entsteht nur für eine Art mit
+        // Rezept-Zeile im Gesetzbuch (_phytoArt) — dasselbe Saat-Schema, darum P2P string-gleich.
+        if (Array.isArray(pool[species]) && pool[species].length === N) return pool[species];
+        if (!this._phytoArt(species)) return null;
+        const worldSeed = wm.seed || "anazh-realm-seed";
+        const variants = new Array(N);
+        for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${species}-var${i}`;
+        pool[species] = variants;
+        return variants;
     }
 
     // LOD-Baupläne je (species, variantIndex): Keys `grown_<species>_v<idx>_lod{0|1|2}`; LOD0 routet auf
@@ -57840,19 +58073,17 @@ class AnazhRealm {
                 return null;
             }
         }
-        // Statische Deko-Baupläne (Kiesel/Felsen, nicht in SPECIES_GRAMMAR): EIN Bauplan dient allen drei
+        // Statische Deko-Baupläne (Kiesel/Felsen, keine Pflanze des Gesetzbuchs): EIN Bauplan dient allen drei
         // LOD-Slots — so fließen sie durch denselben Scatter-Pfad wie die Bäume.
-        if (!AnazhRealm.SPECIES_GRAMMAR || !AnazhRealm.SPECIES_GRAMMAR[species]) {
+        if (!this._phytoArt(species)) {
             if (this.state.blueprints[species]) return { 0: species, 1: species, 2: species };
             return null;
         }
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const pool = this._ensureVariantSeedPool();
-        if (!pool || !pool[species] || pool[species].length !== N) return null;
+        const seeds = this._variantSeedsFor(species);
+        if (!seeds) return null;
         if (!Number.isFinite(variantIndex) || variantIndex < 0 || variantIndex >= N) return null;
-        const variantSeed = pool[species][variantIndex];
-        const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-        if (!grammar) return null;
+        const variantSeed = seeds[variantIndex];
         const speciesLabel = String(species || "Baum")
             .replace(/^baum_/, "")
             .replace(/^./, (c) => c.toUpperCase());
@@ -57866,7 +58097,7 @@ class AnazhRealm {
                 lod === 0 ? `grown_${species}_v${variantIndex}` : `grown_${species}_v${variantIndex}_lod${lod}`;
             keys[lod] = cacheKey;
             if (this.state.blueprints[cacheKey]) continue;
-            const parts = this._growTreeBlueprintRich(species, variantSeed, grammar, { lod });
+            const parts = this._growTreeBlueprintRich(species, variantSeed, { lod });
             if (!Array.isArray(parts) || parts.length < 1) continue;
             const isSkeletonMeshed =
                 genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
@@ -59971,10 +60202,9 @@ class AnazhRealm {
         if (!this.state.blueprints) return null;
         // Varianten-Pool: der regionSeed rastert in EINE von VARIANTS_PER_SPECIES Varianten — die Welt
         // bleibt beschränkt, HISM teilt über Regionen, und ein berührter Baum re-wächst BIT-GENAU aus
-        // variantSeed[index] (Voraussetzung der Promotion). Alte Welten: _ensureVariantSeedPool.
-        const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const pool = this._ensureVariantSeedPool();
-        if (!pool || !pool[species] || pool[species].length !== N) return null;
+        // variantSeed[index] (Voraussetzung der Promotion). Die Zeile der Art: _variantSeedsFor.
+        const seeds = this._variantSeedsFor(species);
+        if (!seeds) return null;
         // Hash für die VARIANTEN-WAHL — fnv-1a über (species, regionSeed):
         // gleicher regionSeed → gleicher variantIndex (Region trägt EINEN
         // lokalen Stil); verschiedene regionSeeds streuen über N Varianten.
@@ -59996,7 +60226,7 @@ class AnazhRealm {
         // Die Spezies moduliert FORM/FARBE, die Materialien (holz+laub) bleiben über alle Arten identisch →
         // Spawn-Affinitäts-Achsen verschieben sich nie. Geometrie aus dem gefrorenen variantSeed:
         // bit-identisch zwischen Erstwachstum und Re-Growth nach Restore (Promotion ohne Sprung).
-        const variantSeed = pool[species][variantIndex];
+        const variantSeed = seeds[variantIndex];
         const parts = this._growTreeBlueprint(species, variantSeed);
         if (!Array.isArray(parts) || parts.length < 4) return null;
         // Variations-Wand: nur UNDEKLARIERTE Achsen strikt (Δ < 0.05); in SPECIES_TAG_VARIATION deklarierte
@@ -60083,11 +60313,10 @@ class AnazhRealm {
     }
 
     _growTreeBlueprint(speciesKey, seed) {
-        // Welt-Routing: ab gen >= 5 die Rich-Skeleton-Grammar (Verzweigung + Laub an den Spitzen),
+        // Welt-Routing: ab gen >= 5 wächst jede Art mit Rezept-Zeile im Gesetzbuch (_phytoArt) aus dem Kern,
         // davor die Legacy-Form (alte Welten bit-identisch).
-        const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[speciesKey];
-        if (grammar && this._genVersion && this._genVersion() >= 5) {
-            return this._growTreeBlueprintRich(speciesKey, seed, grammar);
+        if (this._genVersion && this._genVersion() >= 5 && this._phytoArt(speciesKey)) {
+            return this._growTreeBlueprintRich(speciesKey, seed);
         }
         return this._growTreeBlueprintLegacy(speciesKey, seed);
     }
@@ -60099,148 +60328,41 @@ class AnazhRealm {
     // Polylinien. `count`/`leafBudget` sind die Perf-Wand; headless: diag-phyto-tree.
     _phytoGrowSkeleton(P, seq) {
         // Delegator: die Wuchs-Mathematik lebt in der EINEN Quelle phyto-core.js
-        // (`globalThis.__phytoCore.growSkeleton`; Main, voxel-worker und Terrain-Portal laden sie).
-        // Kern fehlt → leeres Ergebnis statt Wurf (der Aufrufer prüft segs.length).
+        // (`globalThis.__phytoCore.growSkeleton`; Main, voxel-worker und Terrain-Portal laden sie). Ohne Kern kein Baum.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        if (core && typeof core.growSkeleton === "function") return core.growSkeleton(P, seq);
-        return { segs: [], leaves: [], trunkR: 0.1, height: (P && P.height) || 1, runMeta: {} };
+        if (!core || typeof core.growSkeleton !== "function") return AnazhRealm._kernPflichtBruch("phyto:growSkeleton");
+        return core.growSkeleton(P, seq);
     }
 
-    // Dial-Brücke: SPECIES_GRAMMAR + Genom-Achsen → Phänotyp-Vektor `P` für _phytoGrowSkeleton (die Art
-    // als Region im Morphospace). Zufall deterministisch über `r01`; Genom-Achsen modulieren die Dials.
-    _phytoDialsFor(speciesKey, grammar, genome, r01, ctx) {
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const clamp01 = (v) => Math.max(0, Math.min(1, v));
-        const c = ctx || {};
-        const crown = c.crownForm || grammar.crown;
-        const specialCrown = crown === "weeping" || crown === "vase" || crown === "schirm";
-        // Basis-Regler aus der Studio-Tafel (_phytoStudioDials, dieselbe Quelle wie der Render), sofern die
-        // Art ein Studio-Gesetz trägt und keine Sonder-Krone (weeping/vase/schirm) gewürfelt wurde;
-        // sonst crown-abgeleitet.
-        const preset = !specialCrown && this._phytoStudioDials(speciesKey);
-        const conifer = preset ? preset.conifer : crown === "cone" || grammar.foliage.kind === "needleSpray";
-        let apical, slim, trop, delta, leafD;
-        if (preset) {
-            // Vorlagen-Werte als Zentrum + kleiner deterministischer Jitter (Natur-Varianz).
-            // apical trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
-            apical = clamp01(preset.api + (r01() - 0.5) * 0.06);
-            slim = clamp01(preset.slim + (r01() - 0.5) * 0.08);
-            trop = preset.trop + (r01() - 0.5) * 0.08;
-            delta = Math.max(1.9, Math.min(2.9, preset.delta + (r01() - 0.5) * 0.1));
-            leafD = grammar.foliage.kind === "none" ? 0 : clamp01(preset.leaf + (r01() - 0.5) * 0.08);
-        } else {
-            // Apikaldominanz: Nadelbaum-Kegel exkurrent (hoch), Laubkrone dekurrent (niedrig).
-            // Aus der Kronen-Form abgeleitet — die eine Achse, die Eiche von Tanne trennt. Der
-            // Feldname `apical` trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
-            if (conifer || crown === "cone") apical = lerp(0.82, 0.95, r01());
-            else if (crown === "column") apical = lerp(0.66, 0.78, r01());
-            else if (crown === "vase" || crown === "schirm") apical = lerp(0.3, 0.46, r01());
-            else apical = lerp(0.24, 0.52, r01()); // dome/ellipsoid/irregular/weeping — breite Laubkrone
-            // Schlankheit (McMahon-k): Nadelbäume + Säulen schlank, breite Kronen gedrungen.
-            slim = conifer
-                ? lerp(0.62, 0.82, r01())
-                : crown === "column"
-                  ? lerp(0.7, 0.82, r01())
-                  : lerp(0.32, 0.55, r01());
-            // Gravitropismus: aufrecht (−), Trauerweide hängend (+).
-            trop =
-                crown === "weeping"
-                    ? lerp(0.7, 0.95, r01())
-                    : conifer
-                      ? lerp(0.0, 0.14, r01())
-                      : lerp(-0.2, 0.05, r01());
-            // da-Vinci-Δ: 2 (mechanisch) .. 3 (hydraulisch); die phyllo-Achse trägt die Varianz.
-            delta = c.phylloDiv ? Math.max(1.9, Math.min(2.9, c.phylloDiv)) : lerp(2.1, 2.5, r01());
-            leafD = grammar.foliage.kind === "none" ? 0 : lerp(0.45, 0.8, r01());
-        }
-        // Kronen-Charakter aus der Vorlage, sonst crown-abgeleitet (auch für fehlende Felder wie crownBase).
-        // maxDepth bleibt das Part-Budget (c.maxDepth via countCap/leafBudget) — nie die L-System-Tiefe.
-        const dialCrownBase =
-            preset && preset.crownBase != null ? preset.crownBase : crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24;
-        const dialConiferDroop =
-            preset && preset.coniferDroop != null ? preset.coniferDroop : crown === "cone" ? 0.22 : 0.05;
-        const dialWindGain = preset && preset.windGain != null ? preset.windGain : 1;
-        return {
-            height: c.height,
-            slim,
-            apical,
-            trop,
-            delta,
-            leafD,
-            leafSize: (grammar.foliage.size || 0.5) * (c.foliageScale || 1) * 1.3,
-            conifer,
-            barkType: c.barkType || (conifer ? "conifer" : "smooth"),
-            maxDepth: c.maxDepth != null ? c.maxDepth : conifer ? 4 : 5,
-            crownBase: dialCrownBase,
-            whorlSpacing: 0.1 + r01() * 0.05,
-            coniferDroop: dialConiferDroop,
-            basalStems: c.basalStems || 0,
-            windGain: dialWindGain,
-            trunkMul: c.trunkMul || 1,
-            countCap: c.countCap,
-            leafBudget: c.leafBudget,
-        };
-    }
-
-    // Studio-Quelle der Phänotyp-Regler: der gefühlte Baum (Wuchs → Kollision/Silhouette) liest DIESELBE
-    // Tafel wie der gesehene — foundry-core PRESETS, SYNCHRON über __terrainCore.PHYTO_PRESETS (nie der
-    // async Buch-Stand; lockstep-fest). Fehlende Kronen-Felder (crownBase/coniferDroop) aus der Krone.
-    // null → Grammatik-Fallback (Arten ohne Studio-Gesetz).
-    _phytoStudioDials(speciesKey) {
+    // DIE ART EINER PFLANZE (K24): der Welt-Name → seine Rezept-Zeile der Studio-Tafel (foundry-core PRESETS, SYNCHRON über
+    // __terrainCore.PHYTO_PRESETS — nie der async Buch-Stand, lockstep-fest). Die EINE Quelle von Reglern, Phänotyp und
+    // Gestalt jedes gewachsenen Baums, Strauchs und Krauts: der gefühlte Baum (Wuchs → Kollision/Silhouette) liest dieselbe
+    // Zeile wie der gesehene (buildInstance im Worker). Eine zweite Grammatik im Stamm gibt es nicht mehr. null = keine
+    // Pflanze mit Regler-Zeile (Fels, Bauwerk, unbekannter Name).
+    _phytoArt(speciesKey) {
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
         const tab = tc && tc.PHYTO_PRESETS;
-        if (!tab) return null;
-        const preset = this._foundryPresetFor(speciesKey);
-        const rec = preset ? tab[preset] : null;
+        if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
+        const id = this._foundryPresetFor(speciesKey);
+        const rec = id ? tab[id] : null;
         if (!rec || !rec.s || !Number.isFinite(rec.s.api)) return null;
-        const s = rec.s;
-        const fx = rec.fx || {};
-        return {
-            api: s.api,
-            delta: s.delta,
-            slim: s.slim,
-            trop: s.trop,
-            leaf: s.leaf,
-            conifer: !!fx.conifer,
-            coniferDroop: Number.isFinite(fx.coniferDroop) ? fx.coniferDroop : undefined,
-            crownBase: Number.isFinite(fx.crownBase) ? fx.crownBase : undefined,
-            maxDepth: Number.isFinite(fx.maxDepth) ? fx.maxDepth : undefined,
-            windGain: Number.isFinite(fx.windGain) ? fx.windGain : undefined,
-            barkA: Number.isFinite(fx.barkA) ? fx.barkA : undefined,
-            barkB: Number.isFinite(fx.barkB) ? fx.barkB : undefined,
-            leafCol: Number.isFinite(fx.leafCol) ? fx.leafCol : undefined,
-        };
+        const k = rec.kind;
+        if (k !== "tree" && k !== "shrub" && k !== "flower" && k !== "fern") return null;
+        return { id, rec };
     }
 
-    // Rezept-Quelle: die 5 Vorlagen-Regler {api,slim,trop,delta,leaf} (+ conifer) je Spezies — bevorzugt
-    // die Studio-Tafel (_phytoStudioDials), sonst aus der Grammatik-Krone abgeleitet. Fließt durch die
-    // EINE Pipeline `__phytoCore.treeParams`.
-    _treeRecipeDials(speciesKey, grammar) {
-        const preset = this._phytoStudioDials(speciesKey);
-        if (preset)
-            return {
-                api: preset.api,
-                slim: preset.slim,
-                trop: preset.trop,
-                delta: preset.delta,
-                leaf: preset.leaf,
-                conifer: !!preset.conifer,
-            };
-        const crown = (grammar && grammar.crown) || "dome";
-        const fol = (grammar && grammar.foliage) || {};
-        const conifer = crown === "cone" || fol.kind === "needleSpray";
-        const api = conifer ? 0.9 : crown === "column" ? 0.72 : crown === "vase" || crown === "schirm" ? 0.38 : 0.34;
-        const slim = conifer ? 0.72 : crown === "column" ? 0.76 : 0.45;
-        const trop = crown === "weeping" ? 0.85 : conifer ? 0.06 : -0.1;
-        const leaf = fol.kind === "none" ? 0.2 : 0.6;
-        return { api, slim, trop, delta: 2.3, leaf, conifer };
+    // Die 5 Regler {api,slim,trop,delta,leaf} einer Art (Werkstatt-Panel, Regrow) — ihre Rezept-Zeile im Gesetzbuch.
+    _treeRecipeDials(speciesKey) {
+        const art = this._phytoArt(speciesKey);
+        if (!art) return null;
+        const s = art.rec.s;
+        return { api: s.api, slim: s.slim, trop: s.trop, delta: s.delta, leaf: s.leaf };
     }
 
-    _growTreeBlueprintRich(speciesKey, seed, grammar, opts) {
-        // LOD-Stufen aus EINER Grammatik: `opts.lod` beschneidet die Tiefe, nie die Form —
-        // lod 0 = Hero (L1–L3 + volle Foliage, ~75–81 Parts) · lod 1 = nur L1, ~4 Cards (~12) ·
-        // lod 2 = Trunk + 1 Kronen-Card (~6). Der seed ist über alle Stufen identisch; die Kronen-Mitte
-        // (Skeleton-Anchors) wandert nicht → kein horizontaler LOD-Pop.
+    _growTreeBlueprintRich(speciesKey, seed, opts) {
+        // LOD-Stufen aus EINEM Gesetz: `opts.lod` ist die Bau-Stufe von treeParams (Blatt-Stride, Blatt-Maß, Wurzeln) und
+        // beschneidet die Part-Tiefe, nie die Form — lod 0 = Hero · lod 1 = nur L1 · lod 2 = Stamm + 1 Kronen-Anker. Der
+        // seed ist über alle Stufen identisch; die Kronen-Mitte (Skeleton-Anchors) wandert nicht → kein LOD-Pop.
         const lodLevel = opts && Number.isFinite(opts.lod) ? Math.max(0, Math.min(2, opts.lod | 0)) : 0;
         const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g8-default") + "|v5";
         let hash = 2166136261;
@@ -60257,88 +60379,51 @@ class AnazhRealm {
             return (v + 1) * 0.5;
         };
         const lerp = (a, b, t) => a + (b - a) * t;
-        // ─── DAS GENOM ───
-        // Über den geteilten Roller (deterministisch, eigener Stream je Achse, orthogonal zu r01()):
-        // sizeClass (Strauch · Baum · GROSS · GIGANT) · age (jung/dünn ↔ alt/knorrig) · foliageVar
-        // (Sommer ↔ Herbst, tag-neutral). Die Achsen sind orthogonal (junger Gigant, alte Strauch-Eiche).
-        const genome = this._rollGenome(sKey, "tree-genome");
-        // Die Größenklasse gilt nur den BÄUMEN (baum_*). Sträucher/Farne/Blumen tragen
-        // ihre eigene kleine Grammatik-Höhe (sie SIND die Strauch-Lebensform) → kein
-        // 77-m-Riesen-Blume-Unsinn; nur das Alter variiert sie (jung/alt). wahrerwuchs §4.6.
+        // ─── DIE ART UND IHR GESETZ (K24) ───
+        // Regler, Phänotyp und Bau-Stufe fließen durch die EINE Ableitung `__phytoCore.treeParams` — mit der Phänotyp-Zeile
+        // der Art (die Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf), wie der gesehene Baum im Worker.
+        // Instanz-Varianz = der Saat-Wurf des Gesetzes (±16 % Höhe, ±0,1 Regler, der Farb-Wurf). opts.recipeDials
+        // überschreibt die Regler (Werkstatt → Live-Vorschau). Keine Genom-Krone, keine Neigung, kein Herbst-Ton: der
+        // gefühlte Baum trägt nur, was das Gesetz trägt.
+        const art = this._phytoArt(speciesKey);
+        if (!art) return null;
+        const pc = globalThis.__phytoCore;
+        if (!pc || typeof pc.treeParams !== "function") return AnazhRealm._kernPflichtBruch("phyto:treeParams");
+        const dials = (opts && opts.recipeDials) || art.rec.s;
+        const P0 = pc.treeParams(dials, hash >>> 0, lodLevel, art.rec);
+        // Die Größenklasse ist ein abgeleitetes Etikett der Ableitung (nur baum_*: Sträucher und Kräuter SIND klein).
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
-        genome.axis("sizeClass"); // Genom-Zieh-Strom-Position bewahren (die alte sizeClass-Achse)
-        // Rezept→Parameter: Höhe, Proportion und Art-Charakter kommen aus der Vorlage — die 5 Regler
-        // (_treeRecipeDials) fließen durch die EINE Quelle `__phytoCore.treeParams`. Nie ein
-        // sizeClass-Höhen-Override (machte die 8-m-Tanne zum 2-m-Blob). Instanz-Varianz = Saat-Jitter
-        // (±16 % Höhe, ±0.10 Dials aus `hash`); sizeClass ist nur ein abgeleitetes Etikett.
-        // opts.recipeDials überschreibt das Rezept (Werkstatt-Regler → Live-Vorschau).
-        const _recipeDials = (opts && opts.recipeDials) || this._treeRecipeDials(speciesKey, grammar);
-        const _phytoP =
-            typeof globalThis !== "undefined" &&
-            globalThis.__phytoCore &&
-            typeof globalThis.__phytoCore.treeParams === "function"
-                ? globalThis.__phytoCore.treeParams(_recipeDials, hash >>> 0, lodLevel)
-                : null;
         let sizeClass;
-        if (!isTreeSpecies || !_phytoP) sizeClass = "normal";
-        else if (_phytoP.barkType === "sequoia" || _phytoP.height >= 18) sizeClass = "gigant";
-        else if (_phytoP.height >= 9) sizeClass = "gross";
+        if (!isTreeSpecies) sizeClass = "normal";
+        else if (P0.barkType === "sequoia" || P0.height >= 18) sizeClass = "gigant";
+        else if (P0.height >= 9) sizeClass = "gross";
         else sizeClass = "normal";
-        const ageMul = genome.axis("age"); // 0 = jung (dünn/sparse) .. 1 = uralt (dick/knorrig/voll)
-        // Vier weitere orthogonale Achsen, tag-neutral + physik-safe, NUR baum_*: crownForm weitet die Krone
-        // über den Spezies-Default (weeping/vase/schirm) · lean neigt den Stamm · phylloDiv variiert die
-        // Blattstellung · multiStem würfelt Nebenstämme.
-        const crownForm = isTreeSpecies
-            ? genome.pick("crownForm", [grammar.crown, grammar.crown, grammar.crown, "weeping", "vase", "schirm"])
-            : grammar.crown;
-        const leanMag = isTreeSpecies ? genome.range("leanMag", 0, 0.16) * (sizeClass === "gigant" ? 0.4 : 1) : 0;
-        const leanDir = genome.axis("leanDir") * 6.283;
-        const leanX = Math.cos(leanDir) * leanMag;
-        const leanZ = Math.sin(leanDir) * leanMag;
-        const phylloDiv = isTreeSpecies ? genome.range("phyllo", 2.18, 2.62) : 2.39996323; // golden ± Varianz
-        const multiStem =
-            isTreeSpecies &&
-            sizeClass !== "gigant" &&
-            grammar.foliage.kind !== "none" &&
-            genome.chance("multiStem", 0.22)
-                ? genome.int("stems", 1, 2)
-                : 0;
         const parts = [];
         // Skeleton-Container: flacher Branch-Pool (Polylinien-Punkte + Level + isTrunk), Foliage-Anker und
         // Welt-Höhe für die Flex-Berechnung; nach dem Bau in `_lastTreeSkeleton` gespiegelt.
+        const totalH = P0.height;
+        // Das Laub der Art aus dem Gesetz: Nadel oder Blatt (der Phänotyp), kahl das Totholz, das Blatt-Maß der Stufe.
+        const laub = { kind: P0.tot ? "none" : P0.conifer ? "needleSpray" : "leafCluster", size: P0.leafSize };
         const skeleton = {
             species: speciesKey,
-            grammar: grammar,
-            totalH: 0, // wird gleich unten gesetzt
+            art: art.id,
+            laub,
+            totalH,
             branches: [], // [{ points: [{x,y,z,r}, ...], level: int, isTrunk: bool }]
             anchors: [], // [{x,y,z}]
-            flareAmp: 0,
-            flareLobes: 0,
+            // Der Wurzelanlauf aus dem Gesetz (P.flare, der Phänotyp der Art — die Studio-Gestalt liest dieselbe Größe);
+            // die Rippen sind ein Maß der Werkstatt-Röhre (der Stamm des Studios ist glatt). Die Hand-Zeile je Art
+            // (SPECIES_TREE_PARAMS.flare) und ihr stiller Ersatz DEFAULT_TREE_FLARE sind gefallen (K24-N1).
+            flareAmp: P0.flare,
+            flareLobes: AnazhRealm.STAMM_RIPPEN,
+            // die Blatt-Form der Art (Superformel des Phänotyps) — die Klingen der Werkstatt lesen sie wie das Studio
+            leafShape: P0.leafShape,
             // V18.218 — die LOD-Stufe reist in den Skeleton; die Tube-/Cards-
             // Geometrie-Builder können sie lesen (z.B. radialSegs reduzieren).
             lodLevel: lodLevel,
         };
-
-        // ─── STAMM ───
-        // Höhe aus der Vorlagen-Pipeline (_phytoP.height, per Saat gejittert); ist sie nicht geladen, die
-        // Grammatik-Spanne.
-        const totalH = _phytoP ? _phytoP.height : lerp(grammar.height[0], grammar.height[1], r01());
-        skeleton.totalH = totalH;
-        // Allometrie (Quadrat-Kubik): größere Bäume brauchen überproportional dicke Glieder, sonst Knick.
-        // sizeFactor = Höhe / Spezies-Normalhöhe (normal ≈ 1), Exponent 1.15.
-        const refH = (grammar.height[0] + grammar.height[1]) * 0.5;
-        const sizeFactor = totalH / Math.max(0.5, refH);
-        const allometry = Math.pow(sizeFactor, 1.15);
-        // GERÜST-Dicke + Laub-Größe ans Alter koppeln (die age-Achse, wahrerwuchs §4.1):
-        // jung = dünn/klein, uralt = dick/knorrig/voll. tag-neutral (nur Größe/Form).
-        const foliageScale = Math.max(0.55, Math.pow(sizeFactor, 0.62)) * (0.78 + ageMul * 0.5);
-        // Flare am Stamm-Fuß je Spezies aus SPECIES_TREE_PARAMS; ohne Eintrag DEFAULT_TREE_FLARE.
-        const sParams = AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS[speciesKey];
-        const flareDef = (sParams && sParams.flare) || AnazhRealm.DEFAULT_TREE_FLARE;
-        skeleton.flareAmp = flareDef.amp;
-        skeleton.flareLobes = flareDef.lobes;
         // emitCylinderBetween: die EINE Stelle, die eine Segment-Kante zu einem holz-Zylinder-
-        // Part macht (Trunk/Äste/Foot-Flare/Buttress teilen sie). Tag-neutral (material "holz").
+        // Part macht (Trunk/Äste/Buttress teilen sie). Tag-neutral (material "holz").
         const emitCylinderBetween = (a, b, segments) => {
             const mx = (a.x + b.x) * 0.5;
             const my = (a.y + b.y) * 0.5;
@@ -60361,39 +60446,19 @@ class AnazhRealm {
                 segments: segments || 5,
             });
         };
-        // Stamm + Äste wachsen aus den GESETZEN (McMahon H→D · da Vinci r^Δ · Apikaldominanz): der
-        // Phyto-Kern (_phytoGrowSkeleton) ist die EINE Wuchs-Quelle; die Genom-Achsen modulieren seine Dials
-        // über _phytoDialsFor. Eigener Sub-Strom `genome.seq` (unabhängig von r01). Ausgänge: parts[]
-        // (cylinder holz + sphere laub, Tags frozen) + `_lastTreeSkeleton` (Polylinien + Anchors).
-        const conifer = _phytoP ? _phytoP.conifer : grammar.crown === "cone" || grammar.foliage.kind === "needleSpray";
-        const phytoSeq = genome.seq("phyto-growth");
-        // P kommt aus der Vorlagen-Pipeline (_phytoP); hier reiten nur die Render-Budgets darauf
-        // (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den Zufalls-Strom; trunkMul=1).
-        // leafBudget 480 bei L0 füllt die Krone wie die Vorlage. Ohne phyto-core: alter Dial-Ableiter.
-        const P = _phytoP
-            ? Object.assign({}, _phytoP, {
-                  trunkMul: 1,
-                  countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-                  leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
-              })
-            : this._phytoDialsFor(speciesKey, grammar, genome, r01, {
-                  height: totalH,
-                  crownForm,
-                  foliageScale,
-                  barkType: conifer ? "conifer" : "smooth",
-                  maxDepth: conifer ? 4 : 5,
-                  basalStems: multiStem > 0 ? multiStem + 1 : 0,
-                  trunkMul: allometry * (0.85 + ageMul * 0.35),
-                  countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-                  leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
-                  phylloDiv,
-              });
+        // Stamm + Äste wachsen aus den GESETZEN (McMahon H→D · da Vinci r^Δ · Apikaldominanz): der Phyto-Kern
+        // (_phytoGrowSkeleton) ist die EINE Wuchs-Quelle, P die EINE Ableitung. Eigener Sub-Strom `genome.seq`
+        // (unabhängig von r01). Ausgänge: parts[] (cylinder holz + sphere laub, Tags frozen) + `_lastTreeSkeleton`.
+        const phytoSeq = this._rollGenome(sKey, "tree-genome").seq("phyto-growth");
+        // Hier reiten nur die Render-Budgets auf P (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den
+        // Zufalls-Strom; trunkMul=1). leafBudget 480 bei L0 füllt die Krone wie die Vorlage.
+        const P = Object.assign({}, P0, {
+            trunkMul: 1,
+            countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
+            leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
+        });
         const phyto = this._phytoGrowSkeleton(P, phytoSeq);
         const trunkBaseR = phyto.trunkR;
-        // Konsistente Neigung (Lean, die T6-Genom-Achse): ein y-proportionaler Shear auf ALLE
-        // Phyto-Punkte → Stamm + Krone neigen sich zusammen (Wind/Hang). Verwurzelt → kein
-        // Kipp-Risiko (Ω-Φ2, der Richter prüft den Schwerpunkt).
-        const _lean = (p) => ({ x: p.x + leanX * p.y, y: p.y, z: p.z + leanZ * p.y, r: p.r });
         // Trunk-Kette = run 0 + die durchgehende Lead-Nachkommen-Kette. Der Wuchs ist tiefen-zuerst mit dem
         // Lead als children[0] → countCap beschneidet nur Seiten-Äste, NIE die Stammhöhe.
         const runMeta = phyto.runMeta;
@@ -60408,11 +60473,11 @@ class AnazhRealm {
             let poly = runPolys[s.runId];
             if (!poly) {
                 poly = runPolys[s.runId] = {
-                    points: [_lean({ x: s.p0[0], y: s.p0[1], z: s.p0[2], r: s.r0 })],
+                    points: [{ x: s.p0[0], y: s.p0[1], z: s.p0[2], r: s.r0 }],
                     depth: s.depth,
                 };
             }
-            poly.points.push(_lean({ x: s.p1[0], y: s.p1[1], z: s.p1[2], r: s.r1 }));
+            poly.points.push({ x: s.p1[0], y: s.p1[1], z: s.p1[2], r: s.r1 });
         }
         // Die Trunk-Kette als EINE Skeleton-Branch (wie der alte Stamm) + trunkPts für die
         // Downstream-Leser (Foot-Flare/Buttress).
@@ -60430,10 +60495,7 @@ class AnazhRealm {
         }
         if (trunkPts.length < 2) {
             trunkPts.length = 0;
-            trunkPts.push(
-                { x: 0, y: 0, z: 0, r: trunkBaseR },
-                { x: leanX * totalH, y: totalH, z: leanZ * totalH, r: trunkBaseR * 0.2 }
-            );
+            trunkPts.push({ x: 0, y: 0, z: 0, r: trunkBaseR }, { x: 0, y: totalH, z: 0, r: trunkBaseR * 0.2 });
         }
         // LOD-Dezimierung der Stamm-Polylinie (ein Zylinder-Part je Kante; LOD1 ≤20 · LOD2 ≤10 Parts):
         // erster + letzter Punkt bleiben (Höhe/Verjüngung), dazwischen jeden n-ten.
@@ -60465,7 +60527,7 @@ class AnazhRealm {
         const flareH = trunkBaseR * 0.5;
         // Mossy-Tönung — ein gedämpftes Grün das mit dem Foliage-Color
         // gleitet (Krone gibt den Wald-Ton, der Sockel folgt sanft).
-        const flareTint = (grammar.foliage.color & 0x7f7f7f) | 0x1a1a1a; // gedämpfte Version der Krone-Farbe
+        const flareTint = (P0.leafCol & 0x7f7f7f) | 0x1a1a1a; // gedämpfte Version der Laub-Farbe des Gesetzes
         parts.push({
             shape: "sphere",
             material: "laub",
@@ -60532,19 +60594,18 @@ class AnazhRealm {
         // Foliage-Anker aus den PHYTO-BLÄTTERN — ihre Positionen (aus der gesetz-wahren
         // Verzweigung) treiben die Cards; das IST der K1-Gewinn (Laub sitzt, wo das Gesetz es
         // wachsen ließ, nicht auf geratenen Ankern). lod2: ein zentraler Krone-Anker.
-        if (grammar.foliage && grammar.foliage.kind !== "none") {
+        if (laub.kind !== "none") {
             if (lodLevel === 2) {
                 const top = trunkPts[trunkPts.length - 1];
                 foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
             } else {
                 // Die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/needle/phase — phase dreht die Karte) — daraus
-                // baut `__phytoCore.buildFoliageQuads` die Krone. Der `_lean`-Shear trifft die Position (Card: dir/up).
+                // baut `__phytoCore.buildFoliageQuads` die Krone.
                 const phytoLeaves = [];
                 for (const l of phyto.leaves) {
-                    const lp = _lean({ x: l.pos[0], y: l.pos[1], z: l.pos[2], r: 0 });
-                    foliageAnchors.push({ x: lp.x, y: lp.y, z: lp.z });
+                    foliageAnchors.push({ x: l.pos[0], y: l.pos[1], z: l.pos[2] });
                     phytoLeaves.push({
-                        pos: [lp.x, lp.y, lp.z],
+                        pos: [l.pos[0], l.pos[1], l.pos[2]],
                         dir: [l.dir[0], l.dir[1], l.dir[2]],
                         up: l.up ? [l.up[0], l.up[1], l.up[2]] : [0, 1, 0],
                         scale: l.scale,
@@ -60559,72 +60620,33 @@ class AnazhRealm {
                 }
             }
         }
-        // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
-        const fo = grammar.foliage;
-        // Farb-Wurzeln aus der Studio-Tafel (foundry-core PRESETS fx.barkA/barkB/leafCol, wie der Render);
-        // der Gigant trägt den mammut-Ton. Arten ohne Studio-Farben (blume) → der EINE neutrale Default.
-        const _sd = sizeClass === "gigant" ? this._phytoStudioDials("baum_mammut") : this._phytoStudioDials(speciesKey);
-        const palette =
-            _sd && _sd.barkA != null && _sd.leafCol != null
-                ? { barkA: _sd.barkA, barkB: _sd.barkB, leaf: _sd.leafCol }
-                : AnazhRealm.SPECIES_PALETTE_DEFAULT;
-        skeleton.barkA = palette.barkA;
-        skeleton.barkB = palette.barkB;
-        // Herbst-Tönung (foliageVar-Achse, wahrerwuchs §4.1, tag-neutral — bleibt laub):
-        // ein Teil der LAUB-Bäume (nicht Nadel) färbt herbstlich (gold/orange/rot/braun)
-        // → ein gemischter Wald statt monochrom-grün. Deterministisch je Baum.
-        let baseColor = palette.leaf;
-        if (fo.kind === "leafCluster" && genome.chance("autumn", 0.24)) {
-            baseColor = genome.pick("autumnTint", [0xc89a3a, 0xbf7a2a, 0xa84e22, 0x9a7a30, 0xb5532a]);
-        }
-        // Farb-Variation PER KANAL (±12, geklemmt) — eine numerische Addition auf die ganze Hex-Zahl läuft in
-        // die Nachbar-Kanäle über (Grün kippt zu Lila).
-        const _bjR = (baseColor >> 16) & 0xff,
-            _bjG = (baseColor >> 8) & 0xff,
-            _bjB = baseColor & 0xff;
-        const _cl = (v) => Math.max(0, Math.min(255, v | 0));
-        const laubColor =
-            (_cl(_bjR + Math.floor((r01() - 0.5) * 24)) << 16) |
-            (_cl(_bjG + Math.floor((r01() - 0.5) * 24)) << 8) |
-            _cl(_bjB + Math.floor((r01() - 0.5) * 24));
-        // Foliage-Cap je LOD (35 / 4 / 1 × sizeCapBoost): mehr Anker als das Limit → gleichmäßig jedes
-        // skip-te samplen (kein Sektor-Bias).
+        // ─── LAUB AN DEN ANKERN (§3.4) ───
+        // Farbe und Maß aus dem Gesetz: die Rinde der Art (P.barkA/barkB, ihr Phänotyp), das Laub ihr Farb-Wurf (P.leafCol,
+        // der r128-Wurf des Gesetzes), das Blatt-Maß der Stufe (P.leafSize) — derselbe Ton wie der gesehene Baum.
+        skeleton.barkA = P0.barkA;
+        skeleton.barkB = P0.barkB;
+        const laubColor = P0.leafCol;
+        // Laub-Cap je LOD (35 / 4 / 1 × sizeCapBoost): EIN Laub-Ball je Anker-Probe, mehr Anker als das Limit →
+        // gleichmäßig jedes step-te samplen (kein Sektor-Bias).
         const MAX_FOLIAGE_PARTS = Math.round((lodLevel === 0 ? 35 : lodLevel === 1 ? 4 : 1) * sizeCapBoost);
-        const targetClusterCount = Math.min(MAX_FOLIAGE_PARTS, foliageAnchors.length * Math.max(1, fo.clusterSize[0]));
-        const anchorStep = Math.max(
-            1,
-            Math.floor((foliageAnchors.length * fo.clusterSize[0]) / Math.max(1, targetClusterCount))
-        );
+        const anchorStep = Math.max(1, Math.floor(foliageAnchors.length / Math.max(1, MAX_FOLIAGE_PARTS)));
         let foliageEmitted = 0;
-        for (let ai = 0; ai < foliageAnchors.length && foliageEmitted < MAX_FOLIAGE_PARTS; ai += anchorStep) {
-            const a = foliageAnchors[ai];
-            const cs = fo.clusterSize;
-            const clusterCount = cs[0] + Math.floor(r01() * Math.max(1, cs[1] - cs[0] + 1));
-            for (let c = 0; c < clusterCount && foliageEmitted < MAX_FOLIAGE_PARTS; c++) {
-                const ox = (r01() - 0.5) * 0.55 * foliageScale;
-                const oy = (r01() - 0.5) * 0.35 * foliageScale;
-                const oz = (r01() - 0.5) * 0.55 * foliageScale;
-                const lR = fo.size * lerp(0.75, 1.1, r01()) * foliageScale;
-                if (fo.kind === "needleSpray") {
-                    // Card{cross} als y-gestreckte sphere (Nadel-Optik) — kein neuer Shape-Typ, damit die Tags neutral
-                    // bleiben.
-                    parts.push({
-                        shape: "sphere",
-                        material: "laub",
-                        color: laubColor,
-                        position: { x: a.x + ox, y: a.y + oy, z: a.z + oz },
-                        size: { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 },
-                    });
-                } else {
-                    // leafCluster — ellipsoid (kompakte Laub-Knäul).
-                    parts.push({
-                        shape: "sphere",
-                        material: "laub",
-                        color: laubColor,
-                        position: { x: a.x + ox, y: a.y + oy, z: a.z + oz },
-                        size: { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
-                    });
-                }
+        if (laub.kind !== "none") {
+            for (let ai = 0; ai < foliageAnchors.length && foliageEmitted < MAX_FOLIAGE_PARTS; ai += anchorStep) {
+                const a = foliageAnchors[ai];
+                const lR = laub.size * lerp(0.75, 1.1, r01());
+                // Nadel: y-gestreckte sphere (Nadel-Optik) · Blatt: kompakter Laub-Knäul — kein neuer Shape-Typ, die
+                // Tags bleiben neutral.
+                const nadel = laub.kind === "needleSpray";
+                parts.push({
+                    shape: "sphere",
+                    material: "laub",
+                    color: laubColor,
+                    position: { x: a.x, y: a.y, z: a.z },
+                    size: nadel
+                        ? { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 }
+                        : { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
+                });
                 foliageEmitted++;
             }
         }
@@ -60632,17 +60654,9 @@ class AnazhRealm {
         // baut daraus card{cross} je Anchor mit normalBend zur Kronen-Sphere.
         skeleton.anchors = foliageAnchors.map((a) => ({ x: a.x, y: a.y, z: a.z }));
         skeleton.foliageColor = laubColor;
-        // wahrerwuchs §4.1 — die Krone-Karten skalieren mit Größe + Alter (ein Mammut-
-        // baum trägt große Büschel, ein junger Strauch kleine). Der Card-Builder liest es.
-        skeleton.foliageScale = foliageScale;
         skeleton.sizeClass = sizeClass;
-        // T6 — die neuen Form-Achsen am Skeleton (für diag-genom + den Card-Builder lesbar).
-        skeleton.crownForm = crownForm;
-        skeleton.leanMag = leanMag;
-        skeleton.multiStem = multiStem;
-        skeleton.phylloDiv = phylloDiv;
-        // Side-Channel: der Aufrufer (`_growTreeBlueprintForSpawn`,
-        // `_loadStateRestoreGrownBlueprints`) liest das direkt nach dem Aufruf.
+        // Side-Channel: der Aufrufer (\`_growTreeBlueprintForSpawn\`,
+        // \`_loadStateRestoreGrownBlueprints\`) liest das direkt nach dem Aufruf.
         this._lastTreeSkeleton = skeleton;
         return parts;
     }
@@ -63675,7 +63689,7 @@ class AnazhRealm {
 
         // DIE SECHS BAUM-ARTEN als Built-in-Identität (EINE Baum-Quelle): ~6 Subsysteme keyen auf den NAMEN
         // (Crafting-Kosten · Archetyp-Bank · Instancing · HISM-Tint · Tag-Wand · Worldgen · spawn_tree).
-        // Form aus der GRAMMATIK (`_growTreeBlueprintRich`); nur holz+laub → tag-neutral über alle Arten.
+        // Form aus dem GESETZ (`_growTreeBlueprintRich` → treeParams der Art); nur holz+laub → tag-neutral über alle Arten.
         // Skeleton + _isMerged tragen den Skeleton-Mesh-Renderpfad (2 Leaves: Rinde + Foliage).
         const treeSpeciesBlueprints = {};
         const TREE_SPECIES = [
@@ -63688,15 +63702,14 @@ class AnazhRealm {
             ["baum_mammut", "Mammutbaum"], // die Mammut-Nische des Wald-Generators (04.10., vorher als baum_buche)
         ];
         for (const [species, label] of TREE_SPECIES) {
-            const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-            if (!grammar) continue;
+            if (!this._phytoArt(species)) continue;
             let parts = null;
             let skeleton = null;
             try {
                 // Fester kanonischer Seed → die Art ist EINE deterministische Gestalt (Instanz-Varianz im Worldgen
-                // über scale/yaw/tint). _growTreeBlueprintRich liest nur SPECIES_GRAMMAR + _rollGenome + den lazy
-                // _growTreeNoise → konstruktor-sicher.
-                parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`, grammar);
+                // über scale/yaw/tint). _growTreeBlueprintRich liest nur das Gesetzbuch (_phytoArt → treeParams) + den
+                // lazy _growTreeNoise → konstruktor-sicher.
+                parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`);
                 skeleton =
                     this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches)
                         ? this._lastTreeSkeleton
@@ -67006,14 +67019,14 @@ class AnazhRealm {
     // verbunden, Radius = radii[i]; lobed flare am Stamm-Fuß. Alle Äste zu EINER Geometrie gemerged.
     _buildTreeTubeGeometry(skeleton, opts) {
         if (!skeleton || !Array.isArray(skeleton.branches) || skeleton.branches.length === 0) return null;
+        AnazhRealm._skelettPflicht(skeleton);
         const radialSegs = (opts && opts.radialSegs) || 6;
-        const totalH = Math.max(1, skeleton.totalH || 10);
-        // DAS NEUE KLEID K1 (V18.385) — die RINDEN-FARBE aus der Phyto-Palette: barkA (Fuß-
+        const totalH = Math.max(1, skeleton.totalH);
+        // DAS NEUE KLEID K1 (V18.385) — die RINDEN-FARBE aus dem Gesetz der Art (P.barkA/barkB): barkA (Fuß-
         // dunkel) → barkB (Wipfel-hell), ein Höhen-Gradient wie in der Vorlage (buildTube
         // barkBase→barkTip). Die Birke trägt so ihre weiße Rinde, der Mammut sein Rot-Braun.
-        const _pal = AnazhRealm.SPECIES_PALETTE_DEFAULT;
-        const _bA = skeleton.barkA != null ? skeleton.barkA : _pal.barkA;
-        const _bB = skeleton.barkB != null ? skeleton.barkB : _pal.barkB;
+        const _bA = skeleton.barkA;
+        const _bB = skeleton.barkB;
         const bAr = ((_bA >> 16) & 0xff) / 255,
             bAg = ((_bA >> 8) & 0xff) / 255,
             bAb = (_bA & 0xff) / 255;
@@ -67032,8 +67045,8 @@ class AnazhRealm {
             totalH,
             barkColorA: [bAr, bAg, bAb],
             barkColorB: [bBr, bBg, bBb],
-            flareAmp: skeleton.flareAmp || 0.45,
-            flareLobes: skeleton.flareLobes || 5,
+            flareAmp: skeleton.flareAmp,
+            flareLobes: skeleton.flareLobes,
         });
         const geomList = [];
         for (const s of snippets) {
@@ -67191,8 +67204,8 @@ class AnazhRealm {
     // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (der Phyto-Pfad gewinnt). Das Farb-Gesetz
     // der Vegetation (foundry-core `vegFarbe`, V18.506): der Hex ist eine sRGB-Absicht, die Albedo sein
     // linearer Wert — `THREE.Color(hex)` dekodiert unter der Farb-Verwaltung von r184 genau so.
-    _treeLeafBaseColor(skeleton, fo) {
-        const c = new THREE.Color((skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a);
+    _treeLeafBaseColor(skeleton) {
+        const c = new THREE.Color(AnazhRealm._skelettPflicht(skeleton).foliageColor);
         return [c.r, c.g, c.b];
     }
 
@@ -67201,29 +67214,23 @@ class AnazhRealm {
     // aH0/aH0L). Nadeln bleiben Spray-Quads (Einzel-Nadeln trügen beim 480er-Blatt-Budget die Deckung
     // nicht). null (kein Kern/Blätter/THREE) → der Aufrufer bleibt beim Karten-Pfad.
     _buildTreeFoliageBladeGeometry(skeleton) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.phytoLeaves) || !skeleton.phytoLeaves.length) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo || fo.kind === "none") return null;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         if (!core || typeof core.buildLeafBlades !== "function" || typeof THREE === "undefined") return null;
         const blades = skeleton.phytoLeaves.filter((l) => l && !l.needle);
         if (!blades.length) return null;
-        // Blatt-Form je Art (die Vorlagen-Zuordnung Z.929-935: eiche→oak · weide→lance ·
-        // birke/übrige Laub-Arten→ovate; eine hängende Sonder-Krone liest lanzettlich).
-        const sp = String(skeleton.species || "");
-        const shapeKey = /eiche/.test(sp)
-            ? "oak"
-            : /weide/.test(sp) || (grammar && grammar.crown === "weeping")
-              ? "lance"
-              : "ovate";
+        // Blatt-Form der Art aus dem Gesetz (die Superformel des Phänotyps, P.leafShape) — wie die Studio-Gestalt; die
+        // Zuordnung nach dem Namen der Art (eiche→oak · weide→lance · sonst ovate) fiel K24-N1.
         const q = core.buildLeafBlades(blades, {
-            leafColor: this._treeLeafBaseColor(skeleton, fo),
+            leafColor: this._treeLeafBaseColor(skeleton),
             // Vorlagen-roh (pushLeaf bekommt l.scale unskaliert): AnazhRealms leafSize trägt
             // schon den ×1.3-Dial → die Klinge liest als Blatt-Büschel-Größe, kein Mega-Blatt.
             scale: 1.0,
             cup: 0.5, // die Quer-Mulde (Vorlagen-Aufruf Z.660)
-            leafShape: shapeKey,
+            leafShape: skeleton.leafShape,
         });
         if (!q || !(q.count > 0)) return null;
         const g = new THREE.BufferGeometry();
@@ -67238,16 +67245,16 @@ class AnazhRealm {
         this._stampFoliageDomeNormals(g);
         // S1-SHADER — dieselben Wahrnehmungs-Höhen wie die Karten → das Dither-Crossfade
         // blendet die Klingen am L0→L1-Band weich aus (kein Pop auf die Karten-Krone).
-        this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
+        this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
         g.computeBoundingBox();
         g.computeBoundingSphere();
         return g;
     }
 
     _buildTreeFoliageCardGeometry(skeleton, _opts) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length === 0) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo) return null;
         // Laub-Geometrie aus phyto-core (`buildFoliageQuads`): ein Quad je Blatt (Achse aus dir/up, Roll aus
         // phase, UV in die Atlas-Zelle); hier nur in BufferGeometry gewickelt + WebGPU-Material (liest
@@ -67265,15 +67272,14 @@ class AnazhRealm {
             const _skipB = _opts && _opts.skipBroadleaf === true;
             const _quadLeaves = _skipB ? skeleton.phytoLeaves.filter((l) => l && l.needle) : skeleton.phytoLeaves;
             if (_skipB && !_quadLeaves.length) return null;
-            const leafColor = this._treeLeafBaseColor(skeleton, fo);
-            const fScaleQ = Math.max(0.4, skeleton.foliageScale || 1);
+            const leafColor = this._treeLeafBaseColor(skeleton);
             const q = core.buildFoliageQuads(_quadLeaves, {
                 leafColor,
-                scale: 2.35 * fScaleQ,
+                scale: 2.35,
                 // Nadeln: das gewachsene Blatt IST eine EINZELNE Nadel (scale ~0.15) — als
                 // Spray-Quad braucht es einen grossen Faktor, damit die Zelle-3-Nadel-Silhouette
                 // sichtbar wird + die Kegel-Krone füllt (sonst unsichtbare 7-cm-Punkte).
-                needleScale: 5.5 * fScaleQ,
+                needleScale: 5.5,
             });
             if (q && q.count > 0) {
                 const g = new THREE.BufferGeometry();
@@ -67283,7 +67289,7 @@ class AnazhRealm {
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
                 // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
-                this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
+                this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
                 g.computeBoundingBox();
                 g.computeBoundingSphere();
                 return g;
@@ -67292,10 +67298,9 @@ class AnazhRealm {
         // KIND-Spalte im 4×2-Atlas + Karten-Proportion je Kind: Breitblatt(0) breit, Nadel(1) lang-schmal,
         // Palme(2) lange Wedel, Schuppe(3) feine Sprays. EINE Textur, die Spalte routet die UVs.
         const kindCol = fo.kind === "needleSpray" ? 1 : fo.kind === "palm" ? 2 : fo.kind === "scale" ? 3 : 0;
-        const baseSize = fo.size || 0.5;
+        const baseSize = fo.size;
         // Karten-Größe: proportionierte Büschel (1.5–2 m am ~10-m-Baum), die Fülle trägt FOLIAGE_DENSITY;
-        // Nadel-Sprays drapen größer. Skaliert mit skeleton.foliageScale (Größe/Alter; Alt-Skelette: 1).
-        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
+        // Nadel-Sprays drapen größer.
         // V18.235 (§5 Ω-O9) — fd/lod/K hier gehoistet (vor cardW/cardH), damit der LOD-Karten-
         // Boost die Karten-Größe trifft. cardsPerAnchor dünnt LOD1/2 aus (5→2→1), das trägt die FPS.
         const fd = (this.state.atmosphere && this.state.atmosphere.foliageDensity) || AnazhRealm.FOLIAGE_DENSITY;
@@ -67309,9 +67314,9 @@ class AnazhRealm {
         // je-Kind-Aspekt: Nadel lang-schmal, Palme große breite Wedel, Schuppe feine Sprays.
         const _wByKind = kindCol === 1 ? 2.4 : kindCol === 2 ? 3.0 : kindCol === 3 ? 1.7 : 2.1;
         const _hByKind = kindCol === 1 ? 3.4 : kindCol === 2 ? 3.4 : kindCol === 3 ? 1.7 : 1.85;
-        const cardW = baseSize * _wByKind * fScale * _lodCardBoost;
-        const cardH = baseSize * _hByKind * fScale * _lodCardBoost;
-        const totalH = Math.max(1, skeleton.totalH || 10);
+        const cardW = baseSize * _wByKind * _lodCardBoost;
+        const cardH = baseSize * _hByKind * _lodCardBoost;
+        const totalH = Math.max(1, skeleton.totalH);
         // Kronen-Zentrum (Mitte der Anchor-Wolke, leicht angehoben) — NUR für Positionen (innerFill-Pull +
         // Spitzen-Curl); die Shading-Normale stempelt _stampFoliageDomeNormals.
         let cx = 0,
@@ -67341,9 +67346,9 @@ class AnazhRealm {
         const uvs = new Float32Array(M * 8 * 2);
         const UVC = [0, 0, 1, 0, 1, 1, 0, 1]; // (0,0)(1,0)(1,1)(0,1)
         const indices = new Uint32Array(M * 12);
-        // foliageColor aus dem skeleton (grammar.color + Jitter in _growTreeBlueprintRich), gelesen über
+        // foliageColor aus dem skeleton (der Farb-Wurf des Gesetzes, P.leafCol in _growTreeBlueprintRich), gelesen über
         // `_treeLeafBaseColor` — dieselbe rohe Quelle wie der Phyto-Pfad, kein Pfad-Dämpfer.
-        const _lc = this._treeLeafBaseColor(skeleton, fo);
+        const _lc = this._treeLeafBaseColor(skeleton);
         const fr = _lc[0];
         const fg = _lc[1];
         const fb = _lc[2];
@@ -67482,15 +67487,14 @@ class AnazhRealm {
     // verwirft verdeckte Hinter-Karten (die Laub-Last ist Overdraw von ~100 DoubleSide-Alpha-Karten).
     // Nur LOD0, opak, kein Schatten. A/B-Toggle `state.foliageOpaqueCore`.
     _buildTreeFoliageCoreGeometry(skeleton) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
         if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo) return null;
-        // Kern NUR für dichte runde Kronen (dome/ellipsoid/irregular/vase); bei Kegel/Säule/Schirm gibt es
-        // kaum Overdraw zu sparen, und die Ellipsoid-Mitte pokt durch die dünne Silhouette.
-        const cf = skeleton.crownForm || (grammar && grammar.crown);
-        if (cf === "cone" || cf === "column" || cf === "schirm" || fo.kind === "needleSpray") return null;
+        // Kern NUR für dichte runde Laub-Kronen; am Nadel-Kegel gibt es kaum Overdraw zu sparen, und die
+        // Ellipsoid-Mitte pokt durch die dünne Silhouette.
+        if (fo.kind === "needleSpray") return null;
         const anchors = skeleton.anchors;
         // Kronen-Schwerpunkt + Bounding-Box (die Kron-Form, damit der Kern Tanne tall-schmal vs Eiche
         // rund-breit folgt statt einer generischen Kugel).
@@ -67518,8 +67522,7 @@ class AnazhRealm {
         cx /= n;
         cy /= n;
         cz /= n;
-        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
-        const baseSize = (fo.size || 0.5) * 2.0 * fScale; // ~Karten-Halb-Reichweite
+        const baseSize = fo.size * 2.0; // ~Karten-Halb-Reichweite
         // CORE_FILL < 1 → der Kern sitzt INNERHALB der Karten-Spitzen (die Karten reichen bis
         // ~(Anker-Spanne + baseSize)) → die Silhouette-Karten verdecken ihn → kein Heraus-Poken.
         const CORE_FILL = 0.6;
@@ -67543,7 +67546,7 @@ class AnazhRealm {
         const uvs = new Float32Array(vCount * 2);
         // Kern-Farbe: das DUNKLE Innen-Grün (tiefer Kronen-Schatten) — die instanceColor (per-Spawn)
         // moduliert es wie die Karten, so matcht der Kern den Baum.
-        const _kl = this._treeLeafBaseColor(skeleton, fo);
+        const _kl = this._treeLeafBaseColor(skeleton);
         const cr = _kl[0] * 0.5,
             cg = _kl[1] * 0.62,
             cb = _kl[2] * 0.38;
@@ -67584,10 +67587,10 @@ class AnazhRealm {
     // Ellipsoid-Hülle mit der echten Anker-Reichweite). Unsichtbar → darf jede Kronenform tragen, auch
     // Koniferen. Deterministisch, kein Math.random.
     _buildTreeShadowTwinGeometry(skeleton) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
         if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo) return null;
         const anchors = skeleton.anchors;
         let cx = 0,
@@ -67614,8 +67617,7 @@ class AnazhRealm {
         cx /= n;
         cy /= n;
         cz /= n;
-        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
-        const baseSize = (fo.size || 0.5) * 2.0 * fScale; // ~Karten-Halb-Reichweite
+        const baseSize = fo.size * 2.0; // ~Karten-Halb-Reichweite
         // TWIN_FILL 0.9 (> der Kern-CORE_FILL 0.6): der Zwilling füllt bis nahe die Karten-Spitzen →
         // sein Schatten deckt die volle sichtbare Krone (er ist unsichtbar, darf also groß sein).
         const TWIN_FILL = 0.9;
@@ -67721,7 +67723,7 @@ class AnazhRealm {
         // (`_baumWindStoff` über `opts.baumWind`), die Welt-Höhe jedes Teils im Stempel aH0: `_stampFoliageVisHeights` trägt
         // die Vorlage, die Instanz-Fassade (`_lodInstanceFacade`, je Slot gestempelt) Vorlage × Instanz-Skala.
         const baumWind = this._skelettWindDaten(skel);
-        const totalH = Math.max(1, skel.totalH || 10);
+        const totalH = Math.max(1, AnazhRealm._skelettPflicht(skel).totalH);
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
         if (barkGeom) {
@@ -68156,7 +68158,7 @@ class AnazhRealm {
     // sitzt unverzerrt. halfH = volle Baumhöhe (+2 %), halfW ≥ Zell-Proportion (cw/ch = 0.5) bzw. die
     // radiale Kronen-Spanne (+4 %).
     _impostorFrame(skeleton) {
-        const totalH = Math.max(1, (skeleton && skeleton.totalH) || 10);
+        const totalH = Math.max(1, AnazhRealm._skelettPflicht(skeleton).totalH);
         let maxR = 0;
         if (skeleton && Array.isArray(skeleton.anchors)) {
             for (const a of skeleton.anchors) {
@@ -71498,7 +71500,17 @@ class AnazhRealm {
                           groesse: TSL.uniform(S.fensterM),
                       })
                     : null;
-            return { S, N, daten, tex, kronen, U, mitteX: 0, mitteZ: 0, zentriert: false };
+            // DIE FLUSS-KARTE dieser Stufe (K16, die Naht des Wassers): dasselbe Fenster, dasselbe Raster wie die Wege — je Texel
+            // der Anteil, den das Wasser eines Flusses deckt (`_flussKarteMalen`, dieselben Segmente und Breiten wie
+            // `_fernFlussDeckung`). Der Fern-Ring liest sie je Fragment (`_flussKarteNode`): ein 4–17 m breiter Fluss
+            // trägt seine Kante im Bild statt im Kasten-Mittel seiner Masche (6–24 m).
+            const fDaten = new Uint8Array(N * N);
+            const fluss = {
+                daten: fDaten,
+                tex: karte(N, fDaten, THREE.RedFormat, "fluss-karte:" + S.name),
+                hydroN: -1,
+            };
+            return { S, N, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
         // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
         // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
@@ -71812,11 +71824,13 @@ class AnazhRealm {
     // die Nähe, nie an die Zahl besuchter Siedlungen), EIN Upload je umgezogener Stufe.
     _tickWegeKarte(playerPos) {
         const wk = this.state.wegeKarte;
-        if (!wk || !playerPos || (wk.siedlungen.length === 0 && wk.kronen.size === 0)) return;
+        if (!wk || !playerPos) return;
         const jetzt = performance.now();
+        const hydroN = this._flussKarteStand();
         for (const stufe of wk.stufen) {
             const S = stufe.S;
             if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
+                stufe.fluss.hydroN = -1; // das Fenster zog um: die Flüsse neu
                 const war = stufe.zentriert ? [stufe.mitteX, stufe.mitteZ] : null;
                 const raster = S.texelM * 16;
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
@@ -71826,6 +71840,7 @@ class AnazhRealm {
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 this._kronenStreuUmzug(stufe, war);
             }
+            if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
             // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
             const kr = stufe.kronen;
@@ -71842,6 +71857,88 @@ class AnazhRealm {
                 kr.upload = jetzt;
             }
         }
+    }
+
+    // Der Stand der Hydrosphäre, den die Fluss-Karte trägt: die Zahl bereiter Regionen (Heimat + Kacheln) — kommt eine
+    // Kachel dazu, malt jede Stufe ihre Flüsse neu.
+    _flussKarteStand() {
+        const st = this.state;
+        let n = st.hydrosphere && st.hydrosphere.ready ? 1 : 0;
+        if (st.hydroTiles) for (const t of st.hydroTiles.values()) if (t && t.ready) n++;
+        return n;
+    }
+
+    // Die Flüsse EINER zentrierten Stufe malen (K16, die Naht des Wassers): leeren, jedes Segment der bereiten Regionen
+    // (`riverBuckets`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
+    // den [−Halbbreite, +Halbbreite] quer zum Segment deckt (dieselbe Breite wie `_fernFlussDeckung`); EIN Upload.
+    _flussKarteMalen(stufe, hydroN) {
+        const fl = stufe.fluss;
+        fl.daten.fill(0);
+        fl.hydroN = hydroN;
+        const S = stufe.S;
+        const N = stufe.N;
+        const t = S.texelM;
+        const x0w = stufe.mitteX - S.fensterM / 2;
+        const z0w = stufe.mitteZ - S.fensterM / 2;
+        const st = this.state;
+        const regionen = [st.hydrosphere, ...(st.hydroTiles ? st.hydroTiles.values() : [])];
+        const gesehen = new Set();
+        const daten = fl.daten;
+        for (const h of regionen) {
+            if (!h || !h.ready || !h.riverBuckets) continue;
+            for (const list of h.riverBuckets) {
+                if (!list) continue;
+                for (const seg of list) {
+                    if (gesehen.has(seg)) continue;
+                    gesehen.add(seg);
+                    const r = Math.max(seg.hwA, seg.hwB) + t;
+                    const i0 = Math.max(0, Math.floor((Math.min(seg.ax, seg.bx) - r - x0w) / t));
+                    const i1 = Math.min(N - 1, Math.ceil((Math.max(seg.ax, seg.bx) + r - x0w) / t));
+                    const j0 = Math.max(0, Math.floor((Math.min(seg.az, seg.bz) - r - z0w) / t));
+                    const j1 = Math.min(N - 1, Math.ceil((Math.max(seg.az, seg.bz) + r - z0w) / t));
+                    if (i1 < i0 || j1 < j0) continue;
+                    const ex = seg.bx - seg.ax;
+                    const ez = seg.bz - seg.az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    for (let j = j0; j <= j1; j++) {
+                        const pz = z0w + (j + 0.5) * t;
+                        for (let i = i0; i <= i1; i++) {
+                            const px = x0w + (i + 0.5) * t;
+                            let u = ((px - seg.ax) * ex + (pz - seg.az) * ez) / len2;
+                            u = u < 0 ? 0 : u > 1 ? 1 : u;
+                            const d = Math.hypot(px - (seg.ax + ex * u), pz - (seg.az + ez * u));
+                            const hw = seg.hwA + (seg.hwB - seg.hwA) * u;
+                            const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
+                            if (c <= 0) continue;
+                            const v = Math.round(Math.min(1, c) * 255);
+                            const k = j * N + i;
+                            if (v > daten[k]) daten[k] = v;
+                        }
+                    }
+                }
+            }
+        }
+        fl.tex.needsUpdate = true;
+    }
+
+    // Der Wasser-Anteil der Fluss-Karte je Fragment (dieselbe Stufen-Wahl und dasselbe UV wie `_wegeBodenFarbe`):
+    // { wert, imFenster } — jenseits des Fern-Fensters trägt der Leser seinen Kasten-Anteil (aNass).
+    _flussKarteNode(_T) {
+        const wk = this._wegeKarteEnsure();
+        if (!wk || !wk.stufen[0].U || !wk.stufen[0].fluss)
+            throw new Error("Fluss-Karte: der Ring-Stoff braucht die Wege-Karte mit ihrer Fluss-Schicht");
+        const [nah, fern] = wk.stufen;
+        const xz = _T.positionWorld.xz;
+        const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
+        const relFern = xz.sub(fern.U.mitte).div(fern.U.groesse);
+        const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
+        const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5 - 1 / fern.N));
+        const wert = _T.mix(
+            _T.texture(fern.fluss.tex, relFern.add(0.5)).r,
+            _T.texture(nah.fluss.tex, relNah.add(0.5)).r,
+            innen
+        );
+        return { wert, imFenster };
     }
 
     // Die Wege EINER zentrierten Stufe neu malen — der EINE Neu-Maler für Umzug und Abbau: leeren, die Formen der
@@ -78269,7 +78366,7 @@ class AnazhRealm {
         return mat;
     }
 
-    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (foundry-core fx.conifer der Zelle), sonst 0 — EINE
+    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (der Phänotyp der Zelle, K24), sonst 0 — EINE
     // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
     // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
     _karteNadel(T, z) {
@@ -78287,7 +78384,12 @@ class AnazhRealm {
         }
         if (z) {
             const rec = tab[z.preset];
-            at.nadelU.array[z.idx] = rec && rec.fx && rec.fx.conifer ? 1 : 0;
+            // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp, dieselbe Quelle wie der Baum).
+            const pc = globalThis.__phytoCore;
+            at.nadelU.array[z.idx] =
+                rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && pc.artPhaenotyp(rec.s, rec).conifer
+                    ? 1
+                    : 0;
         }
         return at.nadelU;
     }
@@ -91415,13 +91517,7 @@ class AnazhRealm {
     _workshopRecipeKind(bp) {
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
         const species = bp._grownSpecies;
-        if (
-            species &&
-            String(species).startsWith("baum_") &&
-            AnazhRealm.SPECIES_GRAMMAR &&
-            AnazhRealm.SPECIES_GRAMMAR[species]
-        )
-            return "tree";
+        if (species && String(species).startsWith("baum_") && this._phytoArt(species)) return "tree";
         let rock = false,
             crystal = false;
         for (const p of bp.parts) {
@@ -91684,8 +91780,7 @@ class AnazhRealm {
     // Kerne — der Panel-Renderer bleibt art-neutral.
     _workshopRecipeSpec(bp, kind) {
         if (kind === "tree") {
-            const grammar = AnazhRealm.SPECIES_GRAMMAR[bp._grownSpecies];
-            const cur = bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar);
+            const cur = bp._recipeDials || this._treeRecipeDials(bp._grownSpecies);
             return {
                 cur: Object.assign({}, cur),
                 dials: [
@@ -91726,14 +91821,14 @@ class AnazhRealm {
                 dice: () =>
                     this._workshopRegrowRecipe(
                         bp,
-                        bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar),
+                        bp._recipeDials || this._treeRecipeDials(bp._grownSpecies),
                         `${bp._grownSpecies}-studio-${this._bauSame("wuerfel:baum").toString(36)}`
                     ),
                 reset: () => {
                     delete bp._recipeDials;
                     this._workshopRegrowRecipe(
                         bp,
-                        this._treeRecipeDials(bp._grownSpecies, grammar),
+                        this._treeRecipeDials(bp._grownSpecies),
                         `${bp._grownSpecies}-studio`
                     );
                 },
@@ -91799,12 +91894,11 @@ class AnazhRealm {
     // growSkeleton) → neue parts + skeleton in den Bauplan schreiben + Vorschau neu bauen.
     _workshopRegrowRecipe(bp, dials, seedStr) {
         const species = bp && bp._grownSpecies;
-        const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-        if (!species || !grammar) return;
+        if (!species || !this._phytoArt(species)) return;
         const lod = Number.isFinite(bp._recipeLod) ? bp._recipeLod : 0;
         let parts = null;
         try {
-            parts = this._growTreeBlueprintRich(species, seedStr, grammar, { recipeDials: dials, lod });
+            parts = this._growTreeBlueprintRich(species, seedStr, { recipeDials: dials, lod });
         } catch (e) {
             if (typeof this.log === "function") this.log("Rezept-Regrow fehlgeschlagen: " + (e && e.message), "WARN");
             return;
@@ -98175,6 +98269,7 @@ class AnazhRealm {
             lb.maxZ = ob.hz;
             lb.topY = box.topY;
             lb.botY = box.botY;
+            lb.gedeckt = box.gedeckt === true;
             const ax = lp.x;
             const az = lp.z;
             // Der Kontakt der lokalen Lösung landet im lokalen Empfänger und reist gedreht zu SEINEM Körper zurück (D5): ein
@@ -98194,7 +98289,9 @@ class AnazhRealm {
                 this._wandKontaktSetzen(kontakt, lk.nx * ob.c + lk.nz * ob.s, -lk.nx * ob.s + lk.nz * ob.c);
             return st;
         }
+        // die FUGE trägt nie (`gedeckt`, `_blockerFugen`): auf ihr sitzt eine Box desselben Werks
         if (
+            box.gedeckt !== true &&
             pos.x >= box.minX - radius &&
             pos.x <= box.maxX + radius &&
             pos.z >= box.minZ - radius &&
@@ -99012,7 +99109,7 @@ class AnazhRealm {
         this._tickTrefferGliederVorbacken(); // die Treffer-Glieder einer kalten Gattung, im Takt der EINEN Bake-Uhr
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
-        this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
+        this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
@@ -102833,15 +102930,14 @@ AnazhRealm.LAUB_STREU = Object.freeze({
 // FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
-// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Wasser =
-// das Fern-Blau als sRGB-Absicht (FARB-GESETZ: 0x265273 → linear), flach auf dem Spiegel.
+// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Das Wasser
+// trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
 // DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für die Fern-Krone des nahen Bodens, offene Ring-Farben und
 // den Feld-Farb-Job, über dem Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte (Krone und Ring je); `memo` = eine Generation des Fern-Farb-Gedächtnisses
 // (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
     saisonDrift: 0.05,
-    wasser: Object.freeze([0.0196, 0.0863, 0.1706]),
     msJeTakt: 2,
     msKnapp: 0.5,
     mindestJeTakt: 64,
@@ -104023,546 +104119,87 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
     innerFill: 0.2, // etwas Füllung, das Ast-Gerüst bleibt aber sichtbar
 });
 
-// SPECIES_GRAMMAR (unten) — Wachstums-Grammatik je Baumart (aus LAAS' Species.ts, auf
-// cylinder/sphere/plane abgebildet): die FORM emergiert aus der Grammatik. gen >= 5 aktiviert sie
-// (alte Welten bit-identisch). Felder je Spezies:
-//   height [minM, maxM] · crown "cone"/"ellipsoid"/"dome"/"column"/"irregular"
-//   trunk { segs, wander, taper, baseR }
-//   L1/L2/L3 { density, whorl, childStart, childEnd, angleBase, lenRatio, droop, tipCurl, radRatio,
-//     segs } (L2/L3 optional)
-//   foliage { kind "needleSpray"/"leafCluster", anchorLevel 2/3, clusterSize [min,max], color, size }
-// Tag-neutral: alle Arten lesen nur `holz`/`laub` (kein Spawn-Affinitäts-Shift).
-// SPECIES_PALETTE_DEFAULT — nur der neutrale Default (Arten ohne Studio-Farben, z. B. blume); die
-// EINE Farb-Tafel je Art ist foundry-core PRESETS (via __terrainCore.PHYTO_PRESETS, Leser
-// _phytoStudioDials). Nur Render-Farbe, kein Tag.
-AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c });
-// Keine Stamm-Farb-/Dial-Tafel je Art — kein Zwilling zu foundry-core PRESETS.
-AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
-    baum_tanne: Object.freeze({
-        // Fichte/Tanne: konisch, dichte Whorls, needleSpray
-        height: [9, 14],
-        crown: "cone",
-        trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.78, baseR: 0.42 }),
-        L1: Object.freeze({
-            density: 1.9,
-            whorl: 4,
-            childStart: 0.1,
-            childEnd: 0.97,
-            angleBase: 1.65,
-            lenRatio: 0.26,
-            droop: 0.32,
-            tipCurl: 0.22,
-            radRatio: 0.38,
-        }),
-        L2: Object.freeze({
-            density: 2.0,
-            whorl: 0,
-            childStart: 0.12,
-            childEnd: 0.97,
-            angleBase: 1.0,
-            lenRatio: 0.18,
-            droop: 0.42,
-            tipCurl: 0.12,
-            radRatio: 0.45,
-        }),
-        foliage: Object.freeze({
-            // V18.245 — der KEGEL füllt sich bis zur Spitze: Foliage auf L1 (reicht bis 97 %,
-            // nicht nur die kurzen L2 unten) + größere Sprays → konische Tanne (echte Referenz)
-            // statt kahler Stamm-Spike mit Laub nur unten.
-            kind: "needleSpray",
-            anchorLevel: 1,
-            clusterSize: [2, 3],
-            color: 0x2c5a2c,
-            size: 0.62,
-        }),
-    }),
-    // Mammutbaum (04.10.): die Riesen-Nische des Wald-Generators — hoher Säulenstamm, die Krone erst im oberen
-    // Drittel, kurze hängende Äste mit Nadel-Sprays (die Grammatik-Gestalt vor dem Studio-Asset; die Welt zeigt das
-    // Studio-Mammut).
-    baum_mammut: Object.freeze({
-        height: [16, 24],
-        crown: "cone",
-        trunk: Object.freeze({ segs: 7, wander: 0.03, taper: 0.82, baseR: 0.72 }),
-        L1: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.38,
-            childEnd: 0.97,
-            angleBase: 1.55,
-            lenRatio: 0.22,
-            droop: 0.4,
-            tipCurl: 0.18,
-            radRatio: 0.36,
-        }),
-        L2: Object.freeze({
-            density: 1.8,
-            whorl: 0,
-            childStart: 0.15,
-            childEnd: 0.97,
-            angleBase: 1.0,
-            lenRatio: 0.2,
-            droop: 0.45,
-            tipCurl: 0.1,
-            radRatio: 0.45,
-        }),
-        foliage: Object.freeze({
-            kind: "needleSpray",
-            anchorLevel: 1,
-            clusterSize: [2, 3],
-            color: 0x3a6a30,
-            size: 0.66,
-        }),
-    }),
-    baum_kiefer: Object.freeze({
-        // Kiefer: runde Krone, Äste am Stamm-oben, twiglets
-        height: [7, 12],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 5, wander: 0.06, taper: 0.78, baseR: 0.38 }),
-        L1: Object.freeze({
-            density: 1.5,
-            whorl: 3,
-            childStart: 0.45,
-            childEnd: 0.95,
-            angleBase: 1.45,
-            lenRatio: 0.4,
-            droop: 0.28,
-            tipCurl: 0.3,
-            radRatio: 0.42,
-        }),
-        L2: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.35,
-            childEnd: 1.0,
-            angleBase: 0.9,
-            lenRatio: 0.3,
-            droop: 0.24,
-            tipCurl: 0.18,
-            radRatio: 0.48,
-        }),
-        foliage: Object.freeze({
-            kind: "needleSpray",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x3a6b3a,
-            size: 0.55,
-        }),
-    }),
-    baum_buche: Object.freeze({
-        // Buche: ausladend, horizontale Platten, distiche
-        height: [8, 13],
-        crown: "dome",
-        trunk: Object.freeze({ segs: 5, wander: 0.05, taper: 0.7, baseR: 0.52 }),
-        L1: Object.freeze({
-            density: 1.4,
-            whorl: 0,
-            childStart: 0.32,
-            childEnd: 0.92,
-            angleBase: 1.05,
-            lenRatio: 0.5,
-            droop: 0.22,
-            tipCurl: 0.16,
-            radRatio: 0.5,
-        }),
-        L2: Object.freeze({
-            density: 1.8,
-            whorl: 0,
-            childStart: 0.25,
-            childEnd: 0.97,
-            angleBase: 0.9,
-            lenRatio: 0.4,
-            droop: 0.3,
-            tipCurl: 0.14,
-            radRatio: 0.52,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x6a9a4a,
-            size: 0.7,
-        }),
-    }),
-    baum_birke: Object.freeze({
-        // Birke: schmal, zarte Ranken, drooping leaves
-        height: [7, 11],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 5, wander: 0.08, taper: 0.72, baseR: 0.3 }),
-        L1: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.4,
-            childEnd: 0.95,
-            angleBase: 1.1,
-            lenRatio: 0.45,
-            droop: 0.42,
-            tipCurl: 0.14,
-            radRatio: 0.45,
-        }),
-        L2: Object.freeze({
-            density: 2.0,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 1.0,
-            angleBase: 0.95,
-            lenRatio: 0.34,
-            droop: 0.48,
-            tipCurl: 0.1,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x7ab86a,
-            size: 0.48,
-        }),
-    }),
-    baum_eiche: Object.freeze({
-        // Eiche: breit-gnarled, ausladende irreguläre Krone
-        height: [7, 12],
-        crown: "irregular",
-        trunk: Object.freeze({ segs: 5, wander: 0.07, taper: 0.65, baseR: 0.52 }),
-        L1: Object.freeze({
-            density: 1.4,
-            whorl: 0,
-            childStart: 0.35,
-            childEnd: 0.92,
-            angleBase: 1.15,
-            lenRatio: 0.48,
-            droop: 0.2,
-            tipCurl: 0.18,
-            radRatio: 0.52,
-        }),
-        L2: Object.freeze({
-            density: 2.4,
-            whorl: 0,
-            childStart: 0.25,
-            childEnd: 0.98,
-            angleBase: 0.95,
-            lenRatio: 0.38,
-            droop: 0.26,
-            tipCurl: 0.14,
-            radRatio: 0.55,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [3, 5], // V18.245 — dichtere Eichen-Kuppel (gegen die echte Referenz)
-            color: 0x4a8a3a,
-            size: 0.82,
-        }),
-    }),
-    baum_erle: Object.freeze({
-        // Erle: column-shape, dichte schmale Krone
-        height: [7, 11],
-        crown: "column",
-        trunk: Object.freeze({ segs: 5, wander: 0.05, taper: 0.68, baseR: 0.42 }),
-        L1: Object.freeze({
-            density: 1.5,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 0.94,
-            angleBase: 0.95,
-            lenRatio: 0.4,
-            droop: 0.24,
-            tipCurl: 0.16,
-            radRatio: 0.48,
-        }),
-        L2: Object.freeze({
-            density: 1.8,
-            whorl: 0,
-            childStart: 0.22,
-            childEnd: 0.98,
-            angleBase: 0.88,
-            lenRatio: 0.32,
-            droop: 0.28,
-            tipCurl: 0.12,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x5a8c4a,
-            size: 0.58,
-        }),
-    }),
-    // KARST: knorrig, klettert Klippen — höchster slopeMax (1.6); drei Ast-Ebenen → dichter, holziger
-    // Aufbau; foliage am L3-Anker (kleine Cluster, gedämpftes Grün).
-    baum_karst: Object.freeze({
-        height: [3.5, 6.5],
-        crown: "irregular",
-        trunk: Object.freeze({ segs: 6, wander: 0.16, taper: 0.55, baseR: 0.32 }),
-        L1: Object.freeze({
-            density: 2.6,
-            whorl: 0,
-            childStart: 0.18,
-            childEnd: 0.95,
-            angleBase: 1.4,
-            lenRatio: 0.35,
-            droop: 0.35,
-            tipCurl: 0.08,
-            radRatio: 0.38,
-        }),
-        L2: Object.freeze({
-            density: 3.8,
-            whorl: 0,
-            childStart: 0.2,
-            childEnd: 1.0,
-            angleBase: 1.1,
-            lenRatio: 0.28,
-            droop: 0.4,
-            tipCurl: 0.04,
-            radRatio: 0.42,
-        }),
-        L3: Object.freeze({
-            density: 5.0,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 1.0,
-            angleBase: 0.95,
-            lenRatio: 0.22,
-            droop: 0.45,
-            tipCurl: 0.02,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 3,
-            spacing: 0.055,
-            clusterSize: [2, 4],
-            color: 0x4a6230,
-            size: 0.45,
-        }),
-    }),
-    // Drei BUSCH-Arten als eigene SPECIES_GRAMMAR-Spezies (kein „kleiner Baum"-Hack), damit der
-    // Skeleton+Tube+Cards-Pfad sie trägt: foliage.anchorLevel 1 oder 2, kleinere Heights, dünnere Trunks.
-    busch_hazel: Object.freeze({
-        // Hazel — Haselnuss-Strauch, dome-Krone, mittel-dicht
-        height: [1.9, 2.9],
-        crown: "dome",
-        trunk: Object.freeze({ segs: 3, wander: 0.05, taper: 0.5, baseR: 0.12 }),
-        L1: Object.freeze({
-            density: 4.0,
-            whorl: 0,
-            childStart: 0.15,
-            childEnd: 0.95,
-            angleBase: 1.4,
-            lenRatio: 0.4,
-            droop: 0.25,
-            tipCurl: 0.1,
-            radRatio: 0.45,
-        }),
-        L2: Object.freeze({
-            density: 5.0,
-            whorl: 0,
-            childStart: 0.25,
-            childEnd: 1.0,
-            angleBase: 1.0,
-            lenRatio: 0.3,
-            droop: 0.3,
-            tipCurl: 0.08,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            spacing: 0.08,
-            clusterSize: [2, 4],
-            color: 0x4a7d3a,
-            size: 0.32,
-        }),
-    }),
-    farn_busch: Object.freeze({
-        // Farn-Cluster: NUR L1 (fronds direkt aus der Basis) — KEIN L2-Eintrag,
-        // der grow-Pfad überspringt L2 automatisch (`if (grammar.L2 && ...)`).
-        height: [1.0, 1.8],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 2, wander: 0.02, taper: 0.2, baseR: 0.06 }),
-        L1: Object.freeze({
-            density: 6.0,
-            whorl: 0,
-            childStart: 0.0,
-            childEnd: 0.98,
-            angleBase: 1.5,
-            lenRatio: 0.85,
-            droop: 0.5,
-            tipCurl: 0.06,
-            radRatio: 0.3,
-        }),
-        // KEIN L2 — fronds gehen direkt von der Basis aus (Plan §3.5).
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 1,
-            spacing: 0.12,
-            clusterSize: [3, 5],
-            color: 0x5a8a3a,
-            size: 0.4,
-        }),
-    }),
-    blume_gross: Object.freeze({
-        // Stand-Blume (50-90cm) — winzige Bühne mit roter Krone (Variation in
-        // Spezies-Optik). NUR L1, foliage als 1-2 cluster pro anchor.
-        height: [0.5, 0.9],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 2, wander: 0.03, taper: 0.3, baseR: 0.025 }),
-        L1: Object.freeze({
-            density: 3.0,
-            whorl: 0,
-            childStart: 0.7,
-            childEnd: 1.0,
-            angleBase: 0.6,
-            lenRatio: 0.3,
-            droop: 0.0,
-            tipCurl: 0.05,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 1,
-            spacing: 0.06,
-            clusterSize: [1, 2],
-            color: 0xc04a4a, // rot — Variation in Spezies (Plan §3.5)
-            size: 0.18,
-        }),
-    }),
-    // PALME: hoher, fast kahler Schaft mit Wedel-Krone nur an der Spitze (foliage am L1, childStart 0.82);
-    // kind "palm" zieht die Palmen-Wedel-Spalte des Atlas. Tag-neutral (holz+laub).
-    baum_palme: Object.freeze({
-        height: [6, 12],
-        crown: "column", // schmaler Schaft, Krone konzentriert oben
-        trunk: Object.freeze({ segs: 7, wander: 0.05, taper: 0.86, baseR: 0.3 }),
-        L1: Object.freeze({
-            density: 2.6,
-            whorl: 0,
-            childStart: 0.82, // Wedel NUR an der Spitze (kahler Schaft darunter)
-            childEnd: 1.0,
-            angleBase: 1.5, // Wedel splayen weit aus
-            lenRatio: 0.34,
-            droop: 0.5, // Wedel hängen anmutig
-            tipCurl: 0.06,
-            radRatio: 0.3,
-        }),
-        foliage: Object.freeze({
-            kind: "palm",
-            anchorLevel: 1,
-            clusterSize: [2, 3],
-            color: 0x4f8a3a,
-            size: 0.7,
-        }),
-    }),
-    // T1 — DIE ZYPRESSE: ein schmaler, säulen-förmiger Nadelholz-Verwandter mit
-    // SCHUPPEN-Laub (Cupressus). kind "scale" → die Schuppen-Spray-Spalte des Atlas.
-    // Die Äste hugen den Stamm (angleBase niedrig, lenRatio niedrig → schmale Säule).
-    baum_zypresse: Object.freeze({
-        height: [8, 16],
-        crown: "column",
-        trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.82, baseR: 0.34 }),
-        L1: Object.freeze({
-            density: 3.4,
-            whorl: 0,
-            childStart: 0.1,
-            childEnd: 0.97,
-            angleBase: 0.5, // Äste hugen den Stamm → schmale Säule
-            lenRatio: 0.16,
-            droop: 0.12,
-            tipCurl: 0.08,
-            radRatio: 0.4,
-        }),
-        L2: Object.freeze({
-            density: 2.4,
-            whorl: 0,
-            childStart: 0.2,
-            childEnd: 1.0,
-            angleBase: 0.6,
-            lenRatio: 0.14,
-            droop: 0.1,
-            tipCurl: 0.05,
-            radRatio: 0.45,
-        }),
-        foliage: Object.freeze({
-            kind: "scale",
-            anchorLevel: 2,
-            clusterSize: [2, 4],
-            color: 0x3f6a48,
-            size: 0.42,
-        }),
-    }),
-});
+// STAMM_RIPPEN — die Rippen-Zahl des Wurzelanlaufs der Werkstatt-Röhre (sin(Winkel·Rippen)·P.flare, phyto-core
+// buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der
+// Stamm des Studios ist glatt). Die Hand-Tafeln SPECIES_PALETTE_DEFAULT (Rinde/Laub) und DEFAULT_TREE_FLARE fielen K24-N1.
+AnazhRealm.STAMM_RIPPEN = 5;
 
-// DEFAULT_TREE_FLARE — Wurzelanlauf am Fuß: amp = seitliche Aufweitung (1.0 = +100 % Radius am
-// Sockel), lobes = Rippen-Zahl (sin(angle·lobes)·amp). Die Tube-Geometrie verbreitert die ersten
-// ~2 Punkte → der Stamm wurzelt sichtbar im Boden.
-AnazhRealm.DEFAULT_TREE_FLARE = Object.freeze({ amp: 0.45, lobes: 5 });
+// DAS SKELETT DES GESETZES (K24-N1): der EINE Erzeuger `_growTreeBlueprintRich` schreibt jede Größe, die die Bauer der
+// Werkstatt-Gestalt lesen (Röhre, Klingen, Karten, Kern, Schatten-Zwilling, Impostor-Rahmen) — Höhe, Rinde, Wurzelanlauf,
+// Laub-Farbe, Laub-Art und -Maß, Blatt-Form, alle aus treeParams der Art. Fehlt eine, bricht der Bau laut beim Namen. Vorher
+// setzten die Leser still einen Ersatz ein: Rinde SPECIES_PALETTE_DEFAULT, Höhe 10, Anlauf 0,45 × 5 (der Farn mit Anlauf 0
+// bekam ihn: `|| 0.45`), Laub 0x4a8a3a und Maß 0,5, Blatt-Form nach dem Namen der Art, ein nie geschriebenes foliageScale.
+AnazhRealm._skelettPflicht = function (sk) {
+    const fehlt = [];
+    if (!sk) fehlt.push("Skelett");
+    else {
+        if (!(sk.totalH > 0)) fehlt.push("totalH");
+        for (const k of ["barkA", "barkB", "foliageColor", "flareAmp", "flareLobes"])
+            if (!Number.isFinite(sk[k])) fehlt.push(k);
+        if (!sk.laub || typeof sk.laub.kind !== "string" || !(sk.laub.kind === "none" || sk.laub.size > 0))
+            fehlt.push("laub");
+        if (!sk.leafShape || typeof sk.leafShape !== "object") fehlt.push("leafShape");
+    }
+    if (fehlt.length)
+        throw new Error(
+            "SKELETT-PFLICHT verletzt: " + fehlt.join(", ") + " fehlt (der Erzeuger _growTreeBlueprintRich)"
+        );
+    return sk;
+};
 
-// SPECIES_TREE_PARAMS — Welt-Bezug je Spezies: flare, slopeMax (ab diesem Slope kein Spawn),
+// SPECIES_TREE_PARAMS — Welt-Bezug je Spezies: slopeMax (ab diesem Slope kein Spawn),
 // heightRange [min,max] (Spawn-Höhenfenster über `state.terrainBaseHeight`).
 AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
     baum_tanne: Object.freeze({
-        flare: Object.freeze({ amp: 0.5, lobes: 5 }),
         slopeMax: 1.2,
         heightRange: Object.freeze([-30, 200]),
     }),
     baum_kiefer: Object.freeze({
-        flare: Object.freeze({ amp: 0.42, lobes: 4 }),
         slopeMax: 1.3,
         heightRange: Object.freeze([-20, 180]),
     }),
     baum_buche: Object.freeze({
-        flare: Object.freeze({ amp: 0.55, lobes: 6 }),
         slopeMax: 0.8,
         heightRange: Object.freeze([-40, 120]),
     }),
     baum_birke: Object.freeze({
-        flare: Object.freeze({ amp: 0.32, lobes: 4 }),
         slopeMax: 0.6,
         heightRange: Object.freeze([-30, 90]),
     }),
     baum_eiche: Object.freeze({
-        flare: Object.freeze({ amp: 0.55, lobes: 6 }),
         slopeMax: 0.7,
         heightRange: Object.freeze([-40, 110]),
     }),
     baum_erle: Object.freeze({
-        flare: Object.freeze({ amp: 0.5, lobes: 5 }),
         slopeMax: 0.9,
         heightRange: Object.freeze([-40, 100]),
     }),
-    // KARST: slopeMax 1.6 (höchster aller Arten), heightRange [-30, 80] bewusst eng (Klippen-Zone);
-    // flare amp 0.9 × lobes 6 (knorriger Sockel).
+    // KARST: slopeMax 1.6 (höchster aller Arten), heightRange [-30, 80] bewusst eng (Klippen-Zone).
     baum_karst: Object.freeze({
-        flare: Object.freeze({ amp: 0.9, lobes: 6 }),
         slopeMax: 1.6,
         heightRange: Object.freeze([-30, 80]),
     }),
-    // V18.216 (Plan §3.5) — Büsche: dezenter flare (kleinere Sockel-Aufweitung),
-    // mittlere bis kleine slopeMax (Hazel klettert leichter, Blume meidet Steile),
+    // V18.216 (Plan §3.5) — Büsche: mittlere bis kleine slopeMax (Hazel klettert leichter, Blume meidet Steile),
     // weite heightRange (Understory wächst überall, wo der Baum-Schatten fällt).
     busch_hazel: Object.freeze({
-        flare: Object.freeze({ amp: 0.2, lobes: 3 }),
         slopeMax: 0.9,
         heightRange: Object.freeze([-30, 90]),
     }),
     farn_busch: Object.freeze({
-        flare: Object.freeze({ amp: 0.0, lobes: 0 }),
         slopeMax: 0.5,
         heightRange: Object.freeze([-40, 60]),
     }),
     blume_gross: Object.freeze({
-        flare: Object.freeze({ amp: 0.0, lobes: 0 }),
         slopeMax: 0.4,
         heightRange: Object.freeze([-30, 50]),
     }),
     // T1 (wahrerwuchs §4.1) — PALME: warmes Tiefland, meidet Steile + Höhe (Küsten/Oasen).
     baum_palme: Object.freeze({
-        flare: Object.freeze({ amp: 0.3, lobes: 4 }),
         slopeMax: 0.6,
         heightRange: Object.freeze([-30, 35]),
     }),
     // T1 — ZYPRESSE: säulen-förmig, tolerant (Hügel + mittlere Höhe).
     baum_zypresse: Object.freeze({
-        flare: Object.freeze({ amp: 0.35, lobes: 5 }),
         slopeMax: 1.0,
         heightRange: Object.freeze([-30, 120]),
     }),

@@ -63,6 +63,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
     tiefeStamm: 0.05, // m sichtbares Wasser über dem Fuß eines Stamms
@@ -1798,6 +1799,7 @@ function selbsttest() {
                 ueberSpiegel: -0.94,
             },
         },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
         setzen: {
             faelle: [
@@ -1874,6 +1876,7 @@ function selbsttest() {
         [
             "Z Haus aus dem Satz im Wasser",
             (b) =>
+                // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
                 b.zensus.imWasser.push({
                     typ: "haus_alemannisch",
                     id: 4,
@@ -2396,7 +2399,7 @@ async function lauf() {
         });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         // die Orte aus der Welt (K16): Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
-        const ORTE = await page.evaluate(weltOrte, { mess: [-900, -850], R: 1500, rampeStufe: 0.25, ansaugTief: 1.3 });
+        const ORTE = await page.evaluate(weltOrte, { mess: ((m) => [m.x, m.z])(messort("wiese")), R: 1500, rampeStufe: 0.25, ansaugTief: 1.3 });
         befund.orte = ORTE;
         console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
         if (!ORTE.fluss || !ORTE.see)

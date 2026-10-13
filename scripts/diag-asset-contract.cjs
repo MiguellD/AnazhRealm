@@ -658,8 +658,9 @@ function bildUrteil(mess, tafel) {
             if (!tafelSchreiben && c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, f.replace(/\.json$/, ""));
             if (c.lod <= 1 && artVon(c.presetId) === "tree" && c.season === "summer") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
-                const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};
-                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!fx.conifer, H: 0 });
+                // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
+                const ph = PC.artPhaenotyp(buch[c.presetId].s, buch[c.presetId]);
+                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!ph.conifer, H: 0 });
                 const krone = kroneAus(a.meshes);
                 if (c.lod === 0) {
                     pp.l0 = krone;
@@ -676,7 +677,7 @@ function bildUrteil(mess, tafel) {
                     }
                     pp.H = hi - Math.max(0, lo);
                 } else {
-                    pp.art = krone.some((m) => m.kind === "foliageTex") ? (fx.conifer ? "nadel" : "laub") : "klinge";
+                    pp.art = krone.some((m) => m.kind === "foliageTex") ? (ph.conifer ? "nadel" : "laub") : "klinge";
                     pp.l1 = krone;
                 }
             }

@@ -135,9 +135,11 @@ const server = http.createServer((req, res) => {
                 }
                 return null;
             };
-            const nearSpot = findLand(-40, 40, 0) || { x: 0, y: r.getTerrainHeightAt(0, 0) + 1.5, z: 0 };
+            const nearSpot = findLand(-40, 40, 0);
             // FERN-Spot (Szenario b): weit außerhalb des gebauten Rings — dort existiert kein Chunk.
-            const farSpot = findLand(560, 720, 500) || { x: 600, y: r.getTerrainHeightAt(600, 500) + 1.5, z: 500 };
+            const farSpot = findLand(560, 720, 500);
+            // kein Ersatz-Ort (K16): findet die Suche kein Land, bricht die Probe laut
+            if (!nearSpot || !farSpot) throw new Error(`move-under-load: kein Land fuer den ${nearSpot ? "FERN" : "NAH"}-Spot (findLand)`);
 
             const resetSim = (spot) => {
                 mesh.position.set(spot.x, spot.y, spot.z);

@@ -1683,12 +1683,14 @@ function __wedelBreiten(pts, blaetter, K, rand, ab) {
     return h;
 }
 // DIE STUFEN-ABBILDUNG (Welle 6): EINE Bedeutung je Bau-Stufe, fuer das Labor (`build()`, Knopf L0/L1/L2) wie fuer die
-// Welt (`buildInstance`) — welches REZEPT die Stufe faehrt. Der Strauch: Nah- (0) und Mittel-Stufe (1) fahren beide das
-// Rezept 1 (Karten-Krone, Blatt-Aggregation, Ring-Duennung), was sie trennt, ist ihre Holz-Zeile budget.shrub[Stufe];
-// einen Strauch nach Rezept 0 (die Klingen-Krone, ~175k Dreiecke) gibt es nicht. Jede andere Art: Rezept = Stufe.
-// Leser: deriveParamsPlant (Blatt-Stride, Blatt-Mass, Wurzeln) und emitTree (Wuchs, Wurzeln, Rinde, Krone).
+// Welt (`buildInstance`) — welches REZEPT die Stufe faehrt; was Strauch-Nah- und -Mittel-Stufe trennt, ist ihre Holz-Zeile
+// budget.shrub[Stufe]. Das Gesetz wohnt seit K24 EINMAL in phyto-core (`stufenRezept`, gelesen auch von `treeParams`);
+// dieser Name bleibt der Delegat fuer emitTree (Wuchs, Wurzeln, Rinde, Krone). Fail-closed: ohne Gesetzbuch kein Rezept.
 function stufenRezept(kind, stufe) {
-    return kind === "shrub" && stufe === 0 ? 1 : stufe;
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.stufenRezept !== "function")
+        throw new Error("phyto-core fehlt — das Stufen-Rezept wohnt im Gesetzbuch (Ladereihenfolge)");
+    return core.stufenRezept(kind, stufe);
 }
 // Der Baum- und Strauch-Bau: die Bau-Stufe `__lod` wird fuer den ganzen Bau zum Rezept (Wuchs, Wurzeln und Rinde lesen
 // `__lod`), die Stufe selbst reist als Zeile mit; danach steht `__lod` wieder auf der Stufe (der Labor-Knopf bleibt).
@@ -4170,133 +4172,36 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
-        fx: {
-            barkType: "oak",
-            height: 6.2,
-            conifer: false,
-            barkA: 0x3a2c1e,
-            barkB: 0x6a5a44,
-            leafCol: 0x4a7a2c,
-            leafShape: "oak",
-            maxDepth: 9,
-            windGain: 0.9,
-            roots: 5,
-            flare: 0.18,
-        },
     },
     fichte: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7 },
-        fx: {
-            barkType: "conifer",
-            height: 7.6,
-            conifer: true,
-            barkA: 0x4a2c1a,
-            barkB: 0x6a4a30,
-            leafCol: 0x2e5526,
-            leafShape: "lance",
-            maxDepth: 9,
-            windGain: 0.5,
-            coniferDroop: 0.22,
-            roots: 4,
-            flare: 0.12,
-        },
     },
     birke: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42 },
-        fx: {
-            barkType: "birch",
-            height: 6.4,
-            conifer: false,
-            barkA: 0xe6e6dc,
-            barkB: 0xf2f2ea,
-            leafCol: 0x8ab84a,
-            leafShape: "ovate",
-            maxDepth: 10,
-            windGain: 1.2,
-            roots: 3,
-            flare: 0.1,
-        },
     },
     weide: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.55, trop: 0.9, leaf: 0.8 },
-        fx: {
-            barkType: "willow",
-            height: 5.8,
-            conifer: false,
-            barkA: 0x4a3a26,
-            barkB: 0x6a5a3e,
-            leafCol: 0x7aa83a,
-            leafShape: "lance",
-            maxDepth: 10,
-            windGain: 1.6,
-            roots: 5,
-            flare: 0.15,
-        },
     },
     mammut: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.95, delta: 2.35, slim: 0.18, trop: 0.05, leaf: 0.88 },
-        fx: {
-            barkType: "sequoia",
-            height: 15.0,
-            conifer: true,
-            coniferDroop: 0.1,
-            crownBase: 0.38,
-            flare: 0.8,
-            roots: 7,
-            barkA: 0x7a3b22,
-            barkB: 0x9a5a38,
-            leafCol: 0x3a5a30,
-            leafShape: "lance",
-            maxDepth: 10,
-            windGain: 0.4,
-        },
     },
     tanne: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78 },
-        fx: {
-            barkType: "conifer",
-            height: 8.6,
-            conifer: true,
-            coniferDroop: -0.05,
-            crownBase: 0.12,
-            flare: 0.22,
-            roots: 4,
-            barkA: 0x4a3a2a,
-            barkB: 0x6a5a42,
-            leafCol: 0x2e5a30,
-            leafShape: "lance",
-            maxDepth: 9,
-            windGain: 0.5,
-        },
     },
     strauch: {
         kind: "shrub",
         panel: "plant",
         s: { api: 0.1, delta: 2.4, slim: 0.3, trop: -0.05, leaf: 0.8 },
-        fx: {
-            barkType: "smooth",
-            height: 2.1,
-            conifer: false,
-            basalStems: 5,
-            barkA: 0x3a2c1e,
-            barkB: 0x5a4a34,
-            leafCol: 0x4a7a2c,
-            leafShape: "ovate",
-            maxDepth: 7,
-            windGain: 1.1,
-            roots: 4,
-            flare: 0.1,
-        },
     },
     blume: {
         kind: "flower",
@@ -4552,15 +4457,7 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.4, delta: 2.25, slim: 0.6, trop: 0.05, leaf: 0.75 },
-        fx: {
-            barkType: "smooth",
-            conifer: false,
-            leafShape: "ovate",
-            barkA: 0x6c6a62,
-            barkB: 0x8e8a80,
-            leafCol: 0x4c7d2a,
-            place: { mode: "none" },
-        },
+        fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
         ph: {
             barkType: "smooth",
             barkA: 0x6c6a62,
@@ -4576,15 +4473,7 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.28, delta: 2.4, slim: 0.14, trop: -0.4, leaf: 0.36 },
-        fx: {
-            barkType: "oak",
-            conifer: false,
-            leafShape: "oak",
-            barkA: 0x3b3128,
-            barkB: 0x5f5444,
-            leafCol: 0x3e6626,
-            place: { mode: "none" },
-        },
+        fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
         ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444 },
     },
     // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
@@ -4592,20 +4481,10 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
-        fx: { barkType: "oak", conifer: false, barkA: 0x46423a, barkB: 0x6e685c, place: { mode: "none" } },
+        fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
         ph: { tot: 1, barkA: 0x46423a, barkB: 0x6e685c },
     },
 };
-
-// ULTRAGUSS U2 — DER PHÄNOTYP-ZWILLING IST TOT: das Gesetz wohnt EINMAL in
-// phyto-core (treePhenotype); dieser Name bleibt als Delegat für alle Leser
-// (Studio + Foundry-Worker). Fail-closed: ohne Gesetzbuch kein Phänotyp.
-function phenotype(api, slim, trop, delta, leaf) {
-    const core = typeof self !== "undefined" && self.__phytoCore;
-    if (!core || typeof core.treePhenotype !== "function")
-        throw new Error("phyto-core fehlt — der Phänotyp wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treePhenotype(api, slim, trop, delta, leaf);
-}
 
 function deriveParamsPlant(pre) {
     const _D = __dials;
@@ -4650,58 +4529,13 @@ function deriveParamsPlant(pre) {
         }; // Belaubung -> Aehren/Rispen, Gravitropismus -> Fontaene
     }
     if (WALDBODEN_EMIT[pre.kind]) return deriveParamsWaldboden(pre, { api, delta, slim, trop, leaf }, IR, J, O);
-    // tree / shrub — phaenotypische Variation um den Genotyp (Slider) + LOD
-    // Die Phänotyp-Zeilen einer Art (`pre.ph`, 04.10.): was das Gesetz aus den Reglern ableitet, kann die Art
-    // benennen — die Buche ihre glatte graue Rinde und das ganzrandige Blatt, der Karst-Baum seinen Wurzelanlauf,
-    // das Totholz seine vergraute Borke. Ohne Zeile byte-gleich.
-    const ph = pre.ph ? Object.assign(phenotype(api, slim, trop, delta, leaf), pre.ph) : phenotype(api, slim, trop, delta, leaf);
-    // Das Rezept der Bau-Stufe (`stufenRezept`, dieselbe Abbildung wie emitTree): Blatt-Stride, Blatt-Mass und Wurzeln.
-    const rezept = stufenRezept(ph.kind, __lod);
-    const lf = rezept === 0 ? 1 : rezept === 1 ? (fx && fx.conifer ? 0.0265 : 0.21) : 0.16,
-        ls =
-            rezept === 0
-                ? 1
-                : rezept === 1
-                  ? fx && fx.conifer
-                      ? 1.62
-                      : 2.05
-                  : 4.0; /* FIX v29: AGGREGATION statt Ausduennung (SpeedTree/FarCry-Prinzip): Wahrnehmung ~ n*s^2. Vorher L1: 0.34*1.35^2=0.62 -> Mittelfeld-Kronen 38% LOECHRIGER als L0 (und trotzdem teuer). Jetzt Laub: 0.21*2.05^2=0.88, Nadel: 0.36*1.62^2=0.94 -> VOLLERE Kronen bei ~35% weniger Blatt-Dreiecken. Nahfeld (L0) bleibt unangetastet — dort sitzt die Wahrnehmung. */
-    const lc0 = new THREE.Color(ph.leafCol);
-    lc0.offsetHSL((IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
-    const lcol = lc0.getHex();
-    const P = {
-        kind: ph.kind,
-        apical: clamp(api + O(0.1), 0, 1),
-        delta: delta + O(0.1),
-        slim: clamp(slim + O(0.1), 0, 1),
-        trop: trop + O(0.1),
-        leafD: clamp(leaf * J(0.16), 0.05, 1),
-        _lf: lf /* FIX v35: lf NICHT mehr im Wachstum (sonst andere rnd()-Zugzahl je LOD -> Stromdivergenz) — Ausduennung passiert als Index-Stride NACH dem Wachstum */,
-        height: ph.height * J(0.16),
-        conifer: ph.conifer,
-        coniferDroop: ph.coniferDroop,
-        crownBase: ph.crownBase,
-        flare: ph.flare,
-        roots: ph.roots * (rezept === 0 ? 1 : rezept === 1 ? 0.8 : 0.6),
-        basalStems: ph.basalStems,
-        maxDepth: ph.kind === "shrub" && rezept === 2 ? 3 : Math.max(4, ph.maxDepth),
-        /* FIX v35: KEINE Tiefenreduktion je LOD mehr — die kappte den Rekursionsbaum frueher und verschob damit den Zufallsstrom: gleicher Same, ANDERER Stamm. Skelett waechst immer voll; Detail nimmt die Dezimierung (Radius-Prune + Stride), nie der Zufall. */ barkA: ph.barkA,
-        barkB: ph.barkB,
-        leafCol: lcol,
-        leafShape: ph.leafShape,
-        leafSize: lerp(0.22, 0.6, leaf) * (ph.conifer ? 0.6 : 1) * J(0.12) * ls,
-        windGain: ph.windGain,
-        barkType: ph.barkType,
-        _bphase: IR() * 6.2831,
-    };
-    // Totholz (stehend): die Bruch-Höhe ist ein Wurf des Individuums (nach allen anderen — jeder lebende Baum
-    // zieht byte-gleich), die Krone der Fernform ist kahl.
-    if (ph.tot) {
-        P.tot = 1;
-        P.totBruch = 0.42 + IR() * 0.26;
-        P.crown = "kahl";
-    }
-    return P;
+    // tree / shrub — DIE EINE ABLEITUNG (K24): der Baum-Zweig ist das Gesetz `treeParams` (phyto-core) — Regler, Saat,
+    // Bau-Stufe und die Phänotyp-Zeile der Art (`pre.ph`). Hier lebt keine eigene Ableitung mehr (der Zwilling setzte
+    // keinen Quirl-Abstand und trug eine eigene Stufen-Tafel). Fail-closed: ohne Gesetzbuch kein Baum.
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.treeParams !== "function")
+        throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
