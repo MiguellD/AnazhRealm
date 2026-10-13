@@ -25,6 +25,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -741,16 +742,19 @@ function ninja(arg) {
     return out;
 }
 
+// KAMERA_LAUB_STAMM: der Stamm-Text des Vorher (eine Stamm-Datei oder ein Baum, scripts/lib/stamm.cjs), ausgeliefert in
+// der Form dieses Baums (`liefere`: die Datei, die die Zeile trägt)
+const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
     if (p === "/") p = "/index.html";
-    const fp =
-        STAMM && p === "/anazhRealm.js"
-            ? STAMM
-            : STUDIO && p === "/worlds/koerperstudio/koerperstudio.js"
-              ? STUDIO
-              : path.join(root, p);
-    if (fp !== STAMM && fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
+    const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
+    if (vorher) {
+        res.setHeader("Content-Type", mime[".js"]);
+        return res.end(vorher);
+    }
+    const fp = STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? STUDIO : path.join(root, p);
+    if (fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
         res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
@@ -1088,7 +1092,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(STAMM || path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = STAMM_TEXT || stammLib.text(root);
     const studioQuelle = fs.readFileSync(STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");

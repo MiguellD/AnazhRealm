@@ -507,7 +507,7 @@ async function probe(argW) {
         n = 0;
         Math.random = function () {
             const rufer = (new Error().stack || "").split("\n")[2] || "";
-            if (/anazhRealm\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
+            if (/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
             return orig();
         };
         try {

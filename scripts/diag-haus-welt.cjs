@@ -42,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.HAUS_WELT_PORT || 4486);
 const ROOT = path.resolve(__dirname, "..");
@@ -127,6 +128,8 @@ const BASIS = {
 let patch = null;
 let patchFehler = [];
 let patchAngewandt = new Set();
+const patchZiel = (z) =>
+    z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
@@ -135,9 +138,10 @@ const server = http.createServer((req, res) => {
     if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
-        // eine Patch-Zeile [geheilt, basis] gilt anazhRealm.js, [datei, geheilt, basis] der genannten Datei (das Gesetzbuch
-        // reist über den Foundry-Worker: /fachwerk-core.js)
-        const meine = patch ? patch.map((z) => (z.length === 3 ? z : ["/anazhRealm.js", z[0], z[1]])).filter((z) => z[0] === p) : [];
+        // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs
+        // `dateiMit`; trägt sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der
+        // genannten Datei (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
+        const meine = patch ? patch.map(patchZiel).filter((z) => z[0] === p) : [];
         if (meine.length) {
             let txt = data.toString("utf8");
             for (const [, geheilt, basis] of meine) {
@@ -1145,7 +1149,7 @@ function zeile(o) {
             const o = await page.evaluate(proben, phasen || null);
             await kontext.close();
             for (const z of patch || []) {
-                const [d, g] = z.length === 3 ? z : ["/anazhRealm.js", z[0]];
+                const [d, g] = patchZiel(z);
                 if (!patchAngewandt.has(d + "|" + g)) patchFehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
             }
             patch = null;

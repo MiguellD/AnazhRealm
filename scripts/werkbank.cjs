@@ -173,6 +173,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
@@ -1263,10 +1264,8 @@ async function starte() {
                 }
                 if (req.url === "/methode") {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
-                    const quelle = fs.readFileSync(
-                        b.quelle ? path.resolve(b.quelle) : path.join(root, "anazhRealm.js"),
-                        "utf8"
-                    );
+                    // die Quelle ist eine Stamm-Datei oder ein Baum (scripts/lib/stamm.cjs: beide Formen, laut)
+                    const quelle = stammLib.text(b.quelle ? path.resolve(b.quelle) : root);
                     const src = methodeAusQuelle(quelle, b.name);
                     if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
                     const o = await page.evaluate(

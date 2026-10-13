@@ -1116,7 +1116,8 @@ function validateManifest(m) {
             const wk = fs.readFileSync(path.join(root, "voxel-worker.js"), "utf8");
             const ix = fs.readFileSync(path.join(root, "index.html"), "utf8");
             const gTag = ix.indexOf('<script src="gelaende-core.js?v=');
-            const sTag = ix.indexOf('<script src="anazhRealm.js?v=');
+            // der ERSTE Stamm-Tag (scripts/lib/stamm.cjs: die Liste, wie index.html sie lädt)
+            const sTag = ix.indexOf('<script src="' + stammLib.dateien(root)[0] + "?v=");
             check(
                 "KONSUM: gelaende steht in GESETZ_KERNE und im Manifest (§9), voxel-worker und index.html laden gelaende-core.js",
                 !!src &&

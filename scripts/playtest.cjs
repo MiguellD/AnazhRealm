@@ -30994,10 +30994,11 @@ async function checkBandV18177AAA(ctx) {
         out.aoStrength = aer.aoStrength;
         out.aoCap = aer.aoCap;
         out.frozen = Object.isFrozen(aer);
-        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse; __codeOf strippt die
-        // Kommentare (sie dürfen das Wort zitieren), gesucht wird die echte Method-Definition.
-        const srcNoComments = window.__codeOf(A);
-        out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
+        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse — gelesen am lebenden Deskriptor,
+        // nie am Klassen-Text (der trüge nach dem Stamm-Schnitt nur den Kern): ein statischer Getter machte AERIAL zum
+        // Accessor, und die §26-Zuweisung liefe im sloppy-Skript still ins Leere.
+        const dAerial = Object.getOwnPropertyDescriptor(A, "AERIAL") || {};
+        out.noGetterShadow = "value" in dAerial && !dAerial.get;
         return out;
     });
     check(
@@ -34240,9 +34241,10 @@ async function checkBandV18201ManaKonsum(ctx) {
             out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
 
             // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
-            const dslOpsSrc = window.__codeOf(r.constructor).substring(0, 100000);
-            // grobe Probe: kein "drain_mana" oder "consume_mana" als DSL-Op-Key
-            out.noDslDrainMana = !/\bdrain_mana\s*:\s*\(/.test(dslOpsSrc) && !/\bconsume_mana\s*:\s*\(/.test(dslOpsSrc);
+            // die lebende Op-Tafel (nie der Klassen-Text: nach dem Stamm-Schnitt trüge er nur den Kern): kein
+            // "drain_mana" oder "consume_mana" als DSL-Op-Key
+            const dslOps = r.dslEffects || {};
+            out.noDslDrainMana = Object.keys(dslOps).length > 0 && !("drain_mana" in dslOps) && !("consume_mana" in dslOps);
 
             // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
             if (r.setGameMode) r.setGameMode("pfad");
@@ -46971,7 +46973,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     void errors;
     void finalState;
     // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
-    const v840Results = await safeEvaluate(page, () => {
+    const v840Results = await safeEvaluate(page, (stammDateien) => {
         const r = window.anazhRealm;
         const out = {};
         const ring = document.getElementById("slider-ring");
@@ -47004,21 +47006,20 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
         out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
 
-        // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
-        const appScript = [...document.querySelectorAll("script")].find((s) =>
-            (s.getAttribute("src") || "").includes("anazhRealm.js")
-        );
-        out.cacheBust = !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
+        // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
+        const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
+        const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
+        out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
 
         return out;
-    });
+    }, stammLib.dateien(path.join(__dirname, "..")));
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("V8.40 → V18.530: kein Fog-Regler-Setter mehr", v840Results.fogTripleRange);
         check("V8.40 → V18.530: kein persistiertes fogDistance mehr", v840Results.fogDefault3);
         check("V8.40 → V18.530: keine Fog-Slider-Verdrahtung mehr", v840Results.fogHandlerTriples);
-        check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
+        check("V8.41: jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
     } else {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }

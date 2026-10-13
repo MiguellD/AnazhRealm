@@ -29,9 +29,9 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
-const SOURCE_JS = path.join(ROOT, "anazhRealm.js");
 const INDEX_HTML = path.join(ROOT, "index.html");
 
 let failures = [];
@@ -97,7 +97,7 @@ function auditCssVariables() {
 // ============================================================
 function auditSoftDefaults() {
     console.log("\n=== Soft-Default-Audit ===");
-    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    const src = stammLib.text(ROOT);
     const checks = [
         {
             literal: "Grok",
@@ -198,7 +198,7 @@ async function auditStateAndMethods() {
             fail("STATE", "window.anazhRealm.state nicht erreichbar");
         } else {
             // Source-Code scannen für this.state.X.Y.Z reads
-            const src = fs.readFileSync(SOURCE_JS, "utf8");
+            const src = stammLib.text(ROOT);
             // Regex für `this.state.X.Y.Z` (max 3 Ebenen, nur einfache Identifier)
             const re = /this\.state\.([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){0,2})/g;
             const usedPaths = new Set();
@@ -685,7 +685,7 @@ async function auditStateAndMethods() {
 //      (klang:UMWELT — die Stimme folgt dem Körper, tierRuf).
 function auditAtmosphereHardcode() {
     console.log("\n=== Atmosphäre-Hardcode-Audit ===");
-    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    const src = stammLib.text(ROOT);
     // Methode-Block extrahieren: von `[ATMOSPHERE]`-Kommentar bis zur
     // nächsten Methode (Zeile beginnt mit 4-Space + identifier(args).
     const lines = src.split("\n");

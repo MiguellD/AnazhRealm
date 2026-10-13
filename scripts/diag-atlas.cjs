@@ -13,11 +13,14 @@
 // Drift-Check erzwingt: gleiche IDs, gleiche Ordnung, gleiche Namen — ein
 // neuer/verschobener Abschnitt OHNE Registry-Pflege wird rot. Zeilen-Nummern
 // leben NIE in der Registry (sie rotten) — diese Karte druckt sie LIVE.
-const fs = require("fs");
 const path = require("path");
-const STAMM = path.resolve(__dirname, "..", "anazhRealm.js");
+const stammLib = require("./lib/stamm.cjs");
+const ROOT = path.resolve(__dirname, "..");
+// der virtuelle Stamm (scripts/lib/stamm.cjs) und sein Name: die eine Datei oder die Zonen-Dateien
+const DATEIEN = stammLib.dateien(ROOT);
+const STAMM_NAME = DATEIEN.length === 1 ? DATEIEN[0] : `${DATEIEN.length} Dateien unter ${stammLib.DIR}/`;
 
-const src = fs.readFileSync(STAMM, "utf8");
+const src = stammLib.text(ROOT);
 const lines = src.split("\n");
 
 const MARKER_RX = /^\s*\/\/ ===== ATLAS §(\d+) · ([^—]+) — (.+?) =====\s*$/;
@@ -100,7 +103,7 @@ if (findIdx >= 0) {
     process.exit(0);
 }
 
-console.log(`STAMM-ATLAS — ${path.basename(STAMM)} (${lines.length} Zeilen, ${zonen.length} Zonen)\n`);
+console.log(`STAMM-ATLAS — ${STAMM_NAME} (${lines.length} Zeilen, ${zonen.length} Zonen)\n`);
 for (const z of zonen) {
     console.log(
         `  §${z.id}  ${z.name.padEnd(28)} ${String(z.line).padStart(6)}–${String(z.ende).padEnd(6)} ` +

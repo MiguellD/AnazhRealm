@@ -28,11 +28,14 @@ const path = require("path");
 const acorn = require("acorn");
 
 const ROOT = path.resolve(__dirname, "..");
-const FILE = path.join(ROOT, "anazhRealm.js");
+const stammLib = require("./lib/stamm.cjs");
+// der virtuelle Stamm (scripts/lib/stamm.cjs) und sein Name: die eine Datei oder die Zonen-Dateien
+const DATEIEN = stammLib.dateien(ROOT);
+const STAMM_NAME = DATEIEN.length === 1 ? DATEIEN[0] : `${DATEIEN.length} Dateien unter ${stammLib.DIR}/`;
 const args = process.argv.slice(2);
 const TOP = args.indexOf("--top") >= 0 ? parseInt(args[args.indexOf("--top") + 1], 10) : 15;
 
-const src = fs.readFileSync(FILE, "utf8");
+const src = stammLib.text(ROOT);
 const lines = src.split("\n");
 
 // ── Zonen-Tabelle aus den ATLAS-§-Markern (dieselbe Wahrheit wie diag-atlas) ──
@@ -147,7 +150,7 @@ for (const m of methods) {
 // ── Bericht ───────────────────────────────────────────────────────────────
 const pct = (x) => (x * 100).toFixed(0) + "%";
 console.log(
-    `STRUKTUR-LINSE — anazhRealm.js (${lines.length} Zeilen, ${methods.length} Methoden, ${zones.length} Zonen)\n`
+    `STRUKTUR-LINSE — ${STAMM_NAME} (${lines.length} Zeilen, ${methods.length} Methoden, ${zones.length} Zonen)\n`
 );
 
 console.log("── ZONEN-KOHÄSION (intra / (intra+cross) der this.*-Referenzen) ──");

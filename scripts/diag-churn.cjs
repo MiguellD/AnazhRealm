@@ -31,6 +31,7 @@ const os = require("os");
 const path = require("path");
 const { spawn } = require("child_process");
 const readline = require("readline");
+const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const args = process.argv.slice(2);
@@ -40,7 +41,8 @@ const MAXC = args.indexOf("--max-commits") >= 0 ? parseInt(args[args.indexOf("--
 
 // xfuncname über eine temporäre attributesFile — der Repo bleibt unberührt.
 const attrs = path.join(os.tmpdir(), `anazh-attrs-${process.pid}`);
-fs.writeFileSync(attrs, "anazhRealm.js diff=anazh\n");
+// der Stamm über den Schnitt hinweg: die eine Datei (Chronik bis zum Umzug) und die Zonen-Dateien danach
+fs.writeFileSync(attrs, `${stammLib.ALT} diff=anazh\n${stammLib.DIR}/*.js diff=anazh\n`);
 const gitArgs = [
     "-c",
     `core.attributesFile=${attrs}`,
@@ -59,7 +61,7 @@ const gitArgs = [
     "-U0",
 ];
 if (MAXC > 0) gitArgs.push("-n", String(MAXC));
-gitArgs.push("--", "anazhRealm.js");
+gitArgs.push("--", stammLib.ALT, `${stammLib.DIR}/`);
 
 // Aktueller Stamm als Join-Ziel (Zone/Länge/Komplexität pro Methode).
 let current = new Map();
@@ -216,7 +218,7 @@ function report() {
         });
     const outside = methodStats.get("(außerhalb von Methoden)");
     console.log(
-        `VERHALTENS-LINSE — anazhRealm.js: ${commitCount} Commits ausgewertet · ${rows.length} Methoden-Namen berührt · Fenster „jung" = ${DAYS} Tage (neuester Commit ${newestDate})\n`
+        `VERHALTENS-LINSE — der Stamm: ${commitCount} Commits ausgewertet · ${rows.length} Methoden-Namen berührt · Fenster „jung" = ${DAYS} Tage (neuester Commit ${newestDate})\n`
     );
 
     console.log(`── HOTSPOTS TOP ${TOP} (Commits × aktuelle Komplexität — das Risiko wohnt hier) ──`);

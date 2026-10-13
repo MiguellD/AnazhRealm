@@ -680,7 +680,7 @@ function makeRealmA(env, initSrcOverride) {
         check(
             "D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)",
             t.fremd.length === 0,
-            t.fremd.length ? `anazhRealm.js Zeile ${t.fremd.join(", ")}` : ""
+            t.fremd.length ? t.fremd.map((z) => stammLib.ort(root, z)).join(", ") : ""
         );
         const smokes = ["smoke-copresence.cjs", "smoke-lockstep.cjs", "smoke-webrtc.cjs"].filter((f) =>
             /p2p\.enabled\s*=\s*true/.test(fs.readFileSync(path.join(root, "scripts", f), "utf8"))

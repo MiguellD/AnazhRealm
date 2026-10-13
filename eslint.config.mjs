@@ -1,11 +1,18 @@
 // ESLint Flat-Config für AnazhRealm.
-// anazhRealm.js läuft im Browser und nutzt CDN-Globale; save-server.js ist Node.
+// Der Stamm läuft im Browser und nutzt CDN-Globale; save-server.js ist Node.
 import js from "@eslint/js";
+import { createRequire } from "module";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+// die Stamm-Dateien aus der EINEN Liste (scripts/lib/stamm.cjs: die eine Datei, nach dem Schnitt stamm/NN.js)
+const stammLib = createRequire(import.meta.url)("./scripts/lib/stamm.cjs");
+const STAMM = stammLib.dateien(dirname(fileURLToPath(import.meta.url)));
 
 export default [
     js.configs.recommended,
     {
-        files: ["anazhRealm.js"],
+        files: STAMM,
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",

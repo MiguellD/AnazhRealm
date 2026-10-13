@@ -431,7 +431,7 @@ async function messen(h, opts) {
 // erste Stufe und die NUR-WURF-Stufe ohne ov und an jedem Regler-Rand (min, max) über die echte Brücke und richtet: die
 // Regel wirft nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am
 // Regler-Rand richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
-const STAMM_PFAD = path.join(ROOT, "anazhRealm.js");
+const stammLib = require("./lib/stamm.cjs");
 function statischeMethode(src, kopf, args) {
     const i = src.indexOf(kopf);
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);
@@ -445,7 +445,7 @@ function statischeMethode(src, kopf, args) {
     return { rumpf: src.slice(j + 1, k), fn: new Function(...args, src.slice(j + 1, k)) };
 }
 function stammRegel(src) {
-    const s = src || fs.readFileSync(STAMM_PFAD, "utf8");
+    const s = src || stammLib.text(ROOT);
     return {
         teilWirft: statischeMethode(s, "static _teilWirft(m) {", ["m"]).fn,
         vonBilligerer: statischeMethode(s, "static _wurfVonBilligerer(eigen, zwilling) {", ["eigen", "zwilling"]).fn,
@@ -691,7 +691,7 @@ async function selbsttest() {
     await runWithWorker(PORT, async (h) => {
         wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
     });
-    const quelle = fs.readFileSync(STAMM_PFAD, "utf8");
+    const quelle = stammLib.text(ROOT);
     const taeterQ = quelle.replace('return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
     const wTaeter = taeterQ !== quelle ? wurfRichten(wHeil.zeilen, stammRegel(taeterQ)) : [];
     const rotHeil = wurfUrteil(wHeil.zeilen);

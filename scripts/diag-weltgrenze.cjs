@@ -368,7 +368,7 @@ function absenz() {
         zeilen.forEach((z, i) => {
             if (!re.test(z) || /^\s*\/\//.test(z)) return;
             const m = methodeAn(i);
-            if (!erlaubt.includes(m)) out.push(`${was}: ${m} (anazhRealm.js:${i + 1})`);
+            if (!erlaubt.includes(m)) out.push(`${was}: ${m} (${stammLib.ort(root, i + 1)})`);
         });
     pruefe(
         /localStorage\.setItem\(this\.worldStorageKey\(/,

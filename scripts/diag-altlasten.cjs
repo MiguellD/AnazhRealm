@@ -1275,6 +1275,9 @@ function checkSoulKeys() {
     return errs;
 }
 
+// Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
+const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
 const ZWILLINGE = [
@@ -1287,109 +1290,109 @@ const ZWILLINGE = [
     {
         fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", "anazhRealm.js"],
+        verboten: ["foundry-core.js", ...STAMM],
         fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
     },
     {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", "anazhRealm.js"],
+        verboten: ["foundry-core.js", ...STAMM],
         fiel: "U2b (V18.467) — das Rinden-Gesetz (barkProfile/buildTubeGesetz) wohnt im Pflanzen-Gesetzbuch, foundry-core delegiert",
     },
     {
         fingerprint: "Math.pow(size / 2.4, 0.67)",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
     },
     {
         fingerprint: "Math.sin(phases[j] - phases[i])",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
     },
     {
         fingerprint: "0.818 * H",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die 6-KH-Loomis-Proportionen wohnen im Gesetzbuch (labProportionen)",
     },
     {
         fingerprint: "(0.62 + p.tone * 0.53) * (1 - p.age * 0.35)",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
         fingerprint: "reg('glute'+(sd===1?'1':'-1')",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
     },
     {
         fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
     },
     {
         fingerprint: "mahagoni:{hex:0x5f3826",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
     },
     {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
     },
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
         fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js", "foundry-core.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM, "foundry-core.js"],
         fiel: "V18.463 — die Hüllen-Maschine (Voxel-Ops + Surface-Nets) wohnt im Gesetzbuch; Shell UND Bäcker LESEN",
     },
     {
         fingerprint: "burgundy:{hex:0x5a2530",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
     },
     {
         fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die distale Klingen-Verjüngung (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "Math.pow(w / 0.4, 2)",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die Hohlkehle des Wirts-Schnitts (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "bladeLen: 1.45",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
     // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
@@ -1433,9 +1436,17 @@ const ZWILLINGE = [
 // selbst als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
+    // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
     const wurzel = fs
         .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && f !== "feld-wgsl.js");
+        .filter(
+            (f) =>
+                /\.(?:c|m)?js$/.test(f) &&
+                f !== "gelaende-core.js" &&
+                f !== "feld-wgsl.js" &&
+                !stammLib.istStammDatei(f)
+        )
+        .concat(STAMM);
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))
@@ -1731,7 +1742,7 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
         const b = besitzer[f.methode];
         if (b && b.arten.includes(f.art)) continue;
         errs.push(
-            `Entsorgungs-Wand: anazhRealm.js:${f.zeile} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
+            `Entsorgungs-Wand: ${stammLib.ort(path.join(__dirname, ".."), f.zeile)} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
                 `Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\`, eigene frische Objekte ` +
                 `nur ihr Besitzer (ENTSORGUNG_BESITZER)`
         );
@@ -1790,7 +1801,7 @@ function scanNormalWand(srcRoh) {
     let m;
     while ((m = re.exec(code)))
         errs.push(
-            `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} dreht die Normale mit der ` +
+            `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} dreht die Normale mit der ` +
                 `transponierten Matrix (n.transformDirection(M) = Mᵀ·n) — Welt → Sicht ist M.transformDirection(n)`
         );
     // DIE QUELLE (V18.532): ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
@@ -1823,7 +1834,7 @@ function scanNormalWand(srcRoh) {
         }
         if (treffer)
             errs.push(
-                `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} — der normalNode-Graph liest ` +
+                `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} — der normalNode-Graph liest ` +
                     `r184s \`normalWorld\` (${treffer}); die Geometrie-Normale ist \`normalWorldGeometry\` × \`faceDirection\``
             );
     }
@@ -1947,6 +1958,68 @@ function linsenDateien(root) {
         .map((f) => path.join(d, f));
 }
 
+// DIE STAMM-LESER-WAND (Stamm-Zerlegung, plan 13.10. §7.5): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
+// Literal, das die Datei nennt („anazhRealm.js", „/anazhRealm.js", „http://…/anazhRealm.js", mit ?v=) — nur in
+// scripts/lib/stamm.cjs. Jeder andere Leser liest den Stamm über die EINE Schnittstelle (stammLib.text · dateien · liefere
+// · dateiMit · ort): ein Leser am Namen vorbei sähe nach dem Schnitt nur den Kern (vakuum-grün) oder bräche erst im
+// Fenster. Kommentare und Meldungen („anazhRealm.js: … fehlt") dürfen den Namen tragen; gezählt wird je Literal-Token.
+const STAMM_NAME_RX = new RegExp(
+    "^(?:\\.{0,2}/|https?://[^/]*/)?" + stammLib.ALT.replace(/\./g, "\\.") + "(?:\\?[^\"'`]*)?$"
+);
+function stammLeserDateien(root) {
+    const aus = [];
+    for (const f of fs.readdirSync(root))
+        if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
+    const geh = (d) => {
+        for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {
+            const rel = d + "/" + e.name;
+            if (e.isDirectory()) geh(rel);
+            else if (/\.(?:c|m)?js$/.test(e.name) && rel !== "scripts/lib/stamm.cjs") aus.push(rel);
+        }
+    };
+    geh("scripts");
+    return aus;
+}
+function scanStammLeser(root, ersatz = {}) {
+    const acorn = require("acorn");
+    const errs = [];
+    const dateien = stammLeserDateien(root).concat(Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f))));
+    for (const rel of dateien) {
+        const src = rel in ersatz ? ersatz[rel] : fs.readFileSync(path.join(root, rel), "utf8");
+        if (!src.includes(stammLib.ALT)) continue;
+        let toks = null;
+        for (const sourceType of ["script", "module"])
+            try {
+                toks = [
+                    ...acorn.tokenizer(src, {
+                        ecmaVersion: "latest",
+                        sourceType,
+                        locations: true,
+                        allowHashBang: true,
+                        allowReturnOutsideFunction: true,
+                    }),
+                ];
+                break;
+            } catch {
+                toks = null;
+            }
+        if (!toks) {
+            errs.push(`Stamm-Leser-Wand: ${rel} ist für acorn unlesbar — die Wand sähe ihre Leser nicht`);
+            continue;
+        }
+        for (const t of toks)
+            if (
+                (t.type === acorn.tokTypes.string || t.type === acorn.tokTypes.template) &&
+                STAMM_NAME_RX.test(String(t.value))
+            )
+                errs.push(
+                    `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} nennt ${JSON.stringify(t.value)} als Lese-Ziel — der Stamm ` +
+                        `liest sich über scripts/lib/stamm.cjs (stammLib.text · dateien · liefere · dateiMit · ort)`
+                );
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
@@ -1954,7 +2027,7 @@ function main() {
     // mit drin: der trilineare Brick-March (feldTriAbtast/feldTriGrad, V18.528) fiel dort (Integration W0 — die
     // Band-Wand trug dieselbe Liste ein zweites Mal, die Rückkehr-Wand ist die EINE).
     const files = [
-        "anazhRealm.js",
+        ...STAMM,
         "voxel-worker.js",
         "index.html",
         "signaling-server.js",
@@ -2230,10 +2303,10 @@ function main() {
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
         const zwillingFeuert =
             feuert("voxel-worker.js", cont0, "kontinentale Basis") &&
-            feuert("anazhRealm.js", maske, "Massiv-Maske") &&
+            feuert(STAMM[0], maske, "Massiv-Maske") &&
             feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
             still("voxel-worker.js", cont0) &&
-            still("anazhRealm.js", maske);
+            still(STAMM[0], maske);
         console.log(
             zwillingFeuert
                 ? "✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"

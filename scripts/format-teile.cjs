@@ -281,7 +281,8 @@ function fixture() {
 async function selbsttest() {
     const prettier = require("prettier");
     const optionen = {
-        ...((await prettier.resolveConfig(path.join(__dirname, "..", "anazhRealm.js"))) || {}),
+        // die Konfiguration der Wurzel (für jede Datei dort dieselbe; der Stamm ist nach dem Schnitt keine Wurzel-Datei mehr)
+        ...((await prettier.resolveConfig(path.join(__dirname, "..", "package.json"))) || {}),
         filepath: "f.js",
     };
     const ganz = async (t) => {

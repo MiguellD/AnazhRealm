@@ -42,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
@@ -110,6 +111,20 @@ const BASIS = {
 };
 let patch = null;
 let patchFehler = [];
+// Der Patch wirkt auf den virtuellen Stamm (scripts/lib/stamm.cjs) — EINMAL je Patch-Satz; ausgeliefert wird je Stamm-
+// Datei ihr Teil (`liefere`), so trifft jede Zeile die Datei, die sie trägt.
+let gepatcht = { patch: null, text: null };
+function stammGepatcht() {
+    if (gepatcht.patch !== patch) {
+        let txt = stammLib.text(ROOT);
+        for (const [geheilt, basis] of patch) {
+            if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
+            else txt = txt.replace(geheilt, basis);
+        }
+        gepatcht = { patch, text: txt };
+    }
+    return gepatcht.text;
+}
 
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
@@ -118,14 +133,7 @@ const server = http.createServer((req, res) => {
     if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
-        if (patch && p === "/anazhRealm.js") {
-            let txt = data.toString("utf8");
-            for (const [geheilt, basis] of patch) {
-                if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
-                else txt = txt.replace(geheilt, basis);
-            }
-            data = Buffer.from(txt, "utf8");
-        }
+        if (patch && stammLib.istStammUrl(ROOT, p)) data = stammLib.liefere(ROOT, p, stammGepatcht());
         res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
         res.end(data);
     });
@@ -991,6 +999,7 @@ function zeile(o) {
         const lauf = async (inj) => {
             patch = inj && BASIS[inj] ? BASIS[inj] : null;
             patchFehler = [];
+            gepatcht = { patch: null, text: null }; // je Lauf neu gepatcht (die Fehl-Zeilen zählen je Lauf)
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();

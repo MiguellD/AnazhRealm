@@ -293,6 +293,14 @@ function dateiVon(root, methode) {
     return null;
 }
 
+// Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
+// Pfad; keine → null; mehrere → wirft (der Patch wäre mehrdeutig).
+function dateiMit(root, stelle) {
+    const mit = dateien(root).filter((p) => fs.readFileSync(path.join(root, p), "utf8").includes(stelle));
+    if (mit.length > 1) throw new Error(`dateiMit: ${mit.join(", ")} tragen „${String(stelle).slice(0, 60)}"`);
+    return mit[0] || null;
+}
+
 const istStammDatei = (rel) => rel === ALT || ZONEN_DATEI_RX.test(rel);
 
 // Ist die URL (Server-Pfad, „/…") eine Stamm-Datei dieses Baums?
@@ -430,6 +438,7 @@ module.exports = {
     textAusRev,
     ort,
     dateiVon,
+    dateiMit,
     istStammDatei,
     istStammUrl,
     liefere,
@@ -553,6 +562,14 @@ if (require.main === module && process.argv.includes("--selftest")) {
             `${zeileV} → ${o}`
         );
         pruef("versionsDatei = die Datei aus ort()", versionsDatei(z) === od, versionsDatei(z));
+        pruef(
+            "dateiMit(VERSION-Zeile) = dieselbe Datei; ein fehlender Text → null; ein mehrdeutiger wirft",
+            dateiMit(z, T.split("\n")[zeileV - 1]) === od &&
+                dateiMit(z, "// diese Zeile steht nirgends\u0001") === null &&
+                wirft(() => dateiMit(z, "\n    }\n"), /tragen/) &&
+                dateiMit(root, T.split("\n")[zeileV - 1]) === (lay === "datei" ? ALT : versionsDatei(root)),
+            od
+        );
         const dv = dateiVon(z, "_bodenSichtAt");
         pruef(
             "dateiVon(_bodenSichtAt) trägt die Methode",
