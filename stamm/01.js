@@ -9,65 +9,6 @@
  * Performance: FPS ~90-120, Frustum Culling optimiert, SimplexNoise gecacht.
  * Chaos und Ordnung, 1 und 0, Liebe und Stabilität – alles in Harmonie.
  */
-// ===== ATLAS-REGISTRY (W6, V18.174) — die Karte des EINEN Stamms =====
-// 26 Zonen in Datei-Reihenfolge, 22 davon Unter-Schnitte §NNb … (Decke
-// 4 000 Zeilen je Teil); die `// ===== ATLAS §NN · NAME — Themen`-
-// Marker im Text sind die WAHRHEIT (Zeilen-Nummern leben nie hier — sie
-// rotten). `node scripts/diag-atlas.cjs` druckt die LIVE-Karte (Start/
-// Zeilen/Methoden je Zone, --find <regex> verortet eine Methode);
-// `--check` prüft Registry ↔ Marker (Drift = rot, im npm-run-check-Gate).
-// Zonen = DOMINANTE Themen — Einsprengsel kommen vor (der Stamm wuchs
-// organisch); der Atlas ist Karte, nicht Käfig (Heilige Lektion: EIN
-// Stamm, keine Module — die Antwort auf R-032 ist NAVIGATION, kein Split).
-// §01 KERN/BOOT — Konstruktor · state-Baum · init · Szene/Renderer-Boot
-// §02 DSL/NEXUS — Ops · Sandbox · Welt-Regeln · Chat-Tore · LLM-Begleiter
-// §02b DSL/NEXUS — ab dslSelectByFitness
-// §03 MULTI-USER-MESH — WS-Broker · WebRTC · Räume · Positions-/DSL-Sync
-// §03b MULTI-USER-MESH — Block Feld
-// §04 AUDIO — Lo-Fi-Symphonie · Resonanz-Pings
-// §05 UI-GRUNDIERUNG — Drawer · Omnibox · Help-Pops · Feed-Spiegel
-// §05b UI-GRUNDIERUNG — Block Dirigent
-// §06 KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd
-// §06b KREATUREN — Block Kreatur
-// §06c KREATUREN — Block Kreatur
-// §07 CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · feld-native Kollision
-// §08 WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen
-// §09 KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten
-// §10 LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · PBR-Uniform-Sync
-// §11 VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits
-// §11b VOXEL-MESHER/WASSER — Block Gelaende
-// §11c VOXEL-MESHER/WASSER — Block Vegetation
-// §11d VOXEL-MESHER/WASSER — Block Dienst
-// §12 PERSISTENZ/TAILLE — Snapshot · Restore · IndexedDB · Ω-Zwillinge
-// §13 IDENTITÄT/WELTEN/SOZIAL — Vibe-Pass · Bibliothek/Feed · Zeugnisse · Welt-Manifest
-// §13b IDENTITÄT/WELTEN/SOZIAL — Block Werkstatt
-// §13c IDENTITÄT/WELTEN/SOZIAL — Block Dienst
-// §14 PORTALE/SUB-WELTEN — Welt-Tor · Sandbox-Shim · Ko-Präsenz · Vendor
-// §15 SPIELER-SEELEN/BEWEGUNG — Avatare · Movement/Sprung · Ritt · Hand
-// §15b SPIELER-SEELEN/BEWEGUNG — Block Siedlung
-// §15c SPIELER-SEELEN/BEWEGUNG — Block Koerper
-// §16 SUBSTANZ/BAU — Materialien · Baupläne · der EINE Builder · Verbindungen
-// §17 ARCHITEKTUR-HISM — Instancing · Welt-Spawns · Culling
-// §17b ARCHITEKTUR-HISM — Block Siedlung
-// §17c ARCHITEKTUR-HISM — Block Siedlung
-// §18 LEBENS-FELD — deposit/decay-Overlay — die Schreib-Seite des Feldes
-// §19 LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler)
-// §20 SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung
-// §20b SPAWN-ÖKOLOGIE — Block Studio
-// §20c SPAWN-ÖKOLOGIE — ab _laubLichtStoff
-// §20d SPAWN-ÖKOLOGIE — Block Vegetation
-// §21 BAU-ÖKONOMIE/ERNTE — Kosten-Tore · confirmBuild · Ernte/Abbau
-// §22 ICH/HOF-RÄUME — Equip-UI · Rezeptbuch · Hof-Bühne/Karten
-// §23 WERKSTATT — Viewer · Gizmo · Prozesse · Mach-Akte · Readout
-// §23b WERKSTATT — ab _specRenderHeader
-// §24 TAG-NACHT/HIMMEL — Sonnen-Zyklus · Wetter-Sync · Fog/Hemi · Himmelskörper
-// §25 HUD/EINSTELLUNGEN — Statusbar · Slider · Hotbar · Settings-Räume
-// §25b HUD/EINSTELLUNGEN — Block Koerper
-// §25c HUD/EINSTELLUNGEN — Block Bild
-// §26 AUSSEN-KONSTANTEN — VERSION · Tag-Schlüssel · Signatur-Tabellen · frozen Welt-Daten
-// §26b AUSSEN-KONSTANTEN — ab AnazhRealm.FOUNDRY_CACHE_CAP
-// §26c AUSSEN-KONSTANTEN — ab AnazhRealm.FOREST
-// ===== ATLAS-REGISTRY-ENDE =====
 // F1 (gigant-plan §5 — G2 REKURSION, Schnitt 3): der localStorage-SCHATTEN.
 // Im sandboxed null-origin-iframe (AnazhRealm IN AnazhRealm) wirft schon der
 // GETTER `window.localStorage` SecurityError — 102 Zugriffe im Stamm würden

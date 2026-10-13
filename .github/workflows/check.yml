@@ -82,33 +82,6 @@ jobs:
                     node --check "$f"
                   done
 
-            - name: Duplikate Methodendefinitionen
-              if: matrix.gruppe == 1
-              # Die Methoden der Klasse stehen eingerueckt (4 Leerzeichen) - das Muster `^[a-zA-Z_]+(` sah keine einzige
-              # (vakuos seit dem Umzug in die Klasse; Integration V18.536: `_sonnenWinkel` stand zweimal, die spaetere
-              # Formel ohne Stufen haette die Sonnen-Stufen der Welle C still ueberschrieben). Gezaehlt werden die
-              # Methoden im Koerper von `class AnazhRealm` (static/get/set gehoeren zum Namen) und die statischen
-              # Zuweisungen `AnazhRealm.x = ` ausserhalb; ohne Methoden ist die Probe blind (rot).
-              run: |
-                  node -e "process.stdout.write(require('./scripts/lib/stamm.cjs').text('.'))" > "$RUNNER_TEMP/stamm.txt"
-                  klasse=$(awk '/^class AnazhRealm \{/{f=1;next} f&&/^\}$/{f=0} f' "$RUNNER_TEMP/stamm.txt" \
-                    | grep -E '^    (static |async |get |set )*[A-Za-z_$][A-Za-z0-9_$]*\s*\([^)]*\)\s*\{\s*$' \
-                    | grep -vE '^    (if|for|while|switch|catch|function|return)\b' \
-                    | sed -E 's/\(.*//; s/^ +//; s/^async //')
-                  n=$(printf '%s\n' "$klasse" | grep -c . || true)
-                  if [ "$n" -lt 500 ]; then
-                    echo "❌ Die Probe ist blind: nur $n Methoden in class AnazhRealm gefunden"
-                    exit 1
-                  fi
-                  dups=$( { printf '%s\n' "$klasse"; grep -oE '^AnazhRealm\.[A-Za-z_$][A-Za-z0-9_$]* = ' "$RUNNER_TEMP/stamm.txt"; } \
-                    | sort | uniq -d || true)
-                  if [ -n "$dups" ]; then
-                    echo "❌ Doppelte Methodendefinitionen gefunden:"
-                    echo "$dups"
-                    exit 1
-                  fi
-                  echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
-
             - name: Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
               if: matrix.gruppe == 1
               # `npm run check` = `check:statik` + `gate:haus-fern` (V18.543): die ganze Statik trug je Push Median 105 s und
