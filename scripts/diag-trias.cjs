@@ -335,8 +335,11 @@ function triasStaticLaws(anazhSrc) {
         if (!res.bookReady) return res;
 
         const pm = r.state.playerMesh;
+        // Das Auge reist mit (K36): jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
+        // Kamera des Spiels sitzt es über dem Spieler (ohne Spiel-Takt folgt die Kamera dem Teleport sonst nicht).
         const tp = (x, z) => {
             pm.position.set(x, r.getTerrainHeightAt(x, z) + 2, z);
+            r.state.camera.position.set(x, pm.position.y + 1.6, z);
         };
         async function pumpRender(nTicks) {
             for (let i = 0; i < nTicks; i++) {

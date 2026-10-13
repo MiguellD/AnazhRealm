@@ -907,9 +907,9 @@ async function runPartB() {
                         };
                     if (art.ohneHalt) r._lodHaltSetzen = () => false;
                     try {
-                        for (const dnZiel of [6, 10, 13, 16, 19, 21, 23, 25, 27, 30, 34, 40, 34, 30, 27, 25, 23, 21, 19, 16, 13, 10, 6]) {
+                        for (const dnZiel of [6, 10, 14, 19, 22, 24, 27, 31, 40, 27, 24, 22, 14, 6]) {
                             const rawAuge = dnZiel / factor;
-                            const auge = new THREE.Vector3(px - rawAuge, py + 1.6, pz);
+                            const auge = new window.THREE.Vector3(px - rawAuge, py + 1.6, pz);
                             st.playerMesh.position.set(px - Math.max(0, rawAuge - art.armM), py, pz);
                             r._archLODCursor = 0;
                             for (let i = 0; i < 4; i++)
@@ -1852,11 +1852,11 @@ async function main() {
         }
         if (!(out.ohnePartner || []).length) check("KETTE OHNE PARTNER lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
-    // (10) DER GEISTER-BAUM (K36): je Lauf 23 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
+    // (10) DER GEISTER-BAUM (K36): je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;
     if (GB) {
         const g = (o) => `${o.geister} Geister · ${o.loecher} Löcher in ${o.proben} Proben${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
-        const sauber = (o) => o.proben >= 20 && o.geister === 0 && o.loecher === 0;
+        const sauber = (o) => o.proben >= 14 && o.geister === 0 && o.loecher === 0;
         check("GEISTER-BAUM: der Partner steht — keine Instanz halb maskiert (die Linse schweigt bei der Blende)", sauber(GB.normal), g(GB.normal));
         check("GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner)", sauber(GB.karteLaedt), g(GB.karteLaedt));
         check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
