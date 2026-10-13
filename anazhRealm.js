@@ -28084,18 +28084,10 @@ class AnazhRealm {
         if (ple.has(key)) return ple.get(key);
         // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das vom
         // Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der Erdbau nichts
-        const ctx = globalThis.__gelaendeCore.ortCtx(
-            this._gelaende(),
-            (x, z) => {
-                // der Fluss formt den Grund bis zu seiner Krone (`_hydroRiverAt`): sein Bett liegt im Feld unter der Höhe
-                // des Gesetzes — am Auto-Dorf −768/−886 stand der Grund 1 m unter der Platte, der Fluss im Grundriss
-                if (this._hydroRiverAt(x, z)) return true;
-                const w = this._atlasWaterLevelAt(x, z, -1e9);
-                return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
-            },
-            // der Spiegel des Gesetzes (dieselbe Frage wie `_landAt`): ein Haus, dessen Platte unter ihm liegt, fällt im Plan
-            (x, z) => this._atlasWaterLevelAt(x, z, -1e9)
-        );
+        const ctx = globalThis.__gelaendeCore.ortCtx(this._gelaende(), (x, z) => {
+            const w = this._atlasWaterLevelAt(x, z, -1e9);
+            return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
+        });
         const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, ctx);
         this._erdbauSetzen(key, v2.erdbau);
         ple.set(key, v2);

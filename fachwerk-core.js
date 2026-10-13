@@ -5518,24 +5518,6 @@
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
-            // DER SPIEGEL ÜBER DER PLATTE (K10): legt der Erdbau den Grund des Hauses unter den Spiegel des Welt-Wassers
-            // (ctx.spiegelAt, + 0,2 m wie die Land-Frage des Wirts `_landAt`), stünde es im Wasser — es fällt hier, vor seiner
-            // Platte (am Auto-Dorf −768/−886 nahm die Land-Wand des Wirts 5 von 16 gesetzten Häusern erst nach dem Erdbau)
-            if (ob && ctx.spiegelAt) {
-                var cS = Math.cos(ob.phi || 0);
-                var sS = Math.sin(ob.phi || 0);
-                var unter = false;
-                for (var iS = -2; iS <= 2 && !unter; iS++)
-                    for (var jS = -2; jS <= 2 && !unter; jS++) {
-                        var lxS = ((ob.ex + O.saumM) * iS) / 2;
-                        var lzS = ((ob.ez + O.saumM) * jS) / 2;
-                        if (ctx.spiegelAt(ox + ob.cx + lxS * cS + lzS * sS, oz + ob.cz - lxS * sS + lzS * cS) + 0.2 > y) unter = true;
-                    }
-                if (unter) {
-                    wasserSlots++;
-                    continue;
-                }
-            }
             if (ob)
                 hausPlatten.push({
                     art: "platte",
