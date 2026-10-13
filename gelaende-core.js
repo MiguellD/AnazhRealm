@@ -741,10 +741,24 @@
     // Landes über 50 m Prominenz). Die Landform trägt Gipfel bis ~200 m über dem Meer; die Grenze 140 → 185 m legt
     // Schnee auf die obersten 1–3 % des Landes. Leser: die Boden-Farbe (Stamm `_bodenFarbeAt`, Worker
     // `attachFieldColors`) — der Anteil 0…1 an der Höhe y.
-    const SCHNEE = Object.freeze({ start: 140, voll: 185 });
-    function schnee(L, y) {
+    // WEICH (K16, Prüfung Runde 2: „harte Schnee-Kappen" im Makro-Bild): die Grenze ist keine Höhenlinie — zwei Oktaven des
+    // Gelände-Rauschens verschieben sie je Ort (`zungen`: λ ≈ 330 m um ±18 m, λ ≈ 45 m um ±7 m), die Kappe franst in Zungen
+    // und Flecken aus, wie Schnee in Mulden länger liegt als auf Rücken. Das Mittel bleibt die Grenze (Rauschen ohne Mittel).
+    // Die Leser geben den Ort (x, z); fehlt er, bricht die Funktion laut (nie die alte Höhenlinie als Ersatz).
+    const SCHNEE = Object.freeze({
+        start: 140,
+        voll: 185,
+        zungen: [
+            { f: 0.003, a: 18, ox: 17.3, oz: -41.9 },
+            { f: 0.022, a: 7, ox: -5.1, oz: 8.3 },
+        ],
+    });
+    function schnee(L, y, x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - 3;
-        return glatt(SCHNEE.start, SCHNEE.voll, y - wl);
+        let zunge = 0;
+        for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
+        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
     }
 
     function wildnisY(L, x, z, mitDetail, aus) {

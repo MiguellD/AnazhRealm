@@ -33003,7 +33003,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
 
         // Die Probe misst am Gesetz (gelaende-core `schnee`), nie an einer Kopie.
-        const schneeAt = (y) => window.__gelaendeCore.schnee(r._gelaende(), y);
+        const schneeAt = (y, x, z) => window.__gelaendeCore.schnee(r._gelaende(), y, x, z); // der Ort trägt die Zungen der Grenze
         let snowSum = 0;
         let nSamples = 0;
         const base = s.terrainBaseHeight || 0;
@@ -33025,7 +33025,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             const y = r._terrainMacroSurfaceY(x, z, false);
             const wY = r._waterLevelAt ? r._waterLevelAt(x, z) : -3;
             if (y <= wY + 0.5) continue;
-            const sn = schneeAt(y);
+            const sn = schneeAt(y, x, z);
             snowSum += sn;
             nSamples++;
             // Tiefland-Klasse: ≤ 100 m über dem Meer (klar unter der Schneegrenze, K16 — der 85-m-Spawn-Hügel war weiß)
