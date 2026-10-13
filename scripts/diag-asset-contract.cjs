@@ -161,7 +161,8 @@ const dekodiere = (b64, Typ) => {
 };
 // DIE FERN-WAND (S3 haus, docs/studio-vertrag.md N5): jede gebaute NUR-WURF-Stufe (B2c `nurWurf`) trägt den Beipack `__fern` in
 // der EINEN Hüllen-Form — Teile box · keil · kapsel mit endlichen Zahlen auf dem Raster 2^-12, die First-Kante ±x/±z, der
-// Walm in [0, 1], die Farbe je sichtbarem Teil, höchstens 24 Teile (die Kapsel-Liste des Welt-March). Der Wirt bricht ohne sie
+// Walm in [0, 1], die Farbe je sichtbarem Teil, höchstens 24 Teile im Fernbild (rolle "sicht"/"beide" — der Welt-March läuft je
+// Pixel über alle Teile seines Eintrags; "wurf"-Teile wirft nur die NUR-WURF-Stufe, das Tor 1110-9). Der Wirt bricht ohne sie
 // (KERN-PFLICHT in `_archFoundryZiegel`); hier fällt der Bruch am Studio-Ausgang auf. null = die Form steht.
 function huellenFormFehler(h) {
     const r = (x) => Number.isFinite(x) && Number.isInteger(x * 4096);
@@ -169,9 +170,10 @@ function huellenFormFehler(h) {
     if (!h || typeof h !== "object") return "fehlt";
     if (!Number.isInteger(h.stufe)) return "ohne stufe";
     if (!Array.isArray(h.teile) || !h.teile.length) return "ohne teile";
-    if (h.teile.length > 24) return `${h.teile.length} Teile > 24`;
+    const imBild = h.teile.filter((t) => t && (t.rolle === "sicht" || t.rolle === "beide")).length;
+    if (imBild > 24) return `${imBild} Teile im Fernbild > 24`;
     for (const t of h.teile) {
-        if (!t || !["fest", "sicht", "beide"].includes(t.rolle)) return "rolle";
+        if (!t || !["fest", "sicht", "wurf", "beide"].includes(t.rolle)) return "rolle";
         if (t.art === "box" || t.art === "keil") {
             if (!v3(t.c) || !v3(t.h)) return `${t.art} c/h nicht auf dem Raster`;
             if (t.art === "keil" && !["+x", "-x", "+z", "-z"].includes(t.first)) return `keil first ${t.first}`;
@@ -658,8 +660,9 @@ function bildUrteil(mess, tafel) {
             if (!tafelSchreiben && c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, f.replace(/\.json$/, ""));
             if (c.lod <= 1 && artVon(c.presetId) === "tree" && c.season === "summer") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
-                const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};
-                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!fx.conifer, H: 0 });
+                // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
+                const ph = PC.artPhaenotyp(buch[c.presetId].s, buch[c.presetId]);
+                const pp = paare[pk] || (paare[pk] = { l0: null, l1: null, art: null, conifer: !!ph.conifer, H: 0 });
                 const krone = kroneAus(a.meshes);
                 if (c.lod === 0) {
                     pp.l0 = krone;
@@ -676,7 +679,7 @@ function bildUrteil(mess, tafel) {
                     }
                     pp.H = hi - Math.max(0, lo);
                 } else {
-                    pp.art = krone.some((m) => m.kind === "foliageTex") ? (fx.conifer ? "nadel" : "laub") : "klinge";
+                    pp.art = krone.some((m) => m.kind === "foliageTex") ? (ph.conifer ? "nadel" : "laub") : "klinge";
                     pp.l1 = krone;
                 }
             }

@@ -8,12 +8,12 @@
 //   S (statisch, Node): Manifest traegt porta (ns __portaCore) · KIND_POLICY
 //     traegt die gate-Zeile (prefix tor_, donor tor_basis) · der Auto-Register-
 //     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · porta-core
-//     deklariert kindStages.gate == [0] · die Rezepte tragen fx.place
+//     deklariert kindStages.gate == [0, 3] · die Rezepte tragen fx.place
 //     {mode:"site", siteTag:"tor"} als DATEN · die Donor-SUBSTANZ tor_basis
 //     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (der Alt-Blueprint ist
 //     PHYSISCH gefallen — AUSLÖSCHUNGS-WELLE). --selftest injiziert 2 Verletzungen.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 7 Tor-
-//     Rezepte · kindStages.gate == [0] gemerged (foundry-core-kinds unberuehrt) ·
+//     Rezepte · kindStages.gate == [0,3] gemerged (foundry-core-kinds unberuehrt) ·
 //     Auto-Blueprint tor_drachentor entsteht am EINEN Chokepoint (Donor-Klon,
 //     KEIN _grownSpecies) · die generische tor_-Regel loest auf · die Place-
 //     Aufloesung liefert mode "site" + siteTag "tor", der Dispatch streut NICHT
@@ -107,8 +107,8 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
     out.push([
-        "S4: porta-core deklariert kindStages.gate == [0] (B2-Vertrags-Daten)",
-        /kindStages:\s*\{\s*gate:\s*\[0\]\s*\}/.test(pcSrc),
+        "S4: porta-core deklariert kindStages.gate == [0, 3] (B2-Vertrags-Daten; 3 = die NUR-WURF-Stufe, 1110-9)",
+        /kindStages:\s*\{\s*gate:\s*\[0,\s*3\]\s*\}/.test(pcSrc),
     ]);
     out.push([
         "S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)",
@@ -313,7 +313,7 @@ function ksRow(src, name) {
     );
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.orders === 2, String(out.b.orders));
     check("B: alle 7 Tor-Ordnungen im Buch", out.b.gateCount === 7, String(out.b.gateCount));
-    check("B: kindStages.gate == [0] (N7.5-Merge am Ingest)", out.b.ksGate === "[0]", String(out.b.ksGate));
+    check("B: kindStages.gate == [0,3] (N7.5-Merge am Ingest; 3 = NUR-WURF)", out.b.ksGate === "[0,3]", String(out.b.ksGate));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
     check("B: vehicle-kindStages UNANGETASTET ([0])", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
     check(
