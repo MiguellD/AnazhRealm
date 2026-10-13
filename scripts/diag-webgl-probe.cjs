@@ -86,7 +86,7 @@ const server = http.createServer((req, res) => {
             o.rendererType = r._flightRecorderDevice().rendererType;
             // W3 — die Wände:
             o.feldPassRuht = !st.feldPass;
-            o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
+            o.bundlesRuhen = (st._regionBundles ? st._regionBundles.size : 0) === 0;
             o.computeFaehig = r._gpuComputeFaehig(); // MUSS false sein (die Wand-Quelle selbst)
             // W4 — der Fern-Ring verfeinert auf CPU (den Tick deterministisch pumpen):
             const pm = st.playerMesh;

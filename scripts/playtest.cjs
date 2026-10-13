@@ -46,6 +46,14 @@ function _sondeRot(name, detail) {
     if (!_sonde.check) throw new Error(`Sonden-Senke fehlt: ${name} — ${detail}`);
     _sonde.check(name, false, detail);
 }
+// unmessbar zählt als Fehlschlag (Meta-Wand V2): fehlt die Vorbedingung, misst die Prüfung nichts.
+function unmessbar(name, grund) {
+    _sondeRot(name, "unmessbar: " + grund);
+}
+// unmessbar zählt als Fehlschlag (Meta-Wand V2): fehlt die Vorbedingung, misst die Prüfung nichts.
+function unmessbar(name, grund) {
+    _sondeRot(name, "unmessbar: " + grund);
+}
 // page.evaluate mit Fang: liefert das Ergebnis oder `null` — ein Wurf UND ein leeres Ergebnis (null/undefined)
 // verbuchen je eine rote Prüfung im laufenden Band, die Guards `if (!X)` der Aufrufer zweigen danach weiter.
 async function safeEvaluate(page, fn, ...args) {
@@ -1158,8 +1166,8 @@ async function checkBandV1727WritableField(ctx) {
             out.loopSpreads = Math.abs(p2.x - p1.x) > 1 || Math.abs(p2.z - p1.z) > 1;
             out.p1Raised = r.auraAt(p1.x, p1.z).lebendig > r.auraAt(p2.x, p2.z).lebendig;
         } else {
-            out.loopSpreads = true;
-            out.p1Raised = true;
+            out.loopSpreads = false /* unmessbar zählt als Fehlschlag */;
+            out.p1Raised = false /* unmessbar zählt als Fehlschlag */;
         }
         if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
         return out;
@@ -1409,7 +1417,7 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
             out.coldR = cold.skyColor.r;
             out.warmR = warm.skyColor.r;
         } else {
-            out.joyWarmsWorld = true; // THREE nicht erreichbar — Source-Probe traegt
+            out.joyWarmsWorld = false /* unmessbar zählt als Fehlschlag */;
         }
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
         if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
@@ -2834,7 +2842,7 @@ async function checkBandV1742Wohl(ctx) {
             strukturHigh > struktur0 + 0.05
                 ? // der Sprung war real: Baseline bewegte sich HOCH, lagt aber WEIT unter dem neuen Wert
                   Math.abs(pre - struktur0) < 1e-3 && bAfter > struktur0 + 1e-4 && bAfter < strukturHigh - 0.05
-                : true; // kein Headroom an diesem Spot → vacuously ok (selten)
+                : false /* unmessbar */; // kein Headroom an diesem Spot → vacuously ok (selten)
 
         // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle wird entfernt ---
         r.state.wohlBaseline.set("9,9", { b: 0.5, t: 0 });
@@ -3073,7 +3081,7 @@ async function checkBandV1744Appraisal(ctx) {
         p.emotionLastTick = 2001;
         r.updatePlayerEmotions(2002); // δ>0 → joy steigt
         // nur prüfen, wenn der Sprung real war (sonst war kein Headroom — vacuously ok)
-        out.surpriseRaisesJoy = sitPost - sitPre > 0.1 ? p.emotions.joy > joyBefore + 0.001 : true;
+        out.surpriseRaisesJoy = sitPost - sitPre > 0.1 ? p.emotions.joy > joyBefore + 0.001 : false /* unmessbar */;
 
         // --- (5) Gewöhnung + KEIN Feedback-Runaway (feedback-frei bewiesen) ---
         setEmo({});
@@ -6068,7 +6076,7 @@ async function checkBandOmegaPhi1CoM(ctx) {
                 { position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
             ])
         );
-        out.dichteShiftsCoM = out.haveMats ? cDch.com.x > 0 : true;
+        out.dichteShiftsCoM = out.haveMats ? cDch.com.x > 0 : false /* unmessbar */;
         // (4) Masse skaliert mit dichte (gleiche Form, dense > light)
         const mDense = r._compoundCenterOfMass(
             mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense }])
@@ -6076,7 +6084,7 @@ async function checkBandOmegaPhi1CoM(ctx) {
         const mLight = r._compoundCenterOfMass(
             mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light }])
         ).mass;
-        out.massScalesDichte = out.haveMats ? mDense > mLight : true;
+        out.massScalesDichte = out.haveMats ? mDense > mLight : false /* unmessbar */;
         // (5) leerer/ungültiger Bauplan → sicher 0 (keine Division durch 0)
         out.emptySafe = r._compoundCenterOfMass({ parts: [] }).mass === 0 && r._compoundCenterOfMass(null).mass === 0;
         return out;
@@ -6651,7 +6659,7 @@ async function checkBandV1773HeldMesh(ctx) {
         r.equipHeld("waterfall");
         const m2 = pm.userData && pm.userData.heldMesh;
         out.swapped = !!m2 && m2.uuid !== m1uuid;
-        out.oldDetached = !m1 || m1.parent === null;
+        out.oldDetached = !!m1 && (m1.parent === null);
 
         // (4) ablegen → kein Mesh
         r.equipHeld(null);
@@ -7860,12 +7868,12 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         const esse = r.state.blueprints["esse"];
         const esseRender = esse ? renderFor("esse") : null;
         out.esseRoleChip = esseRender ? esseRender.roleChip : "(keine esse)";
-        out.esseLabeled = !esse || esseRender.roleChip === "Werkstatt";
+        out.esseLabeled = !!esse && (esseRender.roleChip === "Werkstatt");
         // (3) die Affordanzen sind in der FÄHIGKEIT-Zeile, NICHT in der Rolle-Zeile (der ungebundene Faden)
         out.esseRoleRowAffordances = esseRender ? esseRender.roleRowAffordances : -1;
-        out.esseRoleRowClean = !esse || esseRender.roleRowAffordances === 0; // keine ✦ in der Rolle-Zeile
+        out.esseRoleRowClean = !!esse && (esseRender.roleRowAffordances === 0); // keine ✦ in der Rolle-Zeile
         out.esseCapRowHasAffordance =
-            !esse || esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c));
+            !!esse && (esseRender.capRowChips.some((c) => /sendend|strahlend|vergrößernd|bündelnd/.test(c)));
         return out;
     });
     check(
@@ -13847,8 +13855,7 @@ async function checkBandW4LofiPad(ctx) {
         const _extSoll =
             _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(_sp && _sp.dna ? _sp.dna.color : 0) : 1;
         out.scaleStudio =
-            !prevLofi ||
-            (r._lofiScaleSemitone(2) === 5 &&
+            !!prevLofi && (r._lofiScaleSemitone(2) === 5 &&
                 r._lofiScaleSemitone(6) === 12 &&
                 _chord0.length === 3 + _extSoll &&
                 JSON.stringify(_chord0.slice(0, 4)) === JSON.stringify([0, 5, 7, 12]));
@@ -16350,7 +16357,7 @@ async function checkBandWelle6DSoul(ctx) {
                 return false;
             }
         })();
-        out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
+        out.boundsRingRemoved = !(r.state.playerAura && r.state.scene.children.includes(r.state.playerAura));
         out.glowSpriteGone = !r.state.playerAuraGlow;
 
         // Drache: Kopf in +Z (Forward), Kopf-Box bei +0.85 Z — kein Inner-π-Flip (der spiegelte ihn in
@@ -16838,8 +16845,7 @@ async function checkBandWelle6DSoul(ctx) {
         const anchor = (r.state.architectures || []).find((a) => a && a.type === "start_plattform");
         const pm = r.state.playerMesh;
         out.preDeathSoulRemembered =
-            !anchor ||
-            (!!pm &&
+            !!anchor && (!!pm &&
                 Math.abs(pm.position.x - anchor.position.x) < 2 &&
                 Math.abs(pm.position.z - anchor.position.z) < 2);
         out.weltTrauerSorrow = r.state.player.emotions.sorrow > 0.25;
@@ -19656,7 +19662,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // V9.27 Phase 5c.1: keine Heightfield-Chunks. V18.272 — `chunkMap` ist als
         // totes Sediment gekehrt (ensureChunkAt starb V9.39); die Wahrheit ist
         // jetzt „abwesend ODER leer" (beides = kein Heightfield-Chunk).
-        out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
+        out.voxelChunkMapEmpty = (r.state.chunkMap ? r.state.chunkMap.size : 0) === 0;
         out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
         // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
         out.voxelGroundFieldNull = r.state.groundHeightField === null;
@@ -19705,7 +19711,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
                 const fallbackY = r.state.terrainBaseHeight || 0;
                 out.creatureNotAtFallback =
-                    Math.abs(voxelY - fallbackY) < 1.0 ? true : Math.abs(actual - fallbackY) > 0.5;
+                    Math.abs(voxelY - fallbackY) < 1.0 ? false /* unmessbar */ : Math.abs(actual - fallbackY) > 0.5;
             }
         }
 
@@ -19716,7 +19722,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
         // V18.272 — „abwesend ODER leer": kein Heightfield-Chunk gebaut.
-        out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
+        out.heightfieldElseDead = (r.state.chunkMap ? r.state.chunkMap.size : 0) === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
         r.state.worldMeta.voxelTerrain = true;
@@ -21136,18 +21142,10 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
                 "Cells über globalem waterLevel müssen water tragen, wenn Bergsee im Hydrosphäre-Atlas vermerkt"
             );
         } else {
-            check(
-                "Welle C.2 V9.73 (Heilung): Bergsee-Cell-Init (Vorbedingung: ≥1 Lake mit waterY > waterLevel+1)",
-                true,
-                "skip — keine Bergseen in der Test-Welt (Seed-abhängig)"
-            );
+            unmessbar("Welle C.2 V9.73 (Heilung): Bergsee-Cell-Init (Vorbedingung: ≥1 Lake mit waterY > waterLevel+1)", "skip — keine Bergseen in der Test-Welt (Seed-abhängig)");
         }
     } else {
-        check(
-            "Welle C.2 V9.72: Iso-Mesh-Sichtbarkeits-Tests (Vorbedingung: ≥1 Iso-Mesh)",
-            true,
-            "skip — keine Wasser-Cells in den gestreamten Chunks (Worldgen-Seed-abhängig)"
-        );
+        unmessbar("Welle C.2 V9.72: Iso-Mesh-Sichtbarkeits-Tests (Vorbedingung: ≥1 Iso-Mesh)", "skip — keine Wasser-Cells in den gestreamten Chunks (Worldgen-Seed-abhängig)");
     }
 }
 
@@ -21515,10 +21513,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
         res.aabbHasBotY && res.aabbHasHeight,
         `botY=${res.aabbBotY}, topY=${res.aabbTopY}`
     );
-    check(
-        "Welle C.3 V9.74: Voxel-Chunk im Damm-Footprint existiert (oder kein Wasser-Ufer-Spot = unmessbar)",
-        !res.damSpotHasWater || res.damChunkExists
-    );
+    if (!res.damSpotHasWater) unmessbar("Welle C.3 V9.74: Voxel-Chunk im Damm-Footprint existiert (oder kein Wasser-Ufer-Spot = unmessbar)", "Vorbedingung fehlt: res.damSpotHasWater");
+        else check("Welle C.3 V9.74: Voxel-Chunk im Damm-Footprint existiert (oder kein Wasser-Ufer-Spot = unmessbar)", res.damChunkExists);
     if (res.damChunkExists) {
         check(
             "Welle C.3 V9.74: Damm-Cell im Footprint ist SOLID (Architektur-Stempel)",
@@ -21533,13 +21529,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
     }
     // Kein isolierter Flach-Spot im Ring = „unmessbar = bestanden“ (nicht jeder Ring hat einen);
     // der Phantom-Test (carveStaysDry) läuft nur mit passendem Spot.
-    check(
-        "Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)",
-        true,
-        res.carveSpotFound
+    check("Welle C.3 V9.74: Trocken-Spot für Carve-Test (gefunden ODER unmessbar)", !!res.carveSpotFound, res.carveSpotFound
             ? `macroY=${res.carveMacro || "?"}`
-            : "kein isolierter Flach-Spot im Ring — Test übersprungen"
-    );
+            : "kein isolierter Flach-Spot im Ring — Test übersprungen");
     if (res.carveSpotFound) {
         // Phantom-Schutz (heilige Invariante): ein Carve OHNE Wasser-Quelle in Reichweite bleibt TROCKEN,
         // jede Tiefe; nur nahe einer echten Quelle füllt sich die Mulde reaktiv. Der Spot oben ist via
@@ -23009,7 +23001,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
             out.workerCellCount = workerMesh.waterCells ? workerMesh.waterCells.length : 0;
             out.cellCountMatch = syncFresh.waterCells === null && workerMesh.waterCells.length === 0;
             out.cellMismatches = 0;
-            out.cellsNearMatch = true;
+            out.cellsNearMatch = out.cellCountMatch; // beide leer = gleich, gemessen
         }
         // Clean up
         syncFresh.mesh.geometry.dispose();
@@ -24430,11 +24422,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         );
         return;
     }
-    check(
-        "Welle V11.0-d.2: Tiefer Wasser-Spot gefunden",
-        true,
-        `depth=${res.spotDepth?.toFixed(2)}m, expectedFloor=${res.yExpectedFloor?.toFixed(2)}, expectedSurface=${res.yExpectedSurface?.toFixed(2)}`
-    );
+    check("Welle V11.0-d.2: Tiefer Wasser-Spot gefunden", res.waterSpotFound === true, `depth=${res.spotDepth?.toFixed(2)}m, expectedFloor=${res.yExpectedFloor?.toFixed(2)}, expectedSurface=${res.yExpectedSurface?.toFixed(2)}`);
     check("Welle V11.0-d.2: Helper erkennt depthBelow > 1.5", res.helperSeesWater === true);
     check("Welle V11.0-d.2: Helper hat shoreDir (Ufer in 12m Reichweite)", res.helperHasShoreDir === true);
     check(
@@ -24953,7 +24941,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             r._tickDirtyVoxelChunks(pm);
             out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
         } else {
-            out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
+            out.tickRebuildsOne = false /* unmessbar zählt als Fehlschlag */;
         }
         // Disposal räumt dirty-Marker mit.
         r._drainDirtyVoxelChunks();
@@ -24963,7 +24951,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             r._disposeVoxelChunk(dirtyKey);
             out.disposeClearsDirty = !r.state.dirtyVoxelChunks.has(dirtyKey);
         } else {
-            out.disposeClearsDirty = true;
+            out.disposeClearsDirty = false /* unmessbar zählt als Fehlschlag */;
         }
         r._drainDirtyVoxelChunks();
         return out;
@@ -27778,7 +27766,7 @@ async function checkBandWelle6HCreatures(ctx) {
         // Compound-Diskrimination
         const oakCost = r.computeBuildCost("baum_eiche");
         out.oakHasHolzAndLaub = oakCost.holz > 0 && oakCost.laub > 0;
-        out.oakHasNoStein = !oakCost.stein || oakCost.stein === 0;
+        out.oakHasNoStein = !(oakCost.stein > 0);
 
         // checkBuildCost ok/missing
         const origMode = r.getGameMode();
@@ -28185,10 +28173,8 @@ async function checkBandV18133Forage(ctx) {
         "V18.133 Foraging: der Lebenssaft zieht GEPFLUECKTES kraut (die Zutaten-Oekonomie schliesst)",
         res.trankKraut
     );
-    check(
-        "V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt) — oder unmessbar",
-        !res.measured || (res.harvested && res.doubleRejected && res.ausgetreten)
-    );
+    if (!res.measured) unmessbar("V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt) — oder unmessbar", "Vorbedingung fehlt: res.measured");
+        else check("V18.133 Foraging: pfluecken wirkt (+1 Stoff · die Pflanze tritt aus der Senke · Doppel-Pflueck abgelehnt) — oder unmessbar", res.harvested && res.doubleRejected && res.ausgetreten);
 }
 
 // Signierte BEWERTUNGS-ZEUGNISSE übers Mesh: {id,s,t,pub,sig} (ed25519 über das stabile
@@ -28245,7 +28231,7 @@ async function checkBandV18134Social(ctx) {
                 // einem Object still leer).
                 r.state.revokedKeys.delete(pubHex.toLowerCase());
             } else {
-                out.revokeConsumed = true;
+                out.revokeConsumed = false /* unmessbar zählt als Fehlschlag */;
             }
             const batch = r._socialAnnounceBatch();
             out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
@@ -31651,7 +31637,7 @@ async function checkBandM4SuchKern(ctx) {
                 out.ichHits = !!probeRow && probeRow.style.display !== "none";
                 // die Nicht-Treffer verschwinden (UND-Logik siebt).
                 const trankRow = rows.find((row) => /lebenssaft/i.test(row.textContent || ""));
-                out.ichSiebt = !trankRow || trankRow.style.display === "none";
+                out.ichSiebt = !!trankRow && (trankRow.style.display === "none");
                 ichSearch.value = "";
                 r._applyIchFilter();
             }
@@ -33528,7 +33514,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
             out.smallMatchesFormula = Math.abs(smallComputed.stats.hpMax - expectedSmall) < 0.1;
             // Erwartung: kleiner Avatar (sizeFactor < 1) hat WENIGER HP als die
             // direkte Tag-Berechnung
-            out.smallHasLessHpThanDirect = out.smallSizeFactor < 1 ? smallComputed.stats.hpMax < smallDirect : true;
+            out.smallHasLessHpThanDirect = out.smallSizeFactor < 1 ? smallComputed.stats.hpMax < smallDirect : false /* unmessbar */;
 
             // (S4) CUSTOM LARGE: großer Avatar (große Parts) → soulSize>1 → hpMax>direkt
             r.state.customSouls["bp_largeAvatar"] = {
@@ -33544,7 +33530,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
             out.largeHpMax = largeComputed.stats.hpMax;
             const largeDirect = A.STAT_FROM_TAGS.hpMax(largeComputed.tags);
             out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatar"].bodyParts });
-            out.largeHasMoreHpThanDirect = out.largeSizeFactor > 1 ? largeComputed.stats.hpMax > largeDirect : true;
+            out.largeHasMoreHpThanDirect = out.largeSizeFactor > 1 ? largeComputed.stats.hpMax > largeDirect : false /* unmessbar */;
             // small < large (selbst nach Mul, weil large viel größer ist)
             out.smallLessThanLarge = smallComputed.stats.hpMax < largeComputed.stats.hpMax;
 
@@ -33817,7 +33803,7 @@ async function checkBandV18197GammaMStrata(ctx) {
             res.migrationConsistent === true
         );
     } else {
-        check("V18.197 (S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", true);
+        unmessbar("V18.197 (S4-S8) Erde-Punkt nicht gefunden — Welt ohne Erde-Region (skip)", "die Vorbedingung fehlt in dieser Welt");
     }
 }
 
@@ -34177,7 +34163,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
             res.midDepthStaysStein === true
         );
     } else {
-        check("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
+        unmessbar("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", "die Vorbedingung fehlt in dieser Welt");
     }
     check("V18.200 (I7) Source-Probe: IRON_BANDS + _eisenAderAt in _terrainMaterialAt", res.srcHasIronCheck === true);
 }
@@ -34785,8 +34771,8 @@ async function checkBandV18206SpeedTrade(ctx) {
                 out.largeJumpLower = large.stats.jumpPower < small.stats.jumpPower;
             } else {
                 // sizeFactor-Reihenfolge umgekehrt → skip
-                out.largeSlower = true;
-                out.largeJumpLower = true;
+                out.largeSlower = false /* unmessbar zählt als Fehlschlag */;
+                out.largeJumpLower = false /* unmessbar zählt als Fehlschlag */;
             }
 
             // (S6) Floor-Disziplin: speed-Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; kalter Kern
@@ -35134,7 +35120,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ≤ 256 (V18.210 Audit-Heilung #2: CAP 64→256, Architektur-bewusste
         // Eviction — der bounded Memory-Schutz hält weiter).
         for (let s = 0; s < 300; s++) r._growTreeBlueprintForSpawn("baum_eiche", 90000 + s);
-        out.a1RingCap = !r._growTreeRing || r._growTreeRing.length <= 256;
+        out.a1RingCap = !!r._growTreeRing && (r._growTreeRing.length <= 256);
         // (A3-Perf Watch-Item #1) — die Scent-sizeFactor-Cache muss PRO SOUL
         // sein (1 Compute je Soul, nicht je Tick × Quelle). Source-Probe +
         // Cache-Verhalten.
@@ -37785,8 +37771,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             out.helperReturnsNode = !!node && typeof node === "object";
             out.helperNoThrow = typeof window.__terrainGeologyError === "undefined";
         } else {
-            out.helperReturnsNode = true;
-            out.helperNoThrow = true;
+            out.helperReturnsNode = false /* unmessbar zählt als Fehlschlag */;
+            out.helperNoThrow = false /* unmessbar zählt als Fehlschlag */;
         }
         // Graceful: ohne TSL gibt der Helfer den Eingangs-Albedo unverändert zurück
         out.helperGraceful = r._terrainGeologyAlbedo(null, "ALBEDO_SENTINEL", null) === "ALBEDO_SENTINEL";
@@ -40069,7 +40055,7 @@ async function checkBandTailleGolden(ctx) {
         check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", false, e.message);
         return;
     }
-    check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", true);
+    check("Ω4: die goldenen Dateien existieren (spec/golden/v1 — NIE regenerieren)", golden !== null);
     const res = await safeEvaluate(
         page,
         async (g) => {
@@ -40832,7 +40818,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             const oldest = r._findOldestCreature();
             out.oldestIsOlder = oldest === c1;
         } else {
-            out.oldestIsOlder = true; // skip wenn keine Kreaturen
+            out.oldestIsOlder = false /* unmessbar zählt als Fehlschlag */;
         }
 
         // _pickFaunaSoulAtPlayer liefert valide Soul — die AMBIENT-Menge sind die
@@ -40856,9 +40842,9 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             const afterJournalLoss = (r.state.worldJournal.entries || []).filter((e) => e.type === "loss").length;
             out.deathAddsLossJournal = afterJournalLoss > beforeJournalLoss;
         } else {
-            out.deathReducesCount = true;
-            out.deathIncreasesSorrow = true;
-            out.deathAddsLossJournal = true;
+            out.deathReducesCount = false /* unmessbar zählt als Fehlschlag */;
+            out.deathIncreasesSorrow = false /* unmessbar zählt als Fehlschlag */;
+            out.deathAddsLossJournal = false /* unmessbar zählt als Fehlschlag */;
         }
 
         // _creatureNaturalBirth fügt Kreatur + Journal-Eintrag hinzu. NICHT count(growth) vorher/nachher
@@ -41094,7 +41080,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             const satG3High = satG3(r._dayNightComputeTint(mkStopG3()).skyColor);
             out.sorrowReducesSaturation = satG3High < satG3Zero;
         } else {
-            out.sorrowReducesSaturation = true; // THREE nicht erreichbar — Source deckt
+            out.sorrowReducesSaturation = false /* unmessbar zählt als Fehlschlag */;
         }
         // Reset
         r.state.player.emotions.sorrow = 0;
@@ -46363,7 +46349,7 @@ async function checkBandG8R0Sovereign(ctx) {
         const pay = r._portalEnterPayload();
         const payJson = JSON.stringify(pay);
         out.payloadPublicOnly = !/"_?privateKeyJwk"|"privateKey"/.test(payJson);
-        out.payloadIdPublic = !pay.vibePassId || /^ed25519:[0-9a-f]*$/.test(pay.vibePassId);
+        out.payloadIdPublic = !!pay.vibePassId && (/^ed25519:[0-9a-f]*$/.test(pay.vibePassId));
         // (5) DEFENSE: selbst ein injiziertes Privat-Feld in state.vibePass leckt
         // NICHT in den Snapshot (der fixe Key-Satz schließt vibePass ganz aus).
         const vp = r.state.vibePass || (r.state.vibePass = {});
@@ -46984,7 +46970,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
         // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
         out.fogTripleRange = r.setFogDistance === undefined;
-        out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
+        out.fogDefault3 = (r.state.atmosphere ? r.state.atmosphere.fogDistance : undefined) === undefined;
         out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
 
         // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
@@ -52700,7 +52686,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
                 (!werkstattEl807 || !werkstattEl807.style.width);
             // Idempotenz: zweiter Call wirft nicht + lässt keine Inline-Größe zurück
             r._workshopApplyDefaultSizeOnce();
-            out.idempotentAfterApply = !werkstattEl807 || !werkstattEl807.style.width;
+            out.idempotentAfterApply = !!werkstattEl807 && (!werkstattEl807.style.width);
 
             // Cleanup
             if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");

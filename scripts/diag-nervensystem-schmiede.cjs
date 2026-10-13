@@ -506,7 +506,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
                     delete r._queueDispose;
                     res.h.unequipNoMesh = !(pm.userData && pm.userData.heldMesh);
                     res.h.sharedSurvives = !queued.some((q) => sharedGeos.indexOf(q) >= 0);
-                    res.h.refReturned = !src || src._liveRefs === Math.max(0, refsBefore - 1);
+                    res.h.refReturned = !!src && src._liveRefs === Math.max(0, refsBefore - 1);
                     res.h.srcAlive = !!(
                         src &&
                         !src._geomDisposed &&

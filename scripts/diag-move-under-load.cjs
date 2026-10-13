@@ -218,11 +218,11 @@ const server = http.createServer((req, res) => {
             const farKey = `${Math.floor(farSpot.x / span)},${Math.floor(farSpot.z / span)}`;
             // Prämisse sichern: dort steht KEIN Chunk (weit außerhalb des Rings)
             const preEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
-            o.premiseNoChunk = !preEntry || !preEntry.mesh;
+            o.premiseNoChunk = !(preEntry && preEntry.mesh);
             o.b = heavyRun(farSpot, 60, false);
             const postEntry = s.voxelChunks ? s.voxelChunks.get(farKey) : null;
             // die Prämisse HIELT über den ganzen Lauf (der Stall wirkte — kein Sync-Leck)
-            o.premiseHeld = !postEntry || !postEntry.mesh;
+            o.premiseHeld = !(postEntry && postEntry.mesh);
             o.pendingAfter = s.voxelMeshPending ? s.voxelMeshPending.size : 0;
             // WIEDERHERSTELLEN (die Gate-Hook-Lehre: sichern + restaurieren, nie löschen)
             s.voxelWorker = savedWorker;

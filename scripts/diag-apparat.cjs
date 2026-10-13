@@ -346,7 +346,7 @@ function pruefDateien(root) {
 async function vakuumKlinge(root) {
     const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
     const v3 = await pruefeSonde(playtestSrc);
-    const regeln = { V1: [], V3: v3.funde };
+    const regeln = { V1: [], V2: [], V3: v3.funde };
     const dateien = pruefDateien(root);
     for (const [rel, abs] of dateien) {
         const src = fs.readFileSync(abs, "utf8");
@@ -359,6 +359,7 @@ async function vakuumKlinge(root) {
         }
         const lit = pruefeLiteral(rel, ast);
         regeln.V1.push(...lit.v1);
+        regeln.V2.push(...lit.v2);
     }
     return { regeln, v3, dateien: dateien.length };
 }
@@ -409,12 +410,19 @@ async function selftest() {
     if (pruefeLiteral("v1.cjs", sonde("out.k = true;")).v1.length !== 1) fails.push("V1 feuert nicht an out.k = true");
     if (pruefeLiteral("v1.cjs", sonde("out.k = a === b;")).v1.length !== 0) fails.push("V1 feuert fälschlich an out.k = a === b");
     if (pruefeLiteral("v1.cjs", parseJs('check("n", x.length >= 0);')).v1.length !== 1) fails.push("V1 feuert nicht an length >= 0");
+    // Vakuum-Klinge V2: je Skip-Form eine synthetische Zeile ROT, die gemessene Form grün.
+    const v2 = (zeile) => pruefeLiteral("v2.cjs", sonde(zeile)).v2.length;
+    if (v2("if (a) out.k = a > 1;\n        else out.k = true;") !== 1) fails.push("V2 feuert nicht am else-Zweig");
+    if (v2("out.k = a ? b > 1 : true;") !== 1) fails.push("V2 feuert nicht an c ? x : true");
+    if (v2("out.k = !a || a.b > 1;") !== 1) fails.push("V2 feuert nicht an !x || y");
+    if (v2("out.k = !!a && a.b > 1;") !== 0) fails.push("V2 feuert fälschlich an der gemessenen Form");
+    if (pruefeLiteral("v2.cjs", parseJs('check("n", true);')).v2.length !== 1) fails.push("V2 feuert nicht an check(…, true)");
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 und V3), Kommentare zählen nicht"
+        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 V2 V3), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -450,7 +458,7 @@ async function main() {
     );
     console.log(
         `✅ DIE VAKUUM-KLINGE steht — V3: die EINE Sonde verbucht Wurf und leeres Ergebnis rot ` +
-            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1: 0 Literal-Grüne in ${klinge.dateien} Prüf-Dateien.`
+            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1 + V2: 0 Literal- und Skip-Grüne in ${klinge.dateien} Prüf-Dateien.`
     );
 }
 

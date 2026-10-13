@@ -175,7 +175,7 @@ function main() {
     note("Live-Pfad: Perf-Panel Export → anazhRealmPerf.json");
   } else {
     const t = geladen.trace;
-    check("kind=anazh-flight-recorder", !t.kind || t.kind === "anazh-flight-recorder", t.kind || "(kein kind)");
+    check("kind=anazh-flight-recorder", t.kind === "anazh-flight-recorder", t.kind || "(kein kind)");
     note("version=" + (t.version || "?") + " savedAt=" + (t.savedAt || "?"));
     const wm = t.steadyState && t.steadyState.weltMarch;
     const wmMaengel = pruefeWeltMarch(wm, "steadyState");
@@ -188,7 +188,7 @@ function main() {
       if (wm.felderFrei != null) note("frei: felder=" + wm.felderFrei);
       if (typeof wm.kapseln === "number") {
         note("kapseln=" + wm.kapseln + " (Dedup-Sätze)");
-        check("steadyState.weltMarch.kapseln numerisch", true, String(wm.kapseln));
+        check("steadyState.weltMarch.kapseln numerisch", Number.isFinite(wm.kapseln), String(wm.kapseln));
       } else {
         check("steadyState.weltMarch.kapseln numerisch", false, "fehlt im Export — Code trägt Feld ab ≥18.491.54; neu exportieren");
       }

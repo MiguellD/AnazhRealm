@@ -335,7 +335,7 @@ const server = http.createServer((req, res) => {
             if (!spurMit || !spurOhne) {
                 o.checks.dLaufe = false;
             } else {
-                o.checks.dLaufe = true;
+                o.checks.dLaufe = spurMit.length > 0 && spurOhne.length > 0;
                 let diffAt = -1;
                 for (let k = 0; k < spurMit.length; k++) {
                     if (spurMit[k] !== spurOhne[k]) {
