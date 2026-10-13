@@ -2054,7 +2054,7 @@ function selbsttest() {
         ["D leer", (b) => (b.damm.w1 = 2100), /D LEER: der Damm staute 30 /],
         [
             "D Ort ohne Stau (die Furt −937/−1064 am Kopf a0d6a81b: die 1 715 Punkte der Basis waren die Deck-Zeile)",
-            (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0, hubNass: 0 }),
+            (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0, hubNass: 0 }), // BÜHNE: Befund des Selbsttests
             /D LEER: das Stau-Feld des Damms #425 \(-937\.00\/-1064\.00\) hebt 0 Fluss-Spalten .*der Ort trägt keinen Stau/,
         ],
         [
