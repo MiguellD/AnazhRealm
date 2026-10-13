@@ -18987,6 +18987,7 @@ class AnazhRealm {
         // ebener Zwei-Knochen-IK im Rumpf-Raum (Schritt 3). Der Boden unter der Pfote ist _kreaturFussBoden (der
         // Stand-Leser der Sicht um den Träger des Leibs; wer schwimmt oder springt, hält die Pfote an seiner Ebene).
         const GG = core.GANG_GESETZ;
+        const LANDUNG = 0.85; // der Anteil seines Wegs, ab dem ein sinkender Fuß den Punkt hält, an dem er aufsetzt
         const fLab = tb.f || 1;
         const vZiel = this._gangV || (this._gangV = new THREE.Vector3());
         const vHuefte = this._gangH || (this._gangH = new THREE.Vector3());
@@ -19088,17 +19089,18 @@ class AnazhRealm {
                     tritt = true;
                 }
             }
+            // der freie Fuß (Tritt oder Schwung) und ob er schon sinkt (DIE LANDUNG, unten)
+            let frei = true,
+                sinkt = false;
             if (L.tritt >= 0) {
                 L.tritt = Math.min(1, L.tritt + dt / 0.25);
                 const w = L.tritt * L.tritt * (3 - 2 * L.tritt);
                 fx = L.ax + (fx - L.ax) * w;
                 fz = L.az + (fz - L.az) * w;
                 hub = Math.pow(Math.sin(Math.PI * L.tritt), GG.hubForm);
-                L.x = fx;
-                L.z = fz;
-                L.an = true;
-                if (L.tritt >= 1) L.tritt = -1;
+                sinkt = L.tritt >= LANDUNG;
             } else if (imStand) {
+                frei = false;
                 fx = L.x;
                 fz = L.z;
             } else {
@@ -19119,18 +19121,31 @@ class AnazhRealm {
                     fx = L.ax + (fx - L.ax) * w;
                     fz = L.az + (fz - L.az) * w;
                 }
-                // DIE LANDUNG STEHT IN DER WELT (K07): ab 0,85 π hält die sinkende Pfote den Punkt, an dem sie aufsetzt — das
-                // Ziel des Gesetzes lief dort mit dem Leib, wo Phase und Leib im Folgen voneinander abwichen (bis auf die
-                // Hälfte), und die Pfote strich die letzten 3 cm über den Boden (am Querhang 64 % des Wolf-Schlupfs)
-                if (!L.an && u >= 0.85 * Math.PI) {
-                    if (!L.land) {
-                        L.land = true;
-                        L.lx = fx;
-                        L.lz = fz;
-                    }
-                    fx = L.lx;
-                    fz = L.lz;
-                } else L.land = false;
+                sinkt = !L.an && u >= LANDUNG * Math.PI;
+            }
+            // DIE LANDUNG STEHT IN DER WELT (K07) — EIN Halt für jeden sinkenden Fuß: ab LANDUNG seines Wegs (der Schwung ab
+            // 0,85 π, der Tritt ab 0,85 seiner Viertel-Sekunde) hält die Pfote den Punkt, an dem sie aufsetzt. Das Ziel des
+            // Gesetzes läuft mit dem Leib: im Schwung, wo Phase und Leib im Folgen voneinander abwichen, strich die Pfote die
+            // letzten 3 cm über den Boden (am Querhang 64 % des Wolf-Schlupfs); den Tritt hielt nichts (K16-Q) — läuft der
+            // Leib an, während eine Pfote tritt, setzte sie auf das Ziel unter der wandernden Hüfte und strich in ihren
+            // letzten zwei Takten je 3,6–4,1 cm über den Boden (Querhang 22,2°, Wolf: 8,3 cm von 41 cm Schlupf).
+            if (sinkt) {
+                if (!L.land) {
+                    L.land = true;
+                    L.lx = fx;
+                    L.lz = fz;
+                }
+                fx = L.lx;
+                fz = L.lz;
+            } else if (frei) L.land = false;
+            if (L.tritt >= 0) {
+                L.x = fx;
+                L.z = fz;
+                L.an = true;
+                if (L.tritt >= 1) {
+                    L.tritt = -1;
+                    L.land = false;
+                }
             }
             const Z = ziele[i];
             Z[0] = fx;
@@ -19251,7 +19266,12 @@ class AnazhRealm {
                 }
             }
             const cur = g.legCur[i];
-            if (!g.legInit) {
+            // DER GEHALTENE FUSS STEHT IN DEN GELENKEN (K16-Q): die einpolige Näherung (legA, kpMul) glättet nur den freien
+            // Fuß — Schwung und Tritt. Ein Fuß, den das Gesetz in der Welt hält (an, kein Tritt), steht in der Lösung der IK
+            // selbst: im Stand lief die Näherung mit einem Sechstel ihrer Gang-Rate, die Gelenke hinkten dem Anker nach, und
+            // die Pfote glitt mit dem Leib — am Querhang (22,2°) drehte der stehende Wolf 4,15° je Takt, die hintere Pfote lag
+            // 6,9 cm neben ihrem Anker und schnappte beim Anlaufen in einem Takt zurück (6,3 cm, der größte Einzel-Schlupf).
+            if (!g.legInit || (fl[i].an && !(fl[i].tritt >= 0))) {
                 cur[0] = z0;
                 cur[1] = z1;
                 cur[2] = z2;
@@ -37891,9 +37911,11 @@ class AnazhRealm {
         const whitewater = smoothstep(float(1.2), float(3.2), aSlopeV).mul(
             float(0.25).add(riverS1.mul(0.75).mul(detailFade))
         );
-        // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
-        // im Wasser); default 0 = exakt das alte Bild.
-        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
+        // V14-Emotions-Haken: uEmotion > 0 hebt den Schaum des GESETZES an (die Welt atmet im Wasser: Ufer, Kamm, Wildwasser
+        // schäumen bis doppelt), nie Schaum, wo das Gesetz keinen hat; 0 = das Bild des Gesetzes. Bis K16 legte die Stimmung
+        // + 0,25 · uEmotion über JEDES Wasser — der ruhige Fluss trug bei der Boot-Stimmung 0,9 ein Schaum-Grau (Makro 300 m
+        // Luma 0,387 gegen den Ring 0,106), das der Blick des Wassers (`_wasserBlick`) nicht kennt.
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).mul(uEmotion.add(1.0)), 0.0, 1.0);
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
