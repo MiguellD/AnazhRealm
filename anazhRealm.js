@@ -73761,11 +73761,17 @@ class AnazhRealm {
             retry: [],
             _prefetching: false,
             recipes: null,
+            // DAS BUCH IST EIN EREIGNIS (K22, Nachbesserung 4): wer auf das Studio-Buch wartet (der Vorrat, der Dorf-Spawn,
+            // die Portal-Vorschau), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
+            // 2 s auf die Uhr und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen im Buch).
+            buchDa: null,
+            buchKam: null,
             // V4(B) — die Leck-Linse: gebaute vs. deferred-freigegebene Foundry-Geometrien (die
             // Schnitte heben sie ohnehin lazy via `|| 0`; hier explizit für die Auffindbarkeit).
             _geomBuiltCount: 0,
             _geomDisposedCount: 0,
         };
+        f.buchDa = new Promise((r) => (f.buchKam = r));
         this._foundry = f;
         try {
             // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; init() kehrt vor jedem Renderer
@@ -73950,6 +73956,10 @@ class AnazhRealm {
         // `_ensureFoliageClusterAtlas` lädt sie, ohne im Haupt-Thread zu malen.
         if (m.blattAtlas && m.blattAtlas.rgba && Array.isArray(m.blattAtlas.rgba.mips) && m.blattAtlas.rgba.mips.length)
             this._blattAtlasBild = m.blattAtlas;
+        // das Ereignis für jeden, der auf das Buch wartet (`buchDa`); ein Buch ohne Rezepte bricht laut, die Wartenden
+        // sehen es (der Vorrat: FOUNDRY WARM je kritischem Preset, der Dorf-Spawn: FOUNDRY KALT)
+        if (!m.book || typeof m.book !== "object") this._stoffBruch("das Studio-Buch kam ohne Rezepte (get-book)");
+        if (this._foundry && this._foundry.buchKam) this._foundry.buchKam();
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
         // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
@@ -78288,12 +78298,13 @@ class AnazhRealm {
         if (!f) return { ok: false, reason: "foundry_aus" };
         const budget = Number.isFinite(timeoutMs) ? timeoutMs : 45000;
         const t0 = performance.now();
-        while (performance.now() - t0 < budget) {
-            if (f.ready && f.recipes && f.recipeCount > 0) {
-                return { ok: true, ms: Math.round(performance.now() - t0), recipeCount: f.recipeCount };
-            }
-            await new Promise((r) => setTimeout(r, 50));
-        }
+        // das EREIGNIS des Buchs (`buchDa`), nie eine Uhr-Schleife; die Frist ist die Geduld des Rufers, ihr Ende meldet
+        // er laut (FOUNDRY KALT am Dorf-Spawn)
+        let frist = 0;
+        await Promise.race([f.buchDa, new Promise((r) => (frist = setTimeout(r, budget)))]);
+        clearTimeout(frist);
+        if (f.ready && f.recipes && f.recipeCount > 0)
+            return { ok: true, ms: Math.round(performance.now() - t0), recipeCount: f.recipeCount };
         return {
             ok: false,
             reason: "foundry_kalt",
@@ -78359,11 +78370,10 @@ class AnazhRealm {
         if (!f || !f.ready || f._prefetching) return;
         f._prefetching = true;
         const spec = this._foundryLibrarySpec();
-        // Die Stufen je Art kommen aus den Vertrags-Daten (kindStages via get-render-config); die Replies sind
-        // winzig und reisen vor den Bakes — ein kurzer Warte-Deckel (~2 s) lässt den Prefetch exakt die
-        // deklarierten Stufen wärmen statt zu raten.
-        for (let _w = 0; _w < 40 && !(f.recipeCount > 0 && AnazhRealm._studioRenderConfig); _w++)
-            await new Promise((r) => setTimeout(r, 50));
+        // Die Stufen je Art (kindStages) und die Gestalten-Budgets kommen mit dem Studio-Buch: der Vorrat wartet auf sein
+        // EREIGNIS (`buchDa`), nie auf die Uhr. Bis K22 (Nachbesserung 4) wartete er 2 s und wärmte danach ohne Rezepte
+        // (FOUNDRY WARM: fünf kritische Presets fehlen, kein Boden-Vorrat); die Regionen bauen erst nach dem Vorrat.
+        await f.buchDa;
         // Paralleler Saug: ALLE Anfragen feuern SOFORT (der Worker arbeitet seine serielle Queue Rücken an
         // Rücken ab) statt await je Asset (Worker idle zwischen Antworten). Post kostet den Main-Frame nichts.
         const jobs = [];

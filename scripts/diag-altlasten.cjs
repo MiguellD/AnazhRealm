@@ -1860,6 +1860,10 @@ function scanNormalWand(srcRoh) {
 // des Loops rufen ihn über `_loopErrorBoundary` und brauchen keinen Zweig; ein catch an einem Namen misst, was der Name
 // bindet; ein `.then`-Glied, das den gelieferten Wert prüft und ohne Wert zurückkehrt, ist ein Fang (für eine Kette aus
 // einer Methode des Stamms spricht die Methode).
+// DIE NACHBESSERUNG 4 (13.10., am Kopf 53b2c1d7 ROT mit 2 Uhr-Deckeln): ein Bau, der in einer Schleife auf die Uhr wartet,
+// geht nach dem Deckel mit halben Daten weiter — `_foundryPrefetchLibrary` wartete 2 s auf das Studio-Buch und wärmte danach
+// ohne Rezepte (gate:post-kette rot mit FOUNDRY WARM, je nach Takt), `_foundryAwaitBook` pollte. Beide warten jetzt auf das
+// EREIGNIS des Buchs (`buchDa`, `_foundryIngestBook` erfüllt es).
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
@@ -2684,6 +2688,33 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 if (!laut(h.fn.body))
                     fund("Fang", name, h.fn, `Hörer ${f.w}.${h.art} ${kurz(h.fn.body)} — der Studio-Faden ${f.kette}`);
         }
+        // (a'') DER UHR-DECKEL (Nachbesserung 4): ein Bau, der in einer Schleife auf die Uhr wartet (`await new Promise((r) =>
+        // setTimeout(r, …))`), geht nach dem Deckel mit dem weiter, was gerade da ist. Der Vorrat wartete 2 s auf das
+        // Studio-Buch und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen, der Wald am Dorf fiel je
+        // nach Takt). Ein Bau wartet auf das EREIGNIS (ein Versprechen), nie auf die Uhr.
+        if (renderBauer.has(name))
+            gehe(m.value, (n) => {
+                if (!/^(For|While|DoWhile)Statement$/.test(n.type)) return;
+                let uhr = false;
+                gehe(n.body, (x) => {
+                    if (
+                        x.type === "AwaitExpression" &&
+                        x.argument &&
+                        x.argument.type === "NewExpression" &&
+                        x.argument.callee.type === "Identifier" &&
+                        x.argument.callee.name === "Promise"
+                    )
+                        gehe(x.argument, (y) => {
+                            if (
+                                y.type === "CallExpression" &&
+                                y.callee.type === "Identifier" &&
+                                y.callee.name === "setTimeout"
+                            )
+                                uhr = true;
+                        });
+                });
+                if (uhr) fund("Uhr-Deckel", name, n, `wartet in der Schleife auf die Uhr: ${kurz(n)} — ${kette(name)}`);
+            });
         if (!stoff) continue;
         // (c) das Ausstattungs-Wenn: ein Glied von TSL als Wahrheitswert
         const ausAlias = (e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
@@ -3344,6 +3375,12 @@ function main() {
                     "                    if (!Array.isArray(manifest) || !manifest.length)\n                        return;",
                     /^Fang$/,
                 ],
+                [
+                    "Uhr-Deckel",
+                    "        await f.buchDa;",
+                    "        for (let _w = 0; _w < 40 && !f.recipes; _w++) await new Promise((r) => setTimeout(r, 50));",
+                    /^Uhr-Deckel$/,
+                ],
             ];
             const fehltAnker = [];
             for (const [name, alt, neu, muster] of schmuggel) {
@@ -3513,7 +3550,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 
