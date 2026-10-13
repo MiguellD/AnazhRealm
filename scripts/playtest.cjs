@@ -20373,24 +20373,20 @@ async function checkBandHydrosphere(ctx) {
         }
         // Weit ausserhalb der Hydrosphären-Region → Meeresspiegel.
         out.seaFallbackOk = r._waterLevelAt(999999, 999999) === r.state.waterLevel;
-        // Fluss-Mündung erreicht das Wasser: ein Meer-Mündungs-Fluss-
-        // Ribbon endet auf `waterLevel` (kein Rinnsal-Ende in der Luft).
-        r._buildHydrosphereMeshes();
-        const meshes = r.state.hydrosphereMeshes || [];
-        const riverMeshes = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
-        out.seaMouthChecked = false;
+        // Fluss-Mündung erreicht das Wasser: am letzten Punkt jedes Meer-Mündungs-Flusses liegt das Wasser, das der
+        // Körper und das Auge lesen (die EINE Wahrheit `_koerperWasser`), auf `waterLevel` und ist der Spiegel DES
+        // Flusses (`_hydroRiverAt` trifft ihn) — kein Rinnsal-Ende in der Luft. Das Fluss-Ribbon fiel mit der Welle L
+        // (das Sheet zeichnet den Fluss); bis zur Vakuum-Klinge las die Probe ein Mesh, das es nicht mehr gibt.
+        out.seaMouthChecked = 0;
         let mundVerfehlt = false;
-        for (let i = 0; i < hydro.rivers.length; i++) {
-            if (hydro.rivers[i].mouth !== "sea") continue;
-            const m = riverMeshes[i];
-            if (!m || !m.geometry || !m.geometry.attributes.position) continue;
-            const pos = m.geometry.attributes.position.array;
-            const vc = pos.length / 3;
-            const lastY = pos[(vc - 1) * 3 + 1];
-            out.seaMouthChecked = true;
-            if (Math.abs(lastY - r.state.waterLevel) > 0.3) mundVerfehlt = true;
+        for (const rv of hydro.rivers) {
+            if (rv.mouth !== "sea") continue;
+            const p = rv.points[rv.points.length - 1];
+            const fluss = r._hydroRiverAt(p.x, p.z);
+            out.seaMouthChecked++;
+            if (!fluss || Math.abs(r._koerperWasser(p.x, p.z) - r.state.waterLevel) > 0.3) mundVerfehlt = true;
         }
-        out.mouthReachesSea = out.seaMouthChecked && !mundVerfehlt;
+        out.mouthReachesSea = out.seaMouthChecked > 0 && !mundVerfehlt;
         // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus der EINEN Wasser-Wahrheit am Körper
         // (`_koerperWasser`, Welle L wasser — vorher `_waterLevelAt`); sie lebt im feld-nativen Controller `_stepCharacter`
         // (`_loopPhysicsSync` dispatcht nur).
@@ -20415,7 +20411,7 @@ async function checkBandHydrosphere(ctx) {
             h2.seaFallbackOk
         );
         check(
-            "Voxel V9.43-c.2: ein Meer-Mündungs-Fluss-Ribbon endet sichtbar auf dem Meeresspiegel",
+            `Voxel V9.43-c.2: jeder Meer-Mündungs-Fluss endet mit seinem Spiegel auf dem Meeresspiegel (${h2.seaMouthChecked} Mündungen)`,
             h2.mouthReachesSea
         );
         check(
@@ -33493,13 +33489,14 @@ async function checkBandV18195AvatarSizeHp(ctx) {
             // Bei built-in soulSize=1, sqrt(1)=1 → KEIN Delta zur Direkt-Form
             out.humanNeutralOk = out.humanNeutralDelta < 0.001;
 
-            // (S3) CUSTOM SMALL: kleiner Avatar (kleine Parts) → soulSize<1 → hpMax<direkt
+            // (S3) CUSTOM SMALL: kleiner Avatar (kleine Parts) → soulSize<1 → hpMax<direkt. Σ Substanz 0,035 m³ gegen
+            // REF 0,06 → sizeFactor 0,922 (die alten Teile 0,4 + 0,3 hatten 0,091 m³ → 1,064: nie klein, die Probe maß nie).
             if (!r.state.customSouls) r.state.customSouls = {};
             r.state.customSouls["bp_smallAvatar"] = {
                 role: "soul",
                 bodyParts: [
-                    { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
                     { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
+                    { shape: "sphere", material: "fleisch", size: { x: 0.2, y: 0.2, z: 0.2 } },
                 ],
             };
             r.state.blueprints = r.state.blueprints || {};
@@ -34754,8 +34751,8 @@ async function checkBandV18206SpeedTrade(ctx) {
             r.state.customSouls["bp_smallAvatarS"] = {
                 role: "soul",
                 bodyParts: [
-                    { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
                     { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
+                    { shape: "sphere", material: "fleisch", size: { x: 0.2, y: 0.2, z: 0.2 } },
                 ],
             };
             r.state.blueprints["bp_smallAvatarS"] = r.state.customSouls["bp_smallAvatarS"];
