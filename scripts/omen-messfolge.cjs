@@ -12,7 +12,9 @@
 //   profil (12 s, Regler voll, Top 60) — und stop. DER GENESIS-RING (`--ort genesis`, 0910-1) misst in seinem EIGENEN Boot:
 //   boot · dorf-aus · fenster · umstellen --ort genesis · buehne · band — nie in einer Sitzung, die schon anderes maß.
 //   DIE BAND urteilt ihre Aufzeichnung selbst: steht der Ort nicht (`ortGestellt`: „NICHT GESTELLT"), ist der Lauf ROT und
-//   zählt nie; ein Rahmen-Ziel des Direktpfads im VRAM (`tex:r184-ausgabe`, ein Linsen-Rest) ebenso.
+//   zählt nie; JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt · stufe · leck · weit · ungemessen) ebenso —
+//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie (K26: bis 13.10. sah der Exit die Linse nie, 1110-12 meldete
+//   „12 von 12 GRÜN" bei 8 von 8 Band-Boots „linse ROT"). Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -40,6 +42,8 @@
 //
 //   node scripts/omen-messfolge.cjs [--ort wiese|genesis] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
 //                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
+//                                   [--sicht ego|third] [--basis <A.json>]   (K26: die Sicht des Orts; die Basis-Seite A des ABAB)
+//   node scripts/omen-messfolge.cjs --urteil <boot.json> [--basis <A.json>]   (K26, ohne GPU: ein gespeicherter Boot neu gelesen)
 //   node scripts/omen-messfolge.cjs --schalter <bloecke.json> (1310-1: ein Schalter in EINER Sitzung, Erst- gegen Dauer-Zeichnung)
 //   node scripts/omen-messfolge.cjs --selbsttest       (ohne Welt: jede Wache und die Folge-Regel fallen bei ihrem Täter rot)
 //
