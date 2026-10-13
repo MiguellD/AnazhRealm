@@ -28393,6 +28393,7 @@ class AnazhRealm {
         let best = Infinity;
         let bestHw = 0;
         let bestRand = Infinity;
+        let bestSp = NaN;
         for (let dj = -1; dj <= 1; dj++) {
             for (let di = -1; di <= 1; di++) {
                 const bi = bi0 + di;
@@ -28418,11 +28419,12 @@ class AnazhRealm {
                         bestRand = rand;
                         best = dist;
                         bestHw = hw;
+                        bestSp = seg.sA + (seg.sB - seg.sA) * t;
                     }
                 }
             }
         }
-        return { dist: best, halfW: bestHw };
+        return { dist: best, halfW: bestHw, spiegel: bestSp };
     }
 
     // DIE FLÜSSE UNTER EINEM ABDRUCK (K16, die Fern-Farbe): ein Fern-Punkt steht für eine Fläche der Kante `F` (`fussM`,
@@ -32158,10 +32160,21 @@ class AnazhRealm {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
                             // das Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
                             // derselbe Stoff; der Ring reicht seine Ecken-Krone (`opts.kroneVertex`) für den Ort jenseits der Karte.
-                            const _alb =
+                            let _alb =
                                 opts.wegeKarte === true
                                     ? this._fernKroneNahMisch(_Ta, _geo, opts.kroneVertex || null)
                                     : _geo;
+                            // DAS WASSER DES RINGS (K16, die Naht des Wassers): der Anteil des Wassers (`opts.wasserVertex`,
+                            // aNass) ist kein Boden — er wirft zurück, was der Wasser-Stoff zurückwirft (`_wasserBlick`: der
+                            // Körper R∞ im Licht des Orts, der Himmel × Fresnel, der Glanz; dieselben Uniforms), der Boden
+                            // trägt den Rest. Bis K16 mischte der Ring ein Fern-Blau in die Boden-Farbe (Luma 4,8× zu hell).
+                            if (opts.wasserVertex) {
+                                // im Fern-Fenster die Fluss-Karte je Fragment, jenseits der Kasten-Anteil des Punkts
+                                const _fk = this._flussKarteNode(_Ta);
+                                const _nass = _Ta.mix(opts.wasserVertex, _fk.wert, _fk.imFenster).clamp(0.0, 1.0);
+                                _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
+                                mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
+                            }
                             albedoNode = _alb;
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
@@ -37606,6 +37619,45 @@ class AnazhRealm {
     // Der EINE Wasser-Shader für alle Iso-Wasser-Meshes (Ozean + See + Fluss): `aWave` ∈ [0,1]
     // (Ozean-Anteil, skaliert die Wellen; weich 0 am Ufer → kein Küsten-Riss), `aFlow` (Gefälle-
     // Tangente, die Strömung trägt das Bild stromab). Sonne/Licht/Fog speist `_applyDayNightToScene`.
+    // DER WASSER-KÖRPER (K16, die Naht des Wassers): was die optisch tiefe Wassersäule zurückstreut, R∞ = 0,33 · b_b / (a + b_b)
+    // je Kanal (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m) — EINE Formel
+    // für den Wasser-Stoff und jeden Fern-Leser (Ring, Feld-Pass). Bis K16 trug die Ferne ein eigenes Fern-Blau
+    // (`FERN_FARBE.wasser`, 0x265273): der Fluss im Ring 4,8× heller als der gebaute (Luma 0,255 gegen 0,053).
+    static _wasserKoerper(WG) {
+        return WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu));
+    }
+
+    // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
+    // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
+    // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
+    _wasserBlick(TSL, WG, o) {
+        const { float, vec3, normalize, reflect, max, dot, pow, clamp, texture, equirectUV } = TSL;
+        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
+        const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
+        const fres = float(WG.fresnel[0]).add(
+            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
+        );
+        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
+        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
+        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
+        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
+        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
+        const _R = reflect(o.viewDir.negate(), o.n);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
+        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
+        // (Rayleigh-Farbe sunCol × ihre Stärke light).
+        const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
+        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const eigen = o.koerper
+            .mul(o.irr)
+            .mul(float(1.0).sub(o.T))
+            .mul(float(1.0).sub(fres))
+            .add(himmel.mul(fres))
+            .add(glanz);
+        return { eigen, fres };
+    }
+
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
@@ -37685,7 +37737,7 @@ class AnazhRealm {
         // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
         // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
-        const koerperAlbedo = vec3(...WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu)));
+        const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
         // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
         // + Himmels-Umgebung + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
@@ -37914,32 +37966,16 @@ class AnazhRealm {
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
-        const ndvW = clamp(dot(nFlow, viewDir), 0.0, 1.0);
-        const fres = float(WG.fresnel[0]).add(
-            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
-        );
-        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
-        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
-        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
-        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
-        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
-        const _R = reflect(viewDir.negate(), nFlow);
-        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
-        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
-        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
-        // (Rayleigh-Farbe uSunCol × ihre Stärke uLight).
-        const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
-        const glanz = uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight);
-        // Was das Wasser selbst zurückwirft: der Körper im Licht des Orts (Volumen-Albedo × E/π), soweit er den
-        // Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Der Schaum ist eine
-        // diffuse weiße Fläche im selben Licht, er deckt (fw).
-        const eigen = koerperAlbedo
-            .mul(uIrr)
-            .mul(float(1.0).sub(T))
-            .mul(float(1.0).sub(fres))
-            .add(himmel.mul(fres))
-            .add(glanz);
+        const { eigen, fres } = this._wasserBlick(TSL, WG, {
+            n: nFlow,
+            viewDir,
+            T,
+            koerper: koerperAlbedo,
+            irr: uIrr,
+            sunCol: uSunCol,
+            sunDir: uSunDir,
+            light: uLight,
+        });
         const fw = foamD.mul(0.7);
         // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
         // α = 1 − T·(1−F)·(1−fw) und C = (fw·Schaum + (1−fw)·eigen) / α — am Ufer scheint der Grund (α → F),
@@ -39286,11 +39322,15 @@ class AnazhRealm {
                 side: THREE.DoubleSide,
                 wegeKarte: true,
                 kroneVertex: TSL.attribute("aKrone", "vec4"),
+                wasserVertex: TSL.attribute("aNass", "float"),
             });
         const material = stoff();
         const stoffNaht = stoff();
         if (!material || !material.colorNode || !stoffNaht || !stoffNaht.colorNode)
             throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
+        // Die Fabrik schluckt Fehler ihres Albedo-Zweigs still — der Ring prüft seinen Wasser-Anteil selbst (K16, laut).
+        if (!material.emissiveNode || !stoffNaht.emissiveNode)
+            throw new Error("Fern-Ring: der Blick des Wassers (aNass, `_fernWasserBlickNode`) fehlt im Ring-Stoff");
         // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um den
         // SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe weiter
         // (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
@@ -39411,6 +39451,7 @@ class AnazhRealm {
             geo.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("aKrone", new THREE.Float32BufferAttribute(new Float32Array(per * 4), 4));
+            geo.setAttribute("aNass", new THREE.Float32BufferAttribute(new Float32Array(per), 1));
             geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setIndex(indices);
             geos.push(geo);
@@ -39423,7 +39464,8 @@ class AnazhRealm {
         const voll0 = geos[0].index.array;
         const teil = (index) => {
             const g = new THREE.BufferGeometry();
-            for (const k of ["position", "color", "aKrone", "normal"]) g.setAttribute(k, geos[0].attributes[k]);
+            for (const k of ["position", "color", "aKrone", "aNass", "normal"])
+                g.setAttribute(k, geos[0].attributes[k]);
             g.setIndex(new THREE.BufferAttribute(index, 1));
             return g;
         };
@@ -39486,8 +39528,8 @@ class AnazhRealm {
     // (`_fernFlussDeckung`), als Wasser-Farbe ohne Krone — dieselbe Farbe, die ein nasser Ring-Punkt trägt.
     _fernFarbeTeile(x, y, z, out, fuss, fussM) {
         if (fuss)
-            return this._fernFlussFarbe(x, z, this._fernFarbeMasche(x, y, z, out, fuss), Math.max(fuss.ht, fuss.hr));
-        if (fussM === undefined) return this._fernFlussFarbe(x, z, this._fernFarbeTeile(x, y, z, out, null, 0), 0);
+            return this._fernFlussTeil(x, z, this._fernFarbeMasche(x, y, z, out, fuss), Math.max(fuss.ht, fuss.hr));
+        if (fussM === undefined) return this._fernFlussTeil(x, z, this._fernFarbeTeile(x, y, z, out, null, 0), 0);
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (
             !core ||
@@ -39593,17 +39635,18 @@ class AnazhRealm {
     // die Saison (`saison` = `_saisonMul` der laufenden Phase — dieselbe Zahl, die `uSeasonMul` trägt) zur Deckung.
     // `out` = [r, g, b] (linear).
     _fernFarbeAt(x, y, z, wet, out, saison, fuss) {
-        const K = AnazhRealm.FERN_FARBE;
+        const R = this._fernWasserKoerper();
         if (wet) {
-            out[0] = K.wasser[0];
-            out[1] = K.wasser[1];
-            out[2] = K.wasser[2];
+            out[0] = R[0];
+            out[1] = R[1];
+            out[2] = R[2];
             return out;
         }
-        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(7)), fuss);
-        out[0] = t[0] + (t[3] * saison.r - t[0]) * t[6];
-        out[1] = t[1] + (t[4] * saison.g - t[1]) * t[6];
-        out[2] = t[2] + (t[5] * saison.b - t[2]) * t[6];
+        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(8)), fuss);
+        const c = t[7];
+        out[0] = (t[0] + (t[3] * saison.r - t[0]) * t[6]) * (1 - c) + R[0] * c;
+        out[1] = (t[1] + (t[4] * saison.g - t[1]) * t[6]) * (1 - c) + R[1] * c;
+        out[2] = (t[2] + (t[5] * saison.b - t[2]) * t[6]) * (1 - c) + R[2] * c;
         return out;
     }
 
@@ -39614,7 +39657,7 @@ class AnazhRealm {
     // 0,035 … 0,128) — jede Masche zog als radialer Streifen um den Spieler. Das Mittel ist exakt für jede Saison s:
     // Deckung ā = ⟨a⟩, Krone k' = ⟨k·a⟩/ā, Boden c' = (⟨c⟩ − ⟨c·a⟩)/(1 − ā), also c' + (k'·s − c')·ā = ⟨c + (k·s − c)·a⟩.
     _fernFarbeMasche(x, y, z, out, fuss) {
-        const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(7));
+        const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(8));
         const S = this._fernMascheSumme || (this._fernMascheSumme = new Float64Array(10));
         S.fill(0);
         const dx = x - fuss.ax;
@@ -40016,7 +40059,17 @@ class AnazhRealm {
             if (v === v) law = v;
         }
         const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
-        let y = this._fernNass(p.x, p.z, law, wl, aus) ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
+        const wet = this._fernNass(p.x, p.z, law, wl, aus);
+        let y = wet ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
+        // DIE HÖHE DES FLUSSES (K16, die Naht des Wassers): der Punkt steht für seine Masche — wo ein Fluss sie zum Anteil c
+        // deckt (`_fernFlussDeckung`, derselbe Kasten-Filter, der den Wasser-Anteil aNass trägt), liegt er auf dem Mittel der
+        // sichtbaren Fläche: Boden × (1 − c) + der Spiegel des Flusses × c. Ein ganz getauchter Punkt riss Gruben in den Ring
+        // (Werkbank 13.10.), ein nie getauchter trug den Fluss nur als Farbe auf der Bank (Prüfung 13.10.).
+        if (!wet) {
+            const fl = this._fernRingFluss || (this._fernRingFluss = { spiegel: NaN });
+            const c = this._fernFlussDeckung(p.x, p.z, p.fuss ? Math.max(p.fuss.ht, p.fuss.hr) : 0, fl);
+            if (c > 0 && fl.spiegel === fl.spiegel) y += (fl.spiegel - y) * c;
+        }
         if (p.row === 0) y -= F.saumDrop;
         return y;
     }
@@ -40046,21 +40099,48 @@ class AnazhRealm {
     // DER FLUSS IN DER MASCHE (K16, die Naht): der Anteil einer Masche (halbe Kante `hs` m; 0 = ein Punkt), den das Wasser
     // eines Flusses deckt — der Querschnitt als Kasten-Filter: die Überdeckung von [d − hs, d + hs] mit dem Wasser
     // [−halbe Breite, +halbe Breite] des nächsten Segments (`_hydroDistAt`).
-    _fernFlussDeckung(x, z, hs) {
+    _fernFlussDeckung(x, z, hs, aus) {
         const fl = this._hydroDistAt(x, z);
+        if (aus) aus.spiegel = fl.spiegel;
         if (!(fl.dist < Infinity)) return 0;
         const w = fl.halfW;
         if (!(hs > 0)) return fl.dist <= w ? 1 : 0;
         return Math.max(0, Math.min(fl.dist + hs, w) - Math.max(fl.dist - hs, -w)) / (2 * hs);
     }
-    _fernFlussFarbe(x, z, out, hs) {
+    // Der Anteil des Wassers in die Teile (Slot 7): das Wasser trägt keine Krone; seine Farbe ist der Blick des Wassers im
+    // Ring-Stoff (`_wasserBlick`) bzw. der Wasser-Körper im Feld-Pass (`_fernFarbeAt`), nie eine Fern-Konstante.
+    _fernFlussTeil(x, z, out, hs) {
         const c = this._fernFlussDeckung(x, z, hs);
-        if (c > 0) {
-            const w = AnazhRealm.FERN_FARBE.wasser;
-            for (let k = 0; k < 3; k++) out[k] += (w[k] - out[k]) * c;
-            out[6] *= 1 - c;
-        }
+        out[7] = c;
+        if (c > 0) out[6] *= 1 - c;
         return out;
+    }
+    // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
+    // des Wasser-Stoffs (`hydroSurfaceUniforms`, EIN Schreiber `_dayNightApplyWaterMaterials`). Ohne Wasser-Stoff bricht er laut.
+    _fernWasserBlickNode(_T) {
+        this._ensureHydroSurfaceMaterial();
+        const U = this.state.hydroSurfaceUniforms;
+        if (!U || !U.irr || !U.sunCol || !U.sunDir || !U.light)
+            throw new Error("Fern-Ring: der Blick des Wassers braucht den Wasser-Stoff (hydroSurfaceUniforms)");
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        return this._wasserBlick(_T, WG, {
+            n: _T.vec3(0.0, 1.0, 0.0),
+            viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
+            T: _T.float(0.0),
+            koerper: _T.vec3(...this._fernWasserKoerper()),
+            irr: U.irr,
+            sunCol: U.sunCol,
+            sunDir: U.sunDir,
+            light: U.light,
+        }).eigen;
+    }
+    // Der Wasser-Körper R∞ des Gesetzes für die CPU-Leser der Ferne (`_wasserKoerper`, EINE Formel mit dem Wasser-Stoff).
+    _fernWasserKoerper() {
+        if (this._fernWasserR) return this._fernWasserR;
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG));
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
@@ -40112,8 +40192,10 @@ class AnazhRealm {
     // ihn). Die Saison legt der Ring-Stoff auf (`uSeasonMul`), das Gedächtnis bleibt über das Jahr gültig.
     _fernRingTeile(x, z, law, wet, rechnen, fuss) {
         if (wet) {
-            const w = AnazhRealm.FERN_FARBE.wasser;
-            return this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0]));
+            const w = this._fernWasserKoerper();
+            return (
+                this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0, 1]))
+            );
         }
         // Schnapp-Punkte sind ganzzahlig, |x|, |z| < 2^21 m; die Maschen-Breite (Viertel-Oktaven) steht über 2^44 — eindeutig.
         const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
@@ -40122,7 +40204,7 @@ class AnazhRealm {
         if (f) return f;
         f = m.alt.get(key) || null;
         if (!f && !rechnen) return null;
-        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(7), fuss);
+        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(8), fuss);
         // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
         // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
         if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
@@ -40160,7 +40242,8 @@ class AnazhRealm {
         return Math.max(0, mindest - n);
     }
 
-    // Die Teile in die zwei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung).
+    // Die Teile in die drei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung), aNass = der Anteil
+    // des Wassers (der Ring-Stoff zeichnet ihn mit dem Blick des Wassers, `_wasserBlick`).
     // Die Reihen einer Schale (inner → aussen, geometrisch): der Reihen-Faktor q ist 1 + `seite` × die Winkel-Breite 2π/W —
     // die Masche ist radial höchstens `seite`-mal so tief wie breit, an jedem Radius.
     static _fernRingReihen(inner, aussen) {
@@ -40172,10 +40255,12 @@ class AnazhRealm {
     static _fernRingSchreibe(geo, li, t) {
         geo.attributes.color.setXYZ(li, t[0], t[1], t[2]);
         geo.attributes.aKrone.setXYZW(li, t[3], t[4], t[5], t[6]);
+        geo.attributes.aNass.setX(li, t[7]);
     }
     static _fernRingAttributeHoch(geo) {
         geo.attributes.color.needsUpdate = true;
         geo.attributes.aKrone.needsUpdate = true;
+        geo.attributes.aNass.needsUpdate = true;
     }
 
     // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die Fern-Krone des nahen Bodens (das
@@ -40257,7 +40342,7 @@ class AnazhRealm {
         if (!j) return;
         const N = k.N;
         const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
-        const t = k.teile || (k.teile = new Float32Array(7));
+        const t = k.teile || (k.teile = new Float32Array(8));
         const sRGB = (c) => {
             const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
             return Math.round(v * 255);
@@ -71510,7 +71595,17 @@ class AnazhRealm {
                           groesse: TSL.uniform(S.fensterM),
                       })
                     : null;
-            return { S, N, daten, tex, kronen, U, mitteX: 0, mitteZ: 0, zentriert: false };
+            // DIE FLUSS-KARTE dieser Stufe (K16, die Naht des Wassers): dasselbe Fenster, dasselbe Raster wie die Wege — je Texel
+            // der Anteil, den das Wasser eines Flusses deckt (`_flussKarteMalen`, dieselben Segmente und Breiten wie
+            // `_fernFlussDeckung`). Der Fern-Ring liest sie je Fragment (`_flussKarteNode`): ein 4–17 m breiter Fluss
+            // trägt seine Kante im Bild statt im Kasten-Mittel seiner Masche (6–24 m).
+            const fDaten = new Uint8Array(N * N);
+            const fluss = {
+                daten: fDaten,
+                tex: karte(N, fDaten, THREE.RedFormat, "fluss-karte:" + S.name),
+                hydroN: -1,
+            };
+            return { S, N, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
         // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
         // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
@@ -71824,11 +71919,13 @@ class AnazhRealm {
     // die Nähe, nie an die Zahl besuchter Siedlungen), EIN Upload je umgezogener Stufe.
     _tickWegeKarte(playerPos) {
         const wk = this.state.wegeKarte;
-        if (!wk || !playerPos || (wk.siedlungen.length === 0 && wk.kronen.size === 0)) return;
+        if (!wk || !playerPos) return;
         const jetzt = performance.now();
+        const hydroN = this._flussKarteStand();
         for (const stufe of wk.stufen) {
             const S = stufe.S;
             if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
+                stufe.fluss.hydroN = -1; // das Fenster zog um: die Flüsse neu
                 const war = stufe.zentriert ? [stufe.mitteX, stufe.mitteZ] : null;
                 const raster = S.texelM * 16;
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
@@ -71838,6 +71935,7 @@ class AnazhRealm {
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 this._kronenStreuUmzug(stufe, war);
             }
+            if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
             // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
             const kr = stufe.kronen;
@@ -71854,6 +71952,88 @@ class AnazhRealm {
                 kr.upload = jetzt;
             }
         }
+    }
+
+    // Der Stand der Hydrosphäre, den die Fluss-Karte trägt: die Zahl bereiter Regionen (Heimat + Kacheln) — kommt eine
+    // Kachel dazu, malt jede Stufe ihre Flüsse neu.
+    _flussKarteStand() {
+        const st = this.state;
+        let n = st.hydrosphere && st.hydrosphere.ready ? 1 : 0;
+        if (st.hydroTiles) for (const t of st.hydroTiles.values()) if (t && t.ready) n++;
+        return n;
+    }
+
+    // Die Flüsse EINER zentrierten Stufe malen (K16, die Naht des Wassers): leeren, jedes Segment der bereiten Regionen
+    // (`riverBuckets`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
+    // den [−Halbbreite, +Halbbreite] quer zum Segment deckt (dieselbe Breite wie `_fernFlussDeckung`); EIN Upload.
+    _flussKarteMalen(stufe, hydroN) {
+        const fl = stufe.fluss;
+        fl.daten.fill(0);
+        fl.hydroN = hydroN;
+        const S = stufe.S;
+        const N = stufe.N;
+        const t = S.texelM;
+        const x0w = stufe.mitteX - S.fensterM / 2;
+        const z0w = stufe.mitteZ - S.fensterM / 2;
+        const st = this.state;
+        const regionen = [st.hydrosphere, ...(st.hydroTiles ? st.hydroTiles.values() : [])];
+        const gesehen = new Set();
+        const daten = fl.daten;
+        for (const h of regionen) {
+            if (!h || !h.ready || !h.riverBuckets) continue;
+            for (const list of h.riverBuckets) {
+                if (!list) continue;
+                for (const seg of list) {
+                    if (gesehen.has(seg)) continue;
+                    gesehen.add(seg);
+                    const r = Math.max(seg.hwA, seg.hwB) + t;
+                    const i0 = Math.max(0, Math.floor((Math.min(seg.ax, seg.bx) - r - x0w) / t));
+                    const i1 = Math.min(N - 1, Math.ceil((Math.max(seg.ax, seg.bx) + r - x0w) / t));
+                    const j0 = Math.max(0, Math.floor((Math.min(seg.az, seg.bz) - r - z0w) / t));
+                    const j1 = Math.min(N - 1, Math.ceil((Math.max(seg.az, seg.bz) + r - z0w) / t));
+                    if (i1 < i0 || j1 < j0) continue;
+                    const ex = seg.bx - seg.ax;
+                    const ez = seg.bz - seg.az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    for (let j = j0; j <= j1; j++) {
+                        const pz = z0w + (j + 0.5) * t;
+                        for (let i = i0; i <= i1; i++) {
+                            const px = x0w + (i + 0.5) * t;
+                            let u = ((px - seg.ax) * ex + (pz - seg.az) * ez) / len2;
+                            u = u < 0 ? 0 : u > 1 ? 1 : u;
+                            const d = Math.hypot(px - (seg.ax + ex * u), pz - (seg.az + ez * u));
+                            const hw = seg.hwA + (seg.hwB - seg.hwA) * u;
+                            const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
+                            if (c <= 0) continue;
+                            const v = Math.round(Math.min(1, c) * 255);
+                            const k = j * N + i;
+                            if (v > daten[k]) daten[k] = v;
+                        }
+                    }
+                }
+            }
+        }
+        fl.tex.needsUpdate = true;
+    }
+
+    // Der Wasser-Anteil der Fluss-Karte je Fragment (dieselbe Stufen-Wahl und dasselbe UV wie `_wegeBodenFarbe`):
+    // { wert, imFenster } — jenseits des Fern-Fensters trägt der Leser seinen Kasten-Anteil (aNass).
+    _flussKarteNode(_T) {
+        const wk = this._wegeKarteEnsure();
+        if (!wk || !wk.stufen[0].U || !wk.stufen[0].fluss)
+            throw new Error("Fluss-Karte: der Ring-Stoff braucht die Wege-Karte mit ihrer Fluss-Schicht");
+        const [nah, fern] = wk.stufen;
+        const xz = _T.positionWorld.xz;
+        const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
+        const relFern = xz.sub(fern.U.mitte).div(fern.U.groesse);
+        const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
+        const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5 - 1 / fern.N));
+        const wert = _T.mix(
+            _T.texture(fern.fluss.tex, relFern.add(0.5)).r,
+            _T.texture(nah.fluss.tex, relNah.add(0.5)).r,
+            innen
+        );
+        return { wert, imFenster };
     }
 
     // Die Wege EINER zentrierten Stufe neu malen — der EINE Neu-Maler für Umzug und Abbau: leeren, die Formen der
@@ -99076,7 +99256,7 @@ class AnazhRealm {
         this._tickTrefferGliederVorbacken(); // die Treffer-Glieder einer kalten Gattung, im Takt der EINEN Bake-Uhr
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
-        this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
+        this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
@@ -102897,15 +103077,14 @@ AnazhRealm.LAUB_STREU = Object.freeze({
 // FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
-// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Wasser =
-// das Fern-Blau als sRGB-Absicht (FARB-GESETZ: 0x265273 → linear), flach auf dem Spiegel.
+// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Das Wasser
+// trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
 // DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für die Fern-Krone des nahen Bodens, offene Ring-Farben und
 // den Feld-Farb-Job, über dem Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte (Krone und Ring je); `memo` = eine Generation des Fern-Farb-Gedächtnisses
 // (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
     saisonDrift: 0.05,
-    wasser: Object.freeze([0.0196, 0.0863, 0.1706]),
     msJeTakt: 2,
     msKnapp: 0.5,
     mindestJeTakt: 64,
