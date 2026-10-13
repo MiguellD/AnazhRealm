@@ -27,7 +27,7 @@
     // ── Der WGSL-Compute-Shader: f32-Port von _terrainMacroSurfaceY ──────────
     //
     // Bind-Group 0 (Layout „auto", 1 Uniform + 8 Storage):
-    //   @0 uniform  Skalare        (8×f32 + 4×u32, 48 Bytes — Reihenfolge unten)
+    //   @0 uniform  Skalare        (6×f32 + 5×u32 in 48 Bytes — packt NUR skalarBytes)
     //   @1 storage  permV[512]     u32 — Lage noise.perm (`_voxelNoise`)
     //   @2 storage  permMod12V[512] u32 — Lage noise.permMod12
     //   @3 storage  permR[512]     u32 — __gelaendeCore.gratRauschen(saat).perm
@@ -35,7 +35,9 @@
     //   @4 storage  anker[]        f32 — Makro-Anker-Pack (Layout siehe
     //                                    spiegelEingaben; [14..] Tal-Vertices
     //                                    flach, dann Tal-Floors)
-    //   @5 storage  eroGrid[]      f32 — Erosions-Delta (Heimat-Grid dim×dim)
+    //   @5 storage  eroGrid[]      f32 — die Erosions-Gitter der Lage: je Gitter ein Kopf
+    //                                    (Ursprung x·z, Kante), dann je Gitter dim×dim
+    //                                    Delta — [0] die Heimat, dann jede Kachel
     //   @6 storage  tarns[]        f32 — je Tarn 5 Werte: x·z·d·reach2·twoSig2
     //   @7 storage  punkte[]       f32 — Eingabe (x,z)-Paare
     //   @8 storage  ausgabe[]      f32 — Makro-Oberflächen-Höhe je Punkt
@@ -56,10 +58,9 @@ struct Skalare {
     wasser: f32,        // Number.isFinite(state.waterLevel) ? waterLevel : base + 4
     includeDetail: f32, // 1 = Detail-Oktave an (Default des JS-Gesetzes)
     hatAnker: f32,      // 1 = _macroAnker() lieferte einen Anker
-    eroOriginX: f32,
-    eroOriginZ: f32,
-    eroCell: f32,
-    eroDim: u32,        // 0 = kein Erosions-Grid (Delta 0)
+    eroCell: f32,       // die Zelle jedes Erosions-Gitters (Heimat und Kacheln teilen sie)
+    eroDim: u32,        // 0 = kein Erosions-Gitter (Delta 0)
+    nEro: u32,          // Gitter im eroGrid-Pack
     nTarns: u32,
     nTal: u32,          // Anzahl Tal-Vertices im anker-Pack
     nPunkte: u32,
@@ -169,13 +170,24 @@ fn noise2dR(xin: f32, yin: f32) -> f32 {
     return 70.0 * (n0 + n1 + n2);
 }
 
-// erosionDelta (gelaende-core) — bilinear über das EINE Heimat-Grid (Kacheln reisen nicht:
-// der Seh-Spiegel v1 deckt die Heimat-Region; jenseits liefert er das rohe
-// Makro-Gesetz, exakt wie das JS vor dem Kachel-Bau).
+// erosionFuer + erosionDelta (gelaende-core) — das Gitter der Region an (x, z): die Heimat, wenn (x, z) in ihr
+// liegt, sonst die Kachel, die (x, z) trägt (Kopf: Ursprung + Kante, die Heimat zuerst), sonst 0; darin bilinear.
+// Bis K40 trug der Spiegel nur die Heimat: wo der Stamm eine Kachel erodiert hatte, lag der Fern-Ring jenseits
+// ±1024 m auf dem rohen Gesetz (Radeon 3,51 m über dem Gesetz — swiftshader baute die Kachel erst nach der Probe).
 fn erosionDeltaAt(x: f32, z: f32) -> f32 {
     if (S.eroDim < 2u) { return 0.0; }
-    let fx = (x - S.eroOriginX) / S.eroCell;
-    let fz = (z - S.eroOriginZ) / S.eroCell;
+    var g = S.nEro;
+    for (var i = 0u; i < S.nEro; i = i + 1u) {
+        let k = i * 3u;
+        if (x >= eroGrid[k] && z >= eroGrid[k + 1u] && x < eroGrid[k] + eroGrid[k + 2u]
+            && z < eroGrid[k + 1u] + eroGrid[k + 2u]) {
+            g = i;
+            break;
+        }
+    }
+    if (g == S.nEro) { return 0.0; }
+    let fx = (x - eroGrid[g * 3u]) / S.eroCell;
+    let fz = (z - eroGrid[g * 3u + 1u]) / S.eroCell;
     let grenze = f32(S.eroDim) - 1.0;
     if (fx < 0.0 || fz < 0.0 || fx >= grenze || fz >= grenze) { return 0.0; }
     let i0 = u32(fx); // fx >= 0 hier: Trunkierung == JS (fx | 0)
@@ -183,7 +195,7 @@ fn erosionDeltaAt(x: f32, z: f32) -> f32 {
     let tx = fx - f32(i0);
     let tz = fz - f32(j0);
     let dim = S.eroDim;
-    let a = i0 + j0 * dim;
+    let a = S.nEro * 3u + g * dim * dim + i0 + j0 * dim;
     return (eroGrid[a] * (1.0 - tx) + eroGrid[a + 1u] * tx) * (1.0 - tz)
         + (eroGrid[a + dim] * (1.0 - tx) + eroGrid[a + dim + 1u] * tx) * tz;
 }
@@ -481,14 +493,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             }
         }
 
-        // Erosions-HEIMAT-Grid (±1024 m; kann vor dem Worldgen null sein → dim 0).
-        const ero = G.erosionFuer(L, 0, 0);
-        const eroDim = ero && ero.delta && ero.dim >= 2 ? ero.dim : 0;
-        const erosionGrid = eroDim
-            ? ero.delta instanceof Float32Array
-                ? ero.delta
-                : Float32Array.from(ero.delta)
-            : new Float32Array(1);
+        // DIE EROSIONS-GITTER der Lage, wie `erosionFuer` sie wählt: die Heimat (±1024 m; vor dem Worldgen null) mit
+        // ihrer Kante dim·cell, dann jede erodierte Kachel mit der Kante ihres Schlüssels (regionSize um den Ursprung,
+        // `kachelSchluessel`). Alle teilen Zelle und Maß — sonst bricht der Pack laut.
+        const gitter = [];
+        if (L.erosion && L.erosion.delta && L.erosion.dim >= 2)
+            gitter.push({
+                e: L.erosion,
+                x: L.erosion.originX,
+                z: L.erosion.originZ,
+                kante: L.erosion.dim * L.erosion.cell,
+            });
+        const kacheln = L.erosionTiles;
+        if (kacheln) {
+            const size = L.regionSize;
+            const eintraege = typeof kacheln.entries === "function" ? [...kacheln.entries()] : Object.entries(kacheln);
+            for (const [schluessel, t] of eintraege) {
+                if (!t || !t.delta || !(t.dim >= 2)) continue;
+                const [kx, kz] = String(schluessel).split(",").map(Number);
+                const x = kx * size - size / 2;
+                const z = kz * size - size / 2;
+                if (t.originX !== x || t.originZ !== z)
+                    throw new Error(
+                        `__feldWgsl.spiegelEingaben: die Erosions-Kachel ${schluessel} liegt nicht an ihrem Schlüssel`
+                    );
+                gitter.push({ e: t, x, z, kante: size });
+            }
+        }
+        const eroDim = gitter.length ? gitter[0].e.dim : 0;
+        const eroCell = gitter.length ? gitter[0].e.cell : 1;
+        for (const g of gitter) {
+            if (g.e.dim !== eroDim || g.e.cell !== eroCell)
+                throw new Error("__feldWgsl.spiegelEingaben: die Erosions-Gitter teilen Zelle und Maß nicht");
+        }
+        const erosionGrid = new Float32Array(Math.max(1, gitter.length * (3 + eroDim * eroDim)));
+        gitter.forEach((g, i) => {
+            erosionGrid[i * 3] = g.x;
+            erosionGrid[i * 3 + 1] = g.z;
+            erosionGrid[i * 3 + 2] = g.kante;
+            erosionGrid.set(g.e.delta, gitter.length * 3 + i * eroDim * eroDim);
+        });
 
         // Tarn-Liste (je 5 Werte — exakt die Leser-Reihenfolge von gelaende-core tarnDelta).
         const tarnListe = Array.isArray(L.tarns) ? L.tarns : [];
@@ -514,10 +558,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             wasser: wasser,
             includeDetail: 1,
             hatAnker: anker ? 1 : 0,
-            eroOriginX: eroDim ? ero.originX : 0,
-            eroOriginZ: eroDim ? ero.originZ : 0,
-            eroCell: eroDim ? ero.cell : 1,
+            eroCell: eroCell,
             eroDim: eroDim,
+            nEro: gitter.length,
             nTarns: nTarns,
             nTal: nTal,
             // f32-Storage-Buffer
@@ -527,9 +570,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         };
     }
 
+    // ── skalarBytes(e, includeDetail, n) — die EINE Uniform-Naht (Reihenfolge == struct Skalare) ──
+    // Jeder Lauf des Spiegels (Fern-Ring, Panorama, die Linse) packt hier; bis K40 schrieb jeder Aufrufer das
+    // Layout selbst ab.
+    function skalarBytes(e, includeDetail, n) {
+        const b = new ArrayBuffer(48);
+        const f = new Float32Array(b, 0, 6);
+        const u = new Uint32Array(b, 24, 5);
+        f[0] = e.base;
+        f[1] = e.steilheit;
+        f[2] = e.wasser;
+        f[3] = includeDetail ? 1 : 0;
+        f[4] = e.hatAnker;
+        f[5] = e.eroCell;
+        u[0] = e.eroDim;
+        u[1] = e.nEro;
+        u[2] = e.nTarns;
+        u[3] = e.nTal;
+        u[4] = n;
+        return b;
+    }
+
     root.__feldWgsl = {
         VERSION: VERSION,
         WGSL_MAKRO: WGSL_MAKRO,
         spiegelEingaben: spiegelEingaben,
+        skalarBytes: skalarBytes,
     };
 })(typeof self !== "undefined" ? self : globalThis);

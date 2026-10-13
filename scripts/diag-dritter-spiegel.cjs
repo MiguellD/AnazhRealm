@@ -9,7 +9,7 @@
 //      Selbsttest-Marker existiert genau einmal.
 //   B) PARITÄT — deterministisches 72×72-Proben-Gitter (x,z ∈ [−852,852],
 //      Schritt 24 m — ganzzahlig = f32-exakt, innerhalb des Erosions-
-//      Heimat-Grids ±1024): je Punkt f64-Referenz (die EINE lebende Quelle
+//      Heimat-Grids ±1024; dazu seit K40 ein 24×24-Gitter in der Erosions-Kachel "1,0"): je Punkt f64-Referenz (die EINE lebende Quelle
 //      `_terrainMacroSurfaceY`) gegen den GPU-Compute-Lauf; Bänder auf
 //      meanAbs / p95 / Anteil>2 m / max — UND (V18.485) als MULTI-SEED-
 //      SWEEP über 3 Welten in EINEM Boot: das Gesetz liest genau 6 seed-
@@ -40,6 +40,10 @@ function check(name, ok, detail) {
 const N = 72; // 72×72 = 5184 Punkte
 const START = -852; // ±852 m — innerhalb des Erosions-Heimat-Grids (±1024)
 const STEP = 24; // ganzzahlig → jede Koordinate ist f32-exakt (kein Rundungs-Rauschen)
+// Das KACHEL-Gitter (K40): 24×24 ganzzahlige Punkte in der Erosions-Kachel "1,0" (Ursprung 1024/−1024, Kante 2048 —
+// _ensureHydroTilesAround legt sie so), jenseits der Heimat. Band: das Seh-Band des Fern-Rings (0,5 m).
+const KACHEL = { schluessel: "1,0", ursprung: { x: 1024, z: -1024 }, M: 24, x0: 1048, dx: 40, z0: -952, dz: 80 };
+const BAND_KACHEL = 0.5; // m
 
 // ── BÄNDER (GEMESSEN 16.07.2026, swiftshader-Vulkan, Headless-Boot-Seed
 //    "anazh-realm-seed", Erosion+Anker+19 Tarns im Pack:
@@ -147,7 +151,7 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(
-        async (MARKER, TAMPER, N, START, STEP, SEEDS) => {
+        async (MARKER, TAMPER, N, START, STEP, SEEDS, KACHEL) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const res = { fehler: [] };
             // Boot-Warte: das Gesetz + worldMeta müssen stehen.
@@ -186,7 +190,9 @@ const server = http.createServer((req, res) => {
             };
             // Seed-NEUTRALE Ressourcen EINMAL: Proben-Gitter, Uniform-, Out-,
             // Staging-Buffer (Größen hängen nur an n).
-            const n = N * N;
+            // Dahinter das KACHEL-Gitter (K40): M×M Punkte in der Erosions-Kachel östlich der Heimat — der Spiegel trägt
+            // jede Kachel, die der Stamm erodiert hat (bis K40 nur die Heimat: der Fern-Ring lag auf dem Radeon 3,5 m daneben).
+            const n = N * N + KACHEL.M * KACHEL.M;
             const punkte = new Float32Array(n * 2);
             {
                 let k = 0;
@@ -194,6 +200,13 @@ const server = http.createServer((req, res) => {
                     for (let i = 0; i < N; i++) {
                         punkte[k * 2] = START + i * STEP;
                         punkte[k * 2 + 1] = START + j * STEP;
+                        k++;
+                    }
+                }
+                for (let j = 0; j < KACHEL.M; j++) {
+                    for (let i = 0; i < KACHEL.M; i++) {
+                        punkte[k * 2] = KACHEL.x0 + i * KACHEL.dx;
+                        punkte[k * 2 + 1] = KACHEL.z0 + j * KACHEL.dz;
                         k++;
                     }
                 }
@@ -277,28 +290,27 @@ const server = http.createServer((req, res) => {
                     r.state.erosionTiles = new Map();
                     r._worldgenComputeErosionAndTarns();
                 }
+                // Die Erosions-Kachel des Kachel-Gitters (wie _ensureHydroTilesAround sie legt: Ursprung am Schlüssel).
+                if (!r.state.erosionTiles) r.state.erosionTiles = new Map();
+                if (!r.state.erosionTiles.has(KACHEL.schluessel)) {
+                    const t = r._computeErosion(KACHEL.ursprung);
+                    if (t) t.flowTo = null;
+                    if (t) r.state.erosionTiles.set(KACHEL.schluessel, t);
+                }
+                const L = r._gelaende();
+                let kachelDelta = 0;
+                for (let k = N * N; k < n; k++)
+                    kachelDelta = Math.max(
+                        kachelDelta,
+                        Math.abs(window.__gelaendeCore.erosionDelta(L, punkte[k * 2], punkte[k * 2 + 1]))
+                    );
                 // SYNCHRONER Block (keine awaits): Eingaben-Pack + f64-Referenz
                 // sehen garantiert DENSELBEN Welt-Stand.
                 const eingaben = window.__feldWgsl.spiegelEingaben(r);
                 const ref = new Float64Array(n);
                 for (let k = 0; k < n; k++) ref[k] = r._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1]);
                 // Uniform je Seed frisch (Anker/Erosions-Ursprung/Zähler wandern mit).
-                const uniBytes = new ArrayBuffer(48);
-                const uf = new Float32Array(uniBytes, 0, 8);
-                const uu = new Uint32Array(uniBytes, 32, 4);
-                uf[0] = eingaben.base;
-                uf[1] = eingaben.steilheit;
-                uf[2] = eingaben.wasser;
-                uf[3] = eingaben.includeDetail;
-                uf[4] = eingaben.hatAnker;
-                uf[5] = eingaben.eroOriginX;
-                uf[6] = eingaben.eroOriginZ;
-                uf[7] = eingaben.eroCell;
-                uu[0] = eingaben.eroDim;
-                uu[1] = eingaben.nTarns;
-                uu[2] = eingaben.nTal;
-                uu[3] = n;
-                device.queue.writeBuffer(uniBuf, 0, uniBytes);
+                device.queue.writeBuffer(uniBuf, 0, window.__feldWgsl.skalarBytes(eingaben, eingaben.includeDetail, n));
                 const bufs = [
                     mkStorage(eingaben.permVoxel),
                     mkStorage(eingaben.permMod12Voxel),
@@ -324,6 +336,8 @@ const server = http.createServer((req, res) => {
                 res.seeds.push({
                     seed: seedK,
                     erosionDa: eingaben.eroDim > 0,
+                    nEro: eingaben.nEro,
+                    kachelDelta,
                     ankerDa: eingaben.hatAnker === 1,
                     nTarns: eingaben.nTarns,
                     gpu,
@@ -346,7 +360,8 @@ const server = http.createServer((req, res) => {
         N,
         START,
         STEP,
-        SWEEP_SEEDS
+        SWEEP_SEEDS,
+        KACHEL
     );
 
     await browser.close();
@@ -365,7 +380,10 @@ const server = http.createServer((req, res) => {
     for (const s of out.seeds || []) {
         check(
             `Welt ${JSON.stringify(s.seed)}: Pack komplett (Erosion + Anker) + GPU-Ausgabe`,
-            s.erosionDa === true && s.ankerDa === true && Array.isArray(s.gpu) && s.gpu.length === N * N,
+            s.erosionDa === true &&
+                s.ankerDa === true &&
+                Array.isArray(s.gpu) &&
+                s.gpu.length === N * N + KACHEL.M * KACHEL.M,
             `Erosion=${s.erosionDa ? "da" : "FEHLT"} · Anker=${s.ankerDa ? "da" : "FEHLT"} · Tarns=${s.nTarns}`
         );
     }
@@ -423,6 +441,23 @@ const server = http.createServer((req, res) => {
             `${(st.anteilUeber2 * 100).toFixed(3)} %`
         );
         check(`${s.seed}: BAND max <= ${BAND_MAX} m`, st.max <= BAND_MAX, `${fmt(st.max)} m`);
+    }
+
+    // DIE KACHEL REIST MIT (K40): das Kachel-Gitter trägt Erosion (sonst bewiese es nichts), der Pack trägt die Kachel,
+    // und die GPU liegt dort im Seh-Band — bis K40 lag sie auf dem rohen Gesetz (die Heimat allein reiste).
+    const nH = N * N;
+    for (const s of out.seeds) {
+        const st = statistik(s.ref.slice(nH), s.gpu.slice(nH));
+        check(
+            `${s.seed}: KACHEL ${KACHEL.schluessel} im Pack und erodiert (sonst bewiese das Gitter nichts)`,
+            s.nEro >= 2 && s.kachelDelta >= 0.5,
+            `Gitter im Pack ${s.nEro} · max |Erosion| im Kachel-Gitter ${fmt(s.kachelDelta)} m`
+        );
+        check(
+            `${s.seed}: KACHEL — GPU im Seh-Band (max <= ${BAND_KACHEL} m, ${KACHEL.M}×${KACHEL.M} Punkte)`,
+            st.kaputt === 0 && st.max <= BAND_KACHEL,
+            `meanAbs=${fmt(st.meanAbs)} m · max=${fmt(st.max)} m`
+        );
     }
 
     console.log("\n===== DRITTER SPIEGEL — C) Selbst-Test (Linse nicht vakuös) =====");

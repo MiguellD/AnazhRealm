@@ -40197,21 +40197,7 @@ class AnazhRealm {
                 device.queue.writeBuffer(buf, 0, arr.buffer, arr.byteOffset, arr.byteLength);
                 return buf;
             };
-            const uniBytes = new ArrayBuffer(48);
-            const uf = new Float32Array(uniBytes, 0, 8);
-            const uu = new Uint32Array(uniBytes, 32, 4);
-            uf[0] = e.base;
-            uf[1] = e.steilheit;
-            uf[2] = e.wasser;
-            uf[3] = includeDetail ? 1 : 0; // der Ring liest das Gesetz OHNE Detail-Oktave
-            uf[4] = e.hatAnker;
-            uf[5] = e.eroOriginX;
-            uf[6] = e.eroOriginZ;
-            uf[7] = e.eroCell;
-            uu[0] = e.eroDim;
-            uu[1] = e.nTarns;
-            uu[2] = e.nTal;
-            uu[3] = n;
+            const uniBytes = fw.skalarBytes(e, includeDetail, n); // der Ring liest das Gesetz OHNE Detail-Oktave
             const uniBuf = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
             device.queue.writeBuffer(uniBuf, 0, uniBytes);
             const bufs = [
