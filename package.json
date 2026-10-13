@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.543.0",
+    "version": "18.544.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -35,7 +35,7 @@
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
         "gate:schatten-bias": "node scripts/diag-schatten-bias.cjs --selftest && node scripts/diag-schatten-terminator.cjs --selftest",
         "gate:schatten-terminator": "node scripts/diag-schatten-terminator.cjs",
-        "gate:persistence": "node scripts/diag-persistence.cjs",
+        "gate:persistence": "node scripts/diag-persistence.cjs --selftest",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
         "gate:render-tap": "node scripts/diag-render-tap.cjs",
@@ -221,6 +221,7 @@
         "gate:ci-deckung": "node scripts/diag-ci-deckung.cjs --selftest && node scripts/diag-ci-deckung.cjs",
         "gate:taille": "node scripts/diag-taille.cjs",
         "gate:haus-fern": "node scripts/diag-haus-fern.cjs",
+        "gate:tor-fern": "node scripts/diag-tor-fern.cjs --selftest",
         "gate:arch-feld": "node scripts/diag-arch-feld.cjs --selftest && node scripts/diag-arch-feld.cjs",
         "gate:analog-nah": "node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs",
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",

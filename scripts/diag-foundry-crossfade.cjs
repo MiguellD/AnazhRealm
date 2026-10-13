@@ -33,7 +33,7 @@
 //       gegen das Gesetz, je Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz ×
 //       Distanz-Intervall, Dither-Raster 256 — kein Loch; der Überschuss (das Fenster behält, das Gesetz nicht) steht als
 //       Zahl. --selftest: verschobene Kanten (je Stufe 1 m nach innen) reißen Löcher und werden genannt.
-//   (7) DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): eine Karten-Art, die nur die L0 deklariert (Wagen, Tor), blendet nie
+//   (7) DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): eine Karten-Art, die nur die L0 zeigt (Wagen, Tor), blendet nie
 //       aus — dieselbe Loch-Probe wie die Stufen-Wahrheit (Teil b), über den Sweep 4–55 m, voll und unter Last. Bis 06.10.
 //       stempelte der Gruppen-Bau ihre L0 als „L0 vor einer L1" (1): ab 8 m × Perf fiel die ganze Gestalt aus.
 //   (8) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das Maß der Blende ist die INSTANZ (Studio foundry-core
@@ -603,8 +603,9 @@ async function runPartB() {
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
-        // DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): Wagen und Tor sind Karten-Arten (KIND_POLICY.impostor), deklarieren
-        // aber nur die L0 (kindStages [0]). Eigene Orte; ihre L0 wärmt hier, der Sweep pflanzt sie neu und räumt sie.
+        // DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): Wagen und Tor sind Karten-Arten (KIND_POLICY.impostor), zeigen
+        // aber nur die L0 (Wagen kindStages [0]; das Tor [0,3], die 3 ist NUR-WURF und wird nie gezeigt — 1110-9). Eigene
+        // Orte; ihre L0 wärmt hier, der Sweep pflanzt sie neu und räumt sie.
         res.ohnePartner = [];
         for (const [typ, dx] of [
             ["fahrzeug_gt", 800],
@@ -632,6 +633,7 @@ async function runPartB() {
                 preset: oPreset,
                 warm: oWarm,
                 stufen: oPreset ? r._foundryKindStages(oPreset) : null,
+                gezeigt: oPreset ? (r._foundryKindStages(oPreset) || []).filter((s) => !r._foundryNurWurf(oPreset, s)) : null,
                 ort: { x: ox, y: oy, z: oz },
             });
             if (oE) r.removeArchitecture(oE);
@@ -1064,8 +1066,12 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     if (!/setAttribute\(\s*"aLodLevel",\s*new THREE\.BufferAttribute\(new Float32Array\([^)]*\)\.fill\(3\), 1\)\s*\)/.test(gestalt))
         v.push("die Zwillings-Gestalt trägt nicht den Nah-Stempel (aLodLevel 3: wirft für L0 und L1, blendet zur Karte aus)");
     // EIN WERFER JE GESTALT (W6): die Wurf-Quelle wirft über die Zwillings-Leaves, die L0 übernimmt DIESELBEN Objekte.
-    if (!/const castsShadow = wurf === lod && !zwillingsQuelle;/.test(flat))
+    // Die Kosten-Regel (1110-9, `_wurfVonBilligerer`) ist der zweite Term: die eigene Stufe wirft nur, wenn die Regel SIE
+    // wählt — und dann reist kein Zwilling mit (`schatten = null`), sonst würfen beide.
+    if (!/const castsShadow = \(wurf === lod && !zwillingsQuelle\) \|\| \(wurfKosten !== null && wurfKosten\.von === lod\);/.test(flat))
         v.push("die Wurf-Quelle (L1) wirft über ihre Teile UND als Zwilling der L0 — zwei Gruppen je Gestalt in jeder Kaskade");
+    if (!/if \(von !== "zwilling"\) schatten = null;/.test(flat))
+        v.push("die Kosten-Regel lässt die eigene Stufe werfen UND den Zwilling mitreisen — zwei Werfer je Gestalt");
     if (!/for \(const lf of schatten\.leaves\) if \(lf\.shadowTwin\) leaves\.push\(lf\);/.test(flat))
         v.push("die L0 baut einen eigenen Zwilling statt die Zwillings-Leaves der Wurf-Stufe zu tragen");
     const band = fnBody(srcNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
@@ -1217,7 +1223,8 @@ async function main() {
             ],
             ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
             ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(3), 1)", "aLodLevel.count).fill(2), 1)")],
-            ["zwei Werfer je Gestalt", nc.replace("const castsShadow = wurf === lod && !zwillingsQuelle;", "const castsShadow = wurf === lod;")],
+            ["zwei Werfer je Gestalt", nc.replace("const castsShadow = (wurf === lod && !zwillingsQuelle) ||", "const castsShadow = wurf === lod ||")],
+            ["Kosten-Regel wirft doppelt", nc.replace('if (von !== "zwilling") schatten = null;', "")],
             ["L0 baut eigenen Zwilling", nc.replace("for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
             ["Band wirft doppelt", nc.replace("this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
             ["Streu-Band wirft doppelt", nc.replace("const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
@@ -1666,11 +1673,12 @@ async function main() {
         // Gestalt ab 8 m × Perf (der eigene Wagen in der Verfolger-Kamera ein Geist, jeder Wagen und jedes Tor jenseits
         // 12 m fort; 06.10. rot: GT voll 27 von 27 Proben mit Loch).
         for (const op of out.ohnePartner || []) {
-            const nurL0 = Array.isArray(op.stufen) && op.stufen.length === 1 && op.stufen[0] === 0;
+            // gezählt werden die GEZEIGTEN Stufen (eine NUR-WURF-Stufe ist kein Blend-Partner, `_foundryDeclaredStage`)
+            const nurL0 = Array.isArray(op.gezeigt) && op.gezeigt.length === 1 && op.gezeigt[0] === 0;
             check(
-                `KETTE OHNE PARTNER (${op.typ}): Preset, nur die L0 deklariert, L0 warm`,
+                `KETTE OHNE PARTNER (${op.typ}): Preset, nur die L0 gezeigt, L0 warm`,
                 !!op.preset && nurL0 && op.warm === true,
-                JSON.stringify({ preset: op.preset, stufen: op.stufen, warm: op.warm })
+                JSON.stringify({ preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, warm: op.warm })
             );
             if (!op.voll || !op.last) {
                 check(`KETTE OHNE PARTNER (${op.typ}): Sweep lief`, false, "fehlt");

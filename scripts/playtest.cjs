@@ -16270,12 +16270,21 @@ async function checkBandWelle6DSoul(ctx) {
                 : 2;
         out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
         out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === humanStats.hpMax;
+        // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie, eine Neuberechnung klemmt nur
+        // (verwundet bleibt verwundet; gate:kampf-gefuehl T27 geht jeden Rufer im Modus pfad).
+        const pl6d = r.state.player;
+        const vollNachWandlung =
+            typeof pl6d.hp === "number" &&
+            typeof pl6d.hpMax === "number" &&
+            typeof pl6d.stamina === "number" &&
+            typeof pl6d.staminaMax === "number" &&
+            pl6d.hp === pl6d.hpMax &&
+            pl6d.stamina === pl6d.staminaMax;
+        pl6d.hp = 0.5 * pl6d.hpMax;
+        pl6d.stamina = 0.25 * pl6d.staminaMax;
+        r.recomputePlayerStats();
         out.statePlayerHasHpAndStamina =
-            typeof r.state.player.hp === "number" &&
-            typeof r.state.player.hpMax === "number" &&
-            typeof r.state.player.stamina === "number" &&
-            typeof r.state.player.staminaMax === "number" &&
-            r.state.player.hp === r.state.player.hpMax;
+            vollNachWandlung && pl6d.hp === 0.5 * pl6d.hpMax && pl6d.stamina === 0.25 * pl6d.staminaMax;
         // Restore
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
@@ -16419,7 +16428,11 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
         r.state.player.deathWoundIntensity = 0;
         r.state.player.respawnGraceUntil = -Infinity;
+        r.state.player.hp = 1;
         r._playerDeathRespawn("test");
+        // Der feld-native Tod (K27): die Rückkehr setzt die Lebenswerte voll — gemessen am Respawn selbst, bevor der
+        // Vitals-Takt die Wunde heilt (er hebt hpMax, nie hp).
+        out.respawnHpFull = r.state.player.hp === r.state.player.hpMax && r.state.player.hp > 1;
         out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
         // ALTLASTEN-NULL: die Wunde drückt die Tags — der ROHE Stat-Rechner
         // (computePlayerStats) zeigt sie; hp wurde vom Respawn voll gesetzt.
@@ -16432,9 +16445,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.deathLastTick = -Infinity;
         r.tickPlayerVitals(performance.now() / 1000);
         out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
-        // Der feld-native Tod: Respawn setzte HP voll + Gnade steht + der
-        // Todesort trägt eine Lebens-Spur (das dritte Verb, KONSUM).
-        out.respawnHpFull = r.state.player.hp === r.state.player.hpMax;
+        // Gnade steht + der Todesort trägt eine Lebens-Spur (das dritte Verb, KONSUM).
         out.respawnGraceSet = r.state.player.respawnGraceUntil > performance.now() / 1000;
         out.deathDepositsLife = !!(r.state.lifeField && r.state.lifeField.size > 0);
         r.state.player.respawnGraceUntil = -Infinity;
@@ -17593,7 +17604,7 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: state.sprintSpeed = Gesetz-sprintMul × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
         check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
         check(
-            "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
+            "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt, die Neuberechnung heilt nicht",
             wave6dResults.statePlayerHasHpAndStamina
         );
         check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
@@ -22801,11 +22812,24 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             syncResult.mesh.geometry.dispose();
             workerResult.mesh.geometry.dispose();
         }
-        // 5) voxelEdit notify: state-gen bumpt + cache geleert
-        const beforeStateGen = r.state.voxelWorkerStateGen;
-        r._voxelWorkerNotifyEdit({ x: 1000, y: 0, z: 1000, r: 3, strength: 48, mode: "carve" });
-        out.editBumpedStateGen = r.state.voxelWorkerStateGen === beforeStateGen + 1;
-        out.editClearedCache = !r.state.voxelDensityCache || r.state.voxelDensityCache.size === 0;
+        // 5) voxelEdit notify (K23, die Generation je Chunk): ein Edit über den Spielpfad ändert den Stand SEINES Chunks,
+        // nicht den eines fernen, und aus dem Density-Cache fällt nur seine Nachbarschaft.
+        const span5 = r._voxelChunkConfig().span;
+        const ecx = Math.floor(1000 / span5);
+        const standNahVor = r._voxelStand(ecx, ecx);
+        const standFernVor = r._voxelStand(ecx + 10, ecx + 10);
+        if (!r.state.voxelDensityCache) r.state.voxelDensityCache = new Map();
+        r.state.voxelDensityCache.set(`${ecx},${ecx},0`, new Float32Array(1));
+        r.state.voxelDensityCache.set(`${ecx + 10},${ecx + 10},0`, new Float32Array(1));
+        const editsVor5 = r.state.worldMeta.voxelEdits;
+        r.state.worldMeta.voxelEdits = (editsVor5 || []).slice();
+        r.carveVoxelSphere(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
+        out.editBumpedStateGen = r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
+        out.editClearedCache =
+            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) && r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
+        r.state.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
+        r.state.worldMeta.voxelEdits = editsVor5 || [];
+        r._voxelWorkerSyncState({ op: "state-set" });
         // 6) Source-Probes
         // V12.0-perf.a — Worker-Density-Stufe lebt in `_acquireVoxelChunkBuild`.
         out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(window.__codeOf(r._acquireVoxelChunkBuild));
@@ -22841,8 +22865,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
         );
     }
-    check("Welle Perf-3.c V9.90: voxelEdit bumpt state-gen", res.editBumpedStateGen);
-    check("Welle Perf-3.c V9.90: voxelEdit leert Density-Cache", res.editClearedCache);
+    check("K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)", res.editBumpedStateGen);
+    check("K23: ein voxelEdit leert den Density-Cache nur in seiner Nachbarschaft", res.editClearedCache);
     check(
         "Welle Perf-3.c V9.90: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensity (Source-Probe)",
         res.ensureUsesFetch
@@ -24854,10 +24878,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 Array.isArray(snap.worldMeta.voxelEdits) &&
                 snap.worldMeta.voxelEdits.length >= 1
             );
-            // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt.
+            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits (bis K23 verdrängte ein FIFO-Deckel ab 257).
             r.state.worldMeta.voxelEdits = [];
             for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
-            out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
+            out.capHeld = r.state.worldMeta.voxelEdits.length === 270;
             // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
             // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
             r.state.worldMeta.voxelEdits = [];
@@ -24882,7 +24906,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
         check("Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)", voxelP3Results.solidToAir);
         check("Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)", voxelP3Results.snapshotHasEdit);
-        check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
+        check("Voxel P3: kein Edit fällt still — 270 Schnitte, 270 Edits (K23)", voxelP3Results.capHeld);
         check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
     }
 
@@ -30918,7 +30942,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // V18.257 — die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
-        // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + SPECIES_GRAMMAR (Form) +
+        // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
         const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
         out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
@@ -34632,9 +34656,10 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             out.hasLaubParts = sample.filter((p) => p.material === "laub").length >= 1;
 
             // (G5) SPECIES.ts-Regel: Laub sitzt NIE am Hauptstamm (y=0..3), sondern an Ebene-2-Enden →
-            // alle laub-Parts haben |xz| > 0.4 ODER y > 2.
+            // alle laub-Parts haben |xz| > 0.4 ODER y > 2. Der Fuß-Saum (die flache Wurzelanlauf-Disk, Ω-K2) sitzt
+            // BEWUSST am Sockel und ist keine Krone (wie V18.211 S3c); seit K24 wächst auch die Bare-Art "eiche" aus dem Gesetz.
             const laubAwayFromTrunk = sample
-                .filter((p) => p.material === "laub")
+                .filter((p) => p.material === "laub" && !(p.position.y < 1 && p.size.x > p.size.y * 1.5))
                 .every((p) => {
                     const dist = Math.hypot(p.position.x, p.position.z);
                     return dist > 0.4 || p.position.y > 2;
@@ -35620,26 +35645,16 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (S1) SPECIES_GRAMMAR trägt die Kern-Arten (6 Bäume + Totholz; mit KARST + 3 Büschen 11) — die
-        // Probe verlangt ≥ 6 statt einer scharfen Zahl.
-        out.grammarExists = !!A.SPECIES_GRAMMAR;
+        // (S1) K24: jede Kern-Art wächst aus dem Gesetzbuch — `_phytoArt` löst den Welt-Namen auf die Rezept-Zeile der
+        // Studio-Tafel auf (die Stamm-Grammatik ist gefallen, der Richter liest treeParams der Art).
+        out.grammarExists = typeof r._phytoArt === "function";
         if (out.grammarExists) {
-            const species = Object.keys(A.SPECIES_GRAMMAR);
-            out.sixSpecies = species.length >= 6;
-            out.allSpeciesPresent = [
-                "baum_eiche",
-                "baum_tanne",
-                "baum_buche",
-                "baum_birke",
-                "baum_kiefer",
-                "baum_erle",
-            ].every((s) => A.SPECIES_GRAMMAR[s] != null);
-            // Pro Spezies: trunk + L1 + foliage existieren; anchorLevel ≥ 1 (Büsche tragen die Krone an L1,
-            // Bäume an L2+, Karst an L3 — „≥ 2" wäre eine Baum-Annahme).
-            out.grammarShapeWohlgeformt = species.every((s) => {
-                const g = A.SPECIES_GRAMMAR[s];
-                return g && g.trunk && g.L1 && g.foliage && g.foliage.anchorLevel >= 1;
-            });
+            out.sixSpecies = ["baum_eiche", "baum_tanne", "baum_buche", "baum_birke", "baum_kiefer", "baum_erle"].every(
+                (sp) => {
+                    const a = r._phytoArt(sp);
+                    return !!(a && a.rec.kind === "tree" && Number.isFinite(a.rec.s.api));
+                }
+            );
         }
 
         // (S2) `_growTreeBlueprintRich` existiert (Routing-Helfer-Trio).
@@ -35650,8 +35665,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // (S3) RICH-PFAD bei direktem Aufruf produziert ≥50 Parts (vs Legacy ~12).
         // 50 = sicherer Schwellenwert; gemessen 75-81 pro Art.
         if (out.richExists && out.grammarExists) {
-            const grammar = A.SPECIES_GRAMMAR.baum_tanne;
-            const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test", grammar);
+            const richParts = r._growTreeBlueprintRich("baum_tanne", "v211-test");
             out.richProducesMany = Array.isArray(richParts) && richParts.length >= 50;
             out.richPartsCount = richParts ? richParts.length : 0;
             // Tag-Neutralität: jedes Part ist holz oder laub (V17.16-Wand).
@@ -35706,10 +35720,11 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         return out;
     });
 
-    check("V18.211 (S1a) SPECIES_GRAMMAR Config existiert", res.grammarExists === true);
-    check("V18.211 (S1b) SPECIES_GRAMMAR trägt 6 Arten", res.sixSpecies === true);
-    check("V18.211 (S1c) Alle 6 Spezies (tanne/kiefer/buche/birke/eiche/erle) präsent", res.allSpeciesPresent === true);
-    check("V18.211 (S1d) Jede Grammatik trägt trunk+L1+foliage", res.grammarShapeWohlgeformt === true);
+    check("K24 (S1a) _phytoArt: die Art liest das Gesetzbuch", res.grammarExists === true);
+    check(
+        "K24 (S1b) die 6 Kern-Arten (tanne/kiefer/buche/birke/eiche/erle) sind Baum-Zeilen der Tafel",
+        res.sixSpecies === true
+    );
     check("V18.211 (S2a) _growTreeBlueprintRich existiert", res.richExists === true);
     check("V18.211 (S2b) _growTreeBlueprintLegacy existiert", res.legacyExists === true);
     check("V18.211 (S2c) _growTreeBlueprint Routing-Funktion existiert", res.routingExists === true);
@@ -35748,13 +35763,15 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // ─── Ω-K2 BAUM-FÜSSE ───
         // Flacher mossiger Saum am Stamm-Sockel: jeder Rich-Baum hat ein laub-Part mit y < trunkBaseR und
         // großem x/z-Stretch (Disk-Form).
-        if (typeof r._growTreeBlueprintRich === "function" && A.SPECIES_GRAMMAR) {
-            const grammar = A.SPECIES_GRAMMAR.baum_tanne;
-            const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test", grammar);
+        if (typeof r._growTreeBlueprintRich === "function") {
+            const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
+            const sk = r._lastTreeSkeleton;
+            r._lastTreeSkeleton = null;
+            const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
             // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
             // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
             const sockelParts = parts.filter(
-                (p) => p.material === "laub" && p.position.y < grammar.trunk.baseR * 2 && p.size.x > p.size.y * 1.5
+                (p) => p.material === "laub" && p.position.y < baseR * 2 && p.size.x > p.size.y * 1.5
             );
             out.k2HasFlare = sockelParts.length >= 1;
             // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).
@@ -36075,8 +36092,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
+        // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
         out.defaultFlareExists =
-            !!A.DEFAULT_TREE_FLARE && Number.isFinite(A.DEFAULT_TREE_FLARE.amp) && A.DEFAULT_TREE_FLARE.amp > 0;
+            Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
         out.speciesTreeParamsExists =
             !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
@@ -36090,7 +36108,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 "baum_birke",
                 "baum_eiche",
                 "baum_erle",
-            ].every((k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp));
+            ].every((k) => tp[k] && !("flare" in tp[k]));
         }
 
         // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
@@ -36139,7 +36157,10 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 out.skelBranchCount = bp._skeleton.branches.length;
                 out.skelAnchorCount = Array.isArray(bp._skeleton.anchors) ? bp._skeleton.anchors.length : 0;
                 out.skelHasTrunk = bp._skeleton.branches.some((b) => b.isTrunk === true);
-                out.skelHasFlare = Number.isFinite(bp._skeleton.flareAmp) && bp._skeleton.flareAmp > 0;
+                out.skelHasFlare =
+                    Number.isFinite(bp._skeleton.flareAmp) &&
+                    bp._skeleton.flareAmp > 0 &&
+                    bp._skeleton.flareLobes === A.STAMM_RIPPEN;
             }
 
             // ─── (T5) Behavioral: archFlattenBlueprint baut Tube+Cards ───
@@ -36222,13 +36243,13 @@ async function checkBandV18214SkeletonMesh(ctx) {
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
     );
-    check("V18.214 (T1f) DEFAULT_TREE_FLARE definiert + amp>0", res.defaultFlareExists === true);
+    check("V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)", res.defaultFlareExists === true);
     check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
     check(
         "V18.214 (T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
         res.tannenSlopeHigher === true
     );
-    check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
+    check("V18.214 (T1i) keine der 6 Arten trägt eine Hand-Anlauf-Zeile (K24-N1)", res.allSpeciesHaveFlare === true);
     check(
         "K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)",
         res.skelettWindDaten === true
@@ -36245,7 +36266,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     );
     check(`V18.214 (T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`, res.skelAnchorCount >= 1);
     check("V18.214 (T4e) Skeleton trägt einen isTrunk-Branch", res.skelHasTrunk === true);
-    check("V18.214 (T4f) Skeleton trägt flareAmp>0 (Wurzelanlauf)", res.skelHasFlare === true);
+    check("V18.214 (T4f) Skeleton trägt den Anlauf des Gesetzes (flareAmp>0, STAMM_RIPPEN)", res.skelHasFlare === true);
     check("V18.214 (T5a) archFlattenBlueprint markiert skeleton: true", res.flatIsSkeleton === true);
     check(
         "V18.214 (T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)",
@@ -36313,12 +36334,11 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
                 v.baum_tanne.resoniert > 0;
         }
 
-        // ─── (W2) baum_totholz ist aus SPECIES_GRAMMAR + SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN ─
+        // ─── (W2) baum_totholz ist aus SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN (die Stamm-Grammatik fiel K24) ─
         // Seit dem Waldboden (integriert 05.10.) ist Totholz eine Studio-Art: die generische Regel (`baum_<preset>` im
         // LIVE-Buch) löst baum_totholz auf das stehende Studio-Totholz auf — nie auf die belaubte Eiche (der Alias).
         const totholzPreset = r._foundryPresetFor("baum_totholz");
         out.totholzFort =
-            !(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_totholz) &&
             !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
             (totholzPreset == null || totholzPreset === "totholz");
 
@@ -36338,9 +36358,8 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         const origLast = r._lastTreeSkeleton;
         try {
             // Tanne-Parts (ohne _isGrown-Flag)
-            const grammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_tanne;
-            if (grammar && r._growTreeBlueprintRich) {
-                const parts = r._growTreeBlueprintRich("baum_tanne", "v215-tanne-1", grammar);
+            if (r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("baum_tanne", "v215-tanne-1");
                 if (Array.isArray(parts) && parts.length >= 30) {
                     const tagsRaw = r.computeCompoundTags({ parts });
                     const tagsGrown = r.computeCompoundTags({
@@ -36389,7 +36408,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     check("V18.215 (W1b) Alle 6 Baum-Spezies deklariert, baum_totholz nicht", res.variationAllSpecies === true);
     check("V18.215 (W1c) Tanne: brennbar↑ + resoniert↑ deklariert", res.tannenDeklariert === true);
     check(
-        "Integration 05.10. (W2) baum_totholz ist aus SPECIES_GRAMMAR, SPECIES_TREE_PARAMS und dem Eichen-Alias gefallen (Studio-Totholz)",
+        "Integration 05.10. (W2) baum_totholz ist aus SPECIES_TREE_PARAMS und dem Eichen-Alias gefallen (Studio-Totholz)",
         res.totholzFort === true
     );
     check(
@@ -36429,20 +36448,18 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // ─── (A) KARST in SPECIES_GRAMMAR + Params + Variation ───────
-        out.grammarHasKarst = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_karst);
-        if (out.grammarHasKarst) {
-            const g = A.SPECIES_GRAMMAR.baum_karst;
-            out.karstAnchor3 = g.foliage.anchorLevel === 3; // L3 foliage (Plan §3.3)
-            out.karstHasL3 = !!g.L3;
-            out.karstCrownIrregular = g.crown === "irregular";
-            out.karstHeightRange = Array.isArray(g.height) && g.height[1] <= 6.5;
-        }
+        // ─── (A) KARST: die Studio-Art karst (_phytoArt, K24) + Params + Variation ───────
+        const karstArt = r._phytoArt("baum_karst");
+        out.grammarHasKarst = !!(karstArt && karstArt.id === "karst" && karstArt.rec.kind === "tree");
         out.karstInTreeParams = !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_karst);
         if (out.karstInTreeParams) {
             const p = A.SPECIES_TREE_PARAMS.baum_karst;
             out.karstSlope16 = Math.abs(p.slopeMax - 1.6) < 1e-9; // klettert Klippen
-            out.karstFlareAmp = !!p.flare && Math.abs(p.flare.amp - 0.9) < 1e-9;
+            // K24-N1: der knorrige Sockel ist das Gesetz der Art (P.flare 0,9 im Phänotyp), nie eine Hand-Zeile
+            r._growTreeBlueprintRich("baum_karst", "pt-karst-anlauf");
+            const skK = r._lastTreeSkeleton;
+            r._lastTreeSkeleton = null;
+            out.karstFlareAmp = !("flare" in p) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
         }
         out.karstInTagVariation = !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.baum_karst);
         if (out.karstInTagVariation) {
@@ -36451,25 +36468,14 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             out.karstLebendigVar = Math.abs(v.lebendig - -0.05) < 1e-9; // lebendig-0.05
         }
 
-        // ─── (B) Drei Büsche in SPECIES_GRAMMAR ─────────────────────
-        out.grammarHasHazel = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.busch_hazel);
-        out.grammarHasFarn = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.farn_busch);
-        out.grammarHasBlume = !!(A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.blume_gross);
-        if (out.grammarHasHazel) {
-            const g = A.SPECIES_GRAMMAR.busch_hazel;
-            out.hazelHeight = Array.isArray(g.height) && g.height[0] >= 1.9 && g.height[1] <= 2.9; // Plan §3.5
-            out.hazelCrownDome = g.crown === "dome";
-        }
-        if (out.grammarHasFarn) {
-            const g = A.SPECIES_GRAMMAR.farn_busch;
-            out.farnNoL2 = !g.L2; // KEIN L2 (fronds direkt aus der Basis)
-            out.farnAnchorL1 = g.foliage.anchorLevel === 1;
-        }
-        if (out.grammarHasBlume) {
-            const g = A.SPECIES_GRAMMAR.blume_gross;
-            out.blumeRedColor = g.foliage.color === 0xc04a4a; // rot (Plan §3.5 Variation)
-            out.blumeSmall = g.height[1] <= 0.9;
-        }
+        // ─── (B) Drei Unterholz-Arten als Studio-Arten (_phytoArt, K24) ─────────────────────
+        const artKind = (sp) => {
+            const a = r._phytoArt(sp);
+            return a ? a.rec.kind : null;
+        };
+        out.grammarHasHazel = artKind("busch_hazel") === "shrub";
+        out.grammarHasFarn = artKind("farn_busch") === "fern";
+        out.grammarHasBlume = artKind("blume_gross") === "flower";
 
         // Bush-Tree-Params + Tag-Variation
         out.allBushInParams =
@@ -36502,9 +36508,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         const origLast = r._lastTreeSkeleton;
         try {
             // KARST: ≥30 parts (drei Ast-Ebenen + foliage)
-            const kg = A.SPECIES_GRAMMAR.baum_karst;
-            if (kg && r._growTreeBlueprintRich) {
-                const parts = r._growTreeBlueprintRich("baum_karst", "v216-karst-1", kg);
+            if (r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("baum_karst", "v216-karst-1");
                 out.karstPartsCount = Array.isArray(parts) ? parts.length : 0;
                 out.karstPartsValid = out.karstPartsCount >= 30;
                 // V17.16-VARIATIONS-Wand passt: dichte+0.10 deklariert → spawnable
@@ -36512,15 +36517,13 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
                     Array.isArray(parts) && parts.every((p) => p.material === "holz" || p.material === "laub");
             }
             // Bushes: ≥10 parts (multi-level branching + Foliage)
-            const hg = A.SPECIES_GRAMMAR.busch_hazel;
-            if (hg && r._growTreeBlueprintRich) {
-                const parts = r._growTreeBlueprintRich("busch_hazel", "v216-hazel-1", hg);
+            if (r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("busch_hazel", "v216-hazel-1");
                 out.hazelPartsCount = Array.isArray(parts) ? parts.length : 0;
                 out.hazelPartsValid = out.hazelPartsCount >= 10;
             }
-            const fg = A.SPECIES_GRAMMAR.farn_busch;
-            if (fg && r._growTreeBlueprintRich) {
-                const parts = r._growTreeBlueprintRich("farn_busch", "v216-farn-1", fg);
+            if (r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("farn_busch", "v216-farn-1");
                 out.farnPartsCount = Array.isArray(parts) ? parts.length : 0;
                 out.farnPartsValid = out.farnPartsCount >= 6;
                 // farn hat ≥3 foliage anchors (cards)
@@ -36528,9 +36531,8 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
                 out.farnAnchors = skel && Array.isArray(skel.anchors) ? skel.anchors.length : 0;
                 out.farnHasAnchors = out.farnAnchors >= 3;
             }
-            const bg = A.SPECIES_GRAMMAR.blume_gross;
-            if (bg && r._growTreeBlueprintRich) {
-                const parts = r._growTreeBlueprintRich("blume_gross", "v216-blume-1", bg);
+            if (r._growTreeBlueprintRich) {
+                const parts = r._growTreeBlueprintRich("blume_gross", "v216-blume-1");
                 out.blumePartsCount = Array.isArray(parts) ? parts.length : 0;
                 out.blumePartsValid = out.blumePartsCount >= 4;
             }
@@ -36582,27 +36584,18 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     });
 
     // (A) KARST
-    check("V18.216 (A1) baum_karst in SPECIES_GRAMMAR", res.grammarHasKarst === true);
-    check("V18.216 (A2) Karst foliage.anchorLevel=3 (L3-Krone, Plan §3.3)", res.karstAnchor3 === true);
-    check("V18.216 (A3) Karst hat L3-Ast-Ebene", res.karstHasL3 === true);
-    check("V18.216 (A4) Karst crown=irregular (gnarled)", res.karstCrownIrregular === true);
+    check("K24 (A1) baum_karst ist die Studio-Art karst (_phytoArt)", res.grammarHasKarst === true);
     check("V18.216 (A5) Karst in SPECIES_TREE_PARAMS", res.karstInTreeParams === true);
     check("V18.216 (A6) Karst slopeMax=1.6 (klettert Klippen)", res.karstSlope16 === true);
-    check("V18.216 (A7) Karst flare amp=0.9 (Sockel knorrig)", res.karstFlareAmp === true);
+    check("V18.216 (A7) Karst-Anlauf 0,9 aus dem Gesetz (Sockel knorrig)", res.karstFlareAmp === true);
     check("V18.216 (A8) Karst in SPECIES_TAG_VARIATION", res.karstInTagVariation === true);
     check("V18.216 (A9) Karst dichte+0.10 (hart)", res.karstDichteVar === true);
     check("V18.216 (A10) Karst lebendig-0.05 (weniger saftig)", res.karstLebendigVar === true);
 
     // (B) Drei Büsche
-    check("V18.216 (B1) busch_hazel in SPECIES_GRAMMAR", res.grammarHasHazel === true);
-    check("V18.216 (B2) farn_busch in SPECIES_GRAMMAR", res.grammarHasFarn === true);
-    check("V18.216 (B3) blume_gross in SPECIES_GRAMMAR", res.grammarHasBlume === true);
-    check("V18.216 (B4) Hazel height [1.9, 2.9] (Plan §3.5)", res.hazelHeight === true);
-    check("V18.216 (B5) Hazel crown=dome", res.hazelCrownDome === true);
-    check("V18.216 (B6) Farn KEIN L2 (fronds direkt aus der Basis)", res.farnNoL2 === true);
-    check("V18.216 (B7) Farn foliage.anchorLevel=1", res.farnAnchorL1 === true);
-    check("V18.216 (B8) Blume foliage.color=0xc04a4a (rot, Plan §3.5)", res.blumeRedColor === true);
-    check("V18.216 (B9) Blume height ≤0.9m (Stand-Blume)", res.blumeSmall === true);
+    check("K24 (B1) busch_hazel ist der Studio-Strauch (_phytoArt)", res.grammarHasHazel === true);
+    check("K24 (B2) farn_busch ist der Studio-Farn (_phytoArt)", res.grammarHasFarn === true);
+    check("K24 (B3) blume_gross ist die Studio-Blume (_phytoArt)", res.grammarHasBlume === true);
     check("V18.216 (B10) Alle 3 Büsche in SPECIES_TREE_PARAMS", res.allBushInParams === true);
     check("V18.216 (B11) Bush-slopeMax-Reihenfolge Hazel>Farn>Blume", res.bushSlopeOrdered === true);
     check("V18.216 (B12) Alle 3 Büsche in SPECIES_TAG_VARIATION", res.allBushInVariation === true);
@@ -36655,11 +36648,10 @@ async function checkBandV18217VariantenPool(ctx) {
         // die Vielfalt reitet pro Instanz über scale/rotationY/tint); der Pool-Mechanismus ist N-unabhängig.
         out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 2;
         out.constantValue = A.VARIANTS_PER_SPECIES;
-        out.ensureHelperExists = typeof r._ensureVariantSeedPool === "function";
-        out.generateHelperExists = typeof r._generateVariantSeedPool === "function";
+        out.ensureHelperExists = typeof r._variantSeedsFor === "function";
         // Grow-Pipeline liest Pool + variantIndex (Source-Probe)
         const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
-        out.growUsesPool = /_ensureVariantSeedPool/.test(growSrc);
+        out.growUsesPool = /_variantSeedsFor/.test(growSrc);
         out.growUsesVariantIndex = /variantIndex/.test(growSrc);
         // Cache-Key-Form `grown_<species>_v<idx>` statt der alten Hash-Form
         out.cacheKeyVariantForm = /grown_\$\{species\}_v\$\{variantIndex\}/.test(growSrc);
@@ -36670,22 +36662,53 @@ async function checkBandV18217VariantenPool(ctx) {
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18217") : null;
         out.freshHasPool = !!(newMeta && newMeta.variantSeed && typeof newMeta.variantSeed === "object");
         if (out.freshHasPool) {
-            const species = Object.keys(newMeta.variantSeed);
-            out.freshPoolSpeciesCount = species.length;
-            // Alle aktuellen SPECIES_GRAMMAR-Spezies haben einen Pool
-            const grammarSpec = Object.keys(A.SPECIES_GRAMMAR || {});
-            out.allGrammarSpeciesInPool = grammarSpec.every(
-                (s) => Array.isArray(newMeta.variantSeed[s]) && newMeta.variantSeed[s].length === A.VARIANTS_PER_SPECIES
-            );
-            // String-Seeds, kein Float-Drift-Risiko (P2P-Konsistenz)
-            const sampleArr = newMeta.variantSeed[grammarSpec[0]] || [];
-            out.poolEntriesAreStrings = sampleArr.every((s) => typeof s === "string");
+            // K24: die Zeile einer Art entsteht beim ersten Wuchs (_variantSeedsFor) — jede Pflanze des Gesetzbuchs,
+            // nie ein Fels; im TEMPORÄREN Meta-Kontext, der Welt-Stand bleibt unberührt.
+            const savedFresh = r.state.worldMeta;
+            try {
+                r.state.worldMeta = newMeta;
+                const ARTEN = [
+                    "baum_eiche",
+                    "baum_tanne",
+                    "baum_birke",
+                    "baum_kiefer",
+                    "baum_erle",
+                    "baum_buche",
+                    "baum_mammut",
+                    "baum_karst",
+                    "busch_hazel",
+                    "farn_busch",
+                    "blume_gross",
+                ];
+                for (const sp of ARTEN) r._variantSeedsFor(sp);
+                out.freshPoolSpeciesCount = Object.keys(newMeta.variantSeed).length;
+                out.allGrammarSpeciesInPool =
+                    ARTEN.every(
+                        (sp) =>
+                            Array.isArray(newMeta.variantSeed[sp]) &&
+                            newMeta.variantSeed[sp].length === A.VARIANTS_PER_SPECIES
+                    ) && r._variantSeedsFor("stein_block") === null;
+                // String-Seeds, kein Float-Drift-Risiko (P2P-Konsistenz)
+                out.poolEntriesAreStrings = newMeta.variantSeed.baum_eiche.every((v) => typeof v === "string");
+            } finally {
+                r.state.worldMeta = savedFresh;
+            }
         }
 
         // ─── (C) Determinismus: 2 Pools mit gleichem Seed sind identisch ─
         const sampleSeed = "test-determinism-v18217-seed-xyz";
-        const pool1 = r._generateVariantSeedPool(sampleSeed);
-        const pool2 = r._generateVariantSeedPool(sampleSeed);
+        const poolFor = (seed) => {
+            const savedP = r.state.worldMeta;
+            try {
+                r.state.worldMeta = { seed, variantSeed: {} };
+                for (const sp of ["baum_eiche", "baum_tanne", "busch_hazel"]) r._variantSeedsFor(sp);
+                return r.state.worldMeta.variantSeed;
+            } finally {
+                r.state.worldMeta = savedP;
+            }
+        };
+        const pool1 = poolFor(sampleSeed);
+        const pool2 = poolFor(sampleSeed);
         out.poolDeterministic = (() => {
             const spec = Object.keys(pool1);
             if (spec.length !== Object.keys(pool2).length) return false;
@@ -36699,7 +36722,7 @@ async function checkBandV18217VariantenPool(ctx) {
         })();
 
         // Pools mit verschiedenen Seeds → unterscheiden sich (string-equality)
-        const pool3 = r._generateVariantSeedPool("anderer-seed-distinct-abc");
+        const pool3 = poolFor("anderer-seed-distinct-abc");
         const specCheck = Object.keys(pool1)[0];
         out.poolDistinctSeeds =
             Array.isArray(pool1[specCheck]) &&
@@ -36709,7 +36732,7 @@ async function checkBandV18217VariantenPool(ctx) {
         // ─── (D) Cache-Key: regionSeeds, die auf gleichen Index hashen, geben gleichen Bauplan ─
         if (r.state.worldMeta) {
             // Lazy-Init des Pools im laufenden state (falls nicht da)
-            r._ensureVariantSeedPool();
+            r._variantSeedsFor("baum_eiche");
             // Zwei verschiedene regionSeeds, deterministische variantIndex
             const k1 = r._growTreeBlueprintForSpawn("baum_eiche", "test-region-A-0");
             const k2 = r._growTreeBlueprintForSpawn("baum_eiche", "test-region-A-0");
@@ -36733,7 +36756,7 @@ async function checkBandV18217VariantenPool(ctx) {
             const wmSnap = snap && snap.worldMeta;
             out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
             if (out.snapshotCarriesPool) {
-                const liveKey = Object.keys(A.SPECIES_GRAMMAR || {})[0];
+                const liveKey = "baum_eiche";
                 const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
                 if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
                     out.snapshotPoolMatchesLive =
@@ -36751,12 +36774,11 @@ async function checkBandV18217VariantenPool(ctx) {
             const oldStyleMeta = { seed: "old-world-seed-1", genVersion: 5 };
             r.state.worldMeta = { ...r.state.worldMeta, ...oldStyleMeta };
             delete r.state.worldMeta.variantSeed;
-            const migrated = r._ensureVariantSeedPool();
+            const migrated = r._variantSeedsFor("baum_tanne");
             out.migrationFillsPool = !!(
-                migrated &&
-                Object.keys(A.SPECIES_GRAMMAR || {}).every(
-                    (s) => Array.isArray(migrated[s]) && migrated[s].length === A.VARIANTS_PER_SPECIES
-                )
+                Array.isArray(migrated) &&
+                migrated.length === A.VARIANTS_PER_SPECIES &&
+                r.state.worldMeta.variantSeed.baum_tanne === migrated
             );
         } finally {
             // Welt-Identität wiederherstellen — kein State-Leck in Folge-Bands.
@@ -36787,9 +36809,8 @@ async function checkBandV18217VariantenPool(ctx) {
         `V18.217 (A1) AnazhRealm.VARIANTS_PER_SPECIES Konstante (gemessen ${res.constantValue})`,
         res.constantExists === true
     );
-    check("V18.217 (A2) _ensureVariantSeedPool Helper existiert", res.ensureHelperExists === true);
-    check("V18.217 (A3) _generateVariantSeedPool Helper existiert", res.generateHelperExists === true);
-    check("V18.217 (A4) _growTreeBlueprintForSpawn nutzt _ensureVariantSeedPool", res.growUsesPool === true);
+    check("K24 (A2) _variantSeedsFor: die Zeile je Art", res.ensureHelperExists === true);
+    check("K24 (A4) _growTreeBlueprintForSpawn nutzt _variantSeedsFor", res.growUsesPool === true);
     check("V18.217 (A5) _growTreeBlueprintForSpawn berechnet variantIndex", res.growUsesVariantIndex === true);
     check("V18.217 (A6) Cache-Key-Form `grown_<species>_v<idx>` (Source-Probe)", res.cacheKeyVariantForm === true);
     check("V18.217 (A7) Bauplan trägt _variantIndex (Source-Probe)", res.bpHasVariantIndex === true);
@@ -36797,7 +36818,7 @@ async function checkBandV18217VariantenPool(ctx) {
     // (B) Fresh-Welt
     check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
     check(
-        `V18.217 (B2) Fresh-Pool deckt alle SPECIES_GRAMMAR-Arten (gemessen ${res.freshPoolSpeciesCount})`,
+        `K24 (B2) der Pool wächst je Pflanze des Gesetzbuchs, nie für Fels (gemessen ${res.freshPoolSpeciesCount} Arten)`,
         res.allGrammarSpeciesInPool === true
     );
     check("V18.217 (B3) Pool-Einträge sind STRINGS (P2P-Determinismus)", res.poolEntriesAreStrings === true);
@@ -36958,13 +36979,12 @@ async function checkBandV18218LODStufen(ctx) {
         }
 
         // ─── (D) Geometrie: LOD-Reduktion in Parts-Anzahl ────────────
-        const grammar = A.SPECIES_GRAMMAR && A.SPECIES_GRAMMAR.baum_eiche;
-        if (grammar && r._growTreeBlueprintRich) {
+        if (r._growTreeBlueprintRich) {
             const origLast = r._lastTreeSkeleton;
             try {
-                const partsLOD0 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", grammar, { lod: 0 });
-                const partsLOD1 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", grammar, { lod: 1 });
-                const partsLOD2 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", grammar, { lod: 2 });
+                const partsLOD0 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", { lod: 0 });
+                const partsLOD1 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", { lod: 1 });
+                const partsLOD2 = r._growTreeBlueprintRich("baum_eiche", "v218-lod-test", { lod: 2 });
                 out.lod0Parts = Array.isArray(partsLOD0) ? partsLOD0.length : 0;
                 out.lod1Parts = Array.isArray(partsLOD1) ? partsLOD1.length : 0;
                 out.lod2Parts = Array.isArray(partsLOD2) ? partsLOD2.length : 0;
@@ -36972,7 +36992,7 @@ async function checkBandV18218LODStufen(ctx) {
                 out.lod1Reduced = out.lod1Parts > 0 && out.lod1Parts <= 20;
                 out.lod2Tiny = out.lod2Parts > 0 && out.lod2Parts <= 10;
                 out.lodPartsMonotone = out.lod0Parts > out.lod1Parts && out.lod1Parts > out.lod2Parts;
-                const partsDefault = r._growTreeBlueprintRich("baum_eiche", "v218-default-test", grammar);
+                const partsDefault = r._growTreeBlueprintRich("baum_eiche", "v218-default-test");
                 out.lodDefaultIsLod0 = Array.isArray(partsDefault) && partsDefault.length >= 50;
                 out.lod2UnderCap = out.lod2Parts <= Math.ceil(out.lod0Parts * 0.15);
             } finally {
@@ -37514,7 +37534,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         // Player an eine bekannte Position teleportieren, eine Region generieren.
         if (out.scatterRegionExists && r.state.scene) {
             // Sicherstellen: Pool + Bake bereit
-            r._ensureVariantSeedPool();
+            r._variantSeedsFor("baum_eiche");
             // V18.225 — die Dichte-Messung an der SPIELER-Region (vegetiert,
             // worldgen-habitabel) statt einer fernen leeren → die echte Plan-§13-
             // Dichte (≥hunderte/Chunk via 5 Strata) ist messbar.
@@ -38383,10 +38403,10 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (IV) Büsche sind SKELETON-GRAMMATIK (kein Kugel-Haufen) — V18.216
-        const G = A.SPECIES_GRAMMAR;
-        out.buschGrammar = !!(G && G.busch_hazel && G.busch_hazel.trunk && G.busch_hazel.L1);
-        out.understoryArts = !!(G && G.farn_busch && G.blume_gross);
+        // (IV) Büsche wachsen aus dem Gesetz (kein Kugel-Haufen) — der Studio-Strauch, K24
+        const busch = r._phytoArt("busch_hazel");
+        out.buschGrammar = !!(busch && busch.rec.kind === "shrub");
+        out.understoryArts = !!(r._phytoArt("farn_busch") && r._phytoArt("blume_gross"));
         const layers = A.SCATTER && A.SCATTER.layers;
         out.understoryLayer = !!(layers && layers.some((l) => l.kind === "under"));
         let buschParts = 0;
@@ -38421,7 +38441,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     });
 
     check(
-        "Ω-OPSIS S4 (IV1) Büsche sind Skeleton-Grammatik (busch_hazel trunk+L1, kein Kugel-Haufen)",
+        "Ω-OPSIS S4 (IV1) Büsche wachsen aus dem Gesetz (busch_hazel = Studio-Strauch, kein Kugel-Haufen)",
         res.buschGrammar === true
     );
     check("Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)", res.understoryArts === true);

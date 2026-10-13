@@ -378,6 +378,9 @@ jobs:
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
               # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
+              # K23: (L) 300 Löcher über den Spielpfad stehen nach dem Reload alle (vorher 256/300, FIFO-Deckel), (S) der
+              # save-server stirbt an jedem Schreib-Punkt und lässt den alten oder neuen Stand ganz, der .bak hält den
+              # vorigen; der Selbsttest setzt das direkte fs.writeFile ein und sieht ROT. Lokal 16 → 30 s.
               run: npm run gate:persistence
 
             - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
@@ -1184,7 +1187,9 @@ jobs:
               # BRICHT (rot) = der Bau wirft, bleibt leer, trägt NaN oder den Not-Körper. Ratschen (spec/vertraege/ratsche.json):
               # reglerTot 18 von 113 → Soll 0 · reglerBudget (Rand-Wert über der Budget-Zeile) 9 → Soll 0. --selftest zuerst:
               # die Brücke ohne ov → jeder vehicle-Regler tot; ein Regler-Bau, der wirft bzw. NaN rechnet → BRICHT; der Ofen
-              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT.
+              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT. WURF (1110-9): die
+              # NUR-WURF-Stufe am Regler-Rand richtet die Kosten-Regel des Wirts (Tor: volle Regler-Hülle, 385 Paare; Haus mit
+              # Abstand); der Täter „der Zwilling wirft immer" → rot an kathedrale.
               run: npm run gate:regler-wirkt
 
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
@@ -1291,6 +1296,11 @@ jobs:
               if: matrix.gruppe == 4
               run: npm run gate:kopplung
 
+            - name: Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)
+              # Gruppe 9 (die leichteste, 8,9 min Median): in Gruppe 4 trug sie nach main bb554abf 11,6 min (Waage 11).
+              if: matrix.gruppe == 9
+              run: npm run gate:tor-fern
+
             - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
               if: matrix.gruppe == 6
               run: npm run gate:worker-watersheet
@@ -1328,7 +1338,9 @@ jobs:
             - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
               if: matrix.gruppe == 4
               # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
-              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT.
+              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
+              # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
+              # Graben-Nachricht doppelt an und (c) muss ROT werden (die erste Fassung, ohne die Laenge, blieb gruen).
               run: npm run gate:mp-sync
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)

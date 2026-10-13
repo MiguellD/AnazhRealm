@@ -40,6 +40,7 @@
 //
 //   node scripts/omen-messfolge.cjs [--ort wiese|genesis] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
 //                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
+//   node scripts/omen-messfolge.cjs --schalter <bloecke.json> (1310-1: ein Schalter in EINER Sitzung, Erst- gegen Dauer-Zeichnung)
 //   node scripts/omen-messfolge.cjs --selbsttest       (ohne Welt: jede Wache und die Folge-Regel fallen bei ihrem Täter rot)
 //
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
@@ -157,6 +158,119 @@ function bankJe(lauf) {
         takt[k] = b && b.takt && Number.isFinite(b.takt.mhz) ? b.takt.mhz : null;
     }
     return { je, takt };
+}
+
+// DAS SCHALTER-URTEIL (1310-1, rein): ein Schalter in EINER Sitzung, die Erst-Zeichnung von der Dauer-Zeichnung getrennt.
+// Befund 12.10. (1110-9, Genesis): jeder Eingriff machte das folgende 10-s-Band ~1 ms teurer — auch das Entfernen des
+// Tor-Zwillings. Ein Schalter-Vergleich ist nur ein Urteil, wenn (a) je Block das erste Band nach dem Eingriff verworfen
+// wird (die Erst-Zeichnung: neue Programme, Bündel-Neuaufnahme), (b) jeder Schalter-Block gegen den Mittelwert seiner
+// Grund-Nachbarn davor UND danach steht (linearer Drift fällt heraus) und (c) ein NULL-Schalter (derselbe Eingriff ohne
+// Änderung) im Rauschband liegt — sonst misst die Methode den Eingriff mit (Täter: Methode).
+// `bloecke` = [{ zustand: "grund" | "null" | <schalter>, baender: [ms …] (das erste = Aufwärm-Band), takt: [MHz …] }] in
+// Zeitfolge. DAS RAUSCHEN misst dieselbe Rechnung ohne Schalter: jeder innere Grund-Block gegen das Mittel seiner Grund-
+// Nachbarn (σ_d, quadratisch um 0) — Drift über die Sitzung (der Takt fällt mit der Wärme, 13.10.: 1796 → 1765 MHz) fällt so
+// aus Rauschen UND Schalter heraus; das Rauschband eines Schalters über k Blöcke = 2σ_d/√k. DER TAKT gilt lokal: der Schalter-
+// Block gegen das Mittel seiner Grund-Nachbarn (±0,5 %), je Band das Mittel der nvidia-smi-Proben.
+const SCHALTER_MIN_BLOECKE = 2;
+const SCHALTER_MIN_BAENDER = 3; // gemessen je Block, nach dem Aufwärm-Band
+function schalterUrteil(bloecke, toleranz = 0.005) {
+    const befunde = [];
+    const verworfen = [];
+    const mittel = (w) => w.reduce((a, b) => a + b, 0) / w.length;
+    const sd = (w) => {
+        const m = mittel(w);
+        return Math.sqrt(w.reduce((a, b) => a + (b - m) ** 2, 0) / Math.max(1, w.length - 1));
+    };
+    const B = bloecke.map((b, i) => {
+        const roh = (b.baender || []).filter((x) => Number.isFinite(x));
+        const dauer = roh.slice(1);
+        if ((b.baender || []).length !== roh.length)
+            befunde.push(`SCHALTER Block ${i + 1} (${b.zustand}): ${(b.baender || []).length - roh.length} Band ohne Wert`);
+        if (dauer.length < SCHALTER_MIN_BAENDER)
+            befunde.push(
+                `SCHALTER Block ${i + 1} (${b.zustand}): ${dauer.length} Dauer-Bänder — je Block ein Aufwärm-Band und mindestens ${SCHALTER_MIN_BAENDER} gemessene`
+            );
+        const m = dauer.length ? mittel(dauer) : NaN;
+        return {
+            i,
+            zustand: b.zustand,
+            m,
+            erst: roh.length > 1 ? roh[0] - m : NaN,
+            dauer,
+            takt: b.takt || [],
+            ohneTakt: (b.baender || []).length !== (b.takt || []).length,
+        };
+    });
+    // DER TAKT: fehlt er an einem Band, ist der gleiche Takt nicht belegt (der lokale Vergleich steht unten je Schalter-Block).
+    const takte = B.flatMap((b) => b.takt);
+    const taktDa = takte.length > 0 && !B.some((b) => b.ohneTakt) && takte.every((t) => Number.isFinite(t) && t > 0);
+    if (!taktDa) befunde.push("TAKT: nicht jedes Band trägt seinen Takt (nvidia-smi) — der gleiche Takt ist nicht belegt");
+    for (const b of B) b.taktM = taktDa && b.takt.length ? mittel(b.takt) : NaN;
+    const grund = B.filter((b) => b.zustand === "grund" && Number.isFinite(b.m));
+    if (grund.length < 4) befunde.push(`SCHALTER: ${grund.length} Grund-Blöcke — das Rauschen braucht mindestens vier`);
+    const rest = [];
+    for (let k = 1; k + 1 < grund.length; k++) rest.push(grund[k].m - (grund[k - 1].m + grund[k + 1].m) / 2);
+    const sigma = rest.length ? Math.sqrt(rest.reduce((a, r) => a + r * r, 0) / rest.length) : NaN;
+    const schalter = [...new Set(B.filter((b) => b.zustand !== "grund").map((b) => b.zustand))];
+    if (!schalter.includes("null"))
+        befunde.push("SCHALTER: kein Null-Schalter — ohne ihn ist nicht belegt, dass die Methode den Eingriff nicht mitmisst");
+    const zeilen = [];
+    for (const s of schalter) {
+        const d = [];
+        for (const b of B) {
+            if (b.zustand !== s || !Number.isFinite(b.m)) continue;
+            let vor = null,
+                nach = null;
+            for (let j = b.i - 1; j >= 0 && !vor; j--) if (B[j].zustand === "grund" && Number.isFinite(B[j].m)) vor = B[j];
+            for (let j = b.i + 1; j < B.length && !nach; j++)
+                if (B[j].zustand === "grund" && Number.isFinite(B[j].m)) nach = B[j];
+            if (!vor || !nach) {
+                befunde.push(`SCHALTER ${s}: Block ${b.i + 1} ohne Grund-Block davor UND danach — der Drift fällt nicht heraus`);
+                continue;
+            }
+            // ein Block bei anderem Takt als seine Nachbarn fällt beim Namen aus dem Urteil (nie still); bleiben zu wenige,
+            // ist der Schalter ROT
+            const tN = (vor.taktM + nach.taktM) / 2;
+            if (Number.isFinite(b.taktM) && Number.isFinite(tN) && Math.abs(b.taktM - tN) > tN * toleranz) {
+                verworfen.push(
+                    `TAKT: Block ${b.i + 1} (${b.zustand}) bei ${b.taktM.toFixed(0)} MHz, Grund-Nachbarn ${tN.toFixed(0)} MHz (±${toleranz * 100} %) — der Block fällt aus dem Urteil (Täter: Takt)`
+                );
+                continue;
+            }
+            d.push(b.m - (vor.m + nach.m) / 2);
+        }
+        if (d.length < SCHALTER_MIN_BLOECKE) {
+            befunde.push(`SCHALTER ${s}: ${d.length} Blöcke — ein Urteil braucht mindestens ${SCHALTER_MIN_BLOECKE}`);
+            continue;
+        }
+        const delta = mittel(d);
+        const band = (2 * sigma) / Math.sqrt(d.length);
+        const erstS = B.filter((b) => b.zustand === s && Number.isFinite(b.erst)).map((b) => b.erst);
+        const z = {
+            schalter: s,
+            bloecke: d.length,
+            delta: +delta.toFixed(3),
+            je: d.map((x) => +x.toFixed(3)),
+            rauschband: +band.toFixed(3),
+            erst: erstS.length ? +mittel(erstS).toFixed(3) : null,
+            urteil: !Number.isFinite(band) ? "BLIND" : Math.abs(delta) > band ? "TRÄGT" : "IM RAUSCHEN",
+        };
+        zeilen.push(z);
+        if (s === "null" && z.urteil !== "IM RAUSCHEN")
+            befunde.push(
+                `NULL-SCHALTER: Δ ${z.delta >= 0 ? "+" : ""}${z.delta.toFixed(2)} ms außerhalb des Rauschbands ±${z.rauschband.toFixed(2)} ms — die Methode misst den Eingriff mit (Täter: Methode)`
+            );
+    }
+    const erstG = grund.filter((b) => b.i > 0 && Number.isFinite(b.erst)).map((b) => b.erst);
+    return {
+        befunde,
+        verworfen,
+        zeilen,
+        sigma: Number.isFinite(sigma) ? +sigma.toFixed(3) : null,
+        takt: taktDa ? { erst: +B[0].taktM.toFixed(0), letzt: +B[B.length - 1].taktM.toFixed(0) } : null,
+        grund: grund.map((b) => +b.m.toFixed(3)),
+        erstGrund: erstG.length ? +mittel(erstG).toFixed(3) : null,
+    };
 }
 
 // DER TAKT EINER BANK (rein): `nvidia-smi --format=csv,noheader,nounits` je Zeile Takt (MHz), Temperatur, Leistung und die
@@ -1137,6 +1251,76 @@ async function selbsttest() {
         ).befunde,
         /STREUUNG 0: Spanne 0\.40 ms/
     );
+    // DAS SCHALTER-URTEIL (1310-1): Erst- gegen Dauer-Zeichnung, der Null-Schalter, Drift und Takt.
+    {
+    // Grund 20,30 ± 0,05; Bänder je Block [Aufwärm, 3 gemessen]; Takt 1700 MHz.
+    const G = (m, erst = 0) => ({ zustand: "grund", baender: [m + erst, m - 0.03, m + 0.02, m + 0.01], takt: [1700, 1700, 1700, 1700] });
+    const S = (name, m, erst = 0, takt = 1700) => ({ zustand: name, baender: [m + erst, m + 0.02, m - 0.01, m - 0.01], takt: [takt, takt, takt, takt] });
+    const folge = (blocke) => blocke;
+    const ruhig = folge([G(20.3), S("null", 20.31), G(20.28), S("weg", 20.31), G(20.34), S("null", 20.29), G(20.3), S("weg", 20.3), G(20.27)]);
+    pruefe("Null im Rauschen, Schalter ohne Kosten", schalterUrteil(ruhig).befunde, null);
+    {
+        const u = schalterUrteil(ruhig);
+        const z = u.zeilen.find((x) => x.schalter === "weg");
+        pruefe("Schalter ohne Kosten im Rauschen", z && z.urteil === "IM RAUSCHEN" ? [] : [JSON.stringify(z)], null);
+    }
+    // die Erst-Zeichnung allein (+1,1 ms im Aufwärm-Band, die Dauer gleich) — der Schalter trägt NICHTS, die Erst-Zeichnung steht
+    {
+        const u = schalterUrteil(folge([G(20.3, 1.1), S("null", 20.31, 1.1), G(20.28, 1.1), S("stoff", 20.29, 1.1), G(20.33, 1.1), S("null", 20.3, 1.1), G(20.3, 1.1), S("stoff", 20.31, 1.1), G(20.29, 1.1)]));
+        const z = u.zeilen.find((x) => x.schalter === "stoff");
+        const v = [...u.befunde];
+        if (!z || z.urteil !== "IM RAUSCHEN" || !(z.erst > 1)) v.push(`Erst-Zeichnung nicht getrennt: ${JSON.stringify(z)}`);
+        pruefe("die Erst-Zeichnung allein trägt nicht", v, null);
+    }
+    // der Befund vom 12.10. ohne Aufwärm-Verwurf: der Null-Schalter selbst +1 ms in der Dauer → die Methode
+    pruefe(
+        "Null-Schalter teurer",
+        schalterUrteil(folge([G(20.3), S("null", 21.3), G(20.28), S("null", 21.25), G(20.34), S("weg", 20.3), G(20.3), S("weg", 20.31), G(20.27)])).befunde,
+        /^NULL-SCHALTER: Δ \+0?\.?9|^NULL-SCHALTER: Δ \+1\.0/
+    );
+    {
+        const u = schalterUrteil(folge([G(20.3), S("null", 20.31), G(20.28), S("stoff", 21.3), G(20.34), S("null", 20.29), G(20.3), S("stoff", 21.32), G(20.27)]));
+        const z = u.zeilen.find((x) => x.schalter === "stoff");
+        pruefe("der Schalter trägt +1 ms", z && z.urteil === "TRÄGT" && Math.abs(z.delta - 1.01) < 0.05 ? [] : [JSON.stringify(z)], null);
+    }
+    pruefe("ohne Null-Schalter", schalterUrteil(folge([G(20.3), S("weg", 20.3), G(20.3), S("weg", 20.3), G(20.3)])).befunde, /kein Null-Schalter/);
+    {
+        // ein Block bei 1640 MHz fällt beim Namen; zwei Null-Blöcke bleiben → das Urteil steht
+        const u = schalterUrteil(folge([G(20.3), S("null", 20.31), G(20.28), S("null", 20.3, 0, 1640), G(20.3), S("null", 20.3), G(20.31)]));
+        pruefe("Takt gedrosselt: der Block fällt beim Namen", u.verworfen, /^TAKT: Block 4 \(null\) bei 1640 MHz, Grund-Nachbarn 1700 MHz.*Täter: Takt/);
+        pruefe("Takt gedrosselt: zwei Blöcke tragen das Urteil", u.befunde, null);
+    }
+    pruefe(
+        "Takt gedrosselt, zu wenige Blöcke",
+        schalterUrteil(folge([G(20.3), S("null", 20.31), G(20.28), S("null", 20.3, 0, 1640), G(20.3), S("weg", 20.3), G(20.31), S("weg", 20.3), G(20.3)])).befunde,
+        /^SCHALTER null: 1 Blöcke/
+    );
+    // Drift über die Sitzung: Grund und Takt fallen linear (20,6 → 20,0 ms, 1800 → 1760 MHz) — die Nachbarn tragen ihn
+    {
+        const D = (i, name) => {
+            const m = 20.6 - 0.075 * i + (i % 3 === 0 ? 0.02 : -0.01);
+            const t = 1800 - 5 * i;
+            return { zustand: name, baender: [m, m - 0.02, m + 0.01, m + 0.01], takt: [t, t, t, t] };
+        };
+        const z = ["grund", "null", "grund", "weg", "grund", "null", "grund", "weg", "grund"].map((n, i) => D(i, n));
+        pruefe("Drift über die Sitzung", schalterUrteil(z).befunde, null);
+    }
+    pruefe(
+        "ohne Takt",
+        schalterUrteil(folge([G(20.3), S("null", 20.31), G(20.28), Object.assign(S("null", 20.3), { takt: [] }), G(20.3)])).befunde,
+        /^TAKT: nicht jedes Band/
+    );
+    pruefe(
+        "ohne Aufwärm-Band",
+        schalterUrteil(folge([G(20.3), { zustand: "null", baender: [20.3, 20.3, 20.3], takt: [1700, 1700, 1700] }, G(20.3), S("null", 20.3), G(20.3)])).befunde,
+        /Block 2 \(null\): 2 Dauer-Bänder/
+    );
+    pruefe(
+        "Schalter am Rand",
+        schalterUrteil(folge([G(20.3), S("null", 20.3), G(20.3), S("null", 20.3), G(20.3), S("null", 20.3)])).befunde,
+        /Block 6 ohne Grund-Block davor UND danach/
+    );
+    }
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Mess-Folge ist blind: " + fehler.join(" · "));
         process.exit(1);
@@ -1180,6 +1364,30 @@ function streuungCli() {
     process.exit(0);
 }
 
+// DAS SCHALTER-URTEIL einer Sitzung (1310-1): `bloecke.json` = { bloecke: [{ zustand, baender, takt }] } in Zeitfolge
+// (je Block das erste Band nach dem Eingriff verworfen) — je Schalter Δ gegen die Grund-Nachbarn, Rauschband, Erst-Zeichnung;
+// ROT, wenn der Null-Schalter außerhalb des Rauschbands liegt (die Methode misst den Eingriff mit), Takt oder Bänder fehlen.
+function schalterCli() {
+    const datei = argv[argv.indexOf("--schalter") + 1];
+    const { bloecke } = JSON.parse(fs.readFileSync(datei, "utf8"));
+    const u = schalterUrteil(bloecke.filter(Boolean));
+    console.log(`\n=== DAS SCHALTER-URTEIL: ${bloecke.length} Blöcke, Grund σ ${u.sigma} ms, Erst-Zeichnung der Grund-Blöcke ${u.erstGrund} ms ===`);
+    for (const z of u.zeilen)
+        console.log(
+            `  ${z.schalter}: Δ ${z.delta >= 0 ? "+" : ""}${z.delta.toFixed(3)} ms (je Block ${z.je.join(" · ")}) · Rauschband ±${z.rauschband} · ` +
+                `Erst-Zeichnung ${z.erst} ms → ${z.urteil}`
+        );
+    for (const b of u.verworfen) console.log("  VERWORFEN " + b);
+    if (u.takt) console.log(`  Takt über die Sitzung ${u.takt.erst} → ${u.takt.letzt} MHz`);
+    if (u.befunde.length) {
+        for (const b of u.befunde) console.log("  ROT " + b);
+        console.log("\n❌ SCHALTER ROT — das Urteil ist blind oder die Methode misst den Eingriff mit.");
+        process.exit(1);
+    }
+    console.log("\n✅ SCHALTER GRÜN — der Null-Schalter liegt im Rauschen, jeder Schalter steht mit Δ und Erst-Zeichnung.");
+    process.exit(0);
+}
+
 if (require.main === module) {
     if (argv.includes("--selbsttest"))
         selbsttest().catch((e) => {
@@ -1187,6 +1395,7 @@ if (require.main === module) {
             process.exit(1);
         });
     else if (argv.includes("--streuung")) streuungCli();
+    else if (argv.includes("--schalter")) schalterCli();
     else
         folge().catch((e) => {
             console.error("MESS-FOLGE-FEHLER:", (e && e.stack) || e);
@@ -1203,5 +1412,6 @@ module.exports = {
     bandBefunde,
     beendeBaum,
     streuungUrteil,
+    schalterUrteil,
     bankJe,
 };
