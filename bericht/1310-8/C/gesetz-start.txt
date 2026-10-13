@@ -1,0 +1,1 @@
+{"ergebnis":{"folge":["f:birke|2|0:0","f:birke|2|0:2","f:eiche|1|0:0","f:eiche|1|0:2","f:eiche|2|0:0","f:eiche|2|0:2","f:strauch|1|0:0","f:strauch|1|0:2"]},"ms":2}

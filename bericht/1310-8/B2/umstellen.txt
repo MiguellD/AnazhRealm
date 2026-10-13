@@ -1,0 +1,15 @@
+{
+ "ort": "wiese",
+ "pose": null,
+ "welt": null,
+ "spieler": [
+  -900,
+  -850
+ ],
+ "takte": 60,
+ "chunks": 25,
+ "gier": 0,
+ "dorfZug": false,
+ "ortTakt": [],
+ "ms": 9389
+}

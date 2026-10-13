@@ -1,0 +1,14 @@
+Blick       Paar         MSSIM ganz  MSSIM Boden  |ΔLuma| Boden  Pixel >8 (%)  Farbton-Blöcke >6 (%)
+wiese       Rauschen A       0.9807       0.9746            1.5          4.28                   0.67
+wiese       Rauschen B       0.9796       0.9738           1.62          4.27                   0.46
+wiese       A1↔B1            0.9805       0.9781           1.51          4.36                   0.42
+wiese       A2↔B2            0.9745       0.9669           1.86          5.32                    1.4
+wiese       A1↔B2             0.979       0.9734           1.57          4.35                   0.71
+wiese       A2↔B1             0.977       0.9702           1.67          4.69                   1.13
+
+Mittel je Bild (Luma 0–255 · R−G · B−G), Seiten ankunft1 · ankunft2 · gesetz1 · gesetz2; ΔB−A = Mittel B − Mittel A
+wiese       116.6/-38.0/-61.7  116.6/-38.0/-61.8  116.6/-38.0/-61.8  116.6/-38.0/-61.7   ΔLuma 0.02 (Rausch 0.06/0.01)  ΔB−G -0.02
+
+Ruhe (mittlere |ΔLuma| zweier Aufnahmen nacheinander, ganzes Bild)
+
+GRÜN — jedes Quer-Paar liegt im Rausch-Boden zweier Boots desselben Stands
