@@ -141,6 +141,31 @@ function ladeschirmVerdict(m) {
         else if (th.omnibox) out.push("hinter dem Ladeschirm öffnet Strg+K die Omnibox");
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
+    // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): während der Vorrat läuft (`_foundryPrefetchLibrary`), wartet das
+    // erste Weltbild auf nichts, was er bestellt — weder das Tor (`_weltbildFehlt`) noch eine neue Streu-Region (sie wartet
+    // nur auf IHR Asset), und er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst).
+    const v = m.vorrat;
+    if (!v) out.push("der Vorrat: keine Probe (Vorbedingung)");
+    else if (v.fehler) out.push(`der Vorrat: ${v.fehler} (Vorbedingung)`);
+    else {
+        const liste = (v.ohneLeser || []).join(", ") || "keine";
+        if (v.fehltNeu && v.fehltNeu.length)
+            out.push(
+                `während der Vorrat läuft, wartet das erste Weltbild („${v.fehltNeu.join(" · ")}") auf Aufträge ohne Leser des ` +
+                    `ersten Frames: ${liste}`
+            );
+        if (v.karten > 0)
+            out.push(
+                `der Vorrat bestellt ${v.karten} Karten nach der Buchgröße (${(v.kartenBsp || []).join(", ")}), das erste Weltbild ` +
+                    "wartet auf jede (die Karten-Schlange) — die Karte bestellt ihr Leser"
+            );
+        if (!v.streu) out.push("die Streu-Region unter dem Vorrat: keine Probe (Vorbedingung)");
+        else if (v.streu.aufgeschoben)
+            out.push(
+                `während der Vorrat läuft, wartet eine neue Streu-Region auf ihn (leer aufgeschoben, ${v.streu.zellen} Zellen) statt ` +
+                    `auf ihr Asset — das erste Weltbild wartet mit ihr auf: ${liste}`
+            );
+    }
     return out;
 }
 function kreuzVerdict(m) {
@@ -522,6 +547,72 @@ async function probe(arg) {
                     ? ls.getAnimations({ subtree: true }).filter((a) => a.playState === "running").length
                     : null;
                 m.weichtGanz = { hidden: ls.hidden, display: cs.display, animationen: laufen };
+            }
+            // (10) DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30, Grok R11: kalt 25–30 s, das Tor wartete auf
+            // `f._prefetching`): der Vorrat läuft noch einmal (die echte Methode), jede seiner Bestellungen beim Namen; während
+            // er läuft, fragt die Probe das Tor und baut eine neue Streu-Region mit echtem Renderer-Zweig (Scheibe 0 — nur die
+            // Weiche, kein Bau).
+            {
+                const v = { ohneLeser: [], karten: 0, kartenBsp: [] };
+                m.vorrat = v;
+                const f = r._foundry;
+                if (!f || !f.ready || typeof r._foundryPrefetchLibrary !== "function") v.fehler = "keine lebende Foundry";
+                else {
+                    const P = Object.getPrototypeOf(r);
+                    const alt = {};
+                    const wickle = (name, fn) => {
+                        alt[name] = r[name];
+                        r[name] = function (...a) {
+                            fn(a);
+                            return P[name].apply(this, a);
+                        };
+                    };
+                    wickle("_foundryVorrat", (a) => v.ohneLeser.push(`Wagen ${a[0]}|${a[1]}|lod${a[2]}`));
+                    wickle("_foundryRequestSettlement", () => v.ohneLeser.push("Siedlungs-Probe"));
+                    wickle("_foundryEnsureImpostorRecord", (a) => {
+                        v.karten++;
+                        if (v.kartenBsp.length < 4) v.kartenBsp.push(`${a[0]}|${a[1]}`);
+                    });
+                    const vor = r._weltbildFehlt();
+                    f._prefetching = false;
+                    let lauf = null;
+                    try {
+                        lauf = r._foundryPrefetchLibrary();
+                        v.laeuft = f._prefetching === true;
+                        v.fehltNeu = r._weltbildFehlt().filter((z) => !vor.includes(z));
+                        // die Streu-Weiche: eine neue Region fern jeder bestehenden, Scheibe mit abgelaufener Frist
+                        const SC = r.constructor.SCATTER;
+                        const p = st.playerMesh.position;
+                        const rx = Math.floor(p.x / SC.regionM) + 40;
+                        const rz = Math.floor(p.z / SC.regionM) + 40;
+                        const key = `${rx},${rz}`;
+                        const map = st.scatterRegions || r._ensureScatterRegionMap();
+                        const merkH = st.renderer._isHeadlessNull;
+                        if (!map.has(key)) {
+                            st.renderer._isHeadlessNull = false;
+                            try {
+                                const reg = r._scatterRegion(rx, rz, p, 0);
+                                v.streu = {
+                                    aufgeschoben: !!(reg && reg._deferredFoundry && !reg._cont),
+                                    zellen: reg && reg.cells ? reg.cells.length : -1,
+                                };
+                            } finally {
+                                st.renderer._isHeadlessNull = merkH;
+                                if (map.has(key)) r._disposeScatterRegion(key);
+                                map.delete(key);
+                            }
+                        }
+                        // die Wagen und die Siedlung bestellt er erst nach den Boden-Arten: bis zum Ende mitschreiben
+                        if (lauf) await Promise.race([lauf, sleep(60000)]);
+                    } finally {
+                        for (const k of Object.keys(alt)) {
+                            if (alt[k] === P[k]) delete r[k];
+                            else r[k] = alt[k];
+                        }
+                    }
+                    v.ende = f._prefetching === false;
+                    if (!v.laeuft) v.fehler = "der Vorrat lief nicht an (`_prefetching` blieb aus)";
+                }
             }
             await sleep(800);
             if (!st._weltbildDa) st._weltbildDa = performance.now();
@@ -1343,8 +1434,21 @@ async function probe(arg) {
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
+                    vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 } },
                 },
                 [
+                    [
+                        "das Tor wartet auf den Vorrat (K30, Grok R11: kalt 25–30 s)",
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: ["die Werkstatt backt vor"], streu: { aufgeschoben: false, zellen: 0 } } },
+                        "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0",
+                    ],
+                    [
+                        "die Streu wartet auf den Vorrat statt auf ihr Asset (K30, Radeon: 4 Wald-Stücke 15 s nach dem Vorrat)",
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], streu: { aufgeschoben: true, zellen: 0 } } },
+                        "während der Vorrat läuft, wartet eine neue Streu-Region auf ihn",
+                    ],
+                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: { ohneLeser: [], karten: 14, kartenBsp: ["eiche|1"], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat bestellt 14 Karten"],
+                    ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
                     [
                         "die Streu-Region fehlt nach dem Boot (Befund 09.10., CI 37942425121)",
                         {

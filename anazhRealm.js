@@ -58579,25 +58579,10 @@ class AnazhRealm {
         const _existing = map.get(key);
         if (_existing && !_existing._cont) return _existing;
         if (_existing && _existing._cont) return this._scatterRegionWork(_existing, regX, regZ, key, deadlineMs);
-        // Läuft der Foundry-Prefetch noch (Boot-Fenster), baut die Region NICHT halb (der Refill disposed
-        // sonst sichtbar und baut neu): sie entsteht LEER mit Defer-Flag und baut EINMAL, wenn die Bibliothek
-        // warm ist. `_fdry._prefetching` ist nur bei lebender Foundry wahr; headless baut sofort voll.
-        const _fdry = this._foundry;
-        if (_fdry && _fdry._prefetching && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
-            const empty = {
-                regX,
-                regZ,
-                cells: [],
-                instanceCount: 0,
-                byLayer: {},
-                builtDensity: this._effectiveFoliageDensity(),
-                regional: this.state.useRegionFoliageCull !== false,
-                _deferredFoundry: true,
-            };
-            map.set(key, empty);
-            this._weltRegt(); // die Streu-Menge regt sich
-            return empty;
-        }
+        // Die Region baut, was warm ist, und wartet nur auf IHR Asset: eine kalte Zelle bestellt es (`_foundryFlattenFor`) und
+        // schiebt die Region auf, die Lieferung baut sie neu (`_scatterRefillPending`). Bis K30 wartete sie leer auf den
+        // ganzen Vorrat (Wagen, Siedlungs-Probe) — und nach seinem Ende weckte sie keine Lieferung: an der Radeon standen
+        // 4 Wald-Stücke 15 s still, das erste Weltbild kam ohne Streu.
         // V18.280 — die Dichte, bei der diese Region gebaut wurde (für das Nach-Dünnen:
         // sinkt die perf-geregelte Dichte unter diesen Wert, wird die Region re-gestreamt).
         // W1 — die Buchhaltung liest den ANGEWANDTEN Wert (die eine Quelle), nie den rohen.
@@ -78416,8 +78401,9 @@ class AnazhRealm {
         return false;
     }
     _foundryLibrarySpec() {
-        // Der Vorrat wärmt GENE, keine Körper ohne Leser: Boden-Arten ihre deklarierten Stufen je Gestalt, Karten-Arten
-        // (Bäume, Strauch) nur ihre Karten — L0/L1 lädt nah auf Abruf (_foundryFlattenFor + _foundryLodForEntry).
+        // Der Vorrat wärmt GENE, keine Körper ohne Leser: Boden-Arten ihre deklarierten Stufen je Gestalt; Karten-Arten
+        // (Bäume, Strauch) wärmt er nicht — ihre Karte bestellt ihr Leser, L0/L1 lädt nah auf Abruf (_foundryFlattenFor +
+        // _foundryLodForEntry). Der Vorrat läuft neben der Welt: kein Leser des ersten Frames wartet auf ihn (K30).
         return {
             species: [
                 "eiche",
@@ -78494,18 +78480,9 @@ class AnazhRealm {
                 }
             }
         }
-        // Die Karten vorwärmen — EINE Atlas-Schicht je Gestalt; der Fern-Scatter serviert LOD2 = Studio-Karte. Mit echtem
-        // Renderer reiht die Zelle ihren Bake direkt ein (rahmenlos, kein Körper-Zug; ab dem Zweit-Boot von der Platte);
-        // headless trägt der L1-Rahmen die Mechanik.
-        for (const sp of spec.species) {
-            if (!this._foundryPresetIsTree(sp)) continue;
-            const _VK = this._foundryGestalten(sp); // EINE Karte je Gestalt (Studio-Budget)
-            for (let v = 1; v <= _VK; v++) {
-                try {
-                    this._foundryEnsureImpostorRecord(sp, v);
-                } catch (_e) {}
-            }
-        }
+        // Keine Karte im Vorrat: die Karte bestellt ihr Leser (`_foundryBuildImpostorFlat`, mit Bedarf-Stempel nah zuerst) —
+        // bis K30 bestellte der Vorrat je Baum-Art jede Gestalt (11 Karten nach der Buchgröße), und das erste Weltbild wartete
+        // auf jede (die Karten-Schlange).
         await Promise.all(jobs);
         // FOUNDRY-WARM — kritische Studio-Arten (Garage) + Siedlungs-Kanal: In-Welt-Spawn
         // von fahrzeug_*/dorf trifft warmes Memo statt kalt-404. Fail-closed: leerer
@@ -101552,9 +101529,10 @@ class AnazhRealm {
 
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
     // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
-    // Buch der Studios und sein Vor-Backen, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede
-    // Streu-Region, die der Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines
-    // fernen Baums offen.
+    // Buch der Studios, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede Streu-Region, die der
+    // Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines fernen Baums offen.
+    // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
+    // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
     _weltbildFehlt() {
         const st = this.state;
         const pm = st.playerMesh;
@@ -101570,7 +101548,6 @@ class AnazhRealm {
             out.push("das Buch der Studios öffnet sich");
             return out;
         }
-        if (f._prefetching) out.push("die Werkstatt backt vor");
         const p = pm.position;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
         let ungebaut = 0;
