@@ -1485,22 +1485,22 @@ async function probe(arg) {
                 [
                     [
                         "der Vorrat stellt sich in der Ankunft vor die Leser (K30)",
-                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 } } },
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
                         "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)",
                     ],
-                    ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat bestellt nie"],
-                    ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat endet nicht"],
+                    ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt nie"],
+                    ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat endet nicht"],
                     [
                         "das Tor wartet auf den Vorrat (K30, Grok R11: kalt 25–30 s)",
-                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: ["die Werkstatt backt vor"], streu: { aufgeschoben: false, zellen: 0 } } },
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: ["die Werkstatt backt vor"], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
                         "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0",
                     ],
                     [
                         "die Streu wartet auf den Vorrat statt auf ihr Asset (K30, Radeon: 4 Wald-Stücke 15 s nach dem Vorrat)",
-                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], streu: { aufgeschoben: true, zellen: 0 } } },
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], streu: { aufgeschoben: true, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
                         "während der Vorrat läuft, wartet eine neue Streu-Region auf ihn",
                     ],
-                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: { ohneLeser: [], karten: 14, kartenBsp: ["eiche|1"], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat bestellt 14 Karten"],
+                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: { ohneLeser: [], karten: 14, kartenBsp: ["eiche|1"], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt 14 Karten"],
                     [
                         "der Merker sagt „an“, während der Vorrat auf das Bild wartet (K30-N1, Radeon: „Vorrat läuft“ 8–44 s, die erste Bestellung bei 45 s)",
                         { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } },
