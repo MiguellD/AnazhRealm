@@ -51,7 +51,9 @@
     // (Haushalt, offen solange tris darüber liegt), draws = Draws je Tor und Pass nach der Wirts-Regel: das
     // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Flügel-Teile je Flügel × Stoff (das
     // Scharnier reist mit, `_tickTorFluegel` dreht je Flügel und Stoff EINE Matrix), nur innerhalb EINER Seh-Klasse;
-    // Glut faltet nie — 13 ist das gemessene Minimum über alle 112 Fälle (Flügel × Stoff × Seh-Klasse). gestalten =
+    // Glut faltet nie — 13 war das gemessene Minimum über alle 112 Fälle (Flügel × Stoff × Seh-Klasse); seit 1310-4 zeichnet
+    // der Wirt den Hinterflügel einer Seite als Instanz des Vorderflügels (gleiche Gestalt, nur verschoben — phyto-core
+    // `budgetGestaltVersatz`, `_foundryFluegelInstanz`), das Gesetz zählt in seiner Einheit: 9 (dieselbe Faltung). gestalten =
     // Individuen je Tor (gefüllt je Rezept unten bei PRESETS): EINE — der Bau liest den Samen nicht (seed reserviert,
     // Kopf; Same 1 ≡ 2 byte-gleich), 16 Gestalten waren 16 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
     // Drachentore, zwei Leaves, 43 Befehle). Eine Seed-Achse ist ein Re-Mint-Akt, nie eine Zahl hier (S3 08.10.,
@@ -69,7 +71,7 @@
                 // 1110-9 (der Wurf aus der gröberen Stufe, Nordstern M4): die Stufe 0 wirft nicht mehr selbst — ihr Wurf ist
                 // die NUR-WURF-Stufe 3, die Hüllen-Liste des Tors (huelle, N5) als EIN Gitter; dieselbe Liste ist die Fernform.
                 // tris der Stufe 3 = die Regler-Hülle (Rezepte × Regler × Rand, gate:regler-wirkt fährt auch die Stufe 3).
-                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 3 }, 3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+                gate: { 0: { tris: 76000, band: 60000, draws: 9, schatten: 3 }, 3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
                 gestalten: {},
             },
         },

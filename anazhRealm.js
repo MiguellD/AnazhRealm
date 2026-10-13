@@ -79548,37 +79548,32 @@ class AnazhRealm {
             });
         }
     }
-    // Ist b dieselbe Geometrie wie a, nur verschoben? Gleiche Attribut-Namen, derselbe Index, jedes Attribut gleich, die Lage um
-    // EINEN Vektor versetzt (1e-5 m; gebacken ist sie bit-gleich). Gibt den Vektor oder null.
+    // Ist b dieselbe Geometrie wie a, nur verschoben? Die Regel ist die des Budget-Gesetzes (phyto-core `budgetGestaltVersatz`:
+    // derselbe Index, jede Spur gleich, die Lage um EINEN Vektor versetzt) — so zählt das Gesetz, was der Wirt zeichnet
+    // (gate:sippen-wirt). Der Wirt legt nur die Gestalt der Puffer davor (gleiche Attribut-Namen und Spurbreiten, kein
+    // verschränkter Puffer, derselbe Zeichen-Bereich). Gibt den Vektor oder null.
     static _geoVerschoben(a, b) {
         const pa = a.attributes.position;
         const pb = b.attributes.position;
         if (a === b || !pa || !pb || pa.isInterleavedBufferAttribute || pb.isInterleavedBufferAttribute) return null;
         if (pa.itemSize !== 3 || pb.itemSize !== 3 || pa.count !== pb.count) return null;
         if (a.drawRange.start !== b.drawRange.start || a.drawRange.count !== b.drawRange.count) return null;
-        if (!!a.index !== !!b.index || (a.index && a.index.count !== b.index.count)) return null;
-        const namen = Object.keys(a.attributes);
-        if (namen.length !== Object.keys(b.attributes).length) return null;
-        if (a.index) {
-            const ia = a.index.array;
-            const ib = b.index.array;
-            for (let i = 0; i < a.index.count; i++) if (ia[i] !== ib[i]) return null;
-        }
+        const namen = Object.keys(a.attributes)
+            .filter((k) => k !== "position")
+            .sort();
+        if (namen.length + 1 !== Object.keys(b.attributes).length) return null;
         for (const k of namen) {
-            if (k === "position") continue;
             const x = a.attributes[k];
             const y = b.attributes[k];
-            if (!y || x.isInterleavedBufferAttribute || y.isInterleavedBufferAttribute) return null;
-            if (x.itemSize !== y.itemSize || x.count !== y.count) return null;
-            const xa = x.array;
-            const ya = y.array;
-            for (let i = 0, n = x.count * x.itemSize; i < n; i++) if (Math.abs(xa[i] - ya[i]) > 1e-6) return null;
+            if (!y || x.isInterleavedBufferAttribute || y.isInterleavedBufferAttribute || x.itemSize !== y.itemSize)
+                return null;
         }
-        const A = pa.array;
-        const B = pb.array;
-        const d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
-        for (let i = 0, n = pa.count * 3; i < n; i++) if (Math.abs(B[i] - A[i] - d[i % 3]) > 1e-5) return null;
-        return d;
+        const sicht = (g) => ({
+            pos: g.attributes.position.array,
+            idx: g.index ? g.index.array : null,
+            spuren: namen.map((k) => g.attributes[k].array),
+        });
+        return globalThis.__phytoCore.budgetGestaltVersatz(sicht(a), sicht(b));
     }
 
     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
