@@ -410,7 +410,7 @@ class AnazhRealm {
             // Streaming-Pumps; der Density-Cache darüber bleibt nur für den Determinismus-Test.
             voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
             voxelMeshPending: null, // Set<"cx,cz,lod">
-            voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
+            voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", Stand (`_voxelStand`)> für Stale-Filter
             tmpVec1: null,
             tmpVec2: null,
             // Sentinel: -Infinity heißt "noch nie generiert". Mit 0 würde der
@@ -24725,7 +24725,7 @@ class AnazhRealm {
     // Cache-First-Density für den Streaming-Pfad: Float32Array = Cache-Hit (one-shot, wird konsumiert),
     // null = Worker-Request pending (Pump kommt wieder), undefined = kein Worker → sync-Density.
     // Indizierung MUSS exakt zum `_buildVoxelChunkData`-Aufruf passen (ox-step, oy, oz-step, dim+3,
-    // dimY, dim+3, step), sonst Drift. Bumpt ein voxelEdit stateGen im Roundtrip → Result verworfen.
+    // dimY, dim+3, step), sonst Drift. Ändert ein Edit oder ein Welt-Sync im Roundtrip den Stand des Chunks (`_voxelStand`) → Result verworfen.
     _fetchOrRequestChunkDensity(cx, cz, lod) {
         const cfg = this._voxelChunkConfig(lod);
         const { dim, step, span, dimY, floorDrop } = cfg;
@@ -24744,16 +24744,15 @@ class AnazhRealm {
         if (!this.state.voxelDensityPending) this.state.voxelDensityPending = new Set();
         if (this.state.voxelDensityPending.has(cacheKey)) return null;
         this.state.voxelDensityPending.add(cacheKey);
-        const expectedStateGen = this.state.voxelWorkerStateGen;
+        const expectedStateGen = this._voxelStand(cx, cz);
         // Origin + Sample-Dimensions IDENTISCH zur Main-Thread-Geometry-Calls
         // (V9.42-d-Pad: ox-step + dim+3 in X/Z, vertikal dimY).
         this._voxelWorkerComputeDensity(ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step)
             .then((density) => {
                 this.state.voxelDensityPending.delete(cacheKey);
-                // Stale-Result-Filter: wenn state-gen während des Roundtrips
-                // bumpe wurde (voxelEdit, worldgen-rebuild), ist das Grid
-                // gegen alten State berechnet — verwerfen.
-                if (this.state.voxelWorkerStateGen !== expectedStateGen) return;
+                // Stale-Result-Filter: änderte sich der Stand des Chunks während des Roundtrips (ein Edit in
+                // seinem 3×3, ein Welt-Sync), ist das Grid gegen alten State berechnet — verwerfen.
+                if (this._voxelStand(cx, cz) !== expectedStateGen) return;
                 if (!this.state.voxelDensityCache) this.state.voxelDensityCache = new Map();
                 this.state.voxelDensityCache.set(cacheKey, density);
             })
@@ -24882,8 +24881,8 @@ class AnazhRealm {
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
     // und Pad ±1 Cell → die Box deckt den Mesh-Footprint konservativ.
     _chunkFootprintEditFrei(cx, cz) {
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (!edits || !edits.length) return true;
+        const edits = this._voxelEditsNah(cx, cz);
+        if (!edits.length) return true;
         const { span } = this._voxelChunkConfig();
         const loX = (cx - 1) * span,
             hiX = (cx + 2) * span,
@@ -24897,7 +24896,7 @@ class AnazhRealm {
     }
 
     // Cache-First-Mesh für den Streaming-Pfad: {empty, positions, …} = Cache-Hit (`empty` = kein Iso),
-    // null = Worker-Request läuft, undefined = kein Worker → sync. Bumpt ein voxelEdit stateGen im
+    // null = Worker-Request läuft, undefined = kein Worker → sync. Ändert ein Edit den Stand des Chunks (`_voxelStand`) im
     // Roundtrip → Result verworfen. Warm-Start: VOR dem Worker-Zweig fragt ein edit-freier Footprint
     // die IndexedDB (pending-Semantik), der resolve füllt denselben `voxelMeshCache`-Pfad.
     _fetchOrRequestChunkMesh(cx, cz, lod) {
@@ -24924,16 +24923,16 @@ class AnazhRealm {
             (!this.state._chunkIdbMiss || !this.state._chunkIdbMiss.has(cacheKey)) &&
             this._chunkFootprintEditFrei(cx, cz)
         ) {
-            const genAtIdbRequest = this.state.voxelWorkerStateGen;
+            const genAtIdbRequest = this._voxelStand(cx, cz);
             this.state.voxelMeshPending.add(cacheKey);
             this.state.voxelMeshGenAtRequest.set(cacheKey, genAtIdbRequest);
             this._chunkIdbGet(this._chunkIdbKey(cx, cz, lod)).then((payload) => {
                 this.state.voxelMeshPending.delete(cacheKey);
                 this.state.voxelMeshGenAtRequest.delete(cacheKey);
-                // Derselbe Stale-Filter wie der Worker-Zweig: bumpte ein Edit
-                // die Gen während des Platten-Roundtrips, ist der Payload
+                // Derselbe Stale-Filter wie der Worker-Zweig: änderte ein Edit
+                // den Stand während des Platten-Roundtrips, ist der Payload
                 // gegen alten State — verwerfen (der Pump resubmittet frisch).
-                if (this.state.voxelWorkerStateGen !== genAtIdbRequest) return;
+                if (this._voxelStand(cx, cz) !== genAtIdbRequest) return;
                 if (payload) {
                     if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
                     this.state.voxelMeshCache.set(cacheKey, payload);
@@ -24952,12 +24951,12 @@ class AnazhRealm {
             return null;
         }
         this.state.voxelMeshPending.add(cacheKey);
-        const expectedStateGen = this.state.voxelWorkerStateGen;
+        const expectedStateGen = this._voxelStand(cx, cz);
         this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
         this._voxelWorkerComputeChunkMesh(cx, cz, lod)
             .then((meshData) => {
                 this.state.voxelMeshPending.delete(cacheKey);
-                if (this.state.voxelWorkerStateGen !== expectedStateGen) {
+                if (this._voxelStand(cx, cz) !== expectedStateGen) {
                     this.state.voxelMeshGenAtRequest.delete(cacheKey);
                     return;
                 }
@@ -25095,13 +25094,25 @@ class AnazhRealm {
         }
     }
 
-    // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Bumpt stateGen
-    // → stale Density-Results verworfen; Cache leeren, der nächste Pump fordert frisch an.
+    // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Die Karte trägt ihn nach — die
+    // Generation seiner Chunks steigt (`_voxelStand`), ihre Antworten im Flug fallen beim Eintreffen; aus den Caches
+    // fallen nur die Chunks, deren Stand er ändert (sein Karten-Fußabdruck samt 3×3), je LOD. Der Rest der Welt streamt
+    // weiter (bis K23 leerte jeder Edit beide Caches der ganzen Welt und verwarf jede Antwort im Flug).
     _voxelWorkerNotifyEdit(ed) {
         if (!this.state.voxelWorker) return;
-        this.state.voxelWorkerStateGen++;
-        if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
-        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
+        const k = this._voxelEditKarte();
+        const span = k.span;
+        const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+        const cx0 = Math.floor((ed.x - r) / span) - 2;
+        const cx1 = Math.floor((ed.x + r) / span) + 2;
+        const cz0 = Math.floor((ed.z - r) / span) - 2;
+        const cz1 = Math.floor((ed.z + r) / span) + 2;
+        for (const cache of [this.state.voxelDensityCache, this.state.voxelMeshCache]) {
+            if (!cache || !cache.size) continue;
+            for (let cx = cx0; cx <= cx1; cx++)
+                for (let cz = cz0; cz <= cz1; cz++)
+                    for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
+        }
         try {
             this.state.voxelWorker.postMessage({
                 type: "state-update",
@@ -25129,7 +25140,7 @@ class AnazhRealm {
         if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
         if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
         // stateGen bumpt in _voxelWorkerSyncState (send-time). worldgenSynced bleibt ab jetzt true — der
-        // Streaming-Pump traut dem Worker; voxelEdits filtern weiter per stateGen.
+        // Streaming-Pump traut dem Worker; Edits filtern je Chunk (`_voxelStand`).
         this._voxelWorkerSyncState({ op: "state-set" });
         this.state.voxelWorkerWorldgenSynced = true;
     }
@@ -26619,7 +26630,11 @@ class AnazhRealm {
                         this.log("Aufschütten: kein Material im Inventar — erst graben.", "INFO");
                         return true;
                     }
-                    this.fillVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    // Das Chat-Graben reist wie jedes Graben (K23): über den DSL-Op, der den Mitspielern broadcastet;
+                    // der Material-Konsum bleibt lokal (wie beim Aufschütten mit der Hand).
+                    this.dslRun(["voxel_fill", pm.position.x, pm.position.y - 1.5, pm.position.z, 5], {
+                        source: "human",
+                    });
                     this.log(
                         matGate.free
                             ? "Voxel-Terrain aufgeschüttet — ein Hügel unter dir."
@@ -26627,7 +26642,9 @@ class AnazhRealm {
                         "INFO"
                     );
                 } else {
-                    this.carveVoxelSphere(pm.position.x, pm.position.y - 1.5, pm.position.z, 5);
+                    this.dslRun(["voxel_carve", pm.position.x, pm.position.y - 1.5, pm.position.z, 5], {
+                        source: "human",
+                    });
                     this.log("Voxel-Terrain gegraben — eine Mulde unter dir.", "INFO");
                 }
             }
@@ -27748,8 +27765,8 @@ class AnazhRealm {
             { x: spot.x, y: platCenterY + 0.5, z: spot.z },
             { silent: true }
         );
-        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus
-        if (plat) this._grundrissRaeumen(plat);
+        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus —
+        // geräumt an der Wurzel (`spawnArchitecture`)
         // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
         // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
         const spawnY = platCenterY + 2.2;
@@ -28102,12 +28119,109 @@ class AnazhRealm {
         return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
     }
 
+    // DIE EDIT-KARTE (K23): die Edits der Welt je Chunk. `worldMeta.voxelEdits` bleibt die EINE Liste (persistiert, in
+    // Setz-Reihenfolge, ohne Deckel — kein Edit fällt still); die Karte legt jeden Edit in jeden Chunk, den seine Kugel
+    // samt einem Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in
+    // derselben Reihenfolge; der KERN ohne Rand dient der Punkt-Probe. Ein Leser fragt nur seinen Chunk statt alle Edits
+    // zu summieren, und die Summe bleibt Bit für Bit die der ganzen Liste (ein Edit außerhalb trägt nichts bei). Je Chunk
+    // eine Generation aus EINEM steigenden Zähler (nie wiederholt) — der Stale-Filter der Worker-Antworten
+    // (`_voxelStand`). Identität und Länge der Liste halten die Karte frisch: ein Push wird nachgetragen, ein Tausch oder
+    // Kürzen baut sie neu. Der Worker spiegelt sie byte-gleich (`editKarte`, voxel-worker.js).
+    _voxelEditKarte() {
+        const meta = this.state.worldMeta;
+        const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
+        let k = this._editKarte;
+        if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0)) {
+            k = this._editKarte = {
+                edits,
+                n: 0,
+                span: this._voxelChunkConfig().span,
+                je: new Map(),
+                kern: new Map(),
+                gen: new Map(),
+            };
+        }
+        if (edits && k.n < edits.length) {
+            const span = k.span;
+            while (k.n < edits.length) {
+                const ed = edits[k.n++];
+                if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
+                const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+                this._editGenZaehler = (this._editGenZaehler || 0) + 1;
+                const g = this._editGenZaehler;
+                // Der Kasten der Kugel in Chunks (ka … kb); die Karte nimmt einen Chunk Rand dazu.
+                const kax = Math.floor((ed.x - r) / span);
+                const kbx = Math.floor((ed.x + r) / span);
+                const kaz = Math.floor((ed.z - r) / span);
+                const kbz = Math.floor((ed.z + r) / span);
+                for (let cx = kax - 1; cx <= kbx + 1; cx++) {
+                    for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
+                        const key = (cx + 32768) * 65536 + (cz + 32768);
+                        const liste = k.je.get(key);
+                        if (liste) liste.push(ed);
+                        else k.je.set(key, [ed]);
+                        k.gen.set(key, g);
+                        // DER KERN (ohne Rand): die Punkt-Probe fragt nur die Edits, deren Kasten ihren Chunk berührt.
+                        if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
+                            const kern = k.kern.get(key);
+                            if (kern) kern.push(ed);
+                            else k.kern.set(key, [ed]);
+                        }
+                    }
+                }
+            }
+        }
+        return k;
+    }
+
+    // Die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können — in Setz-Reihenfolge, leer ohne.
+    _voxelEditsNah(cx, cz) {
+        return this._voxelEditKarte().je.get((cx + 32768) * 65536 + (cz + 32768)) || AnazhRealm.KEINE_EDITS;
+    }
+
+    // Die Edits, die den waagrechten Kasten [x0, x1] × [z0, z1] berühren können: liegt er (mit 1 m Rand) im 3×3 um den
+    // Chunk seiner Mitte, ist es dessen Karten-Eintrag (jedes Chunk-Gitter samt Pad), sonst die ganze Liste.
+    _voxelEditsImKasten(x0, x1, z0, z1) {
+        const k = this._voxelEditKarte();
+        if (!k.edits || !k.edits.length) return AnazhRealm.KEINE_EDITS;
+        const span = k.span;
+        const cx = Math.floor((x0 + x1) / 2 / span);
+        const cz = Math.floor((z0 + z1) / 2 / span);
+        if (
+            x0 - 1 > (cx - 1) * span &&
+            x1 + 1 < (cx + 2) * span &&
+            z0 - 1 > (cz - 1) * span &&
+            z1 + 1 < (cz + 2) * span
+        )
+            return k.je.get((cx + 32768) * 65536 + (cz + 32768)) || AnazhRealm.KEINE_EDITS;
+        return k.edits;
+    }
+
+    // Der Stand eines Chunks für den Stale-Filter der Worker- und Platten-Antworten: der Welt-Sync
+    // (`voxelWorkerStateGen`) und die jüngste Edit-Generation im 3×3 um ihn. Ein Edit verwirft nur die Antworten seiner
+    // Nachbarschaft, nie die der ganzen Welt.
+    _voxelStand(cx, cz) {
+        const gen = this._voxelEditKarte().gen;
+        let g = 0;
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const v = gen.get((cx + dx + 32768) * 65536 + (cz + dz + 32768));
+                if (v > g) g = v;
+            }
+        }
+        return `${this.state.voxelWorkerStateGen}|${g}`;
+    }
+
     // Voxel-Edit-Deltas (EINE Quelle): jede Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf
     // (fill). Edits leben in worldMeta.voxelEdits (persistiert) und gelten ZULETZT — der Spieler-Wille
-    // überschreibt Terrain UND Hydrosphäre-Sculpting.
+    // überschreibt Terrain UND Hydrosphäre-Sculpting. Summiert werden nur die Edits, deren Kasten den Chunk der Probe
+    // berührt (der Kern der Karte).
     _voxelEditDeltaAt(x, y, z) {
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (!edits || !edits.length) return 0;
+        const meta = this.state.worldMeta;
+        if (!meta || !meta.voxelEdits || !meta.voxelEdits.length) return 0;
+        const k = this._voxelEditKarte();
+        const edits = k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768));
+        if (!edits) return 0;
         let d = 0;
         for (let e = 0; e < edits.length; e++) {
             const ed = edits[e];
@@ -28147,8 +28261,9 @@ class AnazhRealm {
             baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample, colVoxel);
             this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
         }
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (!edits || !edits.length) return baseGrid; // Basis IST das Grid (read-only)
+        // Die Edits des Gitter-Kastens (die Karte, `_voxelEditsImKasten`; der Worker fragt denselben Kasten).
+        const edits = this._voxelEditsImKasten(gox, gox + dimX * step, goz, goz + dimZ * step);
+        if (!edits.length) return baseGrid; // Basis IST das Grid (read-only)
         // Edit-Delta auf eine Kopie legen. Nur Vertices im Kugel-Radius werden
         // berührt (Index-Bounding-Box), der Rest bleibt Basis → billig.
         const out = new Float32Array(baseGrid);
@@ -30161,9 +30276,9 @@ class AnazhRealm {
         const oz = cz * span;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         // (1) Voxel-Carve unter waterLevel im xz-Footprint — Spieler-Wille
-        // überschreibt Atlas (Hochland-Pool emergiert lokal).
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (Array.isArray(edits) && edits.length) {
+        // überschreibt Atlas (Hochland-Pool emergiert lokal). Gefragt wird die Karte des Chunks.
+        const edits = this._voxelEditsNah(cx, cz);
+        if (edits.length) {
             for (let e = 0; e < edits.length; e++) {
                 const ed = edits[e];
                 if (!ed || ed.mode !== "carve") continue;
@@ -35663,6 +35778,8 @@ class AnazhRealm {
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
+        // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) this._grundrissRaeumen(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
@@ -39609,7 +39726,12 @@ class AnazhRealm {
         const voll = fr.vollY[p.g];
         if (!(voll === voll)) return NaN;
         const y = this._voxelSurfaceY(p.x, p.z);
-        fr.feldY[p.g] = y === null || !(y === y) ? voll : y;
+        // OHNE FLÄCHE (die Spalte trägt keinen Boden bis zur Garantie-Tiefe) bleibt die Ecke auf dem Gesetz — gezählt
+        // (`feldOhne`, gate:fern-ring Band 9 nennt es), nie still
+        if (y === null || !(y === y)) {
+            fr.feldOhne = (fr.feldOhne | 0) + 1;
+            fr.feldY[p.g] = voll;
+        } else fr.feldY[p.g] = y;
         return fr.feldY[p.g];
     }
 
@@ -42469,12 +42591,11 @@ class AnazhRealm {
         if (y < Y_MIN || y > Y_MAX) return false;
         const yClamped = Math.max(floorY - radius, Math.min(ceilY + radius, y));
         const newEdit = { x, y: yClamped, z, r: radius, strength: 48, mode: mode === "fill" ? "fill" : "carve" };
+        // Kein Deckel (K23): jeder Edit bleibt, Main und Worker tragen dieselbe Liste; die Leser fragen je Chunk (die
+        // Karte, `_voxelEditKarte`). Bis K23 verdrängte ein FIFO-Deckel (256) still den ersten — nur im Main.
         edits.push(newEdit);
-        // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt im Save.
-        const CAP = 256;
-        while (edits.length > CAP) edits.shift();
-        // Edit-Delta an den Worker: state-gen bumpt, in-flight Density-Requests invalidiert, Cache geleert;
-        // der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
+        // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
+        // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
         this._voxelWorkerNotifyEdit(newEdit);
         // `_remeshVoxelChunksAround` ist der EINZIGE Reaktiv-Pfad: die Chunks bauen neu, das Cell-Feld
         // klassifiziert die neue Lage (Carve unter waterLevel → WATER, Fill → SOLID) — Cells sind DERIVED,
@@ -42591,8 +42712,8 @@ class AnazhRealm {
     // Zellen (`_buildVoxelChunkWaterCells`) und baut der Chunk SYNC-MAIN (`_rebuildVoxelChunk`), damit
     // die Flut über die Naht läuft; unberührte Chunks bleiben atlas-only = bit-identisch zum Worker.
     _chunkRegionHasCarve(cx, cz) {
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (!edits || !edits.length) return false;
+        const edits = this._voxelEditsNah(cx, cz);
+        if (!edits.length) return false;
         const { span } = this._voxelChunkConfig();
         const loX = (cx - 1) * span,
             hiX = (cx + 2) * span,
@@ -73046,7 +73167,6 @@ class AnazhRealm {
                 /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
             }
         }
-        if (this._grundrissVon(entry)) this._grundrissGitter = null; // ein Bau mit Grundriss (Haus, Lichtung): das Gitter baut neu
         // KAMIN-RAUCH (.105): Spitze haus-lokal → userData.rauchQuelle (Invariant: Rauch ⟺ chimney).
         if (
             opts.chimney &&
@@ -73127,6 +73247,9 @@ class AnazhRealm {
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+        // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung): was die Natur dort schon geworfen hat,
+        // weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Plattform, Spieler, KI und Probe gleich.
+        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
@@ -75170,7 +75293,6 @@ class AnazhRealm {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
-        if (entry) this._grundrissRaeumen(entry);
         return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
@@ -81005,6 +81127,30 @@ class AnazhRealm {
             return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
         const t = e.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
+        // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament- und Tür-Zeile (gesetzt vom
+        // Spieler, der KI, einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der
+        // Mess-Wiese). Die festen Boxen der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle.
+        const hu = e._hausHuelle;
+        if (hu) {
+            const m = e._grundrissHuelle;
+            if (m && m.hu === hu) return m.fp;
+            const fest = AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || [];
+            let x0 = Infinity,
+                x1 = -Infinity,
+                z0 = Infinity,
+                z1 = -Infinity;
+            for (const q of fest)
+                if (q.art === "box") {
+                    x0 = Math.min(x0, q.c[0] - q.h[0]);
+                    x1 = Math.max(x1, q.c[0] + q.h[0]);
+                    z0 = Math.min(z0, q.c[2] - q.h[2]);
+                    z1 = Math.max(z1, q.c[2] + q.h[2]);
+                }
+            const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+            const fp = x1 > x0 && z1 > z0 ? { ex: ((x1 - x0) / 2) * k, ez: ((z1 - z0) / 2) * k, ox: ((x0 + x1) / 2) * k, oz: ((z0 + z1) / 2) * k } : null;
+            e._grundrissHuelle = { hu, fp };
+            if (fp) return fp;
+        }
         const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
@@ -81108,7 +81254,8 @@ class AnazhRealm {
     // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
     // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
     // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
-    // (Lehre 25). Leser: `_spawnSettlementSlot`, `_ensureGenesisPlatform` und das Laden. Gibt die Zahl der geräumten
+    // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
+    // und das Laden. Gibt die Zahl der geräumten
     // Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
@@ -81227,11 +81374,11 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
         if (!entry || !entry.waterCells) return false; // kein Wasser → der Aufrufer baut sync (Map null)
-        const genAtRequest = this.state.voxelWorkerStateGen;
+        const genAtRequest = this._voxelStand(cx, cz);
         this._workerBuildWaterSheet(cx, cz)
             .then((data) => {
                 if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) return; // gepruned
-                if (this.state.voxelWorkerStateGen !== genAtRequest) {
+                if (this._voxelStand(cx, cz) !== genAtRequest) {
                     // Welt-State driftete (Carve/Regen) → die gesendeten Zellen sind stale → sync neu.
                     this._buildVoxelChunkWaterIsoSurface(cx, cz);
                     return;
@@ -102192,6 +102339,8 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
+// Die leere Edit-Liste eines Chunks ohne Edits (`_voxelEditsNah`, `_voxelEditsImKasten`): eingefroren, nie beschrieben.
+AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
 // liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
 // Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die

@@ -720,6 +720,8 @@ const server = http.createServer((req, res) => {
                 }
                 res.feldTakte = t + 1;
                 res.feldOffen = randOffen();
+                // die Ecken ohne Fläche des Feldes (`_fernRingFeldY` zählt sie, `feldOhne`): dort stünde der Ring auf dem Gesetz
+                res.feldOhne = f9 ? f9.feldOhne | 0 : -1;
                 const rand = [];
                 for (let g = 0; f9 && f9.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
                     const p = r._fernRingPunkt(f9, g);
@@ -1503,8 +1505,12 @@ const server = http.createServer((req, res) => {
     );
     check(
         "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet; Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
-        !!out.muendung && out.muendung[0] === 0 && out.feldOffen === 0 && out.muendungAlt > 0,
-        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
+        !!out.muendung &&
+            out.muendung[0] === 0 &&
+            out.feldOffen === 0 &&
+            out.feldOhne === 0 &&
+            out.muendungAlt > 0,
+        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} ohne-flaeche=${out.feldOhne} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",
