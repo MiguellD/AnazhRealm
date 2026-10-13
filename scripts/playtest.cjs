@@ -24684,8 +24684,9 @@ async function checkBandNahStreu(ctx) {
             );
         const ns = r.state.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
-        // Satz in der Szene (wirft nicht), jede Senke ist ein Studio-Teil (leafKey f:…) ohne Mesh, ihre Blöcke treu
-        // (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im Satz ihres Stoffs.
+        // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
+        // ohne Mesh, ihre Blöcke treu (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im
+        // Satz ihres Stoffs.
         let selbst = 0;
         r.state.scene.traverse((o) => {
             if (o.isMesh && ((o.userData && o.userData.inventar === "streu-klein") || /^streuNah:/.test(o.name || "")))
@@ -24695,12 +24696,15 @@ async function checkBandNahStreu(ctx) {
         for (const [art, satz] of r.state.chunkSaetze || [])
             if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
         const stoffe = new Set([...ns.senken.values()].map((a) => a.mat.uuid));
+        const stehtJe = new Map([...ns.senken.values()].map((a) => [a.satz, !a.wiegt]));
         out.jeStoffEinSatz =
             selbst === 0 &&
             [...ns.senken.values()].every((a) => stoffSaetze.has(a.satz)) &&
             new Set([...stoffSaetze.values()].map((x) => x.spec.mat.uuid)).size === stoffSaetze.size &&
             stoffSaetze.size <= stoffe.size &&
-            [...stoffSaetze.values()].every((x) => x.mesh.parent === r.state.scene && x.mesh.castShadow === false);
+            [...stoffSaetze].every(
+                ([art, x]) => x.mesh.parent === r.state.scene && x.mesh.castShadow === (stehtJe.get(art) === true)
+            );
         out.studioTeile = [...ns.senken.values()].every(
             (a) => a.mesh === undefined && typeof a.leafKey === "string" && a.leafKey.startsWith("f:")
         );
@@ -24766,7 +24770,7 @@ async function checkBandNahStreu(ctx) {
         JSON.stringify(res.wind)
     );
     check(
-        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, keiner wirft",
+        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, der stehende Stoff wirft, der wiegende nie",
         res.jeStoffEinSatz === true
     );
     check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), Daten ohne Mesh", res.studioTeile === true);

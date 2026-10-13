@@ -38560,7 +38560,8 @@ class AnazhRealm {
     // Befehl, und das Frustum jedes Passes wählt je Pflanze (`_chunkSatzPass`, der EINE Haken). Der wiegende Stoff trägt
     // keine Dither-Stempel (die Nah-Streu blendet nie, ihr Stufen-Wechsel ist die Armlänge): Position · Normale · Farbe ·
     // `aWiege`; ein stehender Stoff ist der Studio-Stoff (`lf.mat`) mit den Stempeln des Bau-Satzes. Fail-closed: ein Stoff,
-    // der eine Karte liest (uv — der Blatt-Atlas), hat im Satz keine Quelle.
+    // der eine Karte liest (uv — der Blatt-Atlas), hat im Satz keine Quelle. DER WURF (1310-11): der stehende Stoff (Holz und
+    // Stein — Geröll · Totstamm · Stumpf) wirft in die Kaskaden, der wiegende nie (Gras, Blüte, Farn bleiben schattenlos).
     _streuSatzArt(a) {
         const mat = a.mat;
         const u = mat.userData || {};
@@ -38575,7 +38576,7 @@ class AnazhRealm {
             st.satzStoffe.set(art, {
                 name: "streuSatz",
                 mat,
-                wurf: false,
+                wurf: !a.wiegt,
                 attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.BAU_SATZ_ATTR,
                 kapazitaet: "streu",
                 userData: { streuSatz: "streuSatz" },
