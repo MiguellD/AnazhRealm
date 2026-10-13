@@ -1,0 +1,4 @@
+{"a":"bild-aus/1/stein.png","b":"bild-aus/2/stein.png","kasten":8111,"bDunkler":3999,"ganz":119262,"lumaA":90.35,"lumaB":90.43}
+{"a":"bild-an/1/stein.png","b":"bild-an/2/stein.png","kasten":11986,"bDunkler":5128,"ganz":259942,"lumaA":90.44,"lumaB":90.88}
+{"a":"bild-aus/1/stein.png","b":"bild-an/1/stein.png","kasten":10807,"bDunkler":5364,"ganz":217508,"lumaA":90.35,"lumaB":90.44}
+{"a":"bild-aus/2/stein.png","b":"bild-an/2/stein.png","kasten":10063,"bDunkler":4161,"ganz":200419,"lumaA":90.43,"lumaB":90.88}

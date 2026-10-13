@@ -1,0 +1,1 @@
+{"ergebnis":{"modus":"zaehle","stehend":{"senken":1,"instanzen":2,"dreiecke":2560},"wiegend":{"instanzen":132,"dreiecke":34762},"saetze":1,"vorher":[{"art":"streuSatz|f1074ebe-48d3-4b3c","schatten":false,"wirft":false}],"senken":[{"key":"geroell:1:L0:0","anzahl":2,"dreiecke":1280,"satz":"streuSatz|f1074ebe-48d3-4b3c-bb7b-a5584bd2c785"}]},"ms":2}

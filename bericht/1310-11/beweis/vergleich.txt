@@ -1,0 +1,6 @@
+{"a":"alle/an1/oben-1.png","b":"alle/an2/oben-1.png","kasten":5336,"bDunkler":3192,"ganz":72137,"lumaA":84.95,"lumaB":84.76}
+{"a":"alle/an1/oben-1.png","b":"alle/aus/oben-1.png","kasten":2900,"bDunkler":1256,"ganz":57107,"lumaA":84.95,"lumaB":85.04}
+{"a":"alle/aus/oben-1.png","b":"alle/an2/oben-1.png","kasten":6149,"bDunkler":3824,"ganz":64399,"lumaA":85.04,"lumaB":84.76}
+{"a":"alle/an1/oben-2.png","b":"alle/an2/oben-2.png","kasten":6937,"bDunkler":963,"ganz":77503,"lumaA":52.69,"lumaB":53.62}
+{"a":"alle/an1/oben-2.png","b":"alle/aus/oben-2.png","kasten":6914,"bDunkler":924,"ganz":50141,"lumaA":52.69,"lumaB":53.63}
+{"a":"alle/aus/oben-2.png","b":"alle/an2/oben-2.png","kasten":2477,"bDunkler":1287,"ganz":74047,"lumaA":53.63,"lumaB":53.62}
