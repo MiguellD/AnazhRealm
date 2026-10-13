@@ -91,11 +91,12 @@
                 // (31 660–101 716 Dreiecke je Kaskade), die L1 ebenso, die L2 gar nicht (der Schatten sprang bei 26 m weg).
                 // DAS FENSTER JEDER STUFE (K38, 13.10.): der Schlaf der Fenster würfelt in jeder Stufe gleich — die L0 trägt das
                 // schlafende Glas als eigenen Stoff (gotisch 11 → 12); die L2 trägt das Glas der L0 (Stoff + Glas, 2 Befehle), der
-                // Glas-Stil dazu seinen Fern-Körper und sein Metall (volle_moderne: Stoff · Metall · Fern-Glas · Glas, 3 → 4).
+                // Glas-Stil dazu seinen Fern-Körper und sein Metall (volle_moderne: Stoff · Metall · Fern-Glas · Glas, 3 → 4); das
+                // Fern-Fenster kostet 14–16 Dreiecke (Rahmen-Kasten, Scheibe, Kreuz): L2 tris 7000 → 7250 (marokkanisch/1 7224, 31 Fenster).
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
-                    2: { tris: 7000, band: 2000, draws: 4, schatten: 3 },
+                    2: { tris: 7250, band: 2000, draws: 4, schatten: 3 },
                     3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
                     // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel
@@ -1967,14 +1968,14 @@
     }
     // DAS FERN-FENSTER: je Öffnung des Gesetzbuchs (`H.windows`, jede Art: Stockwerk, Giebel, Anbau) das Fenster der L0 in
     // ihren Kosten — der RAHMEN als Kasten vor der Wand (`w + 0,2` × `h + 0,2`, RAHMEN_TIEFE: Pfosten und Sturz der L0 stehen
-    // 0,09 vor der Wand, die Bank 0,12; Front und vier Seiten, im Rahmen-Stoff des Hauses — ist er kein Stoff, das Metall des
+    // 0,09 vor der Wand, die Bank 0,12; Front und die Seiten längs der Wand, im Rahmen-Stoff des Hauses — ist er kein Stoff, das Metall des
     // Glas-Stils, trägt der Stoff seinen Ton: kein eigener Befehl), davor die SCHEIBE der L0 (`w − 2·SCHEIBE_RAND`: die Scheibe
     // liegt im Flügel-Rahmen, windowSash sw 0,06) — der Innenkörper (der Raum × INNEN_DAEMMER) und das Glas (`glas`,
     // durchsichtig 0,42, glüht nach LICHT_GESETZ.fenster). Ein schlafendes Fenster trägt fern seine Mischung opak im Stoff
     // (`glasdunkel` deckt 0,92 über dem Raum — der Ton derselbe, ohne den Glas-Befehl). Steht die Dachhaut der L2 vor der
     // Wand (der Ortgang über dem Giebel, `_hautKappen`), steht das Fenster vor ihr — vorher lagen die Giebel-Fenster der L2
     // hinter ihr (holzhuette Glut 0). Vor der Scheibe das FENSTERKREUZ der L0 (windowSash: Pfosten und Kämpfer 0,04 m, im
-    // Rahmen-Stoff). Die Fern-Stufe kostet Stoff + Glas, zwei Befehle; 18 bis 20 Dreiecke je Fenster.
+    // Rahmen-Stoff). Die Fern-Stufe kostet Stoff + Glas, zwei Befehle; 14 bis 16 Dreiecke je Fenster.
     var RAHMEN_TIEFE = 0.1,
         SCHEIBE_RAND = 0.06,
         KREUZ = 0.02;
@@ -1996,8 +1997,7 @@
   for(const o of liste){ const z=o.perp==='z', s=z?(o.cz<0?-1:1):(o.cx<0?-1:1), u=z?o.cx:o.cz, schlaf=fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
     const e0=_fernVorn(kappen,o,s), P=(uu,y,d)=>z?[uu,y,e0+s*d]:[e0+s*d,y,uu], aus=z?[0,0,s]:[s,0,0], uR=z?[1,0,0]:[0,0,1];
     const rw=(o.w+0.2)/2, rh=(o.h+0.2)/2, y0=o.cy-rh, y1=o.cy+rh, d0=-0.02, d1=RAHMEN_TIEFE;   // der Kasten greift 2 cm in die Wand: keine Fuge zum Körper (der liegt 1,5 cm innen)
-    teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],
-      [[P(u-rw,y1,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u-rw,y1,d1)],[0,1,0]], [[P(u-rw,y0,d0),P(u+rw,y0,d0),P(u+rw,y0,d1),P(u-rw,y0,d1)],[0,-1,0]],
+    teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
