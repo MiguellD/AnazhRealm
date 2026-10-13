@@ -1,0 +1,16 @@
+== A
+bank-1-an.txt    an   GPU 13.77 ms · CPU 2.63 · Takt 1741 (Last 1708, 7 Proben)
+bank-2-aus.txt   aus  GPU 9.18 ms · CPU 2.23 · Takt 1708 (Last 1708, 5 Proben)
+bank-3-an.txt    an   GPU 13.72 ms · CPU 2.31 · Takt 1742 (Last 1729, 7 Proben)
+bank-4-aus.txt   aus  GPU 9.23 ms · CPU 2.48 · Takt 1746 (Last 1746, 5 Proben)
+bank-5-an.txt    an   GPU 13.64 ms · CPU 2.60 · Takt 1741 (Last 1741, 7 Proben)
+bank-6-aus.txt   aus  GPU 9.14 ms · CPU 2.30 · Takt 1738 (Last 1717, 5 Proben)
+an  GPU 13.71 · aus GPU 9.18 · Baum-Preis 4.53 ms · Takt an/aus 1741/1731
+== B
+bank-1-an.txt    an   GPU 14.55 ms · CPU 4.96 · Takt 1735 (Last 1735, 8 Proben)
+bank-2-aus.txt   aus  GPU 9.13 ms · CPU 2.88 · Takt 1700 (Last 1700, 5 Proben)
+bank-3-an.txt    an   GPU 14.77 ms · CPU 3.04 · Takt 1708 (Last 1708, 8 Proben)
+bank-4-aus.txt   aus  GPU 9.30 ms · CPU 2.79 · Takt 1746 (Last 1695, 5 Proben)
+bank-5-an.txt    an   GPU 14.98 ms · CPU 3.34 · Takt 1703 (Last 1703, 8 Proben)
+bank-6-aus.txt   aus  GPU 9.18 ms · CPU 2.76 · Takt 1706 (Last 1706, 6 Proben)
+an  GPU 14.77 · aus GPU 9.20 · Baum-Preis 5.56 ms · Takt an/aus 1715/1717

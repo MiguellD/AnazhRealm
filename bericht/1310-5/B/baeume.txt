@@ -1,0 +1,1 @@
+{"ergebnis":{"wie":"zahl","gruppen":48,"instanzen":162,"klassen":["f:birke","f:strauch","f:tanne","f:weide","f:eiche","f:fichte","fscatter:fichte:2:1","fscatter:fichte:1:1"]},"ms":3}

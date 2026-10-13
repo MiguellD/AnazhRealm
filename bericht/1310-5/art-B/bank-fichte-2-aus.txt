@@ -1,0 +1,9 @@
+{
+ "n": 12,
+ "runden": 3,
+ "gpuJeFrameMs": 13.78,
+ "cpuJeFrameMs": 2.47,
+ "gpuGebunden": true,
+ "nachlaufMs": 132.6,
+ "ms": 554
+}
