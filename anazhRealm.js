@@ -58080,44 +58080,50 @@ class AnazhRealm {
             }
         }
         const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;
-        let geaendert = false;
-        let halt = false;
-        if (cur !== desired) {
-            if (entry.instSlotsBand) {
-                this._archInstanceRemove(entry, { bandOnly: true });
-                geaendert = true;
-            }
-            entry._lodBandLevel = null;
-            if (desired !== null) {
-                const flat = this._foundryFlattenFor(entry, preset, desired);
-                // lädt (null) oder kann nicht (false, die Bake-Lücke) → Band leer, die Primär-Stufe HÄLT; lädt der
-                // Partner, wartet der Eintrag (der nächste Tick versucht neu), die Lücke hält still
-                if (!flat || !flat.instanceable) halt = flat === null ? "wartet" : true;
-                else {
-                    // Klammer-Wand: kollabiert kindStages den Partner auf dieselbe servierte Stufe wie die Primär-Stufe,
-                    // wäre das Band ein voll-opaker Doppel-Draw. Flats sind je Stufe gecacht → Identität ist der Test.
-                    const primFlat = this._foundryFlattenFor(entry, preset, entry._lodLevel | 0);
-                    if (!(primFlat && flat === primFlat)) {
-                        const bf = this._bandOhneZwilling(flat, primFlat);
-                        this._archInstanceAdd(entry, bf, { band: true, bandLod: desired });
-                        geaendert = true;
-                    }
-                }
-            }
+        if (cur === desired) {
+            this._lodHaltSetzen(entry, false); // der Partner steht (oder keiner ist verlangt): kein Halt
+            return false;
         }
-        entry._lodHaltWartet = halt === "wartet";
-        this._lodHaltSetzen(entry, !!halt);
-        return geaendert;
+        let geaendert = false;
+        if (entry.instSlotsBand) {
+            this._archInstanceRemove(entry, { bandOnly: true });
+            geaendert = true;
+        }
+        entry._lodBandLevel = null;
+        if (desired === null) {
+            this._lodHaltSetzen(entry, false);
+            return geaendert;
+        }
+        const flat = this._foundryFlattenFor(entry, preset, desired);
+        if (!flat || !flat.instanceable) {
+            // lädt (null) oder kann nicht (false, die Bake-Lücke) → Band leer, die Primär-Stufe HÄLT; lädt der Partner,
+            // wartet der Eintrag (der nächste Tick versucht neu), die Lücke hält still
+            this._lodHaltSetzen(entry, flat === null ? "wartet" : true);
+            return geaendert;
+        }
+        // Klammer-Wand: kollabiert kindStages den Partner auf dieselbe servierte Stufe wie die Primär-Stufe,
+        // wäre das Band ein voll-opaker Doppel-Draw. Flats sind je Stufe gecacht → Identität ist der Test.
+        const primFlat = this._foundryFlattenFor(entry, preset, entry._lodLevel | 0);
+        if (primFlat && flat === primFlat) {
+            this._lodHaltSetzen(entry, false);
+            return geaendert;
+        }
+        this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true, bandLod: desired });
+        this._lodHaltSetzen(entry, false);
+        return true;
     }
 
     // DER HALT DER STUFE (K36, der Geister-Baum): die Maske blendet ein PAAR — eine Stufe weicht ihrem Partner, wo das
     // Gesetz ihn zeigt. Steht der Partner nicht (die Karte bäckt, die Stufe lädt, die Art trägt keine), wich die Stufe dem
     // Nichts: die L1 vor der ungebackenen Karte stand halb durchsichtig über der Szene, jenseits des Bands fehlte sie ganz.
     // Eine Stufe ohne ihren Partner hält VOLL — dasselbe Vorzeichen wie die verdeckte Karte (`_lodSlotVoll` → der Slot-
-    // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht. true = der Stempel wechselte.
+    // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht. `halt`: false · true (die Lücke,
+    // still) · "wartet" (der Partner lädt: der Tick bleibt wach). true = der Stempel wechselte.
     _lodHaltSetzen(entry, halt) {
-        if (!entry || (entry._lodHalt === true) === halt) return false;
-        entry._lodHalt = halt;
+        if (!entry) return false;
+        entry._lodHaltWartet = halt === "wartet";
+        if ((entry._lodHalt === true) === !!halt) return false;
+        entry._lodHalt = !!halt;
         this._lodSlotOcclusionRefresh(entry);
         return true;
     }
