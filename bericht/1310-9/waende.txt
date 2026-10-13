@@ -1,0 +1,8 @@
+23:57:04 lint EXIT=0 8 s · ✖ 2 problems (0 errors, 2 warnings)
+23:57:14 format:check EXIT=0 10 s · ✅ Alle Dateien formatiert (8.4 s).
+23:57:23 gate:profiband EXIT=0 9 s · ✅ DIE BAND-WAND steht — H1 Haushalt 208/208 Befehle · 680000/680000 Dreiecke in 12 Klassen (keine Sammelzeile) · H2 Ratsche 12 Klassen
+23:58:07 gate:foundry-crossfade EXIT=0 44 s · ✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überla
+23:58:14 gate:pflanzen-nah EXIT=0 7 s · ✅ GRÜN — 23 Fälle.
+00:01:23 puls (ci-lokal) EXIT=0 · 18 grün · 
+00:01:50 playtest:fast EXIT=0 26 s · Laufzeit: 25s · 22 ✅ · 0 ❌
+00:01:50 WAENDE ENDE
