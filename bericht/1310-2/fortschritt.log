@@ -1,0 +1,14 @@
+21:47:40 SERIE START A=bb554abf (6922c97486b250bb) B=785cca46 (e0c2b4879ffeb952) Instrument=bb554abf+Genesis-Variante
+21:50:09 gA1 anazhRealm=6922c97486b250bb exit=0 [folge] band …  laufVoll: 50.5 fps · Frame p50/p95/max 16.7/25.1/33.4 ms · CPU p50/p95 6.3/9.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.66 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bea
+21:53:11 gB1 anazhRealm=e0c2b4879ffeb952 exit=0 [folge] band …  laufVoll: 50.3 fps · Frame p50/p95/max 16.7/25.1/33.5 ms · CPU p50/p95 6.5/9.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 5.25 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bea
+21:56:08 gA2 anazhRealm=6922c97486b250bb exit=0 [folge] band …  laufVoll: 49.6 fps · Frame p50/p95/max 16.7/25.1/33.1 ms · CPU p50/p95 6.1/9 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.41 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 
+21:59:06 gB2 anazhRealm=e0c2b4879ffeb952 exit=0 [folge] band …  laufVoll: 50.3 fps · Frame p50/p95/max 16.7/25.1/33.3 ms · CPU p50/p95 5.9/8.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.83 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bea
+22:02:10 wA1 anazhRealm=6922c97486b250bb exit=0 [folge] band …  laufVoll: 69.9 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 3.8/5.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.74 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bea
+22:05:17 wB1 anazhRealm=e0c2b4879ffeb952 exit=0 [folge] band …  laufVoll: 66.1 fps · Frame p50/p95/max 16.7/16.8/33.4 ms · CPU p50/p95 4.1/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.88 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bea
+22:08:22 wA2 anazhRealm=6922c97486b250bb exit=0 [folge] band …  laufVoll: 73.9 fps · Frame p50/p95/max 16.6/16.8/25.2 ms · CPU p50/p95 3.9/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.63 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bea
+22:11:28 wB2 anazhRealm=e0c2b4879ffeb952 exit=0 [folge] band …  laufVoll: 65 fps · Frame p50/p95/max 16.7/16.8/33.4 ms · CPU p50/p95 4.2/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, 
+22:12:02 SERIE ENDE
+22:12:08 SERIE START A=bb554abf (6922c97486b250bb) B=785cca46 (e0c2b4879ffeb952) Instrument=bb554abf+Genesis-Variante
+22:14:46 wA3 anazhRealm=6922c97486b250bb exit=0 [folge] band …  laufVoll: 69.5 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 4.1/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.26 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bea
+22:17:54 wB3 anazhRealm=e0c2b4879ffeb952 exit=0 [folge] band …  laufVoll: 65.6 fps · Frame p50/p95/max 16.7/16.8/33.5 ms · CPU p50/p95 4.2/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.33 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bea
+22:18:28 SERIE ENDE
