@@ -28,6 +28,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.WELTAKT_WACHE_PORT || 4603);
 const root = path.resolve(__dirname, "..");
@@ -250,6 +251,8 @@ function gleich(a, b) {
 }
 
 function urteil(S, pageErrors) {
+    const fehlt = fehlendesGlied(S, ["halt{+}", "schmuggel{}", "frei{}", "frei.nexus{}", "frei.nexus.vorher{}", "frei.nexus.nachher{}", "frei.mensch{}", "frei.mensch.vorher{}", "frei.mensch.nachher{}", "ende{}", S && S.liste && "ops[]"]);
+    if (fehlt) return [`(M) MESSUNG: ${fehlt}`];
     const rot = [];
     const SOLL = {
         nexus: [

@@ -36,6 +36,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
 const root = path.resolve(__dirname, "..");
@@ -1072,6 +1073,8 @@ async function probe() {
 }
 
 function urteil(S, stamm, pageErrors) {
+    const fehlt = fehlendesGlied(S, ["tag{}", "tag.phasen{}", "fern{}", "beweger{}", "verzeichnis[+]", "tor{}", "resonanz{}", "rauch{}"]);
+    if (fehlt) return [`(M) MESSUNG: ${fehlt}`];
     const rot = [];
     const T = S.tag;
     if (T.abw)

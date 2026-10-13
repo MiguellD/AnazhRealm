@@ -42,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.HAUS_WELT_PORT || 4486);
 const ROOT = path.resolve(__dirname, "..");
@@ -991,6 +992,8 @@ function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
     const P = new Set(o.phasen || ["haus", "lichtung", "w4", "w4b", "w6"]);
+    const fehlt = fehlendesGlied(o, [P.has("haus") && "haeuser[]"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     if (P.has("haus")) {
         const hs = o.haeuser.filter((h) => !h.fehler);
         if (!(hs.length >= 6)) f.push(`Aufbau: ${hs.length} Häuser geprüft (Soll ≥ 6)`);

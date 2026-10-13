@@ -20,6 +20,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -66,10 +67,14 @@ function weltAlbedo(o) {
 
 // Das Urteil über EINE Welt-Gestalt: Liste der Täter (je Stoff höchstens einer je Art).
 function urteil(name, group) {
+    const fehlt = fehlendesGlied(group, ["traverse"]);
+    if (fehlt) return [`${name}: ${fehlt}`];
     const out = [];
     const gesehen = new Set();
+    let gemessen = 0;
     group.traverse((o) => {
         if (!o.isMesh || !o.material) return;
+        gemessen++;
         const m = o.material;
         const st = m.userData && m.userData.__stoff;
         const w = weltAlbedo(o);
@@ -100,6 +105,7 @@ function urteil(name, group) {
         if (w.vc && (m.color.r < 0.999 || m.color.g < 0.999 || m.color.b < 0.999))
             out.push(`${name}: toenung ${st} (Material-Farbe ${m.color.getHexString()} auf Vertex-Farben)`);
     });
+    if (!gemessen) out.push(`${name}: Messung fehlt: kein Mesh mit Material in der Gestalt`);
     return out;
 }
 

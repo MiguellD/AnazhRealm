@@ -64,6 +64,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const root = path.resolve(__dirname, "..");
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);
@@ -1095,6 +1096,9 @@ async function aufnahme(page, name, ordner, lage) {
 }
 
 function urteile(daten, offline, lab, ereig, phasen, spitzen) {
+    // die Messung trägt ihre Glieder (fehlende Teile außer daten sind erlaubt: der Selbsttest urteilt je Abschnitt)
+    const fehlt = fehlendesGlied({ daten, offline: offline || {}, lab: lab || {}, ereig: ereig || [], phasen: phasen || {}, spitzen: spitzen || {} }, ["daten{}", "offline{}", "lab{}", "ereig[]", "phasen{}", "spitzen{}"]);
+    if (fehlt) return { rot: [`MESSUNG: ${fehlt}`], zeilen: [] };
     const rot = [];
     const zeilen = [];
     const mixAlle = {};

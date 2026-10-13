@@ -28,6 +28,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.RAUM_TAGS_PORT || 4606);
 const root = path.resolve(__dirname, "..");
@@ -499,6 +500,8 @@ async function probe() {
 }
 
 function urteil(S, Q, pageErrors) {
+    const fehlt = fehlendesGlied({ S, Q }, ["S{}", "S.sitzung[]", "S.welt{}", "Q.befunde[]", S && S.hatGedaechtnis === true && "S.linse{}"]);
+    if (fehlt) return [`(M) MESSUNG: ${fehlt}`];
     const rot = [];
     for (const b of Q.befunde) rot.push(`(Q) QUELLE: ${b}`);
     if (!S.hatGedaechtnis)

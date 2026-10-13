@@ -34,6 +34,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
@@ -731,6 +732,8 @@ const WELT_MESSEN = async () => {
 
 // Das Urteil über die Welt-Sonde (rein — der Selbsttest füttert es mit Bruch-Daten).
 function urteilWelt(d) {
+    const fehlt = fehlendesGlied(d, ["G{}", "boot{}", "samen{}", "karten{}", "saison{}", "saison.kontrolle{}", "saison.mul0[]", "saison.mul1[]"]);
+    if (fehlt) return [["W0 die Sonde misst", false, fehlt]];
     const aus = [];
     const pruef = (name, ok, detail) => aus.push([name, !!ok, detail || ""]);
     pruef("W0 die Sonde misst (Budget im Buch, Boot bestellt, Foundry-Bäume stehen)", d.G && d.boot.posts >= 50 && d.saison.inst0 >= 5, `Boot ${d.boot.posts} Aufträge · ${d.saison.inst0} Bäume`);

@@ -53,8 +53,12 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
+const { fehlendesGlied } = require("./lib/messung.cjs");
+
 // Das Urteil über einen Zensus: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(z) {
+    const fehlt = fehlendesGlied(z, ["boden{}", "boden.objekte#", "boden.namen[]", "voxelChunkNamen[]", "wasser{}", "wasser.objekte#", "streuNah{}", "deck#", "fern{}", "pGruppen[]", "pBundles[]"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const v = [];
     if (z.boden.objekte > 1)
         v.push(
@@ -103,6 +107,8 @@ function urteil(z) {
 // Frames NACH dem ersten (er legt die Abschnitte) einer Phase mit unveränderten Frusta schreiben nichts; jede Zeile nennt
 // Phase, Frame, Satz, wer wessen Abschnitt schrieb (wer ≠ wen: ein Pass schrieb den Abschnitt eines anderen) und die Bytes.
 function urteilNeu(m) {
+    const fehlt = fehlendesGlied(m, ["{+}", ...Object.keys(m || {}).map((phase) => phase + "[+]")]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const v = [];
     for (const [phase, frames] of Object.entries(m || {}))
         for (let i = 1; i < frames.length; i++)
@@ -1154,7 +1160,7 @@ function check(name, ok, detail) {
         const vAlt = urteilNeu({ alt: nu.alt });
         check(
             "(j) Selbsttest: die alte Verdrängung (drei Ring-Kaskaden) schreibt je Frame neu — die Wand nennt sie",
-            vAlt.length > 0,
+            vAlt.some((s) => s.startsWith("NEUSCHREIBEN")),
             vAlt.slice(0, 2).join(" · ") || "(nichts — die Wand ist vakuös)"
         );
     } else check("(j) NEUSCHREIBEN gemessen", false, "keine Messung");

@@ -36,6 +36,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
 const root = path.resolve(__dirname, "..");
@@ -832,6 +833,8 @@ async function probe() {
 }
 
 function urteil(S, stamm, pageErrors) {
+    const fehlt = fehlendesGlied(S, ["runden[+]", "loeser[+]", "tier[+]", "konsistenz[+]", "decke{}", "quelle{}"]);
+    if (fehlt) return [`(M) MESSUNG: ${fehlt}`];
     const rot = [];
     for (const R of S.runden) {
         if (R.abweichungen)

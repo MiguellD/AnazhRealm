@@ -18,6 +18,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.HIMMEL_PORT || 4595);
 const SELFTEST = process.argv.includes("--selftest");
@@ -104,6 +105,8 @@ function probe(stoerung) {
 }
 
 function urteil(S) {
+    const fehlt = fehlendesGlied(S, ["punkte#", "mittag{}", "daemmerung{}", "nacht{}"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const rot = [];
     if (S.fremdeKoerper > 0 || !S.planetenFort)
         rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz am Himmel (planetenFort=${S.planetenFort})`);

@@ -21,6 +21,7 @@
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const ARTEN = ["wolf", "fox", "bear", "deer"];
@@ -304,6 +305,9 @@ function messe(sb, g) {
 }
 
 function urteile(sb, art, m, M) {
+    const fehlt =
+        fehlendesGlied(sb, [`__tetrapodaCore.ANATOMIE_SOLL.${art}{+}`]) || fehlendesGlied({ m, M }, ["m{}", "M#"]);
+    if (fehlt) return { roh: {}, v: [`${art} MESSUNG: ${fehlt}`] };
     const S = sb.__tetrapodaCore.ANATOMIE_SOLL[art];
     const roh = Object.assign({}, m, { widerristM: m.W * M });
     const v = [];

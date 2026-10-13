@@ -15,6 +15,7 @@
 const fs = require("fs");
 const vm = require("vm");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -150,9 +151,10 @@ function messe(sb, verzerre) {
 }
 
 function urteile(sb, m) {
+    const fehlt = fehlendesGlied(sb, ["__koerperCore.MENSCH_SOLL{+}"]) || fehlendesGlied(m, ["{}"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const S = sb.__koerperCore.MENSCH_SOLL;
     const v = [];
-    if (!S) return ["koerper-core MENSCH_SOLL fehlt"];
     for (const [k, band] of Object.entries(S)) {
         const x = m[k];
         if (!Number.isFinite(x)) v.push(`${k} nicht messbar`);

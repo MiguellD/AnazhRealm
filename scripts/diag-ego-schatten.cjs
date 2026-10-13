@@ -35,6 +35,8 @@ const IOU_SOLL = 0.9; // der Ego-Schatten deckt den der 3rd-Person (dieselbe Pos
 const WURF_MIN = 400; // Bildpunkte: so viel Schatten wirft der Leib auf der Bühne mindestens (192×108)
 const SCHWELLE = 8; // Luma-Stufen (8 bit, linear): dunkler als das zählt als Schatten, verschieden als Leib
 
+const { fehlendesGlied } = require("./lib/messung.cjs");
+
 // Das Urteil über EINE Regel (m: ihre Messung, d: die 3rd-Referenz der echten Regel).
 function regelUrteil(m, d) {
     const v = [];
@@ -63,6 +65,8 @@ function regelUrteil(m, d) {
 }
 
 function urteil(z) {
+    const fehlt = fehlendesGlied(z, ["kopf{}", "dritt{}", "gegenprobe[+]"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const v = [];
     const d = z.dritt || {};
     if (!(d.wurf >= WURF_MIN))

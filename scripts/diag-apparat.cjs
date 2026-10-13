@@ -99,7 +99,7 @@ function countToString(src) {
 // Welle 5 Klang: 878 → 874 (die Proben auf _buildHydroAudioLayer · _tickHydrosphereAudio · _pointSegDist2D ·
 // _tagToFrequency fielen mit ihren Methoden); Integration W5-Klang: 874 → 873 (_playCreatureTaskPing fiel — das Tier
 // antwortet mit seiner Stimme).
-const FROZEN_TYPEOF = 873;
+const FROZEN_TYPEOF = 868;
 
 function countTypeof(src) {
     return (stripComments(src).match(/typeof [^=\n]{1,80}=== "function"/g) || []).length;
@@ -327,6 +327,143 @@ function pruefeLiteral(datei, ast) {
     return { v1, v2 };
 }
 
+// V5 Leer-Grün: ein Urteil einer diag-Linse (Top-Ebene, `urteil*`/`verdikt*`, rein) urteilt auf einer leeren Messung
+// ROT mit dem fehlenden Glied — nie grün, nie ein Wurf. Die Klinge hebt die Deklarationen der Datei in eine Sandbox (fs nur
+// lesend, die lib und die Kerne echt, alles andere gesperrt) und füttert jedes Urteil mit `{}` und mit einer tief-leeren
+// Messung (jedes Feld wieder leer, Länge 0, Zahlen NaN). Der Weg der Heilung: `fehlendesGlied` (scripts/lib/messung.cjs).
+function tiefLeer(tiefe = 0) {
+    const arr = [];
+    return new Proxy(function () {}, {
+        get(t, p) {
+            if (p === "length" || p === "size") return 0;
+            if (p === Symbol.iterator) return arr[Symbol.iterator].bind(arr);
+            if (p === Symbol.toPrimitive) return (h) => (h === "string" ? "" : NaN);
+            if (p === "then" || p === "toJSON") return undefined;
+            if (p === "toString") return () => "";
+            if (p === "valueOf") return () => NaN;
+            if (typeof p === "string" && typeof Array.prototype[p] === "function") return Array.prototype[p].bind(arr);
+            if (tiefe > 12) return undefined;
+            return tiefLeer(tiefe + 1);
+        },
+        apply: () => tiefLeer(tiefe + 1),
+        has: () => false,
+    });
+}
+// Die Farbe eines Urteils: eine Liste (leer = grün; Paare [name, ok]) oder ein Objekt mit ok/v/rot/… .
+function farbeVon(r) {
+    if (r == null) return "leer (" + r + ")";
+    if (Array.isArray(r)) {
+        if (r.length === 0) return "GRÜN";
+        if (r.every((x) => Array.isArray(x) && x.length >= 2 && typeof x[1] === "boolean"))
+            return r.every((x) => x[1]) ? "GRÜN" : "rot";
+        return "rot";
+    }
+    if (typeof r === "object") {
+        for (const k of ["ok", "gruen", "pass", "haelt"]) if (k in r) return r[k] === true ? "GRÜN" : "rot";
+        for (const k of ["v", "fehler", "verletzt", "errs", "rot", "hart"])
+            if (Array.isArray(r[k])) return r[k].length ? "rot" : "GRÜN";
+        return "unlesbar (" + Object.keys(r).slice(0, 4).join(",") + ")";
+    }
+    if (typeof r === "boolean") return r ? "GRÜN" : "rot";
+    return "unlesbar (" + typeof r + ")";
+}
+function pruefeUrteile(datei, src, ast, abs, root) {
+    const funde = [];
+    const kand = [];
+    const URTEIL = /^(urteil|verdikt)\w*$/i;
+    for (const s of ast.body) {
+        if (s.type === "FunctionDeclaration" && URTEIL.test(s.id.name) && !s.async)
+            kand.push({ n: s.id.name, p: s.params, z: s.loc.start.line });
+        if (s.type === "VariableDeclaration")
+            for (const d of s.declarations)
+                if (d.id.type === "Identifier" && URTEIL.test(d.id.name) && istFn(d.init) && !d.init.async)
+                    kand.push({ n: d.id.name, p: d.init.params, z: s.loc.start.line });
+    }
+    if (!kand.length) return { funde, urteile: 0 };
+    const sperre = (nm) =>
+        new Proxy(function () {}, {
+            get: (t, p) => (p === Symbol.toPrimitive ? () => "" : sperre(nm + "." + String(p))),
+            apply: () => {
+                throw new Error("gesperrt: " + nm);
+            },
+            construct: () => {
+                throw new Error("gesperrt: " + nm);
+            },
+        });
+    const echt = require("module").createRequire(abs);
+    const req = (id) => {
+        if (id === "fs" || id === "node:fs")
+            return { readFileSync: fs.readFileSync, existsSync: fs.existsSync, readdirSync: fs.readdirSync, statSync: fs.statSync };
+        if (/^(node:)?(path|crypto|util|zlib|os|assert|vm)$/.test(id)) return echt(id);
+        if (/^\.{1,2}\//.test(id) && /scripts[\\/]lib[\\/]|-core\.js$|\.json$/.test(path.resolve(path.dirname(abs), id))) {
+            try {
+                return echt(id);
+            } catch {
+                return sperre(id);
+            }
+        }
+        return sperre(id);
+    };
+    const ctx = {
+        require: req,
+        module: { exports: {} },
+        exports: {},
+        __dirname: path.dirname(abs),
+        __filename: abs,
+        process: {
+            argv: ["node", abs],
+            env: {},
+            exit: () => {
+                throw new Error("exit");
+            },
+            platform: process.platform,
+            cwd: () => root,
+            hrtime: process.hrtime,
+        },
+        console: { log() {}, error() {}, warn() {} },
+        Buffer,
+        URL,
+        setTimeout,
+        clearTimeout,
+        performance,
+    };
+    vm.createContext(ctx);
+    for (const s of ast.body) {
+        if (!/^(FunctionDeclaration|VariableDeclaration|ClassDeclaration)$/.test(s.type)) continue;
+        const code = src
+            .slice(s.start, s.end)
+            .replace(/^(const|let) /, "var ")
+            .replace(/^class (\w+)/, "var $1 = class $1");
+        try {
+            vm.runInContext(code, ctx, { timeout: 3000, filename: datei });
+        } catch {
+            // eine Deklaration mit Laufzeit-Abhängigkeit (Browser, Server): das Urteil selbst entscheidet
+        }
+    }
+    for (const k of kand) {
+        const namen = k.p.map((x) =>
+            x.type === "Identifier" ? x.name : x.type === "AssignmentPattern" && x.left.type === "Identifier" ? x.left.name : "?"
+        );
+        for (const [probe, messung] of [
+            ["{}", () => ({})],
+            ["tief-leer", () => tiefLeer()],
+        ]) {
+            // die Messung im ersten Parameter und in jedem weiteren; Fehler-Listen leer, Quelltexte leer
+            ctx.__a = namen.map((n, i) =>
+                i === 0 ? messung() : /err|fehler/i.test(n) ? [] : /stamm|src|code/i.test(n) ? "" : messung()
+            );
+            let f;
+            try {
+                f = farbeVon(vm.runInContext(`${k.n}(...__a)`, ctx, { timeout: 3000 }));
+            } catch (e) {
+                f = "wirft (" + String(e && e.message).slice(0, 70) + ")";
+            }
+            if (f !== "rot") funde.push(`${datei}:${k.z} ${k.n} auf ${probe}: ${f}`);
+        }
+    }
+    return { funde, urteile: kand.length };
+}
+
 // Die Prüf-Dateien der Klinge: der Playtest (heute EINE Datei, nach der Zerlegung scripts/playtest/**), die
 // diag-Linsen und die geteilte lib.
 function pruefDateien(root) {
@@ -346,7 +483,8 @@ function pruefDateien(root) {
 async function vakuumKlinge(root) {
     const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
     const v3 = await pruefeSonde(playtestSrc);
-    const regeln = { V1: [], V2: [], V3: v3.funde };
+    const regeln = { V1: [], V2: [], V3: v3.funde, V5: [] };
+    let urteile = 0;
     const dateien = pruefDateien(root);
     for (const [rel, abs] of dateien) {
         const src = fs.readFileSync(abs, "utf8");
@@ -360,8 +498,13 @@ async function vakuumKlinge(root) {
         const lit = pruefeLiteral(rel, ast);
         regeln.V1.push(...lit.v1);
         regeln.V2.push(...lit.v2);
+        if (rel.startsWith("scripts/diag-")) {
+            const v5 = pruefeUrteile(rel, src, ast, abs, root);
+            regeln.V5.push(...v5.funde);
+            urteile += v5.urteile;
+        }
     }
-    return { regeln, v3, dateien: dateien.length };
+    return { regeln, v3, urteile, dateien: dateien.length };
 }
 
 async function selftest() {
@@ -417,12 +560,27 @@ async function selftest() {
     if (v2("out.k = !a || a.b > 1;") !== 1) fails.push("V2 feuert nicht an !x || y");
     if (v2("out.k = !!a && a.b > 1;") !== 0) fails.push("V2 feuert fälschlich an der gemessenen Form");
     if (pruefeLiteral("v2.cjs", parseJs('check("n", true);')).v2.length !== 1) fails.push("V2 feuert nicht an check(…, true)");
+    // Vakuum-Klinge V5: ein Urteil `() => []` wird ROT (grün auf {} und auf tief-leer), eines, das zuerst die Messung
+    // prüft, bleibt grün; ein werfendes Urteil wird ROT.
+    const v5 = (code) => {
+        const abs = path.join(__dirname, "diag-v5-selbsttest.cjs");
+        return pruefeUrteile("v5.cjs", code, parseJs(code), abs, path.join(__dirname, "..")).funde.length;
+    };
+    if (v5("function urteil(z) {\n    return [];\n}\n") !== 2) fails.push("V5 feuert nicht an urteil = () => []");
+    if (v5("function urteil(z) {\n    return z.runden.map((r) => r.name);\n}\n") !== 2) fails.push("V5 feuert nicht am Wurf");
+    const geheilt =
+        'const { fehlendesGlied } = require("./lib/messung.cjs");\n' +
+        "function urteil(z) {\n" +
+        '    const fehlt = fehlendesGlied(z, ["runden[+]"]);\n' +
+        "    if (fehlt) return [fehlt];\n" +
+        "    return z.runden.filter((r) => !r.ok).map((r) => r.name);\n}\n";
+    if (v5(geheilt) !== 0) fails.push("V5 feuert fälschlich am geheilten Urteil");
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 V2 V3), Kommentare zählen nicht"
+        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 V2 V3 V5), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -458,7 +616,7 @@ async function main() {
     );
     console.log(
         `✅ DIE VAKUUM-KLINGE steht — V3: die EINE Sonde verbucht Wurf und leeres Ergebnis rot ` +
-            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1 + V2: 0 Literal- und Skip-Grüne in ${klinge.dateien} Prüf-Dateien.`
+            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1 + V2: 0 Literal- und Skip-Grüne in ${klinge.dateien} Prüf-Dateien; V5: ${klinge.urteile} Urteile der diag-Linsen urteilen auf leerer Messung rot.`
     );
 }
 

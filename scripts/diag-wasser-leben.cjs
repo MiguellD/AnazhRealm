@@ -65,8 +65,14 @@ const SCHWELLE = {
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
 };
 
+const { fehlendesGlied } = require("./lib/messung.cjs");
+
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
 function urteil(b) {
+    // LEER, wenn der Befund keine einzige Probe trägt (die Wand prüfte nichts)
+    const proben = ["fluss", "kanal", "quelle", "bach", "see", "bank", "uferFarbe", "regen", "hoehle", "wagen", "leser", "ufer", "koerper", "bild"];
+    const fehlt = fehlendesGlied({ gemessen: proben.filter((k) => b && b[k] !== null && typeof b[k] === "object") }, ["gemessen[+]"]);
+    if (fehlt) return [`LEER: keine Probe im Befund — ${fehlt}`];
     const v = [];
     const S = SCHWELLE;
     // F9 — die Pflanzen im gezeichneten Wasser (Nah-Streu ohne Ufer-Band, Nah-Wiese): je Gebiet ihre Zahl und das Wasser

@@ -21,6 +21,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.LUFT_PORT || 4594);
 const SELFTEST = process.argv.includes("--selftest");
@@ -125,6 +126,8 @@ function probe(stoerung) {
 }
 
 function urteil(S) {
+    const fehlt = fehlendesGlied(S, ["sichtSonne", "absenz{+}"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const rot = [];
     if (!S.knoten)
         rot.push("1 KNOTEN: scene.fogNode fehlt oder ein THREE.Fog/state.fog lebt daneben (linearer Zwilling)");

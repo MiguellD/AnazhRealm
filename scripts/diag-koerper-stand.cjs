@@ -42,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
@@ -882,6 +883,8 @@ async function proben(mitWiese) {
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
+    const fehlt = fehlendesGlied(o, ["k1{}"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     if (!o.k1.struktur) f.push(`K1 Aufbau: der Spieler steht nicht auf einem Bauwerk (Träger ${o.k1.traeger})`);
     if (!(Math.abs(o.k1.beckenCm) <= 1))
         f.push(`K1 Becken auf dem Träger: ${o.k1.beckenCm} cm (die Fuß-IK zieht den Körper ins Bauwerk)`);

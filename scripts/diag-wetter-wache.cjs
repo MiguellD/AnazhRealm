@@ -49,6 +49,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -363,6 +364,8 @@ function taeterGezaehlt(liste) {
 }
 
 function urteil(S, H, quelle, pageErrors) {
+    const fehlt = fehlendesGlied({ S, H, quelle }, ["S.halt{+}", "S.roh", "S.frei{}", "S.frei.mensch{}", "S.frei.wortHaelt{}", "S.frei.autoZug{}", "S.ende{}", "S.wuerfe{}", "quelle.wetter{}", "quelle.wetter.orte[]", "quelle.uhr{}", "quelle.uhr.orte[]", "H.gesetz", "H.frei", "H.wort{}", "H.regler{}", "H.tag{}"]);
+    if (fehlt) return [`(M) MESSUNG: ${fehlt}`];
     const rot = [];
     const SOLL_QUELLE = {
         emotion: "emotion:sorrow",

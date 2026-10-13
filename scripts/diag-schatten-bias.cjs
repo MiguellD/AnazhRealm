@@ -35,6 +35,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const root = path.resolve(__dirname, "..");
@@ -119,6 +120,8 @@ function quellWand(quelle) {
 // DAS URTEIL (rein, Node): S = { werfer: [{ name, zeit, seitlich, iou, deckung, erwartet, gemessen, normalBias, fehler }],
 // akne: [{ name, zeit, maske, dunkel, anteil }], zaehne: { maske, anteil }, fehler }
 function urteil(S, Q, pageErrors) {
+    const fehlt = fehlendesGlied({ S, Q }, ["S{}", "Q[]"]);
+    if (fehlt) return [`(M) MESSUNG: ${fehlt}`];
     const rot = [];
     for (const b of Q) rot.push(`(Q) QUELLE: ${b}`);
     if (S.fehler) rot.push(`(P) BÜHNE: ${S.fehler}`);

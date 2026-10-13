@@ -17,6 +17,7 @@
 //   Wand:      schreiberWand(quelle) → { befunde, schreiber } — jeder Schreiber eines bewachten Zustands und sein Weckruf
 //   Werkbank:  node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
 "use strict";
+const { fehlendesGlied } = require("./messung.cjs");
 
 // Die Fege-Takte (Name der Wache → Methode) und ihre Blatt-Helfer.
 const TAKTE = {
@@ -285,10 +286,12 @@ function standLauf(k) {
 //   CODE    — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`;
 //   PAGE    — kein Page-Error.
 function standUrteil(b) {
+    const fehlt = fehlendesGlied(b, ["ruhe{}", "ruhe.frames#", "ruhe.takte{}", b && b.namen && "namen[]"]);
+    if (fehlt) return [`LEER: keine Ruhe-Phase gemessen — ${fehlt}`];
     const v = [];
     const namen = b.namen || Object.keys(TAKTE);
     const R = b.ruhe;
-    if (!R || !R.frames) v.push("LEER: keine Ruhe-Phase gemessen");
+    if (!R.frames) v.push("LEER: keine Ruhe-Phase gemessen");
     else
         for (const n of namen) {
             const t = R.takte[n];

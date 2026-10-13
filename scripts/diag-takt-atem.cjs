@@ -30,6 +30,8 @@
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
+const { fehlendesGlied } = require("./lib/messung.cjs");
+
 function zeitUrteil(m, wer) {
     const v = [];
     if (m.dichteJeTakt > SOLL.dichte)
@@ -53,6 +55,8 @@ function zeitUrteil(m, wer) {
 const pz = (x) => (100 * x).toFixed(1) + " %";
 
 function urteil(z) {
+    const fehlt = fehlendesGlied(z, ["kopf{}", "gegenprobe{}"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     const v = [];
     if (z.blind) v.push(`BLIND: ${z.blind}`);
     for (const s of zeitUrteil(z.kopf, "")) v.push(s);

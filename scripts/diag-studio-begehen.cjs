@@ -30,6 +30,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 
 const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
 const ROOT = path.resolve(__dirname, "..");
@@ -377,6 +378,8 @@ function b3Zahl(o) {
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
+    const fehlt = fehlendesGlied(o, ["b1{}", "b2{}", "b2.faelle[]", "b3[]", "b4{}", "b5{}", "b6{}", "b6.faelle[]"]);
+    if (fehlt) return [`MESSUNG: ${fehlt}`];
     if (!(o.b1.promoviert >= 3)) f.push(`B1 zu wenig promoviert (${o.b1.promoviert})`);
     if (o.b1.huelleNachPromotion !== 0)
         f.push(`B1 Hülle nach Promotion: ${o.b1.huelleNachPromotion} von ${o.b1.promoviert} Häusern zu`);

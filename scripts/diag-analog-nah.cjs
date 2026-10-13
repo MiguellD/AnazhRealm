@@ -21,6 +21,7 @@
 "use strict";
 const puppeteer = require("puppeteer");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { fehlendesGlied } = require("./lib/messung.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -129,7 +130,8 @@ function klassenWand(src) {
 
 // Das Urteil über EINEN Zensus: hart = zeichnet und schwindet nicht (oder sein Schwund hängt). Die Täter beim Namen.
 function urteil(z) {
-    if (!z) return { hart: [], text: "kein Zensus (Welt-March fehlt)" };
+    const fehlt = fehlendesGlied(z, ["nah[]"]);
+    if (fehlt) return { hart: [{ klasse: "messung", name: fehlt, d: null, seitMs: 0, grund: "kein Zensus" }], text: fehlt };
     const hart = z.nah.filter((a) => !a.schwindet || a.haengt);
     const text = hart
         .slice(0, 8)
