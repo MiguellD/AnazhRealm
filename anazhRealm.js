@@ -28078,23 +28078,26 @@ class AnazhRealm {
                 d -= hallCarve * caveEnv * 72;
             }
         }
-        if (ctx.hydroActive) {
-            // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
-            // dem Kanal (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken danach.
-            const kn = ctx.hydroCarve;
-            if (kn) {
-                const dL = kn.L - y;
-                let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-                const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-                const dP = kn.P - y;
-                hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-                d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-            }
-            const lk = ctx.lake;
-            if (lk) {
-                const flatD = lk.bedY - y;
-                d = d * (1 - lk.w) + flatD * lk.w;
-            }
+        if (ctx.hydroActive) d = AnazhRealm._gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+        return d;
+    }
+
+    // DIE FORM DES GEWÄSSERS (EINE Formel für die Dichte des Chunks und die Fläche der Ferne, `_fernNass`): der Fluss-Kanal
+    // `kn` (`_hydrosphereCarveAt`) als weiches Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal
+    // (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken `lk` danach. `d` ist die Dichte
+    // an der Höhe `y` (die Fläche − y); mit y = 0 und d = der Höhe einer Spalte ist das Ergebnis ihre Fläche.
+    static _gewaesserForm(d, y, kn, lk) {
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
+        if (lk) {
+            const flatD = lk.bedY - y;
+            d = d * (1 - lk.w) + flatD * lk.w;
         }
         return d;
     }
@@ -39236,6 +39239,7 @@ class AnazhRealm {
             // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
             farbOffen: new Uint8Array(off),
             farbLaw: new Float32Array(off),
+            nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser (`_fernNass`)
             farbN: 0,
             farbMin: off,
             refreshed: 0, // Budget-Zähler (Linse)
@@ -39719,11 +39723,13 @@ class AnazhRealm {
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
-        const wet = law < wl;
         const geo = fr.geos[p.s];
         const pos = geo.attributes.position;
         if (p.s === 0 && (pos.getX(p.li) !== p.x || pos.getZ(p.li) !== p.z)) fr.xzGen++; // die Teilung folgt der Lage
-        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
+        const nass = this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
+        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl, nass), p.z);
+        const wet = nass.y < nass.spiegel;
+        fr.nass[p.g] = wet ? 1 : 0;
         // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
@@ -39750,7 +39756,8 @@ class AnazhRealm {
     // ohne die Loch-Senkung) — die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er
     // nicht (die Masken-Karte, `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte
     // ihn per Tiefe — über jeder Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
-    _fernRingY(fr, p, law, wl) {
+    // Das Wasser des Punkts ist das Wasser des Bodens (`_fernNass`: Kanal, See, Meer; `nass` trägt Fläche und Spiegel).
+    _fernRingY(fr, p, law, wl, nass) {
         const F = AnazhRealm.FERN_RING;
         const rand = fr.teilung.randV;
         const f = p.s === 0 && rand && rand[p.li] ? fr.feldY[p.g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
@@ -39759,9 +39766,29 @@ class AnazhRealm {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
-        let y = law < wl ? wl - this._fernRingWasserTiefe() : law;
+        const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
+        let y = this._fernNass(p.x, p.z, law, wl, aus) ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
         if (p.row === 0) y -= F.saumDrop;
         return y;
+    }
+
+    // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
+    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (`_gewaesserForm`: Kanal, Damm, See-Becken),
+    // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer, See, Fluss; jenseits der Kacheln der
+    // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
+    // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Bis K16 nässte jeder Fern-Leser (Ring, Kronen-Karte, Feld-
+    // Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
+    _fernNass(x, z, law, wl, aus) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready || this._hydroComputing) {
+            aus.y = law;
+            aus.spiegel = wl;
+            return law < wl;
+        }
+        const y = AnazhRealm._gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
+        aus.y = y;
+        aus.spiegel = this._atlasWaterLevelAt(x, z, y);
+        return y < aus.spiegel;
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
@@ -39786,7 +39813,7 @@ class AnazhRealm {
         let n = 0;
         const bis = Math.min(fr.totalVerts, fr.cursor);
         for (let g = 0; g < bis; g++) {
-            if (!(fr.farbLaw[g] < wl)) continue;
+            if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl);
             dirty[p.s] = true;
@@ -39838,15 +39865,13 @@ class AnazhRealm {
     // mindestens `mindest` Punkte (nie verhungert). Liefert den Rest des Mindest-Kontingents.
     _fernRingFaerben(fr, ende, mindest) {
         if (!fr.farbN) return mindest;
-        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let n = 0;
         let g = fr.farbMin;
         for (; g < fr.totalVerts && fr.farbN > 0; g++) {
             if (!fr.farbOffen[g]) continue;
             const p = this._fernRingPunkt(fr, g);
-            const law = fr.farbLaw[g];
-            const f = this._fernRingTeile(p.x, p.z, law, law < wl, true, p.fuss);
+            const f = this._fernRingTeile(p.x, p.z, fr.farbLaw[g], fr.nass[g] === 1, true, p.fuss);
             AnazhRealm._fernRingSchreibe(fr.geos[p.s], p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
@@ -39971,12 +39996,13 @@ class AnazhRealm {
             const iz = (j.i / N) | 0;
             const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
             const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
-            const law = this._terrainMacroSurfaceY(x, z, false);
+            const nass = k.nass || (k.nass = { y: 0, spiegel: 0 });
             const o = j.i * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
-            if (law < wl) k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
+            if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false), wl, nass))
+                k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
             else {
-                this._fernFarbeTeile(x, law, z, t);
+                this._fernFarbeTeile(x, nass.y, z, t);
                 k.puffer[o] = sRGB(t[3]);
                 k.puffer[o + 1] = sRGB(t[4]);
                 k.puffer[o + 2] = sRGB(t[5]);
@@ -40956,13 +40982,13 @@ class AnazhRealm {
         const k0 = job.k;
         let ende = job.n;
         for (let k = job.k; k < ende; k++) {
-            const law = job.werte[k];
-            const wet = law < wl;
-            const y = wet ? wl : law;
             // die Masche des Texels (`_fernFarbeMasche`): Azimut-Breite am Radius, die radiale Zeile des Felds
             const P = AnazhRealm.FELD_PASS;
             const px = job.punkte[k * 2];
             const pz = job.punkte[k * 2 + 1];
+            const nass = job.nass || (job.nass = { y: 0, spiegel: 0 });
+            const wet = this._fernNass(px, pz, job.werte[k], wl, nass);
+            const y = wet ? nass.spiegel : nass.y;
             const fuss = job.fuss || (job.fuss = { ax: job.ankerX, az: job.ankerZ, ht: 0, hr: 0 });
             fuss.ht = (Math.PI * Math.hypot(px - job.ankerX, pz - job.ankerZ)) / P.az;
             fuss.hr =

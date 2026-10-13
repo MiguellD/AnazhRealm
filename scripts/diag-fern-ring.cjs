@@ -241,7 +241,9 @@ const server = http.createServer((req, res) => {
             }
             if (feld === feld) law = feld;
             else if (naht) law = r._terrainMacroSurfaceY(sx, sz, true);
-            let expY = law < wl ? wl - r._fernRingWasserTiefe() : law;
+            // das Wasser des Punkts ist das Wasser des Bodens (`_fernNass`: Kanal, See, Meer)
+            const nass = {};
+            let expY = r._fernNass(sx, sz, law, wl, nass) ? nass.spiegel - r._fernRingWasserTiefe() : nass.y;
             if (row === 0) expY -= F.saumDrop;
             // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
             // Masken-Karte, Band 9).
@@ -290,7 +292,7 @@ const server = http.createServer((req, res) => {
                 let nass0 = 0;
                 for (let g = 0; g < bis; g++) {
                     const h = fr.farbLaw[g];
-                    if (h < wl0) nass0++;
+                    if (fr.nass[g]) nass0++;
                     if (h === h) hs.push(h);
                 }
                 if (nass0 < 50 && hs.length) {
@@ -303,17 +305,23 @@ const server = http.createServer((req, res) => {
             const FW = r.constructor.FAR_WATER;
             const fwAlt = r.state.farWater;
             const zaehlen = () => {
-                const tal = wlW - FW.drop - r.constructor._wasserHubM();
+                // je Punkt SEIN Spiegel (Meer, See, Fluss: `_fernNass` über die EINE Setz-Formel `_fernRingY`)
+                const hub = FW.drop + r.constructor._wasserHubM();
+                const aus = {};
+                let tal = Infinity;
                 let nass = 0,
                     klumpen = 0,
                     hoechster = -Infinity;
                 for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++) {
-                    if (!(fr.farbLaw[g] < wlW)) continue;
+                    if (!fr.nass[g]) continue;
                     const pp = r._fernRingPunkt(fr, g);
                     if (pp.s === 0 && pp.row === 0) continue; // die Saum-Tauchkante liegt ohnehin tiefer
                     const y = geosVon(fr)[pp.s].attributes.position.getY(pp.li);
+                    r._fernRingY(fr, pp, fr.farbLaw[g], wlW, aus);
+                    const talP = aus.spiegel - hub;
+                    if (talP < tal) tal = talP;
                     nass++;
-                    if (y > tal + 1e-3) klumpen++;
+                    if (y > talP + 1e-3) klumpen++;
                     if (y > hoechster) hoechster = y;
                 }
                 return { nass, klumpen, tal: +tal.toFixed(2), hoechster: +hoechster.toFixed(2) };
@@ -321,6 +329,10 @@ const server = http.createServer((req, res) => {
             const tiefe0 = Object.getPrototypeOf(r)._fernRingWasserTiefe;
             try {
                 if (!fwAlt || !fwAlt.mesh) r.state.farWater = { mesh: { stellvertreter: true } };
+                // der Spiegel der Probe nässt jenseits der Kacheln (dort ist er das Meer): die EINE Naht setzt die Punkte neu
+                if (wlW !== wl0)
+                    for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
+                        if (fr.farbLaw[g] < wlW) r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wlW);
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
                 res.wasser = zaehlen();
@@ -336,8 +348,7 @@ const server = http.createServer((req, res) => {
                 // die Punkte, die nur der Spiegel der Probe nässte, liegen wieder auf ihrem Gesetz
                 if (wlW !== wl0)
                     for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
-                        if (fr.farbLaw[g] < wlW && !(fr.farbLaw[g] < wl0))
-                            r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wl0);
+                        if (fr.farbLaw[g] < wlW) r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wl0);
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
             }
@@ -1325,6 +1336,34 @@ const server = http.createServer((req, res) => {
         } catch (e11) {
             res.dachErr = String((e11 && e11.stack) || e11).slice(0, 400);
         }
+        // ===== (14) DAS WASSER DES RINGS IST DAS WASSER DES BODENS (K16, die Naht) =====
+        // Wo der Boden Binnen-Wasser trägt (Fluss-Kanal, See: `_atlasWaterLevelAt` ohne Boden — dieselbe Maske, die das
+        // Fern-Wasser zeichnet), liegt der Ring unter dessen Spiegel; sonst verdeckt er es, und der Fluss endet an der
+        // Bau-Kante. Selbsttest: die alte Regel (nass nur unter dem Meeresspiegel, aus dem Gesetz des Punkts) verdeckt.
+        try {
+            const frW = r.state.fernRing;
+            for (let t = 0; t < 400 && frW.cursor < frW.totalVerts; t++) r._fernRingRefresh(4096);
+            const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const w = { n: 0, fluss: 0, verdeckt: 0, alt: 0, orte: [] };
+            const geos = geosVon(frW);
+            for (let g = 0; g < frW.totalVerts; g++) {
+                const p = r._fernRingPunkt(frW, g);
+                const W = r._atlasWaterLevelAt(p.x, p.z, -Infinity);
+                if (!Number.isFinite(W) || !(W > wl + 0.5)) continue;
+                w.n++;
+                if (r._hydroRiverAt(p.x, p.z)) w.fluss++;
+                const y = geos[p.s].attributes.position.getY(p.li);
+                if (!(y < W)) {
+                    w.verdeckt++;
+                    if (w.orte.length < 4) w.orte.push([Math.round(p.x), Math.round(p.z), +(y - W).toFixed(2)]);
+                }
+                const law = frW.farbLaw[g];
+                if (!((law < wl ? wl - r._fernRingWasserTiefe() : law) < W)) w.alt++;
+            }
+            res.binnen = w;
+        } catch (e14) {
+            res.binnenErr = String((e14 && e14.stack) || e14).slice(0, 400);
+        }
         r._fernRingDispose();
         res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
 
@@ -1505,11 +1544,7 @@ const server = http.createServer((req, res) => {
     );
     check(
         "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet; Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
-        !!out.muendung &&
-            out.muendung[0] === 0 &&
-            out.feldOffen === 0 &&
-            out.feldOhne === 0 &&
-            out.muendungAlt > 0,
+        !!out.muendung && out.muendung[0] === 0 && out.feldOffen === 0 && out.feldOhne === 0 && out.muendungAlt > 0,
         `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} ohne-flaeche=${out.feldOhne} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
     );
     check(
@@ -1547,6 +1582,16 @@ const server = http.createServer((req, res) => {
             tt.proben >= 1000 && tt.stich === 0 && tt.loch === 0 && tt.selbstStich > 0 && tt.selbstLoch > 0,
             `proben=${tt.proben} stich=${tt.stich} loch=${tt.loch} klassen(frei/naht/getragen)=${JSON.stringify(tt.n || null)} orte=${JSON.stringify(tt.orte || [])} selbsttest stich=${tt.selbstStich} loch=${tt.selbstLoch}` +
                 (tt.proben ? "" : " — TÄTER: die Schale 0 hat keine Teilung (`fr.teilung`, `_fernRingTeilung`)")
+        );
+        const w = out.binnen || {};
+        check(
+            "14: DAS WASSER DES RINGS IST DAS WASSER DES BODENS — wo der Boden Binnen-Wasser trägt (Fluss-Kanal, See), liegt der Ring unter dessen Spiegel; Selbsttest: die alte Regel (nass nur unter dem Meeresspiegel) verdeckt",
+            w.n >= 20 && w.verdeckt === 0 && w.alt >= w.n * 0.5,
+            `binnen=${w.n} fluss=${w.fluss} verdeckt=${w.verdeckt} orte=${JSON.stringify(w.orte || [])} selbsttest-alt=${w.alt}` +
+                (out.binnenErr ? ` err=${out.binnenErr}` : "") +
+                (w.verdeckt > 0
+                    ? " — TÄTER: `_fernRingSetzVertex` nässt nur unter dem Meeresspiegel (`law < wl`), Kanal und See des Bodens fehlen dem Ring"
+                    : "")
         );
     }
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
