@@ -1968,26 +1968,38 @@ async function probeLeben(expected) {
             weg(gL);
             return m;
         };
-        // L1 DER HANGFUSS: 9,3 m/s, Gier 92,3°, über den Hangfuß an (−852/−861,2) — die flache Box des Glutbrunnens
-        // (−848,9/−861,8) lag unter dem Band der Hülle, bis der Wagen am Hangfuß absank; dann schob sie ihn in EINEM Schritt
+        // L1 DER HANGFUSS: 9,3 m/s, Gier 92,3°, über den Hangfuß an den Glutbrunnen des Dorfs — seine flache Box (in der alten
+        // Welt −848,9/−861,8) lag unter dem Band der Hülle, bis der Wagen am Hangfuß absank; dann schob sie ihn in EINEM Schritt
         // 0,97 m quer auf 0,25 m höheren Grund, der Wand-Zweig des Kerns fror die Höhe ein: 1,16 m unter den Rädern, für immer.
-        S.hangfuss = await lebenFahrt(
-            {
-                ort: [-852, -861.2],
-                start: [-854.5, -861.1],
-                gier: (92.3 * Math.PI) / 180,
-                v0: 9.3,
-                ziel: () =>
-                    st.architectures.find(
-                        (e) =>
-                            e &&
-                            e.position &&
-                            /glutbrunnen/.test(e.blueprintName || e.name || e.type || "") &&
-                            Math.hypot(e.position.x + 848.9, e.position.z + 861.8) < 1
-                    ),
-            },
-            150
-        );
+        // DER ORT AUS DER WELT (K16, Orts-Wand): der Glutbrunnen ist Welt-Genese des Dorfs — die Probe steht am Dorf-Messort
+        // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), nimmt den nächsten Glutbrunnen des Bestands und fährt ihn mit dem
+        // Tempo und der Gier der Schau an (Start 5,6 m, Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
+        const D = expected.dorf;
+        st.playerMesh.position.set(D.x, hh(D.x, D.z) + 2, D.z);
+        for (let i = 0; i < 240; i++) frame(i);
+        let G = null;
+        for (const e of st.architectures)
+            if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
+                if (
+                    !G ||
+                    Math.hypot(e.position.x - D.x, e.position.z - D.z) <
+                        Math.hypot(G.position.x - D.x, G.position.z - D.z)
+                )
+                    G = e;
+        const gierL1 = (92.3 * Math.PI) / 180;
+        const vor = (d) => [G.position.x - Math.sin(gierL1) * d, G.position.z - Math.cos(gierL1) * d];
+        S.hangfuss = G
+            ? await lebenFahrt(
+                  {
+                      ort: vor(3.1),
+                      start: vor(5.6),
+                      gier: gierL1,
+                      v0: 9.3,
+                      ziel: () => (st.architectures.includes(G) ? G : null),
+                  },
+                  150
+              )
+            : { ziel: false, kontakte: 0, fehlt: "kein Glutbrunnen am Dorf-Messort" };
         // L3–L5 DER STOSS (Leben-Schau 07.10.: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je in
         // EINEM Frame, kein Rückprall, der Gegner bewegt sich nicht, keine Rückmeldung): der GT fährt mit W aus 9 m Anlauf
         // in der freien Gasse auf das Hindernis, das NICHT gehalten wird. Kontakt = der erste Schritt, in dem der Kontakt-
@@ -4652,7 +4664,11 @@ function quellenAbgriff() {
         await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
         return page2.evaluate(probeBahn, BAHN);
     };
-    const out = await page.evaluate(probeLeben, { messort, randM: STATION.randM });
+    const out = await page.evaluate(probeLeben, {
+        messort,
+        dorf: require("./lib/welt-orte.cjs").messort("dorf"),
+        randM: STATION.randM,
+    });
     await page.close();
     const bahn = await bahnLauf();
     await browser.close();
@@ -4807,7 +4823,7 @@ function quellenAbgriff() {
     console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
     const L1 = S.hangfuss;
     check(
-        "L1 Hangfuß (−852/−861,2, 9,3 m/s, Gier 92,3°, die Box des Glutbrunnens): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
+        "L1 Hangfuß (der Glutbrunnen am Dorf-Messort, 9,3 m/s, Gier 92,3°, seine Box): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
         !hat("kern") && !hat("hangfuss"),
         L1
             ? `unter dem Gesetz höchstens ${L1.unterMax.toFixed(3)} m (${L1.unterN} Schritte > 0,05 m) · größter Schub ${L1.schubMax.toFixed(3)} m · ${L1.kontakte} Kontakt-Schritte · ${L1.weg.toFixed(1)} m gefahren`

@@ -1286,6 +1286,7 @@ async function checkBandV1729CreatureTrickle(ctx) {
         out.tickedAgain = tending.userData.lastLifeTrickle > 1000;
         // (4) eine AMBIENTE Kreatur (kein tendsLife) traeufelt NICHT (kein Runaway)
         r.state.lifeField.clear();
+        // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
         const ambient = { position: { x: 34567, z: -9876 }, userData: { tendsLife: false } };
         r._tickCreatureLifeTrickle(ambient, 2000);
         out.ambientInert = r._lifeOverlayAt(34567, -9876) === 0;
@@ -1438,6 +1439,7 @@ async function checkBandV1732SpatialEmotion(ctx) {
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
         for (const k of Object.keys(e)) e[k] = 0;
+        // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
         const A = { x: 44444, z: -3333 },
             B = { x: 99999, z: 7777 };
         // (1) backward-compat: leeres Overlay → auraAt.emotion === globale Stimmung (selbes Objekt)
@@ -1702,6 +1704,7 @@ async function checkBandV1734FieldRules(ctx) {
 
         // Scanne einen KARGEN Ort (niedrigste frozen lebendig) — so ist die
         // Heilungs-Regel robust (sie kann nur an einem Ort < Schwelle feuern).
+        // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
         let A = { x: 40000, z: -30000 };
         let lebMin = Infinity;
         for (let i = 0; i < 16; i++) {
@@ -1713,6 +1716,7 @@ async function checkBandV1734FieldRules(ctx) {
                 A = { x, z };
             }
         }
+        // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
         const B = { x: -99999, z: 88888 };
         const posA = ["at", A.x, 0, A.z];
         const posB = ["at", B.x, 0, B.z];
@@ -10811,6 +10815,7 @@ async function checkBandRing9to10(ctx) {
         // Daten-Pfad: importWorldBeside ohne Reload
         const originalSrcId = "src-world-aaaaaaaa";
         const importedSnapshot = {
+            // BÜHNE: Daten eines Import-Schnappschusses, kein gesetzter Ort
             playerPosition: { x: 12, y: 7, z: 34 },
             worldMeta: {
                 worldId: originalSrcId,
@@ -19387,6 +19392,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             r.state.voxelWorkerWorldgenSynced = _wgSyncedTick;
             out.tickBuilds = r.state.voxelChunks.size >= 1;
             // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
+            // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
             r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
             out.pruneRemovesFar = r.state.voxelChunks.size === 0;
 
@@ -21704,6 +21710,7 @@ async function checkBandWellePerfCArchInstancing(ctx) {
 
         // --- Matrix-Bit-Gleichheit: klassische Group vs Instancing-Matrix ---
         const bp = r.state.blueprints[__fkKey];
+        // BÜHNE: Eintrag einer Einheits-Probe, kein gesetzter Ort
         const entry = { position: { x: 100, y: 50, z: -30 }, scale: 1.5 };
         const group = r._buildFromBlueprint(bp);
         const baseY = entry.position.y - 0.5;
@@ -25166,6 +25173,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
             // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
             r.state.worldMeta.voxelEdits = [];
             const dPre = r._terrainDensityAt(120, base - 33, 120);
+            // BÜHNE: Edit-Daten einer Einheits-Probe — gelesen wird der Edit, nicht der Ort
             r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12, strength: 48 }];
             out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
             // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
@@ -30782,6 +30790,7 @@ async function checkBandLambda2HismSynthese(ctx) {
                 {
                     type: "baum_eiche",
                     id: "λ2_probe",
+                    // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                     position: { x: 1000, y: 0, z: 1000 },
                     seed: 12345,
                     scale: 1,
@@ -36811,6 +36820,7 @@ async function checkBandV18219bisVollendung(ctx) {
             if (grownKey && r.state.scene) {
                 const e = r.spawnArchitecture(
                     grownKey,
+                    // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                     { x: 12345, y: r._voxelSurfaceY(12345, 6789) || 1, z: 6789 },
                     { silent: true, seed: 1 }
                 );
@@ -37302,6 +37312,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         if (out.promoteExists && r.state.scene) {
             window.__withNoFoundry(() => {
                 // Eine frische Scatter-Cell bauen + promovieren
+                // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                 const pp2 = { x: 5000, y: 50, z: 5000 };
                 const SC = A.SCATTER;
                 const regX2 = Math.floor(pp2.x / SC.regionM);
@@ -50779,6 +50790,7 @@ async function checkBandWaves9And10a(ctx) {
             r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
 
+            // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
             const farPos = { x: 1000, y: 1000, z: 1000 };
             const nearPos = { x: 5, y: 0, z: 5 };
 
@@ -54705,6 +54717,7 @@ async function checkBandRing6Workshop(ctx) {
         // loadState rekonstruiert die Liste deterministisch aus seed
         const loadInput = {
             architectures: [
+                // BÜHNE: Daten eines Lade-Schnappschusses, kein gesetzter Ort
                 { type: "_t_r6_haus", position: { x: 0, y: 5, z: 0 }, seed: 12345 },
                 { type: "_t_r6_tor", position: { x: 20, y: 5, z: 0 }, seed: 67890 },
             ],
