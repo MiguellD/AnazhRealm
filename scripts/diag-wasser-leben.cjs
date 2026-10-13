@@ -226,7 +226,7 @@ function urteil(b) {
             else if (p.abweichend > 0)
                 v.push(
                     `U2 ZWEI FARBEN: ${p.abweichend} von ${p.vertices} Ufer-Vertices färbt der Worker anders als der Main ` +
-                        `(max ${p.maxDiff})`
+                        `(max ${p.maxDiff}; ${p.fels || 0} tragen den Fels-Stoff)`
                 );
         }
     }

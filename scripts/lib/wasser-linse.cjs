@@ -729,29 +729,54 @@ function wasserUferFarbe(opts) {
                 }
             }
         }
-        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen `_bodenFarbeAt` im Main.
+        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen DASSELBE Gesetz im Stamm —
+        // die Spalten-Farbe `_bodenFarbeAt` und der Fels-Stoff `_felsStoff` darüber, auf dem Netz des Workers. Seit K17-2
+        // mischt der Worker den Fels-Stoff in seine Farbe (der Stamm setzt nur die Attribute); der Leser komponiert, was die
+        // Farbe heute bedeutet (bis K17-2 verglich er nur die Spalten-Farbe: 529/2579 Ufer-Vertices „abweichend").
         let paritaet = null;
         if (typeof r._voxelWorkerComputeChunkMesh === "function" && r._getVoxelWorker() && proben.length) {
             await r._voxelWorkerSyncState({ op: "init" });
+            const T = window.THREE;
             const span = r._voxelChunkConfig(0).span;
             let vertices = 0,
                 abweichend = 0,
-                maxDiff = 0;
+                maxDiff = 0,
+                fels = 0;
             for (const [a] of proben.slice(0, o.chunks || 3)) {
                 const m = await r._voxelWorkerComputeChunkMesh(Math.floor(a.x / span), Math.floor(a.z / span), 0);
                 if (!m || m.empty) continue;
                 const pos = new Float32Array(m.positions),
                     col = new Float32Array(m.colors);
+                const soll = new Float32Array(pos.length);
                 for (let i = 0; i < pos.length; i += 3) {
                     r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c);
+                    soll[i] = c[0];
+                    soll[i + 1] = c[1];
+                    soll[i + 2] = c[2];
+                }
+                const spalte = soll.slice();
+                const g = new T.BufferGeometry();
+                g.setAttribute("position", new T.BufferAttribute(pos, 3));
+                g.setAttribute("normal", new T.BufferAttribute(new Float32Array(m.normals), 3));
+                g.setAttribute("aHimmel", new T.BufferAttribute(new Float32Array(m.himmel), 1));
+                g.setAttribute("color", new T.BufferAttribute(soll, 3));
+                g.setIndex(new T.BufferAttribute(new Uint32Array(m.indices), 1));
+                r._felsStoff(g);
+                for (let i = 0; i < pos.length; i += 3) {
                     vertices++;
-                    let dmax = 0;
-                    for (let k = 0; k < 3; k++) dmax = Math.max(dmax, Math.abs(Math.fround(c[k]) - col[i + k]));
+                    let dmax = 0,
+                        dfels = 0;
+                    for (let k = 0; k < 3; k++) {
+                        dmax = Math.max(dmax, Math.abs(soll[i + k] - col[i + k]));
+                        dfels = Math.max(dfels, Math.abs(soll[i + k] - spalte[i + k]));
+                    }
+                    if (dfels > 0) fels++;
                     if (dmax > 0) abweichend++;
                     if (dmax > maxDiff) maxDiff = dmax;
                 }
+                g.dispose();
             }
-            paritaet = { vertices, abweichend, maxDiff };
+            paritaet = { vertices, abweichend, maxDiff, fels };
         }
         return {
             proben: proben.length,
