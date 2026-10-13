@@ -131,6 +131,91 @@ ok(
     tested + " Läufe, " + maxDivergent + " divergent"
 );
 
+// ── P-ZWILLING (K24): EINE Ableitung Dials → P ──
+// Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
+// __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
+// liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker
+// gebaut (three-r128 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod/gv stellt dort die Shell
+// (phytogenesis.js), hier ihr Ersatz. Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und
+// `build()` (Studio).
+const TERR_LIB = path.join(__dirname, "..", "worlds", "terrain", "lib");
+const fsb = { console, performance: { now: () => 0 } };
+fsb.self = fsb;
+fsb.globalThis = fsb;
+const fctx = vm.createContext(fsb);
+vm.runInContext(fs.readFileSync(path.join(TERR_LIB, "three-r128.min.js"), "utf8"), fctx, { filename: "three-r128" });
+vm.runInContext(src, fctx, { filename: "phyto-core.js(foundry)" });
+vm.runInContext(
+    "var clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;" +
+        "var __dials = null, SEED = 0, __lod = 0, subject = null, RNG = null, CURRENT = '';" +
+        "function gv() { throw new Error('gv: der P-Zwilling liest nur Preset-Regler'); }",
+    fctx
+);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "foundry-core.js"), "utf8"), fctx, {
+    filename: "foundry-core.js",
+});
+const P_ARTEN = ["eiche", "fichte", "birke", "weide", "mammut", "tanne", "buche", "karst", "totholz", "strauch"];
+const P_SAMEN = [1, 2, 7, 12345];
+const P_STUFEN = [0, 1, 2];
+// Vergleich Schlüssel für Schlüssel (Werte per JSON — leafShape ist ein Objekt; ein fehlender Schlüssel ist undefined).
+const pDiff = (A, B) => {
+    const out = [];
+    for (const k of new Set([...Object.keys(A), ...Object.keys(B)]))
+        if (JSON.stringify(A[k]) !== JSON.stringify(B[k])) out.push(k);
+    return out;
+};
+fsb.__pZwillingArgs = { arten: P_ARTEN, samen: P_SAMEN, stufen: P_STUFEN };
+const pPaare = vm.runInContext(
+    `(function () {
+        const a = self.__pZwillingArgs, out = [];
+        for (const id of a.arten) {
+            const pre = PRESETS[id];
+            for (const seed of a.samen)
+                for (const lod of a.stufen) {
+                    __dials = pre.s; SEED = seed; __lod = lod;
+                    const gesehen = deriveParamsPlant(pre);
+                    __dials = null;
+                    const gesetz = self.__phytoCore.treeParams(pre.s, seed, lod, pre);
+                    out.push({ fall: id + "/s" + seed + "/L" + lod, gesehen: JSON.stringify(gesehen), gesetz: JSON.stringify(gesetz) });
+                }
+        }
+        return out;
+    })()`,
+    fctx
+);
+// Selbsttest: ein eingeschleuster Zwilling (Quirl-Abstand fehlt, Nadel-Stride anders) MUSS beim Namen fallen.
+{
+    const g = JSON.parse(pPaare.find((p) => p.fall === "fichte/s1/L1").gesetz);
+    const zw = Object.assign({}, g, { _lf: g._lf + 0.3 });
+    delete zw.whorlSpacing;
+    const d = pDiff(zw, g);
+    ok(
+        "P-Zwilling Selbsttest: der eingeschleuste Zwilling fällt an whorlSpacing und _lf",
+        d.length === 2 && d.includes("whorlSpacing") && d.includes("_lf"),
+        d.join(",")
+    );
+}
+const pAbw = {};
+let pFaelleRot = 0;
+for (const p of pPaare) {
+    const d = pDiff(JSON.parse(p.gesehen), JSON.parse(p.gesetz));
+    if (d.length) pFaelleRot++;
+    for (const k of d) (pAbw[k] = pAbw[k] || []).push(p.fall);
+}
+for (const k of Object.keys(pAbw))
+    console.log("      P-ZWILLING " + k + ": " + pAbw[k].length + " Fälle, z. B. " + pAbw[k].slice(0, 3).join(" "));
+ok(
+    "P-Zwilling: gesehener Baum (deriveParamsPlant) = Gesetz (treeParams), " +
+        P_ARTEN.length +
+        " Arten × " +
+        P_SAMEN.length +
+        " Gestalten × " +
+        P_STUFEN.length +
+        " Stufen",
+    pFaelleRot === 0,
+    pPaare.length + " Fälle, " + pFaelleRot + " abweichend" + (pFaelleRot ? " an " + Object.keys(pAbw).join(", ") : "")
+);
+
 console.log(
     fails === 0
         ? "\n✅ PARITÄT GRÜN — phyto-core.js trägt Main + Worker aus EINER Quelle (Gesetz #0)."
