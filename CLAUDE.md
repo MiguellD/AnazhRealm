@@ -198,8 +198,11 @@ Armlänge, A1 11.10.) · C Ort auf dem Gelände · E Profi-Band (Radeon + GTX 10
     albedo` / `diag-albedo-zensus` (Karte 0,180), Licht-Verhältnisse `werkbank licht` — nie das Auge.
 22. **Der sichtbare Boden ist das Mesh, nicht das Gesetz:** Surface-Nets auf 1,8 m trägt die Feinform der
     Funktion nicht (±0,2 m, Spawn-Chunk Median 46 cm). Was AUF dem Boden steht (Gras, Streu, Deko), liest die
-    Boden-Karte (`_bodenSichtAt`, aus dem gebauten Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn); Körper stehen auf dem Gesetz (Lockstep). Und im
-    positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
+    Boden-Karte (`_bodenSichtAt`, aus dem gebauten Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn); Körper stehen auf dem Gesetz (Lockstep). Und r184
+    rechnet den positionNode VOR der Instanz-Matrix (WGSL gelesen): dort sind `positionLocal`, `normalLocal` und
+    `positionWorld` Vorlage — wer im positionNode die Welt braucht (Wind, Blick der Karte, Blende), liest die EINE Naht
+    `_weltNaht` (Lage, Anker, Welt-Versatz zurück in die Vorlage); sonst weht der Wind in der Drehung jeder Instanz
+    (`gate:foundry-impostor` C4). Höhen-Gewichte lesen `positionGeometry`.
 23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
     Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
     ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines). Ein Bundle

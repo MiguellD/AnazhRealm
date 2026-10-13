@@ -16461,7 +16461,9 @@ class AnazhRealm {
         const wu = this.state.windUniforms;
         if (!wu) return null;
         this._ensureWindCoupling(TSL);
-        const { vec3, float, sin, cos, max, positionWorld } = TSL;
+        const { vec3, float, sin, cos, max } = TSL;
+        const naht = this._weltNaht(TSL);
+        const positionWorld = naht.lage;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
         const wd = wu.uWindDir || null;
         const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
@@ -16470,12 +16472,12 @@ class AnazhRealm {
             .add(
                 dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
-        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung (gelesen im WGSL der
-        // Nah-Wiesen-Senke, W7 06.10.: erst `positionLocal += Versatz`, dann `positionLocal = instanzMatrix ×
-        // positionLocal`): in einer InstancedMesh lesen `positionLocal` und `positionWorld` hier den VORLAGEN-Raum — Phase
-        // und Biegung sehen die Vorlage, der Versatz dreht und skaliert mit der Instanz. Ein Satz (Welt-Lage, keine
-        // Instanz — die Nah-Streu) liest die Welt. Die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt die
-        // Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
+        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung: Phase, Böe und Biegung
+        // lesen die Welt-Lage des Vertex aus der EINEN Naht (`_weltNaht`), der Versatz (Welt-Meter, Welt-Richtung) geht
+        // über sie in die Vorlage zurück (K20-N1; bis dahin sah jeder Halm die Vorlage — die Wiese wiegte im Gleichtakt,
+        // jede Instanz in ihrer eigenen Drehung, die Biegung des Spielers maß gegen die Vorlage). Ein Satz (Welt-Lage,
+        // keine Instanz — die Nah-Streu) liest dieselbe Naht (die Einheit). Die Geometrie-Position (`positionGeometry`,
+        // Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
         const B = AnazhRealm.WIND_BOE;
@@ -16520,7 +16522,7 @@ class AnazhRealm {
             offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
             offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
         }
-        return vec3(offX, float(0.0), offZ);
+        return naht.vorlage(vec3(offX, float(0.0), offZ));
     }
 
     // CPU-Seite der EINEN Wind-Richtung: θ(t) = θ0(seed) + 0.5·sin(t·0.009 + φ1) + 0.22·sin(t·0.0257
@@ -32499,10 +32501,9 @@ class AnazhRealm {
                                     // Baums, von der Seite ein Strich. Spalte 0 = s·(cos r, 0, −sin r), Spalte 3 = der Anker.
                                     // Jede gezeichnete Instanz lebt: die Gruppe ist dicht, count = lebende Instanzen (`_archGroupFree`
                                     // verdichtet) — die Null-3×3 eines freien Slots erreicht den Shader nie.
-                                    const _M = this._instanzMatrixNode(_Ta);
-                                    const _m0 = _M.element(0).xyz,
-                                        _m2 = _M.element(2).xyz;
-                                    const _sV = _m0.length(); // die Instanz-Skala im Vertex-Takt
+                                    const _naht = this._weltNaht(_Ta);
+                                    const _m0 = _naht.spalte(0);
+                                    const _sV = _naht.skala; // die Instanz-Skala im Vertex-Takt
                                     const _sInst = _Ta.varying(_sV, "vKarteSkala");
                                     const _aRot = _Ta.varying(_Ta.atan(_m0.z.negate(), _m0.x), "vKarteDreh");
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
@@ -32690,12 +32691,9 @@ class AnazhRealm {
                                     const _axisY = _axis.y.add(
                                         _Ta.positionGeometry.y.mul(_rahmen.y.sub(_Ta.float(1.0)))
                                     );
-                                    const _augeO = _Ta.modelWorldMatrixInverse.mul(
-                                        _Ta.vec4(_Ta.cameraPosition, 1.0)
-                                    ).xyz;
-                                    const _dAuge = _augeO.sub(_M.element(3).xyz);
-                                    const _lkX = _m0.dot(_dAuge);
-                                    const _lkZ = _m2.dot(_dAuge);
+                                    const _dAuge = _naht.vorlage(_Ta.cameraPosition.sub(_naht.anker));
+                                    const _lkX = _dAuge.x;
+                                    const _lkZ = _dAuge.z;
                                     const _ll = _Ta.sqrt(_lkX.mul(_lkX).add(_lkZ.mul(_lkZ))).max(_Ta.float(1e-4));
                                     const _lx = _lkX.div(_ll);
                                     const _lz = _lkZ.div(_ll);
@@ -32706,13 +32704,13 @@ class AnazhRealm {
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
                                     // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
                                     // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter. Die Phase liest
-                                    // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht in die Vorlage zurück
-                                    // (Mᵀ·w / s²) — sonst drehte und skalierte ihn die Matrix mit dem Baum.
+                                    // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht über die EINE Naht
+                                    // (`_weltNaht.vorlage`) in die Vorlage zurück — sonst drehte und skalierte ihn die Matrix mit dem Baum.
                                     if (!this.state.windUniforms) this._grassInstanceMat();
                                     const _wu = this._ensureWindCoupling(_Ta);
                                     const _WB = AnazhRealm.WIND_BOE;
                                     const _Hk = _rahmen.y.mul(_sV).max(0.5);
-                                    const _ankerW = _Ta.modelWorldMatrix.mul(_Ta.vec4(_M.element(3).xyz, 1.0)).xyz;
+                                    const _ankerW = _naht.anker;
                                     const _ortK = _ankerW.x.mul(_wu.uWindDir.x).add(_ankerW.z.mul(_wu.uWindDir.y));
                                     const _wK = globalThis.__phytoCore.windAusschlag(
                                         AnazhRealm._windTsl(_Ta),
@@ -32739,11 +32737,11 @@ class AnazhRealm {
                                         _Ta.float(0.0),
                                         _wu.uWindDir.y.mul(_wK.quer)
                                     );
-                                    const _s2 = _sV.mul(_sV).max(_Ta.float(1e-8));
+                                    const _swayT = _naht.vorlage(_swayW);
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).add(_m0.dot(_swayW).div(_s2)),
-                                        _axisY,
-                                        _axis.z.add(_lx.negate().mul(_off)).add(_m2.dot(_swayW).div(_s2))
+                                        _axis.x.add(_lz.mul(_off)).add(_swayT.x),
+                                        _axisY.add(_swayT.y),
+                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayT.z)
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
@@ -33572,41 +33570,56 @@ class AnazhRealm {
     }
 
     // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
-    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus ihrer Instanz-
-    // Matrix (der Haken an `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen der Ursprung des
-    // Objekts. Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
+    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus der EINEN Naht
+    // (`_weltNaht`: Objekt × Instanz-Matrix; ohne Instanzen der Ursprung des Objekts, eine InstancedMesh ohne Matrix bricht
+    // laut). Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
     // gemessen löste sich die ferne Krone eines nahen Baums auf, und die Stufen-Wahl musste dafür die zweite Stufe
     // zeichnen (1110-11: die Birke in 5 m stand doppelt, 0,6–2,7 ms GPU an der Mess-Wiese).
     _instanzMitteNode(T) {
         if (this._instanzMitteKnoten) return this._instanzMitteKnoten;
-        // die Knoten-Basis exportiert window.THREE nicht — sie ist die Oberklasse des InstanceNode (r184 `class … extends Node`)
-        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
-        if (!N || N.type !== "Node" || !T.varying || !T.modelWorldMatrix || !T.vec4) {
-            const text =
-                "URSPRUNG DER INSTANZ: r184 Node (über InstanceNode) · varying · modelWorldMatrix fehlen (Vendor-Drift)";
+        if (!T.varying) {
+            const text = "URSPRUNG DER INSTANZ: r184 varying fehlt (Vendor-Drift)";
             this.log(text, "ERROR");
             throw new Error(text);
         }
-        class InstanzMitte extends N {
-            constructor() {
-                super("vec2");
-            }
-            setup(builder) {
-                const m = builder.__anazhInstanzMatrix;
-                const lokal = m ? T.vec4(m.element(3).xyz, 1.0) : T.vec4(0.0, 0.0, 0.0, 1.0);
-                return T.modelWorldMatrix.mul(lokal).xz;
-            }
-        }
-        this._instanzMitteKnoten = T.varying(new InstanzMitte(), "vInstanzMitte");
+        this._instanzMitteKnoten = T.varying(this._weltNaht(T).anker.xz, "vInstanzMitte");
         return this._instanzMitteKnoten;
     }
 
-    // DIE INSTANZ IM POSITIONS-KNOTEN (K20, 13.10.): r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte:
-    // erst `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`) — dort lesen
-    // positionLocal und normalLocal den VORLAGEN-Raum. Wer im positionNode die Lage der Instanz braucht (die Karte, die das
-    // Auge ansieht), liest ihre Matrix hier: die Instanz-Matrix der gezeichneten Instanz (der Haken an
-    // `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen die Einheit. Fehlt sie an einer
-    // InstancedMesh, bricht der Bau LAUT — nie eine Karte, die still in der Drehung ihres Baums steht.
+    // DIE WELT IM POSITIONS-KNOTEN (K20-N1) — die EINE Naht zwischen Vorlage und Welt für jeden Stoff, der im positionNode
+    // die Welt braucht (der Wind von Gras, Streu, Rinde, Laub und Karte, die Karte, die das Auge ansieht, die Blende): r184
+    // rechnet den positionNode VOR der Instanz-Matrix (WGSL der Karte und der Nah-Wiesen-Senke gelesen: erst
+    // `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`), dort lesen positionLocal,
+    // normalLocal und positionWorld den VORLAGEN-Raum. Jede InstancedMesh entsteht in `_instanzMesh`, also gilt das für
+    // jeden Stoff einer Instanz. Die Naht trägt Mw = Objekt × Instanz-Matrix: `lage` die Welt-Lage des Vertex, `anker` die
+    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
+    // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
+    // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
+    // gate:foundry-impostor C4).
+    _weltNaht(T) {
+        const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));
+        const c0 = Mw.element(0).xyz;
+        const c1 = Mw.element(1).xyz;
+        const c2 = Mw.element(2).xyz;
+        return {
+            anker: Mw.element(3).xyz,
+            lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
+            skala: c0.length(),
+            spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
+            richtung: (n) => T.normalize(Mw.mul(T.vec4(n, 0.0)).xyz),
+            vorlage: (w) =>
+                T.vec3(
+                    c0.dot(w).div(c0.dot(c0).max(1e-12)),
+                    c1.dot(w).div(c1.dot(c1).max(1e-12)),
+                    c2.dot(w).div(c2.dot(c2).max(1e-12))
+                ),
+        };
+    }
+
+    // DIE INSTANZ-MATRIX IM POSITIONS-KNOTEN (K20): die Matrix der gezeichneten Instanz (der Haken an
+    // `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen die Einheit — der EINE Leser des Hakens,
+    // gelesen über die Naht `_weltNaht`. Fehlt sie an einer InstancedMesh, bricht der Bau LAUT — nie ein Stoff, der still
+    // in der Drehung seiner Instanz steht.
     _instanzMatrixNode(T) {
         if (this._instanzMatrixKnoten) return this._instanzMatrixKnoten;
         const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
@@ -58961,45 +58974,21 @@ class AnazhRealm {
         return emitted;
     }
 
-    // Der EINE Foundry-Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall): die Materialisierung
-    // (Primär-Stufe · Gesetz-Bahn · Band-Partner), die Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag
-    // lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
-    // Die Gestalt folgt dem Ort (K20): der Streu-Baum am Ort tf (x, z, scale) fragt dasselbe Wald-Gesetz wie der gepflanzte
-    // (`_forestStehtFrei` gegen die stehenden Bäume des Bestands, die eigene Krone FOREST.crown × Größe) — Primär-Stufe,
-    // Sichthöhe und Promotion lesen denselben Samen, dieselbe Gestalt am Promotions-Ring.
+    // Der rohe Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall) — die Klon-Linse (gate:fluss) misst
+    // seine Verteilung über die Gestalten.
+    _scatterRohSame(cellX, cellZ, variantIndex) {
+        return ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+    }
+    // Der EINE Foundry-Same einer Streu-Zelle: die Materialisierung (Primär-Stufe · Gesetz-Bahn · Band-Partner), die
+    // Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt
+    // beim Kristallisieren dieselbe. Die Gestalt folgt dem Ort (K20): der Streu-Baum am Ort tf (x, z, scale) fragt die EINE
+    // Gestalt des Orts (`_ortGestaltSame`) wie der gepflanzte, null = sie wartet auf die Wahrheit ihres Orts.
     _scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) {
-        const roh = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+        const roh = this._scatterRohSame(cellX, cellZ, variantIndex);
         const preset = this._foundryPresetFor(species);
         if (!preset) return roh;
         const krone = AnazhRealm.FOREST.crown[species];
-        const seedInt = this._forestSeedInt();
-        // Gedächtnis je Zelle (rein im Stand des Wald-Gesetzes `_forestDartStand`, Zelle, Art, Größe): der Stufen-Takt
-        // fragt jede Zelle je Takt.
-        const stand = this._forestDartStand(seedInt);
-        const grund = this._grundrissStand(); // und am Stand der Grundrisse (die Natur-Wand über den Nachbarn)
-        if (
-            this._streuSameStand !== stand ||
-            this._streuSameGrund !== grund ||
-            !this._streuSame ||
-            this._streuSame.size > 16384
-        ) {
-            this._streuSame = new Map();
-            this._streuSameStand = stand;
-            this._streuSameGrund = grund;
-        }
-        const mk = cellX + "," + cellZ + "," + variantIndex + "," + species + "," + tf.scale;
-        const hat = this._streuSame.get(mk);
-        if (hat !== undefined) return hat;
-        let vorlaeufig = false;
-        const same = this._foundryGestaltSame(roh, preset, () => {
-            if (!(krone > 0)) return false;
-            vorlaeufig = !this._forestGesetzWahr(); // vor dem Worldgen: die Antwort gilt, gemerkt wird sie nicht
-            return this._forestStehtFrei(tf.x, tf.z, krone * tf.scale, (gx, gz) =>
-                this._forestCellDarts(gx, gz, seedInt)
-            );
-        });
-        if (!vorlaeufig) this._streuSame.set(mk, same);
-        return same;
+        return this._ortGestaltSame(tf.x, tf.z, krone > 0 ? krone * tf.scale : 0, roh, preset);
     }
 
     // Die Sichthöhe einer Streu-Zelle für die Stufenwahl: Fels 0 (roh), ein Foundry-Baum der Stempel seines Assets
@@ -59008,12 +58997,10 @@ class AnazhRealm {
     _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf) {
         if (layer.kind === "rock") return 0;
         const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
-        if (preset && this._foundryPresetIsTree(preset))
-            return this._foundrySichtHoehe(
-                preset,
-                { seed: this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) },
-                tf.scale
-            );
+        if (preset && this._foundryPresetIsTree(preset)) {
+            const seed = this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf);
+            return seed === null ? null : this._foundrySichtHoehe(preset, { seed }, tf.scale);
+        }
         return this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
     }
 
@@ -59049,7 +59036,7 @@ class AnazhRealm {
         // Der EINE Streu-Same der Zelle (`_scatterFoundrySeed`): Primär-Stufe, Gesetz-Bahn, Band-Partner und die
         // Promotion lesen ihn — dieselbe Gestalt auf jeder Bahn.
         const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) : 0;
-        const gestalt = foundryPreset ? this._foundryVariantFor(fseed, foundryPreset) : null;
+        const gestalt = foundryPreset && fseed !== null ? this._foundryVariantFor(fseed, foundryPreset) : null;
         if (foundryPreset && gestalt == null) {
             if (!ctxNoDefer) region._deferredFoundry = true; // Buch kalt → deferrieren wie ein ladendes Asset
             return null;
@@ -59520,6 +59507,15 @@ class AnazhRealm {
             promLayer ? promLayer.scaleBase : cellEntry.scaleBase,
             promLayer ? promLayer.scaleVar : cellEntry.scaleVar
         );
+        // Der Same der Zelle (die Gestalt des Orts) vor dem Freigeben: wartet sie, wartet die Promotion mit ihr.
+        const same = this._scatterFoundrySeed(
+            cellEntry.cellX,
+            cellEntry.cellZ,
+            cellEntry.variantIndex,
+            cellEntry.species,
+            tf
+        );
+        if (same === null) return null;
         const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : cellEntry.y || 0;
         // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh) — und die Krone der Zelle mit ihnen: der
         // Eintrag trägt seine eigene ein (`spawnArchitecture`), sonst summierte die Karte sie doppelt.
@@ -59540,13 +59536,7 @@ class AnazhRealm {
                 precise: true,
                 scale: tf.scale,
                 rotationY: tf.yaw,
-                seed: this._scatterFoundrySeed(
-                    cellEntry.cellX,
-                    cellEntry.cellZ,
-                    cellEntry.variantIndex,
-                    cellEntry.species,
-                    tf
-                ),
+                seed: same,
             }
         );
         if (entry) {
@@ -75916,7 +75906,7 @@ class AnazhRealm {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
         // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
-        if (!(ov && typeof ov === "object" && Object.keys(ov).length)) ov = this._foundryGestaltOv(presetId, seed);
+        ov = this._foundryGestaltOv(presetId, seed, ov);
         // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
         // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
@@ -76185,7 +76175,7 @@ class AnazhRealm {
     _foundryBakeImpostorRequest(presetId, seed, ov, fmt, bedarfD2) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker || !fmt) return Promise.resolve(null);
-        if (!(ov && typeof ov === "object")) ov = this._foundryGestaltOv(presetId, seed); // die Gestalt des Orts (K20)
+        ov = this._foundryGestaltOv(presetId, seed, ov); // die Gestalt des Orts (K20) samt der Prägung des Bestellers
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
         // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
         // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
@@ -78306,7 +78296,9 @@ class AnazhRealm {
     // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
     // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
     // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
-    // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
+    // positionNode VOR der Instanzierung: die Phase liest die Welt-Lage aus der EINEN Naht (`_weltNaht`), der Ausschlag
+    // (Welt-Meter in Windrichtung, das Flattern entlang der Welt-Normale) geht über sie in die Vorlage zurück — bis K20-N1
+    // wehte der Wind jedes Baums in der Drehung seiner Instanz und wuchs mit ihrer Skala (gate:foundry-impostor C4).
     // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
     // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
     // trägt er nicht: sein Hub (WIND_GESETZ.blatt.hub 0,035 m im Sturm) liegt unter dem Kaskaden-Texel (wurf 0,17 m).
@@ -78322,7 +78314,8 @@ class AnazhRealm {
         const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
         const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
-        const pW = T.positionWorld;
+        const naht = this._weltNaht(T);
+        const pW = naht.lage;
         const ht = uB.x.max(1e-3);
         const H = T.attribute("aH0", "float").max(0.5);
         const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
@@ -78344,8 +78337,8 @@ class AnazhRealm {
         const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
         const quer = w.quer.mul(uB.z);
         let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
-        if (laub) off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
-        mat.positionNode = T.positionLocal.add(off);
+        if (laub) off = off.add(naht.richtung(T.normalLocal).mul(w.flattern.mul(uB.z)));
+        mat.positionNode = T.positionLocal.add(naht.vorlage(off));
         mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
@@ -78881,10 +78874,14 @@ class AnazhRealm {
     // Bestand-Gestalten (budget.gestalten) trägt DAZU ihren Solitär als Gestalt T = V+1 (phyto-core `solitaerGestalt`,
     // gebaut mit FREISTAND_OV — growSkeleton: kein Schaft-Hub, der gedrungene Stamm); der Bestand behält 1..V (kein Klon).
     // Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`): jeder Körper und jede Karte der
-    // Gestalt T ist der Solitär.
-    _foundryGestaltOv(preset, gestalt) {
+    // Gestalt T ist der Solitär — auch unter der Prägung eines Bestellers (`ov`, die Regler der Werkstatt, die Wald-
+    // Overrides): die Prägung des Orts tritt DAZU, sie ersetzt sie nie (ein geprägter Solitär wuchs sonst als Bestand).
+    // Rückgabe: die vereinte Prägung, null ohne jede (ein leeres ov ist keine).
+    _foundryGestaltOv(preset, gestalt, ov) {
+        const hat = ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
         const T = this._foundryGestalten(preset);
-        return T >= 2 && gestalt === T && AnazhRealm._solitaerVon(preset, T - 1) === T ? AnazhRealm.FREISTAND_OV : null;
+        if (!(T >= 2 && gestalt === T && AnazhRealm._solitaerVon(preset, T - 1) === T)) return hat;
+        return hat ? Object.assign({}, hat, AnazhRealm.FREISTAND_OV) : AnazhRealm.FREISTAND_OV;
     }
     // Der Same, dessen Gestalt der Ort wählt (K20): `_foundryVariantFor` liest h = Same × 2654435761 in T Eimern; der Ort
     // legt den Eimer fest (frei: der Solitär T, Bestand: 1..T−1 = die V Bestand-Gestalten nach dem eigenen Wurf), die Lage
@@ -78899,43 +78896,50 @@ class AnazhRealm {
         const h2 = Math.ceil((eimer * 4294967296) / T) + Math.floor(lage * (Math.floor(4294967296 / T) - 1));
         return Math.imul(h2 >>> 0, AnazhRealm.KNUTH_INVERS) >>> 0;
     }
-    // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt das Wald-Gesetz an seinem Ort
-    // (`_forestStehtFrei`, die eigene Krone FOREST.crown × Größe) — auch der aus dem Speicher geladene und der gesetzte, sein
-    // Same bleibt; gemerkt am Eintrag (flüchtig, nie im Snapshot), solange Lage, Same, Art, der Stand des Wald-Gesetzes
-    // (`_forestDartStand`) und der der Grundrisse (`_grundrissStand`) bleiben. Ein Datensatz ohne Lage (die Streu-Zelle) trägt den Samen seines Orts schon
-    // (`_scatterFoundrySeed`).
-    _foundryGestaltFor(entry, preset) {
-        const p = entry && entry.position;
-        if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);
+    // DIE GESTALT DES ORTS (K20), das EINE Gesetz und das EINE Gedächtnis für jeden Baum mit Lage — den Eintrag (auch den
+    // geladenen und den gesetzten, `_foundryGestaltFor`) und die Streu-Zelle (`_scatterFoundrySeed`): der Baum am Ort (x, z)
+    // mit der eigenen Krone T (FOREST.crown × Größe, m) fragt das Wald-Gesetz (`_forestStehtFrei`), der Same wählt danach
+    // seinen Eimer (`_foundryGestaltSame`). Gemerkt je Ort, Krone, Same und Art am Stand jeder Eingabe des Urteils: dem
+    // Stand des Wald-Gesetzes (`_forestDartStand`: Same, Buch, Hydrosphäre) und dem der Grundrisse (`_grundrissStand`, die
+    // Wand des Orts `_ortWand`). Vor dem Worldgen wartet die Gestalt (null, nie gemerkt) — für jeden Leser gleich.
+    _ortGestaltSame(x, z, T, seed, preset) {
         const seedInt = this._forestSeedInt();
         const stand = this._forestDartStand(seedInt);
         const grund = this._grundrissStand();
-        const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
-        const T = krone > 0 ? krone * (entry.scale || 1) : 0;
-        let m = entry._ortSame;
-        if (!(
-            m &&
-            m.stand === stand &&
-            m.grund === grund &&
-            m.x === p.x &&
-            m.z === p.z &&
-            m.T === T &&
-            m.seed === entry.seed &&
-            m.preset === preset
-        )) {
-            let wartet = false;
-            const same = this._foundryGestaltSame(entry.seed, preset, () => {
-                if (!(T > 0)) return false;
-                if (!this._forestGesetzWahr()) {
-                    wartet = true;
-                    return false;
-                }
-                return this._forestStehtFrei(p.x, p.z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
-            });
-            if (wartet) return null; // die Gestalt wartet auf die Wahrheit ihres Orts (nie gemerkt)
-            m = entry._ortSame = { stand, grund, x: p.x, z: p.z, T, seed: entry.seed, preset, same };
+        if (
+            this._ortSameStand !== stand ||
+            this._ortSameGrund !== grund ||
+            !this._ortSame ||
+            this._ortSame.size > 16384
+        ) {
+            this._ortSame = new Map();
+            this._ortSameStand = stand;
+            this._ortSameGrund = grund;
         }
-        return this._foundryVariantFor(m.same, preset);
+        const k = x + "," + z + "," + T + "," + seed + "," + preset;
+        const hat = this._ortSame.get(k);
+        if (hat !== undefined) return hat;
+        let wartet = false;
+        const same = this._foundryGestaltSame(seed, preset, () => {
+            if (!(T > 0)) return false;
+            if (!this._forestGesetzWahr()) {
+                wartet = true;
+                return false;
+            }
+            return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
+        });
+        if (wartet) return null;
+        this._ortSame.set(k, same);
+        return same;
+    }
+    // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt die Gestalt seines Orts (`_ortGestaltSame`),
+    // sein Same bleibt; null = sie wartet (wie auf ein kaltes Buch). Ein Datensatz ohne Lage trägt den Samen seines Orts schon.
+    _foundryGestaltFor(entry, preset) {
+        const p = entry && entry.position;
+        if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);
+        const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
+        const same = this._ortGestaltSame(p.x, p.z, krone > 0 ? krone * (entry.scale || 1) : 0, entry.seed, preset);
+        return same === null ? null : this._foundryVariantFor(same, preset);
     }
     // Die Gestalten-Zahl einer Art, wie der Wirt sie bedient: die Bestand-Gestalten der Budget-Zeile (sonst '*'), dazu der
     // Solitär einer Baum-Art (`_solitaerVon`: Gestalt V+1); 0 = Buch kalt. Der Vorrat wärmt 1..T, je Gestalt EINE Karte.
@@ -80061,7 +80065,7 @@ class AnazhRealm {
                     if (d2 < 1e-6 || d2 >= r * r) continue;
                     if (!this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) continue;
                     if (!this._wildnisTraegt(o.x, o.z)) continue;
-                    if (!this._naturWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
+                    if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
                 }
             }
         }
@@ -80659,10 +80663,18 @@ class AnazhRealm {
     // Namen) urteilt selbst, ihr Schilf steht im Ufer-Wasser.
     _naturWand(name, position, opts) {
         if (!position) return false;
-        const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
+        const g = this._ortWand(name, position, opts);
         if (g) return g;
         if (this._imWagen(position.x, position.z, 0.8)) return "wagen";
         return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;
+    }
+
+    // DIE WAND DES ORTS (K20): der Grundriss (`_imGrundriss`, die Krone des Wurfs) — die Hälfte der Natur-Wand, die der Ort
+    // trägt. Der Wagen fährt und das gezeichnete Wasser folgt dem Laden der Chunks: beide urteilen nur über das Setzen
+    // (`_naturWand`); das Wasser des Gesetzes trägt schon der Dart (`planForestCell`). Leser: `_naturWand` und das Wald-Gesetz
+    // des Solitärs (`_forestStehtFrei`), dessen Antwort `_ortGestaltSame` am Stand der Grundrisse merkt.
+    _ortWand(name, position, opts) {
+        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
     }
 
     // Liegt (x, z) in der Hülle eines Studio-Wagens (+ `rand`, der Stamm; eine Krone darf über das Dach)? Ein Wagen ist Bau,

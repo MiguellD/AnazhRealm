@@ -628,6 +628,144 @@ async function blickProbe(page) {
     }, BLICK_DREHUNGEN);
 }
 
+// ===== TEIL C4 — DER WIND WEHT IN DER WELT (K20-N1, 13.10.) =====
+// Dieselbe r184-Reihenfolge trägt jeder Stoff einer InstancedMesh (`_instanzMesh`): der positionNode läuft VOR der
+// Instanz-Matrix. Addiert der Wind dort einen Versatz in Welt-Metern und Welt-Richtung, drehte und skalierte ihn die
+// Matrix danach mit jedem Baum — jeder Baum bog sich in die Richtung seiner eigenen Drehung. Die Probe stellt EINE
+// Säule (Vorlage 10 m, der Rinden-Stoff `_baumWindStoff` mit Wind-Daten) im Sturm (Wind-Zeile 1, Richtung +x, feste
+// Wind-Uhr) in drei Instanz-Drehungen und zwei Skalen an DENSELBEN Anker und misst von oben den Versatz des Säulen-Bilds
+// gegen die Säule ohne Wind (Schwerpunkt in Welt-Metern). Urteil: jeder Versatz zeigt in die Wind-Richtung (± 10°) und
+// ist je Skala über die Drehungen gleich lang (± 10 %). Täter beim Namen: `_baumWindStoff` und `_instanzMatrixNode`.
+const WIND_FAELLE = [
+    { phi: 0, s: 1 },
+    { phi: 90, s: 1 },
+    { phi: -119, s: 1 },
+    { phi: 0, s: 2 },
+    { phi: 90, s: 2 },
+    // die Wiese (`_windSwayOffset`, die Halme der Gras-Instanzen) liest dieselbe Naht
+    { phi: 0, s: 1, stoff: "gras" },
+    { phi: 90, s: 1, stoff: "gras" },
+    { phi: -119, s: 1, stoff: "gras" },
+];
+function windUrteil(mess) {
+    const v = [];
+    const laenge = {};
+    for (const m of mess) {
+        const stoff = m.stoff || "rinde";
+        const L = Math.hypot(m.dx, m.dz);
+        // die Rinde weht in uWindDir (+x); die Wiese wiegt in Welt-x/z — sie misst gegen ihre Drehung 0
+        const ref = m.stoff ? mess.find((q) => q.stoff === m.stoff && q.phi === 0 && q.s === m.s) : null;
+        const w0 = ref ? (Math.atan2(ref.dz, ref.dx) * 180) / Math.PI : 0;
+        const w = (((((Math.atan2(m.dz, m.dx) * 180) / Math.PI - w0 + 540) % 360) + 360) % 360) - 180;
+        if (!(L > 0.05))
+            v.push(`${stoff} Drehung ${m.phi}° Skala ${m.s}: kein Versatz (${L.toFixed(3)} m) — die Probe ist blind`);
+        else if (Math.abs(w) > 10)
+            v.push(
+                `${stoff} Drehung ${m.phi}° Skala ${m.s}: der Wind weht ${w.toFixed(0)}° neben der Welt-Richtung — er dreht mit der Instanz`
+            );
+        (laenge[stoff + " " + m.s] = laenge[stoff + " " + m.s] || []).push(L);
+    }
+    for (const sk of Object.keys(laenge)) {
+        const L = laenge[sk];
+        const lo = Math.min(...L),
+            hi = Math.max(...L);
+        if (lo > 0 && hi / lo > 1.1)
+            v.push(
+                `Skala ${sk}: Versatz ${lo.toFixed(2)}–${hi.toFixed(2)} m über die Drehungen — er hängt an der Drehung`
+            );
+    }
+    return v;
+}
+async function windProbe(page) {
+    return await page.evaluate(async (faelle) => {
+        const r = window.anazhRealm;
+        const out = { err: null, mess: [] };
+        try {
+            const T = THREE;
+            const ren = new T.WebGPURenderer({ antialias: false });
+            await ren.init();
+            const W = 256,
+                H = 256;
+            ren.setSize(W, H, false);
+            if (!r.state.windUniforms) r._grassInstanceMat();
+            const wu = r._ensureWindCoupling(T.TSL);
+            const anker = new T.Vector3(30, 0, -10);
+            const halb = 2; // Bild-Halbbreite in m (von oben): 1,6 cm je Pixel
+            const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 0.1, 200);
+            cam.position.set(anker.x, 60, anker.z);
+            cam.up.set(0, 0, -1);
+            cam.lookAt(anker.x, 0, anker.z);
+            cam.updateMatrixWorld(true);
+            const schwerpunkt = async (mesh) => {
+                const szene = new T.Scene();
+                szene.add(mesh);
+                const rt = new T.RenderTarget(W, H);
+                ren.setRenderTarget(rt);
+                await ren.renderAsync(szene, cam);
+                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                rt.dispose();
+                let n = 0,
+                    sx = 0,
+                    sy = 0;
+                for (let y = 0; y < H; y++)
+                    for (let x = 0; x < W; x++)
+                        if (buf[(y * W + x) * 4 + 3] > 0) {
+                            n++;
+                            sx += x;
+                            sy += y;
+                        }
+                if (!n) return null;
+                // Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
+                const px = (2 * halb) / W;
+                return { x: (sx / n + 0.5) * px - halb, z: -((sy / n + 0.5) * px - halb), n };
+            };
+            const baue = (phi, s, wind, stoff) => {
+                const g = new T.CylinderGeometry(0.3, 0.3, 10, 8, 20);
+                g.translate(0, 5, 0);
+                g.setAttribute("aH0", new T.InstancedBufferAttribute(new Float32Array([10 * s]), 1));
+                const mat = new T.MeshBasicNodeMaterial({ color: 0xffffff });
+                if (wind && stoff === "gras")
+                    mat.positionNode = T.TSL.positionLocal.add(
+                        r._windSwayOffset(T.TSL, { ampX: 1.5, hoehe: T.TSL.positionGeometry.y })
+                    );
+                else if (wind) r._baumWindStoff(mat, "bark", { ht: 10, delta: 0.3, an: 1 });
+                const mesh = new T.InstancedMesh(g, mat, 1);
+                mesh.frustumCulled = false;
+                const M = new T.Matrix4().compose(
+                    anker,
+                    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (phi * Math.PI) / 180),
+                    new T.Vector3(s, s, s)
+                );
+                mesh.setMatrixAt(0, M);
+                mesh.instanceMatrix.needsUpdate = true;
+                return mesh;
+            };
+            wu.uWindDir.value.set(1, 0);
+            wu.uWindStrength.value = r.constructor.WEATHER_WIND_AMP;
+            wu.uWindTime.value = 3.0;
+            for (const f of faelle) {
+                const ruhe = await schwerpunkt(baue(f.phi, f.s, false, f.stoff));
+                const sturm = await schwerpunkt(baue(f.phi, f.s, true, f.stoff));
+                if (!ruhe || !sturm) {
+                    out.mess.push({ phi: f.phi, s: f.s, stoff: f.stoff, dx: 0, dz: 0 });
+                    continue;
+                }
+                out.mess.push({
+                    phi: f.phi,
+                    s: f.s,
+                    stoff: f.stoff,
+                    dx: +(sturm.x - ruhe.x).toFixed(3),
+                    dz: +(sturm.z - ruhe.z).toFixed(3),
+                });
+            }
+            ren.dispose();
+        } catch (e) {
+            out.err = (e && e.message) || String(e);
+        }
+        return out;
+    }, WIND_FAELLE);
+}
+
 // ===== TEIL D — DIE STRICH-WAND (Integration W6, Echt-GPU 05.10.) =====
 // Die Karte liest die Peilung des ANKERS (für das ganze Quad dieselbe); steht sie genau auf einer Ansichts-Grenze, kippt
 // ihr Rundungs-Rauschen einzelne Pixel auf die Nachbar-Ansicht — die Atlas-Koordinate springt dort um 1/8 bis 7/8 der
@@ -678,6 +816,7 @@ function strichWand(src) {
     const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
     const C3 = await blickProbe(pageA);
+    const C4 = await windProbe(pageA);
     await browserA.close();
 
     console.log("=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===");
@@ -812,6 +951,36 @@ function strichWand(src) {
         );
         if (!(selbstRot && selbstGruen))
             errs.push("C3-SELBSTTEST: das Blick-Urteil unterscheidet Tafel und Karte nicht");
+    }
+    {
+        console.log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");
+        if (C4.err) errs.push(`C4: Wind-Probe brach ab — ${C4.err}`);
+        else {
+            for (const m of C4.mess)
+                console.log(`  ${m.stoff || "rinde"} Drehung ${m.phi}° Skala ${m.s}: Versatz (${m.dx}, ${m.dz}) m`);
+            if (C4.mess.length !== WIND_FAELLE.length) errs.push("C4: nicht jeder Fall gemessen — die Probe ist blind");
+            errs.push(...windUrteil(C4.mess).map((x) => "C4: " + x));
+        }
+        const selbstRot =
+            windUrteil([
+                { phi: 0, s: 1, dx: 0.8, dz: 0 },
+                { phi: 90, s: 1, dx: 0, dz: -0.8 },
+            ]).length === 1;
+        const selbstLang =
+            windUrteil([
+                { phi: 0, s: 2, dx: 0.8, dz: 0 },
+                { phi: 90, s: 2, dx: 1.6, dz: 0 },
+            ]).length === 1;
+        const selbstGruen =
+            windUrteil([
+                { phi: 0, s: 1, dx: 0.8, dz: 0.02 },
+                { phi: 90, s: 1, dx: 0.79, dz: -0.03 },
+            ]).length === 0;
+        console.log(
+            `  Selbsttest: der gedrehte Wind feuert ${selbstRot} · der skalierte feuert ${selbstLang} · der Welt-Wind schweigt ${selbstGruen}`
+        );
+        if (!(selbstRot && selbstLang && selbstGruen))
+            errs.push("C4-SELBSTTEST: das Wind-Urteil unterscheidet Welt- und Instanz-Wind nicht");
     }
     for (const C2 of C2s) {
         const F = `C2[${C2.fmt}]`;

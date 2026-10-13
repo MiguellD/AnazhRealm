@@ -142,7 +142,7 @@ function check(name, ok, detail) {
                 const alt = proben.map((e) => r._foundryGestaltFor(e, "eiche"));
                 const frischAlle = () => {
                     r._forestDartMemo = null; // alle Gedächtnisse des Walds fort: die Antwort aus dem Nichts
-                    for (const e of proben) e._ortSame = null;
+                    r._ortSame = null; // das EINE Gedächtnis der Gestalt des Orts (`_ortGestaltSame`)
                     return proben.map((e) => r._foundryGestaltFor(e, "eiche"));
                 };
                 const frisch = frischAlle();
@@ -158,7 +158,15 @@ function check(name, ok, detail) {
                 let vorWelt;
                 st.hydrosphere = null;
                 try {
-                    vorWelt = { gestalt: r._foundryGestaltFor(e0, "eiche"), gemerkt: !!e0._ortSame };
+                    vorWelt = {
+                        gestalt: r._foundryGestaltFor(e0, "eiche"),
+                        gemerkt: !!(
+                            r._ortSame &&
+                            [...r._ortSame.keys()].some(
+                                (k) => k.startsWith(KX + "," + KZ + ",") && k.endsWith(",7,eiche")
+                            )
+                        ),
+                    };
                 } catch (err) {
                     vorWelt = { fehler: String((err && err.message) || err).split("\n")[0] };
                 } finally {
@@ -167,9 +175,15 @@ function check(name, ok, detail) {
                 // Selbsttest: ein Gedächtnis am gültigen Stand mit gekippter Gestalt muss beim Namen feuern
                 const p0 = proben[0];
                 const g0 = r._foundryGestaltFor(p0, "eiche");
-                p0._ortSame = Object.assign({}, p0._ortSame, {
-                    same: r._foundryGestaltSame(p0.seed, "eiche", () => g0 !== V),
-                });
+                const k0 = [...(r._ortSame ? r._ortSame.keys() : [])].find(
+                    (k) =>
+                        k.startsWith(p0.position.x + "," + p0.position.z + ",") && k.endsWith("," + p0.seed + ",eiche")
+                );
+                if (k0)
+                    r._ortSame.set(
+                        k0,
+                        r._foundryGestaltSame(p0.seed, "eiche", () => g0 !== V)
+                    );
                 const sAlt = r._foundryGestaltFor(p0, "eiche");
                 const sFrisch = frischAlle()[0];
                 Object.assign(res.E, {
