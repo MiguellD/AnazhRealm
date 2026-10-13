@@ -21440,7 +21440,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
             const zM = window.__stoffZeuge(r);
             let mM = null;
             try {
-                mM = r._buildToonNodeMaterial({ vertexColors: true });
+                mM = r._buildToonNodeMaterial({ vertexColors: true, geomorph: true }); // wie der Boden-Stoff
             } finally {
                 zM.zu();
             }
