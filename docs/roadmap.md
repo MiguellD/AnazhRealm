@@ -35,8 +35,8 @@ Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit d
 „analog!", seit 30.09. in der AAA-Lesart „am Ende AAA-Niveau, nicht Kapseln"). Neu gefasst 11.10.
 (Entscheidung 1110 §5.1, Vollmacht des Schöpfers): B Bäume und C Architektur fielen mit dem Beweis-Satz
 A1 (echte GPU, Ausgabe-Pfad, `docs/abnahme-analog.md` § A1: Mesh-Zone 0 ungebaut in jedem Schuss); B der
-Pfad ohne Bruch fiel V18.543 (jede der sieben Zahlen an ihrem Ziel, je Zahl ihr Gate). Offen stehen A (die Kopf-Zeile
-des Fell-Gesetzes: seit K28 gegossen, im Armlängen-Bild nicht über dem Rauschen), B die Ankunft (≤ 5 s kalt, gesetzt 13.10.), C der Ort auf
+Pfad ohne Bruch fiel V18.543 (jede der sieben Zahlen an ihrem Ziel, je Zahl ihr Gate). A fiel mit K28 (14.10.: der Kopf trägt sein Fell
+wie der Rumpf, im Armlängen-Bild über dem Rauschen). Offen stehen B die Ankunft (≤ 5 s kalt, gesetzt 13.10.), C der Ort auf
 dem Gelände und E das Profi-Band auf jedem Standardgerät mit seinem Kriterium (Radeon 890M und GTX 1060, Wiese und
 Genesis, Ego und Third-Person, Regler voll; Schöpfer-Wort 02.10.: „richter ist nicht mein rechner").
 

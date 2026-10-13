@@ -77330,6 +77330,10 @@ class AnazhRealm {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
             for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return; // die Grobstufe wäre der Doppel-Körper
+            // Das Fell ist kein Leib (K28): die Glieder (Treffer, Biss, Fern-Bild) passen auf Haut und starre Teile — die
+            // Schalen und Strähnen über ihnen trügen ihre Länge in jedes Volumen (der Biss reichte um das Kopf-Fell weiter).
+            const kl = o.userData && o.userData.__klasse;
+            if (typeof kl === "string" && (kl === "fellSchale" || kl.indexOf("straehne") === 0)) return;
             // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
             // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
             // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.

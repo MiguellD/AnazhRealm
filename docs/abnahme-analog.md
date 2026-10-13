@@ -462,13 +462,17 @@ Stufen zeigen): hell 124,0 ↔ 127,0 (0,976).
 Länge 0,045 und Dicke 0,005 Lab-Einheiten; der Kopf steht in der Welt bei Skala 1/3 — 15 × 1,67 mm. Am Armlängen-Schuss steht
 der Kopf 1,82 m vor der Kamera (75° senkrecht, 1080 px): 386 px je m, die Strähne 5,79 px lang und 0,64 px dick (die Zahl
 2,8 mm aus dem Kommentar der Schalen gäbe 1,08 px). Die Kopf-Zeile liegt damit NICHT unter dem Pixel — A bleibt offen mit
-diesem Rest; B und C fallen mit diesem Satz. K28 (13.10.) gießt sie: die Lab-Streu der Zeile (19 Strähnen auf der Kappe
-beim Wolf, 17,3 mm lang, 6 mm Wurzel — an Armlänge 6,7 × 2,3 px) steht auf der Kopf-Haut als Karten im Schalen-Stapel,
-0 Befehle mehr; im Armlängen-Bild steht die Strähne am Scheitel frei, 14 der 19 Wurzeln liegen unter dem Hals-Mantel der
-Leib-Haut (gate:tier-anatomie, Kopf-Zeile). Sichtbar ist sie damit nicht: im Kopf-Fenster ändert die Zeile die Kanten-Dichte
-kaum (V18.544, 220 px: aus 0,1546 ↔ an 0,1573, aus2 0,1548 ↔ an2 0,1552, Rauschen 0,0002; gleichsinnig geändert
-109 px gegen 806 px Rauschen), im Bild steht ein Büschel am Scheitel, der Kopf liest glatt — A bleibt offen.
+diesem Rest; B und C fallen mit diesem Satz. K28 gießt sie zuerst als 19 Karten der Lab-Kappe (13.10.): 14 Wurzeln lagen
+unter dem Hals-Mantel, im Bild ein Büschel, der Kopf las glatt. Die Nachbesserung (14.10.) gießt den Kopf wie den Rumpf: Schalen
+über jeder starren Kopf-Haut (Kopf und Kiefer) aus DEMSELBEN Feld, im Raster und in der Dicke des Rumpfs, Länge und Legerichtung
+aus der Kopf-Zeile; das Fell weicht Auge, Lid, Nase, Lefze, Zahn und Ohr (die Länge höchstens der Abstand zum Teil), die leere
+äußerste Schale fällt im ganzen Stapel (L0 Wolf 55 574 → 54 894, Bär 60 324 ≤ 62 000; gate:tier-anatomie Kopf-Fell, vorher ROT
+29 Abweichungen). Im Armlängen-Bild (V18.544, Radeon 890M, Ausgabe-Pfad, Bild-Paar aus · an · aus2 · an2 · leer) steht das
+Fell: die Feinstruktur im Gesicht (|L − Mittel der 8 Nachbarn| auf den grauen Kopf-Pixeln des Bilds ohne Kopf-Fell, 968 px)
+aus 1,337 → an 3,800 und aus2 1,326 → an2 3,750 bei 0,011 Rauschen — der Hals-Mantel trägt 3,56–3,90; gleichsinnig geändert
+1 708 px gegen 420 px Rauschen im Kopf-Fenster (120 px). Die grobe Kanten-Dichte (Sobel > 40) des Fensters hebt das feine
+Fell nicht (aus 0,4356 ↔ an 0,4238, aus2 0,4128 ↔ an2 0,4099, Rauschen 0,023). A fällt.
 
-Im Bild: der Wolf mit Pelz und hellem Brustlatz, der Kopf als glatte Haut ohne Strähnen; die Eiche mit Stamm-Gabel und
+Im Bild: der Wolf mit Pelz und hellem Brustlatz, der Kopf (seit K28) im Fell wie der Rumpf; die Eiche mit Stamm-Gabel und
 Krone bei 15 und 22 m, bei 80 m ihre Karte hinter der Kuppe; das Fachwerkhaus mit Backstein-Erdgeschoss bei 8,8 m, bei
 19 m die Flächen-Stufe mit Gefach und Schornstein — und am Hang steht sein Sockel frei (das ist der neue Eintrag C).

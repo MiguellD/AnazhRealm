@@ -78,7 +78,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
 p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist nicht mein rechner"). Feature-Stopp bis dahin.
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes · B Ankunft ≤ 5 s kalt (vorher ≈ 28–49 s) ·
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** B Ankunft ≤ 5 s kalt (vorher ≈ 28–49 s) ·
 C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis, Ego + Third-Person).
 
 **WAS STEHT — je Domäne die EINE Quelle:**
