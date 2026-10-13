@@ -24,9 +24,12 @@
 //               (kein Abbau, kein Neubau, kein Takt ohne Gestalt), draußen die Karte allein — kein Pop am Radius.
 //   D2 RIESE    eine Eiche mit Sichthöhe 110 m (Band 134–270 m, jenseits jedes Radius): im Band trägt sie ihren Partner
 //               (nicht voll gestempelt), jenseits die Karte allein, zurück wieder das Band — kein Takt ohne Gestalt.
+//   E STAND     die Gestalt des Orts (Solitär/Bestand) merkt sich erst nach der Wasser-Wahrheit ihrer Kachel (K20).
+//   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
-//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot.
+//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot; (4) ein Gedächtnis mit
+//               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
@@ -177,6 +180,68 @@ function check(name, ok, detail) {
                     selbst: sAlt !== sFrisch,
                     ms: Math.round(performance.now() - t0),
                 });
+                // F DER GRUNDRISS-STAND (K20, Übergabe 12.10.): ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
+                // Grundriss eines Hauses), steht nie — die Eiche neben ihm steht frei. Eine Eiche im Bestand mit genau EINEM
+                // stehenden Nachbarn bekommt über diesem Nachbarn ein Haus; danach muss ihre Gestalt der Solitär sein, gemerkt
+                // (die Antwort vor dem Haus) wie frisch gefragt.
+                {
+                    frischAlle();
+                    const FS = globalThis.__phytoCore.FREISTAND;
+                    const seedInt = r._forestSeedInt();
+                    const CELL = AR.FOREST.cell;
+                    const kr = AR.FOREST.crown.baum_eiche;
+                    const darts = (gx, gz) => r._forestCellDarts(gx, gz, seedInt);
+                    let wahl = null;
+                    for (const e of proben) {
+                        if (r._foundryGestaltFor(e, "eiche") === V) continue;
+                        const gx = Math.floor(e.position.x / CELL);
+                        const gz = Math.floor(e.position.z / CELL);
+                        const nah = [];
+                        for (let ax = -4; ax <= 4; ax++)
+                            for (let az = -4; az <= 4; az++)
+                                for (const o of darts(gx + ax, gz + az)) {
+                                    const d = Math.hypot(o.x - e.position.x, o.z - e.position.z);
+                                    if (d < 1e-3 || d >= FS.abstand * (kr + o.T)) continue;
+                                    if (r._forestDartSteht(o, gx + ax, gz + az, darts)) nah.push({ o, d });
+                                }
+                        if (nah.length === 1 && nah[0].d > 4) {
+                            wahl = { e, o: nah[0].o };
+                            break;
+                        }
+                    }
+                    res.E.F = { probe: !!wahl };
+                    if (wahl) {
+                        const { e, o } = wahl;
+                        const vorher = r._foundryGestaltFor(e, "eiche");
+                        let grund = null;
+                        const haus = r.spawnArchitecture(
+                            "haus_alemannisch",
+                            { x: o.x, y: o.surfaceY, z: o.z },
+                            { fundament: { ex: 1.5, ez: 1.5 }, silent: true, absage: (g) => (grund = g) }
+                        );
+                        const gemerkt = r._foundryGestaltFor(e, "eiche");
+                        const frischF = frischAlle()[proben.indexOf(e)];
+                        if (haus) r.removeArchitecture(haus);
+                        // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
+                        // unterscheidet: frei macht nur der Grundriss)
+                        const ohne = r.spawnArchitecture(
+                            "haus_alemannisch",
+                            { x: o.x, y: o.surfaceY, z: o.z },
+                            { silent: true }
+                        );
+                        res.E.F.selbst = !!ohne && r._foundryGestaltFor(e, "eiche") !== V;
+                        if (ohne) r.removeArchitecture(ohne);
+                        Object.assign(res.E.F, {
+                            ort: `Eiche (${e.position.x}, ${e.position.z}), Nachbar ${o.sp} (${o.x.toFixed(1)}, ${o.z.toFixed(1)})`,
+                            haus: !!haus,
+                            grund,
+                            vorher,
+                            gemerkt,
+                            frisch: frischF,
+                            V,
+                        });
+                    }
+                }
             }
         }
         let taktFehler = null;
@@ -600,6 +665,19 @@ function check(name, ok, detail) {
                   (E.taeter.length ? ` (${E.taeter.slice(0, 4).join(" | ")})` : "") +
                   ` · vor dem Worldgen: ${vw.fehler ? "Fehler " + vw.fehler : "Gestalt " + vw.gestalt + (vw.gemerkt ? ", gemerkt" : ", nicht gemerkt")}`
     );
+    const F = E.F || {};
+    check(
+        "F GRUNDRISS-STAND (ein Wurf im Haus steht nie)",
+        F.probe === true && F.haus === true && F.vorher !== F.V && F.gemerkt === F.V && F.frisch === F.V,
+        !F.probe
+            ? "keine Eiche mit genau einem stehenden Nachbarn (keine Probe)"
+            : !F.haus
+              ? `das Haus fiel (${F.grund}) — keine Probe`
+              : `${F.ort}: vor dem Haus Gestalt ${F.vorher}, mit Haus gemerkt ${F.gemerkt} · frisch ${F.frisch} (Solitär ${F.V})` +
+                (F.frisch !== F.V ? " — _forestStehtFrei zählt den Wurf im Grundriss" : "") +
+                (F.gemerkt !== F.frisch ? " — _foundryGestaltFor merkt vor dem Grundriss" : "")
+    );
+    check("SELBSTTEST 5 (ein Haus ohne Grundriss macht F rot)", F.selbst === true, F.probe ? "" : "keine Probe");
     check(
         "SELBSTTEST 4 (ein Gedächtnis mit gekippter Gestalt macht E rot)",
         E.selbst === true,

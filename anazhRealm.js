@@ -58768,9 +58768,16 @@ class AnazhRealm {
         // Gedächtnis je Zelle (rein im Stand des Wald-Gesetzes `_forestDartStand`, Zelle, Art, Größe): der Stufen-Takt
         // fragt jede Zelle je Takt.
         const stand = this._forestDartStand(seedInt);
-        if (this._streuSameStand !== stand || !this._streuSame || this._streuSame.size > 16384) {
+        const grund = this._grundrissStand(); // und am Stand der Grundrisse (die Natur-Wand über den Nachbarn)
+        if (
+            this._streuSameStand !== stand ||
+            this._streuSameGrund !== grund ||
+            !this._streuSame ||
+            this._streuSame.size > 16384
+        ) {
             this._streuSame = new Map();
             this._streuSameStand = stand;
+            this._streuSameGrund = grund;
         }
         const mk = cellX + "," + cellZ + "," + variantIndex + "," + species + "," + tf.scale;
         const hat = this._streuSame.get(mk);
@@ -78908,20 +78915,22 @@ class AnazhRealm {
     }
     // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt das Wald-Gesetz an seinem Ort
     // (`_forestStehtFrei`, die eigene Krone FOREST.crown × Größe) — auch der aus dem Speicher geladene und der gesetzte, sein
-    // Same bleibt; gemerkt am Eintrag (flüchtig, nie im Snapshot), solange Lage, Same, Art und der Stand des Wald-Gesetzes
-    // (`_forestDartStand`) bleiben. Ein Datensatz ohne Lage (die Streu-Zelle) trägt den Samen seines Orts schon
+    // Same bleibt; gemerkt am Eintrag (flüchtig, nie im Snapshot), solange Lage, Same, Art, der Stand des Wald-Gesetzes
+    // (`_forestDartStand`) und der der Grundrisse (`_grundrissStand`) bleiben. Ein Datensatz ohne Lage (die Streu-Zelle) trägt den Samen seines Orts schon
     // (`_scatterFoundrySeed`).
     _foundryGestaltFor(entry, preset) {
         const p = entry && entry.position;
         if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);
         const seedInt = this._forestSeedInt();
         const stand = this._forestDartStand(seedInt);
+        const grund = this._grundrissStand();
         const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
         const T = krone > 0 ? krone * (entry.scale || 1) : 0;
         let m = entry._ortSame;
         if (!(
             m &&
             m.stand === stand &&
+            m.grund === grund &&
             m.x === p.x &&
             m.z === p.z &&
             m.T === T &&
@@ -78938,7 +78947,7 @@ class AnazhRealm {
                 return this._forestStehtFrei(p.x, p.z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
             });
             if (wartet) return null; // die Gestalt wartet auf die Wahrheit ihres Orts (nie gemerkt)
-            m = entry._ortSame = { stand, x: p.x, z: p.z, T, seed: entry.seed, preset, same };
+            m = entry._ortSame = { stand, grund, x: p.x, z: p.z, T, seed: entry.seed, preset, same };
         }
         return this._foundryVariantFor(m.same, preset);
     }
@@ -80042,7 +80051,11 @@ class AnazhRealm {
     // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (`_forestDartSteht`) näher als phyto-core
     // FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er selbst). Die Nachbarn reichen
     // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
-    // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum.
+    // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum. Ein Nachbar steht nur, wo ihn auch der Pflanz-Gang
+    // setzt (`_enqueueVegetationSpawn`): die Wildnis trägt seinen Ort (`_wildnisTraegt`) und die EINE Natur-Wand lässt ihn
+    // durch (`_naturWand`: kein Grundriss, kein Wagen, Land unter dem Fuß) — der Wurf im Haus stand nie (gate:fernwald F:
+    // die Eiche neben einem Haus über ihrem einzigen Nachbarn blieb Bestand). Wer die Antwort merkt, merkt sie am Stand der
+    // Grundrisse (`_grundrissStand`).
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
@@ -80060,7 +80073,9 @@ class AnazhRealm {
                     const dz = o.z - z;
                     const d2 = dx * dx + dz * dz;
                     if (d2 < 1e-6 || d2 >= r * r) continue;
-                    if (this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) return false;
+                    if (!this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) continue;
+                    if (!this._wildnisTraegt(o.x, o.z)) continue;
+                    if (!this._naturWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
                 }
             }
         }
@@ -80857,28 +80872,9 @@ class AnazhRealm {
     // Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei jedem Spawn/Abriss eines Baus
     // mit Grundriss. Rückgabe: "lichtung" | "haus" | false.
     _imGrundriss(x, z, rand = 0.8, krone = 0) {
-        const G = 32;
-        const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
-        let gitter = this._grundrissGitter;
-        if (!gitter) {
-            gitter = this._grundrissGitter = { zellen: new Map(), lichtungen: [] };
-            for (const e of this.state.architectures || []) {
-                const fp = this._grundrissVon(e);
-                if (!fp) continue;
-                if (fp.lichtung) {
-                    gitter.lichtungen.push({ x: e.position.x, z: e.position.z, r: fp.lichtung });
-                    continue;
-                }
-                const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
-                for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
-                    for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
-                        const k = schluessel(gx, gz);
-                        let l = gitter.zellen.get(k);
-                        if (!l) gitter.zellen.set(k, (l = []));
-                        l.push(e);
-                    }
-            }
-        }
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const schluessel = AnazhRealm._grundrissSchluessel;
+        const gitter = this._grundrissStand();
         const reich = Math.max(rand, krone);
         for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
         if (gitter.zellen.size === 0) return false;
@@ -80899,6 +80895,33 @@ class AnazhRealm {
                 return "haus";
         }
         return false;
+    }
+
+    // DER STAND DER GRUNDRISSE (K20): das Gitter der Häuser und Lichtungen, faul aus den Einträgen gebaut; es fällt bei jedem
+    // Spawn/Abriss eines Baus mit Grundriss, sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die
+    // durch die Natur-Wand geht (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein
+    // neues Haus über einem Nachbarn macht den Baum daneben frei).
+    _grundrissStand() {
+        if (this._grundrissGitter) return this._grundrissGitter;
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const gitter = (this._grundrissGitter = { zellen: new Map(), lichtungen: [] });
+        for (const e of this.state.architectures || []) {
+            const fp = this._grundrissVon(e);
+            if (!fp) continue;
+            if (fp.lichtung) {
+                gitter.lichtungen.push({ x: e.position.x, z: e.position.z, r: fp.lichtung });
+                continue;
+            }
+            const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+            for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
+                for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
+                    const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                    let l = gitter.zellen.get(k);
+                    if (!l) gitter.zellen.set(k, (l = []));
+                    l.push(e);
+                }
+        }
+        return gitter;
     }
 
     // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
@@ -105304,6 +105327,9 @@ AnazhRealm._solitaerVon = function (preset, V) {
     if (!PC || typeof PC.solitaerGestalt !== "function") return AnazhRealm._kernPflichtBruch("phyto:solitaerGestalt");
     return PC.solitaerGestalt(rec.kind, V);
 };
+// Das Gitter der Grundrisse (`_grundrissStand`): 32-m-Zellen, Zahlen-Schlüssel (die Streu fragt je Zelle).
+AnazhRealm.GRUNDRISS_ZELLE = 32;
+AnazhRealm._grundrissSchluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
 // DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
 // `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
 AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });
