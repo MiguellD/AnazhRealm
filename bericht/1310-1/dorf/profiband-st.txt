@@ -1,0 +1,34 @@
+✅ SELBST-TEST: unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot
+✅ SELBST-TEST: fscatter:geroell:3:0 bei 200 m → rot, bei 40 m nicht
+✅ SELBST-TEST: Boden haupt 8 Befehle über Ratsche 5 (+2) → rot, 7 nicht, 5 nicht
+✅ SELBST-TEST: Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht
+✅ SELBST-TEST: neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)
+✅ SELBST-TEST: Namens-Wand: namenlos rot, ohne Ziel rot, benannt grün, Neu-Zuweisung grün, fremder .name rot
+✅ SELBST-TEST: tex:? → rot, karte-albedo nicht; die EINE Faltung: r184-ausgabe und kaskade0 ganz, bindingBuffer1381_ → bindingBuffer
+✅ SELBST-TEST: Schlüssel-Formen des Stamms → 11 Klassen
+✅ SELBST-TEST: Textur-Erzeuger: Name · <ziel>:tiefe · r184-ausgabe · namenlos → null, im Urteil rot
+✅ SELBST-TEST: Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), Schema hält nur eingeschwungen
+✅ SELBST-TEST: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb; ein Wald über dem Band → BAND ROT bei sauberer Linse
+✅ SELBST-TEST: zensusMax: tier:wolf haupt 12 · k0 6 · dMax 40, himmel aus der zweiten Probe
+✅ SELBST-TEST: Täter-Klasse: tier:wolf · fscatter:eiche:L1 · UNBENANNT unter der Region · spieler · voxelChunk · p2p-spieler · leer:fscatter:blume:L0 (Gruppe ohne lebende Instanz)
+✅ SELBST-TEST: freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot
+✅ SELBST-TEST: bandHuelle: f:griechisch:L2 42 aus Lauf 1, bodenSatz 6 aus Lauf 2, VRAM 230 MB, beide Erzeuger
+✅ SELBST-TEST: H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt
+✅ SELBST-TEST: buf:verwaist und buf:ruhend → LINSE rot `leck` mit Täter; buf:szene und buf:bild nicht; die Halter falten, die größten Täter reisen mit
+✅ SELBST-TEST: tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber
+✅ SELBST-TEST: Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben
+✅ SELBST-TEST: buf:szene:tier:* → freier Erzeuger buf:tier (10 MB über seiner Ratsche 1 nie rot), gebunden 30 MB, der Nachzug lässt ihn
+✅ SELBST-TEST: Messorte: Blick auf dem Spieler, doppelte id, fremde Ratsche, dorfZug fehlt, geteilte Ratsche, Soll ohne Quelle → rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht
+✅ SELBST-TEST: bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis −π/2
+✅ SELBST-TEST: Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht
+✅ SELBST-TEST: H6: _genesisRingAlt im Ort-Takt und _genesisMitteAlt als Anker → je rot, ein Anker ohne Methoden-Namen bricht das Schema; der echte Ort-Takt und Anker leben
+✅ SELBST-TEST: Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, ohne Aufzeichnung → je rot
+✅ SELBST-TEST: Projektion: die Ist-Wiese V18.536 (420742 Dreiecke) ist rot, das Soll je Instanz (146500) grün, eine Zeile ohne Golden-Dreiecke beim Namen
+✅ SELBST-TEST: Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760", die Tabelle den Inhalt
+✅ SELBST-TEST: Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), das Hauptbild ohne ihn nicht, ein falscher Draw-Umfang als REST
+✅ SELBST-TEST: Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im Haus-Wurf; stufe + stufen bzw. keins bricht das Schema; ohne k1 keine k1-Zeile
+✅ SELBST-TEST: Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht
+✅ SELBST-TEST: Einschwingen: ein Satz über seinem Ziel (ueberSeit ≥ 0) hält offen, ein ruhender nicht
+✅ SELBST-TEST: Projektion nahWiese: die Mess-Wiese (54994 Dreiecke) liegt unter der Ratsche 57066, das Maximum über die Samen (63002) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen
+✅ SELBST-TEST: Bündel-Reihe: der Stamm stellt @global · Regionen · @wahl; ohne den Aufruf, mit @wahl vorn und ohne die Reihe rot
+✅ SELBST-TEST: die Band-Wand feuert (33/33)

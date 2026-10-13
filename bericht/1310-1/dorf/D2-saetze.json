@@ -1,0 +1,873 @@
+{
+ "ergebnis": {
+  "boden": {
+   "vInhalt": 134128,
+   "vKap": 229376,
+   "vEnde": 134707,
+   "iKap": 652800,
+   "iEnde": 463872,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     688128
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     688128
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     688128
+    ],
+    "aMorphTarget": [
+     3,
+     "Float32Array",
+     688128
+    ],
+    "aMorphWeight": [
+     1,
+     "Float32Array",
+     229376
+    ],
+    "aHimmel": [
+     1,
+     "Float32Array",
+     229376
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    652800
+   ]
+  },
+  "bauSatz|dcf73d75-b5d8-4007-b023-7dcbed7757db|w": {
+   "vInhalt": 1646,
+   "vKap": 2058,
+   "vEnde": 1646,
+   "iKap": 16384,
+   "iEnde": 12288,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     6174
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     6174
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     6174
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     2058
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     2058
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     2058
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    16384
+   ]
+  },
+  "bauSatz|2dbe25d5-62c8-4938-882d-fd4e7dbdea55|-": {
+   "vInhalt": 5800,
+   "vKap": 7250,
+   "vEnde": 5800,
+   "iKap": 7680,
+   "iEnde": 6144,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     21750
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     21750
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     21750
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     7250
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     7250
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     7250
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    7680
+   ]
+  },
+  "formationenSatz|52868b11-373b-43db-83f2-ad63cff609f1|w": {
+   "vInhalt": 4575,
+   "vKap": 8192,
+   "vEnde": 5124,
+   "iKap": 32000,
+   "iEnde": 27648,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     24576
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     24576
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     24576
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     8192
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     8192
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     8192
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    32000
+   ]
+  },
+  "bauSatz|d883d7f3-8ee1-4c40-864b-d9e7e64c0a34|-": {
+   "vInhalt": 18585,
+   "vKap": 27648,
+   "vEnde": 26460,
+   "iKap": 20480,
+   "iEnde": 18432,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     82944
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     82944
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     82944
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     27648
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     27648
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     27648
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    20480
+   ]
+  },
+  "bauWurf|9beb788d-c6c3-45fd-8c14-6728fe39b32a|S": {
+   "vInhalt": 2067,
+   "vKap": 2584,
+   "vEnde": 2067,
+   "iKap": 7680,
+   "iEnde": 6144,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     7752
+    ],
+    "uv": [
+     2,
+     "Float32Array",
+     5168
+    ],
+    "aDeckt": [
+     1,
+     "Float32Array",
+     2584
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     2584
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     2584
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     2584
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    7680
+   ]
+  },
+  "wasser": {
+   "vInhalt": 13378,
+   "vKap": 16384,
+   "vEnde": 13699,
+   "iKap": 65536,
+   "iEnde": 33792,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     49152
+    ],
+    "aFlow": [
+     2,
+     "Float32Array",
+     32768
+    ],
+    "aWave": [
+     1,
+     "Float32Array",
+     16384
+    ],
+    "aDepth": [
+     1,
+     "Float32Array",
+     16384
+    ],
+    "aSlope": [
+     1,
+     "Float32Array",
+     16384
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    65536
+   ]
+  },
+  "bauSatz|a87962ae-8f4c-418e-aeb5-0f0736f9b6dc|-": {
+   "vInhalt": 1180,
+   "vKap": 1475,
+   "vEnde": 1180,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     4425
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     4425
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     4425
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1475
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1475
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1475
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|7bb2e4d4-a373-4dba-89e8-84cc04a96097|-": {
+   "vInhalt": 108,
+   "vKap": 1024,
+   "vEnde": 108,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|b22f6a98-88fb-4506-85f7-7a89afac004b|-": {
+   "vInhalt": 65702,
+   "vKap": 65702,
+   "vEnde": 65702,
+   "iKap": 119808,
+   "iEnde": 119808,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     197106
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     197106
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     197106
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     65702
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     65702
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     65702
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    119808
+   ]
+  },
+  "bauSatz|74ec3583-d22a-47e8-b91c-f347fd01bd60|-": {
+   "vInhalt": 252,
+   "vKap": 1024,
+   "vEnde": 252,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|ad86912e-4710-4b55-b109-c3e09f9815fb|-": {
+   "vInhalt": 576,
+   "vKap": 1024,
+   "vEnde": 576,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|dcf73d75-b5d8-4007-b023-7dcbed7757db|-": {
+   "vInhalt": 588,
+   "vKap": 1024,
+   "vEnde": 588,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|bf6974e6-27e2-44df-ab75-47e3c6f4ee68|-": {
+   "vInhalt": 24,
+   "vKap": 1024,
+   "vEnde": 24,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|b490ecbd-5963-4294-bb2a-94777f3d2923|-": {
+   "vInhalt": 264,
+   "vKap": 1024,
+   "vEnde": 264,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "bauSatz|7bf7b152-e86d-46cc-b8b5-69773d3eaf9b|-": {
+   "vInhalt": 24,
+   "vKap": 1024,
+   "vEnde": 24,
+   "iKap": 3840,
+   "iEnde": 3072,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     1024
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    3840
+   ]
+  },
+  "streuSatz|e76e0966-62ab-4ead-b7b1-3b442f1a74fd": {
+   "vInhalt": 77250,
+   "vKap": 107576,
+   "vEnde": 77250,
+   "iKap": 149760,
+   "iEnde": 144384,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     322728
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     322728
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     322728
+    ],
+    "aWiege": [
+     1,
+     "Float32Array",
+     107576
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    149760
+   ]
+  },
+  "streuSatz|53bd4955-2d7f-462b-8ab7-44cf5be721d6": {
+   "vInhalt": 4560,
+   "vKap": 5184,
+   "vEnde": 4560,
+   "iKap": 6144,
+   "iEnde": 6144,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     15552
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     15552
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     15552
+    ],
+    "aWiege": [
+     1,
+     "Float32Array",
+     5184
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    6144
+   ]
+  },
+  "streuSatz|2a34d810-6f45-488b-bc71-800f143afe59": {
+   "vInhalt": 990,
+   "vKap": 1024,
+   "vEnde": 990,
+   "iKap": 6144,
+   "iEnde": 6144,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     3072
+    ],
+    "aWiege": [
+     1,
+     "Float32Array",
+     1024
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    6144
+   ]
+  },
+  "streuSatz|33cb27b5-68c8-4434-996b-7d6c6aaf42de": {
+   "vInhalt": 5732,
+   "vKap": 7218,
+   "vEnde": 5732,
+   "iKap": 24576,
+   "iEnde": 24576,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     21654
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     21654
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     21654
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     7218
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     7218
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     7218
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    24576
+   ]
+  },
+  "streuSatz|cf30beec-9203-4da9-93fb-0e2fe5f4c614": {
+   "vInhalt": 3648,
+   "vKap": 4104,
+   "vEnde": 3648,
+   "iKap": 6144,
+   "iEnde": 6144,
+   "attr": {
+    "position": [
+     3,
+     "Float32Array",
+     12312
+    ],
+    "normal": [
+     3,
+     "Float32Array",
+     12312
+    ],
+    "color": [
+     3,
+     "Float32Array",
+     12312
+    ],
+    "aLodLevel": [
+     1,
+     "Float32Array",
+     4104
+    ],
+    "aH0": [
+     1,
+     "Float32Array",
+     4104
+    ],
+    "aH0L": [
+     1,
+     "Float32Array",
+     4104
+    ]
+   },
+   "index": [
+    "Uint32Array",
+    6144
+   ]
+  }
+ },
+ "ms": 3
+}
