@@ -1,0 +1,44 @@
+=== SCHALTER-URTEIL s1 (25 Blöcke, Quelle schalter-urteil.cjs) ===
+   1 grund           Aufwärm 19.99 | Dauer 20.31 · 20.23 · 20.77 | Bank 20.23 | Befehle 172 | Takt 1796/1795/1801/1781
+   2 null            Aufwärm 20.27 | Dauer 20.09 · 19.96 · 20.45 | Bank 19.85 | Befehle 172 | Takt 1788/1790/1790/1792
+   3 grund           Aufwärm 20.89 | Dauer 20.38 · 19.95 · 20.29 | Bank 19.96 | Befehle 172 | Takt 1789/1798/1788/1790
+   4 zwilling-stoff  Aufwärm 19.90 | Dauer 20.72 · 20.13 · 20.22 | Bank 19.82 | Befehle 172 | Takt 1791/1783/1780/1790
+   5 grund           Aufwärm 20.68 | Dauer 19.88 · 20.34 · 20.61 | Bank 20.04 | Befehle 172 | Takt 1792/1788/1776/1783
+   6 fern-march      Aufwärm 20.22 | Dauer 20.83 · 19.73 · 20.57 | Bank 20.01 | Befehle 172 | Takt 1779/1774/1775/1777
+   7 grund           Aufwärm 21.26 | Dauer 20.01 · 20.84 · 19.83 | Bank 19.81 | Befehle 172 | Takt 1776/1777/1781/1788
+   8 zwilling-weg    Aufwärm 20.73 | Dauer 20.78 · 19.56 · 19.99 | Bank 19.59 | Befehle 167 | Takt 1771/1782/1763/1766
+   9 grund           Aufwärm 20.01 | Dauer 19.84 · 19.73 · 20.54 | Bank 20.07 | Befehle 172 | Takt 1775/1778/1776/1782
+  10 null            Aufwärm 20.57 | Dauer 20.00 · 20.07 · 19.81 | Bank 19.39 | Befehle 172 | Takt 1771/1784/1781/1762
+  11 grund           Aufwärm 19.77 | Dauer 20.65 · 19.61 · 20.72 | Bank 20.22 | Befehle 172 | Takt 1785/1778/1776/1776
+  12 zwilling-stoff  Aufwärm 20.49 | Dauer 19.43 · 21.05 · 19.77 | Bank 19.35 | Befehle 172 | Takt 1769/1767/1767/1763
+  13 grund           Aufwärm 19.91 | Dauer 20.90 · 19.50 · 19.92 | Bank 19.64 | Befehle 172 | Takt 1764/1777/1773/1781
+  14 fern-march      Aufwärm 20.41 | Dauer 20.32 · 20.81 · 20.32 | Bank 20.02 | Befehle 172 | Takt 1761/1769/1787/1785
+  15 grund           Aufwärm 20.39 | Dauer 21.03 · 19.52 · 20.56 | Bank 20.27 | Befehle 172 | Takt 1777/1780/1774/1774
+  16 zwilling-weg    Aufwärm 20.53 | Dauer 19.30 · 20.99 · 19.73 | Bank 19.41 | Befehle 167 | Takt 1774/1777/1769/1783
+  17 grund           Aufwärm 19.87 | Dauer 20.84 · 19.49 · 19.99 | Bank 19.64 | Befehle 172 | Takt 1774/1763/1777/1776
+  18 null            Aufwärm 20.43 | Dauer 19.88 · 19.95 · 19.93 | Bank 19.61 | Befehle 172 | Takt 1780/1776/1780/1774
+  19 grund           Aufwärm 19.94 | Dauer 19.52 · 20.41 · 19.64 | Bank 19.40 | Befehle 172 | Takt 1766/1764/1771/1768
+  20 zwilling-stoff  Aufwärm 19.70 | Dauer 20.91 · 19.47 · 20.49 | Bank 20.04 | Befehle 172 | Takt 1769/1767/1766/1773
+  21 grund           Aufwärm 20.19 | Dauer 19.66 · 20.95 · 19.69 | Bank 19.20 | Befehle 172 | Takt 1790/1780/1781/1767
+  22 fern-march      Aufwärm 19.76 | Dauer 20.41 · 20.53 · 20.51 | Bank 20.21 | Befehle 172 | Takt 1780/1780/1773/1776
+  23 grund           Aufwärm 20.95 | Dauer 19.87 · 20.92 · 19.56 | Bank 19.17 | Befehle 172 | Takt 1784/1767/1776/1770
+  24 zwilling-weg    Aufwärm 19.64 | Dauer 19.86 · 19.78 · 19.98 | Bank 19.46 | Befehle 167 | Takt 1783/1783/1785/1784
+  25 grund           Aufwärm 19.81 | Dauer 20.42 · 19.73 · 20.73 | Bank 20.25 | Befehle 172 | Takt 1784/1785/1781/1778
+  Grund-Mittel 20.44 · 20.21 · 20.28 · 20.23 · 20.04 · 20.33 · 20.11 · 20.37 · 20.11 · 19.86 · 20.10 · 20.12 · 20.29 → σ 0.181 ms · Erst-Zeichnung der Grund-Blöcke 0.137 ms
+  null            Δ -0.146 ms (je Block -0.155 · -0.222 · -0.062) · Rauschband ±0.209 · Erst-Zeichnung 0.408 ms → IM RAUSCHEN
+  zwilling-stoff  Δ +0.213 ms (je Block 0.115 · 0.312) · Rauschband ±0.256 · Erst-Zeichnung -0.213 ms → IM RAUSCHEN
+  fern-march      Δ +0.248 ms (je Block 0.125 · 0.245 · 0.375) · Rauschband ±0.209 · Erst-Zeichnung -0.318 ms → TRÄGT
+  zwilling-weg    Δ -0.195 ms (je Block -0.022 · -0.232 · -0.332) · Rauschband ±0.209 · Erst-Zeichnung 0.303 ms → IM RAUSCHEN
+  — lange Bank: Grund σ 0.353 ms
+  null            Δ -0.303 ms (je Block -0.245 · -0.755 · 0.09) · Rauschband ±0.407 → IM RAUSCHEN
+  zwilling-stoff  Δ -0.380 ms (je Block -0.18 · -0.58) · Rauschband ±0.499 → IM RAUSCHEN
+  fern-march      Δ +0.075 ms (je Block 0.085 · 0.065) · Rauschband ±0.499 → IM RAUSCHEN
+  (Bank) TAKT: Block 20 (zwilling-stoff) bei 1706 MHz, Grund-Nachbarn 1696 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 22 (fern-march) bei 1714 MHz, Grund-Nachbarn 1698 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 16 (zwilling-weg) bei 1697 MHz, Grund-Nachbarn 1707 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 24 (zwilling-weg) bei 1706 MHz, Grund-Nachbarn 1715 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) SCHALTER zwilling-weg: 1 Blöcke — ein Urteil braucht mindestens 2
+  VERWORFEN TAKT: Block 12 (zwilling-stoff) bei 1766 MHz, Grund-Nachbarn 1776 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  Takt über die Sitzung 1793 → 1782 MHz (Band-Mittel)
+
+✅ SCHALTER GRÜN — die Methode trennt Erst- von Dauer-Zeichnung, der Null-Schalter liegt im Rauschen.

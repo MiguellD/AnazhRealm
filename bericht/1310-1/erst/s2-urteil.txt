@@ -1,0 +1,62 @@
+=== SCHALTER-URTEIL C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/tor/erst/s2 (19 Blöcke, Quelle schalter-urteil.cjs) ===
+     Lauf voll: fps 47.60 · Frame p50 24.90 · Takt 1724
+   1 grund           Aufwärm 20.57 | Dauer 20.28 · 20.52 · 20.21 | Bank 19.87 | Befehle 172 | Takt 1792/1787/1790/1792
+     Lauf voll: fps 47.60 · Frame p50 24.90 · Takt 1713
+   2 null            Aufwärm 20.52 | Dauer 19.67 · 20.39 · 21.07 | Bank 20.33 | Befehle 172 | Takt 1775/1769/1773/1770
+     Lauf voll: fps 47.50 · Frame p50 24.90 · Takt 1720
+   3 grund           Aufwärm 20.00 | Dauer 20.98 · 19.74 · 21.16 | Bank 20.45 | Befehle 172 | Takt 1781/1783/1769/1781
+     Lauf voll: fps 47.50 · Frame p50 24.90 · Takt 1721
+   4 l0-wirft        Aufwärm 20.28 | Dauer 21.31 · 19.93 · 21.22 | Bank 20.80 | Befehle 269 | Takt 1778/1767/1773/1778
+     Lauf voll: fps 47.70 · Frame p50 24.90 · Takt 1718
+   5 grund           Aufwärm 20.44 | Dauer 21.05 · 20.47 · 21.47 | Bank 21.14 | Befehle 172 | Takt 1783/1771/1764/1784
+     Lauf voll: fps 48.20 · Frame p50 16.90 · Takt 1718
+   6 zwilling-weg    Aufwärm 19.52 | Dauer 20.50 · 19.67 · 20.31 | Bank 19.98 | Befehle 167 | Takt 1773/1778/1775/1784
+     Lauf voll: fps 48.20 · Frame p50 16.80 · Takt 1710
+   7 grund           Aufwärm 19.88 | Dauer 19.50 · 20.32 · 19.71 | Bank 19.38 | Befehle 172 | Takt 1776/1762/1763/1774
+     Lauf voll: fps 48.40 · Frame p50 16.80 · Takt 1717
+   8 null            Aufwärm 21.63 | Dauer 20.22 · 20.68 · 19.76 | Bank 19.38 | Befehle 172 | Takt 1775/1784/1782/1770
+     Lauf voll: fps 48.10 · Frame p50 17.00 · Takt 1718
+   9 grund           Aufwärm 19.63 | Dauer 20.43 · 19.74 · 20.39 | Bank 20.07 | Befehle 172 | Takt 1746/1768/1769/1776
+     Lauf voll: fps 48.10 · Frame p50 17.00 · Takt 1713
+  10 l0-wirft        Aufwärm 19.78 | Dauer 20.52 · 19.96 · 20.09 | Bank 19.70 | Befehle 269 | Takt 1778/1778/1760/1777
+     Lauf voll: fps 48.50 · Frame p50 16.80 · Takt 1720
+  11 grund           Aufwärm 19.74 | Dauer 19.79 · 20.33 · 19.63 | Bank 19.37 | Befehle 172 | Takt 1773/1770/1757/1769
+     Lauf voll: fps 48.30 · Frame p50 16.80 · Takt 1716
+  12 zwilling-weg    Aufwärm 20.44 | Dauer 19.73 · 19.78 · 20.26 | Bank 19.94 | Befehle 167 | Takt 1773/1773/1763/1767
+     Lauf voll: fps 48.30 · Frame p50 16.80 · Takt 1716
+  13 grund           Aufwärm 19.82 | Dauer 20.34 · 19.74 · 20.13 | Bank 19.88 | Befehle 172 | Takt 1771/1777/1761/1776
+     Lauf voll: fps 48.30 · Frame p50 16.80 · Takt 1714
+  14 null            Aufwärm 19.94 | Dauer 19.82 · 20.35 · 19.67 | Bank 19.41 | Befehle 172 | Takt 1770/1756/1774/1771
+     Lauf voll: fps 48.30 · Frame p50 16.90 · Takt 1719
+  15 grund           Aufwärm 20.51 | Dauer 19.86 · 20.19 · 19.96 | Bank 19.61 | Befehle 172 | Takt 1781/1764/1770/1769
+     Lauf voll: fps 48.30 · Frame p50 16.90 · Takt 1720
+  16 l0-wirft        Aufwärm 19.84 | Dauer 20.51 · 20.42 · 21.65 | Bank 20.52 | Befehle 269 | Takt 1774/1777/1771/1784
+     Lauf voll: fps 48.20 · Frame p50 16.80 · Takt 1715
+  17 grund           Aufwärm 19.63 | Dauer 20.85 · 19.87 · 19.94 | Bank 19.68 | Befehle 172 | Takt 1786/1768/1764/1791
+     Lauf voll: fps 48.50 · Frame p50 16.80 · Takt 1718
+  18 zwilling-weg    Aufwärm 19.77 | Dauer 19.64 · 20.85 · 19.54 | Bank 19.11 | Befehle 167 | Takt 1765/1764/1786/1791
+     Lauf voll: fps 47.90 · Frame p50 24.60 · Takt 1716
+  19 grund           Aufwärm 20.25 | Dauer 19.72 · 20.36 · 21.14 | Bank 20.55 | Befehle 172 | Takt 1770/1780/1767/1777
+  Grund-Mittel 20.34 · 20.63 · 21.00 · 19.84 · 20.19 · 19.92 · 20.07 · 20.00 · 20.22 · 20.41 → σ 0.405 ms · Erst-Zeichnung der Grund-Blöcke -0.263 ms
+  l0-wirft        Δ +0.298 ms (je Block 0.008 · 0.138 · 0.748) · Rauschband ±0.468 · Erst-Zeichnung -0.657 ms → IM RAUSCHEN
+  zwilling-weg    Δ -0.211 ms (je Block -0.26 · -0.07 · -0.303) · Rauschband ±0.468 · Erst-Zeichnung -0.121 ms → IM RAUSCHEN
+  — lange Bank: Grund σ 0.724 ms
+  null            Δ -0.088 ms (je Block 0.17 · -0.345) · Rauschband ±1.024 → IM RAUSCHEN
+  (Bank) TAKT: Block 14 (null) bei 1695 MHz, Grund-Nachbarn 1705 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 4 (l0-wirft) bei 1740 MHz, Grund-Nachbarn 1730 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 16 (l0-wirft) bei 1748 MHz, Grund-Nachbarn 1705 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 6 (zwilling-weg) bei 1699 MHz, Grund-Nachbarn 1715 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 18 (zwilling-weg) bei 1702 MHz, Grund-Nachbarn 1720 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) SCHALTER l0-wirft: 1 Blöcke — ein Urteil braucht mindestens 2
+  (Bank) SCHALTER zwilling-weg: 1 Blöcke — ein Urteil braucht mindestens 2
+  VERWORFEN TAKT: Block 2 (null) bei 1772 MHz, Grund-Nachbarn 1784 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  VERWORFEN TAKT: Block 8 (null) bei 1778 MHz, Grund-Nachbarn 1767 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  Takt über die Sitzung 1790 → 1773 MHz (Band-Mittel)
+  — Lauf voll (fps): Grund σ 0.197
+  null            Δ fps +0.13 (je Block 0.25 · 0) · Rauschband ±0.278 → IM RAUSCHEN
+  l0-wirft        Δ fps -0.08 (je Block -0.1 · -0.2 · 0.05) · Rauschband ±0.227 → IM RAUSCHEN
+  zwilling-weg    Δ fps +0.20 (je Block 0.25 · -0.1 · 0.45) · Rauschband ±0.227 → IM RAUSCHEN
+  (Lauf) TAKT: Block 2 (null) bei 1713 MHz, Grund-Nachbarn 1722 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  ROT SCHALTER null: 1 Blöcke — ein Urteil braucht mindestens 2
+
+❌ SCHALTER ROT

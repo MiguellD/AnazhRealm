@@ -1,0 +1,13 @@
+11:52:51 M1 Seite porta-core 8b201e1a0894fa75
+11:54:15 M1 Lauf "fps": 49.8 · Band GPU ms/Frame 19.47 · Befehle 212/
+11:56:13 M1 zerlegen exit=0 Gesamt (alles an): 19,36 ms/Frame · CPU-Haupt-Thread 3,88 ms · Pass-Stempel 0,13 ms (1 %) · GPU-gebunden: ja Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:   
+11:56:21 T1 Seite porta-core ed28b324e1f9d482
+11:57:47 T1 Lauf "fps": 47 · Band GPU ms/Frame 21.2 · Befehle 172/
+11:59:53 T1 zerlegen exit=0 Gesamt (alles an): 21,13 ms/Frame · CPU-Haupt-Thread 3,68 ms · Pass-Stempel 0,13 ms (1 %) · GPU-gebunden: ja Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:   
+12:00:01 T2 Seite porta-core ed28b324e1f9d482
+12:01:26 T2 Lauf "fps": 46.9 · Band GPU ms/Frame 20.79 · Befehle 172/
+12:03:30 T2 zerlegen exit=0 Gesamt (alles an): 20,29 ms/Frame · CPU-Haupt-Thread 3,51 ms · Pass-Stempel 0,13 ms (1 %) · GPU-gebunden: ja Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:   
+12:03:38 M2 Seite porta-core 8b201e1a0894fa75
+12:05:01 M2 Lauf "fps": 49.5 · Band GPU ms/Frame 18.88 · Befehle 212/
+12:06:56 M2 zerlegen exit=0 Gesamt (alles an): 18,79 ms/Frame · CPU-Haupt-Thread 3,74 ms · Pass-Stempel 0,14 ms (1 %) · GPU-gebunden: ja Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg Σ der •-Posten:   
+12:07:03 ZERLEG ENDE

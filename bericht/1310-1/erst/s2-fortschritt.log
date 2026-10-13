@@ -1,0 +1,216 @@
+11:29:48 START WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489 · Welt /c/Users/micha/Desktop/AnazhRealm-OMEN/welle-m-e-torwurf · anazhRealm.js 1a9c4a36fb4ed818 · porta-core ed28b324e1f9d482
+11:30:54 eingeschwungen "fps": 48
+11:30:54 BLOCK 1 grund
+11:31:04   b1 grund #0 GPU 20.57 · Befehle 172
+11:31:13   b1 grund #1 GPU 20.28 · Befehle 172
+11:31:23   b1 grund #2 GPU 20.52 · Befehle 172
+11:31:33   b1 grund #3 GPU 20.21 · Befehle 172
+11:31:40   b1 grund Bank 100×3 19.87
+11:32:02   b1 grund Lauf fps 47.6 · Frame p50 24.9
+11:32:02   an:  {"ergebnis":{"schalter":"null","an":true,"betroffen":5},"ms":2}
+11:32:02 BLOCK 2 null
+11:32:12   b2 null #0 GPU 20.52 · Befehle 172
+11:32:22   b2 null #1 GPU 19.67 · Befehle 172
+11:32:31   b2 null #2 GPU 20.39 · Befehle 172
+11:32:41   b2 null #3 GPU 21.07 · Befehle 172
+11:32:48   b2 null Bank 100×3 20.33
+11:33:10   b2 null Lauf fps 47.6 · Frame p50 24.9
+11:33:10   aus: {"ergebnis":{"schalter":"null","an":false,"betroffen":5},"ms":3}
+11:33:10 BLOCK 3 grund
+11:33:20   b3 grund #0 GPU 20 · Befehle 172
+11:33:30   b3 grund #1 GPU 20.98 · Befehle 172
+11:33:40   b3 grund #2 GPU 19.74 · Befehle 172
+11:33:50   b3 grund #3 GPU 21.16 · Befehle 172
+11:33:56   b3 grund Bank 100×3 20.45
+11:34:18   b3 grund Lauf fps 47.5 · Frame p50 24.9
+11:34:18   an:  {"ergebnis":{"schalter":"l0-wirft","an":true,"betroffen":76},"ms":3}
+11:34:18 BLOCK 4 l0-wirft
+11:34:29   b4 l0-wirft #0 GPU 20.28 · Befehle 269
+11:34:38   b4 l0-wirft #1 GPU 21.31 · Befehle 269
+11:34:48   b4 l0-wirft #2 GPU 19.93 · Befehle 269
+11:34:58   b4 l0-wirft #3 GPU 21.22 · Befehle 269
+11:35:05   b4 l0-wirft Bank 100×3 20.8
+11:35:27   b4 l0-wirft Lauf fps 47.5 · Frame p50 24.9
+11:35:27   aus: {"ergebnis":{"schalter":"l0-wirft","an":false,"betroffen":76},"ms":3}
+11:35:27 BLOCK 5 grund
+11:35:37   b5 grund #0 GPU 20.44 · Befehle 172
+11:35:47   b5 grund #1 GPU 21.05 · Befehle 172
+11:35:57   b5 grund #2 GPU 20.47 · Befehle 172
+11:36:07   b5 grund #3 GPU 21.47 · Befehle 172
+11:36:14   b5 grund Bank 100×3 21.14
+11:36:36   b5 grund Lauf fps 47.7 · Frame p50 24.9
+11:36:36   an:  {"ergebnis":{"schalter":"zwilling-weg","an":true,"betroffen":5},"ms":2}
+11:36:36 BLOCK 6 zwilling-weg
+11:36:46   b6 zwilling-weg #0 GPU 19.52 · Befehle 167
+11:36:55   b6 zwilling-weg #1 GPU 20.5 · Befehle 167
+11:37:05   b6 zwilling-weg #2 GPU 19.67 · Befehle 167
+11:37:15   b6 zwilling-weg #3 GPU 20.31 · Befehle 167
+11:37:21   b6 zwilling-weg Bank 100×3 19.98
+11:37:43   b6 zwilling-weg Lauf fps 48.2 · Frame p50 16.9
+11:37:43   aus: {"ergebnis":{"schalter":"zwilling-weg","an":false,"betroffen":5},"ms":3}
+11:37:43 BLOCK 7 grund
+11:37:53   b7 grund #0 GPU 19.88 · Befehle 172
+11:38:03   b7 grund #1 GPU 19.5 · Befehle 172
+11:38:13   b7 grund #2 GPU 20.32 · Befehle 172
+11:38:23   b7 grund #3 GPU 19.71 · Befehle 172
+11:38:29   b7 grund Bank 100×3 19.38
+11:38:51   b7 grund Lauf fps 48.2 · Frame p50 16.8
+11:38:51   an:  {"ergebnis":{"schalter":"null","an":true,"betroffen":5},"ms":2}
+11:38:51 BLOCK 8 null
+11:39:01   b8 null #0 GPU 21.63 · Befehle 172
+11:39:11   b8 null #1 GPU 20.22 · Befehle 172
+11:39:21   b8 null #2 GPU 20.68 · Befehle 172
+11:39:30   b8 null #3 GPU 19.76 · Befehle 172
+11:39:37   b8 null Bank 100×3 19.38
+11:39:58   b8 null Lauf fps 48.4 · Frame p50 16.8
+11:39:59   aus: {"ergebnis":{"schalter":"null","an":false,"betroffen":5},"ms":3}
+11:39:59 BLOCK 9 grund
+11:40:09   b9 grund #0 GPU 19.63 · Befehle 172
+11:40:18   b9 grund #1 GPU 20.43 · Befehle 172
+11:40:28   b9 grund #2 GPU 19.74 · Befehle 172
+11:40:38   b9 grund #3 GPU 20.39 · Befehle 172
+11:40:44   b9 grund Bank 100×3 20.07
+11:41:06   b9 grund Lauf fps 48.1 · Frame p50 17
+11:41:06   an:  {"ergebnis":{"schalter":"l0-wirft","an":true,"betroffen":76},"ms":2}
+11:41:06 BLOCK 10 l0-wirft
+11:41:16   b10 l0-wirft #0 GPU 19.78 · Befehle 269
+11:41:26   b10 l0-wirft #1 GPU 20.52 · Befehle 269
+11:41:36   b10 l0-wirft #2 GPU 19.96 · Befehle 269
+11:41:46   b10 l0-wirft #3 GPU 20.09 · Befehle 269
+11:41:52   b10 l0-wirft Bank 100×3 19.7
+11:42:14   b10 l0-wirft Lauf fps 48.1 · Frame p50 17
+11:42:14   aus: {"ergebnis":{"schalter":"l0-wirft","an":false,"betroffen":76},"ms":3}
+11:42:14 BLOCK 11 grund
+11:42:24   b11 grund #0 GPU 19.74 · Befehle 172
+11:42:34   b11 grund #1 GPU 19.79 · Befehle 172
+11:42:44   b11 grund #2 GPU 20.33 · Befehle 172
+11:42:54   b11 grund #3 GPU 19.63 · Befehle 172
+11:43:00   b11 grund Bank 100×3 19.37
+11:43:22   b11 grund Lauf fps 48.5 · Frame p50 16.8
+11:43:22   an:  {"ergebnis":{"schalter":"zwilling-weg","an":true,"betroffen":5},"ms":2}
+11:43:22 BLOCK 12 zwilling-weg
+11:43:32   b12 zwilling-weg #0 GPU 20.44 · Befehle 167
+11:43:42   b12 zwilling-weg #1 GPU 19.73 · Befehle 167
+11:43:51   b12 zwilling-weg #2 GPU 19.78 · Befehle 167
+11:44:01   b12 zwilling-weg #3 GPU 20.26 · Befehle 167
+11:44:08   b12 zwilling-weg Bank 100×3 19.94
+11:44:29   b12 zwilling-weg Lauf fps 48.3 · Frame p50 16.8
+11:44:29   aus: {"ergebnis":{"schalter":"zwilling-weg","an":false,"betroffen":5},"ms":2}
+11:44:30 BLOCK 13 grund
+11:44:39   b13 grund #0 GPU 19.82 · Befehle 172
+11:44:49   b13 grund #1 GPU 20.34 · Befehle 172
+11:44:59   b13 grund #2 GPU 19.74 · Befehle 172
+11:45:09   b13 grund #3 GPU 20.13 · Befehle 172
+11:45:15   b13 grund Bank 100×3 19.88
+11:45:37   b13 grund Lauf fps 48.3 · Frame p50 16.8
+11:45:37   an:  {"ergebnis":{"schalter":"null","an":true,"betroffen":5},"ms":3}
+11:45:37 BLOCK 14 null
+11:45:47   b14 null #0 GPU 19.94 · Befehle 172
+11:45:57   b14 null #1 GPU 19.82 · Befehle 172
+11:46:07   b14 null #2 GPU 20.35 · Befehle 172
+11:46:16   b14 null #3 GPU 19.67 · Befehle 172
+11:46:23   b14 null Bank 100×3 19.41
+11:46:45   b14 null Lauf fps 48.3 · Frame p50 16.8
+11:46:45   aus: {"ergebnis":{"schalter":"null","an":false,"betroffen":5},"ms":3}
+11:46:45 BLOCK 15 grund
+11:46:55   b15 grund #0 GPU 20.51 · Befehle 172
+11:47:05   b15 grund #1 GPU 19.86 · Befehle 172
+11:47:14   b15 grund #2 GPU 20.19 · Befehle 172
+11:47:24   b15 grund #3 GPU 19.96 · Befehle 172
+11:47:30   b15 grund Bank 100×3 19.61
+11:47:52   b15 grund Lauf fps 48.3 · Frame p50 16.9
+11:47:52   an:  {"ergebnis":{"schalter":"l0-wirft","an":true,"betroffen":76},"ms":3}
+11:47:52 BLOCK 16 l0-wirft
+11:48:02   b16 l0-wirft #0 GPU 19.84 · Befehle 269
+11:48:12   b16 l0-wirft #1 GPU 20.51 · Befehle 269
+11:48:22   b16 l0-wirft #2 GPU 20.42 · Befehle 269
+11:48:32   b16 l0-wirft #3 GPU 21.65 · Befehle 269
+11:48:39   b16 l0-wirft Bank 100×3 20.52
+11:49:01   b16 l0-wirft Lauf fps 48.3 · Frame p50 16.9
+11:49:01   aus: {"ergebnis":{"schalter":"l0-wirft","an":false,"betroffen":76},"ms":3}
+11:49:01 BLOCK 17 grund
+11:49:11   b17 grund #0 GPU 19.63 · Befehle 172
+11:49:21   b17 grund #1 GPU 20.85 · Befehle 172
+11:49:30   b17 grund #2 GPU 19.87 · Befehle 172
+11:49:40   b17 grund #3 GPU 19.94 · Befehle 172
+11:49:46   b17 grund Bank 100×3 19.68
+11:50:08   b17 grund Lauf fps 48.2 · Frame p50 16.8
+11:50:08   an:  {"ergebnis":{"schalter":"zwilling-weg","an":true,"betroffen":5},"ms":3}
+11:50:08 BLOCK 18 zwilling-weg
+11:50:18   b18 zwilling-weg #0 GPU 19.77 · Befehle 167
+11:50:28   b18 zwilling-weg #1 GPU 19.64 · Befehle 167
+11:50:38   b18 zwilling-weg #2 GPU 20.85 · Befehle 167
+11:50:47   b18 zwilling-weg #3 GPU 19.54 · Befehle 167
+11:50:54   b18 zwilling-weg Bank 100×3 19.11
+11:51:15   b18 zwilling-weg Lauf fps 48.5 · Frame p50 16.8
+11:51:16   aus: {"ergebnis":{"schalter":"zwilling-weg","an":false,"betroffen":5},"ms":3}
+11:51:16 BLOCK 19 grund
+11:51:26   b19 grund #0 GPU 20.25 · Befehle 172
+11:51:35   b19 grund #1 GPU 19.72 · Befehle 172
+11:51:45   b19 grund #2 GPU 20.36 · Befehle 172
+11:51:55   b19 grund #3 GPU 21.14 · Befehle 172
+11:52:02   b19 grund Bank 100×3 20.55
+11:52:24   b19 grund Lauf fps 47.9 · Frame p50 24.6
+11:52:29 SITZUNG ENDE · Urteil EXIT=1
+=== SCHALTER-URTEIL C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/tor/erst/s2 (19 Blöcke, Quelle schalter-urteil.cjs) ===
+     Lauf voll: fps 47.60 · Frame p50 24.90 · Takt 1724
+   1 grund           Aufwärm 20.57 | Dauer 20.28 · 20.52 · 20.21 | Bank 19.87 | Befehle 172 | Takt 1792/1787/1790/1792
+     Lauf voll: fps 47.60 · Frame p50 24.90 · Takt 1713
+   2 null            Aufwärm 20.52 | Dauer 19.67 · 20.39 · 21.07 | Bank 20.33 | Befehle 172 | Takt 1775/1769/1773/1770
+     Lauf voll: fps 47.50 · Frame p50 24.90 · Takt 1720
+   3 grund           Aufwärm 20.00 | Dauer 20.98 · 19.74 · 21.16 | Bank 20.45 | Befehle 172 | Takt 1781/1783/1769/1781
+     Lauf voll: fps 47.50 · Frame p50 24.90 · Takt 1721
+   4 l0-wirft        Aufwärm 20.28 | Dauer 21.31 · 19.93 · 21.22 | Bank 20.80 | Befehle 269 | Takt 1778/1767/1773/1778
+     Lauf voll: fps 47.70 · Frame p50 24.90 · Takt 1718
+   5 grund           Aufwärm 20.44 | Dauer 21.05 · 20.47 · 21.47 | Bank 21.14 | Befehle 172 | Takt 1783/1771/1764/1784
+     Lauf voll: fps 48.20 · Frame p50 16.90 · Takt 1718
+   6 zwilling-weg    Aufwärm 19.52 | Dauer 20.50 · 19.67 · 20.31 | Bank 19.98 | Befehle 167 | Takt 1773/1778/1775/1784
+     Lauf voll: fps 48.20 · Frame p50 16.80 · Takt 1710
+   7 grund           Aufwärm 19.88 | Dauer 19.50 · 20.32 · 19.71 | Bank 19.38 | Befehle 172 | Takt 1776/1762/1763/1774
+     Lauf voll: fps 48.40 · Frame p50 16.80 · Takt 1717
+   8 null            Aufwärm 21.63 | Dauer 20.22 · 20.68 · 19.76 | Bank 19.38 | Befehle 172 | Takt 1775/1784/1782/1770
+     Lauf voll: fps 48.10 · Frame p50 17.00 · Takt 1718
+   9 grund           Aufwärm 19.63 | Dauer 20.43 · 19.74 · 20.39 | Bank 20.07 | Befehle 172 | Takt 1746/1768/1769/1776
+     Lauf voll: fps 48.10 · Frame p50 17.00 · Takt 1713
+  10 l0-wirft        Aufwärm 19.78 | Dauer 20.52 · 19.96 · 20.09 | Bank 19.70 | Befehle 269 | Takt 1778/1778/1760/1777
+     Lauf voll: fps 48.50 · Frame p50 16.80 · Takt 1720
+  11 grund           Aufwärm 19.74 | Dauer 19.79 · 20.33 · 19.63 | Bank 19.37 | Befehle 172 | Takt 1773/1770/1757/1769
+     Lauf voll: fps 48.30 · Frame p50 16.80 · Takt 1716
+  12 zwilling-weg    Aufwärm 20.44 | Dauer 19.73 · 19.78 · 20.26 | Bank 19.94 | Befehle 167 | Takt 1773/1773/1763/1767
+     Lauf voll: fps 48.30 · Frame p50 16.80 · Takt 1716
+  13 grund           Aufwärm 19.82 | Dauer 20.34 · 19.74 · 20.13 | Bank 19.88 | Befehle 172 | Takt 1771/1777/1761/1776
+     Lauf voll: fps 48.30 · Frame p50 16.80 · Takt 1714
+  14 null            Aufwärm 19.94 | Dauer 19.82 · 20.35 · 19.67 | Bank 19.41 | Befehle 172 | Takt 1770/1756/1774/1771
+     Lauf voll: fps 48.30 · Frame p50 16.90 · Takt 1719
+  15 grund           Aufwärm 20.51 | Dauer 19.86 · 20.19 · 19.96 | Bank 19.61 | Befehle 172 | Takt 1781/1764/1770/1769
+     Lauf voll: fps 48.30 · Frame p50 16.90 · Takt 1720
+  16 l0-wirft        Aufwärm 19.84 | Dauer 20.51 · 20.42 · 21.65 | Bank 20.52 | Befehle 269 | Takt 1774/1777/1771/1784
+     Lauf voll: fps 48.20 · Frame p50 16.80 · Takt 1715
+  17 grund           Aufwärm 19.63 | Dauer 20.85 · 19.87 · 19.94 | Bank 19.68 | Befehle 172 | Takt 1786/1768/1764/1791
+     Lauf voll: fps 48.50 · Frame p50 16.80 · Takt 1718
+  18 zwilling-weg    Aufwärm 19.77 | Dauer 19.64 · 20.85 · 19.54 | Bank 19.11 | Befehle 167 | Takt 1765/1764/1786/1791
+     Lauf voll: fps 47.90 · Frame p50 24.60 · Takt 1716
+  19 grund           Aufwärm 20.25 | Dauer 19.72 · 20.36 · 21.14 | Bank 20.55 | Befehle 172 | Takt 1770/1780/1767/1777
+  Grund-Mittel 20.34 · 20.63 · 21.00 · 19.84 · 20.19 · 19.92 · 20.07 · 20.00 · 20.22 · 20.41 → σ 0.405 ms · Erst-Zeichnung der Grund-Blöcke -0.263 ms
+  l0-wirft        Δ +0.298 ms (je Block 0.008 · 0.138 · 0.748) · Rauschband ±0.468 · Erst-Zeichnung -0.657 ms → IM RAUSCHEN
+  zwilling-weg    Δ -0.211 ms (je Block -0.26 · -0.07 · -0.303) · Rauschband ±0.468 · Erst-Zeichnung -0.121 ms → IM RAUSCHEN
+  — lange Bank: Grund σ 0.724 ms
+  null            Δ -0.088 ms (je Block 0.17 · -0.345) · Rauschband ±1.024 → IM RAUSCHEN
+  (Bank) TAKT: Block 14 (null) bei 1695 MHz, Grund-Nachbarn 1705 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 4 (l0-wirft) bei 1740 MHz, Grund-Nachbarn 1730 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 16 (l0-wirft) bei 1748 MHz, Grund-Nachbarn 1705 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 6 (zwilling-weg) bei 1699 MHz, Grund-Nachbarn 1715 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 18 (zwilling-weg) bei 1702 MHz, Grund-Nachbarn 1720 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) SCHALTER l0-wirft: 1 Blöcke — ein Urteil braucht mindestens 2
+  (Bank) SCHALTER zwilling-weg: 1 Blöcke — ein Urteil braucht mindestens 2
+  VERWORFEN TAKT: Block 2 (null) bei 1772 MHz, Grund-Nachbarn 1784 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  VERWORFEN TAKT: Block 8 (null) bei 1778 MHz, Grund-Nachbarn 1767 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  Takt über die Sitzung 1790 → 1773 MHz (Band-Mittel)
+  — Lauf voll (fps): Grund σ 0.197
+  null            Δ fps +0.13 (je Block 0.25 · 0) · Rauschband ±0.278 → IM RAUSCHEN
+  l0-wirft        Δ fps -0.08 (je Block -0.1 · -0.2 · 0.05) · Rauschband ±0.227 → IM RAUSCHEN
+  zwilling-weg    Δ fps +0.20 (je Block 0.25 · -0.1 · 0.45) · Rauschband ±0.227 → IM RAUSCHEN
+  (Lauf) TAKT: Block 2 (null) bei 1713 MHz, Grund-Nachbarn 1722 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  ROT SCHALTER null: 1 Blöcke — ein Urteil braucht mindestens 2
+
+❌ SCHALTER ROT

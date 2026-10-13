@@ -1,0 +1,152 @@
+12:28:17 START WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489 · Welt /c/Users/micha/Desktop/AnazhRealm-OMEN/abab-b543 · anazhRealm.js 6922c97486b250bb · porta-core 8b201e1a0894fa75
+12:29:21 eingeschwungen "fps": 49.3
+12:29:21 BLOCK 1 grund
+12:29:31   b1 grund #0 GPU 18.95 · Befehle 212
+12:29:41   b1 grund #1 GPU 19.64 · Befehle 212
+12:29:51   b1 grund #2 GPU 18.89 · Befehle 212
+12:30:00   b1 grund #3 GPU 18.84 · Befehle 212
+12:30:07   b1 grund Bank 100×3 18.61
+12:30:28   b1 grund Lauf fps 50.6 · Frame p50 16.7
+12:30:29   an:  {"ergebnis":{"schalter":"reihe-null","an":true,"start":"global","vorher":"global","nachher":"global","kinder":[28,57]},"ms":2}
+12:30:29 BLOCK 2 null
+12:30:38   b2 null #0 GPU 19.51 · Befehle 212
+12:30:48   b2 null #1 GPU 18.93 · Befehle 212
+12:30:58   b2 null #2 GPU 19.31 · Befehle 212
+12:31:08   b2 null #3 GPU 19.17 · Befehle 212
+12:31:14   b2 null Bank 100×3 18.77
+12:31:35   b2 null Lauf fps 50.4 · Frame p50 16.7
+12:31:36   aus: {"ergebnis":{"schalter":"reihe-null","an":false,"start":"global","vorher":"global","nachher":"global","kinder":[28,57]},"ms":2}
+12:31:36 BLOCK 3 grund
+12:31:45   b3 grund #0 GPU 18.7 · Befehle 212
+12:31:55   b3 grund #1 GPU 19.73 · Befehle 212
+12:32:05   b3 grund #2 GPU 18.99 · Befehle 212
+12:32:14   b3 grund #3 GPU 18.84 · Befehle 212
+12:32:21   b3 grund Bank 100×3 18.44
+12:32:42   b3 grund Lauf fps 50.3 · Frame p50 16.7
+12:32:43   an:  {"ergebnis":{"schalter":"wahl-zuerst","an":true,"start":"global","vorher":"global","nachher":"wahl","kinder":[28,57]},"ms":3}
+12:32:43 BLOCK 4 wahl-zuerst
+12:32:53   b4 wahl-zuerst #0 GPU 21.51 · Befehle 212
+12:33:02   b4 wahl-zuerst #1 GPU 20.84 · Befehle 212
+12:33:12   b4 wahl-zuerst #2 GPU 20.99 · Befehle 212
+12:33:22   b4 wahl-zuerst #3 GPU 20.96 · Befehle 212
+12:33:29   b4 wahl-zuerst Bank 100×3 20.47
+12:33:50   b4 wahl-zuerst Lauf fps 46 · Frame p50 25
+12:33:50   aus: {"ergebnis":{"schalter":"wahl-zuerst","an":false,"start":"global","vorher":"wahl","nachher":"global","kinder":[28,57]},"ms":3}
+12:33:51 BLOCK 5 grund
+12:34:00   b5 grund #0 GPU 18.93 · Befehle 212
+12:34:10   b5 grund #1 GPU 19.33 · Befehle 212
+12:34:20   b5 grund #2 GPU 19.02 · Befehle 212
+12:34:29   b5 grund #3 GPU 19.33 · Befehle 212
+12:34:36   b5 grund Bank 100×3 19.1
+12:34:57   b5 grund Lauf fps 50.4 · Frame p50 16.7
+12:34:58   an:  {"ergebnis":{"schalter":"reihe-null","an":true,"start":"global","vorher":"global","nachher":"global","kinder":[28,57]},"ms":2}
+12:34:58 BLOCK 6 null
+12:35:07   b6 null #0 GPU 19.08 · Befehle 212
+12:35:17   b6 null #1 GPU 18.62 · Befehle 212
+12:35:27   b6 null #2 GPU 19.88 · Befehle 212
+12:35:37   b6 null #3 GPU 18.85 · Befehle 212
+12:35:43   b6 null Bank 100×3 18.55
+12:36:05   b6 null Lauf fps 50.3 · Frame p50 16.7
+12:36:05   aus: {"ergebnis":{"schalter":"reihe-null","an":false,"start":"global","vorher":"global","nachher":"global","kinder":[28,57]},"ms":3}
+12:36:05 BLOCK 7 grund
+12:36:15   b7 grund #0 GPU 18.96 · Befehle 212
+12:36:24   b7 grund #1 GPU 19.48 · Befehle 212
+12:36:34   b7 grund #2 GPU 18.88 · Befehle 212
+12:36:44   b7 grund #3 GPU 19.72 · Befehle 212
+12:36:50   b7 grund Bank 100×3 19.33
+12:37:12   b7 grund Lauf fps 50.2 · Frame p50 16.7
+12:37:12   an:  {"ergebnis":{"schalter":"wahl-zuerst","an":true,"start":"global","vorher":"global","nachher":"wahl","kinder":[28,57]},"ms":3}
+12:37:12 BLOCK 8 wahl-zuerst
+12:37:22   b8 wahl-zuerst #0 GPU 21.03 · Befehle 212
+12:37:32   b8 wahl-zuerst #1 GPU 20.84 · Befehle 212
+12:37:42   b8 wahl-zuerst #2 GPU 21.24 · Befehle 212
+12:37:51   b8 wahl-zuerst #3 GPU 20.77 · Befehle 212
+12:37:58   b8 wahl-zuerst Bank 100×3 20.32
+12:38:20   b8 wahl-zuerst Lauf fps 46 · Frame p50 25
+12:38:20   aus: {"ergebnis":{"schalter":"wahl-zuerst","an":false,"start":"global","vorher":"wahl","nachher":"global","kinder":[28,57]},"ms":2}
+12:38:20 BLOCK 9 grund
+12:38:30   b9 grund #0 GPU 19.57 · Befehle 212
+12:38:40   b9 grund #1 GPU 18.87 · Befehle 212
+12:38:49   b9 grund #2 GPU 19.55 · Befehle 212
+12:38:59   b9 grund #3 GPU 18.72 · Befehle 212
+12:39:05   b9 grund Bank 100×3 18.42
+12:39:27   b9 grund Lauf fps 50.4 · Frame p50 16.7
+12:39:27   an:  {"ergebnis":{"schalter":"reihe-null","an":true,"start":"global","vorher":"global","nachher":"global","kinder":[28,57]},"ms":2}
+12:39:27 BLOCK 10 null
+12:39:37   b10 null #0 GPU 19.12 · Befehle 212
+12:39:47   b10 null #1 GPU 20.38 · Befehle 212
+12:39:57   b10 null #2 GPU 19.44 · Befehle 212
+12:40:07   b10 null #3 GPU 20.6 · Befehle 212
+12:40:13   b10 null Bank 100×3 20.23
+12:40:35   b10 null Lauf fps 49.3 · Frame p50 16.7
+12:40:35   aus: {"ergebnis":{"schalter":"reihe-null","an":false,"start":"global","vorher":"global","nachher":"global","kinder":[28,57]},"ms":2}
+12:40:36 BLOCK 11 grund
+12:40:46   b11 grund #0 GPU 19.26 · Befehle 212
+12:40:56   b11 grund #1 GPU 20.85 · Befehle 212
+12:41:05   b11 grund #2 GPU 18.87 · Befehle 212
+12:41:15   b11 grund #3 GPU 19.56 · Befehle 212
+12:41:21   b11 grund Bank 100×3 19.15
+12:41:43   b11 grund Lauf fps 50.3 · Frame p50 16.7
+12:41:43   an:  {"ergebnis":{"schalter":"wahl-zuerst","an":true,"start":"global","vorher":"global","nachher":"wahl","kinder":[28,57]},"ms":2}
+12:41:43 BLOCK 12 wahl-zuerst
+12:41:54   b12 wahl-zuerst #0 GPU 21.68 · Befehle 212
+12:42:03   b12 wahl-zuerst #1 GPU 21.39 · Befehle 212
+12:42:13   b12 wahl-zuerst #2 GPU 21.49 · Befehle 212
+12:42:23   b12 wahl-zuerst #3 GPU 21.59 · Befehle 212
+12:42:30   b12 wahl-zuerst Bank 100×3 21.32
+12:42:52   b12 wahl-zuerst Lauf fps 44.8 · Frame p50 25
+12:42:52   aus: {"ergebnis":{"schalter":"wahl-zuerst","an":false,"start":"global","vorher":"wahl","nachher":"global","kinder":[28,57]},"ms":3}
+12:42:52 BLOCK 13 grund
+12:43:02   b13 grund #0 GPU 19.34 · Befehle 212
+12:43:12   b13 grund #1 GPU 20.1 · Befehle 212
+12:43:22   b13 grund #2 GPU 19.53 · Befehle 212
+12:43:32   b13 grund #3 GPU 20.27 · Befehle 212
+12:43:39   b13 grund Bank 100×3 19.79
+12:44:00   b13 grund Lauf fps 49.4 · Frame p50 16.7
+12:44:06 SITZUNG ENDE · Urteil EXIT=1
+=== SCHALTER-URTEIL C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/tor/erst/s4 (13 Blöcke, Quelle schalter-urteil.cjs) ===
+     Lauf voll: fps 50.60 · Frame p50 16.70 · Takt 1720
+   1 grund           Aufwärm 18.95 | Dauer 19.64 · 18.89 · 18.84 | Bank 18.61 | Befehle 212 | Takt 1756/1790/1757/1768
+     Lauf voll: fps 50.40 · Frame p50 16.70 · Takt 1718
+   2 null            Aufwärm 19.51 | Dauer 18.93 · 19.31 · 19.17 | Bank 18.77 | Befehle 212 | Takt 1787/1771/1780/1773
+     Lauf voll: fps 50.30 · Frame p50 16.70 · Takt 1710
+   3 grund           Aufwärm 18.70 | Dauer 19.73 · 18.99 · 18.84 | Bank 18.44 | Befehle 212 | Takt 1768/1764/1769/1773
+     Lauf voll: fps 46.00 · Frame p50 25.00 · Takt 1712
+   4 wahl-zuerst     Aufwärm 21.51 | Dauer 20.84 · 20.99 · 20.96 | Bank 20.47 | Befehle 212 | Takt 1773/1765/1765/1760
+     Lauf voll: fps 50.40 · Frame p50 16.70 · Takt 1713
+   5 grund           Aufwärm 18.93 | Dauer 19.33 · 19.02 · 19.33 | Bank 19.10 | Befehle 212 | Takt 1784/1780/1774/1771
+     Lauf voll: fps 50.30 · Frame p50 16.70 · Takt 1714
+   6 null            Aufwärm 19.08 | Dauer 18.62 · 19.88 · 18.85 | Bank 18.55 | Befehle 212 | Takt 1761/1768/1776/1758
+     Lauf voll: fps 50.20 · Frame p50 16.70 · Takt 1715
+   7 grund           Aufwärm 18.96 | Dauer 19.48 · 18.88 · 19.72 | Bank 19.33 | Befehle 212 | Takt 1777/1793/1781/1776
+     Lauf voll: fps 46.00 · Frame p50 25.00 · Takt 1711
+   8 wahl-zuerst     Aufwärm 21.03 | Dauer 20.84 · 21.24 · 20.77 | Bank 20.32 | Befehle 212 | Takt 1778/1767/1764/1760
+     Lauf voll: fps 50.40 · Frame p50 16.70 · Takt 1718
+   9 grund           Aufwärm 19.57 | Dauer 18.87 · 19.55 · 18.72 | Bank 18.42 | Befehle 212 | Takt 1778/1777/1774/1777
+     Lauf voll: fps 49.30 · Frame p50 16.70 · Takt 1721
+  10 null            Aufwärm 19.12 | Dauer 20.38 · 19.44 · 20.60 | Bank 20.23 | Befehle 212 | Takt 1777/1764/1778/1775
+     Lauf voll: fps 50.30 · Frame p50 16.70 · Takt 1717
+  11 grund           Aufwärm 19.26 | Dauer 20.85 · 18.87 · 19.56 | Bank 19.15 | Befehle 212 | Takt 1776/1781/1777/1783
+     Lauf voll: fps 44.80 · Frame p50 25.00 · Takt 1721
+  12 wahl-zuerst     Aufwärm 21.68 | Dauer 21.39 · 21.49 · 21.59 | Bank 21.32 | Befehle 212 | Takt 1767/1795/1780/1783
+     Lauf voll: fps 49.40 · Frame p50 16.70 · Takt 1724
+  13 grund           Aufwärm 19.34 | Dauer 20.10 · 19.53 · 20.27 | Bank 19.79 | Befehle 212 | Takt 1768/1784/1787/1778
+  Grund-Mittel 19.12 · 19.19 · 19.23 · 19.36 · 19.05 · 19.76 · 19.97 → σ 0.276 ms · Erst-Zeichnung der Grund-Blöcke -0.298 ms
+  wahl-zuerst     Δ +1.675 ms (je Block 1.723 · 1.627) · Rauschband ±0.39 · Erst-Zeichnung 0.283 ms → TRÄGT
+  — lange Bank: Grund σ 0.494 ms
+  wahl-zuerst     Δ +1.665 ms (je Block 1.7 · 1.445 · 1.85) · Rauschband ±0.57 → TRÄGT
+  (Bank) TAKT: Block 2 (null) bei 1712 MHz, Grund-Nachbarn 1701 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 6 (null) bei 1697 MHz, Grund-Nachbarn 1720 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) TAKT: Block 10 (null) bei 1719 MHz, Grund-Nachbarn 1709 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  (Bank) SCHALTER null: 0 Blöcke — ein Urteil braucht mindestens 2
+  VERWORFEN TAKT: Block 2 (null) bei 1778 MHz, Grund-Nachbarn 1768 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  VERWORFEN TAKT: Block 6 (null) bei 1766 MHz, Grund-Nachbarn 1780 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  VERWORFEN TAKT: Block 8 (wahl-zuerst) bei 1767 MHz, Grund-Nachbarn 1779 MHz (±0.5 %) — der Block fällt aus dem Urteil (Täter: Takt)
+  Takt über die Sitzung 1768 → 1779 MHz (Band-Mittel)
+  — Lauf voll (fps): Grund σ 0.239
+  null            Δ fps -0.37 (je Block -0.05 · 0 · -1.05) · Rauschband ±0.276 → TRÄGT
+  wahl-zuerst     Δ fps -4.57 (je Block -4.35 · -4.3 · -5.05) · Rauschband ±0.276 → TRÄGT
+  (Lauf) NULL-SCHALTER: Δ -0.37 ms außerhalb des Rauschbands ±0.28 ms — die Methode misst den Eingriff mit (Täter: Methode)
+  ROT SCHALTER null: 1 Blöcke — ein Urteil braucht mindestens 2
+
+❌ SCHALTER ROT
