@@ -1432,8 +1432,9 @@
         // (Bänke und Klüfte `fern` m, Kanten `fugeFern` m).
         fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, fern: [120, 260], fugeFern: [30, 80] }),
         // Der Schutthang (Geröll = halb Fels) trägt im Detail-Term statt der Bänke den Schutt: Steine der Kante `korn` (m), je
-        // Stein ± `kontrast`, die Fuge `spalt` (Anteil der Kante) um `tiefe` dunkel — sein Mittel ist 1 (`schuttKornO`).
-        geroell: Object.freeze({ korn: 0.8, kontrast: 0.55, spalt: 0.18, tiefe: 0.9 }),
+        // Stein ± `kontrast` und je Stein sein Maß `groesse`, eine Kuppe `kuppe`, `offen` der Fugen klafft (`spalt` der Kante, um `tiefe`
+        // dunkel) — sein Mittel `schuttMittel()` < 1: das Geröll wirft Schatten in sich, nah wie fern (`schuttKornO`).
+        geroell: Object.freeze({ korn: 0.7, groesse: [0.45, 1.45], kontrast: 0.8, kuppe: 0.7, spalt: 0.06, tiefe: 0.8, offen: 0.25, welle: 0.18 }),
     });
     const FELS_SAAT = saatHash("fels-stoff");
     const TAU = 2 * Math.PI;
@@ -1631,39 +1632,50 @@
     }
     // DER SCHUTT (`FELS.geroell`): Steine der Kante `korn` (Zellen-Rauschen in der Ebene des Hangs, je Zelle ein gezogener
     // Mittelpunkt), je Stein seine Helligkeit ± `kontrast`, zwischen den Steinen die Fuge (`spalt` der Kante) dunkel um `tiefe`
-    // — das Mittel ist 1 (`schuttMittel`). Bis zur Nachbesserung 2 lagen achsparallele Würfel (`floor(wp / korn)`) als
+    // — sein Mittel ist `schuttMittel()`. Bis zur Nachbesserung 2 lagen achsparallele Würfel (`floor(wp / korn)`) als
     // Pixel-Mosaik auf dem Hang (σ/Mittel 0,127 gegen 0,72 der Geröll-Referenz).
+    // Nachbesserung 3: gleich große Zellen mit gleich dunkler Fuge lasen sich als PFLASTER. Die Natur: die Steine streuen in
+    // der Größe (je Stein sein Maß `groesse`, das Zellen-Rauschen gewichtet: ein großer Block nimmt den Nachbarn Platz), jeder
+    // Stein ist eine Kuppe (zur Kante hin sieht er weniger Himmel: `kuppe`), und nur ein Teil der Fugen klafft (je Stein
+    // `offen`) — und das Geröll als Ganzes wirft Schatten in sich: sein Mittel ist `schuttMittel()` < 1, nah wie fern.
     function schuttKornO(o, x, z) {
         const S = FELS.geroell;
-        const u = o.div(x, S.korn),
-            v = o.div(z, S.korn);
+        // die Ebene des Hangs leicht gewellt (`welle` Zellen): die Kanten der Steine runden, kein Vieleck-Mosaik
+        const u0 = o.div(x, S.korn),
+            v0 = o.div(z, S.korn);
+        const u = o.add(u0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(v0, 1.9), 1.1)), o.mul(0.6, o.sin(o.add(o.mul(u0, 0.73), o.mul(v0, 1.31)))))));
+        const v = o.add(v0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(u0, 2.1), 0.7)), o.mul(0.6, o.sin(o.sub(o.mul(v0, 0.67), o.mul(u0, 1.23)))))));
         const iu = o.floor(u),
             iv = o.floor(v);
         let d1 = 9,
             d2 = 9,
-            hb = 0.5;
+            hb = 0.5,
+            ho = 0.5;
         for (let a = -1; a <= 1; a++)
             for (let b = -1; b <= 1; b++) {
                 const ci = o.add(iu, a),
                     cj = o.add(iv, b);
-                const h = o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 0);
-                const du = o.sub(o.add(ci, o.add(0.15, o.mul(0.7, h))), u);
+                const du = o.sub(o.add(ci, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 0)))), u);
                 const dv = o.sub(o.add(cj, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 1)))), v);
-                const d = o.add(o.mul(du, du), o.mul(dv, dv));
-                const c = o.step(d, d1); // näher als der bisher nächste
+                const r = o.add(S.groesse[0], o.mul(S.groesse[1] - S.groesse[0], o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 3)));
+                const d = o.div(o.sqrt(o.add(o.mul(du, du), o.mul(dv, dv))), r);
+                const c = o.step(d, d1); // näher als der bisher nächste (im Maß des Steins)
                 d2 = o.wahl(c, d1, o.min(d2, d));
                 hb = o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 2), hb);
+                ho = o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 4), ho);
                 d1 = o.min(d1, d);
             }
-        // die Fuge: der Abstand zur Mittelsenkrechten der zwei nächsten Mittelpunkte (in Zellen) ≈ (√d2 − √d1)/2
-        const fuge = o.sub(1, o.glatt(0, S.spalt, o.mul(0.5, o.sub(o.sqrt(d2), o.sqrt(d1)))));
+        // e: 1 in der Mitte des Steins, 0 an seiner Kante (die gewichtete Grenze liegt bei d1 = d2)
+        const e = o.div(o.sub(d2, d1), o.add(d2, d1));
+        const ke = o.sub(1, e);
+        const kuppe = o.sub(1, o.mul(S.kuppe, o.mul(ke, ke)));
+        const fuge = o.mul(o.step(1 - S.offen, ho), o.sub(1, o.glatt(0, S.spalt, e)));
         const stein = o.add(1, o.mul(S.kontrast, o.sub(o.mul(2, hb), 1)));
-        return o.div(o.mul(stein, o.sub(1, o.mul(S.tiefe, fuge))), schuttMittel());
+        return o.mul(o.mul(stein, kuppe), o.sub(1, o.mul(S.tiefe, fuge)));
     }
     let _schuttMittelMemo = 0;
     function schuttMittel() {
         if (_schuttMittelMemo) return _schuttMittelMemo;
-        _schuttMittelMemo = 1;
         let m = 0;
         for (let i = 0; i < 96; i++) for (let j = 0; j < 96; j++) m += schuttKornO(ZAHL, i * 0.0731 + j * 0.0137, j * 0.0719 - i * 0.0113);
         _schuttMittelMemo = m / 9216;
@@ -2014,6 +2026,7 @@
         felsBankung: felsBankung,
         felsFein: felsFeinO,
         schuttKorn: schuttKornO,
+        schuttMittel: schuttMittel,
         FELS_SAAT: FELS_SAAT,
         felsZahl: ZAHL,
         statistik: statistik,
