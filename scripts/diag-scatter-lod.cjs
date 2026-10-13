@@ -133,7 +133,9 @@ function check(name, ok, detail) {
             if (f && f.ready) break;
             await new Promise((r2) => setTimeout(r2, 100));
         }
-        // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame).
+        // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
+        // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
+        // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
         const pm = r.state.playerMesh.position;
         const dl2 = performance.now() + 45000;
         let cells = 0;
@@ -142,9 +144,10 @@ function check(name, ok, detail) {
             const map = r.state.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
-            if (cells > 40) break;
+            if (cells > 40 && r._streuWartet(pm) === 0) break;
             await new Promise((r2) => setTimeout(r2, 30));
         }
+        res.streuWartet = r._streuWartet(pm);
         res.cells = cells;
         if (!cells) return res;
         // Eine lebende Zelle suchen (Schicht-agnostisch — der Tick trägt alle

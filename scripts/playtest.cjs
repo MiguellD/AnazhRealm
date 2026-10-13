@@ -56197,7 +56197,7 @@ async function checkBandRing6Workshop(ctx) {
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
             // Foundry-Warm-Anker: der Studio-Worker bootet ASYNC (ein anderer Worker als der ausgehängte
-            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_prefetching (im ready-Handler synchron
+            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_vorrat (im ready-Handler synchron
             // true, also „false nach ready“ = Prefetch fertig). Der Loop pumpt weiter; der Deckel ist nur
             // Hänger-Schutz — ein Cap-Treffer lässt die Bänder ehrlich rot werden.
             const _fdry = r._foundry || (typeof r._ensureAssetFoundry === "function" ? r._ensureAssetFoundry() : null);
@@ -56207,7 +56207,7 @@ async function checkBandRing6Workshop(ctx) {
                 const FOUNDRY_WARM_CAP_MS = 120000;
                 const fDeadline = performance.now() + FOUNDRY_WARM_CAP_MS;
                 while (
-                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false) &&
+                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false) &&
                     performance.now() < fDeadline
                 ) {
                     try {
@@ -56218,7 +56218,7 @@ async function checkBandRing6Workshop(ctx) {
                     await new Promise((resolve) => setTimeout(resolve, 25));
                 }
                 foundryReadyMs =
-                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false
+                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)
                         : -1;
                 // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,

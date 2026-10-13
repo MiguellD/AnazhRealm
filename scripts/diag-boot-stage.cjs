@@ -16,19 +16,38 @@
 //           Renderer no-opt den RTT-Bake gate-treu → Term dort übersprungen)
 //   LUFT    die EINE Luftperspektive steht (scene.fogNode, Sichtweite ≥ 5 km) — die Fernform trägt die
 //           Ferne, kein Lade-Nebel kappt sie (V18.530)
-// Zeitleiste: t(Kontrolle) / t(Bibliothek) / t(Ring) / t(Impostoren) / t(Bühne)
+// Zeitleiste: t(Weltbild) / t(Bibliothek) / t(Ring) / t(Impostoren) / t(Bühne)
 // in TICKS (Mechanik-Reihenfolge, hardware-unabhängig) + Wall-Clock (Container-
-// Anhalt; die Schöpfer-GPU-Zahl liefert W8). --selftest beweist die Linse feuert
-// (die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot).
+// Anhalt; die Schöpfer-GPU-Zahl liefert W8). t(Weltbild) liest `state._weltbildDa` (ab Navigation: der Ladeschirm hält
+// jede Taste, also ist das die Kontrolle — bis K30 maß die Linse die Existenz von `_gameLoopTick`). --selftest beweist
+// die Linse feuert (die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot).
 //   node scripts/diag-boot-stage.cjs [--selftest]
+//
+// DIE KALT-ZEILE (K30, Pflicht-OFFEN B): `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem
+// Versions-Update) und nennt je Sekunde der Ankunft, worauf das erste Weltbild wartet (`_weltbildFehlt`), wie lange der
+// Haupt-Thread blockiert war (Langaufgaben; benannt: Boden, Streu, Bauten, Gruppen-Bau, Buch und der Erst-Bau der Zeichnung
+// aus `_erstZeichnung` — Knoten- und Pipeline-Bau des ersten Draws), wie viele Pipelines offen sind, in welcher Phase der
+// Vorrat steht (sein Merker `f._vorrat` wörtlich: „wartet auf das erste Bild" · „bestellt" — nie „läuft" aus einem
+// Merker, der nur „an" sagt) und was die Foundry-Schlange trägt; der Adapter kommt vom Gerät (`device.adapterInfo`). Urteil: t(Weltbild)
+// ≤ 5 s und kein halbes Weltbild (kein „steht ohne" im Log). Ohne `--echt` swiftshader (das Spiel wählt kienspan), mit
+// `--echt` die Hardware-GPU im Fenster (1920×1080) — die Zeit richtet der OMEN an beiden Messplätzen.
+//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
+const ARGV = process.argv.slice(2);
+const OPT = (k, d) => {
+    const i = ARGV.indexOf(k);
+    return i >= 0 ? ARGV[i + 1] : d;
+};
+// Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
+const ANKUNFT_SOLL_MS = 5000;
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -50,7 +69,254 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
+function KALT_PROBE() {
+    const A = (window.__kalt = { proben: [], lang: [], ev: [] });
+    try {
+        new PerformanceObserver((l) => {
+            for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
+        }).observe({ type: "longtask", buffered: true });
+    } catch (_e) {
+        A.ohneLang = true;
+    }
+    let gewickelt = false;
+    // die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter (synchron gemessen; verschachtelt zählt doppelt)
+    A.kosten = {};
+    const KOSTEN = {
+        _buildVoxelChunkDataFromWorkerMesh: "Boden",
+        _buildVoxelChunkData: "Boden",
+        _scatterRegion: "Streu",
+        _rebuildArchitectureMesh: "Bauten",
+        _foundryBuildGroup: "Gruppen-Bau",
+        _foundryIngestBook: "Buch",
+    };
+    const wickleKosten = (P) => {
+        for (const name of Object.keys(KOSTEN)) {
+            const alt = P[name];
+            if (typeof alt !== "function") continue;
+            P[name] = function (...a) {
+                const t0 = performance.now();
+                try {
+                    return alt.apply(this, a);
+                } finally {
+                    const t1 = performance.now();
+                    const k = KOSTEN[name];
+                    const s = Math.floor(t0 / 1000);
+                    const z = A.kosten[k] || (A.kosten[k] = {});
+                    z[s] = (z[s] || 0) + (t1 - t0);
+                    if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
+                }
+            };
+        }
+    };
+    const wickle = (r) => {
+        const P = Object.getPrototypeOf(r);
+        wickleKosten(P);
+        // die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
+        // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
+        for (const name of ["_foundryVorrat", "_foundryRequestSettlement"]) {
+            const alt = P[name];
+            if (typeof alt !== "function") continue;
+            P[name] = function (...a) {
+                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
+                A.ev.push([Math.round(performance.now()), name + " ab", id]);
+                const x = alt.apply(this, a);
+                if (x && typeof x.then === "function")
+                    x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
+                return x;
+            };
+        }
+    };
+    setInterval(() => {
+        const r = window.anazhRealm;
+        const o = { t: Math.round(performance.now()) };
+        if (r && r.state) {
+            if (!gewickelt) {
+                gewickelt = true;
+                wickle(r);
+            }
+            try {
+                o.fehlt = r._weltbildFehlt();
+            } catch (e) {
+                o.fehlt = ["Probe warf: " + e.message];
+            }
+            const f = r._foundry;
+            if (f) {
+                o.vorrat = f._vorrat || null; // die Phase wörtlich (VORRAT_PHASE), null = steht nicht an oder ist durch
+                let werk = 0;
+                for (const k of (f.pending && f.pending.keys()) || []) if (!String(k).startsWith("imp")) werk++;
+                o.schlange = `${(f.warte || []).length} wartend · ${werk} im Werk · ${(f.pending ? f.pending.size : 0) - werk} im Bäcker`;
+            }
+            // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
+            const E = r._erstZeichnung;
+            if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
+            o.da = r.state._weltbildDa ? Math.round(r.state._weltbildDa) : 0;
+        }
+        A.proben.push(o);
+    }, 200);
+}
+
+async function kaltLauf() {
+    const ECHT = ARGV.includes("--echt");
+    const SEK = Number(OPT("--sek", 120));
+    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    const profil = fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
+    const browser = await puppeteer.launch({
+        headless: !ECHT,
+        userDataDir: profil,
+        protocolTimeout: 600000,
+        defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : { width: 1280, height: 720 },
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : softwareWebGpuArgs(),
+    });
+    let out = null;
+    try {
+        const page = await browser.newPage();
+        await page.evaluateOnNewDocument(KALT_PROBE);
+        const t0 = Date.now();
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        while (Date.now() - t0 < SEK * 1000) {
+            await new Promise((r) => setTimeout(r, 500));
+            const da = await page
+                .evaluate(() => (window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa) || 0)
+                .catch(() => 0);
+            if (da) break;
+        }
+        // DAS BILD DER ANKUNFT (`--bild datei.png`): der erste Blick des Spielers aus dem Ausgabe-Pfad
+        // (scripts/lib/ausgabe-aufnahme.cjs), der Loop ruht, die Bühne hält Mittag · Sonne · Sommer.
+        const bildDatei = OPT("--bild", null);
+        let bildInfo = null;
+        if (bildDatei) {
+            const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+            await page.evaluate(AUSGABE_INSTALL);
+            bildInfo = await page.evaluate(
+                async (W, H) => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state._weltbildDa) return { fehlt: "kein Weltbild" };
+                    r.state.renderer.setAnimationLoop(null);
+                    window.__buehne();
+                    let auf = null;
+                    for (let i = 0; i < 2; i++) {
+                        r._schattenAlleNeu();
+                        auf = await window.__ausgabeAufnahme(W, H, 1);
+                    }
+                    const cv = document.createElement("canvas");
+                    cv.width = W;
+                    cv.height = H;
+                    const ctx = cv.getContext("2d");
+                    const img = ctx.createImageData(W, H);
+                    img.data.set(auf.u8.subarray(0, W * H * 4));
+                    ctx.putImageData(img, 0, 0);
+                    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
+                },
+                ECHT ? 960 : 640,
+                ECHT ? 540 : 360
+            );
+            if (bildInfo && bildInfo.png) {
+                fs.writeFileSync(path.resolve(bildDatei), Buffer.from(bildInfo.png.split(",")[1], "base64"));
+                delete bildInfo.png;
+            }
+        }
+        out = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const st = (r && r.state) || {};
+            // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal) — bis K30-N1 las die
+            // Zeile `backend.adapter.info` und schrieb in jeder echten Rohdatei null
+            let adapter = null;
+            try {
+                const i = st.renderer.backend.device.adapterInfo;
+                adapter = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || null;
+            } catch (_e) {}
+            return Object.assign({}, window.__kalt, {
+                weltbildDa: st._weltbildDa ? Math.round(st._weltbildDa) : null,
+                holz: st._holzProfil || null,
+                version: r && r.constructor && r.constructor.VERSION,
+                adapter,
+                ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
+            });
+        });
+        if (bildInfo) out.bild = Object.assign({ datei: path.resolve(bildDatei) }, bildInfo);
+    } catch (e) {
+        out = { __err: (e && e.message) || String(e) };
+    }
+    await browser.close();
+    server.close();
+    try {
+        fs.rmSync(profil, { recursive: true, force: true });
+    } catch (_e) {}
+    if (!out || out.__err) {
+        console.log(`⛔ Kalt-Zeile fehlgeschlagen: ${out ? out.__err : "?"}`);
+        process.exit(2);
+    }
+    const json = OPT("--json", null);
+    if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
+    // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
+    const proben = out.proben || [];
+    const ende = Math.max(out.weltbildDa || 0, proben.length ? proben[proben.length - 1].t : 0);
+    const S = Math.ceil(ende / 1000);
+    const blockiert = new Array(S + 1).fill(0);
+    for (const [s, d] of out.lang || []) {
+        for (let a = s; a < s + d; ) {
+            const k = Math.floor(a / 1000);
+            const b = Math.min(s + d, (k + 1) * 1000);
+            if (k <= S) blockiert[k] += b - a;
+            a = b;
+        }
+    }
+    console.log(
+        `\n=== DIE KALT-ZEILE (leeres Profil) — ${ECHT ? "echte GPU" : "swiftshader"} · ${out.adapter || "Adapter ?"} · ` +
+            `Holz ${out.holz} · V${out.version} ===`
+    );
+    let letzte = null;
+    // der Erst-Bau je Sekunde = Zuwachs des Stamm-Zählers seit der letzten Probe (er wächst nur); eine Sekunde ganz ohne Probe
+    // (der Haupt-Thread hielt sie) zählt in die nächste Sekunde mit Probe
+    let erstVor = 0;
+    for (let s = 0; s < S; s++) {
+        const inS = proben.filter((p) => Math.floor(p.t / 1000) === s);
+        if (inS.length) letzte = inS[inS.length - 1];
+        const q = letzte || {};
+        const erstMs = q.erst ? q.erst[1] - erstVor : 0;
+        if (q.erst) erstVor = q.erst[1];
+        const gruende = q.da && q.da < (s + 1) * 1000 ? "— das Weltbild steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
+        const kosten = Object.entries(out.kosten || {})
+            .map(([k, z]) => [k, Math.round(z[s] || 0)])
+            .concat([["Erst-Bau", Math.round(erstMs)]])
+            .filter(([, ms]) => ms >= 5)
+            .map(([k, ms]) => `${k} ${ms}`)
+            .join(" · ");
+        console.log(
+            `  ${String(s).padStart(3)} s  blockiert ${String(Math.round(blockiert[s])).padStart(4)} ms` +
+                (kosten ? ` (${kosten})` : "") +
+                `${q.erst && q.erst[2] ? ` · ${q.erst[2]} Pipelines offen` : ""}${q.vorrat ? ` · Vorrat ${q.vorrat}` : ""}` +
+                `${q.schlange ? ` · Foundry ${q.schlange}` : ""} | ${gruende}`
+        );
+    }
+    if (out.buchDa) console.log(`  ${(out.buchDa / 1000).toFixed(1)} s  das Buch der Studios ist da`);
+    // die Phasen des Vorrats, wie sein Merker sie nennt (je Wechsel die erste Probe)
+    let phase = null;
+    for (const p of proben) {
+        if (!("vorrat" in p) || p.vorrat === phase) continue;
+        if (p.vorrat || phase) console.log(`  ${(p.t / 1000).toFixed(1)} s  der Vorrat ${p.vorrat || "ist durch"}`);
+        phase = p.vorrat;
+    }
+    for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
+    const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
+    if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
+    if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
+    const t = out.weltbildDa;
+    const halb = out.ohne && out.ohne.length ? out.ohne[0] : null;
+    console.log(`\n  t(Weltbild) = t(Kontrolle) ${t != null ? (t / 1000).toFixed(2) + " s" : "— (nicht erreicht)"} ab Navigation`);
+    const gut = t != null && t <= ANKUNFT_SOLL_MS && !halb;
+    if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
+    console.log(
+        `  ${gut ? "✅" : "❌"} die Ankunft kalt ≤ ${ANKUNFT_SOLL_MS / 1000} s ohne halbes Weltbild (Pflicht-OFFEN B) — ` +
+            `${t != null ? (t / 1000).toFixed(2) + " s" : "nicht erreicht"}`
+    );
+    process.exit(gut ? 0 : 1);
+}
+
 (async () => {
+    if (ARGV.includes("--kalt")) return kaltLauf();
     const SELFTEST = process.argv.includes("--selftest");
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
@@ -64,12 +330,12 @@ const server = http.createServer((req, res) => {
     });
     let out = null;
     try {
-        const navT0 = Date.now();
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
+        // t(Weltbild) aus der Welt selbst: der Moment, in dem der Ladeschirm weicht (`state._weltbildDa`, ab Navigation).
+        await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa, {
             timeout: 120000,
         });
-        const controlMs = Date.now() - navT0;
+        const controlMs = await page.evaluate(() => window.anazhRealm.state._weltbildDa);
         out = await page.evaluate(async (selftest) => {
             const r = window.anazhRealm,
                 st = r.state;
@@ -88,7 +354,7 @@ const server = http.createServer((req, res) => {
                     grass: !st.pendingGrass || st.pendingGrass.size === 0,
                     water: !st.pendingWaterIso || st.pendingWaterIso.size === 0,
                     streu: !!st.playerMesh && wartet === 0,
-                    biblio: !!(f && f.ready && !f._prefetching),
+                    biblio: !!(f && f.ready && !f._vorrat),
                     // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
                     impost: headless ? true : (!q || q.length === 0) && !r._impostorBakePending,
                     _streuWartet: wartet,
@@ -238,7 +504,10 @@ const server = http.createServer((req, res) => {
     console.log(
         "\n=== VOLLE BÜHNE — das Prädikat + die Zeitleiste (headless-Mechanik; Wall-Clock = Container-Anhalt) ==="
     );
-    console.log(`  t(Kontrolle)   nav→Loop ${(out.controlMs / 1000).toFixed(1)} s`);
+    console.log(
+        `  t(Weltbild)    ${(out.controlMs / 1000).toFixed(1)} s ab Navigation (state._weltbildDa = t(Kontrolle); der ` +
+            "Null-Renderer zeigt kein Bild und setzt es beim Renderer-Bau — die Kalt-Zeile mit echtem Renderer: --kalt)"
+    );
     console.log(`  t(Bibliothek)  ${fm(tl.biblio)}`);
     console.log(`  t(Ring)        ${fm(tl.ring)}`);
     console.log(
