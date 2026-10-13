@@ -33336,10 +33336,33 @@ class AnazhRealm {
     _stoffBruch(was, ursache) {
         if (ursache && ursache.stoff === true) return ursache;
         const text = "STOFF: " + was + (ursache ? " — " + ((ursache && ursache.message) || ursache) : "");
-        this.log(text, "ERROR");
+        this._bruchMelden(text);
         const e = new Error(text);
         e.stoff = true;
         return e;
+    }
+
+    // DER EINE MELDER (K22 Nachbesserung 3): jeder Bruch meldet ERROR — eine NEUE Meldung sofort, dieselbe wieder (ein
+    // Bruch, der jeden Frame wirft) zählt in ihrem Buch-Eintrag und meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
+    // Zähler, nie still. Bis hierher kannte die Drossel des Loops nur die LETZTE Meldung (zwei abwechselnde Frame-Fehler
+    // meldeten je Frame ERROR), und `_stoffBruch` meldete einen Bruch im Takt je Frame. Das Buch hält die jüngsten
+    // BRUCH_BUCH_MAX Meldungen (ein Instanz-Feld: nie im Spielstand).
+    _bruchMelden(text) {
+        const buch = this._bruchBuch || (this._bruchBuch = new Map());
+        const jetzt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        const e = buch.get(text);
+        if (!e) {
+            if (buch.size >= AnazhRealm.BRUCH_BUCH_MAX) buch.delete(buch.keys().next().value);
+            buch.set(text, { n: 1, still: 0, gemeldet: jetzt });
+            this.log(text, "ERROR");
+            return;
+        }
+        e.n++;
+        e.still++;
+        if (jetzt - e.gemeldet < AnazhRealm.BRUCH_WIEDER_MS) return;
+        this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, "ERROR");
+        e.gemeldet = jetzt;
+        e.still = 0;
     }
 
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
@@ -50605,9 +50628,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
-                if (rr && typeof rr.catch === "function")
-                    rr.catch((e) => this.log(`Feed-Vorschau-Render: ${e && e.message}`, "INFO"));
+                this._buehneRender(s.renderer, s.scene, s.camera, "Feed-Vorschau");
             }
             s.rafId = requestAnimationFrame(tick);
         };
@@ -73757,7 +73778,9 @@ class AnazhRealm {
                 .then((res) => res.text())
                 .then((manifestText) => {
                     const manifest = JSON.parse(manifestText);
-                    if (!Array.isArray(manifest) || !manifest.length) return; // fail-closed: kein Kern-Satz, kein Worker
+                    // kein Kern-Satz, kein Faden: der Boot bricht laut (der catch unten reicht den Bruch unverändert weiter)
+                    if (!Array.isArray(manifest) || !manifest.length)
+                        throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
                     const rel = [
                         "worlds/terrain/lib/three-r128.min.js",
                         "worlds/terrain/lib/OrbitControls.js",
@@ -86350,9 +86373,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
-                if (rr && typeof rr.catch === "function")
-                    rr.catch((e) => this.log(`Hof-Bühne-Render: ${e && e.message}`, "INFO"));
+                this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");
             }
             s.rafId = requestAnimationFrame(tick);
         };
@@ -87009,9 +87030,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
-                if (rr && typeof rr.catch === "function")
-                    rr.catch((e) => this.log(`Ich-Bühne-Render: ${e && e.message}`, "INFO"));
+                this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");
             }
             s.rafId = requestAnimationFrame(tick);
         };
@@ -89141,13 +89160,10 @@ class AnazhRealm {
         // Welle 6.B Phase 2 — Gizmo synchronisieren (Position + Distance-
         // Scale + Mode-Visibility) VOR dem Render.
         this._workshopSyncGizmo();
-        // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate). render() ist
-        // auf der GPU async — ein Pipeline-Compile-Reject wird geloggt statt unhandled.
+        // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate); ein Render-Fehler bricht in
+        // `_buehneRender` laut beim Namen.
         if (!p.rendererReady) return;
-        const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);
-        if (renderResult && typeof renderResult.catch === "function") {
-            renderResult.catch((err) => this.log(`Workshop-Preview-Render: ${err && err.message}`, "INFO"));
-        }
+        this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");
     }
 
     // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): ein Neben-Renderer (Werkstatt-Vorschau, Feed-, Hof-,
@@ -89155,13 +89171,17 @@ class AnazhRealm {
     // (`uLodAuge`, je Frame aus der Haupt-Kamera) und gehört der Welt: die Vorschau-Eiche im Ursprung lag vom Auge
     // auf der Plattform 36 m weit, jenseits ihrer L0-Kante — 29 Meshes mit 21 108 Dreiecken in der Szene, 0 im Bild.
     // Um den Bühnen-Render steht die Maske aus (uLodMaskOn 0; der geteilte renderGroup-Satz lädt je render() neu),
-    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier.
-    _buehneRender(renderer, scene, camera) {
+    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier. r184s render() ist SYNCHRON (es gibt
+    // kein Versprechen, dessen catch einen Fehler sähe — vier `.catch(… "INFO")` der Bühnen fingen nie etwas): ein
+    // Render-Fehler der Bühne bricht hier laut beim Namen (`wer`), und ihr Takt steht.
+    _buehneRender(renderer, scene, camera, wer) {
         const lu = this.state.lodUniforms;
         const an = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         if (an !== null) lu.uLodMaskOn.value = 0;
         try {
-            return renderer.render(scene, camera);
+            renderer.render(scene, camera);
+        } catch (e) {
+            throw this._stoffBruch("die " + wer + " (Bühnen-Render)", e);
         } finally {
             if (an !== null) lu.uLodMaskOn.value = an;
         }
@@ -96563,21 +96583,14 @@ class AnazhRealm {
         return ms;
     }
 
-    // Die EINE Fehler-Grenze des ewigen Loops: ein Frame-Throw landet hier statt den Loop zu brechen —
-    // gezählt + gedrosselt geloggt (max 1×/2 s, mit Stack), nie verschluckt. `_loopErrorCount`/
-    // `-LastLog` sind undefined-sichere Laufzeit-Felder (audit:strict-whitelisted).
+    // Die EINE Fehler-Grenze des ewigen Loops: ein Frame-Throw landet hier statt den Loop zu brechen — gezählt
+    // (`_loopErrorCount`, undefined-sicheres Laufzeit-Feld, audit:strict-whitelisted) und gemeldet über den EINEN Melder
+    // (`_bruchMelden`: jede neue Meldung sofort ERROR mit Stack, dieselbe wieder mit ihrem Zähler), nie verschluckt.
     _loopErrorBoundary(err) {
         const st = this.state;
         st._loopErrorCount = (st._loopErrorCount || 0) + 1;
-        const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        // DIE DROSSEL (K22): jeder NEUE Fehler meldet sofort ERROR; nur dieselbe Meldung wieder (ein Fehler, der jeden
-        // Frame wirft) zählt still bis 2 s — bis hierher verschwand ein zweiter, anderer Fehler in den 2 s ganz.
         const msg = (err && (err.stack || err.message)) || String(err);
-        if (msg !== st._loopErrorLastMsg || !st._loopErrorLastLog || now - st._loopErrorLastLog > 2000) {
-            st._loopErrorLastLog = now;
-            st._loopErrorLastMsg = msg;
-            this.log(`Loop-Frame-Fehler abgefangen (#${st._loopErrorCount}, die Welt läuft weiter): ${msg}`, "ERROR");
-        }
+        this._bruchMelden(`Loop-Frame-Fehler abgefangen (die Welt läuft weiter): ${msg}`);
     }
 
     // Substanz-Kosten eines DSL-Programms in WIRK-Einheiten (AST-Walk über die Op-Köpfe): spawn_blueprint
@@ -98378,7 +98391,7 @@ class AnazhRealm {
                 job.run(sacred ? Infinity : ms);
                 ran.push(job.name);
             } catch (e) {
-                if (typeof this._loopErrorBoundary === "function") this._loopErrorBoundary(e);
+                this._loopErrorBoundary(e);
             }
         }
         return ran;
@@ -106297,6 +106310,10 @@ AnazhRealm.PERF_TARGET_MS = 17;
 // DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
 // Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
 AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
+// DER EINE MELDER (`_bruchMelden`, K22): dieselbe Bruch-Meldung wieder meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
+// Zähler; das Buch hält die jüngsten BRUCH_BUCH_MAX Meldungen
+AnazhRealm.BRUCH_WIEDER_MS = 2000;
+AnazhRealm.BRUCH_BUCH_MAX = 64;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;

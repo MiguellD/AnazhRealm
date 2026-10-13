@@ -1852,6 +1852,14 @@ function scanNormalWand(srcRoh) {
 // eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
 // dessen Antwort einen Bauer ruft oder im Leser eines Studio-Fadens landet (der Bäcker über `_foundryAntwort`); er trägt
 // einen Hörer, dessen jeder Pfad bricht. Die Klang-Werkstatt baut nichts und bleibt draußen.
+// DIE NACHBESSERUNG 3 (13.10., am Kopf bb9c1179 ROT mit 7 Fängen + dem fehlenden Melder): der Zweig des Loops hing an einem
+// KOMMENTAR (ein leerer catch mit dem Kommentar blieb grün), die Drossel des Loops durfte INFO melden, vier `.catch(… "INFO")`
+// hingen an r184s synchronem render() (der catch an einem Namen zählte nicht als Versuch), und eine Kette aus fremder Quelle
+// stieg still aus (`if (!manifest.length) return;` im Foundry-Boot). Jetzt: ein Fund ist Code (Kommentare geschwärzt), der
+// EINE Melder `_bruchMelden` (STOFF_MELDER) ist laut, wenn er nur ERROR meldet und jeder Pfad meldet oder zählt — die Fänge
+// des Loops rufen ihn über `_loopErrorBoundary` und brauchen keinen Zweig; ein catch an einem Namen misst, was der Name
+// bindet; ein `.then`-Glied, das den gelieferten Wert prüft und ohne Wert zurückkehrt, ist ein Fang (für eine Kette aus
+// einer Methode des Stamms spricht die Methode).
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
@@ -1884,24 +1892,12 @@ const STOFF_ZWEIGE = [
         grund: OHNE_SEITE,
         bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
     },
-    // DIE DROSSEL DES LOOPS (V18.278, K22 Nachbesserung 2): `_loopErrorBoundary` meldet jeden NEUEN Frame-Fehler sofort
-    // ERROR und zählt nur dieselbe Meldung wieder bis 2 s still (`_loopErrorCount`) — ihr Zählpfad ist der einzige, der
-    // nicht bricht, und er trägt das Bild: die Welt zeichnet nach dem Fehler weiter, statt zu erstarren
-    {
-        methode: "startEternalLoop",
-        art: "Fang",
-        anker: "Ein Frame-Fehler erstarrt die Welt NICHT mehr",
-        grund: "die Drossel: jeder neue Frame-Fehler ERROR, dieselbe Meldung wieder zählt bis 2 s (`_loopErrorCount`)",
-        bild: "der nächste Frame zeichnet die Welt (kein Standbild); playtest V18.278 (loopSurvivesThrow · errorCounted)",
-    },
-    {
-        methode: "startEternalLoop",
-        art: "Fang",
-        anker: "catch { this._loopErrorBoundary(err); } — der Versuch ruft applyPlayerSoul",
-        grund: "die Drossel des verzögerten Avatar-Baus: derselbe Melder wie der Frame (`_loopErrorBoundary`)",
-        bild: "die Welt zeichnet weiter, der Avatar-Bau meldet seinen eigenen Bruch (`_buildHumanGroup` → Not-Körper, ERROR)",
-    },
 ];
+// DER EINE MELDER (Nachbesserung 3): `_bruchMelden` meldet jede NEUE Bruch-Meldung sofort ERROR und dieselbe wieder mit ihrem
+// Zähler höchstens alle 2 s (`_stoffBruch` und die Fehler-Grenze des Loops `_loopErrorBoundary` melden über ihn; der Loop
+// zeichnet nach einem Frame-Fehler weiter, playtest V18.278 loopSurvivesThrow · errorCounted). Die Wand misst ihn am Code
+// (DER MELDER in stoffFaenge): fehlt er, meldet er INFO/WARN oder still, ist er rot — und mit ihm jeder Fang, der ihn ruft.
+const STOFF_MELDER = ["_bruchMelden"];
 // DER RENDER-BAU (K22 Nachbesserung): was ein try VERSUCHT (sein Block, bei `promise.catch` die Kette davor), nie was sein
 // catch sagt — ein Schnitt im catch darf die Wand nie verlassen (bis hierher entschied der Rumpf-Text der Methode, und
 // der Schnitt, der `!THREE.TSL` aus `_membranBauFor` nahm, nahm die Methode aus der Wand). Ein Block baut den
@@ -1916,7 +1912,13 @@ const RENDER_LAUF = /^(render|renderAsync|compile|compileAsync)$/;
 const RENDER_TRAEGER = /renderer|^pp$|postProcessing|pipeline/i;
 function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const acorn = require("acorn");
-    const ast = acorn.parse(srcRoh, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    const kommentare = [];
+    const ast = acorn.parse(srcRoh, {
+        ecmaVersion: "latest",
+        sourceType: "script",
+        locations: true,
+        onComment: (_block, _text, start, end) => kommentare.push({ start, end }),
+    });
     const kinder = (n, f) => {
         for (const k in n) {
             if (k === "loc") continue;
@@ -1966,7 +1968,17 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             if (!aufgeschoben(c, n)) geheVersuch(c, f);
         });
     };
-    const kurz = (n) => srcRoh.slice(n.start, n.end).replace(/\s+/g, " ").slice(0, 90);
+    // der Text eines Funds ist CODE: Kommentare sind geschwärzt (Nachbesserung 3 — ein Zweig, dessen Anker ein Kommentar
+    // war, hielt einen leeren catch grün, solange der Kommentar stand)
+    const stuecke = [];
+    let bis = 0;
+    for (const c of kommentare) {
+        stuecke.push(srcRoh.slice(bis, c.start), " ".repeat(c.end - c.start));
+        bis = c.end;
+    }
+    stuecke.push(srcRoh.slice(bis));
+    const code = stuecke.join("");
+    const kurz = (n) => code.slice(n.start, n.end).replace(/\s+/g, " ").trim().slice(0, 90);
     const funde = [];
     const fund = (art, methode, n, was) => funde.push({ art, methode, zeile: n.loc.start.line, was });
     const istThreeTsl = (e) =>
@@ -2269,6 +2281,14 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         e.arguments[1].type === "Literal" &&
         e.arguments[1].value === "ERROR";
     const bruchHelfer = new Set();
+    // DER MELDER (Nachbesserung 3): ein Melder in STOFF_MELDER (`_bruchMelden`) meldet einen Bruch, der jeden Frame
+    // wiederkommt, nicht jeden Frame — er ist laut, wenn JEDER `this.log` in ihm ERROR meldet, mindestens einer steht, und
+    // jeder Pfad durch ihn ERROR meldet oder den Zähler der Meldung erhöht (`e.n++`: ihr Zähler trägt die nächste Meldung).
+    // Bis hierher hielt ein Zweig mit einem KOMMENTAR als Anker die Fänge des Loops grün, und die Drossel selbst durfte INFO
+    // melden.
+    let zaehltMit = false;
+    const istZaehler = (e) =>
+        e.type === "UpdateExpression" && e.operator === "++" && e.argument.type === "MemberExpression";
     const lautE = (e) =>
         !!e &&
         (istErrorLog(e) ||
@@ -2323,7 +2343,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             case "ThrowStatement":
                 return new Set([L]);
             case "ExpressionStatement":
-                return new Set([lautE(s.expression) ? L : F]);
+                return new Set([lautE(s.expression) || (zaehltMit && istZaehler(s.expression)) ? L : F]);
             case "VariableDeclaration":
                 return new Set([s.declarations.some((d) => lautE(d.init)) ? L : F]);
             case "ReturnStatement":
@@ -2395,6 +2415,43 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             if (/Statement$|Declaration$/.test(n.type) && n.type !== "BlockStatement") anw++;
         });
         if (anw <= 12) helferKandidat.push(m);
+    }
+    // die Melder zuerst: jeder benannte Melder ist laut (ein Bruch-Helfer) oder ein Fund an seiner stillen Stelle
+    const melderTot = [];
+    for (const name of STOFF_MELDER) {
+        const m = methoden.find((x) => nameVon(x) === name);
+        if (!m) {
+            melderTot.push({ methode: name, art: "Melder", anker: "die Methode fehlt" });
+            continue;
+        }
+        const logs = [];
+        flach(m.value.body, (n) => {
+            if (
+                n.type === "CallExpression" &&
+                n.callee.type === "MemberExpression" &&
+                n.callee.object.type === "ThisExpression" &&
+                !n.callee.computed &&
+                n.callee.property.name === "log"
+            )
+                logs.push(n);
+        });
+        const still = logs.filter((n) => !istErrorLog(n));
+        zaehltMit = true;
+        const jederPfad = bricht(m.value.body);
+        zaehltMit = false;
+        if (logs.length && !still.length && jederPfad) bruchHelfer.add(name);
+        else
+            fund(
+                "Fang",
+                name,
+                still[0] || m,
+                "der Melder meldet still: " +
+                    (!logs.length
+                        ? "kein this.log"
+                        : still.length
+                          ? still.map(kurz).join(" · ")
+                          : "ein Pfad meldet weder ERROR noch zählt er")
+            );
     }
     for (let neu = true; neu;) {
         neu = false;
@@ -2532,7 +2589,12 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 fund("Fehler-Variable", name, n, `window.${n.left.property.name} (kein Spiel-Leser)`);
         });
         // (a) der Fang: im Stoff jeder catch, sonst jeder catch, dessen Versuch den Render-Graphen baut (try-Block,
-        // bei `promise.catch` die Kette davor)
+        // bei `promise.catch` die Kette davor — hängt der catch an einem Namen, ist der Versuch, was der Name bindet:
+        // `const rr = this._buehneRender(…); rr.catch(…)`, Nachbesserung 3)
+        const bindung = new Map();
+        gehe(m.value, (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init) bindung.set(n.id.name, n.init);
+        });
         gehe(m.value, (n) => {
             let koerper = null;
             let versuch = null;
@@ -2544,10 +2606,71 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             } else if (istPromiseFang(n)) {
                 koerper = n.arguments[0].body;
                 versuch = n.callee.object;
+                if (versuch.type === "Identifier" && bindung.has(versuch.name)) versuch = bindung.get(versuch.name);
                 ort = n.arguments[0];
             } else return;
             const bau = stoff ? "im Stoff" : renderBau(versuch, a);
             if (bau && !laut(koerper)) fund("Fang", name, ort, `catch ${kurz(koerper)} — der Versuch ${bau}`);
+            // der stille Ausstieg der Kette (Nachbesserung 3): ein `.then`-Glied eines bauenden Versuchs prüft den GELIEFERTEN
+            // Wert und kehrt ohne Wert zurück (`if (!x) return;` · `return null;`) — die Kette endet erfüllt, kein Bau, kein
+            // Bruch, der catch sieht nie etwas (das Kern-Manifest ohne Kern ließ die Foundry so still ungebootet). Für den
+            // Wert spricht, wer ihn liefert: eine Kette aus einer Methode des Stamms (`this._x(…)`, auch in Promise.all)
+            // meldet dort; geprüft werden Ketten aus fremder Quelle (fetch, ein Versprechen von außen).
+            const glieder = [];
+            let wurzel = istPromiseFang(n) ? n.callee.object : null;
+            while (
+                wurzel &&
+                wurzel.type === "CallExpression" &&
+                wurzel.callee.type === "MemberExpression" &&
+                !wurzel.callee.computed &&
+                /^(then|catch|finally)$/.test(wurzel.callee.property.name)
+            ) {
+                if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
+                wurzel = wurzel.callee.object;
+            }
+            const stammRuf = (e) =>
+                !!e &&
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                e.callee.object.type === "ThisExpression";
+            const stammQuelle =
+                stammRuf(wurzel) ||
+                (wurzel &&
+                    wurzel.type === "CallExpression" &&
+                    wurzel.callee.type === "MemberExpression" &&
+                    wurzel.callee.object.type === "Identifier" &&
+                    wurzel.callee.object.name === "Promise" &&
+                    wurzel.arguments[0] &&
+                    wurzel.arguments[0].type === "ArrayExpression" &&
+                    wurzel.arguments[0].elements.some(stammRuf));
+            if (bau && !stammQuelle)
+                for (const cb of glieder) {
+                    if (!cb || !/Function/.test(cb.type) || cb.body.type !== "BlockStatement") continue;
+                    const namen = new Set();
+                    for (const p of cb.params) gehe(p, (x) => x.type === "Identifier" && namen.add(x.name));
+                    // was aus dem Gelieferten abgeleitet ist, ist geliefert (`const manifest = JSON.parse(text)`)
+                    flach(cb.body, (d) => {
+                        if (d.type !== "VariableDeclarator" || !d.init) return;
+                        let aus = false;
+                        gehe(d.init, (x) => {
+                            if (x.type === "Identifier" && namen.has(x.name)) aus = true;
+                        });
+                        if (aus) gehe(d.id, (x) => x.type === "Identifier" && namen.add(x.name));
+                    });
+                    const leer = (s) =>
+                        !!s &&
+                        ((s.type === "ReturnStatement" &&
+                            (!s.argument || (s.argument.type === "Literal" && s.argument.value === null))) ||
+                            (s.type === "BlockStatement" && s.body.length === 1 && leer(s.body[0])));
+                    flach(cb.body, (s) => {
+                        if (s.type !== "IfStatement" || !leer(s.consequent)) return;
+                        let liest = false;
+                        gehe(s.test, (x) => {
+                            if (x.type === "Identifier" && namen.has(x.name)) liest = true;
+                        });
+                        if (liest) fund("Fang", name, s, `.then steigt still aus: ${kurz(s)} — der Versuch ${bau}`);
+                    });
+                }
         });
         // (a') DER HÖRER DES STUDIO-FADENS: der Fehler eines Fadens erreicht keinen catch — sein Fehler-Hörer (`onerror`,
         // `onmessageerror`, `addEventListener("error", …)`) IST sein Fang. Ein Faden, dessen Antwort einen Bauer ruft, trägt
@@ -2673,7 +2796,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         else funde.splice(i, 1);
     }
     for (const f of funde) rest.push(f);
-    return { funde: rest, tot };
+    return { funde: rest, tot: tot.concat(melderTot) };
 }
 function scanStoffWand(srcRoh, zweige = STOFF_ZWEIGE) {
     const { funde, tot } = stoffFaenge(srcRoh, zweige);
@@ -3195,6 +3318,32 @@ function main() {
                     "window.__karteError = null; mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle;",
                     /^Fehler-Variable$/,
                 ],
+                // Nachbesserung 3: der Fang des Loops ohne Melder (sein Kommentar bleibt stehen), der Melder meldet INFO, der
+                // tote catch an r184s synchronem render(), der stille Ausstieg der Manifest-Kette
+                [
+                    "Loop-Fang ohne Melder",
+                    "            } catch (err) {\n                // Ein Frame-Fehler erstarrt die Welt NICHT mehr (V18.278) — abfangen, loggen, weiter.\n                this._loopErrorBoundary(err);",
+                    '            } catch (err) {\n                // Ein Frame-Fehler erstarrt die Welt NICHT mehr (V18.278) — abfangen, loggen, weiter.\n                this.log(String(err), "WARN");',
+                    /^Fang$/,
+                ],
+                [
+                    "Melder meldet INFO",
+                    '            this.log(text, "ERROR");\n            return;',
+                    '            this.log(text, "INFO");\n            return;',
+                    /^Fang$/,
+                ],
+                [
+                    "toter Render-catch",
+                    '        this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");',
+                    '        const rr = this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau"); if (rr && typeof rr.catch === "function") rr.catch((e) => this.log(String(e), "INFO"));',
+                    /^Fang$/,
+                ],
+                [
+                    "stiller Ausstieg der Kette",
+                    '                    if (!Array.isArray(manifest) || !manifest.length)\n                        throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");',
+                    "                    if (!Array.isArray(manifest) || !manifest.length)\n                        return;",
+                    /^Fang$/,
+                ],
             ];
             const fehltAnker = [];
             for (const [name, alt, neu, muster] of schmuggel) {
@@ -3364,7 +3513,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite, die Drossel des Loops)), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 
