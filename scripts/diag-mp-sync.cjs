@@ -98,6 +98,9 @@ function installiere(alteTuer) {
         peerTakte: 0,
         ursprung: 0,
         ursprungOhneOrt: 0,
+        ursprungNachlauf: 0,
+        // je Mitspieler: stand er beim ZEICHNEN im Ursprung (die Wahrheit des Zeichen-Moments, `_p2pUpdatePeer`)
+        wahrBeimZeichnen: new Map(),
         ortZuletzt: new Map(),
         ursprungBeispiel: null,
         ortGesehen: new Set(),
@@ -124,6 +127,25 @@ function installiere(alteTuer) {
         if (msg && typeof msg.peerId === "string") mp.ortZuletzt.set(msg.peerId, { x: msg.x, z: msg.z });
         return msgPos.call(this, msg, p2p);
     };
+    // DIE WAHRHEIT DES ZEICHEN-MOMENTS: `_p2pUpdatePeer` zeichnet den Ort, den der Ghost am Ende des VORIGEN Takts setzte
+    // (`_lockstepTickPeers` läuft in `p2pTick` NACH dem Zeichnen) bzw. den Snap von vor P2P_SNAP_INTERP_DELAY_MS (120 ms).
+    // Geurteilt wird darum gegen die Quellen in DIESEM Moment — der Ghost, der Snap-Puffer, der zuletzt empfangene Ort —,
+    // nie gegen den Ghost nach dem Takt (8a2f91e5 und be09baf4: 1–2 Takte ROT, als A aus dem Erst-Spawn 0/0 loslief).
+    const zeichne = r._p2pUpdatePeer;
+    r._p2pUpdatePeer = function (entry, t, dt) {
+        const res = zeichne.call(this, entry, t, dt);
+        const ls = entry.lockstep;
+        const oz = mp.ortZuletzt.get(entry.peerId);
+        mp.wahrBeimZeichnen.set(
+            entry.peerId,
+            !!(
+                (ls && ls.seeded && ls.x === 0 && ls.z === 0) ||
+                (entry.snapBuf && entry.snapBuf.some((q) => q.x === 0 && q.z === 0)) ||
+                (oz && oz.x === 0 && oz.z === 0)
+            )
+        );
+        return res;
+    };
     const tick = r.p2pTick;
     r.p2pTick = function (t) {
         const res = tick.call(this, t);
@@ -138,8 +160,12 @@ function installiere(alteTuer) {
             for (const o of [e.mesh, e.nameLabel]) {
                 if (!o || !o.parent || !o.visible) continue;
                 const oz = mp.ortZuletzt.get(pid);
-                const wirklich = (oz && oz.x === 0 && oz.z === 0) || (ls && ls.seeded && ls.x === 0 && ls.z === 0);
-                if (o.position.x === 0 && o.position.z === 0 && !wirklich) {
+                const wirklich = mp.wahrBeimZeichnen.get(pid) === true;
+                const imUrsprung = o.position.x === 0 && o.position.z === 0;
+                // der Nachlauf: die alte Regel (Ghost NACH dem Takt, neuester Ort) hätte diesen Takt ROT gezählt
+                const alteRegel = (oz && oz.x === 0 && oz.z === 0) || (ls && ls.seeded && ls.x === 0 && ls.z === 0);
+                if (imUrsprung && wirklich && !alteRegel) mp.ursprungNachlauf++;
+                if (imUrsprung && !wirklich) {
                     mp.ursprung++;
                     if (!ortBekannt) mp.ursprungOhneOrt++;
                     if (!mp.ursprungBeispiel)
@@ -178,6 +204,7 @@ function bericht(p) {
             peerTakte: mp.peerTakte,
             ursprung: mp.ursprung,
             ursprungOhneOrt: mp.ursprungOhneOrt,
+            ursprungNachlauf: mp.ursprungNachlauf,
             ursprungBeispiel: mp.ursprungBeispiel,
             inits: mp.inits,
             enabled: p2p.enabled === true,
@@ -535,6 +562,7 @@ function bericht(p) {
                 `(a) Seite ${n}: kein Mitspieler-Takt im Ursprung`,
                 s.ursprung === 0,
                 `${s.ursprung} Takte am Ursprung (davon ${s.ursprungOhneOrt} ohne je empfangenen Ort) von ${s.peerTakte} Peer-Takten` +
+                    ` · Nachlauf ${s.ursprungNachlauf} Takte (beim Zeichnen stand er im Ursprung, der Ghost danach schon weiter; keine Täter)` +
                     (s.ursprung
                         ? ` — Täter _p2pEnsurePeerEntry: Leib/Schild sichtbar bei 0/0/0 (${JSON.stringify(s.ursprungBeispiel)})`
                         : "")
