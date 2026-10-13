@@ -32492,13 +32492,19 @@ class AnazhRealm {
                                     const _rahmen = _karte.yz;
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
                                     const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
-                                    // ── Instanz-Dekodierung (der Normal-Probe) ──
+                                    // ── Instanz-Dekodierung (die Instanz-Matrix, `_instanzMatrixNode`) ──
+                                    // r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte gelesen, K20 13.10.): dort
+                                    // lasen positionLocal und der Normal-Probe den VORLAGEN-Raum (Skala 1, Drehung 0), die Matrix
+                                    // drehte das Quad danach mit der Instanz — jede Karte stand als feste Tafel in der Drehung ihres
+                                    // Baums, von der Seite ein Strich. Spalte 0 = s·(cos r, 0, −sin r), Spalte 3 = der Anker.
                                     // Jede gezeichnete Instanz lebt: die Gruppe ist dicht, count = lebende Instanzen (`_archGroupFree`
-                                    // verdichtet) — die Null-3×3 eines freien Slots, die den Probe singulär machte (das welt-spannende
-                                    // Quad an der Kamera), erreicht den Shader nie.
-                                    const _probe = _Ta.normalLocal;
-                                    const _sInst = _Ta.float(1.0).div(_Ta.sqrt(_probe.dot(_probe)));
-                                    const _aRot = _Ta.atan(_probe.z.negate(), _probe.x);
+                                    // verdichtet) — die Null-3×3 eines freien Slots erreicht den Shader nie.
+                                    const _M = this._instanzMatrixNode(_Ta);
+                                    const _m0 = _M.element(0).xyz,
+                                        _m2 = _M.element(2).xyz;
+                                    const _sV = _m0.length(); // die Instanz-Skala im Vertex-Takt
+                                    const _sInst = _Ta.varying(_sV, "vKarteSkala");
+                                    const _aRot = _Ta.varying(_Ta.atan(_m0.z.negate(), _m0.x), "vKarteDreh");
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -32674,30 +32680,40 @@ class AnazhRealm {
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
                                     // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
                                     mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
-                                    // ── CAMERA-FACING (Vertex): Anker = instanz-transformierte Achsen-Position. Das Einheits-
-                                    //    Quad steht von y=0 bis y=1 (Instanz: Anker + s·y·oben); die Rahmen-Höhe streckt die
-                                    //    Achse auf s·y·H (positionLocal ist im positionNode schon instanziert, r184) ──
+                                    // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
+                                    //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
+                                    //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
+                                    //    (Spalte 3), zurückgedreht mit der transponierten 3×3 (Mᵀ·d = s·Rᵀ·d, die Richtung genügt).
+                                    //    Das Einheits-Quad steht von y=0 bis y=1; Halbbreite und Höhe sind Vorlagen-Maß, die Skala
+                                    //    trägt die Matrix. ──
                                     const _axis = _Ta.positionLocal;
                                     const _axisY = _axis.y.add(
-                                        _Ta.positionGeometry.y.mul(_sInst).mul(_rahmen.y.sub(_Ta.float(1.0)))
+                                        _Ta.positionGeometry.y.mul(_rahmen.y.sub(_Ta.float(1.0)))
                                     );
-                                    const _lkX = _Ta.cameraPosition.x.sub(_axis.x);
-                                    const _lkZ = _Ta.cameraPosition.z.sub(_axis.z);
+                                    const _augeO = _Ta.modelWorldMatrixInverse.mul(
+                                        _Ta.vec4(_Ta.cameraPosition, 1.0)
+                                    ).xyz;
+                                    const _dAuge = _augeO.sub(_M.element(3).xyz);
+                                    const _lkX = _m0.dot(_dAuge);
+                                    const _lkZ = _m2.dot(_dAuge);
                                     const _ll = _Ta.sqrt(_lkX.mul(_lkX).add(_lkZ.mul(_lkZ))).max(_Ta.float(1e-4));
                                     const _lx = _lkX.div(_ll);
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
-                                    const _off = _ecke.mul(_rahmen.x).mul(_sInst);
+                                    const _off = _ecke.mul(_rahmen.x);
                                     // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
                                     // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
                                     // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
-                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter.
+                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter. Die Phase liest
+                                    // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht in die Vorlage zurück
+                                    // (Mᵀ·w / s²) — sonst drehte und skalierte ihn die Matrix mit dem Baum.
                                     if (!this.state.windUniforms) this._grassInstanceMat();
                                     const _wu = this._ensureWindCoupling(_Ta);
                                     const _WB = AnazhRealm.WIND_BOE;
-                                    const _Hk = _rahmen.y.mul(_sInst).max(0.5);
-                                    const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
+                                    const _Hk = _rahmen.y.mul(_sV).max(0.5);
+                                    const _ankerW = _Ta.modelWorldMatrix.mul(_Ta.vec4(_M.element(3).xyz, 1.0)).xyz;
+                                    const _ortK = _ankerW.x.mul(_wu.uWindDir.x).add(_ankerW.z.mul(_wu.uWindDir.y));
                                     const _wK = globalThis.__phytoCore.windAusschlag(
                                         AnazhRealm._windTsl(_Ta),
                                         {
@@ -32718,12 +32734,16 @@ class AnazhRealm {
                                         },
                                         false
                                     );
-                                    const _swayX = _wu.uWindDir.x.mul(_wK.quer);
-                                    const _swayZ = _wu.uWindDir.y.mul(_wK.quer);
+                                    const _swayW = _Ta.vec3(
+                                        _wu.uWindDir.x.mul(_wK.quer),
+                                        _Ta.float(0.0),
+                                        _wu.uWindDir.y.mul(_wK.quer)
+                                    );
+                                    const _s2 = _sV.mul(_sV).max(_Ta.float(1e-8));
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).add(_swayX),
+                                        _axis.x.add(_lz.mul(_off)).add(_m0.dot(_swayW).div(_s2)),
                                         _axisY,
-                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayZ)
+                                        _axis.z.add(_lx.negate().mul(_off)).add(_m2.dot(_swayW).div(_s2))
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
@@ -33579,6 +33599,41 @@ class AnazhRealm {
         }
         this._instanzMitteKnoten = T.varying(new InstanzMitte(), "vInstanzMitte");
         return this._instanzMitteKnoten;
+    }
+
+    // DIE INSTANZ IM POSITIONS-KNOTEN (K20, 13.10.): r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte:
+    // erst `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`) — dort lesen
+    // positionLocal und normalLocal den VORLAGEN-Raum. Wer im positionNode die Lage der Instanz braucht (die Karte, die das
+    // Auge ansieht), liest ihre Matrix hier: die Instanz-Matrix der gezeichneten Instanz (der Haken an
+    // `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen die Einheit. Fehlt sie an einer
+    // InstancedMesh, bricht der Bau LAUT — nie eine Karte, die still in der Drehung ihres Baums steht.
+    _instanzMatrixNode(T) {
+        if (this._instanzMatrixKnoten) return this._instanzMatrixKnoten;
+        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
+        if (!N || N.type !== "Node" || !T.mat4) {
+            const text = "INSTANZ-MATRIX: r184 Node (über InstanceNode) · mat4 fehlen (Vendor-Drift)";
+            this.log(text, "ERROR");
+            throw new Error(text);
+        }
+        const realm = this;
+        class InstanzMatrix extends N {
+            constructor() {
+                super("mat4");
+            }
+            setup(builder) {
+                const m = builder.__anazhInstanzMatrix;
+                if (m) return m;
+                if (builder.object && builder.object.isInstancedMesh) {
+                    const text =
+                        "INSTANZ-MATRIX: der Bau einer InstancedMesh fragt vor ihrer Instanz-Matrix (r184-Reihenfolge)";
+                    realm.log(text, "ERROR");
+                    throw new Error(text);
+                }
+                return T.mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+            }
+        }
+        this._instanzMatrixKnoten = new InstanzMatrix();
+        return this._instanzMatrixKnoten;
     }
 
     // DER BRUCH DER BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied (ein Uniform des LOD-Satzes, ein TSL-Knoten, die
