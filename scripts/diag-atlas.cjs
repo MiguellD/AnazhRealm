@@ -405,7 +405,7 @@ function selbsttest() {
         fall("R4 ZWILLING: ein Konstruktor in einer Zone", /^R4 ZWILLING: stamm\/03\.js:\d+ ein Konstruktor/, {
             fx: (t) => t.replace("    drei() {}", "    constructor() {}\n    drei() {}"),
         });
-        fall("R5 NAME: die alte Datei lebt", /^R5 NAME: anazhRealm\.js lebt/, { alt: true });
+        fall("R5 NAME: die alte Datei lebt", /^R5 NAME: \S+ lebt — der Stamm ist stamm\//, { alt: true });
         fall("R6 CACHE: ein Tag ohne die Version", /^R6 CACHE: stamm\/01\.js\?v=1\.2\.2 statt \?v=1\.2\.3/, {
             v: "1.2.2",
         });
