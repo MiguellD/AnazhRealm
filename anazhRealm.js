@@ -49488,23 +49488,9 @@ class AnazhRealm {
         const f = this._ensureAssetFoundry(); // der Chokepoint prüft das Regime selbst (N7.4-Muster)
         if (!f) return null;
         if (!f.ready || !f.recipes) {
-            // Worker bootet / Buch kalt: EIN Warte-Poll (Guard f._heldWaiting, das
-            // _workshopWaiting-Muster) baut die Hand GENAU EINMAL neu, sobald das Buch
-            // steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
-            if (!f._heldWaiting) {
-                f._heldWaiting = true;
-                const t0 = performance.now();
-                const poll = () => {
-                    if (f.ready && f.recipes) {
-                        f._heldWaiting = false;
-                        try {
-                            this._refreshHeldMesh();
-                        } catch (_e) {}
-                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
-                    else f._heldWaiting = false;
-                };
-                setTimeout(poll, 150);
-            }
+            // Worker bootet / Buch kalt: die Hand hängt sich an die EINE Buch-Zusage und baut GENAU EINMAL neu, sobald das
+            // Buch steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
+            this._foundryWecker(this._foundryBuchDa(f), "hand", () => this._refreshHeldMesh());
             return preset ? "pending" : null;
         }
         if (!preset) return null;
@@ -49519,37 +49505,11 @@ class AnazhRealm {
         const key = this._foundryKoerperKey(preset, variant, 0, heldOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, heldOv || undefined, 0).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
-                        try {
-                            this._refreshHeldMesh(); // Ankunft → die Hand einmal neu (Cache-Treffer, kein Loop)
-                        } catch (_e) {}
-                    } else {
-                        f.requested.delete(key); // Timeout: nicht dauerhaft doomen — der nächste Equip fragt neu
-                    }
-                });
-            } else if (!f._heldCacheWait) {
-                // Schlüssel schon UNTERWEGS (die requested-Wache dedupt global, der fremde Callback kennt die Hand
-                // nicht): ein begrenzter Poll (EIN Guard, 45 s = Worker-Timeout) baut die Hand GENAU EINMAL neu,
-                // sobald der Cache trägt; starb die fremde Anfrage, fragt der Neubau selbst frisch an.
-                f._heldCacheWait = key;
-                const tw0 = performance.now();
-                const cachePoll = () => {
-                    const arrived = f.cache && f.cache.has(key);
-                    if (arrived || !f.requested.has(key)) {
-                        f._heldCacheWait = null;
-                        try {
-                            this._refreshHeldMesh();
-                        } catch (_e) {}
-                    } else if (performance.now() - tw0 < 45000) setTimeout(cachePoll, 150);
-                    else f._heldCacheWait = null;
-                };
-                setTimeout(cachePoll, 150);
-            }
+            // Der EINE Zug des Schlüssels (zog ihn schon die Werkstatt oder die Welt, hängt sich die Hand an): bei Ankunft
+            // die Hand GENAU EINMAL neu (Cache-Treffer, kein Loop); nach Ablauf fragt der nächste Equip neu.
+            this._foundryWecker(this._foundryZug(key, preset, variant, 0, heldOv, 0), "hand", (ok) => {
+                if (ok) this._refreshHeldMesh();
+            });
             return "pending";
         }
         if (group === null || !group.children || !group.children.length) return null;
@@ -74016,6 +73976,9 @@ class AnazhRealm {
             this._blattAtlasBild = m.blattAtlas;
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
+        // Das Buch steht: wer davor fragte (Vorschau, Hand), baut jetzt neu (`_foundryBuchDa`).
+        const fB = this._foundry;
+        if (fB && fB.buchDa && fB.recipes) fB.buchDa.loes(true);
         // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
         // `_baumHuellenNachBuch` fiel mit dem Hand-Spiegel, Leben-Schau 2.)
     }
@@ -75773,6 +75736,66 @@ class AnazhRealm {
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
+    // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
+    // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
+    // für immer (Zweig-CI 38453848494: „keine Vorschau-Gestalt" nach 90 s, der Körper lag längst im Cache), die Hand trug
+    // dafür ihren eigenen 45-s-Poll. Jetzt hält `f.zuege` je Schlüssel im Flug EINE Zusage: der erste Besteller stellt den
+    // Auftrag, jeder spätere hängt sich an (`_foundryWecker`) und hebt den Rang auf seine Nähe (`_foundryNaeher`). Die
+    // Zusage löst mit true, wenn der Körper im Cache liegt, mit false nach Ablauf (die Wache gibt den Schlüssel frei, der
+    // nächste Leser fragt neu). `erst` gilt nur dem ersten Besteller: `vor` läuft vor dem Auftrag (der Wurf-Körper reist
+    // im selben Zug davor), `nach(ok)` nach der Ankunft.
+    _foundryZug(key, preset, variant, lod, ov, wo, erst) {
+        const f = this._foundry;
+        if (!f) return Promise.resolve(false);
+        const zuege = f.zuege || (f.zuege = new Map());
+        const da = zuege.get(key);
+        if (da) {
+            this._foundryNaeher(f, preset, variant, lod, wo);
+            return da;
+        }
+        if (!f.requested) f.requested = new Set();
+        f.requested.add(key);
+        if (erst && erst.vor) erst.vor();
+        const zug = this._foundryRequest(preset, variant, lod, ov || undefined, wo).then((meshes) => {
+            if (zuege.get(key) === zug) zuege.delete(key);
+            if (meshes) {
+                this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                return true;
+            }
+            f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu
+            return false;
+        });
+        zuege.set(key, zug);
+        if (erst && erst.nach) zug.then(erst.nach);
+        return zug;
+    }
+    // DIE BUCH-ANKUNFT als EINE Zusage (`f.buchDa`): wer vor dem Buch fragt (Vorschau, Hand), hängt sich an; sie löst am
+    // Ende von `_foundryIngestBook`, nie nach einer Frist (bis K38 gab je Wartendem ein 20-s-Poll still auf).
+    _foundryBuchDa(f) {
+        if (!f.buchDa) {
+            let loes;
+            f.buchDa = new Promise((res) => (loes = res));
+            f.buchDa.loes = loes;
+            if (f.ready && f.recipes) loes(true);
+        }
+        return f.buchDa;
+    }
+    // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug oder Buch) — kein Poll, keine Frist;
+    // fragt er im selben Warten erneut, bleibt es der eine Wecker.
+    _foundryWecker(zusage, wer, fn) {
+        const hoerer = this._foundryHoerer || (this._foundryHoerer = new WeakMap());
+        let w = hoerer.get(zusage);
+        if (!w) hoerer.set(zusage, (w = new Set()));
+        if (w.has(wer)) return;
+        w.add(wer);
+        zusage.then((ok) => {
+            try {
+                fn(ok);
+            } catch (_e) {
+                /* ein gerissener Neubau des Wartenden stoppt die Zusage nie */
+            }
+        });
+    }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
     // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
     _foundryIngestTakt(x) {
@@ -76551,24 +76574,18 @@ class AnazhRealm {
         const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
-            const f = this._ensureAssetFoundry();
-            if (!f) return null;
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(gkey)) {
-                f.requested.add(gkey);
-                this._foundryRequest(preset, variant, bakeLod, ov || undefined).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: bakeLod, preset }));
+            if (!this._ensureAssetFoundry()) return null;
+            this._foundryZug(gkey, preset, variant, bakeLod, ov, undefined, {
+                nach: (ok) => {
+                    if (ok) {
                         this._scatterRefillPending = true;
                         // Im Ankunfts-Moment die Zelle anlegen (Cache-Hit → Rahmen) — sonst entsteht sie erst beim
                         // nächsten zufälligen Leser.
                         this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
-                    } else {
-                        f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
                     }
                     this._foundryRewarmColdTrees();
-                });
-            }
+                },
+            });
             return null; // die Geometrie lädt (der Aufrufer lässt L2 kalt)
         }
         const z = this._impostorZelleNeu(at, key, preset, variant, ovK);
@@ -78903,28 +78920,20 @@ class AnazhRealm {
         const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
+            this._foundryZug(key, preset, variant, lod, entryOv, entry.position, {
                 // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
-                // im selben Zug — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
+                // im selben Zug davor — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
                 // Stufe wartete doppelt.
-                if (!entryOv) {
+                vor: () => {
+                    if (entryOv) return;
                     const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
                     if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
-                }
-                this._foundryRequest(preset, variant, lod, entryOv || undefined, entry.position).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                    } else {
-                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                        f.requested.delete(key);
-                    }
-                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
-                });
-            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, entry.position);
+                },
+                nach: (ok) => {
+                    if (ok) this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                    this._foundryRewarmColdTrees(); // das eben geladene Asset → wartende Einträge bauen
+                },
+            });
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
@@ -88682,10 +88691,10 @@ class AnazhRealm {
         if (lod > 2) lod = 2;
         // W-A1 — die B4-Regler-Overrides dieser Auswahl (ws.studioOv[preset], null wenn leer).
         const ov = this._workshopStudioOvFor(preset);
-        // W-A1 — EHRLICHES INTERIM: bootet der Worker noch, traegt die EINE Quelle das
-        // Warte-Polling + gibt "pending" (KEIN Grammatik-Interim fuer foundry-aufloesbare
+        // W-A1 — EHRLICHES INTERIM: bootet der Worker noch oder fehlt das Buch, haengt die EINE Quelle die Vorschau an
+        // die Buch-Zusage + gibt "pending" (KEIN Grammatik-Interim fuer foundry-aufloesbare
         // Auswahl mehr — die Buehne bleibt leer, der Status sagt „Studio-Asset lädt…").
-        if (!f.ready) return this._workshopStudioPreviewFrom(preset, seedNum, lod, ov);
+        if (!f.ready || !f.recipes) return this._workshopStudioPreviewFrom(preset, seedNum, lod, ov);
         // L2 eines BAUMS ist in der Welt der 8-Winkel-Impostor (`_foundryFlattenFor` →
         // `_foundryBuildImpostorFlat`) — die Vorschau MUSS dasselbe zeigen. Die Impostor-Geometrie ist
         // camera-facing und liest Rotation/Skala aus der INSTANZ-Matrix → als 1-Instanz-InstancedMesh
@@ -88809,20 +88818,9 @@ class AnazhRealm {
                 this._workshopRebuildPreviewMesh();
             } catch (_e) {}
         };
-        if (!f.ready) {
-            // Foundry bootet noch → sobald sie bereit ist, die Vorschau EINMAL neu bauen.
-            if (!f._workshopWaiting) {
-                f._workshopWaiting = true;
-                const t0 = performance.now();
-                const poll = () => {
-                    if (f.ready) {
-                        f._workshopWaiting = false;
-                        rebuild();
-                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
-                    else f._workshopWaiting = false;
-                };
-                setTimeout(poll, 150);
-            }
+        if (!f.ready || !f.recipes) {
+            // Foundry bootet / Buch kalt → die Vorschau hängt sich an die EINE Buch-Zusage und baut bei Ankunft EINMAL neu.
+            this._foundryWecker(this._foundryBuchDa(f), "werkstatt", rebuild);
             return "pending";
         }
         // ERFINDER-WELLE — die Ofen-Domaenen (koerper/kreatur/klang) ZUERST: der Host baeckt
@@ -88861,16 +88859,9 @@ class AnazhRealm {
         const key = this._foundryKoerperKey(preset, variant, lod); // Same + LOD aus der Auswahl = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, undefined, 0).then((meshes) => {
-                    if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                    else f.requested.delete(key);
-                    rebuild();
-                });
-            }
+            // Noch nicht im Cache → der EINE Zug des Schlüssels (zog ihn schon die Welt oder die Hand, hängt sich die Vorschau
+            // an und hebt seinen Rang auf die Nähe 0); bei Ankunft baut sie neu, nach Ablauf fragt der Neubau frisch an.
+            this._foundryWecker(this._foundryZug(key, preset, variant, lod, null, 0), "werkstatt", rebuild);
             return "pending";
         }
         if (group === null || !group.children || !group.children.length) return false;

@@ -10,6 +10,13 @@
 //     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
+//   V-D3 FREMDER ZUG (K38) — DER WARTENDE ERWACHT, WENN EIN ANDERER SEINEN KÖRPER ZUERST ZOG: die Welt zieht den Körper
+//     der Eiche über ihren Chokepoint (`_foundryFlattenFor`, 300 m fern, im Rang der Ferne), dann wählt der Spieler die
+//     Eiche (`selectBlueprintForEdit`); die Vorschau zeigt sie in der Frist. Dazu die Hand (`_heldFoundryGroup`) hinter dem
+//     Zug der Vorschau: sie wird NACH der Ankunft geweckt. Befund Zweig-CI 38453848494 (voll 8/11): die Vorschau fand den
+//     Schlüssel in der Dedup-Wache `f.requested` und wartete 90 s auf einen Rückruf, den nur der erste Besteller trug
+//     („keine Vorschau-Gestalt"); im Rahmen danach stand dieselbe Eiche sofort (der Körper lag längst im Cache).   Soll ≤ 20 s
+//
 //   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
 //     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
 //     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
@@ -101,7 +108,26 @@ function fnBody(src, sigRe) {
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000 };
+// V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
+function zugVerdict(m) {
+    if (!m || m.gestartet !== true) return ["zug start"];
+    const out = [];
+    for (const [wer, z] of [
+        ["vorschau", m.vorschau],
+        ["hand", m.hand],
+    ]) {
+        if (!z) out.push(`zug ${wer}: keine Probe (vakuös)`);
+        else if (!z.fremd) out.push(`zug ${wer}: kein fremder Zug im Flug (vakuös)`);
+        else if (!(Number.isFinite(z.ms) && z.ms <= SOLL.zugMs)) // null ist nie 0 (Lehre 17)
+            out.push(
+                z.imCache
+                    ? `zug ${wer} schläft: ${z.key} liegt im Cache, ${wer === "hand" ? "die Hand" : "die Vorschau"} wartet weiter`
+                    : `zug ${wer}: ${z.key} nach ${SOLL.zugMs} ms nicht angekommen (der fremde Zug im Rang der Ferne)`
+            );
+    }
+    return out;
+}
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
 // Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
 function rahmenVerdict(m) {
@@ -395,6 +421,7 @@ const server = http.createServer((req, res) => {
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(arg) {
     const kiPort = arg && arg.kiPort;
+    const zugFrist = (arg && arg.zugMs) + 2000; // die Frist des fremden Zugs (SOLL lebt in Node), 2 s über dem Soll
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     const dl0 = performance.now() + 90000;
@@ -958,7 +985,16 @@ async function probe(arg) {
             await tick(1, 80);
         }
         const p = ws.preview;
-        if (!p || !p.currentMesh) throw new Error("keine Vorschau-Gestalt");
+        if (!p || !p.currentMesh) {
+            // Der Zustand beim Namen: liegt der Körper im Cache, schläft die Vorschau; sonst wartet sie auf den Zug.
+            const bpE = st.blueprints.baum_eiche;
+            const pr = r._foundryPresetForEntry({ type: "baum_eiche" });
+            const lodE = bpE && Number.isFinite(bpE._recipeLod) ? bpE._recipeLod | 0 : 0;
+            const k = pr ? r._foundryKoerperKey(pr, r._foundryVariantFor(r._werkSame(bpE, "baum_eiche"), pr), lodE) : null;
+            throw new Error(
+                `keine Vorschau-Gestalt — ${k}: im Cache ${!!(k && f.cache.has(k))} · angefragt ${!!(k && f.requested && f.requested.has(k))} · Vorschau pending ${!!r._wsStudioPending} · Schlange ${(f.warte || []).length} · im Flug ${f.pending ? f.pending.size : 0}`
+            );
+        }
         p.rendererReady = true;
         m.maskeWelt = lu.uLodMaskOn.value;
         r._workshopRender();
@@ -1010,6 +1046,75 @@ async function probe(arg) {
         }
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── V-D3 FREMDER ZUG (K38): der Wartende erwacht, wenn ein ANDERER seinen Körper-Schlüssel zuerst zog ──
+    // Der fremde Besteller läuft über seinen eigenen Chokepoint (die Welt: `_foundryFlattenFor`; für die Hand: die
+    // Vorschau), der Wartende über seinen (`selectBlueprintForEdit` · `_heldFoundryGroup`). Der Körper wird vorher aus dem
+    // Cache geräumt (`_foundryCacheEvict`, die EINE Räumungs-Naht), die Vorschau steht dabei auf einem Teile-Bauplan.
+    try {
+        const m = { gestartet: false };
+        out.zug = m;
+        const ws = r._ensureWorkshopState();
+        const p = ws.preview;
+        const f = r._foundry;
+        if (!p || !f || !f.ready || !f.recipes) throw new Error("keine Vorschau oder kein Buch");
+        const teile = Object.keys(st.blueprints).find((n) => {
+            const b = st.blueprints[n];
+            return b && Array.isArray(b.parts) && b.parts.length && !r._foundryPresetForEntry({ type: n });
+        });
+        const zuTeilen = () => {
+            if (teile) r.selectBlueprintForEdit(teile);
+        };
+        const schluessel = (bpName) => {
+            const preset = r._foundryPresetForEntry({ type: bpName });
+            const variant = r._foundryVariantFor(r._werkSame(st.blueprints[bpName], bpName), preset);
+            return { preset, variant, key: r._foundryKoerperKey(preset, variant, 0) };
+        };
+        const imFlug = (k) => !!(f.requested && f.requested.has(k)) && !f.cache.has(k);
+        // (a) die Vorschau hinter dem Zug der Welt
+        zuTeilen();
+        const a = schluessel("baum_eiche");
+        r._foundryCacheEvict(a.key);
+        let same = 1;
+        while (same < 100000 && r._foundryVariantFor(same, a.preset) !== a.variant) same++;
+        const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        r._foundryFlattenFor({ type: "baum_eiche", seed: same, position: { x: pm.x + 300, y: pm.y, z: pm.z + 300 } }, a.preset, 0);
+        m.vorschau = { key: a.key, fremd: imFlug(a.key) };
+        const t0 = performance.now();
+        r.selectBlueprintForEdit("baum_eiche");
+        const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
+        while (performance.now() < t0 + zugFrist && !steht()) await tick(1, 80);
+        m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
+        m.vorschau.imCache = f.cache.has(a.key);
+        // (b) die Hand hinter dem Zug der Vorschau: geweckt zählt nur NACH der Ankunft
+        const klinge = Object.keys(st.blueprints)
+            .sort()
+            .find((n) => /^klinge_/.test(n) && r._foundryPresetForEntry({ type: n }));
+        if (klinge) {
+            zuTeilen();
+            const b = schluessel(klinge);
+            r._foundryCacheEvict(b.key);
+            r.selectBlueprintForEdit(klinge);
+            m.hand = { key: b.key, fremd: imFlug(b.key), geweckt: 0, vorAnkunft: 0 };
+            const echt = r._refreshHeldMesh;
+            r._refreshHeldMesh = function () {
+                if (f.cache.has(b.key)) m.hand.geweckt++;
+                else m.hand.vorAnkunft++;
+            };
+            try {
+                const t1 = performance.now();
+                const erst = r._heldFoundryGroup(klinge);
+                m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
+                while (performance.now() < t1 + zugFrist && !m.hand.geweckt) await tick(1, 80);
+                m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
+                m.hand.imCache = f.cache.has(b.key);
+            } finally {
+                r._refreshHeldMesh = echt;
+            }
+        }
+        m.gestartet = true;
+    } catch (e) {
+        out.zug = Object.assign(out.zug || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-D3 RAHMEN (K05, WS-01): jedes Rezept und jeder Bauplan füllt die Vorschau ──
     // Die Wahl läuft über die Chokepoints des Spielers (selectStudioRecipeForView · selectBlueprintForEdit), die Kamera
@@ -1103,6 +1208,23 @@ async function probe(arg) {
         ]) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
+        const zugGesund = {
+            gestartet: true,
+            vorschau: { key: "eiche|2|0", fremd: true, ms: 1500, imCache: true },
+            hand: { key: "klinge|1|0", fremd: true, ms: 900, imCache: true },
+        };
+        check("Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter", zugVerdict(zugGesund).length === 0, zugVerdict(zugGesund).join(" · "));
+        const zugMit = (wer, z) => Object.assign({}, zugGesund, { [wer]: Object.assign({}, zugGesund[wer], z) });
+        for (const [name, bruch, soll] of [
+            ["die Vorschau schläft nach der Ankunft (Zweig-CI 38453848494)", zugMit("vorschau", { ms: null, imCache: true }), "zug vorschau schläft"],
+            ["der fremde Zug im Rang der Ferne", zugMit("vorschau", { ms: null, imCache: false }), "zug vorschau: eiche|2|0 nach"],
+            ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null, imCache: true }), "zug hand schläft"],
+            ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
+            ["keine Klinge im Buch (vakuös)", Object.assign({}, zugGesund, { hand: null }), "zug hand: keine Probe"],
+        ]) {
+            const v = zugVerdict(bruch);
+            check(`Selbst-Test V-D3 Fremder Zug: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         const waffe = (id, fuell) => ({ art: "rezept", id, kind: "weapon", fuell, kante: 0.4, dist: 3 });
         const gesundR = { gestartet: true, waffenImBuch: 2, eintraege: [waffe("beil", 0.7), waffe("messer", 0.7)] };
@@ -1304,7 +1426,7 @@ async function probe(arg) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, zugMs: SOLL.zugMs, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
     await browser.close();
     server.close();
 
@@ -1405,6 +1527,15 @@ async function probe(arg) {
         "V-D3 die Eiche der Werkstatt-Vorschau steht im Bild (Masken-Gesetz über die Vorschau-Vertices ≥ 99 %)",
         vV.length === 0,
         `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
+    );
+    const zm = out.zug || {};
+    if (zm.err) check("V-D3 Fremder Zug Probe ohne Ausnahme", false, zm.err.split("\n")[0]);
+    const vZ = zugVerdict(zm);
+    const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
+    check(
+        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers (≤ ${SOLL.zugMs} ms)`,
+        vZ.length === 0,
+        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );
     const rm = out.rahmen || {};
     if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
