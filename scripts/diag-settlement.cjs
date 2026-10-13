@@ -268,6 +268,7 @@ const FIXTURES = [
             ],
             [
                 { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
+                // BÜHNE: Grundriss-Daten einer Einheits-Probe, kein gesetzter Ort
                 { phi: 0, x: 30, z: 0, obb: { cx: 30, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
             ],
             gap
@@ -371,6 +372,7 @@ const FIXTURES = [
         //    tragen; die Determinismus-Aussage ist: derselbe Export + derselbe Anker ⇒
         //    byte-dieselben Eintraege [type/x/z/rot/seed]).
         const before = r.state.architectures.length;
+        // BÜHNE: Bau-Anker: derselbe Export am selben Anker — den Ort trägt das Platz-Gesetz des Stamms (_spawnSettlementFromExport)
         const o1 = { x: 400, z: 400 };
         // Der zweite Akt steht auf dem geräumten Ort: die Bau-Wand (_bauFrei) setzt kein Haus in ein Haus — neben dem ersten
         // Dorf entstünde am selben Anker keines (Integration Welle L, gate:haus-welt W7). Die folgenden Proben lesen die

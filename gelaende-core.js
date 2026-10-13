@@ -501,8 +501,127 @@
         return kn.bed;
     }
 
+    // DIE BREITE eines Flusses aus seinem Einzugsgebiet A (m²): die Bankvoll-Breite der hydraulischen Geometrie (Dunne &
+    // Leopold 1978, W ∝ A^0,37: 0,16 km² ≈ 4,4 m, 25 km² ≈ 17 m). Leser: der Mäander (Wellenlänge und Raum in der Aue) und die
+    // Hydrosphäre des Wirts (`_hydroNetzFluesse`) — EIN Gesetz der Breite.
+    const FLUSS_BREITE = Object.freeze({ min: 2, k: 4.7, exp: 0.37 });
+    function flussBreite(A) {
+        return FLUSS_BREITE.min + FLUSS_BREITE.k * Math.pow(Math.max(0, A) / 1e6, FLUSS_BREITE.exp);
+    }
+
+    // DER MÄANDER (K16, Prüfung Runde 2: „ein linealgerader Fluss — der Kern hat keinen Mäander-Term"): die Bahn eines Fluss-
+    // Glieds der Ebenen 0 und 1 ist die sinus-erzeugte Kurve (Langbein & Leopold 1966) — die Richtung schwingt mit der
+    // Bogenlänge, θ(s) = ω·cos(2π·s/M), die Kurve kleinster Krümmungs-Varianz. Die Wellenlänge auf der Sehne λ ≈ 11 Breiten
+    // (Leopold & Wolman 1960, ±15 % je Glied), ω = 1,2 rad: Sinuosität M/λ = 1/J0(ω) ≈ 1,49, kleinster Krümmungs-Radius
+    // Rc = M/(2π·ω) ≈ 2,2 Breiten (Soll 2–3). Ein Glied trägt n = round(Sehne/λ) ganze Wellen: die Bahn verlässt und erreicht
+    // ihre Knoten auf der Sehne und unter demselben Winkel — die Knicke sind die des Netzes, keiner mehr. Sie bleibt in der
+    // Aue (halbe Amplitude ≤ Aue F − Breite, sonst ein kleineres ω) und streckt sich mit dem Gefälle (voll bis 0,4 %, gerade
+    // ab 1,5 %: der Gebirgsbach mäandriert nicht). Leser: die Fläche (die Aue fällt quer zur BAHN), die Mündung der Zuflüsse
+    // (auf der Bahn) und das Wasser (`flussLaeufe` trägt je Glied die Bahn, die Hydrosphäre legt Kanal und Spiegel darauf).
+    const MAEANDER = Object.freeze({
+        lambdaBreiten: 11,
+        streuung: 0.3,
+        omega: 1.2,
+        gefaelleVoll: 0.004,
+        gefaelleNull: 0.015,
+        stufen: 12,
+        tafel: 128,
+        jeWelle: 12,
+    });
+    // Die Kurve je ω-Stufe, EINMAL beim Laden: über eine Welle (φ = 2π·s/M) X(φ) und Y(φ) in Wellenlängen der Sehne
+    // (X(2π) = 1), dazu Y über X gleichmäßig (die Fläche fragt am Ort auf der Sehne; X steigt streng, ω < π/2), die größte
+    // |Y| (der Raum in der Aue) und der Bogen je Wellenlänge M/λ.
+    const MAEANDER_KURVE = (() => {
+        const n = MAEANDER.tafel;
+        const fein = 16 * n;
+        const d = (2 * Math.PI) / fein;
+        const stufen = [];
+        for (let o = 0; o <= MAEANDER.stufen; o++) {
+            const om = (MAEANDER.omega * o) / MAEANDER.stufen;
+            const xs = new Float64Array(fein + 1);
+            const ys = new Float64Array(fein + 1);
+            for (let k = 0; k < fein; k++) {
+                const th = om * Math.cos((k + 0.5) * d);
+                xs[k + 1] = xs[k] + Math.cos(th) * d;
+                ys[k + 1] = ys[k] + Math.sin(th) * d;
+            }
+            const L = xs[fein];
+            const phiX = new Float64Array(n + 1);
+            const phiY = new Float64Array(n + 1);
+            for (let k = 0; k <= n; k++) {
+                phiX[k] = xs[k * 16] / L;
+                phiY[k] = ys[k * 16] / L;
+            }
+            const yX = new Float64Array(n + 1);
+            let q = 0;
+            for (let j = 0; j <= n; j++) {
+                const X = (j / n) * L;
+                while (q < fein - 1 && xs[q + 1] < X) q++;
+                const f = xs[q + 1] > xs[q] ? Math.min(1, Math.max(0, (X - xs[q]) / (xs[q + 1] - xs[q]))) : 0;
+                yX[j] = (ys[q] + (ys[q + 1] - ys[q]) * f) / L;
+            }
+            let ymax = 0;
+            for (let k = 0; k <= fein; k++) ymax = Math.max(ymax, Math.abs(ys[k]) / L);
+            stufen.push({ omega: om, bogen: (2 * Math.PI) / L, phiX, phiY, yX, ymax });
+        }
+        return stufen;
+    })();
+    // Der Versatz der Bahn quer zur Sehne an t ∈ [0, 1] (m, links positiv; 0 an beiden Knoten).
+    function bahnVersatz(s, t) {
+        const yX = MAEANDER_KURVE[s.mo].yX;
+        let X = t * s.mn;
+        X -= Math.floor(X);
+        const f = X * MAEANDER.tafel;
+        const j = f | 0;
+        const y = j >= MAEANDER.tafel ? yX[MAEANDER.tafel] : yX[j] + (yX[j + 1] - yX[j]) * (f - j);
+        return s.mv * s.ml * y;
+    }
+    // Die Bahn eines Segments als Punkte (Abstand ≤ `schritt` m auf dem Bogen, je Welle mindestens `jeWelle`): je Punkt der
+    // Ort auf der Sehne t, die Lage (x, z), die Bogenlänge s ab dem Knoten und die Richtung (fx, fz). Ohne Mäander die Sehne.
+    function bahnPunkte(s, schritt) {
+        const len = Math.sqrt(s.len2);
+        const ux = s.ex / len;
+        const uz = s.ez / len;
+        const P = [];
+        if (!s.mo) {
+            const m = Math.max(1, Math.ceil(len / schritt));
+            for (let q = 0; q <= m; q++) {
+                const t = q / m;
+                P.push({ t, x: s.ax + s.ex * t, z: s.az + s.ez * t, s: len * t, fx: ux, fz: uz });
+            }
+            return P;
+        }
+        const K = MAEANDER_KURVE[s.mo];
+        const M = K.bogen * s.ml;
+        const je = Math.max(MAEANDER.jeWelle, Math.ceil(M / schritt));
+        const n = MAEANDER.tafel;
+        for (let w = 0; w < s.mn; w++)
+            for (let q = 0; q < je || (q === je && w === s.mn - 1); q++) {
+                const f = (q / je) * n;
+                const j = Math.min(n - 1, f | 0);
+                const r = f - j;
+                const X = K.phiX[j] + (K.phiX[j + 1] - K.phiX[j]) * r;
+                const Y = K.phiY[j] + (K.phiY[j + 1] - K.phiY[j]) * r;
+                const t = (w + X) / s.mn;
+                const y = s.mv * s.ml * Y;
+                const th = s.mv * K.omega * Math.cos((2 * Math.PI * q) / je);
+                const c = Math.cos(th);
+                const sn = Math.sin(th);
+                P.push({
+                    t,
+                    x: s.ax + s.ex * t - uz * y,
+                    z: s.az + s.ez * t + ux * y,
+                    s: (w + q / je) * M,
+                    fx: ux * c - uz * sn,
+                    fz: uz * c + ux * sn,
+                });
+            }
+        return P;
+    }
+
     // Das Talprofil eines Segments (Ebene, Auen-Breite F, Flanken-Breite W, Form b, Stil) — die Segmente einer Knoten-Zelle
-    // sind die, deren Reichweite (F + W, im Tafelland die Schicht-Treppe) die Zelle berührt.
+    // sind die, deren Reichweite (F + W, im Tafelland die Schicht-Treppe) die Zelle berührt. Die Ebenen 0 und 1 tragen ihren
+    // Mäander (Stufe mo, Wellen mn, Wellenlänge ml, Seite mv; mo 0: die Sehne).
     function segment(N, kn) {
         knotenFluss(N, kn);
         const bed = knotenSohle(N, kn);
@@ -523,6 +642,33 @@
             const M = schichtMass(N);
             reach = Math.max(reach, F + 140 + Math.ceil((gf.rel + 40) / M.T) * M.per);
         }
+        let mo = 0;
+        let mn = 0;
+        let ml = 0;
+        let mv = 1;
+        if (kn.k <= 1) {
+            const len = Math.hypot(ex, ez) || 1;
+            const w = flussBreite(Am2);
+            const lam0 =
+                MAEANDER.lambdaBreiten *
+                w *
+                (1 + MAEANDER.streuung * (zufall(N.sh, kn.i, kn.j, 50 + kn.k) - 0.5));
+            const n = Math.round(len / lam0);
+            if (n >= 1) {
+                const lam = len / n;
+                const gefaelle = (bed - t.bed) / len;
+                let o = Math.floor(
+                    MAEANDER.stufen * (1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle)) + 1e-9
+                );
+                while (o > 0 && MAEANDER_KURVE[o].ymax * lam > F - w) o--;
+                if (o > 0) {
+                    mo = o;
+                    mn = n;
+                    ml = lam;
+                    mv = zufall(N.sh, kn.i, kn.j, 52 + kn.k) < 0.5 ? -1 : 1;
+                }
+            }
+        }
         return {
             ax: kn.x,
             az: kn.z,
@@ -536,6 +682,10 @@
             b,
             stil,
             reach,
+            mo,
+            mn,
+            ml,
+            mv,
             von: kn, // der Knoten des Segments (eine Mündung darauf ist ein Zufluss, keine Senke: `flussLaeufe`)
         };
     }
@@ -674,9 +824,18 @@
                 // die Neigung des Profils quer zur Rinne (mit der Treppe gemischt) — der Hang der gewählten Fläche
                 let gh = 0;
                 let sch = 0;
-                // Die Aue fällt quer 0,6 % zur Rinne (das Wasser sammelt sich im Bett, nie in der Fläche).
-                if (u <= 0) v = bed + AUE_QUER * d;
-                else {
+                // Die Aue fällt quer 0,6 % zur Rinne (das Wasser sammelt sich im Bett, nie in der Fläche) — zur BAHN des
+                // Mäanders: der Abstand quer zur Sehne, so gestaucht, dass die Bahn 0 und die Auen-Kante F bleibt (stetig an
+                // der Kante und an den Knoten, wo die Bahn auf der Sehne liegt).
+                if (u <= 0) {
+                    let dq = d;
+                    if (s.mo && t > 0 && t < 1) {
+                        const lat = (dz * s.ex - dx * s.ez) / Math.sqrt(s.len2);
+                        const y = bahnVersatz(s, t);
+                        dq = lat >= y ? ((lat - y) * s.F) / (s.F - y) : ((y - lat) * s.F) / (s.F + y);
+                    }
+                    v = bed + AUE_QUER * dq;
+                } else {
                     const sohle = bed + AUE_QUER * s.F;
                     w = u / s.W;
                     if (w >= 1) v = H;
@@ -736,7 +895,10 @@
             const v = bed + d * 0.05;
             if (v < bv) {
                 bv = v;
-                best = { x: s.ax + s.ex * t, z: s.az + s.ez * t, bed, von: s.von };
+                // der Zufluss mündet auf der BAHN des Hauptlaufs (nie neben dem Wasser in der Aue)
+                const y = s.mo && t > 0 && t < 1 ? bahnVersatz(s, t) : 0;
+                const len = Math.sqrt(s.len2);
+                best = { x: s.ax + s.ex * t - (s.ez / len) * y, z: s.az + s.ez * t + (s.ex / len) * y, bed, von: s.von };
             }
         }
         if (best) return best;
@@ -757,10 +919,24 @@
     // Landes über 50 m Prominenz). Die Landform trägt Gipfel bis ~200 m über dem Meer; die Grenze 140 → 185 m legt
     // Schnee auf die obersten 1–3 % des Landes. Leser: die Boden-Farbe (Stamm `_bodenFarbeAt`, Worker
     // `attachFieldColors`) — der Anteil 0…1 an der Höhe y.
-    const SCHNEE = Object.freeze({ start: 140, voll: 185 });
-    function schnee(L, y) {
+    // WEICH (K16, Prüfung Runde 2: „harte Schnee-Kappen" im Makro-Bild): die Grenze ist keine Höhenlinie — zwei Oktaven des
+    // Gelände-Rauschens verschieben sie je Ort (`zungen`: λ ≈ 330 m um ±18 m, λ ≈ 45 m um ±7 m), die Kappe franst in Zungen
+    // und Flecken aus, wie Schnee in Mulden länger liegt als auf Rücken. Das Mittel bleibt die Grenze (Rauschen ohne Mittel).
+    // Die Leser geben den Ort (x, z); fehlt er, bricht die Funktion laut (nie die alte Höhenlinie als Ersatz).
+    const SCHNEE = Object.freeze({
+        start: 140,
+        voll: 185,
+        zungen: [
+            { f: 0.003, a: 18, ox: 17.3, oz: -41.9 },
+            { f: 0.022, a: 7, ox: -5.1, oz: 8.3 },
+        ],
+    });
+    function schnee(L, y, x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - 3;
-        return glatt(SCHNEE.start, SCHNEE.voll, y - wl);
+        let zunge = 0;
+        for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
+        return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
     }
 
     function wildnisY(L, x, z, mitDetail, aus) {
@@ -830,9 +1006,11 @@
     // Knoten ohne Oberlieger seiner Ebene: `quelle`) oder, liegen alle Oberlieger jenseits der Reichweite, an ihrem Rand,
     // und folgt dem Unterlieger bis zur Mündung ins Netz der Ebene 0 (`ende` "muendung": ein Zufluss endet auf der Rinne des
     // Hauptlaufs, jedes Glied gehört EINEM Lauf), zur Senke ("see" ein benannter See, "meer") oder jenseits der Reichweite
-    // ("rand"). Je Glied die Enden, die Sohlen (`knotenSohle`, stromab streng fallend) und das Einzugsgebiet A in m². Ohne
+    // ("rand"). Je Glied die Enden, die Sohlen (`knotenSohle`, stromab streng fallend), das Einzugsgebiet A in m² und die
+    // BAHN (`bahnPunkte`: der Mäander, Punkte im Abstand ≤ `schritt` m — der Wirt legt Kanal und Spiegel darauf). Ohne
     // Wildnis-Term (eine Bühne): [].
-    function flussLaeufe(L, x0, z0, x1, z1) {
+    function flussLaeufe(L, x0, z0, x1, z1, schritt) {
+        if (!(schritt > 0)) throw new Error("gelaende-core flussLaeufe: der Abtast-Schritt der Bahn fehlt");
         const T = L.erbgut && L.erbgut.terme;
         if (!T || !T.length || T[0].art !== "wildnis") return [];
         const N = netzFuer(L);
@@ -851,6 +1029,7 @@
                 ba: knotenSohle(N, kn),
                 bb: f ? knotenSohle(N, f) : t.bed,
                 A: knotenA(N, kn) * N.S[kn.k] * N.S[kn.k],
+                bahn: bahnPunkte(segment(N, kn), schritt),
             };
         };
         const laeufe = [];
@@ -954,7 +1133,8 @@
     // DIE BODEN-GENERATION (K16): die Zahl des Gelände-Gesetzes, unter dem ein Save seine Höhen schrieb. Ein Save einer anderen
     // Generation (vor K16: keine) zieht beim Laden um — jeder Bau und der Spieler stehen auf dem Boden dieses Gesetzes in ihrer
     // Höhe über Grund (Stamm `_bodenUmzug`). Jeder Schnitt, der den Boden bewegt, zählt sie hoch.
-    const BODEN_GENERATION = 1;
+    // 2: der Mäander (die Aue fällt zur Bahn, die Zuflüsse münden auf ihr).
+    const BODEN_GENERATION = 2;
     const MUND_TAN_VON = Math.tan((HOEHLEN_MUND.von * Math.PI) / 180);
     const MUND_TAN_BIS = Math.tan((HOEHLEN_MUND.bis * Math.PI) / 180);
     function hoehlenMund(hang) {
@@ -1367,6 +1547,62 @@
         const r3 = (v) => Math.round(v * 1000) / 1000;
         if (!c) return { zellen: 0, pediment: 0, schutt: 0, ruhe: 0, kliff: 0 };
         return { zellen: c, pediment: r3(ped / c), schutt: r3(schutt / c), ruhe: r3(ruhe / c), kliff: r3(kliff / c) };
+    }
+    // DIE MÄANDER-ZAHL (K16): die Bahnen der Flachland-Glieder (Gefälle < 0,4 %, Sehne ≥ drei Wellen von 11 Breiten) gegen
+    // Leopold & Wolman — je Glied die Sinuosität (Bogen / Sehne), die Wellenlänge der Sehne in Breiten (2 · Sehne / (Achsen-
+    // Querungen + 1)) und der kleinste Krümmungs-Radius in Breiten (Umkreis je drei Punkte); gezählt wird der Median. Ein
+    // Glied ohne Bahn ist seine Sehne (eine Gerade: Sinuosität 1, keine Querung). Die Breite ist `flussBreite`.
+    function maeanderZahl(laeufe) {
+        const sin = [];
+        const lam = [];
+        const rc = [];
+        for (const lf of laeufe)
+            for (const gl of lf.glieder) {
+                const ex = gl.bx - gl.ax;
+                const ez = gl.bz - gl.az;
+                const sehne = Math.hypot(ex, ez);
+                if (!(sehne > 0) || (gl.ba - gl.bb) / sehne >= MAEANDER.gefaelleVoll) continue;
+                const w = flussBreite(gl.A);
+                if (sehne < 3 * MAEANDER.lambdaBreiten * w) continue;
+                const P = gl.bahn || [
+                    { x: gl.ax, z: gl.az },
+                    { x: gl.bx, z: gl.bz },
+                ];
+                let bogen = 0;
+                let quer = 0;
+                let vz = 0;
+                let rmin = Infinity;
+                for (let k = 0; k < P.length; k++) {
+                    const p = P[k];
+                    if (k) bogen += Math.hypot(p.x - P[k - 1].x, p.z - P[k - 1].z);
+                    const lat = ((p.z - gl.az) * ex - (p.x - gl.ax) * ez) / sehne;
+                    if (Math.abs(lat) > 0.05 * w) {
+                        const s = lat > 0 ? 1 : -1;
+                        if (vz && s !== vz) quer++;
+                        vz = s;
+                    }
+                    if (k && k < P.length - 1) {
+                        const a = Math.hypot(p.x - P[k - 1].x, p.z - P[k - 1].z);
+                        const b = Math.hypot(P[k + 1].x - p.x, P[k + 1].z - p.z);
+                        const c = Math.hypot(P[k + 1].x - P[k - 1].x, P[k + 1].z - P[k - 1].z);
+                        const kreuz = Math.abs(
+                            (p.x - P[k - 1].x) * (P[k + 1].z - P[k - 1].z) - (p.z - P[k - 1].z) * (P[k + 1].x - P[k - 1].x)
+                        );
+                        if (kreuz > 1e-9) rmin = Math.min(rmin, (a * b * c) / (2 * kreuz));
+                    }
+                }
+                sin.push(bogen / sehne);
+                lam.push(quer ? (2 * sehne) / (quer + 1) / w : Infinity);
+                rc.push(rmin / w);
+            }
+        const med = (a) => (a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : null);
+        const r2 = (v) => (v == null ? null : Number.isFinite(v) ? Math.round(v * 100) / 100 : v);
+        return {
+            glieder: sin.length,
+            sinuositaet: r2(med(sin)),
+            lambdaBreiten: r2(med(lam)),
+            rcBreiten: r2(med(rc)),
+        };
     }
 
     // ── DER FELS-STOFF (K17): EIN Gesetz für das Aussehen des Felsens — der Welt-Boden (Kliff, Schutthang, Höhle), das
@@ -2173,6 +2409,10 @@
         felsZahl: ZAHL,
         statistik: statistik,
         hangBaender: hangBaender,
+        maeanderZahl: maeanderZahl,
+        MAEANDER: MAEANDER,
+        FLUSS_BREITE: FLUSS_BREITE,
+        flussBreite: flussBreite,
         VERSION: VERSION,
         STUDIO_VERTRAG: 1, // G4.3 — EINE Versions-Semantik
         FUNKTION: 1, // studio-vertrag §9 — ein Gesetz-Kern: reine Funktionen, keine Rezepte, keine Gestalt

@@ -659,7 +659,8 @@ const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
 // Die Mess-Wiese und das Quadrat der Mündungs-Suche (halbe Seite, m). Mündung, Höhlen-Raum und der Blick hinaus stehen
 // nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die Orte der alten Welt waren Literale).
-const ORTE = { mess: { x: -900, z: -850 }, mundHalb: 1000 };
+const { messort } = require("./lib/welt-orte.cjs");
+const ORTE = { mess: messort("wiese"), mundHalb: 1000 };
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

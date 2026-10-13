@@ -3029,25 +3029,15 @@ async function WELLE_L() {
                         ].map(([a, b]) => r.getTerrainHeightAt(a, b));
                         return Math.max(...h) - Math.min(...h) <= 0.12;
                     };
-                    const ortR = [
-                        [-14, 14],
-                        [14, -14],
-                        [-14, -14],
-                        [14, 14],
-                        [-40, 40],
-                        [40, -40],
-                        [-40, -40],
-                        [70, 0],
-                        [0, 70],
-                        [-70, 0],
-                        // weiter draußen je 8 Richtungen (das Gelände des Kerns trägt Hänge und Kliffe: der Ort kommt aus der Welt)
-                        ...[100, 140, 180].flatMap((rr) =>
+                    // der Ort aus der Welt (K16, Orts-Wand): Ringe je 8 Richtungen um den Start, 20 … 180 m — der erste, der die Prüfung
+                    // unten trägt (eben, trocken, frei); kein Versatz der alten Welt als Liste
+                    const ortR = ((radien) =>
+                        radien.flatMap((rr) =>
                             [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
                                 Math.round(Math.cos((k * Math.PI) / 4) * rr),
                                 Math.round(Math.sin((k * Math.PI) / 4) * rr),
                             ])
-                        ),
-                    ].find(
+                        ))([20, 57, 70, 100, 140, 180]).find(
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
@@ -3320,14 +3310,13 @@ async function WELLE_L() {
                             return r._kreaturSchwimmt(wolfS, r._creatureGroundY(wolfS)) === null;
                         };
                         const ort = wolfS
-                            ? [
-                                  [40, 40],
-                                  [-40, 40],
-                                  [40, -40],
-                                  [-40, -40],
-                                  [70, 0],
-                                  [0, 70],
-                              ].find(
+                            ? ((radien) =>
+                                  radien.flatMap((rr) =>
+                                      [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
+                                          Math.round(Math.cos((k * Math.PI) / 4) * rr),
+                                          Math.round(Math.sin((k * Math.PI) / 4) * rr),
+                                      ])
+                                  ))([57, 70]).find(
                                   ([ox, oz]) => trocken(P0.x + ox, P0.z + oz) && trocken(P0.x + ox + 0.4, P0.z + oz + 6)
                               )
                             : null;

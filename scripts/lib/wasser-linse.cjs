@@ -1,3 +1,4 @@
+const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 // wasser-linse.cjs — DIE WASSER-LINSE der Leben-Prüfung (Welle L, Klassen Q6 + Q7): drei Proben, die den Defekt beim
 // NAMEN nennen und den Chokepoint selbst rufen (nie einen Stub). Befund 06.10. (sichtbares Fenster, echte Radeon,
 // artifacts/profiband/leben/befund-wasser-fluss.md): der Fluss steigt bergauf (14,3 % der 2-m-Schritte), wölbt sich
@@ -17,7 +18,7 @@
 //   window.__wasserRegen(o)          Q7-Regen: der Sturm-Regen der Welt allein auf Schwarz — Schlieren und Neigung
 //
 // Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL; Gate: scripts/diag-wasser-leben.cjs.
-"use strict";
+("use strict");
 
 // ── Q7-Gestalt ──
 function wasserFluss() {
@@ -521,7 +522,7 @@ function wasserKoerper(opts) {
 function __wasserKroneVon(r, p) {
     const A = r.constructor;
     const HC = A.HYDROSPHERE;
-    const w = p.width || HC.widthMin;
+    const w = p.width;
     const D = typeof A._flussTiefe === "function" ? A._flussTiefe(p) : HC.carveBedMin + HC.carveBedK * w;
     if (!Number.isFinite(HC.bankNeigung)) throw new Error("HYDROSPHERE.bankNeigung fehlt (das Gesetz der Bank)");
     return w * 0.5 + D / HC.bankNeigung;
@@ -1706,7 +1707,7 @@ function wasserQuelle(opts) {
     const qBett = Number.isFinite(HC.quellBett) ? HC.quellBett : 1.2;
     const G = Number.isFinite(HC.quellWeitung) ? HC.quellWeitung : 0.25;
     const huelleVon = (h) => {
-        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : HC.widthMin;
+        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : globalThis.__gelaendeCore.FLUSS_BREITE.min;
         const dRel = HC.carveBedMin / bett + HC.carveBedK;
         const huelle = (s) => {
             const w = qBett + G * Math.max(0, s);
@@ -2241,7 +2242,7 @@ function wasserBank(opts) {
     const raster = new Map();
     for (const [a, b] of punkte) {
         const sp = spiegelVon(a);
-        const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
+        const hw = Math.max(1, a.width * 0.5);
         const L = Math.hypot(b.x - a.x, b.z - a.z);
         for (let t = 0; t <= L; t += 0.5) {
             const x = a.x + ((b.x - a.x) * t) / (L || 1),
@@ -2453,7 +2454,9 @@ function wasserOrte(opts) {
     const r = window.anazhRealm;
     const st = r.state;
     const G = window.__gelaendeCore;
-    const [MX, MZ] = o.mess || [-900, -850];
+    const mitte = o.mess || window.__messWiese; // der Messort aus spec/profiband/haushalt.json (welt-orte.cjs)
+    if (!mitte) throw new Error("__wasserOrte: keine Mitte (weder opts.mess noch __messWiese)");
+    const [MX, MZ] = mitte;
     const wl = st.waterLevel || 0;
     const R1 = (v) => Math.round(v * 10) / 10;
     const tiefe = (x, z) => {
@@ -2623,6 +2626,7 @@ function wasserOrte(opts) {
 
 module.exports = {
     WASSER_INSTALL:
+        WELT_ORTE_INSTALL +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +

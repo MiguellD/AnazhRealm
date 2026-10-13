@@ -617,12 +617,24 @@ function realismus() {
                 else maske[i + j * fn] = 1;
             }
         const schicht = Z.hangBaender(HF, fn, 2, maske);
+        // DER MÄANDER (K16): die Bahnen der Flachland-Glieder des inneren Felds (`maeanderZahl`, die Bahn im 8-m-Schritt) —
+        // Sinuosität ≥ 1,3, Wellenlänge 10–14 Breiten, Rc 2–3 Breiten (Leopold & Wolman 1960, Nordstern §4.1), ≥ 3 Glieder.
+        const laeufe = G.flussLaeufe(L, -HALB, -HALB, HALB, HALB, 8);
+        const maeander = Z.maeanderZahl(laeufe);
+        const maeanderGut = (m) =>
+            m.glieder >= 3 &&
+            m.sinuositaet >= 1.3 &&
+            m.lambdaBreiten >= 10 &&
+            m.lambdaBreiten <= 14 &&
+            m.rcBreiten >= 2 &&
+            m.rcBreiten <= 3;
         const urteil = {
             senken: st.senken1mJeKm2 <= 1 && st.anteilSenkeTiefer1m < 0.01,
             flint: st.flint.theta != null && st.flint.theta >= 0.3 && st.flint.theta <= 0.7 && st.flint.r2 >= 0.5,
             hammond: st.hammond.sanft >= 1,
             dorfplaetze: st.dorfplaetze >= 3,
             schicht: !!ort && schicht.kliff >= 0.02 && schicht.schutt >= 0.05 && schicht.pediment >= 0.2,
+            maeander: maeanderGut(maeander),
             kosten: kosten.imBudget,
         };
         const taeter = {
@@ -633,6 +645,10 @@ function realismus() {
             schicht: ort
                 ? "die Bänder fehlen am Schicht-Ort (treppe/schichtMass: Kliff, Schutthang, Pediment)"
                 : "kein Tafelland in 16 × 16 km (grossform: Stil-Feld)",
+            maeander:
+                maeander.glieder < 3
+                    ? `${maeander.glieder} Flachland-Glieder im Feld (knotenSohle: kein Gefälle < 0,4 %)`
+                    : `die Bahn der Flachland-Glieder ist keine Schleife in der Aue: Sinuosität ${maeander.sinuositaet}, λ ${maeander.lambdaBreiten} Breiten, Rc ${maeander.rcBreiten} Breiten (flussLaeufe/segment: der Mäander-Term)`,
             kosten: `die Spalte kostet ${kosten.noise2DAlle} noise2D (Ebene ${kosten.noise2DEbene}) gegen das Budget ${SPALTEN_BUDGET.alle} (Ebene ${SPALTEN_BUDGET.ebenen}) — hoehe: die Terme je Spalte (Netz, Profil, Detail)`,
         };
         let stoer = null;
@@ -642,6 +658,11 @@ function realismus() {
             stoer = Z.statistik(HS, n, SCHRITT, L.waterLevel, benannt, RAND);
             // die Kosten-Last: 40 noise2D mehr je Spalte MÜSSEN das Budget sprengen
             last = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us, 40);
+            // die Gerade: dieselben Läufe ohne Bahn (jedes Glied seine Sehne) MÜSSEN den Mäander rot färben
+            const gerade = Z.maeanderZahl(
+                laeufe.map((lf) => ({ ...lf, glieder: lf.glieder.map((gl) => ({ ...gl, bahn: undefined })) }))
+            );
+            stoer.maeanderGerade = maeanderGut(gerade) ? "blind" : "rot";
         }
         welten.push({
             saat,
@@ -652,7 +673,12 @@ function realismus() {
             schichtOrt: ort ? { x: ox, z: oz, stil: ort.stil } : null,
             schicht,
             urteil,
-            stoerung: stoer && { senken1mJeKm2: stoer.senken1mJeKm2, minimaJeKm2: stoer.minimaJeKm2 },
+            maeander,
+            stoerung: stoer && {
+                senken1mJeKm2: stoer.senken1mJeKm2,
+                minimaJeKm2: stoer.minimaJeKm2,
+                maeanderGerade: stoer.maeanderGerade,
+            },
             kostenLast: last,
         });
         console.log(
@@ -666,7 +692,13 @@ function realismus() {
             rot = true;
             console.log(`    ⛔ ${k}: ${taeter[k]}`);
         }
-        if (stoer) console.log(`    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km²`);
+        console.log(
+            `    Mäander: ${maeander.glieder} Flachland-Glieder · Sinuosität ${maeander.sinuositaet} · λ ${maeander.lambdaBreiten} Breiten · Rc ${maeander.rcBreiten} Breiten (Soll ≥ 1,3 · 10–14 · 2–3)`
+        );
+        if (stoer)
+            console.log(
+                `    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km² · die Gerade (Glieder ohne Bahn): Mäander ${stoer.maeanderGerade}`
+            );
         if (last)
             console.log(
                 `    Selbsttest-Last (+40 noise2D je Spalte): ${last.noise2DAlle} noise2D (Ebene ${last.noise2DEbene})`
@@ -680,10 +712,13 @@ function realismus() {
         );
     if (SELBSTTEST) {
         const blind = welten.some(
-            (w) => !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) || !(w.kostenLast && !w.kostenLast.imBudget)
+            (w) =>
+                !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
+                !(w.kostenLast && !w.kostenLast.imBudget) ||
+                w.stoerung.maeanderGerade !== "rot"
         );
         console.log(
-            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung oder die Kosten-Last blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget"}\n`
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last oder die Gerade blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot"}\n`
         );
         return blind ? 1 : 0;
     }
@@ -739,6 +774,61 @@ async function gebaut(page, fehler) {
                 theta: st.flint.theta,
                 r2: st.flint.r2,
             });
+            // DER MÄANDER IM WASSER (K16): die Fluss-Punkte der Hydrosphäre (Kanal und Spiegel liegen darauf) in Fenstern von
+            // 400 m Bogen, flach (Gefälle < 0,4 %, nicht im See) — die Sinuosität Bogen / Sehne je Fenster, ihr Median.
+            const maeanderWasser = (h) => {
+                const sin = [];
+                for (const rv of (h && h.rivers) || []) {
+                    const P = rv.points;
+                    let k0 = 0;
+                    let bogen = 0;
+                    for (let k = 1; k < P.length; k++) {
+                        bogen += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+                        if (bogen < 400) continue;
+                        const flach = (P[k0].y - P[k].y) / bogen < 0.004 && !P.slice(k0, k + 1).some((p) => p.inLake);
+                        if (flach) sin.push(bogen / Math.hypot(P[k].x - P[k0].x, P[k].z - P[k0].z));
+                        k0 = k;
+                        bogen = 0;
+                    }
+                }
+                sin.sort((a, b) => a - b);
+                return { fenster: sin.length, sinuositaet: sin.length ? +sin[sin.length >> 1].toFixed(3) : null };
+            };
+            // der Selbsttest je Saat — die Gerade: jedes Glied nur seine Sehne (Knoten zu Knoten), dieselbe Hydrosphäre neu
+            // gerechnet; der Mäander im Wasser MUSS rot werden (danach die Hydrosphäre des Gesetzes zurück)
+            const geradeMessung = () => {
+                const kern = window.__gelaendeCore;
+                // dieselben Punkte der Bahn, auf die Sehne gelegt (der Versatz quer fällt, t bleibt)
+                const gerade = (gl) => {
+                    const ex = gl.bx - gl.ax;
+                    const ez = gl.bz - gl.az;
+                    const len = Math.hypot(ex, ez) || 1;
+                    return gl.bahn.map((p) => ({
+                        t: p.t,
+                        x: gl.ax + ex * p.t,
+                        z: gl.az + ez * p.t,
+                        s: len * p.t,
+                        fx: ex / len,
+                        fz: ez / len,
+                    }));
+                };
+                window.__gelaendeCore = {
+                    ...kern,
+                    flussLaeufe: (...a) =>
+                        kern.flussLaeufe(...a).map((lf) => ({
+                            ...lf,
+                            glieder: lf.glieder.map((gl) => ({ ...gl, bahn: gerade(gl) })),
+                        })),
+                };
+                let m;
+                try {
+                    m = maeanderWasser(r._computeHydrosphere());
+                } finally {
+                    window.__gelaendeCore = kern;
+                }
+                s.hydrosphere = r._computeHydrosphere();
+                return m;
+            };
             const bootSaat = s.worldMeta.seed;
             const bootMacro = s.worldMeta.macro;
             // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
@@ -764,6 +854,8 @@ async function gebaut(page, fehler) {
                     seed: saat,
                     hydro: !!(h && h.ready),
                     fluesse: h && h.rivers ? h.rivers.length : 0,
+                    maeander: maeanderWasser(h),
+                    maeanderGerade: selbst ? geradeMessung() : null,
                     voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
                     ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
                     makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
@@ -792,6 +884,8 @@ async function gebaut(page, fehler) {
         SELBSTTEST
     );
     const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
+    // der Mäander im Wasser: Median der Sinuosität der flachen 400-m-Fenster ≥ 1,25 (ohne flaches Fenster kein Urteil)
+    const maeanderGut = (m) => !m.fenster || m.sinuositaet >= 1.25;
     let rot = !!fehler();
     for (const out of alle) {
         console.log(
@@ -801,6 +895,15 @@ async function gebaut(page, fehler) {
             console.log(
                 `  ${k}: Senken>1m ${out[k].senken}/km² · Dorfplätze ${out[k].dorf} · Minima ${out[k].minima}/km² · θ ${out[k].theta} R² ${out[k].r2}`
             );
+        console.log(
+            `  Mäander im Wasser: ${out.maeander.fenster} flache 400-m-Fenster · Sinuosität ${out.maeander.sinuositaet} (Soll ≥ 1,25)`
+        );
+        if (!maeanderGut(out.maeander)) {
+            rot = true;
+            console.log(
+                "  ⛔ das Wasser läuft gerade: die Fluss-Punkte folgen der Sehne, nicht der Bahn (`_hydroNetzFluesse` liest `bahn` des Kerns)"
+            );
+        }
         if (!out.hydro || !out.fluesse) {
             rot = true;
             console.log(
@@ -818,6 +921,13 @@ async function gebaut(page, fehler) {
     }
     if (SELBSTTEST) {
         const st = stoerung;
+        // die Gerade zählt an jeder Saat mit flachen Fenstern — mindestens eine, und jede davon rot
+        const mit = alle.filter((o) => o.maeanderGerade && o.maeanderGerade.fenster);
+        const sieht = mit.length > 0 && mit.every((o) => !maeanderGut(o.maeanderGerade));
+        console.log(
+            `  Selbsttest-Gerade (jedes Glied seine Sehne): ${mit.map((o) => `${o.seed} ${o.maeanderGerade.fenster} Fenster, Sinuosität ${o.maeanderGerade.sinuositaet}`).join(" · ") || "keine Saat mit flachem Fenster"} → ${sieht ? "✅ rot erkannt" : "⛔ blind"}`
+        );
+        if (!sieht) rot = true;
         const blind = !st || (st.senken <= 1 && st.dorf >= 3);
         console.log(
             `\n  Selbsttest-Störung (Bett-Tiefe des alten Gesetzes, Saat ${alle[0].seed}): Senken>1m ${st ? st.senken : "–"}/km² · Dorfplätze ${st ? st.dorf : "–"} → ${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Störung färbt den Boden rot"}`
