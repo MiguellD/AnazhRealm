@@ -200,9 +200,15 @@ Vertrags-Akt (Auge 1310 Nr. 11: die Fensterreihen der L2 und der Turm-L1 waren s
 - **DER EINE SCHLAF-WÜRFEL** (`fensterSchlaeft`: Samen, Wand-Achse, Seite, Lage längs der Wand und Höhe auf 0,25 m): der
   Bau jeder Stufe fragt ihn — vorher würfelte nur die L1 in Lauf-Reihenfolge (nah wachten alle Fenster, ab 12 m schlief
   fast die Hälfte; Glut L1/L0 Median 0,648).
-- **DAS FERN-FENSTER** (`fensterFern` statt `bandFassade`): je Öffnung von `H.windows` Rahmen, Innenkörper (Putz ×
-  `INNEN_DAEMMER`, dieselbe Zahl wie die L1) und das Glas der L0; ein schlafendes Fenster trägt fern seine Mischung opak
-  im Stoff. Das Fern-Glas des Glas-Stils glüht nicht mehr als Körper (die Fenster glühen).
+- **DAS FERN-FENSTER** (`fensterFern` statt `bandFassade`): je Öffnung von `H.windows` das Fenster der L0 in seinen
+  Kosten — der Rahmen als Kasten 0,10 vor der Wand (Front und vier Seiten, der Rahmen-Stoff des Stils; das Metall des
+  Glas-Stils trägt der Stoff als Ton), die Scheibe der L0 (`w − 0,12`) mit Innenkörper und Glas, davor das Fensterkreuz;
+  ein schlafendes Fenster trägt fern seine Mischung opak im Stoff. Steht die Dachhaut der L2 vor der Wand (der Ortgang),
+  steht das Fenster vor ihr (`_hautKappen`, `_fernVorn`). Das Fern-Glas des Glas-Stils glüht nicht mehr als Körper.
+- **DER RAUM HINTER DEM GLAS** (`_innenFaktor`, L1 und L2): der gemessene Wand-Ton × `INNEN_DAEMMER` statt Putz für
+  jeden Stil; der Wand-Ton misst die Fassade VOR dem Innenkörper (er maß ihn mit: hollaendisch 0,295/0,076/0,042 →
+  0,353/0,159/0,121) — darum bewegt sich auch die Farbe der L2-Körper und der Stufe 3.
 - Budget-Zeilen (gemessen, dicht): L0 Draws 11 → 12 (das schlafende Glas), L2 3 → 4 (volle_moderne).
-- Byte-Beweis: von 258 Golden-Fällen bleiben 46 byte-gleich (Stufe 3: 45 von 64), neu sind L0 63/64, L1 64/64, L2
-  64/64 und die beiden Siedlungs-Fälle; `ausstattung.json` byte-gleich.
+- Byte-Beweis (Mint 13.10. abends gegen den Kern c5a4d0f8): L0 1 von 65 byte-gleich (das schlafende Glas), L1 0/64,
+  L2 0/65, Stufe 3 12/64 (der Wand-Ton); gegen den ersten K38-Mint (bd570a89) L0 65/65 byte-gleich. `ausstattung.json`
+  byte-gleich.

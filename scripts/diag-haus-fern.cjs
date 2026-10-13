@@ -774,13 +774,20 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, doppelt)).some((x) => /^Türblatt L0/.test(x)))
         fehler.push("T: ein Türblatt vor seinem Scharnier ist nicht rot");
-    // G: die Band-Fassade vor dem Akt (K38) — je Öffnung ein Kasten im Stoff `dunkel` 5 cm vor der Wand über der L2
+    // G: die Band-Fassade vor dem Akt (K38) — die L2 ohne ihr Glas, je Öffnung ein Kasten im Stoff `dunkel` über dem Fenster
     const band = (g, H) => {
         const dunkel = FC.materials().dunkel;
+        const glas = [];
+        g[2].traverse((o) => {
+            if (o.isMesh && o.material && o.material.userData && o.material.userData.__licht === "fenster")
+                glas.push(o);
+        });
+        for (const o of glas) o.parent.remove(o);
         for (const o of H.windows || []) {
-            const z = o.perp === "z";
-            const k = new T.Mesh(new T.BoxGeometry(z ? o.w + 0.4 : 0.1, o.h, z ? 0.1 : o.w + 0.4), dunkel);
-            k.position.set(o.cx + (z ? 0 : o.cx < 0 ? -0.05 : 0.05), o.cy, o.cz + (z ? (o.cz < 0 ? -0.05 : 0.05) : 0));
+            const z = o.perp === "z",
+                s = (z ? o.cz : o.cx) < 0 ? -0.15 : 0.15;
+            const k = new T.Mesh(new T.BoxGeometry(z ? o.w + 0.4 : 0.3, o.h, z ? 0.3 : o.w + 0.4), dunkel);
+            k.position.set(o.cx + (z ? 0 : s), o.cy, o.cz + (z ? s : 0));
             g[2].add(k);
         }
     };
@@ -884,6 +891,6 @@ function selbsttest() {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier."
+        "\n✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
     );
 })();
