@@ -16270,12 +16270,21 @@ async function checkBandWelle6DSoul(ctx) {
                 : 2;
         out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
         out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === humanStats.hpMax;
+        // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie, eine Neuberechnung klemmt nur
+        // (verwundet bleibt verwundet; gate:kampf-gefuehl T27 geht jeden Rufer im Modus pfad).
+        const pl6d = r.state.player;
+        const vollNachWandlung =
+            typeof pl6d.hp === "number" &&
+            typeof pl6d.hpMax === "number" &&
+            typeof pl6d.stamina === "number" &&
+            typeof pl6d.staminaMax === "number" &&
+            pl6d.hp === pl6d.hpMax &&
+            pl6d.stamina === pl6d.staminaMax;
+        pl6d.hp = 0.5 * pl6d.hpMax;
+        pl6d.stamina = 0.25 * pl6d.staminaMax;
+        r.recomputePlayerStats();
         out.statePlayerHasHpAndStamina =
-            typeof r.state.player.hp === "number" &&
-            typeof r.state.player.hpMax === "number" &&
-            typeof r.state.player.stamina === "number" &&
-            typeof r.state.player.staminaMax === "number" &&
-            r.state.player.hp === r.state.player.hpMax;
+            vollNachWandlung && pl6d.hp === 0.5 * pl6d.hpMax && pl6d.stamina === 0.25 * pl6d.staminaMax;
         // Restore
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
@@ -16419,7 +16428,11 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasWoundPenaltyConst = C.WOUND_TAG_PENALTY && typeof C.WOUND_TAG_PENALTY === "object";
         r.state.player.deathWoundIntensity = 0;
         r.state.player.respawnGraceUntil = -Infinity;
+        r.state.player.hp = 1;
         r._playerDeathRespawn("test");
+        // Der feld-native Tod (K27): die Rückkehr setzt die Lebenswerte voll — gemessen am Respawn selbst, bevor der
+        // Vitals-Takt die Wunde heilt (er hebt hpMax, nie hp).
+        out.respawnHpFull = r.state.player.hp === r.state.player.hpMax && r.state.player.hp > 1;
         out.woundSetAt1 = Math.abs(r.state.player.deathWoundIntensity - 1.0) < 0.001;
         // ALTLASTEN-NULL: die Wunde drückt die Tags — der ROHE Stat-Rechner
         // (computePlayerStats) zeigt sie; hp wurde vom Respawn voll gesetzt.
@@ -16432,9 +16445,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.deathLastTick = -Infinity;
         r.tickPlayerVitals(performance.now() / 1000);
         out.woundRegens = r.state.player.deathWoundIntensity < 1.0;
-        // Der feld-native Tod: Respawn setzte HP voll + Gnade steht + der
-        // Todesort trägt eine Lebens-Spur (das dritte Verb, KONSUM).
-        out.respawnHpFull = r.state.player.hp === r.state.player.hpMax;
+        // Gnade steht + der Todesort trägt eine Lebens-Spur (das dritte Verb, KONSUM).
         out.respawnGraceSet = r.state.player.respawnGraceUntil > performance.now() / 1000;
         out.deathDepositsLife = !!(r.state.lifeField && r.state.lifeField.size > 0);
         r.state.player.respawnGraceUntil = -Infinity;
@@ -17593,7 +17604,7 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: state.sprintSpeed = Gesetz-sprintMul × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
         check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
         check(
-            "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
+            "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt, die Neuberechnung heilt nicht",
             wave6dResults.statePlayerHasHpAndStamina
         );
         check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
