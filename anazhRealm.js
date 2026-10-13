@@ -63890,6 +63890,34 @@ class AnazhRealm {
                     },
                 ],
             },
+            // DIE LATERNE (K10 × K11) — der Welt-Körper der laternen-Schicht aus fachwerk exportSettlement, gehoben über den
+            // EINEN Chokepoint `_spawnSettlementErlebnis` → `spawnArchitecture`. Die GESTALT baut das Gesetzbuch (fachwerk
+            // AUSSTATTUNG `laterne`: Eisenmast, Glas-Kopf, Haube), ihr Licht ist das Datum ihres Rezepts (fx.licht =
+            // LICHT_GESETZ.laterne, `_lichtDatumDerGestalt`) — der Leib und das Licht EINER Quelle. Die Parts sind ihre
+            // unsichtbare Substanz in ihren Maßen (Fuß Ø 0,24 m bis 0,55 m, Mast bis 3,4 m): eisen dicht → solide.
+            laterne_dorf: {
+                name: "laterne_dorf",
+                label: "Laterne",
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "laterne",
+                parts: [
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 0, y: 0.275, z: 0 },
+                        size: { x: 0.24, y: 0.55, z: 0.24 },
+                        segments: 8,
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x: 0, y: 1.975, z: 0 },
+                        size: { x: 0.09, y: 2.85, z: 0.09 },
+                        segments: 8,
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
@@ -72237,7 +72265,6 @@ class AnazhRealm {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
-        this._laternen = null; // die Laternen der Pläne fallen mit ihren Marken (der Rebuild liest sie neu, `_laternenLesen`)
     }
 
     _archInstanceAdd(entry, flat, opts) {
@@ -75011,12 +75038,38 @@ class AnazhRealm {
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
     // über `spawnArchitecture` (Bauplan `brunnen_dorf`). Aufrufer: `spawnSettlement` ·
     // `_autoSettlementSpawnCell` · Reload-Rebuild (so.nurWege — Brunnen sind persistierte Architektur).
-    // Konsum: fences/felder/trees/staende/brunnen/laternen (das Licht, `_laternenLesen`); unkonsumiert (export-stripped): mauer/fluss.
+    // Konsum: fences/felder/trees/staende/brunnen/laternen (die Studio-Gestalt `laterne_dorf`, ihr Licht das Datum ihres
+    // Rezepts); unkonsumiert (export-stripped): mauer/fluss.
     _spawnSettlementErlebnis(plan, origin, so) {
         if (!plan || !origin) return;
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
-        this._laternenLesen(plan, origin, so && so.key ? so.key : null); // die Laternen leuchten (K11, LICHT_GESETZ.laterne)
         if (so && so.nurWege) return;
+        // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
+        // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
+        // Datum seines Rezepts (`_lichtDatumDerGestalt`), der Licht-Takt liest ihn wie jede Feuerstelle. Keine Kappe: das
+        // Gesetz des Plans setzt die Zahl (je Platz eine, je 25 m Weg eine); Wasser- und Bau-Wand wie der Brunnen.
+        if (Array.isArray(plan.laternen) && this.state.blueprints && this.state.blueprints.laterne_dorf) {
+            let k = 0;
+            for (const l of plan.laternen) {
+                if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
+                const wx = origin.x + l.x;
+                const wz = origin.z + l.z;
+                if (!this._landAt(wx, wz, 0.2)) continue;
+                const wy = this.getTerrainHeightAt(wx, wz);
+                if (!Number.isFinite(wy)) continue;
+                if (!this._bauFreiRund("laterne_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
+                this.spawnArchitecture(
+                    "laterne_dorf",
+                    { x: wx, y: wy + 0.5, z: wz },
+                    {
+                        seed: ((plan.seed >>> 0 || 1) + 97 + k++ * 7919) >>> 0,
+                        rotationY: Number.isFinite(l.th) ? -l.th : 0,
+                        silent: true,
+                        autonomous: !!(so && so.autonomous),
+                    }
+                );
+            }
+        }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         let n = 0;
         for (const b of plan.brunnen) {
@@ -93420,7 +93473,7 @@ class AnazhRealm {
 
     // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
     // Die Plätze gehen an die Leuchtquellen, deren Reichweite dem Auge am nächsten kommt (`_leuchtQuellen`: das Licht des
-    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis, die Laternen der Pläne, das wache Tor; neu gewählt je `wahlS`
+    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis (die Laternen der Pläne), das wache Tor; neu gewählt je `wahlS`
     // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
     // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
@@ -93559,8 +93612,8 @@ class AnazhRealm {
     // (`_augenLeuchte`, am Auge: Rang 0), jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim Eintritt)
     // mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist es ihres
     // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
-    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laternen der Pläne (`_laternenLesen`, Zellen)
-    // und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
+    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns); die Laterne eines Plans ist so ein Eintrag (die Gestalt
+    // `laterne_dorf`, ihr Datum LICHT_GESETZ.laterne) — und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
     // Mit dem Sichtkegel `F` (`_leuchtKegel`) rangiert jede Quelle, deren Reichweiten-Kugel ihn nicht berührt, hinter allen,
     // die ihn berühren: sie erhellt kein Pixel des Bildes — die Laterne hinter dem Rücken nahm sonst den Platz der Laterne
     // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
@@ -93595,45 +93648,9 @@ class AnazhRealm {
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
         }
-        const LZ = this._laternen;
-        if (LZ) {
-            const Z = AnazhRealm.LICHT_POOL.zelleM;
-            for (let i = Math.floor((x - R) / Z); i <= Math.floor((x + R) / Z); i++)
-                for (let j = Math.floor((z - R) / Z); j <= Math.floor((z + R) / Z); j++)
-                    for (const l of LZ.zellen.get(i + "," + j) || []) nimm(l, Object.assign({}, l));
-        }
         const tor = this._portalLeuchte;
         if (tor) nimm(tor, Object.assign({}, tor));
         return out;
-    }
-
-    // DER LESER DER LATERNEN (K11 ↔ K10): `laternen[]` eines Siedlungs-Plans (fachwerk exportSettlement, je Laterne x/z
-    // plan-lokal) wird Leuchtquelle mit dem Datum LICHT_GESETZ.laterne — der Kopf `hoeheM` über dem Boden des Gesetzes —, je
-    // Plan einmal (der Schlüssel der Siedlung, wie die Wege), abgelegt in Zellen von `LICHT_POOL.zelleM` (die Wahl liest nur die
-    // Zellen um das Auge, nie alle Laternen der Welt). Gerufen aus dem EINEN Hebe-Chokepoint `_spawnSettlementErlebnis`.
-    _laternenLesen(plan, origin, key) {
-        if (!plan || !Array.isArray(plan.laternen) || plan.laternen.length === 0) return 0;
-        const LZ = this._laternen || (this._laternen = { zellen: new Map(), schluessel: new Set() });
-        if (key) {
-            if (LZ.schluessel.has(key)) return 0;
-            LZ.schluessel.add(key);
-        }
-        const L = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
-        const Z = AnazhRealm.LICHT_POOL.zelleM;
-        let n = 0;
-        for (const l of plan.laternen) {
-            if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
-            const wx = origin.x + l.x;
-            const wz = origin.z + l.z;
-            const wy = this.getTerrainHeightAt(wx, wz);
-            if (!Number.isFinite(wy)) continue;
-            const zk = Math.floor(wx / Z) + "," + Math.floor(wz / Z);
-            const liste = LZ.zellen.get(zk) || [];
-            liste.push({ quelle: "laterne", x: wx, y: wy + L.hoeheM, z: wz, L, masse: 1, phase: 0 });
-            LZ.zellen.set(zk, liste);
-            n++;
-        }
-        return n;
     }
 
     // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
@@ -102119,9 +102136,8 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
 // DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
 // Uniforms — ein Wechsel der Quellen baut kein Programm) an den Leuchtquellen im `umkreisM` um das Auge, deren Reichweite ihm
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
-// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt). Die Laternen der
-// Pläne liegen in Zellen von `zelleM` Metern (die Wahl liest nur die Zellen um das Auge).
-AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5, zelleM: 32 });
+// oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
@@ -104734,7 +104750,7 @@ AnazhRealm.ERBGUT_PROTOKOLL = 1;
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
 //   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug,
-//                die Lichter: Laternen der Pläne, das wache Tor, der Licht-Pool, der ihre Plätze hält) —
+//                die Lichter: das wache Tor, der Licht-Pool, der die Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
 AnazhRealm.WELT_GRENZE = Object.freeze({
     geburt: Object.freeze(["visibility", "creator"]),
@@ -104748,7 +104764,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_autoSettlementRejected",
         "_autoSettlementStartHopeless",
         "_stlWegeKeys",
-        "_laternen",
         "_portalLeuchte",
         "_leuchtPool",
     ]),

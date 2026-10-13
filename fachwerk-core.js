@@ -3617,6 +3617,8 @@
         feuerstelle: { lab: "Feuerstelle · Steinring, Scheite, Glut", gestalten: 2, siteTag: "glut", salz: 0x1f3a, tritt: { typ: "kreis", r: 1.05 }, licht: "feuer" },
         marktstand: { lab: "Marktstand · Plane und Waren", gestalten: 3, siteTag: "platz", salz: 0x2b51, tritt: { typ: "kasten", ex: 1.45, ez: 1.05 } },
         brunnen: { lab: "Ziehbrunnen · Steinkranz, Haspel, Schindeldach", gestalten: 2, siteTag: "platz", salz: 0x3c77, tritt: { typ: "kreis", r: 1.75 } },
+        // DIE LATERNE (K10 × K11, rein additiv): die Leuchte der Gasse als Gestalt — ihr Licht ist das Datum ihres Rezepts
+        laterne: { lab: "Laterne · Eisenmast, Glas-Kopf, Haube", gestalten: 1, siteTag: "weg", salz: 0x4d93, tritt: { typ: "kreis", r: 0.45 }, licht: "laterne" },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -4573,7 +4575,49 @@
         }
     }
 
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen };
+    // ── DIE LATERNE (K10 × K11): Fuß und Mast aus Guss-Eisen · Glas-Kopf im Eisen-Rahmen · Haube mit Knauf ──
+    // DIE MASSE (die Gaslaterne der Gasse): der Fuß Ø 0,30 m bis 0,55 m, der Mast Ø 9 cm bis unter den Kopf, der Kopf ein
+    // Glas-Kasten 0,26 × 0,40 m mit dem Licht-Mittelpunkt auf LICHT_GESETZ.laterne `hoeheM` (3,6 m), die Haube eine flache
+    // Pyramide (0,40 m breit, 0,2 m hoch), nah mit Kranz und Knauf. ZWEI Rollen (das Budget der Ausstattung: der Stoff und
+    // eine Seh-Klasse): metall und glas — der Kopf ist GLAS, die Rolle des Fensters (`__licht` fenster): er zündet nachts mit
+    // den Fenstern wie die Wandlaterne des Hauses; das Licht auf Boden und Wand trägt das Emitter-Datum der Gestalt (fx.licht
+    // = LICHT_GESETZ.laterne) im EINEN Licht-Pool der Welt. Stufe 1: dieselbe Silhouette, vier Seiten, ohne Rahmen und Knauf.
+    function ausLaterne(g, p, seed, stufe) {
+        var m = AUS_MASS.laterne(p.groesse),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            ton = ausTon(ausZufall(seed, 0x91), 0.06, 0.02);
+        var eisen = function (geo) {
+            ausFaerbe(geo, "metall", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "metall");
+        };
+        // der Fuß und der Mast als EIN Drehkörper (nah acht Seiten mit Wulst und Kragen unter dem Kopf)
+        var profil = fein
+            ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yK0 - 0.14], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
+            : [[m.fr, -0.2], [m.fr * 0.62, m.fh], [m.mr, m.fh + 0.22], [m.mr, m.yK0], [0, m.yK0]];
+        eisen(ausDreh(profil, fein ? 8 : 4, false, false));
+        // der Boden des Kopfs, das Glas, nah die vier Eck-Stäbe des Rahmens
+        eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
+        var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
+        ausFaerbe(glas, "glas", 0, null);
+        ausTeil(g, glas, "glas");
+        var i, j;
+        if (fein) for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) eisen(ausSetze(ausKiste(0.022, m.kh, 0.022, 0), (i * m.kb) / 2, m.yL, (j * m.kb) / 2));
+        // die Haube: nah ein Kranz unter der Pyramide und der Knauf auf ihr
+        var y0 = m.yK1;
+        if (fein) {
+            eisen(ausSetze(ausKiste(2 * m.hb, 0.025, 2 * m.hb, 0.006), 0, m.yK1 + 0.0125, 0));
+            y0 = m.yK1 + 0.025;
+            eisen(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
+        }
+        var h = m.hb,
+            spitze = [0, m.yT, 0];
+        eisen(ausVielecke([[[-h, y0, -h], [h, y0, -h], spitze], [[h, y0, -h], [h, y0, h], spitze], [[h, y0, h], [-h, y0, h], spitze], [[-h, y0, h], [-h, y0, -h], spitze], [[-h, y0, -h], [-h, y0, h], [h, y0, h], [h, y0, -h]]], [0, (y0 + m.yT) / 2, 0]));
+    }
+
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -4601,6 +4645,12 @@
             var ra = 0.92 * G,
                 px = ra + 0.13;
             return { ra: ra, rk: ra + 0.08, hK: 0.66 + 0.07, px: px, yF: 2.62, yT: 2.16, hz: 0.86, lx: 2 * px + 0.5, wx: px + 0.17, yW: 1.5 };
+        },
+        laterne: function (G) {
+            // der Licht-Mittelpunkt (LICHT_GESETZ.laterne hoeheM) ist die Mitte des Glas-Kopfs
+            var kh = 0.4 * G,
+                yL = LICHT_GESETZ.laterne.hoeheM * G;
+            return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
         },
     };
     // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
@@ -4664,6 +4714,11 @@
                 for (k = 0; k < 6; k++) deckel.push([fx + Math.cos((k * Math.PI) / 3) * fr, fh, fz + Math.sin((k * Math.PI) / 3) * fr]);
                 flaeche(stern.concat([deckel]));
             }
+        } else if (rezeptId === "laterne") {
+            pfosten(0, 0, -0.05, m.fh, m.fr * 0.8); // der Fuß
+            pfosten(0, 0, m.fh, m.yK0, m.mr); // der Mast
+            pfosten(0, 0, m.yK0, m.yK1, m.kb / 2); // der Kopf
+            flaeche([[[-m.hb, m.yK1, 0], [m.hb, m.yK1, 0], [0, m.yT, 0]], [[0, m.yK1, -m.hb], [0, m.yK1, m.hb], [0, m.yT, 0]]]); // die Haube
         } else {
             teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
             for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
@@ -4700,6 +4755,13 @@
             for (var sx = -1; sx <= 1; sx += 2)
                 for (var sz = -1; sz <= 1; sz += 2) dazu(huelleTeil("box", sx * m.px - 0.045, sx * m.px + 0.045, 0, sz < 0 ? m.pV : m.pH, sz * m.pz - 0.045, sz * m.pz + 0.045, F("holz")));
             if (wahl && wahl.fass) dazu(huelleTeil("box", wahl.fass[0] - 0.21, wahl.fass[0] + 0.21, 0, 0.6, wahl.fass[1] - 0.21, wahl.fass[1] + 0.21, F("holz")));
+        } else if (rezeptId === "laterne") {
+            var fr = m.fr * 0.8;
+            dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
+            dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
+            dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
+            dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
+            dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
         } else {
             dazu(huelleTeil("box", -m.rk + IW, m.rk - IW, -0.05, m.hK, -m.rk + IW, m.rk - IW, F("stein")));
             for (var i = -1; i <= 1; i += 2) dazu(huelleTeil("box", i * m.px - 0.07, i * m.px + 0.07, -0.3, m.yF, -0.07, 0.07, F("holz")));
@@ -4733,6 +4795,7 @@
         };
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
+        if (rezeptId === "laterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
     // Das Raster der Bytes (plattformgleich): 2^-12, Normalen 2^-14, −0 → 0.

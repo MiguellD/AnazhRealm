@@ -567,11 +567,31 @@ function compare(golden, actual) {
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
-    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen (dasselbe Gesetzbuch) ===");
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne (dasselbe Gesetzbuch) ===");
     check(
-        `drei Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
-        AUS.length === 3 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 18
+        `vier Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
+        AUS.length === 4 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 21
     );
+    // DIE LATERNE (K10 × K11): der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
+    // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
+    {
+        const L = FC.PRESETS.laterne && FC.PRESETS.laterne.fx && FC.PRESETS.laterne.fx.licht;
+        let kopf = 0;
+        for (const lod of [0, 1]) {
+            const g = FC.buildInstance("laterne", 1, lod);
+            g.traverse((o) => {
+                if (!o.isMesh || (o.material.userData && o.material.userData.__seh) !== "glas") return;
+                const bb = new THREE.Box3().setFromObject(o);
+                if (L && bb.min.y < L.hoeheM && bb.max.y > L.hoeheM) kopf++;
+            });
+            disposeGroup(g);
+        }
+        check(
+            "Die Laterne trägt ihr Licht: fx.licht = LICHT_GESETZ.laterne, der Glas-Kopf umschließt die Licht-Höhe (L0 und L1)",
+            !!L && JSON.stringify(L) === JSON.stringify(FC.LICHT_GESETZ.laterne) && kopf === 2,
+            `Kopf um hoeheM in ${kopf}/2 Stufen`
+        );
+    }
     const ausIst = {};
     const huelle = {};
     let glutOk = true,

@@ -861,7 +861,7 @@ const FIXTURES = [
         // Marktstände haben Konsumenten); fluss/bruecken/graph (keine Welt-
         // Wahrheit) und die mauer sind GESTRICHEN (kein toter Passagier,
         // Vertrags-Akt); die LATERNEN reisen seit K10 (ihr Leser ist das
-        // Leuchtquellen-Gesetz der Welt, `_laternenLesen`, K11). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
+        // Leuchtquellen-Gesetz der Welt, die Gestalt `laterne_dorf`, K11). Grund: die Stadt-Genese mit Mauer/Fluss/Brücken in der
         // Welt ist neues Verhalten hinter dem Feature-Stopp bis v1.0
         // (docs/roadmap.md §0.v1, Leben-Synthese §5.3) — offen, benannt.
         check(
@@ -1239,6 +1239,7 @@ const FIXTURES = [
                         (e.type.indexOf("haus_") === 0 ||
                             e.type === "brunnen_dorf" ||
                             e.type === "marktstand_dorf" ||
+                            e.type === "laterne_dorf" ||
                             e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
@@ -1384,7 +1385,8 @@ const FIXTURES = [
     // ===== TEIL O: DER ORT AUF DEM GELÄNDE (K10) — das Dorf 7/18 der Gründerzeit an einem Hang, gemessen an der Welt =====
     // Der Akt `spawnSettlement` an einem Hang (Gefälle 0,12–0,25 über 16 m, fern der Orte der Teile B und C); gemessen wird,
     // was die Welt trägt: die Häuser (Eintrag: Ort, Gier, Boden y − 0,5), der Grund unter und vor ihnen (`getTerrainHeightAt`,
-    // der Boden der Körper), der Wald-Plan (`_forestCellDarts`), die Laternen (`_laternen`) und der Plan v2 (`_ortPlaene`).
+    // der Boden der Körper), der Wald-Plan (`_forestCellDarts`), die Laternen (Einträge der Studio-Gestalt laterne) und der
+    // Plan v2 (`_ortPlaene`).
     const dpO = { seed: 7, nH: 18, epoche: "gruenderzeit" };
     const outO = await page.evaluate(
         async (urteilSrc, dp) => {
@@ -1471,13 +1473,20 @@ const FIXTURES = [
                             }
                         }
                 res.kronen = kronen;
-                // die Laternen der Welt um den Ort gegen die des Plans
+                // die Laternen der Welt um den Ort gegen die des Plans: je Laterne die Studio-Gestalt (fachwerk AUSSTATTUNG
+                // laterne) als Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
                 let lw = 0;
-                if (r._laternen && anker)
-                    for (const liste of r._laternen.zellen.values())
-                        for (const l of liste) if (Math.hypot(l.x - anker.x, l.z - anker.z) < 250) lw++;
+                if (anker)
+                    for (const e of r.state.architectures)
+                        if (
+                            r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht &&
+                            Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 250
+                        )
+                            lw++;
                 res.laternenWelt = lw;
                 res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
+                // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
+                res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
                 // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
                 // marktstand_dorf), auf dem Erdbau eines Orts
                 let fremd = 0;
@@ -1627,6 +1636,11 @@ const FIXTURES = [
         "O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg)",
         fehlO.length === 0,
         fehlO.join(" · ") || "gehalten"
+    );
+    check(
+        "O: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (`_laternenLesen` gefallen)",
+        Array.isArray(outO.laternenZwilling) && outO.laternenZwilling.length === 0,
+        "lebt: " + (outO.laternenZwilling || ["?"]).join(", ")
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);

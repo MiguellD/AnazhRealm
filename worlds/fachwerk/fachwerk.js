@@ -472,23 +472,12 @@ function buildDorf(dp){
         const n4=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.34), mLay('stein')); n4.position.y=1.85; g4.add(n4);
         const d4=new THREE.Mesh(new THREE.BoxGeometry(0.68,0.09,0.5), M.ziegel); d4.position.y=2.16; g4.add(d4);
         dorfGroup.add(g4); } } }
-  if(lay.laternen.length){ const mtx=new THREE.Matrix4();                                     /*LATERNEN-ZEITREISE: ZWEI Bauart-Gruppen je Ring-Jahr — Gas (warm, haengend) im Altkern, Elektro (kuehl, sitzend) am Saum; je Gruppe drei Instanz-Draws*/
-    const lichtH=Math.max(2.7, Math.min(4.6, 0.55*plan.norm.strasseW+1.6));
-    const pfD=lichtH/26, ausl=Math.min(0.9,(plan.norm.gehweg||1.2)*0.55);
-    const stdGas=plan.jahr<1895;
-    for(const istGas of [true,false]){ const liste=lay.laternen.filter(l9=>(l9.gas===undefined? stdGas : l9.gas)===istGas); if(!liste.length) continue;
-      const n=liste.length, gas=istGas, kW=gas?0.24:0.34, kH=gas?0.46:0.22;
-      const pf=new THREE.InstancedMesh(new THREE.BoxGeometry(pfD,lichtH,pfD),M.metall,n);
-      const arm2=new THREE.InstancedMesh(new THREE.BoxGeometry(ausl,pfD*0.7,pfD*0.7),M.metall,n);
-      const kopf=new THREE.InstancedMesh(new THREE.BoxGeometry(kW,kH,kW), new THREE.MeshLambertMaterial({color:gas?0xffd9a0:0xfff2cc, emissive:gas?0xcf8f2e:0xb8a86a}), n);
-      liste.forEach((la,i)=>{ const lth=la.th||0, ax=Math.cos(lth), az=Math.sin(lth), ly=dorfBodenY(la.x,la.z);
-        pf.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x,ly+lichtH/2,la.z));
-        arm2.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x+ax*ausl/2, ly+lichtH-pfD, la.z+az*ausl/2));
-        const ky=gas? lichtH-pfD-kH/2-0.02 : lichtH-pfD+kH/2+0.02;
-        kopf.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x+ax*(ausl-kW*0.4), ly+ky, la.z+az*(ausl-kW*0.4)));
-        solids.push({min:[la.x-0.1,ly,la.z-0.1],max:[la.x+0.1,ly+lichtH,la.z+0.1], geerdet:true}); });
-      pf.castShadow=true; pf.name='inst_laternen_'+(gas?'gas':'e');
-      [pf,arm2,kopf].forEach(im=>{ im.instanceMatrix.needsUpdate=true; im.userData.geerdet=true; dorfGroup.add(im); }); }
+  if(lay.laternen.length){                                                                    /*DIE LATERNE aus dem Gesetzbuch (K10 x K11, fachwerk AUSSTATTUNG laterne): Lab = Welt - derselbe Leib (Eisenmast, Glas-Kopf, Haube), dasselbe Licht-Datum LICHT_GESETZ.laterne; die Elektro-Bauart des Saums fiel mit dem Zwilling*/
+    const lg=FC.buildInstance('laterne', 1, 0), mtx=new THREE.Matrix4(), nL=lay.laternen.length;   /*je Rolle der Gestalt EIN InstancedMesh (metall, glas): zwei Draws fuer alle Laternen*/
+    lg.traverse(o=>{ if(!o.isMesh) return; const im=new THREE.InstancedMesh(o.geometry, o.material, nL); im.name='inst_laternen_'+((o.material.userData&&o.material.userData.__seh)||'teil');
+      lay.laternen.forEach((la,i)=>im.setMatrixAt(i, mtx.makeRotationY(-(la.th||0)).setPosition(la.x,0,la.z)));
+      im.instanceMatrix.needsUpdate=true; im.castShadow=o.castShadow; im.receiveShadow=true; dorfGroup.add(im); });
+    lay.laternen.forEach(la=>solids.push({min:[la.x-0.12,-0.2,la.z-0.12],max:[la.x+0.12,3.4,la.z+0.12]}));
     if(modernS){ lay.laternen.forEach((la,i)=>{ if(i%2) return;                                /*MUELLEIMER hinter dem Mast: Gehwegseite = GEGEN die Arm-Richtung — nie zur Fahrbahn*/
       const bx7=la.x-Math.cos(la.th||0)*0.5, bz7=la.z-Math.sin(la.th||0)*0.5;
       const mu=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.55,0.34), M.dunkel); mu.position.set(bx7,0.275,bz7); dorfGroup.add(mu);
@@ -744,8 +733,8 @@ $('pTest').onclick=()=>{ const R=[];
     const nCh=Object.keys(dorfChunks).length; ok('Streaming: Chunks '+nCh, nCh>0);
     ok('Licht: Laternen '+dorf.lay.laternen.length, dorf.lay.laternen.length>0);
     { const li=dorfGroup.children.find(o=>o.name&&o.name.indexOf('inst_laternen')===0), bi5=dorfGroup.children.find(o=>o.name==='inst_baeume');   /*Zeitreise: gas/e-Gruppen — Praefix statt Exaktname*/
-      const liSum=dorfGroup.children.filter(o=>o.name&&o.name.indexOf('inst_laternen')===0).reduce((s9,o)=>s9+o.count,0);   /*Zeitreise: SUMME beider Bauart-Gruppen*/
-      ok('Instancing: Laternen als InstancedMesh ('+liSum+'× in Gruppen, statt '+(dorf.lay.laternen.length*3)+' Draws)', !!li&&liSum===dorf.lay.laternen.length);
+      const lis=dorfGroup.children.filter(o=>o.name&&o.name.indexOf('inst_laternen')===0);   /*die Laterne des Gesetzbuchs: je Rolle EIN InstancedMesh*/
+      ok('Instancing: Laternen als InstancedMesh ('+lis.length+' Rollen × '+dorf.lay.laternen.length+', statt '+(dorf.lay.laternen.length*lis.length)+' Draws)', !!li&&lis.every(o=>o.count===dorf.lay.laternen.length));
       ok('Instancing: Bäume als InstancedMesh', !dorf.lay.trees.length||(!!bi5&&bi5.count===dorf.lay.trees.length)); }
     ok('Straße: Bordstein-Solids '+solids.filter(s=>s.gw).length, solids.filter(s=>s.gw).length>0);
     ok('Name: '+dorf.plan.name, !!dorf.plan.name&&dorf.plan.name.length>3);

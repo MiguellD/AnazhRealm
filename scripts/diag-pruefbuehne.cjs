@@ -231,9 +231,9 @@ async function s4Probe(page, station, schein) {
 // Mittag (`atmoUniforms.fensterGlut`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
 // im Stamm (jede Methode, die einen beleuchteten Stoff baut, ruft `_leuchtStoff`) UND jedes beleuchteten Stoffs der Szene
 // (`userData.lichtPool`); EIN Punktlicht-Gesetz (nur `_lichtPoolTerm` ruft `_punktLichtBrdf`, kein Szenen-Licht im Stamm); die
-// Laterne eines Plans (`laternen[]`, der Leser `_laternenLesen` im Hebe-Chokepoint `_spawnSettlementErlebnis`) leuchtet nachts
-// und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
-// `schein` (der Selbsttest): die Feuerstelle trägt kein Emitter-Datum (`_lichtDatum`), der Laternen-Leser liest nichts, ein
+// Laterne eines Plans (`laternen[]`, gehoben als Studio-Gestalt `laterne_dorf` im Hebe-Chokepoint `_spawnSettlementErlebnis`,
+// ihr Licht das Datum ihres Rezepts) leuchtet nachts und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
+// `schein` (der Selbsttest): die Feuerstelle und die Laterne tragen kein Emitter-Datum (`_lichtDatum`), ein
 // Bauer `_scheinStoff` baut einen Stoff ohne Pool, und ein Stoff ohne Pool steht als `pruef-schein` in der Szene — die Probe
 // MUSS jeden beim Namen nennen.
 const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
@@ -272,7 +272,6 @@ async function s0Probe(page, station, schein) {
             const P = Object.getPrototypeOf(r);
             if (schein) {
                 r._lichtDatum = () => null;
-                r._laternenLesen = () => 0;
                 P._scheinStoff = function () {
                     return new THREE.MeshStandardNodeMaterial({ color: 0xffffff });
                 };
@@ -333,9 +332,8 @@ async function s0Probe(page, station, schein) {
             const f = feuer.position;
             out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
             out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
-            // die Laterne eines Plans 6 m neben dem Feuer (der Leser im Hebe-Chokepoint, nur die Wege-Schicht: der Plan trägt
-            // keine Wege)
-            r._spawnSettlementErlebnis({ laternen: [{ x: 0, z: 6 }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne", nurWege: true });
+            // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`)
+            r._spawnSettlementErlebnis({ laternen: [{ x: 0, z: 6 }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne" });
             const cam = s.camera;
             const zaehle = (um) => {
                 const lichter = [];
@@ -395,7 +393,7 @@ async function s0Probe(page, station, schein) {
             const lp = { x: f.x, y: f.y + 3, z: f.z + 6 };
             const laterneAn = () =>
                 ((r._leuchtPool && r._leuchtPool.plaetze) || []).filter(
-                    (p) => p.quelle === "laterne" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1
+                    (p) => p.quelle === "laterne_dorf" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1
                 ).length;
             cam.position.set(lp.x - 2, lp.y - 1.5, lp.z);
             cam.updateMatrixWorld(true);
@@ -409,7 +407,7 @@ async function s0Probe(page, station, schein) {
             if (nachtL !== 1 || mittagL !== 0)
                 out.befunde.push(
                     `S0 Laterne: die Laterne des Plans trägt nachts ${nachtL} und mittags ${mittagL} Plätze (Soll 1 und 0) — ` +
-                        "der Leser `_laternenLesen` (laternen[] im Hebe-Chokepoint `_spawnSettlementErlebnis`)"
+                        "die Studio-Gestalt `laterne_dorf` (laternen[] im Hebe-Chokepoint `_spawnSettlementErlebnis`, ihr Datum `_lichtDatumDerGestalt`)"
                 );
             // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
             const glut = () => {
@@ -1378,12 +1376,12 @@ function zeige(rep) {
         // die S4-Probe nennt den abgerückten Körper, und nur ihn
         const s4Namen = (s.s4 ? s.s4.befunde : []).map((b) => b.split(":")[0]);
         const s4Soll = S4.koerper.find((k) => k.bauplan === S4_SCHEIN.bauplan).id;
-        // die S0-Probe nennt die Glut ohne Datum beim Verzeichnis, den ungelesenen Plan beim Laternen-Leser, den Stoff und den
+        // die S0-Probe nennt die Glut ohne Datum beim Verzeichnis, die Laterne ohne Datum bei ihrer Gestalt, den Stoff und den
         // Bauer ohne Pool beim Namen
         const s0B = s.s0 ? s.s0.befunde : [];
         const s0Namen = s0B.filter((b) => /^S0 Nacht/.test(b));
         const s0Rest = {
-            laterne: s0B.some((b) => /^S0 Laterne: .*`_laternenLesen`/.test(b)),
+            laterne: s0B.some((b) => /^S0 Laterne: .*`laterne_dorf`/.test(b)),
             stoff: s0B.some((b) => /^S0 Stoff ohne Pool: .*pruef-schein/.test(b)),
             bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinStoff`/.test(b) && /`_scheinRueckfall`/.test(b)),
         };

@@ -62,6 +62,7 @@ const PFLICHT_EXEMPLARE = [
     "haus_alemannisch",
     "brunnen_dorf",
     "marktstand_dorf",
+    "laterne_dorf",
 ];
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
