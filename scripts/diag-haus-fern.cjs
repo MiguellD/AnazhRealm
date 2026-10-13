@@ -72,7 +72,7 @@ const SOLL = {
     tuer: 0.05,
     glut: [2 / 3, 3 / 2],
     glasTag: [1 / 4, 4],
-    glasFarbe: 0.08,
+    glasFarbe: 0.15,
 };
 
 // ── T: DER TÜRBLATT-FANG — die Flügel, die der Bau anlegt (`tueren()`: userData.door + side), bevor die L1 sie an Ort und
@@ -464,14 +464,15 @@ const median = (a) => {
 const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 
 // ── G: DAS GLAS JE STUFE (K38, Auge 1310 Nr. 11). Je Öffnung des Gesetzbuchs (`H.windows`: Stockwerk, Giebel, Anbau) wird
-//    ihr Rechteck von außen abgetastet (Raster 5 cm, entlang der Wand-Normale): je Pixel die Stoffe, die der Strahl trifft,
-//    von vorn gemischt (Deckkraft des Stoffs, ein opaker Stoff schließt) — TAG die Stoff-Antwort (lineare Albedo × Vertex-
+//    ihr Rechteck von außen abgetastet (Raster 5 cm, entlang der Wand-Normale): je Pixel die Stoffe, die der Strahl trifft —
+//    nur Vorderseiten, wie die Welt einen einseitigen Stoff zeichnet, durch den Raum bis zur Gegenwand (14 m) —, von vorn
+//    gemischt (Deckkraft des Stoffs, ein opaker Stoff schließt) — TAG die Stoff-Antwort (lineare Albedo × Vertex-
 //    Farbe, die Mischung der Scheibe über dem Raum), NACHT die Glut (ein Stoff mit `__licht` "fenster" glüht in
 //    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
-//    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht: die L1 liegt kalibriert über der L0 — ihr
-//    Innenkörper steht im Schatten), Farbe (Anteile r/g/b) höchstens 0,08 entfernt. Vorher (Kern c5a4d0f8): die L2 legte
-//    Bänder im Stoff `dunkel` über die Reihen — Glut 0, Tag L2/L0 0,02–0,17; die L1 würfelte den Schlaf allein — Glut
-//    L1/L0 0,6.
+//    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht), Farbe (Anteile r/g/b) höchstens 0,15 entfernt
+//    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
+//    Schritte. Vorher (Kern c5a4d0f8): die L2 legte Bänder im Stoff `dunkel` über die Reihen — Glut 0, Tag L2/L0 0,02–0,25;
+//    die L1 würfelte den Schlaf allein, ihr Raum war Putz für jeden Stil.
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
 const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 const GLAS_R = 0.05;
@@ -503,7 +504,7 @@ function stoffFlaechen(g) {
             w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
             for (let j = 0; j < 3; j++) c[i * 3 + j] = (C ? C[k + j] : 1) * mc[j];
         }
-        out.push({ w, c, al, gl });
+        out.push({ w, c, al, gl, zwei: m.side === T.DoubleSide });
     });
     return out;
 }
@@ -554,10 +555,13 @@ function fensterMisch(F, o, sum, fach) {
             const da = sg * (horiz ? w[t + 2] : w[t]),
                 db = sg * (horiz ? w[t + 5] : w[t + 3]),
                 dc = sg * (horiz ? w[t + 8] : w[t + 6]);
-            // vor der Wand höchstens 1,5 m (Laden, offener Flügel, Bank), dahinter der Raum bis 3 m
-            if (Math.max(da, db, dc) < wand - 3 || Math.min(da, db, dc) > wand + 1.5) continue;
+            // vor der Wand höchstens 1,5 m (Laden, offener Flügel, Bank), dahinter der Raum bis zur Gegenwand
+            if (Math.max(da, db, dc) < wand - 14 || Math.min(da, db, dc) > wand + 1.5) continue;
             const ar = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
             if (Math.abs(ar) < 1e-12) continue;
+            // die Welt zeichnet einen einseitigen Stoff nur von vorn (`side` reist mit, _foundryBuildMesh): eine Fläche, die
+            // vom Auge draußen weg schaut, sieht kein Strahl — die Rückseite jeder Scheibe zählte doppelt
+            if (!f.zwei && (horiz ? sg : -sg) * ar <= 0) continue;
             const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - u0) / GLAS_R)),
                 i1 = Math.min(nu - 1, Math.ceil((Math.max(ax, bx, cx) - u0) / GLAS_R));
             const k0 = Math.max(0, Math.floor((Math.min(ay, by, cy) - v0) / GLAS_R)),
@@ -614,7 +618,8 @@ function glasUrteil(G, f) {
             df = glasAbstand(gs, g0);
         if (rn == null || !(rn >= SOLL.glut[0] && rn <= SOLL.glut[1]))
             f.push(`Glas L${s}: Glut L${s}/L0 ${f3(rn)} (nachts ${f3(gs.nacht)} gegen ${f3(g0.nacht)})`);
-        if (rt == null || !(rt >= SOLL.glasTag[0] && rt <= SOLL.glasTag[1])) f.push(`Glas L${s}: Tag L${s}/L0 ${f3(rt)}`);
+        if (rt == null || !(rt >= SOLL.glasTag[0] && rt <= SOLL.glasTag[1]))
+            f.push(`Glas L${s}: Tag L${s}/L0 ${f3(rt)}`);
         if (!(df <= SOLL.glasFarbe)) f.push(`Glas L${s}: Farbe ${f3(df)} von der L0 entfernt`);
     }
 }
@@ -853,7 +858,9 @@ function selbsttest() {
             return `L${s}/L0 Glut Median ${f3(median(rn))} [${f3(Math.min(...rn))}, ${f3(Math.max(...rn))}] · Tag Median ${f3(median(rt))} [${f3(Math.min(...rt))}, ${f3(Math.max(...rt))}] · Farbe max ${f3(Math.max(...df))}`;
         })
         .join(" · ");
-    console.log(`  Glas je Stufe (G, Soll Glut ${f3(SOLL.glut[0])}–${f3(SOLL.glut[1])}, Tag ${f3(SOLL.glasTag[0])}–${SOLL.glasTag[1]}, Farbe ≤ ${SOLL.glasFarbe}): ${glasZeile}`);
+    console.log(
+        `  Glas je Stufe (G, Soll Glut ${f3(SOLL.glut[0])}–${f3(SOLL.glut[1])}, Tag ${f3(SOLL.glasTag[0])}–${SOLL.glasTag[1]}, Farbe ≤ ${SOLL.glasFarbe}): ${glasZeile}`
+    );
     console.log(
         `  Ausstattung ${aus.length}: ` +
             aus
