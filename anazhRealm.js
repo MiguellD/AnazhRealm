@@ -49429,10 +49429,9 @@ class AnazhRealm {
             if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
             this.state._fieldVy = 0;
         }
-        // HP kehrt voll zurück — die WUNDE (Stat-Penalty, 10-min-Regen) trägt
-        // die Erinnerung, nicht ein HP-Malus.
-        this.state.player.hp = this.state.player.hpMax || 100;
-        this.recomputePlayerStats();
+        // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,
+        // 10-min-Regen) trägt die Erinnerung, nicht ein HP-Malus.
+        this.recomputePlayerStats({ voll: true });
         this.journalAppend("loss", `Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`, {
             source: source || null,
             at: now,
@@ -57978,8 +57977,9 @@ class AnazhRealm {
             if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
-        // Resistenzen). DSL-Tuning (player_speed/player_jump_power) überschreibt bis zum nächsten Wechsel.
-        this.recomputePlayerStats();
+        // Resistenzen), die Wandlung füllt die Lebenswerte. DSL-Tuning (player_speed/player_jump_power) überschreibt
+        // bis zum nächsten Wechsel.
+        this.recomputePlayerStats({ voll: true });
         // S9 (kampf-plan §10-F4) — das gehaltene Gerät an den NEUEN Körper re-attachen (der alte
         // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
         // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).
@@ -60968,28 +60968,31 @@ class AnazhRealm {
 
     // DER EINE Stat-Chokepoint: jede Mutation der Spieler-Stats ruft recomputePlayerStats
     // (computePlayerStats ist die EINE Berechnung) — nie inline neu rechnen, sonst driftet eine zweite
-    // Stat-Wahrheit. HP+Stamina gehen beim Wechsel auf max (der Todes-Respawn nutzt das: Wandlung heilt);
+    // Stat-Wahrheit. Die LEBENSWERTE (hp · stamina · mana) sind ZUSTAND: jede Neuberechnung klemmt sie auf das
+    // neue Maximum, keine hebt sie. Auf das Maximum setzen nur die Wandlung (applyPlayerSoul) und die Rückkehr
+    // (_playerDeathRespawn) mit `{ voll: true }` — vorher heilte jeder Rufer voll: Gerät, Panel, Boost und der
+    // Tod-Takt (K27, gate:kampf-gefuehl T27). Ein fehlender Wert (vor der ersten Wandlung) ist nie 0: er steht voll.
     // player_speed/player_jump_power dürfen danach überschreiben.
-    recomputePlayerStats() {
+    recomputePlayerStats(opts) {
         const computed = this.computePlayerStats();
         if (!this.state.player) return computed;
-        this.state.player.stats = computed.stats;
-        this.state.player.statTags = computed.tags;
+        const pl = this.state.player;
+        pl.stats = computed.stats;
+        pl.statTags = computed.tags;
         // Anwendung auf die Live-Bewegungs-Werte. V9.44-b: speed + sprintSpeed
         // über den kanonischen Setter — Sprint = 2× speed konsistent gehalten.
         this._applyPlayerSpeed(computed.stats.speed);
         this.state.jumpPower = computed.stats.jumpPower;
-        // HP + Stamina als Lebens-Werte (V1 noch ohne Schadens-System; werden
-        // mit 6.C2 pfad-Modus aktiv). Auf MAX setzen bei jedem Soul-Wechsel.
-        this.state.player.hpMax = computed.stats.hpMax;
-        this.state.player.hp = computed.stats.hpMax;
-        this.state.player.staminaMax = computed.stats.staminaMax;
-        this.state.player.stamina = computed.stats.staminaMax;
-        // Mana als zweite Ausdauer-Achse: bei jedem Soul-Wechsel auf MAX; Verbrauch + Regeneration im
-        // Game-Loop analog stamina.
-        this.state.player.manaMax = computed.stats.manaMax;
-        this.state.player.mana = computed.stats.manaMax;
-        // UI-Render anstoßen, falls Spieler-Drawer offen ist.
+        // Die Lebenswerte: das Maximum aus der Berechnung, der Zustand geklemmt (Mana ist die zweite Ausdauer-Achse;
+        // Verbrauch und Regen leben in den Verben und tickPlayerVitals).
+        const voll = !!(opts && opts.voll);
+        const lebenswert = (v, max) => (voll || v == null ? max : Math.min(v, max));
+        pl.hpMax = computed.stats.hpMax;
+        pl.hp = lebenswert(pl.hp, pl.hpMax);
+        pl.staminaMax = computed.stats.staminaMax;
+        pl.stamina = lebenswert(pl.stamina, pl.staminaMax);
+        pl.manaMax = computed.stats.manaMax;
+        pl.mana = lebenswert(pl.mana, pl.manaMax);
         return computed;
     }
 
@@ -68734,8 +68737,35 @@ class AnazhRealm {
             }
             scene.add(bg);
             map.set(regionKey, bg);
+            this._buendelReihe(scene);
         }
         return bg;
+    }
+
+    // DIE REIHE DER BÜNDEL (1310-1): r184 zeichnet die Region-Bündel in der Reihenfolge der Szene und vor jedem losen
+    // Objekt — wer zuerst zeichnet, schreibt die Tiefe, hinter der die übrigen ihre Fragmente verwerfen. Die Verdecker
+    // zuerst: @global (die gesetzten Gruppen ohne Wahl), dann die Regionen, @wahl zuletzt (Pflanzen-Stufen, Atlas-Karten,
+    // Zwillinge — Ausschnitt je Fragment). Bis 1310-1 entschied die Ankunft beim Boot: am Genesis-Ring legte der Tor-
+    // Zwilling @wahl vor @global an — bei gleichen Befehlen in EINER Sitzung gpu-bank +1,6 ms und 47,5 statt 50,1 fps unter
+    // Regler voll (OMEN, GTX 1060). Jedes neue Bündel stellt die Reihe neu (stabil im Rang); die Plätze der übrigen Kinder
+    // der Szene bleiben, nur die Bündel tauschen ihre Plätze untereinander.
+    static _buendelRang(key) {
+        return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;
+    }
+    _buendelReihe(scene) {
+        const kinder = scene.children;
+        const plaetze = [];
+        const buendel = [];
+        for (let i = 0; i < kinder.length; i++) {
+            const c = kinder[i];
+            if (c && c.isBundleGroup && c.userData && c.userData.regionKey != null) {
+                plaetze.push(i);
+                buendel.push(c);
+            }
+        }
+        const rang = (b) => AnazhRealm._buendelRang(b.userData.regionKey);
+        const reihe = buendel.map((b, k) => ({ b, k })).sort((x, y) => rang(x.b) - rang(y.b) || x.k - y.k);
+        for (let k = 0; k < plaetze.length; k++) kinder[plaetze[k]] = reihe[k].b;
     }
 
     // Bundle-Invalidierung für ein MESH in einer Region-BundleGroup: jede Mutation seiner Draw-Wahrheit
@@ -76978,9 +77008,9 @@ class AnazhRealm {
         return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + (rec ? rec.kind : preset) + ".fernform");
     }
     // DIE EINE HÜLLEN-FORM (docs/studio-vertrag.md N5, S3): `{ stufe, teile: [{ art: "box" | "keil" | "kapsel", c, h | a, b,
-    // r, first ("+x" · "-x" · "+z" · "-z", der Keil), walm (0..1), farbe (linear), rolle: "fest" | "sicht" | "beide" }] }`,
+    // r, first ("+x" · "-x" · "+z" · "-z", der Keil), walm (0..1), farbe (linear), rolle: "fest" | "sicht" | "wurf" | "beide" }] }`,
     // asset-lokal. Der EINE Leser: die Teile EINER Rolle — "fest" die Kollision, "sicht" das Fernbild, "beide" zählt für
-    // beide —, fail-closed geprüft (eine kaputte Hülle ist ein KERN-PFLICHT-Bruch mit Quelle, nie still leer). null: keine
+    // beide; "wurf" liest hier niemand (das Teil wirft nur: die NUR-WURF-Stufe ist die ganze Liste, das Tor 1110-9) —, fail-closed geprüft (eine kaputte Hülle ist ein KERN-PFLICHT-Bruch mit Quelle, nie still leer). null: keine
     // Hülle.
     static _huelleVon(h, rolle, quelle) {
         if (!h) return null;
@@ -76994,7 +77024,8 @@ class AnazhRealm {
             Number.isFinite(v[2]);
         const out = [];
         for (const t of h.teile) {
-            if (!t || !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "beide")) return bruch("rolle");
+            if (!t || !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "wurf" || t.rolle === "beide"))
+                return bruch("rolle");
             if (t.art === "box" || t.art === "keil") {
                 if (!v3(t.c) || !v3(t.h)) return bruch(t.art + " c/h");
                 if (t.art === "keil" && AnazhRealm.HUELLE_KEIL_TYP[t.first] == null) return bruch("keil first");
@@ -78493,6 +78524,33 @@ class AnazhRealm {
         if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
         return mat;
     }
+    // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
+    // Quelle). Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
+    // Eine LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
+    // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
+    // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
+    // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
+    // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
+    static _teilWirft(m) {
+        return (
+            m.kind !== "fellSchale" &&
+            !(m.mat && m.mat.seh === "glut") &&
+            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1)
+        );
+    }
+    // DIE KOSTEN-REGEL DES WURFS (1110-9, docs/studio-vertrag.md N5): geworfen wird von der billigeren Stufe — wirft eine
+    // gezeigte Stufe über ihre NUR-WURF-Stufe, nimmt der Wirt deren Zwilling nur, wo er WENIGER Dreiecke in die Kaskaden
+    // trägt als die werfenden Teile der Stufe selbst; sonst wirft die Stufe selbst. `eigen` und `zwilling` = Dreiecke der
+    // werfenden Teile (`_teilWirft`). Gemessen am Regler-Rand: kathedrale orders=9 trägt eine Stufe 3 von 20 308 gegen eine
+    // werfende L0 von 16 652 — der Zwilling wäre dort teurer als das, was er ersetzt (gate:regler-wirkt WURF).
+    static _wurfVonBilligerer(eigen, zwilling) {
+        return zwilling < eigen ? "zwilling" : "selbst";
+    }
+    // Die Dreiecke einer Geometrie (indiziert oder nicht).
+    static _geomDreiecke(g) {
+        if (!g || !g.attributes || !g.attributes.position) return 0;
+        return Math.floor((g.index ? g.index.count : g.attributes.position.count) / 3);
+    }
 
     // DAS LAUB-LICHT IM STOFF (K19): jeder Laub-Stoff der Welt (Foundry-Laub und Blatt-Karte, das Grammatik-Laub) rechnet je
     // direktem Licht den EINEN Laub-Licht-Term (phyto-core `laubDurchlass`, hier über der TSL-Algebra) in seiner Lichtung —
@@ -78752,16 +78810,7 @@ class AnazhRealm {
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null));
         }
-        // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
-        // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
-        // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
-        // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
-        // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
-        // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
-        mesh.castShadow =
-            m.kind !== "fellSchale" &&
-            !(m.mat && m.mat.seh === "glut") &&
-            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1);
+        mesh.castShadow = AnazhRealm._teilWirft(m);
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (globalThis.__phytoCore.budgetLook(m.kind)) mesh.userData.__klasse = m.kind;
@@ -79449,6 +79498,25 @@ class AnazhRealm {
                 if (fw && fw.instanceable && fw.lod === wurf && Array.isArray(fw.leaves) && fw.leaves.length)
                     schatten = fw;
             }
+            // DIE KOSTEN-REGEL (`_wurfVonBilligerer`, N5): ist die Wurf-Stufe eine NUR-WURF-Stufe, wirft ihr Zwilling nur,
+            // wo er weniger Dreiecke trägt als die werfenden Teile dieser Stufe — sonst wirft die Stufe selbst. Der Flat
+            // trägt die Kosten (`wurfKosten`: eigen · zwilling · von = die werfende Stufe).
+            let wurfKosten = null;
+            if (schatten && this._foundryNurWurf(preset, wurf)) {
+                let eigen = 0;
+                let zwilling = 0;
+                for (const c of group.children) {
+                    if (!c.geometry || !c.material || c.castShadow === false) continue;
+                    const rad = c.userData && c.userData.__rad;
+                    const mal = rad && Array.isArray(rad.raeder) && rad.raeder.length ? rad.raeder.length : 1;
+                    eigen += AnazhRealm._geomDreiecke(c.geometry) * mal;
+                }
+                for (const lf of schatten.leaves)
+                    if (lf.shadowTwin && lf.castShadow !== false) zwilling += AnazhRealm._geomDreiecke(lf.geom);
+                const von = AnazhRealm._wurfVonBilligerer(eigen, zwilling);
+                wurfKosten = { eigen, zwilling, von: von === "zwilling" ? wurf : lod };
+                if (von !== "zwilling") schatten = null;
+            }
             // EINE Sichthöhe je Baum über alle Stufen (vor dem Flat: die Instanz-Fassaden lesen die Vorlage). Ohne
             // bekannte Höhe der Höhen-Stufe wartet die Stufe (nie mit eigenem Stempel).
             if (this._foundryPresetIsTree(preset) && lod !== this._foundryHoehenStufe(preset)) {
@@ -79466,7 +79534,7 @@ class AnazhRealm {
             // Zwilling, L1 selbst, Karte nie; Strauch/Blume/Fels selbst; Gras nie). Der `leaf.castShadow`-Override
             // gewinnt gegen `_archGroupCastsShadow` (das `_lodN` im Namen liest; Foundry-Einträge tragen ihr LOD im
             // leafKey). Deckungsgleiche Werfer verdunkeln nicht doppelt (Tiefen-Test).
-            const castsShadow = wurf === lod && !zwillingsQuelle;
+            const castsShadow = (wurf === lod && !zwillingsQuelle) || (wurfKosten !== null && wurfKosten.von === lod);
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -79590,6 +79658,7 @@ class AnazhRealm {
                       leaves,
                       huelle: group._huelle || null,
                       fern: group._fern || null,
+                      wurfKosten,
                   }
                 : false;
         }
@@ -85381,8 +85450,7 @@ class AnazhRealm {
         // wear zehrt zusätzlich zur Stamina, modus-unabhängig — sonst wäre Werkzeug im frieden ein Perpetuum.
         // Die Wand oben verhindert negative wear.
         // Derselbe Verschleiß wie im Kampf (_kampfVerschleiss). Kein Stat-Neubau: kein Stat liest wear (der Faktor
-        // _wearStatFactor wirkt im Treffer-Schaden), und recomputePlayerStats setzt HP und Ausdauer auf das Maximum —
-        // jeder Abbau-Hieb heilte und gab die eben gezahlte Ausdauer zurück (Welle L, K-D6).
+        // _wearStatFactor wirkt im Treffer-Schaden).
         this._kampfVerschleiss(heldBp);
         entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
         if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
@@ -102366,7 +102434,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.543.0";
+AnazhRealm.VERSION = "18.544.0";
 // Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
 // räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
 // `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
