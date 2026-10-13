@@ -26,7 +26,7 @@
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
@@ -534,7 +534,7 @@ function erstWandInstall() {
         let wurf = null;
         ESt.offen.set(attrappe, new Set());
         try {
-            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
         } catch (e) {
             wurf = String((e && e.message) || e);
         } finally {
@@ -542,7 +542,7 @@ function erstWandInstall() {
         }
         let bild = null;
         try {
-            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             bild = { pixel: auf.u8.length, erst: auf.info.erst };
         } catch (e) {
             bild = { wurf: String((e && e.message) || e) };
@@ -588,7 +588,7 @@ function erstWandInstall() {
             for (let i = 0; i < 3; i++) bild();
             offenDanach = ESt.offen.size;
             try {
-                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             } catch (e) {
                 wurf = String((e && e.message) || e);
             }
@@ -630,8 +630,9 @@ function erstWandInstall() {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];

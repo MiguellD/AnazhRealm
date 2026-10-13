@@ -23,6 +23,19 @@
 // Die Saison hält `saisonFest` an, sobald die Welt existiert (der Drift beginnt erst, wenn die Bühne
 // steht); die Bühne setzt Zeit und Wetter über den EINEN Wetter-Schreiber und schneidet den
 // 45-s-Cross-Fade ab (das Bild zeigt den Endzustand), der Regen fällt im selben Zug weg.
+const { KAMERA_NAH_INSTALL } = require("./kamera-nah.cjs");
+const { ABNAHME_INSTALL } = require("./abnahme-urteil.cjs");
+
+// DER SEITENFEHLER-ZÄHLER der Abnahme (das Feld `seitenfehler`): jeder ungefangene Fehler und jede verworfene Zusage seit dem
+// Einbau der Aufnahme.
+function seitenfehlerZaehlen() {
+    if (window.__seitenfehlerZaehlt) return;
+    window.__seitenfehlerZaehlt = true;
+    window.__seitenfehler = 0;
+    window.addEventListener("error", () => window.__seitenfehler++);
+    window.addEventListener("unhandledrejection", () => window.__seitenfehler++);
+}
+
 function saisonFest() {
     const r = window.anazhRealm;
     if (r && r.state) r.state.autoSeason = false;
@@ -391,6 +404,157 @@ function erstRuhe(frame, opt, wer) {
     })();
 }
 
+// DIE ABNAHME DES BLICKS (K32, scripts/lib/abnahme-urteil.cjs): was die Aufnahme über ihr Bild weiß, ohne Pixel — Stand aus dem
+// laufenden Spiel, Bühne, Gerät, Pose, die Nah-Deckung des Schirms (Laub · Rinde · Fels näher als 2 m am Auge, Gelände und Bau
+// näher als 1 m, Gelände näher als 2 m und höchstens 1 m unter dem Auge — die Kamera an der Böschung oder in der Wand; die Linse der
+// Spieler-Kamera scripts/lib/kamera-nah.cjs) und das benannte Ziel (`opt.ziel` = { x, y, z, name, ohne, r }: im Bild, ohne
+// Verdecker davor). Das Ziel selbst zählt nie: seine ids (`ohne`) und jedes Werk, dessen Fuß näher als `r` (1,5 m) am Ziel
+// steht. Anlass 13.10.: vier Beweisbilder standen in Laub und Zweigen (K17 Dorfhang, K20 Waldrand, K24 Tanne, K16 Wald).
+function abnahmeMessen(opt) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const T = window.THREE;
+    const cam = st.camera;
+    const o = opt || {};
+    cam.updateMatrixWorld(true);
+    const z = o.ziel || null;
+    const ohne = [];
+    if (z) {
+        if (Array.isArray(z.ohne)) ohne.push(...z.ohne);
+        const rz = z.r != null ? z.r : 1.5;
+        for (const e of st.architectures || [])
+            if (e && e.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
+    }
+    const RADIUS = 2;
+    const E = cam.position;
+    // DER FUSS DES ZIELS (gemessen 13.10., Werkbank: die Blick-Wahl stand hinter einer Kuppe, die Birke zeigte nur die Krone,
+    // der Strahl zum Ziel-Punkt war frei): steht das Ziel 0,6–40 m über seinem Boden, muss auch sein Fuß (Boden + 0,3 m) frei
+    // sein; `ziel.fussY` nennt ihn selbst, `ziel.fuss === false` fragt ihn nicht (ein Ziel in einer Felswand).
+    const fussY = (q) => {
+        if (q.fuss === false) return undefined;
+        if (Number.isFinite(q.fussY)) return q.fussY;
+        const g = r._voxelSurfaceY(q.x, q.z);
+        return Number.isFinite(g) && q.y - g > 0.6 && q.y - g <= 40 ? g + 0.3 : undefined;
+    };
+    // Der Satz „messung" (Takt- und Luma-Frames) misst keine Sicht: die Strahlen kosteten jeden Mess-Frame Zeit, die er nicht prüft.
+    const nd =
+        o.satz === "messung"
+            ? { deckung: null, taeter: null, ziel: null }
+            : window.__nahDeckung({
+                  radien: { Laub: RADIUS, Rinde: RADIUS, Fels: RADIUS, Gelände: RADIUS, Bau: RADIUS / 2 },
+                  ueber: { Gelände: E.y - 1 },
+                  gw: 48,
+                  gh: 27,
+                  ort: { id: "abnahme", x: E.x, z: E.z, r: RADIUS + 2 },
+                  neu: true,
+                  ohne,
+                  ziel: z ? { x: z.x, y: z.y, z: z.z, name: z.name, saum: z.saum, fussY: fussY(z) } : null,
+              });
+    // DER VORDERGRUND (gemessen 13.10., echte GPU: die Blick-Wahl stand frei, doch eine Kuppe 2–4 m vor dem Auge füllte ein Drittel
+    // des Bilds): mit benanntem Ziel zählt jede Täter-Fläche (Laub · Rinde · Fels · Bau · Böschung) näher als der halbe Ziel-Abstand
+    // (2–8 m) — das Bild zeigt sein Ziel, nicht, was davor steht.
+    let vorn = null;
+    if (z && nd.ziel) {
+        const V = Math.max(RADIUS, Math.min(8, nd.ziel.abstand / 2));
+        const v = window.__nahDeckung({
+            radien: { Laub: V, Rinde: V, Fels: V, Bau: V, Gelände: V },
+            ueber: { Gelände: E.y - 1 },
+            gw: 32,
+            gh: 18,
+            ort: { id: "abnahme-vorn", x: E.x, z: E.z, r: V + 2 },
+            neu: true,
+            ohne,
+        });
+        vorn = { radius: +V.toFixed(2), deckung: v.deckung, taeter: v.taeter };
+    }
+    const rend = st.renderer;
+    const be = rend && rend.backend;
+    const db =
+        rend && typeof rend.getDrawingBufferSize === "function" ? rend.getDrawingBufferSize(new T.Vector2()) : null;
+    const dir = cam.getWorldDirection(new T.Vector3());
+    return {
+        satz: o.satz || "beweis",
+        stand: { version: r.constructor.VERSION || null, sha: o.sha || null },
+        buehne: {
+            saison: st.season || null,
+            wetter: st.weather || null,
+            uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null,
+            tiereGehalten: !!Object.getPrototypeOf(r).__tiereGehalten,
+        },
+        geraet: {
+            backend: !be ? null : be.isWebGPUBackend ? "WebGPU" : be.isWebGLBackend ? "WebGL" : null,
+            adapter: (() => {
+                const i = (be && be.device && be.device.adapterInfo) || (be && be.adapter && be.adapter.info) || null;
+                return i ? [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") : null;
+            })(),
+            leinwand: db ? [Math.round(db.x), Math.round(db.y)] : null,
+        },
+        sicht: { radius: RADIUS, deckung: nd.deckung, taeter: nd.taeter, vordergrund: vorn },
+        // DIE GESTALT DES ZIELS (gemessen 13.10., echte GPU: drei gesetzte Bäume ungebaut, das Bild zeigte einen leeren Hang und
+        // war frei): jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
+        ziel: nd.ziel
+            ? Object.assign(nd.ziel, {
+                  gestalt: ohne.map((id) => {
+                      const e = (st.architectures || []).find((q) => q && q.id === id);
+                      return e ? `${e.type} ${id}${r._archIsRendered(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`;
+                  }),
+                  gezeichnet: ohne.every((id) => {
+                      const e = (st.architectures || []).find((q) => q && q.id === id);
+                      return !!e && r._archIsRendered(e);
+                  }),
+              })
+            : null,
+        pose: {
+            kamera: [E.x, E.y, E.z].map((v) => +v.toFixed(3)),
+            blick: [dir.x, dir.y, dir.z].map((v) => +v.toFixed(5)),
+        },
+        seitenfehler: window.__seitenfehler || 0,
+    };
+}
+
+// DIE BLICK-WAHL (K32; Lehre 17 „die Blick-Wahl sucht freie Sicht"): vor dem Schuss sucht die Aufnahme bis zu `opt.wahl` Posen
+// um den Ort — der Abstand zum Ziel und die Augenhöhe über dem Boden bleiben, der Azimut dreht 0, ±15° … ±90°, ±135°, 180°,
+// je Runde von 14 Posen ein Meter höher und 20 % näher —, je Pose die Abnahme des Blicks nach den EINEN Schwellen (ohne die Bild-Zeilen:
+// Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
+// Abnahme nach dem Schuss wirft beim Namen.
+function blickWahl(opt) {
+    const r = window.anazhRealm;
+    const cam = r.state.camera;
+    const z = opt.ziel;
+    const n = Math.max(1, Math.floor(opt.wahl));
+    const P0 = cam.position.clone();
+    const Q0 = cam.quaternion.clone();
+    const boden = (x, zz) => r._voxelSurfaceY(x, zz);
+    const h0 = Math.max(0.35, P0.y - boden(P0.x, P0.z));
+    const d0 = Math.max(0.5, Math.hypot(P0.x - z.x, P0.z - z.z));
+    const a0 = Math.atan2(P0.z - z.z, P0.x - z.x);
+    const winkel = [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90, 135, -135, 180];
+    const posen = [];
+    let beste = null;
+    for (let k = 0; k < n; k++) {
+        const ring = Math.floor(k / winkel.length);
+        const a = a0 + (winkel[k % winkel.length] * Math.PI) / 180;
+        const d = d0 * Math.pow(0.8, ring);
+        const x = z.x + Math.cos(a) * d,
+            zz = z.z + Math.sin(a) * d;
+        const g = boden(x, zz);
+        if (!Number.isFinite(g)) continue;
+        cam.position.set(x, g + h0 + ring, zz);
+        cam.lookAt(z.x, z.y, z.z + 1e-4);
+        cam.updateMatrixWorld(true);
+        const m = window.__abnahmeMessen(opt);
+        const u = window.__abnahmeUrteil(m);
+        const rest = u.rot.filter((q) => !q.feld.startsWith("bild."));
+        posen.push({ k, kamera: m.pose.kamera, rot: rest.map((q) => q.grund) });
+        if (!rest.length) return { versucht: k + 1, gewaehlt: k, kamera: m.pose.kamera, posen };
+        if (!beste || rest.length < beste.n) beste = { n: rest.length, k };
+    }
+    cam.position.copy(P0);
+    cam.quaternion.copy(Q0);
+    cam.updateMatrixWorld(true);
+    return { versucht: posen.length, gewaehlt: null, beste: beste && beste.k, posen };
+}
+
 // DAS GANZE BILD (04.10., echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
 // des Frames in Originalgröße, nie das verkleinerte Bild — 1280×720 aus 1920×1080 waren ein 2/3-Ausschnitt,
 // 640×360 ein Drittel (gemessen: dieselbe Kamera, 640 = die linke obere 640×360-Ecke des 1920er Bildes). Die
@@ -410,6 +574,27 @@ function ausgabeAufnahme(W, H, warm, opt) {
         // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
         // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
         const prevZiel = rend.getRenderTarget();
+        // DIE BLICK-WAHL (K32) vor dem Schuss: nur mit benanntem Ziel und `opt.wahl` Posen
+        const wahl = opt && opt.ziel && opt.wahl > 0 ? window.__blickWahl(opt) : null;
+        // DIE ABNAHME (K32, scripts/lib/abnahme-urteil.cjs): jedes Bild prüft sich selbst — Sicht frei, Ziel im Bild und frei,
+        // Belichtung im Band, Stand · Bühne · Gerät vermerkt. Ein Bild, das sie nicht hält, wirft beim Namen: der Aufrufer
+        // speichert nie still. Der Satz „messung" (`opt.satz`) prüft nur Stand, Bühne und Gerät (Mess-Frames, kein Beweisbild).
+        const abnahme = (u8, W2, H2) => {
+            const m = window.__abnahmeMessen(opt);
+            m.bild = window.__bildMasse(u8, W2, H2);
+            if (wahl) m.wahl = wahl;
+            const u = window.__abnahmeUrteil(m);
+            m.ok = u.ok;
+            m.zeile = u.zeile;
+            if (!u.ok) {
+                const fehler = new Error(
+                    `${u.zeile}${wahl && wahl.gewaehlt == null ? ` — die Blick-Wahl fand in ${wahl.versucht} Posen keine freie` : ""} — die Aufnahme speichert nichts`
+                );
+                fehler.abnahme = m;
+                throw fehler;
+            }
+            return m;
+        };
         rend.setOutputRenderTarget(rt);
         try {
             // Warm-Frames: der erste Frame nach dem Kamera-Umsetzen trägt die Feld-Formen noch nicht
@@ -467,7 +652,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 voll = new Uint8Array(zeile * BH);
                 for (let y = 0; y < BH; y++) voll.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
             }
-            if (BW === W && BH === H) return { u8: voll, info, ms };
+            if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: abnahme(voll, W, H) };
             // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
             const u8 = new Uint8Array(W * H * 4);
             for (let y = 0; y < H; y++) {
@@ -496,7 +681,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                     u8[o + 3] = Math.round(s3 / n);
                 }
             }
-            return { u8, info, ms };
+            return { u8, info, ms, abnahme: abnahme(u8, W, H) };
         } finally {
             rend.setOutputRenderTarget(prevOut);
             rend.setRenderTarget(prevZiel);
@@ -989,6 +1174,11 @@ module.exports = {
     weltaktUrteil,
     weltaktSelbsttest,
     AUSGABE_INSTALL:
+        KAMERA_NAH_INSTALL +
+        ABNAHME_INSTALL +
+        `window.__abnahmeMessen = ${abnahmeMessen.toString()};` +
+        `window.__blickWahl = ${blickWahl.toString()};` +
+        `(${seitenfehlerZaehlen.toString()})();` +
         `window.__erstRuhe = ${erstRuhe.toString()};` +
         `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
         `window.__spielStapel = ${spielStapel.toString()};` +

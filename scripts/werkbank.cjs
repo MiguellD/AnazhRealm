@@ -12,9 +12,9 @@
 //                                                           genesis · dorf · buehne): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts;
 //                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
-//   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--uhr 0..1]
-//                                                           Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe Bühne zu
-//                                                           dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
+//   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
+//                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
+//                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -164,8 +164,10 @@
 //
 // `start --echt [--seite <url>]` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
 // den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json); ohne
-// `--echt` bleibt es swiftshader auf dem eigenen Seiten-Port. In beiden zählt der VRAM-ABGRIFF jede
-// GPUDevice-Allokation (Puffer + Texturen, live nach destroy) — das ist der Speicher, nicht ein Proxy.
+// `--echt` fährt sie headless auf dem eigenen Seiten-Port an der Weiche des Start-Rezepts (lokal der Hardware-Adapter, in der
+// CI und mit LINSE_GPU=software swiftshader; die erste Zeile `[linse-gpu]` nennt ihn) — Zeit-Urteile (band, gpu-bank) zählen
+// nur mit `--echt` unter dem GPU-Schloss. In beiden zählt der VRAM-ABGRIFF jede GPUDevice-Allokation (Puffer + Texturen,
+// live nach destroy) — das ist der Speicher, nicht ein Proxy.
 //
 // Höhen relativ zum Boden: `bild` nimmt py/ly mit Präfix `+` als Abstand über `_voxelSurfaceY(px,pz)`
 // bzw. `(lx,lz)` (z. B. `+1.6`). Die Bilder sind dieselbe Aufnahme wie die Beweis-Sonden
@@ -194,6 +196,19 @@ const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
+// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32): SHA, „+geaendert" bei Änderungen an versionierten Dateien
+const gitStand = () => {
+    try {
+        const { execFileSync } = require("child_process");
+        const sha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"]).toString().trim();
+        const neu = execFileSync("git", ["-C", root, "status", "--porcelain", "--untracked-files=no"])
+            .toString()
+            .trim();
+        return sha + (neu ? "+geaendert" : "");
+    } catch (_e) {
+        return null;
+    }
+};
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
     const i = argv.indexOf(k);
@@ -773,7 +788,7 @@ function bandProben(k) {
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const puppeteer = require("puppeteer");
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const mime = {
         ".html": "text/html",
         ".js": "application/javascript",
@@ -815,10 +830,12 @@ async function starte() {
         userDataDir: profil,
         protocolTimeout: 3600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
-        // Echt: der Hardware-Adapter; sonst swiftshader — die Schalter je Plattform trägt das EINE Rezept (die alte
-        // Vulkan-Kopie lieferte unter Windows keinen Adapter: die Werkbank fuhr ohne --echt still WebGL2).
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : softwareWebGpuArgs(),
+        // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
+        // — die Schalter je Plattform trägt das EINE Rezept (die alte Vulkan-Kopie lieferte unter Windows keinen Adapter: die
+        // Werkbank fuhr ohne --echt still WebGL2).
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);
@@ -1055,13 +1072,25 @@ async function starte() {
                 }
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = false;
+            // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
+            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42 — gemessen 13.10. am Dreier-Hain: frei erst in Pose 26;
+            // `--wahl 0` schießt nur die genannte Pose)
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel" };
+            const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
+            let gewaehlt = null;
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
                 } catch (_e) {}
                 r._schattenAlleNeu();
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1);
+                // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
+                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
+                if (i === 0) gewaehlt = auf.abnahme.wahl || null;
+            }
+            if (gewaehlt) {
+                auf.abnahme.wahl = gewaehlt;
+                auf.abnahme.zeile = window.__abnahmeUrteil(auf.abnahme).zeile;
             }
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
             // swiftshader ~3 Kerne und verfälschte jede andere Messung.
@@ -1089,7 +1118,8 @@ async function starte() {
             img.data.set(u8.subarray(0, W * H * 4));
             ctx.putImageData(img, 0, 0);
             return {
-                kamera: [px, py, pz].map((v) => +v.toFixed(2)),
+                kamera: auf.abnahme.pose.kamera.map((v) => +v.toFixed(2)),
+                abnahme: auf.abnahme,
                 hell: +(l / n).toFixed(1),
                 kontrast: +(k2 / (2 * n)).toFixed(2),
                 dc: auf.info.drawCalls,
@@ -1264,7 +1294,15 @@ async function starte() {
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
-                    return send(Object.assign(o, { datei, gesamtMs: Date.now() - t0 }));
+                    // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
+                    o.abnahme.stand.sha = gitStand();
+                    fs.writeFileSync(
+                        datei.replace(/\.png$/i, "") + ".abnahme.json",
+                        JSON.stringify(o.abnahme, null, 1)
+                    );
+                    const zeile = o.abnahme.zeile;
+                    delete o.abnahme;
+                    return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
                 }
                 if (req.url === "/eval") {
                     const o = await page.evaluate(
@@ -2325,6 +2363,8 @@ async function starte() {
             uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
             w: Number(opt("--w", 640)),
             h: Number(opt("--h", 360)),
+            ziel: opt("--ziel"),
+            wahl: opt("--wahl"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });

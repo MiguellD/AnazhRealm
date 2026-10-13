@@ -46,7 +46,7 @@
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -259,8 +259,9 @@ function pruefRaum(echt) {
         headless: !ECHT,
         protocolTimeout: 1800000,
         defaultViewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1300,820"] : softwareWebGpuArgs(),
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1300,820"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     const t0 = Date.now();
     const zeit = () => `+${Math.round((Date.now() - t0) / 1000)} s`;

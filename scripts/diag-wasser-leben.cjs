@@ -40,6 +40,8 @@
 //                   Küste zeichnete das Sheet den Küsten-Aquifer über dem Boden, der Körper stand dort trocken. K6 BAUMLOS:
 //                   ein Wesen ohne Gestalt-Baum stand mit der Wasserlinie 0 AUF dem Spiegel.
 //   U3              der Schilf-Bezug der Nah-Streu sprang an der Krone auf den See-/Meeres-Spiegel.
+//   B6 (K40)        der Wasser-Hash rechnete mit sin: auf dem Radeon B2 1,434 (swiftshader 1,027) — die Quelle trägt kein sin
+//                   (Wand im Selbsttest); die Probe hält Mittag und das Gefühl der Welt (uEmotion 0), beide Adapter urteilen gleich.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -65,10 +67,33 @@ const SCHWELLE = {
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
 };
 
+// B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
+// ±π beliebig ungenau, der alte Hash fract(sin(dot(p, ·)) · 43758) zerfiel auf dem Radeon mit Welt-Ort und Wasser-Uhr zum Zebra
+// (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Wand liest die Quelle (Kommentare fallen) und nennt die Zeile.
+function hashSin(quelle) {
+    const a = quelle.indexOf("\n    _ensureHydroSurfaceMaterial() {");
+    if (a < 0) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
+    const rest = quelle.slice(a + 1);
+    const ende = rest.search(/\n {4}[_A-Za-z$][\w$]*\([^)]*\) \{\n/);
+    const zeilen = (ende > 0 ? rest.slice(0, ende) : rest).split("\n");
+    for (const z of zeilen) {
+        const code = z.replace(/\/\/.*$/, "");
+        if (/\bsin\s*\(/.test(code)) return z.trim();
+    }
+    return null;
+}
+
+// Der Täter des Selbsttests: der Hash vor K40, im Gewand des Stoffs.
+const HASH_ALT =
+    "\n    _ensureHydroSurfaceMaterial() {\n        const hash2 = Fn(([p]) => {\n" +
+    "            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));\n        });\n    }\n" +
+    "    _naechster() {\n";
+
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
 function urteil(b) {
     const v = [];
     const S = SCHWELLE;
+    if (b.hashSin) v.push(`B6 HASH: das Wasser-Rauschen rechnet mit sin (${b.hashSin}) — auf echter GPU ungenau`);
     // F9 — die Pflanzen im gezeichneten Wasser (Nah-Streu ohne Ufer-Band, Nah-Wiese): je Gebiet ihre Zahl und das Wasser
     // über dem Fuß; LEER, wenn das Gebiet weniger Pflanzen trägt, als dort stehen (die Probe prüfte nichts)
     const florUrteil = (wo, fl, minStreu, minWiese) => {
@@ -694,8 +719,17 @@ function selbsttest() {
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
         ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],
+        ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
     ];
     let rot = 0;
+    // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
+    const quelleSin = hashSin(
+        require("fs").readFileSync(require("path").join(__dirname, "..", "anazhRealm.js"), "utf8")
+    );
+    console.log(
+        `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
+    );
+    if (quelleSin) rot++;
     const g = urteil(gut);
     if (g.length) {
         console.log("  ❌ der grüne Befund fällt rot:", g);
@@ -724,7 +758,7 @@ async function lauf() {
     const fs = require("fs");
     const path = require("path");
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
@@ -753,8 +787,9 @@ async function lauf() {
     const browser = await puppeteer.launch({
         headless: ECHT ? false : "new",
         protocolTimeout: 900000,
-        args: BILD ? (ECHT ? echteWebGpuArgs() : softwareWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
+        args: BILD ? (ECHT ? echteWebGpuArgs() : linsenWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
     });
+    if (BILD) await adapterZeile(browser);
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
     const seitenFehler = [];
@@ -763,15 +798,15 @@ async function lauf() {
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
         });
-    let befund = { seitenFehler };
+    let befund = { seitenFehler, hashSin: hashSin(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")) };
     let exit = 1;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {
             waitUntil: "domcontentloaded",
             timeout: 120000,
         });
-        // mit Bild auch der Renderer (K16: die Hydrosphäre des Flussnetzes steht vor `renderer.init()` — das erste Bild rief
-        // .render() vor dem Backend)
+        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch): auf dem Hardware-Adapter steht die
+        // Hydrosphäre vor dem Backend, und `__wasserBild` riss „render() called before the backend is initialized".
         await page.waitForFunction(
             (bild) =>
                 window.anazhRealm &&

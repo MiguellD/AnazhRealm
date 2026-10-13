@@ -897,9 +897,24 @@ function wasserBild(opts) {
         // Gesetzes bis auf das Doppelte (bis K16 legte er + 0,25 · uEmotion über JEDES Wasser); die Stimmung driftet mit der
         // Boot-Zeit (lokal 0,06, in der CI ≈ 0,17). B1 misst den Schaum des Gesetzes, nicht die Laune.
         renderer.setAnimationLoop(null);
+        // DER HIMMEL DER PROBE FEST (K40, Lehre 17): das Wasser spiegelt die Himmels-Umgebung der Tageszeit — der Boot
+        // dauert je Adapter verschieden lang, also spiegelte jeder Adapter eine andere Stunde (ruhiger Fluss hell auf
+        // swiftshader 6,7 %, auf dem Radeon 0,9 % bei bit-gleichem Rauschen). Die Probe spiegelt den Mittag.
+        const tagAlt = st.timeOfDay;
+        const weltTagAlt = st.world ? st.world.timeOfDay : undefined;
+        const himmelMittag = (zeit, welt) => {
+            st.timeOfDay = zeit;
+            if (st.world && welt !== undefined) st.world.timeOfDay = welt;
+            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(true);
+        };
+        himmelMittag(0.5, 0.5);
+        // Das Gefühl der Welt ruht (uEmotion hebt den Schaum, der Takt schreibt es aus dem Feld): je nach Boot-Dauer
+        // trug die Probe ein anderes Gefühl — zwei Zustände (ruhig hell 0,9 % oder 6,7 %), je Lauf, nie je Adapter.
+        const gefuehlAlt = U.emotion ? U.emotion.value : null;
+        if (U.emotion) U.emotion.value = 0;
         const irrAlt = U.irr.value.clone();
         const lichtAlt = U.light.value;
-        const stimmungAlt = U.emotion.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
             U.irr.value.setRGB(1, 1, 1);
@@ -967,7 +982,8 @@ function wasserBild(opts) {
             U.time.value = zeitAlt;
             U.irr.value.copy(irrAlt);
             U.light.value = lichtAlt;
-            U.emotion.value = stimmungAlt;
+            himmelMittag(tagAlt, weltTagAlt);
+            if (U.emotion) U.emotion.value = gefuehlAlt;
             geom.dispose();
             maskMat.dispose();
             rt.dispose();

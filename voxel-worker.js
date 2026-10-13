@@ -1094,6 +1094,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                 }
                 continue;
             }
+            // die geleerte Spalte ist trocken (Mirror K37; Doku im Main)
+            if (dach && live < 0) continue;
             const faceY = oy + (sc.floodTopJ + 1) * step;
             const wx = ox + (ci + 0.5) * step;
             const wz = oz + (ck + 0.5) * step;
@@ -1108,8 +1110,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             let ruht = L > -Infinity && top === L;
             if (dach) {
                 const floodRel = (sc.floodTopJ + 1) * step;
-                const liveRel = live < 0 ? 0 : live * step;
-                let d = liveRel - floodRel;
+                let d = live * step - floodRel; // live ≥ 0 (Doku im Main)
                 if (d > -0.05 && d < 0.05) d = 0;
                 if (d !== 0) ruht = false;
                 top += Math.max(-14, Math.min(4, d));

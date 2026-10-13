@@ -20,7 +20,7 @@
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -147,9 +147,10 @@ function urteil(z) {
         // Linse die CPU-Wahrheit eines Passes, der nie läuft — das Backend steht im Bericht. Die Schalter je Plattform
         // trägt das EINE Rezept (scripts/lib/software-gpu.cjs): auf dem Linux-Runner starb das Gerät ~3,9 s nach dem Start
         // („destroyed"), weil der GPU-Prozess ohne Vulkan keine Ablage für die Canvas-Swapchain fand.
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
         dumpio: false,
     });
+    await adapterZeile(browser);
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {
         const proc = browser.process();
