@@ -308,8 +308,9 @@ function pageHtml() {
   };
   // \`mitAbdruck\` (DARF, je Eintrag true/false): dieselbe Stufe trägt zusätzlich den EINEN Bau-Fingerabdruck
   // (\`bauAbdruck\`) — die Gestalten-Wand liest so jede Gestalt der Zweit-Kerne aus dem Bau, den der Kosten-Zug ohnehin
-  // fährt (kein Zweitbau).
-  window.__kostenListe = async (liste, mitAbdruck) => {
+  // fährt (kein Zweitbau). \`mitTeilen\` (DARF): je Stufe die Teile, wie der Wurf des Wirts sie liest — Art, Seh-Klasse,
+  // Deckkraft (das Wurf-Recht \`_teilWirft\` des Stamms) und Dreiecke (budgetSippen je Teil); gate:regler-wirkt WURF.
+  window.__kostenListe = async (liste, mitAbdruck, mitTeilen) => {
     poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
     const out = new Array(liste.length);
     let next = 0;
@@ -321,6 +322,10 @@ function pageHtml() {
         // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
         const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
         out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
+        if (mitTeilen)
+          out[i].teile = (r.meshes || [])
+            .filter((m) => m && m.position && m.position.array)
+            .map((m) => ({ kind: m.kind, mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity } : null, tris: window.__phytoCore.budgetSippen([m]).tris }));
         if (mitAbdruck && mitAbdruck[i]) {
           const a = await bauAbdruck(r.meshes || []);
           out[i].abdruck = a.teile > 0 ? a.hash : null;
@@ -389,15 +394,17 @@ async function runWithWorker(port, cb) {
         // In Scheiben zu 120 Stufen: jede Scheibe ein eigener evaluate (der protocolTimeout gilt je Ruf — 2 224
         // Zweit-Kern-Stufen in EINEM Ruf rissen ihn unter Last).
         // `abdruck` (DARF): (Eintrag) => true, wenn die Stufe auch ihren Bau-Fingerabdruck tragen soll.
-        const kostenListe = async (liste, abdruck) => {
+        // `mitTeilen` (DARF): je Stufe die Teile für den Wurf (Art, Seh-Klasse, Deckkraft, Dreiecke).
+        const kostenListe = async (liste, abdruck, mitTeilen) => {
             const out = [];
             const flags = abdruck ? liste.map((c) => !!abdruck(c)) : null;
             for (let i = 0; i < liste.length; i += 120)
                 out.push(
                     ...(await page.evaluate(
-                        (l, f) => window.__kostenListe(l, f),
+                        (l, f, t) => window.__kostenListe(l, f, t),
                         liste.slice(i, i + 120),
-                        flags ? flags.slice(i, i + 120) : null
+                        flags ? flags.slice(i, i + 120) : null,
+                        !!mitTeilen
                     ))
                 );
             return out;

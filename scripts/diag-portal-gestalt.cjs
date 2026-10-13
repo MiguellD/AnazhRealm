@@ -278,7 +278,10 @@ function deriveGestalt(srcNC) {
         res.c.materializeMs = Math.round(performance.now() - t0);
         res.c.instanced = entry.instanced === true;
         res.c.instFoundry = entry.instFoundry === true;
-        res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length : 0;
+        // die gezeigten Slots: der Wurf-Zwilling der NUR-WURF-Stufe 3 (1110-9, Gruppe `…#S` auf der Schatten-Ebene) zeichnet
+        // nur in die Kaskaden und zählt nicht gegen die Draws der Stufe 0 (das Muster diag-sippen-wirt: ohne shadowTwin)
+        res.c.zwillingSlots = (entry.instSlots || []).filter((s) => /#S$/.test(String(s.key))).length;
+        res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length - res.c.zwillingSlots : 0;
         // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
         // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
         const _rc = r.constructor._studioRenderConfig;
@@ -360,7 +363,7 @@ function deriveGestalt(srcNC) {
     check(
         `C: Tor-Geometrie angekommen auf der Budget-Zeile (instSlots ${outCD.c.slotCount}, 1..${outCD.c.drawBudget} = gate[0].draws)`,
         outCD.c.slotCount >= 1 && Number.isInteger(outCD.c.drawBudget) && outCD.c.slotCount <= outCD.c.drawBudget,
-        `slots=${outCD.c.slotCount} budget=${outCD.c.drawBudget}`
+        `slots=${outCD.c.slotCount} (+ Wurf-Zwilling ${outCD.c.zwillingSlots}) budget=${outCD.c.drawBudget}`
     );
     check(
         `C: der Flügel-Takt dreht je Flügel × Stoff (${outCD.c.fluegelSlots} Flügel-Slots, 1..8)`,

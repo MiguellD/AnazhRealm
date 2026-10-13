@@ -47,7 +47,7 @@
         },
         "v4": {
             "kern": "porta-core.js",
-            "faelle": 9,
+            "faelle": 16,
             "kippt": {},
             "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16)"
         },
