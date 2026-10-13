@@ -32785,23 +32785,85 @@ class AnazhRealm {
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
             // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
             // IST die Vertex-Farbe der Fels — `_felsStoff` hat Bänke, Kanten, Mulden, Flechte und Moos aus dem Gesetz
-            // aufgelegt; die Ferne (Fern-Ring) trägt sein Mittel (`FELS_STOFF.mittel`). Der EINE Detail-Term: die Bänke
-            // unter der Masche, eine Probe im Rausch-Atlas — flach gestreckt, dicht in der Schicht-Höhe des Gesetzes
-            // (Einfallen gegen das Streichen, Mächtigkeit `FELS.bank`). Bis K17 tönte hier ein Zwilling den Palette-Stein
-            // mit der Säulen-Luminanz (rockTint · rockLumMix · rockBand): auf dem Kliff stand die Wiese im Vertex.
+            // aufgelegt; die Ferne (Fern-Ring) trägt sein Mittel (`FELS_STOFF.mittel`). Der EINE Detail-Term trägt, was die
+            // 1,8-m-Masche nicht trägt (`FELS.fein`): die Bänke (je Bank ihre Helligkeit, die helle sandige Bank), die
+            // Fugen zur dunklen Lage und die Klüfte (zwei Scharen, je Bank versetzt) nach DEMSELBEN Gesetz — relativ zum
+            // Mittel, das der Vertex trägt (Y-Verhältnisse der drei Töne aus `felsBasis`), EINE Probe im Rausch-Atlas
+            // wellt die Bank-Grenzen, das Auge blendet aus, was der Pixel nicht trägt. Bis K17 tönte hier ein Zwilling den
+            // Palette-Stein mit der Säulen-Luminanz (rockTint · rockLumMix · rockBand), danach ±6 % Rauschen: die Masse.
             const FS = AnazhRealm.FELS_STOFF;
             const FG = FS.gesetz;
-            const _schichtY = wp.y.add(
-                wp.x
-                    .mul(Math.cos(FG.streichen))
-                    .add(wp.z.mul(Math.sin(FG.streichen)))
-                    .mul(Math.tan(FG.einfall))
-            );
-            const _bandN = _ra.raum(_T.vec3(wp.x.mul(FG.fein.xz), _schichtY.mul(1 / FG.bank), wp.z.mul(FG.fein.xz)));
+            const FF = FG.fein;
+            const _cs = Math.cos(FG.streichen);
+            const _sn = Math.sin(FG.streichen);
+            const _schichtY = wp.y.add(wp.x.mul(_cs).add(wp.z.mul(_sn)).mul(Math.tan(FG.einfall)));
+            const _welle = _ra.raum(_T.vec3(wp.x.mul(FF.xz), _schichtY.mul(FF.y / FG.bank), wp.z.mul(FF.xz)));
+            const _u = _schichtY.mul(1 / FG.bank).add(_welle.mul(FF.welle));
+            const _bk = _T.floor(_u);
+            const _lage = _u.sub(_bk);
+            const _hash = (a, b) => _T.fract(_T.sin(_bk.mul(a).add(b)).mul(43758.5453));
+            const _Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+            const _aRel = 0.6 * (_Y(FS.basis.akzent) / _Y(FS.basis.basis) - 1);
+            const _dRel = 1 - _Y(FS.basis.dunkel) / _Y(FS.basis.basis);
+            const _hell = _hash(12.9898, 4.1414).mul(2).sub(1).mul(FG.bankKontrast).add(1);
+            const _akzF = _T
+                .step(1 - FG.akzentAnteil, _hash(78.233, 1.731))
+                .mul(_aRel)
+                .add(1)
+                .div(1 + _aRel * FG.akzentAnteil);
+            const _fb = FG.fugeBreite;
+            const _inF = _T.max(_T.float(1).sub(_lage.div(_fb)), _lage.sub(1 - _fb).div(_fb)).clamp(0, 1);
+            // nicht jede Schichtfuge klafft (`fugeStreu`), nur `kluftAnteil` der Bänke ist geklüftet
+            const _fStark = _hash(26.651, 7.919).mul(2).sub(1).mul(FG.fugeStreu).add(1);
+            const _fugeF = _T
+                .float(1)
+                .sub(
+                    _inF
+                        .mul(_inF)
+                        .mul(_fStark)
+                        .mul(FG.fuge * _dRel)
+                )
+                .div(1 - _fb * (2 / 3) * FG.fuge * _dRel);
+            const _kb = FG.kluftBreite;
+            const _inKluft = (u) =>
+                _T
+                    .float(1)
+                    .sub(_T.abs(u.sub(_T.floor(u.add(0.5)))).div(_kb))
+                    .clamp(0, 1);
+            const _kWelle = _welle.mul(FF.welle * 0.5);
+            const _inK = _T
+                .max(
+                    _inKluft(wp.x.mul(_cs).add(wp.z.mul(_sn)).div(FG.kluft).add(_hash(39.346, 2.113)).add(_kWelle)),
+                    _inKluft(wp.z.mul(_cs).sub(wp.x.mul(_sn)).div(FG.kluft).add(_hash(11.135, 3.707)).sub(_kWelle))
+                )
+                .mul(_T.step(1 - FG.kluftAnteil, _hash(5.171, 9.233)));
+            const _kluftF = _T
+                .float(1)
+                .sub(_inK.mul(_inK).mul(FG.kluftDunkel * _dRel))
+                .div(1 - _kb * (4 / 3) * FG.kluftAnteil * FG.kluftDunkel * _dRel);
+            const _camD = wp.sub(_T.cameraPosition).length();
+            const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
+            const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
+            const _fein = _T
+                .mix(_T.float(1), _hell.mul(_akzF).mul(_kluftF), _nahB)
+                .mul(_T.mix(_T.float(1), _fugeF, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
-            const _rockCol = _felsGrund.mul(_T.float(1.0).add(_bandN.mul(_T.float(FG.fein.kontrast))));
-            // Das Geröll ist halb Fels (dasselbe Gewicht wie `_felsStoff` am Vertex); der Fels dominiert die Mischung.
-            let _out = _T.mix(albedo, _rockCol, _screeW.mul(_gRock).mul(0.5));
+            const _rockCol = _felsGrund.mul(_fein);
+            // Das Geröll ist halb Fels (dasselbe Gewicht wie `_felsStoff` am Vertex) und trägt den Schutt (`FELS.geroell`:
+            // je Block seine Helligkeit, die Blöcke von der Welle der Probe verschoben); der Fels dominiert die Mischung.
+            const _sg = FG.geroell;
+            const _blk = _T.floor(wp.mul(1 / _sg.korn).add(_welle.mul(FF.welle)));
+            const _schuttF = _T.mix(
+                _T.float(1),
+                _T
+                    .fract(_T.sin(_blk.dot(_T.vec3(12.9898, 78.233, 37.719))).mul(43758.5453))
+                    .mul(2)
+                    .sub(1)
+                    .mul(_sg.kontrast)
+                    .add(1),
+                _nahB
+            );
+            let _out = _T.mix(albedo, _felsGrund.mul(_schuttF), _screeW.mul(_gRock).mul(0.5));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber

@@ -1368,6 +1368,7 @@
         paketKontrast: 0.2,
         fuge: 0.55, // Abdunklung der Schicht-Fuge zur dunklen Lage
         fugeBreite: 0.08, // Anteil der Bank, den die Fuge je Seite trägt
+        fugeStreu: 0.8, // ± Anteil, um den die Fuge je Bank deutlicher oder schwächer ist (nicht jede Schichtfuge klafft)
         kanteHell: 0.6, // die Verwitterungsrinde: Mischung zum gebleichten Stein an konvexen Kanten
         kanteK: [0.08, 0.6], // Krümmung (1/m): von … bis voll
         muldeDunkel: 0.5,
@@ -1382,9 +1383,20 @@
         grundMax: 0.22, // der Grundton höchstens (Y linear): der Fels bleibt im Natur-Band ≤ 0,30
         korn: 0.12, // ± je Korn (Vertex-Hash, wo das Netz es trägt: die Gestalten)
         kornLambda: 0.12, // m
-        // Der EINE Detail-Term im Boden-Shader: die Bänke unter der Masche, eine Probe im Rausch-Atlas, gestreckt in der
-        // Waagerechten (`fein.xz` je m), dicht in der Höhe (1 / bank) — ± `fein.kontrast`.
-        fein: Object.freeze({ xz: 0.05, kontrast: 0.2 }),
+        // Die Klüfte: zwei senkrechte Scharen (im Streichen und quer dazu), je Bank um eine Zufalls-Lage versetzt — der
+        // gebankte Fels bricht in Blöcke.
+        kluft: 3.2, // Abstand (m)
+        kluftAnteil: 0.45, // Anteil der Bänke, die Klüfte tragen (die übrigen sind ungeklüftet)
+        kluftBreite: 0.05, // Anteil des Abstands, den die Kluft je Seite trägt
+        kluftDunkel: 0.5, // Mischung zur dunklen Lage in der Kluft
+        // Der EINE Detail-Term im Boden-Shader trägt, was die Masche nicht trägt — Bänke, Fugen, Klüfte nach DIESEM Gesetz
+        // (bank · bankKontrast · akzentAnteil · fuge · kluft), relativ zum Mittel, das der Vertex trägt. EINE Probe im
+        // Rausch-Atlas wellt die Bank-Grenzen: `xz` je m in der Waagerechten, `y` je Bank in der Höhe, ± `welle` Bänke;
+        // das Auge blendet ihn aus (Bänke und Klüfte `fern` m, Fugen `fugeFern` m: was der Pixel nicht trägt, trägt das Mittel).
+        fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, fern: [120, 260], fugeFern: [30, 80] }),
+        // Der Schutthang (Geröll = halb Fels) trägt im Detail-Term statt der Bänke den Schutt: Blöcke der Kante `korn` (m),
+        // je Block ± `kontrast` — sein Mittel ist 1.
+        geroell: Object.freeze({ korn: 0.45, kontrast: 0.35 }),
     });
     const FELS_SAAT = saatHash("fels-stoff");
     // Trägt ein Netz der Kante `fuss` die Wellenlänge λ? 1 = ganz (fuss ≤ λ/4), 0 = nur ihr Mittel (fuss ≥ λ/2).
@@ -1434,9 +1446,15 @@
         aus.lage = b > a ? (s - a) / (b - a) : 0.5;
         aus.hell = 1 + F.bankKontrast * (2 * zufall(FELS_SAAT, kk, 3, 0) - 1);
         aus.akzent = zufall(FELS_SAAT, kk, 5, 0) < F.akzentAnteil ? 1 : 0;
+        aus.k = kk;
         return aus;
     }
-    const _bank = { lage: 0, hell: 1, akzent: 0 };
+    const _bank = { lage: 0, hell: 1, akzent: 0, k: 0 };
+    // In der Kluft (0..1, 1 = Mitte): u in Kluft-Abständen, b die halbe Breite.
+    const inKluft = (u, b) => {
+        const d = Math.abs(u - Math.round(u));
+        return d < b ? 1 - d / b : 0;
+    };
     // DIE FELS-FARBE an einem Punkt (linear, nach `out`): B = `felsBasis`; (x, y, z) die Lage (m, Welt oder Gestalt); n die
     // Normale; `krumm` die mittlere Krümmung (1/m, > 0 konvex — `felsKruemmung`); `himmel` die Himmels-Sicht (0 Höhle …
     // 1 frei); `feucht` 0..1; `fuss` die Kante des tragenden Netzes (m).
@@ -1470,10 +1488,28 @@
         b *= hell;
         const fb = F.fugeBreite;
         const inFuge = bk.lage < fb ? 1 - bk.lage / fb : bk.lage > 1 - fb ? (bk.lage - (1 - fb)) / fb : 0;
-        const fuge = (tb * inFuge * inFuge + (1 - tb) * fb * (2 / 3)) * F.fuge;
+        const fStark = 1 + F.fugeStreu * (2 * zufall(FELS_SAAT, bk.k, 19, 0) - 1);
+        const fuge = (tb * inFuge * inFuge * fStark + (1 - tb) * fb * (2 / 3)) * F.fuge;
         r += (B.dunkel[0] - r) * fuge;
         g += (B.dunkel[1] - g) * fuge;
         b += (B.dunkel[2] - b) * fuge;
+        // Klüfte: zwei Scharen, je Bank versetzt, nur in `kluftAnteil` der Bänke — wo das Netz sie nicht trägt, ihr Mittel
+        // (je Schar 2/3 · kluftBreite).
+        const tj = traegt(F.kluft, fuss);
+        const kb = F.kluftBreite;
+        let inK = 0;
+        if (tj > 0 && zufall(FELS_SAAT, bk.k, 23, 0) < F.kluftAnteil) {
+            const cs = Math.cos(F.streichen),
+                sn = Math.sin(F.streichen);
+            inK = Math.max(
+                inKluft((x * cs + z * sn) / F.kluft + zufall(FELS_SAAT, bk.k, 13, 0), kb),
+                inKluft((z * cs - x * sn) / F.kluft + zufall(FELS_SAAT, bk.k, 17, 0), kb)
+            );
+        }
+        const kluft = (tj * inK * inK + (1 - tj) * kb * (4 / 3) * F.kluftAnteil) * F.kluftDunkel;
+        r += (B.dunkel[0] - r) * kluft;
+        g += (B.dunkel[1] - g) * kluft;
+        b += (B.dunkel[2] - b) * kluft;
         // Korn (Vertex-Hash) — nur, wo das Netz es trägt; sein Mittel ist 1.
         const tk = traegt(F.kornLambda * 4, fuss);
         if (tk > 0) {
