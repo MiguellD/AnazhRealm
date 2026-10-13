@@ -67,6 +67,10 @@
 //  (KEIN DRITTER LEIB, Integration Welle L) G3: Klinge und Pfeil fragen das EINE Grob-Tor _trefferErreichbar, es liest
 //      den kreatur-Leib (_kreaturLeib.reichweite) · T12: das Tor deckt die Gestalt (jedes Ende jeder Treffer-Glied-Kapsel,
 //      vier Gattungen in jeder Größen-Grenze, 90 Spiel-Takte).
+//  (K27 LEBENSWERTE SIND ZUSTAND) T27: im Modus pfad senken Biss und Hieb hp und Ausdauer; kein Rufer der Stat-
+//      Neuberechnung (Gerät · Panel · Boost · Tod-Takt) hebt hp, Ausdauer oder Mana über Regen·dt, voll setzen nur
+//      applyPlayerSoul und _playerDeathRespawn. (S11) die alte Zeile (jede Neuberechnung = Maximum) als Hülle → der
+//      erste Rufer heißt equipHeld, 4 Wege. Vorher 4 Wege; die Linse lokal ohne T27 84 s, mit T27 61 s.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
