@@ -14,7 +14,7 @@ on:
     pull_request:
         branches: [main]
     schedule:
-        # nachts 02:30 UTC die volle Batterie auf main (vor dem vollen Playtest um 03:30, playtest-full.yml)
+        # nachts 02:30 UTC die volle Batterie auf main (der volle Playtest in ihr, Gruppe 11)
         - cron: "30 2 * * *"
     workflow_dispatch:
 
@@ -66,11 +66,11 @@ jobs:
               run: npm ci --no-audit --no-fund
 
             - name: Prettier-Format-Check
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 1
               run: npm run format:check
 
             - name: ESLint
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 1
               run: npm run lint
 
             - name: Syntax-Check JS-Dateien
@@ -108,8 +108,10 @@ jobs:
                   fi
                   echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
 
-            - name: Statik (npm run check — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
+            - name: Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
               if: matrix.gruppe == 1
+              # `npm run check` = `check:statik` + `gate:haus-fern` (V18.543): die ganze Statik trug je Push Median 105 s und
+              # samt Vorbereitung 2,05 min über dem Puls-Deckel 2 min - der Haus-Fernkörper (CI 36-45 s) läuft in Puls 2.
               # Die EINE Statik, dieselbe wie lokal: bis 09.10. stand `npm run check` in keinem Workflow — die Norm-Wände
               # (Verfassung, Studio-Vertrag, Altlasten, Apparat, Vendor-Anker, Betriebsgesetz, Taille, Start-Rezept …)
               # waren Wachsamkeit. Darin: die Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben, c1c1271-Klasse),
@@ -119,7 +121,14 @@ jobs:
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
               # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
-              run: npm run check
+              run: npm run check:statik
+
+            - name: Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, kein Umriss-Sprung, das Türblatt am Scharnier; Teil von npm run check)
+              if: matrix.gruppe == 2
+              # Der letzte Teil der EINEN Statik (`npm run check`), am Gesetzbuch in Node (three-r128 + fachwerk-core): Wurf-Deckung,
+              # Wurf-Kosten, Sprung-Deckung, First-Achse, Aufblähung, Innen, Türblatt. CI 36-45 s (Puls 1 von 38212701381,
+              # 38208674431, 38211979506) - in Puls 2, damit Puls 1 unter seinem Deckel bleibt.
+              run: npm run gate:haus-fern
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
               if: matrix.gruppe == 2
@@ -221,25 +230,25 @@ jobs:
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
               # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
               # Schliesst zuverlässig in Minuten ab — der reliable per-Push-Gate. Der volle Playtest
-              # läuft in playtest-full.yml.
+              # läuft in der vollen Batterie (Gruppe 11).
               run: npm run playtest:fast
 
     voll:
         # DIE VOLLE BATTERIE — jede Wand, die nicht im Puls steht: die Echt-Renderer-Linsen, die Begehungen, die schweren
-        # Verträge, die Erst-Zeichnungs-Wand, die Tier-Anatomie. WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten
-        # über 242 Bänder brauchen auf einem geteilten Läufer Stunden (gemessen: 3,5 h, dann Fehlschlag, sogar bei einem
-        # reinen Docs-Commit) — sie leben in playtest-full.yml (nachts, zeit-gedeckelt). Vorher trugen drei Gruppen 17,7 /
+        # Verträge, die Erst-Zeichnungs-Wand, die Tier-Anatomie — und der VOLLE PLAYTEST als eigene Gruppe 11 (K18): bis
+        # 11.10. lief er nur nächtlich in playtest-full.yml (blockt keinen Merge; die „3,5 h" von einst waren lange
+        # geheilt, auf main 86–148 s je Lauf), K15 fiel deshalb erst am Merge. Vorher trugen drei Gruppen 17,7 /
         # 26,0 / 19,0 min und zwei eigene Jobs 4,7 und 5,8 min; jetzt 10 Gruppen, verteilt nach dem Median je Schritt
         # (spec/ci/ci-zeiten.json), die größten zuerst in die leichteste Gruppe (`node scripts/ci-zeiten.cjs --verteilen`).
         # Ein neuer Gate-Schritt trägt genau EINE Gruppe und seine Zeit in ci-zeiten.json; gate:ci-deckung fällt rot bei
         # einem Schritt ohne Gruppe, einer Gruppe außerhalb der Matrix, einem doppelten Schritt, einer Gruppe ohne Schritt,
         # einer Gruppe über 11 min und einem Schritt ohne Zeit. fail-fast aus: jede Gruppe meldet ganz.
-        name: voll ${{ matrix.gruppe }}/10
+        name: voll ${{ matrix.gruppe }}/11
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[ci voll]')
         strategy:
             fail-fast: false
             matrix:
-                gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                gruppe: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         runs-on: ubuntu-latest
         # 30 je Gruppe: eine Gruppe trägt ≤ 11 min Median, ein 2-fach langsamerer Läufer (gemessen: dieselbe Gruppe 12,8
         # bis 26,6 min) bleibt unter dem Deckel.
@@ -266,6 +275,17 @@ jobs:
 
             - name: Dependencies installieren (inkl. puppeteer)
               run: npm ci --no-audit --no-fund
+
+            # DER VOLLE PLAYTEST (K18): die ~5340 Invarianten über 242 Bänder, Null-Renderer, eine eigene Gruppe (er trägt
+            # ihre Wanduhr allein). Die Bedingung ist das VERDIKT, nie der Zähler: tee schreibt das Log, der letzte Befehl
+            # greift „Alle Invarianten OK" (unter PLAYTEST_STRICT=0 endete der Playtest mit 0 trotz verletzter
+            # Invarianten), pipefail trägt den Ausgang des Playtests durch die Pipe. gate:ci-deckung (P) hält die Form.
+            - name: Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")
+              if: matrix.gruppe == 11
+              shell: bash
+              run: |
+                  npm run playtest | tee playtest-voll.log
+                  grep -qx "✅ Alle Invarianten OK" playtest-voll.log
 
             - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
               if: matrix.gruppe == 10
@@ -345,6 +365,14 @@ jobs:
               # echten Renderer (Boden-IoU kleiner Werfer, Akne-Platten, Zähne) fährt der OMEN: diag-schatten-bias.cjs --echt.
               run: npm run gate:schatten-bias
 
+            - name: Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)
+              if: matrix.gruppe == 5
+              # Die Werkbank im Software-Holz mit Schatten (holz voll) an der 30-Grad-Rampe der Pruefbuehne, die Sonne am Terminator
+              # (22 Grad aus Azimut 45, N.L -0,002): von oben je ein Schuss mit und ohne Schatten, gemessen nur auf der Rampe - ROT
+              # beim Namen, wenn der Schatten die Rampe fleckig macht (main 2c8deda9: 11,7 % gegen 0,2 %). Lokal 78-119 s, CI 181 s
+              # (38180625147), Median 177 s - in Gruppe 5 (V18.543 gang-gesetz: Gruppe 2 trug mit dem Haus der Welt 405 s 11,9 min).
+              run: npm run gate:schatten-terminator
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 6
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
@@ -387,7 +415,7 @@ jobs:
               # Preset ausserhalb des Korridors, ein Start auf B und eine Karte ohne Schnee fallen rot (Karte K16b).
               run: npm run gate:gelaende-studio
 
-            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
+            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
               # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
@@ -395,7 +423,19 @@ jobs:
               # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
               # Dazu die S4-Probe: die sechs Hindernis-Koerper der Saat (stationen.json s4-hindernisse) stehen je Teil
               # mit ihrer Blocker-Box <= 0,1 m an der Spec und im Blocker-Netz; der Selbsttest rueckt die Mauer 0,5 m.
+              # Dazu die S0-Probe (K11): die Feuerstelle des Menschen leuchtet nachts aus dem Licht-Pool (mit und ohne Klang),
+              # die Laterne eines Plans nachts an und mittags aus, die Fenster-Glut nach dem Zeitplan, JEDER beleuchtete Stoff
+              # (Bauer im Stamm, Stoffe der Buehne und der Wildnis) traegt den Pool, EIN Punktlicht-Gesetz, kein Szenen-Licht.
               run: npm run gate:pruefbuehne
+
+            - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
+              if: matrix.gruppe == 2
+              # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
+              # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
+              # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
+              # in 0,75 / 1,25 / 1,75 m um das Feuer traegt Luma >= 0,15 (K11 Abnahme). Der Selbsttest leert den Licht-Pool:
+              # der Kreis faellt unter die Schwelle und nennt den Pool.
+              run: npm run gate:pruefbuehne-licht
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
               if: matrix.gruppe == 6
@@ -537,7 +577,7 @@ jobs:
               run: npm run gate:pflanzen-nah
 
             - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 6
               # Integration W8 (Pruefer W8 (c)): im echten Spiel (foundry-ON, Null-Renderer) baut die Linse jede Art mit
               # Budget-Zeile auf jeder deklarierten Geometrie-Stufe - Flatten (Haus, Fahrzeug, Waffe, Tor, Baum, Strauch,
               # Fels, Boden-Streu) und Ofen (jede Gattung, der Mensch) - und verlangt phyto-core budgetSippen == die
@@ -863,7 +903,7 @@ jobs:
               run: npm run gate:vehicle-drive
 
             - name: Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 7
               # DER RITT DURCH DEN ECHTEN FRAME (_gameLoopTick: Akkumulator · Sim-Schritte · Interpolation · Frame-Tick,
               # wechselnde Frame-Zeiten 8–33 ms, headless foundry-ON): GT geradeaus, GT am Hang ohne Taste, Pferd —
               # Teleport-Zähler 0, Sim-Weg = Fahr-Weg, der Reiter sitzt (nie „in der Luft"), keine Gier ohne Lenkung.
@@ -905,7 +945,7 @@ jobs:
               run: npm run gate:nervensystem-schmiede
 
             - name: Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)
-              if: matrix.gruppe == 8
+              if: matrix.gruppe == 6
               # Headless (Null-Renderer, Produktions-Boot), gespielt wie ein Mensch: das Fadenkreuz geht über Gier und
               # Neigung durch die ECHTE Kamera aufs Ziel (1st und 3rd), geklickt wird über den EINEN Dispatcher.
               # Q8: Zone je Glied, hangab und klein je ≥ 8/10, Hit-Stop-Energie Keule ≠ Grossschwert, keine
@@ -916,7 +956,9 @@ jobs:
               # offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10: Ego-Neigung −90° = Blick
               # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
               # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
-              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S9.
+              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S10.
+              # K13 T26: die Klick-Pfad-Matrix (8 Waffen × 3 Abstände × Rumpf/Horizont × 3rd/1st über tryMouseBreak) macht
+              # 96 von 96 Schaden, der Wolf im Rücken bleibt heil, jenseits der Klinge ein Luftschlag mit Hinweis.
               run: npm run gate:kampf-gefuehl
 
             - name: Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)
@@ -926,8 +968,9 @@ jobs:
               # wechselt nach 10 s und 50 s die Seite (2 m <-> 40 m), dazu je eine Leichnam-Kopie beim Mitspieler: die Stufe
               # passt zum Abstand wie bei einem lebenden Tier (nah die Gestalt mit Schatten-Werfer, fern der Fern-Guss), keine
               # Aura, keine Traglast, kein Wesen-Takt, keine Stimme, die Wurzel der Tod-Lage auf dem Stand-Boden, nach der Frist
-              # fort. Sechs Taeter im selben Boot (Sicht, Kopie, Zeichen, Sprung, Wesen, Stimme) muessen beim Namen rot lesen.
-              # Lokal 18 s, CI 15 s (Lauf 38030449627).
+              # fort; die Traglast faellt an den Spieler zurueck (Holz + Journal), EINE Methode raeumt die Zeichen (K13).
+              # Zehn Taeter im selben Boot (Sicht, Kopie, Zeichen, Lage, Haltung, Sprung, Wesen, Stimme, Last, Raeumen)
+              # muessen beim Namen rot lesen. Vorher CI 15 s (Lauf 38030449627), acht Laeufe; jetzt zehn.
               run: npm run gate:tod-zensus
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)
@@ -949,6 +992,17 @@ jobs:
               # des Labors, als Taeter eingespielt) steht ueber dem Rand. Die Messung selbst: werkbank albedo --tafel (Welt,
               # echte GPU) und diag-albedo-tafel.cjs --labor (Labor).
               run: npm run gate:albedo-tafel
+
+            - name: Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
+              if: matrix.gruppe == 8
+              # Die Werkbank im Software-Holz (swiftshader, kienspan) an der Mess-Wiese: je Ort im Chunk-Quadrat der Boden-Satz
+              # und der Fern-Ring orthogonal aus 420 m ueber 132 m, beide Leser gegen das Gesetz an der Stelle (_fernRingTeile) -
+              # ROT beim Namen, wenn einer ausserhalb seines Bands liegt (main 2c8deda9: der Boden-Satz +133 bis +143 %), zu wenige
+              # Wald- oder Wiesen-Orte, ein leerer Schuss oder die Karte der Fern-Krone fuer den Ort nicht steht. Je Ort zwei
+              # Runden, die sich wiederholen muessen; davor die Upload-Probe im Hauptbild: jedes Daten-Bild des Boden-Stoffs
+              # erreicht die GPU in drei Bildern (ohne den Textur-Waechter der Diaet 5 von 5 alt). Der Selbsttest des Urteils
+              # zuerst. Lokal 40-47 s; in Gruppe 8 traegt die Waage 10,3 min, in Gruppe 2 lag sie bei 10,9 von 11 min.
+              run: npm run gate:nah-fern
 
             - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
               if: matrix.gruppe == 6
@@ -1000,8 +1054,9 @@ jobs:
               if: matrix.gruppe == 9
               # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
               # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
-              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden (die Rad-
-              # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden (die Rad-
+              # Ebene steht auf dem Gesetz, Entscheid D1) · K6 das Tier am Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht
+              # wie daneben (K21, der EINE Boden-Leser). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
               run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
@@ -1038,8 +1093,12 @@ jobs:
               if: matrix.gruppe == 10
               # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
               # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
-              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
-              # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
+              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,05 (K07, Ratsche von 0,2). Derselbe Punkt am Spieler-Leib
+              # (animatePlayerSoul: Gehen 1,15, Laufen 5,16, Spitze 6,75 m/s) mit Kadenz, Schritt-Tönen, Becken (Hub/Tiefe
+              # in Beinlängen) und Lock-Lösern im Stand-Fenster (Soll 0), dazu das Körper-Studio (Schlupf, Becken-Hub)
+              # und die Schwere (Mensch und Wolf unter 1,62 m/s² nach der Schwere der Welt, Schritt und Becken aus EINER
+              # Zeile, kein Literal-Zwilling). --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt, feste
+              # Auslenkung) gleitet jede Pfote, die Zeile ohne die Schwere der Welt macht die Schwere-Wand rot.
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
@@ -1056,13 +1115,13 @@ jobs:
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
               # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
               # das Tier steht auf der Auflage der Bauten) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
-              # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
+              # gleitet nicht — Schlupf ≤ 0,05, Ratsche K07; ein Fuß an der Grenze seiner Kette hebt ab) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
               # wer läuft, wird ausgewertet). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 
             - name: Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 1
               # Headless (Null-Renderer, Produktions-Boot), Port KREATUR_KOSTEN_PORT: die Anim-Raten-Leiter, die Stand-Pose,
               # die Grobstufe des Menschen am echten Peer-Tick, Starr-Bindung + Körper-Kugel (Pose-Probe auch der Grobstufe:
               # ihre Knochen SIND die der feinen), schmale Puffer — und (W) der Werfer je Gestalt: je Art und Mensch nah und
@@ -1197,7 +1256,7 @@ jobs:
               run: npm run gate:scatter-lod
 
             - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 7
               run: npm run gate:leistungs-vertrag
 
             - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
@@ -1281,6 +1340,12 @@ jobs:
               if: matrix.gruppe == 5
               run: npm run gate:seam
 
+            - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
+              if: matrix.gruppe == 4
+              # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
+              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT.
+              run: npm run gate:mp-sync
+
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 8
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
@@ -1294,6 +1359,21 @@ jobs:
               # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
               # und Wand je einzeln.
               run: npm run gate:werkstatt-weg
+
+            - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
+              if: matrix.gruppe == 1
+              # An vier Orten der Leben-Schau 2 je Pflanze acht Stellungen zu Fuß, im Ritt und im Ich-Auge: die Nah-Deckung
+              # des Schirms je Täter-Klasse (scripts/lib/kamera-nah.cjs); der eingeschmuggelte Laub-Stoff und Fels müssen beim
+              # Namen fallen, der Selbsttest nennt jeden Bruch und die statische Wand feuert am Vor-Stand.
+              run: npm run gate:kamera-laub
+
+            - name: Die Kamera-Leib-Linse (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)
+              if: matrix.gruppe == 2
+              # 50 feste Posen (40 Mess-Wiese, 10 Prüfbühne s2-hang30) zu Fuß und im Verfolger-Ritt gegen die exakte Gestalt,
+              # die Feld-Proben je 3rd-Bild, die Sprünge im Rundgang; NP-03 48 Posen im Körper-Studio, NP-02 der Tunnel.
+              # Gruppe 2 (Integration V18.542): Gruppe 8 trägt seit der weissen Masse 10,6 min (CI 38181627348), mit diesem
+              # Schritt (38 s, CI 38170793765) über dem 11-min-Deckel; Gruppe 2 lief 5,7 min.
+              run: npm run gate:kamera-leib
 
             - name: Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)
               if: matrix.gruppe == 6
@@ -1398,7 +1478,7 @@ jobs:
               run: npm run gate:ego-schatten
 
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 6
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) n Frames lang durch die Haken des Ziel-Zensus: jede GPU-Textur
               # mit Erzeuger, Schreibern und Lesern je Pass, keine Taeter-Klasse (ohne Leser, teilbar, volle Aufloesung fuer
               # niederfrequente Effekte, Tiefe ohne Leser oder doppelt, 32 bit mit 16-bit-Inhalt). Dazu eine Schatten-Buehne

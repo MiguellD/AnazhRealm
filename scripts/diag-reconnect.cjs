@@ -522,6 +522,7 @@ function makeRealmA(env, initSrcOverride) {
         };
         self._p2pSampleSnapBuf = mk("_p2pSampleSnapBuf", env).bind(self);
         self._p2pMsgPos = mk("_p2pMsgPos", env);
+        self._fremdeZahl = mk("_fremdeZahl", env); // die EINE Zahl aus fremder Hand, die _p2pMsgPos liest
 
         // Der reine Kern: (t=0,x=0) · (t=100,x=3) ⇒ bei 50 ≈ 1,5.
         const buf = [
@@ -654,6 +655,42 @@ function makeRealmA(env, initSrcOverride) {
                 const s = extractMethod(n);
                 return !s || s.includes("Math.random");
             })
+        );
+    }
+
+    // ── D  DIE TÜR TRÄGT DIE ABSICHT (K04): `initP2PSync` setzt `p2p.enabled` als erste Tat, kein Aufrufer setzt sie von
+    // Hand davor (Knopf, Boot, die Zwei-Seiten-Smokes) — sonst plant der close-Zweig nach einem gescheiterten
+    // Erst-Aufbau des nackten Aufrufs keinen Rejoin. Der Laufzeit-Beweis ist gate:mp-sync (b); hier die Absenz.
+    {
+        const tuerSetzer = (src) => {
+            const kopf = /^ {4}initP2PSync\(/m.exec(src);
+            const ende = kopf ? src.indexOf("\n    }\n", kopf.index) : -1;
+            const re = /\b(?:p2p|this\.state\.p2p|st\.p2p)\.enabled\s*=\s*true\b/g;
+            const fremd = [];
+            let inTuer = 0;
+            for (let m; (m = re.exec(src)); ) {
+                if (kopf && m.index > kopf.index && m.index < ende) inTuer++;
+                else fremd.push(src.slice(0, m.index).split("\n").length);
+            }
+            return { inTuer, fremd };
+        };
+        const t = tuerSetzer(stammSrc);
+        check("D Tür: initP2PSync setzt die Absicht selbst (ein Setzer in der Tür)", t.inTuer === 1, `${t.inTuer}`);
+        check(
+            "D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)",
+            t.fremd.length === 0,
+            t.fremd.length ? `anazhRealm.js Zeile ${t.fremd.join(", ")}` : ""
+        );
+        const smokes = ["smoke-copresence.cjs", "smoke-lockstep.cjs", "smoke-webrtc.cjs"].filter((f) =>
+            /p2p\.enabled\s*=\s*true/.test(fs.readFileSync(path.join(root, "scripts", f), "utf8"))
+        );
+        check("D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer", smokes.length === 0, smokes.join(", "));
+        // Selbsttest: der Hand-Setzer zurück → ROT; die Tür ohne Absicht → ROT.
+        const mitHand = tuerSetzer(stammSrc + "\n    _probe() {\n        this.state.p2p.enabled = true;\n    }\n");
+        const ohneTuer = tuerSetzer(stammSrc.replace(/(\n {4}initP2PSync\([^]*?)\n {8}p2p\.enabled = true;/, "$1"));
+        check(
+            "D Selbsttest: ein Hand-Setzer und die Tür ohne Absicht sehen ROT",
+            mitHand.fremd.length === 1 && ohneTuer.inTuer === 0
         );
     }
 
