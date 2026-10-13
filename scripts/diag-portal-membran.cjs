@@ -27,7 +27,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
 const root = path.resolve(__dirname, "..");
@@ -142,7 +142,8 @@ async function blickProbe(opts) {
 }
 
 async function blickStufe(check) {
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const lauf = async (alt) => {
         const page = await browser.newPage();
         await page.setViewport({ width: 480, height: 270 });

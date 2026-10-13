@@ -735,7 +735,7 @@ const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
@@ -765,8 +765,9 @@ async function lichtLauf() {
         headless: !ECHT,
         protocolTimeout: (S0_FRIST_S + 60) * 1000,
         defaultViewport: ECHT ? null : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : softwareWebGpuArgs(),
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
