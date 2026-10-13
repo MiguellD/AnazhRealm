@@ -60151,7 +60151,16 @@ class AnazhRealm {
         const pc = globalThis.__phytoCore;
         if (!pc || typeof pc.treeParams !== "function") return AnazhRealm._kernPflichtBruch("phyto:treeParams");
         const dials = (opts && opts.recipeDials) || art.rec.s;
-        const P0 = pc.treeParams(dials, hash >>> 0, lodLevel, art.rec);
+        // DAS WELT-MASS (K20): der gefühlte Baum wächst mit der Welt-Skala seiner Art, wie der Wald den gesehenen pflanzt
+        // (die EINE Template→Welt-Quelle `_foundryWorldScaleMatrix`, dieselbe Zahl wie der Kern `__weltSkalaArt`) — der
+        // Stamm, den die Kollision liest, misst H/hd wie der gezeichnete (vorher der Stamm der Form: Eiche 0,88 statt 0,22 m).
+        const P0 = pc.treeParams(
+            dials,
+            hash >>> 0,
+            lodLevel,
+            art.rec,
+            this._foundryWorldScaleMatrix(art.id).elements[0]
+        );
         // Die Größenklasse ist ein abgeleitetes Etikett der Ableitung (nur baum_*: Sträucher und Kräuter SIND klein).
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
         let sizeClass;
