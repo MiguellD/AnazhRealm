@@ -478,9 +478,17 @@ function stilleBlende(srcNC) {
     }
     if (/__foundryCrossfadeError|__lodCrossfadeError/.test(srcNC)) v.push("ein Fehler der Blende landet still in einer Fenster-Variable");
     const bruch = fnBody(srcNC, /_blendeBruch\(was\)\s*/) || "";
-    // die Blende bricht über den EINEN Stoff-Bruch (K22): ERROR mit dem Glied beim Namen, die Marke `blende` obendrauf
-    const stoffBruch = fnBody(srcNC, /_stoffBruch\(was, ursache\)\s*/) || "";
-    if (!/this\._stoffBruch\(/.test(bruch) || !/e\.blende = true/.test(bruch) || !/this\.log\(text, "ERROR"\)/.test(stoffBruch))
+    // die Blende bricht über den EINEN Stoff-Bruch (K22): ERROR mit dem Glied beim Namen über den EINEN Melder
+    // (`_bruchMelden`, Nachbesserung 3: eine neue Meldung sofort ERROR, dieselbe wieder mit Zähler), die Marke `blende` obendrauf
+    const stoffBruch = fnBody(srcNC, /\n {4}_stoffBruch\(was, ursache\) \{/) || "";
+    const melder = fnBody(srcNC, /\n {4}_bruchMelden\(text\) \{/) || "";
+    if (
+        !/this\._stoffBruch\(/.test(bruch) ||
+        !/e\.blende = true/.test(bruch) ||
+        !/this\._bruchMelden\(text\);/.test(stoffBruch) ||
+        !/this\.log\(text, "ERROR"\);/.test(melder) ||
+        /"(INFO|WARN|WARNING)"/.test(melder)
+    )
         v.push("_blendeBruch meldet nicht laut beim Namen");
     const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
@@ -1328,6 +1336,8 @@ async function main() {
                 ["Karte unter Wenn", nc.replace(/(const _keepFin = this\._lodCrossfadeMaskNode\(_Ta, \{[\s\S]*?\}\);\s*)\{/, "$1if (_keepFin) {")],
                 ["Karte schluckt den Bruch", nc.replace('throw this._stoffBruch("die Karten-Verdrahtung", _e);', "")],
                 ["Blatt-Karte springt still", nc.replace('throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
+                ["Stoff-Bruch ohne Melder", nc.replace("this._bruchMelden(text);", "")],
+                ["Melder meldet INFO", nc.replace(/(\n {4}_bruchMelden\(text\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
             ]) {
                 const v = stilleBlende(src);
                 check(`Selbst-Test laute Blende: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));

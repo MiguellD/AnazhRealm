@@ -1896,6 +1896,18 @@ const STOFF_ZWEIGE = [
         grund: OHNE_SEITE,
         bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
     },
+    {
+        methode: "_getVoxelWorker",
+        art: "Fang",
+        anker: "throw _workerErr; this._voxelFadenBlobWeg()",
+        grund:
+            "der null-origin-Sandbox verbietet `new Worker(url)` (SecurityError): der Voxel-Faden startet EINMAL über die " +
+            "Blob-URL derselben Quelle (`voxel-worker.js?v=`); scheitert der Blob-Weg oder ein zweiter Start, bricht er laut " +
+            "(`_stoffBruch`, der äußere Fang meldet ERROR)",
+        bild:
+            "bis der Blob-Faden steht, baut der Haupt-Thread den Chunk aus derselben Dichte (der bit-identische Spiegel, " +
+            "gate:worker-dichte maxDiff 0), danach der Faden",
+    },
 ];
 // DER EINE MELDER (Nachbesserung 3): `_bruchMelden` meldet jede NEUE Bruch-Meldung sofort ERROR und dieselbe wieder mit ihrem
 // Zähler höchstens alle 2 s (`_stoffBruch` und die Fehler-Grenze des Loops `_loopErrorBoundary` melden über ihn; der Loop
@@ -1909,11 +1921,17 @@ const STOFF_MELDER = ["_bruchMelden"];
 // Spiel-Logik) TSL liest, ein Render-Objekt baut (RENDER_KLASSE, gleich aus welchem Namensraum: `THREE`, `T = THREE`),
 // eine Render-Quelle hochlädt (`needsUpdate = true`) oder den Graphen LÄUFT: r184 baut Post-Kette, Szenen-Pass und jede
 // Pipeline erst beim ersten render() (Vendor: PostProcessing.render → _update → _quadMesh.render) — der Fang um den Lauf
-// fängt den Bau.
+// fängt den Bau. Die GEOMETRIE gehört dazu (Prüfer K22-3): ein Stoff liest ihre Attribute (`attribute("aLodLevel")`), und
+// fehlt ein Attribut, liest r184 still 0 — der catch um die Stufen-Stempel aLodLevel · aH0 · aH0L in `_foundryBuildGroup`
+// ließ den Baum ungemaskt doppelt mit seiner Karte stehen, und die Wand sah ihn nicht (sie zählte weder BufferAttribute noch
+// setAttribute als Bau). Ein Attribut, eine Geometrie, ein Schreiben in eine Geometrie (`geo.setAttribute`, `setIndex`,
+// `addGroup` an einem Träger namens …geo…) baut den Render-Graphen.
 const RENDER_KLASSE =
-    /^(\w*(Material|Texture|RenderTarget|Node)|Mesh|InstancedMesh|BatchedMesh|SkinnedMesh|Line|LineSegments|LineLoop|Points|Sprite|PostProcessing|RenderPipeline|WebGPURenderer|QuadMesh)$/;
+    /^(\w*(Material|Texture|RenderTarget|Node|BufferAttribute|Geometry)|Mesh|InstancedMesh|BatchedMesh|SkinnedMesh|Line|LineSegments|LineLoop|Points|Sprite|PostProcessing|RenderPipeline|WebGPURenderer|QuadMesh)$/;
 const RENDER_LAUF = /^(render|renderAsync|compile|compileAsync)$/;
 const RENDER_TRAEGER = /renderer|^pp$|postProcessing|pipeline/i;
+const GEO_SCHREIBEN = /^(setAttribute|setIndex|addGroup|setDrawRange|computeVertexNormals)$/;
+const GEO_TRAEGER = /geo/i;
 function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
     const acorn = require("acorn");
     const kommentare = [];
@@ -2069,6 +2087,34 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 e.left.property.name === "needsUpdate"
             )
                 hit = "lädt hoch (needsUpdate)";
+            else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                GEO_SCHREIBEN.test(e.callee.property.name) &&
+                GEO_TRAEGER.test(
+                    e.callee.object.type === "Identifier"
+                        ? e.callee.object.name
+                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
+                          ? e.callee.object.property.name
+                          : ""
+                )
+            )
+                hit = "schreibt die Geometrie (" + e.callee.property.name + ")";
+            else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                e.callee.property.name === "postMessage" &&
+                /worker/i.test(
+                    e.callee.object.type === "Identifier"
+                        ? e.callee.object.name
+                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
+                          ? e.callee.object.property.name
+                          : ""
+                )
+            )
+                hit = "schickt dem Faden einen Bau-Auftrag (postMessage)";
             else if (
                 e.type === "CallExpression" &&
                 e.callee.type === "MemberExpression" &&
@@ -2254,12 +2300,19 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             }
         }
     }
-    const renderBau = (block, a) => {
+    // Ein Versuch, der NUR den Faden startet (`worker = new Worker(…)`, sein Hörer hängt danach außerhalb des Versuchs), baut
+    // mit, wenn seine Methode baut (Prüfer K22-3: der Sandbox-Fang des Voxel-Fadens gab still null, und der Haupt-Thread
+    // baute jeden Chunk selbst; die Klang-Werkstatt baut nichts und bleibt draußen).
+    const renderBau = (block, a, methode) => {
         const h = baut(block, a);
         if (h) return h;
         for (const x of ruft(block)) if (renderBauer.has(x)) return kette(x);
         for (const x of fadenRufe(block))
             if (renderBauer.has(x)) return "startet den Studio-Faden, seine Antwort " + kette(x);
+        if (startetFaden(block) && renderBauer.has(methode)) {
+            const b = renderBauer.get(methode);
+            return "startet den Faden der bauenden Methode " + methode + " (" + (b.was || kette(b.ueber)) + ")";
+        }
         return null;
     };
     // LAUT ist ein Fang, dessen JEDER Pfad bricht (Nachbesserung 2: bis hierher reichte EIN lauter Satz irgendwo im Rumpf —
@@ -2439,23 +2492,63 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             )
                 logs.push(n);
         });
-        const still = logs.filter((n) => !istErrorLog(n));
+        // DIE FRIST (Prüfer K22-3): ein Zähler ist nur laut, wenn eine Frist (setTimeout) ihn meldet — sonst blieb eine Folge,
+        // die vor der nächsten Meldung endete, still. Jeder this.log der Frist meldet ERROR, mindestens einer steht.
+        let zaehlt = null;
+        const fristLogs = [];
+        flach(m.value.body, (n) => {
+            if (!zaehlt && istZaehler(n)) zaehlt = n;
+            if (
+                n.type === "CallExpression" &&
+                n.callee.type === "Identifier" &&
+                n.callee.name === "setTimeout" &&
+                n.arguments.length &&
+                /Function/.test(n.arguments[0].type)
+            )
+                gehe(n.arguments[0], (c) => {
+                    if (
+                        c.type === "CallExpression" &&
+                        c.callee.type === "MemberExpression" &&
+                        c.callee.object.type === "ThisExpression" &&
+                        !c.callee.computed &&
+                        c.callee.property.name === "log"
+                    )
+                        fristLogs.push(c);
+                });
+        });
+        // still ist jeder this.log des Melders, der nicht ERROR meldet — auch in einer inneren Funktion (der Frist)
+        const alleLogs = [];
+        gehe(m.value.body, (n) => {
+            if (
+                n.type === "CallExpression" &&
+                n.callee.type === "MemberExpression" &&
+                n.callee.object.type === "ThisExpression" &&
+                !n.callee.computed &&
+                n.callee.property.name === "log"
+            )
+                alleLogs.push(n);
+        });
+        const still = alleLogs.filter((n) => !istErrorLog(n));
+        const fristFehlt = !!zaehlt && !fristLogs.some(istErrorLog);
         zaehltMit = true;
         const jederPfad = bricht(m.value.body);
         zaehltMit = false;
-        if (logs.length && !still.length && jederPfad) bruchHelfer.add(name);
-        else
+        if (logs.length && !still.length && jederPfad && !fristFehlt) {
+            bruchHelfer.add(name);
+            continue;
+        }
+        // je stille Stelle ein Fund an ihrer Zeile (eine stille Stelle verdeckt nie die nächste)
+        if (!logs.length) fund("Fang", name, m, "der Melder meldet still: kein this.log");
+        for (const s of still) fund("Fang", name, s, "der Melder meldet still: " + kurz(s));
+        if (fristFehlt)
             fund(
                 "Fang",
                 name,
-                still[0] || m,
-                "der Melder meldet still: " +
-                    (!logs.length
-                        ? "kein this.log"
-                        : still.length
-                          ? still.map(kurz).join(" · ")
-                          : "ein Pfad meldet weder ERROR noch zählt er")
+                zaehlt,
+                "der Melder meldet still: der Zähler hat keine Frist, die ihn ERROR meldet (eine Folge, die vor der nächsten Meldung endet, bleibt still)"
             );
+        if (logs.length && !still.length && !fristFehlt && !jederPfad)
+            fund("Fang", name, m, "der Melder meldet still: ein Pfad meldet weder ERROR noch zählt er");
     }
     for (let neu = true; neu;) {
         neu = false;
@@ -2613,7 +2706,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 if (versuch.type === "Identifier" && bindung.has(versuch.name)) versuch = bindung.get(versuch.name);
                 ort = n.arguments[0];
             } else return;
-            const bau = stoff ? "im Stoff" : renderBau(versuch, a);
+            const bau = stoff ? "im Stoff" : renderBau(versuch, a, name);
             if (bau && !laut(koerper)) fund("Fang", name, ort, `catch ${kurz(koerper)} — der Versuch ${bau}`);
             // der stille Ausstieg der Kette (Nachbesserung 3): ein `.then`-Glied eines bauenden Versuchs prüft den GELIEFERTEN
             // Wert und kehrt ohne Wert zurück (`if (!x) return;` · `return null;`) — die Kette endet erfüllt, kein Bau, kein
@@ -3375,6 +3468,20 @@ function main() {
                     "                    if (!Array.isArray(manifest) || !manifest.length)\n                        return;",
                     /^Fang$/,
                 ],
+                // Prüfer K22-3: der Melder ohne Frist und die Frist, die INFO meldet (die Fänge um die Stufen-Stempel, die
+                // Buch-Anfrage und den Faden-Start prüft (1): jeder laute Bruch still gemacht)
+                [
+                    "Melder ohne Frist",
+                    "        e.n++;\n        e.still++;\n        if (e.frist != null) return;\n        e.frist = setTimeout(() => {",
+                    "        e.n++;\n        e.still++;\n        if (e.frist != null) return;\n        e.frist = (() => {",
+                    /^Fang$/,
+                ],
+                [
+                    "Frist meldet INFO",
+                    "            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, \"ERROR\");",
+                    "            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, \"INFO\");",
+                    /^Fang$/,
+                ],
                 [
                     "Uhr-Deckel",
                     "        await f.buchDa;",
@@ -3550,7 +3657,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 

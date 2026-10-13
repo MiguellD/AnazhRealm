@@ -324,10 +324,11 @@ function sucheVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
-    const buehne = fnBody(nc, /\n {4}_buehneRender\(renderer, scene, camera\) \{/) || "";
-    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne.
+    const buehne = fnBody(nc, /\n {4}_buehneRender\(renderer, scene, camera, wer\) \{/) || "";
+    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
+    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
     const direkt = (nc.match(/\b[ps]\.renderer\.render\(/g) || []).length;
-    const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera\)/g) || []).length;
+    const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera, "[^"]+"\)/g) || []).length;
     const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
     const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
     const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
@@ -1174,7 +1175,7 @@ async function probe(arg) {
         const gruen = wand(quelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
-            .replace("const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);", "const renderResult = p.renderer.render(p.scene, p.camera);")
+            .replace('this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);")
             .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
             // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             .replace("            throw fehler;\n", "            return null;\n")

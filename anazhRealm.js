@@ -24404,25 +24404,11 @@ class AnazhRealm {
             try {
                 worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
             } catch (_workerErr) {
-                if (!srcUrl && !this._voxelWorkerBlobTried) {
-                    this._voxelWorkerBlobTried = true;
-                    fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
-                        .then((r) => r.text())
-                        .then((src) => {
-                            // V18.112 — die absolute Basis injizieren: ein blob:-Worker
-                            // kann relative importScripts nicht auflösen (Sonden-Fang).
-                            const base = new URL(".", document.baseURI).href;
-                            const blobUrl = URL.createObjectURL(
-                                new Blob([`self.__anazhBase=${JSON.stringify(base)};\n`, src], {
-                                    type: "application/javascript",
-                                })
-                            );
-                            this._getVoxelWorker(blobUrl);
-                            if (this.state.voxelWorker)
-                                this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
-                        })
-                        .catch((e2) => this.log(`Voxel-Worker Blob-Fallback scheiterte: ${e2.message}`, "INFO"));
-                }
+                // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
+                // er laut (der äußere Fang meldet ERROR) — nie wieder still mit null, während der Haupt-Thread jeden Chunk
+                // selbst baut.
+                if (srcUrl || this._voxelWorkerBlobTried) throw _workerErr;
+                this._voxelFadenBlobWeg();
                 return null;
             }
             this.state.voxelWorkerPending = new Map();
@@ -24518,6 +24504,29 @@ class AnazhRealm {
             this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
             return null;
         }
+    }
+
+    // DER SANDBOX-WEG DES VOXEL-FADENS (EIN Versuch): die Quelle per fetch (ACAO *) → Blob-URL → `_getVoxelWorker`
+    // re-entrant. Scheitert er, bricht er laut beim Namen (K22).
+    _voxelFadenBlobWeg() {
+        this._voxelWorkerBlobTried = true;
+        fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
+            .then((r) => r.text())
+            .then((src) => {
+                // V18.112 — die absolute Basis injizieren: ein blob:-Worker
+                // kann relative importScripts nicht auflösen (Sonden-Fang).
+                const base = new URL(".", document.baseURI).href;
+                const blobUrl = URL.createObjectURL(
+                    new Blob([`self.__anazhBase=${JSON.stringify(base)};\n`, src], {
+                        type: "application/javascript",
+                    })
+                );
+                this._getVoxelWorker(blobUrl);
+                if (this.state.voxelWorker)
+                    this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
+            })
+            // LAUT (K22): ohne Faden baut der Haupt-Thread jeden Chunk selbst — der Bruch meldet sich beim Namen
+            .catch((e2) => this._stoffBruch("der Voxel-Faden startet nicht (Blob-Weg)", e2));
     }
 
     // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, erosion, tarns, voxelEdits, …).
@@ -25108,13 +25117,41 @@ class AnazhRealm {
     // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
     // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
     // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
+    // EXISTENZ VOR FRAMERATE (Lehre 13, Prüfer K22-3): über dem Budget drosselt der Frame das TEMPO des Wachstums, nie
+    // seine Existenz — je WUCHS_DROSSEL_MS (Wanduhr) wächst EIN Chunk, der nächste zum Spieler. Bis hierher kehrte das
+    // Wachstum über dem Budget still um: auf der Radeon (Werkbank, Dorf) war das Budget in 60 von 60 und 160 von 160
+    // Takten überschritten, die offenen Chunks im 64-m-Kreis blieben kahl (4 → 4), und ob Wald oder kahler Hügel im Bild
+    // stand, entschied allein der frei laufende Boot.
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
-        // V18.282 — RESPONSIVITÄT VOR DURCHSATZ: ist der Frame über Budget (gemessene Frame-ZEIT
-        // über dem Sollwert), PAUSIERT das Vegetations-Wachstum (reine Deko, kann warten) → der
-        // Frame bekommt Luft. Es wächst weiter, sobald die Zeit es trägt (die echte Kapazität).
-        if (this.state._frameOverBudget) return;
+        if (this.state._frameOverBudget) {
+            const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
+            if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
+            const pm = this.state.playerMesh;
+            const { span } = this._voxelChunkConfig();
+            let naechster = null;
+            let naechsterD = Infinity;
+            for (const key of pending) {
+                const ci = key.indexOf(",");
+                const cx = parseInt(key.slice(0, ci), 10),
+                    cz = parseInt(key.slice(ci + 1), 10);
+                if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+                const d = pm
+                    ? Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z)
+                    : 0;
+                if (d < naechsterD) {
+                    naechsterD = d;
+                    naechster = { key, cx, cz };
+                }
+            }
+            if (!naechster) return;
+            this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
+            pending.delete(naechster.key);
+            if (this.state.voxelChunks && this.state.voxelChunks.has(naechster.key))
+                this._populateVoxelChunkVegetation(naechster.cx, naechster.cz);
+            return;
+        }
         let budget = 2;
         for (const key of pending) {
             if (budget <= 0) break;
@@ -33346,23 +33383,26 @@ class AnazhRealm {
     // Bruch, der jeden Frame wirft) zählt in ihrem Buch-Eintrag und meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
     // Zähler, nie still. Bis hierher kannte die Drossel des Loops nur die LETZTE Meldung (zwei abwechselnde Frame-Fehler
     // meldeten je Frame ERROR), und `_stoffBruch` meldete einen Bruch im Takt je Frame. Das Buch hält die jüngsten
-    // BRUCH_BUCH_MAX Meldungen (ein Instanz-Feld: nie im Spielstand).
+    // BRUCH_BUCH_MAX Meldungen (ein Instanz-Feld: nie im Spielstand). Die Wiederholung meldet sich über ihre FRIST: die
+    // erste Wiederholung nach einer Meldung stellt sie (BRUCH_WIEDER_MS), und die Frist meldet den Zähler — auch wenn die
+    // Folge davor endet (Prüfer K22-3: eine Folge, die binnen 2 s nach der letzten Meldung endete, blieb ungemeldet).
     _bruchMelden(text) {
         const buch = this._bruchBuch || (this._bruchBuch = new Map());
-        const jetzt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
         const e = buch.get(text);
         if (!e) {
             if (buch.size >= AnazhRealm.BRUCH_BUCH_MAX) buch.delete(buch.keys().next().value);
-            buch.set(text, { n: 1, still: 0, gemeldet: jetzt });
+            buch.set(text, { n: 1, still: 0, frist: null });
             this.log(text, "ERROR");
             return;
         }
         e.n++;
         e.still++;
-        if (jetzt - e.gemeldet < AnazhRealm.BRUCH_WIEDER_MS) return;
-        this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, "ERROR");
-        e.gemeldet = jetzt;
-        e.still = 0;
+        if (e.frist != null) return;
+        e.frist = setTimeout(() => {
+            e.frist = null;
+            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, "ERROR");
+            e.still = 0;
+        }, AnazhRealm.BRUCH_WIEDER_MS);
     }
 
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
@@ -73867,9 +73907,13 @@ class AnazhRealm {
                             f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
                             // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung) in
                             // EINEM Roundtrip ziehen, DANN die Assets vorwärmen.
+                            // Der Vorrat wartet ohne Frist auf das Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT
+                            // beim Namen (K22), nie wartet der Vorrat still für immer.
                             try {
                                 worker.postMessage({ type: "get-book", reqId: "book" });
-                            } catch (_e) {}
+                            } catch (_e) {
+                                throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
+                            }
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
                             // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze).
@@ -75751,11 +75795,9 @@ class AnazhRealm {
         for (let i = 0; i < n && q.length; i++) {
             const frei = q.shift();
             this._foundryIngestFrei = (this._foundryIngestFrei || 0) + 1; // Linse (freigegeben gesamt)
-            try {
-                frei();
-            } catch (_e) {
-                /* eine gerissene Freigabe darf den Takt nie stoppen */
-            }
+            // die Freigabe erfüllt nur ein Versprechen (`res(x)` wirft nie); der Bau des Aufrufers läuft danach in SEINER
+            // Kette, deren Fang laut bricht (K22: kein toter catch um die Freigabe)
+            frei();
         }
     }
     // DIE EINE FOUNDRY-FRIST: der Worker arbeitet seine Aufträge FIFO ab — die Uhr eines Auftrags läuft erst,
@@ -78279,7 +78321,14 @@ class AnazhRealm {
                     ch.geometry.setAttribute("aH0", new T.BufferAttribute(new Float32Array(_n).fill(_h0), 1));
                     ch.geometry.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(_n).fill(_h0L), 1));
                 }
-            } catch (_eS) {}
+            } catch (_eS) {
+                // LAUT (K22): ohne Stempel liest der Blenden-Stoff aLodLevel 0 (ungemaskt), der Baum stünde doppelt mit
+                // seiner Karte — der Bau bricht beim Namen, nie still ohne Stempel
+                throw this._stoffBruch(
+                    "die Stufen-Stempel aLodLevel · aH0 · aH0L (" + ((stage && stage.preset) || "?") + ")",
+                    _eS
+                );
+            }
         }
         if (group && group.children.length) {
             // V4(B) — die Bilanz-Zahl (gebaute Foundry-Baum-Geometrien) für die Leck-Linse
@@ -106324,6 +106373,9 @@ AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
 // Zähler; das Buch hält die jüngsten BRUCH_BUCH_MAX Meldungen
 AnazhRealm.BRUCH_WIEDER_MS = 2000;
 AnazhRealm.BRUCH_BUCH_MAX = 64;
+// DAS WACHSTUM ÜBER BUDGET (`_tickFoliageGrowth`, Lehre 13): je WUCHS_DROSSEL_MS wächst EIN Chunk (der nächste) —
+// das Budget drosselt das Tempo, nie die Existenz (dieselbe Garantie wie der Bau über Budget, `_handBauErlaubt`).
+AnazhRealm.WUCHS_DROSSEL_MS = 250;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
