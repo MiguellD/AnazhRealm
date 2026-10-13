@@ -77,8 +77,38 @@ function KALT_PROBE() {
         A.ohneLang = true;
     }
     let gewickelt = false;
+    // die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter (synchron gemessen; verschachtelt zählt doppelt)
+    A.kosten = {};
+    const KOSTEN = {
+        _buildVoxelChunkDataFromWorkerMesh: "Boden",
+        _buildVoxelChunkData: "Boden",
+        _scatterRegion: "Streu",
+        _rebuildArchitectureMesh: "Bauten",
+        _foundryBuildGroup: "Gruppen-Bau",
+        _foundryIngestBook: "Buch",
+    };
+    const wickleKosten = (P) => {
+        for (const name of Object.keys(KOSTEN)) {
+            const alt = P[name];
+            if (typeof alt !== "function") continue;
+            P[name] = function (...a) {
+                const t0 = performance.now();
+                try {
+                    return alt.apply(this, a);
+                } finally {
+                    const t1 = performance.now();
+                    const k = KOSTEN[name];
+                    const s = Math.floor(t0 / 1000);
+                    const z = A.kosten[k] || (A.kosten[k] = {});
+                    z[s] = (z[s] || 0) + (t1 - t0);
+                    if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
+                }
+            };
+        }
+    };
     const wickle = (r) => {
         const P = Object.getPrototypeOf(r);
+        wickleKosten(P);
         for (const name of ["_foundryPrefetchLibrary", "_foundryVorrat", "_foundryRequestSettlement"]) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
@@ -233,11 +263,18 @@ async function kaltLauf() {
         if (inS.length) letzte = inS[inS.length - 1];
         const q = letzte || {};
         const gruende = q.da && q.da < (s + 1) * 1000 ? "— das Weltbild steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
+        const kosten = Object.entries(out.kosten || {})
+            .map(([k, z]) => [k, Math.round(z[s] || 0)])
+            .filter(([, ms]) => ms >= 5)
+            .map(([k, ms]) => `${k} ${ms}`)
+            .join(" · ");
         console.log(
             `  ${String(s).padStart(3)} s  blockiert ${String(Math.round(blockiert[s])).padStart(4)} ms` +
+                (kosten ? ` (${kosten})` : "") +
                 `${q.vorrat ? " · Vorrat läuft" : ""}${q.schlange ? ` · Foundry ${q.schlange}` : ""} | ${gruende}`
         );
     }
+    if (out.buchDa) console.log(`  ${(out.buchDa / 1000).toFixed(1)} s  das Buch der Studios ist da`);
     for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
