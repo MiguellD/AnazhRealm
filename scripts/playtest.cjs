@@ -37475,8 +37475,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const G = A.TERRAIN_GEOLOGY;
         out.configFrozen = !!G && Object.isFrozen(G);
         out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
-        out.slopeOrderScree = !!G && G.screeLo < G.screeHi;
-        out.screeBeforeRock = !!G && G.screeLo < G.rockLo;
+        out.slopeOrderScree = !!G && G.schuttGitter > 0 && G.schuttGitter <= 2 * 3.6;
+        out.screeBeforeRock = !!G && G.schuttKandidat < G.rockLo;
         // Der Fels-Ton ist das Gesetz (K17, gelaende-core `felsBasis` über `FELS_STOFF`), kein Tint der Geologie mehr.
         const FS = A.FELS_STOFF;
         out.tintsAreRgb =
@@ -37594,8 +37594,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (A1) _terrainGeologyAlbedo Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
-    check("Ω-OPSIS S1 (A4) Geröll-Schwellen geordnet (screeLo < screeHi)", res.slopeOrderScree === true);
-    check("Ω-OPSIS S1 (A5) Geröll beginnt vor Fels (screeLo < rockLo)", res.screeBeforeRock === true);
+    check("Ω-OPSIS S1 (A4) Schutt-Gitter des Gesetzes trägt das Schicht-Band (0 < schuttGitter ≤ 7,2 m)", res.slopeOrderScree === true);
+    check("Ω-OPSIS S1 (A5) Schutt-Kandidat beginnt vor Fels (schuttKandidat < rockLo)", res.screeBeforeRock === true);
     check(
         "Ω-OPSIS S1 (A6) Fels-Stoff (Basis + Mittel) und mossTint sind RGB-Tripel, kein rockTint-Zwilling",
         res.tintsAreRgb === true

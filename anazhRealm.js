@@ -29594,7 +29594,55 @@ class AnazhRealm {
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        // Das Gewicht des Stoffs je Vertex: die Höhle oder die Steile (Fels, darunter der Schutthang), je das größere.
+        // DER SCHUTT DES GESETZES (Nachbesserung 2): wo ein Vertex unter dem Himmel steiler als `schuttKandidat` steht, fragt
+        // der Chunk das Schicht-Gesetz auf einem Gitter der Kante `schuttGitter` über diese Vertices (`hoehe(…, aus).schutt`, ohne
+        // Detail) und liest je Vertex bilinear — das Gewicht des Schutts ist eine Funktion des Orts, nie der Facette.
+        const SW = new Float32Array(n);
+        let gx0 = Infinity,
+            gx1 = -Infinity,
+            gz0 = Infinity,
+            gz1 = -Infinity;
+        for (let i = 0; i < n; i++) {
+            if (1 - N[3 * i + 1] < G.schuttKandidat || (H && H[i] < 1)) continue;
+            const x = P[3 * i],
+                z = P[3 * i + 2];
+            if (x < gx0) gx0 = x;
+            if (x > gx1) gx1 = x;
+            if (z < gz0) gz0 = z;
+            if (z > gz1) gz1 = z;
+        }
+        if (gx1 >= gx0) {
+            const nx = Math.max(2, Math.ceil((gx1 - gx0) / G.schuttGitter) + 1);
+            const nz = Math.max(2, Math.ceil((gz1 - gz0) / G.schuttGitter) + 1);
+            const dx = (gx1 - gx0) / (nx - 1) || 1;
+            const dz = (gz1 - gz0) / (nz - 1) || 1;
+            const L = this._gelaende();
+            const aus = {};
+            const Gw = new Float32Array(nx * nz);
+            let jede = 0;
+            for (let j = 0; j < nz; j++)
+                for (let i = 0; i < nx; i++) {
+                    GK.hoehe(L, gx0 + i * dx, gz0 + j * dz, false, aus);
+                    if ((Gw[j * nx + i] = aus.schutt > 0 ? aus.schutt : 0) > 0) jede++;
+                }
+            if (jede)
+                for (let i = 0; i < n; i++) {
+                    if (H && H[i] < 1) continue;
+                    let u = (P[3 * i] - gx0) / dx,
+                        v = (P[3 * i + 2] - gz0) / dz;
+                    u = u < 0 ? 0 : u > nx - 1 ? nx - 1 : u;
+                    v = v < 0 ? 0 : v > nz - 1 ? nz - 1 : v;
+                    const iu = Math.min(nx - 2, Math.floor(u)),
+                        iv = Math.min(nz - 2, Math.floor(v));
+                    const fu = u - iu,
+                        fv = v - iv;
+                    const a = Gw[iv * nx + iu] + (Gw[iv * nx + iu + 1] - Gw[iv * nx + iu]) * fu;
+                    const b = Gw[(iv + 1) * nx + iu] + (Gw[(iv + 1) * nx + iu + 1] - Gw[(iv + 1) * nx + iu]) * fu;
+                    SW[i] = a + (b - a) * fv;
+                }
+        }
+        // Das Gewicht des Stoffs je Vertex: die Höhle, der Fels nach der Steile (dort hält kein Boden) und darunter der Schutt
+        // des Gesetzes, je das größere. `aSchutt` trägt dem Shader den Anteil des Schutts (sein Korn).
         const W = new Float32Array(n);
         // die Kante: nur Fels und Höhle tragen Rinde und Mulde aus der Krümmung — der Schutt bricht, er rundet nicht
         const KM = new Uint8Array(n);
@@ -29606,9 +29654,10 @@ class AnazhRealm {
             sn = 0;
         for (let i = 0; i < n; i++) {
             const st = 1 - N[3 * i + 1];
-            if (st < G.screeLo && !(H && H[i] < 1)) continue;
             const wr = ss(G.rockLo, G.rockHi, st);
-            const w = Math.max(H ? 1 - H[i] : 0, wr + G.schutt * ss(G.screeLo, G.screeHi, st) * (1 - wr));
+            const ws = G.schutt * SW[i] * (1 - wr);
+            SW[i] = ws;
+            const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
             if (!(w > 0)) continue;
             W[i] = w;
             jeder++;
@@ -29623,6 +29672,7 @@ class AnazhRealm {
                 sn++;
             }
         }
+        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SW, 1));
         if (!jeder) return;
         const K = kante ? GK.felsKruemmung(P, N, geom.index ? geom.index.array : null, n, null, KM) : null;
         const fe = sn ? this._feuchteAt(sx / sn, sz / sn, sy / sn) : 0;
@@ -30113,11 +30163,13 @@ class AnazhRealm {
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
-            // Der Schutthang des Schicht-Gesetzes (gelaende-core `schuttWinkel` 35°, das Band 30–40°): ab 28° wächst er, ab 34°
-            // liegt er voll; der Schutt ist zerbrochener Fels — `schutt` sein Gewicht im Vertex (`_felsStoff`), der Detail-Term
-            // legt sein Korn auf. Bis K17 begann das Geröll erst bei 37° und trug halb: der 35°-Schutthang lag weiß wie der Sand.
-            screeLo: 0.117,
-            screeHi: 0.171,
+            // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt (gelaende-core `hoehe(…, aus).schutt`: der Abschnitt
+            // Schutthang der Treppe × Stil), nie nach der Steile der Masche — `schutt` sein Gewicht im Vertex (`_felsStoff`, an
+            // `aSchutt` weitergereicht, der Detail-Term legt sein Korn auf). Das Gesetz fragt der Chunk nur, wo ein Vertex unter
+            // dem Himmel steiler als `schuttKandidat` (≈ 23°) steht, auf einem Gitter der Kante `schuttGitter` (m, 3 Netz-Schritte;
+            // das Band ist 16,7 m breit). Bis zur Nachbesserung 2 lag er ab 28° auf jedem Hang (Steile 0,117 … 0,171).
+            schuttKandidat: 0.08,
+            schuttGitter: 5.4,
             schutt: 0.85,
             mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
             gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
@@ -30131,13 +30183,61 @@ class AnazhRealm {
         });
     }
 
+    // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
+    // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
+    // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben). EIN Rechenwerk je TSL-Modul.
+    static _felsRechenwerkTSL(T) {
+        if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T) return AnazhRealm._felsRwMemo.o;
+        const N = (v) => (typeof v === "number" ? T.float(v) : v);
+        const U = (v) => (typeof v === "number" ? T.uint(v >>> 0) : T.uint(T.int(v)));
+        const o = Object.freeze({
+            add: (a, b) => N(a).add(N(b)),
+            sub: (a, b) => N(a).sub(N(b)),
+            mul: (a, b) => N(a).mul(N(b)),
+            div: (a, b) => N(a).div(N(b)),
+            min: (a, b) => T.min(N(a), N(b)),
+            max: (a, b) => T.max(N(a), N(b)),
+            floor: (a) => T.floor(N(a)),
+            sin: (a) => T.sin(N(a)),
+            exp: (a) => T.exp(N(a)),
+            abs: (a) => T.abs(N(a)),
+            sqrt: (a) => T.sqrt(N(a)),
+            step: (e, v) => T.step(N(e), N(v)),
+            glatt: (a, b, v) => T.smoothstep(N(a), N(b), N(v)),
+            clamp01: (v) => N(v).clamp(0, 1),
+            // die Wahl als Auswahl, nie als Mischung: mix(−1e9, a, 1) verlöre a in f32 (Stelle 64 bei 1e9)
+            wahl: (c, a, b) => T.select(N(c).greaterThan(0.5), N(a), N(b)),
+            // gelaende-core `zufall(sh, i, j, k)`: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1, zwei Misch-Runden
+            zufall: (sh, i, j, k) => {
+                const kk = typeof k === "number" ? T.uint(((k | 0) + 1) >>> 0) : T.uint(T.int(k).add(1));
+                let h = T.uint(sh >>> 0)
+                    .bitXor(U(i).mul(T.uint(0x27d4eb2d)))
+                    .bitXor(U(j).mul(T.uint(0x165667b1)))
+                    .bitXor(kk.mul(T.uint(0x9e3779b1)));
+                h = h.bitXor(h.shiftRight(T.uint(15))).mul(T.uint(0x85ebca6b));
+                h = h.bitXor(h.shiftRight(T.uint(13))).mul(T.uint(0xc2b2ae35));
+                h = h.bitXor(h.shiftRight(T.uint(16)));
+                return T.float(h).div(4294967296);
+            },
+        });
+        AnazhRealm._felsRwMemo = { T, o };
+        return o;
+    }
+
     // DER FELS-STOFF DER WELT (K17): das EINE Gesetz (gelaende-core `FELS`, `felsFarbe`) mit dem Stein der Boden-Palette als
     // Grundton (`felsBasis`: die dunkle Lage und die helle Bank aus ihm), der Kante des Nah-Netzes (1,8 m: was es nicht trägt,
     // trägt sein Mittel) und dem Mittel für die Ferne (`felsMittel`). Ohne den Kern bricht der Boden laut (Kern-Pflicht).
     static get FELS_STOFF() {
         if (AnazhRealm._felsStoffMemo) return AnazhRealm._felsStoffMemo;
         const GK = globalThis.__gelaendeCore;
-        if (!GK || typeof GK.felsFarbe !== "function" || typeof GK.felsKruemmung !== "function" || !GK.FELS)
+        if (
+            !GK ||
+            typeof GK.felsFarbe !== "function" ||
+            typeof GK.felsKruemmung !== "function" ||
+            typeof GK.felsFein !== "function" ||
+            typeof GK.schuttKorn !== "function" ||
+            !GK.FELS
+        )
             AnazhRealm._kernPflichtBruch("gelaende:felsFarbe");
         const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
         AnazhRealm._felsStoffMemo = Object.freeze({
@@ -32934,9 +33034,11 @@ class AnazhRealm {
             // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
             const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
             const _rockW = _T.smoothstep(_T.float(G.rockLo), _T.float(G.rockHi), _steep);
-            const _screeW = _T
-                .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
-                .mul(_T.float(1.0).sub(_rockW));
+            // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt — das Gewicht trägt der Vertex (`aSchutt`, `_felsStoff`
+            // aus gelaende-core `hoehe(…, aus).schutt`), nie die Steile der Masche: bis zur Nachbesserung 2 lag er ab 28° auf
+            // jedem Hang (der grüne Hügel grau, der 42°-Dorfhang zu 85 % Schutt), und das 28°–34°-Band streifte die 30°-Rampe in
+            // den Reihen des Netzes. Der Fern-Ring trägt keinen Schutt.
+            const _screeW = felsImVertex ? _T.attribute("aSchutt", "float") : _T.float(0);
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
             // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
             // IST die Vertex-Farbe der Fels — `_felsStoff` hat Pakete, Rinde, Mulden, Flechte und Moos aus dem Gesetz
@@ -32949,163 +33051,33 @@ class AnazhRealm {
             // das Auge blendet aus, was der Pixel nicht trägt. Bis zur Nachbesserung lasen sich gleich hohe Bänke mit
             // geraden Strich-Fugen und je Bank neu ansetzenden Klüften als Ziegelmauer.
             const FS = AnazhRealm.FELS_STOFF;
-            const FG = FS.gesetz;
-            const FF = FG.fein;
-            const FM = FS.mittelWerte;
-            const TAU = 2 * Math.PI;
-            const _cs = Math.cos(FG.streichen);
-            const _sn = Math.sin(FG.streichen);
-            const _h1 = wp.x.mul(_cs).add(wp.z.mul(_sn));
-            const _h2 = wp.z.mul(_cs).sub(wp.x.mul(_sn));
-            const _schichtY = wp.y.add(_h1.mul(Math.tan(FG.einfall)));
-            const _welle = _ra.raum(_T.vec3(wp.x.mul(FF.xz), _schichtY.mul(FF.y / FG.bank), wp.z.mul(FF.xz)));
-            const _s = _schichtY.add(_welle.mul(FF.welle * FG.bank));
-            // ein Hash [0, 1) je Schlüssel; weitere Ziehungen derselben Größe als fract(r · k)
-            const _H = (v) => _T.fract(_T.sin(v.mul(12.9898).add(4.1414)).mul(43758.5453));
-            const _fr = (r, k) => _T.fract(r.mul(k));
-            // das Paket (die Grenzen wandern um weniger als ein halbes Paket)
-            const _pG = (k) => k.add(_H(k.mul(3.17).add(0.71)).sub(0.5).mul(FG.paketStreu)).mul(FG.paket);
-            const _k = _T.floor(_s.div(FG.paket));
-            const _pk = _k.sub(_T.float(1).sub(_T.step(_pG(_k), _s))).add(_T.step(_pG(_k.add(1)), _s));
-            const _pa = _pG(_pk);
-            const _ln0 = Math.log(FG.paketDicke[0]);
-            const _d = _T
-                .exp(
-                    _H(_pk.mul(5.31).add(2.9))
-                        .mul(Math.log(FG.paketDicke[1] / FG.paketDicke[0]))
-                        .add(_ln0)
-                )
-                .mul(FG.bank);
-            const _uu = _s.sub(_pa).div(_d);
-            const _top = _pG(_pk.add(1)).sub(_pa).div(_d);
-            const _j = _T.floor(_uu);
-            // die Grenze i der Bänke im Paket: gezogen um ± bankStreu/2, je Fuge gewellt (zwei Sinus); i ≤ 0 ist die Paket-Grenze
-            const _B = (i) => {
-                const r = _H(_pk.mul(113.0).add(i.mul(7.31)).add(0.5));
-                const l1 = _fr(r, 97.31)
-                    .mul(FG.fugeLambda[1] - FG.fugeLambda[0])
-                    .add(FG.fugeLambda[0]);
-                const w = _T
-                    .sin(_h1.div(l1).add(_fr(r, 413.7)).mul(TAU))
-                    .mul(0.65)
-                    .add(_T.sin(_h2.div(l1.mul(0.61)).add(_fr(r, 211.9)).mul(TAU)).mul(0.35));
-                return i.add(r.sub(0.5).mul(FG.bankStreu).add(w.mul(FG.fugeWelle)).mul(_T.step(0.5, i)));
-            };
-            const _b0 = _B(_j.sub(1));
-            const _b1 = _B(_j);
-            const _b2 = _B(_j.add(1));
-            const _b3 = _B(_j.add(2));
-            const _ist1 = _T.step(_b1, _uu);
-            const _ist2 = _T.step(_b2, _uu);
-            const _lo = _T.max(_b0, _T.max(_T.mix(_T.float(-1e4), _b1, _ist1), _T.mix(_T.float(-1e4), _b2, _ist2)));
-            const _hi = _T.min(
-                _T.min(_T.mix(_b1, _T.float(1e4), _ist1), _T.mix(_b2, _T.float(1e4), _ist2)),
-                _T.min(_b3, _top)
-            );
-            const _bank = _j.add(_ist2).sub(_T.float(1).sub(_ist1));
-            const _unten = _uu.sub(_lo).mul(_d);
-            const _oben = _hi.sub(_uu).mul(_d);
-            // die Bank: ihre Helligkeit, die helle (sandige) Bank, ob sie geklüftet ist — EIN Hash, weitere Ziehungen daraus
-            const _rb = _H(_pk.mul(57.1).add(_bank.mul(1.93)).add(9.7));
-            const _Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-            const _aRel = 0.6 * (_Y(FS.basis.akzent) / _Y(FS.basis.basis) - 1);
-            const _dRel = 1 - _Y(FS.basis.dunkel) / _Y(FS.basis.basis);
-            const _hell = _rb.mul(2).sub(1).mul(FG.bankKontrast).add(1).div(FM.hell);
-            const _akzF = _T
-                .step(1 - FG.akzentAnteil, _fr(_rb, 97.31))
-                .mul(_aRel)
-                .add(1)
-                .div(1 + _aRel * FM.akzent);
-            // die Fuge als Kante: die Kehle über ihr (dunkel), die Oberkante unter der nächsten (hell); je Fuge klafft sie
-            // auf `fugeOffen` der Länge
-            const _offC = Math.cos(Math.PI * FG.fugeOffen);
-            const _offen = (i) =>
-                _T.smoothstep(
-                    _offC - 0.25,
-                    _offC + 0.25,
-                    _T.sin(
-                        _h1
-                            .add(_h2.mul(0.5))
-                            .div(FG.fugeOffenLambda)
-                            .add(_H(_pk.mul(71.3).add(i.mul(3.77)).add(1.3)))
-                            .mul(TAU)
-                    )
-                );
-            const _kw = _fr(_rb, 413.7)
-                .mul(2)
-                .sub(1)
-                .mul(FG.fugeStreu)
-                .add(1)
-                .mul(FG.kehle)
-                .mul(_offen(_bank))
-                .max(1e-4);
-            const _ke = _T.float(1).sub(_unten.div(_kw)).clamp(0, 1);
-            const _rw = _offen(_bank.add(1)).mul(FG.rand).max(1e-4);
-            const _rt = _T.float(1).sub(_oben.div(_rw)).clamp(0, 1);
-            const _kanteF = _T
-                .float(1)
-                .sub(_ke.mul(_ke).mul(FG.fuge * _dRel))
-                .div(1 - FM.kehle * FG.fuge * _dRel)
-                .mul(
-                    _rt
-                        .mul(_T.float(1).sub(_rt))
-                        .mul(4 * FG.randHell * (FG.bleiche - 1))
-                        .add(1)
-                        .div(1 + FM.rand * FG.randHell * (FG.bleiche - 1))
-                );
-            // die Klüfte: schräg, ihre Lage und ihr Abstand je Paket, an der Fuge ein Versatz, je Bank ihre Breite
-            const _rp = _H(_pk.mul(17.7).add(3.3));
-            const _kd = _fr(_rp, 413.7)
-                .mul(FG.kluftDicht[1] - FG.kluftDicht[0])
-                .add(FG.kluftDicht[0])
-                .mul(FG.kluft);
-            const _kb = _fr(_rb, 59.3).add(0.5).mul(FG.kluftBreite);
-            const _inKluft = (u) =>
-                _T
-                    .float(1)
-                    .sub(_T.abs(u.sub(_T.floor(u.add(0.5)))).div(_kb))
-                    .clamp(0, 1);
-            const _v = 2 * FG.kluftVersatz;
-            const _inK = _T
-                .max(
-                    _inKluft(_h1.add(_s.mul(FG.kluftSchraeg)).div(_kd).add(_rp).add(_fr(_rb, 733.1).sub(0.5).mul(_v))),
-                    _inKluft(
-                        _h2
-                            .sub(_s.mul(0.6 * FG.kluftSchraeg))
-                            .div(_kd)
-                            .add(_fr(_rp, 97.31))
-                            .add(_fr(_rb, 1201.3).sub(0.5).mul(_v))
-                    )
-                )
-                .mul(_T.step(1 - FG.kluftAnteil, _fr(_rb, 211.9)));
-            const _kluftF = _T
-                .float(1)
-                .sub(_inK.mul(_inK).mul(FG.kluftDunkel * _dRel))
-                .div(1 - FM.kluft * FG.kluftDunkel * _dRel);
+            const FF = FS.gesetz.fein;
+            const GK = globalThis.__gelaendeCore;
+            // EIN Rechenwerk (K17, Nachbesserung 2): der Fein-Term IST das Gesetz (gelaende-core `felsFein`, `schuttKorn`) —
+            // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, dieselbe
+            // Welle). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
+            // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
+            // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
+            const _O = AnazhRealm._felsRechenwerkTSL(_T);
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
             const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
-            const _fein = _T
-                .mix(_T.float(1), _hell.mul(_akzF).mul(_kluftF), _nahB)
-                .mul(_T.mix(_T.float(1), _kanteF, _nahF));
+            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+            const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
+            const _gate = _rockW.add(_screeW).mul(_gRock);
+            const _feinV = _T.Fn(() => {
+                const v = _T.vec3(1, 1, 1).toVar("felsFein");
+                _T.If(_gate.greaterThan(1e-3), () => {
+                    const f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
+                    v.assign(_T.vec3(f.bank, f.kante, GK.schuttKorn(_O, wp.x, wp.z)));
+                });
+                return v;
+            })();
+            const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
             const _rockCol = _felsGrund.mul(_fein);
-            // Der Schutthang trägt den Schutt (`FELS.geroell`: je Block seine Helligkeit, die Blöcke von der Welle der Probe
-            // verschoben) — mit dem Gewicht des Schutts im Vertex (`_felsStoff`, `TERRAIN_GEOLOGY.schutt`); der Fels
-            // dominiert die Mischung.
-            const _sg = FG.geroell;
-            const _blk = _T.floor(wp.mul(1 / _sg.korn).add(_welle.mul(FF.welle)));
-            const _schuttF = _T.mix(
-                _T.float(1),
-                _T
-                    .fract(_T.sin(_blk.dot(_T.vec3(12.9898, 78.233, 37.719))).mul(43758.5453))
-                    .mul(2)
-                    .sub(1)
-                    .mul(_sg.kontrast)
-                    .add(1),
-                _nahB
-            );
-            let _out = _T.mix(albedo, _felsGrund.mul(_schuttF), _screeW.mul(_gRock).mul(G.schutt));
+            // Der Schutthang trägt sein Korn mit dem Gewicht des Schutts im Vertex (`aSchutt`, `_felsStoff`); der Fels dominiert.
+            let _out = albedo.mul(_T.mix(_T.float(1), _T.mix(_T.float(1), _feinV.z, _kornSicht), _screeW.mul(_gRock)));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
@@ -34156,7 +34128,10 @@ class AnazhRealm {
             N = [],
             C = [],
             HS = [],
+            SC = [],
             I = [];
+        const sch = geom.attributes.aSchutt;
+        if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
         const seen = new Set();
         for (let t = 0; t < idx.length; t += 3) {
             const i0 = idx[t],
@@ -34190,6 +34165,7 @@ class AnazhRealm {
                     N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
                     C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
                     HS.push(him.getX(v));
+                    SC.push(sch.getX(v));
                 }
                 I.push(base, base + 1, base + 2, base, base + 2, base + 3);
                 // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
@@ -34201,6 +34177,7 @@ class AnazhRealm {
                     const cv = s === 1 || s === 2 ? b : a;
                     C.push(col ? col.getX(cv) : 0.5, col ? col.getY(cv) : 0.5, col ? col.getZ(cv) : 0.5);
                     HS.push(him.getX(cv));
+                    SC.push(sch.getX(cv));
                 }
                 I.push(sBase, sBase + 1, sBase + 2, sBase, sBase + 2, sBase + 3);
             }
@@ -34214,6 +34191,7 @@ class AnazhRealm {
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
         // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
         bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
+        bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         this._chunkSatzEin("boden", "stitch:" + key, bg, key);
@@ -68845,6 +68823,7 @@ class AnazhRealm {
                     ["aMorphTarget", 3],
                     ["aMorphWeight", 1],
                     ["aHimmel", 1],
+                    ["aSchutt", 1],
                 ],
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt

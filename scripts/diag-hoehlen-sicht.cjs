@@ -279,10 +279,16 @@ function urteil(b) {
                     `${KLUFT_DURCHLAUF_MIN}: ihre Lage je Paket, gelaende-core kluftVersatz)`
             );
     }
-    if (c.feinLiest === false)
+    if (c.feinRuft === false || c.feinEigenHash === true)
         v.push(
-            "CODE: der Detail-Term (`_terrainGeologyAlbedo`) liest die Bankung des Gesetzes nicht (paketDicke · fugeWelle · " +
-                "kehle · kluftVersatz · fugeLambda) — im Shader fährt ein Zwilling"
+            "CODE: der Detail-Term (`_terrainGeologyAlbedo`) rechnet nicht das Gesetz (" +
+                (c.feinRuft === false ? "ruft gelaende-core felsFein/schuttKorn nicht" : "eigene Ziehung fract(sin)") +
+                ") — im Shader fährt ein Zwilling"
+        );
+    if (c.feinRuft !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
+        v.push(
+            "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
+                (c.feinRechenwerk ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten` : "fehlt")
         );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
@@ -384,7 +390,9 @@ function selbsttest() {
             augenVorZweig: true,
             augenTslFremd: null,
             poolGesetz: true,
-            feinLiest: true,
+            feinRuft: true,
+            feinEigenHash: false,
+            feinRechenwerk: { maxDiff: 0, n: 400 },
         },
         bankung: { baenke: 2000, mittel: 0.65, cv: 0.71, welligkeit: 0.112, durchlauf: 0.526 },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
@@ -578,7 +586,9 @@ function selbsttest() {
         ["Gerade Fugen", (b) => (b.bankung.welligkeit = 0), /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
         ["Klüfte je Bank", (b) => (b.bankung.durchlauf = 0.13), /KLÜFTE SETZEN NEU AN: nur 0\.13/],
         ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
-        ["Shader-Zwilling", (b) => (b.code.feinLiest = false), /CODE: der Detail-Term .* liest die Bankung des Gesetzes nicht/],
+        ["Shader-Zwilling", (b) => (b.code.feinRuft = false), /CODE: der Detail-Term .*\(ruft gelaende-core felsFein/],
+        ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
+        ["Rechenwerk falsch", (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }), /RECHENWERK: .* 0\.31 an 400/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -1386,10 +1396,67 @@ const server = http.createServer((req, res) => {
             aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionView\b/.test(bedingung);
             const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
             aus.code.augenTslFremd = fremd ? fremd[1] : null;
+            // (m) Der Shader rechnet DAS Gesetz (Nachbesserung 2): der Detail-Term ruft gelaende-core `felsFein` und `schuttKorn`
+            // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
+            // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
+            // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
             const fein = code(r._terrainGeologyAlbedo);
-            aus.code.feinLiest = ["paketDicke", "fugeWelle", "kehle", "kluftVersatz", "fugeLambda"].every((k) =>
-                new RegExp("\\bFG\\." + k + "\\b").test(fein)
-            );
+            aus.code.feinRuft = /GK\.felsFein\(_O,/.test(fein) && /GK\.schuttKorn\(_O,/.test(fein);
+            aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
+            aus.code.feinRechenwerk = (() => {
+                const GKc = globalThis.__gelaendeCore;
+                if (!GKc || typeof GKc.felsFein !== "function" || typeof r.constructor._felsRechenwerkTSL !== "function")
+                    return null;
+                const V = (x) => (typeof x === "number" ? x : x.v);
+                const mk = (v, t) => ({
+                    v,
+                    t,
+                    add: (b) => mk(t === "u" ? (v + V(b)) >>> 0 : v + V(b), t),
+                    sub: (b) => mk(v - V(b), t),
+                    mul: (b) => mk(t === "u" ? Math.imul(v, V(b)) >>> 0 : v * V(b), t),
+                    div: (b) => mk(v / V(b), t),
+                    clamp: (a, c) => mk(Math.min(c, Math.max(a, v)), t),
+                    bitXor: (b) => mk((v ^ V(b)) >>> 0, "u"),
+                    shiftRight: (b) => mk(v >>> V(b), "u"),
+                    greaterThan: (b) => mk(v > V(b) ? 1 : 0, "b"),
+                });
+                const glatt = (a, b, x) => {
+                    let t = (V(x) - V(a)) / (V(b) - V(a));
+                    t = t < 0 ? 0 : t > 1 ? 1 : t;
+                    return mk(t * t * (3 - 2 * t), "f");
+                };
+                const Tm = {
+                    float: (x) => mk(V(x), "f"),
+                    uint: (x) => mk(V(x) >>> 0, "u"),
+                    int: (x) => mk(Math.trunc(V(x)), "i"),
+                    min: (a, b) => mk(Math.min(V(a), V(b)), "f"),
+                    max: (a, b) => mk(Math.max(V(a), V(b)), "f"),
+                    floor: (a) => mk(Math.floor(V(a)), "f"),
+                    sin: (a) => mk(Math.sin(V(a)), "f"),
+                    exp: (a) => mk(Math.exp(V(a)), "f"),
+                    abs: (a) => mk(Math.abs(V(a)), "f"),
+                    sqrt: (a) => mk(Math.sqrt(V(a)), "f"),
+                    step: (e, x) => mk(V(x) >= V(e) ? 1 : 0, "f"),
+                    smoothstep: glatt,
+                    select: (c, a, b) => (V(c) ? a : b),
+                };
+                const O = r.constructor._felsRechenwerkTSL(Tm);
+                const B = r.constructor.FELS_STOFF.basis;
+                let maxDiff = 0,
+                    n = 0;
+                for (let i = 0; i < 400; i++) {
+                    const x = Math.sin(i * 1.37) * 900,
+                        y = Math.cos(i * 0.71) * 80,
+                        z = Math.sin(i * 0.53) * 900;
+                    const a = GKc.felsFein(O, B, x, y, z),
+                        b = GKc.felsFein(GKc.felsZahl, B, x, y, z);
+                    const ka = GKc.schuttKorn(O, x, z),
+                        kb = GKc.schuttKorn(GKc.felsZahl, x, z);
+                    maxDiff = Math.max(maxDiff, Math.abs(V(a.bank) - b.bank), Math.abs(V(a.kante) - b.kante), Math.abs(V(ka) - kb));
+                    n++;
+                }
+                return { maxDiff, n };
+            })();
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
             aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
@@ -1488,6 +1555,11 @@ const server = http.createServer((req, res) => {
             `  (m) Bankung am Gesetz: ${bkn.baenke} Bänke, Mittel ${bkn.mittel} m, Variationskoeffizient ${bkn.cv}, ` +
                 `Eigen-Welligkeit der Fugen ${bkn.welligkeit} Bänke, Durchlauf der Klüfte ${bkn.durchlauf}`
         );
+    const fr = befund.code && befund.code.feinRechenwerk;
+    console.log(
+        `  (m) Shader: ruft das Gesetz ${befund.code && befund.code.feinRuft}, eigene Ziehung ${befund.code && befund.code.feinEigenHash}, ` +
+            `TSL-Rechenwerk gegen Zahlen-Rechenwerk ${fr ? `max. Abstand ${fr.maxDiff} an ${fr.n} Punkten` : "fehlt"}`
+    );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ HÖHLEN-SICHT ROT:\n  " + v.join("\n  "));

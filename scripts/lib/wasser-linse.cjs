@@ -2161,8 +2161,8 @@ function wasserFlora(opts) {
 // Je Fluss-Punkt (Heimat-Region und Kacheln) in einem geladenen Nah-Chunk (LOD 0) ein Profil-Schnitt quer zum Lauf: der
 // Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
 // die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
-// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels, ab screeLo
-// (≈ 37°) Geröll. Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
+// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels; Geröll-Kandidat
+// ist ein Profil ab `schuttKandidat` (≈ 23°) — Schutt trägt nur der Schutthang des Schicht-Gesetzes (je Vertex `aSchutt`, K17). Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
 // des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
 // der Geometrie-Normale. Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe, und dahinter glitt eine Wand ins Gelände.
 function wasserBank(opts) {
@@ -2177,7 +2177,7 @@ function wasserBank(opts) {
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
-        geroellGrad = grad(G.screeLo);
+        geroellGrad = grad(G.schuttKandidat);
     const nah = (x, z) => {
         const e = st.voxelChunks && st.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
         return e && e.mesh && e.lod === 0 ? e : null;
@@ -2289,11 +2289,12 @@ function wasserBank(opts) {
             n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
             const steile = Math.max(0, Math.min(1, 1 - n.y));
             const rw = ss(G.rockLo, G.rockHi, steile);
-            const sw = ss(G.screeLo, G.screeHi, steile) * (1 - rw);
+            const sch = e.mesh.geometry.attributes.aSchutt;
+            const sw = sch ? sch.getX(i) : 0;
             vertices++;
             gewicht += rw + sw;
             if (steile > G.rockLo) felsV++;
-            else if (steile > G.screeLo) geroellV++;
+            else if (sw > 0.5) geroellV++;
         }
     }
     const s = winkel.slice().sort((x, y) => x - y);
