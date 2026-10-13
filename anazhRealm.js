@@ -37937,7 +37937,6 @@ class AnazhRealm {
             modelWorldMatrix,
             modelNormalMatrix,
             cameraPosition,
-            sin,
             dot,
             length,
             mix,
@@ -37952,6 +37951,8 @@ class AnazhRealm {
             reflect,
             select: cond,
             Fn,
+            uint,
+            int,
             abs,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
@@ -38026,9 +38027,23 @@ class AnazhRealm {
         const uWind = uniform(0.06);
         const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
-        // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
+        // 2D-Hash + Value-Noise. Der Hash ist pcg2d (Jarzynski & Olano 2020, derselbe wie `_pcg2d`) auf dem ganzzahligen
+        // Gitterpunkt: nur u32-Multiplikation, Addition, Xor und Shift — auf jedem Adapter bit-gleich. Bis K40 war er
+        // fract(sin(dot(p, ·)) · 43758): WGSL lässt sin außerhalb ±π beliebig ungenau, das Gitter wächst mit Welt-Ort und
+        // Wasser-Uhr (die Kräusel-Lage driftet uTime · 0,02) — auf dem Radeon zerfiel die Stromschnelle nach einer Stunde
+        // zum Zebra (Kanten-Dichte 1,436 × der bei 60 s, swiftshader rechnete sin genau: 1,027).
+        const PCG_A = uint(1664525);
+        const PCG_C = uint(1013904223);
         const hash2 = Fn(([p]) => {
-            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
+            const x0 = uint(int(p.x)).mul(PCG_A).add(PCG_C);
+            const y0 = uint(int(p.y)).mul(PCG_A).add(PCG_C);
+            const x1 = x0.add(y0.mul(PCG_A));
+            const y1 = y0.add(x1.mul(PCG_A));
+            const x2 = x1.bitXor(x1.shiftRight(uint(16)));
+            const y2 = y1.bitXor(y1.shiftRight(uint(16)));
+            const x3 = x2.add(y2.mul(PCG_A));
+            const x4 = x3.bitXor(x3.shiftRight(uint(16)));
+            return float(x4).mul(1.0 / 4294967296.0);
         });
         const vnoise = Fn(([p]) => {
             const i = floor(p);
@@ -40210,21 +40225,7 @@ class AnazhRealm {
                 device.queue.writeBuffer(buf, 0, arr.buffer, arr.byteOffset, arr.byteLength);
                 return buf;
             };
-            const uniBytes = new ArrayBuffer(48);
-            const uf = new Float32Array(uniBytes, 0, 8);
-            const uu = new Uint32Array(uniBytes, 32, 4);
-            uf[0] = e.base;
-            uf[1] = e.steilheit;
-            uf[2] = e.wasser;
-            uf[3] = includeDetail ? 1 : 0; // der Ring liest das Gesetz OHNE Detail-Oktave
-            uf[4] = e.hatAnker;
-            uf[5] = e.eroOriginX;
-            uf[6] = e.eroOriginZ;
-            uf[7] = e.eroCell;
-            uu[0] = e.eroDim;
-            uu[1] = e.nTarns;
-            uu[2] = e.nTal;
-            uu[3] = n;
+            const uniBytes = fw.skalarBytes(e, includeDetail, n); // der Ring liest das Gesetz OHNE Detail-Oktave
             const uniBuf = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
             device.queue.writeBuffer(uniBuf, 0, uniBytes);
             const bufs = [
@@ -78721,8 +78722,8 @@ class AnazhRealm {
         if (!this._foundryEnabled()) return 0;
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
-        // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis ein Frame ohne Chunk-Bau den Scan trägt.
-        if (this.state._frameChunksBuilt) return 1;
+        // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis die Terrain-zuerst-Regel den Scan trägt.
+        if (this._dekoWartet()) return 1;
         const f = this._foundry;
         if (!f || !f.ready) return 0; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
@@ -98671,8 +98672,16 @@ class AnazhRealm {
         return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - mandatory);
     }
 
-    // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). `!chunksBuilt`-Gate (Terrain vor
-    // Deko): der Stream-Job (prio 0) setzt `_frameChunksBuilt`, der Scatter-Deko-Job (prio 2) liest es.
+    // DIE TERRAIN-ZUERST-REGEL (EINE Stelle, Leser: der Deko-Job und `_foundryRewarmColdTrees`): baute dieser Takt
+    // Terrain, wartet die Deko — nie länger als bis zum Existenz-Boden des Dispatchers (jeder 4. Takt, wie das leere
+    // Budget), dann trägt sie ihren Boden-Anteil. Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
+    // baute jeder von 160 Takten nach einem Umzug Terrain, die Nah-Wiese lief 0-mal und 925 Büschel blieben am alten Ort.
+    _dekoWartet() {
+        return !!this.state._frameChunksBuilt && (this._schedFrameNo || 0) % 4 !== 0;
+    }
+
+    // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
+    // `_frameChunksBuilt`, der Scatter-Deko-Job (prio 2) fragt `_dekoWartet`.
     _buildDeferrableJobs(playerPos) {
         const st = this.state;
         return [
@@ -98707,13 +98716,14 @@ class AnazhRealm {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
-                    if (st._frameChunksBuilt) return; // !chunksBuilt-Gate: erst der Boden, dann der Wald
+                    if (this._dekoWartet()) return; // erst der Boden, dann der Wald — nie verhungert
                     // Scatter mit `_perfSenseLap`-Tap (phase.scatter in perfSense + Flugschreiber — neue welt-formende
                     // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
                     // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
-                    // Headless: budget=Infinity → One-Shot.
-                    const _dl = Number.isFinite(ms)
-                        ? performance.now() + Math.min(ms, AnazhRealm.SCATTER_SLICE_MS)
+                    // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
+                    const msDeko = st._frameChunksBuilt ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                    const _dl = Number.isFinite(msDeko)
+                        ? performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS)
                         : undefined;
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
@@ -98932,7 +98942,7 @@ class AnazhRealm {
 
     _loopVoxelStreaming() {
         // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
-        // Wasser [prio 1], Deko [prio 2]; `!chunksBuilt`-Gate via `_frameChunksBuilt`. EIN Pfad.
+        // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
         return this._runFrameScheduler(this.state.playerMesh.position);
     }
 

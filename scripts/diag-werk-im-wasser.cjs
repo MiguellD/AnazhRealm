@@ -2208,7 +2208,7 @@ function argListe(name) {
 async function lauf() {
     const puppeteer = require("puppeteer");
     const http = require("http");
-    const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     const PORT = Number(process.env.WERK_WASSER_PORT || 4643);
     const root = path.resolve(__dirname, "..");
     const mime = {
@@ -2236,7 +2236,8 @@ async function lauf() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const seitenFehler = [];
     let exit = 2;
     try {

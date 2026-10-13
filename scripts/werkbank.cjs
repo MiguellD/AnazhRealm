@@ -163,8 +163,10 @@
 //
 // `start --echt [--seite <url>]` fährt die ECHTE GPU (Fenster, WebGPU über den Hardware-Adapter, 1920×1080 bei DPR 1) gegen
 // den laufenden save-server (`npm start`, :4312 — der Flugschreiber schreibt anazhRealmPerf.json); ohne
-// `--echt` bleibt es swiftshader auf dem eigenen Seiten-Port. In beiden zählt der VRAM-ABGRIFF jede
-// GPUDevice-Allokation (Puffer + Texturen, live nach destroy) — das ist der Speicher, nicht ein Proxy.
+// `--echt` fährt sie headless auf dem eigenen Seiten-Port an der Weiche des Start-Rezepts (lokal der Hardware-Adapter, in der
+// CI und mit LINSE_GPU=software swiftshader; die erste Zeile `[linse-gpu]` nennt ihn) — Zeit-Urteile (band, gpu-bank) zählen
+// nur mit `--echt` unter dem GPU-Schloss. In beiden zählt der VRAM-ABGRIFF jede GPUDevice-Allokation (Puffer + Texturen,
+// live nach destroy) — das ist der Speicher, nicht ein Proxy.
 //
 // Höhen relativ zum Boden: `bild` nimmt py/ly mit Präfix `+` als Abstand über `_voxelSurfaceY(px,pz)`
 // bzw. `(lx,lz)` (z. B. `+1.6`). Die Bilder sind dieselbe Aufnahme wie die Beweis-Sonden
@@ -772,7 +774,7 @@ function bandProben(k) {
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const puppeteer = require("puppeteer");
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const mime = {
         ".html": "text/html",
         ".js": "application/javascript",
@@ -814,10 +816,12 @@ async function starte() {
         userDataDir: profil,
         protocolTimeout: 3600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : null,
-        // Echt: der Hardware-Adapter; sonst swiftshader — die Schalter je Plattform trägt das EINE Rezept (die alte
-        // Vulkan-Kopie lieferte unter Windows keinen Adapter: die Werkbank fuhr ohne --echt still WebGL2).
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : softwareWebGpuArgs(),
+        // Echt: der Hardware-Adapter im Fenster; sonst die Weiche (lokal der Hardware-Adapter headless, in der CI swiftshader)
+        // — die Schalter je Plattform trägt das EINE Rezept (die alte Vulkan-Kopie lieferte unter Windows keinen Adapter: die
+        // Werkbank fuhr ohne --echt still WebGL2).
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);

@@ -23,7 +23,7 @@
 //   node scripts/diag-fern-ring.cjs
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -66,8 +66,9 @@ const server = http.createServer((req, res) => {
         // DER FELD-ZEICHNER (Bänder 7/8): echtes WebGPU trotz Null-Renderer. Unter Windows nahmen die Vulkan-/ANGLE-
         // Schalter den Adapter weg (requestAdapter → null, die Bänder standen auf jeder Basis rot, laeufe=0) — die
         // Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
