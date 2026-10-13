@@ -696,7 +696,7 @@ async function runPartB() {
             for (const target of dnTargets) {
                 const raw = place(target);
                 r._archLODCursor = 0;
-                for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99); // Switch + Band-Pflege (idempotent)
+                for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99, st.playerMesh.position); // Switch + Band-Pflege (idempotent), das Auge = der Proben-Ort
                 const dn = r._lodPerceptionDistance(raw, visH);
                 const dnL = r._lodPerceptionDistance(raw, Math.min(visH, capL));
                 const inB01 = dnL > cfg.thresh01 - (cfg.fade0 || 4) - M && dn < cfg.thresh01 + M;
@@ -748,7 +748,7 @@ async function runPartB() {
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
                     st.playerMesh.position.set(e0.px - raw, e0.py, e0.pz);
                     r._archLODCursor = 0;
-                    for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99);
+                    for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
                     const stufen = new Map();
                     for (const list of [e0.entry.instSlots, e0.entry.instSlotsBand])
                         if (Array.isArray(list))

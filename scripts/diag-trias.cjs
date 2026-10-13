@@ -343,7 +343,7 @@ function triasStaticLaws(anazhSrc) {
                 r.state._frameOverBudget = false;
                 try {
                     r.tickArchitectureCulling();
-                    r._tickArchitectureLOD(8);
+                    r._tickArchitectureLOD(8, r.state.playerMesh.position); // das Auge = der Proben-Ort
                 } catch (e) {
                     res.errors.push("render: " + e.message);
                     break;
