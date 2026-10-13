@@ -20395,7 +20395,7 @@ async function checkBandHydrosphere(ctx) {
             // (4) das Bett liegt unter den Ufern: die Bank steigt von der Fluss-Mitte mit ihrer Neigung zur Krone (halbe
             // Breite + Tiefe / bankNeigung, die Tiefe aus `_flussTiefe`).
             const D = r.constructor._flussTiefe(rp);
-            const halfW = (rp.width || HC.widthMin) * 0.5;
+            const halfW = rp.width * 0.5;
             const pX = -rp.flowZ;
             const pZ = rp.flowX;
             const midOff = halfW + (D / HC.bankNeigung) * 0.75;

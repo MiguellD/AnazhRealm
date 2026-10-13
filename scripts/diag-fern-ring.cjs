@@ -1452,7 +1452,9 @@ const server = http.createServer((req, res) => {
                         const l = Math.hypot(seg.bx - seg.ax, seg.bz - seg.az) || 1;
                         const nx = -(seg.bz - seg.az) / l;
                         const nz = (seg.bx - seg.ax) / l;
-                        const aussen = r._fernFlussDeckung(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 0);
+                        // daneben heißt: 2 Texel um den Punkt kein Wasser — auch keins des Nachbar-Bogens (der Mäander
+                        // legt seine Schleifen eng; ein Punkt-Test traf den Rand der nächsten Schleife)
+                        const aussen = r._fernFlussDeckung(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 2 * t);
                         const d = lies(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t));
                         if (aussen === 0 && d > 0.08) w.karteDanebenFehl++;
                     }

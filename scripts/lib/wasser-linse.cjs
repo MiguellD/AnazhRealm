@@ -522,7 +522,7 @@ function wasserKoerper(opts) {
 function __wasserKroneVon(r, p) {
     const A = r.constructor;
     const HC = A.HYDROSPHERE;
-    const w = p.width || HC.widthMin;
+    const w = p.width;
     const D = typeof A._flussTiefe === "function" ? A._flussTiefe(p) : HC.carveBedMin + HC.carveBedK * w;
     if (!Number.isFinite(HC.bankNeigung)) throw new Error("HYDROSPHERE.bankNeigung fehlt (das Gesetz der Bank)");
     return w * 0.5 + D / HC.bankNeigung;
@@ -1707,7 +1707,7 @@ function wasserQuelle(opts) {
     const qBett = Number.isFinite(HC.quellBett) ? HC.quellBett : 1.2;
     const G = Number.isFinite(HC.quellWeitung) ? HC.quellWeitung : 0.25;
     const huelleVon = (h) => {
-        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : HC.widthMin;
+        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : globalThis.__gelaendeCore.FLUSS_BREITE.min;
         const dRel = HC.carveBedMin / bett + HC.carveBedK;
         const huelle = (s) => {
             const w = qBett + G * Math.max(0, s);
@@ -2242,7 +2242,7 @@ function wasserBank(opts) {
     const raster = new Map();
     for (const [a, b] of punkte) {
         const sp = spiegelVon(a);
-        const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
+        const hw = Math.max(1, a.width * 0.5);
         const L = Math.hypot(b.x - a.x, b.z - a.z);
         for (let t = 0; t <= L; t += 0.5) {
             const x = a.x + ((b.x - a.x) * t) / (L || 1),
