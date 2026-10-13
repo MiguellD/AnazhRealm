@@ -37923,7 +37923,6 @@ class AnazhRealm {
             modelWorldMatrix,
             modelNormalMatrix,
             cameraPosition,
-            sin,
             dot,
             length,
             mix,
@@ -37938,6 +37937,8 @@ class AnazhRealm {
             reflect,
             select: cond,
             Fn,
+            uint,
+            int,
             abs,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
@@ -38012,9 +38013,23 @@ class AnazhRealm {
         const uWind = uniform(0.06);
         const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
-        // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
+        // 2D-Hash + Value-Noise. Der Hash ist pcg2d (Jarzynski & Olano 2020, derselbe wie `_pcg2d`) auf dem ganzzahligen
+        // Gitterpunkt: nur u32-Multiplikation, Addition, Xor und Shift — auf jedem Adapter bit-gleich. Bis K40 war er
+        // fract(sin(dot(p, ·)) · 43758): WGSL lässt sin außerhalb ±π beliebig ungenau, das Gitter wächst mit Welt-Ort und
+        // Wasser-Uhr (die Kräusel-Lage driftet uTime · 0,02) — auf dem Radeon zerfiel die Stromschnelle nach einer Stunde
+        // zum Zebra (Kanten-Dichte 1,436 × der bei 60 s, swiftshader rechnete sin genau: 1,027).
+        const PCG_A = uint(1664525);
+        const PCG_C = uint(1013904223);
         const hash2 = Fn(([p]) => {
-            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
+            const x0 = uint(int(p.x)).mul(PCG_A).add(PCG_C);
+            const y0 = uint(int(p.y)).mul(PCG_A).add(PCG_C);
+            const x1 = x0.add(y0.mul(PCG_A));
+            const y1 = y0.add(x1.mul(PCG_A));
+            const x2 = x1.bitXor(x1.shiftRight(uint(16)));
+            const y2 = y1.bitXor(y1.shiftRight(uint(16)));
+            const x3 = x2.add(y2.mul(PCG_A));
+            const x4 = x3.bitXor(x3.shiftRight(uint(16)));
+            return float(x4).mul(1.0 / 4294967296.0);
         });
         const vnoise = Fn(([p]) => {
             const i = floor(p);
