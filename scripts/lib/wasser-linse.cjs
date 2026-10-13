@@ -919,10 +919,19 @@ function wasserBild(opts) {
             U.time.value = zeit;
             U.irr.value.setRGB(1, 1, 1);
             U.light.value = 0;
+            // DAS BILD OHNE SCHAUM (K10 × K16 × K40): derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
+            // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
+            // Streiflichts (der Mittags-Himmel K40 hob den ruhigen Fluss am fernen Rand über 32 — 6,0 % ohne einen Schaum-Term)
+            U.emotion.value = -1;
+            const px0 = await lese();
             U.emotion.value = 0;
             const px = await lese();
             const L = new Float32Array(W * H);
-            for (let p = 0; p < W * H; p++) L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
+            const L0 = new Float32Array(W * H);
+            for (let p = 0; p < W * H; p++) {
+                L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
+                L0[p] = 0.2126 * px0[p * 4] + 0.7152 * px0[p * 4 + 1] + 0.0722 * px0[p * 4 + 2];
+            }
             const zone = (z) => {
                 let n = 0,
                     tv = 0,
@@ -937,7 +946,7 @@ function wasserBild(opts) {
                         np++;
                         summe += L[p];
                         if (L[p] > 64) weiss++; // Schaum: über ein Viertel Weiß (der Wasser-Körper liegt bei Licht 1 unter 20)
-                        if (L[p] > 32) hell++; // Schaum-Deckung: doppelt so hell wie der Wasser-Körper im Licht 1
+                        if (L[p] > 32 && L[p] - L0[p] > 8) hell++; // Schaum-Deckung: doppelt so hell wie der Wasser-Körper im Licht 1, vom Schaum
 
                         if (maske[p + 1] === z && maske[p + W] === z) {
                             tv += Math.abs(L[p + 1] - L[p]) + Math.abs(L[p + W] - L[p]);

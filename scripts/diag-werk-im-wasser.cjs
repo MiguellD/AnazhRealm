@@ -265,7 +265,8 @@ function urteil(b) {
             v.push(
                 `R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus}; geräumte Reste früherer Proben: ${(RD.reste || []).join(", ") || "keine"}; Nexus-Deckel ${RD.deckel ? `${RD.deckel.max}, autonome Bauten ${RD.deckel.autosVor} → ${RD.deckel.autosNach}` : "ungemessen"})`
             );
-        if (RD.invalidierungen > 0)
+        // ein Wecken ist ein Befund, wenn keine Wasser-Zelle eines geladenen Chunks sich änderte (`zellenWechsel`)
+        if (RD.invalidierungen > 0 && !(RD.zellenWechsel > 0))
             v.push(
                 `R: das Dorf am Seerand weckt den Wasser-Automaten, ohne Wasser der Zellen zu verdrängen — ${RD.invalidierungen} Invalidierungen, ${RD.ca} Chunks wach nach ${RD.takte} Takten (${RD.randHaus})`
             );
@@ -1597,6 +1598,21 @@ async function probe(A) {
                 geladen = new Set();
                 for (const [k, e] of st.voxelChunks) if (e && e.waterCells) geladen.add(k);
                 vor = zaehlen();
+                // DIE ZELLEN SELBST (K10): je geladenem Chunk die Zahl seiner Wasser-Zellen — ändert das Dorf sie (der Erdbau
+                // am Ufer rückt einen Grund unter Wasser in eine andere Zelle), ist das Wecken des Automaten verdient
+                const ZW = r.constructor.CELL_STATE.WATER;
+                const wasserZellen = () => {
+                    const m = new Map();
+                    for (const k of geladen) {
+                        const e = st.voxelChunks.get(k);
+                        if (!e || !e.waterCells) continue;
+                        let n = 0;
+                        for (let q = 0; q < e.waterCells.length; q++) if (e.waterCells[q] === ZW) n++;
+                        m.set(k, n);
+                    }
+                    return m;
+                };
+                const zellenVor = wasserZellen();
                 const inv = { n: 0 };
                 const invAlt = r._invalidateWaterCapsAround;
                 r._invalidateWaterCapsAround = function () {
@@ -1647,6 +1663,9 @@ async function probe(A) {
                 }
                 const autosNach = autos();
                 const nach = zaehlen();
+                const zellenNach = wasserZellen();
+                let zellenWechsel = 0;
+                for (const [k, n] of zellenVor) if (zellenNach.has(k) && zellenNach.get(k) !== n) zellenWechsel++;
                 const randHaus = st.architectures.find(
                     (e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - hx, e.position.z - hz) < 6
                 );
@@ -1661,6 +1680,7 @@ async function probe(A) {
                     // der Nexus-Deckel: so viele autonome Bauten vor und nach dem Dorf — über dem Deckel fiele das Fernste
                     deckel: { max: deckel, autosVor, autosNach, ueber: Math.max(0, autosNach - deckel) },
                     invalidierungen: inv.n,
+                    zellenWechsel,
                     ca: st.waterCAActive ? st.waterCAActive.size : 0,
                     nass0: vor.nass,
                     nass1: nach.nass,

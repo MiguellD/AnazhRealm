@@ -5409,6 +5409,16 @@
         var hatTuer = function (sl) {
             return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
         };
+        // DER EINGANG, den der Gang von der Gasse betritt (z haus-lokal, y seine Schwelle über dem Boden des Hauses): die
+        // Haustür — beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9), sein Boden
+        // auf der Diele + 0,08 m); vor ihm liegt der Vorplatz (am Hof-Tor stand der Gang vor 0,63 m ohne Stufe, W6).
+        var eingang = function (sl) {
+            var tu = sl.tuer;
+            var pre = PRESETS[sl.kultur];
+            var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
+            var ty = isFinite(tu.y) ? tu.y : 0;
+            return hof ? { z: tu.z - Math.min(9, Math.max(5, tu.W)), y: ty + 0.08 } : { z: tu.z, y: ty };
+        };
         // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
         // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
         // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
@@ -5434,7 +5444,7 @@
             if (hatTuer(sl) && isFinite(sl.tuer.w))
                 for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
                     for (var u = -1; u <= 1; u++) {
-                        var v = vorne(sl, sl.tuer.z - t);
+                        var v = vorne(sl, eingang(sl).z - t);
                         var cu = Math.cos(sl.phi || 0);
                         var su = Math.sin(sl.phi || 0);
                         var du = (u * sl.tuer.w) / 2;
@@ -5460,7 +5470,7 @@
                 // teilt sich in zwei kleine Stufen statt einer großen)
                 var tritt = [];
                 for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM; t0 += 0.25) {
-                    var va = vorne(sl, sl.tuer.z - t0);
+                    var va = vorne(sl, eingang(sl).z - t0);
                     var ya = aufY(va[0], va[1]);
                     if (ya !== null) tritt.push([t0, ya]);
                     if (tritt.length && t0 >= tritt[0][0] + 1) break;
@@ -5486,11 +5496,11 @@
         for (var neu = true; neu; ) {
             neu = false;
             for (si = 0; si < NS; si++) {
-                if (hy[si] !== null || !hatTuer(plan.slots[si])) continue;
+                if (hy[si] !== null || !hatTuer(ps[si])) continue;
                 for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM && hy[si] === null; t += 0.5) {
-                    var v1 = vorne(plan.slots[si], plan.slots[si].tuer.z - t);
+                    var v1 = vorne(ps[si], eingang(ps[si]).z - t);
                     for (var sj = 0; sj < NS; sj++)
-                        if (sj !== si && hy[sj] !== null && plan.slots[sj].obb && inPlatte(v1[0], v1[1], plan.slots[sj].obb)) {
+                        if (sj !== si && hy[sj] !== null && ps[sj].obb && inPlatte(v1[0], v1[1], ps[sj].obb)) {
                             hy[si] = hy[sj];
                             neu = true;
                             break;
@@ -5500,7 +5510,7 @@
         }
         var slots = [];
         for (si = 0; si < NS; si++) {
-            sl = plan.slots[si];
+            sl = ps[si];
             ob = sl.obb;
             var tu = sl.tuer;
             var grund = grunde[si];
@@ -5508,6 +5518,24 @@
             var spanne = 0;
             for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
             var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
+            // DER SPIEGEL ÜBER DER PLATTE (K10): legt der Erdbau den Grund des Hauses unter den Spiegel des Welt-Wassers
+            // (ctx.spiegelAt, + 0,2 m wie die Land-Frage des Wirts `_landAt`), stünde es im Wasser — es fällt hier, vor seiner
+            // Platte (am Auto-Dorf −768/−886 nahm die Land-Wand des Wirts 5 von 16 gesetzten Häusern erst nach dem Erdbau)
+            if (ob && ctx.spiegelAt) {
+                var cS = Math.cos(ob.phi || 0);
+                var sS = Math.sin(ob.phi || 0);
+                var unter = false;
+                for (var iS = -2; iS <= 2 && !unter; iS++)
+                    for (var jS = -2; jS <= 2 && !unter; jS++) {
+                        var lxS = ((ob.ex + O.saumM) * iS) / 2;
+                        var lzS = ((ob.ez + O.saumM) * jS) / 2;
+                        if (ctx.spiegelAt(ox + ob.cx + lxS * cS + lzS * sS, oz + ob.cz - lxS * sS + lzS * cS) + 0.2 > y) unter = true;
+                    }
+                if (unter) {
+                    wasserSlots++;
+                    continue;
+                }
+            }
             if (ob)
                 hausPlatten.push({
                     art: "platte",
@@ -5519,7 +5547,8 @@
                     y: y,
                 });
             if (hatTuer(sl) && isFinite(tu.w)) {
-                var vp = vorne(sl, tu.z - O.vorplatzM / 2);
+                var ein = eingang(sl);
+                var vp = vorne(sl, ein.z - O.vorplatzM / 2);
                 vorplaetze.push({
                     art: "platte",
                     cx: r6(ox + vp[0]),
@@ -5527,7 +5556,7 @@
                     phi: r6(sl.phi || 0),
                     ex: r6(tu.w / 2 + O.saumM),
                     ez: r6(O.vorplatzM / 2),
-                    y: r6(y + (isFinite(tu.y) ? tu.y : 0) / 2),
+                    y: r6(y + ein.y / 2),
                 });
             }
             slots.push(Object.assign({}, sl, { y: y, hang: hang }));
@@ -5537,7 +5566,7 @@
             var yl = aufY(l.x, l.z);
             return Object.assign({}, l, { y: yl === null ? r6(H(l.x, l.z)) : yl });
         });
-        return Object.assign({}, plan, {
+        var v2 = Object.assign({}, plan, {
             version: 2,
             ort: { x: ox, z: oz },
             slots: slots,
@@ -5549,6 +5578,9 @@
             // Vorplätze (die Stufe vor der Tür liegt auf allem)
             erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
         });
+        // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
+        if (wasserSlots) v2.wasserSlots = wasserSlots;
+        return v2;
     }
 
     // ── KAMIN-RAUCH (.105/.106) — Partikel-Feel als DATEN: Host + Lab lesen

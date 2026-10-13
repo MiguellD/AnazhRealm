@@ -1268,11 +1268,14 @@
     // Wirt (`_ortPlanSetzen` über seine lebende Lage), das Fachwerk-Studio (`buildDorf` über `lageGrund`) und die Linse
     // (gate:settlement Plan-Hash Studio = Welt): derselbe Export am selben Ort über derselben Lage ⇒ byte-derselbe Plan.
     // `wasserAt` (optional) nennt das Welt-Wasser für das Brücken-Etikett — der Wirt reicht sein Urteil (`_landAt`: Meer, See
-    // und Fluss), ohne ihn gilt das Meer der Lage (Höhe unter `waterLevel`).
-    function ortCtx(L, wasserAt) {
+    // und Fluss), ohne ihn gilt das Meer der Lage (Höhe unter `waterLevel`). `spiegelAt` (optional, additiv) nennt den
+    // Spiegel des Welt-Wassers an (x, z) (−Infinity ohne Wasser): ein Haus, dessen Erdbau seinen Grund unter ihn legt, steht
+    // im Wasser; ohne ihn gilt der Meeresspiegel der Lage.
+    function ortCtx(L, wasserAt, spiegelAt) {
         return {
             hoeheAt: (x, z) => hoehe(L, x, z, true),
             wasserAt: typeof wasserAt === "function" ? wasserAt : (x, z) => hoehe(L, x, z, true) < L.waterLevel,
+            spiegelAt: typeof spiegelAt === "function" ? spiegelAt : () => L.waterLevel,
             flaeche: (splats) => {
                 const E = erdbauNormal(splats);
                 return (x, z) => erdbauFlaeche(E, x, z);

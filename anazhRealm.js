@@ -28034,18 +28034,22 @@ class AnazhRealm {
     // DAS WASSER DES ERDBAUS (K10): ändert der Erdbau E (die Normalform seiner Splats) den Grund an gezeichnetem Wasser? Die
     // Regel des Zell-Stempels — ein Bau weckt den Automaten nur, wenn er eine Wasser-Zelle berührt (gate:werk-im-wasser R:
     // das Dorf am Seerand weckte ihn, ohne Wasser zu verdrängen). Je Zelle seiner Reichweite (gelaende-core `zellen`) ein
-    // 2-m-Raster: an jeder nassen Spalte (`_nassAt`) ändert E den Grund, oder eine Sim-Zelle daneben schneidet E ihn unter
-    // den Spiegel (ein Schnitt öffnet dem Wasser einen Weg; eine Schüttung neben dem Wasser verdrängt keins).
+    // 2-m-Raster: an jeder nassen Spalte (`_nassAt`) rückt E den Grund in eine andere Sim-Zelle (DIESELBEN Zellen, die der
+    // Automat liest — ein Grund, der in seiner Zelle bleibt, ändert kein Wasser), oder eine Sim-Zelle daneben schneidet E ihn
+    // eine Zelle tiefer unter den Spiegel (ein Schnitt öffnet dem Wasser einen Weg; eine Schüttung daneben verdrängt keins).
     _erdbauAmWasser(E) {
         if (!E) return false;
         const G = globalThis.__gelaendeCore;
         const Z = G.ERDBAU.zelleM;
-        const d = this._voxelChunkConfig(0).step;
+        const cfg = this._voxelChunkConfig(0);
+        const d = cfg.step;
+        const oy = (this.state.terrainBaseHeight || 0) - cfg.floorDrop;
+        const zelle = (h) => Math.floor((h - oy) / d);
         let spiegel = -Infinity;
         const aendert = (x, z, nurSchnitt) => {
             const h0 = this._terrainMacroSurfaceY(x, z, true);
             const h1 = G.erdbauY(E, x, z, h0);
-            return nurSchnitt ? h1 < h0 - 0.01 && h1 < spiegel : Math.abs(h1 - h0) > 0.01;
+            return nurSchnitt ? zelle(h1) < zelle(h0) && h1 < spiegel : zelle(h1) !== zelle(h0);
         };
         for (const key of E.zellen.keys()) {
             const a = Math.floor(key / 65536) - 32768;
@@ -28080,10 +28084,18 @@ class AnazhRealm {
         if (ple.has(key)) return ple.get(key);
         // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das vom
         // Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der Erdbau nichts
-        const ctx = globalThis.__gelaendeCore.ortCtx(this._gelaende(), (x, z) => {
-            const w = this._atlasWaterLevelAt(x, z, -1e9);
-            return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
-        });
+        const ctx = globalThis.__gelaendeCore.ortCtx(
+            this._gelaende(),
+            (x, z) => {
+                // der Fluss formt den Grund bis zu seiner Krone (`_hydroRiverAt`): sein Bett liegt im Feld unter der Höhe
+                // des Gesetzes — am Auto-Dorf −768/−886 stand der Grund 1 m unter der Platte, der Fluss im Grundriss
+                if (this._hydroRiverAt(x, z)) return true;
+                const w = this._atlasWaterLevelAt(x, z, -1e9);
+                return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
+            },
+            // der Spiegel des Gesetzes (dieselbe Frage wie `_landAt`): ein Haus, dessen Platte unter ihm liegt, fällt im Plan
+            (x, z) => this._atlasWaterLevelAt(x, z, -1e9)
+        );
         const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, ctx);
         this._erdbauSetzen(key, v2.erdbau);
         ple.set(key, v2);
