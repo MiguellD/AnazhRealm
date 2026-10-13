@@ -19,6 +19,14 @@
 //   F4 Stau-Qualifikation: ein Architektur-AABB dämmt NUR geerdet+geschlossen
 //      (beide Achsen ≥ 1 Zelle, Basis ≤ 1 Zelle überm Terrain) — Pfosten/dünne
 //      Wände/Schwebendes stauen nicht; echte Dämme stauen weiter.
+//   F5 „Weißes Treppen-Band am Ufer" (K37, Auge 13.10., Solitär-Eiche): jede
+//      Werk-Setzung am Ufer weckt den Automaten; seine Kappe lag eine Zeile
+//      über der Flut-Ruhe, die Deck-Zelle floss ab, die flache Ufer-Spalte
+//      leerte sich. Fix: die Kappe ist die oberste Flut-Zelle
+//      (`_ensureWaterCALevel`), Raum nimmt nur ein Schnitt — Ruhe bleibt Ruhe.
+//   F6 „Grube im See": eine vom Automaten geleerte Flut-Spalte zeichnete das
+//      Sheet 14 m unter dem Spiegel (die Klemme des Live-Deltas). Fix: die
+//      geleerte Spalte ist trocken (`_computeWaterSheetData`, Worker-Spiegel).
 //
 // Jede Fixture ist PURE (synthetische Arrays / direkte Funktions-Fragen) und
 // trägt ihren SELBST-TEST: der Fix wird per Quell-Patch künstlich deaktiviert
