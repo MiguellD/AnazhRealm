@@ -30997,12 +30997,13 @@ class AnazhRealm {
             nassOben[idx0] = 1;
             offen.push(idx0);
         }
-        // 4c) DIE UFER-SENKE (K37, 13.10.): grenzt eine trockene Spalte an Wasser und liegt schon die Mitte ihrer ersten freien
-        //    Zelle unter ihrem Spiegel (kein Deck-Fall), erreichte der Flood sie nie — die Nachbar-Spalte trägt ihr Wasser in der
-        //    Deck-Zelle (die nichts weiter flutet) oder ist in dieser Höhe fest. Das Sheet stand am Rand auf dem Spiegel und tauchte
-        //    über der Senke zum Anker ab: eine Wand aus Wasser über trockenem Gras (Ufer der Solitär-Eiche −751/−796: 10 Senken
-        //    1,7–2,5 m unter dem Spiegel, 9 Wand-Dreiecke, weiß im Himmel). Die Senke flutet bis zu ihrem Spiegel — nie höher als
-        //    das Wasser, an das sie grenzt — und der Flood läuft von ihr weiter. Worker bit-identisch.
+        // 4c) DIE UFER-SENKE (K37, 13.10.): grenzt eine trockene Spalte an Wasser und liegt schon die Mitte ihrer
+        //    ersten freien Zelle unter ihrem Spiegel (kein Deck-Fall), erreichte der Flood sie nie — die Nachbar-Spalte
+        //    trägt ihr Wasser in der Deck-Zelle (die nichts weiter flutet) oder ist in dieser Höhe fest. Das Sheet
+        //    stand am Rand auf dem Spiegel und tauchte über der Senke zum Anker ab: eine Wand aus Wasser über trockenem
+        //    Gras (Ufer der Solitär-Eiche −751/−796: 10 Senken 1,7–2,5 m unter dem Spiegel, 9 Wand-Dreiecke, weiß).
+        //    Die Senke flutet bis zu ihrem Spiegel — nie höher als das Wasser, an das sie grenzt — und der Flood läuft
+        //    von ihr weiter. Worker bit-identisch.
         const flutSenke = (i, k, quelle) => {
             const idx0 = i + k * dim;
             const lvl = colL[idx0];

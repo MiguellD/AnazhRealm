@@ -2449,9 +2449,9 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         nassOben[idx0] = 1;
         offen.push(idx0);
     }
-    // 4c) DIE UFER-SENKE (Mirror von `_buildVoxelChunkWaterCells` 4c, MUSS bit-identisch): eine trockene Spalte an Wasser,
-    //    deren erste freie Zelle schon unter ihrem Spiegel liegt, flutet bis zu ihrem Spiegel (nie über das Wasser, an das sie
-    //    grenzt), und der Flood läuft von ihr weiter.
+    // 4c) DIE UFER-SENKE (Mirror von `_buildVoxelChunkWaterCells` 4c, MUSS bit-identisch): eine trockene Spalte an
+    //    Wasser, deren erste freie Zelle schon unter ihrem Spiegel liegt, flutet bis zu ihrem Spiegel (nie über das
+    //    Wasser, an das sie grenzt), und der Flood läuft von ihr weiter.
     const flutSenke = (i, k, quelle) => {
         const idx0 = i + k * dim;
         const lvl = colL[idx0];
