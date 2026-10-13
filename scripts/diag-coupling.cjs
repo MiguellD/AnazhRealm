@@ -41,8 +41,8 @@ const lines = src.split("\n");
 // ── Zonen-Tabelle aus den ATLAS-§-Markern (dieselbe Wahrheit wie diag-atlas) ──
 const zones = [];
 for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^\s*\/\/ ===== ATLAS §(\d+) · ([^—]+) — .+? =====\s*$/);
-    if (m) zones.push({ id: m[1], name: m[2].trim(), startLine: i + 1 });
+    const m = lines[i].match(/^\s*\/\/ ===== ATLAS §(\d\d)([a-z]?) · ([^—]+) — .+? =====\s*$/);
+    if (m) zones.push({ id: m[1] + m[2], name: m[3].trim(), startLine: i + 1 });
 }
 for (let i = 0; i < zones.length; i++)
     zones[i].endLine = i + 1 < zones.length ? zones[i + 1].startLine - 1 : lines.length;

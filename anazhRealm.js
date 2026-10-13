@@ -10,7 +10,8 @@
  * Chaos und Ordnung, 1 und 0, Liebe und Stabilität – alles in Harmonie.
  */
 // ===== ATLAS-REGISTRY (W6, V18.174) — die Karte des EINEN Stamms =====
-// 26 Zonen in Datei-Reihenfolge; die `// ===== ATLAS §NN · NAME — Themen`-
+// 26 Zonen in Datei-Reihenfolge, 22 davon Unter-Schnitte §NNb … (Decke
+// 4 000 Zeilen je Teil); die `// ===== ATLAS §NN · NAME — Themen`-
 // Marker im Text sind die WAHRHEIT (Zeilen-Nummern leben nie hier — sie
 // rotten). `node scripts/diag-atlas.cjs` druckt die LIVE-Karte (Start/
 // Zeilen/Methoden je Zone, --find <regex> verortet eine Methode);
@@ -20,30 +21,52 @@
 // Stamm, keine Module — die Antwort auf R-032 ist NAVIGATION, kein Split).
 // §01 KERN/BOOT — Konstruktor · state-Baum · init · Szene/Renderer-Boot
 // §02 DSL/NEXUS — Ops · Sandbox · Welt-Regeln · Chat-Tore · LLM-Begleiter
+// §02b DSL/NEXUS — ab dslSelectByFitness
 // §03 MULTI-USER-MESH — WS-Broker · WebRTC · Räume · Positions-/DSL-Sync
+// §03b MULTI-USER-MESH — Block Feld
 // §04 AUDIO — Lo-Fi-Symphonie · Resonanz-Pings
 // §05 UI-GRUNDIERUNG — Drawer · Omnibox · Help-Pops · Feed-Spiegel
+// §05b UI-GRUNDIERUNG — Block Dirigent
 // §06 KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd
+// §06b KREATUREN — Block Kreatur
+// §06c KREATUREN — Block Kreatur
 // §07 CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · feld-native Kollision
 // §08 WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen
 // §09 KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten
 // §10 LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · PBR-Uniform-Sync
 // §11 VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits
+// §11b VOXEL-MESHER/WASSER — Block Gelaende
+// §11c VOXEL-MESHER/WASSER — Block Vegetation
+// §11d VOXEL-MESHER/WASSER — Block Dienst
 // §12 PERSISTENZ/TAILLE — Snapshot · Restore · IndexedDB · Ω-Zwillinge
 // §13 IDENTITÄT/WELTEN/SOZIAL — Vibe-Pass · Bibliothek/Feed · Zeugnisse · Welt-Manifest
+// §13b IDENTITÄT/WELTEN/SOZIAL — Block Werkstatt
+// §13c IDENTITÄT/WELTEN/SOZIAL — Block Dienst
 // §14 PORTALE/SUB-WELTEN — Welt-Tor · Sandbox-Shim · Ko-Präsenz · Vendor
 // §15 SPIELER-SEELEN/BEWEGUNG — Avatare · Movement/Sprung · Ritt · Hand
+// §15b SPIELER-SEELEN/BEWEGUNG — Block Siedlung
+// §15c SPIELER-SEELEN/BEWEGUNG — Block Koerper
 // §16 SUBSTANZ/BAU — Materialien · Baupläne · der EINE Builder · Verbindungen
 // §17 ARCHITEKTUR-HISM — Instancing · Welt-Spawns · Culling
+// §17b ARCHITEKTUR-HISM — Block Siedlung
+// §17c ARCHITEKTUR-HISM — Block Siedlung
 // §18 LEBENS-FELD — deposit/decay-Overlay — die Schreib-Seite des Feldes
 // §19 LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler)
 // §20 SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung
+// §20b SPAWN-ÖKOLOGIE — Block Studio
+// §20c SPAWN-ÖKOLOGIE — ab _laubLichtStoff
+// §20d SPAWN-ÖKOLOGIE — Block Vegetation
 // §21 BAU-ÖKONOMIE/ERNTE — Kosten-Tore · confirmBuild · Ernte/Abbau
 // §22 ICH/HOF-RÄUME — Equip-UI · Rezeptbuch · Hof-Bühne/Karten
 // §23 WERKSTATT — Viewer · Gizmo · Prozesse · Mach-Akte · Readout
+// §23b WERKSTATT — ab _specRenderHeader
 // §24 TAG-NACHT/HIMMEL — Sonnen-Zyklus · Wetter-Sync · Fog/Hemi · Himmelskörper
 // §25 HUD/EINSTELLUNGEN — Statusbar · Slider · Hotbar · Settings-Räume
+// §25b HUD/EINSTELLUNGEN — Block Koerper
+// §25c HUD/EINSTELLUNGEN — Block Bild
 // §26 AUSSEN-KONSTANTEN — VERSION · Tag-Schlüssel · Signatur-Tabellen · frozen Welt-Daten
+// §26b AUSSEN-KONSTANTEN — ab AnazhRealm.FOUNDRY_CACHE_CAP
+// §26c AUSSEN-KONSTANTEN — ab AnazhRealm.FOREST
 // ===== ATLAS-REGISTRY-ENDE =====
 // F1 (gigant-plan §5 — G2 REKURSION, Schnitt 3): der localStorage-SCHATTEN.
 // Im sandboxed null-origin-iframe (AnazhRealm IN AnazhRealm) wirft schon der
@@ -3352,6 +3375,7 @@ class AnazhRealm {
         return this._dslConditionsCache;
     }
 
+    // ===== ATLAS §02b · DSL/NEXUS — ab dslSelectByFitness =====
     // ### Nexus-Generator ###
     // Rekursive, gewichtete Random-Komposition; die Tiefe deckt sich mit dem Interpreter-Budget,
     // atomare Effekte dominieren (~40 % der Auswahl).
@@ -8830,6 +8854,7 @@ class AnazhRealm {
         if (typeof this._renderGuestBanner === "function") this._renderGuestBanner();
     }
 
+    // ===== ATLAS §03b · MULTI-USER-MESH — Block Feld =====
     // ### Chat → DSL ###
     // Regelbasierter Parser: welt-betreffende Befehle laufen durch dieselbe DSL wie der Nexus (Budget,
     // Outcome-Log, persistenz-fähig). System-Befehle (speichere/lade, Toggles, Debug) leben in
@@ -13786,6 +13811,7 @@ class AnazhRealm {
         return ordered.map((e) => `- [${e.type}] ${e.text}`).join("\n");
     }
 
+    // ===== ATLAS §05b · UI-GRUNDIERUNG — Block Dirigent =====
     // FPS als gleitender 1-s-Durchschnitt: ein Einzel-Frame ist vsync-gekoppelt (exakt 1/Refreshrate),
     // zeigt nur 120/60/40/30… und flackert. Kein Pro-Frame-Log (Konsolen-Flut).
     updateFps(delta) {
@@ -20032,6 +20058,7 @@ class AnazhRealm {
         return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
+    // ===== ATLAS §06b · KREATUREN — Block Kreatur =====
     // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., D16/K-D12): wild · wehrhaft · sanft · scheu aus der Ernährung der
     // Gattung (Dial diet, wie das Tier gegossen ist) und der EINEN Masse des Leibs (`_leibMasse`, kg) — tetrapoda
     // temperamentDerGattung; gecacht je Gattung × Körpergröße. Konsumenten: der Mut der Art (_kreaturMut: Leine und
@@ -21253,6 +21280,7 @@ class AnazhRealm {
         return 0.15; // L5 = +75 % Geschwindigkeit (3.0 → 5.25 m/s)
     }
 
+    // ===== ATLAS §06c · KREATUREN — Block Kreatur =====
     _getCreatureTask(creature) {
         if (!creature) return null;
         const ud = creature.userData;
@@ -35701,6 +35729,7 @@ class AnazhRealm {
         return { inWater: true, depthBelow, submerged, distToShore: bestDist, shoreDir };
     }
 
+    // ===== ATLAS §11b · VOXEL-MESHER/WASSER — Block Gelaende =====
     // Solid-Klassifikation der Architektur-Parts, UNIVERSELL: jede solide Substanz blockiert Wasser
     // (der `damm` ist eine Anwendung). Pro Part — Holz-Stamm blockiert, Laub-Krone nicht. dichte ≥ 0.3
     // schließt Laub/Federn (0.1), Glut (0.25) aus; Holz (0.4), Stein, Metall, Kristall, Erde bleiben.
@@ -38290,6 +38319,7 @@ class AnazhRealm {
         return mat;
     }
 
+    // ===== ATLAS §11c · VOXEL-MESHER/WASSER — Block Vegetation =====
     // Die Wiese ist Boden-Funktion: jede Gras-Zelle wird gras-los verbucht (null), die Halme zeichnet
     // die Parallax-Funktion im Terrain-Albedo. Keine Halm-Geometrie.
     _buildVoxelChunkGrass(cx, cz) {
@@ -41051,6 +41081,7 @@ class AnazhRealm {
         return ende - k0;
     }
 
+    // ===== ATLAS §11d · VOXEL-MESHER/WASSER — Block Dienst =====
     // ═══ DER EINE WELT-MARCH: Atlas + Feld-Liste ═══
     // Der Atlas allokiert in EINHEITEN (32³) und BLÖCKEN (2×2×2 Einheiten = 64³): ein Feld zahlt eine
     // Einheit, Region-/Bau-Felder einen Block — nichts verschwendet. Layout der Liste: s. LISTE v2.
@@ -46230,6 +46261,7 @@ class AnazhRealm {
         return { ok: true, id: reg.id, label: reg.label, fileCount: posted.fileCount, branch: posted.branch };
     }
 
+    // ===== ATLAS §13b · IDENTITÄT/WELTEN/SOZIAL — Block Werkstatt =====
     // ### Welt-Tor ###
     // Welt-Info im Welt-Drawer: Identität, Alter, Erinnerungen. Export = Save-Snapshot mit slug im
     // Dateinamen; Import = File-Picker für jeden gültigen Snapshot.
@@ -49267,6 +49299,8 @@ class AnazhRealm {
         };
         return this._uiRooms;
     }
+
+    // ===== ATLAS §13c · IDENTITÄT/WELTEN/SOZIAL — Block Dienst =====
     _uiDirty(raum) {
         if (typeof document === "undefined") return;
         const reg = this._uiRoomRegistry();
@@ -57676,6 +57710,7 @@ class AnazhRealm {
         return variants;
     }
 
+    // ===== ATLAS §15b · SPIELER-SEELEN/BEWEGUNG — Block Siedlung =====
     // LOD-Baupläne je (species, variantIndex): Keys `grown_<species>_v<idx>_lod{0|1|2}`; LOD0 routet auf
     // den bestehenden `grown_<species>_v<idx>` (keine Doppel-Registrierung), LOD1/2 on-demand. Alle
     // Stufen teilen den variantSeed (nur die Polylinien-Dichte sinkt) und die (shape, material)-Combos
@@ -60445,6 +60480,7 @@ class AnazhRealm {
         return parts;
     }
 
+    // ===== ATLAS §15c · SPIELER-SEELEN/BEWEGUNG — Block Koerper =====
     // Wind-Vektor an (x, z): deterministisch aus dem Welt-Seed (_voxelNoise), dreht sanft über
     // km-Distanzen (windScale = 1/1000). windTimeRate = 0 → statischer Wind je Welt (deterministisch).
     _worldWindDirAt(x, z, t) {
@@ -67941,6 +67977,7 @@ class AnazhRealm {
         return this._impostorLeaf(z, new THREE.Matrix4(), z.frame.halfH * 2);
     }
 
+    // ===== ATLAS §17b · ARCHITEKTUR-HISM — Block Siedlung =====
     // Bauplan flach in Leaf-Primitive auflösen (cached); nested Blueprints rekursiv mit komponierter
     // Lokal-Matrix. Nicht instanzierbar bei: water_wave-Part · Top-Level-connections · Tiefe > 4 oder
     // Zyklus. Rückgabe: { instanceable, reason, leaves:[{geom, mat, localMatrix}] }.
@@ -70160,6 +70197,7 @@ class AnazhRealm {
         return true;
     }
 
+    // ===== ATLAS §17c · ARCHITEKTUR-HISM — Block Siedlung =====
     // ═══ DER BAU-SATZ (Welle 6) ═══
     // Die Draw-Einheit des gesetzten Studio-Baus ist sein STOFF, nie seine Gestalt. Befund (echte GPU, Mess-Wiese
     // −900/−850, `werkbank band`): jede Instanz-Gruppe ist EINE Geometrie (`f:<preset>|<gestalt>|<lod>[|ov]:<teil>`), und
@@ -75729,6 +75767,8 @@ class AnazhRealm {
             }
         }
     }
+
+    // ===== ATLAS §20b · SPAWN-ÖKOLOGIE — Block Studio =====
     // DIE KÖRPER-IDENTITÄT (V18.527): ein Foundry-Körper ist (Art, Gestalt, Stufe) und — geprägt — sein ov-Hash.
     // Keine Saison: jeder Körper ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"), das Jahr
     // trägt die Uniform `uSeasonMul` (`_tickSeason`). Cache-Schlüssel, Platten-Schlüssel und leafKey-Stamm sind
@@ -78008,6 +78048,7 @@ class AnazhRealm {
         return Math.floor((g.index ? g.index.count : g.attributes.position.count) / 3);
     }
 
+    // ===== ATLAS §20c · SPAWN-ÖKOLOGIE — ab _laubLichtStoff =====
     // DAS LAUB-LICHT IM STOFF (K19): jeder Laub-Stoff der Welt (Foundry-Laub und Blatt-Karte, das Grammatik-Laub) rechnet je
     // direktem Licht den EINEN Laub-Licht-Term (phyto-core `laubDurchlass`, hier über der TSL-Algebra) in seiner Lichtung —
     // das Lichtmodell des Standard-Stoffs (r184 PhysicalLightingModel), dessen `direct` nach der Physik des Stoffs den
@@ -79789,6 +79830,7 @@ class AnazhRealm {
         }
     }
 
+    // ===== ATLAS §20d · SPAWN-ÖKOLOGIE — Block Vegetation =====
     // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
     // Positions-Tiebreak) in ±2 Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein
     // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
@@ -90298,6 +90340,7 @@ class AnazhRealm {
         );
     }
 
+    // ===== ATLAS §23b · WERKSTATT — ab _specRenderHeader =====
     // Header: die IDENTITÄT — Rolle (prominenter Chip) + die Fähigkeiten (Form-Lesart + Affordanzen),
     // rechts die Qualität als Stern-Rating. „Was ist es + wie gut".
     _specRenderHeader(panel, bp) {
@@ -96999,6 +97042,7 @@ class AnazhRealm {
         else st._fixedRenderPos.copy(mesh.position);
     }
 
+    // ===== ATLAS §25b · HUD/EINSTELLUNGEN — Block Koerper =====
     // ===== DIE HÜLLE DES GERITTENEN WAGENS (Welle L, Q5 — Befund 06.10.: im Sattel kollidierte die Reiter-Kapsel r 0,35
     // am Ursprung — der Bug stak 1,97–2,32 m im Fichtenstamm, 2,17 m in der Hauswand, 1,83 m in der Plattform, ein Bär
     // ganz im Wagen). Der Körper des Gesetz-Fahrzeugs ist seine Hülle: ein Rechteck längs der Fahrt (Bug bis Heck, ±halbe
@@ -99226,6 +99270,7 @@ class AnazhRealm {
         }
     }
 
+    // ===== ATLAS §25c · HUD/EINSTELLUNGEN — Block Bild =====
     // DIE KEHRAUS-MARKE: r184s Lebenszeit-Zähler der render()-Aufrufe (`info.render.calls` — NIE eine Frame-Metrik, die
     // liest der EINE Tap über drawCalls); `attributeCall` trägt je Attribut seinen Wert beim letzten Zeichnen, der Kehraus
     // vergleicht dagegen. Die einzige Lesung des Zählers im Stamm (gate:pipeline-constitution · gate:render-tap).
@@ -101854,6 +101899,8 @@ class AnazhRealm {
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
 AnazhRealm.VERSION = "18.544.0";
+
+// ===== ATLAS §26b · AUSSEN-KONSTANTEN — ab AnazhRealm.FOUNDRY_CACHE_CAP =====
 // Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
 // räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
 // `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
@@ -104589,6 +104636,8 @@ AnazhRealm._studioGestaltenKern = function (preset) {
     if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
     return V;
 };
+
+// ===== ATLAS §26c · AUSSEN-KONSTANTEN — ab AnazhRealm.FOREST =====
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit
 // Kronen-Schüchternheit + Arten-Nische. `crown` = Beästungsradius (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.

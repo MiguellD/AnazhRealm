@@ -23,8 +23,11 @@ const STAMM_NAME = DATEIEN.length === 1 ? DATEIEN[0] : `${DATEIEN.length} Dateie
 const src = stammLib.text(ROOT);
 const lines = src.split("\n");
 
-const MARKER_RX = /^\s*\/\/ ===== ATLAS §(\d+) · ([^—]+) — (.+?) =====\s*$/;
-const REG_RX = /^\/\/ §(\d+) ([^—]+) — (.+)$/;
+// Eine Zone trägt §NN, ihre Unter-Schnitte §NNb, §NNc … (stamm-umzug --marker / --teile): id = NN + Buchstabe.
+const MARKER_RX = /^\s*\/\/ ===== ATLAS §(\d\d)([a-z]?) · ([^—]+) — (.+?) =====\s*$/;
+const REG_RX = /^\/\/ §(\d\d)([a-z]?) ([^—]+) — (.+)$/;
+// Ordnung: die Nummer steigt streng, innerhalb einer Nummer der Buchstabe (die Zone selbst zählt als „a").
+const ordnung = (id) => Number(id.slice(0, 2)) * 32 + Math.max(0, (id.charCodeAt(2) || 97) - 96);
 const METHOD_RX =
     /^    (?:async )?(?:static (?:get )?)?([a-zA-Z_$][a-zA-Z0-9_$]*)\(.*\) \{|^    static (?:get )?([a-zA-Z_$][a-zA-Z0-9_$]*)\b/;
 
@@ -32,7 +35,7 @@ const METHOD_RX =
 const marker = [];
 lines.forEach((l, i) => {
     const m = l.match(MARKER_RX);
-    if (m) marker.push({ id: m[1], name: m[2].trim(), themen: m[3].trim(), line: i + 1 });
+    if (m) marker.push({ id: m[1] + m[2], name: m[3].trim(), themen: m[4].trim(), line: i + 1 });
 });
 
 // 2) Registry einsammeln (zwischen ATLAS-REGISTRY und -ENDE).
@@ -42,7 +45,7 @@ const registry = [];
 if (regStart >= 0 && regEnd > regStart) {
     for (let i = regStart; i < regEnd; i++) {
         const m = lines[i].match(REG_RX);
-        if (m) registry.push({ id: m[1], name: m[2].trim(), themen: m[3].trim() });
+        if (m) registry.push({ id: m[1] + m[2], name: m[3].trim(), themen: m[4].trim() });
     }
 }
 
@@ -60,7 +63,7 @@ for (let i = 0; i < n; i++) {
         );
 }
 for (let i = 1; i < marker.length; i++) {
-    if (Number(marker[i].id) <= Number(marker[i - 1].id))
+    if (ordnung(marker[i].id) <= ordnung(marker[i - 1].id))
         fehler.push(`Marker-Ordnung bricht: §${marker[i - 1].id} → §${marker[i].id} (Zeile ${marker[i].line})`);
 }
 
@@ -106,7 +109,7 @@ if (findIdx >= 0) {
 console.log(`STAMM-ATLAS — ${STAMM_NAME} (${lines.length} Zeilen, ${zonen.length} Zonen)\n`);
 for (const z of zonen) {
     console.log(
-        `  §${z.id}  ${z.name.padEnd(28)} ${String(z.line).padStart(6)}–${String(z.ende).padEnd(6)} ` +
+        `  §${z.id.padEnd(3)} ${z.name.padEnd(28)} ${String(z.line).padStart(6)}–${String(z.ende).padEnd(6)} ` +
             `${String(z.zeilen).padStart(5)} Z. ${String(z.methoden).padStart(4)} M.  ${z.themen}`
     );
 }
