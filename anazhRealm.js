@@ -59934,10 +59934,7 @@ class AnazhRealm {
         }
         if (trunkPts.length < 2) {
             trunkPts.length = 0;
-            trunkPts.push(
-                { x: 0, y: 0, z: 0, r: trunkBaseR },
-                { x: 0, y: totalH, z: 0, r: trunkBaseR * 0.2 }
-            );
+            trunkPts.push({ x: 0, y: 0, z: 0, r: trunkBaseR }, { x: 0, y: totalH, z: 0, r: trunkBaseR * 0.2 });
         }
         // LOD-Dezimierung der Stamm-Polylinie (ein Zylinder-Part je Kante; LOD1 ≤20 · LOD2 ≤10 Parts):
         // erster + letzter Punkt bleiben (Höhe/Verjüngung), dazwischen jeden n-ten.
@@ -60085,7 +60082,9 @@ class AnazhRealm {
                     material: "laub",
                     color: laubColor,
                     position: { x: a.x, y: a.y, z: a.z },
-                    size: nadel ? { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 } : { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
+                    size: nadel
+                        ? { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 }
+                        : { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
                 });
                 foliageEmitted++;
             }

@@ -489,7 +489,9 @@ function check(name, ok) {
                             const sk = r._lastTreeSkeleton;
                             r._lastTreeSkeleton = null;
                             // die Nadel-Art liest der Richter an seinen Laub-Bällen ab (Nadel y-gestreckt), der Fuß-Saum zählt nicht
-                            const baelle = (teile || []).filter((p) => p.material === "laub" && p.size.x <= p.size.y * 1.5);
+                            const baelle = (teile || []).filter(
+                                (p) => p.material === "laub" && p.size.x <= p.size.y * 1.5
+                            );
                             const ist = {
                                 hoehe: sk.totalH,
                                 rindeA: sk.barkA,
@@ -510,8 +512,10 @@ function check(name, ok) {
                             // Selbsttest: ein eingeschleuster Zwilling (die Rinde einer anderen Art) MUSS beim Namen fallen
                             if (fall === "baum_buche/k24-a/L0")
                                 o.selbst =
-                                    vergleiche(Object.assign({}, soll, { rindeA: soll.rindeA ^ 0x101010 }), soll).join() ===
-                                    "rindeA";
+                                    vergleiche(
+                                        Object.assign({}, soll, { rindeA: soll.rindeA ^ 0x101010 }),
+                                        soll
+                                    ).join() === "rindeA";
                         } catch (e) {
                             o.rot++;
                             notiere("bruch:" + ((e && e.message) || String(e)).slice(0, 60), fall);
@@ -520,7 +524,9 @@ function check(name, ok) {
             return o;
         });
         for (const k of Object.keys(RI.abw))
-            console.log("     ⟶ RICHTER " + k + ": " + RI.abw[k].length + " Fälle, z. B. " + RI.abw[k].slice(0, 3).join(" "));
+            console.log(
+                "     ⟶ RICHTER " + k + ": " + RI.abw[k].length + " Fälle, z. B. " + RI.abw[k].slice(0, 3).join(" ")
+            );
         check("K24 RICHTER Selbsttest: ein Rinden-Zwilling fällt beim Namen (rindeA)", RI.selbst === true);
         check(
             `K24 RICHTER = GESETZ: gefühlter Baum = treeParams der Art, 9 Arten × 2 Gestalten × 3 Stufen (${RI.faelle} Fälle, ${RI.rot} abweichend)`,
