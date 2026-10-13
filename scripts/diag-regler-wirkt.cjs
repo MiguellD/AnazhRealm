@@ -87,7 +87,7 @@ const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const http = require("http");
     const puppeteer = require("puppeteer");
-    const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     const MIME = { ".html": "text/html", ".js": "application/javascript", ".mjs": "application/javascript", ".json": "application/json", ".css": "text/css", ".wasm": "application/wasm", ".png": "image/png", ".woff2": "font/woff2" };
     const server = http.createServer((req, res) => {
         let p = decodeURIComponent(req.url.split("?")[0]);
@@ -101,7 +101,8 @@ async function imStamm(cb) {
         });
     });
     await new Promise((r) => server.listen(OFEN_PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     try {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(() => {

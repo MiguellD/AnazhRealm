@@ -54,7 +54,7 @@ __fachwerkCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
     (LOD1F, kein Innenleben) + FENSTER-SCHLAF + INNENDÄMMER-Liner.
   - `2` ≙ Lab „Chunk Stufe 2 · Destillat": Warm-Pfad `fragFuer(B,1)` (misst
     den wandTon, Fragment verworfen — exakt die LOD-Sonde), dann
-    `fragFuer(B,2)` — DESTNUR + KULLVOL + lod2Koerper + bandFassade.
+    `fragFuer(B,2)` — DESTNUR + KULLVOL + lod2Koerper + fensterFern (K38).
   - „Editor · voll (live)" bleibt Lab-UI; „Chunk Stufe 3 · Vogel" bleibt die
     DORF-Fernstufe (Siedlungs-Streaming) → W-A5b.
 - `ov` (optional): Parameter-Override im P-Raum (die B4-PARAMS-ids, 21 Regler
@@ -191,3 +191,25 @@ Vertrags-Akt (Studio-Welle S3 „Kosten ins Asset", Plan §3.3; Lehre 19: die Ko
 - **DIE HAUS-KARTE IST FINAL GESTRICHEN**: das Befehle-Ziel trägt seit W6 der Bau-Satz, eine Karte zeigte bei 26–64 m
   Parallaxe; die Fernstufe ist die grundriss-treue L2, jenseits 64 m die Hülle (`fernform: "huelle"`).
 - Byte-Beweis siehe den Commit des Akts (die L0/L1-Fälle und `siedlung.json` byte-gleich, die L2 neu, die Stufe 3 neu).
+
+## Nachtrag FENSTER-GESETZ (13.10.2026, K38) — das Fenster jeder Stufe
+
+Vertrags-Akt (Auge 1310 Nr. 11: die Fensterreihen der L2 und der Turm-L1 waren schwarze Bänder, tags und nachts; Linse
+`gate:haus-fern` G). Die Stufe wechselt die Kosten, nie das Material:
+
+- **DER EINE SCHLAF-WÜRFEL** (`fensterSchlaeft`: Samen, Wand-Achse, Seite, Lage längs der Wand und Höhe auf 0,25 m): der
+  Bau jeder Stufe fragt ihn — vorher würfelte nur die L1 in Lauf-Reihenfolge (nah wachten alle Fenster, ab 12 m schlief
+  fast die Hälfte; Glut L1/L0 Median 0,648).
+- **DAS FERN-FENSTER** (`fensterFern` statt `bandFassade`): je Öffnung von `H.windows` das Fenster der L0 in seinen
+  Kosten — der Rahmen als Kasten 0,10 vor der Wand (Front und die Seiten längs der Wand, der Rahmen-Stoff des Stils; das Metall des
+  Glas-Stils trägt der Stoff als Ton), die Scheibe der L0 (`w − 0,12`) mit Innenkörper und Glas, davor das Fensterkreuz;
+  ein schlafendes Fenster trägt fern seine Mischung opak im Stoff. Steht die Dachhaut der L2 vor der Wand (der Ortgang),
+  steht das Fenster vor ihr (`_hautKappen`, `_fernVorn`). Das Fern-Glas des Glas-Stils glüht nicht mehr als Körper.
+- **DER RAUM HINTER DEM GLAS** (`_innenFaktor`, L1 und L2): der gemessene Wand-Ton × `INNEN_DAEMMER` statt Putz für
+  jeden Stil; der Wand-Ton misst die Fassade VOR dem Innenkörper (er maß ihn mit: hollaendisch 0,295/0,076/0,042 →
+  0,353/0,159/0,121) — darum bewegt sich auch die Farbe der L2-Körper und der Stufe 3.
+- Budget-Zeilen (gemessen, dicht): L0 Draws 11 → 12 (das schlafende Glas), L2 Draws 3 → 4 (volle_moderne), L2 Dreiecke
+  7000 → 7250 (marokkanisch/1 7224, 31 Fenster zu 14–16 Dreiecken).
+- Byte-Beweis (Mint 13.10. abends gegen den Kern c5a4d0f8): L0 1 von 65 byte-gleich (das schlafende Glas), L1 0/64,
+  L2 0/65, Stufe 3 12/64 (der Wand-Ton); gegen den ersten K38-Mint (bd570a89) L0 65/65 byte-gleich. `ausstattung.json`
+  byte-gleich.

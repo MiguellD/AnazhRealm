@@ -142,6 +142,9 @@ async function driveImpostor(page) {
                     // die Sichthöhe je Slot = Höhe der Höhen-Stufe × Instanz-Skala (dieselbe Zahl wie der aH0-Stempel)
                     sicht: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[3]),
                     erwartetSicht: [l1.sicht * 1.1, l2.sicht * 0.9, l1.sicht * 1.2],
+                    // VOLL je Slot (das Vorzeichen): die Streu-Slots frei, die frisch gesetzte Primär-Stufe hält, bis ihre
+                    // Band-Pflege urteilt (K36, `_lodSlotVoll`)
+                    voll: [false, false, r._lodSlotVoll(entry)],
                     instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
                     vertexPuffer: puffer,
                     attribute: geo ? Object.keys(geo.attributes) : [],
@@ -177,7 +180,10 @@ async function driveImpostor(page) {
                 if ((window.__impostorRttBaked || 0) > out.rttBaked) break;
             }
             out.rttBakedAfter = (typeof window !== "undefined" && window.__impostorRttBaked) || 0;
-            out.rttErrorAfter = (typeof window !== "undefined" && window.__impostorRttError) || null;
+            // der Bruch der Karte steht beim Namen im Log (`_stoffBruch`, K22); hier zählt der Zensus die gescheiterten
+            const cz = r._impostorCensus && r._impostorCensus();
+            out.rttErrorAfter =
+                cz && cz.gescheitert ? `gescheitert ${cz.gescheitert} (${cz.gescheitertArten.join(", ")})` : null;
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -224,7 +230,7 @@ async function kleberProbe(page, fmtWunsch) {
             r.state.foundryCrossfade = prevCf;
             out.billboard = !!(mat && mat.userData && mat.userData.impostorBillboard);
             if (!out.billboard) {
-                out.err = "Impostor-TSL-Wiring fehlgeschlagen: " + (window.__impostorAtlasError || "unbekannt");
+                out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
                 return out;
             }
             // (1) die synthetische Studio-Karte: Albedo linear, links oben opak; Normale zur Kamera
@@ -458,9 +464,12 @@ function strichWand(src) {
                 errs.push(`A: aKarte.x je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
             const rOk = G.rahmen.every((v, i) => Math.abs(v - G.erwartetRahmen[i]) < 1e-5);
             if (!rOk) errs.push(`A: aKarte.yz je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
-            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv
-            const sOk = G.sicht.every((v, i) => v > 0 && Math.abs(v - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i]));
-            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ${JSON.stringify(G.erwartetSicht)} (Sichthöhe × Skala)`);
+            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv,
+            // VOLL (verdeckt, Brücke, die Stufe im Halt — K36) = negativ
+            const sOk = G.sicht.every(
+                (v, i) => v < 0 === G.voll[i] && Math.abs(Math.abs(v) - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i])
+            );
+            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
     if (A.vereinigung) {

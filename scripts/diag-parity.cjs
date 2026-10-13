@@ -383,7 +383,10 @@ async function renderAnazh() {
                 baked: ((window.__impostorRttBaked || 0) | 0) - n0,
                 queueVorher: qLen0,
                 records: recs0,
-                err: window.__impostorRttError || null,
+                err: (() => {
+                    const cz = r._impostorCensus && r._impostorCensus();
+                    return cz && cz.gescheitert ? `gescheitert ${cz.gescheitert}` : null;
+                })(),
             };
         });
         console.log("ANAZH Impostor-RTT gebacken:", JSON.stringify(baked));

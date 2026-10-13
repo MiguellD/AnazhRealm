@@ -10,7 +10,10 @@
 //       JEDEN Frame (Zeit-Boden), Deko (prio ≥ 2) jeden 4. Frame;
 //   (b) eine gefüllte pendingWaterIso-Queue SCHRUMPFT unter leerem Budget;
 //   (c) SELBST-TEST: prio-2-Jobs laufen bei leerem Budget NICHT auf
-//       Nicht-4er-Frames (der Boden ist ein Boden, keine Aufhebung).
+//       Nicht-4er-Frames (der Boden ist ein Boden, keine Aufhebung);
+//   (d) K40 DER DAUER-STROM: baut jeder Takt Terrain, läuft das Innere der Deko trotzdem jeden 4. Takt
+//       (`_dekoWartet`; vorher 0 von 8 — auf dem Radeon blieb die Nah-Wiese über vier Umzüge am alten Ort);
+//   (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst bleibt).
 //   node scripts/diag-existenz-boden.cjs   (npm run gate:existenz-boden)
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
@@ -119,6 +122,34 @@ function check(name, ok, detail) {
             let sondeLief = false;
             r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
             res.selbstTestBodenIstBoden = sondeLief === false;
+            // (d) DER DAUER-STROM (K40): baut JEDER Takt Terrain (auf dem Radeon nach jedem Umzug 160 von 160 Takten), trägt
+            // die Deko trotzdem ihren Boden — ihr Inneres (der Scatter-Takt) läuft jeden 4. Takt, auch bei vollem Budget.
+            // Der Dispatcher zählt den Job als gelaufen, auch wenn er innen wartet: gezählt wird das Innere.
+            const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
+            const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
+            const altStrom = r._tickVoxelChunkStreaming;
+            const altDeko = r._tickScatterStreaming;
+            let innen = 0;
+            r._tickVoxelChunkStreaming = () => 1;
+            r._tickScatterStreaming = () => {
+                innen++;
+            };
+            const voll = { remainingMs: () => 16 };
+            try {
+                r._schedFrameNo = 0;
+                for (let i = 0; i < 8; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+                res.dauerStromDeko = innen;
+                // (e) SELBST-TEST: auf einem Nicht-4er-Takt mit Terrain-Bau wartet das Innere (Terrain zuerst bleibt)
+                innen = 0;
+                r._schedFrameNo = 1;
+                r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+                res.terrainZuerst = innen === 0;
+            } finally {
+                if (alt.strom) r._tickVoxelChunkStreaming = altStrom;
+                else delete r._tickVoxelChunkStreaming;
+                if (alt.deko) r._tickScatterStreaming = altDeko;
+                else delete r._tickScatterStreaming;
+            }
             return res;
         });
     } catch (e) {
@@ -142,7 +173,19 @@ function check(name, ok, detail) {
         `(b) die Wasser-Queue SCHRUMPFT unter leerem Budget (${out.queueVor} → ${out.queueNach})`,
         out.queueNach < out.queueVor
     );
-    check("SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)", out.selbstTestBodenIstBoden);
+    check(
+        "SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)",
+        out.selbstTestBodenIstBoden
+    );
+    check(
+        "(d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt (nie verhungert)",
+        out.dauerStromDeko >= 2,
+        `${out.dauerStromDeko} von 8 Takten`
+    );
+    check(
+        "(e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)",
+        out.terrainZuerst === true
+    );
     check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
 
     if (errs.length) {
