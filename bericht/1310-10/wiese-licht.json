@@ -1,0 +1,92 @@
+{
+ "sonnenRichtung": [
+  0,
+  0.962,
+  0.272
+ ],
+ "lichter": {
+  "AmbientLight": {
+   "intensitaet": 0.011,
+   "farbe": "1/1/1"
+  },
+  "DirectionalLight": {
+   "intensitaet": 7.433,
+   "farbe": "1/0.947/0.834"
+  },
+  "HemisphereLight": {
+   "intensitaet": 0,
+   "farbe": "0.159/0.376/0.694"
+  }
+ },
+ "alle": {
+  "oben": {
+   "L": "0/0/0",
+   "E": 0
+  },
+  "zurSonne": {
+   "L": "0/0/0",
+   "E": 0
+  },
+  "vonSonne": {
+   "L": "0/0/0",
+   "E": 0
+  }
+ },
+ "umgebung": {
+  "oben": {
+   "L": "0.101/0.135/0.162",
+   "E": 2.26
+  },
+  "zurSonne": {
+   "L": "0.104/0.137/0.154",
+   "E": 2.29
+  },
+  "vonSonne": {
+   "L": "0.104/0.137/0.154",
+   "E": 2.29
+  }
+ },
+ "AmbientLight": {
+  "oben": {
+   "L": "0.001/0.001/0.001",
+   "E": 0.01
+  },
+  "zurSonne": {
+   "L": "0.001/0.001/0.001",
+   "E": 0.01
+  },
+  "vonSonne": {
+   "L": "0.001/0.001/0.001",
+   "E": 0.01
+  }
+ },
+ "DirectionalLight": {
+  "oben": {
+   "L": "0.433/0.41/0.361",
+   "E": 7.18
+  },
+  "zurSonne": {
+   "L": "0.126/0.12/0.105",
+   "E": 2.1
+  },
+  "vonSonne": {
+   "L": "0/0/0",
+   "E": 0
+  }
+ },
+ "HemisphereLight": {
+  "oben": {
+   "L": "0/0/0",
+   "E": 0
+  },
+  "zurSonne": {
+   "L": "0/0/0",
+   "E": 0
+  },
+  "vonSonne": {
+   "L": "0/0/0",
+   "E": 0
+  }
+ },
+ "ms": 829
+}

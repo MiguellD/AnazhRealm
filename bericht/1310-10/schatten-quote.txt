@@ -1,0 +1,3 @@
+{"blick":"wiese","pixel":1958,"anteilBoden":0.002,"linearQuote":0.469,"lumaMit":78.5,"lumaOhne":115.6,"lumaQuote":0.679}
+{"blick":"birke","pixel":16232,"anteilBoden":0.014,"linearQuote":0.549,"lumaMit":81.1,"lumaOhne":116.4,"lumaQuote":0.697}
+{"blick":"ankunft","pixel":106,"anteilBoden":0,"linearQuote":0.521,"lumaMit":51.7,"lumaOhne":71.6,"lumaQuote":0.722}
