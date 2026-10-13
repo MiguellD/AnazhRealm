@@ -10,7 +10,7 @@ sitzt am Wirt (`_foundryFluegelInstanz`); die Drehung bleibt eine Instanz-Matrix
 - Der erste Weg ist verworfen: alle Flügel eines Stoffs zu EINEM Zug, die Drehung in der Geometrie. Er brachte im Stand −0,4 ms,
   gehend aber +2,9 ms.
 
-Schnitt: **welle-m-e-fluegel 6f264611** `[ci voll]` (ab welle-m-e-genesis d180e3d6).
+Schnitt: **welle-m-e-fluegel 6f264611 + 46d49ac9** `[ci voll]` (ab welle-m-e-genesis d180e3d6).
 
 ## Der Befund am Wirt
 
@@ -89,7 +89,14 @@ Je EXIT=0 (`1310-4/waende.txt`):
 - gate:portal-membran (mit den zwei neuen F-Prüfungen), gate:portal-gestalt, gate:freie-slots;
 - gate:haus-fern, gate:haus-welt (Haus-Türen laufen durch denselben Tick), playtest:fast 22/0.
 
-CI: Lauf 38454550049 auf 6f264611 (`[ci voll]`) läuft.
+CI:
+- Lauf 38454550049 auf 6f264611 war rot in Gruppe 6, gate:sippen-wirt. Das Budget-Gesetz zählte je Flügel einen Draw (Tor 13), der
+  Wirt zeichnet 9.
+- Der Nachtrag **46d49ac9** setzt die EINE Regel ins Gesetzbuch: phyto-core `budgetGestaltVersatz`. `budgetSippen` und die
+  Faltung zählen in der Einheit des Wirts, `_geoVerschoben` ruft die Regel.
+- Die Tor-Zeile `gate[0].draws` geht 13 → 9 bei gleicher Faltung (render-config per MINT_NUR_DATEN, asset-contract 128/128
+  byte-gleich); portal-gestalt zählt Züge statt Slots (`1310-4/../p3`-Wände waende3: alle grün).
+- **Lauf 38463803387 auf 46d49ac9: grün, 13/13.**
 
 ## Pflicht-OFFEN Rest
 
@@ -102,6 +109,6 @@ CI: Lauf 38454550049 auf 6f264611 (`[ci voll]`) läuft.
 
 ## Status ZWISCHENSTAND + Übergabe
 
-- Branch welle-m-e-fluegel, Kopf 6f264611, gepusht `[ci voll]`, Arbeitsbaum sauber.
+- Branch welle-m-e-fluegel, Kopf 46d49ac9, gepusht `[ci voll]`, Arbeitsbaum sauber.
 - Werkzeug `p3/fluegel`: `sitzung3.sh`, `schalter2.cjs`, `gehen2.cjs`, `gleich.cjs`, `offen.cjs`, `blick.cjs`, `auswertung.cjs`.
 - 1310-2 (V18.544-ABAB) hat Vorrang, sobald der Kopf gemeldet ist.
