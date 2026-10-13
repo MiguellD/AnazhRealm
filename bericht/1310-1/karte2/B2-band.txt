@@ -1,0 +1,62 @@
+BAND ROT: Befehle 161/208 (0.77×) · Dreiecke 696k/680k (1.02×) · VRAM MB 125.3/118 (1.06×) · GPU ms/Frame 44.4/16.7 (2.66×)
+ORT genesis — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1          260k/200k !bodenSatz 3 · fern-ring 3 · farWater 1 · wasserSatz 1
+streu                         2/9          2/0/0             5k/40k  streuSatz 2
+nahWiese                      3/4          3/0/0             1k/80k  nahWiese:L2 2 · nahWiese:L1 1
+karten                        1/1          1/0/0             844/1k  fimp:atlas:L2 1
+baum                        20/40         12/8/0           33k/150k  f:tanne:L1 6 · f:fichte:L1 4 · f:birke:L1 4 · fscatter:tanne:L1 3
+busch                         0/8          0/0/0              0/40k  
+tier*                        0/30          0/0/0              0/60k  
+bau                         98/40        76/21/1           252k/60k !bauSatz 28 · f:drachentor:L0 8 · f:maurentor:L0 8 · f:verkalkt:L0 8
+    bauSatz k0: f:kathedrale:L0 2 Zellen = 7 380 · f:geisttor:L0 2 Zellen = 2 132
+    bauSatz haupt: f:drachentor:L0 5 Zellen = 42 112 · f:maurentor:L0 5 Zellen = 26 690 · f:alemannisch:L1 4 Zellen = 19 062 · f:maschine:L0 6 Zellen = 18 768
+    bauWurf k0: f:verkalkt:L3 1 Zellen = 7 632 · f:maurentor:L3 1 Zellen = 5 768 · f:drachentor:L3 2 Zellen = 3 536 · f:ruine:L3 1 Zellen = 2 944
+    bauWurf k1: f:feuerstelle:L3 2 Zellen = 48
+formationen                  5/20          2/2/1            17k/30k  formationenSatz 5
+    formationenSatz k0: f:zacken:L0 26 Zellen = 8 320 · f:kristalle:L0 1 Zellen = 440
+    formationenSatz k1: f:zacken:L0 3 Zellen = 960
+    formationenSatz haupt: f:zacken:L0 20 Zellen = 6 400 · f:kristalle:L0 1 Zellen = 440
+einzelstuecke               24/25         14/8/2           127k/15k !dsl-insel 7 · spieler 5 · portal-membran 4 · portal-nebel 4
+reserve                      0/19          0/0/0               0/4k  
+SUMME                     161/208       116/40/5          696k/680k  Abstand 0.77× Befehle · 1.02× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+SOLL Tor-Hülle f:maurentor:L0: 11160 Dreiecke je Exemplar (1 im Bild) / 60000 (0.19×)
+SOLL Tor-Hülle f:kathedrale:L0: 11160 Dreiecke je Exemplar (1 im Bild) / 60000 (0.19×)
+SOLL Tor-Hülle f:ruine:L0: 9960 Dreiecke je Exemplar (1 im Bild) / 60000 (0.17×)
+SOLL Tor-Hülle f:drachentor:L0: 8984 Dreiecke je Exemplar (2 im Bild) / 60000 (0.15×)
+SOLL Tor-Hülle f:verkalkt:L0: 8944 Dreiecke je Exemplar (1 im Bild) / 60000 (0.15×)
+SOLL Tor-Hülle f:maschine:L0: 8752 Dreiecke je Exemplar (1 im Bild) / 60000 (0.15×)
+SOLL Tor-Hülle f:geisttor:L0: 4360 Dreiecke je Exemplar (1 im Bild) / 60000 (0.07×)
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 125.3 MB / Band 118 MB (1.06×) — je Erzeuger:
+     40.3 MB  935   buf:szene  (bodenSatz · bauSatz · spieler)
+     19.8 MB  2     tex:TRAANode.history
+     15.8 MB  1     tex:TRAANode.resolve
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.9 MB  1     tex:output
+      7.9 MB  1     tex:depth
+      4.0 MB  2     tex:szene
+      4.0 MB  2     tex:wege-karte
+      2.7 MB  1     tex:karte-albedo
+      1.9 MB  1     tex:feld-pass-panorama
+      1.3 MB  1     tex:karte-normal
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+      0.7 MB  1     tex:laub-cluster-atlas
+      0.5 MB  1     tex:welt-march-liste
+      0.5 MB  2     tex:kronen-streu
+      0.3 MB  1     tex:welt-march-kapseln
+
+erst-Boot, Ladung 1 · eingeschwungen nach 40 Takten (2 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 177 Antworten 42.1 MB — von der Platte 5 (0.2 MB), Neubau 41.9 MB
+
+BAND ROT: Befehle 161/208 (0.77×) · Dreiecke 696k/680k (1.02×) · VRAM MB 125.3/118 (1.06×) · GPU ms/Frame 44.4/16.7 (2.66×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)
+  [ratsche] einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 104/2048
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\tor\satz\daten\B2-band.json

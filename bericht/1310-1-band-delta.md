@@ -159,6 +159,28 @@ Die Seiten:
 - Main trägt dieselbe Lotterie. An dieser Genesis stand main zufällig richtig (`@global` vorn). Ein main-Boot mit `@wahl` vorn
   kostet 4,6 fps (s4). Mit dem Schnitt gilt EINE Reihe für jeden Boot und jeden Ort.
 
+## 7. Karte (2), Versuch 1: die Tore in den Bau-Satz — verworfen (`1310-1/karte2/`)
+
+- **Der Versuch:** `BAU_SATZ.gate = "bauSatz"` auf dem Zweig welle-m-e-torsatz ab 198e80f3. Die Tor-Leaves teilen über alle
+  Tore wenige Host-Stoffe (ids 171/172/178); die Flügel (`leaf.tuer`) bleiben Instanz-Gruppen.
+- **Erster Bruch, laut:** `_satzBlock(f:verkalkt|1|3:0#S): kein Index`. Die Stufe-3-Hülle (porta-core `huelleGeometrie`)
+  war eine Dreiecks-Suppe mit 60 Ecken je Sechskant-Kapsel statt 12. Indiziert gebaut (gleiche Dreiecke, gleiche
+  Reihenfolge) läuft der Satz.
+- **Ergebnis an der Genesis** (B2 gegen A1 torwurf, je ein Boot):
+  - Befehle 172 → 161 (bauSatz 28; drachentor/maurentor/verkalkt tragen je noch 8 Flügel-Züge);
+  - **GPU 44,4 ms/Frame statt 18,8, 22,4 fps statt 51.**
+- **Im Bild** (`A1-torwurf-ring.png` gegen `B2-torsatz-ring.png`) erscheinen die steinernen Rahmen weiß durchscheinend,
+  die Portal-Nebel scheinen durch.
+  - Vermutete Klasse: Der Satz trägt den Stempel „einzige Nah-Stufe“ der Tore nicht (KETTE OHNE PARTNER, aLodLevel 3), und
+    die L0 blendet ab 8 m × Perf aus.
+  - Nicht bewiesen, nicht weiter vermessen (Budget).
+- **Urteil:** Der Satz-Weg zahlt sich für die Tore nicht aus. 8 der 13 Züge je Tor sind Flügel (4 Flügel × 2 Stoffe), die
+  wandern und im Satz nie liegen.
+  - An der Genesis liegen die Befehle mit 172 schon unter dem Soll 208. Der offene E-Punkt dort ist CPU-Takt p95 (7,2 > 5,8).
+  - Der Hebel der 13 Züge ist der Flügel: EIN Zug je Stoff für alle Flügel eines Tors, mit der Drehung je Flügel als
+    Vertex-Index statt als Instanz-Matrix. Das ist ein Wirts-Schnitt, kein Satz-Eintrag.
+- Der Versuch liegt als Patch vor (`versuch-1.diff`). Der Zweig welle-m-e-torsatz steht unverändert auf 198e80f3.
+
 ## Pflicht-OFFEN Rest
 
 - CI-Gruppe 3: `gate:hitch-telemetrie` rot nach 14 min, lokal grün vor und nach dem Schnitt — Job-Log lesen, neu starten.

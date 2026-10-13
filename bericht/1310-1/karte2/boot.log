@@ -1,0 +1,40 @@
+13:56:57 A1 bereit 198e80f3 0 geändert · anazhRealm.js 714da48a89084c8e
+13:58:09 A1 lauf "fps": 51 · BAND ROT: Befehle 172/208 (0.83×) · Dreiecke 706k/680k (1.04×) · VRAM MB 122.3/118 (1.04×) · GPU ms/Frame 18.81/16.7 (1.13×)
+13:58:09 A1 bau bau 109/40 82/26/1 255k/60k !f:drachentor:L0 13 · f:maurentor:L0 13 · f:maschine:L0 10 · f:kathedrale:L0 9
+13:58:18 A1 ring    { "kamera": [ 36, 54.14, 0 ], "hell": 86.7, "kontrast": 1.07, "dc": 123, "dreiecke": 496912, "ms": 488, "datei
+13:58:20 A1 nah     { "kamera": [ 13, 46.06, 2 ], "hell": 59.2, "kontrast": 1.7, "dc": 87, "dreiecke": 274399, "ms": 435, "datei":
+13:58:23 A1 seite   { "kamera": [ 4, 67.64, 22 ], "hell": 108.2, "kontrast": 2.01, "dc": 99, "dreiecke": 390641, "ms": 439, "datei
+13:58:25 A1 hoch    { "kamera": [ 40, 73.28, 18 ], "hell": 96.6, "kontrast": 4.41, "dc": 130, "dreiecke": 536907, "ms": 431, "date
+13:58:52 A1 fern    { "kamera": [ 75, 52.26, 30 ], "hell": 86.6, "kontrast": 2.27, "dc": 118, "dreiecke": 503772, "ms": 485, "date
+13:58:52 A1 gpu-fehler { "ergebnis": "0 []", "ms": 2}
+13:58:58 A1 ENDE
+13:59:11 B1 bereit 198e80f3 1 geändert · anazhRealm.js d0bc003b38803421
+14:00:17 B1 lauf "fps":  · {
+14:00:18 B1 bau 
+14:00:18 B1 ring    { "fehler": "_satzBlock(f:verkalkt|1|3:0#S): kein Index", "ms": 10}
+14:00:19 B1 nah     { "fehler": "_satzBlock(f:verkalkt|1|3:0#S): kein Index", "ms": 15}
+14:00:19 B1 seite   { "fehler": "_satzBlock(f:verkalkt|1|3:0#S): kein Index", "ms": 14}
+14:00:19 B1 hoch    { "fehler": "_satzBlock(f:verkalkt|1|3:0#S): kein Index", "ms": 16}
+14:00:19 B1 fern    { "fehler": "_satzBlock(f:verkalkt|1|3:0#S): kein Index", "ms": 16}
+14:00:20 B1 gpu-fehler { "ergebnis": "0 []", "ms": 2}
+14:00:26 B1 ENDE
+14:00:43 A2 bereit 198e80f3 0 geändert · anazhRealm.js 714da48a89084c8e
+14:01:55 A2 lauf "fps": 50.5 · BAND ROT: Befehle 172/208 (0.83×) · Dreiecke 699k/680k (1.03×) · VRAM MB 122.5/118 (1.04×) · GPU ms/Frame 19.46/16.7 (1.17×)
+14:01:55 A2 bau bau 109/40 82/26/1 255k/60k !f:drachentor:L0 13 · f:maurentor:L0 13 · f:maschine:L0 10 · f:kathedrale:L0 9
+14:02:05 A2 ring    { "kamera": [ 36, 54.14, 0 ], "hell": 86.7, "kontrast": 1.07, "dc": 123, "dreiecke": 496936, "ms": 502, "datei
+14:02:07 A2 nah     { "kamera": [ 13, 46.06, 2 ], "hell": 59.2, "kontrast": 1.7, "dc": 87, "dreiecke": 274399, "ms": 434, "datei":
+14:02:10 A2 seite   { "kamera": [ 4, 67.64, 22 ], "hell": 108.1, "kontrast": 2.01, "dc": 99, "dreiecke": 390665, "ms": 438, "datei
+14:02:12 A2 hoch    { "kamera": [ 40, 73.28, 18 ], "hell": 97.8, "kontrast": 4.39, "dc": 130, "dreiecke": 536931, "ms": 426, "date
+14:02:39 A2 fern    { "kamera": [ 75, 52.26, 30 ], "hell": 86.8, "kontrast": 2.29, "dc": 118, "dreiecke": 503796, "ms": 479, "date
+14:02:39 A2 gpu-fehler { "ergebnis": "0 []", "ms": 2}
+14:02:45 A2 ENDE
+14:02:57 B2 bereit 198e80f3 2 geändert · anazhRealm.js d0bc003b38803421
+14:04:15 B2 lauf "fps": 22.4 · BAND ROT: Befehle 161/208 (0.77×) · Dreiecke 696k/680k (1.02×) · VRAM MB 125.3/118 (1.06×) · GPU ms/Frame 44.4/16.7 (2.66×)
+14:04:15 B2 bau bau 98/40 76/21/1 252k/60k !bauSatz 28 · f:drachentor:L0 8 · f:maurentor:L0 8 · f:verkalkt:L0 8
+14:04:37 B2 ring    { "kamera": [ 36, 54.14, 0 ], "hell": 99.3, "kontrast": 1.71, "dc": 117, "dreiecke": 490256, "ms": 1309, "date
+14:04:38 B2 nah     { "kamera": [ 13, 46.06, 2 ], "hell": 59.2, "kontrast": 1.7, "dc": 82, "dreiecke": 261647, "ms": 442, "datei":
+14:04:41 B2 seite   { "kamera": [ 4, 67.64, 22 ], "hell": 108.2, "kontrast": 2.01, "dc": 104, "dreiecke": 417799, "ms": 424, "date
+14:04:43 B2 hoch    { "kamera": [ 40, 73.28, 18 ], "hell": 98.6, "kontrast": 4.34, "dc": 125, "dreiecke": 535573, "ms": 565, "date
+14:05:10 B2 fern    { "kamera": [ 75, 52.26, 30 ], "hell": 86.9, "kontrast": 2.29, "dc": 136, "dreiecke": 666010, "ms": 442, "date
+14:05:10 B2 gpu-fehler { "ergebnis": "0 []", "ms": 2}
+14:05:16 B2 ENDE

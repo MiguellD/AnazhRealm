@@ -1,0 +1,65 @@
+diff --git a/anazhRealm.js b/anazhRealm.js
+index e3d77f50..496413c9 100644
+--- a/anazhRealm.js
++++ b/anazhRealm.js
+@@ -102036,6 +102036,7 @@ AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, st
+ AnazhRealm.BAU_SATZ = Object.freeze({
+     haus: "bauSatz",
+     ausstattung: "bauSatz",
++    gate: "bauSatz",
+     rock: "formationenSatz",
+     boulder: "formationenSatz",
+     scree: "formationenSatz",
+diff --git a/porta-core.js b/porta-core.js
+index 651720f5..f6948955 100644
+--- a/porta-core.js
++++ b/porta-core.js
+@@ -459,18 +459,25 @@
+         }
+     }
+     // DAS GITTER DER LISTE (die Stufe 3): Kasten 12 Dreiecke, Kapsel ein `seiten`-Prisma mit flachen Kappen (es endet an a und b
+-    // wie die Röhre, deren Wurf es trägt; die Spitzen standen r über jedes Röhren-Ende hinaus) — EIN Mesh.
++    // wie die Röhre, deren Wurf es trägt; die Spitzen standen r über jedes Röhren-Ende hinaus) — EIN Mesh, INDIZIERT: je Teil
++    // seine Ecken einmal (Kasten 8, Kapsel 2·seiten), die Dreiecke in derselben Reihenfolge über den Index. Der Bau-Satz des
++    // Wirts (`bauWurf`) nimmt nur indizierte Gitter (Karte (2), 13.10.: die Suppe trug je Kapsel 60 Ecken statt 12 in jede
++    // Kaskade); das Gitter wirft nur, seine Normalen liest kein Bild.
+     function huelleGeometrie(teile) {
+-        var pos = [];
++        var pos = [], idx = [], ecke = 0;
++        var V0 = function (p) {
++            pos.push(p[0], p[1], p[2]);
++            return ecke++;
++        };
+         var tri = function (a, b, c) {
+-            pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
++            idx.push(a, b, c);
+         };
+         for (var i = 0; i < teile.length; i++) {
+             var t = teile[i];
+             if (t.art === "box") {
+                 var c = t.c, h = t.h, F = [[0, 2, 3, 1], [4, 5, 7, 6], [0, 4, 6, 2], [1, 3, 7, 5], [0, 1, 5, 4], [2, 6, 7, 3]];
+                 var V = [];
+-                for (var k = 0; k < 8; k++) V.push([c[0] + (k & 1 ? h[0] : -h[0]), c[1] + (k & 2 ? h[1] : -h[1]), c[2] + (k & 4 ? h[2] : -h[2])]);
++                for (var k = 0; k < 8; k++) V.push(V0([c[0] + (k & 1 ? h[0] : -h[0]), c[1] + (k & 2 ? h[1] : -h[1]), c[2] + (k & 4 ? h[2] : -h[2])]));
+                 for (var f = 0; f < 6; f++) {
+                     tri(V[F[f][0]], V[F[f][1]], V[F[f][2]]);
+                     tri(V[F[f][0]], V[F[f][2]], V[F[f][3]]);
+@@ -484,8 +491,8 @@
+                 var w = ax.clone().cross(u), n = HUELLE_GESETZ.seiten, RA = [], RB = [];
+                 for (var s = 0; s < n; s++) {
+                     var a = (s / n) * Math.PI * 2, cs = Math.cos(a) * t.r, sn = Math.sin(a) * t.r;
+-                    RA.push([A.x + u.x * cs + w.x * sn, A.y + u.y * cs + w.y * sn, A.z + u.z * cs + w.z * sn]);
+-                    RB.push([B.x + u.x * cs + w.x * sn, B.y + u.y * cs + w.y * sn, B.z + u.z * cs + w.z * sn]);
++                    RA.push(V0([A.x + u.x * cs + w.x * sn, A.y + u.y * cs + w.y * sn, A.z + u.z * cs + w.z * sn]));
++                    RB.push(V0([B.x + u.x * cs + w.x * sn, B.y + u.y * cs + w.y * sn, B.z + u.z * cs + w.z * sn]));
+                 }
+                 // die Kappen nur an den Enden einer Kette: ein Glied, dessen Nachbar am selben Punkt anschließt, trägt dort keine
+                 // (die Kappe läge im Nachbar-Glied) — die Liste trägt die Ketten in ihrer Reihenfolge
+@@ -506,6 +513,7 @@
+         }
+         var geo = new THREE.BufferGeometry();
+         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
++        geo.setIndex(idx);
+         geo.computeVertexNormals();
+         return geo;
+     }
