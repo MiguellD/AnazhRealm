@@ -34922,7 +34922,8 @@ class AnazhRealm {
     // LAND neben einem Körper (3×3) → dessen Spiegel, wenn `terrainTopY < rim` (Mulde bis zum Terrain
     // gefüllt, keine Ufer-Wand), sonst trocken. `terrainTopY` reicht der Aufrufer (Density-Grid bzw.
     // `_voxelSurfaceY`); Rückgabe -Infinity = „hier nie Wasser".
-    _atlasWaterLevelAt(x, z, terrainTopY) {
+    // `aus` (optional) bekommt den Spiegel der Wasser-KÖRPER ohne den Fluss: `aus.koerper` (Meer, See; −Infinity = keiner).
+    _atlasWaterLevelAt(x, z, terrainTopY, aus) {
         let level = -Infinity;
         let inRegion = false;
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -34976,6 +34977,7 @@ class AnazhRealm {
             const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
             level = waterLevel;
         }
+        if (aus) aus.koerper = level;
         const river = this._hydroRiverAt(x, z);
         if (river && river.surfaceY > level) {
             // Auch beim Fluss: `_hydroRiverAt` trifft die volle Carve-Breite inkl. Bank-Rampe, deren surfaceY
@@ -39259,8 +39261,12 @@ class AnazhRealm {
     // Sommer-Konstante neben dem Studio-Laub (ohne Art, ohne Saison) ist gefallen. Die Saison legt der Leser auf.
     // `fuss` (optional, `_fernFarbeMasche`): die Masche, für die der Punkt steht — dann das Mittel über sie. `fussM` (die
     // Abtastung einer Masche): ihre Kante in Metern — die Nische trägt darunter das Mosaik-Mittel (phyto-core `forestNische`).
+    // DAS WASSER DES FLUSSES (K16): die Masche (oder der Punkt ohne Abtastung) trägt den Anteil, den der Fluss deckt
+    // (`_fernFlussDeckung`), als Wasser-Farbe ohne Krone — dieselbe Farbe, die ein nasser Ring-Punkt trägt.
     _fernFarbeTeile(x, y, z, out, fuss, fussM) {
-        if (fuss) return this._fernFarbeMasche(x, y, z, out, fuss);
+        if (fuss)
+            return this._fernFlussFarbe(x, z, this._fernFarbeMasche(x, y, z, out, fuss), Math.max(fuss.ht, fuss.hr));
+        if (fussM === undefined) return this._fernFlussFarbe(x, z, this._fernFarbeTeile(x, y, z, out, null, 0), 0);
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (
             !core ||
@@ -39774,10 +39780,12 @@ class AnazhRealm {
 
     // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
     // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (`_gewaesserForm`: Kanal, Damm, See-Becken),
-    // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer, See, Fluss; jenseits der Kacheln der
+    // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer und See; jenseits der Kacheln der
     // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
-    // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Bis K16 nässte jeder Fern-Leser (Ring, Kronen-Karte, Feld-
-    // Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
+    // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Der FLUSS taucht keinen Punkt: sein Kanal (4–17 m) ist
+    // schmaler als die Masche der Ferne, sein Wasser trägt die Fern-Farbe als Anteil der Masche (`_fernFlussDeckung`) —
+    // ein getauchter Punkt riss Gruben in den Ring (Werkbank 13.10.). Bis K16 nässte jeder Fern-Leser (Ring, Kronen-Karte,
+    // Feld-Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
     _fernNass(x, z, law, wl, aus) {
         const h = this.state.hydrosphere;
         if (!h || !h.ready || this._hydroComputing) {
@@ -39787,8 +39795,29 @@ class AnazhRealm {
         }
         const y = AnazhRealm._gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
         aus.y = y;
-        aus.spiegel = this._atlasWaterLevelAt(x, z, y);
+        this._atlasWaterLevelAt(x, z, y, aus);
+        aus.spiegel = aus.koerper;
         return y < aus.spiegel;
+    }
+
+    // DER FLUSS IN DER MASCHE (K16, die Naht): der Anteil einer Masche (halbe Kante `hs` m; 0 = ein Punkt), den das Wasser
+    // eines Flusses deckt — der Querschnitt als Kasten-Filter: die Überdeckung von [d − hs, d + hs] mit dem Wasser
+    // [−halbe Breite, +halbe Breite] des nächsten Segments (`_hydroDistAt`).
+    _fernFlussDeckung(x, z, hs) {
+        const fl = this._hydroDistAt(x, z);
+        if (!(fl.dist < Infinity)) return 0;
+        const w = fl.halfW;
+        if (!(hs > 0)) return fl.dist <= w ? 1 : 0;
+        return Math.max(0, Math.min(fl.dist + hs, w) - Math.max(fl.dist - hs, -w)) / (2 * hs);
+    }
+    _fernFlussFarbe(x, z, out, hs) {
+        const c = this._fernFlussDeckung(x, z, hs);
+        if (c > 0) {
+            const w = AnazhRealm.FERN_FARBE.wasser;
+            for (let k = 0; k < 3; k++) out[k] += (w[k] - out[k]) * c;
+            out[6] *= 1 - c;
+        }
+        return out;
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
@@ -40756,8 +40785,30 @@ class AnazhRealm {
                 "    var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
                 "    if (e < 0.0) { sV = -sV; }\n" +
                 "    let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "    let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
-                "    if (pT.a <= 0.0) { return vec4<f32>(0.0); }\n" +
+                "    // DIE SILHOUETTE BILINEAR (K16): vier Texel um den Strahl (Texel-Mitten, der Azimut umlaufend), nur die\n" +
+                "    // Treffer tragen Farbe und Distanz; der Himmel beginnt, wo ihre Deckung unter die Hälfte fällt — die\n" +
+                "    // nächste Texel-Lesung zeigte jenseits 8 km Zinnen (je Texel 0,47° ≈ 6,7 px bei 1080p/75°).\n" +
+                "    let W = i32(dim.x);\n" +
+                "    let H = i32(dim.y);\n" +
+                "    let fx = u * f32(dim.x) - 0.5;\n" +
+                "    let fy = v * f32(dim.y) - 0.5;\n" +
+                "    let tx = fx - floor(fx);\n" +
+                "    let ty = fy - floor(fy);\n" +
+                "    let x0 = ((i32(floor(fx)) % W) + W) % W;\n" +
+                "    let x1 = (x0 + 1) % W;\n" +
+                "    let y0 = clamp(i32(floor(fy)), 0, H - 1);\n" +
+                "    let y1 = clamp(i32(floor(fy)) + 1, 0, H - 1);\n" +
+                "    let p00 = textureLoad(pano, vec2<i32>(x0, y0), 0);\n" +
+                "    let p10 = textureLoad(pano, vec2<i32>(x1, y0), 0);\n" +
+                "    let p01 = textureLoad(pano, vec2<i32>(x0, y1), 0);\n" +
+                "    let p11 = textureLoad(pano, vec2<i32>(x1, y1), 0);\n" +
+                "    let w00 = (1.0 - tx) * (1.0 - ty) * select(0.0, 1.0, p00.a > 0.0);\n" +
+                "    let w10 = tx * (1.0 - ty) * select(0.0, 1.0, p10.a > 0.0);\n" +
+                "    let w01 = (1.0 - tx) * ty * select(0.0, 1.0, p01.a > 0.0);\n" +
+                "    let w11 = tx * ty * select(0.0, 1.0, p11.a > 0.0);\n" +
+                "    let deck = w00 + w10 + w01 + w11;\n" +
+                "    if (deck < 0.5) { return vec4<f32>(0.0); }\n" +
+                "    let pT = (p00 * w00 + p10 * w10 + p01 * w01 + p11 * w11) / deck;\n" +
                 "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
                 "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
                 "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
@@ -41848,6 +41899,26 @@ class AnazhRealm {
             "    let k = (u32(iy) * u32(S.feldAz) + u32(ix)) * 4u;\n" +
             "    return vec4<f32>(feld[k], feld[k + 1u], feld[k + 2u], feld[k + 3u]);\n" +
             "}\n" +
+            // DAS FELD IST EINE FLÄCHE, KEIN KASTEN-GITTER (K16, die Horizont-Zinnen): der Strahl liest Höhe und Farbe bilinear
+            // zwischen den vier Texel-Mitten (Azimut umlaufend, radial geklemmt). Bis K16 las er den nächsten Texel: jeder
+            // Texel (1,875° × 667 m) stand als Kasten mit ebenem Dach und senkrechter Wand — die Silhouette trug Zinnen.
+            "fn feldAn(rel: vec2<f32>, r: f32) -> vec4<f32> {\n" +
+            "    let PI = 3.14159265358979;\n" +
+            "    let nAz = i32(S.feldAz);\n" +
+            "    let fx = (atan2(rel.y, rel.x) / (2.0 * PI) + 0.5) * S.feldAz - 0.5;\n" +
+            "    let fy = clamp((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad - 0.5, 0.0, S.feldRad - 1.0);\n" +
+            "    let x0 = floor(fx);\n" +
+            "    let y0 = floor(fy);\n" +
+            "    let tx = fx - x0;\n" +
+            "    let ty = fy - y0;\n" +
+            "    let ix0 = ((i32(x0) % nAz) + nAz) % nAz;\n" +
+            "    let ix1 = (ix0 + 1) % nAz;\n" +
+            "    let iy0 = i32(y0);\n" +
+            "    let iy1 = min(iy0 + 1, i32(S.feldRad) - 1);\n" +
+            "    let a = mix(feldTexel(ix0, iy0), feldTexel(ix1, iy0), tx);\n" +
+            "    let b = mix(feldTexel(ix0, iy1), feldTexel(ix1, iy1), tx);\n" +
+            "    return mix(a, b, ty);\n" +
+            "}\n" +
             "@compute @workgroup_size(64)\n" +
             "fn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n" +
             "    let idx = gid.x;\n" +
@@ -41879,10 +41950,7 @@ class AnazhRealm {
             "        let r = length(rel);\n" +
             "        if (r < S.rMin) { tVor = t; continue; }\n" +
             "        if (r > S.rMax) { break; }\n" +
-            "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
-            "        let ix = i32(clamp(u, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
-            "        let iy = clamp(i32((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
-            "        let h = feldTexel(ix, iy);\n" +
+            "        let h = feldAn(rel, r);\n" +
             "        if (pos.y <= h.x) {\n" +
             "            var aB = tVor;\n" +
             "            var bB = t;\n" +
@@ -41893,10 +41961,7 @@ class AnazhRealm {
             "                let pm = camPos + dir * m;\n" +
             "                let relM = pm.xz - vec2<f32>(S.ankerX, S.ankerZ);\n" +
             "                let rM = length(relM);\n" +
-            "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
-            "                let ixM = i32(clamp(uM, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
-            "                let iyM = clamp(i32((rM - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
-            "                let hM = feldTexel(ixM, iyM);\n" +
+            "                let hM = feldAn(relM, rM);\n" +
             "                if (pm.y <= hM.x) { bB = m; tFein = m; hF = hM; } else { aB = m; }\n" +
             "            }\n" +
             "            pano[o] = hF.y; pano[o + 1u] = hF.z; pano[o + 2u] = hF.w; pano[o + 3u] = tFein;\n" +
