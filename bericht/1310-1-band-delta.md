@@ -183,13 +183,14 @@ Die Seiten:
 
 ## Pflicht-OFFEN Rest
 
-- CI-Gruppe 3: `gate:hitch-telemetrie` rot nach 14 min, lokal grün vor und nach dem Schnitt — Job-Log lesen, neu starten.
+- CI-Gruppe 3: `gate:hitch-telemetrie` rot nach 14 min, lokal grün vor und nach dem Schnitt. Der Koordinator hat das Log
+  gelesen (Runner-Klasse „Bundle-Neubau“, viertes Mal, heilt K25) und die Gruppe neu gestartet.
 - Null-Block 10 in s4 (main): −1,05 fps bei gleicher Bündel-Reihe, ohne Namen.
 - Die Zerlege-Posten `bau`/`post` an der Genesis: Abschalten verteuert um 26 ms, die Linse ist dort blind.
 - Weitere Session-Lotterien derselben Klasse? Die Lehre aus 1110-6 („bimodal je Sitzung“, S6 hoch in 9 von 10) gehört mit
   `reihenfolge.cjs` noch einmal angesehen.
-- Karte (2): 13 Stoff-Züge je Tor. Vermerk: die Tore sind nur wegen der Flügel aus `BAU_SATZ` ausgenommen, der Satz filtert
-  `leaf.tuer` schon je Leaf. Danach (3) Dorf-VRAM.
+- Karte (2): 13 Stoff-Züge je Tor. Der Satz-Weg ist verworfen (§7), der Hebel sind die Flügel (8 von 13). Offen, hinter
+  (3) Dorf-VRAM, das über dem Band liegt.
 
 ## Status ZWISCHENSTAND + Übergabe
 
@@ -203,5 +204,5 @@ Die Seiten:
   - `p3/tor/zerleg`: Zerlegung, `reihenfolge.cjs`.
   - `p3/tor/abab3`, `p3/tor/abab4`.
   - Varianten-Worktrees tw-ohne-zwilling und tw-gesetz (52ac16d8 + eine Zeile, bleiben bis zur Annahme).
-- **Nächster Schritt:** Karte (2), die 13 Stoff-Züge je Tor über den Bau-Satz, sobald der Koordinator die CI-Gruppe 3 gelesen
-  hat.
+  - welle-m-e-torsatz (= 198e80f3, Versuch zurückgesetzt), `p3/tor/satz` (Bild-Boot).
+- **Nächster Schritt:** (3) Dorf-VRAM (bauSatz 9,3 MB, 125,8 > 118 MB). Karte (2) bleibt offen mit dem Flügel-Hebel (§7).
