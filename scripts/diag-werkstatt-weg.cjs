@@ -907,8 +907,7 @@ async function probe(argW) {
             for (const [k, v] of r._foundry.cache) if (v === grp) return k;
             return null;
         };
-        const werkKey = (e) =>
-            r._foundryKoerperKey(preset, r._foundryVariantFor(e.seed, preset), 0, r._artifactStudioOv(e));
+        const werkKey = (e) => r._foundryKoerperKey(preset, r._foundryGestaltFor(e, preset), 0, r._artifactStudioOv(e));
         const dreh = (e) => (Number.isFinite(e.rotationY) ? +e.rotationY.toFixed(6) : 0);
         const tint = (e) => [e.tintH, e.tintS, e.tintV].map((v) => (Number.isFinite(v) ? v.toFixed(6) : "-")).join("/");
         const finde = (p) => {
