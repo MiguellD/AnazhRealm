@@ -800,9 +800,11 @@ async function lichtLauf() {
     await page.evaluateOnNewDocument(() => {
         window.__s0Still = true;
         const warte = setInterval(() => {
+            // die Klasse steht ab stamm/01.js, ihre Glieder trägt erst die Naht (stamm/26a.js) auf: gewartet wird auf das
+            // Glied selbst — ein vorher gesetztes `_loopRender` wäre ein Zwilling, an dem die Naht laut bricht
             // eslint-disable-next-line no-undef
             const K = typeof AnazhRealm === "function" ? AnazhRealm : null;
-            if (!K) return;
+            if (!K || typeof K.prototype._loopRender !== "function") return;
             clearInterval(warte);
             const zeichne = K.prototype._loopRender;
             K.prototype._loopRender = function (t) {
