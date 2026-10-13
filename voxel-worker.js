@@ -2449,6 +2449,60 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         nassOben[idx0] = 1;
         offen.push(idx0);
     }
+    // 4c) DIE UFER-SENKE (Mirror von `_buildVoxelChunkWaterCells` 4c, MUSS bit-identisch): eine trockene Spalte an Wasser,
+    //    deren erste freie Zelle schon unter ihrem Spiegel liegt, flutet bis zu ihrem Spiegel (nie über das Wasser, an das sie
+    //    grenzt), und der Flood läuft von ihr weiter.
+    const flutSenke = (i, k, quelle) => {
+        const idx0 = i + k * dim;
+        const lvl = colL[idx0];
+        if (!(lvl > -Infinity) || lvl > colL[quelle] || !(lvl > colBoden[idx0])) return;
+        let topJ = -1;
+        for (let j = jMax; j >= 0; j--) {
+            const c = cells[idx0 + j * dimSq];
+            if (c === AIR) continue;
+            if (c === CELL_STATE.SOLID) topJ = j;
+            break;
+        }
+        if (topJ < 0 || topJ + 1 > jMax) return;
+        const topCy = oy + (topJ + 0.5) * step;
+        if (!(topCy + step <= lvl)) return;
+        const start = queue.length;
+        for (let j = topJ + 1; j <= jMax; j++) {
+            const cy = oy + (j + 0.5) * step;
+            if (cy > lvl) break;
+            const cidx = idx0 + j * dimSq;
+            if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
+                cells[cidx] = WATER;
+                queue.push(cidx);
+            }
+        }
+        for (let qh = start; qh < queue.length; qh++) {
+            const cidx = queue[qh];
+            const j = (cidx / dimSq) | 0;
+            const rem = cidx - j * dimSq;
+            const kk = (rem / dim) | 0;
+            const ii = rem - kk * dim;
+            pushN(ii + 1, kk, j);
+            pushN(ii - 1, kk, j);
+            pushN(ii, kk + 1, j);
+            pushN(ii, kk - 1, j);
+            pushN(ii, kk, j + 1);
+            pushN(ii, kk, j - 1);
+        }
+        for (let qh = start; qh < queue.length; qh++) {
+            const n0 = queue[qh] % dimSq;
+            if (nassOben[n0]) continue;
+            for (let j = jMax; j >= 0; j--) {
+                const c = cells[n0 + j * dimSq];
+                if (c === AIR) continue;
+                if (c === WATER) {
+                    nassOben[n0] = 1;
+                    offen.push(n0);
+                }
+                break;
+            }
+        }
+    };
     for (let h = 0; h < offen.length; h++) {
         const i = offen[h] % dim;
         const k = (offen[h] / dim) | 0;
@@ -2462,7 +2516,10 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
             const n0 = ni + nk * dim;
             if (nassOben[n0]) continue;
             const d = deckZelle(ni, nk);
-            if (d < 0) continue;
+            if (d < 0) {
+                flutSenke(ni, nk, offen[h]);
+                continue;
+            }
             cells[d] = WATER;
             nassOben[n0] = 1;
             offen.push(n0);
