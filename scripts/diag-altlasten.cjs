@@ -1966,6 +1966,8 @@ function linsenDateien(root) {
 const STAMM_NAME_RX = new RegExp(
     "^(?:\\.{0,2}/|https?://[^/]*/)?" + stammLib.ALT.replace(/\./g, "\\.") + "(?:\\?[^\"'`]*)?$"
 );
+// Ausgenommen: die Schnittstelle selbst und der Codemod (er trägt die alte Leser-Form als Muster).
+const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs", "scripts/stamm-umzug.cjs"];
 function stammLeserDateien(root) {
     const aus = [];
     for (const f of fs.readdirSync(root))
@@ -1974,7 +1976,7 @@ function stammLeserDateien(root) {
         for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {
             const rel = d + "/" + e.name;
             if (e.isDirectory()) geh(rel);
-            else if (/\.(?:c|m)?js$/.test(e.name) && rel !== "scripts/lib/stamm.cjs") aus.push(rel);
+            else if (/\.(?:c|m)?js$/.test(e.name) && !STAMM_WERKZEUG.includes(rel)) aus.push(rel);
         }
     };
     geh("scripts");
@@ -1986,7 +1988,8 @@ function scanStammLeser(root, ersatz = {}) {
     const dateien = stammLeserDateien(root).concat(Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f))));
     for (const rel of dateien) {
         const src = rel in ersatz ? ersatz[rel] : fs.readFileSync(path.join(root, rel), "utf8");
-        if (!src.includes(stammLib.ALT)) continue;
+        // Vorfilter: der Name als Text oder als Regex-Quelle (anazhRealm\.js)
+        if (!src.includes(stammLib.ALT) && !src.includes(stammLib.ALT.replace(".", "\\."))) continue;
         let toks = null;
         for (const sourceType of ["script", "module"])
             try {
@@ -2007,7 +2010,7 @@ function scanStammLeser(root, ersatz = {}) {
             errs.push(`Stamm-Leser-Wand: ${rel} ist für acorn unlesbar — die Wand sähe ihre Leser nicht`);
             continue;
         }
-        for (const t of toks)
+        for (const t of toks) {
             if (
                 (t.type === acorn.tokTypes.string || t.type === acorn.tokTypes.template) &&
                 STAMM_NAME_RX.test(String(t.value))
@@ -2016,6 +2019,17 @@ function scanStammLeser(root, ersatz = {}) {
                     `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} nennt ${JSON.stringify(t.value)} als Lese-Ziel — der Stamm ` +
                         `liest sich über scripts/lib/stamm.cjs (stammLib.text · dateien · liefere · dateiMit · ort)`
                 );
+            // ein Stapel-Leser (Rahmen „…/anazhRealm.js:12:5" im Error-Stack, in der Seite) sieht auch die Zonen-Dateien
+            if (
+                t.type === acorn.tokTypes.regexp &&
+                t.value.pattern.includes("anazhRealm\\.js") &&
+                !t.value.pattern.includes("stamm\\/")
+            )
+                errs.push(
+                    `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} liest Rahmen nur an /${t.value.pattern}/ — nach dem Schnitt ` +
+                        `stehen sie in stamm/NN.js (das Muster trägt \`\\/stamm\\/\\d\\d[a-z]?\\.js\` mit)`
+                );
+        }
     }
     return errs;
 }
@@ -2313,6 +2327,29 @@ function main() {
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
+        // Die Stamm-Leser-Wand muss feuern: ein kanonischer Leser am Namen vorbei, ein Server-Patcher am Pfad und ein
+        // Stapel-Leser ohne die Zonen-Dateien in einer Kopie — je beim Namen samt Zeile; Kommentar und Meldung bleiben still.
+        const leserDatei = "scripts/diag-stamm-leser-probe.cjs";
+        const n = stammLib.ALT;
+        const leserRot = scanStammLeser(root, {
+            [leserDatei]:
+                `const fs = require("fs");\nconst path = require("path");\n` +
+                `const s = fs.readFileSync(path.join(__dirname, "..", "${n}"), "utf8");\n` +
+                `if (p === "/${n}") x();\n` +
+                `if (/${n.replace(".", "\\.")}/.test(rahmen)) y();\n`,
+        });
+        const leserStill = scanStammLeser(root, {
+            [leserDatei]: `// liest ${n}\nconsole.log("${n}: der Leser fehlt");\nif (/${n.replace(".", "\\.")}|\\/stamm\\/\\d\\d[a-z]?\\.js/.test(r)) y();\n`,
+        });
+        const amOrt = (z) => leserRot.some((e) => e.startsWith(`Stamm-Leser-Wand: ${leserDatei}:${z} `));
+        const leserFeuert =
+            scanStammLeser(root).length === 0 && leserRot.length === 3 && amOrt(3) && amOrt(4) && amOrt(5) && leserStill.length === 0;
+        console.log(
+            leserFeuert
+                ? `✅ SELBST-TEST: die Stamm-Leser-Wand feuert (Leser am Namen · Patcher am Pfad · Stapel-Leser ohne stamm/ — je mit Zeile; Kommentar, Meldung und das volle Stapel-Muster still; ${stammLeserDateien(root).length} Dateien gesehen)`
+                : `❌ SELBST-TEST: die Stamm-Leser-Wand feuert nicht — ${JSON.stringify(leserRot.concat(leserStill)).slice(0, 400)}`
+        );
+        if (!leserFeuert) process.exit(1);
         process.exit(fired && aliasFeuert ? 0 : 1);
     }
 
@@ -2327,6 +2364,7 @@ function main() {
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
+        .concat(scanStammLeser(root))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm und in den Linsen:");
@@ -2334,7 +2372,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 
