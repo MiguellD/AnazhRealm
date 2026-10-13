@@ -70,7 +70,7 @@ const state = {
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
     erosion: null, // { originX, originZ, cell, dim, delta }
     tarns: null, // Array of { x, z, d, reach2, twoSig2 }
-    voxelEdits: [], // Array of { x, y, z, r, strength, mode }
+    voxelEdits: [], // Array of { x, y, z, r, strength, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
     hydroComputing: false,
     spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
     bankNeigung: 0.7, // Mirror AnazhRealm.HYDROSPHERE.bankNeigung (die Bank, Gegenprüfung 07.10.)
@@ -250,18 +250,74 @@ function applyStateSnapshot(snap) {
 
 function applyStateDelta(delta) {
     if (!delta) return;
-    // Delta-Update: nur explizit gesetzte Felder werden ersetzt. voxelEdits kann
-    // entweder vollständig ersetzt werden (full sync) oder via append (add).
+    // Delta-Update: nur explizit gesetzte Felder werden ersetzt. voxelEdits wird
+    // entweder vollständig ersetzt (full sync) oder wächst um einen Edit (append) — ohne Deckel, wie im Main.
     if (delta.voxelEditAppend) {
         if (!Array.isArray(state.voxelEdits)) state.voxelEdits = [];
         state.voxelEdits.push(delta.voxelEditAppend);
         return;
     }
-    if (delta.voxelEditRemoveLast) {
-        if (Array.isArray(state.voxelEdits) && state.voxelEdits.length) state.voxelEdits.pop();
-        return;
-    }
     applyStateSnapshot(delta);
+}
+
+// DIE EDIT-KARTE (Spiegel von `_voxelEditKarte` in anazhRealm.js, K23): je Chunk die Edits, deren Kugel ihn samt einem
+// Chunk Rand berührt (Spalten floor((x − r)/span) − 1 … floor((x + r)/span) + 1, r mindestens 1 m), in Setz-Reihenfolge.
+// Der KERN ohne Rand dient der Punkt-Probe. Identität und Länge von state.voxelEdits halten sie frisch (ein Append wird
+// nachgetragen, ein Snapshot baut neu). Die Summe je Chunk bleibt Bit für Bit die der ganzen Liste. MUSS bit-identisch
+// zur Main (gate:worker-dichte, 300 Edits).
+const KEINE_EDITS = Object.freeze([]);
+let editKarte = null;
+function editKarteFrisch() {
+    const edits = Array.isArray(state.voxelEdits) ? state.voxelEdits : null;
+    let k = editKarte;
+    if (!k || k.edits !== edits || k.n > (edits ? edits.length : 0)) {
+        k = editKarte = { edits, n: 0, span: voxelChunkConfig(0).span, je: new Map(), kern: new Map() };
+    }
+    if (edits && k.n < edits.length) {
+        const span = k.span;
+        while (k.n < edits.length) {
+            const ed = edits[k.n++];
+            if (!ed || !Number.isFinite(ed.x) || !Number.isFinite(ed.z)) continue;
+            const r = Number.isFinite(ed.r) ? Math.max(ed.r, 1) : 1;
+            const kax = Math.floor((ed.x - r) / span);
+            const kbx = Math.floor((ed.x + r) / span);
+            const kaz = Math.floor((ed.z - r) / span);
+            const kbz = Math.floor((ed.z + r) / span);
+            for (let cx = kax - 1; cx <= kbx + 1; cx++) {
+                for (let cz = kaz - 1; cz <= kbz + 1; cz++) {
+                    const key = (cx + 32768) * 65536 + (cz + 32768);
+                    const liste = k.je.get(key);
+                    if (liste) liste.push(ed);
+                    else k.je.set(key, [ed]);
+                    // der Kern ohne Rand (die Punkt-Probe)
+                    if (cx >= kax && cx <= kbx && cz >= kaz && cz <= kbz) {
+                        const kern = k.kern.get(key);
+                        if (kern) kern.push(ed);
+                        else k.kern.set(key, [ed]);
+                    }
+                }
+            }
+        }
+    }
+    return k;
+}
+
+// Spiegel von `_voxelEditsNah`: die Edits, die den Chunk (cx, cz) samt einem Chunk Rand berühren können.
+function editsNah(cx, cz) {
+    return editKarteFrisch().je.get((cx + 32768) * 65536 + (cz + 32768)) || KEINE_EDITS;
+}
+
+// Spiegel von `_voxelEditsImKasten`: liegt der Kasten (mit 1 m Rand) im 3×3 um den Chunk seiner Mitte, dessen Eintrag,
+// sonst die ganze Liste.
+function editsImKasten(x0, x1, z0, z1) {
+    const k = editKarteFrisch();
+    if (!k.edits || !k.edits.length) return KEINE_EDITS;
+    const span = k.span;
+    const cx = Math.floor((x0 + x1) / 2 / span);
+    const cz = Math.floor((z0 + z1) / 2 / span);
+    if (x0 - 1 > (cx - 1) * span && x1 + 1 < (cx + 2) * span && z0 - 1 > (cz - 1) * span && z1 + 1 < (cz + 2) * span)
+        return k.je.get((cx + 32768) * 65536 + (cz + 32768)) || KEINE_EDITS;
+    return k.edits;
 }
 
 // =============================================================================
@@ -314,8 +370,8 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
 // Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (anazhRealm.js) — dieselben Kästen, dieselbe Reihenfolge,
 // dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
 function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
-    const edits = state.voxelEdits;
-    if (!edits || !edits.length) return;
+    const edits = editsImKasten(gox, gox + (Nx - 1) * step, goz, goz + (Nz - 1) * step);
+    if (!edits.length) return;
     for (let e = 0; e < edits.length; e++) {
         const ed = edits[e];
         if (!ed) continue;
@@ -431,10 +487,12 @@ function terrainBaseDensityCol(x, y, z, ctx) {
     return d;
 }
 
-// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel, der Edit-Satz ist klein.
+// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel, gefragt wird die Karte des Chunks (Spiegel von
+// `_voxelEditDeltaAt`).
 function applyVoxelEdits(d, x, y, z) {
-    const edits = state.voxelEdits;
-    if (edits && edits.length) {
+    const k = state.voxelEdits && state.voxelEdits.length ? editKarteFrisch() : null;
+    const edits = k ? k.kern.get((Math.floor(x / k.span) + 32768) * 65536 + (Math.floor(z / k.span) + 32768)) : null;
+    if (edits) {
         for (let e = 0; e < edits.length; e++) {
             const ed = edits[e];
             if (!ed) continue;
@@ -2520,8 +2578,8 @@ function chunkHasAnyWater(cx, cz, lod) {
     const ox = cx * span;
     const oz = cz * span;
     const waterLevel = typeof state.waterLevel === "number" ? state.waterLevel : 0;
-    const edits = state.voxelEdits;
-    if (Array.isArray(edits) && edits.length) {
+    const edits = editsNah(cx, cz);
+    if (edits.length) {
         for (let e = 0; e < edits.length; e++) {
             const ed = edits[e];
             if (!ed || ed.mode !== "carve") continue;
