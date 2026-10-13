@@ -1848,6 +1848,10 @@ function scanNormalWand(srcRoh) {
 // _buildHumanGroup (Not-Körper) · _foundryPrefetchLibrary (Karte) · _ensurePortalPreview · _portalApproachPrefetch ·
 // _ensureAssetFoundry ×2 (es gibt keinen Alt-Pfad); generateNewWorld und der Loop fangen ihren Ruf nicht mehr; die Drossel
 // des Loops (`_loopErrorBoundary`) meldet jeden NEUEN Fehler und steht als Zweig mit ihrem Bild.
+// DER HÖRER DES FADENS (Nachbesserung 2, Fortsetzung, an 23d29378 ROT mit 10: die 8 und zwei stille Hörer): der Fehler
+// eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
+// dessen Antwort einen Bauer ruft oder im Leser eines Studio-Fadens landet (der Bäcker über `_foundryAntwort`); er trägt
+// einen Hörer, dessen jeder Pfad bricht. Die Klang-Werkstatt baut nichts und bleibt draußen.
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
@@ -2154,6 +2158,86 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         }
         return t + " (" + (b ? b.was : "?") + ")";
     };
+    // die Fehler-Hörer je Studio-Faden einer Methode: { w, art, fn, ort, kette } (fn null = der Faden hat keinen Hörer)
+    const HOERER = /^(onerror|onmessageerror)$/;
+    const fadenHoerer = (n) => {
+        if (!startetFaden(n)) return [];
+        const text = (e) => srcRoh.slice(e.start, e.end);
+        const istWorker = (e) =>
+            !!e && e.type === "NewExpression" && e.callee.type === "Identifier" && e.callee.name === "Worker";
+        const faeden = new Map(); // Name des Fadens → { ort, rufe, hoerer }
+        gehe(n, (e) => {
+            if (e.type === "VariableDeclarator" && e.id.type === "Identifier" && istWorker(e.init))
+                faeden.set(e.id.name, { ort: e.init, rufe: new Set(), hoerer: [] });
+            else if (e.type === "AssignmentExpression" && istWorker(e.right) && !faeden.has(text(e.left)))
+                faeden.set(text(e.left), { ort: e.right, rufe: new Set(), hoerer: [] });
+        });
+        gehe(n, (e) => {
+            let ziel = null;
+            let fn = null;
+            let art = null;
+            if (
+                e.type === "AssignmentExpression" &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                /Function/.test(e.right.type)
+            ) {
+                ziel = text(e.left.object);
+                fn = e.right;
+                art = e.left.property.name;
+            } else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                e.callee.property.name === "addEventListener" &&
+                e.arguments.length >= 2 &&
+                e.arguments[0].type === "Literal" &&
+                /Function/.test(e.arguments[1].type)
+            ) {
+                ziel = text(e.callee.object);
+                fn = e.arguments[1];
+                art = e.arguments[0].value === "message" ? "onmessage" : "on" + e.arguments[0].value;
+            }
+            const f = ziel && faeden.get(ziel);
+            if (!f) return;
+            if (art === "onmessage")
+                gehe(fn, (c) => {
+                    if (
+                        c.type === "CallExpression" &&
+                        c.callee.type === "MemberExpression" &&
+                        c.callee.object.type === "ThisExpression" &&
+                        !c.callee.computed
+                    )
+                        f.rufe.add(c.callee.property.name);
+                });
+            else if (HOERER.test(art)) f.hoerer.push({ art, fn });
+        });
+        return [...faeden].map(([w, f]) => Object.assign({ w }, f));
+    };
+    // die Studio-Fäden des Stamms: ein Faden, dessen Antwort einen Bauer ruft, oder dessen Antwort im LESER eines
+    // Studio-Fadens landet (der Bäcker liefert seine Karte über `_foundryAntwort` wie die Foundry ihr Mesh — die Antwort
+    // erfüllt das Versprechen, das ein Bauer hält); Fixpunkt. Die Klang-Werkstatt bleibt draußen (ihre Antwort baut nichts).
+    const studioFaeden = [];
+    {
+        const alle = [];
+        for (const m of methoden) for (const f of fadenHoerer(m.value)) alle.push(Object.assign({ m }, f));
+        const leser = new Map(); // Methode → der Studio-Faden, dessen Antwort sie liest
+        for (let neu = true; neu;) {
+            neu = false;
+            for (const f of alle) {
+                if (f.kette) continue;
+                const x = [...f.rufe].find((y) => renderBauer.has(y));
+                const l = x ? null : [...f.rufe].find((y) => leser.has(y));
+                if (!x && !l) continue;
+                f.kette = x
+                    ? "(seine Antwort " + kette(x) + ")"
+                    : `(seine Antwort ruft ${l}, den Leser des Studio-Fadens ${leser.get(l)})`;
+                for (const y of f.rufe) if (!leser.has(y)) leser.set(y, `${f.w} in ${nameVon(f.m)}`);
+                studioFaeden.push(f);
+                neu = true;
+            }
+        }
+    }
     const renderBau = (block, a) => {
         const h = baut(block, a);
         if (h) return h;
@@ -2465,6 +2549,18 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             const bau = stoff ? "im Stoff" : renderBau(versuch, a);
             if (bau && !laut(koerper)) fund("Fang", name, ort, `catch ${kurz(koerper)} — der Versuch ${bau}`);
         });
+        // (a') DER HÖRER DES STUDIO-FADENS: der Fehler eines Fadens erreicht keinen catch — sein Fehler-Hörer (`onerror`,
+        // `onmessageerror`, `addEventListener("error", …)`) IST sein Fang. Ein Faden, dessen Antwort einen Bauer ruft, trägt
+        // einen Hörer, dessen jeder Pfad bricht; ohne Hörer fällt sein Bruch still (bis zur Nachbesserung 2 schwieg der
+        // Bäcker-Hörer, und jede Karte wartete für immer in der Schlange).
+        for (const f of studioFaeden) {
+            if (f.m !== m) continue;
+            if (!f.hoerer.length)
+                fund("Fang", name, f.ort, `Hörer fehlt: der Studio-Faden ${f.w} ${f.kette} — sein Bruch fällt still`);
+            for (const h of f.hoerer)
+                if (!laut(h.fn.body))
+                    fund("Fang", name, h.fn, `Hörer ${f.w}.${h.art} ${kurz(h.fn.body)} — der Studio-Faden ${f.kette}`);
+        }
         if (!stoff) continue;
         // (c) das Ausstattungs-Wenn: ein Glied von TSL als Wahrheitswert
         const ausAlias = (e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
@@ -3014,6 +3110,16 @@ function main() {
                 ) {
                     k = n.arguments[0].body;
                     ort = n.arguments[0];
+                } else if (
+                    n.type === "AssignmentExpression" &&
+                    n.left.type === "MemberExpression" &&
+                    !n.left.computed &&
+                    /^(onerror|onmessageerror)$/.test(n.left.property.name) &&
+                    /Function/.test(n.right.type)
+                ) {
+                    // der Fehler-Hörer eines Fadens (Fortsetzung der Nachbesserung 2): sein Fang ist sein Rumpf
+                    k = n.right.body;
+                    ort = n.right;
                 }
                 if (k && /this\._(stoffBruch|blendeBruch)\(/.test(stamm.slice(k.start, k.end)))
                     brueche.push({ k, zeile: ort.loc.start.line });
@@ -3130,12 +3236,20 @@ function main() {
                     `try { ${MESH} } catch (e) { setTimeout(() => this._stoffBruch("x", e), 1); }`,
                 ],
                 ["Bruch nur im Zweig", `try { ${MESH} } catch (e) { if (e && e.stoff) throw e; }`],
+                // der Studio-Faden: ohne Fehler-Hörer, und ein stiller Hörer an einem Faden, der nur den Leser des
+                // Foundry-Fadens ruft (der Bäcker liefert so seine Karte)
+                ["Faden ohne Hörer", 'const w = new Worker("x"); w.onmessage = () => this._sgTief3(g);'],
+                [
+                    "Hörer schweigt am Leser",
+                    'const w = new Worker("x"); w.onerror = () => {}; w.onmessage = (ev) => this._foundryAntwort(g, ev.data);',
+                ],
             ];
             const helfer =
                 "    _sgTief1(g) { return this._sgTief2(g); }\n    _sgTief2(g) { return this._sgTief3(g); }\n" +
                 "    _sgTief3(g) { return new THREE.Mesh(g, null); }\n" +
                 "    _sgHelfer(e) { if (this.state.strikt) throw e; return null; }\n" +
-                '    _sgAblage(g) { try { this._uiRooms = { x: { render: () => this._sgTief1(g) } }; window.addEventListener("x", () => this._sgTief3(g)); } catch (e) {} }\n';
+                '    _sgAblage(g) { try { this._uiRooms = { x: { render: () => this._sgTief1(g) } }; window.addEventListener("x", () => this._sgTief3(g)); } catch (e) {} }\n' +
+                '    _sgKlang(g) { const w = new Worker("k"); w.onerror = () => {}; w.onmessage = (ev) => { this._sgZahl = ev.data; }; }\n';
             const tiefAnker = stamm.indexOf("    // Studio-Dither-Blende als TSL-Knoten");
             const tiefQuelle =
                 stamm.slice(0, tiefAnker) +
@@ -3177,7 +3291,7 @@ function main() {
                 `✅ SELBST-TEST: die Stoff-Wand sieht jeden ihrer ${aussen.length} lauten Brüche still gemacht an seiner Zeile, ` +
                     `${schmuggel.length} Schmuggel je Art (${schmuggel.map((x) => x[0]).join(" · ")}), ` +
                     `${tiefSchmuggel.length} Schmuggel in Tiefe und Pfad (${tiefSchmuggel.map((x) => x[0]).join(" · ")}), ` +
-                    `die Ablage (Objekt-Wert, Hörer) still, die tote Zweig-Zeile und den toten Fehler-Marker; heute 0`
+                    `die Ablage (Objekt-Wert, Hörer) und den Faden ohne Bau still, die tote Zweig-Zeile und den toten Fehler-Marker; heute 0`
             );
         }
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
@@ -3250,7 +3364,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite, die Drossel des Loops)), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite, die Drossel des Loops)), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 
