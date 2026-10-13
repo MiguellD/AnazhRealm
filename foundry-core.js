@@ -5590,7 +5590,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     // Die Kopf-Häute vor den Schalen: die Kopf-Haut ist der Boden der Kopf-Zeile (K28).
     if (!fein) __tierKopfHaeute(hk, B, H, matFuer, kern, P);
     if (fell) {
-        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName);
+        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName, geo);
         root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
     }
     return skinJoints;
@@ -5766,15 +5766,16 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
 // Median · Haar-Zellen je Einheit = √Median — das Raster der Lab-Strähnen) · aWurzel (der Bind-Punkt
 // der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
 // color (der gemischte Ton, linear). Das Welt-Material (Klasse fellSchale) maskiert und schattiert.
-// DIE KOPF-ZEILE (K28): die Zeile des Gesetzes am Kopf (headGroup, 30 Strähnen, Ton D, nach hinten gelegt) liegt auf der
-// STARREN Kopf-Haut, und sie ist dünn: das Raster der Schalen trägt sie nicht (eine Locke von 3 mm in einer Zelle von
-// 47 mm trifft die Fläche mit ≈ 2r/Zelle — im Bild blieben Sprenkel). Der Ofen gießt ihre Strähnen, wie das Lab sie streut
-// (addFurLocal: die Kappe cos φ ≥ −0,05, Richtungs-Streu, Längen-Raster, Kreuz-Karten Wurzel 1,8 t → Spitze 0,65 t), im
-// Ton der Zeile (das Lab: toene[row.ton]), und setzt jede auf die Haut wie die Schalen jede Zeile lesen (__tierKarten):
-// Wurzel auf der Kopf-Haut, Achse auf der Normale, gekämmt — die Lab-Kugel liegt unter Stirn und Scheitel-Kamm, gerade
-// nach hinten gelegt blieb von 19 Strähnen im Armlängen-Bild ein Büschel. Die Karten liegen im SELBEN Schalen-Stapel:
-// Gewicht 1 am Kopf-Knochen, aSchale = (Achse t, 0, 0) — Zellen 0 heißt: die Karte ist das Haar (das Welt-Material maskiert
-// sie nie), beide Seiten gegossen (der Stoff zeichnet vorn). Kein Befehl mehr; eine Zeile ohne Haut bricht laut.
+// DIE KOPF-ZEILE (K28): die Zeile des Gesetzes am Kopf (headGroup, 30 Strähnen, nach hinten gelegt) liegt auf der STARREN
+// Kopf-Haut, und sie ist dünn: das Raster der Schalen trägt sie nicht (eine Locke von 3 mm in einer Zelle von 47 mm trifft
+// die Fläche mit ≈ 2r/Zelle — im Bild blieben Sprenkel). Der Ofen gießt ihre Strähnen, wie das Lab sie streut (addFurLocal:
+// die Kappe cos φ ≥ −0,05, Richtungs-Streu, Längen-Raster, Kreuz-Karten Wurzel 1,8 t → Spitze 0,65 t), und setzt jede auf
+// die GEZEICHNETE Haut (__tierKarten): auf die Kopf-Haut, und wo die Leib-Haut den Schädel deckt (der Hals-Mantel reicht
+// beim Wolf über Hinterhaupt und Scheitel — 14 von 19 Wurzeln lagen 1–18 cm Lab unter ihm), auf die Basis der Leib-Schalen
+// dort, wo der Strahl der Strähne sie verlässt — mit den Gewichten jener Haut (die Strähne geht mit dem Hals) und im Ton
+// des Musters an ihrer Wurzel wie jede Schale (EIN Ton-Gesetz, Welle 5). Die Karten liegen im SELBEN Schalen-Stapel:
+// aSchale = (Achse t, 0, 0) — Zellen 0 heißt: die Karte ist das Haar (das Welt-Material maskiert sie nie), beide Seiten
+// gegossen (der Stoff zeichnet vorn). Kein Befehl mehr; eine Zeile ohne Haut bricht laut.
 var TIER_FELL = Object.freeze({
     schalen: 6,
     basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
@@ -5783,56 +5784,81 @@ var TIER_FELL = Object.freeze({
     kamm: 0.6, // Lean zur Spitze (× Länge)
     samen: 4242, // der Samen der Strähnen-Streu (V18.460), je Zeile + ihr Platz in der Tabelle
 });
-// Die Karten einer Zeile auf der starren Kopf-Haut: die Lab-Streu der Zeile (__streuStraehnen — Kappe, Richtungs-Streu,
-// Längen-Raster, Breiten), jede Strähne auf die Haut gesetzt, wie die Schalen jede Zeile lesen (die Deckung folgt der Haut):
-// die Wurzel ist der äußerste Schnitt des Strahls vom Zeilen-Zentrum durch ihren Kappen-Punkt mit der Haut, die Achse
-// steht auf der Haut-Normale, mit der Legerichtung gekämmt (n + kamm · Tangente — das Schalen-Gesetz bei t = 1). Die Karten
-// (__straehnenKarten) gehen nach zuWurzel in den Root-Raum, jede zweiseitig. Je Ecke: Lage · Normale · Wurzel (die Mitte der
-// Wurzel-Ecken ihrer Strähne) · Achse t (die Ecke der Kreuz-Karte: Wurzel 0 · 1 · 4 · 5, Spitze 2 · 3 · 6 · 7) · Ton.
-function __tierKarten(row, samen, flaeche, zuWurzel, P) {
-    const hx = P["c" + row.ton];
-    if (typeof hx !== "number") throw new Error("FELL: der Ton " + row.ton + " der Zeile " + row.teil + " fehlt");
-    const ton = __tierLin([(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]);
+// Die Karten einer Zeile auf dem starren Kopf: die Lab-Streu der Zeile (__streuStraehnen — Kappe, Richtungs-Streu,
+// Längen-Raster, Breiten), jede Strähne auf die gezeichnete Haut gesetzt, wie die Schalen jede Zeile lesen (die Deckung
+// folgt der Haut). Alles im Root-Raum (zuWurzel trägt den Kopf hinein, Längen und Breiten mit seiner Skala): die Wurzel ist
+// der äußerste Schnitt des Strahls vom Zeilen-Zentrum durch ihren Kappen-Punkt mit der Kopf-Haut (kopf, Teil-Raum); liegt
+// sie in der Leib-Haut (ungerade Schnitte mit der Schalen-Basis leib entlang des Strahls), wandert sie auf den Punkt, an
+// dem der Strahl die Basis verlässt, und trägt deren Gewichte (baryzentrisch, die stärksten vier) — sonst Gewicht 1 am Kopf.
+// Die Achse steht auf der Haut-Normale, mit der Legerichtung gekämmt (n + kamm · Tangente — das Schalen-Gesetz bei t = 1);
+// schneidet sie eine der beiden Häute vor der Spitze, steht sie auf der Normale. Je Ecke: Lage · Normale · Wurzel (die
+// Mitte der Wurzel-Ecken ihrer Strähne) · Achse t (Wurzel 0 · 1 · 4 · 5, Spitze 2 · 3 · 6 · 7) · Ton (das Muster an der
+// Wurzel, muster(Lagen, Gelenke)) · Gelenke ([Name, Gewicht] je Strähne, S = Strähne der Ecke).
+function __tierKarten(row, samen, kopf, zuWurzel, kopfName, leib, muster) {
     const liste = __streuStraehnen(row, samen);
     if (!liste.length) throw new Error("FELL: die Zeile " + row.teil + " streut keine Strähne");
-    const HP = flaeche.P,
-        HN = flaeche.N,
-        HX = flaeche.X;
-    const c = new THREE.Vector3(row.c[0], row.c[1], row.c[2]),
+    const nm = new THREE.Matrix3().getNormalMatrix(zuWurzel),
+        v = new THREE.Vector3();
+    const KP = new Float32Array(kopf.P.length),
+        KN = new Float32Array(kopf.N.length);
+    for (let i = 0; i < KP.length; i += 3) {
+        v.fromArray(kopf.P, i).applyMatrix4(zuWurzel).toArray(KP, i);
+        v.fromArray(kopf.N, i).applyMatrix3(nm).normalize().toArray(KN, i);
+    }
+    const s = zuWurzel.getMaxScaleOnAxis(); // die Skala des Kopfs (Art-Gestalt kopf.gross)
+    const c = new THREE.Vector3(row.c[0], row.c[1], row.c[2]).applyMatrix4(zuWurzel),
         u = new THREE.Vector3(),
         tg = new THREE.Vector3();
     for (const st of liste) {
         if (!st.e) throw new Error("FELL: die Zeile " + row.teil + " ist keine Kalotten-Zeile");
-        u.set(st.e[0] - c.x, st.e[1] - c.y, st.e[2] - c.z).normalize();
-        const treffer = __strahl(HP, HN, HX, c, u, true);
-        if (!treffer) throw new Error("FELL: der Strahl der Zeile " + row.teil + " trifft ihre Haut nicht");
-        st.p = [c.x + u.x * treffer.t, c.y + u.y * treffer.t, c.z + u.z * treffer.t];
-        tg.copy(st.d).addScaledVector(treffer.n, -st.d.dot(treffer.n));
+        u.set(st.e[0], st.e[1], st.e[2]).applyMatrix4(zuWurzel).sub(c).normalize();
+        const k = __strahl(KP, KN, kopf.X, c, u, true);
+        if (!k) throw new Error("FELL: der Strahl der Zeile " + row.teil + " trifft ihre Haut nicht");
+        const p = c.clone().addScaledVector(u, k.t);
+        let n = k.n;
+        st.gelenke = [[kopfName, 1]];
+        const l0 = __strahl(leib.P, leib.N, leib.X, p, u, false);
+        if (l0 && l0.zahl % 2 === 1) {
+            p.addScaledVector(u, l0.t);
+            n = l0.n;
+            st.gelenke = leib.gelenke(l0.q, l0.b);
+        }
+        st.p = p.toArray();
+        st.l *= s;
+        st.w *= s;
+        st.wt *= s;
+        const d0 = st.d.clone().transformDirection(zuWurzel);
+        tg.copy(d0).addScaledVector(n, -d0.dot(n));
         const tl = tg.length();
-        st.d = treffer.n.clone().addScaledVector(tg, tl > 1e-9 ? TIER_FELL.kamm / tl : 0).normalize();
-        // Der Kamm legt die Strähne nie in die Haut: schneidet die gekämmte Achse die Haut vor der Spitze (am Scheitel-Kamm,
-        // vor dem Hinterhaupt), steht sie auf der Normale.
-        const o = new THREE.Vector3(st.p[0], st.p[1], st.p[2]).addScaledVector(treffer.n, 1e-4);
-        const vor = __strahl(HP, HN, HX, o, st.d, false);
-        if (vor && vor.t < st.l) st.d = treffer.n.clone();
+        st.d = n.clone().addScaledVector(tg, tl > 1e-9 ? TIER_FELL.kamm / tl : 0).normalize();
+        // Der Kamm legt die Strähne nie in eine Haut: schneidet die gekämmte Achse Kopf- oder Leib-Haut vor der Spitze
+        // (am Scheitel-Kamm, vor dem Hinterhaupt, am Hals-Mantel), steht sie auf der Normale.
+        const o = p.clone().addScaledVector(n, 1e-4 * s);
+        const vorK = __strahl(KP, KN, kopf.X, o, st.d, false),
+            vorL = __strahl(leib.P, leib.N, leib.X, o, st.d, false);
+        if ((vorK && vorK.t < st.l) || (vorL && vorL.t < st.l)) st.d = n.clone();
     }
-    const geo = __straehnenKarten(liste, ton);
-    geo.applyMatrix4(zuWurzel);
+    const geo = __straehnenKarten(liste, [1, 1, 1]);
+    const wurzeln = new THREE.BufferAttribute(Float32Array.from(liste.flatMap((st) => st.p)), 3);
+    const toene = muster(wurzeln, (i) => liste[i].gelenke);
     const pa = geo.attributes.position.array,
         na = geo.attributes.normal.array,
         X = geo.index.array;
     const n = pa.length / 3;
-    const out = { P: [], N: [], W: [], T: [], X: [], ton };
+    const out = { P: [], N: [], W: [], T: [], C: [], S: [], X: [], gelenke: liste.map((st) => st.gelenke) };
     for (const seite of [1, -1]) {
         const o = out.P.length / 3;
         for (let i = 0; i < n; i++) {
             const b = i - (i % 8); // die Strähne: 8 Ecken, Wurzel-Ecken 0 · 1 · 4 · 5
+            const j = b / 8;
             for (let k = 0; k < 3; k++) {
                 out.P.push(pa[i * 3 + k]);
                 out.N.push(seite * na[i * 3 + k]);
                 out.W.push((pa[b * 3 + k] + pa[(b + 1) * 3 + k] + pa[(b + 4) * 3 + k] + pa[(b + 5) * 3 + k]) / 4);
+                out.C.push(toene[j * 3 + k]);
             }
             out.T.push((i % 8) % 4 >= 2 ? 1 : 0, 0, 0);
+            out.S.push(j);
         }
         for (let q = 0; q < X.length; q += 3)
             if (seite > 0) out.X.push(X[q] + o, X[q + 1] + o, X[q + 2] + o);
@@ -5869,10 +5895,14 @@ function __tierFellFlaeche(teil, nodeName) {
     return out;
 }
 // Der äußerste (aussen) bzw. erste Schnitt des Strahls o + t·u (t > 0) mit einer Dreiecks-Fläche (Möller–Trumbore) und
-// die Normale der Fläche dort (die Ecken-Normalen baryzentrisch gemischt), zum Strahl hin gekehrt.
+// die Normale der Fläche dort (die Ecken-Normalen baryzentrisch gemischt), zum Strahl hin gekehrt; dazu das Dreieck (q, der
+// Platz seiner ersten Ecke im Index), seine baryzentrischen Gewichte b und die Zahl aller Schnitte (ungerade: o liegt innen).
 function __strahl(P, N, X, o, u, aussen) {
     let best = aussen ? 0 : Infinity,
-        bn = null;
+        bn = null,
+        bq = -1,
+        bb = null,
+        zahl = 0;
     for (let q = 0; q < X.length; q += 3) {
         const a = X[q] * 3,
             b = X[q + 1] * 3,
@@ -5900,18 +5930,22 @@ function __strahl(P, N, X, o, u, aussen) {
         const bv = (u.x * qx + u.y * qy + u.z * qz) * inv;
         if (bv < 0 || bu + bv > 1) continue;
         const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
-        if (t > 1e-9 && (aussen ? t > best : t < best)) {
+        if (!(t > 1e-9)) continue;
+        zahl++;
+        if (aussen ? t > best : t < best) {
             best = t;
             const w0 = 1 - bu - bv;
             bn = [0, 1, 2].map((k) => w0 * N[a + k] + bu * N[b + k] + bv * N[c + k]);
+            bq = q;
+            bb = [w0, bu, bv];
         }
     }
     if (!bn) return null;
     const n = new THREE.Vector3(bn[0], bn[1], bn[2]).normalize();
     if (n.dot(u) < 0) n.negate();
-    return { t: best, n };
+    return { t: best, n, q: bq, b: bb, zahl };
 }
-function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName) {
+function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName, haut) {
     const s = TIER_FELL.basisVox;
     const nx2 = Math.floor((nx - 1) / s) + 1,
         ny2 = Math.floor((ny - 1) / s) + 1,
@@ -5974,7 +6008,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     // Der Deck-Mantel (Unterwolle · Grannen · helle Spitzen) liegt gleichmäßig auf der Haut der Wurzel.
     const mantel = [];
     const kopf = B.teile.headGroup;
-    const karten = []; // die Zeilen der starren Kopf-Haut (oben: die Kopf-Zeile)
+    const kopfZeilen = []; // die Zeilen des starren Kopfs (oben: die Kopf-Zeile) — gegossen, sobald die Basis steht
     for (const [platz, row] of fell.rows.entries()) {
         if (row.art === "deck") {
             const dw = new THREE.Vector3(row.d[0], row.d[1], row.d[2]).normalize();
@@ -5992,8 +6026,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         const node = B.teile[row.teil];
         if (!node) throw new Error("FELL: die Zeile " + row.teil + " hat keinen Teil im Bau");
         if (node === kopf) {
-            if (row.n > 0 && row.l > 0)
-                karten.push(__tierKarten(row, TIER_FELL.samen + platz + 1, __tierFellFlaeche(kopf, nodeName), new THREE.Matrix4().multiplyMatrices(invRoot, kopf.matrixWorld), fell.P));
+            if (row.n > 0 && row.l > 0) kopfZeilen.push([platz, row]);
             continue;
         }
         zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + ((row.lj != null ? row.lj : 0.015) / 2) * fell.kl);
@@ -6011,6 +6044,32 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const hI = basis.attributes.skinIndex.array,
         hW = basis.attributes.skinWeight.array,
         hX = basis.index.array;
+    // Die Karten des Kopfs: die Kopf-Haut, und wo die Leib-Haut den Schädel deckt, die gezeichnete Leib-Haut (ihre Gewichte
+    // am Treffer baryzentrisch, die stärksten vier); der Ton ist das Muster an der Wurzel wie bei jeder Schale.
+    const lX = haut.index.array,
+        lI = haut.attributes.skinIndex.array,
+        lW = haut.attributes.skinWeight.array;
+    const leib = {
+        P: haut.attributes.position.array,
+        N: haut.attributes.normal.array,
+        X: lX,
+        gelenke: (q, b) => {
+            const sum = new Map();
+            for (let e = 0; e < 3; e++)
+                for (let k = 0; k < 4; k++) {
+                    const v = lX[q + e];
+                    const w = b[e] * lW[v * 4 + k];
+                    if (w > 0) sum.set(lI[v * 4 + k], (sum.get(lI[v * 4 + k]) || 0) + w);
+                }
+            const vier = [...sum].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, 4);
+            const ganz = vier.reduce((s2, x) => s2 + x[1], 0);
+            return vier.map(([j, w]) => [skinJoints[j], w / ganz]);
+        },
+    };
+    const muster = (lagen, gelenke) => __tierMusterFarben(fell.kern, fell.P, B.masse, lagen, gelenke, null);
+    const karten = kopfZeilen.map(([platz, row]) =>
+        __tierKarten(row, TIER_FELL.samen + platz + 1, __tierFellFlaeche(kopf, nodeName), new THREE.Matrix4().multiplyMatrices(invRoot, kopf.matrixWorld), nodeName.get(kopf), leib, muster)
+    );
     // Die Haut-Fläche je Gelenk (jedes Dreieck verteilt seine Fläche über die Bone-Gewichte seiner Ecken) und die
     // Strähnen je Fläche des Gelenks — die Einheit des Lab-Mantels (placeFurOnMesh: N Strähnen über der Fläche); sie
     // trägt das Haar-Raster. Die Look-Mischung wiegt Mantel und Zeilen in der Einheit der Zeilen-Dichte
@@ -6148,11 +6207,13 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         }
         for (let q = 0; q < hX.length; q++) I[sN * hX.length + q] = hX[q] + o;
     }
-    // Die Karten: der Kopf-Knochen tritt hinten an die Bone-Ordnung (die Indizes der Leib-Haut bleiben).
+    // Die Karten: jede Ecke trägt die Gelenke ihrer Strähne; ein Kopf-Knochen tritt hinten an die Bone-Ordnung (die
+    // Indizes der Leib-Haut bleiben).
     if (karten.length) {
-        const kn = nodeName.get(kopf);
-        if (skinJoints.indexOf(kn) < 0) skinJoints.push(kn);
-        const jK = skinJoints.indexOf(kn);
+        const gelenk = (nm) => {
+            if (skinJoints.indexOf(nm) < 0) skinJoints.push(nm);
+            return skinJoints.indexOf(nm);
+        };
         let v = Vs * N,
             q0 = hX.length * N;
         for (const k of karten) {
@@ -6162,9 +6223,11 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
                 Nn.set(k.N.slice(i * 3, i * 3 + 3), v * 3);
                 Wz.set(k.W.slice(i * 3, i * 3 + 3), v * 3);
                 T.set(k.T.slice(i * 3, i * 3 + 3), v * 3);
-                C.set(k.ton, v * 3);
-                SI[v * 4] = jK;
-                SW[v * 4] = 1;
+                C.set(k.C.slice(i * 3, i * 3 + 3), v * 3);
+                k.gelenke[k.S[i]].forEach(([nm, w], m) => {
+                    SI[v * 4 + m] = gelenk(nm);
+                    SW[v * 4 + m] = w;
+                });
             }
         }
     }
