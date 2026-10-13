@@ -43,6 +43,20 @@ const PORT = Number(process.env.WORKER_DICHTE_PORT) || 4392;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const WELTEN = String(opt("--welten", "standard,buehne")).split(",").filter(Boolean);
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
+// DIE LINSE kommt immer aus DIESEM Baum (`gelaende-core.js` `MESSUNG`, `abdruckFeld`, `messStatistik`, `schichtMessung`,
+// `urteil` — dieselbe Rechnung wie die Zahl-Leiste des Studios), das Gesetz aus der gemessenen Wurzel.
+let linseKern = null;
+const linse = () => (linseKern = linseKern || gelaendeKern(path.resolve(__dirname, ".."))).G;
+// Die Punkte des Makro-Abdrucks in der Reihenfolge des Kerns (`abdruckFeld`, aufgezeichnet): die Seite liest an ihnen nur
+// die Höhe der Welt (`_terrainMacroSurfaceY`) und hasht die Float64-Bytes — dieselben Bytes wie das Studio.
+const abdruckPunkte = () => {
+    const P = [];
+    linse().abdruckFeld((x, z, mitDetail) => (P.push([x, z, mitDetail]), 0));
+    return P;
+};
+// Die Bedienung des Studios (Namen, Gruppen, die benannten Landschaften) — kein Gesetz des Kerns (studio-vertrag §9).
+const bedienung = () =>
+    JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "worlds", "gelaende", "bedienung.json"), "utf8"));
 
 const mime = {
     ".html": "text/html",
@@ -100,7 +114,7 @@ async function boote(page) {
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck) {
     return page.evaluate(
-        async (welt, mitAbdruck) => {
+        async (welt, mitAbdruck, punkte) => {
             const r = window.anazhRealm;
             const s = r.state;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
@@ -220,17 +234,9 @@ async function probe(page, welt, mitAbdruck) {
             out.orte.push({ id: o0.id + "+edits", x: o0.x, z: o0.z, zeilen: zeilenEdit });
             s.worldMeta.voxelEdits = editsVorher;
             await r._voxelWorkerSyncState({ op: "state-set" });
-            // Der Abdruck der Makro-Höhe (64×64, ±852 m, Schritt 27 m — ganzzahlig, f32-exakt) für den Byte-Beweis.
-            const makroSha = async () => {
-                const h = new Float64Array(64 * 64 * 2);
-                let q = 0;
-                for (let j = 0; j < 64; j++)
-                    for (let i = 0; i < 64; i++) {
-                        h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, true);
-                        h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, false);
-                    }
-                return hex(h);
-            };
+            // Der Abdruck der Makro-Höhe für den Byte-Beweis: die Punkte des Kerns (`abdruckFeld`), die Höhe der Welt.
+            const makroSha = async () =>
+                hex(Float64Array.from(punkte, ([x, z, mitDetail]) => r._terrainMacroSurfaceY(x, z, mitDetail)));
             // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
             // Punkten in drei Höhen über der Makro-Höhe (die Schneegrenze `schnee` des Kerns greift erst
             // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache) und die
@@ -311,7 +317,8 @@ async function probe(page, welt, mitAbdruck) {
             return out;
         },
         welt,
-        mitAbdruck
+        mitAbdruck,
+        mitAbdruck ? abdruckPunkte() : []
     );
 }
 
@@ -478,50 +485,34 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
         imBudget: alle <= SPALTEN_BUDGET.alle && ebenen <= SPALTEN_BUDGET.ebenen,
     };
 }
-// Das Schicht-Gesetz am Schicht-Ort auf 2-m-Raster, 600 m: das Tafelland ist ein ORT (Stil-Feld λ 5,2 km), der Kern nennt
-// ihn im Umkreis von 8 km (16 × 16 km — in 4 × 4 km fehlt er zwei von drei Welten); ohne Ort: der Ursprung. Gezählt wird im
-// Tafelland selbst (Stil ≥ 0,8 der Großform), nicht im Wald daneben. Leser: die Saaten und die Presets der Gelände-Linse.
-function schichtAm(G, Z, L) {
-    const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -8000, -8000, 8000, 8000) : null;
-    const ox = ort ? ort.x : 0;
-    const oz = ort ? ort.z : 0;
-    const fn = 301;
-    const HF = new Float64Array(fn * fn);
-    const maske = new Uint8Array(fn * fn);
-    for (let j = 0; j < fn; j++)
-        for (let i = 0; i < fn; i++) {
-            HF[i + j * fn] = G.hoehe(L, ox - 300 + i * 2, oz - 300 + j * 2, true);
-            if (ort && typeof G.grossform === "function")
-                maske[i + j * fn] = G.grossform(L, ox - 300 + i * 2, oz - 300 + j * 2).stil >= 0.8 ? 1 : 0;
-            else maske[i + j * fn] = 1;
-        }
-    return { ort, ox, oz, schicht: Z.hangBaender(HF, fn, 2, maske) };
-}
-// DIE PRESETS AN DEN DREI SAATEN (K16b): jede benannte Landschaft (`LANDFORM_PRESETS`) als EIN Plan je Saat der Linse
-// (`planLage` — dieselbe Lage, die die Welt aus dem Plan gebiert), dieselbe Statistik und dasselbe Urteil wie die Saaten;
-// das Schicht-Gesetz am Schicht-Ort des Presets (ohne Ort: null, es gilt dort nicht). Das Urteil spricht `presetBefunde`
-// (dieselbe Wand wie die Knöpfe der Studio-Probe): kein Ziel false, und je Saat trägt mindestens eine Landschaft das
-// Schicht-Gesetz. Ein Gesetz ohne Presets (`--wurzel` vor K16b) trägt keine — dann misst das Bein nichts und sagt es.
-function presetsAnSaaten(K, Z, n, SCHRITT, AUSSEN, RAND) {
+// DIE LANDSCHAFTEN AN DEN DREI SAATEN (K16b): jede benannte Landschaft der Bedienung des Studios (worlds/gelaende/
+// bedienung.json `landschaften`) als EIN Plan je Saat der Linse (`planLage` des gemessenen Gesetzes — dieselbe Lage, die die
+// Welt aus dem Plan gebiert), dieselbe Messung und dasselbe Urteil wie die Saaten (die Linse dieses Baums). Das Urteil spricht
+// `presetBefunde` (dieselbe Wand wie die Knöpfe der Studio-Probe): kein Ziel false, und je Saat trägt mindestens eine
+// Landschaft das Schicht-Gesetz. Ein Gesetz ohne Plan-Tür (`--wurzel` vor K16b) liest keinen Plan — dann misst das Bein
+// nichts und sagt es.
+function presetsAnSaaten(K, Z) {
     const G = K.G;
-    if (!Array.isArray(G.LANDFORM_PRESETS) || typeof G.planLage !== "function") {
-        console.log("\n  Presets: das gemessene Gesetz trägt keine (LANDFORM_PRESETS, planLage) — das Bein misst nichts");
+    const R = Z.MESSUNG.raster;
+    if (typeof G.planLage !== "function") {
+        console.log("\n  Landschaften: das gemessene Gesetz liest keinen Plan (planLage) — das Bein misst nichts");
         return { befunde: [], je: [] };
     }
     const befunde = [];
     const je = [];
     for (const saat of REALISMUS_SAATEN) {
         const liste = [];
-        for (const P of G.LANDFORM_PRESETS) {
-            const plan = { art: G.PLAN_ART, v: G.PLAN_VERSION, saat, regler: P.regler };
+        for (const P of bedienung().landschaften) {
+            const plan = { art: Z.PLAN_ART, v: Z.PLAN_VERSION, saat, regler: P.regler };
             const L = G.planLage(plan, K.SimplexNoise);
-            const H = new Array(n * n);
-            for (let j = 0; j < n; j++)
-                for (let i = 0; i < n; i++) H[i + j * n] = G.hoehe(L, -AUSSEN + i * SCHRITT, -AUSSEN + j * SCHRITT, true);
-            const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
-            const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
-            const { ort, schicht } = schichtAm(G, Z, L);
-            const urteil = Z.urteil(st, ort ? schicht : null);
+            const H = new Float64Array(R.n * R.n);
+            for (let j = 0; j < R.n; j++)
+                for (let i = 0; i < R.n; i++) H[i + j * R.n] = G.hoehe(L, R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
+            const st = Z.messStatistik(H, L, G);
+            const sm = Z.schichtMessung(L, G);
+            const ort = sm.ort;
+            const schicht = sm.baender;
+            const urteil = Z.urteil(st, sm);
             liste.push({ id: P.id, traegt: true, urteil });
             je.push({
                 saat,
@@ -553,13 +544,13 @@ function realismus() {
         console.log("  ⛔ der Kern trägt keine Linse (statistik)");
         return 1;
     }
-    const SCHRITT = 30;
-    const HALB = 2000;
-    // Der Rand (2 km je Seite) rechnet mit — Füllung, Abfluss und das WAHRE Einzugsgebiet der Flüsse, die ins Feld treten
-    // (ohne ihn zählte Flint die Ströme ab der Feldkante); gezählt wird das innere Feld.
-    const RAND = Math.round(2000 / SCHRITT);
-    const AUSSEN = HALB + RAND * SCHRITT;
-    const n = Math.floor((2 * AUSSEN) / SCHRITT) + 1;
+    // Das Mess-Raster des Kerns (`MESSUNG.raster`: 4 × 4 km innen, 30 m, 2 km Rand — EINE Quelle mit der Zahl-Leiste).
+    const R = Z.MESSUNG.raster;
+    const SCHRITT = R.schritt;
+    const HALB = R.halb;
+    const RAND = R.rand;
+    const AUSSEN = -R.x0;
+    const n = R.n;
     console.log(
         "\n========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) ========="
     );
@@ -574,12 +565,15 @@ function realismus() {
             for (let i = 0; i < n; i++) H[i + j * n] = G.hoehe(L, -AUSSEN + i * SCHRITT, -AUSSEN + j * SCHRITT, true);
         const us = Number(process.hrtime.bigint() - t0) / 1000 / (n * n);
         const kosten = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us);
-        const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
-        const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
-        const { ort, ox, oz, schicht } = schichtAm(G, Z, L);
+        const st = Z.messStatistik(H, L, G);
+        const sm = Z.schichtMessung(L, G);
+        const ort = sm.ort;
+        const ox = sm.x;
+        const oz = sm.z;
+        const schicht = sm.baender;
         // Der Korridor ist EINE Quelle (`urteil`/`KORRIDOR` im Kern — dieselbe Zahl-Leiste wie im Studio); die Wand verlangt
         // jedes Ziel, auch das Schicht-Gesetz (ohne Schicht-Ort: null = rot), und die Kosten je Spalte (K16).
-        const urteil = { ...Z.urteil(st, ort ? schicht : null), kosten: kosten.imBudget };
+        const urteil = { ...Z.urteil(st, sm), kosten: kosten.imBudget };
         const taeter = {
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
             flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
@@ -594,7 +588,7 @@ function realismus() {
         let last = null;
         if (SELBSTTEST) {
             const HS = H.map((h, k) => h + stoerung(-AUSSEN + (k % n) * SCHRITT, -AUSSEN + ((k / n) | 0) * SCHRITT));
-            stoer = Z.statistik(HS, n, SCHRITT, L.waterLevel, benannt, RAND);
+            stoer = Z.messStatistik(HS, L, G);
             // die Kosten-Last: 40 noise2D mehr je Spalte MÜSSEN das Budget sprengen
             last = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us, 40);
         }
@@ -630,7 +624,7 @@ function realismus() {
     let presets = null;
     if (!SELBSTTEST) {
         console.log("\n  DIE PRESETS an den drei Saaten (je Preset EIN Plan, dieselbe Statistik, dasselbe Urteil):");
-        presets = presetsAnSaaten(K, Z, n, SCHRITT, AUSSEN, RAND);
+        presets = presetsAnSaaten(K, Z);
         for (const b of presets.befunde) {
             rot = true;
             console.log(`    ⛔ ${b}`);
@@ -671,7 +665,7 @@ function realismus() {
 //   DER START: das Studio öffnet auf A, und der Entwurf nennt sichtbar, was die Welt trägt und kein Plan (Rampe, Basis);
 //   A = DIE GEBAUTE WELT: das Studio steht über einer Welt, die kein Plan beschreibt (Basis 7 m, eine Rampe im Erbgut) —
 //       unter A zeigt es dieselbe Welt (Makro-Abdruck und Statistik wie die Welt selbst), nie eine Projektion auf einen Plan;
-//   DIE PRESETS (`LANDFORM_PRESETS`): jeder Knopf legt seine Regler in den Entwurf, kein Ziel fällt aus dem Natur-Korridor
+//   DIE LANDSCHAFTEN (`landschaften` der Bedienung): jeder Knopf legt seine Regler in den Entwurf, kein Ziel fällt aus dem Natur-Korridor
 //       (`urteil` false), und mindestens eine Landschaft trägt das Schicht-Gesetz (Kliff über Schutthang über Pediment);
 //   DER SCHNEE (EIN Farb-Gesetz): nach dem Import malt die Karte des Plans je Rasterzelle den Schnee, den die Boden-Farbe der
 //       Welt trägt (`_bodenFarbeAt`), in der Farbe der Boden-Palette.
@@ -713,11 +707,14 @@ function startBefunde(z, soll) {
     if (soll.length && !z.sichtbar) b.push("die Abweichung steht nicht sichtbar im Panel (.abweichung)");
     return b;
 }
-// Die Welt in der Seite gemessen, unabhängig vom Studio: der Makro-Abdruck (64×64, ±852 m, mit und ohne Detail) und die
-// Statistik auf dem Raster des Studios — beides über `_terrainMacroSurfaceY`, die Höhe, die die Welt baut.
-function weltMessen(page, raster) {
-    return page.evaluate(
-        async (n, schritt, x0) => {
+// Die Welt in der Seite gemessen, unabhängig vom Studio — mit der Linse dieses Baums: der Makro-Abdruck an den Punkten des
+// Kerns (`abdruckFeld`) und die Statistik auf dem Mess-Raster des Kerns (`MESSUNG.raster`, `messStatistik`); die Seite liest
+// nur die Höhe, die die Welt baut (`_terrainMacroSurfaceY`), und die Seen, die ihr Gesetz benennt (`benannteSeen`).
+async function weltMessen(page) {
+    const Z = linse();
+    const R = Z.MESSUNG.raster;
+    const w = await page.evaluate(
+        async (punkte, R) => {
             const r = window.anazhRealm;
             const G = window.__gelaendeCore;
             const hex = async (arr) => {
@@ -729,29 +726,17 @@ function weltMessen(page, raster) {
                     .map((b) => b.toString(16).padStart(2, "0"))
                     .join("");
             };
-            const h = new Float64Array(64 * 64 * 2);
-            let q = 0;
-            for (let j = 0; j < 64; j++)
-                for (let i = 0; i < 64; i++) {
-                    h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, true);
-                    h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, false);
-                }
-            const H = new Float64Array(n * n);
-            for (let j = 0; j < n; j++)
-                for (let i = 0; i < n; i++)
-                    H[i + j * n] = r._terrainMacroSurfaceY(x0 + i * schritt, x0 + j * schritt, true);
+            const H = new Array(R.n * R.n);
+            for (let j = 0; j < R.n; j++)
+                for (let i = 0; i < R.n; i++)
+                    H[i + j * R.n] = r._terrainMacroSurfaceY(R.x0 + i * R.schritt, R.x0 + j * R.schritt, true);
             const L = r._gelaende();
-            const st = G.statistik(
-                H,
-                n,
-                schritt,
-                L.waterLevel,
-                G.benannteSeen(L, x0, x0, schritt, n),
-                Math.round(2000 / schritt)
-            );
             return {
-                makroSha: await hex(h),
-                statistik: st,
+                makroSha: await hex(
+                    Float64Array.from(punkte, ([x, z, mitDetail]) => r._terrainMacroSurfaceY(x, z, mitDetail))
+                ),
+                H,
+                benannt: G.benannteSeen(L, R.x0, R.x0, R.schritt, R.n),
                 seed: L.seed,
                 basis: L.baseHeight,
                 wasser: L.waterLevel,
@@ -759,10 +744,14 @@ function weltMessen(page, raster) {
                 erbgut: r._erbgut().terme[0],
             };
         },
-        raster.n,
-        raster.schritt,
-        raster.x0
+        abdruckPunkte(),
+        R
     );
+    const { H, benannt, ...rest } = w;
+    return {
+        ...rest,
+        statistik: Z.messStatistik(Float64Array.from(H), { waterLevel: w.wasser }, { benannteSeen: () => benannt }),
+    };
 }
 async function studioProbe() {
     await new Promise((r) => server.listen(PORT, r));
@@ -858,7 +847,7 @@ async function studioProbe() {
             await S.ruhig();
             return S.zustand();
         });
-        const weltA = await weltMessen(page, zA.raster);
+        const weltA = await weltMessen(page);
         const aGleich = zA.makroSha === weltA.makroSha;
         const aStat = JSON.stringify(zA.statistik) === JSON.stringify(weltA.statistik);
         out.a = { welt: weltA, studio: { makroSha: zA.makroSha, statistik: zA.statistik } };
@@ -943,12 +932,11 @@ async function studioProbe() {
         console.log(
             `  Export: ${studio.text.length} Bytes · Saat ${plan.saat} · ${Object.keys(plan.regler).length} Regler · Makro ${studio.zustand.makroSha.slice(0, 16)}`
         );
-        // DIE PRESETS: jeder Knopf aus `LANDFORM_PRESETS`, die Zahl-Leiste danach.
-        const presets = await page.evaluate(async () => {
+        // DIE LANDSCHAFTEN: jeder Knopf aus der Bedienung (`landschaften`, worlds/gelaende/bedienung.json), die Zahl-Leiste danach.
+        const presets = await page.evaluate(async (LANDSCHAFTEN) => {
             const S = window.__gelaendeStudio;
-            const G = window.__gelaendeCore;
             const aus = [];
-            for (const P of G.LANDFORM_PRESETS) {
+            for (const P of LANDSCHAFTEN) {
                 const k = document.querySelector(`#gelaende-studio [data-preset="${P.id}"]`);
                 if (!k) {
                     aus.push({ id: P.id, fehlt: true });
@@ -972,7 +960,7 @@ async function studioProbe() {
                 });
             }
             return aus;
-        });
+        }, bedienung().landschaften);
         out.presets = presets;
         for (const p of presets) {
             const ziele = Object.entries(p.urteil || {})
@@ -1005,7 +993,7 @@ async function studioProbe() {
         const b3 = await boote(page);
         if (!b3.ok) throw new Error("die Welt aus dem Plan erwachte nicht");
         console.log(`  Import: Welt-Tor „Ersetzen" → Reload → Boot ${b3.ms} ms (Seed ${b3.seed})`);
-        const welt = await weltMessen(page, studio.zustand.raster);
+        const welt = await weltMessen(page);
         out.welt = welt;
         const gleich = welt.makroSha === studio.zustand.makroSha;
         const statGleich = JSON.stringify(welt.statistik) === JSON.stringify(studio.zustand.statistik);

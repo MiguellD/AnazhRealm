@@ -4,9 +4,10 @@
 // dieser Worker rechnet sie mit DEMSELBEN Gesetzbuch wie die Welt (gelaende-core.js `hoehe` an `lageAus`; kein Spiegel,
 // keine eigene Höhe) und antwortet in drei Stufen, jede ein Bild:
 //   grob    90 × 90 Spalten (90 m) — das Bild unter dem Finger, während der Regler noch gleitet
-//   voll    268 × 268 Spalten (30 m, das Raster der Gelände-Linse: 4 × 4 km innen + 2 km Rand) — Bild, Statistik, Urteil,
-//           der Makro-Abdruck (64 × 64, ±852 m, mit und ohne Detail — derselbe wie `diag-worker-dichte --abdruck`)
-//   schicht das Schicht-Gesetz am Schicht-Ort (`schichtOrt`, 2-m-Raster, 600 m, im Tafelland gezählt)
+//   voll    das Mess-Raster des Kerns (`MESSUNG.raster`: 4 × 4 km innen + 2 km Rand, 30 m) — Bild, Statistik
+//           (`messStatistik`), Urteil, der Makro-Abdruck (`abdruckFeld` — dieselben Bytes, die die Wände an der Welt messen)
+//   schicht das Schicht-Gesetz am Schicht-Ort (`schichtSchritte` des Kerns, zeilenweise mit Takt-Abgabe)
+// Die Messung rechnet nur der Kern (`MESSUNG`, EINE Quelle für die Wände und diese Zahl-Leiste); der Worker gibt den Takt ab.
 // Ein neuer Entwurf überholt den alten (die Rechnung gibt je ~16 ms den Takt ab und bricht ab, wenn sie nicht mehr
 // die jüngste ist). Die Bilder reisen als Transfer (der Haupt-Thread trägt keine Bytes, Lehre 24).
 "use strict";
@@ -24,11 +25,16 @@ const G = self.__gelaendeCore;
 if (!G || typeof G.lageAus !== "function")
     throw new Error("makro-worker: gelaende-core trägt keine Lage-Rechnung (lageAus)");
 
-const RASTER = Object.freeze({
-    grob: { n: 90, schritt: 90, x0: -4005 },
-    voll: { n: 268, schritt: 30, x0: -4010 },
-});
-const RAND = Math.round(2000 / 30);
+// voll ist das Mess-Raster des Kerns; grob deckt dieselbe Fläche mit 90 m (das Bild unter dem Finger).
+const RASTER = (function () {
+    const M = G.MESSUNG.raster;
+    const schritt = 90;
+    const n = Math.floor((-2 * M.x0) / schritt) + 1;
+    return Object.freeze({
+        grob: Object.freeze({ n, schritt, x0: -((n - 1) * schritt) / 2 }),
+        voll: Object.freeze({ n: M.n, schritt: M.schritt, x0: M.x0 }),
+    });
+})();
 // Je Spur (A = die gebaute Welt, B = der Entwurf) der jüngste Auftrag — ein neuer Entwurf überholt nur seine Spur.
 const juengste = { A: 0, B: 0 };
 const pause = () => new Promise((r) => setTimeout(r, 0));
@@ -55,15 +61,8 @@ async function sha(arr) {
         .join("");
 }
 
-async function makroSha(L) {
-    const h = new Float64Array(64 * 64 * 2);
-    let q = 0;
-    for (let j = 0; j < 64; j++)
-        for (let i = 0; i < 64; i++) {
-            h[q++] = G.hoehe(L, -852 + i * 27, -852 + j * 27, true);
-            h[q++] = G.hoehe(L, -852 + i * 27, -852 + j * 27, false);
-        }
-    return sha(h);
+function makroSha(L) {
+    return sha(G.abdruckFeld((x, z, mitDetail) => G.hoehe(L, x, z, mitDetail)));
 }
 
 // DAS RELIEF-BILD: Höhenstufen über dem Meer (Aue grün → Hochland ocker → Fels), Fels nach dem Hang (Schutt ab 30°,
@@ -200,27 +199,20 @@ function faerbe(H, n, schritt, L, schneeAus) {
     return px;
 }
 
-async function schichtBaender(L, id, spur) {
-    const ort = G.schichtOrt(L, -8000, -8000, 8000, 8000);
-    if (!ort) return { ort: null, baender: null };
-    const fn = 301;
-    const HF = new Float64Array(fn * fn);
-    const maske = new Uint8Array(fn * fn);
+// Das Schicht-Gesetz des Kerns, Zeile für Zeile (`schichtSchritte`); je ~16 ms gibt es den Takt ab — und bricht ab, wenn
+// ein jüngerer Entwurf kam.
+async function schichtMessung(L, id, spur) {
+    const it = G.schichtSchritte(L);
     let t = performance.now();
-    for (let j = 0; j < fn; j++) {
-        for (let i = 0; i < fn; i++) {
-            const x = ort.x - 300 + i * 2;
-            const z = ort.z - 300 + j * 2;
-            HF[i + j * fn] = G.hoehe(L, x, z, true);
-            maske[i + j * fn] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;
-        }
+    for (;;) {
+        const r = it.next();
+        if (r.done) return r.value;
         if (performance.now() - t > 16) {
             await pause();
             if (id !== juengste[spur]) return null;
             t = performance.now();
         }
     }
-    return { ort, baender: G.hangBaender(HF, fn, 2, maske) };
 }
 
 async function rechne(id, spur, abbild, stufen) {
@@ -230,20 +222,19 @@ async function rechne(id, spur, abbild, stufen) {
         const H = await raster(L, R, id, spur);
         if (!H) return;
         const px = faerbe(H, R.n, R.schritt, L);
-        self.postMessage({ id, stufe: "grob", n: R.n, px }, [px.buffer]);
+        self.postMessage({ id, stufe: "grob", n: R.n, raster: R, px }, [px.buffer]);
     }
     const R = RASTER.voll;
     const H = await raster(L, R, id, spur);
     if (!H) return;
     const schneeKarte = new Uint8Array(R.n * R.n);
     const px = faerbe(H, R.n, R.schritt, L, schneeKarte);
-    const benannt = G.benannteSeen(L, R.x0, R.x0, R.schritt, R.n);
-    const statistik = G.statistik(H, R.n, R.schritt, L.waterLevel, benannt, RAND);
+    const statistik = G.messStatistik(H, L);
     const voll = {
         id,
         stufe: "voll",
         n: R.n,
-        raster: { n: R.n, schritt: R.schritt, x0: R.x0 },
+        raster: R,
         px,
         statistik,
         urteil: G.urteil(statistik, null),
@@ -255,14 +246,14 @@ async function rechne(id, spur, abbild, stufen) {
     };
     if (id !== juengste[spur]) return;
     self.postMessage(voll, [px.buffer]);
-    const sb = await schichtBaender(L, id, spur);
-    if (!sb || id !== juengste[spur]) return;
+    const sm = await schichtMessung(L, id, spur);
+    if (!sm || id !== juengste[spur]) return;
     self.postMessage({
         id,
         stufe: "schicht",
-        ort: sb.ort,
-        baender: sb.baender,
-        urteil: G.urteil(statistik, sb.baender),
+        ort: sm.ort,
+        baender: sm.ort ? sm.baender : null,
+        urteil: G.urteil(statistik, sm),
     });
 }
 

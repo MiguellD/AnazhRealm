@@ -3,13 +3,14 @@
 // `index.html?studio=gelaende` — die Welt läuft wie immer, das Studio legt ein schmales Panel über sie (Garage-Norm:
 // halbtransparent, einklappbar) und führt die Kamera (Makro-Flug, langsamer Orbit, Augenhöhe). Es erzeugt nichts selbst:
 //   · die REGLER sind die Parameter des EINEN Kerns (`__gelaendeCore.LANDFORM_REGLER`), das Panel baut jede Zeile aus
-//     ihnen (Name, Einheit, Bereich, Schritt, Standard, Gesetz); die vier Gruppen zeigen ihre Haupt-Regler, der Rest liegt
-//     hinter „mehr";
+//     ihnen (Einheit, Bereich, Schritt, Standard, Gesetz); die BEDIENUNG (worlds/gelaende/bedienung.json: die Namen, die
+//     vier Gruppen mit ihren Haupt-Reglern — der Rest liegt hinter „mehr" — und die benannten Landschaften) ist kein Gesetz
+//     und kein Rezept des Kerns (studio-vertrag §9), sie gehört dem Studio und fällt laut, wenn sie einen Regler nicht kennt;
 //   · die MAKRO-ANSICHT und die ZAHL-LEISTE rechnet der Makro-Worker mit demselben Gesetzbuch (`lageAus` → `hoehe`,
 //     `statistik`, `urteil`) — sofort beim Griff, ohne den Takt der Welt;
 //   · der EXPORT ist EIN Plan (`planNormal`: Saat + Regler), „Welt bauen" legt ihn durch die Welt-Tür des Stamms
 //     (`_weltAusPlan` → `_weltBetreten`) — die Welt erwacht neu und liest ihn byte-gleich (gate:worker-dichte --studio).
-// Saat-Würfel, vier benannte Landschaften (`LANDFORM_PRESETS`) und der A/B-Umschalter (A = die gebaute Welt, B = der
+// Saat-Würfel, vier benannte Landschaften (`landschaften` der Bedienung) und der A/B-Umschalter (A = die gebaute Welt, B = der
 // Entwurf) liegen am selben Ort.
 (function () {
     "use strict";
@@ -29,6 +30,10 @@
         }
     })();
     const WELT_SCHLUESSEL = "anazh.gelaende.welt"; // die Welt, die das Studio baut (je Betrachter)
+    const BEDIENUNG = fetch(new URL("bedienung.json" + (V ? "?v=" + V : ""), SKRIPT).href).then((r) => {
+        if (!r.ok) throw new Error(`bedienung.json: HTTP ${r.status}`);
+        return r.json();
+    });
 
     const CSS = `
 #gelaende-studio{--panel:rgba(9,14,20,.72);--ink:#cdd8e2;--mut:#7f8f9c;--hair:rgba(90,140,170,.18);--steel:#4f8fa6;
@@ -89,6 +94,8 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
     const st = {
         realm: null,
         G: null,
+        B: null, // die Bedienung (`bedienungPruefen`)
+        bildRaster: null, // das Raster des gezeigten Bildes (der Worker nennt es je Stufe)
         lageA: null, // A: das Abbild der gebauten Welt (`lageAbbild` ihrer Lage — jede Welt, wie sie steht)
         planB: null, // B: der Entwurf (der Plan, den „Welt bauen" in die Welt legt)
         zeige: "A", // das Studio öffnet über der Welt, wie sie steht
@@ -208,6 +215,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             }
         }
         if (bild && cv) {
+            st.bildRaster = bild.raster;
             if (!bildCanvas || bildCanvas.width !== bild.n) {
                 bildCanvas = document.createElement("canvas");
                 bildCanvas.width = bildCanvas.height = bild.n;
@@ -233,17 +241,21 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         if (!cv || !r || !r.state || !r.state.playerMesh) return;
         const ctx = cv.getContext("2d");
         ctx.clearRect(0, 0, cv.width, cv.height);
+        const R = st.bildRaster;
+        if (!R) return;
+        // das Raster des Bildes (der Worker nennt es): Pixel i deckt die Zelle um x0 + i·schritt
+        const k = cv.width / (R.n * R.schritt);
+        const links = R.x0 - R.schritt / 2;
         const p = r.state.playerMesh.position;
-        const k = cv.width / (268 * 30);
-        const x = (p.x + 4010) * k;
-        const y = (p.z + 4010) * k;
+        const x = (p.x - links) * k;
+        const y = (p.z - links) * k;
         const cam = r.state.camera;
         if (cam) {
             const dx = p.x - cam.position.x;
             const dz = p.z - cam.position.z;
             const a = Math.atan2(dz, dx);
-            const cx = (cam.position.x + 4010) * k;
-            const cy = (cam.position.z + 4010) * k;
+            const cx = (cam.position.x - links) * k;
+            const cy = (cam.position.z - links) * k;
             ctx.fillStyle = "rgba(111,208,232,.16)";
             ctx.beginPath();
             ctx.moveTo(cx, cy);
@@ -367,7 +379,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         d.className = "sl";
         d.title = R.law;
         d.innerHTML = `<div class="sl-h"><span class="n"></span><span class="v"></span></div><input type="range">`;
-        d.querySelector(".n").textContent = st.G.LANDFORM_NAMEN[R.id] || R.id;
+        d.querySelector(".n").textContent = st.B.namen[R.id];
         const inp = d.querySelector("input");
         inp.min = R.min;
         inp.max = R.max;
@@ -397,7 +409,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         const s = $(".saat");
         if (s) s.textContent = st.planB.saat;
         for (const k of document.querySelectorAll("#gelaende-studio [data-preset]")) {
-            const P = st.G.LANDFORM_PRESETS.find((p) => p.id === k.dataset.preset);
+            const P = st.B.landschaften.find((p) => p.id === k.dataset.preset);
             const an = st.G.LANDFORM_REGLER.every(
                 (R) => st.planB.regler[R.id] === (R.id in P.regler ? P.regler[R.id] : R.def)
             );
@@ -471,7 +483,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             })
         );
         const pr = $(".reihe.presets");
-        for (const P of st.G.LANDFORM_PRESETS)
+        for (const P of st.B.landschaften)
             pr.appendChild(
                 knopf(
                     P.name,
@@ -489,12 +501,12 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         const gruppen = $(".gruppen");
         const mehr = $(".mehr-leib");
         const haupt = new Set();
-        for (const g of Object.keys(st.G.LANDFORM_HAUPT)) {
+        for (const g of Object.keys(st.B.gruppen)) {
             const sec = document.createElement("div");
             sec.className = "sec";
-            sec.textContent = (st.G.LANDFORM_NAMEN[g] || g).toUpperCase();
+            sec.textContent = st.B.gruppen[g].name.toUpperCase();
             gruppen.appendChild(sec);
-            for (const id of st.G.LANDFORM_HAUPT[g]) {
+            for (const id of st.B.gruppen[g].haupt) {
                 haupt.add(id);
                 gruppen.appendChild(schieber(regler(id)));
             }
@@ -506,7 +518,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                 gruppe = R.gruppe;
                 const sec = document.createElement("div");
                 sec.className = "sec";
-                sec.textContent = (st.G.LANDFORM_NAMEN[gruppe] || gruppe).toUpperCase();
+                sec.textContent = st.B.gruppen[gruppe].name.toUpperCase();
                 mehr.appendChild(sec);
             }
             mehr.appendChild(schieber(R));
@@ -692,8 +704,43 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             setTimeout(start, 120);
             return;
         }
+        BEDIENUNG.then(
+            (B) => oeffne(r, G, bedienungPruefen(B, G)),
+            (e) => bruch(r, e)
+        ).catch((e) => bruch(r, e));
+    }
+    // EIN BRUCH IST LAUT: ein Studio ohne lesbare Bedienung öffnet nicht (kein Panel mit Ids statt Namen, keine stummen Knöpfe).
+    function bruch(r, e) {
+        const grund = String((e && e.message) || e);
+        console.error(`[Gelände-Studio] öffnet nicht: ${grund}`);
+        if (r && typeof r.log === "function") r.log(`Gelände-Studio öffnet nicht — ${grund}`, "ERROR");
+    }
+    // Die Bedienung gegen den Kern: jeder Regler trägt einen Namen und eine Gruppe, jede Haupt-Zeile ist ein Regler, jede
+    // Landschaft ist ein Plan, den der Kern liest (`planNormal`: ein unbekannter Regler WIRFT) — sonst wirft sie mit dem Grund.
+    function bedienungPruefen(B, G) {
+        const nein = (g) => {
+            throw new Error(`die Bedienung (worlds/gelaende/bedienung.json) ${g}`);
+        };
+        if (!B || B.art !== "gelaende-bedienung") nein("ist keine gelaende-bedienung");
+        const ids = new Set(G.LANDFORM_REGLER.map((R) => R.id));
+        for (const R of G.LANDFORM_REGLER) {
+            if (typeof (B.namen && B.namen[R.id]) !== "string") nein(`nennt den Regler „${R.id}" nicht`);
+            if (!(B.gruppen && B.gruppen[R.gruppe])) nein(`kennt die Gruppe „${R.gruppe}" nicht`);
+        }
+        for (const g of Object.keys(B.gruppen))
+            for (const id of B.gruppen[g].haupt || []) if (!ids.has(id)) nein(`zeigt in „${g}" den unbekannten Regler „${id}"`);
+        for (const P of B.landschaften || [])
+            try {
+                G.planNormal({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "bedienung", regler: P.regler });
+            } catch (e) {
+                nein(`trägt die Landschaft „${P.id}", die kein Plan ist: ${e.message}`);
+            }
+        return B;
+    }
+    function oeffne(r, G, B) {
         st.realm = r;
         st.G = G;
+        st.B = B;
         st.lageA = G.lageAbbild(r._gelaende());
         st.planB = entwurfDerWelt(r);
         st.abweichung = abweichungDerWelt(st.lageA, st.planB);

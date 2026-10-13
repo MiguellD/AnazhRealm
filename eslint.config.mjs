@@ -114,6 +114,7 @@ export default [
                 URL: "readonly",
                 URLSearchParams: "readonly",
                 ImageData: "readonly",
+                fetch: "readonly",
                 Event: "readonly",
                 alert: "readonly",
                 setTimeout: "readonly",

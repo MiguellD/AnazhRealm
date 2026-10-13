@@ -346,6 +346,8 @@
         return N;
     }
 
+    // Die Großform einer Lage (der Namensraum-Leser `grossform(L, x, z)`).
+    const grossformAus = (L, x, z) => grossform(netzFuer(L), x, z);
     // T1 — die Großform an (x, z): Grundhöhe K (sie lenkt das Netz der Ebene 0 und setzt Meer und Seen), Relief (die Hülle
     // über dem Talgrund), Hebung U (der Steilheits-Index der Flüsse: ks = ks₀·U), Stil (Tafelland), Trog-Gewicht.
     function grossform(N, x, z) {
@@ -1359,72 +1361,81 @@
         return { zellen: c, pediment: r3(ped / c), schutt: r3(schutt / c), ruhe: r3(ruhe / c), kliff: r3(kliff / c) };
     }
 
-    // ── DAS GELÄNDE-STUDIO (K16b): Bedienung, Urteil und Plan — rein additiv, die Höhe rechnet weiter `hoehe` allein.
+    // ── DAS GELÄNDE-STUDIO (K16b): Urteil, Messung und Plan — rein additiv, die Höhe rechnet weiter `hoehe` allein. Die
+    // Bedienung (Namen, Haupt-Regler je Gruppe, die benannten Landschaften) ist kein Gesetz und kein Rezept des Kerns
+    // (studio-vertrag §9): sie liegt beim Studio (worlds/gelaende/bedienung.json).
     //
-    // DIE HAUPT-REGLER je Gruppe (die vier Gruppen in der Sprache des Bildes; alles Weitere liegt hinter „mehr"). Leser:
-    // das Panel des Studios (worlds/gelaende/studio.js baut jede Zeile aus `LANDFORM_REGLER`, die Haupt-Liste ordnet sie).
-    const LANDFORM_HAUPT = Object.freeze({
-        kontinent: Object.freeze(["land", "hoehe"]),
-        taeler: Object.freeze(["netzDichte", "talForm"]),
-        kliffs: Object.freeze(["tafel", "kliffWinkel"]),
-        rauheit: Object.freeze(["rinnen", "detail"]),
-    });
-    // DIE NAMEN der Regler und Gruppen in der Sprache des Bildes (die Vokabel des Studios; `law` bleibt die Formel).
-    const LANDFORM_NAMEN = Object.freeze({
-        kontinent: "Kontinent",
-        taeler: "Täler",
-        kliffs: "Kliffs",
-        rauheit: "Rauheit",
-        land: "Land ↔ Meer",
-        kontinentLambda: "Weite der Kontinente",
-        hoehe: "Höhe",
-        rauhLambda: "Weite der Gebirge",
-        netzDichte: "Flussnetz",
-        talForm: "Talform V ↔ U",
-        trog: "Trog im Hochgebirge",
-        aue: "Aue",
-        ks: "Steilheit der Flüsse",
-        theta: "Konkavität θ",
-        tafel: "Tafelland",
-        kliffWinkel: "Kliff",
-        schuttWinkel: "Schutthang",
-        pedimentWinkel: "Pediment",
-        schichtDicke: "Schicht",
-        hartAnteil: "harte Lage",
-        rinnen: "Rinnen",
-        detail: "Grate",
-    });
-    // DIE BENANNTEN LANDSCHAFTEN: je Preset nur die Regler, die es vom Gesetz abweichen lässt (der Rest ist def). Jede
-    // trägt ihr Bild aus Nordstern §4.1 und steht im Natur-Korridor der Linse: kein Ziel rot, das Tafelland trägt das
-    // Schicht-Gesetz — die Studio-Probe (gate:gelaende-studio) drückt jeden Knopf und verlangt es an ihrer Saat, die
-    // Gelände-Linse (gate:gelaende-realismus, `presetsAnSaaten`) an ihren drei Saaten (θ je Preset 0,5–0,55: bei θ 0,3
-    // fällt die Küste an zwei der drei Saaten aus dem Korridor, Senken und Flint). Leser: die Preset-Knöpfe des Studios.
-    const LANDFORM_PRESETS = Object.freeze([
-        Object.freeze({
-            id: "mittelgebirge",
-            name: "Mittelgebirge",
-            bild: "sanfte Kuppen, weite Auen, dichtes Talnetz",
-            regler: Object.freeze({ land: 0.45, hoehe: 0.7, rauhLambda: 4600, netzDichte: 1.15, talForm: 1.25, trog: 0.1, aue: 1.5, theta: 0.52, tafel: 0.1, detail: 0.45 }),
-        }),
-        Object.freeze({
-            id: "alpental",
-            name: "Alpental",
-            bild: "Trogtäler unter hohen Graten (Lauterbrunnental)",
-            regler: Object.freeze({ land: 0.6, hoehe: 1.5, kontinentLambda: 12000, rauhLambda: 2400, netzDichte: 0.85, talForm: 1.8, trog: 1, aue: 0.8, ks: 9, theta: 0.55, tafel: 0.05, rinnen: 1.2, detail: 0.8 }),
-        }),
-        Object.freeze({
-            id: "tafelland",
-            name: "Tafelland",
-            bild: "Kliff über Schutthang über Pediment (Monument Valley)",
-            regler: Object.freeze({ land: 0.5, hoehe: 1.1, rauhLambda: 3600, netzDichte: 1.1, talForm: 1.5, theta: 0.5, tafel: 1, kliffWinkel: 82, schichtDicke: 30, hartAnteil: 0.7, aue: 1.3, detail: 0.35 }),
-        }),
-        Object.freeze({
-            id: "kueste",
-            name: "Küste",
-            bild: "Land und Meer verzahnt, Buchten und flache Mündungen",
-            regler: Object.freeze({ land: 0.25, kontinentLambda: 6500, hoehe: 0.85, netzDichte: 1.2, aue: 1.6, theta: 0.5, tafel: 0.1, rinnen: 0.8 }),
-        }),
-    ]);
+    // DIE MESSUNG — EINE Quelle für die Wände (gate:gelaende-realismus, gate:gelaende-studio) und die Zahl-Leiste des
+    // Studios (der Makro-Worker): das Raster der Statistik (4 × 4 km innen, 30 m, der Rand von 2 km rechnet Füllung, Abfluss
+    // und das WAHRE Einzugsgebiet der Flüsse mit, die ins Feld treten — gezählt wird das innere Feld), der Makro-Abdruck des
+    // Byte-Beweises (64 × 64, ±852 m, Schritt 27 m — ganzzahlig, f32-exakt; je Punkt mit und ohne Detail) und der Ort des
+    // Schicht-Gesetzes (das Tafelland ist ein ORT im Stil-Feld λ 5,2 km: der Kern nennt ihn im Umkreis von 8 km — in
+    // 4 × 4 km fehlt er zwei von drei Welten —, gezählt wird auf 2-m-Raster über 600 m im Tafelland selbst, Stil ≥ 0,8).
+    const MESSUNG = (function () {
+        const schritt = 30;
+        const halb = 2000;
+        const rand = Math.round(2000 / schritt);
+        const aussen = halb + rand * schritt;
+        return Object.freeze({
+            raster: Object.freeze({ schritt, halb, rand, n: Math.floor((2 * aussen) / schritt) + 1, x0: -aussen }),
+            abdruck: Object.freeze({ n: 64, x0: -852, schritt: 27 }),
+            schicht: Object.freeze({ umkreis: 8000, n: 301, schritt: 2, stil: 0.8 }),
+        });
+    })();
+    // Der Makro-Abdruck einer Höhe `hf(x, z, mitDetail)` — dieselben Bytes für die Lage des Studios (`hoehe`) und die Welt
+    // (`_terrainMacroSurfaceY`): je Punkt erst mit, dann ohne Detail.
+    function abdruckFeld(hf) {
+        const A = MESSUNG.abdruck;
+        const h = new Float64Array(A.n * A.n * 2);
+        let q = 0;
+        for (let j = 0; j < A.n; j++)
+            for (let i = 0; i < A.n; i++) {
+                h[q++] = hf(A.x0 + i * A.schritt, A.x0 + j * A.schritt, true);
+                h[q++] = hf(A.x0 + i * A.schritt, A.x0 + j * A.schritt, false);
+            }
+        return h;
+    }
+    // Die Statistik des Mess-Rasters (`MESSUNG.raster`, H[i + j·n] = Höhe mit Detail am Punkt x0 + i·schritt, x0 + j·schritt)
+    // einer Lage; `gesetz` (optional) ist das gemessene Gesetzbuch, das die benannten Seen nennt (die Linse misst einen
+    // anderen Stand mit DIESER Rechnung) — ohne `benannteSeen` zählt jede Senke.
+    function messStatistik(H, L, gesetz) {
+        const R = MESSUNG.raster;
+        const g = gesetz || { benannteSeen: benannteSeen };
+        const benannt = typeof g.benannteSeen === "function" ? g.benannteSeen(L, R.x0, R.x0, R.schritt, R.n) : [];
+        return statistik(H, R.n, R.schritt, L.waterLevel, benannt, R.rand);
+    }
+    // Das Schicht-Gesetz am Schicht-Ort in Zeilen (ein Generator: der Worker gibt zwischen zwei Zeilen den Takt ab, die
+    // Linse zieht ihn durch `schichtMessung` in einem Zug): `{ ort, x, z, baender }` — ohne Ort (kein Tafelland im
+    // Umkreis, oder ein Gesetz ohne `schichtOrt`) misst er am Ursprung ohne Maske, das Urteil gilt dort nicht (`urteil`).
+    // `gesetz` (optional): das gemessene Gesetzbuch (`hoehe`, `grossform`, `schichtOrt`), sonst dieses.
+    function* schichtSchritte(L, gesetz) {
+        const M = MESSUNG.schicht;
+        const g = gesetz || { hoehe: hoehe, grossform: grossformAus, schichtOrt: schichtOrt };
+        const ort = typeof g.schichtOrt === "function" ? g.schichtOrt(L, -M.umkreis, -M.umkreis, M.umkreis, M.umkreis) : null;
+        const ox = ort ? ort.x : 0;
+        const oz = ort ? ort.z : 0;
+        const h = ((M.n - 1) / 2) * M.schritt;
+        const stil = ort && typeof g.grossform === "function";
+        const HF = new Float64Array(M.n * M.n);
+        const maske = new Uint8Array(M.n * M.n);
+        for (let j = 0; j < M.n; j++) {
+            for (let i = 0; i < M.n; i++) {
+                const x = ox - h + i * M.schritt;
+                const z = oz - h + j * M.schritt;
+                HF[i + j * M.n] = g.hoehe(L, x, z, true);
+                maske[i + j * M.n] = !stil || g.grossform(L, x, z).stil >= M.stil ? 1 : 0;
+            }
+            yield j;
+        }
+        return { ort, x: ox, z: oz, baender: hangBaender(HF, M.n, M.schritt, maske) };
+    }
+    function schichtMessung(L, gesetz) {
+        const it = schichtSchritte(L, gesetz);
+        for (;;) {
+            const r = it.next();
+            if (r.done) return r.value;
+        }
+    }
     // DER NATUR-KORRIDOR der Gelände-Linse (Nordstern §4.1, Karte K16) — EINE Quelle für die Wand (`diag-worker-dichte
     // --realismus`) und die Zahl-Leiste des Studios: grün im Korridor, rot außerhalb.
     const KORRIDOR = Object.freeze({
@@ -1439,10 +1450,12 @@
         schutt: 0.05,
         pediment: 0.2,
     });
-    // Das Urteil je Ziel aus der Statistik (`statistik`) und den Bändern am Schicht-Ort (`hangBaender`, null = kein Ort):
-    // true im Korridor, false außerhalb, null = das Ziel gilt hier nicht.
-    function urteil(st, schicht) {
+    // Das Urteil je Ziel aus der Statistik (`messStatistik`) und der Schicht-Messung (`schichtMessung`; null = noch nicht
+    // gemessen): true im Korridor, false außerhalb, null = das Ziel gilt hier nicht (ohne Schicht-Ort gilt das Schicht-Gesetz
+    // nicht — die Bänder am Ursprung sind nur Auskunft).
+    function urteil(st, messung) {
         const K = KORRIDOR;
+        const schicht = messung && messung.ort ? messung.baender : null;
         return {
             senken: st.senken1mJeKm2 <= K.senkenJeKm2 && st.anteilSenkeTiefer1m < K.senkeAnteil,
             flint:
@@ -1543,9 +1556,11 @@
     }
 
     root.__gelaendeCore = Object.freeze({
-        LANDFORM_HAUPT: LANDFORM_HAUPT,
-        LANDFORM_NAMEN: LANDFORM_NAMEN,
-        LANDFORM_PRESETS: LANDFORM_PRESETS,
+        MESSUNG: MESSUNG,
+        abdruckFeld: abdruckFeld,
+        messStatistik: messStatistik,
+        schichtSchritte: schichtSchritte,
+        schichtMessung: schichtMessung,
         KORRIDOR: KORRIDOR,
         urteil: urteil,
         PLAN_ART: PLAN_ART,
@@ -1578,7 +1593,7 @@
         termY: termY,
         SCHNEE: SCHNEE,
         schnee: schnee,
-        grossform: (L, x, z) => grossform(netzFuer(L), x, z),
+        grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
         flussLaeufe: flussLaeufe,

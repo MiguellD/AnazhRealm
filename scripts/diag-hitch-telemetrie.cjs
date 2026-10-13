@@ -168,16 +168,24 @@ function erstWandInstall() {
         }
     };
     // DIE RUHE vor jeder Probe (auf der Bühne): keine Pipeline der Welt ist mehr offen — sie kompiliert sonst neben der
-    // Probe (höchstens 60 s; was danach noch offen ist, trägt die Probe als `ruheOffen`, das Band urteilt).
+    // Probe. Höchstens 180 s: auf dem Software-Holz des Runners kostet EIN Welt-Programm bis über 60 s (CI 38242768343:
+    // nach 60 s eine offen, das Band fiel an der Vorbedingung, nicht am Bürger). Was danach offen ist, trägt die Probe als
+    // `ruheOffen` — das Band urteilt —, und die Ruhe nennt jede offene Pipeline beim Namen (`__erstWandRuhe`, der Läufer druckt sie).
     let ruheOffen = 0;
     const ruhe = async () => {
         const t0 = performance.now();
-        while (ESt && ESt.offen.size > 0 && performance.now() - t0 < 60000) {
+        while (ESt && ESt.offen.size > 0 && performance.now() - t0 < 180000) {
             bild();
             await sleep(50);
         }
         ruheOffen = ESt ? ESt.offen.size : 0;
-        return Math.round(performance.now() - t0);
+        const ms = Math.round(performance.now() - t0);
+        window.__erstWandRuhe = {
+            ms,
+            offen: ruheOffen,
+            namen: ESt ? [...ESt.offen.keys()].map((p) => ESt.namen.get(p) || "ohne Namen") : [],
+        };
+        return ms;
     };
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
@@ -730,8 +738,14 @@ function erstWandInstall() {
     if (out && !out.fatal) {
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
+            await page.evaluate(() => (window.__erstWandRuhe = null));
             const v = await page.evaluate(fn, arg);
             console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
+            const ru = await page.evaluate(() => window.__erstWandRuhe);
+            if (ru && ru.offen)
+                console.log(
+                    `  [Erst-Zeichnung] ${name}: die Ruhe endete nach ${ru.ms} ms mit ${ru.offen} offenen Pipelines der Welt — ${ru.namen.join(" · ")}`
+                );
             return v;
         };
         await page.evaluate(`(${erstWandInstall.toString()})()`);
