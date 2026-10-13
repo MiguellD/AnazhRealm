@@ -77765,8 +77765,13 @@ class AnazhRealm {
                         // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
                         // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
                         // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
-                        // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
+                        // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE. Der Locken-
+                        // Radius (√y · locke Zellen) ist EIN Wert des Ofens (foundry-core TIER_FELL.locke): die Kopf-Zeile
+                        // rechnet ihre Strähnen-Dicke in ihn um (K28).
                         const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
+                        const locke = schale && globalThis.TIER_FELL ? globalThis.TIER_FELL.locke : null;
+                        if (schale && !(locke > 0))
+                            throw new Error("FELL-SCHALE: der Locken-Radius des Ofens (TIER_FELL.locke) fehlt");
                         if (schale) {
                             const t = aS.x;
                             const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
@@ -77781,7 +77786,7 @@ class AnazhRealm {
                             const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
                             const radius = aS.y
                                 .sqrt()
-                                .mul(0.62)
+                                .mul(locke)
                                 .mul(TSL.float(1.0).sub(t.mul(0.75)));
                             const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
                             const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
