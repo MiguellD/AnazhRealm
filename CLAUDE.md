@@ -110,8 +110,7 @@ Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINS
 EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff, die Farbe aus `kelvin` · WASSER = EINE Wahrheit, jedes Werk (der Wagen nach EINEM Platz-Gesetz) fragt das Land samt Sockel, der Fern-Ring kein zweites Wasser · TAKT = an der Wurzel gedeckelt (`TAKT_DECKEL_S`) · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie (der volle Playtest ist Gruppe 11) auf integ-probe, main und nachts.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes (5,79 px je Strähne an
-Armlänge, A1 11.10.) · B Ankunft ≤ 5 s kalt (neu 13.10., vorher ≈ 28 s) · C Ort auf dem Gelände (das Licht = brennende
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** B Ankunft ≤ 5 s kalt (neu 13.10., vorher ≈ 28 s) · C Ort auf dem Gelände (das Licht = brennende
 Quellen des Plans) · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis, Ego + Third-Person).
 
 ## Architektur (die Karte)

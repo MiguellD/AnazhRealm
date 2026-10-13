@@ -462,7 +462,10 @@ Stufen zeigen): hell 124,0 ↔ 127,0 (0,976).
 Länge 0,045 und Dicke 0,005 Lab-Einheiten; der Kopf steht in der Welt bei Skala 1/3 — 15 × 1,67 mm. Am Armlängen-Schuss steht
 der Kopf 1,82 m vor der Kamera (75° senkrecht, 1080 px): 386 px je m, die Strähne 5,79 px lang und 0,64 px dick (die Zahl
 2,8 mm aus dem Kommentar der Schalen gäbe 1,08 px). Die Kopf-Zeile liegt damit NICHT unter dem Pixel — A bleibt offen mit
-diesem Rest; B und C fallen mit diesem Satz.
+diesem Rest; B und C fallen mit diesem Satz. K28 (13.10.) gießt sie: die Lab-Streu der Zeile (19 Strähnen auf der Kappe
+beim Wolf, 17,3 mm lang, 6 mm Wurzel — an Armlänge 6,7 × 2,3 px) steht auf der Kopf-Haut als Karten im Schalen-Stapel,
+0 Befehle mehr; im Armlängen-Bild steht die Strähne am Scheitel frei, 14 der 19 Wurzeln liegen unter dem Hals-Mantel der
+Leib-Haut (gate:tier-anatomie, Kopf-Zeile). A fällt damit.
 
 Im Bild: der Wolf mit Pelz und hellem Brustlatz, der Kopf als glatte Haut ohne Strähnen; die Eiche mit Stamm-Gabel und
 Krone bei 15 und 22 m, bei 80 m ihre Karte hinter der Kuppe; das Fachwerkhaus mit Backstein-Erdgeschoss bei 8,8 m, bei
