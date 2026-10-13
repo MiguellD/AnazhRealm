@@ -95,7 +95,7 @@ CI:
 - Der Nachtrag **46d49ac9** setzt die EINE Regel ins Gesetzbuch: phyto-core `budgetGestaltVersatz`. `budgetSippen` und die
   Faltung zählen in der Einheit des Wirts, `_geoVerschoben` ruft die Regel.
 - Die Tor-Zeile `gate[0].draws` geht 13 → 9 bei gleicher Faltung (render-config per MINT_NUR_DATEN, asset-contract 128/128
-  byte-gleich); portal-gestalt zählt Züge statt Slots (`1310-4/../p3`-Wände waende3: alle grün).
+  byte-gleich); portal-gestalt zählt Züge statt Slots (Wände `p3/fluegel/waende3`: alle grün).
 - **Lauf 38463803387 auf 46d49ac9: grün, 13/13.**
 
 ## Pflicht-OFFEN Rest
