@@ -147,7 +147,7 @@ function check(name, ok, detail) {
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && !f._prefetching) break;
+            if (f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat) break;
             await sleep(120);
         }
         if (!(f && f.ready && f.recipes && f.recipes.mensch)) return { fatal: "mensch-Rezept kam nie" };

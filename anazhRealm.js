@@ -73808,7 +73808,7 @@ class AnazhRealm {
             reqSeq: 1,
             cache: new Map(),
             retry: [],
-            _prefetching: false,
+            _vorrat: false, // die Phase des Vorrats (`VORRAT_PHASE`); false = steht nicht an oder ist durch (warm)
             recipes: null,
             // V4(B) — die Leck-Linse: gebaute vs. deferred-freigegebene Foundry-Geometrien (die
             // Schnitte heben sie ohnehin lazy via `|| 0`; hier explizit für die Auffindbarkeit).
@@ -78384,7 +78384,7 @@ class AnazhRealm {
             reason: "foundry_kalt",
             ready: !!f.ready,
             recipes: !!(f.recipes && f.recipeCount),
-            prefetching: !!f._prefetching,
+            vorrat: f._vorrat || false,
         };
     }
     // Studio-Arten mit KIND_POLICY.prefix (fahrzeug_/haus_/tor_/klinge_…): brauchen
@@ -78442,14 +78442,18 @@ class AnazhRealm {
     }
     async _foundryPrefetchLibrary() {
         const f = this._foundry;
-        if (!f || !f.ready || f._prefetching) return;
-        f._prefetching = true;
+        if (!f || !f.ready || f._vorrat) return;
         // DER VORRAT NACH DEM ERSTEN BILD (K30): bis der Ladeschirm weicht (`_weltbildDa`), gehört der Worker den Lesern des
         // ersten Frames — nahe Bäume, die Streu in Reichweite, die Karten der fernen Bäume. Bis K30 stellte sich der Vorrat
         // beim Worker-Start vor sie (je Boden-Art jede Gestalt, 10 Wagen, die Siedlungs-Probe), die Streu wartete in seiner
-        // Schlange mit. `_prefetching` bleibt sein Merker (warm = der Vorrat ist durch); der Null-Renderer setzt das Weltbild
-        // beim Renderer-Bau, dort wärmt er sofort.
+        // Schlange mit. Sein Merker `f._vorrat` nennt die PHASE (`VORRAT_PHASE`), nie nur „an": der Merker `_prefetching`
+        // stand ab dem Worker-Start auf true, und die Kalt-Zeile las „Vorrat läuft", solange er auf das Bild wartete
+        // (Radeon 8–44 s, die erste Bestellung bei 45 s). Der Null-Renderer setzt das Weltbild beim Renderer-Bau, dort
+        // bestellt er sofort; false = durch (warm).
+        const PH = AnazhRealm.VORRAT_PHASE;
+        f._vorrat = PH.wartet;
         while (!this.state._weltbildDa) await new Promise((r) => setTimeout(r, 200));
+        f._vorrat = PH.bestellt;
         const spec = this._foundryLibrarySpec();
         // Die Stufen je Art kommen aus den Vertrags-Daten (kindStages via get-render-config); die Replies sind
         // winzig und reisen vor den Bakes — ein kurzer Warte-Deckel (~2 s) lässt den Prefetch exakt die
@@ -78533,7 +78537,7 @@ class AnazhRealm {
             this.log(`FOUNDRY WARM: Settlement-Probe warf (${e && e.message})`, "ERROR");
         }
         f._warmCritical = true;
-        f._prefetching = false;
+        f._vorrat = false;
         // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
         // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
         // hoffen (unter Last baut der NICHTS -> die Baeume blieben cold).
@@ -105963,6 +105967,9 @@ AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
+// DIE PHASEN DES VORRATS (`_foundryPrefetchLibrary`, Merker `f._vorrat`): er wartet auf das erste Weltbild, dann bestellt er;
+// durch ist er false. Jeder Leser (Kalt-Zeile, Warm-Anker, gate:ankunft) nennt die Phase, nie nur „an".
+AnazhRealm.VORRAT_PHASE = Object.freeze({ wartet: "wartet auf das erste Bild", bestellt: "bestellt" });
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
 // jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });

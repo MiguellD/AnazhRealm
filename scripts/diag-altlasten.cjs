@@ -1141,6 +1141,29 @@ const FORBIDDEN = [
     { token: "_chunkSurfaceAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
     { token: "_chunkGruenAt", fiel: "K21 — `_bodenSichtAt(x, z, aus)` trägt den Grün-Kanal der gewinnenden Karte" },
     { token: "_chunkKarteAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
+    // DER VORRAT NENNT SEINE PHASE (K30-N1): sein Merker `_prefetching` stand ab dem Worker-Start auf true, auch solange er
+    // auf das erste Weltbild wartete — die Kalt-Zeile las „Vorrat läuft" (Radeon 8–44 s, die erste Bestellung bei 45 s).
+    // `f._vorrat` trägt die Phase (`VORRAT_PHASE`), jeder Leser nennt sie; der Merker, der nur „an" sagt, kehrt nicht zurück.
+    {
+        token: "_prefetching",
+        fiel: "K30-N1 — `f._vorrat` nennt die Phase des Vorrats (`VORRAT_PHASE`)",
+        auch: [
+            "scripts/playtest.cjs",
+            "scripts/diag-ankunft.cjs",
+            "scripts/diag-boot-stage.cjs",
+            "scripts/diag-fluss.cjs",
+            "scripts/diag-leistungs-vertrag.cjs",
+            "scripts/diag-p2p-gestalt.cjs",
+            "scripts/diag-parity.cjs",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/diag-regler-wirkt.cjs",
+            "scripts/diag-reload-treue.cjs",
+            "scripts/diag-rezept-katalog.cjs",
+            "scripts/diag-studio-uebergabe.cjs",
+            "scripts/lib/pack-kanon.cjs",
+            "scripts/mint-asset-packs.cjs",
+        ],
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

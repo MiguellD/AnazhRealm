@@ -651,7 +651,7 @@ const WELT_MESSEN = async () => {
     const tq = performance.now();
     while (performance.now() - tq < 240000) {
         await pump(20);
-        if (!f._prefetching && !(f.warte && f.warte.length) && f.pending.size === 0) break;
+        if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }
     await pump(60);
     const fl = window.__fl;

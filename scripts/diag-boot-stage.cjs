@@ -25,7 +25,10 @@
 //
 // DIE KALT-ZEILE (K30, Pflicht-OFFEN B): `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem
 // Versions-Update) und nennt je Sekunde der Ankunft, worauf das erste Weltbild wartet (`_weltbildFehlt`), wie lange der
-// Haupt-Thread blockiert war (Langaufgaben, darin der Pipeline-Bau) und was die Foundry-Schlange trägt. Urteil: t(Weltbild)
+// Haupt-Thread blockiert war (Langaufgaben; benannt: Boden, Streu, Bauten, Gruppen-Bau, Buch und der Erst-Bau der Zeichnung
+// aus `_erstZeichnung` — Knoten- und Pipeline-Bau des ersten Draws), wie viele Pipelines offen sind, in welcher Phase der
+// Vorrat steht (sein Merker `f._vorrat` wörtlich: „wartet auf das erste Bild" · „bestellt" — nie „läuft" aus einem
+// Merker, der nur „an" sagt) und was die Foundry-Schlange trägt; der Adapter kommt vom Gerät (`device.adapterInfo`). Urteil: t(Weltbild)
 // ≤ 5 s und kein halbes Weltbild (kein „steht ohne" im Log). Ohne `--echt` swiftshader (das Spiel wählt kienspan), mit
 // `--echt` die Hardware-GPU im Fenster (1920×1080) — die Zeit richtet der OMEN an beiden Messplätzen.
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
@@ -109,7 +112,9 @@ function KALT_PROBE() {
     const wickle = (r) => {
         const P = Object.getPrototypeOf(r);
         wickleKosten(P);
-        for (const name of ["_foundryPrefetchLibrary", "_foundryVorrat", "_foundryRequestSettlement"]) {
+        // die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
+        // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
+        for (const name of ["_foundryVorrat", "_foundryRequestSettlement"]) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
             P[name] = function (...a) {
@@ -137,11 +142,14 @@ function KALT_PROBE() {
             }
             const f = r._foundry;
             if (f) {
-                o.vorrat = !!f._prefetching;
+                o.vorrat = f._vorrat || null; // die Phase wörtlich (VORRAT_PHASE), null = steht nicht an oder ist durch
                 let werk = 0;
                 for (const k of (f.pending && f.pending.keys()) || []) if (!String(k).startsWith("imp")) werk++;
                 o.schlange = `${(f.warte || []).length} wartend · ${werk} im Werk · ${(f.pending ? f.pending.size : 0) - werk} im Bäcker`;
             }
+            // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
+            const E = r._erstZeichnung;
+            if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
             o.da = r.state._weltbildDa ? Math.round(r.state._weltbildDa) : 0;
         }
         A.proben.push(o);
@@ -212,10 +220,12 @@ async function kaltLauf() {
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const st = (r && r.state) || {};
+            // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal) — bis K30-N1 las die
+            // Zeile `backend.adapter.info` und schrieb in jeder echten Rohdatei null
             let adapter = null;
             try {
-                const i = st.renderer.backend.adapter.info;
-                adapter = [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") || null;
+                const i = st.renderer.backend.device.adapterInfo;
+                adapter = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || null;
             } catch (_e) {}
             return Object.assign({}, window.__kalt, {
                 weltbildDa: st._weltbildDa ? Math.round(st._weltbildDa) : null,
@@ -258,23 +268,37 @@ async function kaltLauf() {
             `Holz ${out.holz} · V${out.version} ===`
     );
     let letzte = null;
+    // der Erst-Bau je Sekunde = Zuwachs des Stamm-Zählers seit der letzten Probe (er wächst nur); eine Sekunde ganz ohne Probe
+    // (der Haupt-Thread hielt sie) zählt in die nächste Sekunde mit Probe
+    let erstVor = 0;
     for (let s = 0; s < S; s++) {
         const inS = proben.filter((p) => Math.floor(p.t / 1000) === s);
         if (inS.length) letzte = inS[inS.length - 1];
         const q = letzte || {};
+        const erstMs = q.erst ? q.erst[1] - erstVor : 0;
+        if (q.erst) erstVor = q.erst[1];
         const gruende = q.da && q.da < (s + 1) * 1000 ? "— das Weltbild steht" : (q.fehlt || ["die Seite lädt"]).join(" · ");
         const kosten = Object.entries(out.kosten || {})
             .map(([k, z]) => [k, Math.round(z[s] || 0)])
+            .concat([["Erst-Bau", Math.round(erstMs)]])
             .filter(([, ms]) => ms >= 5)
             .map(([k, ms]) => `${k} ${ms}`)
             .join(" · ");
         console.log(
             `  ${String(s).padStart(3)} s  blockiert ${String(Math.round(blockiert[s])).padStart(4)} ms` +
                 (kosten ? ` (${kosten})` : "") +
-                `${q.vorrat ? " · Vorrat läuft" : ""}${q.schlange ? ` · Foundry ${q.schlange}` : ""} | ${gruende}`
+                `${q.erst && q.erst[2] ? ` · ${q.erst[2]} Pipelines offen` : ""}${q.vorrat ? ` · Vorrat ${q.vorrat}` : ""}` +
+                `${q.schlange ? ` · Foundry ${q.schlange}` : ""} | ${gruende}`
         );
     }
     if (out.buchDa) console.log(`  ${(out.buchDa / 1000).toFixed(1)} s  das Buch der Studios ist da`);
+    // die Phasen des Vorrats, wie sein Merker sie nennt (je Wechsel die erste Probe)
+    let phase = null;
+    for (const p of proben) {
+        if (!("vorrat" in p) || p.vorrat === phase) continue;
+        if (p.vorrat || phase) console.log(`  ${(p.t / 1000).toFixed(1)} s  der Vorrat ${p.vorrat || "ist durch"}`);
+        phase = p.vorrat;
+    }
     for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
@@ -330,7 +354,7 @@ async function kaltLauf() {
                     grass: !st.pendingGrass || st.pendingGrass.size === 0,
                     water: !st.pendingWaterIso || st.pendingWaterIso.size === 0,
                     streu: !!st.playerMesh && wartet === 0,
-                    biblio: !!(f && f.ready && !f._prefetching),
+                    biblio: !!(f && f.ready && !f._vorrat),
                     // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
                     impost: headless ? true : (!q || q.length === 0) && !r._impostorBakePending,
                     _streuWartet: wartet,

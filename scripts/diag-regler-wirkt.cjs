@@ -117,7 +117,7 @@ async function imStamm(cb) {
             () => {
                 const r = window.anazhRealm;
                 const f = r && r._foundry;
-                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._prefetching && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
+                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
             },
             { timeout: 240000, polling: 250 }
         );

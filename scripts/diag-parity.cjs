@@ -339,7 +339,7 @@ async function renderAnazh() {
             // real backen. Vorher: baked:0, weil die Queue zum Drain-Zeitpunkt leer war.
             const f = r._foundry;
             const dlP = performance.now() + 30000;
-            while (f && f._prefetching && performance.now() < dlP) await new Promise((res) => setTimeout(res, 200));
+            while (f && f._vorrat && performance.now() < dlP) await new Promise((res) => setTimeout(res, 200));
             try {
                 const spec = r._foundryLibrarySpec();
                 for (const sp of spec.species) {
