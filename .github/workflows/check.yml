@@ -405,7 +405,7 @@ jobs:
               run: npm run gate:gelaende-realismus
 
             - name: Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 9
               # Faehrt index.html?studio=gelaende (Null-Renderer) ueber einer Welt, die kein Plan beschreibt (Basis 7 m,
               # Rampe): der Start zeigt A und nennt Rampe und Basis als Abweichung; A zeigt dieselbe Welt (Makro-Abdruck + Statistik); jeder Regler aus LANDFORM_REGLER einmal ueber
               # sein Schieber-Element (tot = das Raster bleibt byte-gleich); jeder Landschafts-Knopf (bedienung.json) ohne
