@@ -570,7 +570,7 @@ function strichWand(src) {
             if (B.rttBakedAfter > 0) console.log("  ok — der RTT-Bake lief auf echter GPU-Bahn (Atlas gebacken).");
             else console.log("  (RTT nicht abgeschlossen — swiftshader-fragil; den LOOK misst die Blick-Sonde auf echter GPU.)");
         } catch (e) {
-            console.log(`  (Teil B uebersprungen — Renderer-Start fehlgeschlagen: ${(e && e.message) || e})`);
+            errs.push(`B: Teil B verlangt (P5_REAL_RENDERER), aber nicht gemessen — ${(e && e.message) || e}`);
         }
     } else {
         console.log("\n(Teil B [echter RTT-Bake] per Default aus — mit P5_REAL_RENDERER=1 aktivieren; den LOOK misst die Blick-Sonde auf echter GPU.)");

@@ -1571,7 +1571,7 @@ async function main() {
         const B = out.balance || {};
         check(
             "SLOT-BILANZ: Σ liveCount zurück auf die Baseline (kein Leck)",
-            B.liveBefore === B.liveAfter,
+            Number.isFinite(B.liveBefore) && B.liveBefore === B.liveAfter,
             `${B.liveBefore} → ${B.liveAfter}`
         );
         check("SLOT-BILANZ: je Gruppe dicht (count == liveCount, Marke i trägt Slot i)", B.inconsistentAfter === 0);

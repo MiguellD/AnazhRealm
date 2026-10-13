@@ -182,16 +182,18 @@ function parseJs(src) {
         return acorn.parse(src, { ...o, sourceType: "module" });
     }
 }
+// Die Ahnen reisen als EIN Stapel (push/pop): der Rückruf liest `anc` nur während seines Aufrufs.
 function astWalk(n, f, anc = []) {
     f(n, anc);
-    const a2 = anc.concat([n]);
+    anc.push(n);
     for (const k in n) {
         if (k === "loc") continue;
         const v = n[k];
         if (Array.isArray(v)) {
-            for (const c of v) if (c && typeof c.type === "string") astWalk(c, f, a2);
-        } else if (v && typeof v.type === "string") astWalk(v, f, a2);
+            for (const c of v) if (c && typeof c.type === "string") astWalk(c, f, anc);
+        } else if (v && typeof v.type === "string") astWalk(v, f, anc);
     }
+    anc.pop();
 }
 
 // V3: die Sonde aus dem Quelltext des Playtests in eine Sandbox heben und gegen die Attrappe fahren.
@@ -325,6 +327,125 @@ function pruefeLiteral(datei, ast) {
         });
     }
     return { v1, v2 };
+}
+
+// V4 Stiller Fang: ein catch ohne Fehlersignal (throw · push · exit ≠ 0 · exitCode · check(…, false) · ok = false ·
+// ein Fehler-Feld), dessen try eine Messung trägt. Kein Fang ist der Abbau (jeder Ruf im try räumt: close, kill, unlink …)
+// und das Lesen einer Eingabe (≤ 2 Anweisungen, nur parse/readFileSync/existsSync …) — der AST erkennt beide an der Form.
+// Der Bestand je Datei steht in scripts/vakuum-ratsche.json und darf nur sinken (der Messpfad zieht mit dem Prüf-Gerüst
+// über W.warte und W.einschwingen in die lib, Plan §2); ein Fang über dem Bestand ist ROT mit Datei:Zeile.
+// V4b Leere Gleichheit: `const B = m.x || {}` und im Urteil `B.a === B.b` ohne Wache auf a oder b — fehlt die Messung,
+// ist undefined === undefined grün (foundry-crossfade SLOT-BILANZ bis 13.10.). Bestand 0.
+const ABBAU_RUF =
+    /^(close|kill|unlink|unlinkSync|rmSync|rm|rmdirSync|destroy|disconnect|terminate|removeListener|removeAllListeners|removeEventListener|clearTimeout|clearInterval|end|stop|abort|dispose|exitFullscreen|releasePointerCapture|setAnimationLoop|remove|delete|revokeObjectURL|cancel|cancelAnimationFrame|detach|closeSync)$/;
+const LESE_RUF =
+    /^(parse|readFileSync|existsSync|statSync|readdirSync|require|execSync|spawnSync|resolve|readFile|accessSync|realpathSync|decodeURIComponent|decodeURI|URL|lstatSync)$/;
+function rufeIn(block) {
+    const r = [];
+    astWalk(block, (n, anc) => {
+        if (anc.slice(anc.indexOf(block) + 1).some(istFn)) return;
+        if (n.type === "CallExpression" || n.type === "NewExpression") r.push(blatt(n.callee));
+    });
+    return r;
+}
+function meldetFehler(body, param) {
+    let hit = false;
+    const traegtWurf = (x) => {
+        let ja = false;
+        if (x && param && param.type === "Identifier")
+            astWalk(x, (m) => {
+                if (m.type === "Identifier" && m.name === param.name) ja = true;
+            });
+        return ja;
+    };
+    astWalk(body, (n) => {
+        if (hit) return;
+        if (n.type === "ThrowStatement") hit = true;
+        // der Wurf reist weiter (in eine Zuweisung oder die Rückgabe) — der Leser urteilt über ihn, nichts ist still
+        if ((n.type === "AssignmentExpression" && traegtWurf(n.right)) || (n.type === "ReturnStatement" && traegtWurf(n.argument)))
+            hit = true;
+        if (n.type === "CallExpression") {
+            const l = blatt(n.callee);
+            const o = n.callee.type === "MemberExpression" ? blatt(n.callee.object) : "";
+            if (o === "process" && l === "exit" && !istLit(n.arguments[0], 0)) hit = true;
+            if (l === "push" || (l === "add" && /fehl|err|rot|fail/i.test(o))) hit = true;
+            if (n.arguments.some((a) => istLit(a, false)) && /check|pruef|urteil|ok|rot|melde/i.test(l)) hit = true;
+            if (/^(fail|rot|fehler|bruch|reject|unmessbar|_sondeRot|abbruch|abbrechen)$/i.test(l)) hit = true;
+        }
+        if (n.type === "AssignmentExpression") {
+            const l = blatt(n.left);
+            if (/exitCode$/.test(l)) hit = true;
+            if (/^(ok|gruen|pass|bestanden)$/.test(l) && istLit(n.right, false)) hit = true;
+            if (/(fehler|err|fail|rot|bruch|wurf|grund)/i.test(l) && !istLit(n.right, null) && !istLit(n.right, false))
+                if (n.right.type !== "Identifier" || n.right.name !== "undefined") hit = true;
+        }
+        if (n.type === "Property") {
+            const k = n.key.name || n.key.value;
+            if (/^(ok|gruen|pass)$/.test(k) && istLit(n.value, false)) hit = true;
+            if (/^(fehler|err|error|fatal|bruch|wurf|grund)$/.test(k) && !istLit(n.value, null)) hit = true;
+        }
+    });
+    return hit;
+}
+function stilleFaenge(datei, ast) {
+    const out = [];
+    astWalk(ast, (n) => {
+        if (n.type === "TryStatement" && n.handler) {
+            const rufe = rufeIn(n.block);
+            if (!rufe.length || rufe.every((c) => ABBAU_RUF.test(c))) return;
+            if (n.block.body.length <= 2 && rufe.every((c) => LESE_RUF.test(c))) return;
+            if (!meldetFehler(n.handler.body, n.handler.param)) out.push(`${datei}:${n.handler.loc.start.line}`);
+        }
+        if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && blatt(n.callee) === "catch" && istFn(n.arguments[0])) {
+            const ziel = n.callee.object;
+            const c = ziel.type === "CallExpression" ? blatt(ziel.callee) : "";
+            if (ABBAU_RUF.test(c) || LESE_RUF.test(c)) return;
+            if (!meldetFehler(n.arguments[0].body, n.arguments[0].params[0])) out.push(`${datei}:${n.loc.start.line} .catch`);
+        }
+    });
+    return out;
+}
+function leereGleichheit(datei, ast) {
+    const out = [];
+    const wurzelName = (x) => (x.type === "MemberExpression" && x.object.type === "Identifier" ? x.object.name : null);
+    const feld = (x) => `${wurzelName(x)}.${blatt(x)}`;
+    const scopeVon = (anc) => {
+        for (let i = anc.length - 1; i >= 0; i--) if (istFn(anc[i]) || anc[i].type === "Program") return anc[i];
+        return null;
+    };
+    // EIN Gang: die leeren Vorbelegungen je Funktion und die Gleichheiten zweier Felder derselben Wurzel
+    const leer = new Map();
+    const kandidaten = [];
+    astWalk(ast, (n, anc) => {
+        if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init) {
+            const i = n.init;
+            if (i.type === "LogicalExpression" && i.operator === "||" && i.right.type === "ObjectExpression" && !i.right.properties.length) {
+                const sc = scopeVon(anc);
+                if (!leer.has(sc)) leer.set(sc, new Set());
+                leer.get(sc).add(n.id.name);
+            }
+        }
+        if (n.type !== "BinaryExpression" || !/^(===|==)$/.test(n.operator)) return;
+        const w = wurzelName(n.left);
+        if (!w || w !== wurzelName(n.right)) return;
+        // ein Vergleich in einer if-Bedingung meldet ROT, wenn er hält — nie Leer-Grün
+        if (anc.some((a) => a.type === "IfStatement" && a.test.start <= n.start && n.end <= a.test.end)) return;
+        // die Wache: ein anderes Glied derselben Bedingung (&&, ||, !, ?:) liest eines der beiden Felder
+        let ausdruck = n;
+        for (let i = anc.length - 1; i >= 0 && /^(LogicalExpression|UnaryExpression|ConditionalExpression)$/.test(anc[i].type); i--)
+            ausdruck = anc[i];
+        kandidaten.push({ n, w, sc: scopeVon(anc), ausdruck });
+    });
+    for (const { n, w, sc, ausdruck } of kandidaten) {
+        if (!leer.has(sc) || !leer.get(sc).has(w)) continue;
+        const felder = new Set([feld(n.left), feld(n.right)]);
+        let bewacht = false;
+        astWalk(ausdruck, (m) => {
+            if (m !== n.left && m !== n.right && m.type === "MemberExpression" && felder.has(feld(m))) bewacht = true;
+        });
+        if (!bewacht) out.push(`${datei}:${n.loc.start.line} ${feld(n.left)} === ${feld(n.right)} (beide fehlen: grün)`);
+    }
+    return out;
 }
 
 // V5 Leer-Grün: ein Urteil einer diag-Linse (Top-Ebene, `urteil*`/`verdikt*`, rein) urteilt auf einer leeren Messung
@@ -480,10 +601,19 @@ function pruefDateien(root) {
     return out;
 }
 
+// Der Bestand der stillen Fänge je Datei (V4, nur sinkend): scripts/vakuum-ratsche.json.
+const RATSCHE_DATEI = path.join("scripts", "vakuum-ratsche.json");
+function ladeRatsche(root) {
+    const p = path.join(root, RATSCHE_DATEI);
+    return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : { V4: {} };
+}
+
 async function vakuumKlinge(root) {
     const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
     const v3 = await pruefeSonde(playtestSrc);
-    const regeln = { V1: [], V2: [], V3: v3.funde, V5: [] };
+    const regeln = { V1: [], V2: [], V3: v3.funde, V4: [], V4b: [], V5: [] };
+    const ratsche = ladeRatsche(root).V4;
+    const v4 = { bestand: {}, n: 0, gesunken: [] };
     let urteile = 0;
     const dateien = pruefDateien(root);
     for (const [rel, abs] of dateien) {
@@ -498,13 +628,22 @@ async function vakuumKlinge(root) {
         const lit = pruefeLiteral(rel, ast);
         regeln.V1.push(...lit.v1);
         regeln.V2.push(...lit.v2);
+        const faenge = stilleFaenge(rel, ast);
+        const frei = ratsche[rel] || 0;
+        if (faenge.length) v4.bestand[rel] = faenge.length;
+        v4.n += faenge.length;
+        if (faenge.length > frei)
+            regeln.V4.push(`${rel}: ${faenge.length} stille Fänge, Bestand ${frei} — ${faenge.map((x) => x.slice(rel.length + 1)).join(" · ")}`);
+        else if (faenge.length < frei) v4.gesunken.push(`${rel} ${frei} → ${faenge.length}`);
+        regeln.V4b.push(...leereGleichheit(rel, ast));
         if (rel.startsWith("scripts/diag-")) {
             const v5 = pruefeUrteile(rel, src, ast, abs, root);
             regeln.V5.push(...v5.funde);
             urteile += v5.urteile;
         }
     }
-    return { regeln, v3, urteile, dateien: dateien.length };
+    for (const rel of Object.keys(ratsche)) if (!dateien.some(([r]) => r === rel)) v4.gesunken.push(`${rel} ${ratsche[rel]} → fort`);
+    return { regeln, v3, v4, urteile, dateien: dateien.length };
 }
 
 async function selftest() {
@@ -560,6 +699,18 @@ async function selftest() {
     if (v2("out.k = !a || a.b > 1;") !== 1) fails.push("V2 feuert nicht an !x || y");
     if (v2("out.k = !!a && a.b > 1;") !== 0) fails.push("V2 feuert fälschlich an der gemessenen Form");
     if (pruefeLiteral("v2.cjs", parseJs('check("n", true);')).v2.length !== 1) fails.push("V2 feuert nicht an check(…, true)");
+    // Vakuum-Klinge V4: ein leerer catch um page.evaluate wird ROT, ein catch um browser.close() und ein lauter bleiben grün.
+    const v4 = (code) => stilleFaenge("v4.cjs", parseJs(code)).length;
+    if (v4("async function a(page) {\n    try {\n        await page.evaluate(() => 1);\n    } catch (e) {}\n}\n") !== 1)
+        fails.push("V4 feuert nicht am leeren catch um page.evaluate");
+    if (v4("async function a(browser) {\n    try {\n        await browser.close();\n    } catch (e) {}\n}\n") !== 0)
+        fails.push("V4 feuert fälschlich am Abbau-Fang");
+    if (v4("async function a(page, f) {\n    try {\n        await page.evaluate(() => 1);\n    } catch (e) {\n        f.push(e.message);\n    }\n}\n") !== 0)
+        fails.push("V4 feuert fälschlich am lauten Fang");
+    // Vakuum-Klinge V4b: die leere Vorbelegung mit einer Gleichheit ihrer Felder wird ROT, mit Wache grün.
+    const v4b = (zeile) => leereGleichheit("v4b.cjs", parseJs(`function a(m) {\n    const B = m.b || {};\n    ${zeile}\n}\n`)).length;
+    if (v4b('check("n", B.vor === B.nach);') !== 1) fails.push("V4b feuert nicht an B.vor === B.nach");
+    if (v4b('check("n", Number.isFinite(B.vor) && B.vor === B.nach);') !== 0) fails.push("V4b feuert fälschlich mit Wache");
     // Vakuum-Klinge V5: ein Urteil `() => []` wird ROT (grün auf {} und auf tief-leer), eines, das zuerst die Messung
     // prüft, bleibt grün; ein werfendes Urteil wird ROT.
     const v5 = (code) => {
@@ -580,7 +731,7 @@ async function selftest() {
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 V2 V3 V5), Kommentare zählen nicht"
+        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 V2 V3 V4 V4b V5), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -593,6 +744,18 @@ async function main() {
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);
     const klinge = await vakuumKlinge(root);
+    // --v4-bestand: die Ratsche der stillen Fänge auf den Ist-Stand ziehen — nur enger (kein Fang über dem Bestand),
+    // beim ersten Mal (keine Datei) der Ist-Stand selbst.
+    if (process.argv.includes("--v4-bestand")) {
+        const p = path.join(root, RATSCHE_DATEI);
+        if (fs.existsSync(p) && klinge.regeln.V4.length) {
+            console.log("⛔ die Ratsche zieht nur enger — über dem Bestand: " + klinge.regeln.V4.join(" | "));
+            process.exit(1);
+        }
+        fs.writeFileSync(p, JSON.stringify({ V4: klinge.v4.bestand }, null, 4) + "\n");
+        console.log(`✅ ${RATSCHE_DATEI}: ${klinge.v4.n} stille Fänge in ${Object.keys(klinge.v4.bestand).length} Dateien`);
+        process.exit(0);
+    }
     const errs = ratchet.errs.concat(anker.errs);
     for (const [regel, funde] of Object.entries(klinge.regeln))
         for (const fund of funde) errs.push(`Vakuum-Klinge ${regel}: ${fund}`);
@@ -605,6 +768,10 @@ async function main() {
         console.log(
             `ℹ️  Der Bestand sank (${ratchet.n} < ${FROZEN_TOSTRING}) — FROZEN_TOSTRING in scripts/diag-apparat.cjs nachziehen (der Ratchet darf enger).`
         );
+    if (klinge.v4.gesunken.length)
+        console.log(
+            `ℹ️  Der Bestand stiller Fänge sank (${klinge.v4.gesunken.join(", ")}) — node scripts/diag-apparat.cjs --v4-bestand zieht die Ratsche nach.`
+        );
     if (ratchet.nT < FROZEN_TYPEOF)
         console.log(
             `ℹ️  Der typeof-Bestand sank (${ratchet.nT} < ${FROZEN_TYPEOF}) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).`
@@ -616,7 +783,7 @@ async function main() {
     );
     console.log(
         `✅ DIE VAKUUM-KLINGE steht — V3: die EINE Sonde verbucht Wurf und leeres Ergebnis rot ` +
-            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1 + V2: 0 Literal- und Skip-Grüne in ${klinge.dateien} Prüf-Dateien; V5: ${klinge.urteile} Urteile der diag-Linsen urteilen auf leerer Messung rot.`
+            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1 + V2: 0 Literal- und Skip-Grüne in ${klinge.dateien} Prüf-Dateien; V4: ${klinge.v4.n} stille Fänge in ${Object.keys(klinge.v4.bestand).length} Dateien (Ratsche nur sinkend, keiner neu), 0 leere Gleichheiten; V5: ${klinge.urteile} Urteile der diag-Linsen urteilen auf leerer Messung rot.`
     );
 }
 

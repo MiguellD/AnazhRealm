@@ -117,15 +117,21 @@ function blaetter(obj, prefix, tiefe, out) {
     };
     const neueWaisen = [];
     const bekannteGesehen = [];
+    // Ein Kern, den die Bilanz nicht laden oder nicht lesen kann, ist ungemessen — ROT beim Namen, nie übersprungen
+    // (bis zur Vakuum-Klinge V4 fiel er still aus der Bilanz, und seine Waisen waren unsichtbar).
+    const ungemessen = [];
     for (const entry of CORES) {
         let ns = null;
         try {
             ns = ladeKern(entry);
         } catch (e) {
-            console.log(`  ⚠ ${entry.file}: lädt nicht im vm (${(e && e.message) || e}) — übersprungen`);
+            ungemessen.push(`${entry.file}: lädt nicht im vm (${(e && e.message) || e})`);
             continue;
         }
-        if (!ns) continue;
+        if (!ns) {
+            ungemessen.push(`${entry.file}: der Namensraum ${entry.ns || "PRESETS"} fehlt nach dem Laden`);
+            continue;
+        }
         const pfade = [];
         for (const top of Object.keys(ns)) {
             if (top === "PRESETS" && ns.PRESETS) {
@@ -141,8 +147,9 @@ function blaetter(obj, prefix, tiefe, out) {
         try {
             for (const dep of entry.deps) eigenSrc += fs.readFileSync(path.join(root, dep), "utf8") + "\n";
             eigenSrc += fs.readFileSync(path.join(root, entry.file), "utf8");
-        } catch (_e) {
-            eigenSrc = "";
+        } catch (e) {
+            ungemessen.push(`${entry.file}: Quelle unlesbar (${(e && e.message) || e})`);
+            continue;
         }
         let waisen = 0;
         for (const p of pfade) {
@@ -186,6 +193,11 @@ function blaetter(obj, prefix, tiefe, out) {
     console.log(
         `  ${selbsttest3 ? "✅" : "❌"} SELBSTTEST 3: die Maschinen-Regel urteilt (1× Definition = rot, 2× = gelesen)`
     );
+    if (ungemessen.length) {
+        console.log(`\n❌ ROT — ${ungemessen.length} Kern(e) ungemessen (die Bilanz sähe ihre Waisen nicht):`);
+        for (const u of ungemessen) console.log("    ! " + u);
+        process.exit(1);
+    }
     if (neueWaisen.length) {
         console.log(`\n❌ ROT — ${neueWaisen.length} NEUE Waise(n) (Anazh kennt noch nicht):`);
         for (const w of neueWaisen) console.log("    ! " + w);
