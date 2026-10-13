@@ -1360,15 +1360,28 @@
     const FELS = Object.freeze({
         einfall: 0.07, // Einfallen der Bänke (rad, ≈ 4°: flach lagernd wie die Tafelberge des Schicht-Gesetzes)
         streichen: 0.6, // Streich-Richtung (rad gegen +x)
-        bank: 0.9, // mittlere Mächtigkeit einer Bank (m)
-        bankStreu: 0.5, // ± Anteil der Mächtigkeit je Bank
+        // DIE BANKUNG ist unregelmäßig (Nachbesserung K17: gleich hohe Bänke mit geraden Fugen und je Bank versetzten
+        // Klüften lasen sich als Ziegelmauer). Die Natur: die Mächtigkeit streut stark — dünnbankige und massige Pakete —,
+        // jede Fuge wellt für sich und keilt aus, die Klüfte laufen schräg durch die Bänke eines Pakets.
+        paket: 5.5, // mittlere Mächtigkeit eines Bank-Pakets (m): die groben Lagen, die das 1,8-m-Netz trägt
+        paketStreu: 0.6, // die Paket-Grenze wandert je Paket um ± paketStreu/2 Pakete
+        paketKontrast: 0.2,
+        bank: 0.9, // Mächtigkeit einer Bank (m) bei Paket-Dicke 1
+        paketDicke: [0.35, 2.2], // je Paket die Bank-Mächtigkeit × (log-gleich zwischen beiden): dünnbankig … massig
+        bankStreu: 0.85, // die Grenze einer Bank wandert um ± bankStreu/2 Bänke (gleich verteilt)
         bankKontrast: 0.22, // Helligkeit je Bank ±
         akzentAnteil: 0.25, // Anteil der hellen (sandigen) Bänke
-        paket: 5.5, // Mächtigkeit eines Bank-Pakets (m): die groben Lagen, die das 1,8-m-Netz trägt
-        paketKontrast: 0.2,
-        fuge: 0.55, // Abdunklung der Schicht-Fuge zur dunklen Lage
-        fugeBreite: 0.08, // Anteil der Bank, den die Fuge je Seite trägt
-        fugeStreu: 0.8, // ± Anteil, um den die Fuge je Bank deutlicher oder schwächer ist (nicht jede Schichtfuge klafft)
+        fugeWelle: 0.25, // ± Bänke: jede Fuge wellt für sich (zwei Sinus, im Streichen und quer dazu)
+        fugeLambda: [3.5, 12], // ihre Wellenlänge (m), je Fuge gezogen
+        // Die Fuge ist eine KANTE, kein Strich: unter ihr die gerundete Oberkante der Bank (die Rinde, hell), über ihr die
+        // Kehle (die zurückwitternde Fuge, dunkel) — ihre Weite streut je Fuge, und auf `1 − fugeOffen` der Länge keilt sie aus.
+        kehle: 0.1, // Höhe der Kehle über der Fuge (m)
+        rand: 0.08, // Höhe der hellen Oberkante unter der Fuge (m)
+        randHell: 0.4, // Mischung zum gebleichten Stein an der Oberkante
+        fuge: 0.6, // Abdunklung in der Kehle zur dunklen Lage
+        fugeStreu: 0.8, // ± Anteil, um den die Kehle je Fuge weiter oder enger ist
+        fugeOffen: 0.65, // Anteil der Fugen-Länge, die klafft
+        fugeOffenLambda: 6, // m
         kanteHell: 0.6, // die Verwitterungsrinde: Mischung zum gebleichten Stein an konvexen Kanten
         kanteK: [0.08, 0.6], // Krümmung (1/m): von … bis voll
         muldeDunkel: 0.5,
@@ -1383,22 +1396,31 @@
         grundMax: 0.22, // der Grundton höchstens (Y linear): der Fels bleibt im Natur-Band ≤ 0,30
         korn: 0.12, // ± je Korn (Vertex-Hash, wo das Netz es trägt: die Gestalten)
         kornLambda: 0.12, // m
-        // Die Klüfte: zwei senkrechte Scharen (im Streichen und quer dazu), je Bank um eine Zufalls-Lage versetzt — der
-        // gebankte Fels bricht in Blöcke.
+        // Die Klüfte: zwei steile Scharen (im Streichen und quer dazu), um `kluftSchraeg` gegen die Senkrechte geneigt; ihr
+        // Abstand je Paket aus `kluftDicht`, ihre Lage je PAKET — eine Kluft läuft durch die Bänke ihres Pakets und springt an
+        // der Fuge nur um ± `kluftVersatz` Abstände; `kluftAnteil` der Bänke trägt sie, die übrigen sind ungeklüftet.
         kluft: 3.2, // Abstand (m)
-        kluftAnteil: 0.45, // Anteil der Bänke, die Klüfte tragen (die übrigen sind ungeklüftet)
-        kluftBreite: 0.05, // Anteil des Abstands, den die Kluft je Seite trägt
+        kluftDicht: [0.6, 1.6],
+        kluftSchraeg: 0.35,
+        kluftAnteil: 0.6,
+        kluftVersatz: 0.06,
+        kluftBreite: 0.05, // Anteil des Abstands, den die Kluft je Seite trägt (je Bank × 0,5 … 1,5)
         kluftDunkel: 0.5, // Mischung zur dunklen Lage in der Kluft
-        // Der EINE Detail-Term im Boden-Shader trägt, was die Masche nicht trägt — Bänke, Fugen, Klüfte nach DIESEM Gesetz
-        // (bank · bankKontrast · akzentAnteil · fuge · kluft), relativ zum Mittel, das der Vertex trägt. EINE Probe im
-        // Rausch-Atlas wellt die Bank-Grenzen: `xz` je m in der Waagerechten, `y` je Bank in der Höhe, ± `welle` Bänke;
-        // das Auge blendet ihn aus (Bänke und Klüfte `fern` m, Fugen `fugeFern` m: was der Pixel nicht trägt, trägt das Mittel).
+        // Der EINE Detail-Term im Boden-Shader trägt, was die Masche nicht trägt — Bänke, Kanten und Klüfte nach DIESEM
+        // Gesetz (`felsLage`), relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`). EINE Probe im Rausch-Atlas wellt
+        // die Schichten im Großen: `xz` je m, `y` je Bank, ± `welle` Bänke; das Auge blendet aus, was der Pixel nicht trägt
+        // (Bänke und Klüfte `fern` m, Kanten `fugeFern` m).
         fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, fern: [120, 260], fugeFern: [30, 80] }),
         // Der Schutthang (Geröll = halb Fels) trägt im Detail-Term statt der Bänke den Schutt: Blöcke der Kante `korn` (m),
         // je Block ± `kontrast` — sein Mittel ist 1.
         geroell: Object.freeze({ korn: 0.45, kontrast: 0.35 }),
     });
     const FELS_SAAT = saatHash("fels-stoff");
+    const TAU = 2 * Math.PI;
+    const FELS_CS = Math.cos(FELS.streichen),
+        FELS_SN = Math.sin(FELS.streichen),
+        FELS_TE = Math.tan(FELS.einfall);
+    const fz = (a, b, c) => zufall(FELS_SAAT, a, b, c);
     // Trägt ein Netz der Kante `fuss` die Wellenlänge λ? 1 = ganz (fuss ≤ λ/4), 0 = nur ihr Mittel (fuss ≥ λ/2).
     const traegt = (lambda, fuss) => 1 - glatt(0.25 * lambda, 0.5 * lambda, fuss > 0 ? fuss : 0);
     // Wert-Rauschen [0, 1] im Gitter der Kante 1 (trilinear, geglättet) — rein, deterministisch, ohne Saat-Strom.
@@ -1408,10 +1430,10 @@
             iz = Math.floor(z);
         let fx = x - ix,
             fy = y - iy,
-            fz = z - iz;
+            fz3 = z - iz;
         fx = fx * fx * (3 - 2 * fx);
         fy = fy * fy * (3 - 2 * fy);
-        fz = fz * fz * (3 - 2 * fz);
+        fz3 = fz3 * fz3 * (3 - 2 * fz3);
         const e = (i, j, k) => zufall(sh, ix + i, iy + j, iz + k);
         const x00 = e(0, 0, 0) + (e(1, 0, 0) - e(0, 0, 0)) * fx;
         const x10 = e(0, 1, 0) + (e(1, 1, 0) - e(0, 1, 0)) * fx;
@@ -1419,7 +1441,7 @@
         const x11 = e(0, 1, 1) + (e(1, 1, 1) - e(0, 1, 1)) * fx;
         const y0 = x00 + (x10 - x00) * fy;
         const y1 = x01 + (x11 - x01) * fy;
-        return y0 + (y1 - y0) * fz;
+        return y0 + (y1 - y0) * fz3;
     }
     // Die drei Töne eines Felsens aus seinem Grundton (linear): die dunkle Lage und die helle, sandige Bank. Der Grundton
     // liegt im Natur-Band: über `FELS.grundMax` (Leuchtdichte Y) sinken alle drei Töne gemeinsam — mit Bänken, Rinde und
@@ -1434,124 +1456,255 @@
             akzent: akzent ? [akzent[0] * f, akzent[1] * f, akzent[2] * f] : [b[0] * 1.35, b[1] * 1.28, b[2] * 1.18],
         });
     }
-    // Die Bank an der Schicht-Höhe s (m): ihre Helligkeit, ob sie hell (sandig) ist, und die Lage in ihr (0..1).
-    function bankAn(s, aus) {
+    // Die Paket-Grenze k (m, in der Schicht-Höhe).
+    const paketGrenze = (k) => (k + (fz(k, 31, 0) - 0.5) * FELS.paketStreu) * FELS.paket;
+    // Das Paket an der Schicht-Höhe s (die Grenzen wandern um weniger als ein halbes Paket: Nachbarn genügen).
+    function paketAn(s) {
+        const k = Math.floor(s / FELS.paket);
+        return s < paketGrenze(k) ? k - 1 : s >= paketGrenze(k + 1) ? k + 1 : k;
+    }
+    // Die Bank-Mächtigkeit im Paket p (m): log-gleich in `paketDicke`.
+    const paketBank = (p) =>
+        FELS.bank * Math.exp(Math.log(FELS.paketDicke[0]) + Math.log(FELS.paketDicke[1] / FELS.paketDicke[0]) * fz(p, 37, 0));
+    // Die Grenze i der Bänke im Paket p (in Bänken des Pakets ab der Paket-Grenze 0) an der Lage (h1 im Streichen, h2 quer):
+    // gezogen um ± bankStreu/2, gewellt um ± fugeWelle (zwei Sinus, je Fuge Wellenlänge und Phase). Die Paket-Grenze (i = 0)
+    // wellt nur mit der großen Welle.
+    function bankGrenze(p, i, h1, h2) {
+        if (i <= 0) return i;
         const F = FELS;
-        const k = Math.floor(s / F.bank);
-        // Die Mächtigkeit streut je Bank: die Grenze der Bank k wandert um ± bankStreu/2 · bank (stetig in s).
-        const grenze = (i) => (i + (zufall(FELS_SAAT, i, 7, 0) - 0.5) * F.bankStreu) * F.bank;
-        const kk = s < grenze(k) ? k - 1 : s >= grenze(k + 1) ? k + 1 : k;
-        const a = grenze(kk);
-        const b = grenze(kk + 1);
-        aus.lage = b > a ? (s - a) / (b - a) : 0.5;
-        aus.hell = 1 + F.bankKontrast * (2 * zufall(FELS_SAAT, kk, 3, 0) - 1);
-        aus.akzent = zufall(FELS_SAAT, kk, 5, 0) < F.akzentAnteil ? 1 : 0;
-        aus.k = kk;
+        const l1 = F.fugeLambda[0] + (F.fugeLambda[1] - F.fugeLambda[0]) * fz(p, i, 43);
+        const w = 0.65 * Math.sin(TAU * (h1 / l1 + fz(p, i, 47))) + 0.35 * Math.sin(TAU * (h2 / (0.61 * l1) + fz(p, i, 53)));
+        return i + (fz(p, i, 41) - 0.5) * F.bankStreu + F.fugeWelle * w;
+    }
+    // Klafft die Fuge i des Pakets p an der Lage? (0 = ausgekeilt … 1 = offen; `fugeOffen` der Länge klafft)
+    const _offenC = Math.cos(Math.PI * FELS.fugeOffen);
+    const fugeOffenAn = (p, i, h1, h2) =>
+        glatt(_offenC - 0.25, _offenC + 0.25, Math.sin(TAU * ((h1 + 0.5 * h2) / FELS.fugeOffenLambda + fz(p, i, 59))));
+    // DIE LAGE IM FELS an (x, y, z) mit der großen Welle `welle` (± 1, Bänke × `fein.welle`): Paket, Bank, die Mächtigkeit der
+    // Bank hier und der Abstand zur Fuge unten und oben (m). Die Bank zwischen den Grenzen j − 1 … j + 2 (die Grenzen wandern
+    // um weniger als 0,65 Bänke): die oberste darunter, die unterste darüber — wo sich zwei Fugen kreuzen, keilt die Bank aus.
+    function felsLage(x, y, z, welle, aus) {
+        const F = FELS;
+        const h1 = x * FELS_CS + z * FELS_SN,
+            h2 = z * FELS_CS - x * FELS_SN;
+        const s = y + FELS_TE * h1 + (welle || 0) * F.fein.welle * F.bank;
+        const p = paketAn(s);
+        const pa = paketGrenze(p);
+        const d = paketBank(p);
+        const u = (s - pa) / d;
+        const top = (paketGrenze(p + 1) - pa) / d;
+        const j = Math.floor(u);
+        const b0 = bankGrenze(p, j - 1, h1, h2),
+            b1 = bankGrenze(p, j, h1, h2),
+            b2 = bankGrenze(p, j + 1, h1, h2),
+            b3 = bankGrenze(p, j + 2, h1, h2);
+        const lo = Math.max(b0, b1 <= u ? b1 : -1e9, b2 <= u ? b2 : -1e9);
+        const hi = Math.min(b1 > u ? b1 : 1e9, b2 > u ? b2 : 1e9, b3, top);
+        const bank = j + (b2 <= u ? 1 : 0) - (b1 > u ? 1 : 0);
+        aus.s = s;
+        aus.h1 = h1;
+        aus.h2 = h2;
+        aus.paket = p;
+        aus.bank = bank;
+        aus.d = d;
+        aus.dicke = (hi - lo) * d;
+        aus.unten = (u - lo) * d;
+        aus.oben = (hi - u) * d;
         return aus;
     }
-    const _bank = { lage: 0, hell: 1, akzent: 0, k: 0 };
+    const _lage = { s: 0, h1: 0, h2: 0, paket: 0, bank: 0, d: 0, dicke: 0, unten: 0, oben: 0 };
     // In der Kluft (0..1, 1 = Mitte): u in Kluft-Abständen, b die halbe Breite.
     const inKluft = (u, b) => {
         const d = Math.abs(u - Math.round(u));
         return d < b ? 1 - d / b : 0;
     };
+    // Die Kanten und Klüfte an einer Lage: die Kehle über der Fuge (dunkel), die Oberkante unter der nächsten (hell), die
+    // Kluft (dunkel) — je 0..1, ohne Mittel. aus = { kehle, rand, kluft }.
+    function felsKanten(L, aus) {
+        const F = FELS;
+        const p = L.paket,
+            k = L.bank;
+        const kw = F.kehle * (1 + F.fugeStreu * (2 * fz(p, k, 19) - 1)) * fugeOffenAn(p, k, L.h1, L.h2);
+        const ke = kw > 1e-4 && L.unten < kw ? 1 - L.unten / kw : 0;
+        aus.kehle = ke * ke;
+        const rw = F.rand * fugeOffenAn(p, k + 1, L.h1, L.h2);
+        const t = rw > 1e-4 && L.oben < rw ? 1 - L.oben / rw : 0;
+        aus.rand = 4 * t * (1 - t);
+        let inK = 0;
+        if (fz(p, k, 23) < F.kluftAnteil) {
+            const kd = F.kluft * (F.kluftDicht[0] + (F.kluftDicht[1] - F.kluftDicht[0]) * fz(p, 29, 0));
+            const kb = F.kluftBreite * (0.5 + fz(p, k, 71));
+            const v = 2 * F.kluftVersatz;
+            inK = Math.max(
+                inKluft((L.h1 + L.s * F.kluftSchraeg) / kd + fz(p, 13, 0) + (fz(p, k, 61) - 0.5) * v, kb),
+                inKluft((L.h2 - 0.6 * L.s * F.kluftSchraeg) / kd + fz(p, 17, 0) + (fz(p, k, 67) - 0.5) * v, kb)
+            );
+        }
+        aus.kluft = inK * inK;
+        return aus;
+    }
+    const _kanten = { kehle: 0, rand: 0, kluft: 0 };
+    // Die Mittel des Gesetzes (über die Lage gemittelt, EINMAL gezogen): was ein Netz trägt, das Bänke, Kanten oder Klüfte
+    // nicht auflöst — der Vertex trägt sie, der Detail-Term im Shader rechnet relativ zu ihnen (sein Mittel ist der Vertex).
+    let _felsMittelMemo = null;
+    function felsMittelWerte() {
+        if (_felsMittelMemo) return _felsMittelMemo;
+        let n = 0,
+            ke = 0,
+            ra = 0,
+            kl = 0,
+            ak = 0,
+            he = 0;
+        for (let i = 0; i < 64; i++)
+            for (let j = 0; j < 64; j++) {
+                const L = felsLage(i * 2.71 + j * 0.37, (i * 64 + j) * 0.0617, j * 1.93 - i * 0.71, 0, _lage);
+                felsKanten(L, _kanten);
+                ke += _kanten.kehle;
+                ra += _kanten.rand;
+                kl += _kanten.kluft;
+                ak += fz(L.paket, L.bank, 5) < FELS.akzentAnteil ? 1 : 0;
+                he += 1 + FELS.bankKontrast * (2 * fz(L.paket, L.bank, 3) - 1);
+                n++;
+            }
+        _felsMittelMemo = Object.freeze({ kehle: ke / n, rand: ra / n, kluft: kl / n, akzent: ak / n, hell: he / n });
+        return _felsMittelMemo;
+    }
     // DIE FELS-FARBE an einem Punkt (linear, nach `out`): B = `felsBasis`; (x, y, z) die Lage (m, Welt oder Gestalt); n die
     // Normale; `krumm` die mittlere Krümmung (1/m, > 0 konvex — `felsKruemmung`); `himmel` die Himmels-Sicht (0 Höhle …
-    // 1 frei); `feucht` 0..1; `fuss` die Kante des tragenden Netzes (m).
-    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out) {
+    // 1 frei); `feucht` 0..1; `fuss` die Kante des tragenden Netzes (m). Was das Netz nicht trägt, trägt sein Mittel — und
+    // wird dann nicht gerechnet (der Welt-Boden mit 1,8 m trägt nur die Pakete).
+    let _tFuss = NaN,
+        _tSatz = null;
+    function traegtSatz(fuss) {
+        if (fuss === _tFuss) return _tSatz;
         const F = FELS;
-        // Schicht-Höhe: die Bänke fallen mit dem Einfallen gegen die Streich-Richtung.
-        const s = y + Math.tan(F.einfall) * (x * Math.cos(F.streichen) + z * Math.sin(F.streichen));
-        let r = B.basis[0],
-            g = B.basis[1],
-            b = B.basis[2];
-        // Bank-Pakete (grob) — ihr Mittel ist 1.
-        const tp = traegt(F.paket, fuss);
-        if (tp > 0) {
-            const kp = Math.floor(s / F.paket);
-            const m = 1 + tp * F.paketKontrast * (2 * zufall(FELS_SAAT, kp, 11, 0) - 1);
-            r *= m;
-            g *= m;
-            b *= m;
-        }
-        // Bänke (fein): Helligkeit, helle Bank, Fuge zur dunklen Lage — wo das Netz sie nicht trägt, ihr Mittel (die
-        // Fugen dunkeln im Mittel um 2 · fugeBreite · fuge · ½, die hellen Bänke heben um akzentAnteil).
-        const tb = traegt(F.bank, fuss);
-        const bk = bankAn(s, _bank);
-        const akz = tb * bk.akzent + (1 - tb) * F.akzentAnteil;
+        _tFuss = fuss;
+        _tSatz = {
+            fuss,
+            tp: traegt(F.paket, fuss),
+            tb: traegt(F.bank, fuss),
+            tf: traegt(4 * (F.kehle + F.rand), fuss),
+            tj: traegt(F.kluft, fuss),
+            tk: traegt(F.kornLambda * 4, fuss),
+            tfl: traegt(F.flechteLambda, fuss),
+            tm: traegt(F.moosLambda, fuss),
+        };
+        return _tSatz;
+    }
+    // Die Kette Paket · Bank · Kanten · Klüfte (die Bank `L` und ihre Kanten `K`, wo das Netz sie trägt, sonst ihre Mittel)
+    // vom Grundton × m (m das Paket) nach out.
+    function felsKette(B, m, L, K, T, out) {
+        const F = FELS;
+        const M = _felsMittelMemo || felsMittelWerte();
+        const tb = L ? T.tb : 0,
+            tf = K ? T.tf : 0,
+            tj = K ? T.tj : 0;
+        let r = B.basis[0] * m,
+            g = B.basis[1] * m,
+            b = B.basis[2] * m;
+        // Bänke: die helle Bank und ihre Helligkeit.
+        const akz = (tb > 0 ? tb * (fz(L.paket, L.bank, 5) < F.akzentAnteil ? 1 : 0) : 0) + (1 - tb) * M.akzent;
         r += (B.akzent[0] - r) * akz * 0.6;
         g += (B.akzent[1] - g) * akz * 0.6;
         b += (B.akzent[2] - b) * akz * 0.6;
-        const hell = tb * bk.hell + (1 - tb);
+        const hell = (tb > 0 ? tb * (1 + F.bankKontrast * (2 * fz(L.paket, L.bank, 3) - 1)) : 0) + (1 - tb) * M.hell;
         r *= hell;
         g *= hell;
         b *= hell;
-        const fb = F.fugeBreite;
-        const inFuge = bk.lage < fb ? 1 - bk.lage / fb : bk.lage > 1 - fb ? (bk.lage - (1 - fb)) / fb : 0;
-        const fStark = 1 + F.fugeStreu * (2 * zufall(FELS_SAAT, bk.k, 19, 0) - 1);
-        const fuge = (tb * inFuge * inFuge * fStark + (1 - tb) * fb * (2 / 3)) * F.fuge;
-        r += (B.dunkel[0] - r) * fuge;
-        g += (B.dunkel[1] - g) * fuge;
-        b += (B.dunkel[2] - b) * fuge;
-        // Klüfte: zwei Scharen, je Bank versetzt, nur in `kluftAnteil` der Bänke — wo das Netz sie nicht trägt, ihr Mittel
-        // (je Schar 2/3 · kluftBreite).
-        const tj = traegt(F.kluft, fuss);
-        const kb = F.kluftBreite;
-        let inK = 0;
-        if (tj > 0 && zufall(FELS_SAAT, bk.k, 23, 0) < F.kluftAnteil) {
-            const cs = Math.cos(F.streichen),
-                sn = Math.sin(F.streichen);
-            inK = Math.max(
-                inKluft((x * cs + z * sn) / F.kluft + zufall(FELS_SAAT, bk.k, 13, 0), kb),
-                inKluft((z * cs - x * sn) / F.kluft + zufall(FELS_SAAT, bk.k, 17, 0), kb)
-            );
-        }
-        const kluft = (tj * inK * inK + (1 - tj) * kb * (4 / 3) * F.kluftAnteil) * F.kluftDunkel;
+        // Die Kanten: die Kehle über der Fuge zur dunklen Lage, die Oberkante unter ihr zum gebleichten Stein; die Klüfte.
+        const kehle = ((tf > 0 ? tf * K.kehle : 0) + (1 - tf) * M.kehle) * F.fuge;
+        r += (B.dunkel[0] - r) * kehle;
+        g += (B.dunkel[1] - g) * kehle;
+        b += (B.dunkel[2] - b) * kehle;
+        const rand = ((tf > 0 ? tf * K.rand : 0) + (1 - tf) * M.rand) * F.randHell;
+        r += (B.basis[0] * F.bleiche - r) * rand;
+        g += (B.basis[1] * F.bleiche - g) * rand;
+        b += (B.basis[2] * F.bleiche - b) * rand;
+        const kluft = ((tj > 0 ? tj * K.kluft : 0) + (1 - tj) * M.kluft) * F.kluftDunkel;
         r += (B.dunkel[0] - r) * kluft;
         g += (B.dunkel[1] - g) * kluft;
         b += (B.dunkel[2] - b) * kluft;
-        // Korn (Vertex-Hash) — nur, wo das Netz es trägt; sein Mittel ist 1.
-        const tk = traegt(F.kornLambda * 4, fuss);
-        if (tk > 0) {
-            const q = 1 / F.kornLambda;
-            const m = 1 + tk * F.korn * (2 * zufall(FELS_SAAT, Math.floor(x * q), Math.floor(y * q), Math.floor(z * q)) - 1);
-            r *= m;
-            g *= m;
-            b *= m;
+        out[0] = r;
+        out[1] = g;
+        out[2] = b;
+        return out;
+    }
+    // Trägt das Netz nichts Feines, ist die Kette affin im Paket-Faktor m: c(m) = c0 + m · d — EINMAL je (B, fuss).
+    const _affinMemo = new WeakMap();
+    function felsAffin(B, T) {
+        let A = _affinMemo.get(B);
+        if (A && A.fuss === T.fuss) return A;
+        const c0 = felsKette(B, 0, null, null, T, [0, 0, 0]);
+        const c1 = felsKette(B, 1, null, null, T, [0, 0, 0]);
+        A = { fuss: T.fuss, c0, d: [c1[0] - c0[0], c1[1] - c0[1], c1[2] - c0[2]] };
+        _affinMemo.set(B, A);
+        return A;
+    }
+    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out) {
+        const F = FELS;
+        const T = traegtSatz(fuss);
+        const sy = y + FELS_TE * (x * FELS_CS + z * FELS_SN);
+        let L = null;
+        if (T.tb > 0 || T.tf > 0 || T.tj > 0) {
+            const w = 2 * wert3(x * F.fein.xz, (sy * F.fein.y) / F.bank, z * F.fein.xz, FELS_SAAT ^ 0x77) - 1;
+            L = felsLage(x, y, z, w, _lage);
         }
-        // Die Kante: konvex hellt die Verwitterungsrinde auf, die Mulde dunkelt.
+        // Bank-Pakete (grob) — ihr Mittel ist 1.
+        const m = T.tp > 0 ? 1 + T.tp * F.paketKontrast * (2 * fz(L ? L.paket : paketAn(sy), 11, 0) - 1) : 1;
+        let r, g, b;
+        if (L) {
+            felsKette(B, m, L, felsKanten(L, _kanten), T, out);
+            r = out[0];
+            g = out[1];
+            b = out[2];
+        } else {
+            const A = felsAffin(B, T);
+            r = A.c0[0] + m * A.d[0];
+            g = A.c0[1] + m * A.d[1];
+            b = A.c0[2] + m * A.d[2];
+        }
+        // Korn (Vertex-Hash) — nur, wo das Netz es trägt; sein Mittel ist 1.
+        if (T.tk > 0) {
+            const q = 1 / F.kornLambda;
+            const mk = 1 + T.tk * F.korn * (2 * zufall(FELS_SAAT, Math.floor(x * q), Math.floor(y * q), Math.floor(z * q)) - 1);
+            r *= mk;
+            g *= mk;
+            b *= mk;
+        }
+        // Die Kante des Netzes: konvex hellt die Verwitterungsrinde auf, die Mulde dunkelt.
         const k = krumm > 0 || krumm < 0 ? krumm : 0;
-        const ke = glatt(F.kanteK[0], F.kanteK[1], k) * F.kanteHell;
-        if (ke > 0) {
+        if (k > F.kanteK[0]) {
+            const ke = glatt(F.kanteK[0], F.kanteK[1], k) * F.kanteHell;
             r += (B.basis[0] * F.bleiche - r) * ke;
             g += (B.basis[1] * F.bleiche - g) * ke;
             b += (B.basis[2] * F.bleiche - b) * ke;
+        } else if (-k > F.muldeK[0]) {
+            const md = 1 - glatt(F.muldeK[0], F.muldeK[1], -k) * F.muldeDunkel;
+            r *= md;
+            g *= md;
+            b *= md;
         }
-        const md = 1 - glatt(F.muldeK[0], F.muldeK[1], -k) * F.muldeDunkel;
-        r *= md;
-        g *= md;
-        b *= md;
-        // Flechte am trockenen Licht, Moos am feuchten Sims — beide nur unter dem Himmel, in Flecken.
+        // Flechte am trockenen Licht, Moos am feuchten Sims — beide nur unter dem Himmel, in Flecken (das Rauschen nur, wo
+        // das Netz die Flecken trägt).
         const h = himmel > 0 ? (himmel < 1 ? himmel : 1) : 0;
         const fe = feucht > 0 ? (feucht < 1 ? feucht : 1) : 0;
         if (h > 0) {
-            const up = ny > 0 ? ny : 0;
-            const tf = traegt(F.flechteLambda, fuss);
-            const pf =
-                tf * glatt(0.5, 0.72, wert3(x / F.flechteLambda, y / F.flechteLambda, z / F.flechteLambda, FELS_SAAT ^ 0x51)) +
-                (1 - tf) * 0.27;
+            const tfl = T.tfl;
+            const lf = F.flechteLambda;
+            const pf = (tfl > 0 ? tfl * glatt(0.5, 0.72, wert3(x / lf, y / lf, z / lf, FELS_SAAT ^ 0x51)) : 0) + (1 - tfl) * 0.27;
             const wf = F.flechteDeckung * pf * h * (1 - 0.7 * fe) * glatt(-0.3, 0.4, ny);
             r += (F.flechte[0] - r) * wf;
             g += (F.flechte[1] - g) * wf;
             b += (F.flechte[2] - b) * wf;
-            const tm = traegt(F.moosLambda, fuss);
-            const pm =
-                tm * glatt(0.45, 0.7, wert3(x / F.moosLambda, y / F.moosLambda, z / F.moosLambda, FELS_SAAT ^ 0xa3)) +
-                (1 - tm) * 0.32;
-            const wm = F.moosDeckung * pm * h * fe * glatt(0.15, 0.7, up);
-            r += (F.moos[0] - r) * wm;
-            g += (F.moos[1] - g) * wm;
-            b += (F.moos[2] - b) * wm;
+            if (fe > 0 && ny > 0.15) {
+                const tm = T.tm;
+                const lm = F.moosLambda;
+                const pm = (tm > 0 ? tm * glatt(0.45, 0.7, wert3(x / lm, y / lm, z / lm, FELS_SAAT ^ 0xa3)) : 0) + (1 - tm) * 0.32;
+                const wm = F.moosDeckung * pm * h * fe * glatt(0.15, 0.7, ny);
+                r += (F.moos[0] - r) * wm;
+                g += (F.moos[1] - g) * wm;
+                b += (F.moos[2] - b) * wm;
+            }
         }
         out[0] = r;
         out[1] = g;
@@ -1559,34 +1712,138 @@
         return out;
     }
     // Die mittlere Krümmung je Vertex (1/m, > 0 konvex) eines indizierten Netzes: je Kante (i, j) −2 n_i · (p_j − p_i) /
-    // |p_j − p_i|², gemittelt — auf einer Kugel vom Radius ρ genau 1/ρ. P, N: Float32-Felder (xyz), I: Index (oder null).
-    function felsKruemmung(P, N, I, n, out) {
+    // |p_j − p_i|², gemittelt — auf einer Kugel vom Radius ρ genau 1/ρ. P, N: Float32-Felder (xyz), I: Index (oder null);
+    // `maske` (optional, je Vertex > 0 = gefragt): nur Dreiecke mit einer gefragten Ecke werden gerechnet.
+    function felsKruemmung(P, N, I, n, out, maske) {
         const K = out || new Float32Array(n);
         const c = new Uint16Array(n);
         K.fill(0, 0, n);
         if (!I) return K;
-        const kante = (i, j) => {
-            const dx = P[3 * j] - P[3 * i],
-                dy = P[3 * j + 1] - P[3 * i + 1],
-                dz = P[3 * j + 2] - P[3 * i + 2];
-            const l2 = dx * dx + dy * dy + dz * dz;
-            if (!(l2 > 1e-12)) return;
-            K[i] += (-2 * (N[3 * i] * dx + N[3 * i + 1] * dy + N[3 * i + 2] * dz)) / l2;
-            c[i]++;
-        };
-        for (let t = 0; t + 2 < I.length; t += 3) {
-            const a = I[t],
-                b = I[t + 1],
-                d = I[t + 2];
-            kante(a, b);
-            kante(a, d);
-            kante(b, a);
-            kante(b, d);
-            kante(d, a);
-            kante(d, b);
+        // je Dreieck die drei Kanten, jede an beiden Enden: −2 n_i · (p_j − p_i) / l² (eng geschrieben: der Takt des
+        // Welt-Bodens zahlt sie je Chunk)
+        const m = I.length - 2;
+        for (let t = 0; t < m; t += 3) {
+            const v0 = I[t],
+                v1 = I[t + 1],
+                v2 = I[t + 2];
+            if (maske && maske[v0] === 0 && maske[v1] === 0 && maske[v2] === 0) continue;
+            const x0 = P[3 * v0],
+                y0 = P[3 * v0 + 1],
+                z0 = P[3 * v0 + 2],
+                x1 = P[3 * v1],
+                y1 = P[3 * v1 + 1],
+                z1 = P[3 * v1 + 2],
+                x2 = P[3 * v2],
+                y2 = P[3 * v2 + 1],
+                z2 = P[3 * v2 + 2];
+            const a0 = N[3 * v0],
+                b0 = N[3 * v0 + 1],
+                c0 = N[3 * v0 + 2],
+                a1 = N[3 * v1],
+                b1 = N[3 * v1 + 1],
+                c1 = N[3 * v1 + 2],
+                a2 = N[3 * v2],
+                b2 = N[3 * v2 + 1],
+                c2 = N[3 * v2 + 2];
+            let dx = x1 - x0,
+                dy = y1 - y0,
+                dz = z1 - z0,
+                l2 = dx * dx + dy * dy + dz * dz;
+            if (l2 > 1e-12) {
+                const q = 2 / l2;
+                K[v0] -= q * (a0 * dx + b0 * dy + c0 * dz);
+                K[v1] += q * (a1 * dx + b1 * dy + c1 * dz);
+                c[v0]++;
+                c[v1]++;
+            }
+            dx = x2 - x1;
+            dy = y2 - y1;
+            dz = z2 - z1;
+            l2 = dx * dx + dy * dy + dz * dz;
+            if (l2 > 1e-12) {
+                const q = 2 / l2;
+                K[v1] -= q * (a1 * dx + b1 * dy + c1 * dz);
+                K[v2] += q * (a2 * dx + b2 * dy + c2 * dz);
+                c[v1]++;
+                c[v2]++;
+            }
+            dx = x0 - x2;
+            dy = y0 - y2;
+            dz = z0 - z2;
+            l2 = dx * dx + dy * dy + dz * dz;
+            if (l2 > 1e-12) {
+                const q = 2 / l2;
+                K[v2] -= q * (a2 * dx + b2 * dy + c2 * dz);
+                K[v0] += q * (a0 * dx + b0 * dy + c0 * dz);
+                c[v2]++;
+                c[v0]++;
+            }
         }
         for (let i = 0; i < n; i++) if (c[i]) K[i] /= c[i];
         return K;
+    }
+    // DIE UNREGELMÄSSIGKEIT DER BANKUNG (die Zahl am Gesetz, `gate:hoehlen-sicht` (l)): der Variationskoeffizient der
+    // Bank-Mächtigkeit (an einer Lotrechten, n Bänke), die Welligkeit der Fugen (RMS-Abweichung einer Fuge von ihrer Geraden
+    // über `strecke` m, in Bank-Mächtigkeiten) und der Durchlauf der Klüfte (Anteil der Klüfte einer Bank, die in der Bank
+    // darüber innerhalb ± 0,15 Abständen weiterlaufen).
+    function felsBankung(o) {
+        const F = FELS;
+        const strecke = (o && o.strecke) || 20;
+        const dicken = [];
+        let s = 0.013;
+        let guard = 0;
+        while (dicken.length < 2000 && guard++ < 20000) {
+            const L = felsLage(0, s, 0, 0, _lage);
+            if (L.dicke > 1e-3) dicken.push(L.dicke);
+            s += L.oben + 1e-4;
+        }
+        const mw = dicken.reduce((a, v) => a + v, 0) / dicken.length;
+        const sd = Math.sqrt(dicken.reduce((a, v) => a + (v - mw) * (v - mw), 0) / dicken.length);
+        // Die Welligkeit: je Fuge (Paket p, Grenze i ≥ 1) ihre Höhe über h1 (h2 = 0), von ihrer Ausgleichs-Geraden.
+        let wSum = 0,
+            wN = 0;
+        for (let p = 0; p < 40; p++) {
+            const d = paketBank(p);
+            for (let i = 1; i <= 3; i++) {
+                const xs = [],
+                    ys = [];
+                for (let h = 0; h <= strecke; h += 0.25) {
+                    xs.push(h);
+                    ys.push(bankGrenze(p, i, h, 0) * d);
+                }
+                const n = xs.length;
+                const mx = xs.reduce((a, v) => a + v, 0) / n,
+                    my = ys.reduce((a, v) => a + v, 0) / n;
+                let sxy = 0,
+                    sxx = 0;
+                for (let q = 0; q < n; q++) {
+                    sxy += (xs[q] - mx) * (ys[q] - my);
+                    sxx += (xs[q] - mx) * (xs[q] - mx);
+                }
+                const k = sxx > 0 ? sxy / sxx : 0;
+                let rss = 0;
+                for (let q = 0; q < n; q++) {
+                    const e = ys[q] - (my + k * (xs[q] - mx));
+                    rss += e * e;
+                }
+                wSum += Math.sqrt(rss / n) / d;
+                wN++;
+            }
+        }
+        // Der Durchlauf: je Bank mit Klüften die Lage ihrer Klüfte (Schar 1) gegen die Bank darüber im selben Paket.
+        let lauf = 0,
+            laufN = 0;
+        for (let p = 0; p < 60; p++)
+            for (let k = 0; k < 4; k++) {
+                if (!(fz(p, k, 23) < F.kluftAnteil)) continue;
+                laufN++;
+                if (!(fz(p, k + 1, 23) < F.kluftAnteil)) continue;
+                const v = 2 * F.kluftVersatz;
+                const dq = (fz(p, k + 1, 61) - 0.5) * v - (fz(p, k, 61) - 0.5) * v;
+                if (Math.abs(dq - Math.round(dq)) <= 0.15) lauf++;
+            }
+        const r3 = (v) => Math.round(v * 1000) / 1000;
+        return { baenke: dicken.length, mittel: r3(mw), cv: r3(sd / mw), welligkeit: r3(wSum / wN), durchlauf: r3(laufN ? lauf / laufN : 0) };
     }
     // Ein ganzes Netz durch den Stoff (die Gestalten der Foundry, der Werkstatt-Stein): C ← felsFarbe je Vertex.
     // o = { himmel (1), feucht (0,3), fuss (die mittlere Kante, sonst aus dem Netz) }.
@@ -1627,6 +1884,9 @@
         felsKruemmung: felsKruemmung,
         felsNetz: felsNetz,
         felsMittel: felsMittel,
+        felsLage: felsLage,
+        felsMittelWerte: felsMittelWerte,
+        felsBankung: felsBankung,
         statistik: statistik,
         hangBaender: hangBaender,
         VERSION: VERSION,

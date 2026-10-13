@@ -43,6 +43,11 @@
 //       `felsFarbe` über `_felsStoff`: Bänke, Kanten, Mulden, Flechte, Moos), Streuung σ/Mittel ≥ 0,08, Albedo ≤ 0,30; vorher
 //       die eine graue Masse des Palette-Steins (Auge-Runde V18.540 bei 762/−138), davor
 //       das Grün der Wiese 25 m über ihm.
+//   (m) DIE BANKUNG IST UNREGELMÄSSIG (K17, Nachbesserung 1) — am Gesetz (gelaende-core `felsBankung`, ohne Browser): der
+//       Variationskoeffizient der Bank-Mächtigkeit ≥ 0,4, die Eigen-Welligkeit der Fugen ≥ 0,1 Bänke, der Durchlauf der Klüfte
+//       durch die Fuge ≥ 0,4; der Detail-Term des Boden-Shaders liest dieselben Größen (paketDicke · fugeWelle · kehle ·
+//       kluftVersatz · fugeLambda). Vorher (9f400dd5) lasen sich gleich hohe Bänke mit geraden Strich-Fugen und je Bank neu
+//       ansetzenden Klüften als Ziegelmauer: im Shader CV 0, am Gesetz 0,20, Welligkeit 0, Durchlauf 0,13.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -59,6 +64,10 @@ const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
 const FELS_FREMD_ANTEIL = 0.01;
 const FELS_STREUUNG_MIN = 0.08;
 const FELS_ALBEDO_MAX = 0.3;
+// (m) Die Bankung (K17 Nachbesserung 1): Natur-Bankung streut stark (Variationskoeffizient ≳ 0,4, Koordinator-Auge 13.10.).
+const BANK_CV_MIN = 0.4;
+const FUGE_WELLE_MIN = 0.1;
+const KLUFT_DURCHLAUF_MIN = 0.4;
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
@@ -249,6 +258,32 @@ function urteil(b) {
                 `(${kl.gruen} davon grün), zuerst ${JSON.stringify(kl.erst)} — der Vertex trägt die Säule, der Fels lebt nur ` +
                 "als Farbton im Shader (`_felsStoff`)"
         );
+    // (m) DIE BANKUNG: unregelmäßig am Gesetz, und der Detail-Term liest es
+    const bk = b.bankung;
+    if (!bk || !(bk.baenke > 0))
+        v.push("LEER: (m) Bankung: das Gesetz trägt keine Bänke (gelaende-core `felsBankung` fehlt)");
+    else {
+        if (!(bk.cv >= BANK_CV_MIN))
+            v.push(
+                `MAUERWERK: die Bänke sind gleich hoch — Variationskoeffizient der Mächtigkeit ${bk.cv} über ${bk.baenke} ` +
+                    `Bänke (mindestens ${BANK_CV_MIN}: dünnbankige und massige Pakete, gelaende-core paketDicke · bankStreu)`
+            );
+        if (!(bk.welligkeit >= FUGE_WELLE_MIN))
+            v.push(
+                `GERADE FUGEN: die Fugen wellen nicht für sich — Eigen-Welligkeit ${bk.welligkeit} Bänke (mindestens ` +
+                    `${FUGE_WELLE_MIN}, gelaende-core fugeWelle)`
+            );
+        if (!(bk.durchlauf >= KLUFT_DURCHLAUF_MIN))
+            v.push(
+                `KLÜFTE SETZEN NEU AN: nur ${bk.durchlauf} der Klüfte laufen durch die Fuge weiter (mindestens ` +
+                    `${KLUFT_DURCHLAUF_MIN}: ihre Lage je Paket, gelaende-core kluftVersatz)`
+            );
+    }
+    if (c.feinLiest === false)
+        v.push(
+            "CODE: der Detail-Term (`_terrainGeologyAlbedo`) liest die Bankung des Gesetzes nicht (paketDicke · fugeWelle · " +
+                "kehle · kluftVersatz · fugeLambda) — im Shader fährt ein Zwilling"
+        );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
     if (!c.abschnittLiest) v.push("CODE: `_chunkSatzAbschnitt` liest den Stempel des Höhlen-Knotens nicht");
@@ -349,7 +384,9 @@ function selbsttest() {
             augenVorZweig: true,
             augenTslFremd: null,
             poolGesetz: true,
+            feinLiest: true,
         },
+        bankung: { baenke: 2000, mittel: 0.65, cv: 0.71, welligkeit: 0.112, durchlauf: 0.526 },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
         kliff: { steil: 300, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
@@ -536,6 +573,12 @@ function selbsttest() {
             /KLIFF OHNE STOFF: 280 von 300 steilen Vertices/,
         ],
         ["Kein Kliff", (b) => (b.kliff.steil = 0), /LEER: \(k\) Kliff/],
+        // (m) K17 Nachbesserung 1: das Höhlen-Bild las sich als Ziegelmauer (9f400dd5)
+        ["Ziegelmauer", (b) => (b.bankung.cv = 0.204), /MAUERWERK: die Bänke sind gleich hoch — .* 0\.204 über 2000/],
+        ["Gerade Fugen", (b) => (b.bankung.welligkeit = 0), /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
+        ["Klüfte je Bank", (b) => (b.bankung.durchlauf = 0.13), /KLÜFTE SETZEN NEU AN: nur 0\.13/],
+        ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
+        ["Shader-Zwilling", (b) => (b.code.feinLiest = false), /CODE: der Detail-Term .* liest die Bankung des Gesetzes nicht/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -1155,6 +1198,9 @@ const server = http.createServer((req, res) => {
                     // (Normale des Vorhangs 0,2 nach oben) — sie trägt den Stoff ihrer Quelle, gezählt werden die Chunks.
                     const KR = new Float32Array(nV);
                     const naht = new Uint8Array(nV).fill(1);
+                    // die Feuchte des Moos-Terms: EINE je Chunk (`_felsStoff` am Schwerpunkt seines Felsens unter dem Himmel,
+                    // `userData.felsFeuchte`)
+                    const FE = new Float32Array(nV).fill(NaN);
                     if (bs)
                         for (const [key, bl] of bs.bloecke) {
                             if (String(key).startsWith("stitch:") || !bl.geom || !bl.geom.index) continue;
@@ -1167,6 +1213,8 @@ const server = http.createServer((req, res) => {
                             );
                             KR.set(k, bl.vStart);
                             naht.fill(0, bl.vStart, bl.vStart + bl.vAnzahl);
+                            const ud = g.userData ? g.userData.felsFeuchte : undefined;
+                            FE.fill(Number.isFinite(ud) ? ud : NaN, bl.vStart, bl.vStart + bl.vAnzahl);
                         }
                     const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
                     const fuss = FS ? FS.fuss : 1.8;
@@ -1175,7 +1223,7 @@ const server = http.createServer((req, res) => {
                         const x = P3[3 * i],
                             y = P3[3 * i + 1],
                             zz = P3[3 * i + 2];
-                        const fe = him > 0 ? r._feuchteAt(x, zz, y) : 0;
+                        const fe = him > 0 ? FE[i] : 0;
                         GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll);
                         const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
                         if (Math.max(...c.map((q, j) => Math.abs(q - soll[j]))) <= 0.002) return c;
@@ -1338,6 +1386,10 @@ const server = http.createServer((req, res) => {
             aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionView\b/.test(bedingung);
             const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
             aus.code.augenTslFremd = fremd ? fremd[1] : null;
+            const fein = code(r._terrainGeologyAlbedo);
+            aus.code.feinLiest = ["paketDicke", "fugeWelle", "kehle", "kluftVersatz", "fugeLambda"].every((k) =>
+                new RegExp("\\bFG\\." + k + "\\b").test(fein)
+            );
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
             aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
@@ -1419,6 +1471,22 @@ const server = http.createServer((req, res) => {
         console.log(
             `  (k) Fels-Stoff Kliff: ${kf.steil} steile Vertices unter dem Himmel, ${kf.fremd} ohne das Gesetz (${kf.gruen} grün)` +
                 (kf.erst ? `, zuerst ${JSON.stringify(kf.erst)}` : "")
+        );
+    // (m) DIE BANKUNG am Gesetz (rein, ohne Browser)
+    try {
+        globalThis.self = globalThis;
+        require(path.join(__dirname, "..", "gelaende-core.js"));
+        const GKn = globalThis.__gelaendeCore;
+        befund.bankung = GKn && typeof GKn.felsBankung === "function" ? GKn.felsBankung() : null;
+    } catch (e) {
+        befund.bankung = null;
+        console.log("  (m) Bankung: gelaende-core nicht ladbar — " + ((e && e.message) || e));
+    }
+    const bkn = befund.bankung;
+    if (bkn)
+        console.log(
+            `  (m) Bankung am Gesetz: ${bkn.baenke} Bänke, Mittel ${bkn.mittel} m, Variationskoeffizient ${bkn.cv}, ` +
+                `Eigen-Welligkeit der Fugen ${bkn.welligkeit} Bänke, Durchlauf der Klüfte ${bkn.durchlauf}`
         );
     const v = urteil(befund);
     if (v.length) {

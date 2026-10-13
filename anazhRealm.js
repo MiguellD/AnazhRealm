@@ -29447,13 +29447,16 @@ class AnazhRealm {
 
     // DER FELS HAT STOFF (K17; davor K02a „unter Fels wächst nichts"): die Boden-Farbe ist eine Funktion von (x, z) — Wiese,
     // Feuchte, Schnee liegen auf der Säule. Wo das Netz Fels ist, trägt der Vertex den Fels-Stoff des Gesetzes (gelaende-core
-    // `felsFarbe`: Bänke nach Höhe und Einfallen, die Verwitterungsrinde an konvexen Kanten aus der Krümmung des Netzes
-    // (`felsKruemmung`), Mulden dunkel, Flechte am trockenen Licht, Moos am feuchten Sims): was den Himmel nicht sieht
-    // (1 − `aHimmel`, die Höhle; an der Mündung ein Saum) und was steil steht (die Steile der Vertex-Normale über die
-    // Schwellen von `TERRAIN_GEOLOGY`: Fels ganz, Geröll halb — dieselben Gewichte, mit denen der Shader nur noch die
-    // feinen Bänke auflegt). Bis K17 lag in der Höhle EIN Palette-Stein (σ der Leuchtdichte 0 über 64 576 Vertices) und
-    // auf dem Kliff die Säule (2 526 von 6 504 steilen Vertices grün). Beide Bau-Wege rufen es: der synchrone über
-    // `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht (`_buildVoxelChunkDataFromWorkerMesh`).
+    // `felsFarbe`: die Pakete, die Verwitterungsrinde an konvexen Kanten aus der Krümmung des Netzes (`felsKruemmung`),
+    // Mulden dunkel, Flechte am trockenen Licht, Moos am feuchten Sims, und die Mittel der Bänke, Kanten und Klüfte, die
+    // die 1,8-m-Masche nicht trägt): was den Himmel nicht sieht (1 − `aHimmel`, die Höhle; an der Mündung ein Saum) und
+    // was steil steht (die Steile der Vertex-Normale über die Schwellen von `TERRAIN_GEOLOGY`: der Fels ganz, der
+    // Schutthang des Schicht-Gesetzes mit `schutt` — dieselben Gewichte, mit denen der Shader das Feine auflegt). Bis K17
+    // lag in der Höhle EIN Palette-Stein (σ der Leuchtdichte 0 über 64 576 Vertices) und auf dem Kliff die Säule. Beide
+    // Bau-Wege rufen es: der synchrone über `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht
+    // (`_buildVoxelChunkDataFromWorkerMesh`). Der Takt kostet, was ihn betrifft (Lehre 25): Krümmung nur an Dreiecken mit
+    // Fels, die Feuchte (das Moos) EINMAL je Chunk am Schwerpunkt seines Felsens unter dem Himmel — sie wechselt über
+    // Dutzende Meter, die Punkt-Probe je Vertex kostete 0,6 ms je Chunk.
     _felsStoff(geom) {
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
@@ -29470,33 +29473,65 @@ class AnazhRealm {
         const N = nor.array;
         const P = pos.array;
         const n = pos.count;
-        const H = him ? him.array : new Float32Array(n).fill(1);
+        const H = him ? him.array : null;
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        // Das Gewicht des Stoffs je Vertex: die Höhle oder die Steile, je das größere.
+        // Das Gewicht des Stoffs je Vertex: die Höhle oder die Steile (Fels, darunter der Schutthang), je das größere.
         const W = new Float32Array(n);
-        let jeder = false;
+        // die Kante: nur Fels und Höhle tragen Rinde und Mulde aus der Krümmung — der Schutt bricht, er rundet nicht
+        const KM = new Uint8Array(n);
+        let jeder = 0;
+        let kante = 0;
+        let sx = 0,
+            sy = 0,
+            sz = 0,
+            sn = 0;
         for (let i = 0; i < n; i++) {
             const st = 1 - N[3 * i + 1];
+            if (st < G.screeLo && !(H && H[i] < 1)) continue;
             const wr = ss(G.rockLo, G.rockHi, st);
-            const w = Math.max(1 - H[i], wr + 0.5 * ss(G.screeLo, G.screeHi, st) * (1 - wr));
+            const w = Math.max(H ? 1 - H[i] : 0, wr + G.schutt * ss(G.screeLo, G.screeHi, st) * (1 - wr));
+            if (!(w > 0)) continue;
             W[i] = w;
-            if (w > 0) jeder = true;
+            jeder++;
+            if (wr > 0 || (H && H[i] < 1)) {
+                KM[i] = 1;
+                kante++;
+            }
+            if (!H || H[i] > 0) {
+                sx += P[3 * i];
+                sy += P[3 * i + 1];
+                sz += P[3 * i + 2];
+                sn++;
+            }
         }
         if (!jeder) return;
-        const K = GK.felsKruemmung(P, N, geom.index ? geom.index.array : null, n);
+        const K = kante ? GK.felsKruemmung(P, N, geom.index ? geom.index.array : null, n, null, KM) : null;
+        const fe = sn ? this._feuchteAt(sx / sn, sz / sn, sy / sn) : 0;
+        geom.userData.felsFeuchte = fe; // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
         const t = [0, 0, 0];
         for (let i = 0; i < n; i++) {
             const w = W[i];
             if (!(w > 0)) continue;
-            const x = P[3 * i],
-                y = P[3 * i + 1],
-                z = P[3 * i + 2];
-            const fe = H[i] > 0 ? this._feuchteAt(x, z, y) : 0;
-            GK.felsFarbe(FS.basis, x, y, z, N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], H[i], fe, FS.fuss, t);
+            const h = H ? H[i] : 1;
+            const kr = K && KM[i] ? K[i] : 0;
+            GK.felsFarbe(
+                FS.basis,
+                P[3 * i],
+                P[3 * i + 1],
+                P[3 * i + 2],
+                N[3 * i],
+                N[3 * i + 1],
+                N[3 * i + 2],
+                kr,
+                h,
+                h > 0 ? fe : 0,
+                FS.fuss,
+                t
+            );
             C[3 * i] += (t[0] - C[3 * i]) * w;
             C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
@@ -29963,8 +29998,12 @@ class AnazhRealm {
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
-            screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band; Geröll = halb Fels, `_felsStoff`)
-            screeHi: 0.48,
+            // Der Schutthang des Schicht-Gesetzes (gelaende-core `schuttWinkel` 35°, das Band 30–40°): ab 28° wächst er, ab 34°
+            // liegt er voll; der Schutt ist zerbrochener Fels — `schutt` sein Gewicht im Vertex (`_felsStoff`), der Detail-Term
+            // legt sein Korn auf. Bis K17 begann das Geröll erst bei 37° und trug halb: der 35°-Schutthang lag weiß wie der Sand.
+            screeLo: 0.117,
+            screeHi: 0.171,
+            schutt: 0.85,
             mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
             gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
             mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
@@ -29991,6 +30030,7 @@ class AnazhRealm {
             basis,
             fuss: 1.8,
             mittel: Object.freeze(GK.felsMittel(basis)),
+            mittelWerte: GK.felsMittelWerte(),
         });
         return AnazhRealm._felsStoffMemo;
     }
@@ -31931,7 +31971,7 @@ class AnazhRealm {
                     // Multi-Klassen-Geologie, als Füll-Licht-Albedo UND als colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
                     if (opts.vertexColorAlbedo) {
-                        // FELS: die per-Vertex-Geologie (phyto-core `withColor`) IST die Albedo; der EINE Substanz-Kern legt
+                        // FELS: der Stoff am Vertex (das Fels-Gesetz, gelaende-core `felsNetz`) IST die Albedo; der EINE Substanz-Kern legt
                         // Korn + Kavität + Roughness drauf (instanz-stabil via positionLocal). KEIN Terrain-Geologie-Overlay
                         // (positionWorld schmiert über instanzierte Felsen), KEIN Normal-Flatten/Bump (plättet die Krümmung).
                         if (typeof this._substanceCharacter === "function") {
@@ -32784,73 +32824,160 @@ class AnazhRealm {
                 .mul(_T.float(1.0).sub(_rockW));
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
             // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
-            // IST die Vertex-Farbe der Fels — `_felsStoff` hat Bänke, Kanten, Mulden, Flechte und Moos aus dem Gesetz
-            // aufgelegt; die Ferne (Fern-Ring) trägt sein Mittel (`FELS_STOFF.mittel`). Der EINE Detail-Term trägt, was die
-            // 1,8-m-Masche nicht trägt (`FELS.fein`): die Bänke (je Bank ihre Helligkeit, die helle sandige Bank), die
-            // Fugen zur dunklen Lage und die Klüfte (zwei Scharen, je Bank versetzt) nach DEMSELBEN Gesetz — relativ zum
-            // Mittel, das der Vertex trägt (Y-Verhältnisse der drei Töne aus `felsBasis`), EINE Probe im Rausch-Atlas
-            // wellt die Bank-Grenzen, das Auge blendet aus, was der Pixel nicht trägt. Bis K17 tönte hier ein Zwilling den
-            // Palette-Stein mit der Säulen-Luminanz (rockTint · rockLumMix · rockBand), danach ±6 % Rauschen: die Masse.
+            // IST die Vertex-Farbe der Fels — `_felsStoff` hat Pakete, Rinde, Mulden, Flechte und Moos aus dem Gesetz
+            // aufgelegt und trägt die Mittel dessen, was die Masche nicht trägt (`felsMittelWerte`); die Ferne (Fern-Ring)
+            // trägt das Mittel des Stoffs (`FELS_STOFF.mittel`). Der EINE Detail-Term legt das Feine nach DEMSELBEN Gesetz
+            // (`felsLage`, `felsKanten`) relativ zu diesen Mitteln auf: die Bank im Paket (Mächtigkeit je Paket, Grenzen
+            // gezogen und je Fuge gewellt — wo zwei Fugen sich kreuzen, keilt die Bank aus), die Fuge als KANTE (die Kehle
+            // dunkel, die Oberkante hell, je Fuge ihre Weite, auf einem Teil der Länge ausgekeilt) und die Klüfte (schräg,
+            // ihre Lage je Paket, an der Fuge nur ein Versatz). EINE Probe im Rausch-Atlas wellt die Schichten im Großen,
+            // das Auge blendet aus, was der Pixel nicht trägt. Bis zur Nachbesserung lasen sich gleich hohe Bänke mit
+            // geraden Strich-Fugen und je Bank neu ansetzenden Klüften als Ziegelmauer.
             const FS = AnazhRealm.FELS_STOFF;
             const FG = FS.gesetz;
             const FF = FG.fein;
+            const FM = FS.mittelWerte;
+            const TAU = 2 * Math.PI;
             const _cs = Math.cos(FG.streichen);
             const _sn = Math.sin(FG.streichen);
-            const _schichtY = wp.y.add(wp.x.mul(_cs).add(wp.z.mul(_sn)).mul(Math.tan(FG.einfall)));
+            const _h1 = wp.x.mul(_cs).add(wp.z.mul(_sn));
+            const _h2 = wp.z.mul(_cs).sub(wp.x.mul(_sn));
+            const _schichtY = wp.y.add(_h1.mul(Math.tan(FG.einfall)));
             const _welle = _ra.raum(_T.vec3(wp.x.mul(FF.xz), _schichtY.mul(FF.y / FG.bank), wp.z.mul(FF.xz)));
-            const _u = _schichtY.mul(1 / FG.bank).add(_welle.mul(FF.welle));
-            const _bk = _T.floor(_u);
-            const _lage = _u.sub(_bk);
-            const _hash = (a, b) => _T.fract(_T.sin(_bk.mul(a).add(b)).mul(43758.5453));
+            const _s = _schichtY.add(_welle.mul(FF.welle * FG.bank));
+            // ein Hash [0, 1) je Schlüssel; weitere Ziehungen derselben Größe als fract(r · k)
+            const _H = (v) => _T.fract(_T.sin(v.mul(12.9898).add(4.1414)).mul(43758.5453));
+            const _fr = (r, k) => _T.fract(r.mul(k));
+            // das Paket (die Grenzen wandern um weniger als ein halbes Paket)
+            const _pG = (k) => k.add(_H(k.mul(3.17).add(0.71)).sub(0.5).mul(FG.paketStreu)).mul(FG.paket);
+            const _k = _T.floor(_s.div(FG.paket));
+            const _pk = _k.sub(_T.float(1).sub(_T.step(_pG(_k), _s))).add(_T.step(_pG(_k.add(1)), _s));
+            const _pa = _pG(_pk);
+            const _ln0 = Math.log(FG.paketDicke[0]);
+            const _d = _T
+                .exp(
+                    _H(_pk.mul(5.31).add(2.9))
+                        .mul(Math.log(FG.paketDicke[1] / FG.paketDicke[0]))
+                        .add(_ln0)
+                )
+                .mul(FG.bank);
+            const _uu = _s.sub(_pa).div(_d);
+            const _top = _pG(_pk.add(1)).sub(_pa).div(_d);
+            const _j = _T.floor(_uu);
+            // die Grenze i der Bänke im Paket: gezogen um ± bankStreu/2, je Fuge gewellt (zwei Sinus); i ≤ 0 ist die Paket-Grenze
+            const _B = (i) => {
+                const r = _H(_pk.mul(113.0).add(i.mul(7.31)).add(0.5));
+                const l1 = _fr(r, 97.31)
+                    .mul(FG.fugeLambda[1] - FG.fugeLambda[0])
+                    .add(FG.fugeLambda[0]);
+                const w = _T
+                    .sin(_h1.div(l1).add(_fr(r, 413.7)).mul(TAU))
+                    .mul(0.65)
+                    .add(_T.sin(_h2.div(l1.mul(0.61)).add(_fr(r, 211.9)).mul(TAU)).mul(0.35));
+                return i.add(r.sub(0.5).mul(FG.bankStreu).add(w.mul(FG.fugeWelle)).mul(_T.step(0.5, i)));
+            };
+            const _b0 = _B(_j.sub(1));
+            const _b1 = _B(_j);
+            const _b2 = _B(_j.add(1));
+            const _b3 = _B(_j.add(2));
+            const _ist1 = _T.step(_b1, _uu);
+            const _ist2 = _T.step(_b2, _uu);
+            const _lo = _T.max(_b0, _T.max(_T.mix(_T.float(-1e4), _b1, _ist1), _T.mix(_T.float(-1e4), _b2, _ist2)));
+            const _hi = _T.min(
+                _T.min(_T.mix(_b1, _T.float(1e4), _ist1), _T.mix(_b2, _T.float(1e4), _ist2)),
+                _T.min(_b3, _top)
+            );
+            const _bank = _j.add(_ist2).sub(_T.float(1).sub(_ist1));
+            const _unten = _uu.sub(_lo).mul(_d);
+            const _oben = _hi.sub(_uu).mul(_d);
+            // die Bank: ihre Helligkeit, die helle (sandige) Bank, ob sie geklüftet ist — EIN Hash, weitere Ziehungen daraus
+            const _rb = _H(_pk.mul(57.1).add(_bank.mul(1.93)).add(9.7));
             const _Y = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
             const _aRel = 0.6 * (_Y(FS.basis.akzent) / _Y(FS.basis.basis) - 1);
             const _dRel = 1 - _Y(FS.basis.dunkel) / _Y(FS.basis.basis);
-            const _hell = _hash(12.9898, 4.1414).mul(2).sub(1).mul(FG.bankKontrast).add(1);
+            const _hell = _rb.mul(2).sub(1).mul(FG.bankKontrast).add(1).div(FM.hell);
             const _akzF = _T
-                .step(1 - FG.akzentAnteil, _hash(78.233, 1.731))
+                .step(1 - FG.akzentAnteil, _fr(_rb, 97.31))
                 .mul(_aRel)
                 .add(1)
-                .div(1 + _aRel * FG.akzentAnteil);
-            const _fb = FG.fugeBreite;
-            const _inF = _T.max(_T.float(1).sub(_lage.div(_fb)), _lage.sub(1 - _fb).div(_fb)).clamp(0, 1);
-            // nicht jede Schichtfuge klafft (`fugeStreu`), nur `kluftAnteil` der Bänke ist geklüftet
-            const _fStark = _hash(26.651, 7.919).mul(2).sub(1).mul(FG.fugeStreu).add(1);
-            const _fugeF = _T
+                .div(1 + _aRel * FM.akzent);
+            // die Fuge als Kante: die Kehle über ihr (dunkel), die Oberkante unter der nächsten (hell); je Fuge klafft sie
+            // auf `fugeOffen` der Länge
+            const _offC = Math.cos(Math.PI * FG.fugeOffen);
+            const _offen = (i) =>
+                _T.smoothstep(
+                    _offC - 0.25,
+                    _offC + 0.25,
+                    _T.sin(
+                        _h1
+                            .add(_h2.mul(0.5))
+                            .div(FG.fugeOffenLambda)
+                            .add(_H(_pk.mul(71.3).add(i.mul(3.77)).add(1.3)))
+                            .mul(TAU)
+                    )
+                );
+            const _kw = _fr(_rb, 413.7)
+                .mul(2)
+                .sub(1)
+                .mul(FG.fugeStreu)
+                .add(1)
+                .mul(FG.kehle)
+                .mul(_offen(_bank))
+                .max(1e-4);
+            const _ke = _T.float(1).sub(_unten.div(_kw)).clamp(0, 1);
+            const _rw = _offen(_bank.add(1)).mul(FG.rand).max(1e-4);
+            const _rt = _T.float(1).sub(_oben.div(_rw)).clamp(0, 1);
+            const _kanteF = _T
                 .float(1)
-                .sub(
-                    _inF
-                        .mul(_inF)
-                        .mul(_fStark)
-                        .mul(FG.fuge * _dRel)
-                )
-                .div(1 - _fb * (2 / 3) * FG.fuge * _dRel);
-            const _kb = FG.kluftBreite;
+                .sub(_ke.mul(_ke).mul(FG.fuge * _dRel))
+                .div(1 - FM.kehle * FG.fuge * _dRel)
+                .mul(
+                    _rt
+                        .mul(_T.float(1).sub(_rt))
+                        .mul(4 * FG.randHell * (FG.bleiche - 1))
+                        .add(1)
+                        .div(1 + FM.rand * FG.randHell * (FG.bleiche - 1))
+                );
+            // die Klüfte: schräg, ihre Lage und ihr Abstand je Paket, an der Fuge ein Versatz, je Bank ihre Breite
+            const _rp = _H(_pk.mul(17.7).add(3.3));
+            const _kd = _fr(_rp, 413.7)
+                .mul(FG.kluftDicht[1] - FG.kluftDicht[0])
+                .add(FG.kluftDicht[0])
+                .mul(FG.kluft);
+            const _kb = _fr(_rb, 59.3).add(0.5).mul(FG.kluftBreite);
             const _inKluft = (u) =>
                 _T
                     .float(1)
                     .sub(_T.abs(u.sub(_T.floor(u.add(0.5)))).div(_kb))
                     .clamp(0, 1);
-            const _kWelle = _welle.mul(FF.welle * 0.5);
+            const _v = 2 * FG.kluftVersatz;
             const _inK = _T
                 .max(
-                    _inKluft(wp.x.mul(_cs).add(wp.z.mul(_sn)).div(FG.kluft).add(_hash(39.346, 2.113)).add(_kWelle)),
-                    _inKluft(wp.z.mul(_cs).sub(wp.x.mul(_sn)).div(FG.kluft).add(_hash(11.135, 3.707)).sub(_kWelle))
+                    _inKluft(_h1.add(_s.mul(FG.kluftSchraeg)).div(_kd).add(_rp).add(_fr(_rb, 733.1).sub(0.5).mul(_v))),
+                    _inKluft(
+                        _h2
+                            .sub(_s.mul(0.6 * FG.kluftSchraeg))
+                            .div(_kd)
+                            .add(_fr(_rp, 97.31))
+                            .add(_fr(_rb, 1201.3).sub(0.5).mul(_v))
+                    )
                 )
-                .mul(_T.step(1 - FG.kluftAnteil, _hash(5.171, 9.233)));
+                .mul(_T.step(1 - FG.kluftAnteil, _fr(_rb, 211.9)));
             const _kluftF = _T
                 .float(1)
                 .sub(_inK.mul(_inK).mul(FG.kluftDunkel * _dRel))
-                .div(1 - _kb * (4 / 3) * FG.kluftAnteil * FG.kluftDunkel * _dRel);
+                .div(1 - FM.kluft * FG.kluftDunkel * _dRel);
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
             const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
             const _fein = _T
                 .mix(_T.float(1), _hell.mul(_akzF).mul(_kluftF), _nahB)
-                .mul(_T.mix(_T.float(1), _fugeF, _nahF));
+                .mul(_T.mix(_T.float(1), _kanteF, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
             const _rockCol = _felsGrund.mul(_fein);
-            // Das Geröll ist halb Fels (dasselbe Gewicht wie `_felsStoff` am Vertex) und trägt den Schutt (`FELS.geroell`:
-            // je Block seine Helligkeit, die Blöcke von der Welle der Probe verschoben); der Fels dominiert die Mischung.
+            // Der Schutthang trägt den Schutt (`FELS.geroell`: je Block seine Helligkeit, die Blöcke von der Welle der Probe
+            // verschoben) — mit dem Gewicht des Schutts im Vertex (`_felsStoff`, `TERRAIN_GEOLOGY.schutt`); der Fels
+            // dominiert die Mischung.
             const _sg = FG.geroell;
             const _blk = _T.floor(wp.mul(1 / _sg.korn).add(_welle.mul(FF.welle)));
             const _schuttF = _T.mix(
@@ -32863,7 +32990,7 @@ class AnazhRealm {
                     .add(1),
                 _nahB
             );
-            let _out = _T.mix(albedo, _felsGrund.mul(_schuttF), _screeW.mul(_gRock).mul(0.5));
+            let _out = _T.mix(albedo, _felsGrund.mul(_schuttF), _screeW.mul(_gRock).mul(G.schutt));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
@@ -61251,7 +61378,6 @@ class AnazhRealm {
                             // LOD-Override (Werkstatt-Regler): gröbere Regeneration = weniger Detail.
                             detail: Math.max(1, det + 2 - (Number.isFinite(part.rockLod) ? part.rockLod : 0)),
                             seed: Number.isFinite(part.rockSeed) ? (part.rockSeed % 9973) + 1 : (hs % 9973) + 1,
-                            withColor: false,
                         },
                         seq
                     );
@@ -62353,7 +62479,7 @@ class AnazhRealm {
             // W-E (§8.3) — die Antenne IST die Substanz: das Material-Tag-Profil
             // reist in den Material-Bau (Glut glimmt, Eisen spiegelt, Holz wärmt).
             if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
-            // Trägt die Part-Geometrie ein `color`-Attribut (phyto-core `withColor`-Fels), liest das Material die
+            // Trägt die Part-Geometrie ein `color`-Attribut (der Fels-Stoff, gelaende-core `felsNetz`), liest das Material die
             // Vertex-Farbe als Albedo (`vertexColorAlbedo` in _buildPbrNodeMaterial, ohne Terrain-Geologie-
             // Overlay). Rein geometrie-getrieben; Parts ohne color-Attribut unverändert.
             if (geom && geom.attributes && geom.attributes.color) {
