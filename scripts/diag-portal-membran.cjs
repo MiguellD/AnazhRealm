@@ -319,6 +319,40 @@ async function blickStufe(check) {
             geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
             winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,
         };
+        // DIE FLÜGEL-INSTANZ (1310-4): gleiche Gestalten teilen ihren Zug, und jeder Flügel steht, wo SEINE Gestalt um SEIN
+        // Scharnier geschwenkt landet — die Mitte der gezeichneten Geometrie unter der Slot-Matrix gegen
+        // Eintrag · Welt-Skala · (h + R(w)·(Basis · Mitte − h)).
+        if (recF && recF._fluegel && recF._fluegel.length) {
+            const T = window.THREE;
+            const ew = r._archEntryWorldMatrix(entry, new T.Matrix4());
+            const ws = r._foundryWorldScaleMatrix(recF.tor.gestalt);
+            const M = new T.Matrix4();
+            const Y = new T.Vector3(0, 1, 0);
+            let abweichung = 0;
+            let basis = 0;
+            for (const fl of recF._fluegel) {
+                const t = fl.tuer;
+                const geo = fl.g.mesh.geometry;
+                if (!geo.boundingBox) geo.computeBoundingBox();
+                const c = geo.boundingBox.getCenter(new T.Vector3());
+                fl.g.mesh.getMatrixAt(fl.ref.slot, M);
+                const ist = c.clone().applyMatrix4(M);
+                const q = c.clone();
+                if (t.basis) {
+                    q.applyMatrix4(t.basis);
+                    basis++;
+                }
+                q.x -= t.hx || 0;
+                q.z -= t.zf || 0;
+                q.applyAxisAngle(Y, (t.seite || 1) * (t.zf >= 0 ? 1 : -1) * recF._fluegelWinkel);
+                q.x += t.hx || 0;
+                q.z += t.zf || 0;
+                abweichung = Math.max(abweichung, ist.distanceTo(q.applyMatrix4(ws).applyMatrix4(ew)));
+            }
+            res.f.zuege = new Set(recF._fluegel.map((x) => x.g)).size;
+            res.f.basis = basis;
+            res.f.abweichung = +abweichung.toFixed(4);
+        }
 
         // ── W: Hindurchgehen (Ebenen-Kreuzung in der Apertur → enterPortal) ──
         let entered = 0;
@@ -395,6 +429,16 @@ async function blickStufe(check) {
             `anzahl=${out.f.anzahl}`
         );
         check(`F: die Flügel ÖFFNEN sich dem Reisenden (Winkel ${out.f.winkel})`, out.f.geoeffnet === true);
+        check(
+            `F: gleiche Flügel-Gestalten teilen ihren Zug (${out.f.zuege} Züge für ${out.f.anzahl} Flügel, ${out.f.basis} als Instanz)`,
+            out.f.basis > 0 && out.f.zuege < out.f.anzahl,
+            `zuege=${out.f.zuege} anzahl=${out.f.anzahl} basis=${out.f.basis}`
+        );
+        check(
+            `F: jeder Flügel steht, wo seine Gestalt um sein Scharnier schwenkt (größte Abweichung ${out.f.abweichung} m)`,
+            out.f.abweichung < 0.01,
+            `abweichung=${out.f.abweichung}`
+        );
     } else check("F: Flügel-Block erreicht", false);
     if (out.w) {
         check("W: Hindurchgehen durch die Apertur feuert enterPortal (genau 1×)", out.w.feuert === true);
