@@ -12,6 +12,12 @@
 //       Sammelzeile (`rest`), jedes Muster verankert
 //   H2  die Ratsche trägt jede Haushalt-Klasse × Pass (null = ungemessen), ihre Toleranz und — wenn gemessen — eine
 //       eingeschwungene Messung
+//   H2b DIE FRISCHE (K26): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht: Radeon und GTX, Ego und
+//       Third-Person), steht gemessen, an höchstens einer Version vor dem Kopf (package.json), an ihrem Ort, Gerät und in ihrer
+//       Sicht; ihre Gesamt-Zeile ist höchstens die Summe der Klassen (darüber feuert sie nie); `--messung <boot.json …>`
+//       (Boots der Messfolge oder Band-Dateien) richtet jede Ratsche gegen die Messung ihres Orts × Geräts × Sicht: eine
+//       Zeile über Messung × (1 + Toleranz) ist zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen 05.–11.10. auf der
+//       Radeon, gerichtet auf der GTX, nie nachgezogen — der Re-Mint (`werkbank ratsche --neu`) heilt H2b
 //   H3  die Namens-Wand: jede Textur, die der Stamm erzeugt, trägt `.name` = Erzeuger (sonst zählt der VRAM-Abgriff
 //       `tex:?`) — auch eine Neu-Zuweisung (`map = new T.DataArrayTexture(…)`), der Name mit Wortgrenze
 //   H4  die Täter-Klasse des Stamms: die drei Methoden stehen im Quelltext und klassifizieren die Schlüssel-Formen,
@@ -48,7 +54,7 @@
 // Draw-Umfang als REST; die Ratschen-Zeile „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760") · der Wurf je Exemplar
 // (Soll-Zeile mit `stufen`, Messort dorf) · das Einschwingen wartet auf den Dorf-Zug (Export, wachsende Siedlung).
 //
-//   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
+//   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -336,7 +342,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 }
 
 function selbsttest() {
-    const { haushalt, ratsche } = BAND.ladeSpec();
+    const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const S = stammKlasse(stamm);
     const tests = [];
@@ -346,7 +352,8 @@ function selbsttest() {
     const rt = JSON.parse(JSON.stringify(ratsche));
     rt.toleranzPct = 10;
     rt.toleranzAbs = { befehle: 2, dreiecke: 1000, vramMB: 1 };
-    rt.gemessen = null;
+    // gemessen (sonst nennte jedes Urteil die Ratsche „ungemessen", K26), jedes Feld ungemessen (null)
+    rt.gemessen = { datum: "selbsttest-basis", eingeschwungen: true };
     rt.gesamt = { befehle: null, dreiecke: null, vramMB: null };
     delete rt.vramMB;
     for (const id of Object.keys(rt.klassen))
@@ -810,13 +817,12 @@ function selbsttest() {
         unbekannt = true;
     }
     t(
-        "Messorte: Blick auf dem Spieler, doppelte id, fremde Ratsche, dorfZug fehlt, geteilte Ratsche, Soll ohne Quelle " +
+        "Messorte: Blick auf dem Spieler, doppelte id, ein Ort nennt eine Ratschen-Datei, dorfZug fehlt, Soll ohne Quelle " +
             "→ rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht",
         h20((o) => (o[1].blick = o[1].spieler.slice())).some((x) => /keine Richtung/.test(x)) &&
             h20((o) => (o[1].id = o[0].id)).some((x) => /doppelter id/.test(x)) &&
-            h20((o) => (o[1].ratsche = "../haushalt.json")).some((x) => /keine Datei ratsche/.test(x)) &&
+            h20((o) => (o[1].ratsche = "ratsche-genesis.json")).some((x) => /kein Ort nennt eine Datei/.test(x)) &&
             h20((o) => delete o[1].dorfZug).some((x) => /dorfZug/.test(x)) &&
-            h20((o) => (o[1].ratsche = o[0].ratsche)).some((x) => /schon ein anderer Ort/.test(x)) &&
             h20((o) => delete o[1].soll[0].quelle).some((x) => /Soll-Zeile/.test(x)) &&
             !BAND.messortePruefen(haushalt).length &&
             BAND.ortOf(haushalt).id === "wiese" &&
@@ -824,7 +830,7 @@ function selbsttest() {
     );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
     // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis −x = −π/2).
-    const gen = BAND.ladeSpec("genesis");
+    const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
     const r21 = JSON.parse(JSON.stringify(rt));
     r21.klassen.bau.haupt.befehle = 20;
     const bauGenesis = [{ klasse: "f:kathedrale:L0", stufe: 0, art: "gate", je: { haupt: 30 }, jeTris: { haupt: 9000 } }];
@@ -878,21 +884,26 @@ function selbsttest() {
     );
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
-    // Dorf-Zug, Ort-Takt, Gier). Der gestellte Zustand ist sauber; laufender Dorf-Zug, eine Aufstellung ohne `--ort`, ein
-    // anderer Blick, ein fehlender Ort-Takt und ein Lauf ohne Aufzeichnung werden je einzeln beim Namen genannt.
+    // Dorf-Zug, Ort-Takt, Gier, Sicht). Der gestellte Zustand ist sauber; laufender Dorf-Zug, eine Aufstellung ohne `--ort`, ein
+    // anderer Blick, ein fehlender Ort-Takt, eine andere oder keine Sicht (K26) und ein Lauf ohne Aufzeichnung werden je einzeln
+    // beim Namen genannt.
     const wiese = BAND.ortOf(haushalt, "wiese");
-    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0 };
+    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0, sicht: "ego" };
     const g24 = (o, z) => BAND.ortGestellt(o, Object.assign({}, gestellt, z));
     t(
-        "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, ohne Aufzeichnung → je rot",
-        !BAND.ortGestellt(wiese, gestellt).length &&
-            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2 }).length &&
+        "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, " +
+            "ohne Sicht, ohne Aufzeichnung → je rot",
+        !BAND.ortGestellt(wiese, gestellt, "ego").length &&
+            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2, sicht: "third" }, "third").length &&
+            g24(wiese, { sicht: "third" }).length === 0 &&
+            /Sicht third, verlangt ego/.test(BAND.ortGestellt(wiese, Object.assign({}, gestellt, { sicht: "third" }), "ego")[0]) &&
+            /keine Sicht aufgezeichnet/.test(g24(wiese, { sicht: undefined })[0]) &&
             g24(wiese, { dorfZug: true }).length === 1 &&
             /Dorf-Zug/.test(g24(wiese, { dorfZug: true })[0]) &&
             g24(wiese, { ort: null }).length === 1 &&
             g24(wiese, { gier: -0.88 }).length === 1 &&
             /Gier/.test(g24(wiese, { gier: -0.88 })[0]) &&
-            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2 }).length === 1 &&
+            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2, sicht: "ego" }).length === 1 &&
             BAND.ortGestellt(wiese, undefined).length === 1
     );
 
@@ -1034,7 +1045,7 @@ function selbsttest() {
     // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
     const nwB = zs.nahWiese;
     const nwT = gestaltDreiecke(nwB.art, nwB.zeilen);
-    const rtW = BAND.ladeSpec(zs.ort).ratsche;
+    const rtW = BAND.ladeSpec(zs.ort, { geraet: zs.geraet, sicht: zs.sicht }).ratsche;
     const nwEcht = gestaltWand(haushalt, rtW, nwB, zs.ort, nwT);
     const maxT = {};
     for (const z of nwB.zeilen) {
@@ -1081,6 +1092,97 @@ function selbsttest() {
         );
     }
 
+    // S31 — H2b DIE FRISCHE (K26) an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
+    // wie sie w2B auf der GTX richtete (gemessen 05.10. auf der Radeon, ohne Version), ist ROT — ohne Version, mit fremder
+    // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
+    {
+        const probe = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "probe-1110-12.json"), "utf8"));
+        const w2B = probe.boots.w2B.schritte.find((x) => x.name === "band").ergebnis.messung;
+        const slot = (r, z) => Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
+        const alt31 = BAND.ratscheFrische({
+            haushalt,
+            version: "18.543.0",
+            ratschen: [slot(probe.ratscheWiese)],
+            messungen: [{ quelle: "w2B", ort: "wiese", geraet: "gtx", sicht: "ego", u: w2B }],
+        });
+        // eine frische Ratsche: die Hülle von w2B selbst, an V18.542 (eine Version vor dem Kopf), am eigenen Platz
+        const frisch = BAND.ratscheNachziehen(BAND.ratscheNeu(probe.ratscheWiese), w2B, {
+            datum: "selbsttest",
+            version: "18.542.0",
+            ort: "wiese",
+            geraet: "gtx",
+            sicht: "ego",
+            eingeschwungen: true,
+        }).ratsche;
+        const fr = (r, v, m) =>
+            BAND.ratscheFrische({ haushalt, version: v || "18.543.0", ratschen: [slot(r)], messungen: m || [] });
+        const alt2 = JSON.parse(JSON.stringify(frisch));
+        alt2.gemessen.version = "18.541.0";
+        const fremd = JSON.parse(JSON.stringify(frisch));
+        fremd.gemessen.geraet = "radeon";
+        const ungemessen = JSON.parse(JSON.stringify(frisch));
+        ungemessen.gemessen = null;
+        t(
+            "H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile " +
+                "4 095 487 über 1 295 324, baum haupt 385 630 gegen 60 976 zu weit; die Hülle von w2B an V18.542 grün, an V18.541 " +
+                "alt, mit fremdem Gerät, ungemessen und fehlend rot; eine Messung ohne geforderte Ratsche rot",
+            alt31.some((x) => /ohne Version — älter als jede Version/.test(x)) &&
+                alt31.some((x) => /trägt die Messung \? × Radeon 890M/.test(x)) &&
+                alt31.some((x) => /Gesamt-Zeile dreiecke 4095487 liegt über der Summe der Klassen 1295324 — sie feuert nie/.test(x)) &&
+                alt31.some((x) => /baum haupt dreiecke: Ratsche 385630 über der Messung 60976 — zu weit \(w2B\)/.test(x)) &&
+                fr(frisch, "18.543.0", [{ quelle: "w2B", ort: "wiese", geraet: "gtx", sicht: "ego", u: w2B }]).length === 0 &&
+                fr(alt2).some((x) => /gemessen an V18\.541\.0, der Kopf ist V18\.543\.0 — älter als eine Version/.test(x)) &&
+                fr(fremd).some((x) => /trägt die Messung wiese × radeon × ego/.test(x)) &&
+                fr(ungemessen).some((x) => /ungemessen/.test(x)) &&
+                fr(null).some((x) => /fehlt — ungemessen/.test(x)) &&
+                fr(frisch, "18.543.0", [{ quelle: "x", ort: "wiese", geraet: "gtx", sicht: "third", u: w2B }]).some((x) =>
+                    /keine geforderte Ratsche richtet wiese × gtx × third/.test(x)
+                )
+        );
+        // Der Re-Mint hebt, der Nachzug nie; das Band-Urteil ohne gemessene Ratsche nennt sie `ungemessen`, eine zu weite
+        // Ratsche `weit` — beide sperren den Nachzug nicht (die Linse bleibt sauber), der Leser der Messfolge liest sie.
+        const r31 = JSON.parse(JSON.stringify(rt));
+        r31.gemessen = { datum: "selbsttest", eingeschwungen: true };
+        r31.klassen.boden.haupt = { befehle: 7, dreiecke: 70000 };
+        const boden9 = [{ klasse: "bodenSatz", stufe: 0, art: null, je: { haupt: 10 }, jeTris: { haupt: 7000 } }];
+        const u31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: r31 });
+        const nach31 = BAND.ratscheNachziehen(r31, u31, { datum: "x" }).ratsche;
+        const neu31 = BAND.ratscheNachziehen(BAND.ratscheNeu(r31), u31, { datum: "x" }).ratsche;
+        const ohne31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: null, ratscheDatei: "ratsche-wiese-gtx-third.json" });
+        t(
+            "Re-Mint: boden haupt 7 → 10 Befehle (der Nachzug hält 7), 70 000 → 7 000 Dreiecke; 70 000 gegen 7 000 ist weit, die " +
+                "Linse bleibt sauber; ohne Ratsche „ungemessen\" beim Datei-Namen; jede Rot-Zeile trägt ihren Schlüssel",
+            nach31.klassen.boden.haupt.befehle === 7 &&
+                neu31.klassen.boden.haupt.befehle === 10 &&
+                neu31.klassen.boden.haupt.dreiecke === 7000 &&
+                neu31.klassen.baum.haupt.befehle === 0 &&
+                u31.rot.some((x) => x.art === "weit" && x.schluessel === "weit:boden:haupt:dreiecke") &&
+                u31.rot.some((x) => x.art === "ratsche" && x.schluessel === "ratsche:boden:haupt:befehle" && x.ist === 10) &&
+                u31.linse === "ROT" &&
+                ohne31.rot.some((x) => x.art === "ungemessen" && /ratsche-wiese-gtx-third\.json/.test(x.text)) &&
+                ohne31.linse === "SAUBER" &&
+                u31.rot.every((x) => typeof x.schluessel === "string")
+        );
+        // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
+        // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
+        const hAlt = JSON.parse(JSON.stringify(haushalt));
+        hAlt.geraet = "Radeon 890M";
+        const hKam = JSON.parse(JSON.stringify(haushalt));
+        hKam.sichten.third.kamera = "drohne";
+        t(
+            "Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; " +
+                "geraet (EIN Gerät) und eine Kamera „drohne\" brechen den Haushalt",
+            BAND.geraetSchluessel(haushalt, "amd rdna-3 AMD Radeon 890M Graphics") === "radeon" &&
+                BAND.geraetSchluessel(haushalt, "nvidia pascal") === "gtx" &&
+                BAND.geraetSchluessel(haushalt, "google swiftshader") === null &&
+                BAND.sichtSchluessel(haushalt, "first") === "ego" &&
+                BAND.sichtSchluessel(haushalt, "third") === "third" &&
+                BAND.haushaltPruefen(hAlt).fehler.some((x) => /geraet \(EIN Gerät für jede Ratsche\) ist abgelöst/.test(x)) &&
+                BAND.haushaltPruefen(hKam).fehler.some((x) => /sichten\.third: titel und kamera/.test(x)) &&
+                BAND.ratschenAlle(haushalt).length === 12
+        );
+    }
+
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
     if (rot.length) {
@@ -1092,14 +1194,29 @@ function selbsttest() {
 
 function main() {
     if (process.argv.includes("--selftest")) return selbsttest();
-    const { haushalt, ratsche } = BAND.ladeSpec();
+    const { haushalt } = BAND.ladeSpec();
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
-    // H2 je Ort: jede Ratsche trägt das Schema (die Mess-Wiese und jeder weitere Ort).
-    // (ein Toggle-Ort mit `bank` trägt keine Ratsche — H1 prüft sein Schema)
-    const orte = (haushalt.messorte || []).filter((o) => o.ratsche).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
-    for (const { o, r } of orte) for (const f of BAND.ratschePruefen(r, haushalt)) errs.push(`H2 [${o.id}] ${f}`);
+    // H2 je Ort × Gerät × Sicht: jede Ratsche trägt das Schema (ein Toggle-Ort mit `bank` trägt keine — H1 prüft sein Schema).
+    const ratschen = BAND.ratschenAlle(haushalt);
+    for (const e of ratschen.filter((x) => x.ratsche))
+        for (const f of BAND.ratschePruefen(e.ratsche, haushalt)) errs.push(`H2 [${e.datei}] ${f}`);
+    // H2b DIE FRISCHE (K26): gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
+    // gegen jede gegebene Messung (`--messung`) keine Zeile zu weit.
+    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+    const messungen = [];
+    const mi = process.argv.indexOf("--messung");
+    for (const d of mi >= 0 ? process.argv.slice(mi + 1).filter((x) => /\.json$/i.test(x)) : []) {
+        const j = JSON.parse(fs.readFileSync(path.resolve(d), "utf8"));
+        const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
+        const u = e ? (e.ergebnis && e.ergebnis.messung) || null : j;
+        const geraet = u && u.geraet ? u.geraet.schluessel : null;
+        if (!u || !u.ort || !geraet || !u.sicht)
+            errs.push(`H2b ${path.basename(d)}: keine Band-Messung mit Ort, Gerät und Sicht — sie richtet keine Ratsche`);
+        else messungen.push({ quelle: path.basename(d), ort: u.ort, geraet, sicht: u.sicht, u });
+    }
+    for (const f of BAND.ratscheFrische({ haushalt, version, ratschen, messungen })) errs.push("H2b " + f);
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const nw = namensWand(stamm);
     for (const f of nw.errs) errs.push("H3 " + f);
@@ -1129,7 +1246,13 @@ function main() {
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
         errs.push(`P: der Zensus ${zs.ort} trägt keine Zeile nahWiese (je Gestalt × Stufe die gelegten Büschel)`);
     else {
-        const nw = gestaltWand(haushalt, BAND.ladeSpec(zs.ort).ratsche, nwB, zs.ort, gestaltDreiecke(nwB.art, nwB.zeilen));
+        const nw = gestaltWand(
+            haushalt,
+            BAND.ladeSpec(zs.ort, { geraet: zs.geraet, sicht: zs.sicht }).ratsche,
+            nwB,
+            `${zs.ort} × ${zs.geraet} × ${zs.sicht}`,
+            gestaltDreiecke(nwB.art, nwB.zeilen)
+        );
         for (const f of nw.errs) errs.push(f);
         console.log(
             `P Projektion ${zs.ort}/${nwB.klasse}: ${nw.summe} Dreiecke (Ratsche ${nw.soll}, Haushalt ${nw.haushalt}; ` +
@@ -1142,6 +1265,12 @@ function main() {
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);
+        // H2b heilt nur eine Serie der echten GPU je Ort × Gerät × Sicht (vier Boots, Erst- und Zweit-Boot) und ihr Re-Mint
+        if (errs.some((e) => /^H2b /.test(e)))
+            console.log(
+                "   → der Re-Mint je Ort × Gerät × Sicht: 4 × `node scripts/omen-messfolge.cjs --ort <ort> --sicht <sicht> --serie <s> " +
+                    "--datei <boot>.json` (Erst- und Zweit-Boot), dann `node scripts/werkbank.cjs ratsche <boot>.json … --neu`"
+            );
         process.exit(1);
     }
     const paesse = haushalt.paesse;
@@ -1156,19 +1285,18 @@ function main() {
                 }
         return { g, f };
     };
-    const { g: gemessen, f: felder } = gemessenAn(ratsche);
-    const ortZeile = orte
-        .map(({ o, r }) => {
-            const x = gemessenAn(r);
-            return `${o.id} (${o.ratsche}, gemessen ${x.g} von ${x.f})`;
+    const ortZeile = ratschen
+        .map((e) => {
+            const x = gemessenAn(e.ratsche);
+            return `${e.ort} × ${e.geraet} × ${e.sicht} (V${e.ratsche.gemessen.version}, gemessen ${x.g} von ${x.f})`;
         })
         .join(" · ");
     console.log(
         `✅ DIE BAND-WAND steht — H1 Haushalt ${h.summe.befehle}/${haushalt.band.befehle} Befehle · ` +
             `${h.summe.dreiecke}/${haushalt.band.dreiecke} Dreiecke in ${haushalt.klassen.length} Klassen (keine Sammelzeile) · ` +
-            `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe (gemessen ${gemessen} von ${felder}` +
-            `${ratsche.gemessen ? ", " + ratsche.gemessen.datum.slice(0, 10) : ""}, Toleranz ${ratsche.toleranzPct} % / ` +
-            `+${ratsche.toleranzAbs.befehle} Befehle) · H3 ${nw.n} Textur-Erzeuger benannt · ` +
+            `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe je Ort × Gerät × Sicht · ` +
+            `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
+            `H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
             `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl).`
     );

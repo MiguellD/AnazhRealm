@@ -1,7 +1,7 @@
 // band-urteil.cjs — DAS URTEIL DER BAND-LINSE (W0): der Zensus eines Messorts (Klasse × Stufe × Pass, aus
 // scripts/lib/draw-zaehler.cjs, die Klasse ist die Täter-Klasse des Stamms), der VRAM je Erzeuger und die GPU-Zeit
-// gegen den Haushalt (spec/profiband/haushalt.json) und die Ratsche des Orts (`messorte[].ratsche`: ratsche.json die
-// Mess-Wiese, ratsche-genesis.json der Genesis-Ring) → die Tabelle
+// gegen den Haushalt (spec/profiband/haushalt.json) und die Ratsche des Orts × Geräts × Sicht
+// (`ratsche-<ort>-<gerät>-<sicht>.json`, K26) → die Tabelle
 // Ist/Soll/Täter und ZWEI Urteile:
 //
 //   BAND     das Profi-Band selbst (Befehle · Dreiecke · VRAM · GPU-Zeit je Frame): ROT, solange ein Ist darüber liegt
@@ -16,6 +16,10 @@
 //     leck       VRAM, den kein Bild trägt: Geometrie-Puffer, die nur der Foundry-Cache (`buf:ruhend`) oder nur r184s
 //                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6); und das Rahmen-Ziel des Direktpfads
 //                (`tex:r184-ausgabe`), das eine Linse liegen ließ (0910-1)
+//     weit       eine Ratsche über der Messung × (1 + Toleranz): sie hielte einen Rückschritt bis zu ihr grün (K26)
+//     ungemessen keine gemessene Ratsche für diesen Ort × Gerät × Sicht (K26)
+//   Den Exit der Messfolge trägt JEDE Rot-Zeile (omen-messfolge `bandBefunde`, K26); die Ratsche ziehen nur unbenannt ·
+//   haushalt · ratsche · leck auf (`linse`), weit · stufe · ungemessen heilt der Nachzug bzw. der Re-Mint selbst.
 //
 // Die RATSCHE zieht nur die HÜLLE einer Mess-Serie nach (`werkbank ratsche`: ≥ 4 eingeschwungene Läufe der vollen
 // Welt aus Erst- und Zweit-Boot, je Klasse × Pass das Maximum) und nur ohne Linsen-Fehler (unbenannt · haushalt ·
@@ -24,7 +28,8 @@
 // wandern —, die Ratsche hält sie nicht und die Summen-Ratsche zählt nur die gebundenen Klassen; im Band zählt sie voll.
 //
 //   Werkbank:  node scripts/werkbank.cjs umstellen --ort <id> · band --ort <id>   (die echte Messung am Ort, echte GPU)
-//              node scripts/werkbank.cjs ratsche --ort <id> <band-*.json …>   (die Ratsche des Orts aus der Hülle einer Serie)
+//              node scripts/werkbank.cjs ratsche <band-*.json | messfolge-*.json …> [--neu]   (die Ratsche des Orts × Geräts ×
+//              Sicht aus der Hülle einer Serie; `--neu` der Re-Mint, K26)
 //   Wand:      node scripts/diag-profiband.cjs              (Schema, Summe <= Band, Selbsttests gegen injizierte Fälle)
 "use strict";
 const fs = require("fs");
@@ -44,33 +49,74 @@ function ortOf(haushalt, id) {
     return o;
 }
 
-function ladeSpec(ortId) {
+// DIE RATSCHE JE ORT × GERÄT × SICHT (K26): die Kosten eines Orts sind auf der Radeon (iGPU) andere als auf der GTX (alte
+// dGPU) und in der Ego-Sicht andere als in Third-Person — gemessen wurde bis 13.10. auf der Radeon, gerichtet auf der GTX.
+// Jede Ratsche ist EINE Datei `ratsche-<ort>-<gerät>-<sicht>.json`; die Geräte und Sichten nennt der Haushalt (`geraete`,
+// `sichten`), die Messung nennt, woran sie stand (`geraet`, `sicht`), und nur deren Ratsche richtet sie.
+const ratscheDatei = (ortId, geraet, sicht) => `ratsche-${ortId}-${geraet}-${sicht}.json`;
+const istBandOrt = (o) => !!o && o.bank === undefined;
+
+function ladeSpec(ortId, wahl) {
     const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
     const ort = ortOf(haushalt, ortId);
-    return {
-        haushalt,
-        ort,
-        // ein Toggle-Ort (`bank`) trägt keine Ratsche: wer an ihm ein Band richten will, bricht laut (`ratscheVon`)
-        ratsche: ort.ratsche ? JSON.parse(fs.readFileSync(path.join(SPEC, ort.ratsche), "utf8")) : null,
-    };
+    const spec = { haushalt, ort, ratsche: null, ratscheDatei: null };
+    // Die Ratsche wählt nur, wer Gerät UND Sicht nennt; ein Toggle-Ort (`bank`) trägt keine (`ratscheVon` bricht laut).
+    if (wahl && istBandOrt(ort)) {
+        if (!(haushalt.geraete || {})[wahl.geraet] || !(haushalt.sichten || {})[wahl.sicht])
+            throw new Error(
+                `Ratschen-Wahl ${wahl.geraet} × ${wahl.sicht}: der Haushalt kennt die Geräte ` +
+                    `${Object.keys(haushalt.geraete || {}).join(", ")} und die Sichten ${Object.keys(haushalt.sichten || {}).join(", ")}`
+            );
+        spec.ratscheDatei = ratscheDatei(ort.id, wahl.geraet, wahl.sicht);
+        const f = path.join(SPEC, spec.ratscheDatei);
+        // Eine fehlende Datei ist UNGEMESSEN (null): das Band-Urteil nennt sie rot (`ungemessen`), nie still ohne Ratsche.
+        spec.ratsche = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null;
+    }
+    return spec;
 }
 
-// Die Ratsche des Orts für ein Band-Urteil — ein Toggle-Ort hat keine, das Band richten die Band-Orte.
+// Die Ratsche eines Orts für ein Band-Urteil — ein Toggle-Ort hat keine, das Band richten die Band-Orte. `null` heißt
+// ungemessen (die Datei fehlt) und urteilt rot.
 function ratscheVon(spec) {
-    if (!spec.ratsche)
+    if (!istBandOrt(spec.ort))
         throw new Error(
             `Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank) — das Band richten ` +
                 spec.haushalt.messorte
-                    .filter((o) => o.ratsche)
+                    .filter(istBandOrt)
                     .map((o) => o.id)
                     .join(", ")
         );
     return spec.ratsche;
 }
 
-// Die Ratsche eines Orts schreiben (`werkbank ratsche --ort <id>`): dieselbe Form wie gelesen.
-function schreibeRatsche(ort, ratsche) {
-    fs.writeFileSync(path.join(SPEC, ort.ratsche), JSON.stringify(ratsche, null, 4) + "\n");
+// Eine Ratsche schreiben (`werkbank ratsche`): dieselbe Form wie gelesen, unter ihrem Namen Ort × Gerät × Sicht.
+function schreibeRatsche(datei, ratsche) {
+    fs.writeFileSync(path.join(SPEC, datei), JSON.stringify(ratsche, null, 4) + "\n");
+}
+
+// Das Gerät einer Messung: der Adapter-Text (WebGPU `adapterInfo`: Hersteller · Architektur · Beschreibung) gegen die
+// Muster des Haushalts — kein Treffer oder zwei sind `null` (keine Ratsche richtet die Messung; das Urteil nennt es rot).
+function geraetSchluessel(haushalt, text) {
+    if (typeof text !== "string" || !text) return null;
+    const treffer = Object.entries(haushalt.geraete || {}).filter(([, g]) => new RegExp(g.muster, "i").test(text));
+    return treffer.length === 1 ? treffer[0][0] : null;
+}
+// Die Sicht einer Messung aus dem Kamera-Modus des Stamms (`state.cameraMode`: first | third).
+function sichtSchluessel(haushalt, kamera) {
+    const t = Object.entries(haushalt.sichten || {}).find(([, s]) => s.kamera === kamera);
+    return t ? t[0] : null;
+}
+// Jede Ratsche, die der Haushalt fordert: Band-Ort × Gerät × Sicht, mit dem Inhalt der Datei (null = fehlt).
+function ratschenAlle(haushalt) {
+    const out = [];
+    for (const o of (haushalt.messorte || []).filter(istBandOrt))
+        for (const geraet of Object.keys(haushalt.geraete || {}))
+            for (const sicht of Object.keys(haushalt.sichten || {})) {
+                const datei = ratscheDatei(o.id, geraet, sicht);
+                const f = path.join(SPEC, datei);
+                out.push({ ort: o.id, geraet, sicht, datei, ratsche: fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : null });
+            }
+    return out;
 }
 
 // Der Blick eines Orts als Gier des Stamms: die Kamera sieht entlang (sin yaw, 0, cos yaw) (gemessen an der Welt:
@@ -83,10 +129,13 @@ function ortGier(ort) {
 // Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Bis 07.10. nahm die
 // Linse den Ort aus dem Aufruf (`band --ort`) und prüfte nur den Abstand des Spielers: eine Serie mit laufendem Dorf-Zug
 // oder anderem Blick zog die Ratsche eines Orts, dessen Zustand sie nie hatte. Ein Lauf ohne Aufzeichnung (vor dem
-// 07.10.) ist ungestellt.
-function ortGestellt(ort, z) {
+// 07.10.) ist ungestellt. DIE SICHT (K26) gehört zum gestellten Ort: `sicht` ist die verlangte (ego | third), `z.sicht` die
+// gezählte — ohne Verlangen prüft die Wache nur, dass die Messung ihre Sicht nennt.
+function ortGestellt(ort, z, sicht) {
     if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
     const f = [];
+    if (!z.sicht) f.push("keine Sicht aufgezeichnet (Ego oder Third-Person)");
+    else if (sicht != null && z.sicht !== sicht) f.push(`Sicht ${z.sicht}, verlangt ${sicht}`);
     if (z.ort !== ort.id) f.push(`aufgestellt ${z.ort ? "am Ort " + z.ort : "ohne --ort"}, nicht ${ort.id}`);
     if (z.dorfZug !== ort.dorfZug) f.push(`Dorf-Zug ${z.dorfZug ? "läuft" : "ruht"}, der Ort will ${ort.dorfZug ? "laufend" : "ruhend"}`);
     const takt = (ort.ortTakt || []).join(",");
@@ -105,7 +154,6 @@ function messortePruefen(h) {
     const orte = h && h.messorte;
     if (!Array.isArray(orte) || !orte.length) return ["messorte fehlt (mindestens ein Ort)"];
     const ids = new Set();
-    const dateien = new Set();
     const xz = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
     for (const o of orte) {
         if (!o || typeof o.id !== "string" || !/^[a-z][a-z0-9-]*$/.test(o.id) || ids.has(o.id))
@@ -148,11 +196,10 @@ function messortePruefen(h) {
                     f.push(`${o.id}: Pose ${p.id} blickt auf den Spieler (keine Richtung)`);
                 pIds.add(p && p.id);
             }
-        } else if (typeof o.ratsche !== "string" || !/^ratsche(-[a-z0-9-]+)?\.json$/.test(o.ratsche))
-            f.push(`${o.id}: ratsche ist keine Datei ratsche[-<ort>].json`);
-        else if (dateien.has(o.ratsche)) f.push(`${o.id}: die Ratsche ${o.ratsche} trägt schon ein anderer Ort`);
-        else if (!fs.existsSync(path.join(SPEC, o.ratsche))) f.push(`${o.id}: die Ratsche ${o.ratsche} fehlt`);
-        if (o.ratsche) dateien.add(o.ratsche);
+        } else if (o.ratsche !== undefined)
+            // Die Datei folgt aus Ort × Gerät × Sicht (`ratsche-<ort>-<gerät>-<sicht>.json`, K26) — ein genannter Name wäre EINE
+            // Ratsche für alle Geräte und Sichten (bis 13.10.: auf der Radeon gemessen, auf der GTX gerichtet).
+            f.push(`${o.id}: ratsche ${o.ratsche} — die Ratsche folgt aus Ort × Gerät × Sicht, kein Ort nennt eine Datei`);
         // Eine Soll-Zeile: die Hülle EINES Exemplars der Art `art` im Pass `pass` — auf EINER Stufe (`stufe`, die Tor-Hülle
         // L0) oder über mehrere (`stufen`, der Wurf: was in der Kaskade für die Art wirft, gleich welche Stufe es ist).
         for (const s of o.soll || []) {
@@ -247,6 +294,9 @@ function rahmenZielBefunde(vram, texturen) {
         ? [
               {
                   art: "leck",
+                  schluessel: "leck:tex:r184-ausgabe",
+                  ist: +mb.toFixed(1),
+                  groesse: "vramMB",
                   text:
                       `tex:r184-ausgabe ${+mb.toFixed(1)} MB in ${n} Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie ` +
                       "angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)",
@@ -366,7 +416,25 @@ function haushaltPruefen(h) {
     for (const k of ["befehle", "dreiecke", "vramMB", "gpuMs"]) if (!(b[k] > 0)) f.push(`band.${k} fehlt`);
     const paesse = h && h.paesse;
     if (!Array.isArray(paesse) || !paesse.length) f.push("paesse fehlt");
-    if (!h || typeof h.geraet !== "string" || !h.geraet) f.push("geraet fehlt");
+    // DIE GERÄTE und DIE SICHTEN (K26): je Gerät ein Titel und das Muster seines Adapter-Texts, je Sicht der Kamera-Modus
+    // des Stamms — jede Ratsche gilt EINEM Ort × Gerät × Sicht.
+    const ge = h && h.geraete;
+    if (!ge || typeof ge !== "object" || !Object.keys(ge).length) f.push("geraete fehlt (je Gerät titel und muster)");
+    for (const [k, g] of Object.entries(ge || {})) {
+        if (!/^[a-z][a-z0-9]*$/.test(k) || !g || !g.titel || typeof g.muster !== "string") f.push(`geraete.${k}: titel und muster`);
+        else
+            try {
+                new RegExp(g.muster, "i");
+            } catch (_e) {
+                f.push(`geraete.${k}: muster ${g.muster} ist kein Regex`);
+            }
+    }
+    if (h && h.geraet !== undefined) f.push("geraet (EIN Gerät für jede Ratsche) ist abgelöst — geraete nennt jedes");
+    const si = h && h.sichten;
+    if (!si || typeof si !== "object" || !Object.keys(si).length) f.push("sichten fehlt (je Sicht titel und kamera)");
+    for (const [k, s] of Object.entries(si || {}))
+        if (!/^[a-z][a-z0-9]*$/.test(k) || !s || !s.titel || !["first", "third"].includes(s.kamera))
+            f.push(`sichten.${k}: titel und kamera (first | third)`);
     f.push(...messortePruefen(h));
     const kl = (h && h.klassen) || [];
     if (!kl.length) f.push("keine Klassen");
@@ -461,7 +529,7 @@ function ueberRatsche(ist, r, ratsche, groesse) {
 // vram     = { mb, liste: [{k, mb, n}] } (der VRAM-Abgriff der Werkbank, nur WebGPU) oder null
 // texturen = { mb, erzeuger: [{erzeuger, mb, n}], unbenannt: [Spur] } (Textur-Objekte, jedes Backend) oder null
 // gpu      = { gpuJeFrameMs } (die GPU-Bank) oder null
-function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
+function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratscheDatei }) {
     const paesse = haushalt.paesse;
     const rot = [];
     const zeilen = new Map();
@@ -501,6 +569,9 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
             if (Number.isFinite(e.dMax) && e.dMax > w.maxM)
                 rot.push({
                     art: "stufe",
+                    schluessel: `stufe:${e.klasse}:L${w.stufe}`,
+                    ist: e.dMax,
+                    groesse: null,
                     text: `${e.klasse}: L${w.stufe} bis ${e.dMax} m im Hauptbild (Wand ${w.maxM} m) — ${w.grund}`,
                 });
         }
@@ -509,12 +580,18 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
         if (istUnbenannt(e.klasse)) {
             rot.push({
                 art: "unbenannt",
+                schluessel: `unbenannt:${e.klasse}`,
+                ist: cmd,
+                groesse: "befehle",
                 text: `${e.klasse}: ${cmd} Befehle ohne Täter-Namen (Spur: zensus.unbenannt)`,
             });
             id = "UNBENANNT";
         } else if (!id) {
             rot.push({
                 art: "haushalt",
+                schluessel: `haushalt:${e.klasse}`,
+                ist: cmd,
+                groesse: "befehle",
                 text: `${e.klasse}: ${cmd} Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)`,
             });
             id = "OHNE-HAUSHALT";
@@ -548,6 +625,9 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
                 if (ueberRatsche(z.je[p][g], r[g], ratsche, g))
                     rot.push({
                         art: "ratsche",
+                        schluessel: `ratsche:${z.id}:${p}:${g}`,
+                        ist: z.je[p][g],
+                        groesse: g,
                         text: `${z.id} ${p}: ${z.je[p][g]} ${g} über der Ratsche ${r[g]} (Täter: ${z.taeter
                             .slice(0, 3)
                             .map((t) =>
@@ -582,7 +662,13 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
             e.form.push(v);
             je.set(key, e);
             if (art === "tex" && erzeuger === "?")
-                rot.push({ art: "unbenannt", text: `${v.k}: ${v.mb} MB in ${v.n} Texturen ohne Erzeuger-Namen` });
+                rot.push({
+                    art: "unbenannt",
+                    schluessel: `unbenannt:${v.k}`,
+                    ist: v.mb,
+                    groesse: "vramMB",
+                    text: `${v.k}: ${v.mb} MB in ${v.n} Texturen ohne Erzeuger-Namen`,
+                });
         }
         // Je Erzeuger seine drei größten Schlüssel (die Täter-Klassen eines Halters, die Formen einer Textur).
         const liste = [...je.values()]
@@ -599,6 +685,9 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
             if (LECK_ERZEUGER.test(e.erzeuger) && e.mb > 0)
                 rot.push({
                     art: "leck",
+                    schluessel: `leck:${e.erzeuger}`,
+                    ist: e.mb,
+                    groesse: "vramMB",
                     text: `VRAM-Leck ${e.erzeuger}: ${e.mb} MB in ${e.n} Puffern, die kein Bild trägt (${e.form.join(" · ")})`,
                 });
         const rv = (ratsche && ratsche.vramMB) || {};
@@ -609,7 +698,13 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
                 continue;
             }
             if (ueberRatsche(e.mb, rv[e.erzeuger], ratsche, "vramMB"))
-                rot.push({ art: "ratsche", text: `VRAM ${e.erzeuger}: ${e.mb} MB über der Ratsche ${rv[e.erzeuger]}` });
+                rot.push({
+                    art: "ratsche",
+                    schluessel: `ratsche:vram:${e.erzeuger}`,
+                    ist: e.mb,
+                    groesse: "vramMB",
+                    text: `VRAM ${e.erzeuger}: ${e.mb} MB über der Ratsche ${rv[e.erzeuger]}`,
+                });
         }
         // gebunden = ohne die freien Erzeuger (wie die Summen-Ratsche der Befehle): die Ratsche hält, was Kosten sind
         speicher = { mb: vram.mb, gebunden: +(vram.mb - frei).toFixed(1), band: haushalt.band.vramMB, erzeuger: liste };
@@ -620,17 +715,51 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
         for (const t of texturen.unbenannt || [])
             rot.push({
                 art: "unbenannt",
+                schluessel: `unbenannt:textur:${t.klasse}:${(t.groesse || []).join("x")}`,
+                ist: t.mb,
+                groesse: "vramMB",
                 text:
                     `Textur-Objekt ohne Erzeuger: ${t.klasse}${t.tiefe ? " (Tiefe)" : ""} ${(t.groesse || []).join("x")} ` +
                     `${t.mb} MB${t.ziel ? " in einem namenlosen Ziel" : ", ohne Ziel"}`,
             });
     const rg = (ratsche && ratsche.gesamt) || {};
     if (ueberRatsche(gebunden.befehle, rg.befehle, ratsche, "befehle"))
-        rot.push({ art: "ratsche", text: `Summe (gebunden) ${gebunden.befehle} Befehle über der Ratsche ${rg.befehle}` });
+        rot.push({
+            art: "ratsche",
+            schluessel: "ratsche:gesamt:befehle",
+            ist: gebunden.befehle,
+            groesse: "befehle",
+            text: `Summe (gebunden) ${gebunden.befehle} Befehle über der Ratsche ${rg.befehle}`,
+        });
     if (ueberRatsche(gebunden.dreiecke, rg.dreiecke, ratsche, "dreiecke"))
-        rot.push({ art: "ratsche", text: `Summe (gebunden) ${gebunden.dreiecke} Dreiecke über der Ratsche ${rg.dreiecke}` });
+        rot.push({
+            art: "ratsche",
+            schluessel: "ratsche:gesamt:dreiecke",
+            ist: gebunden.dreiecke,
+            groesse: "dreiecke",
+            text: `Summe (gebunden) ${gebunden.dreiecke} Dreiecke über der Ratsche ${rg.dreiecke}`,
+        });
     if (speicher && ueberRatsche(speicher.gebunden, rg.vramMB, ratsche, "vramMB"))
-        rot.push({ art: "ratsche", text: `VRAM ${speicher.gebunden} MB (gebunden) über der Ratsche ${rg.vramMB}` });
+        rot.push({
+            art: "ratsche",
+            schluessel: "ratsche:gesamt:vramMB",
+            ist: speicher.gebunden,
+            groesse: "vramMB",
+            text: `VRAM ${speicher.gebunden} MB (gebunden) über der Ratsche ${rg.vramMB}`,
+        });
+    // UNGEMESSEN (K26): ohne Ratsche dieses Orts × Geräts × Sicht richtet keine Zeile — rot beim Namen, nie still.
+    if (!ratsche || ratsche.gemessen == null)
+        rot.push({
+            art: "ungemessen",
+            schluessel: "ratsche:ungemessen",
+            ist: null,
+            groesse: null,
+            text:
+                `keine gemessene Ratsche${ratscheDatei ? " " + ratscheDatei : ""}${ort ? " am Ort " + ort.id : ""} — ` +
+                "dieser Ort × Gerät × Sicht ist ungemessen, die Re-Mint-Serie fehlt (werkbank ratsche --neu)",
+        });
+    // ZU WEIT (K26): eine Ratsche über der Messung × (1 + Toleranz) hält keinen Gewinn — der Rückschritt bis zu ihr bliebe grün.
+    else rot.push(...ratscheWeit(ratsche, { klassen: [...zeilen.values()], summe: { gebunden }, vram: speicher }, paesse));
     // DAS BAND: jede Größe gegen ihr Soll — ROT, solange ein Ist darüber liegt.
     const B = haushalt.band;
     const gpuMs = gpu && Number.isFinite(gpu.gpuJeFrameMs) ? gpu.gpuJeFrameMs : null;
@@ -663,7 +792,46 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
         texturen: texturen ? { n: texturen.n, mb: texturen.mb, erzeuger: texturen.erzeuger } : null,
         ort: ort ? ort.id : null,
         soll: ort ? ortSoll(ort, zensus) : [],
+        // die Toleranz der richtenden Ratsche: der Leser der Messfolge vergleicht damit B gegen die Basis-Seite A
+        toleranz: ratsche ? { toleranzPct: ratsche.toleranzPct, toleranzAbs: ratsche.toleranzAbs } : null,
     };
+}
+
+// DIE ZU WEITE RATSCHE (K26, rein): je gebundene Klasse × Pass × Größe, die Summe und jeder VRAM-Erzeuger, deren Ratsche über
+// der Messung liegt — über max(Ist × (1 + toleranzPct), Ist + toleranzAbs), die Regel der Ratsche gespiegelt. `u` ist ein
+// Band-Urteil oder eine gespeicherte Band-Messung (`klassen[].je`, `summe.gebunden`, `vram`). An der Mess-Wiese lag die
+// Ratsche baum haupt bei 385 630 Dreiecken, gemessen 60 976 (1110-12): ein Rückschritt um das Sechsfache wäre grün geblieben.
+function ratscheWeit(ratsche, u, paesse) {
+    const out = [];
+    if (!ratsche || !u) return out;
+    const weit = (schluessel, r, ist, g, text) => {
+        if (r == null || !(typeof ist === "number" && Number.isFinite(ist))) return;
+        if (ueberRatsche(r, ist, ratsche, g))
+            out.push({ art: "weit", schluessel, ist: r, groesse: null, text: `${text}: Ratsche ${r} über der Messung ${ist} — zu weit` });
+    };
+    const je = new Map((u.klassen || []).map((z) => [z.id, z]));
+    for (const [id, rz] of Object.entries(ratsche.klassen || {})) {
+        if (freiGrund(ratsche, id)) continue;
+        const z = je.get(id);
+        for (const p of paesse)
+            for (const g of ["befehle", "dreiecke"]) {
+                const ist = z && z.je && z.je[p] ? z.je[p][g] || 0 : 0;
+                weit(`weit:${id}:${p}:${g}`, (rz[p] || {})[g], ist, g, `${id} ${p} ${g}`);
+            }
+    }
+    const rg = ratsche.gesamt || {};
+    const geb = (u.summe && u.summe.gebunden) || null;
+    if (geb) {
+        weit("weit:gesamt:befehle", rg.befehle, geb.befehle, "befehle", "Summe (gebunden) Befehle");
+        weit("weit:gesamt:dreiecke", rg.dreiecke, geb.dreiecke, "dreiecke", "Summe (gebunden) Dreiecke");
+    }
+    if (u.vram && Array.isArray(u.vram.erzeuger)) {
+        const mb = new Map(u.vram.erzeuger.map((e) => [e.erzeuger, e.mb]));
+        for (const [k, r] of Object.entries(ratsche.vramMB || {}))
+            if (!vramFrei(ratsche, k)) weit(`weit:vram:${k}`, r, mb.get(k) || 0, "vramMB", `VRAM ${k}`);
+        weit("weit:gesamt:vramMB", rg.vramMB, u.vram.gebunden != null ? u.vram.gebunden : u.vram.mb, "vramMB", "VRAM (gebunden)");
+    }
+    return out;
 }
 
 // DIE SOLL-ZEILEN EINES ORTS (haushalt.messorte[].soll): je Studio-Klasse der Art `art` auf Stufe `stufe` die Hülle EINES
@@ -767,10 +935,85 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
         for (const k of Object.keys(neu.vramMB))
             if (!lebt.has(k) && !vramFrei(neu, k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
-    if (aenderungen.length)
-        if (nur === "vram") neu.gemessen = Object.assign({}, ratsche.gemessen || gemessen, { vram: gemessen });
-        else neu.gemessen = gemessen;
+    // Die Serie bestätigt die Ratsche an IHREM Stand (Version, Gerät, Sicht) auch ohne Änderung — gate:profiband H2b liest das
+    // Alter daran.
+    if (nur === "vram") {
+        if (aenderungen.length) neu.gemessen = Object.assign({}, ratsche.gemessen || gemessen, { vram: gemessen });
+    } else neu.gemessen = gemessen;
     return { ratsche: neu, aenderungen };
+}
+
+// DER RE-MINT (K26, `werkbank ratsche --neu`): die Ratsche wird die Hülle der Serie am Kopf — jedes gebundene Feld neu, auch
+// nach oben (ein Ist über der alten Ratsche ist dann kein Rückschritt dieser Serie, sondern die Wahrheit, die die alte nie
+// trug: der Ego-Wurf seit V18.540, auf der GTX gerichtet, auf der Radeon gemessen). Ein begründeter Akt: die Zeilen, die
+// steigen, nennt die Ausgabe, der Commit trägt sie.
+function ratscheNeu(ratsche) {
+    const neu = JSON.parse(JSON.stringify(ratsche));
+    for (const [id, rz] of Object.entries(neu.klassen || {}))
+        if (!freiGrund(neu, id)) for (const p of Object.keys(rz)) rz[p] = { befehle: null, dreiecke: null };
+    neu.gesamt = { befehle: null, dreiecke: null, vramMB: null };
+    neu.vramMB = {};
+    neu.gemessen = null;
+    return neu;
+}
+
+// Der Abstand zweier Versionen `M.m.p` in Versions-Schritten (der mittlere Teil zählt; ein anderer Hauptteil ist weit weg).
+function versionAbstand(kopf, gemessen) {
+    const a = /^(\d+)\.(\d+)\.\d+$/.exec(String(kopf));
+    const b = /^(\d+)\.(\d+)\.\d+$/.exec(String(gemessen));
+    if (!a || !b) return null;
+    return +a[1] !== +b[1] ? Infinity : +a[2] - +b[2];
+}
+
+// H2b DIE FRISCHE (K26, rein): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht), steht gemessen, an
+// höchstens einer Version vor dem Kopf, an ihrem Ort, Gerät und in ihrer Sicht; ihre Gesamt-Zeile ist höchstens die Summe der
+// Klassen (darüber feuert sie nie — die Mess-Wiese trug 4 095 487 Dreiecke über 1 295 324); und gegen jede gegebene Messung
+// (`messungen`: { quelle, ort, geraet, sicht, u }) liegt keine Zeile zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen
+// 05.–11.10. auf der Radeon, gerichtet auf der GTX, nie nachgezogen.
+function ratscheFrische({ haushalt, version, ratschen, messungen }) {
+    const rot = [];
+    const paesse = haushalt.paesse;
+    const nameOf = (e) => `${e.ort} × ${e.geraet} × ${e.sicht} (${e.datei})`;
+    for (const e of ratschen) {
+        const r = e.ratsche;
+        if (!r) {
+            rot.push(`${nameOf(e)}: fehlt — ungemessen, die Re-Mint-Serie fehlt`);
+            continue;
+        }
+        const g = r.gemessen;
+        if (!g) {
+            rot.push(`${nameOf(e)}: ungemessen — die Re-Mint-Serie fehlt`);
+            continue;
+        }
+        const d = versionAbstand(version, g.version);
+        if (!g.version) rot.push(`${nameOf(e)}: gemessen ${String(g.datum || "?").slice(0, 10)} ohne Version — älter als jede Version des Kopfs ${version}`);
+        else if (d == null) rot.push(`${nameOf(e)}: Version ${g.version} oder Kopf ${version} unlesbar`);
+        else if (d > 1) rot.push(`${nameOf(e)}: gemessen an V${g.version}, der Kopf ist V${version} — älter als eine Version`);
+        if (g.ort !== e.ort || g.geraet !== e.geraet || g.sicht !== e.sicht)
+            rot.push(`${nameOf(e)}: trägt die Messung ${g.ort || "?"} × ${g.geraet || "?"} × ${g.sicht || "?"}`);
+        for (const gr of ["befehle", "dreiecke"]) {
+            let summe = 0;
+            for (const [id, k] of Object.entries(r.klassen || {}))
+                if (!freiGrund(r, id)) for (const p of paesse) summe += (k[p] || {})[gr] || 0;
+            const tot = (r.gesamt || {})[gr];
+            if (tot != null && tot > summe)
+                rot.push(`${nameOf(e)}: die Gesamt-Zeile ${gr} ${tot} liegt über der Summe der Klassen ${summe} — sie feuert nie`);
+        }
+        let vSumme = 0;
+        for (const [k, v] of Object.entries(r.vramMB || {})) if (!vramFrei(r, k)) vSumme += v || 0;
+        const vTot = (r.gesamt || {}).vramMB;
+        if (vTot != null && vTot > +vSumme.toFixed(1) + 0.05)
+            rot.push(`${nameOf(e)}: die Gesamt-Zeile vramMB ${vTot} liegt über der Summe der Erzeuger ${+vSumme.toFixed(1)} — sie feuert nie`);
+    }
+    for (const m of messungen || []) {
+        const e = ratschen.find((x) => x.ort === m.ort && x.geraet === m.geraet && x.sicht === m.sicht);
+        if (!e) {
+            rot.push(`${m.quelle}: keine geforderte Ratsche richtet ${m.ort} × ${m.geraet} × ${m.sicht}`);
+            continue;
+        }
+        for (const w of ratscheWeit(e.ratsche, m.u, paesse)) rot.push(`${nameOf(e)}: ${w.text} (${m.quelle})`);
+    }
+    return rot;
 }
 
 // Die Befunde der LINSE, die den Speicher betreffen (`ratsche --nur vram`): ein Leck, eine Textur ohne Erzeuger, ein
@@ -913,6 +1156,15 @@ function bandTabelle(u) {
 }
 
 module.exports = {
+    ratscheDatei,
+    istBandOrt,
+    geraetSchluessel,
+    sichtSchluessel,
+    ratschenAlle,
+    ratscheWeit,
+    ratscheNeu,
+    ratscheFrische,
+    versionAbstand,
     einschwingOffen,
     EINSCHWING_INSTALL: `window.__einschwingOffen = ${einschwingOffen.toString()};`,
     ladeSpec,
