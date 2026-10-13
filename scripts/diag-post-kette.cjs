@@ -512,7 +512,7 @@ function saumProbe() {
                 r._loopRender(1000);
             }
             setzeKamera();
-            const { u8 } = await window.__ausgabeAufnahme(W, H);
+            const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
             return u8;
         };
         r._loopRender = function () {
@@ -689,7 +689,7 @@ function buehne(nFrames) {
             // Die Bild-Mitte aus dem Ausgabe-Pfad (was der Spieler sieht): 32×24, das Mittel der vier Mitten-Zellen.
             try {
                 setzeKamera();
-                const { u8 } = await window.__ausgabeAufnahme(32, 24);
+                const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 const px = (x, y) => [0, 1, 2].map((c) => u8[(y * 32 + x) * 4 + c]);
                 const m = [px(15, 11), px(16, 11), px(15, 12), px(16, 12)];
                 s.mitte = [0, 1, 2].map((c) => Math.round(m.reduce((a, p) => a + p[c], 0) / 4));
@@ -785,7 +785,7 @@ function buehne(nFrames) {
                     frame();
                 }
                 setzeKamera();
-                const { u8 } = await window.__ausgabeAufnahme(32, 24);
+                const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 const s = [0, 0, 0];
                 let n = 0;
                 for (let y = 17; y < 24; y++)
@@ -839,7 +839,7 @@ function buehne(nFrames) {
                 st._godrayScale = skala;
                 blickSonne();
                 blickSonne();
-                const { u8 } = await window.__ausgabeAufnahme(64, 48);
+                const { u8 } = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
                 return u8;
             };
             // der Anteil der Pixel, die sich in einem Kanal um mindestens 4/255 ändern

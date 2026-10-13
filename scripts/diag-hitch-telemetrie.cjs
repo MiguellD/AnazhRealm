@@ -534,7 +534,7 @@ function erstWandInstall() {
         let wurf = null;
         ESt.offen.set(attrappe, new Set());
         try {
-            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
         } catch (e) {
             wurf = String((e && e.message) || e);
         } finally {
@@ -542,7 +542,7 @@ function erstWandInstall() {
         }
         let bild = null;
         try {
-            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             bild = { pixel: auf.u8.length, erst: auf.info.erst };
         } catch (e) {
             bild = { wurf: String((e && e.message) || e) };
@@ -588,7 +588,7 @@ function erstWandInstall() {
             for (let i = 0; i < 3; i++) bild();
             offenDanach = ESt.offen.size;
             try {
-                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             } catch (e) {
                 wurf = String((e && e.message) || e);
             }
