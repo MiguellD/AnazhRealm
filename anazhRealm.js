@@ -33490,11 +33490,39 @@ class AnazhRealm {
     // liest ihn je Frame (`uLodAuge`), die Stufen-Wahl, ihr Band, die Verdeckung und der Kalt-Schätzer je Takt; bis K36 maß
     // die CPU vom Spieler: in der Verfolger-Kamera (Arm 9,6 m) wählte sie für Tore und Bäume die Partner der Spieler-Distanz,
     // die Maske blendete nach der Auge-Distanz — am Genesis-Ring standen 9 Tore und Ruinen halb durchsichtig im Bild.
-    // null = keine Kamera (dann misst nichts).
+    // Das Auge ist die Kamera, wo zuletzt jemand sie SETZTE — das Rig je Bild (`_lodAugeGesetzt` am Ende von `_loopCamera`),
+    // eine Sonde für ihren Schuss (jede Bewegung der Kamera seit der letzten Lesung ist eine Setzung) —, und es REIST MIT
+    // DEM SPIELER, bis sie neu gesetzt wird: der Welt-Takt läuft vor dem Rig, ein Sprung (Ankunft, Tor, Rettung, ein Gate
+    // ohne Spiel-Takt) trüge die Wahl sonst vom alten Ort. Vor der ersten Setzung steht es, wo das Ego-Rig es setzt: im
+    // Kopf des Spielers (der kopflose Boot hält die Kamera im Ursprung, 36 m neben ihm — das Tor kam ohne L0 und ohne
+    // Flügel). null = weder Kamera noch Spieler.
     _lodAuge() {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
         const cam = this.state.camera;
-        if (!cam) return null;
-        return cam.getWorldPosition(this._lodAugeV || (this._lodAugeV = new THREE.Vector3()));
+        const out = this._lodAugeV || (this._lodAugeV = new THREE.Vector3());
+        const r = this._lodAugeR || (this._lodAugeR = { cam: new THREE.Vector3(), pl: new THREE.Vector3(), stand: 0 });
+        if (!cam) return pm ? out.set(pm.x, pm.y + AnazhRealm.EGO_AUGE_M, pm.z) : null;
+        const c = cam.getWorldPosition(this._lodAugeC || (this._lodAugeC = new THREE.Vector3()));
+        if (r.stand === 0) {
+            r.cam.copy(c); // die Kamera, wie sie geboren wurde: ungesetzt
+            r.stand = 1;
+        } else if (c.distanceToSquared(r.cam) > 1e-10) this._lodAugeGesetzt(c);
+        if (r.stand === 1) return pm ? out.set(pm.x, pm.y + AnazhRealm.EGO_AUGE_M, pm.z) : out.copy(c);
+        out.copy(c);
+        if (pm) out.add(pm).sub(r.pl); // der Sprung des Spielers seit der Setzung
+        return out;
+    }
+    // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
+    _lodAugeGesetzt(c) {
+        const cam = this.state.camera;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!cam) return;
+        const r = this._lodAugeR || (this._lodAugeR = { cam: new THREE.Vector3(), pl: new THREE.Vector3(), stand: 0 });
+        if (c) r.cam.copy(c);
+        else cam.getWorldPosition(r.cam);
+        if (pm) r.pl.copy(pm);
+        else r.pl.set(0, 0, 0);
+        r.stand = 2;
     }
 
     // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
@@ -58762,6 +58790,10 @@ class AnazhRealm {
         // nie die Live-Position — sonst driftete der emitted-Satz gegen den One-Shot.
         const px = cont ? cont.px : playerPos ? playerPos.x : 0;
         const pz = cont ? cont.pz : playerPos ? playerPos.z : 0;
+        // DAS AUGE DER STUFEN (K36): der Ring streamt um den Spieler (seine Distanz-Gates oben), die Stufe der Geburt und
+        // ihr Band-Partner messen vom Auge der Maske (`_lodAuge`) wie der Takt (`_tickScatterLod`) — sonst trug die Geburt in
+        // der Verfolger-Kamera die Wahl der Spieler-Distanz, bis der Takt die Zelle besuchte.
+        const auge = this._lodAuge() || { x: px, z: pz };
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
         const slopeMax = Number.isFinite(layer.slopeMax) ? layer.slopeMax : SC.slopeMax;
         const floor = Number.isFinite(layer.floor) ? layer.floor : SC.densityFloor;
@@ -58849,7 +58881,8 @@ class AnazhRealm {
                     region._deferredFoundry = true;
                     continue;
                 }
-                const lod = this._chooseLODForDistance(dist, undefined, visH);
+                const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
+                const lod = this._chooseLODForDistance(distAuge, undefined, visH);
                 // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
                 // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
                 // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
@@ -58864,7 +58897,7 @@ class AnazhRealm {
                         cellZ,
                         cellM,
                         tf,
-                        dist,
+                        distAuge,
                         surfY,
                         species,
                         variantIndex,
@@ -99319,7 +99352,7 @@ class AnazhRealm {
                 // Kamera-Clip-Wand: das Ego-Auge sitzt 1.6 m über dem Body-Zentrum (Box-halfExtent 0.5; nicht das
                 // Lab-eyeY 1.62) — die Decken-Probe klemmt es unter eine niedrige Decke (0.12 m Marge), sonst sieht
                 // man den Fels von innen. Die Seitenwände hält die Physik-Box.
-                let eyeY = smoothBodyY + 1.6 + landDip;
+                let eyeY = smoothBodyY + AnazhRealm.EGO_AUGE_M + landDip;
                 const headroomFP = this._ceilingHeadroom();
                 if (Number.isFinite(headroomFP)) {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
@@ -99338,6 +99371,7 @@ class AnazhRealm {
                 const KD1 = AnazhRealm.KAMERA_DURCHSICHT;
                 this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0, KD1.ichM, -KD1.saumM, KD1.ichM);
             }
+            this._lodAugeGesetzt(); // das Rig setzte das Auge der Stufen (K36): die Maske und die Wahl messen von hier
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
                     `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
@@ -107079,6 +107113,9 @@ AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
 });
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
+// Das Ego-Auge über dem Leib-Zentrum (m): das Rig setzt die Ego-Kamera hier, das Auge der Stufen steht hier, bevor eine
+// Kamera gesetzt ist (`_lodAuge`).
+AnazhRealm.EGO_AUGE_M = 1.6;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).

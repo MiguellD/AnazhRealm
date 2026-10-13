@@ -839,6 +839,12 @@ async function runPartB() {
                 // reicht für sie null): die L1 wich dem Nichts; (b) das Auge steht NEBEN dem Spieler (die Verfolger-
                 // Kamera, Arm 9,6 m): die Wahl maß vom Spieler, die Maske vom Auge. Selbsttest im selben Lauf: der Halt
                 // fällt stumm (`_lodHaltSetzen`) bzw. die Wahl misst vom Spieler — die Linse MUSS Geister zählen.
+                // DER SCHATTEN-ZWILLING (K36 N1) gehört zur Klasse: das Gesetz — die Karte wirft nicht, der Wurf folgt der
+                // GEZEICHNETEN 3D-Gestalt: wo sie voll steht (auch im Halt), wirft der Zwilling voll, wo sie zur Karte
+                // ausblendet, blendet sein Wurf mit (dieselbe f1o-Rampe), ohne 3D-Stufe wirft nichts. Ein SCHATTEN-GEIST =
+                // die Deckung des Zwillings ≠ die Deckung der gezeichneten 3D-Stufen (der Halbschatten unter dem vollen Baum,
+                // der Wurf eines Baums, der nicht steht). Selbsttest: der Zwilling ohne Halt im Stempel — die Linse MUSS ihn zählen.
+                let zwBekannt = false;
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
                     const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
@@ -848,7 +854,8 @@ async function runPartB() {
                         if (!Array.isArray(list)) continue;
                         for (const s of list) {
                             const g = st.archInstanceGroups && st.archInstanceGroups.get(s.key);
-                            if (!g || !g.mesh || g.shadowTwin || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) continue;
+                            if (!g || !g.mesh) continue;
+                            const zwilling = !!(g.shadowTwin || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER);
                             const a = g.mesh.geometry.attributes;
                             const i = s.slot;
                             const m = g.mesh.instanceMatrix.array;
@@ -871,6 +878,7 @@ async function runPartB() {
                                 const kL = Math.min(ref / Math.max(Math.abs(hL), 1e-3), 1);
                                 teile.push({
                                     karte: false,
+                                    zwilling,
                                     laub,
                                     keep: (dh) => {
                                         if (hL < 0) return true; // der Halt: die Stufe ohne Partner zeichnet voll
@@ -881,26 +889,36 @@ async function runPartB() {
                             }
                         }
                     }
-                    const D = {};
-                    for (const klasse of ["rinde", "laub"]) {
-                        const tk = teile.filter((t) => t.karte || t.laub === (klasse === "laub"));
-                        if (!tk.length) continue;
+                    const deckung = (tk) => {
                         let n = 0;
                         for (let j = 0; j < 64; j++) {
                             const dh = (j + 0.5) / 64;
                             if (tk.some((t) => t.keep(dh))) n++;
                         }
-                        D[klasse] = n / 64;
+                        return n / 64;
+                    };
+                    const D = {};
+                    const bild = teile.filter((t) => !t.zwilling);
+                    for (const klasse of ["rinde", "laub"]) {
+                        const tk = bild.filter((t) => t.karte || t.laub === (klasse === "laub"));
+                        if (tk.length) D[klasse] = deckung(tk);
                     }
+                    const zw = teile.filter((t) => t.zwilling);
+                    const d3 = bild.filter((t) => !t.karte);
+                    if (zw.length) zwBekannt = true;
+                    const S = { wurf: deckung(zw), gestalt: deckung(d3) };
                     const werte = Object.values(D);
                     return {
                         D,
+                        S,
                         geist: werte.some((v) => v > 0 && v < 1),
                         loch: werte.length > 0 && werte.every((v) => v === 0),
+                        schattenGeist: (zw.length > 0 || (d3.length > 0 && zwBekannt)) && S.wurf !== S.gestalt,
+                        zwN: zw.length,
                     };
                 };
                 const geisterLauf = (art) => {
-                    const o = { proben: 0, geister: 0, loecher: 0, beispiel: null };
+                    const o = { proben: 0, geister: 0, loecher: 0, schatten: 0, mitZwilling: 0, beispiel: null };
                     if (art.karteLaedt)
                         r._foundryFlattenFor = function (e, p, lod) {
                             return e === entry && lod === 2 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
@@ -910,6 +928,12 @@ async function runPartB() {
                         r._lodSlotVoll = function (e, band, bl = e._lodBandLevel) {
                             const karte = e._occluded === true || e._bruecke === true;
                             return band ? karte && bl === 2 : karte;
+                        };
+                    // der Zwilling ohne Halt: sein Stempel trägt das VOLL nie (die gezeichnete Stufe hält, ihr Wurf blendet)
+                    if (art.zwillingOhneHalt)
+                        r._lodSlotStamp = function (g, slot, scale, voll, leaf) {
+                            const tw = !!(g && (g.shadowTwin || (g.mesh && g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER)));
+                            return A.prototype._lodSlotStamp.call(this, g, slot, scale, tw ? false : voll, leaf);
                         };
                     try {
                         for (const dnZiel of [6, 10, 14, 19, 22, 24, 27, 31, 40, 27, 24, 22, 14, 6]) {
@@ -923,10 +947,13 @@ async function runPartB() {
                             o.proben++;
                             if (z.geist) o.geister++;
                             if (z.loch) o.loecher++;
-                            if ((z.geist || z.loch) && !o.beispiel)
+                            if (z.schattenGeist) o.schatten++;
+                            if (z.zwN > 0) o.mitZwilling++;
+                            if ((z.geist || z.loch || z.schattenGeist) && !o.beispiel)
                                 o.beispiel = {
                                     dn: dnZiel,
                                     D: z.D,
+                                    S: z.S,
                                     primaer: entry._lodLevel,
                                     band: Number.isFinite(entry._lodBandLevel) ? entry._lodBandLevel : null,
                                     halt: entry._lodHalt === true,
@@ -935,6 +962,7 @@ async function runPartB() {
                     } finally {
                         delete r._foundryFlattenFor;
                         delete r._lodSlotVoll;
+                        delete r._lodSlotStamp;
                     }
                     return o;
                 };
@@ -945,8 +973,90 @@ async function runPartB() {
                     auge: geisterLauf({ armM: 9.6 }),
                     gegenHalt: geisterLauf({ armM: 0, karteLaedt: true, ohneHalt: true }),
                     gegenAuge: geisterLauf({ armM: 9.6, wahlVomSpieler: true }),
+                    gegenSchatten: geisterLauf({ armM: 0, karteLaedt: true, zwillingOhneHalt: true }),
                 };
                 geisterLauf({ armM: 0 }); // die Stufen und der Halt zurück auf die gebackene Karte
+                // ════ (10b) DAS AUGE VOR DER SETZUNG, IM SPRUNG, DER SONDE, BEI DER GEBURT (K36 N1): die Kalt-Wahl
+                // (`_foundryLodForEntry`) und die Geburt der Streu (`_scatterPass`) messen vom Auge der Stufen. Ungesetzt (die
+                // Kamera, wie geboren, fern vom Spieler — der kopflose Boot) steht es im Kopf des Spielers; nach der Setzung reist
+                // es mit dem Sprung des Spielers, bis das Rig nachzieht; setzt eine Sonde die Kamera, IST sie das Auge; die Geburt
+                // trägt die Distanz vom Auge (die Verfolger-Kamera 9,6 m hinter dem Spieler). Selbsttest im selben Lauf: das
+                // Auge = die Kamera allein (der Stand d6fd4047) bzw. der Spieler — die Linse MUSS falsche Wahlen zählen.
+                const augeLauf = (gegen) => {
+                    const T3 = window.THREE;
+                    const o = { proben: 0, falsch: 0, geburten: 0, geburtFalsch: 0, beispiel: [] };
+                    const cam = st.camera;
+                    const camVor = cam.position.clone();
+                    const pmVor = st.playerMesh.position.clone();
+                    const rVor = r._lodAugeR;
+                    const setzeKam = (x, y, z) => {
+                        cam.position.set(x, y, z);
+                        cam.updateMatrixWorld(true);
+                    };
+                    const fall = (name, ist, soll) => {
+                        o.proben++;
+                        if (ist !== soll) {
+                            o.falsch++;
+                            if (o.beispiel.length < 4) o.beispiel.push({ name, ist, soll });
+                        }
+                    };
+                    if (gegen === "kamera")
+                        r._lodAuge = function () {
+                            return this.state.camera.getWorldPosition(new T3.Vector3());
+                        };
+                    if (gegen === "spieler")
+                        r._lodAuge = function () {
+                            const p = this.state.playerMesh.position;
+                            return new T3.Vector3(p.x, p.y + 1.6, p.z);
+                        };
+                    const key = `${Math.floor(px / A.SCATTER.regionM)},${Math.floor(pz / A.SCATTER.regionM)}`;
+                    try {
+                        // (i) ungesetzt: die Kamera, wie geboren, 200 m neben dem Spieler; der Spieler am Baum → L0
+                        r._lodAugeR = null;
+                        setzeKam(px - 200, py, pz);
+                        st.playerMesh.position.set(px + 1, py, pz);
+                        fall("ungesetzt", r._foundryLodForEntry(entry), 0);
+                        // (ii) der Sprung: das Rig setzte das Auge 500 m vom Baum, der Spieler springt an den Baum → L0
+                        st.playerMesh.position.set(px - 500, py, pz);
+                        setzeKam(px - 509.6, py + 3, pz);
+                        if (typeof r._lodAugeGesetzt === "function") r._lodAugeGesetzt();
+                        st.playerMesh.position.set(px + 1, py, pz);
+                        fall("Sprung", r._foundryLodForEntry(entry), 0);
+                        // (iii) die Sonde setzt die Kamera an den Baum, der Spieler steht 500 m fern → das Auge ist die Kamera: L0
+                        st.playerMesh.position.set(px - 500, py, pz);
+                        setzeKam(px + 1, py + 1.6, pz);
+                        fall("Sonde", r._foundryLodForEntry(entry), 0);
+                        // (iv) die Geburt der Streu: die Sonde setzt die Kamera 9,6 m hinter den Spieler (der Arm der Verfolger-
+                        // Kamera); jede geborene Zelle trägt die Distanz vom Auge
+                        st.playerMesh.position.set(px, py, pz);
+                        setzeKam(px - 9.6, py + 3, pz);
+                        const augeSoll = cam.getWorldPosition(new T3.Vector3());
+                        r._disposeScatterRegion(key);
+                        r._scatterMaterializeCell = function (region, layer, salt, cx, cz, cm, tf, dist, ...rest) {
+                            o.geburten++;
+                            const soll = Math.hypot(tf.x - augeSoll.x, tf.z - augeSoll.z);
+                            if (!(Math.abs(dist - soll) < 1e-6)) {
+                                o.geburtFalsch++;
+                                if (o.beispiel.length < 4) o.beispiel.push({ name: "Geburt", ist: +dist.toFixed(2), soll: +soll.toFixed(2) });
+                            }
+                            return A.prototype._scatterMaterializeCell.call(this, region, layer, salt, cx, cz, cm, tf, dist, ...rest);
+                        };
+                        r._scatterRegion(Math.floor(px / A.SCATTER.regionM), Math.floor(pz / A.SCATTER.regionM), st.playerMesh.position);
+                    } catch (e) {
+                        o.err = String((e && e.message) || e);
+                    } finally {
+                        delete r._lodAuge;
+                        delete r._scatterMaterializeCell;
+                        r._disposeScatterRegion(key);
+                        r._lodAugeR = rVor;
+                        setzeKam(camVor.x, camVor.y, camVor.z);
+                        st.playerMesh.position.copy(pmVor);
+                    }
+                    return o;
+                };
+                res.geisterBaum.augeGesetz = augeLauf(null);
+                res.geisterBaum.gegenKamera = augeLauf("kamera");
+                res.geisterBaum.gegenSpieler = augeLauf("spieler");
                 res.geisterBaum.ms = Math.round(performance.now() - tGeist);
             } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask oder _lodPerfMul fehlt" };
             st._foliageDensityScale = fdVor;
@@ -1248,6 +1358,16 @@ function geisterQuelle(srcNC) {
     if (!/const auge = this\._lodAuge\(\);/.test(sched) || !/this\._tickArchitectureLOD\(5, auge\);/.test(sched))
         v.push("der Takt reicht der Architektur-Wahl nicht das Auge (_lodAuge)");
     if (!/this\._tickScatterLod\(auge, /.test(sched)) v.push("der Takt reicht der Streu-Wahl nicht das Auge (_lodAuge)");
+    // das Auge reist mit dem Sprung des Spielers und steht vor der ersten Setzung im Kopf; das Rig setzt es je Bild (K36 N1)
+    const augeQ = fnBody(srcNC, /\n {4}_lodAuge\(\)\s*\{/) || "";
+    if (!/out\.add\(pm\)\.sub\(r\.pl\)/.test(augeQ)) v.push("_lodAuge trägt den Sprung des Spielers nicht (die Wahl vom alten Ort)");
+    if (!/r\.stand === 1\) return pm \? out\.set\(pm\.x, pm\.y \+ AnazhRealm\.EGO_AUGE_M, pm\.z\)/.test(augeQ))
+        v.push("_lodAuge steht vor der ersten Setzung nicht im Kopf des Spielers (die ungesetzte Kamera wählt)");
+    const rig = fnBody(srcNC, /\n {4}_loopCamera\(currentTime\)\s*\{/) || "";
+    if (!/this\._lodAugeGesetzt\(\);/.test(rig)) v.push("das Rig (_loopCamera) setzt das Auge der Stufen nicht");
+    const pass = fnBody(srcNC, /\n {4}_scatterPass\([^)]*\)\s*\{/) || "";
+    if (!/const auge = this\._lodAuge\(\)/.test(pass) || !/this\._chooseLODForDistance\(distAuge, undefined, visH\)/.test(pass))
+        v.push("die Geburt der Streu (_scatterPass) wählt die Stufe nicht vom Auge");
     for (const [name, re] of [
         ["_tickArchitectureLOD", /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/],
         ["_switchArchitectureLOD", /\n {4}_switchArchitectureLOD\([^)]*\)\s*\{/],
@@ -1493,6 +1613,9 @@ async function main() {
                 ["Maske ohne Halt", nc.replace(".max(_halt)", "")],
                 ["Stempel ohne Halt", nc.replace("_h0LTpl * s * (voll ? -1 : 1)", "_h0LTpl * s")],
                 ["Band ohne Halt", nc.replace('this._lodHaltSetzen(entry, flat === null ? "wartet" : true);', "")],
+                ["Auge ohne Sprung", nc.replace("if (pm) out.add(pm).sub(r.pl);", "")],
+                ["Rig setzt nicht", nc.replace("this._lodAugeGesetzt();", "")],
+                ["Geburt vom Spieler", nc.replace("this._chooseLODForDistance(distAuge, undefined, visH)", "this._chooseLODForDistance(dist, undefined, visH)")],
             ]) {
                 const v = geisterQuelle(src);
                 check(`Selbst-Test Geister-Baum: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
@@ -1862,13 +1985,22 @@ async function main() {
     // (10) DER GEISTER-BAUM (K36): je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;
     if (GB) {
-        const g = (o) => `${o.geister} Geister · ${o.loecher} Löcher in ${o.proben} Proben${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
-        const sauber = (o) => o.proben >= 14 && o.geister === 0 && o.loecher === 0;
+        const g = (o) =>
+            `${o.geister} Geister · ${o.loecher} Löcher · ${o.schatten} Schatten-Geister in ${o.proben} Proben (${o.mitZwilling} mit Zwilling)${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
+        const sauber = (o) => o.proben >= 14 && o.geister === 0 && o.loecher === 0 && o.schatten === 0 && o.mitZwilling > 0;
         check("GEISTER-BAUM: der Partner steht — keine Instanz halb maskiert (die Linse schweigt bei der Blende)", sauber(GB.normal), g(GB.normal));
         check("GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner)", sauber(GB.karteLaedt), g(GB.karteLaedt));
         check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
         check("GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte", GB.gegenHalt.geister + GB.gegenHalt.loecher > 0, g(GB.gegenHalt));
         check("GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, zählt die Linse den Geist der Verfolger-Kamera", GB.gegenAuge.geister + GB.gegenAuge.loecher > 0, g(GB.gegenAuge));
+        check("GEISTER-BAUM Selbsttest: trägt der Zwilling den Halt nicht, zählt die Linse den Halbschatten unter dem vollen Baum", GB.gegenSchatten.schatten > 0, g(GB.gegenSchatten));
+        // (10b) das Auge vor der Setzung, im Sprung, der Sonde und bei der Geburt der Streu
+        const ga = (o) => `${o.falsch} falsche Wahlen in ${o.proben} Proben · ${o.geburtFalsch} von ${o.geburten} Geburten nicht vom Auge${o.err ? " — Fehler " + o.err : ""}${o.beispiel.length ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
+        const AG = GB.augeGesetz;
+        check("GEISTER-BAUM Auge: ungesetzt, im Sprung und unter der Sonde wählt die Kalt-Wahl vom Auge der Stufen (der Täter: _lodAuge = die Kamera allein)", !!AG && !AG.err && AG.proben === 3 && AG.falsch === 0, ga(AG));
+        check("GEISTER-BAUM Auge: jede Streu-Geburt trägt die Distanz vom Auge (der Täter: _scatterPass wählt vom Spieler)", !!AG && !AG.err && AG.geburten > 0 && AG.geburtFalsch === 0, ga(AG));
+        check("GEISTER-BAUM Auge Selbsttest: das Auge = die Kamera allein — die Linse zählt die Wahl des ungesetzten Auges und des Sprungs", !!GB.gegenKamera && GB.gegenKamera.falsch >= 2, ga(GB.gegenKamera));
+        check("GEISTER-BAUM Auge Selbsttest: das Auge = der Spieler — die Linse zählt die Sonde und jede Geburt", !!GB.gegenSpieler && GB.gegenSpieler.falsch >= 1 && GB.gegenSpieler.geburtFalsch > 0, ga(GB.gegenSpieler));
         console.log(`  (die Geister-Linse lief ${GB.ms} ms)`);
     } else check("GEISTER-BAUM lief", false, "fehlt");
     if (errs.length) {
