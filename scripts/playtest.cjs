@@ -10710,6 +10710,7 @@ async function checkBandRing8(ctx) {
 
         // buildStateSnapshot fängt aktuelle Mesh-Position ein
         if (r.state.playerMesh) {
+            // BÜHNE: der Snapshot fängt eine beliebige Position (Speicher-Mechanik)
             r.state.playerMesh.position.set(42, 7, 23);
         }
         const snap1 = r.buildStateSnapshot();
@@ -10722,6 +10723,7 @@ async function checkBandRing8(ctx) {
         // Reset-Szenario: terrainEverGenerated=false, loadState(snap)
         // soll Flag setzen UND Position restaurieren.
         r.state.terrainEverGenerated = false;
+        // BÜHNE: der Reset-Wert vor loadState (Speicher-Mechanik)
         if (r.state.playerMesh) r.state.playerMesh.position.set(99, 99, 99);
         r.loadState(snap1);
         out.flagSetAfterLoad = r.state.terrainEverGenerated === true;
@@ -10740,6 +10742,7 @@ async function checkBandRing8(ctx) {
         out.emptySnapHasNoPosition = emptySnap.playerPosition === null;
         const savedPos = r.state.playerMesh ? r.state.playerMesh.position.clone() : null;
         r.state.terrainEverGenerated = false;
+        // BÜHNE: der Reset-Wert vor dem Restore (Speicher-Mechanik)
         if (r.state.playerMesh) r.state.playerMesh.position.set(7, 8, 9);
         r._loadStateRestorePlayerPosition(emptySnap);
         out.emptySnapKeepsFirstSpawn = r.state.terrainEverGenerated === false;
@@ -14616,6 +14619,7 @@ async function checkBandLateMultiUser(ctx) {
         // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
         const _saveMaxNet = r.state.maxCreatures;
         r.state.maxCreatures = r.state.creatures.length + 1;
+        // BÜHNE: netId/Broadcast-Mechanik, der Ort trägt nichts
         const testC = r.spawnCreatureAt(20, 6, 20, "happy");
         r.state.maxCreatures = _saveMaxNet;
         out.creatureHasNetId = !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
@@ -15543,6 +15547,7 @@ async function checkBandWelle6APolish(ctx) {
 
         // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält 33 ms
         // und trüge sonst einen stale Wert der alten Spieler-Position.
+        // BÜHNE: der Himmel 5 km über jedem Boden
         r.state.playerMesh.position.set(0, 5000, 0);
         r.state._groundedCachedAt = 0;
         r.isPlayerGrounded();
@@ -17111,6 +17116,7 @@ async function checkBandWelle6DSoul(ctx) {
             y: r.state.playerMesh.position.y,
             z: r.state.playerMesh.position.z,
         };
+        // BÜHNE: Boost-Reichweite relativ zum Spieler (die Bauten folgen ihm)
         r.state.playerMesh.position.set(80, 5, 80);
         // Custom-Bauplan mit Quarz-Helix-Array: vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) — der
         // Resonance-Array-Detector verlangt gleiche Shape auf gleichem Radius ±12 %. Quarz (resoniert 0.9,
@@ -17160,6 +17166,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.resonanceHasResonierDelta = resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
 
         // Boost außerhalb Reichweite → kein Trigger
+        // BÜHNE: außerhalb der Boost-Reichweite (nur der Abstand zählt)
         r.state.playerMesh.position.set(-200, 5, -200);
         r.state.player.boosts = [];
         r.state.player.boostLastTick = -Infinity;
@@ -38502,6 +38509,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         };
         const sy = r.getTerrainHeightAt(0, 0);
         const startY = (Number.isFinite(sy) ? sy : 5) + 2;
+        // BÜHNE: die Ankunft der Welt (jeder Erst-Spawn auf 0/0), die Höhe aus dem Gesetz
         s.playerMesh.position.set(0, startY, 0);
         s.playerVel.setValue(0, 0, 0);
         s._fieldVy = 0;
@@ -40120,6 +40128,7 @@ async function checkBandWelle6XAudit(ctx) {
             // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
             // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
             // at_player_forward(8) liefert (10, 50, 28).
+            // BÜHNE: die Vorwärts-Richtung (at_player_forward rechnet relativ zum Spieler)
             r.state.playerMesh.position.set(10, 50, 20);
             r.state.yaw = 0;
             const ctx = { state: r.state, rng: () => 0.5 };
@@ -40135,6 +40144,7 @@ async function checkBandWelle6XAudit(ctx) {
         }
 
         // --- C1: Chat „baue dorf hier" embedded forward-Position
+        // BÜHNE: die Vorwärts-Richtung („baue dorf hier“ relativ zum Spieler)
         r.state.playerMesh.position.set(0, 50, 0);
         r.state.yaw = 0;
         const dslOut = r.parseChatToDsl("baue dorf hier");
@@ -40861,13 +40871,16 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // der Nexus deponiert aktiv Leben → ein Deposit nahe der kargen Testzelle verfälschte den Mock.
         // Getestet wird die frozen→Fauna-Abbildung isoliert.
         if (r.state.lifeField) r.state.lifeField.clear();
+        // BÜHNE: die Fauna-Abbildung einer Testzelle (Life-Feld geleert, kein Boden)
         r.state.playerMesh.position.x = -100;
         const targetLiv = r._currentFaunaTarget();
+        // BÜHNE: die Fauna-Abbildung einer Testzelle (Life-Feld geleert, kein Boden)
         r.state.playerMesh.position.x = 100;
         const targetKarg = r._currentFaunaTarget();
         out.liveRegionHasHigherTarget = targetLiv > targetKarg;
         out.targetInExpectedRange = targetLiv >= 10 && targetKarg <= 6;
         r.worldFieldAt = origWFA;
+        // BÜHNE: zurück an den Ursprung der Testzelle
         r.state.playerMesh.position.x = 0;
 
         // --- Vision 8: Stern-Feld folgt Tageszeit (V18.530: die Dämmerung setzt die GRENZGRÖSSE — mittags ist kein
@@ -41405,6 +41418,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         if (r.state.sunMesh && r.state.camera && typeof r._updateCelestialBodies === "function") {
             r._updateCelestialBodies(Math.PI * 0.3, 1.0); // setzt skyOffset
             const camOrig = r.state.camera.position.clone();
+            // BÜHNE: ein ferner Spieler für den Himmels-Folger (nur der Abstand zählt)
             r.state.camera.position.set(2000, 50, 2000); // ferner Spieler
             r._followCelestialBodies();
             const sun = r.state.sunMesh;
@@ -46803,6 +46817,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
             // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
             r.setTimeOfDay(0.3, "human");
+            // BÜHNE: eine nicht achsparallele Lage für den Schatten-Snap (nur die Bruchteile zählen)
             pm.position.x = 123.5;
             pm.position.z = -77.25;
             r._applyDayNightToScene();
@@ -54402,6 +54417,7 @@ async function checkBandRing5Soul(ctx) {
         // Distanz reproduzierbar in -Z-Richtung liegt.
         r.state.yaw = 0;
         r.state.pitch = 0;
+        // BÜHNE: die Blick-Distanz in −Z (Render-Mechanik)
         r.state.playerMesh.position.set(0, 20, 0);
         // Render-Frame triggern: Loop läuft bereits, wir warten auf
         // den nächsten Tick im Test-Wrapper. Hier prüfen wir die
@@ -54893,6 +54909,7 @@ async function checkBandRing6Workshop(ctx) {
         };
         r.spawnArchitecture("_t_live_haus", { x: 1.925, y: 5, z: 5 }, { seed: 11 });
         // Player nach (0, 5, −2) — Haus liegt in +Z, Spieler läuft in +Z auf es zu.
+        // BÜHNE: der Spieler vor dem gestellten Haus (Haus und Spieler in derselben Anordnung)
         r.state.playerMesh.position.set(0, 5, -2);
         if (r.state.playerVel) {
             r.state.playerVel.setValue(0, 0, 0);
@@ -55426,17 +55443,20 @@ async function checkBandRing6Workshop(ctx) {
             parts: JSON.parse(JSON.stringify(KSr6v2.haus_basis.parts)),
         };
         // Setze Spieler auf (0,0,0), spawne weit + nah.
+        // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         r.state.playerMesh.position.set(0, 20, 0);
         const near = r.spawnArchitecture("_t_r6v2_haus", { x: 5, y: 5, z: 5 }, { seed: 1 });
         const far = r.spawnArchitecture("_t_r6v2_haus", { x: 400, y: 5, z: 400 }, { seed: 2 });
         out.nearHasMesh = !!near.mesh;
         out.farIsCold = far.mesh === null;
         // Spieler weg vom near → cull-Tick muss near disposen
+        // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         r.state.playerMesh.position.set(400, 20, 400);
         r.tickArchitectureCulling(1.0);
         out.nearCulledAfterWalkAway = near.mesh === null;
         out.farRebuiltAfterApproach = !!far.mesh;
         // Zurück gehen → near baut sich wieder auf
+        // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         r.state.playerMesh.position.set(0, 20, 0);
         r.tickArchitectureCulling(2.0);
         out.nearRebuiltAfterReturn = !!near.mesh;
@@ -55486,6 +55506,7 @@ async function checkBandRing6Workshop(ctx) {
             }
         }
         r.state.architectures = [];
+        // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
         r.state.playerMesh.position.set(0, 20, 0);
         for (let i = 0; i < 3; i++) r.spawnArchitecture("_t_r6v2_haus", { x: i * 10, y: 5, z: 0 }, { seed: i });
         for (let i = 0; i < 5; i++) r.spawnArchitecture("_t_r6v2_haus", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });

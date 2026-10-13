@@ -197,6 +197,7 @@ function pruefRaum(echt) {
     if (c) seele = r._creatureProfile(c).soul;
     if (seele) tier = r._buildCreatureGroup(seele);
     if (tier) {
+        // BÜHNE: eigene Szene des Frost-Bilds
         tier.position.set(1.3, 0, -0.4);
         pivot.add(tier);
     }
@@ -217,6 +218,7 @@ function pruefRaum(echt) {
         }
     });
     const cam = new T.PerspectiveCamera(45, 16 / 9, 0.05, 100);
+    // BÜHNE: eigene Szene des Frost-Bilds
     cam.position.set(0, 1.0, 3.0);
     cam.lookAt(0, 0.7, 0);
     F.wurzel = scene;

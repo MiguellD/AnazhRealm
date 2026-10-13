@@ -293,6 +293,7 @@ async function kleberProbe(page, fmtWunsch) {
             szene.add(mesh);
             szene.add(new T.AmbientLight(0xffffff, 3));
             const cam = new T.PerspectiveCamera(60, W / H, 0.5, 500);
+            // BÜHNE: eigene Szene des Impostor-Vergleichs
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);

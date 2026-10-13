@@ -132,6 +132,7 @@ function check(name, ok, detail) {
             r._studioUebergabeEmpfang({ kind: "kreatur", gattung: "wolf", s: { size } });
         };
         const spawnWolf = (opts) =>
+            // BÜHNE: der Wolf fällt präzise aus 40 m (die Probe misst Gestalt und Reload, nie den Boden)
             r.spawnCreatureAt(0, 40, 0, "happy", "wolf", Object.assign({ precise: true, bodySize: 1 }, opts || {}));
 
         // ── Übergabe size 3.5 → Wolf A gegossen ──
