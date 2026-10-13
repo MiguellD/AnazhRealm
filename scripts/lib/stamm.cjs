@@ -341,11 +341,12 @@ function tagsSetzen(html, pfade) {
 // ── die Klasse im vm (Beweis-Lader) ───────────────────────────────────────────────────────────────────────────────
 // Lädt die klassischen Skripte, die index.html VOR dem Stamm lädt, dann den Stamm — als EIN Skript (`monolith`) oder je
 // Datei (`teile`, sonst der Baum). Derselbe globale lexikalische Raum wie <script defer>. Der Boot pollt window.THREE
-// über setTimeout (hier stumm) — er ruft den Konstruktor nie.
+// über setTimeout (hier stumm) — er ruft den Konstruktor nie. window.THREE setzt im Browser der Modul-Bootstrap; im vm
+// trägt das UMD-Bündel vendor/three.min.js die Top-Level-Symbole der Kerne (für alt und neu dasselbe).
 function ladeKlasse(root, opt = {}) {
     const vm = require("vm");
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
-    const vor = [];
+    const vor = ["vendor/three.min.js"];
     for (const m of html.matchAll(/<script(?![^>]*type="module")[^>]*\ssrc="([^"?:]+)(?:\?[^"]*)?"[^>]*><\/script>/g)) {
         if (istStammDatei(m[1])) break;
         vor.push(m[1]);
