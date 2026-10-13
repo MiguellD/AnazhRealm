@@ -22405,7 +22405,7 @@ class AnazhRealm {
             if (Math.abs(e.position.x - p.x) > er || Math.abs(e.position.z - p.z) > er) continue;
             for (let b = 0; b < boxes.length; b++) {
                 const box = boxes[b];
-                if (!(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue;
+                if (box.gedeckt === true || !(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue; // die Fuge trägt nie
                 if (
                     p.x < box.minX - reich ||
                     p.x > box.maxX + reich ||
@@ -36011,6 +36011,7 @@ class AnazhRealm {
     // die Kollision seiner Randparts.
     _blockerStampReach(entry) {
         if (!entry || !entry.blockerAABBs) return;
+        this._blockerFugen(entry.blockerAABBs);
         let r = 0;
         for (const b of entry.blockerAABBs) {
             r = Math.max(
@@ -36023,6 +36024,70 @@ class AnazhRealm {
         }
         entry._blockerReach = r;
         this._blockerNetzSetzen(entry);
+    }
+
+    // DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt — sie beginnt höchstens
+    // PLAYER_GROUND_SNAP über ihr, steigt über sie, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius
+    // der Kapsel —, ist keine Fläche: die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, der Pfosten unter dem Bogen. Sie
+    // trägt keinen Leib (`gedeckt`; die Auflage der Kapsel `_resolveCapsuleVsAABB` und die des Tiers `_kreaturAuflage`
+    // übergehen sie). Eine Treppe bleibt Treppe: die nächste Stufe deckt nie die Mitte der vorigen. Gedrehte Boxen messen im
+    // Rahmen der deckenden (`obb`). Vorher stand jeder Leib, der einen Baum berührte, auf der ersten Stamm-Fuge in der Box
+    // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, 1084 von 2803 Fugen trugen).
+    _blockerFugen(boxes) {
+        const R = AnazhRealm.PLAYER_WALL_RADIUS;
+        const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
+        const E = this._fugenEcken || (this._fugenEcken = new Float64Array(10));
+        // die vier Ecken und die Mitte der Grundfläche (gedreht: aus der obb)
+        const ecken = (a) => {
+            const ob = a.obb;
+            if (ob) {
+                for (let i = 0; i < 4; i++) {
+                    const lx = i & 1 ? ob.hx : -ob.hx;
+                    const lz = i & 2 ? ob.hz : -ob.hz;
+                    E[2 * i] = ob.cx + lx * ob.c + lz * ob.s;
+                    E[2 * i + 1] = ob.cz - lx * ob.s + lz * ob.c;
+                }
+                E[8] = ob.cx;
+                E[9] = ob.cz;
+                return;
+            }
+            E[0] = E[4] = a.minX;
+            E[2] = E[6] = a.maxX;
+            E[1] = E[3] = a.minZ;
+            E[5] = E[7] = a.maxZ;
+            E[8] = (a.minX + a.maxX) / 2;
+            E[9] = (a.minZ + a.maxZ) / 2;
+        };
+        // liegt (x, z) in der Grundfläche von b, um `rand` erweitert?
+        const innen = (b, x, z, rand) => {
+            const ob = b.obb;
+            if (!ob) return x >= b.minX - rand && x <= b.maxX + rand && z >= b.minZ - rand && z <= b.maxZ + rand;
+            const dx = x - ob.cx;
+            const dz = z - ob.cz;
+            return Math.abs(dx * ob.c - dz * ob.s) <= ob.hx + rand && Math.abs(dx * ob.s + dz * ob.c) <= ob.hz + rand;
+        };
+        for (const a of boxes) {
+            let gedeckt = false;
+            let eckenDa = false;
+            for (const b of boxes) {
+                if (b === a || !(b.botY <= a.topY + SNAP) || !(b.topY > a.topY)) continue;
+                if (!eckenDa) {
+                    ecken(a);
+                    eckenDa = true;
+                }
+                if (!innen(b, E[8], E[9], 0)) continue;
+                if (
+                    innen(b, E[0], E[1], R) &&
+                    innen(b, E[2], E[3], R) &&
+                    innen(b, E[4], E[5], R) &&
+                    innen(b, E[6], E[7], R)
+                ) {
+                    gedeckt = true;
+                    break;
+                }
+            }
+            a.gedeckt = gedeckt;
+        }
     }
 
     // DIE NACHBARSCHAFT DER BLOCKER (0710-7): ein Gitter aus Zellen (AnazhRealm.BLOCKER_ZELLE m) über die Hülle jedes Eintrags
@@ -97695,6 +97760,7 @@ class AnazhRealm {
             lb.maxZ = ob.hz;
             lb.topY = box.topY;
             lb.botY = box.botY;
+            lb.gedeckt = box.gedeckt === true;
             const ax = lp.x;
             const az = lp.z;
             // Der Kontakt der lokalen Lösung landet im lokalen Empfänger und reist gedreht zu SEINEM Körper zurück (D5): ein
@@ -97714,7 +97780,9 @@ class AnazhRealm {
                 this._wandKontaktSetzen(kontakt, lk.nx * ob.c + lk.nz * ob.s, -lk.nx * ob.s + lk.nz * ob.c);
             return st;
         }
+        // die FUGE trägt nie (`gedeckt`, `_blockerFugen`): auf ihr sitzt eine Box desselben Werks
         if (
+            box.gedeckt !== true &&
             pos.x >= box.minX - radius &&
             pos.x <= box.maxX + radius &&
             pos.z >= box.minZ - radius &&
