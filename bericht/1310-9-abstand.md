@@ -43,6 +43,7 @@ gate:pflanzen-nah (23), Puls ci-lokal 18/18, playtest:fast 22/0.
 
 ## Status ZWISCHENSTAND + Übergabe
 
-- Branch welle-m-e-baum-wirt, Kopf 4b0fd232, gepusht `[ci voll]`. CI 38474954929 läuft (dazu 38473549071 an a0918e5e).
+- Branch welle-m-e-baum-wirt, Kopf 4b0fd232, gepusht `[ci voll]`. **CI 38474954929 an 4b0fd232 grün, 13/13** (sie deckt a0918e5e mit; dessen
+  eigener Lauf 38473549071 wurde vom neueren Push abgelöst).
   Arbeitsbaum sauber.
 - Werkzeug `p3/k8`: `kinder.cjs` (… · schluessel · abstand), `sitzung-d.sh`, `patch-abstand.cjs`.
