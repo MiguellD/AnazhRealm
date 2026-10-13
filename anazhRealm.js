@@ -29630,11 +29630,7 @@ class AnazhRealm {
                 }
             if (jede)
                 for (let i = 0; i < n; i++) {
-                    // Schutt liegt am HANG: das Gesetz sagt wo, die Fläche muss ein Hang sein (die Rampe der Masche über
-                    // `schuttKandidat` voll, unter der Hälfte nichts) — bis Nachbesserung 3 las jeder flache Vertex im Rahmen
-                    // des Gitters das Band des Gesetzes: 44 % der Boden-Vertices an der Wiese trugen Schutt und den Fein-Term.
-                    const hangW = ss(0.5 * G.schuttKandidat, G.schuttKandidat, 1 - N[3 * i + 1]);
-                    if ((H && H[i] < 1) || !(hangW > 0)) continue;
+                    if (H && H[i] < 1) continue;
                     let u = (P[3 * i] - gx0) / dx,
                         v = (P[3 * i + 2] - gz0) / dz;
                     u = u < 0 ? 0 : u > nx - 1 ? nx - 1 : u;
@@ -29645,7 +29641,7 @@ class AnazhRealm {
                         fv = v - iv;
                     const a = Gw[iv * nx + iu] + (Gw[iv * nx + iu + 1] - Gw[iv * nx + iu]) * fu;
                     const b = Gw[(iv + 1) * nx + iu] + (Gw[(iv + 1) * nx + iu + 1] - Gw[(iv + 1) * nx + iu]) * fu;
-                    SW[i] = (a + (b - a) * fv) * hangW;
+                    SW[i] = a + (b - a) * fv;
                 }
         }
         // Das Gewicht des Stoffs je Vertex: die Höhle, der Fels nach der Steile (dort hält kein Boden) und darunter der Schutt
@@ -33085,8 +33081,11 @@ class AnazhRealm {
             const _rockCol = _felsGrund.mul(_fein);
             // Der Schutthang trägt sein Korn mit dem Gewicht des Schutts im Vertex (`aSchutt`, `_felsStoff`); der Fels dominiert.
             // Wo der Pixel den Stein nicht trägt, bleibt das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich).
+            // Die Steine liegen, wo das Gesetz Schutt sagt, ganz (`aSchutt` / `schutt`): die 15 % Boden im Ton des Vertex tragen
+            // kein eigenes Korn — mit dem Gewicht des Tons (0,85) fehlte dem Hang ein Sechstel seiner Streuung.
             const _kornFern = _T.mix(_T.float(GK.schuttMittel()), _feinV.z, _kornSicht);
-            let _out = albedo.mul(_T.mix(_T.float(1), _kornFern, _screeW.mul(_gRock)));
+            const _kornW = _screeW.div(G.schutt).clamp(0, 1).mul(_gRock);
+            let _out = albedo.mul(_T.mix(_T.float(1), _kornFern, _kornW));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
