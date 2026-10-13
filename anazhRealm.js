@@ -78444,6 +78444,12 @@ class AnazhRealm {
         const f = this._foundry;
         if (!f || !f.ready || f._prefetching) return;
         f._prefetching = true;
+        // DER VORRAT NACH DEM ERSTEN BILD (K30): bis der Ladeschirm weicht (`_weltbildDa`), gehört der Worker den Lesern des
+        // ersten Frames — nahe Bäume, die Streu in Reichweite, die Karten der fernen Bäume. Bis K30 stellte sich der Vorrat
+        // beim Worker-Start vor sie (je Boden-Art jede Gestalt, 10 Wagen, die Siedlungs-Probe), die Streu wartete in seiner
+        // Schlange mit. `_prefetching` bleibt sein Merker (warm = der Vorrat ist durch); der Null-Renderer setzt das Weltbild
+        // beim Renderer-Bau, dort wärmt er sofort.
+        while (!this.state._weltbildDa) await new Promise((r) => setTimeout(r, 200));
         const spec = this._foundryLibrarySpec();
         // Die Stufen je Art kommen aus den Vertrags-Daten (kindStages via get-render-config); die Replies sind
         // winzig und reisen vor den Bakes — ein kurzer Warte-Deckel (~2 s) lässt den Prefetch exakt die

@@ -159,6 +159,14 @@ function ladeschirmVerdict(m) {
                 `der Vorrat bestellt ${v.karten} Karten nach der Buchgröße (${(v.kartenBsp || []).join(", ")}), das erste Weltbild ` +
                     "wartet auf jede (die Karten-Schlange) — die Karte bestellt ihr Leser"
             );
+        if (v.vorBild && v.vorBild.length)
+            out.push(
+                `vor dem ersten Weltbild bestellt der Vorrat ${v.vorBild.length} Aufträge ohne Leser des ersten Frames ` +
+                    `(${v.vorBild.slice(0, 4).join(", ")}${v.vorBild.length > 4 ? ", …" : ""}) — die Leser warten in seiner Schlange`
+            );
+        if (v.ende !== true) out.push("der Vorrat endet nicht (`_prefetching` bleibt an)");
+        else if (!(v.nachBild > 0) && !(v.vorBild && v.vorBild.length))
+            out.push("der Vorrat bestellt nie — die Wagen und die Siedlung bleiben kalt");
         if (!v.streu) out.push("die Streu-Region unter dem Vorrat: keine Probe (Vorbedingung)");
         else if (v.streu.aufgeschoben)
             out.push(
@@ -576,6 +584,9 @@ async function probe(arg) {
                     const vor = r._weltbildFehlt();
                     f._prefetching = false;
                     let lauf = null;
+                    // der Vorrat startet in der Ankunft: das erste Weltbild steht noch nicht
+                    const merkDa = st._weltbildDa;
+                    st._weltbildDa = 0;
                     try {
                         lauf = r._foundryPrefetchLibrary();
                         v.laeuft = f._prefetching === true;
@@ -602,9 +613,16 @@ async function probe(arg) {
                                 map.delete(key);
                             }
                         }
-                        // die Wagen und die Siedlung bestellt er erst nach den Boden-Arten: bis zum Ende mitschreiben
+                        // was er bestellt, solange das erste Weltbild fehlt (die Boden-Arten liegen schon im Speicher, Wagen
+                        // und Siedlung folgen ihnen im nächsten Mikro-Takt) — dann steht das Bild, er wärmt zu Ende
+                        await sleep(600);
+                        const nVor = v.ohneLeser.length;
+                        v.vorBild = v.ohneLeser.concat(v.karten ? [`${v.karten} Karten`] : []);
+                        st._weltbildDa = merkDa || performance.now();
                         if (lauf) await Promise.race([lauf, sleep(60000)]);
+                        v.nachBild = v.ohneLeser.length - nVor;
                     } finally {
+                        if (!st._weltbildDa) st._weltbildDa = merkDa || performance.now();
                         for (const k of Object.keys(alt)) {
                             if (alt[k] === P[k]) delete r[k];
                             else r[k] = alt[k];
@@ -1434,9 +1452,16 @@ async function probe(arg) {
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
-                    vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 } },
+                    vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 } },
                 },
                 [
+                    [
+                        "der Vorrat stellt sich in der Ankunft vor die Leser (K30)",
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 } } },
+                        "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)",
+                    ],
+                    ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat bestellt nie"],
+                    ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat endet nicht"],
                     [
                         "das Tor wartet auf den Vorrat (K30, Grok R11: kalt 25–30 s)",
                         { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: ["die Werkstatt backt vor"], streu: { aufgeschoben: false, zellen: 0 } } },
