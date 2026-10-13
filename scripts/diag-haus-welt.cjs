@@ -70,8 +70,9 @@ const BASIS = {
     // die Natur wirft in den Grundriss, und das Dorf räumt nicht
     grundriss: [
         // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit); seit Schau-2
-        // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss
-        ["const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "const g = false;"],
+        // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss; seit K20
+        // trägt die Wand des Orts (`_ortWand`) den Grundriss für die Natur-Wand und den Solitär
+        ["        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "        return false;"],
         ["if (entry) this._grundrissRaeumen(entry);", ""],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt

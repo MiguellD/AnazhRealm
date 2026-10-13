@@ -36039,7 +36039,13 @@ class AnazhRealm {
             }
         }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
+        // DER GEFÜHLTE BAUM IST DER GEZEICHNETE (K20): zeichnet das Studio einen Baum oder Strauch, trägt das Skelett seiner
+        // Gestalt die Kollision (`_baumGestaltTeile`), nie der Bauplan der Art (ein zweites Individuum: 40 Nadelbäume
+        // ragten 0,55–2,14 m über ihr Bild, der Solitär trug keinen FREISTAND, sein Stamm stand 2,2× dünner als gezeichnet).
+        const baumTeile = this._baumGestaltTeile(entry);
+        if (baumTeile === null) return; // die Gestalt wartet — die Hülle folgt ihr (`_foundryGestaltFor`)
+        const teile = baumTeile || (bp && bp.parts);
+        if (!Array.isArray(teile) || teile.length === 0) return;
         const solidAABBs = [];
         // DIE STAMM-HÜLLE IM WELTMASS (Leben-Schau 07.10., L-Kamera / V-D1): der Studio-Baum steht in der Welt × seiner
         // Welt-Skala (`_foundryWorldScaleMatrix`, 3,4–4,0), sein Stamm-Blocker stand im Vorlagen-Maß — 0,19 m halbe Breite
@@ -36051,7 +36057,7 @@ class AnazhRealm {
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
         const pflanze = this._istNatur(entry);
-        for (const part of bp.parts) {
+        for (const part of teile) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
@@ -36747,6 +36753,46 @@ class AnazhRealm {
                 size: { x: x1 - x0, y: y1, z: z1 - z0 },
             },
         ];
+    }
+
+    // DER GEFÜHLTE BAUM DER GESTALT (K20): zeichnet das Studio einen Baum oder Strauch (Rezept-Art tree/shrub), wächst sein
+    // gefühlter Leib aus DERSELBEN Gestalt wie das Bild — die Gestalt des Eintrags (`_foundryGestaltFor`, V synchron aus dem
+    // Kern wie beim Fels), die Prägung des Orts samt Besteller (`_foundryGestaltOv`: der Solitär trägt FREISTAND), das
+    // Skelett, wie der Worker es baut (`_growTreeBlueprintRich` mit `gestalt`, L0). Gemerkt je Art, Gestalt und Prägung (je
+    // Art höchstens V+1 Gestalten). Rückgabe: die Teile · false = kein Studio-Baum (der Bauplan ist das Bild) · null = die
+    // Gestalt wartet auf ihren Ort (`entry._huelleWartet`; `_foundryGestaltFor` setzt die Hülle, sobald sie steht).
+    _baumGestaltTeile(entry) {
+        if (!entry || typeof entry.type !== "string" || !this._foundryEnabled()) return false;
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const tab = tc && tc.PHYTO_PRESETS;
+        if (!tab) return false;
+        const preset = this._foundryPresetForEntry(entry);
+        const rec = preset ? tab[preset] : null;
+        if (!rec || (rec.kind !== "tree" && rec.kind !== "shrub")) return false;
+        entry._huelleWartet = false; // die eigene Frage löst die Hülle nicht erneut aus
+        entry._huelleG = null;
+        const g = this._foundryGestaltFor(entry, preset, AnazhRealm._studioGestaltenKern(preset));
+        if (!Number.isInteger(g)) {
+            entry._huelleWartet = true;
+            return null;
+        }
+        entry._huelleG = g;
+        const ov = this._foundryGestaltOv(preset, g, entry.studioOv);
+        const k = preset + "|" + g + "|" + (ov ? JSON.stringify(ov) : "");
+        if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
+        let teile = this._baumGestaltMerk.get(k);
+        if (teile === undefined) {
+            // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
+            const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
+                (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
+            );
+            teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
+            this._lastTreeSkeleton = null;
+            if (!Array.isArray(teile) || !teile.length)
+                return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt(" + k + ")");
+            this._baumGestaltMerk.set(k, teile);
+        }
+        return teile;
     }
 
     // Tor-Kollisions-Hülle aus dem Gesetz: Pfosten (beidseitig, jambW·Ordnungen) + Bogen-Schultern
@@ -60151,16 +60197,24 @@ class AnazhRealm {
         const pc = globalThis.__phytoCore;
         if (!pc || typeof pc.treeParams !== "function") return AnazhRealm._kernPflichtBruch("phyto:treeParams");
         const dials = (opts && opts.recipeDials) || art.rec.s;
+        // DIE GESTALT (K20): `opts.gestalt` = { g, ov } — der gefühlte Baum IST der gezeichnete: sein Skelett wächst aus
+        // derselben Gestalt, wie der Worker sie baut (foundry-core `skelettDerGestalt`: Same g, Strom, Ableitung samt
+        // Prägung des Orts, Stufen-Rezept). Ohne Gestalt (Werkstatt, Grammatik-Welt) der Same des Aufrufers.
+        const gestalt = opts && opts.gestalt;
+        let gewachsen = null;
+        if (gestalt) {
+            const tc = globalThis.__terrainCore;
+            if (!tc || typeof tc.skelettDerGestalt !== "function")
+                return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt");
+            gewachsen = tc.skelettDerGestalt(art.id, gestalt.g, lodLevel, gestalt.ov || null);
+            if (!gewachsen) return null;
+        }
         // DAS WELT-MASS (K20): der gefühlte Baum wächst mit der Welt-Skala seiner Art, wie der Wald den gesehenen pflanzt
         // (die EINE Template→Welt-Quelle `_foundryWorldScaleMatrix`, dieselbe Zahl wie der Kern `__weltSkalaArt`) — der
         // Stamm, den die Kollision liest, misst H/hd wie der gezeichnete (vorher der Stamm der Form: Eiche 0,88 statt 0,22 m).
-        const P0 = pc.treeParams(
-            dials,
-            hash >>> 0,
-            lodLevel,
-            art.rec,
-            this._foundryWorldScaleMatrix(art.id).elements[0]
-        );
+        const P0 = gewachsen
+            ? gewachsen.P
+            : pc.treeParams(dials, hash >>> 0, lodLevel, art.rec, this._foundryWorldScaleMatrix(art.id).elements[0]);
         // Die Größenklasse ist ein abgeleitetes Etikett der Ableitung (nur baum_*: Sträucher und Kräuter SIND klein).
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
         let sizeClass;
@@ -60227,7 +60281,8 @@ class AnazhRealm {
             countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
             leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
         });
-        const phyto = this._phytoGrowSkeleton(P, phytoSeq);
+        // die Gestalt trägt ihr gewachsenes Skelett (der Strom des Workers), sonst wächst es hier aus dem Samen
+        const phyto = gewachsen ? gewachsen.nodes : this._phytoGrowSkeleton(P, phytoSeq);
         const trunkBaseR = phyto.trunkR;
         // Trunk-Kette = run 0 + die durchgehende Lead-Nachkommen-Kette. Der Wuchs ist tiefen-zuerst mit dem
         // Lead als children[0] → countCap beschneidet nur Seiten-Äste, NIE die Stammhöhe.
@@ -78989,12 +79044,17 @@ class AnazhRealm {
     }
     // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt die Gestalt seines Orts (`_ortGestaltSame`),
     // sein Same bleibt; null = sie wartet (wie auf ein kaltes Buch). Ein Datensatz ohne Lage trägt den Samen seines Orts schon.
-    _foundryGestaltFor(entry, preset) {
+    // `Vk` (optional) reicht die Gestalten-Zahl des Kerns durch (der gefühlte Baum fragt synchron, `_baumGestaltTeile`). Die
+    // Hülle folgt der Gestalt: wartete sie oder wechselte die Gestalt des Orts, fühlt der Baum neu (`_populateBlockerAABBs`).
+    _foundryGestaltFor(entry, preset, Vk) {
         const p = entry && entry.position;
-        if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);
+        if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);
         const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
         const same = this._ortGestaltSame(p.x, p.z, krone > 0 ? krone * (entry.scale || 1) : 0, entry.seed, preset);
-        return same === null ? null : this._foundryVariantFor(same, preset);
+        const g = same === null ? null : this._foundryVariantFor(same, preset, Vk);
+        if (Number.isInteger(g) && (entry._huelleWartet || (entry._huelleG != null && entry._huelleG !== g)))
+            this._populateBlockerAABBs(entry);
+        return g;
     }
     // Die Gestalten-Zahl einer Art, wie der Wirt sie bedient: die Bestand-Gestalten der Budget-Zeile (sonst '*'), dazu der
     // Solitär einer Baum-Art (`_solitaerVon`: Gestalt V+1); 0 = Buch kalt. Der Vorrat wärmt 1..T, je Gestalt EINE Karte.
@@ -80117,10 +80177,10 @@ class AnazhRealm {
     // FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er selbst). Die Nachbarn reichen
     // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
     // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum. Ein Nachbar steht nur, wo ihn auch der Pflanz-Gang
-    // setzt (`_enqueueVegetationSpawn`): die Wildnis trägt seinen Ort (`_wildnisTraegt`) und die EINE Natur-Wand lässt ihn
-    // durch (`_naturWand`: kein Grundriss, kein Wagen, Land unter dem Fuß) — der Wurf im Haus stand nie (gate:fernwald F:
-    // die Eiche neben einem Haus über ihrem einzigen Nachbarn blieb Bestand). Wer die Antwort merkt, merkt sie am Stand der
-    // Grundrisse (`_grundrissStand`).
+    // setzt (`_enqueueVegetationSpawn`): die Wildnis trägt seinen Ort (`_wildnisTraegt`) und die Wand des Orts lässt ihn durch
+    // (`_ortWand`: kein Grundriss — der Wagen fährt, das Wasser des Gesetzes trägt schon der Dart) — der Wurf im Haus stand nie
+    // (gate:fernwald F: die Eiche neben einem Haus über ihrem einzigen Nachbarn blieb Bestand). Wer die Antwort merkt, merkt sie
+    // am Stand der Grundrisse (`_grundrissStand`).
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;

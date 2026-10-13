@@ -1322,6 +1322,11 @@ function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega
 }
 
 function growTreeNodes(P) {
+    return __wuchsDerStufe(P, typeof __lod === "undefined" ? 0 : __lod, rnd);
+}
+// Der Wuchs eines Rezepts `stufe` aus dem Strom `zufall` (K20: rein, ohne Studio-Globale — der Bau liest ihn über
+// growTreeNodes, der gefühlte Baum über skelettDerGestalt).
+function __wuchsDerStufe(P, stufe, zufall) {
     // DER GETEILTE SAMEN: die Baum-Wuchs-Mathematik (da Vinci Δ · McMahon · Apikaldominanz ·
     // Gravitropismus · Phyllotaxis · Whorls) lebt in phyto-core.js (growSkeleton) — DIESELBE
     // Quelle, die AnazhRealm (Main + Voxel-Worker) liest. Ein Edit am Wuchs-Gesetz fliesst hier
@@ -1336,14 +1341,14 @@ function growTreeNodes(P) {
     if (__core && typeof __core.growSkeleton === "function") {
         // Baum-L1 traegt das Blatt-Budget der L0 (20000 statt 9000): die L1-Krone ist eine Teilmenge der L0-Blaetter
         // (Stride _lf), so haengt ihre Deckung nie davon ab, ob eine Art die Kappe erreicht (Fichte/Tanne taten es).
-        const __gsLBl = typeof __lod === "undefined" ? 0 : __lod;
+        const __gsLBl = stufe;
         // Der Strauch hat kein Rezept 0 (`stufenRezept`): seine Zeile nennt nur die Rezepte 1 und 2 — fehlt das Budget
         // des Rezepts, bricht der Bau laut (kein stiller Rueckfall auf das Kern-Budget 20 000).
         const __gsLB =
             (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__gsLBl]) ||
             (P.kind === "shrub" ? { 1: 1500, 2: 1400 } : [20000, 20000, 7000])[__gsLBl];
         if (!(__gsLB > 0)) throw new Error("[phyto] Blatt-Budget fehlt: " + P.kind + " Rezept " + __gsLBl);
-        const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), rnd);
+        const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), zufall);
         if (__gsR && __gsR.segs && __gsR.segs.length) {
             P._trunkR = __gsR.trunkR;
             P._D = 2 * __gsR.trunkR;
@@ -1708,7 +1713,7 @@ function emitTree(P) {
 }
 function emitTreeRezept(P, stufe) {
     const nodes = growTreeNodes(P);
-    if (P.tot) __totholzSchnitt(nodes, P); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
+    if (P.tot) __totholzSchnitt(nodes, P, SEED); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
     /* FIX v35: LOD = ABLEITUNG AUS L0. Ein Same -> EIN Individuum: das Skelett waechst bei JEDER Stufe identisch
      (gleicher RNG-Strom), niedrigere Stufen entstehen deterministisch daraus — Zweige unter der Radius-Schwelle
      fallen aus der Geometrie (das ist Pipe-Modell-treu: duenn = jung = fern unsichtbar), Blaetter werden per
@@ -3516,11 +3521,11 @@ const WALDBODEN_EMIT = { fern: emitFern, reed: emitSchilf, brush: emitGestruepp,
 // Das Totholz eines stehenden Baums (P.tot): die Krone ist gebrochen (der Stamm endet in der Bruch-Höhe in einem
 // Splitterkranz), das Feinreisig ist abgefallen, kein Laub. Läuft NACH dem Wuchs — das Skelett und der rnd()-Strom
 // sind die eines lebenden Baums derselben Art (FIX v35), die Stufen schneiden dasselbe Individuum.
-function __totholzSchnitt(nodes, P) {
+function __totholzSchnitt(nodes, P, seed) {
     const hB = nodes.height * P.totBruch,
         rMin = (nodes.trunkR || 0.1) * 0.16,
         hsh = (k, n) => {
-            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(SEED);
+            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(seed);
             h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
             return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
         };
@@ -4890,6 +4895,32 @@ function buildInstance(presetId, seed, lod, ov) {
     __dials = sDials;
     return g;
 }
+
+// DAS SKELETT DER GESTALT (K20, rein additiv): der Wuchs eines Baums oder Strauchs, wie buildInstance ihn für
+// (presetId, seed, lod, ov) wächst — dieselben kanonischen Regler, derselbe Same und Strom (RNG = mulberry32(seed)),
+// dieselbe Ableitung samt Prägung, dasselbe Stufen-Rezept und Blatt-Budget, der Totholz-Schnitt —, ohne Geometrie.
+// Der Stamm liest es für den gefühlten Baum (Kollision): er IST der gezeichnete, nie ein zweites Individuum.
+// Rückgabe { P, nodes } (nodes = growTreeNodes: segs · leaves · trunkR · runMeta · schaftHub), null für jede andere Art.
+function skelettDerGestalt(presetId, seed, lod, ov) {
+    const pre = PRESETS[presetId];
+    if (!pre || (pre.kind !== "tree" && pre.kind !== "shrub")) return null;
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.treeParams !== "function" || typeof core.stufenRezept !== "function")
+        throw new Error("phyto-core fehlt — das Skelett der Gestalt wohnt im Gesetzbuch (Ladereihenfolge)");
+    const d = pre.s;
+    const P = core.treeParams(
+        { api: d.api, delta: d.delta, slim: d.slim, trop: d.trop, leaf: d.leaf },
+        seed,
+        lod,
+        pre,
+        __weltSkalaArt(presetId)
+    );
+    if (ov) Object.assign(P, ov);
+    const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
+    if (P.tot) __totholzSchnitt(nodes, P, seed);
+    return { P, nodes };
+}
+__terrainCore.skelettDerGestalt = skelettDerGestalt;
 
 // ════════════════════════════════════════════════════════════════════════════
 // DIE EINE PIPE (V18.458) — DER GATTUNGS-BÄCKER-TISCH.
