@@ -12,7 +12,9 @@
 // Main (`_voxelEditedDensityGrid`, frischer Cache-Schlüssel) und im Worker (`density-grid`) gebaut und Wort für
 // Wort (Float32-Bitmuster) verglichen — zuerst ohne Edits, dann mit zwei Kugeln am ersten Ort: einer Schnitz-Kugel
 // im Oberflächen-Band und einer FÜLL-KUGEL ÜBER dem Band (der Band-Befund des Richters 09.10.: der Main legt die
-// Kugel auf jede Ecke ihres Kastens, der Worker übersprang über dem Band).
+// Kugel auf jede Ecke ihres Kastens, der Worker übersprang über dem Band). Dazu DIE EDIT-WAHRHEIT (K23): 300 Kugeln
+// über den Spielpfad (`carveVoxelSphere`), danach hält der Main alle 300 und die Gitter am Ort und an zwei Nachbarn
+// sind SHA Main = Worker (bis K23 verdrängte der FIFO-Deckel in `_addVoxelEdit` ab Edit 257 still nur im Main).
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
 //   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (die Basis-Höhe + 1 cm,
@@ -191,7 +193,7 @@ async function probe(page, welt, mitAbdruck) {
                 }
                 out.abweichend += z.abweichend;
                 if (!(z.maxDiff <= out.maxDiff)) out.maxDiff = z.maxDiff;
-                if (mitAbdruck) {
+                if (mitAbdruck || tag === "300") {
                     z.shaMain = await hex(main);
                     z.shaWorker = await hex(worker);
                 }
@@ -218,6 +220,88 @@ async function probe(page, welt, mitAbdruck) {
             const zeilenEdit = [];
             for (let lod = 0; lod <= 3; lod++) zeilenEdit.push(await vergleiche(o0, lod, "edits"));
             out.orte.push({ id: o0.id + "+edits", x: o0.x, z: o0.z, zeilen: zeilenEdit });
+            // (3) DIE EDIT-WAHRHEIT (K23): 300 Kugeln über den Spielpfad (`carveVoxelSphere` → `_addVoxelEdit` → das Delta an den
+            // Worker), 20 × 15 im 2-m-Raster über die Chunk-Naht des ersten Orts. Kein Edit fällt still: der Main hält alle 300,
+            // und die Gitter des Orts und seiner zwei Nachbarn sind Main = Worker byte-gleich (SHA je Gitter). Der FIFO-Deckel
+            // (256) verdrängte die ersten 44 nur im Main — der Worker hielt sie: zwei Böden ab Edit 257.
+            s.worldMeta.voxelEdits = [];
+            await r._voxelWorkerSyncState({ op: "state-set" });
+            const N_EDITS = 300;
+            const span0 = r._voxelChunkConfig(0).span;
+            const ex0 = Math.floor(o0.x / span0) * span0 + span0 - 20;
+            const ez0 = Math.floor(o0.z / span0) * span0 + 6;
+            for (let i = 0; i < N_EDITS; i++) {
+                const x = ex0 + (i % 20) * 2;
+                const z = ez0 + Math.floor(i / 20) * 2;
+                r.carveVoxelSphere(x, r._terrainMacroSurfaceY(x, z) - 1, z, 2.5);
+            }
+            out.editWahrheit = { gesetzt: N_EDITS, imMain: s.worldMeta.voxelEdits.length, gitter: [] };
+            const zeilenWahr = [];
+            const nachbarn = [
+                { id: o0.id + "+300", x: ex0, z: ez0 },
+                { id: o0.id + "+300 Ost", x: ex0 + span0, z: ez0 },
+                { id: o0.id + "+300 Süd", x: ex0, z: ez0 + span0 },
+            ];
+            for (const ort of nachbarn) {
+                const zeilen = [];
+                for (let lod = 0; lod <= 3; lod++) {
+                    const z = await vergleiche(ort, lod, "300");
+                    out.editWahrheit.gitter.push({ ort: ort.id, lod, main: z.shaMain, worker: z.shaWorker });
+                    zeilen.push(z);
+                }
+                zeilenWahr.push({ id: ort.id, x: ort.x, z: ort.z, zeilen });
+            }
+            out.orte.push(...zeilenWahr);
+            out.editWahrheit.shaGleich = out.editWahrheit.gitter.filter((g) => g.main === g.worker).length;
+            // KARTE = LISTE: die Edit-Karte (je Chunk) trägt jeden beitragenden Edit — das Gitter über die Karte und über die
+            // ganze Liste sind byte-gleich (LOD 0 an den drei Orten), und 4000 Punkt-Proben im Feld summieren gleich.
+            if (typeof r._voxelEditsImKasten === "function") {
+                const karte = r._voxelEditsImKasten;
+                const liste = function () {
+                    return this.state.worldMeta.voxelEdits;
+                };
+                let gleich = 0;
+                for (const ort of nachbarn) {
+                    const cfg = r._voxelChunkConfig(0);
+                    const cx = Math.floor(ort.x / cfg.span);
+                    const cz = Math.floor(ort.z / cfg.span);
+                    const args = [cx * cfg.span - cfg.step, base - cfg.floorDrop, cz * cfg.span - cfg.step];
+                    const dims = [cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step];
+                    const a = r._voxelEditedDensityGrid(`linse-karte|${cx},${cz}`, ...args, ...dims);
+                    r._voxelEditsImKasten = liste;
+                    const b = r._voxelEditedDensityGrid(`linse-karte|${cx},${cz}`, ...args, ...dims);
+                    r._voxelEditsImKasten = karte;
+                    s.voxelBaseDensityCache.delete(`linse-karte|${cx},${cz}`);
+                    if ((await hex(a)) === (await hex(b))) gleich++;
+                }
+                let punkte = 0;
+                const alle = s.worldMeta.voxelEdits;
+                for (let i = 0; i < 4000; i++) {
+                    const x = ex0 - 4 + ((i * 7919) % 4800) / 100;
+                    const z = ez0 - 4 + ((i * 104729) % 3800) / 100;
+                    const y = r._terrainMacroSurfaceY(x, z) - 1 + ((i % 7) - 3) * 0.6;
+                    let d = 0;
+                    for (const ed of alle) {
+                        const dx = x - ed.x;
+                        const dy = y - ed.y;
+                        const dz = z - ed.z;
+                        const d2 = dx * dx + dy * dy + dz * dz;
+                        if (d2 < ed.r * ed.r) d += (ed.mode === "fill" ? 1 : -1) * (1 - Math.sqrt(d2) / ed.r) * (ed.strength || 48);
+                    }
+                    if (Object.is(d, r._voxelEditDeltaAt(x, y, z)) || d === r._voxelEditDeltaAt(x, y, z)) punkte++;
+                }
+                out.editWahrheit.karteGleich = `${gleich}/${nachbarn.length} Gitter · ${punkte}/4000 Punkte`;
+                if (gleich !== nachbarn.length || punkte !== 4000)
+                    out.befunde.push(`EDIT-KARTE ≠ LISTE: ${out.editWahrheit.karteGleich} — Täter _voxelEditKarte (ein Edit fehlt seinem Chunk)`);
+            }
+            if (out.editWahrheit.imMain !== N_EDITS)
+                out.befunde.push(
+                    `EDIT-WAHRHEIT: der Main hält ${out.editWahrheit.imMain} von ${N_EDITS} Edits — Täter _addVoxelEdit (FIFO-Deckel verdrängt still)`
+                );
+            if (out.editWahrheit.shaGleich !== out.editWahrheit.gitter.length)
+                out.befunde.push(
+                    `EDIT-WAHRHEIT: SHA Main = Worker in ${out.editWahrheit.shaGleich}/${out.editWahrheit.gitter.length} Gittern nach ${N_EDITS} Edits`
+                );
             s.worldMeta.voxelEdits = editsVorher;
             await r._voxelWorkerSyncState({ op: "state-set" });
             // Der Abdruck der Makro-Höhe (64×64, ±852 m, Schritt 27 m — ganzzahlig, f32-exakt) für den Byte-Beweis.
@@ -366,6 +450,12 @@ function zeige(rep) {
                 console.log(
                     `      ✗ L${z.lod}: ${z.abweichend} Ecken, maxDiff ${z.maxDiff} — erste bei (${z.erste.x}|${z.erste.y}|${z.erste.z}) Main ${z.erste.main} ≠ Worker ${z.erste.worker}`
                 );
+    }
+    if (rep.editWahrheit) {
+        const w = rep.editWahrheit;
+        console.log(
+            `    Edit-Wahrheit: ${w.gesetzt} Edits über den Spielpfad, der Main hält ${w.imMain}, SHA Main = Worker in ${w.shaGleich}/${w.gitter.length} Gittern · Karte = Liste ${w.karteGleich || "—"}`
+        );
     }
     for (const b of rep.befunde) console.log("    •", b);
     console.log(

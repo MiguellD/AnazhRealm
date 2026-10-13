@@ -12,13 +12,18 @@
 //                 scheitert (signaling-server aus), heilte nie. Probe: Server beim Aufbau 3 s aus, dann an; Rejoin
 //                 ≤ 31 s (Backoff-Deckel 30 s + Jitter). Täter, wenn ROT: der Rejoin liest eine Absicht, die die Tür
 //                 nie setzte.
+//   (c) GRABEN    das Chat-Graben reist (K23): A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
+//                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
+//                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
 // Ort (±0,3 m waagrecht); die Latenz (A bewegt sich → B sieht es) wird berichtet.
 // Konsum-Leser: `_p2pUpdatePeer` (zeichnet den Peer je Takt) und der close-Zweig von `initP2PSync` (plant den Rejoin).
 //
-// Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT.
+// Selbsttest (`--selftest`): die alte Tür wieder eingesetzt (initP2PSync lässt `enabled`, wie es war) → (b) ROT. Der
+// Selbsttest von (c) läuft im Hauptlauf gleich nach (c): B wendet jede Graben-Nachricht doppelt an (`_p2pMsgDsl` zweimal)
+// → (c) ROT an der Länge; die erste Fassung aus K23 fragte nur „jeder Edit von A auch bei B“ und blieb dabei grün.
 // Ports: MP_SYNC_PORT (save-server, Default 4312), MP_SYNC_SIGNAL_PORT (signaling, Default 4313). `--roh <datei>`
 // schreibt die Zahlen als JSON.
 //
@@ -43,6 +48,8 @@ const ROH = (() => {
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 const LATENZ_MS = 150;
+// Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
+const GRABEN_NACHLAUF_MS = 800;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -415,6 +422,100 @@ function bericht(p) {
         );
         if (!process.env.CI && latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, latenz <= LATENZ_MS, `${latenz} ms`);
+
+        // ── (c) DAS CHAT-GRABEN REIST (K23) ──
+        // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss
+        // GENAU dieselben zwei Edits tragen (Ort, Radius, Art), wie bei jedem Graben mit der Hand — keiner fehlt, keiner
+        // doppelt. Täter, wenn einer fehlt: `_chatTryVoxelDebugCommand` schnitzt direkt (carveVoxelSphere/fillVoxelSphere)
+        // statt über dslRun, das broadcastet; wenn B mehr trägt: der Empfang wendet eine Graben-Nachricht mehrfach an.
+        const editsVon = (p) =>
+            p.evaluate(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).map((e) => ({ ...e })));
+        const chatGraben = async () => {
+            const vorA = (await editsVon(pageA)).length;
+            const vorB = (await editsVon(pageB)).length;
+            await pageA.bringToFront();
+            for (const satz of ["voxel carve", "voxel fill"]) {
+                await pageA.keyboard.press("Enter");
+                await sleep(150);
+                // Öffnete die Taste das Feld nicht (der Zeiger-Fang nach dem ersten Senden), klickt der Spieler hinein.
+                const offen = await pageA.evaluate(
+                    () => document.activeElement && document.activeElement.id === "chat-input"
+                );
+                if (!offen) await pageA.click("#chat-input");
+                // Der Voxel-Befehl lässt seinen Satz im Feld stehen (Wiederholung mit Enter): der Spieler markiert ihn und tippt neu.
+                await pageA.keyboard.down("Control");
+                await pageA.keyboard.press("KeyA");
+                await pageA.keyboard.up("Control");
+                await pageA.keyboard.type(satz);
+                await pageA.keyboard.press("Enter");
+                await sleep(300);
+            }
+            const neuA = (await editsVon(pageA)).slice(vorA);
+            const zaehle = (neuB) =>
+                neuA.filter((a) =>
+                    neuB.some(
+                        (b) =>
+                            b.mode === a.mode &&
+                            b.r === a.r &&
+                            Math.abs(b.x - a.x) < 1e-6 &&
+                            Math.abs(b.y - a.y) < 1e-6 &&
+                            Math.abs(b.z - a.z) < 1e-6
+                    )
+                ).length;
+            let neuB = [];
+            const tGrab = Date.now();
+            while (Date.now() - tGrab < 6000) {
+                neuB = (await editsVon(pageB)).slice(vorB);
+                if (neuA.length > 0 && zaehle(neuB) === neuA.length) break;
+                await sleep(150);
+            }
+            await sleep(GRABEN_NACHLAUF_MS);
+            neuB = (await editsVon(pageB)).slice(vorB);
+            return { neuA, neuB, gleich: zaehle(neuB) };
+        };
+        // Das Urteil: jeder Edit von A bei B UND B trägt keinen mehr — ohne die Länge bliebe eine Doppel-Anwendung grün.
+        const grabenGleich = (g) => g.neuA.length === 2 && g.gleich === g.neuA.length && g.neuB.length === 2;
+        const graben = await chatGraben();
+        roh.chatGraben = graben;
+        check(
+            "A gräbt und schüttet per Chat (zwei Edits bei A)",
+            graben.neuA.length === 2,
+            `${graben.neuA.length} Edits bei A`
+        );
+        check(
+            "(c) B sieht das Chat-Graben (genau dieselben Edits wie A, keiner doppelt)",
+            grabenGleich(graben),
+            `${graben.gleich}/${graben.neuA.length} bei B, B trägt ${graben.neuB.length} neue` +
+                (graben.gleich < graben.neuA.length
+                    ? " — Täter _chatTryVoxelDebugCommand: schnitzt direkt statt über dslRun (kein Broadcast)"
+                    : graben.neuB.length > graben.neuA.length
+                      ? " — Täter: B wendet eine Graben-Nachricht mehrfach an (Empfang _p2pMsgDsl → dslRun je Ankunft)"
+                      : "")
+        );
+        // Der Selbsttest von (c): B wendet jede DSL-Nachricht doppelt an — (c) muss ROT werden, und zwar an der Länge
+        // (die alte Probe, nur „jeder Edit von A auch bei B“, bleibt dabei grün). Danach trägt B wieder den echten Empfang.
+        await pageB.evaluate(() => {
+            const r = window.anazhRealm;
+            const echt = r._p2pMsgDsl;
+            window.__mpDslEcht = echt;
+            r._p2pMsgDsl = function (msg, p2p) {
+                echt.call(this, msg, p2p);
+                return echt.call(this, msg, p2p);
+            };
+        });
+        const doppelt = await chatGraben();
+        await pageB.evaluate(() => {
+            window.anazhRealm._p2pMsgDsl = window.__mpDslEcht;
+            delete window.__mpDslEcht;
+        });
+        roh.chatGrabenDoppelt = doppelt;
+        const altGruen = doppelt.neuA.length === 2 && doppelt.gleich === doppelt.neuA.length;
+        check(
+            "(c) Selbsttest: eine doppelt angewendete Graben-Nachricht macht (c) ROT",
+            altGruen && !grabenGleich(doppelt),
+            `B trägt ${doppelt.neuB.length} neue für ${doppelt.neuA.length} von A (${doppelt.gleich}/${doppelt.neuA.length} gefunden)` +
+                ` — (c) ${grabenGleich(doppelt) ? "GRÜN, die Linse ist blind" : "ROT"}, die alte Probe ${altGruen ? "grün" : "rot"}`
+        );
 
         // ── (a) URSPRUNG ──
         const endA = await bericht(pageA);

@@ -86,7 +86,7 @@ const PROXY_ALLOWED_HEADER_PREFIXES = [
 //     worlds/<id>/ bleiben (path.join + startsWith-Prüfung)
 //   - Endung-Whitelist (nur Text — html/js/css/json/...); kein .sh/.exe
 //   - Deckel: Datei-Anzahl, je-Datei-Bytes, Gesamt-Bytes, roher Request
-//   - NIE wird etwas ausgeführt — nur fs.writeFileSync (reines Schreiben)
+//   - NIE wird etwas ausgeführt — nur `schreibeGanzSync` (reines Schreiben, je Datei tmp + rename)
 // Die Limits müssen mit anazhRealm.js (AnazhRealm.VENDOR_LIMITS) übereinstimmen.
 const VENDOR_MAX_FILES = 64;
 const VENDOR_MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MiB je Datei
@@ -473,8 +473,7 @@ function applyVendorBundle(worldId, files) {
         fs.mkdirSync(worldDir, { recursive: true });
         for (const c of clean) {
             fs.mkdirSync(path.dirname(c.target), { recursive: true });
-            if (c.isB64) fs.writeFileSync(c.target, c.content);
-            else fs.writeFileSync(c.target, c.content, "utf8");
+            schreibeGanzSync(c.target, c.content);
         }
     } catch (e) {
         return { status: 500, body: { error: "Vendor write failed", details: e.message } };
@@ -880,6 +879,65 @@ function sendStaticFile(req, res) {
     });
 }
 
+// DAS GANZE SCHREIBEN (K23): eine Datei des Servers wechselt nur GANZ. Der neue Inhalt geht in eine tmp-Datei daneben
+// (geflusht), mit `mitBak` wird der bisherige Stand als `<ziel>.bak` gesichert (selbst über tmp + rename), dann ersetzt
+// EIN rename das Ziel. Ein Absturz an jeder Stelle lässt den alten oder den neuen Stand ganz (gate:persistence (S): der
+// Tod an jedem Schreib-Punkt). Je Ziel EINE Schlange: zwei Saves zugleich schreiben nacheinander, der .bak hält den
+// Stand vor dem letzten. Bis K23 schrieb `fs.writeFile` direkt aufs Ziel — ein Absturz mittendrin zerriss den Stand.
+const _schreibSchlangen = new Map();
+let _schreibNr = 0;
+const { setTimeout: warte } = require("timers/promises");
+const _UMBENENN_VERSUCHE = 5;
+async function umbenenne(von, nach) {
+    // Windows: ein Leser (Virenscanner, Editor) hält das Ziel kurz offen → EPERM/EBUSY; nach einer Pause erneut.
+    for (let i = 1; ; i++) {
+        try {
+            return await fs.promises.rename(von, nach);
+        } catch (e) {
+            if (i >= _UMBENENN_VERSUCHE || !["EPERM", "EBUSY", "EACCES"].includes(e.code)) throw e;
+            await warte(40 * i);
+        }
+    }
+}
+function schreibeGanz(ziel, text, mitBak) {
+    const vorher = _schreibSchlangen.get(ziel) || Promise.resolve();
+    const lauf = vorher
+        .catch(() => {})
+        .then(async () => {
+            const nr = ++_schreibNr;
+            const tmp = `${ziel}.${process.pid}.${nr}.tmp`;
+            try {
+                await fs.promises.writeFile(tmp, text, { encoding: "utf8", flush: true });
+                if (mitBak && fs.existsSync(ziel)) {
+                    const bakTmp = `${ziel}.bak.${process.pid}.${nr}.tmp`;
+                    await fs.promises.copyFile(ziel, bakTmp);
+                    await umbenenne(bakTmp, `${ziel}.bak`);
+                }
+                await umbenenne(tmp, ziel);
+            } catch (e) {
+                await fs.promises.rm(tmp, { force: true }).catch(() => {});
+                throw e;
+            }
+        });
+    _schreibSchlangen.set(ziel, lauf);
+    lauf.then(
+        () => _schreibSchlangen.get(ziel) === lauf && _schreibSchlangen.delete(ziel),
+        () => _schreibSchlangen.get(ziel) === lauf && _schreibSchlangen.delete(ziel)
+    );
+    return lauf;
+}
+// Die Sync-Form für den Welt-Import (`vendor`): je Datei tmp + rename, geflusht.
+function schreibeGanzSync(ziel, inhalt) {
+    const tmp = `${ziel}.${process.pid}.${++_schreibNr}.tmp`;
+    try {
+        fs.writeFileSync(tmp, inhalt, typeof inhalt === "string" ? { encoding: "utf8", flush: true } : { flush: true });
+        fs.renameSync(tmp, ziel);
+    } catch (e) {
+        fs.rmSync(tmp, { force: true });
+        throw e;
+    }
+}
+
 function handleSaveState(req, res) {
     let rawBody = "";
     req.on("data", (chunk) => {
@@ -906,13 +964,10 @@ function handleSaveState(req, res) {
                 return;
             }
 
-            fs.writeFile(targetPath, JSON.stringify(state, null, 2), "utf8", (err) => {
-                if (err) {
-                    sendJson(res, 500, { error: "Write failed", details: err.message });
-                    return;
-                }
-                sendJson(res, 200, { ok: true, path: targetPath });
-            });
+            schreibeGanz(targetPath, JSON.stringify(state, null, 2), true).then(
+                () => sendJson(res, 200, { ok: true, path: targetPath }),
+                (err) => sendJson(res, 500, { error: "Write failed", details: err.message })
+            );
         } catch (error) {
             sendJson(res, 400, { error: "Invalid JSON", details: error.message });
         }
@@ -959,13 +1014,10 @@ function handlePerfTrace(req, res) {
             sendJson(res, 403, { error: "Forbidden target path" });
             return;
         }
-        fs.writeFile(targetPath, JSON.stringify(trace, null, 2), "utf8", (err) => {
-            if (err) {
-                sendJson(res, 500, { error: "Write failed", details: err.message });
-                return;
-            }
-            sendJson(res, 200, { ok: true, path: targetPath });
-        });
+        schreibeGanz(targetPath, JSON.stringify(trace, null, 2), false).then(
+            () => sendJson(res, 200, { ok: true, path: targetPath }),
+            (err) => sendJson(res, 500, { error: "Write failed", details: err.message })
+        );
     });
     req.on("error", (err) => {
         if (!aborted) sendJson(res, 400, { error: "Request stream error", details: err.message });
