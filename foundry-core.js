@@ -1396,6 +1396,14 @@ function pushJointSphere(arr, pos, r, col, sway) {
     arr.push(g);
 }
 
+// DER WURZEL-ANLAUF (K20, 13.10.): an der Oberfläche läuft die Primär-Wurzel nur im Anlauf des Stamms (`stammRadien`
+// Stamm-Radien um die Achse) — dort flacht sie ab und folgt dem Boden; jenseits taucht sie ab (`abtauchen`, die Neigung je
+// Schritt wie über dem Boden, verdoppelt). Befund (Werkbank, Radeon, Strahl auf den Strich): die dünnen dunklen Striche am
+// Boden neben den Stammfüßen waren die Tannen-Wurzel `f:tanne|1|1` — 4,6 m vom Fuß 0,58 m unter der Vorlagen-Ebene, der
+// Hang zum Wasser 2,1 m tiefer, also 1,5 m über dem Ufer. Die Reichweite misst an der Baum-Höhe (0,3 H · spread), der
+// Querschnitt am Stamm: mit dem Welt-Maß (H/D 70–89) lief die Wurzel 0,37 H flach (Tanne 9,5 m, Mammut 17 m) und trat auf
+// jedem Hang über 9–15 % aus dem Boden.
+const WURZEL_ANLAUF = { stammRadien: 3, abtauchen: 1.2 };
 function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
     rt = rt || { dive: 0.6, wob: 0.4, nb: 2 };
     if (depth > 4 || radius < P._trunkR * 0.05 || len < 0.1) return;
@@ -1404,14 +1412,16 @@ function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
         d = vnorm(dir.slice());
     const rings = [{ c: p.slice(), r: radius, sway: 0, depth: 1 }];
     let seekT = rnd() * 6.28;
+    const anlaufR = P._trunkR * WURZEL_ANLAUF.stammRadien;
     for (let i = 0; i < STEPS; i++) {
         const f = i / STEPS;
+        const imAnlauf = p[0] * p[0] + p[2] * p[2] < anlaufR * anlaufR;
         let vb;
         if (depth === 0) {
-            vb = p[1] > P._trunkR * 0.16 ? 0.55 : lerp(0.1, rt.dive, f);
+            vb = p[1] > P._trunkR * 0.16 ? 0.55 : imAnlauf ? lerp(0.1, rt.dive, f) : WURZEL_ANLAUF.abtauchen;
         } else vb = 0.3 + depth * 0.12; // arttypische Abtauchtiefe (Flach- vs Tiefwurzler)
         d = vnorm(vadd(d, [0, -vb * 0.5, 0]));
-        if (depth === 0 && p[1] < P._trunkR * 0.16) {
+        if (depth === 0 && imAnlauf && p[1] < P._trunkR * 0.16) {
             d[1] *= 0.45;
             d = vnorm(d);
         } // an der Oberflaeche abflachen -> folgt dem Boden
@@ -1474,14 +1484,17 @@ function emitRoots(P) {
             (__lod === 1 || L0Baum) && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
         // Die Baum-L0 (S7): ohne ihre Verzweigungen endete der Primaerstrang stumpf ueber dem Boden (eine
         // Schnittflaeche von halbem Wurzel-Radius) — er laeuft in seiner Richtung weiter und taucht ab: zwei Ringe je eine
-        // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden.
+        // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden. Nie steigt sie dabei (K20,
+        // WURZEL_ANLAUF): das Ende der abgetauchten Wurzel liegt tief, ihre Ringe stiegen von dort zurueck auf ein Drittel
+        // der Tiefe und traten am Hang aus (Fichte-L0 auf 20 % Hang sichtbar bis 6,4 m) — unter dem Boden bleibt die
+        // Fortsetzung in der Tiefe ihres Endes; ueber dem Boden ist sie die alte.
         if (L0Baum && R.length > 1) {
             const a = R[R.length - 2],
                 b = R[R.length - 1],
                 d = vsub(b.c, a.c);
             ringe = ringe.concat([
-                { c: [b.c[0] + d[0], b.c[1] * 0.35, b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
-                { c: [b.c[0] + 2 * d[0], -1.2 * b.r, b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
+                { c: [b.c[0] + d[0], Math.min(b.c[1] * 0.35, b.c[1]), b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
+                { c: [b.c[0] + 2 * d[0], Math.min(-1.2 * b.r, b.c[1] - 1.2 * b.r), b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
             ]);
         }
         // Die Baum-L1 (S3): die Primaer-Wurzel in der Radial-Teilung der L2 — ab 12 m liegt ihr Bild im Boden und in der
