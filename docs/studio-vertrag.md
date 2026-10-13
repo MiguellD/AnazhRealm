@@ -81,7 +81,8 @@ Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
   `schatten`) und trägt die Fernform (`fernform: "huelle"`: ihre Liste reist als Beipack `__fern` in der Hüllen-Form N5).
   Ihr Stoff ist der EINE Schatten-Stoff (`material.userData.__stoff = "schatten"` — die Brücke reicht ihn als kind
   `schatten`, dieselbe Material-Identität wie der Schatten-Teil der Baum-L1; jede Ecke `aDeckt` 1). Eine Stufe 3 ohne
-  `nurWurf` ist rot (`gate:studio-vertrag`). Träger: fachwerk `haus` [0,1,2,3] und `ausstattung` [0,1,3].
+  `nurWurf` ist rot (`gate:studio-vertrag`). Träger: fachwerk `haus` [0,1,2,3] und `ausstattung` [0,1,3], porta `gate`
+  [0,3] (1110-9: die gezeigte Stufe 0 wirft nicht mehr selbst — die Karten-Linse zählt NUR-WURF-Stufen nicht als gezeigt).
 - Byte-Beweis: die eingefrorenen Vertrags-Fixtures (`spec/asset-contract/`,
   sha256-Goldens, NIE regenerieren) — jede Domäne bekommt ihren Ordner
   (v1 Pflanzen · v2 Kreatur-Haut · v3 Fahrzeuge · v4 Tore …).
@@ -106,6 +107,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   selbst), nie `karte`. Der Satz-Bau des Wirts legt ihren Zwilling in den Wurf-Satz `bauWurf` seines Schatten-Stoffs
   (`_bauSatzArt`: EIN Befehl je Kaskade für jeden Werfer, im Hauptbild keiner — `gate:chunk-satz` (l)). Haus: Stufe 3 ≤ 96
   Dreiecke in 1 Draw; Ausstattung ≤ 48 (die Feuerstelle ≤ 32) — `gate:haus-fern` misst Kosten und Form.
+  **Die Kosten-Regel des Wurfs (1110-9, generisch je Art mit NUR-WURF-Stufe):** geworfen wird von der billigeren Stufe —
+  der Wirt nimmt den Zwilling der NUR-WURF-Stufe nur, wo er weniger Dreiecke wirft als die werfenden Teile der gezeigten
+  Stufe, sonst wirft sie selbst (`_wurfVonBilligerer` in `_foundryFlattenFor`; die Zeile der Stufe 3 ist das Rezept-Maß,
+  am Regler-Rand richtet die Regel — `gate:regler-wirkt` WURF nennt dort Stufe und Kosten).
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
   `false` wirft nicht) und für die Nah-Wiese, die Gelenk-Gestalt liest sie über `_ofenZeile` (den Leser von
@@ -211,7 +216,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Hüllen-Form N5 — PFLICHT dann eine Stufe mit `nurWurf`, und ihr Bau trägt den Beipack `__fern`; der EINE Host-Leser
   `_huelleVon` legt die Teile in den Welt-March (`_archFoundryZiegel`), fail-closed: fehlt `__fern`, bricht die Art
   (KERN-PFLICHT), nie ein Box-Fit-Rückfall; die Streu trägt `huelle` nicht und bricht laut). foundry-core: tree/shrub
-  `karte` · flower/rock `gesetz` · grass `boden`; fachwerk: haus/ausstattung `huelle`.
+  `karte` · flower/rock `gesetz` · grass `boden`; fachwerk: haus/ausstattung `huelle`; porta: gate `huelle` (1110-9, vorher
+  `gesetz` — der Box-Fit der Stufe 0).
   **Die Haus-Karte ist FINAL GESTRICHEN** (S3, E7): das Befehle-Ziel (karten 37 → ≤ 2) trägt seit W6 der Bau-Satz, eine
   Karte zeigte bei 26–64 m Parallaxe; die Fernstufe des Hauses ist die grundriss-treue L2, jenseits 64 m die Hülle. Kein Builder liest sie. Pflicht am Konsum: der Host-Leser
   (`_foundryFernForm`) liest sie im Zellen-Chokepoint VOR jedem Mesh-Zug und bricht fail-closed
@@ -348,10 +354,13 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   (0..1, fehlt = 0) schneidet die zwei Stirnen quer zum First mit derselben Neigung: von (1 − walm) der Höhe an der Stirn
   bis zum First, der um walm × Tiefe kürzer wird (walm 1 über einem Quadrat: die Pyramide).
 - `kapsel`: die Strecke `a → b` mit Radius `r` (Kuppel, Rundbau, Zwiebel).
-- `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle`: `"fest"` (die Kollision), `"sicht"` (das
-  Fernbild) oder `"beide"`.
+- `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle` trennt die Leser der EINEN Liste: `"fest"`
+  (die Kollision), `"sicht"` (das Fernbild des Welt-March — höchstens 24 Teile je Liste, die Kosten-Grenze: je Pixel
+  läuft der March über alle Teile seines Eintrags), `"wurf"` (nur die NUR-WURF-Stufe: ihr Gitter ist die GANZE Liste, der
+  March liest das Teil nie — das Tor, 1110-9: das Geflecht als Band, Steine, Hölzer) oder `"beide"` (fest und sicht).
 - **EINE Quelle je Gesetzbuch:** die reine Kern-Funktion `huelle(rezeptId, seed, ov)` (fachwerk: der grundriss-treue
-  Fernkörper `koerperListe`, die Ausstattung aus ihrer Grundform); dieselbe Liste trägt die NUR-WURF-Stufe als Beipack
+  Fernkörper `koerperListe`, die Ausstattung aus ihrer Grundform, das Tor aus `buildGate`, das sie im selben Lauf wie
+  seine Meshes sammelt); dieselbe Liste trägt die NUR-WURF-Stufe als Beipack
   `__fern`, und ihr Gitter IST diese Liste. Die Kollision (`__huelle`, Welle L) trägt dieselbe Form (rolle `fest`).
 - **EIN Transport:** die Beipack-Karte der Foundry-Antwort (`FOUNDRY_BEIPACK`: `__huelle` → `huelle`, `__fern` → `fern`
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
@@ -361,7 +370,8 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
   `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
   ihn, fail-closed (KERN-PFLICHT).
-- Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
+- Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:tor-fern` (das Tor: Fernbild ≤ 24 sicht-Teile ohne
+  wurf-Teil durch den EINEN Leser, Wurf-Deckung, innen — über die Regler-Hülle), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
   (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).
 
 ### B3 — PLACEMENT (SOLL)

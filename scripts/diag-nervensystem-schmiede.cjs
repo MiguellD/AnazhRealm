@@ -576,7 +576,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", out.b.ksWeapon === "[0]", String(out.b.ksWeapon));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
     check("B: vehicle-kindStages UNANGETASTET ([0])", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
-    check("B: gate-kindStages UNANGETASTET ([0])", out.b.ksGate === "[0]", String(out.b.ksGate));
+    check("B: gate-kindStages UNANGETASTET ([0,3] — die NUR-WURF-Stufe 3, 1110-9)", out.b.ksGate === "[0,3]", String(out.b.ksGate));
     check(
         "D: Auto-Blueprint klinge_langschwert registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 2,
