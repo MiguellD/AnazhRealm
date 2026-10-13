@@ -184,8 +184,18 @@ function urteil(z) {
         v.push(
             `RAHMEN-ZIEL: ${rahmenErrors.length - erwartet} ERROR-Zeile(n) von \`_rahmenZielAbschied\` außerhalb der Drift-Probe: ${rahmenErrors[0]}`
         );
-    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x))) v.push(`KONSOLE: ${t}`);
+    // (a) DER ERZWUNGENE BRUCH (K22): der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
+    // (`_loopRender` → `_stoffBruch`, ERROR „STOFF: die Post-Kette …" mit der Ursache) — GENAU EINMAL; still (0) ist rot,
+    // ein zweiter ist rot. Bis zur Nachbesserung 2 zählte die Konsolen-Wand ihn als fremd (die CI voll 6/11 rot).
+    const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
     const fang = schritte.find((s) => s.name === "Render-Fehler");
+    const erzwungen = (z.konsolenFehler || []).filter((x) => ERZWUNGEN.test(x));
+    if (fang && erzwungen.length !== 1)
+        v.push(
+            `WEICHE: der erzwungene Render-Fehler der Kette meldet ${erzwungen.length}× „STOFF: die Post-Kette …" (Soll genau 1 — ${erzwungen.length ? "doppelt" : "er bricht STILL"})`
+        );
+    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x) && !ERZWUNGEN.test(x)))
+        v.push(`KONSOLE: ${t}`);
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
     if (z.seitenFehler && z.seitenFehler.length)
         v.push(`SEITE: ${z.seitenFehler.length} Seiten-Fehler: ${z.seitenFehler[0]}`);
@@ -237,6 +247,7 @@ function selbsttest() {
             fehler: ["RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt"],
         },
         konsolenFehler: [
+            "[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — gate:post-kette — erzwungener Render-Fehler der Kette",
             "[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
         ],
         seitenFehler: [],
@@ -316,6 +327,21 @@ function selbsttest() {
             name: "ERROR von _rahmenZielAbschied außerhalb der Drift",
             z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)")),
             muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
+        },
+        {
+            name: "der erzwungene Render-Fehler bricht still",
+            z: mit((z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x)))),
+            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/,
+        },
+        {
+            name: "der erzwungene Render-Fehler bricht doppelt",
+            z: mit((z) => z.konsolenFehler.push(z.konsolenFehler[0])),
+            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/,
+        },
+        {
+            name: "ein fremder Stoff-Bruch der Seite",
+            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt")),
+            muss: /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/,
         },
         {
             name: "eine fremde ERROR-Zeile der Seite",

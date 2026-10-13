@@ -1841,6 +1841,13 @@ function scanNormalWand(srcRoh) {
 // _foundryPrefetchLibrary · _tryWorkerWaterSheet · _workshopBuildSkeletonPreviewGroup · _workshopStudioPreviewFrom; die
 // Fragen an Stoff-Bauer fallen (_buildPbrNodeMaterial Saison · Tag-Licht · Flatten, _applyVegetationResponse LOD-Satz).
 // Bewusst bleibt EIN Zweig ohne Seite: `_blattAtlasProbe` gibt ohne document null, seine drei Leser stehen benannt.
+// DIE NACHBESSERUNG 2 (13.10., am Kopf 23d29378 ROT mit 8 Fängen + 2 der Drossel): die Hülle endete nach zwei Ruf-Gliedern
+// und lief zugleich über Abgelegtes (UI-Räume, Hörer: der Chat und P2P „bauten" über die Kreatur-Aura); „laut" hieß
+// „irgendein Satz bricht". Jetzt: die Hülle ist ein Fixpunkt über das, was IM Versuch läuft, der Studio-Faden zählt
+// (`_ensureAssetFoundry` startet ihn, seine Antwort baut), und JEDER Pfad muss brechen. Laut brechen jetzt
+// _buildHumanGroup (Not-Körper) · _foundryPrefetchLibrary (Karte) · _ensurePortalPreview · _portalApproachPrefetch ·
+// _ensureAssetFoundry ×2 (es gibt keinen Alt-Pfad); generateNewWorld und der Loop fangen ihren Ruf nicht mehr; die Drossel
+// des Loops (`_loopErrorBoundary`) meldet jeden NEUEN Fehler und steht als Zweig mit ihrem Bild.
 const OHNE_SEITE =
     "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
     "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
@@ -1872,6 +1879,23 @@ const STOFF_ZWEIGE = [
         anker: "_atl = this._blattAtlasProbe",
         grund: OHNE_SEITE,
         bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
+    },
+    // DIE DROSSEL DES LOOPS (V18.278, K22 Nachbesserung 2): `_loopErrorBoundary` meldet jeden NEUEN Frame-Fehler sofort
+    // ERROR und zählt nur dieselbe Meldung wieder bis 2 s still (`_loopErrorCount`) — ihr Zählpfad ist der einzige, der
+    // nicht bricht, und er trägt das Bild: die Welt zeichnet nach dem Fehler weiter, statt zu erstarren
+    {
+        methode: "startEternalLoop",
+        art: "Fang",
+        anker: "Ein Frame-Fehler erstarrt die Welt NICHT mehr",
+        grund: "die Drossel: jeder neue Frame-Fehler ERROR, dieselbe Meldung wieder zählt bis 2 s (`_loopErrorCount`)",
+        bild: "der nächste Frame zeichnet die Welt (kein Standbild); playtest V18.278 (loopSurvivesThrow · errorCounted)",
+    },
+    {
+        methode: "startEternalLoop",
+        art: "Fang",
+        anker: "catch { this._loopErrorBoundary(err); } — der Versuch ruft applyPlayerSoul",
+        grund: "die Drossel des verzögerten Avatar-Baus: derselbe Melder wie der Frame (`_loopErrorBoundary`)",
+        bild: "die Welt zeichnet weiter, der Avatar-Bau meldet seinen eigenen Bruch (`_buildHumanGroup` → Not-Körper, ERROR)",
     },
 ];
 // DER RENDER-BAU (K22 Nachbesserung): was ein try VERSUCHT (sein Block, bei `promise.catch` die Kette davor), nie was sein
@@ -1910,12 +1934,33 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         n.callee.property.name === "catch" &&
         n.arguments.length >= 1 &&
         /Function/.test(n.arguments[0].type);
-    // der Versuch ohne seine Fänge: catch-Rümpfe und Promise-Rückrufe zählen nie zum Bau
+    // AUFGESCHOBEN läuft, was der Versuch nur ablegt: eine Funktion als Wert eines Objekts (`{ render: () => … }`), an ein
+    // Glied gehängt (`el.onclick = () => …`) oder einem Zeitgeber/Hörer übergeben (rAF, setTimeout, addEventListener …) —
+    // sie läuft nach dem Versuch, ihr Fehler erreicht seinen catch nie (die Hülle lief über die UI-Räume vom Chat in die
+    // Kreatur-Aura). Eine Funktion als Argument (forEach, map, then …) oder in einer Variable läuft im Versuch.
+    const ZEITGEBER =
+        /^(setTimeout|setInterval|requestAnimationFrame|requestIdleCallback|queueMicrotask|addEventListener|on|once)$/;
+    const aufgeschoben = (c, el) => {
+        if (!/Function/.test(c.type) || !el) return false;
+        if (el.type === "Property" && el.value === c) return true;
+        if (el.type === "MethodDefinition" || el.type === "PropertyDefinition") return true;
+        if (el.type === "AssignmentExpression" && el.right === c && el.left.type === "MemberExpression") return true;
+        if ((el.type === "CallExpression" || el.type === "NewExpression") && el.arguments.includes(c)) {
+            const k = el.callee;
+            const name =
+                k.type === "Identifier" ? k.name : k.type === "MemberExpression" && !k.computed ? k.property.name : "";
+            return ZEITGEBER.test(name);
+        }
+        return false;
+    };
+    // der Versuch ohne seine Fänge: catch-Rümpfe und Promise-Rückrufe zählen nie zum Bau, Aufgeschobenes läuft nicht in ihm
     const geheVersuch = (n, f) => {
         f(n);
         if (n.type === "CatchClause") return;
         if (istPromiseFang(n)) return geheVersuch(n.callee.object, f);
-        kinder(n, (c) => geheVersuch(c, f));
+        kinder(n, (c) => {
+            if (!aufgeschoben(c, n)) geheVersuch(c, f);
+        });
     };
     const kurz = (n) => srcRoh.slice(n.start, n.end).replace(/\s+/g, " ").slice(0, 90);
     const funde = [];
@@ -2035,30 +2080,95 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         });
         return s;
     };
-    const bauer0 = new Map(); // Methode → was sie direkt baut
-    for (const m of methoden) {
-        const h = baut(m.value, name2al.get(m));
-        if (h) bauer0.set(nameVon(m), h);
-    }
-    const bauer1 = new Map(); // Methode → der Bauer, den sie ruft
+    // DIE HÜLLE: jede Methode, die den Render-Graphen baut — direkt oder über JEDES Ruf-Glied (Fixpunkt, keine Tiefe:
+    // bis zur Nachbesserung 2 endete sie nach zwei Gliedern, und ein Bauer drei Glieder tief ließ den Fang still).
+    // DER STUDIO-FADEN: wer einen Worker startet, dessen Antwort (`onmessage`) einen Bauer ruft, baut den Render-Graphen
+    // mit — der Faden ist seine Quelle (die Foundry: ohne Faden kein Studio-Mesh). Sein Hörer läuft aufgeschoben, darum
+    // zählt er nur über den Start im Versuch.
+    const startetFaden = (n) => {
+        let ja = false;
+        geheVersuch(n, (e) => {
+            if (e.type === "NewExpression" && e.callee.type === "Identifier" && e.callee.name === "Worker") ja = true;
+        });
+        return ja;
+    };
+    const fadenRufe = (n) => {
+        const s = new Set();
+        if (!startetFaden(n)) return s;
+        gehe(n, (e) => {
+            if (
+                e.type === "AssignmentExpression" &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                e.left.property.name === "onmessage" &&
+                /Function/.test(e.right.type)
+            )
+                gehe(e.right, (c) => {
+                    if (
+                        c.type === "CallExpression" &&
+                        c.callee.type === "MemberExpression" &&
+                        c.callee.object.type === "ThisExpression" &&
+                        !c.callee.computed
+                    )
+                        s.add(c.callee.property.name);
+                });
+        });
+        return s;
+    };
+    const renderBauer = new Map(); // Methode → { was, ueber, faden } (ueber: das gerufene Glied, null = direkt)
+    const rufe = new Map();
+    const faeden = new Map();
     for (const m of methoden) {
         const n = nameVon(m);
-        if (bauer0.has(n)) continue;
-        for (const x of ruft(m.value))
-            if (bauer0.has(x)) {
-                bauer1.set(n, x);
-                break;
-            }
+        const h = baut(m.value, name2al.get(m));
+        if (h && !renderBauer.has(n)) renderBauer.set(n, { was: h, ueber: null });
+        const s = rufe.get(n) || new Set();
+        for (const x of ruft(m.value)) s.add(x);
+        rufe.set(n, s);
+        const fr = fadenRufe(m.value);
+        if (fr.size) faeden.set(n, fr);
     }
+    for (let neu = true; neu;) {
+        neu = false;
+        for (const [n, xs] of rufe) {
+            if (renderBauer.has(n)) continue;
+            let x = [...xs].find((y) => renderBauer.has(y));
+            let faden = false;
+            if (!x && faeden.has(n)) {
+                x = [...faeden.get(n)].find((y) => renderBauer.has(y));
+                faden = !!x;
+            }
+            if (x) {
+                renderBauer.set(n, { was: null, ueber: x, faden });
+                neu = true;
+            }
+        }
+    }
+    // die Kette bis zum Bau, beim Namen: `ruft A → B → C (baut Mesh)`, ein Faden als `A ⇢ B`
+    const kette = (x) => {
+        let t = "ruft " + x;
+        let b = renderBauer.get(x);
+        for (let i = 0; b && b.ueber && i < 24; i++) {
+            t += (b.faden ? " ⇢ (Studio-Faden) " : " → ") + b.ueber;
+            b = renderBauer.get(b.ueber);
+        }
+        return t + " (" + (b ? b.was : "?") + ")";
+    };
     const renderBau = (block, a) => {
         const h = baut(block, a);
         if (h) return h;
-        for (const x of ruft(block)) if (bauer0.has(x) || bauer1.has(x)) return "ruft " + x;
+        for (const x of ruft(block)) if (renderBauer.has(x)) return kette(x);
+        for (const x of fadenRufe(block))
+            if (renderBauer.has(x)) return "startet den Studio-Faden, seine Antwort " + kette(x);
         return null;
     };
-    // LAUT ist ein Fang, dessen jeder Pfad bricht: ein Wurf, ein ERROR beim Namen (`this.log(…, "ERROR")` oder ein
-    // Bruch-Helfer, der selbst wirft oder ERROR meldet: `_stoffBruch`, `_blendeBruch`, `_loopErrorBoundary` …), oder
-    // eine BEGRENZTE Wiederholung: der Auftrag kehrt in seine Schlange zurück, und der andere Zweig bricht laut
+    // LAUT ist ein Fang, dessen JEDER Pfad bricht (Nachbesserung 2: bis hierher reichte EIN lauter Satz irgendwo im Rumpf —
+    // ein `return null` davor, ein toter Bruch nach `return`, ein Helfer, der nur bedingt wirft, blieben grün). Gezählt wird
+    // je Pfad durch den Rumpf, in seiner Reihenfolge: ein Wurf, ein ERROR beim Namen (`this.log(…, "ERROR")` oder ein
+    // Bruch-Helfer: eine Methode, deren JEDER Pfad bricht — `_stoffBruch`, `_blendeBruch`, `logError` …), eine BEGRENZTE
+    // Wiederholung (der Auftrag kehrt in seine Schlange zurück, und der andere Zweig bricht), oder das Weiterreichen eines
+    // Bruchs, der schon gemeldet ist (`if (e.stoff === true) return e`). Still ist jeder Pfad, der den Rumpf verlässt
+    // (return · break · continue) oder an seinem Ende ankommt, ehe er brach.
     const flach = (n, f) => {
         f(n);
         kinder(n, (c) => {
@@ -2074,43 +2184,11 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         e.arguments.length >= 2 &&
         e.arguments[1].type === "Literal" &&
         e.arguments[1].value === "ERROR";
-    // ein Bruch-Helfer ist KLEIN (≤ 12 Anweisungen, ein Melder, kein Bau) und bricht: er wirft, meldet ERROR oder ruft
-    // einen Bruch-Helfer
     const bruchHelfer = new Set();
-    const helferKandidat = [];
-    for (const m of methoden) {
-        let anw = 0;
-        flach(m.value.body, (n) => {
-            if (/Statement$|Declaration$/.test(n.type) && n.type !== "BlockStatement") anw++;
-        });
-        if (anw <= 12) helferKandidat.push(m);
-    }
-    for (let runde = 0, neu = true; neu && runde < 4; runde++) {
-        neu = false;
-        for (const m of helferKandidat) {
-            if (bruchHelfer.has(nameVon(m))) continue;
-            let b = false;
-            flach(m.value.body, (n) => {
-                if (
-                    n.type === "ThrowStatement" ||
-                    istErrorLog(n) ||
-                    (n.type === "CallExpression" &&
-                        n.callee.type === "MemberExpression" &&
-                        n.callee.object.type === "ThisExpression" &&
-                        !n.callee.computed &&
-                        bruchHelfer.has(n.callee.property.name))
-                )
-                    b = true;
-            });
-            if (b) {
-                bruchHelfer.add(nameVon(m));
-                neu = true;
-            }
-        }
-    }
     const lautE = (e) =>
         !!e &&
         (istErrorLog(e) ||
+            (e.type === "AwaitExpression" && lautE(e.argument)) ||
             (e.type === "CallExpression" &&
                 e.callee.type === "MemberExpression" &&
                 e.callee.object.type === "ThisExpression" &&
@@ -2127,20 +2205,124 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         !!s &&
         ((s.type === "ExpressionStatement" && istSchlangeZurueck(s.expression)) ||
             (s.type === "BlockStatement" && s.body.some(wiederholt)));
-    const lautS = (s) => {
-        if (!s) return false;
-        if (s.type === "ThrowStatement") return true;
-        if (s.type === "ExpressionStatement") return lautE(s.expression);
-        if (s.type === "BlockStatement") return s.body.some(lautS);
-        if (s.type === "IfStatement")
-            return (
-                (lautS(s.consequent) && lautS(s.alternate)) ||
-                (wiederholt(s.consequent) && lautS(s.alternate)) ||
-                (lautS(s.consequent) && wiederholt(s.alternate))
-            );
-        return false;
+    // `if (v.stoff === true)` (oder `v && v.stoff === true`): v ist ein schon gemeldeter Bruch
+    const bruchGeprueft = (test) => {
+        const aus = new Set();
+        gehe(test, (e) => {
+            if (
+                e.type === "BinaryExpression" &&
+                e.operator === "===" &&
+                e.right.type === "Literal" &&
+                e.right.value === true &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                e.left.property.name === "stoff" &&
+                e.left.object.type === "Identifier"
+            )
+                aus.add(e.left.object.name);
+        });
+        return aus;
     };
-    const laut = (koerper) => (koerper.type === "BlockStatement" ? lautS(koerper) : lautE(koerper));
+    // die Ausgänge eines Satzes: L (brach) · F (fällt weiter, ungebrochen) · R (verlässt still: return) · B (break/continue)
+    const L = "L",
+        F = "F",
+        R = "R",
+        B = "B";
+    const vereint = (...xs) => {
+        const s = new Set();
+        for (const x of xs) for (const y of x) s.add(y);
+        return s;
+    };
+    const pfade = (s, gebrochen = new Set()) => {
+        if (!s) return new Set([F]);
+        switch (s.type) {
+            case "ThrowStatement":
+                return new Set([L]);
+            case "ExpressionStatement":
+                return new Set([lautE(s.expression) ? L : F]);
+            case "VariableDeclaration":
+                return new Set([s.declarations.some((d) => lautE(d.init)) ? L : F]);
+            case "ReturnStatement":
+                return new Set([
+                    lautE(s.argument) ||
+                    (s.argument && s.argument.type === "Identifier" && gebrochen.has(s.argument.name))
+                        ? L
+                        : R,
+                ]);
+            case "BreakStatement":
+            case "ContinueStatement":
+                return new Set([B]);
+            case "BlockStatement": {
+                let jetzt = new Set([F]);
+                for (const x of s.body) {
+                    if (!jetzt.has(F)) break; // was nach dem letzten Ausgang steht, ist tot
+                    jetzt.delete(F);
+                    jetzt = vereint(jetzt, pfade(x, gebrochen));
+                }
+                return jetzt;
+            }
+            case "IfStatement": {
+                const g2 = vereint(gebrochen, bruchGeprueft(s.test));
+                const a = pfade(s.consequent, g2);
+                const b = s.alternate ? pfade(s.alternate, gebrochen) : new Set([F]);
+                const nurL = (p) => p.size === 1 && p.has(L);
+                if ((wiederholt(s.consequent) && nurL(b)) || (nurL(a) && wiederholt(s.alternate))) return new Set([L]);
+                return vereint(a, b);
+            }
+            case "TryStatement": {
+                const p = vereint(pfade(s.block, gebrochen), s.handler ? pfade(s.handler.body, gebrochen) : []);
+                if (!s.finalizer) return p;
+                const f = pfade(s.finalizer, gebrochen);
+                return f.has(F) ? p : f;
+            }
+            case "ForStatement":
+            case "ForInStatement":
+            case "ForOfStatement":
+            case "WhileStatement":
+            case "DoWhileStatement": {
+                // ein Lauf kann nullmal gehen; break/continue enden in ihm
+                const p = pfade(s.body, gebrochen);
+                p.delete(B);
+                p.add(F);
+                return p;
+            }
+            case "SwitchStatement": {
+                const p = new Set([F]);
+                for (const c of s.cases)
+                    for (const y of pfade({ type: "BlockStatement", body: c.consequent }, gebrochen))
+                        p.add(y === B ? F : y);
+                return p;
+            }
+            case "LabeledStatement":
+                return pfade(s.body, gebrochen);
+            default:
+                return new Set([F]);
+        }
+    };
+    const bricht = (s) => {
+        const p = pfade(s);
+        return p.size === 1 && p.has(L);
+    };
+    // ein Bruch-Helfer ist KLEIN (≤ 12 Anweisungen, ein Melder, kein Bau) und JEDER seiner Pfade bricht
+    const helferKandidat = [];
+    for (const m of methoden) {
+        let anw = 0;
+        flach(m.value.body, (n) => {
+            if (/Statement$|Declaration$/.test(n.type) && n.type !== "BlockStatement") anw++;
+        });
+        if (anw <= 12) helferKandidat.push(m);
+    }
+    for (let neu = true; neu;) {
+        neu = false;
+        for (const m of helferKandidat) {
+            if (bruchHelfer.has(nameVon(m))) continue;
+            if (bricht(m.value.body)) {
+                bruchHelfer.add(nameVon(m));
+                neu = true;
+            }
+        }
+    }
+    const laut = (koerper) => (koerper.type === "BlockStatement" ? bricht(koerper) : lautE(koerper));
     // (d) die Knoten-Bauer: `const v = this._m(…)`, danach `if (v …) { x.…Node = … }` oder `x.…Node = v ? … : …`; in einem
     // Stoff jede Frage an das Ergebnis eines Stoff-Bauers (`if (_su)`, `!v`, `v?.x`)
     const stoffMethode = new Set();
@@ -2929,13 +3111,54 @@ function main() {
                 { datei: "probe.cjs", text: "out.ok = !window.__probeError;\nwindow.__lebtFehler = [];" },
             ]);
             const markerFeuert = marker.length === 1 && /__probeError/.test(marker[0]);
+            // (5) DIE TIEFE UND DER PFAD (Nachbesserung 2): eingeschmuggelte Methoden — ein Bauer drei Ruf-Glieder unter
+            // dem Versuch (die Hülle hat keine Tiefe), ein `return null` vor dem Bruch, ein toter Bruch nach `return`, ein
+            // Helfer, der nur bedingt wirft, ein Bruch, der erst im Zeitgeber läuft: jeder ist rot. Und die Gegenprobe: ein
+            // Bauer, den der Versuch nur ABLEGT (`{ render: () => … }`, ein Hörer), ist nie ein Fund (die Hülle lief sonst
+            // über die UI-Räume vom Chat bis in die Kreatur-Aura).
+            const MESH = "this.state.scene.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial()));";
+            const tiefSchmuggel = [
+                ["drei Ruf-Glieder tief", 'try { this._sgTief1(g); } catch (e) { this.log("still", "WARN"); }'],
+                [
+                    "return null vor dem Bruch",
+                    `try { ${MESH} } catch (e) { if (!this.state.scene) return null; this._stoffBruch("x", e); }`,
+                ],
+                ["toter Bruch nach return", `try { ${MESH} } catch (e) { return null; this._stoffBruch("x", e); }`],
+                ["Helfer wirft nur bedingt", `try { ${MESH} } catch (e) { this._sgHelfer(e); }`],
+                [
+                    "Bruch erst im Zeitgeber",
+                    `try { ${MESH} } catch (e) { setTimeout(() => this._stoffBruch("x", e), 1); }`,
+                ],
+                ["Bruch nur im Zweig", `try { ${MESH} } catch (e) { if (e && e.stoff) throw e; }`],
+            ];
+            const helfer =
+                "    _sgTief1(g) { return this._sgTief2(g); }\n    _sgTief2(g) { return this._sgTief3(g); }\n" +
+                "    _sgTief3(g) { return new THREE.Mesh(g, null); }\n" +
+                "    _sgHelfer(e) { if (this.state.strikt) throw e; return null; }\n" +
+                '    _sgAblage(g) { try { this._uiRooms = { x: { render: () => this._sgTief1(g) } }; window.addEventListener("x", () => this._sgTief3(g)); } catch (e) {} }\n';
+            const tiefAnker = stamm.indexOf("    // Studio-Dither-Blende als TSL-Knoten");
+            const tiefQuelle =
+                stamm.slice(0, tiefAnker) +
+                helfer +
+                tiefSchmuggel.map(([, k], i) => `    _sgFang${i}(g) { ${k} }\n`).join("") +
+                stamm.slice(tiefAnker);
+            const tiefFunde = tiefAnker < 0 ? [] : stoffFaenge(tiefQuelle).funde.filter((f) => /^_sg/.test(f.methode));
+            const pfadBlind = tiefSchmuggel
+                .filter((_, i) => !tiefFunde.some((f) => f.methode === `_sgFang${i}` && f.art === "Fang"))
+                .map(([n]) => n);
+            const ablageRot = tiefFunde
+                .filter((f) => !/^_sgFang\d$/.test(f.methode))
+                .map((f) => `${f.methode}: ${f.was}`);
             if (
                 heute.length ||
                 blind.length ||
                 fehltAnker.length ||
                 !totFeuert ||
                 !markerFeuert ||
-                aussen.length < 20
+                aussen.length < 20 ||
+                tiefAnker < 0 ||
+                pfadBlind.length ||
+                ablageRot.length
             ) {
                 console.log("❌ SELBST-TEST: die Stoff-Wand ist blind (oder steht heute rot)", {
                     heute: heute.slice(0, 5),
@@ -2944,13 +3167,17 @@ function main() {
                     tot,
                     marker,
                     brueche: aussen.length,
+                    tiefAnker,
+                    pfadBlind,
+                    ablageRot,
                 });
                 process.exit(1);
             }
             console.log(
                 `✅ SELBST-TEST: die Stoff-Wand sieht jeden ihrer ${aussen.length} lauten Brüche still gemacht an seiner Zeile, ` +
-                    `${schmuggel.length} Schmuggel je Art (${schmuggel.map((x) => x[0]).join(" · ")}), die tote Zweig-Zeile ` +
-                    `und den toten Fehler-Marker; heute 0`
+                    `${schmuggel.length} Schmuggel je Art (${schmuggel.map((x) => x[0]).join(" · ")}), ` +
+                    `${tiefSchmuggel.length} Schmuggel in Tiefe und Pfad (${tiefSchmuggel.map((x) => x[0]).join(" · ")}), ` +
+                    `die Ablage (Objekt-Wert, Hörer) still, die tote Zweig-Zeile und den toten Fehler-Marker; heute 0`
             );
         }
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
@@ -3023,7 +3250,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, der Render-Lauf eingeschlossen), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Leser des Zweigs ohne Seite), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite, die Drossel des Loops)), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 

@@ -42379,11 +42379,7 @@ class AnazhRealm {
         // Der Foundry-Worker startet VOR dem synchronen Worldgen-Block: er lädt Kerne + wärmt die
         // Bibliothek, während Main die Welt rechnet. Billig (Worker + Posts); das Boot-Gate prüft
         // `_ensureAssetFoundry` selbst (foundry-aus → null) — der Aufrufer dupliziert es nicht.
-        if (!this._foundry) {
-            try {
-                this._ensureAssetFoundry();
-            } catch (_efb) {}
-        }
+        if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
         this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
         return true;
     }
@@ -54652,6 +54648,8 @@ class AnazhRealm {
         try {
             built = this._buildHumanoidRig(g);
         } catch (_e) {
+            // ein Wurf im Mensch-Bau (Ofen, Rig, Haut) bricht LAUT beim Namen (K22); der Not-Körper unten steht sichtbar
+            this._stoffBruch("der Mensch-Bau (Rig) — Not-Körper statt Gestalt", _e);
             built = null;
         }
         if (built && built.rig) {
@@ -73827,9 +73825,12 @@ class AnazhRealm {
                     f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
                     const worker = new Worker(f.bootUrl);
                     f.worker = worker;
-                    worker.onerror = () => {
-                        /* Boot-/Laufzeit-Fehler des Workers: f.ready bleibt false -> alles fällt auf den Alt-Pfad */
-                    };
+                    // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
+                    // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
+                    worker.onerror = (ev) =>
+                        this._stoffBruch(
+                            "der Foundry-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler")
+                        );
                     worker.onmessage = (ev) => {
                         const m = ev.data;
                         if (!m || typeof m !== "object") return;
@@ -73850,11 +73851,9 @@ class AnazhRealm {
                         this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
                     };
                 })
-                .catch(() => {
-                    /* FAIL-CLOSED: Manifest nicht ladbar/parsebar → kein Worker, f.ready bleibt false → Alt-Pfad */
-                });
+                .catch((e) => this._stoffBruch("die Foundry bootet nicht (Kern-Manifest, Faden-Boot)", e));
         } catch (_e) {
-            this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
+            this._stoffBruch("die Foundry bootet nicht", _e);
         }
         return f;
     }
@@ -73902,9 +73901,9 @@ class AnazhRealm {
         if (f.baecker || !f.bootUrl) return f.baecker;
         const w = new Worker(f.bootUrl);
         f.baecker = w;
-        w.onerror = () => {
-            /* Boot-Fehler: der Bäcker bleibt unbereit, die Karten warten in der Schlange (der Zensus nennt sie wartend) */
-        };
+        // ein Boot-/Laufzeit-Fehler des Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte für immer in der Schlange
+        w.onerror = (ev) =>
+            this._stoffBruch("der Bäcker-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
         w.onmessage = (ev) => {
             const m = ev.data;
             if (!m || typeof m !== "object") return;
@@ -75297,8 +75296,9 @@ class AnazhRealm {
                     awaiting[worldKey] = false;
                     if (warm && warm.ok) this._ensurePortalPreview(worldKey, type, id);
                 })
-                .catch(() => {
+                .catch((e) => {
                     awaiting[worldKey] = false;
+                    this._stoffBruch("die Portal-Vorschau " + worldKey, e);
                 });
             return;
         }
@@ -75414,8 +75414,9 @@ class AnazhRealm {
             .then(() => {
                 this._portalApproachAwaiting = false;
             })
-            .catch(() => {
+            .catch((e) => {
                 this._portalApproachAwaiting = false;
+                this._stoffBruch("das Studio-Buch vor dem Portal (Foundry-Boot)", e);
             });
     }
 
@@ -78379,7 +78380,9 @@ class AnazhRealm {
             for (let v = 1; v <= _VK; v++) {
                 try {
                     this._foundryEnsureImpostorRecord(sp, v);
-                } catch (_e) {}
+                } catch (_e) {
+                    this._stoffBruch("die Karte (Vorab-Bau " + sp + " #" + v + ")", _e);
+                }
             }
         }
         await Promise.all(jobs);
@@ -96257,11 +96260,7 @@ class AnazhRealm {
                 // entstünde sonst erst lazy beim ersten Foundry-Baum (`_foundryRewarmColdTrees` liest `_foundry`,
                 // erzeugt es nicht). Billig (nur iframe); das Gate (foundry-aus → null, headless-Null → No-op)
                 // prüft `_ensureAssetFoundry` selbst.
-                if (!this._foundry) {
-                    try {
-                        this._ensureAssetFoundry();
-                    } catch (_efk) {}
-                }
+                if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
 
                 // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
                 this._loopNexusUpdate();
@@ -96571,9 +96570,12 @@ class AnazhRealm {
         const st = this.state;
         st._loopErrorCount = (st._loopErrorCount || 0) + 1;
         const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        if (!st._loopErrorLastLog || now - st._loopErrorLastLog > 2000) {
+        // DIE DROSSEL (K22): jeder NEUE Fehler meldet sofort ERROR; nur dieselbe Meldung wieder (ein Fehler, der jeden
+        // Frame wirft) zählt still bis 2 s — bis hierher verschwand ein zweiter, anderer Fehler in den 2 s ganz.
+        const msg = (err && (err.stack || err.message)) || String(err);
+        if (msg !== st._loopErrorLastMsg || !st._loopErrorLastLog || now - st._loopErrorLastLog > 2000) {
             st._loopErrorLastLog = now;
-            const msg = (err && (err.stack || err.message)) || String(err);
+            st._loopErrorLastMsg = msg;
             this.log(`Loop-Frame-Fehler abgefangen (#${st._loopErrorCount}, die Welt läuft weiter): ${msg}`, "ERROR");
         }
     }
