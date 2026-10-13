@@ -182,7 +182,10 @@ function inhaltText(ih, n) {
 // Foundry-Schlange und Aufträge im Flug, offene Karten-Bakes, der Streu-Nachschub, ein Chunk im Bau, aufgeschobene
 // Streu-Regionen — und der DORF-ZUG (S3 haus, Messort dorf: der Zug läuft): ein Export unterwegs
 // (`_autoSettlementPendingKey`) oder eine Siedlung, die über die Takte wächst (`_autoSettlementQueue`, ihre Häuser
-// entstehen budgetiert). Ohne die Dorf-Wache zählte die Messung ein halbes Dorf. `{}` = nichts offen. Die Werkbank
+// entstehen budgetiert). Ohne die Dorf-Wache zählte die Messung ein halbes Dorf. Und DER SATZ, DER NOCH SCHRUMPFT (1310-1):
+// ein Satz über seinem Ziel wartet `ruheTakte` Render-Takte, bevor er auf seinen Inhalt schrumpft (`_chunkSatzVerdichten`,
+// `ueberSeit` ≥ 0); ohne die Satz-Wache maß das Band am Dorf die Kapazität der Ankunft (VRAM 124,6 MB, nach 20 s Spiel 118,4:
+// Bau-Sätze 8192 → 1024 Ecken, Boden-Index 1,31 M → 653 k). `{}` = nichts offen. Die Werkbank
 // installiert sie in die Seite (`EINSCHWING_INSTALL`), gate:profiband prüft sie an einer gestellten Welt (Selbsttest).
 function einschwingOffen(r) {
     const st = r.state;
@@ -203,6 +206,9 @@ function einschwingOffen(r) {
     const q = r._autoSettlementQueue;
     if (q != null) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
     if (r._autoSettlementPendingKey) o.dorfExport = r._autoSettlementPendingKey;
+    let schrumpft = 0;
+    for (const [, s] of st.chunkSaetze || []) if (s && s.ueberSeit >= 0) schrumpft++;
+    if (schrumpft) o.satzSchrumpft = schrumpft;
     return o;
 }
 
