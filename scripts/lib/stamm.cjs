@@ -262,14 +262,16 @@ function text(pfad) {
 function textAusRev(root, rev) {
     const { execFileSync } = require("child_process");
     const git = (args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8", maxBuffer: 1 << 30 });
+    // ls-tree mit `stamm/` nennt die Dateien darin (stamm/01.js …), nie das Verzeichnis
     const namen = git(["ls-tree", "--name-only", rev, "--", ALT, `${DIR}/`])
         .split("\n")
         .filter(Boolean);
+    const zonen = namen.includes(`${DIR}/01.js`);
     if (namen.includes(ALT)) {
-        if (namen.includes(DIR)) throw new Error(`Stamm-Layout an ${rev}: ${ALT} UND ${DIR}/`);
+        if (zonen) throw new Error(`Stamm-Layout an ${rev}: ${ALT} UND ${DIR}/`);
         return blind(git(["show", `${rev}:${ALT}`]), rev);
     }
-    if (!namen.includes(DIR)) throw new Error(`Stamm-Layout an ${rev}: weder ${ALT} noch ${DIR}/`);
+    if (!zonen) throw new Error(`Stamm-Layout an ${rev}: weder ${ALT} noch ${DIR}/01.js`);
     const liste = tagsVon(git(["show", `${rev}:index.html`])).map((t) => t.pfad);
     return blind(ausZonen(liste.map((p) => ({ pfad: p, text: git(["show", `${rev}:${p}`]) }))), rev);
 }
