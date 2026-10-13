@@ -1465,7 +1465,7 @@ async function checkBandV1732SpatialEmotion(ctx) {
         out.decays = r.auraAt(A.x, A.z).emotion.sorrow < stored;
         // (5) Anti-Passagier-Beweis: ein räumlicher sorrow-Abdruck FÄRBT den Tint am Spieler (sorrow senkt
         // die Sättigung), obwohl die globale Stimmung neutral ist — gleicher Ort, nur der Abdruck differiert.
-        out.tintColors = true;
+        out.tintColors = false; // ohne THREE misst die Probe nichts
         const THREE = window.THREE;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (THREE && THREE.Color && pm) {
@@ -4379,10 +4379,6 @@ async function checkBandV1754PlayerAttack(ctx) {
             r.updateCreatures(0.016);
         }
 
-        // ALTLASTEN-NULL: das Material-Wesen (quarz-sprite) ist gefallen — alle
-        // lebenden Kreaturen sind Tiere (lebendig > 0); das Schuld-GATE selbst
-        // prueft (4) über die lebendig-Schwelle weiter.
-        out.noGuiltForMaterial = true;
 
         // (6) der Rückstoß-Pfad (fromPos + stoss {p, m}, das EINE Impuls-Gesetz) läuft, schädigt UND stößt das Ziel vom
         // Angreifer weg — der Schlag ein Keulen-Hieb des Schmiede-Urteils (p 26,85 · m 1,71, gate:kampf-gefuehl T13). Die
@@ -4437,10 +4433,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     check(
         "V17.54 Kampf D: KONSUM — die SCHULD ist lebendig-gegated (Spieler-Kill eines lebendig-Wesens → sorrow)",
         res.guiltGatedByLiving
-    );
-    check(
-        "V17.54 Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
-        res.noGuiltForMaterial
     );
     check(
         "V17.54 Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
@@ -10876,7 +10868,6 @@ async function checkBandRing9to10(ctx) {
         // _weltTorImportBeside ohne pendingImport ist no-op
         r.state.pendingImport = null;
         r._weltTorImportBeside();
-        out.besideNoopWithoutPending = true; // sollte nicht crashen
 
         // Eine importierte Welt OHNE worldJournal bekommt trotzdem einen Witness-Eintrag (nie still
         // überspringen, wenn cloned.worldJournal fehlt).
@@ -10930,8 +10921,7 @@ async function checkBandRing9to10(ctx) {
         check("Ring 9: Slug-Kollision wird via -N aufgelöst", ring9Results.collisionResolved);
         check("Ring 9: _openWeltTorDialog setzt pendingImport", ring9Results.pendingImportSet);
         check("Ring 9: Cancel räumt pendingImport auf", ring9Results.pendingClearedAfterCancel);
-        check("Ring 9: importBeside ohne pending crasht nicht", ring9Results.besideNoopWithoutPending);
-        check(
+            check(
             "Ring 9: Import ohne worldJournal bekommt trotzdem Witness-Eintrag (Bugfix)",
             ring9Results.journallessGetsWitness
         );
@@ -20256,7 +20246,7 @@ async function checkBandHydrosphere(ctx) {
         // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden.
         out.hasTarnPass = typeof r._hydroSeedTarns === "function";
         out.tarnCount = Array.isArray(r.state.tarns) ? r.state.tarns.length : -1;
-        out.tarnsHighAltitude = true;
+        out.tarnsHighAltitude = out.tarnCount > 0; // ohne Tarn misst die Schleife nichts
         out.tarnsBecameLakes = 0;
         if (Array.isArray(r.state.tarns) && r.state.tarns.length && h1.lakes) {
             const base = r.state.terrainBaseHeight || 0;
@@ -20346,8 +20336,8 @@ async function checkBandHydrosphere(ctx) {
         // _waterLevelAt: über einer GERENDERTEN See-Zelle → der
         // See-Level. V9.45-c: absorbierte Seen (level ≤ waterLevel+2)
         // zählen nicht — die Meeres-Plane vertritt sie.
-        out.lakeLevelOk = true;
-        out.ringFollowsPlane = true;
+        out.lakeLevelOk = false;
+        out.ringFollowsPlane = false;
         const wlT = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
         const renderedLk = hydro.lakes.find((l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0);
         if (renderedLk) {
@@ -20382,8 +20372,8 @@ async function checkBandHydrosphere(ctx) {
         r._buildHydrosphereMeshes();
         const meshes = r.state.hydrosphereMeshes || [];
         const riverMeshes = meshes.filter((m) => m.userData && m.userData.hydroKind === "river");
-        out.mouthReachesSea = true;
         out.seaMouthChecked = false;
+        let mundVerfehlt = false;
         for (let i = 0; i < hydro.rivers.length; i++) {
             if (hydro.rivers[i].mouth !== "sea") continue;
             const m = riverMeshes[i];
@@ -20392,8 +20382,9 @@ async function checkBandHydrosphere(ctx) {
             const vc = pos.length / 3;
             const lastY = pos[(vc - 1) * 3 + 1];
             out.seaMouthChecked = true;
-            if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
+            if (Math.abs(lastY - r.state.waterLevel) > 0.3) mundVerfehlt = true;
         }
+        out.mouthReachesSea = out.seaMouthChecked && !mundVerfehlt;
         // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus der EINEN Wasser-Wahrheit am Körper
         // (`_koerperWasser`, Welle L wasser — vorher `_waterLevelAt`); sie lebt im feld-nativen Controller `_stepCharacter`
         // (`_loopPhysicsSync` dispatcht nur).
@@ -22884,8 +22875,8 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         const cz = 0;
         const lod = 0;
         const syncFresh = r._buildVoxelChunkData(cx, cz, lod, null);
-        if (!syncFresh || !syncFresh.mesh) return { ...out, error: "sync build failed" };
-        out.syncBuildOk = true;
+        out.syncBuildOk = !!(syncFresh && syncFresh.mesh);
+        if (!out.syncBuildOk) return { ...out, error: "sync build failed" };
         // Worker-Build via _voxelWorkerComputeChunkMesh.
         let workerMesh;
         try {
@@ -26730,7 +26721,6 @@ async function checkBandWelle6HCreatures(ctx) {
         r.dslRun(["creature_task_all", "wander"], { source: "test" });
         out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
         r.dslRun(["creature_task", 9999, "follow_player"], { source: "test" });
-        out.dslOobSafe = true; // wenn wir hier sind, kein crash
 
         // NON_BROADCASTABLE_OPS Mitgliedschaft
         const nbs = r.constructor.NON_BROADCASTABLE_OPS;
@@ -26828,8 +26818,7 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
         check("Welle 6.H Phase 1: DSL creature_task setzt Task", wave6hResults.dslSingleWorks);
         check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
-        check("Welle 6.H Phase 1: DSL mit OOB-Index crasht nicht", wave6hResults.dslOobSafe);
-        check(
+            check(
             "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
             wave6hResults.nbCreatureTask && wave6hResults.nbCreatureTaskNearest && wave6hResults.nbCreatureTaskAll
         );
@@ -33565,10 +33554,8 @@ async function checkBandV18195AvatarSizeHp(ctx) {
             const largeSpeed = largeComputed.stats.speed;
             // Keine speed-Identität (Tags variieren je Compound), aber keine systematische Beschleunigung der
             // Großen: |speed_large/speed_small| ≈ Tag-Verhältnis, NICHT sqrt(sizeFactor).
-            out.speedNotScaledBySize = true; // wir prüfen es indirekt via STAT-Formel-Anteil
 
             // (S6) STAMINA: same scaling als HP
-            out.staminaScaledLikeHp = true; // Source-Probe
             const smallStamSqrt = Math.sqrt(out.smallSizeFactor);
             out.staminaMatchesFormula =
                 Math.abs(
@@ -34922,11 +34909,8 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
             );
 
         // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
-        if (!A.CREATURE_SOULS) {
-            out.creatureSoulsExists = false;
-            return out;
-        }
-        out.creatureSoulsExists = true;
+        out.creatureSoulsExists = !!A.CREATURE_SOULS;
+        if (!out.creatureSoulsExists) return out;
 
         // Liste aller built-in Kreatur-Seelen
         const souls = Object.keys(A.CREATURE_SOULS);
@@ -37305,10 +37289,6 @@ async function checkBandV18219bisVollendung(ctx) {
     // V18.221 Ω-H Promotion
     check("V18.221 (P1) spawnArchitecture auto-promoted grown-tree-Cell", res.spawnAutoPromotes === true);
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
-    check(
-        `V18.221 (P3) Snapshot enthält Promotionen (Anzahl ${res.snapshotPromotedCount})`,
-        res.snapshotPromotedCount >= 0
-    );
     check("V18.221 (P4) _loadStateRestoreWorldMeta rebuildet das Set", res.restoreRebuildsPromotedSet === true);
 
     // V18.222 Canopy chunk-streaming
@@ -40258,7 +40238,6 @@ async function checkBandWelle6XAudit(ctx) {
         r.setCameraMode("third");
         out.auraVisibleInThird = !r.state.playerAuraGlow && !r.state.auraSkinUniforms;
         r.setCameraMode("first");
-        out.auraPositionStillTracked = true; // gegenstandslos — nichts folgt mehr
 
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -40306,10 +40285,6 @@ async function checkBandWelle6XAudit(ctx) {
         check(
             "Welle 6.X.1 A4 (V18.105): in 3rd trägt die HAUT die Aura (Shells statt Lampe)",
             wave6x1Results.auraVisibleInThird
-        );
-        check(
-            "Welle 6.X.1 A4 (V18.105): Shells folgen per Konstruktion (Kinder der Parts)",
-            wave6x1Results.auraPositionStillTracked
         );
     } else {
         check("Welle 6.X.1: Audit-Fix-Tests laufen", false, wave6x1Results ? wave6x1Results.error : "no result");
@@ -49814,7 +49789,7 @@ async function checkBandCadWorkshop(ctx) {
 
             // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
             // stein_block ist built-in → kein Drag
-            out.builtInRejected = true;
+            out.builtInRejected = false; // ohne Vorschau misst die Probe nichts
             try {
                 r._workshopSetSelection(0);
                 // Wir können _workshopBeginManipulation aufrufen, aber es sollte
@@ -50585,18 +50560,15 @@ async function checkBandCadWorkshop(ctx) {
             // Direkter Methoden-Aufruf: ob der Raycast trifft, hängt an der Kamera — geprüft wird nur, dass die
             // Methode existiert und nicht crasht.
             r._workshopHandleMaterialDrop("holz", cx, cy);
-            out.materialDropNoCrash = true;
             // Wenn ein Hit war, sollte material gewechselt sein
             const part0After = r.state.blueprints.test_v803.parts[0].material;
             out.materialDropMaybeChanged = part0After !== part0Before || part0After === part0Before;
 
             // Bogus material wird abgelehnt
             r._workshopHandleMaterialDrop("nonsense_material", cx, cy);
-            out.bogusMaterialNoCrash = true;
 
             // --- Color-Drop ---
             r._workshopHandleColorDrop("ff5500", cx, cy);
-            out.colorDropNoCrash = true;
 
             // --- CSS overscroll-behavior auf .drawer-scroll ---
             const werkstattScroll = document.querySelector('[data-drawer="werkstatt"] > .drawer-scroll');
@@ -50654,11 +50626,6 @@ async function checkBandCadWorkshop(ctx) {
         );
         check("V8.03 Camera: Wheel ändert orbit.dist (Zoom)", v803Results.distChangedOnWheel);
         check("V8.03 Camera: Wheel ruft preventDefault → kein Drawer-Scroll-Bleed", v803Results.wheelPreventDefault);
-        check(
-            "V8.03 Camera: _workshopHandleMaterialDrop crashed nicht",
-            v803Results.materialDropNoCrash && v803Results.bogusMaterialNoCrash
-        );
-        check("V8.03 Camera: _workshopHandleColorDrop crashed nicht", v803Results.colorDropNoCrash);
         check(
             "V8.03 CSS: .drawer-scroll hat overscroll-behavior:contain (zweite Verteidigung gegen Wheel-Bleed)",
             v803Results.overscrollContain
@@ -52643,14 +52610,8 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Default-Size-Apply-Funktion ist sauber idempotent —
             // wir setzen Flag, dann ist die Funktion no-op
-            try {
-                localStorage.setItem("anazh.workshop.defaultApplied", "1");
-                r._workshopApplyDefaultSizeOnce();
-                // Nichts sollte passiert sein (flag schützt)
-                out.idempotentRespected = true;
-            } catch {
-                out.idempotentRespected = false;
-            }
+            localStorage.setItem("anazh.workshop.defaultApplied", "1");
+            r._workshopApplyDefaultSizeOnce();
 
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
@@ -52682,10 +52643,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         );
         check("V8.06: Mode-Bar hat Hintergrund-Farbe (Kontrast-Verbesserung)", v806Results.modeBarHasBg);
         check("V8.06: Stats-Panel hat dunklen Hintergrund (Kontrast-Verbesserung)", v806Results.statsHasDarkBg);
-        check(
-            "V8.06: _workshopApplyDefaultSizeOnce ist idempotent (flag respektiert)",
-            v806Results.idempotentRespected
-        );
     } else if (v806Results && v806Results.error) {
         check(`V8.06: evaluate-Fehler — ${v806Results.error}`, false);
     }
@@ -53249,7 +53206,6 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
         }
 
         // 4. Default-Modell ist jetzt llama3.2 (moderner)
-        out.defaultModelModern = true; // wir bauen das später
         // Heuristik: state-Default ist nicht garantiert beim Test-Lauf,
         // weil localStorage greift. Wir prüfen den class-Default.
         // (Skip this strict check.)

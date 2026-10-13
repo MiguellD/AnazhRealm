@@ -246,10 +246,121 @@ async function pruefeSonde(playtestSrc, datei = "scripts/playtest.cjs") {
     return { funde, aufrufe, baender: baender.size };
 }
 
+// V1 Literal-Grün und V2 Skip-Grün: eine Prüfung, deren Wert ohne Messung wahr wird.
+//   V1: im Ergebnis einer Sonde (`return out` → `out.k`) ein `= true` ohne jede Bedingung (der „kein Crash"-Grabstein;
+//       den Wurf meldet die Sonde selbst, V3) · eine Schwelle, die nie fällt (`check(…, x.length >= 0)`).
+//   V2: `check(…, true)` · im Ergebnis `= true` im else-Zweig · `c ? x : true` · `!x || y` (fehlt x, ist es grün).
+//   Eine fehlende Vorbedingung heißt `unmessbar(name, grund)` und zählt als Fehlschlag. Bereitschafts-Merker
+//   (`boot`, `bereit`, `ready`) sind keine Messung.
+const BEDINGT = /^(IfStatement|ConditionalExpression|LogicalExpression|For\w*Statement|While\w*|DoWhileStatement|SwitchCase|CatchClause)$/;
+const istFn = (n) => !!n && /Function/.test(n.type);
+const istLit = (n, v) => !!n && n.type === "Literal" && n.value === v;
+const blatt = (c) =>
+    c && c.type === "MemberExpression"
+        ? c.property.name || String(c.property.value)
+        : c && c.type === "Identifier"
+          ? c.name
+          : "";
+const wurzel = (c) => (c && c.type === "MemberExpression" ? wurzel(c.object) : c);
+const skipOder = (n) =>
+    !!n &&
+    n.type === "LogicalExpression" &&
+    n.operator === "||" &&
+    n.left.type === "UnaryExpression" &&
+    n.left.operator === "!" &&
+    /^(Identifier|MemberExpression)$/.test(n.left.argument.type);
+const einArmWahr = (n) =>
+    !!n &&
+    n.type === "ConditionalExpression" &&
+    istLit(n.consequent, true) !== istLit(n.alternate, true) &&
+    !istLit(n.consequent, false) &&
+    !istLit(n.alternate, false);
+function pruefeLiteral(datei, ast) {
+    const v1 = [];
+    const v2 = [];
+    const Z = (n) => `${datei}:${n.loc.start.line}`;
+    const sonden = [];
+    astWalk(ast, (n) => {
+        if (n.type !== "CallExpression") return;
+        if (n.callee.type === "Identifier" && n.callee.name === "safeEvaluate" && istFn(n.arguments[1]))
+            sonden.push(n.arguments[1]);
+        if (n.callee.type === "MemberExpression" && blatt(n.callee) === "evaluate" && istFn(n.arguments[0]))
+            sonden.push(n.arguments[0]);
+        if (n.callee.type !== "Identifier" || n.callee.name !== "check") return;
+        const ok = n.arguments[1];
+        if (istLit(ok, true)) v2.push(`${Z(n)} check(…, true)`);
+        else if (einArmWahr(ok)) v2.push(`${Z(n)} check(…, c ? x : true)`);
+        else if (skipOder(ok)) v2.push(`${Z(n)} check(…, !x || y)`);
+        else if (
+            ok &&
+            ok.type === "BinaryExpression" &&
+            ok.operator === ">=" &&
+            istLit(ok.right, 0) &&
+            /(length|size|count|Count|Anzahl|anzahl)$/.test(blatt(ok.left))
+        )
+            v1.push(`${Z(n)} Schwelle fällt nie (… ${blatt(ok.left)} >= 0)`);
+    });
+    for (const fn of sonden) {
+        const erg = new Set();
+        astWalk(fn.body, (m, a) => {
+            if (m.type === "ReturnStatement" && m.argument && m.argument.type === "Identifier" && !a.some(istFn))
+                erg.add(m.argument.name);
+        });
+        astWalk(fn.body, (n, anc) => {
+            if (anc.some(istFn) || n.type !== "AssignmentExpression" || n.operator !== "=") return;
+            if (n.left.type !== "MemberExpression") return;
+            const w = wurzel(n.left);
+            if (!w || w.type !== "Identifier" || !erg.has(w.name)) return;
+            const k = blatt(n.left);
+            if (/^(boot|bereit|ready)$/.test(k)) return;
+            const r = n.right;
+            if (istLit(r, true)) {
+                const bed = anc.filter((a) => BEDINGT.test(a.type));
+                const nah = bed[bed.length - 1];
+                if (!nah) v1.push(`${Z(n)} ${k} = true (ohne Bedingung)`);
+                else if (nah.type === "IfStatement" && nah.alternate && nah.alternate.start <= n.start)
+                    v2.push(`${Z(n)} ${k} = true (else-Zweig)`);
+            } else if (einArmWahr(r)) v2.push(`${Z(n)} ${k} = c ? x : true`);
+            else if (skipOder(r)) v2.push(`${Z(n)} ${k} = !x || y`);
+        });
+    }
+    return { v1, v2 };
+}
+
+// Die Prüf-Dateien der Klinge: der Playtest (heute EINE Datei, nach der Zerlegung scripts/playtest/**), die
+// diag-Linsen und die geteilte lib.
+function pruefDateien(root) {
+    const sd = path.join(root, "scripts");
+    const out = [];
+    for (const f of fs.readdirSync(sd).sort())
+        if (/^(diag-.*|playtest|playtest-fast)\.cjs$/.test(f)) out.push(["scripts/" + f, path.join(sd, f)]);
+    for (const unter of ["lib", "playtest"]) {
+        const d = path.join(sd, unter);
+        if (!fs.existsSync(d)) continue;
+        for (const f of fs.readdirSync(d).sort())
+            if (/\.cjs$/.test(f)) out.push([`scripts/${unter}/${f}`, path.join(d, f)]);
+    }
+    return out;
+}
+
 async function vakuumKlinge(root) {
     const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
     const v3 = await pruefeSonde(playtestSrc);
-    return { regeln: { V3: v3.funde }, v3 };
+    const regeln = { V1: [], V3: v3.funde };
+    const dateien = pruefDateien(root);
+    for (const [rel, abs] of dateien) {
+        const src = fs.readFileSync(abs, "utf8");
+        let ast;
+        try {
+            ast = parseJs(src);
+        } catch (e) {
+            regeln.V1.push(`${rel}: unlesbar für die Klinge (${e.message})`);
+            continue;
+        }
+        const lit = pruefeLiteral(rel, ast);
+        regeln.V1.push(...lit.v1);
+    }
+    return { regeln, v3, dateien: dateien.length };
 }
 
 async function selftest() {
@@ -285,12 +396,25 @@ async function selftest() {
         '    if (w || r == null) _sondeRot("B: Sonde", "x");\n    return r;\n}\n';
     const v3Laut = await pruefeSonde(laut, "laut.cjs");
     if (v3Laut.funde.length) fails.push("V3 feuert fälschlich an der lauten Sonde: " + v3Laut.funde.join(" · "));
+    // Vakuum-Klinge V1: `out.k = true` ohne Bedingung im Ergebnis einer Sonde wird ROT, `out.k = a === b` bleibt grün.
+    const sonde = (zeile) =>
+        parseJs(`async function b(page) {
+    await safeEvaluate(page, () => {
+        const out = {};
+        ${zeile}
+        return out;
+    });
+}
+`);
+    if (pruefeLiteral("v1.cjs", sonde("out.k = true;")).v1.length !== 1) fails.push("V1 feuert nicht an out.k = true");
+    if (pruefeLiteral("v1.cjs", sonde("out.k = a === b;")).v1.length !== 0) fails.push("V1 feuert fälschlich an out.k = a === b");
+    if (pruefeLiteral("v1.cjs", parseJs('check("n", x.length >= 0);')).v1.length !== 1) fails.push("V1 feuert nicht an length >= 0");
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V3 an der stillen Sonde), Kommentare zählen nicht"
+        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V1 und V3), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -326,7 +450,7 @@ async function main() {
     );
     console.log(
         `✅ DIE VAKUUM-KLINGE steht — V3: die EINE Sonde verbucht Wurf und leeres Ergebnis rot ` +
-            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr).`
+            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr); V1: 0 Literal-Grüne in ${klinge.dateien} Prüf-Dateien.`
     );
 }
 
