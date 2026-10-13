@@ -75750,7 +75750,7 @@ class AnazhRealm {
         const zuege = f.zuege || (f.zuege = new Map());
         const da = zuege.get(key);
         if (da) {
-            this._foundryNaeher(f, preset, variant, lod, wo);
+            if (wo != null) this._foundryNaeher(f, preset, variant, lod, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
             return da;
         }
         if (!f.requested) f.requested = new Set();

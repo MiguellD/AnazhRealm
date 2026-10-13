@@ -144,9 +144,9 @@ function statisch(src) {
     );
     const recS = teil("_foundryEnsureImpostorRecord(");
     const iStudio = recS ? recS.indexOf("this._impostorZelleNeu(at, key, preset, variant, ovK)") : -1;
-    const iZug = recS ? recS.indexOf("this._foundryRequest(") : -1;
+    const iZug = recS ? recS.indexOf("this._foundryZug(") : -1; // der Körper reist im EINEN Zug je Schlüssel (K38)
     pruef(
-        "S6b die Karte zieht mit echtem Renderer keine Körper-Stufe (rahmenlose Atlas-Zelle vor jedem _foundryRequest)",
+        "S6b die Karte zieht mit echtem Renderer keine Körper-Stufe (rahmenlose Atlas-Zelle vor jedem _foundryZug)",
         iStudio >= 0 && iZug > iStudio && /rendR && !rendR\._isHeadlessNull/.test(recS)
     );
     pruef(
