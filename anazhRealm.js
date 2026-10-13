@@ -54589,7 +54589,8 @@ class AnazhRealm {
             if (groups) {
                 for (const s of slots) {
                     const g = groups.get(s.key);
-                    if (g && g.tuer) rec._fluegel.push({ g, ref: s, tuer: g.tuer });
+                    const t = s.tuer || (g && g.tuer);
+                    if (g && t) rec._fluegel.push({ g, ref: s, tuer: t });
                 }
             }
             // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
@@ -54628,6 +54629,8 @@ class AnazhRealm {
             // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
             mA.multiplyMatrices(ew, this._foundryWorldScaleMatrix(rec.tor.gestalt));
             mA.multiply(mB);
+            // DIE FLÜGEL-INSTANZ (1310-4): zeichnet der Flügel die Gestalt eines anderen, setzt seine Basis sie an ihren Platz
+            if (t.basis) mA.multiply(t.basis);
             if (!(f.ref.slot >= 0)) continue; // die Marke ist frei (Rebuild): der nächste Slot-Wechsel sammelt neu
             f.g.mesh.setMatrixAt(f.ref.slot, mA);
             f.g.mesh.instanceMatrix.needsUpdate = true;
@@ -72100,6 +72103,9 @@ class AnazhRealm {
                 null
             );
             const ref = this._archGroupAlloc(g, entry);
+            // DIE FLÜGEL-INSTANZ (1310-4): zeichnen mehrere Flügel in EINER Gruppe, trägt die Marke den Schwenk-Träger ihres
+            // Flügels (Scharnier, Lage der Gestalt) — `g.tuer` ist nur der des ersten
+            if (leaf.tuer) ref.tuer = leaf.tuer;
             const slot = ref.slot;
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
@@ -79103,6 +79109,7 @@ class AnazhRealm {
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
+            this._foundryFluegelInstanz(group, leaves);
             // DIE RÄDER (Welle L, Q13 F-D8): ein Rad-Leaf (die Teile der Ecke 0, nabenrelativ, je Dreh-Klasse
             // verschmolzen) steht je Ecke als EIGENE Instanz derselben Gruppe (derselbe leafKey): Ruhe-Lage =
             // Welt-Skala · Nabe(Ecke) · Drehung π für die Gegenseite. Der Ritt schreibt ihre Matrix je Schritt neu
@@ -79549,7 +79556,8 @@ class AnazhRealm {
     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
     // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
-    // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel bleiben einzeln (eigene Scharnier-Matrix), schwere
+    // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel bleiben eigene Leaves (eigene Scharnier-Matrix; gleiche Gestalten
+    // teilen ihre Geometrie als Instanz, `_foundryFluegelInstanz`), schwere
     // Teile (Baum-L0 — Konifere ~143k je Teil —, über phyto-core `BUDGET_GESETZ.verschmelzVerts` zusammen) auch —
     // die Kopie verdoppelte ihren Speicher für einen Draw. WAS verschmilzt, sagt das Budget-Gesetz: die Sippe des Teils
     // (phyto-core `budgetSippe`, am Mesh gestempelt) — dieselbe Regel, mit der es die Draws zählt (`budgetSippen`);
@@ -79588,6 +79596,71 @@ class AnazhRealm {
             if (f && Number.isFinite(f.cacheBytes)) f.cacheBytes += bytes;
         }
     }
+    // DIE FLÜGEL-INSTANZ (1310-4, OMEN): porta-core baut Vorder- und Hinterflügel einer Seite mit DERSELBEN Funktion
+    // (`makeLeaf(seite, ±zFace)`); gebacken liegen sie bit-gleich um 2·zFace versetzt (Lage und Normalen, gemessen an allen
+    // sieben Genesis-Toren), und doch zeichnete jeder Flügel × Stoff eine eigene Gruppe (40 am Ring, CPU-Takt p95 −0,8 ms in
+    // EINER Sitzung ohne sie). Wiederholt ein Flügel einen früheren gleichen Stoffs und Wurf-Rechts nur verschoben
+    // (`_geoVerschoben`), zeichnet er dessen Geometrie als weitere Instanz derselben Gruppe: sein Leaf trägt die Verschiebung
+    // in `localMatrix` und in `tuer.basis` — der Schwenk-Träger dreht um SEIN Scharnier und setzt die Gestalt dann an ihren
+    // Platz (`_tickTorFluegel`). Die Drehung bleibt in der Instanz-Matrix: ein Schwung kostet je Flügel eine Matrix, nie die
+    // Ecken (die Drehung in der Geometrie kostete beim Gehen am Ring +2,9 ms CPU-Takt p95 und fiel). Links und rechts sind
+    // Spiegel mit eigener Teilung — sie bleiben zwei Gestalten.
+    _foundryFluegelInstanz(group, leaves) {
+        const vorlagen = [];
+        for (let i = 0; i < leaves.length; i++) {
+            const lf = leaves[i];
+            if (!lf.tuer || lf.rad || lf.teil) continue;
+            let treffer = null;
+            for (const v of vorlagen) {
+                if (v.mat !== lf.mat || v.castShadow !== lf.castShadow || v.teilWirft !== lf.teilWirft) continue;
+                const d = AnazhRealm._geoVerschoben(v.geom, lf.geom);
+                if (d) {
+                    treffer = { v, d };
+                    break;
+                }
+            }
+            if (!treffer) {
+                vorlagen.push(lf);
+                continue;
+            }
+            const basis = new THREE.Matrix4().makeTranslation(treffer.d[0], treffer.d[1], treffer.d[2]);
+            leaves[i] = Object.assign({}, lf, {
+                geom: treffer.v.geom,
+                leafKey: treffer.v.leafKey,
+                localMatrix: new THREE.Matrix4().multiplyMatrices(lf.localMatrix, basis),
+                tuer: Object.assign({}, lf.tuer, { basis }),
+                _eigen: false, // die Geometrie gehört der Vorlage
+            });
+        }
+    }
+    // Ist b dieselbe Geometrie wie a, nur verschoben? Die Regel ist die des Budget-Gesetzes (phyto-core `budgetGestaltVersatz`:
+    // derselbe Index, jede Spur gleich, die Lage um EINEN Vektor versetzt) — so zählt das Gesetz, was der Wirt zeichnet
+    // (gate:sippen-wirt). Der Wirt legt nur die Gestalt der Puffer davor (gleiche Attribut-Namen und Spurbreiten, kein
+    // verschränkter Puffer, derselbe Zeichen-Bereich). Gibt den Vektor oder null.
+    static _geoVerschoben(a, b) {
+        const pa = a.attributes.position;
+        const pb = b.attributes.position;
+        if (a === b || !pa || !pb || pa.isInterleavedBufferAttribute || pb.isInterleavedBufferAttribute) return null;
+        if (pa.itemSize !== 3 || pb.itemSize !== 3 || pa.count !== pb.count) return null;
+        if (a.drawRange.start !== b.drawRange.start || a.drawRange.count !== b.drawRange.count) return null;
+        const namen = Object.keys(a.attributes)
+            .filter((k) => k !== "position")
+            .sort();
+        if (namen.length + 1 !== Object.keys(b.attributes).length) return null;
+        for (const k of namen) {
+            const x = a.attributes[k];
+            const y = b.attributes[k];
+            if (!y || x.isInterleavedBufferAttribute || y.isInterleavedBufferAttribute || x.itemSize !== y.itemSize)
+                return null;
+        }
+        const sicht = (g) => ({
+            pos: g.attributes.position.array,
+            idx: g.index ? g.index.array : null,
+            spuren: namen.map((k) => g.attributes[k].array),
+        });
+        return globalThis.__phytoCore.budgetGestaltVersatz(sicht(a), sicht(b));
+    }
+
     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
     // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
     static _geoVerbinden(geoms) {

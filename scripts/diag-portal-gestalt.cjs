@@ -282,6 +282,8 @@ function deriveGestalt(srcNC) {
         // nur in die Kaskaden und zählt nicht gegen die Draws der Stufe 0 (das Muster diag-sippen-wirt: ohne shadowTwin)
         res.c.zwillingSlots = (entry.instSlots || []).filter((s) => /#S$/.test(String(s.key))).length;
         res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length - res.c.zwillingSlots : 0;
+        // die Züge: je Gruppe einer — der Hinterflügel zeichnet als Instanz in der Gruppe des Vorderflügels (1310-4)
+        res.c.zuege = new Set((entry.instSlots || []).filter((s) => !/#S$/.test(String(s.key))).map((s) => s.key)).size;
         // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
         // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
         const _rc = r.constructor._studioRenderConfig;
@@ -361,9 +363,9 @@ function deriveGestalt(srcNC) {
     // Merge der Zweit-Kerne) — vorher 124–315 Leaves je Tor, jedes Flügel-Teil eines; jetzt je Flügel × Stoff ein
     // Leaf, der Flügel-Takt (`_tickTorFluegel`) setzt höchstens 8 Matrizen statt bis zu 244.
     check(
-        `C: Tor-Geometrie angekommen auf der Budget-Zeile (instSlots ${outCD.c.slotCount}, 1..${outCD.c.drawBudget} = gate[0].draws)`,
-        outCD.c.slotCount >= 1 && Number.isInteger(outCD.c.drawBudget) && outCD.c.slotCount <= outCD.c.drawBudget,
-        `slots=${outCD.c.slotCount} (+ Wurf-Zwilling ${outCD.c.zwillingSlots}) budget=${outCD.c.drawBudget}`
+        `C: Tor-Geometrie angekommen auf der Budget-Zeile (${outCD.c.zuege} Züge aus ${outCD.c.slotCount} Slots, 1..${outCD.c.drawBudget} = gate[0].draws)`,
+        outCD.c.zuege >= 1 && Number.isInteger(outCD.c.drawBudget) && outCD.c.zuege <= outCD.c.drawBudget,
+        `zuege=${outCD.c.zuege} slots=${outCD.c.slotCount} (+ Wurf-Zwilling ${outCD.c.zwillingSlots}) budget=${outCD.c.drawBudget}`
     );
     check(
         `C: der Flügel-Takt dreht je Flügel × Stoff (${outCD.c.fluegelSlots} Flügel-Slots, 1..8)`,

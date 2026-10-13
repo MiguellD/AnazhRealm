@@ -42,7 +42,7 @@ console.log("— MEMBRAN-GESETZ (porta-core ⇄ Lab-Shell ⇄ Welt) —");
 // ── Wand 1: die Zwillings-Tabelle (Alt-Literale V18.463, eingefroren) ──
 const FROZEN = {
     profilW: 64,
-    seg: 90,
+    seg: 45, // 1310-3: von 90 (Vertex-Welle bildgleich bei 45, Genesis −47k Dreiecke, −1,0 ms GPU) — ein erklärter Akt
     eps: 0.06,
     om: 3.0,
     kk: 13.8,
