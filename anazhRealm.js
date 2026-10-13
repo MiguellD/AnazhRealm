@@ -67645,7 +67645,8 @@ class AnazhRealm {
         return dev && dev.features && dev.features.has("texture-compression-bc") ? "bc" : "rgba8";
     }
 
-    // Die Texturen des Atlas für mindestens `bedarf` Schichten (verdoppelnd). Das Wachsen baut neue Texturen, kopiert
+    // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
+    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen baut neue Texturen, kopiert
     // die Schichten und tauscht den Wert der Basis-Knoten — das EINE Material bleibt, die Bundles zeichnen neu.
     _impostorAtlasTexturen(at, bedarf) {
         if (!at) return null;
@@ -67668,8 +67669,9 @@ class AnazhRealm {
             if (!at.fmt) at.fmt = this._impostorAtlasFormat();
             at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt);
         }
+        const S = AnazhRealm.KARTEN_ATLAS_SCHRITT;
         let cap = Math.max(8, at.cap || 0);
-        while (cap < soll) cap *= 2;
+        while (cap < soll) cap += S;
         const M = at.masse;
         const T = THREE;
         // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.
@@ -105327,6 +105329,9 @@ AnazhRealm._solitaerVon = function (preset, V) {
     if (!PC || typeof PC.solitaerGestalt !== "function") return AnazhRealm._kernPflichtBruch("phyto:solitaerGestalt");
     return PC.solitaerGestalt(rec.kind, V);
 };
+// Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht ~0,25 MB, das Wachsen kopiert nur beim
+// Einzug einer Art (BC1-Albedo 170 KB + RGTC2-Normale 85 KB je Schicht, 512 px samt Mips; Mess-Wiese 18 Karten in 18 Schichten).
+AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
 // Das Gitter der Grundrisse (`_grundrissStand`): 32-m-Zellen, Zahlen-Schlüssel (die Streu fragt je Zelle).
 AnazhRealm.GRUNDRISS_ZELLE = 32;
 AnazhRealm._grundrissSchluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
