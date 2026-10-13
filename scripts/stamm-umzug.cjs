@@ -16,7 +16,10 @@
 //        vm-Fingerabdruck alt (EIN Skript) ↔ neu (die Zonen-Dateien): Schlüssel-Ordnung, Deskriptor-Art, toString-sha,
 //        name/length, Datenwerte — 0 Abweichungen außer dem Klassen-Text.
 //   --teile §NN <methode>      setzt einen Unter-Marker vor die Methode und schneidet neu (Buchstaben der Zone neu gezählt)
-//   --leser [--trocken]        der Codemod (idempotent): kanonische Stamm-Leser → stamm.text(root), Rest benannt
+//   --leser [--trocken]        der Codemod (idempotent): kanonische Stamm-Leser → stammLib.text(root), Rest benannt
+//   --fmt | --lint [--basis origin/main]
+//        prettier --write bzw. eslint NUR auf den Stamm-Dateien, die gegen die Merge-Basis geändert sind (samt Arbeitsbaum
+//        und neuen Dateien) — npm run stamm:fmt / stamm:lint
 //   --selftest
 const fs = require("fs");
 const path = require("path");
@@ -370,6 +373,32 @@ function codemod(trocken) {
     return { geaendert, stellen, hand };
 }
 
+// ── --fmt / --lint: nur die geänderten Stamm-Dateien ──────────────────────────────────────────────────────────────
+function geaenderteStammDateien(root, basis) {
+    const git = (args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" });
+    const mb = git(["merge-base", "HEAD", basis]).trim();
+    const geaendert = new Set(
+        git(["diff", "--name-only", mb])
+            .split("\n")
+            .concat(git(["ls-files", "--others", "--exclude-standard"]).split("\n"))
+            .filter(Boolean)
+    );
+    return { mb, dateien: stamm.dateien(root).filter((p) => geaendert.has(p)) };
+}
+function werkzeugLauf(root, art, basis) {
+    const { mb, dateien } = geaenderteStammDateien(root, basis);
+    if (!dateien.length) {
+        console.log(`stamm:${art}: keine Stamm-Datei gegen ${basis} (${mb.slice(0, 8)}) geändert`);
+        return 0;
+    }
+    const befehl = art === "fmt" ? ["prettier", "--write", ...dateien] : ["eslint", ...dateien];
+    console.log(`stamm:${art}: ${dateien.length} Datei(en) gegen ${basis} (${mb.slice(0, 8)}): ${dateien.join(" ")}`);
+    const t0 = Date.now();
+    const r = require("child_process").spawnSync("npx", befehl, { cwd: root, stdio: "inherit", shell: true });
+    console.log(`stamm:${art}: EXIT ${r.status} in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    return r.status === 0 ? 0 : 1;
+}
+
 // ── --teile ───────────────────────────────────────────────────────────────────────────────────────────────────────
 function teile(T, zone, methode) {
     const nn = zone.replace(/^§/, "");
@@ -537,8 +566,9 @@ function main() {
         const ziel = opt("--ziel");
         if (!ziel) throw new Error("--schnitt braucht --ziel <wurzel>");
         const z = path.resolve(ziel);
-        if (z === ROOT && !argv.includes("--im-repo"))
-            throw new Error("--schnitt ins Repo nur mit --im-repo (das Fenster)");
+        const imRepo = !path.relative(ROOT, z).startsWith("..") && !path.isAbsolute(path.relative(ROOT, z));
+        if (imRepo && !argv.includes("--im-repo"))
+            throw new Error("--schnitt in den Baum dieses Repos nur mit --im-repo (das Fenster C2)");
         const T = stamm.text(opt("--quelle") ? path.resolve(opt("--quelle")) : z);
         const t0 = Date.now();
         const S = schreibeZonen(z, T);
@@ -573,6 +603,8 @@ function main() {
         );
         return 0;
     }
+    if (argv.includes("--fmt") || argv.includes("--lint"))
+        return werkzeugLauf(ROOT, argv.includes("--fmt") ? "fmt" : "lint", opt("--basis", "origin/main"));
     if (argv.includes("--leser")) {
         const r = codemod(argv.includes("--trocken"));
         console.log(
