@@ -5124,8 +5124,10 @@ init();
                 if (!Object.prototype.hasOwnProperty.call(PRESETS, id)) continue;
                 const p = PRESETS[id];
                 if (!p || typeof p !== "object") continue;
-                // Reine Daten (JSON-klonbar): kind/panel + die Regler `s` + die Material/Form `fx`.
+                // Reine Daten (JSON-klonbar): kind/panel + die Regler `s` + die Material/Form `fx` + die Phänotyp-Zeile
+                // `ph` der Art (K24: Rinde, Laub, Nadel und Krone eines Baums sind phyto-core artPhaenotyp(s, Art)).
                 book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
+                if (p.ph) book[id].ph = Object.assign({}, p.ph);
             }
         } catch (_e) {}
         // W7b/N2 (Studio-Vertrag v1.1 N7.2 + Nervensystem-Plan) — die ZWEIT-KERN-REZEPTE reisen im

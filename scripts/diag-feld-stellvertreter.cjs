@@ -21,7 +21,7 @@
 //   O2  ein freigegebener Slot kehrt zurück und hebt die Obergrenze wieder; kein Slot doppelt
 //   T1  der Pass-Takt setzt die Instanzen = Obergrenze × Plätze je Block und zieht Strahl und Raster aus EINER Matrix
 //   K1  der March-Draw: instanzierte Kiste, Rückseiten, Vertex-Knoten aus dem Stellvertreter, Fragment-Tiefe, vor dem Panorama
-//   K2  DAS STATISCHE BUDGET je Fragment (WGSL der Draws, `fp.wgsl`, gezählt mit `wgslKosten`): Panorama 0 Schleifen · ≤ 1 Abtastung · keine Fragment-
+//   K2  DAS STATISCHE BUDGET je Fragment (WGSL der Draws, `fp.wgsl`, gezählt mit `wgslKosten`): Panorama 0 Schleifen · ≤ 4 Abtastungen (die bilineare Silhouette, K16) · keine Fragment-
 //       Tiefe; March ≤ 4 Schleifen (je Zweig Schritte × Primitive), keine Seiten-/Eintrags-/Platz-Schleife, EIN Satz je Fragment
 //   S1  Selbsttest: ein Panorama mit Fragment-Tiefe bricht K2; S2: eine Obergrenze ohne Nachzug bricht O1
 //
@@ -207,7 +207,7 @@ function probe(modus) {
     const urteilK2 = (a) =>
         !a.pano.tiefe &&
         a.budgetPano.schleifen === 0 &&
-        a.budgetPano.abtastungen <= 1 &&
+        a.budgetPano.abtastungen <= 4 &&
         a.budgetMarch.schleifen <= 4 &&
         !a.budgetMarch.seitenSchleife &&
         a.budgetMarch.einSatz;

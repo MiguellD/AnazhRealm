@@ -1337,28 +1337,48 @@ const server = http.createServer((req, res) => {
             res.dachErr = String((e11 && e11.stack) || e11).slice(0, 400);
         }
         // ===== (14) DAS WASSER DES RINGS IST DAS WASSER DES BODENS (K16, die Naht) =====
-        // Wo der Boden Binnen-Wasser trägt (Fluss-Kanal, See: `_atlasWaterLevelAt` ohne Boden — dieselbe Maske, die das
-        // Fern-Wasser zeichnet), liegt der Ring unter dessen Spiegel; sonst verdeckt er es, und der Fluss endet an der
-        // Bau-Kante. Selbsttest: die alte Regel (nass nur unter dem Meeresspiegel, aus dem Gesetz des Punkts) verdeckt.
+        // Der SEE (ein Wasser-Körper über dem Meer, `_atlasWaterLevelAt` → koerper): der Ring liegt unter seinem Spiegel. Der
+        // FLUSS (4–17 m, schmaler als die Masche): die Farbe des Ring-Punkts trägt den Anteil der Masche, den sein Wasser deckt
+        // (`_fernFlussDeckung`, Kasten-Filter über die halbe Maschen-Kante) — der Wasser-Anteil der Farbe zwischen dem Land der
+        // Masche (`_fernFarbeMasche`) und dem Wasser weicht höchstens 0,05 ab. Selbsttest: die alte Regel (nass nur unter dem
+        // Meeresspiegel, kein Fluss in der Farbe) verfehlt jeden Fluss-Punkt.
         try {
             const frW = r.state.fernRing;
             for (let t = 0; t < 400 && frW.cursor < frW.totalVerts; t++) r._fernRingRefresh(4096);
+            r._fernRingFaerben(frW, performance.now() + 60000, frW.totalVerts);
             const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
-            const w = { n: 0, fluss: 0, verdeckt: 0, alt: 0, orte: [] };
+            const WF = r.constructor.FERN_FARBE.wasser;
+            const w = { see: 0, verdeckt: 0, fluss: 0, sichtbar: 0, abweichung: 0, alt: 0, offen: frW.farbN, orte: [] };
             const geos = geosVon(frW);
+            const aus = {};
+            const land = new Float32Array(7);
             for (let g = 0; g < frW.totalVerts; g++) {
                 const p = r._fernRingPunkt(frW, g);
-                const W = r._atlasWaterLevelAt(p.x, p.z, -Infinity);
-                if (!Number.isFinite(W) || !(W > wl + 0.5)) continue;
-                w.n++;
-                if (r._hydroRiverAt(p.x, p.z)) w.fluss++;
-                const y = geos[p.s].attributes.position.getY(p.li);
-                if (!(y < W)) {
-                    w.verdeckt++;
-                    if (w.orte.length < 4) w.orte.push([Math.round(p.x), Math.round(p.z), +(y - W).toFixed(2)]);
+                r._atlasWaterLevelAt(p.x, p.z, -Infinity, aus);
+                if (Number.isFinite(aus.koerper) && aus.koerper > wl + 0.5) {
+                    w.see++;
+                    if (!(geos[p.s].attributes.position.getY(p.li) < aus.koerper)) w.verdeckt++;
                 }
-                const law = frW.farbLaw[g];
-                if (!((law < wl ? wl - r._fernRingWasserTiefe() : law) < W)) w.alt++;
+                const c = r._fernFlussDeckung(p.x, p.z, Math.max(p.fuss.ht, p.fuss.hr));
+                if (!(c >= 0.05)) continue;
+                r._fernFarbeMasche(p.x, frW.farbLaw[g], p.z, land, p.fuss);
+                const col = geos[p.s].attributes.color;
+                const v = [WF[0] - land[0], WF[1] - land[1], WF[2] - land[2]];
+                const vv = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+                if (vv < 4e-4) continue;
+                w.fluss++;
+                if (c >= 0.25) w.sichtbar++;
+                const s =
+                    ((col.getX(p.li) - land[0]) * v[0] +
+                        (col.getY(p.li) - land[1]) * v[1] +
+                        (col.getZ(p.li) - land[2]) * v[2]) /
+                    vv;
+                if (Math.abs(s - c) > 0.05) {
+                    w.abweichung++;
+                    if (w.orte.length < 4)
+                        w.orte.push([Math.round(p.x), Math.round(p.z), +c.toFixed(2), +s.toFixed(2)]);
+                }
+                if (Math.abs(0 - c) > 0.05) w.alt++;
             }
             res.binnen = w;
         } catch (e14) {
@@ -1585,12 +1605,15 @@ const server = http.createServer((req, res) => {
         );
         const w = out.binnen || {};
         check(
-            "14: DAS WASSER DES RINGS IST DAS WASSER DES BODENS — wo der Boden Binnen-Wasser trägt (Fluss-Kanal, See), liegt der Ring unter dessen Spiegel; Selbsttest: die alte Regel (nass nur unter dem Meeresspiegel) verdeckt",
-            w.n >= 20 && w.verdeckt === 0 && w.alt >= w.n * 0.5,
-            `binnen=${w.n} fluss=${w.fluss} verdeckt=${w.verdeckt} orte=${JSON.stringify(w.orte || [])} selbsttest-alt=${w.alt}` +
+            "14: DAS WASSER DES RINGS IST DAS WASSER DES BODENS — ein See liegt über dem Ring, ein Fluss trägt seinen Anteil der Masche in der Farbe (Abweichung ≤ 0,05); Selbsttest: die alte Regel (nass nur unter dem Meeresspiegel) verfehlt den Fluss",
+            w.fluss >= 20 && w.sichtbar >= 5 && w.abweichung === 0 && w.verdeckt === 0 && w.alt >= w.fluss * 0.5,
+            `see=${w.see} verdeckt=${w.verdeckt} fluss=${w.fluss} deutlich(>=0,25)=${w.sichtbar} abweichung=${w.abweichung} offen=${w.offen} orte=${JSON.stringify(w.orte || [])} selbsttest-alt=${w.alt}` +
                 (out.binnenErr ? ` err=${out.binnenErr}` : "") +
                 (w.verdeckt > 0
-                    ? " — TÄTER: `_fernRingSetzVertex` nässt nur unter dem Meeresspiegel (`law < wl`), Kanal und See des Bodens fehlen dem Ring"
+                    ? " — TÄTER: `_fernNass` legt den Ring über den See (`_atlasWaterLevelAt` koerper)"
+                    : "") +
+                (w.abweichung > 0
+                    ? " — TÄTER: die Fern-Farbe trägt den Fluss nicht als Anteil der Masche (`_fernFarbeTeile` → `_fernFlussFarbe`)"
                     : "")
         );
     }

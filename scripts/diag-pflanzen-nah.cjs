@@ -650,13 +650,14 @@ function windDatenUrteil(quellen) {
     const zeilen = [];
     const ergebnis = {};
     for (const [k, f] of Object.entries(roh)) {
-        const fx = (buch[f.presetId] && buch[f.presetId].fx) || {};
         const kind = buch[f.presetId].kind;
+        // Rinde und Nadel-Art sind der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
+        const ph = kind === "tree" || kind === "shrub" ? PC.artPhaenotyp(buch[f.presetId].s, buch[f.presetId]) : {};
         let u = { v: [], m: {} };
         const trauerArt = buch[f.presetId].s && buch[f.presetId].s.trop >= 0.55;
         if (kind === "tree" && f.lod === 1) u = klingenL1(k, f.T);
         else if (kind === "tree") {
-            u = rindeUrteil(k, f.T, fx.barkType || (fx.conifer ? "conifer" : "oak"), f.presetId !== "totholz");
+            u = rindeUrteil(k, f.T, ph.barkType, f.presetId !== "totholz");
             if (f.seed === 1) {
                 const w = windUrteil(k, f.T, skala(f.presetId));
                 u.v.push(...w.v);
@@ -665,7 +666,7 @@ function windDatenUrteil(quellen) {
             // Die Trauer-L0 trägt Strähnen (gestreckte Zellen) — ihr Blatt-Maß ist kein Karten-Maß.
             const trauer = buch[f.presetId].s && buch[f.presetId].s.trop >= 0.55;
             if (!trauer && f.T.some((t) => t.kind === "foliageTex")) {
-                const b = fx.conifer ? nadelMass(k, f.T, skala(f.presetId)) : blattMass(k, f.T, skala(f.presetId));
+                const b = ph.conifer ? nadelMass(k, f.T, skala(f.presetId)) : blattMass(k, f.T, skala(f.presetId));
                 u.v.push(...b.v);
                 Object.assign(u.m, b.m);
             }

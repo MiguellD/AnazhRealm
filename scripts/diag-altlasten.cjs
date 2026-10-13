@@ -94,7 +94,26 @@ const FORBIDDEN = [
     { token: "0x241712", fiel: "BOOT-LITERAL-ABSCHIED — das Haar zieht aus der HAIR_COLORS-Palette" },
     // DIAL-ZWILLINGS-ABSCHIED 18.07. — die Literal-Kopien der Pflanzen-Tafel:
     // die EINE Quelle ist foundry-core PRESETS (__terrainCore.PHYTO_PRESETS,
-    // Leser _phytoStudioDials); nur SPECIES_PALETTE_DEFAULT (neutral) lebt.
+    // Leser _phytoArt).
+    // K24 (13.10.) — die zweite Baum-Grammatik des Stamms ist gefallen: der gefühlte Baum (Richter) wächst aus der
+    // Rezept-Zeile der Art im Gesetzbuch (_phytoArt) und der EINEN Ableitung treeParams, wie der gesehene.
+    {
+        token: "SPECIES_GRAMMAR",
+        fiel: "K24 — der Richter wächst aus treeParams der Art (_phytoArt), keine Stamm-Grammatik",
+    },
+    { token: "_phytoDialsFor", fiel: "K24 — der dritte Dial-Zwilling (Grammatik-Krone → P)" },
+    { token: "_phytoStudioDials", fiel: "K24 — die Art liest _phytoArt, ihr Phänotyp artPhaenotyp" },
+    { token: "_ensureVariantSeedPool", fiel: "K24 — der Pool wächst je Art (_variantSeedsFor)" },
+    { token: "_generateVariantSeedPool", fiel: "K24 — der Pool wächst je Art (_variantSeedsFor)" },
+    { token: "skeleton.grammar", fiel: "K24 — das Laub der Art am Skelett heißt skeleton.laub (aus P)" },
+    // K24-N1 (13.10.) — der stille Ersatz der Skelett-Leser ist gefallen: jede Größe schreibt der EINE Erzeuger aus treeParams
+    // der Art, die Wand `_skelettPflicht` bricht laut, wo eine fehlt.
+    { token: "SPECIES_PALETTE_DEFAULT", fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz" },
+    { token: "DEFAULT_TREE_FLARE", fiel: "K24-N1 — der Wurzelanlauf ist P.flare der Art, die Rippen STAMM_RIPPEN" },
+    { token: "foliageScale", fiel: "K24-N1 — ein nie geschriebenes Skelett-Feld, die Leser setzten still 1" },
+    { token: "totalH || 10", fiel: "K24-N1 — die Höhe des Skeletts ist P.height, kein Ersatz" },
+    { token: "flareAmp || 0.45", fiel: "K24-N1 — der Farn mit Anlauf 0 bekam still 0,45" },
+    { token: 'test(sp) ? "oak"', fiel: "K24-N1 — die Blatt-Form ist P.leafShape der Art, nie ihr Name" },
     { token: "SPECIES_PHYTO_DIALS", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Studio-Tafel führt (gefühlt == gesehen)" },
     { token: "SPECIES_PALETTE_GIGANT", fiel: "DIAL-ZWILLINGS-ABSCHIED — der Gigant trägt den mammut-Ton der Tafel" },
     { token: "SPECIES_PALETTE[", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Art-Palette wohnt in der Studio-Tafel" },
@@ -1291,6 +1310,12 @@ const ZWILLINGE = [
         fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
     },
     {
+        fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
+        gesetzbuch: "phyto-core.js",
+        verboten: ["foundry-core.js", "anazhRealm.js"],
+        fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
+    },
+    {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
         verboten: ["foundry-core.js", "anazhRealm.js"],
@@ -1858,14 +1883,15 @@ function scanNormalWand(srcRoh) {
 // DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
-// deriveParamsPlant liest dieselbe Abbildung. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot
-// mit Zeile; fehlt ein Anker, ist die Abbildung aus emitTree oder deriveParamsPlant gewandert.
+// deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
+// (K24). Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot mit Zeile; fehlt ein Anker, ist die
+// Abbildung aus emitTree gewandert oder deriveParamsPlant reicht dem Gesetz eine andere als die rohe Stufe.
 const STUFEN_ANKER = [
     "__lod = lod;",
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "const rezept = stufenRezept(ph.kind, __lod);",
+    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -2155,13 +2181,16 @@ function main() {
         const ohne = scanStufenWand(
             kern
                 .replace("__lod = stufenRezept(P.kind, stufe);", "")
-                .replace("const rezept = stufenRezept(ph.kind, __lod);", "const rezept = __lod;")
+                .replace(
+                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
+                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre);'
+                )
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
             ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /stufenRezept\(ph\.kind, __lod\);` steht 0×/.test(e));
+            ohne.some((e) => /SEED, __lod, pre\);` steht 0×/.test(e));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);
