@@ -35694,7 +35694,8 @@ class AnazhRealm {
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
         // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
-        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) this._grundrissRaeumen(entry);
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
+            this._grundrissRaeumen(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
@@ -80860,7 +80861,15 @@ class AnazhRealm {
                     z1 = Math.max(z1, q.c[2] + q.h[2]);
                 }
             const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
-            const fp = x1 > x0 && z1 > z0 ? { ex: ((x1 - x0) / 2) * k, ez: ((z1 - z0) / 2) * k, ox: ((x0 + x1) / 2) * k, oz: ((z0 + z1) / 2) * k } : null;
+            const fp =
+                x1 > x0 && z1 > z0
+                    ? {
+                          ex: ((x1 - x0) / 2) * k,
+                          ez: ((z1 - z0) / 2) * k,
+                          ox: ((x0 + x1) / 2) * k,
+                          oz: ((z0 + z1) / 2) * k,
+                      }
+                    : null;
             e._grundrissHuelle = { hu, fp };
             if (fp) return fp;
         }
@@ -93448,7 +93457,7 @@ class AnazhRealm {
             pool.x = cp.x;
             pool.y = cp.y;
             pool.z = cp.z;
-            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM);
+            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
             q.sort((a, b) => a.rang - b.rang);
             pool.wahl = q.slice(0, LP.plaetze);
         }
@@ -93534,6 +93543,17 @@ class AnazhRealm {
         return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
     }
 
+    // DER SICHTKEGEL der Licht-Wahl (K10 × K11): das Frustum der Kamera des Bildes, je Wahl aus ihren Matrizen.
+    _leuchtKegel(cam) {
+        const F = this._leuchtFrustum || (this._leuchtFrustum = new THREE.Frustum());
+        const m = this._leuchtKegelM || (this._leuchtKegelM = new THREE.Matrix4());
+        cam.updateMatrixWorld();
+        return F.setFromProjectionMatrix(
+            m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+            cam.coordinateSystem
+        );
+    }
+
     // DIE LEUCHTQUELLEN um das Auge (x, y, z) im Umkreis R (K11), je mit stabiler Kennung (`id`) und Rang (der Abstand des
     // Auges zur Kugel ihrer Reichweite, 0 in ihr — dann der Abstand selbst, das Nächste zuerst): das Licht des Auges
     // (`_augenLeuchte`, am Auge: Rang 0), jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim Eintritt)
@@ -93541,13 +93561,18 @@ class AnazhRealm {
     // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
     // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laternen der Pläne (`_laternenLesen`, Zellen)
     // und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
-    _leuchtQuellen(x, y, z, R) {
+    // Mit dem Sichtkegel `F` (`_leuchtKegel`) rangiert jede Quelle, deren Reichweiten-Kugel ihn nicht berührt, hinter allen,
+    // die ihn berühren: sie erhellt kein Pixel des Bildes — die Laterne hinter dem Rücken nahm sonst den Platz der Laterne
+    // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
+    _leuchtQuellen(x, y, z, R, F) {
         const out = [];
         const t = this._windZeit();
+        const kugel = F ? this._leuchtKugel || (this._leuchtKugel = new THREE.Sphere()) : null;
         const nimm = (id, q) => {
             const d = Math.hypot(q.x - x, q.y - y, q.z - z);
             if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
-            out.push(Object.assign(q, { id, rang: Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+            const imBild = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
+            out.push(Object.assign(q, { id, rang: (imBild ? 0 : 1e9) + Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
         };
         const auge = this._augenLeuchte;
         if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
