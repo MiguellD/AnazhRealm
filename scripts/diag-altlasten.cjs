@@ -534,6 +534,14 @@ const FORBIDDEN = [
         fiel: "K16 — die Ferne trägt den Wasser-Körper des Gesetzes (_wasserKoerper), kein Fern-Blau",
     },
     { token: "0.0196, 0.0863, 0.1706", fiel: "K16 — das Fern-Blau 0x265273 fiel, R∞ aus WASSER_GESETZ" },
+    {
+        token: "_flussBreite",
+        fiel: "K16 — die Breite des Flusses ist das Gesetz des Kerns (gelaende-core flussBreite)",
+    },
+    {
+        token: "HC.widthMin",
+        fiel: "K16 — jeder Fluss-Punkt trägt seine Breite; das Minimum ist FLUSS_BREITE.min des Kerns",
+    },
     { token: "ctx.getLevel(", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
     { token: "getLevel: (", fiel: "Welle 5 — der Sheet-Kontext trägt getDach, keinen Live-Pegel" },
     { token: "_studioGround", fiel: "Welle 5 — die Boden-Palette liegt synchron im Terrain-Namensraum (BODEN_FARBE)" },

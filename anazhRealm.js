@@ -20998,11 +20998,8 @@ class AnazhRealm {
             fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
             minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
             // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
-            // DIE BREITE (K16) aus dem Einzugsgebiet A des Netzes (km²): width = widthMin + widthK · A^widthExp — die Bankvoll-
-            // Breite der hydraulischen Geometrie (Dunne & Leopold 1978, W ∝ A^0,37: 0,16 km² ≈ 4,4 m, 25 km² ≈ 17 m).
-            widthMin: 2,
-            widthK: 4.7,
-            widthExp: 0.37,
+            // DIE BREITE (K16) ist das Gesetz des Kerns (gelaende-core `flussBreite`, `FLUSS_BREITE`): der Mäander misst seine
+            // Wellenlänge daran, jeder Fluss-Punkt trägt sie (`width`).
             // Gegen die ECHTE Voxel-Surface getunt (steilstes Fluss-Segment ~0.5): Wasserfall = Lauf steiler
             // als 0.4 UND in Summe ≥ 6 m Absturz (`_hydroExtractWaterfalls` verschmilzt Kaskaden per run-merge).
             waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
@@ -36671,21 +36668,16 @@ class AnazhRealm {
     // Phase 5b — DIE FLÜSSE SIND DAS NETZ DES GESETZES (K16): die Läufe der Ebenen 0 und 1 aus gelaende-core
     // (`flussLaeufe`) — dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites (bis K16 eine D8-
     // Akkumulation auf der geglätteten Makro-Fläche: ihr Kanal fräste den gebauten Boden quer durch Hänge und Ebenen, 3,94
-    // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied Punkte im Zell-Abstand, gleich verteilt auf
-    // dem Segment (ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des Gesetzes (stromab streng fallend), die
-    // Breite aus dem Einzugsgebiet (`_flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter
-    // Lauf). Ein Lauf endet am Meer, am See (`mouth` "see", `seeY` sein Spiegel), als Zufluss auf der Rinne seines
-    // Hauptlaufs ("zufluss") oder am Rand der Kachel.
+    // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied die Punkte seiner BAHN (der Mäander des
+    // Gesetzes, `bahn`: Abstand ≤ Zelle auf dem Bogen; ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des
+    // Gesetzes am Ort der Sehne (stromab streng fallend), die Richtung die der Bahn, die Breite aus dem Einzugsgebiet (Kern
+    // `flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter Bogen). Ein Lauf endet am Meer, am
+    // See (`mouth` "see", `seeY` sein Spiegel), als Zufluss auf der Bahn seines Hauptlaufs ("zufluss") oder am Rand der Kachel.
     _hydroNetzFluesse(ctx) {
         const { dim, cell, originX, originZ, size, filled, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
-        const laeufe = globalThis.__gelaendeCore.flussLaeufe(
-            this._gelaende(),
-            originX,
-            originZ,
-            originX + size,
-            originZ + size
-        );
+        const G = globalThis.__gelaendeCore;
+        const laeufe = G.flussLaeufe(this._gelaende(), originX, originZ, originX + size, originZ + size, cell);
         const zelle = (x, z) => {
             const i = Math.floor((x - originX) / cell);
             const j = Math.floor((z - originZ) / cell);
@@ -36707,16 +36699,11 @@ class AnazhRealm {
             };
             for (let g = 0; g < lf.glieder.length && !mouth; g++) {
                 const gl = lf.glieder[g];
-                const ex = gl.bx - gl.ax;
-                const ez = gl.bz - gl.az;
-                const len = Math.hypot(ex, ez) || 1;
-                const n = Math.max(1, Math.ceil(len / cell));
-                const voll = AnazhRealm._flussBreite(gl.A);
-                const bis = g === lf.glieder.length - 1 ? n : n - 1;
-                for (let m = 0; m <= bis; m++) {
-                    const t = m / n;
-                    const x = gl.ax + ex * t;
-                    const z = gl.az + ez * t;
+                const B = gl.bahn;
+                const voll = G.flussBreite(gl.A);
+                const bis = g === lf.glieder.length - 1 ? B.length : B.length - 1;
+                for (let m = 0; m < bis; m++) {
+                    const { t, x, z } = B[m];
                     const idx = zelle(x, z);
                     if (idx < 0) {
                         abschluss("border");
@@ -36731,7 +36718,7 @@ class AnazhRealm {
                         seeY = filled[idx];
                         break;
                     }
-                    const s = lauf + len * t;
+                    const s = lauf + B[m].s;
                     const quelle = Math.min(1, (HC.quellBett + HC.quellWeitung * s) / voll);
                     points.push({
                         x,
@@ -36739,12 +36726,12 @@ class AnazhRealm {
                         y: gl.ba + (gl.bb - gl.ba) * t,
                         width: voll * quelle,
                         quelle,
-                        flowX: ex / len,
-                        flowZ: ez / len,
+                        flowX: B[m].fx,
+                        flowZ: B[m].fz,
                         inLake: false,
                     });
                 }
-                lauf += len;
+                lauf += B[B.length - 1].s;
             }
             const ende = { meer: "sea", see: "see", muendung: "zufluss" };
             abschluss(mouth || ende[lf.ende] || "border");
@@ -36788,7 +36775,7 @@ class AnazhRealm {
         const S = new Map();
         const ziel = (p) => {
             const D = AnazhRealm._flussTiefe(p);
-            const rand = (p.width || HC.widthMin) * 0.5 + D / HC.bankNeigung;
+            const rand = p.width * 0.5 + D / HC.bankNeigung;
             let tief = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
             for (let sg = -1; sg <= 1; sg += 2) {
                 const v = this._voxelSurfaceY(p.x - p.flowZ * rand * sg, p.z + p.flowX * rand * sg);
@@ -36912,8 +36899,8 @@ class AnazhRealm {
                 const a = punkte.get(ka);
                 const b = punkte.get(kb);
                 if (!b) continue;
-                const hwA = (a.width || HC.widthMin) * 0.5;
-                const hwB = (b.width || HC.widthMin) * 0.5;
+                const hwA = a.width * 0.5;
+                const hwB = b.width * 0.5;
                 const dA = AnazhRealm._flussTiefe(a);
                 const dB = AnazhRealm._flussTiefe(b);
                 const weit = Math.max(hwA + dA / sN, hwB + dB / sN) + HC.dammBreite + HC.bankWeite;
@@ -36933,7 +36920,7 @@ class AnazhRealm {
                             let t = ((p.x - a.x) * ex + (p.z - a.z) * ez) / len2;
                             t = t < 0 ? 0 : t > 1 ? 1 : t;
                             const halfW = hwA + (hwB - hwA) * t;
-                            if (!((p.width || HC.widthMin) * 0.5 < halfW)) continue;
+                            if (!(p.width * 0.5 < halfW)) continue;
                             const D = dA + (dB - dA) * t;
                             const dK = halfW + D / sN;
                             const dist = Math.hypot(p.x - (a.x + ex * t), p.z - (a.z + ez * t));
@@ -37075,8 +37062,8 @@ class AnazhRealm {
                     az: a.z,
                     bx: b.x,
                     bz: b.z,
-                    hwA: (a.width || HC.widthMin) * 0.5,
-                    hwB: (b.width || HC.widthMin) * 0.5,
+                    hwA: a.width * 0.5,
+                    hwB: b.width * 0.5,
                     dA: AnazhRealm._flussTiefe(a),
                     dB: AnazhRealm._flussTiefe(b),
                     // der Spiegel an beiden Enden (`_hydroRiverSpiegel`): Fluss-Fläche und Bett lesen ihn linear
@@ -103093,12 +103080,6 @@ AnazhRealm._flussTiefe = function (p) {
     const q = p.quelle;
     if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
     return Math.min(HC.kanalTiefe, (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q);
-};
-// DIE VOLLE BREITE eines Flusses aus seinem Einzugsgebiet A (m², das Netz des Gelände-Gesetzes): widthMin + widthK ·
-// (A in km²)^widthExp. Leser: `_hydroNetzFluesse`.
-AnazhRealm._flussBreite = function (A) {
-    const HC = AnazhRealm.HYDROSPHERE;
-    return HC.widthMin + HC.widthK * Math.pow(Math.max(0, A) / 1e6, HC.widthExp);
 };
 // DER KASTEN QUER ZUM FLUSS (K16, `_flussAbdruck`): das Mittel eines Ufer-Bands b(|u|) über [d − F/2, d + F/2] (u der
 // Abstand quer zum Segment, d der des Punkts) aus der Stammfunktion des Bands C(s) = ∫₀ˢ b — exakt für ein gerades
