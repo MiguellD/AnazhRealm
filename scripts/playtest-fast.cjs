@@ -450,6 +450,82 @@ function check(name, ok) {
             }
             return o;
         });
+        // K24 — DER RICHTER IST DAS GESETZ: der gefühlte Baum (`_growTreeBlueprintRich` — Kollision, Silhouette, Werkstatt,
+        // Reload) wächst aus derselben Ableitung wie der gesehene (`__phytoCore.treeParams` mit der Phänotyp-Zeile der Art):
+        // je Art der Welt × Gestalt × Stufe trägt er die Höhe, die Rinde, die Laub-Farbe und die Nadel-Art des Gesetzes —
+        // Schlüssel für Schlüssel. Konsum-Leser: der Kollisions-Stamm (`_populateBlockerAABBs`) und die Werkstatt-Vorschau.
+        const RI = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const pc = window.__phytoCore;
+            const tab = window.__terrainCore && window.__terrainCore.PHYTO_PRESETS;
+            const o = { faelle: 0, rot: 0, abw: {}, selbst: false };
+            const ARTEN = [
+                "baum_eiche",
+                "baum_fichte",
+                "baum_birke",
+                "baum_weide",
+                "baum_mammut",
+                "baum_tanne",
+                "baum_buche",
+                "baum_karst",
+                "busch_hazel",
+            ];
+            const fnv = (s) => {
+                let h = 2166136261;
+                for (let i = 0; i < s.length; i++) h = ((h ^ s.charCodeAt(i)) * 16777619) >>> 0;
+                return h >>> 0;
+            };
+            const vergleiche = (ist, soll) => Object.keys(soll).filter((k) => ist[k] !== soll[k]);
+            const notiere = (k, fall) => (o.abw[k] = o.abw[k] || []).push(fall);
+            for (const sp of ARTEN)
+                for (const seed of ["k24-a", "k24-b"])
+                    for (const lod of [0, 1, 2]) {
+                        const fall = sp + "/" + seed + "/L" + lod;
+                        o.faelle++;
+                        try {
+                            const rec = tab[r._foundryPresetFor(sp)];
+                            const P = pc.treeParams(rec.s, fnv(sp + "|" + seed + "|v5"), lod, rec);
+                            const teile = r._growTreeBlueprintRich(sp, seed, { lod });
+                            const sk = r._lastTreeSkeleton;
+                            r._lastTreeSkeleton = null;
+                            // die Nadel-Art liest der Richter an seinen Laub-Bällen ab (Nadel y-gestreckt), der Fuß-Saum zählt nicht
+                            const baelle = (teile || []).filter((p) => p.material === "laub" && p.size.x <= p.size.y * 1.5);
+                            const ist = {
+                                hoehe: sk.totalH,
+                                rindeA: sk.barkA,
+                                rindeB: sk.barkB,
+                                laub: sk.foliageColor,
+                                nadel: baelle.length > 0 && baelle.every((p) => p.size.y > p.size.x),
+                            };
+                            const soll = {
+                                hoehe: P.height,
+                                rindeA: P.barkA,
+                                rindeB: P.barkB,
+                                laub: P.leafCol,
+                                nadel: !!P.conifer && !P.tot,
+                            };
+                            const d = vergleiche(ist, soll);
+                            if (d.length) o.rot++;
+                            for (const k of d) notiere(k, fall);
+                            // Selbsttest: ein eingeschleuster Zwilling (die Rinde einer anderen Art) MUSS beim Namen fallen
+                            if (fall === "baum_buche/k24-a/L0")
+                                o.selbst =
+                                    vergleiche(Object.assign({}, soll, { rindeA: soll.rindeA ^ 0x101010 }), soll).join() ===
+                                    "rindeA";
+                        } catch (e) {
+                            o.rot++;
+                            notiere("bruch:" + ((e && e.message) || String(e)).slice(0, 60), fall);
+                        }
+                    }
+            return o;
+        });
+        for (const k of Object.keys(RI.abw))
+            console.log("     ⟶ RICHTER " + k + ": " + RI.abw[k].length + " Fälle, z. B. " + RI.abw[k].slice(0, 3).join(" "));
+        check("K24 RICHTER Selbsttest: ein Rinden-Zwilling fällt beim Namen (rindeA)", RI.selbst === true);
+        check(
+            `K24 RICHTER = GESETZ: gefühlter Baum = treeParams der Art, 9 Arten × 2 Gestalten × 3 Stufen (${RI.faelle} Fälle, ${RI.rot} abweichend)`,
+            RI.faelle === 54 && RI.rot === 0
+        );
         check("CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)", K.satz === true);
         check("CO-SCHÖPFER: KI-Antwort → Studio-Birken in der Welt (END-ZU-END, gestubbt)", K.ki === true);
         if (K.err) console.log("     ⟶ " + K.err);

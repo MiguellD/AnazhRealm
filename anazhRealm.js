@@ -13237,7 +13237,7 @@ class AnazhRealm {
         // fresh (kein worldId aus einem Save) → heutige Genese-Version: alle neuen Spieler teilen Seed UND
         // genVersion; eine GELADENE Welt ohne Feld bleibt Legacy (fehlend → 1, _genVersion).
         // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
-        // Grammar (SPECIES_GRAMMAR) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
+        // Wuchs aus dem Gesetz (_phytoArt → treeParams) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
         // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
         if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
         // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
@@ -13483,8 +13483,8 @@ class AnazhRealm {
         const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
         // Jede NEUE Welt wird mit der heutigen Genese-Version geboren; bestehende Welten (Feld fehlt → 1)
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
-        // Genese-Konstante: bei fresh sofort gepinnt, alte Welten migrieren lazy (_ensureVariantSeedPool).
-        const variantSeed = this._generateVariantSeedPool(seed);
+        // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
+        const variantSeed = {};
         return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: 9, variantSeed };
     }
 
@@ -39498,7 +39498,8 @@ class AnazhRealm {
         if (this._fernLaubLin) return this._fernLaubLin;
         const c = new THREE.Color();
         this._fernLaubLin = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"].map((art) => {
-            const d = this._phytoStudioDials(art);
+            const a = this._phytoArt(art);
+            const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
             if (!d || !Number.isFinite(d.leafCol)) throw new Error("Fern-Farbe: Studio-Laubfarbe fehlt für " + art);
             c.setHex(d.leafCol);
             return [c.r, c.g, c.b];
@@ -57477,48 +57478,23 @@ class AnazhRealm {
     // Varianten-Pool: Map<species, string[]> mit VARIANTS_PER_SPECIES Seeds je Spezies — PURE STRINGS
     // (frozen, reisen im Snapshot, P2P string-gleich, kein Float-Drift). Fehlt worldMeta.variantSeed,
     // lazy deterministisch aus dem Welt-Seed; danach Cache.
-    // Grammatik (_growTreeBlueprint): Laub NIE auf Primärästen, nur an Ebene-2-Enden; tag-neutral über
+    // Der Wuchs (_growTreeBlueprint) liest die Art aus dem Gesetzbuch (_phytoArt); tag-neutral über
     // materialKonsistenz (Stamm holz, Krone laub); Stream `-veg-grammatik` (re-rollt keinen anderen).
-    _ensureVariantSeedPool() {
-        if (!this.state.worldMeta) return null;
-        const existing = this.state.worldMeta.variantSeed;
-        if (existing && typeof existing === "object") {
-            // Pool aus älterer Welt deckt evtl. nicht alle heutigen SPECIES_GRAMMAR: fehlende Spezies lazy
-            // ergänzen (gleiches Seed-Schema); existierende Pools bleiben UNANGETASTET (bit-identischer Wuchs).
-            const speciesNow = Object.keys(AnazhRealm.SPECIES_GRAMMAR || {});
-            const N = AnazhRealm.VARIANTS_PER_SPECIES;
-            const worldSeed = this.state.worldMeta.seed || "anazh-realm-seed";
-            let added = 0;
-            for (const sp of speciesNow) {
-                if (!Array.isArray(existing[sp]) || existing[sp].length !== N) {
-                    const variants = new Array(N);
-                    for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${sp}-var${i}`;
-                    existing[sp] = variants;
-                    added++;
-                }
-            }
-            if (added > 0 && typeof this.log === "function") {
-                this.log(`V18.217: ${added} Spezies in den Varianten-Pool ergänzt (lazy)`, "DBG");
-            }
-            return existing;
-        }
-        const pool = this._generateVariantSeedPool(this.state.worldMeta.seed || "anazh-realm-seed");
-        this.state.worldMeta.variantSeed = pool;
-        return pool;
-    }
-
-    // Pure Pool-Generierung aus dem Welt-Seed (kein state, nur SPECIES_GRAMMAR + VARIANTS_PER_SPECIES).
-    // Der species-Name ist Teil des Seed-Suffixes → eine neue Spezies verschiebt keine bestehende Bahn.
-    _generateVariantSeedPool(worldSeed) {
-        const pool = {};
+    _variantSeedsFor(species) {
+        const wm = this.state.worldMeta;
+        if (!wm) return null;
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const species = Object.keys(AnazhRealm.SPECIES_GRAMMAR || {});
-        for (const sp of species) {
-            const variants = new Array(N);
-            for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${sp}-var${i}`;
-            pool[sp] = variants;
-        }
-        return pool;
+        if (!wm.variantSeed || typeof wm.variantSeed !== "object") wm.variantSeed = {};
+        const pool = wm.variantSeed;
+        // Eine bestehende Zeile bleibt UNANGETASTET (bit-identischer Wuchs); eine neue entsteht nur für eine Art mit
+        // Rezept-Zeile im Gesetzbuch (_phytoArt) — dasselbe Saat-Schema, darum P2P string-gleich.
+        if (Array.isArray(pool[species]) && pool[species].length === N) return pool[species];
+        if (!this._phytoArt(species)) return null;
+        const worldSeed = wm.seed || "anazh-realm-seed";
+        const variants = new Array(N);
+        for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${species}-var${i}`;
+        pool[species] = variants;
+        return variants;
     }
 
     // LOD-Baupläne je (species, variantIndex): Keys `grown_<species>_v<idx>_lod{0|1|2}`; LOD0 routet auf
@@ -57536,19 +57512,17 @@ class AnazhRealm {
                 return null;
             }
         }
-        // Statische Deko-Baupläne (Kiesel/Felsen, nicht in SPECIES_GRAMMAR): EIN Bauplan dient allen drei
+        // Statische Deko-Baupläne (Kiesel/Felsen, keine Pflanze des Gesetzbuchs): EIN Bauplan dient allen drei
         // LOD-Slots — so fließen sie durch denselben Scatter-Pfad wie die Bäume.
-        if (!AnazhRealm.SPECIES_GRAMMAR || !AnazhRealm.SPECIES_GRAMMAR[species]) {
+        if (!this._phytoArt(species)) {
             if (this.state.blueprints[species]) return { 0: species, 1: species, 2: species };
             return null;
         }
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const pool = this._ensureVariantSeedPool();
-        if (!pool || !pool[species] || pool[species].length !== N) return null;
+        const seeds = this._variantSeedsFor(species);
+        if (!seeds) return null;
         if (!Number.isFinite(variantIndex) || variantIndex < 0 || variantIndex >= N) return null;
-        const variantSeed = pool[species][variantIndex];
-        const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-        if (!grammar) return null;
+        const variantSeed = seeds[variantIndex];
         const speciesLabel = String(species || "Baum")
             .replace(/^baum_/, "")
             .replace(/^./, (c) => c.toUpperCase());
@@ -57562,7 +57536,7 @@ class AnazhRealm {
                 lod === 0 ? `grown_${species}_v${variantIndex}` : `grown_${species}_v${variantIndex}_lod${lod}`;
             keys[lod] = cacheKey;
             if (this.state.blueprints[cacheKey]) continue;
-            const parts = this._growTreeBlueprintRich(species, variantSeed, grammar, { lod });
+            const parts = this._growTreeBlueprintRich(species, variantSeed, { lod });
             if (!Array.isArray(parts) || parts.length < 1) continue;
             const isSkeletonMeshed =
                 genV >= 7 && this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches);
@@ -59667,10 +59641,9 @@ class AnazhRealm {
         if (!this.state.blueprints) return null;
         // Varianten-Pool: der regionSeed rastert in EINE von VARIANTS_PER_SPECIES Varianten — die Welt
         // bleibt beschränkt, HISM teilt über Regionen, und ein berührter Baum re-wächst BIT-GENAU aus
-        // variantSeed[index] (Voraussetzung der Promotion). Alte Welten: _ensureVariantSeedPool.
-        const N = AnazhRealm.VARIANTS_PER_SPECIES;
-        const pool = this._ensureVariantSeedPool();
-        if (!pool || !pool[species] || pool[species].length !== N) return null;
+        // variantSeed[index] (Voraussetzung der Promotion). Die Zeile der Art: _variantSeedsFor.
+        const seeds = this._variantSeedsFor(species);
+        if (!seeds) return null;
         // Hash für die VARIANTEN-WAHL — fnv-1a über (species, regionSeed):
         // gleicher regionSeed → gleicher variantIndex (Region trägt EINEN
         // lokalen Stil); verschiedene regionSeeds streuen über N Varianten.
@@ -59692,7 +59665,7 @@ class AnazhRealm {
         // Die Spezies moduliert FORM/FARBE, die Materialien (holz+laub) bleiben über alle Arten identisch →
         // Spawn-Affinitäts-Achsen verschieben sich nie. Geometrie aus dem gefrorenen variantSeed:
         // bit-identisch zwischen Erstwachstum und Re-Growth nach Restore (Promotion ohne Sprung).
-        const variantSeed = pool[species][variantIndex];
+        const variantSeed = seeds[variantIndex];
         const parts = this._growTreeBlueprint(species, variantSeed);
         if (!Array.isArray(parts) || parts.length < 4) return null;
         // Variations-Wand: nur UNDEKLARIERTE Achsen strikt (Δ < 0.05); in SPECIES_TAG_VARIATION deklarierte
@@ -59779,11 +59752,10 @@ class AnazhRealm {
     }
 
     _growTreeBlueprint(speciesKey, seed) {
-        // Welt-Routing: ab gen >= 5 die Rich-Skeleton-Grammar (Verzweigung + Laub an den Spitzen),
+        // Welt-Routing: ab gen >= 5 wächst jede Art mit Rezept-Zeile im Gesetzbuch (_phytoArt) aus dem Kern,
         // davor die Legacy-Form (alte Welten bit-identisch).
-        const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[speciesKey];
-        if (grammar && this._genVersion && this._genVersion() >= 5) {
-            return this._growTreeBlueprintRich(speciesKey, seed, grammar);
+        if (this._genVersion && this._genVersion() >= 5 && this._phytoArt(speciesKey)) {
+            return this._growTreeBlueprintRich(speciesKey, seed);
         }
         return this._growTreeBlueprintLegacy(speciesKey, seed);
     }
@@ -59795,154 +59767,41 @@ class AnazhRealm {
     // Polylinien. `count`/`leafBudget` sind die Perf-Wand; headless: diag-phyto-tree.
     _phytoGrowSkeleton(P, seq) {
         // Delegator: die Wuchs-Mathematik lebt in der EINEN Quelle phyto-core.js
-        // (`globalThis.__phytoCore.growSkeleton`; Main, voxel-worker und Terrain-Portal laden sie).
-        // Kern fehlt → leeres Ergebnis statt Wurf (der Aufrufer prüft segs.length).
+        // (`globalThis.__phytoCore.growSkeleton`; Main, voxel-worker und Terrain-Portal laden sie). Ohne Kern kein Baum.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        if (core && typeof core.growSkeleton === "function") return core.growSkeleton(P, seq);
-        return { segs: [], leaves: [], trunkR: 0.1, height: (P && P.height) || 1, runMeta: {} };
+        if (!core || typeof core.growSkeleton !== "function") return AnazhRealm._kernPflichtBruch("phyto:growSkeleton");
+        return core.growSkeleton(P, seq);
     }
 
-    // Dial-Brücke: SPECIES_GRAMMAR + Genom-Achsen → Phänotyp-Vektor `P` für _phytoGrowSkeleton (die Art
-    // als Region im Morphospace). Zufall deterministisch über `r01`; Genom-Achsen modulieren die Dials.
-    _phytoDialsFor(speciesKey, grammar, genome, r01, ctx) {
-        const lerp = (a, b, t) => a + (b - a) * t;
-        const clamp01 = (v) => Math.max(0, Math.min(1, v));
-        const c = ctx || {};
-        const crown = c.crownForm || grammar.crown;
-        const specialCrown = crown === "weeping" || crown === "vase" || crown === "schirm";
-        // Basis-Regler aus der Studio-Tafel (_phytoStudioDials, dieselbe Quelle wie der Render), sofern die
-        // Art ein Studio-Gesetz trägt und keine Sonder-Krone (weeping/vase/schirm) gewürfelt wurde;
-        // sonst crown-abgeleitet.
-        const preset = !specialCrown && this._phytoStudioDials(speciesKey);
-        const conifer = preset ? preset.conifer : crown === "cone" || grammar.foliage.kind === "needleSpray";
-        let apical, slim, trop, delta, leafD;
-        if (preset) {
-            // Vorlagen-Werte als Zentrum + kleiner deterministischer Jitter (Natur-Varianz).
-            // apical trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
-            apical = clamp01(preset.api + (r01() - 0.5) * 0.06);
-            slim = clamp01(preset.slim + (r01() - 0.5) * 0.08);
-            trop = preset.trop + (r01() - 0.5) * 0.08;
-            delta = Math.max(1.9, Math.min(2.9, preset.delta + (r01() - 0.5) * 0.1));
-            leafD = grammar.foliage.kind === "none" ? 0 : clamp01(preset.leaf + (r01() - 0.5) * 0.08);
-        } else {
-            // Apikaldominanz: Nadelbaum-Kegel exkurrent (hoch), Laubkrone dekurrent (niedrig).
-            // Aus der Kronen-Form abgeleitet — die eine Achse, die Eiche von Tanne trennt. Der
-            // Feldname `apical` trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
-            if (conifer || crown === "cone") apical = lerp(0.82, 0.95, r01());
-            else if (crown === "column") apical = lerp(0.66, 0.78, r01());
-            else if (crown === "vase" || crown === "schirm") apical = lerp(0.3, 0.46, r01());
-            else apical = lerp(0.24, 0.52, r01()); // dome/ellipsoid/irregular/weeping — breite Laubkrone
-            // Schlankheit (McMahon-k): Nadelbäume + Säulen schlank, breite Kronen gedrungen.
-            slim = conifer
-                ? lerp(0.62, 0.82, r01())
-                : crown === "column"
-                  ? lerp(0.7, 0.82, r01())
-                  : lerp(0.32, 0.55, r01());
-            // Gravitropismus: aufrecht (−), Trauerweide hängend (+).
-            trop =
-                crown === "weeping"
-                    ? lerp(0.7, 0.95, r01())
-                    : conifer
-                      ? lerp(0.0, 0.14, r01())
-                      : lerp(-0.2, 0.05, r01());
-            // da-Vinci-Δ: 2 (mechanisch) .. 3 (hydraulisch); die phyllo-Achse trägt die Varianz.
-            delta = c.phylloDiv ? Math.max(1.9, Math.min(2.9, c.phylloDiv)) : lerp(2.1, 2.5, r01());
-            leafD = grammar.foliage.kind === "none" ? 0 : lerp(0.45, 0.8, r01());
-        }
-        // Kronen-Charakter aus der Vorlage, sonst crown-abgeleitet (auch für fehlende Felder wie crownBase).
-        // maxDepth bleibt das Part-Budget (c.maxDepth via countCap/leafBudget) — nie die L-System-Tiefe.
-        const dialCrownBase =
-            preset && preset.crownBase != null ? preset.crownBase : crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24;
-        const dialConiferDroop =
-            preset && preset.coniferDroop != null ? preset.coniferDroop : crown === "cone" ? 0.22 : 0.05;
-        const dialWindGain = preset && preset.windGain != null ? preset.windGain : 1;
-        return {
-            height: c.height,
-            slim,
-            apical,
-            trop,
-            delta,
-            leafD,
-            leafSize: (grammar.foliage.size || 0.5) * (c.foliageScale || 1) * 1.3,
-            conifer,
-            barkType: c.barkType || (conifer ? "conifer" : "smooth"),
-            maxDepth: c.maxDepth != null ? c.maxDepth : conifer ? 4 : 5,
-            crownBase: dialCrownBase,
-            whorlSpacing: 0.1 + r01() * 0.05,
-            coniferDroop: dialConiferDroop,
-            basalStems: c.basalStems || 0,
-            windGain: dialWindGain,
-            trunkMul: c.trunkMul || 1,
-            countCap: c.countCap,
-            leafBudget: c.leafBudget,
-        };
-    }
-
-    // Studio-Quelle der Phänotyp-Regler: der gefühlte Baum (Wuchs → Kollision/Silhouette) liest DIESELBE
-    // Tafel wie der gesehene — foundry-core PRESETS, SYNCHRON über __terrainCore.PHYTO_PRESETS (nie der
-    // async Buch-Stand; lockstep-fest). Fehlende Kronen-Felder (crownBase/coniferDroop) aus der Krone.
-    // null → Grammatik-Fallback (Arten ohne Studio-Gesetz).
-    _phytoStudioDials(speciesKey) {
+    // DIE ART EINER PFLANZE (K24): der Welt-Name → seine Rezept-Zeile der Studio-Tafel (foundry-core PRESETS, SYNCHRON über
+    // __terrainCore.PHYTO_PRESETS — nie der async Buch-Stand, lockstep-fest). Die EINE Quelle von Reglern, Phänotyp und
+    // Gestalt jedes gewachsenen Baums, Strauchs und Krauts: der gefühlte Baum (Wuchs → Kollision/Silhouette) liest dieselbe
+    // Zeile wie der gesehene (buildInstance im Worker). Eine zweite Grammatik im Stamm gibt es nicht mehr. null = keine
+    // Pflanze mit Regler-Zeile (Fels, Bauwerk, unbekannter Name).
+    _phytoArt(speciesKey) {
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
         const tab = tc && tc.PHYTO_PRESETS;
-        if (!tab) return null;
-        const preset = this._foundryPresetFor(speciesKey);
-        const rec = preset ? tab[preset] : null;
+        if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
+        const id = this._foundryPresetFor(speciesKey);
+        const rec = id ? tab[id] : null;
         if (!rec || !rec.s || !Number.isFinite(rec.s.api)) return null;
-        const s = rec.s;
-        // Ein Baum oder Strauch trägt Rinde, Laub, Nadel und Krone als seinen Phänotyp (K24: phyto-core artPhaenotyp aus
-        // Reglern und Phänotyp-Zeile — dieselbe Quelle wie der gezeichnete Baum); jede andere Art ihre Rezept-Zeile fx.
-        const pc = globalThis.__phytoCore;
-        const baum = rec.kind === "tree" || rec.kind === "shrub";
-        if (baum && !(pc && typeof pc.artPhaenotyp === "function"))
-            return AnazhRealm._kernPflichtBruch("phyto:artPhaenotyp");
-        const fx = baum ? pc.artPhaenotyp(s, rec) : rec.fx || {};
-        return {
-            api: s.api,
-            delta: s.delta,
-            slim: s.slim,
-            trop: s.trop,
-            leaf: s.leaf,
-            conifer: !!fx.conifer,
-            coniferDroop: Number.isFinite(fx.coniferDroop) ? fx.coniferDroop : undefined,
-            crownBase: Number.isFinite(fx.crownBase) ? fx.crownBase : undefined,
-            maxDepth: Number.isFinite(fx.maxDepth) ? fx.maxDepth : undefined,
-            windGain: Number.isFinite(fx.windGain) ? fx.windGain : undefined,
-            barkA: Number.isFinite(fx.barkA) ? fx.barkA : undefined,
-            barkB: Number.isFinite(fx.barkB) ? fx.barkB : undefined,
-            leafCol: Number.isFinite(fx.leafCol) ? fx.leafCol : undefined,
-        };
+        const k = rec.kind;
+        if (k !== "tree" && k !== "shrub" && k !== "flower" && k !== "fern") return null;
+        return { id, rec };
     }
 
-    // Rezept-Quelle: die 5 Vorlagen-Regler {api,slim,trop,delta,leaf} (+ conifer) je Spezies — bevorzugt
-    // die Studio-Tafel (_phytoStudioDials), sonst aus der Grammatik-Krone abgeleitet. Fließt durch die
-    // EINE Pipeline `__phytoCore.treeParams`.
-    _treeRecipeDials(speciesKey, grammar) {
-        const preset = this._phytoStudioDials(speciesKey);
-        if (preset)
-            return {
-                api: preset.api,
-                slim: preset.slim,
-                trop: preset.trop,
-                delta: preset.delta,
-                leaf: preset.leaf,
-                conifer: !!preset.conifer,
-            };
-        const crown = (grammar && grammar.crown) || "dome";
-        const fol = (grammar && grammar.foliage) || {};
-        const conifer = crown === "cone" || fol.kind === "needleSpray";
-        const api = conifer ? 0.9 : crown === "column" ? 0.72 : crown === "vase" || crown === "schirm" ? 0.38 : 0.34;
-        const slim = conifer ? 0.72 : crown === "column" ? 0.76 : 0.45;
-        const trop = crown === "weeping" ? 0.85 : conifer ? 0.06 : -0.1;
-        const leaf = fol.kind === "none" ? 0.2 : 0.6;
-        return { api, slim, trop, delta: 2.3, leaf, conifer };
+    // Die 5 Regler {api,slim,trop,delta,leaf} einer Art (Werkstatt-Panel, Regrow) — ihre Rezept-Zeile im Gesetzbuch.
+    _treeRecipeDials(speciesKey) {
+        const art = this._phytoArt(speciesKey);
+        if (!art) return null;
+        const s = art.rec.s;
+        return { api: s.api, slim: s.slim, trop: s.trop, delta: s.delta, leaf: s.leaf };
     }
 
-    _growTreeBlueprintRich(speciesKey, seed, grammar, opts) {
-        // LOD-Stufen aus EINER Grammatik: `opts.lod` beschneidet die Tiefe, nie die Form —
-        // lod 0 = Hero (L1–L3 + volle Foliage, ~75–81 Parts) · lod 1 = nur L1, ~4 Cards (~12) ·
-        // lod 2 = Trunk + 1 Kronen-Card (~6). Der seed ist über alle Stufen identisch; die Kronen-Mitte
-        // (Skeleton-Anchors) wandert nicht → kein horizontaler LOD-Pop.
+    _growTreeBlueprintRich(speciesKey, seed, opts) {
+        // LOD-Stufen aus EINEM Gesetz: `opts.lod` ist die Bau-Stufe von treeParams (Blatt-Stride, Blatt-Maß, Wurzeln) und
+        // beschneidet die Part-Tiefe, nie die Form — lod 0 = Hero · lod 1 = nur L1 · lod 2 = Stamm + 1 Kronen-Anker. Der
+        // seed ist über alle Stufen identisch; die Kronen-Mitte (Skeleton-Anchors) wandert nicht → kein LOD-Pop.
         const lodLevel = opts && Number.isFinite(opts.lod) ? Math.max(0, Math.min(2, opts.lod | 0)) : 0;
         const sKey = String(speciesKey || "baum_eiche") + "|" + String(seed || "g8-default") + "|v5";
         let hash = 2166136261;
@@ -59959,59 +59818,36 @@ class AnazhRealm {
             return (v + 1) * 0.5;
         };
         const lerp = (a, b, t) => a + (b - a) * t;
-        // ─── DAS GENOM ───
-        // Über den geteilten Roller (deterministisch, eigener Stream je Achse, orthogonal zu r01()):
-        // sizeClass (Strauch · Baum · GROSS · GIGANT) · age (jung/dünn ↔ alt/knorrig) · foliageVar
-        // (Sommer ↔ Herbst, tag-neutral). Die Achsen sind orthogonal (junger Gigant, alte Strauch-Eiche).
-        const genome = this._rollGenome(sKey, "tree-genome");
-        // Die Größenklasse gilt nur den BÄUMEN (baum_*). Sträucher/Farne/Blumen tragen
-        // ihre eigene kleine Grammatik-Höhe (sie SIND die Strauch-Lebensform) → kein
-        // 77-m-Riesen-Blume-Unsinn; nur das Alter variiert sie (jung/alt). wahrerwuchs §4.6.
+        // ─── DIE ART UND IHR GESETZ (K24) ───
+        // Regler, Phänotyp und Bau-Stufe fließen durch die EINE Ableitung `__phytoCore.treeParams` — mit der Phänotyp-Zeile
+        // der Art (die Buche ihre glatte graue Rinde, der Karst-Baum seinen Wurzelanlauf), wie der gesehene Baum im Worker.
+        // Instanz-Varianz = der Saat-Wurf des Gesetzes (±16 % Höhe, ±0,1 Regler, der Farb-Wurf). opts.recipeDials
+        // überschreibt die Regler (Werkstatt → Live-Vorschau). Keine Genom-Krone, keine Neigung, kein Herbst-Ton: der
+        // gefühlte Baum trägt nur, was das Gesetz trägt.
+        const art = this._phytoArt(speciesKey);
+        if (!art) return null;
+        const pc = globalThis.__phytoCore;
+        if (!pc || typeof pc.treeParams !== "function") return AnazhRealm._kernPflichtBruch("phyto:treeParams");
+        const dials = (opts && opts.recipeDials) || art.rec.s;
+        const P0 = pc.treeParams(dials, hash >>> 0, lodLevel, art.rec);
+        // Die Größenklasse ist ein abgeleitetes Etikett der Ableitung (nur baum_*: Sträucher und Kräuter SIND klein).
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
-        genome.axis("sizeClass"); // Genom-Zieh-Strom-Position bewahren (die alte sizeClass-Achse)
-        // Rezept→Parameter: Höhe, Proportion und Art-Charakter kommen aus der Vorlage — die 5 Regler
-        // (_treeRecipeDials) fließen durch die EINE Quelle `__phytoCore.treeParams`. Nie ein
-        // sizeClass-Höhen-Override (machte die 8-m-Tanne zum 2-m-Blob). Instanz-Varianz = Saat-Jitter
-        // (±16 % Höhe, ±0.10 Dials aus `hash`); sizeClass ist nur ein abgeleitetes Etikett.
-        // opts.recipeDials überschreibt das Rezept (Werkstatt-Regler → Live-Vorschau).
-        const _recipeDials = (opts && opts.recipeDials) || this._treeRecipeDials(speciesKey, grammar);
-        const _phytoP =
-            typeof globalThis !== "undefined" &&
-            globalThis.__phytoCore &&
-            typeof globalThis.__phytoCore.treeParams === "function"
-                ? globalThis.__phytoCore.treeParams(_recipeDials, hash >>> 0, lodLevel)
-                : null;
         let sizeClass;
-        if (!isTreeSpecies || !_phytoP) sizeClass = "normal";
-        else if (_phytoP.barkType === "sequoia" || _phytoP.height >= 18) sizeClass = "gigant";
-        else if (_phytoP.height >= 9) sizeClass = "gross";
+        if (!isTreeSpecies) sizeClass = "normal";
+        else if (P0.barkType === "sequoia" || P0.height >= 18) sizeClass = "gigant";
+        else if (P0.height >= 9) sizeClass = "gross";
         else sizeClass = "normal";
-        const ageMul = genome.axis("age"); // 0 = jung (dünn/sparse) .. 1 = uralt (dick/knorrig/voll)
-        // Vier weitere orthogonale Achsen, tag-neutral + physik-safe, NUR baum_*: crownForm weitet die Krone
-        // über den Spezies-Default (weeping/vase/schirm) · lean neigt den Stamm · phylloDiv variiert die
-        // Blattstellung · multiStem würfelt Nebenstämme.
-        const crownForm = isTreeSpecies
-            ? genome.pick("crownForm", [grammar.crown, grammar.crown, grammar.crown, "weeping", "vase", "schirm"])
-            : grammar.crown;
-        const leanMag = isTreeSpecies ? genome.range("leanMag", 0, 0.16) * (sizeClass === "gigant" ? 0.4 : 1) : 0;
-        const leanDir = genome.axis("leanDir") * 6.283;
-        const leanX = Math.cos(leanDir) * leanMag;
-        const leanZ = Math.sin(leanDir) * leanMag;
-        const phylloDiv = isTreeSpecies ? genome.range("phyllo", 2.18, 2.62) : 2.39996323; // golden ± Varianz
-        const multiStem =
-            isTreeSpecies &&
-            sizeClass !== "gigant" &&
-            grammar.foliage.kind !== "none" &&
-            genome.chance("multiStem", 0.22)
-                ? genome.int("stems", 1, 2)
-                : 0;
         const parts = [];
         // Skeleton-Container: flacher Branch-Pool (Polylinien-Punkte + Level + isTrunk), Foliage-Anker und
         // Welt-Höhe für die Flex-Berechnung; nach dem Bau in `_lastTreeSkeleton` gespiegelt.
+        const totalH = P0.height;
+        // Das Laub der Art aus dem Gesetz: Nadel oder Blatt (der Phänotyp), kahl das Totholz, das Blatt-Maß der Stufe.
+        const laub = { kind: P0.tot ? "none" : P0.conifer ? "needleSpray" : "leafCluster", size: P0.leafSize };
         const skeleton = {
             species: speciesKey,
-            grammar: grammar,
-            totalH: 0, // wird gleich unten gesetzt
+            art: art.id,
+            laub,
+            totalH,
             branches: [], // [{ points: [{x,y,z,r}, ...], level: int, isTrunk: bool }]
             anchors: [], // [{x,y,z}]
             flareAmp: 0,
@@ -60020,27 +59856,13 @@ class AnazhRealm {
             // Geometrie-Builder können sie lesen (z.B. radialSegs reduzieren).
             lodLevel: lodLevel,
         };
-
-        // ─── STAMM ───
-        // Höhe aus der Vorlagen-Pipeline (_phytoP.height, per Saat gejittert); ist sie nicht geladen, die
-        // Grammatik-Spanne.
-        const totalH = _phytoP ? _phytoP.height : lerp(grammar.height[0], grammar.height[1], r01());
-        skeleton.totalH = totalH;
-        // Allometrie (Quadrat-Kubik): größere Bäume brauchen überproportional dicke Glieder, sonst Knick.
-        // sizeFactor = Höhe / Spezies-Normalhöhe (normal ≈ 1), Exponent 1.15.
-        const refH = (grammar.height[0] + grammar.height[1]) * 0.5;
-        const sizeFactor = totalH / Math.max(0.5, refH);
-        const allometry = Math.pow(sizeFactor, 1.15);
-        // GERÜST-Dicke + Laub-Größe ans Alter koppeln (die age-Achse, wahrerwuchs §4.1):
-        // jung = dünn/klein, uralt = dick/knorrig/voll. tag-neutral (nur Größe/Form).
-        const foliageScale = Math.max(0.55, Math.pow(sizeFactor, 0.62)) * (0.78 + ageMul * 0.5);
         // Flare am Stamm-Fuß je Spezies aus SPECIES_TREE_PARAMS; ohne Eintrag DEFAULT_TREE_FLARE.
         const sParams = AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS[speciesKey];
         const flareDef = (sParams && sParams.flare) || AnazhRealm.DEFAULT_TREE_FLARE;
         skeleton.flareAmp = flareDef.amp;
         skeleton.flareLobes = flareDef.lobes;
         // emitCylinderBetween: die EINE Stelle, die eine Segment-Kante zu einem holz-Zylinder-
-        // Part macht (Trunk/Äste/Foot-Flare/Buttress teilen sie). Tag-neutral (material "holz").
+        // Part macht (Trunk/Äste/Buttress teilen sie). Tag-neutral (material "holz").
         const emitCylinderBetween = (a, b, segments) => {
             const mx = (a.x + b.x) * 0.5;
             const my = (a.y + b.y) * 0.5;
@@ -60063,39 +59885,19 @@ class AnazhRealm {
                 segments: segments || 5,
             });
         };
-        // Stamm + Äste wachsen aus den GESETZEN (McMahon H→D · da Vinci r^Δ · Apikaldominanz): der
-        // Phyto-Kern (_phytoGrowSkeleton) ist die EINE Wuchs-Quelle; die Genom-Achsen modulieren seine Dials
-        // über _phytoDialsFor. Eigener Sub-Strom `genome.seq` (unabhängig von r01). Ausgänge: parts[]
-        // (cylinder holz + sphere laub, Tags frozen) + `_lastTreeSkeleton` (Polylinien + Anchors).
-        const conifer = _phytoP ? _phytoP.conifer : grammar.crown === "cone" || grammar.foliage.kind === "needleSpray";
-        const phytoSeq = genome.seq("phyto-growth");
-        // P kommt aus der Vorlagen-Pipeline (_phytoP); hier reiten nur die Render-Budgets darauf
-        // (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den Zufalls-Strom; trunkMul=1).
-        // leafBudget 480 bei L0 füllt die Krone wie die Vorlage. Ohne phyto-core: alter Dial-Ableiter.
-        const P = _phytoP
-            ? Object.assign({}, _phytoP, {
-                  trunkMul: 1,
-                  countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-                  leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
-              })
-            : this._phytoDialsFor(speciesKey, grammar, genome, r01, {
-                  height: totalH,
-                  crownForm,
-                  foliageScale,
-                  barkType: conifer ? "conifer" : "smooth",
-                  maxDepth: conifer ? 4 : 5,
-                  basalStems: multiStem > 0 ? multiStem + 1 : 0,
-                  trunkMul: allometry * (0.85 + ageMul * 0.35),
-                  countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-                  leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
-                  phylloDiv,
-              });
+        // Stamm + Äste wachsen aus den GESETZEN (McMahon H→D · da Vinci r^Δ · Apikaldominanz): der Phyto-Kern
+        // (_phytoGrowSkeleton) ist die EINE Wuchs-Quelle, P die EINE Ableitung. Eigener Sub-Strom `genome.seq`
+        // (unabhängig von r01). Ausgänge: parts[] (cylinder holz + sphere laub, Tags frozen) + `_lastTreeSkeleton`.
+        const phytoSeq = this._rollGenome(sKey, "tree-genome").seq("phyto-growth");
+        // Hier reiten nur die Render-Budgets auf P (countCap/leafBudget schneiden DETAIL nach dem Wuchs, nie den
+        // Zufalls-Strom; trunkMul=1). leafBudget 480 bei L0 füllt die Krone wie die Vorlage.
+        const P = Object.assign({}, P0, {
+            trunkMul: 1,
+            countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
+            leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
+        });
         const phyto = this._phytoGrowSkeleton(P, phytoSeq);
         const trunkBaseR = phyto.trunkR;
-        // Konsistente Neigung (Lean, die T6-Genom-Achse): ein y-proportionaler Shear auf ALLE
-        // Phyto-Punkte → Stamm + Krone neigen sich zusammen (Wind/Hang). Verwurzelt → kein
-        // Kipp-Risiko (Ω-Φ2, der Richter prüft den Schwerpunkt).
-        const _lean = (p) => ({ x: p.x + leanX * p.y, y: p.y, z: p.z + leanZ * p.y, r: p.r });
         // Trunk-Kette = run 0 + die durchgehende Lead-Nachkommen-Kette. Der Wuchs ist tiefen-zuerst mit dem
         // Lead als children[0] → countCap beschneidet nur Seiten-Äste, NIE die Stammhöhe.
         const runMeta = phyto.runMeta;
@@ -60110,11 +59912,11 @@ class AnazhRealm {
             let poly = runPolys[s.runId];
             if (!poly) {
                 poly = runPolys[s.runId] = {
-                    points: [_lean({ x: s.p0[0], y: s.p0[1], z: s.p0[2], r: s.r0 })],
+                    points: [{ x: s.p0[0], y: s.p0[1], z: s.p0[2], r: s.r0 }],
                     depth: s.depth,
                 };
             }
-            poly.points.push(_lean({ x: s.p1[0], y: s.p1[1], z: s.p1[2], r: s.r1 }));
+            poly.points.push({ x: s.p1[0], y: s.p1[1], z: s.p1[2], r: s.r1 });
         }
         // Die Trunk-Kette als EINE Skeleton-Branch (wie der alte Stamm) + trunkPts für die
         // Downstream-Leser (Foot-Flare/Buttress).
@@ -60134,7 +59936,7 @@ class AnazhRealm {
             trunkPts.length = 0;
             trunkPts.push(
                 { x: 0, y: 0, z: 0, r: trunkBaseR },
-                { x: leanX * totalH, y: totalH, z: leanZ * totalH, r: trunkBaseR * 0.2 }
+                { x: 0, y: totalH, z: 0, r: trunkBaseR * 0.2 }
             );
         }
         // LOD-Dezimierung der Stamm-Polylinie (ein Zylinder-Part je Kante; LOD1 ≤20 · LOD2 ≤10 Parts):
@@ -60167,7 +59969,7 @@ class AnazhRealm {
         const flareH = trunkBaseR * 0.5;
         // Mossy-Tönung — ein gedämpftes Grün das mit dem Foliage-Color
         // gleitet (Krone gibt den Wald-Ton, der Sockel folgt sanft).
-        const flareTint = (grammar.foliage.color & 0x7f7f7f) | 0x1a1a1a; // gedämpfte Version der Krone-Farbe
+        const flareTint = (P0.leafCol & 0x7f7f7f) | 0x1a1a1a; // gedämpfte Version der Laub-Farbe des Gesetzes
         parts.push({
             shape: "sphere",
             material: "laub",
@@ -60234,19 +60036,18 @@ class AnazhRealm {
         // Foliage-Anker aus den PHYTO-BLÄTTERN — ihre Positionen (aus der gesetz-wahren
         // Verzweigung) treiben die Cards; das IST der K1-Gewinn (Laub sitzt, wo das Gesetz es
         // wachsen ließ, nicht auf geratenen Ankern). lod2: ein zentraler Krone-Anker.
-        if (grammar.foliage && grammar.foliage.kind !== "none") {
+        if (laub.kind !== "none") {
             if (lodLevel === 2) {
                 const top = trunkPts[trunkPts.length - 1];
                 foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
             } else {
                 // Die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/needle/phase — phase dreht die Karte) — daraus
-                // baut `__phytoCore.buildFoliageQuads` die Krone. Der `_lean`-Shear trifft die Position (Card: dir/up).
+                // baut `__phytoCore.buildFoliageQuads` die Krone.
                 const phytoLeaves = [];
                 for (const l of phyto.leaves) {
-                    const lp = _lean({ x: l.pos[0], y: l.pos[1], z: l.pos[2], r: 0 });
-                    foliageAnchors.push({ x: lp.x, y: lp.y, z: lp.z });
+                    foliageAnchors.push({ x: l.pos[0], y: l.pos[1], z: l.pos[2] });
                     phytoLeaves.push({
-                        pos: [lp.x, lp.y, lp.z],
+                        pos: [l.pos[0], l.pos[1], l.pos[2]],
                         dir: [l.dir[0], l.dir[1], l.dir[2]],
                         up: l.up ? [l.up[0], l.up[1], l.up[2]] : [0, 1, 0],
                         scale: l.scale,
@@ -60261,72 +60062,31 @@ class AnazhRealm {
                 }
             }
         }
-        // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
-        const fo = grammar.foliage;
-        // Farb-Wurzeln aus der Studio-Tafel (foundry-core PRESETS fx.barkA/barkB/leafCol, wie der Render);
-        // der Gigant trägt den mammut-Ton. Arten ohne Studio-Farben (blume) → der EINE neutrale Default.
-        const _sd = sizeClass === "gigant" ? this._phytoStudioDials("baum_mammut") : this._phytoStudioDials(speciesKey);
-        const palette =
-            _sd && _sd.barkA != null && _sd.leafCol != null
-                ? { barkA: _sd.barkA, barkB: _sd.barkB, leaf: _sd.leafCol }
-                : AnazhRealm.SPECIES_PALETTE_DEFAULT;
-        skeleton.barkA = palette.barkA;
-        skeleton.barkB = palette.barkB;
-        // Herbst-Tönung (foliageVar-Achse, wahrerwuchs §4.1, tag-neutral — bleibt laub):
-        // ein Teil der LAUB-Bäume (nicht Nadel) färbt herbstlich (gold/orange/rot/braun)
-        // → ein gemischter Wald statt monochrom-grün. Deterministisch je Baum.
-        let baseColor = palette.leaf;
-        if (fo.kind === "leafCluster" && genome.chance("autumn", 0.24)) {
-            baseColor = genome.pick("autumnTint", [0xc89a3a, 0xbf7a2a, 0xa84e22, 0x9a7a30, 0xb5532a]);
-        }
-        // Farb-Variation PER KANAL (±12, geklemmt) — eine numerische Addition auf die ganze Hex-Zahl läuft in
-        // die Nachbar-Kanäle über (Grün kippt zu Lila).
-        const _bjR = (baseColor >> 16) & 0xff,
-            _bjG = (baseColor >> 8) & 0xff,
-            _bjB = baseColor & 0xff;
-        const _cl = (v) => Math.max(0, Math.min(255, v | 0));
-        const laubColor =
-            (_cl(_bjR + Math.floor((r01() - 0.5) * 24)) << 16) |
-            (_cl(_bjG + Math.floor((r01() - 0.5) * 24)) << 8) |
-            _cl(_bjB + Math.floor((r01() - 0.5) * 24));
-        // Foliage-Cap je LOD (35 / 4 / 1 × sizeCapBoost): mehr Anker als das Limit → gleichmäßig jedes
-        // skip-te samplen (kein Sektor-Bias).
+        // ─── LAUB AN DEN ANKERN (§3.4) ───
+        // Farbe und Maß aus dem Gesetz: die Rinde der Art (P.barkA/barkB, ihr Phänotyp), das Laub ihr Farb-Wurf (P.leafCol,
+        // der r128-Wurf des Gesetzes), das Blatt-Maß der Stufe (P.leafSize) — derselbe Ton wie der gesehene Baum.
+        skeleton.barkA = P0.barkA;
+        skeleton.barkB = P0.barkB;
+        const laubColor = P0.leafCol;
+        // Laub-Cap je LOD (35 / 4 / 1 × sizeCapBoost): EIN Laub-Ball je Anker-Probe, mehr Anker als das Limit →
+        // gleichmäßig jedes step-te samplen (kein Sektor-Bias).
         const MAX_FOLIAGE_PARTS = Math.round((lodLevel === 0 ? 35 : lodLevel === 1 ? 4 : 1) * sizeCapBoost);
-        const targetClusterCount = Math.min(MAX_FOLIAGE_PARTS, foliageAnchors.length * Math.max(1, fo.clusterSize[0]));
-        const anchorStep = Math.max(
-            1,
-            Math.floor((foliageAnchors.length * fo.clusterSize[0]) / Math.max(1, targetClusterCount))
-        );
+        const anchorStep = Math.max(1, Math.floor(foliageAnchors.length / Math.max(1, MAX_FOLIAGE_PARTS)));
         let foliageEmitted = 0;
-        for (let ai = 0; ai < foliageAnchors.length && foliageEmitted < MAX_FOLIAGE_PARTS; ai += anchorStep) {
-            const a = foliageAnchors[ai];
-            const cs = fo.clusterSize;
-            const clusterCount = cs[0] + Math.floor(r01() * Math.max(1, cs[1] - cs[0] + 1));
-            for (let c = 0; c < clusterCount && foliageEmitted < MAX_FOLIAGE_PARTS; c++) {
-                const ox = (r01() - 0.5) * 0.55 * foliageScale;
-                const oy = (r01() - 0.5) * 0.35 * foliageScale;
-                const oz = (r01() - 0.5) * 0.55 * foliageScale;
-                const lR = fo.size * lerp(0.75, 1.1, r01()) * foliageScale;
-                if (fo.kind === "needleSpray") {
-                    // Card{cross} als y-gestreckte sphere (Nadel-Optik) — kein neuer Shape-Typ, damit die Tags neutral
-                    // bleiben.
-                    parts.push({
-                        shape: "sphere",
-                        material: "laub",
-                        color: laubColor,
-                        position: { x: a.x + ox, y: a.y + oy, z: a.z + oz },
-                        size: { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 },
-                    });
-                } else {
-                    // leafCluster — ellipsoid (kompakte Laub-Knäul).
-                    parts.push({
-                        shape: "sphere",
-                        material: "laub",
-                        color: laubColor,
-                        position: { x: a.x + ox, y: a.y + oy, z: a.z + oz },
-                        size: { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
-                    });
-                }
+        if (laub.kind !== "none") {
+            for (let ai = 0; ai < foliageAnchors.length && foliageEmitted < MAX_FOLIAGE_PARTS; ai += anchorStep) {
+                const a = foliageAnchors[ai];
+                const lR = laub.size * lerp(0.75, 1.1, r01());
+                // Nadel: y-gestreckte sphere (Nadel-Optik) · Blatt: kompakter Laub-Knäul — kein neuer Shape-Typ, die
+                // Tags bleiben neutral.
+                const nadel = laub.kind === "needleSpray";
+                parts.push({
+                    shape: "sphere",
+                    material: "laub",
+                    color: laubColor,
+                    position: { x: a.x, y: a.y, z: a.z },
+                    size: nadel ? { x: lR * 1.5, y: lR * 1.9, z: lR * 1.5 } : { x: lR * 2.0, y: lR * 1.45, z: lR * 2.0 },
+                });
                 foliageEmitted++;
             }
         }
@@ -60334,17 +60094,9 @@ class AnazhRealm {
         // baut daraus card{cross} je Anchor mit normalBend zur Kronen-Sphere.
         skeleton.anchors = foliageAnchors.map((a) => ({ x: a.x, y: a.y, z: a.z }));
         skeleton.foliageColor = laubColor;
-        // wahrerwuchs §4.1 — die Krone-Karten skalieren mit Größe + Alter (ein Mammut-
-        // baum trägt große Büschel, ein junger Strauch kleine). Der Card-Builder liest es.
-        skeleton.foliageScale = foliageScale;
         skeleton.sizeClass = sizeClass;
-        // T6 — die neuen Form-Achsen am Skeleton (für diag-genom + den Card-Builder lesbar).
-        skeleton.crownForm = crownForm;
-        skeleton.leanMag = leanMag;
-        skeleton.multiStem = multiStem;
-        skeleton.phylloDiv = phylloDiv;
-        // Side-Channel: der Aufrufer (`_growTreeBlueprintForSpawn`,
-        // `_loadStateRestoreGrownBlueprints`) liest das direkt nach dem Aufruf.
+        // Side-Channel: der Aufrufer (\`_growTreeBlueprintForSpawn\`,
+        // \`_loadStateRestoreGrownBlueprints\`) liest das direkt nach dem Aufruf.
         this._lastTreeSkeleton = skeleton;
         return parts;
     }
@@ -63377,7 +63129,7 @@ class AnazhRealm {
 
         // DIE SECHS BAUM-ARTEN als Built-in-Identität (EINE Baum-Quelle): ~6 Subsysteme keyen auf den NAMEN
         // (Crafting-Kosten · Archetyp-Bank · Instancing · HISM-Tint · Tag-Wand · Worldgen · spawn_tree).
-        // Form aus der GRAMMATIK (`_growTreeBlueprintRich`); nur holz+laub → tag-neutral über alle Arten.
+        // Form aus dem GESETZ (`_growTreeBlueprintRich` → treeParams der Art); nur holz+laub → tag-neutral über alle Arten.
         // Skeleton + _isMerged tragen den Skeleton-Mesh-Renderpfad (2 Leaves: Rinde + Foliage).
         const treeSpeciesBlueprints = {};
         const TREE_SPECIES = [
@@ -63390,15 +63142,14 @@ class AnazhRealm {
             ["baum_mammut", "Mammutbaum"], // die Mammut-Nische des Wald-Generators (04.10., vorher als baum_buche)
         ];
         for (const [species, label] of TREE_SPECIES) {
-            const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-            if (!grammar) continue;
+            if (!this._phytoArt(species)) continue;
             let parts = null;
             let skeleton = null;
             try {
                 // Fester kanonischer Seed → die Art ist EINE deterministische Gestalt (Instanz-Varianz im Worldgen
-                // über scale/yaw/tint). _growTreeBlueprintRich liest nur SPECIES_GRAMMAR + _rollGenome + den lazy
-                // _growTreeNoise → konstruktor-sicher.
-                parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`, grammar);
+                // über scale/yaw/tint). _growTreeBlueprintRich liest nur das Gesetzbuch (_phytoArt → treeParams) + den
+                // lazy _growTreeNoise → konstruktor-sicher.
+                parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`);
                 skeleton =
                     this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches)
                         ? this._lastTreeSkeleton
@@ -66876,21 +66627,16 @@ class AnazhRealm {
     // nicht). null (kein Kern/Blätter/THREE) → der Aufrufer bleibt beim Karten-Pfad.
     _buildTreeFoliageBladeGeometry(skeleton) {
         if (!skeleton || !Array.isArray(skeleton.phytoLeaves) || !skeleton.phytoLeaves.length) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo || fo.kind === "none") return null;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         if (!core || typeof core.buildLeafBlades !== "function" || typeof THREE === "undefined") return null;
         const blades = skeleton.phytoLeaves.filter((l) => l && !l.needle);
         if (!blades.length) return null;
         // Blatt-Form je Art (die Vorlagen-Zuordnung Z.929-935: eiche→oak · weide→lance ·
-        // birke/übrige Laub-Arten→ovate; eine hängende Sonder-Krone liest lanzettlich).
-        const sp = String(skeleton.species || "");
-        const shapeKey = /eiche/.test(sp)
-            ? "oak"
-            : /weide/.test(sp) || (grammar && grammar.crown === "weeping")
-              ? "lance"
-              : "ovate";
+        // birke/übrige Laub-Arten→ovate).
+        const sp = String(skeleton.art || skeleton.species || "");
+        const shapeKey = /eiche/.test(sp) ? "oak" : /weide/.test(sp) ? "lance" : "ovate";
         const q = core.buildLeafBlades(blades, {
             leafColor: this._treeLeafBaseColor(skeleton, fo),
             // Vorlagen-roh (pushLeaf bekommt l.scale unskaliert): AnazhRealms leafSize trägt
@@ -66920,8 +66666,7 @@ class AnazhRealm {
 
     _buildTreeFoliageCardGeometry(skeleton, _opts) {
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length === 0) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo) return null;
         // Laub-Geometrie aus phyto-core (`buildFoliageQuads`): ein Quad je Blatt (Achse aus dir/up, Roll aus
         // phase, UV in die Atlas-Zelle); hier nur in BufferGeometry gewickelt + WebGPU-Material (liest
@@ -67015,7 +66760,7 @@ class AnazhRealm {
         const uvs = new Float32Array(M * 8 * 2);
         const UVC = [0, 0, 1, 0, 1, 1, 0, 1]; // (0,0)(1,0)(1,1)(0,1)
         const indices = new Uint32Array(M * 12);
-        // foliageColor aus dem skeleton (grammar.color + Jitter in _growTreeBlueprintRich), gelesen über
+        // foliageColor aus dem skeleton (der Farb-Wurf des Gesetzes, P.leafCol in _growTreeBlueprintRich), gelesen über
         // `_treeLeafBaseColor` — dieselbe rohe Quelle wie der Phyto-Pfad, kein Pfad-Dämpfer.
         const _lc = this._treeLeafBaseColor(skeleton, fo);
         const fr = _lc[0];
@@ -67158,13 +66903,11 @@ class AnazhRealm {
     _buildTreeFoliageCoreGeometry(skeleton) {
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
         if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo) return null;
-        // Kern NUR für dichte runde Kronen (dome/ellipsoid/irregular/vase); bei Kegel/Säule/Schirm gibt es
-        // kaum Overdraw zu sparen, und die Ellipsoid-Mitte pokt durch die dünne Silhouette.
-        const cf = skeleton.crownForm || (grammar && grammar.crown);
-        if (cf === "cone" || cf === "column" || cf === "schirm" || fo.kind === "needleSpray") return null;
+        // Kern NUR für dichte runde Laub-Kronen; am Nadel-Kegel gibt es kaum Overdraw zu sparen, und die
+        // Ellipsoid-Mitte pokt durch die dünne Silhouette.
+        if (fo.kind === "needleSpray") return null;
         const anchors = skeleton.anchors;
         // Kronen-Schwerpunkt + Bounding-Box (die Kron-Form, damit der Kern Tanne tall-schmal vs Eiche
         // rund-breit folgt statt einer generischen Kugel).
@@ -67260,8 +67003,7 @@ class AnazhRealm {
     _buildTreeShadowTwinGeometry(skeleton) {
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
         if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
-        const grammar = skeleton.grammar;
-        const fo = grammar && grammar.foliage;
+        const fo = skeleton.laub;
         if (!fo) return null;
         const anchors = skeleton.anchors;
         let cx = 0,
@@ -91186,13 +90928,7 @@ class AnazhRealm {
     _workshopRecipeKind(bp) {
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
         const species = bp._grownSpecies;
-        if (
-            species &&
-            String(species).startsWith("baum_") &&
-            AnazhRealm.SPECIES_GRAMMAR &&
-            AnazhRealm.SPECIES_GRAMMAR[species]
-        )
-            return "tree";
+        if (species && String(species).startsWith("baum_") && this._phytoArt(species)) return "tree";
         let rock = false,
             crystal = false;
         for (const p of bp.parts) {
@@ -91455,8 +91191,7 @@ class AnazhRealm {
     // Kerne — der Panel-Renderer bleibt art-neutral.
     _workshopRecipeSpec(bp, kind) {
         if (kind === "tree") {
-            const grammar = AnazhRealm.SPECIES_GRAMMAR[bp._grownSpecies];
-            const cur = bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar);
+            const cur = bp._recipeDials || this._treeRecipeDials(bp._grownSpecies);
             return {
                 cur: Object.assign({}, cur),
                 dials: [
@@ -91497,14 +91232,14 @@ class AnazhRealm {
                 dice: () =>
                     this._workshopRegrowRecipe(
                         bp,
-                        bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar),
+                        bp._recipeDials || this._treeRecipeDials(bp._grownSpecies),
                         `${bp._grownSpecies}-studio-${this._bauSame("wuerfel:baum").toString(36)}`
                     ),
                 reset: () => {
                     delete bp._recipeDials;
                     this._workshopRegrowRecipe(
                         bp,
-                        this._treeRecipeDials(bp._grownSpecies, grammar),
+                        this._treeRecipeDials(bp._grownSpecies),
                         `${bp._grownSpecies}-studio`
                     );
                 },
@@ -91570,12 +91305,11 @@ class AnazhRealm {
     // growSkeleton) → neue parts + skeleton in den Bauplan schreiben + Vorschau neu bauen.
     _workshopRegrowRecipe(bp, dials, seedStr) {
         const species = bp && bp._grownSpecies;
-        const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-        if (!species || !grammar) return;
+        if (!species || !this._phytoArt(species)) return;
         const lod = Number.isFinite(bp._recipeLod) ? bp._recipeLod : 0;
         let parts = null;
         try {
-            parts = this._growTreeBlueprintRich(species, seedStr, grammar, { recipeDials: dials, lod });
+            parts = this._growTreeBlueprintRich(species, seedStr, { recipeDials: dials, lod });
         } catch (e) {
             if (typeof this.log === "function") this.log("Rezept-Regrow fehlgeschlagen: " + (e && e.message), "WARN");
             return;
@@ -103748,473 +103482,9 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
     innerFill: 0.2, // etwas Füllung, das Ast-Gerüst bleibt aber sichtbar
 });
 
-// SPECIES_GRAMMAR (unten) — Wachstums-Grammatik je Baumart (aus LAAS' Species.ts, auf
-// cylinder/sphere/plane abgebildet): die FORM emergiert aus der Grammatik. gen >= 5 aktiviert sie
-// (alte Welten bit-identisch). Felder je Spezies:
-//   height [minM, maxM] · crown "cone"/"ellipsoid"/"dome"/"column"/"irregular"
-//   trunk { segs, wander, taper, baseR }
-//   L1/L2/L3 { density, whorl, childStart, childEnd, angleBase, lenRatio, droop, tipCurl, radRatio,
-//     segs } (L2/L3 optional)
-//   foliage { kind "needleSpray"/"leafCluster", anchorLevel 2/3, clusterSize [min,max], color, size }
-// Tag-neutral: alle Arten lesen nur `holz`/`laub` (kein Spawn-Affinitäts-Shift).
-// SPECIES_PALETTE_DEFAULT — nur der neutrale Default (Arten ohne Studio-Farben, z. B. blume); die
-// EINE Farb-Tafel je Art ist foundry-core PRESETS (via __terrainCore.PHYTO_PRESETS, Leser
-// _phytoStudioDials). Nur Render-Farbe, kein Tag.
+// SPECIES_PALETTE_DEFAULT — nur der neutrale Default eines Skeletts ohne Rinde; die EINE Farb-Tafel je Art ist der
+// Phänotyp im Gesetzbuch (phyto-core artPhaenotyp über foundry-core PRESETS, Leser treeParams). Nur Render-Farbe, kein Tag.
 AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c });
-// Keine Stamm-Farb-/Dial-Tafel je Art — kein Zwilling zu foundry-core PRESETS.
-AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
-    baum_tanne: Object.freeze({
-        // Fichte/Tanne: konisch, dichte Whorls, needleSpray
-        height: [9, 14],
-        crown: "cone",
-        trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.78, baseR: 0.42 }),
-        L1: Object.freeze({
-            density: 1.9,
-            whorl: 4,
-            childStart: 0.1,
-            childEnd: 0.97,
-            angleBase: 1.65,
-            lenRatio: 0.26,
-            droop: 0.32,
-            tipCurl: 0.22,
-            radRatio: 0.38,
-        }),
-        L2: Object.freeze({
-            density: 2.0,
-            whorl: 0,
-            childStart: 0.12,
-            childEnd: 0.97,
-            angleBase: 1.0,
-            lenRatio: 0.18,
-            droop: 0.42,
-            tipCurl: 0.12,
-            radRatio: 0.45,
-        }),
-        foliage: Object.freeze({
-            // V18.245 — der KEGEL füllt sich bis zur Spitze: Foliage auf L1 (reicht bis 97 %,
-            // nicht nur die kurzen L2 unten) + größere Sprays → konische Tanne (echte Referenz)
-            // statt kahler Stamm-Spike mit Laub nur unten.
-            kind: "needleSpray",
-            anchorLevel: 1,
-            clusterSize: [2, 3],
-            color: 0x2c5a2c,
-            size: 0.62,
-        }),
-    }),
-    // Mammutbaum (04.10.): die Riesen-Nische des Wald-Generators — hoher Säulenstamm, die Krone erst im oberen
-    // Drittel, kurze hängende Äste mit Nadel-Sprays (die Grammatik-Gestalt vor dem Studio-Asset; die Welt zeigt das
-    // Studio-Mammut).
-    baum_mammut: Object.freeze({
-        height: [16, 24],
-        crown: "cone",
-        trunk: Object.freeze({ segs: 7, wander: 0.03, taper: 0.82, baseR: 0.72 }),
-        L1: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.38,
-            childEnd: 0.97,
-            angleBase: 1.55,
-            lenRatio: 0.22,
-            droop: 0.4,
-            tipCurl: 0.18,
-            radRatio: 0.36,
-        }),
-        L2: Object.freeze({
-            density: 1.8,
-            whorl: 0,
-            childStart: 0.15,
-            childEnd: 0.97,
-            angleBase: 1.0,
-            lenRatio: 0.2,
-            droop: 0.45,
-            tipCurl: 0.1,
-            radRatio: 0.45,
-        }),
-        foliage: Object.freeze({
-            kind: "needleSpray",
-            anchorLevel: 1,
-            clusterSize: [2, 3],
-            color: 0x3a6a30,
-            size: 0.66,
-        }),
-    }),
-    baum_kiefer: Object.freeze({
-        // Kiefer: runde Krone, Äste am Stamm-oben, twiglets
-        height: [7, 12],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 5, wander: 0.06, taper: 0.78, baseR: 0.38 }),
-        L1: Object.freeze({
-            density: 1.5,
-            whorl: 3,
-            childStart: 0.45,
-            childEnd: 0.95,
-            angleBase: 1.45,
-            lenRatio: 0.4,
-            droop: 0.28,
-            tipCurl: 0.3,
-            radRatio: 0.42,
-        }),
-        L2: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.35,
-            childEnd: 1.0,
-            angleBase: 0.9,
-            lenRatio: 0.3,
-            droop: 0.24,
-            tipCurl: 0.18,
-            radRatio: 0.48,
-        }),
-        foliage: Object.freeze({
-            kind: "needleSpray",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x3a6b3a,
-            size: 0.55,
-        }),
-    }),
-    baum_buche: Object.freeze({
-        // Buche: ausladend, horizontale Platten, distiche
-        height: [8, 13],
-        crown: "dome",
-        trunk: Object.freeze({ segs: 5, wander: 0.05, taper: 0.7, baseR: 0.52 }),
-        L1: Object.freeze({
-            density: 1.4,
-            whorl: 0,
-            childStart: 0.32,
-            childEnd: 0.92,
-            angleBase: 1.05,
-            lenRatio: 0.5,
-            droop: 0.22,
-            tipCurl: 0.16,
-            radRatio: 0.5,
-        }),
-        L2: Object.freeze({
-            density: 1.8,
-            whorl: 0,
-            childStart: 0.25,
-            childEnd: 0.97,
-            angleBase: 0.9,
-            lenRatio: 0.4,
-            droop: 0.3,
-            tipCurl: 0.14,
-            radRatio: 0.52,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x6a9a4a,
-            size: 0.7,
-        }),
-    }),
-    baum_birke: Object.freeze({
-        // Birke: schmal, zarte Ranken, drooping leaves
-        height: [7, 11],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 5, wander: 0.08, taper: 0.72, baseR: 0.3 }),
-        L1: Object.freeze({
-            density: 1.6,
-            whorl: 0,
-            childStart: 0.4,
-            childEnd: 0.95,
-            angleBase: 1.1,
-            lenRatio: 0.45,
-            droop: 0.42,
-            tipCurl: 0.14,
-            radRatio: 0.45,
-        }),
-        L2: Object.freeze({
-            density: 2.0,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 1.0,
-            angleBase: 0.95,
-            lenRatio: 0.34,
-            droop: 0.48,
-            tipCurl: 0.1,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x7ab86a,
-            size: 0.48,
-        }),
-    }),
-    baum_eiche: Object.freeze({
-        // Eiche: breit-gnarled, ausladende irreguläre Krone
-        height: [7, 12],
-        crown: "irregular",
-        trunk: Object.freeze({ segs: 5, wander: 0.07, taper: 0.65, baseR: 0.52 }),
-        L1: Object.freeze({
-            density: 1.4,
-            whorl: 0,
-            childStart: 0.35,
-            childEnd: 0.92,
-            angleBase: 1.15,
-            lenRatio: 0.48,
-            droop: 0.2,
-            tipCurl: 0.18,
-            radRatio: 0.52,
-        }),
-        L2: Object.freeze({
-            density: 2.4,
-            whorl: 0,
-            childStart: 0.25,
-            childEnd: 0.98,
-            angleBase: 0.95,
-            lenRatio: 0.38,
-            droop: 0.26,
-            tipCurl: 0.14,
-            radRatio: 0.55,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [3, 5], // V18.245 — dichtere Eichen-Kuppel (gegen die echte Referenz)
-            color: 0x4a8a3a,
-            size: 0.82,
-        }),
-    }),
-    baum_erle: Object.freeze({
-        // Erle: column-shape, dichte schmale Krone
-        height: [7, 11],
-        crown: "column",
-        trunk: Object.freeze({ segs: 5, wander: 0.05, taper: 0.68, baseR: 0.42 }),
-        L1: Object.freeze({
-            density: 1.5,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 0.94,
-            angleBase: 0.95,
-            lenRatio: 0.4,
-            droop: 0.24,
-            tipCurl: 0.16,
-            radRatio: 0.48,
-        }),
-        L2: Object.freeze({
-            density: 1.8,
-            whorl: 0,
-            childStart: 0.22,
-            childEnd: 0.98,
-            angleBase: 0.88,
-            lenRatio: 0.32,
-            droop: 0.28,
-            tipCurl: 0.12,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            clusterSize: [2, 3],
-            color: 0x5a8c4a,
-            size: 0.58,
-        }),
-    }),
-    // KARST: knorrig, klettert Klippen — höchster slopeMax (1.6); drei Ast-Ebenen → dichter, holziger
-    // Aufbau; foliage am L3-Anker (kleine Cluster, gedämpftes Grün).
-    baum_karst: Object.freeze({
-        height: [3.5, 6.5],
-        crown: "irregular",
-        trunk: Object.freeze({ segs: 6, wander: 0.16, taper: 0.55, baseR: 0.32 }),
-        L1: Object.freeze({
-            density: 2.6,
-            whorl: 0,
-            childStart: 0.18,
-            childEnd: 0.95,
-            angleBase: 1.4,
-            lenRatio: 0.35,
-            droop: 0.35,
-            tipCurl: 0.08,
-            radRatio: 0.38,
-        }),
-        L2: Object.freeze({
-            density: 3.8,
-            whorl: 0,
-            childStart: 0.2,
-            childEnd: 1.0,
-            angleBase: 1.1,
-            lenRatio: 0.28,
-            droop: 0.4,
-            tipCurl: 0.04,
-            radRatio: 0.42,
-        }),
-        L3: Object.freeze({
-            density: 5.0,
-            whorl: 0,
-            childStart: 0.3,
-            childEnd: 1.0,
-            angleBase: 0.95,
-            lenRatio: 0.22,
-            droop: 0.45,
-            tipCurl: 0.02,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 3,
-            spacing: 0.055,
-            clusterSize: [2, 4],
-            color: 0x4a6230,
-            size: 0.45,
-        }),
-    }),
-    // Drei BUSCH-Arten als eigene SPECIES_GRAMMAR-Spezies (kein „kleiner Baum"-Hack), damit der
-    // Skeleton+Tube+Cards-Pfad sie trägt: foliage.anchorLevel 1 oder 2, kleinere Heights, dünnere Trunks.
-    busch_hazel: Object.freeze({
-        // Hazel — Haselnuss-Strauch, dome-Krone, mittel-dicht
-        height: [1.9, 2.9],
-        crown: "dome",
-        trunk: Object.freeze({ segs: 3, wander: 0.05, taper: 0.5, baseR: 0.12 }),
-        L1: Object.freeze({
-            density: 4.0,
-            whorl: 0,
-            childStart: 0.15,
-            childEnd: 0.95,
-            angleBase: 1.4,
-            lenRatio: 0.4,
-            droop: 0.25,
-            tipCurl: 0.1,
-            radRatio: 0.45,
-        }),
-        L2: Object.freeze({
-            density: 5.0,
-            whorl: 0,
-            childStart: 0.25,
-            childEnd: 1.0,
-            angleBase: 1.0,
-            lenRatio: 0.3,
-            droop: 0.3,
-            tipCurl: 0.08,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 2,
-            spacing: 0.08,
-            clusterSize: [2, 4],
-            color: 0x4a7d3a,
-            size: 0.32,
-        }),
-    }),
-    farn_busch: Object.freeze({
-        // Farn-Cluster: NUR L1 (fronds direkt aus der Basis) — KEIN L2-Eintrag,
-        // der grow-Pfad überspringt L2 automatisch (`if (grammar.L2 && ...)`).
-        height: [1.0, 1.8],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 2, wander: 0.02, taper: 0.2, baseR: 0.06 }),
-        L1: Object.freeze({
-            density: 6.0,
-            whorl: 0,
-            childStart: 0.0,
-            childEnd: 0.98,
-            angleBase: 1.5,
-            lenRatio: 0.85,
-            droop: 0.5,
-            tipCurl: 0.06,
-            radRatio: 0.3,
-        }),
-        // KEIN L2 — fronds gehen direkt von der Basis aus (Plan §3.5).
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 1,
-            spacing: 0.12,
-            clusterSize: [3, 5],
-            color: 0x5a8a3a,
-            size: 0.4,
-        }),
-    }),
-    blume_gross: Object.freeze({
-        // Stand-Blume (50-90cm) — winzige Bühne mit roter Krone (Variation in
-        // Spezies-Optik). NUR L1, foliage als 1-2 cluster pro anchor.
-        height: [0.5, 0.9],
-        crown: "ellipsoid",
-        trunk: Object.freeze({ segs: 2, wander: 0.03, taper: 0.3, baseR: 0.025 }),
-        L1: Object.freeze({
-            density: 3.0,
-            whorl: 0,
-            childStart: 0.7,
-            childEnd: 1.0,
-            angleBase: 0.6,
-            lenRatio: 0.3,
-            droop: 0.0,
-            tipCurl: 0.05,
-            radRatio: 0.5,
-        }),
-        foliage: Object.freeze({
-            kind: "leafCluster",
-            anchorLevel: 1,
-            spacing: 0.06,
-            clusterSize: [1, 2],
-            color: 0xc04a4a, // rot — Variation in Spezies (Plan §3.5)
-            size: 0.18,
-        }),
-    }),
-    // PALME: hoher, fast kahler Schaft mit Wedel-Krone nur an der Spitze (foliage am L1, childStart 0.82);
-    // kind "palm" zieht die Palmen-Wedel-Spalte des Atlas. Tag-neutral (holz+laub).
-    baum_palme: Object.freeze({
-        height: [6, 12],
-        crown: "column", // schmaler Schaft, Krone konzentriert oben
-        trunk: Object.freeze({ segs: 7, wander: 0.05, taper: 0.86, baseR: 0.3 }),
-        L1: Object.freeze({
-            density: 2.6,
-            whorl: 0,
-            childStart: 0.82, // Wedel NUR an der Spitze (kahler Schaft darunter)
-            childEnd: 1.0,
-            angleBase: 1.5, // Wedel splayen weit aus
-            lenRatio: 0.34,
-            droop: 0.5, // Wedel hängen anmutig
-            tipCurl: 0.06,
-            radRatio: 0.3,
-        }),
-        foliage: Object.freeze({
-            kind: "palm",
-            anchorLevel: 1,
-            clusterSize: [2, 3],
-            color: 0x4f8a3a,
-            size: 0.7,
-        }),
-    }),
-    // T1 — DIE ZYPRESSE: ein schmaler, säulen-förmiger Nadelholz-Verwandter mit
-    // SCHUPPEN-Laub (Cupressus). kind "scale" → die Schuppen-Spray-Spalte des Atlas.
-    // Die Äste hugen den Stamm (angleBase niedrig, lenRatio niedrig → schmale Säule).
-    baum_zypresse: Object.freeze({
-        height: [8, 16],
-        crown: "column",
-        trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.82, baseR: 0.34 }),
-        L1: Object.freeze({
-            density: 3.4,
-            whorl: 0,
-            childStart: 0.1,
-            childEnd: 0.97,
-            angleBase: 0.5, // Äste hugen den Stamm → schmale Säule
-            lenRatio: 0.16,
-            droop: 0.12,
-            tipCurl: 0.08,
-            radRatio: 0.4,
-        }),
-        L2: Object.freeze({
-            density: 2.4,
-            whorl: 0,
-            childStart: 0.2,
-            childEnd: 1.0,
-            angleBase: 0.6,
-            lenRatio: 0.14,
-            droop: 0.1,
-            tipCurl: 0.05,
-            radRatio: 0.45,
-        }),
-        foliage: Object.freeze({
-            kind: "scale",
-            anchorLevel: 2,
-            clusterSize: [2, 4],
-            color: 0x3f6a48,
-            size: 0.42,
-        }),
-    }),
-});
 
 // DEFAULT_TREE_FLARE — Wurzelanlauf am Fuß: amp = seitliche Aufweitung (1.0 = +100 % Radius am
 // Sockel), lobes = Rippen-Zahl (sin(angle·lobes)·amp). Die Tube-Geometrie verbreitert die ersten
