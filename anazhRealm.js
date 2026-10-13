@@ -35531,7 +35531,8 @@ class AnazhRealm {
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
         // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
-        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) this._grundrissRaeumen(entry);
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
+            this._grundrissRaeumen(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
@@ -40086,9 +40087,33 @@ class AnazhRealm {
             fr.zoneVerts = rows * F.winkel;
         }
         if (!fr.zoneVerts) return;
+        // DIE EDIT-WACHE (K16, VOR der Stand-Wache): ein Edit schreibt das Feld um — die Feld-Fläche des Rands
+        // (`_fernRingFeldY`) fällt nur an den Ecken um den neuen Edit (Radius + 4 m), und die Edit-Generation weckt die
+        // Wache. Vorher stand die Prüfung hinter der Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-
+        // Cursor +0), und weckte sie später ein Chunk-Wechsel, löschte sie alle 1 081 Rand-Flächen.
+        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const edN = Array.isArray(ed) ? ed.length : 0;
+        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
+            const rand = fr.teilung && fr.teilung.randV;
+            if (fr.feldEdits === ed && edN > (fr.feldEditsN | 0) && rand) {
+                for (let k = fr.feldEditsN | 0; k < edN; k++) {
+                    const e = ed[k];
+                    if (!e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) continue;
+                    const r2 = ((Number(e.r) || 0) + 4) ** 2;
+                    for (let i = 0; i < fr.zoneVerts; i++) {
+                        const p = this._fernRingPunkt(fr, i);
+                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 <= r2) fr.feldY[p.g] = NaN;
+                    }
+                }
+            } else fr.feldY.fill(NaN);
+            fr.feldEdits = ed;
+            fr.feldEditsN = edN;
+            fr.feldEditGen = (fr.feldEditGen | 0) + 1;
+        }
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
-        // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
-        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
+        // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
+        // schläft die Wache.
+        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
@@ -40099,14 +40124,6 @@ class AnazhRealm {
             fr.deckLaw = new Float64Array(fr.zoneVerts).fill(NaN);
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
-        }
-        // die Feld-Fläche des Rands (`_fernRingFeldY`) gilt je Edit-Stand: ein Edit schreibt das Feld um
-        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        const edN = Array.isArray(ed) ? ed.length : 0;
-        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
-            fr.feldEdits = ed;
-            fr.feldEditsN = edN;
-            fr.feldY.fill(NaN);
         }
         const pos = fr.geos[0].attributes.position;
         let neu = false;
@@ -40713,30 +40730,8 @@ class AnazhRealm {
                 "    var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
                 "    if (e < 0.0) { sV = -sV; }\n" +
                 "    let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "    // DIE SILHOUETTE BILINEAR (K16): vier Texel um den Strahl (Texel-Mitten, der Azimut umlaufend), nur die\n" +
-                "    // Treffer tragen Farbe und Distanz; der Himmel beginnt, wo ihre Deckung unter die Hälfte fällt — die\n" +
-                "    // nächste Texel-Lesung zeigte jenseits 8 km Zinnen (je Texel 0,47° ≈ 6,7 px bei 1080p/75°).\n" +
-                "    let W = i32(dim.x);\n" +
-                "    let H = i32(dim.y);\n" +
-                "    let fx = u * f32(dim.x) - 0.5;\n" +
-                "    let fy = v * f32(dim.y) - 0.5;\n" +
-                "    let tx = fx - floor(fx);\n" +
-                "    let ty = fy - floor(fy);\n" +
-                "    let x0 = ((i32(floor(fx)) % W) + W) % W;\n" +
-                "    let x1 = (x0 + 1) % W;\n" +
-                "    let y0 = clamp(i32(floor(fy)), 0, H - 1);\n" +
-                "    let y1 = clamp(i32(floor(fy)) + 1, 0, H - 1);\n" +
-                "    let p00 = textureLoad(pano, vec2<i32>(x0, y0), 0);\n" +
-                "    let p10 = textureLoad(pano, vec2<i32>(x1, y0), 0);\n" +
-                "    let p01 = textureLoad(pano, vec2<i32>(x0, y1), 0);\n" +
-                "    let p11 = textureLoad(pano, vec2<i32>(x1, y1), 0);\n" +
-                "    let w00 = (1.0 - tx) * (1.0 - ty) * select(0.0, 1.0, p00.a > 0.0);\n" +
-                "    let w10 = tx * (1.0 - ty) * select(0.0, 1.0, p10.a > 0.0);\n" +
-                "    let w01 = (1.0 - tx) * ty * select(0.0, 1.0, p01.a > 0.0);\n" +
-                "    let w11 = tx * ty * select(0.0, 1.0, p11.a > 0.0);\n" +
-                "    let deck = w00 + w10 + w01 + w11;\n" +
-                "    if (deck < 0.5) { return vec4<f32>(0.0); }\n" +
-                "    let pT = (p00 * w00 + p10 * w10 + p01 * w01 + p11 * w11) / deck;\n" +
+                "    let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
+                "    if (pT.a <= 0.0) { return vec4<f32>(0.0); }\n" +
                 "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
                 "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
                 "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
@@ -80918,7 +80913,15 @@ class AnazhRealm {
                     z1 = Math.max(z1, q.c[2] + q.h[2]);
                 }
             const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
-            const fp = x1 > x0 && z1 > z0 ? { ex: ((x1 - x0) / 2) * k, ez: ((z1 - z0) / 2) * k, ox: ((x0 + x1) / 2) * k, oz: ((z0 + z1) / 2) * k } : null;
+            const fp =
+                x1 > x0 && z1 > z0
+                    ? {
+                          ex: ((x1 - x0) / 2) * k,
+                          ez: ((z1 - z0) / 2) * k,
+                          ox: ((x0 + x1) / 2) * k,
+                          oz: ((z0 + z1) / 2) * k,
+                      }
+                    : null;
             e._grundrissHuelle = { hu, fp };
             if (fp) return fp;
         }
