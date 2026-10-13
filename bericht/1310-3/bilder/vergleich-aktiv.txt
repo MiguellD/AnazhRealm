@@ -1,0 +1,35 @@
+Blick       Paar         MSSIM ganz  MSSIM Boden  |ΔLuma| Boden  Pixel >8 (%)  Farbton-Blöcke >6 (%)
+mittel      Rauschen A            1            1              0             0                      0
+mittel      Rauschen B            1            1              0             0                      0
+mittel      A1↔B1            0.9974       0.9959           0.11          0.26                      0
+mittel      A2↔B2            0.9974       0.9959           0.11          0.26                      0
+mittel      A1↔B2            0.9974       0.9959           0.11          0.26                      0
+mittel      A2↔B1            0.9974       0.9959           0.11          0.26                      0
+nah         Rauschen A            1            1              0             0                      0
+nah         Rauschen B            1            1              0             0                      0
+nah         A1↔B1                 1            1              0             0                      0
+nah         A2↔B2                 1            1              0             0                      0
+nah         A1↔B2                 1            1              0             0                      0
+nah         A2↔B1                 1            1              0             0                      0
+ort         Rauschen A       0.9999       0.9999           0.01          0.01                      0
+ort         Rauschen B            1       0.9999           0.01          0.01                      0
+ort         A1↔B1            0.9997       0.9995           0.02          0.03                      0
+ort         A2↔B2            0.9997       0.9995           0.02          0.03                      0
+ort         A1↔B2            0.9997       0.9994           0.02          0.04                      0
+ort         A2↔B1            0.9997       0.9995           0.02          0.03                      0
+schraeg     Rauschen A       0.9993       0.9998           0.02          0.03                      0
+schraeg     Rauschen B       0.9993       0.9998           0.02          0.03                      0
+schraeg     A1↔B1            0.9992       0.9998           0.02          0.03                      0
+schraeg     A2↔B2            0.9992       0.9998           0.02          0.03                      0
+schraeg     A1↔B2            0.9991       0.9998           0.02          0.03                      0
+schraeg     A2↔B1            0.9992       0.9998           0.02          0.03                      0
+
+Mittel je Bild (Luma 0–255 · R−G · B−G), Seiten A1 · A2 · B1 · B2; ΔB−A = Mittel B − Mittel A
+mittel      159.7/3.6/-7.9  159.7/3.6/-7.9  159.7/3.6/-7.9  159.7/3.6/-7.9   ΔLuma 0.00 (Rausch 0.00/0.00)  ΔB−G 0.00
+nah         165.6/9.8/-19.9  165.6/9.8/-19.9  165.6/9.8/-19.9  165.6/9.8/-19.9   ΔLuma 0.00 (Rausch 0.00/0.00)  ΔB−G 0.00
+ort         93.5/1.5/-14.3  93.5/1.5/-14.3  93.5/1.5/-14.3  93.5/1.5/-14.3   ΔLuma 0.00 (Rausch 0.00/0.00)  ΔB−G 0.00
+schraeg     130.5/5.9/-23.7  130.5/5.9/-23.7  130.5/5.9/-23.7  130.5/5.9/-23.7   ΔLuma -0.00 (Rausch 0.01/0.00)  ΔB−G 0.00
+
+Ruhe (mittlere |ΔLuma| zweier Aufnahmen nacheinander, ganzes Bild)
+
+GRÜN — jedes Quer-Paar liegt im Rausch-Boden zweier Boots desselben Stands

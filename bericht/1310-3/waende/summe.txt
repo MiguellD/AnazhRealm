@@ -1,0 +1,11 @@
+19:41:19 puls (ci-lokal) EXIT=0 · 18 grün · 
+19:41:21 gate:membran-gesetz EXIT=0 2 s · ✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Shell-Zahlen, die Ableitung is
+19:41:30 gate:porta-contract EXIT=0 9 s · ✅ GRÜN — der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal wirkt
+19:45:05 gate:asset-contract EXIT=0 215 s · ✅ GRÜN — der Generator trifft die eingefrorenen Goldens byte-genau (cv:1). Kein stiller Drift.
+19:45:44 gate:tor-fern EXIT=0 39 s · ✅ GRÜN — die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile oh
+19:47:52 gate:regler-wirkt EXIT=0 128 s · 
+19:48:23 gate:portal-membran EXIT=0 30 s · ✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen
+19:48:40 gate:portal-gestalt EXIT=0 17 s · ✅ GRÜN — W-A3 STEHT: die 7 welt_-Portale (dynamisch aus der Quelle) tragen ihre porta-Gestalt als DATEN-Zeile, der 
+19:49:27 gate:foundry-crossfade EXIT=0 47 s · ✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Parti
+19:49:33 gate:profiband EXIT=0 6 s · ✅ SELBST-TEST: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb;
+19:49:33 WAENDE ENDE

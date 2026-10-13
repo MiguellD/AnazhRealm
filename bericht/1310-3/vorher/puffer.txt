@@ -1,0 +1,418 @@
+{
+ "vramMB": 122.6,
+ "pufferMB": 37.6,
+ "texturenMB": 85,
+ "gcMB": 0,
+ "puffer": {
+  "mb": 37.51,
+  "halter": {
+   "szene": 37.51,
+   "bild": 0
+  },
+  "klassen": [
+   {
+    "klasse": "szene:bodenSatz",
+    "mb": 17.25,
+    "n": 7
+   },
+   {
+    "klasse": "szene:bauSatz",
+    "mb": 2.93,
+    "n": 42
+   },
+   {
+    "klasse": "szene:spieler",
+    "mb": 1.67,
+    "n": 36
+   },
+   {
+    "klasse": "szene:f:drachentor:L0",
+    "mb": 1.61,
+    "n": 104
+   },
+   {
+    "klasse": "szene:f:maurentor:L0",
+    "mb": 1.5,
+    "n": 104
+   },
+   {
+    "klasse": "szene:formationenSatz",
+    "mb": 1.45,
+    "n": 12
+   },
+   {
+    "klasse": "szene:portal-membran",
+    "mb": 1.13,
+    "n": 12
+   },
+   {
+    "klasse": "szene:f:kathedrale:L0",
+    "mb": 1.08,
+    "n": 56
+   },
+   {
+    "klasse": "szene:f:maschine:L0",
+    "mb": 0.95,
+    "n": 80
+   },
+   {
+    "klasse": "szene:f:verkalkt:L3",
+    "mb": 0.87,
+    "n": 8
+   },
+   {
+    "klasse": "szene:f:gt:L0",
+    "mb": 0.84,
+    "n": 56
+   },
+   {
+    "klasse": "szene:f:ruine:L0",
+    "mb": 0.72,
+    "n": 56
+   },
+   {
+    "klasse": "szene:streuSatz",
+    "mb": 0.71,
+    "n": 10
+   },
+   {
+    "klasse": "szene:f:maurentor:L3",
+    "mb": 0.66,
+    "n": 8
+   },
+   {
+    "klasse": "szene:fern-ring",
+    "mb": 0.56,
+    "n": 15
+   },
+   {
+    "klasse": "szene:f:verkalkt:L0",
+    "mb": 0.34,
+    "n": 64
+   },
+   {
+    "klasse": "szene:f:ruine:L3",
+    "mb": 0.34,
+    "n": 8
+   },
+   {
+    "klasse": "szene:f:tanne:L1",
+    "mb": 0.29,
+    "n": 54
+   },
+   {
+    "klasse": "szene:f:geisttor:L0",
+    "mb": 0.28,
+    "n": 48
+   },
+   {
+    "klasse": "szene:f:maschine:L3",
+    "mb": 0.27,
+    "n": 8
+   },
+   {
+    "klasse": "szene:wasserSatz",
+    "mb": 0.26,
+    "n": 6
+   },
+   {
+    "klasse": "szene:himmel-sterne",
+    "mb": 0.25,
+    "n": 8
+   },
+   {
+    "klasse": "szene:dsl-insel",
+    "mb": 0.21,
+    "n": 12
+   },
+   {
+    "klasse": "szene:f:birke:L1",
+    "mb": 0.21,
+    "n": 36
+   },
+   {
+    "klasse": "szene:f:drachentor:L3",
+    "mb": 0.2,
+    "n": 8
+   },
+   {
+    "klasse": "szene:f:fichte:L1",
+    "mb": 0.2,
+    "n": 36
+   },
+   {
+    "klasse": "szene:fimp:atlas:L2",
+    "mb": 0.18,
+    "n": 6
+   },
+   {
+    "klasse": "szene:f:eiche:L1",
+    "mb": 0.12,
+    "n": 27
+   },
+   {
+    "klasse": "szene:farWater",
+    "mb": 0.1,
+    "n": 6
+   },
+   {
+    "klasse": "szene:nahWiese:L1",
+    "mb": 0.08,
+    "n": 8
+   },
+   {
+    "klasse": "szene:bauWurf",
+    "mb": 0.06,
+    "n": 7
+   },
+   {
+    "klasse": "szene:bau:welt_tetrapoda",
+    "mb": 0.05,
+    "n": 6
+   },
+   {
+    "klasse": "szene:nahWiese:L2",
+    "mb": 0.05,
+    "n": 16
+   },
+   {
+    "klasse": "szene:himmel",
+    "mb": 0.04,
+    "n": 3
+   },
+   {
+    "klasse": "szene:bau:esse",
+    "mb": 0.03,
+    "n": 12
+   },
+   {
+    "klasse": "szene:bau:welt_klang",
+    "mb": 0.02,
+    "n": 9
+   },
+   {
+    "klasse": "szene:himmel-sonne",
+    "mb": 0.01,
+    "n": 3
+   },
+   {
+    "klasse": "szene:bau:welt_koerperstudio",
+    "mb": 0,
+    "n": 10
+   },
+   {
+    "klasse": "szene:fscatter:tanne:L1",
+    "mb": 0,
+    "n": 10
+   },
+   {
+    "klasse": "szene:bau:start_plattform",
+    "mb": 0,
+    "n": 5
+   }
+  ]
+ },
+ "gross": [
+  {
+   "k": "buf:szene:bodenSatz",
+   "mb": 17.25,
+   "n": 7
+  },
+  {
+   "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+   "mb": 15.82,
+   "n": 1
+  },
+  {
+   "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+   "mb": 15.82,
+   "n": 1
+  },
+  {
+   "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+   "mb": 8,
+   "n": 1
+  },
+  {
+   "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+   "mb": 8,
+   "n": 1
+  },
+  {
+   "k": "tex:output rg11b10ufloat 1920x1080x1",
+   "mb": 7.91,
+   "n": 1
+  },
+  {
+   "k": "tex:depth depth24plus 1920x1080x1",
+   "mb": 7.91,
+   "n": 1
+  },
+  {
+   "k": "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1",
+   "mb": 3.955,
+   "n": 1
+  },
+  {
+   "k": "tex:szene:tiefenabbild r32float 960x1080x1",
+   "mb": 3.955,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:bauSatz",
+   "mb": 2.925,
+   "n": 42
+  },
+  {
+   "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x16",
+   "mb": 2.666,
+   "n": 1
+  },
+  {
+   "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+   "mb": 2,
+   "n": 1
+  },
+  {
+   "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+   "mb": 2,
+   "n": 1
+  },
+  {
+   "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+   "mb": 1.875,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:spieler",
+   "mb": 1.675,
+   "n": 36
+  },
+  {
+   "k": "buf:szene:f:drachentor:L0",
+   "mb": 1.605,
+   "n": 104
+  },
+  {
+   "k": "buf:szene:f:maurentor:L0",
+   "mb": 1.498,
+   "n": 104
+  },
+  {
+   "k": "buf:szene:formationenSatz",
+   "mb": 1.446,
+   "n": 12
+  },
+  {
+   "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x16",
+   "mb": 1.332,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:portal-membran",
+   "mb": 1.129,
+   "n": 12
+  },
+  {
+   "k": "buf:szene:f:kathedrale:L0",
+   "mb": 1.081,
+   "n": 56
+  },
+  {
+   "k": "buf:szene:f:maschine:L0",
+   "mb": 0.945,
+   "n": 80
+  },
+  {
+   "k": "buf:szene:f:verkalkt:L3",
+   "mb": 0.875,
+   "n": 8
+  },
+  {
+   "k": "buf:szene:f:gt:L0",
+   "mb": 0.839,
+   "n": 56
+  },
+  {
+   "k": "tex:rausch-atlas rgba8unorm 768x256x1",
+   "mb": 0.75,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:f:ruine:L0",
+   "mb": 0.718,
+   "n": 56
+  },
+  {
+   "k": "buf:szene:streuSatz",
+   "mb": 0.713,
+   "n": 10
+  },
+  {
+   "k": "tex:laub-cluster-atlas bc1-rgba-unorm-srgb 2048x512x1",
+   "mb": 0.667,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:f:maurentor:L3",
+   "mb": 0.661,
+   "n": 8
+  },
+  {
+   "k": "tex:PMREM.cubeUv rgba16float 336x128x1",
+   "mb": 0.656,
+   "n": 2
+  },
+  {
+   "k": "buf:szene:fern-ring",
+   "mb": 0.556,
+   "n": 15
+  },
+  {
+   "k": "tex:welt-march-liste rgba32float 4096x8x1",
+   "mb": 0.5,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:f:verkalkt:L0",
+   "mb": 0.34,
+   "n": 64
+  },
+  {
+   "k": "buf:szene:f:ruine:L3",
+   "mb": 0.338,
+   "n": 8
+  },
+  {
+   "k": "tex:PMREM.cubeUv:tiefe depth24plus 336x128x1",
+   "mb": 0.328,
+   "n": 2
+  },
+  {
+   "k": "buf:szene:f:tanne:L1",
+   "mb": 0.292,
+   "n": 54
+  },
+  {
+   "k": "buf:szene:f:geisttor:L0",
+   "mb": 0.282,
+   "n": 48
+  },
+  {
+   "k": "buf:szene:f:maschine:L3",
+   "mb": 0.266,
+   "n": 8
+  },
+  {
+   "k": "buf:szene:wasserSatz",
+   "mb": 0.261,
+   "n": 6
+  },
+  {
+   "k": "tex:kronen-streu:fern r8unorm 512x512x1",
+   "mb": 0.25,
+   "n": 1
+  }
+ ],
+ "ms": 471
+}
