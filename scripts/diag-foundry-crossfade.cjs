@@ -905,7 +905,12 @@ async function runPartB() {
                         r._foundryFlattenFor = function (e, p, lod) {
                             return e === entry && lod === 2 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
                         };
-                    if (art.ohneHalt) r._lodHaltSetzen = () => false;
+                    // ohne Halt: VOLL kennt nur die Karte des Verdeckten und der Brücke (der Stand vor K36) — kein Stempel hält
+                    if (art.ohneHalt)
+                        r._lodSlotVoll = function (e, band, bl = e._lodBandLevel) {
+                            const karte = e._occluded === true || e._bruecke === true;
+                            return band ? karte && bl === 2 : karte;
+                        };
                     try {
                         for (const dnZiel of [6, 10, 14, 19, 22, 24, 27, 31, 40, 27, 24, 22, 14, 6]) {
                             const rawAuge = dnZiel / factor;
@@ -929,10 +934,11 @@ async function runPartB() {
                         }
                     } finally {
                         delete r._foundryFlattenFor;
-                        delete r._lodHaltSetzen;
+                        delete r._lodSlotVoll;
                     }
                     return o;
                 };
+                const tGeist = performance.now();
                 res.geisterBaum = {
                     normal: geisterLauf({ armM: 0 }),
                     karteLaedt: geisterLauf({ armM: 0, karteLaedt: true }),
@@ -941,6 +947,7 @@ async function runPartB() {
                     gegenAuge: geisterLauf({ armM: 9.6, wahlVomSpieler: true }),
                 };
                 geisterLauf({ armM: 0 }); // die Stufen und der Halt zurück auf die gebackene Karte
+                res.geisterBaum.ms = Math.round(performance.now() - tGeist);
             } else res.stufenWahrheit = { err: "__phytoCore.lodCrossfadeMask oder _lodPerfMul fehlt" };
             st._foliageDensityScale = fdVor;
         } finally {
@@ -1862,6 +1869,7 @@ async function main() {
         check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
         check("GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte", GB.gegenHalt.geister + GB.gegenHalt.loecher > 0, g(GB.gegenHalt));
         check("GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, zählt die Linse den Geist der Verfolger-Kamera", GB.gegenAuge.geister + GB.gegenAuge.loecher > 0, g(GB.gegenAuge));
+        console.log(`  (die Geister-Linse lief ${GB.ms} ms)`);
     } else check("GEISTER-BAUM lief", false, "fehlt");
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

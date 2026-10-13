@@ -68005,6 +68005,9 @@ class AnazhRealm {
         // diesen Anstoß blieb die Region aufgeschoben, wenn die letzte Lieferung VOR dem Bake kam — an der Mess-Wiese
         // fehlten im frischen Boot die Mammutbäume (9 Instanzen, 556k Dreiecke), bis eine fremde Lieferung sie weckte.
         this._scatterRefillPending = true;
+        // Und die Bau-Takte gehen (K36): eine Stufe, die auf diese Karte als Partner wartet, hält voll (`_lodHalt`) —
+        // die Band-Pflege nimmt die Karte jetzt auf, statt zu schlafen, bis sich zufällig etwas regt.
+        this._bauRegt();
         if (typeof window !== "undefined") window.__impostorRttBaked = (window.__impostorRttBaked || 0) + 1;
         return true;
     }
@@ -72103,6 +72106,14 @@ class AnazhRealm {
             this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        // DER HALT AB GEBURT (K36): eine neue Primär-Stufe hält VOLL, bis die Band-Pflege ihren Partner geurteilt hat
+        // (`_updateFoundryLodBand` löst ihn, wo der Partner steht oder keiner verlangt ist). Bis K36 blendete sie vom ersten
+        // Bild an — und urteilte die schlafende Stufen-Wahl nie über sie, stand die L1 vor der ungebackenen Karte halb
+        // durchsichtig (Genesis-Ankunft, echte GPU: 5 Bäume nach 71 Takten).
+        if (!(opts && opts.band)) {
+            entry._lodHalt = true;
+            entry._lodHaltWartet = false;
+        }
         const slots = [];
         // instanceColor trägt die Farbe als RGB (0..1); InstancedMesh alloziert mesh.instanceColor LAZY beim
         // ersten setColorAt. OB und WAS geschrieben wird, entscheidet `_archSlotColor`. instanceColor
