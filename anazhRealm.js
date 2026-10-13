@@ -39184,6 +39184,13 @@ class AnazhRealm {
         maskeTex.generateMipmaps = false;
         maskeTex.needsUpdate = true;
         const uMaskeZelle0 = TSL.uniform(new THREE.Vector2(0, 0)); // die Chunk-Zelle des Texels (0, 0)
+        // der Anker des Rings (die Weiche liest den Durchmesser der Masche an ihrem Radius); der Re-Anker (`_tickFernRing`) setzt ihn
+        const uAnker = TSL.uniform(
+            new THREE.Vector2(
+                Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
+                Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant
+            )
+        );
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
         // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
         // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
@@ -39235,17 +39242,20 @@ class AnazhRealm {
                 .and(nahX.and(nahZ).not().or(traegt(TXZ)));
             const saum = sicher.not().and(T00.b.or(nahX.and(TX.b)).or(nahZ.and(TZ.b)).or(nahX.and(nahZ).and(TXZ.b)));
             stoffNaht.maskNode = sicher.not();
-            // die Weiche: der Strahl bis zur um `nahtWeiche` gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|)
+            // die Weiche: der Strahl bis zur um H gesenkten Ring-Fläche (Normale n, Strahl d: Δt = H·|n_y| / |n·d|). H trägt
+            // den Fehler der MASCHE (`_fernRingWeiche`, der CPU-Spiegel): ihre Ecken liegen auf dem Feld, dazwischen
+            // interpoliert sie linear — über einer Wand des Feldes (Sockel, Höhlen-Mündung, Kanal) steht sie bis zu ihrer Steigung
+            // × ihrem Durchmesser über der Fläche (Band 9 13.10.: die Masche 516…528 m über einer 15-m-Wand stand 7,6 m über dem
+            // Deck, die feste Weiche 6 m schnitt ein). H·|n_y| = max(nahtWeiche·|n_y|, |n_xz|·Durchmesser).
             const pv = TSL.positionView;
             const lang = pv.length();
             const nW = TSL.normalWorldGeometry;
             const dW = TSL.normalize(TSL.positionWorld.sub(TSL.cameraPosition));
-            const dt = TSL.min(
-                TSL.float(F.nahtWeiche)
-                    .mul(TSL.abs(nW.y))
-                    .div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)),
-                TSL.float(F.nahtWeicheMax)
-            );
+            const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
+                .mul(AnazhRealm._fernRingMascheJeM())
+                .add(schalen[0].snap * Math.SQRT2);
+            const hNy = TSL.max(TSL.float(F.nahtWeiche).mul(TSL.abs(nW.y)), TSL.length(nW.xz).mul(masche));
+            const dt = TSL.min(hNy.div(TSL.max(TSL.abs(TSL.dot(nW, dW)), 1e-3)), TSL.float(F.nahtWeicheMax));
             const vz = TSL.select(saum, pv.z.mul(lang.add(dt).div(lang)), pv.z);
             stoffNaht.depthNode = TSL.viewZToPerspectiveDepth(vz, TSL.cameraNear, TSL.cameraFar);
         }
@@ -39326,6 +39336,7 @@ class AnazhRealm {
             bauZoneRad, // die Bau-Zone (oben)
             // die Masken-Karte des Gebauten (`maskNode`, `_fernRingMaske`): je Texel 255 = ein gezeichneter Chunk
             maske: { tex: maskeTex, daten: maskeDaten, n: maskeN, uZelle0: uMaskeZelle0, schluessel: "" },
+            uAnker, // der Anker im Stoff der Naht (die Weiche, `_fernRingWeiche`)
             vollY: new Float32Array(off).fill(NaN),
             // die Fläche des FELDES am Rand der Naht (`_fernRingFeldY`): NaN = noch nicht gemessen
             feldY: new Float32Array(off).fill(NaN),
@@ -39592,6 +39603,25 @@ class AnazhRealm {
             fr.feldY[p.g] = voll;
         } else fr.feldY[p.g] = y;
         return fr.feldY[p.g];
+    }
+
+    // DIE WEICHE DES SAUMS, ihr CPU-Spiegel (K16, der Einschnitt): wie tief (m, senkrecht) der Ring im Saum (`_fernRingRegel` 1)
+    // dem Chunk weicht, an (x, z) mit der Normale n seiner Masche — die feste Weiche oder der Fehler der Masche (Steigung ×
+    // Durchmesser), was größer ist; der Knoten rechnet dasselbe (`_fernRingEnsure`, depthNode). Leser: gate:fern-ring Band 9.
+    _fernRingWeiche(fr, x, z, nx, ny, nz) {
+        const F = AnazhRealm.FERN_RING;
+        const masche =
+            Math.hypot(x - fr.anchorX, z - fr.anchorZ) * AnazhRealm._fernRingMascheJeM() +
+            fr.schalen[0].snap * Math.SQRT2;
+        const nY = Math.abs(ny);
+        return Math.max(F.nahtWeiche, (Math.hypot(nx, nz) * masche) / Math.max(nY, 1e-3));
+    }
+
+    // DER DURCHMESSER EINER MASCHE der Schale 0 je Meter Radius: radial die Reihen-Tiefe (q − 1, `_fernRingReihen`), quer der
+    // Winkel-Schritt 2π/winkel; dazu trägt jede Ecke ihr Snap (die Weiche addiert snap·√2)
+    static _fernRingMascheJeM() {
+        const F = AnazhRealm.FERN_RING;
+        return Math.hypot((F.seite * 2 * Math.PI) / F.winkel, (2 * Math.PI) / F.winkel);
     }
 
     // DIE REGEL DES maskNode, ihr CPU-Spiegel (K16, die Naht; die Herleitung steht am Stoff in `_fernRingEnsure`): 2 = der Ring
@@ -42414,6 +42444,7 @@ class AnazhRealm {
         if (dx * dx + dz * dz > F.reanchorDist * F.reanchorDist) {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
+            fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
             fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
             fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
             fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
