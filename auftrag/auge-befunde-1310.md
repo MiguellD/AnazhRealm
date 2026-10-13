@@ -17,3 +17,6 @@ Soll-Bild + Zahl + Linse vorher ROT). Was eine laufende Karte trägt, steht dort
 | 10 | Kamera steckt in Laub (Dorfhang-Bild K17, Waldrand K20, Weide K24) | mehrere Sonden | Beweis-Bild ohne freie Sicht | Sonden-Klasse: Blick-Wahl (Lehre 17) greift nicht |
 
 Zu prüfen (Wissen): K20-Bauer meldet, Lehre 22 („im positionNode ist positionLocal schon instanziert“) widerspreche dem WGSL der Karte — am r184-Vendor nachlesen, dann die Lehre berichtigen oder bestätigen.
+| 11 | Fensterbänder SCHWARZ an den L1/L2-Häusern (waagrechte schwarze Streifen statt Fenster), tags und nachts | K10 Gasse auf Augenhöhe, `auge/1310/k10-gasse-tag.png` | Haus-Stoff der Fern-/Mittel-Stufe (Fenster-Glas ohne Stoff) | offen — Bild-Karte |
+| 12 | Die Gasse ist ein glatter brauner Matsch: kein Pflaster, kein Weg-Stoff, keine Kante zwischen Weg und Haus | K10 Gasse | Weg-Stoff (Plan v2 trägt Wege — der Boden liest sie nicht) | offen — Bild-Karte |
+| 13 | Nachts: Fassaden angestrahlt orange, Boden rot-rosa Glut; nur 1 von 6 Laternen im Bild leuchtet (Licht-Pool wählt 4 Plätze nach NÄHE, auch hinter der Kamera) | K10 Gasse nachts, `auge/1310/k10-gasse-nacht.png` | Licht-Pool nach Sicht statt Nähe | in K10 offen benannt |
