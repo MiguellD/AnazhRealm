@@ -31138,6 +31138,7 @@ class AnazhRealm {
     // keine); danach weckte ein Haus am Seerand den Automaten (die Frage las das Gesetz samt Rand-Füllung, die Zellen fluten
     // den Rand nur, wo er mit der Quelle verbunden ist).
     _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
+        if (lod === 0) this._stauFeldVorlaeufig(ox, oz);
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
         const { dim, dimY, step } = this._voxelChunkConfig(lod);
         const STATE = AnazhRealm.CELL_STATE;
@@ -81428,6 +81429,7 @@ class AnazhRealm {
         const barrier = new Float64Array(w * h);
         const init = new Float64Array(w * h).fill(Infinity);
         let anySource = false;
+        let teil = 0; // Spalten, deren Boden das Makro trägt (Chunk noch nicht geladen)
         for (let kz = 0; kz < h; kz++) {
             for (let ix = 0; ix < w; ix++) {
                 const gx = gx0 + ix;
@@ -81452,6 +81454,7 @@ class AnazhRealm {
                 } else {
                     const m = this._terrainMacroSurfaceY(x, z);
                     bY = Number.isFinite(m) ? m : oy;
+                    teil++;
                 }
                 barrier[c] = bY;
                 if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
@@ -81466,10 +81469,38 @@ class AnazhRealm {
         let field = null;
         if (anySource) {
             const fill = this._stauSpillLevels(barrier, w, h, init);
-            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill) };
+            // DAS FELD AUS HALBER WAHRHEIT IST VORLÄUFIG (K37): las es Rand-Spalten aus dem Makro, baut es neu, sobald ein
+            // Chunk seines Fensters seine Zellen bringt (`_stauFeldVorlaeufig`, gerufen vom Zell-Stempel jedes Chunks). Nach dem
+            // Reload baute der Damm im Tal 26/−120 sein Feld im ersten Takt mit 894 Makro-Spalten, das gecachte wich vom
+            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte.
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), teil: teil > 0 };
         }
         this.state.waterStauFields.set(cluster.key, field);
         return field;
+    }
+
+    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld (`teil`, aus Makro-Rand gebaut), dessen
+    // Fenster ihn schneidet, fällt samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
+    _stauFeldVorlaeufig(ox, oz) {
+        const felder = this.state.waterStauFields;
+        if (!felder || felder.size === 0) return;
+        const cfg = this._voxelChunkConfig(0);
+        const gxA = Math.round(ox / cfg.step);
+        const gzA = Math.round(oz / cfg.step);
+        let fallen = null;
+        for (const f of felder.values()) {
+            if (!f || !f.teil) continue;
+            if (f.gx0 > gxA + cfg.dim - 1 || f.gx0 + f.w - 1 < gxA) continue;
+            if (f.gz0 > gzA + cfg.dim - 1 || f.gz0 + f.h - 1 < gzA) continue;
+            (fallen || (fallen = [])).push(f);
+        }
+        if (!fallen) return;
+        for (const f of fallen)
+            this._invalidateWaterCapsAround(
+                (f.gx0 + f.w * 0.5) * cfg.step,
+                (f.gz0 + f.h * 0.5) * cfg.step,
+                Math.max(f.w, f.h) * 0.5 * cfg.step
+            );
     }
 
     // Die Stau-Felder, deren Fenster den Chunk schneiden (für den Kappen-Bau).
