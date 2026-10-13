@@ -466,7 +466,8 @@ diesem Rest; B und C fallen mit diesem Satz. K28 (13.10.) gießt sie: die Lab-St
 beim Wolf, 17,3 mm lang, 6 mm Wurzel — an Armlänge 6,7 × 2,3 px) steht auf der Kopf-Haut als Karten im Schalen-Stapel,
 0 Befehle mehr; im Armlängen-Bild steht die Strähne am Scheitel frei, 14 der 19 Wurzeln liegen unter dem Hals-Mantel der
 Leib-Haut (gate:tier-anatomie, Kopf-Zeile). Sichtbar ist sie damit nicht: im Kopf-Fenster ändert die Zeile die Kanten-Dichte
-nicht über das Rauschen (aus 0,1534 ↔ an 0,1533, aus ↔ aus2 +0,0036) — A bleibt offen.
+kaum (V18.544, 220 px: aus 0,1546 ↔ an 0,1573, aus2 0,1548 ↔ an2 0,1552, Rauschen 0,0002; gleichsinnig geändert
+109 px gegen 806 px Rauschen), im Bild steht ein Büschel am Scheitel, der Kopf liest glatt — A bleibt offen.
 
 Im Bild: der Wolf mit Pelz und hellem Brustlatz, der Kopf als glatte Haut ohne Strähnen; die Eiche mit Stamm-Gabel und
 Krone bei 15 und 22 m, bei 80 m ihre Karte hinter der Kuppe; das Fachwerkhaus mit Backstein-Erdgeschoss bei 8,8 m, bei
