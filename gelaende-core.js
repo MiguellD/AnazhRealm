@@ -1663,10 +1663,10 @@
         kluftBreite: 0.05, // Anteil des Abstands, den die Kluft je Seite trägt (je Bank × 0,5 … 1,5)
         kluftDunkel: 0.5, // Mischung zur dunklen Lage in der Kluft
         // Der EINE Detail-Term im Boden-Shader trägt, was die Masche nicht trägt — Bänke, Kanten und Klüfte nach DIESEM
-        // Gesetz (`felsLage`), relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`). EINE Probe im Rausch-Atlas wellt
-        // die Schichten im Großen: `xz` je m, `y` je Bank, ± `welle` Bänke; das Auge blendet aus, was der Pixel nicht trägt
-        // (Bänke und Klüfte `fern` m, Kanten `fugeFern` m).
-        fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, fern: [120, 260], fugeFern: [30, 80] }),
+        // Gesetz (`felsLage`), relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`). EINE Probe im Rausch-Atlas (`rausch`,
+        // σ × `rausch` ≈ 0,37) wellt die Schichten im Großen: `xz` je m, `y` je Bank, ± `welle` Bänke; das Auge blendet aus,
+        // was der Pixel nicht trägt (Bänke und Klüfte `fern` m, Kanten `fugeFern` m).
+        fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, rausch: 1.4, fern: [120, 260], fugeFern: [30, 80] }),
         // Der Schutthang (Geröll = halb Fels) trägt im Detail-Term statt der Bänke den Schutt: Steine der Kante `korn` (m), je
         // Stein ± `kontrast` und je Stein sein Maß `groesse`, eine Kuppe `kuppe`, `offen` der Fugen klafft (`spalt` der Kante, um `tiefe`
         // dunkel) — sein Mittel `schuttMittel()` < 1: das Geröll wirft Schatten in sich, nah wie fern (`schuttKornO`).
@@ -1693,13 +1693,87 @@
             akzent: akzent ? [akzent[0] * f, akzent[1] * f, akzent[2] * f] : [b[0] * 1.35, b[1] * 1.28, b[2] * 1.18],
         });
     }
+    // DAS RAUSCH-GESETZ (Welle G; K17-2 Nachbesserung 1 aus dem Stamm in den Kern): das EINE Gradienten-Rauschen der Boden-
+    // Stoffe — das Perlin-Rauschen von MaterialX (three r184 `mx_noise_float`: die Gradienten-Menge nach `h & 15` aus dem
+    // Jenkins-lookup3-Hash, die Fünftgrad-Blende, die Skala 0,982). Der Hash liegt EINMAL im Gitter (`rauschGitter`: je Punkt
+    // (i, j) der Gradient, Komponenten −1 · 0 · +1), das der Stamm als Rausch-Atlas packt (`_rauschAtlasDaten`); `P` Gitter-
+    // Zellen je Kante, die dritte Achse im selben Gitter, je Schicht um `schraeg` versetzt. `rauschRaum` ist derselbe Wert
+    // auf der CPU, den der Shader mit sechs Atlas-Ladungen liest (`_rauschAtlas().raum`) — Vertex und Pixel lesen EIN
+    // Rauschen, keiner rechnet es aus Hash-Zügen nach.
+    const RAUSCH = Object.freeze({ P: 256, schraeg: Object.freeze([12, 42]), skala: 0.982 });
+    let _rauschGitterMemo = null;
+    function rauschGitter() {
+        if (_rauschGitterMemo) return _rauschGitterMemo;
+        const P = RAUSCH.P;
+        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
+        const hash = (x, y, z) => {
+            let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
+            let b = a;
+            let c = a;
+            a = (a + x) >>> 0;
+            b = (b + y) >>> 0;
+            c = (c + z) >>> 0;
+            c = ((c ^ b) - rot(b, 14)) >>> 0;
+            a = ((a ^ c) - rot(c, 11)) >>> 0;
+            b = ((b ^ a) - rot(a, 25)) >>> 0;
+            c = ((c ^ b) - rot(b, 16)) >>> 0;
+            a = ((a ^ c) - rot(c, 4)) >>> 0;
+            b = ((b ^ a) - rot(a, 14)) >>> 0;
+            c = ((c ^ b) - rot(b, 24)) >>> 0;
+            return c;
+        };
+        const g = new Int8Array(P * P * 3);
+        for (let j = 0; j < P; j++)
+            for (let i = 0; i < P; i++) {
+                const h = hash(i, j, 0) & 15;
+                const o = (j * P + i) * 3;
+                const u = h < 8 ? 0 : 1;
+                const v = h < 4 ? 1 : h === 12 || h === 14 ? 0 : 2;
+                g[o + u] += h & 1 ? -1 : 1;
+                g[o + v] += h & 2 ? -1 : 1;
+            }
+        _rauschGitterMemo = g;
+        return g;
+    }
+    // Der Raum-Wert an (x, y, z): die acht Ecken der Zelle aus zwei Schichten des Gitters (Schicht k bei (i + A·k, j + B·k)),
+    // je Ecke Gradient · Abstand, trilinear mit der Fünftgrad-Blende — Schritt für Schritt wie `_rauschAtlas().raum`.
+    function rauschRaum(x, y, z) {
+        const g = rauschGitter();
+        const P = RAUSCH.P,
+            m = P - 1,
+            A = RAUSCH.schraeg[0],
+            B = RAUSCH.schraeg[1];
+        const cx = Math.floor(x),
+            cy = Math.floor(y),
+            cz = Math.floor(z);
+        const fx = x - cx,
+            fy = y - cy,
+            fz = z - cz;
+        const i0 = (cx + cz * A) & m,
+            j0 = (cy + cz * B) & m;
+        const i1 = (i0 + A) & m,
+            j1 = (j0 + B) & m;
+        const ecke = (i, j, dx, dy, ez) => {
+            const o = (((j + dy) & m) * P + ((i + dx) & m)) * 3;
+            return g[o] * (fx - dx) + g[o + 1] * (fy - dy) + g[o + 2] * ez;
+        };
+        const bl = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+        const ux = bl(fx),
+            uy = bl(fy),
+            uz = bl(fz);
+        const mix = (a, b, t) => a + (b - a) * t;
+        const d = (dx, dy) => mix(ecke(i0, j0, dx, dy, fz), ecke(i1, j1, dx, dy, fz - 1), uz);
+        return mix(mix(d(0, 0), d(1, 0), ux), mix(d(0, 1), d(1, 1), ux), uy) * RAUSCH.skala;
+    }
     // DAS RECHENWERK DES FELS-GESETZES (K17, Nachbesserung 2): der Fein-Term ist EIN Code für den Vertex (Zahlen) und den
     // Boden-Shader (TSL-Knoten, `_felsRechenwerkTSL` im Stamm) — bis hierher transkribierte der Shader das Gesetz mit eigenem
     // Sinus-Hash und eigener Welle (die Paket-Grenzen von Vertex und Shader lagen im Median 0,57 m auseinander, und eine Linse
     // konnte den Shader nur über Namen prüfen). `o` ist das Rechenwerk: add · sub · mul · div · min · max, floor · sin · exp ·
     // abs · sqrt, step(kante, v) = v ≥ kante, glatt(a, b, v), clamp01, wahl(c, a, b) = c ? a : b mit c ∈ {0, 1}, zufall(saat, i, j, k)
-    // = `zufall` für ganze i, j, k (im Shader dieselben 32-Bit-Ganzzahl-Schritte). Die Reihenfolge der Rechnung ist die des
-    // Gesetzes vor dem Rechenwerk (die Zahl je Vertex bleibt byte-gleich).
+    // = `zufall` für ganze i, j, k (im Shader dieselben 32-Bit-Ganzzahl-Schritte), rausch(x, y, z) = `rauschRaum` (im Shader
+    // EINE Probe im Rausch-Atlas). Die Reihenfolge der Rechnung ist die des Gesetzes vor dem Rechenwerk. Ein Rauschen rechnet
+    // das Rechenwerk nie aus Hash-Zügen nach (das Rausch-Gesetz: bis K17-2 Nachbesserung 1 wellte ein Wert-Rauschen aus acht
+    // Ziehungen die Bänke im Fragment).
     const ZAHL = Object.freeze({
         add: (a, b) => a + b,
         sub: (a, b) => a - b,
@@ -1717,29 +1791,29 @@
         clamp01: (v) => (v < 0 ? 0 : v > 1 ? 1 : v),
         wahl: (c, a, b) => (c ? a : b),
         zufall: zufall,
+        rausch: rauschRaum,
     });
-    // Wert-Rauschen [0, 1] im Gitter der Kante 1 (trilinear, geglättet) — rein, deterministisch, ohne Saat-Strom.
-    function wert3O(o, x, y, z, sh) {
-        const ix = o.floor(x),
-            iy = o.floor(y),
-            iz = o.floor(z);
-        let fx = o.sub(x, ix),
-            fy = o.sub(y, iy),
-            fz3 = o.sub(z, iz);
-        fx = o.mul(o.mul(fx, fx), o.sub(3, o.mul(2, fx)));
-        fy = o.mul(o.mul(fy, fy), o.sub(3, o.mul(2, fy)));
-        fz3 = o.mul(o.mul(fz3, fz3), o.sub(3, o.mul(2, fz3)));
-        const e = (i, j, k) => o.zufall(sh, o.add(ix, i), o.add(iy, j), o.add(iz, k));
-        const lerp = (a, b, t) => o.add(a, o.mul(o.sub(b, a), t));
+    // Wert-Rauschen [0, 1] im Gitter der Kante 1 (trilinear, geglättet) — rein, deterministisch, ohne Saat-Strom. NUR im Vertex
+    // (Flechte und Moos des Netzes): es zieht acht Hashes je Wert und hat darum kein Rechenwerk — der Pixel liest das EINE
+    // Gradienten-Rauschen (`rausch`).
+    function wert3(x, y, z, sh) {
+        const ix = Math.floor(x),
+            iy = Math.floor(y),
+            iz = Math.floor(z);
+        let fx = x - ix,
+            fy = y - iy,
+            fz3 = z - iz;
+        fx = fx * fx * (3 - 2 * fx);
+        fy = fy * fy * (3 - 2 * fy);
+        fz3 = fz3 * fz3 * (3 - 2 * fz3);
+        const e = (i, j, k) => zufall(sh, ix + i, iy + j, iz + k);
+        const lerp = (a, b, t) => a + (b - a) * t;
         const x00 = lerp(e(0, 0, 0), e(1, 0, 0), fx);
         const x10 = lerp(e(0, 1, 0), e(1, 1, 0), fx);
         const x01 = lerp(e(0, 0, 1), e(1, 0, 1), fx);
         const x11 = lerp(e(0, 1, 1), e(1, 1, 1), fx);
-        const y0 = lerp(x00, x10, fy);
-        const y1 = lerp(x01, x11, fy);
-        return lerp(y0, y1, fz3);
+        return lerp(lerp(x00, x10, fy), lerp(x01, x11, fy), fz3);
     }
-    const wert3 = (x, y, z, sh) => wert3O(ZAHL, x, y, z, sh);
     const fzO = (o, a, b, c) => o.zufall(FELS_SAAT, a, b, c);
     // Die Paket-Grenze k (m, in der Schicht-Höhe).
     const paketGrenzeO = (o, k) => o.mul(o.add(k, o.mul(o.sub(fzO(o, k, 31, 0), 0.5), FELS.paketStreu)), FELS.paket);
@@ -1847,7 +1921,7 @@
     const _kanten = { kehle: 0, rand: 0, kluft: 0 };
     // DER FEIN-TERM DES FELSENS relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`): `bank` = Helligkeit × helle Bank
     // × Kluft, `kante` = Kehle × Oberkante — je mit dem Mittel 1. B = `felsBasis` (die Töne der dunklen Lage und der hellen
-    // Bank relativ zum Grundton). Die große Welle ist DASSELBE Wert-Rauschen wie im Vertex (`felsFarbe`).
+    // Bank relativ zum Grundton). Die große Welle ist DASSELBE Gradienten-Rauschen wie im Vertex (`felsFarbe`, `rausch`).
     function felsFeinO(o, B, x, y, z) {
         const F = FELS;
         const FM = felsMittelWerte();
@@ -1855,7 +1929,7 @@
         const aRel = 0.6 * (Yl(B.akzent) / Yl(B.basis) - 1);
         const dRel = 1 - Yl(B.dunkel) / Yl(B.basis);
         const sy = o.add(y, o.mul(FELS_TE, o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))));
-        const w = o.sub(o.mul(2, wert3O(o, o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz), FELS_SAAT ^ 0x77)), 1);
+        const w = o.mul(F.fein.rausch, o.rausch(o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz)));
         const L = felsLageO(o, x, y, z, w, {});
         const K = felsKantenO(o, L, {});
         const hell = o.div(o.add(1, o.mul(F.bankKontrast, o.sub(o.mul(2, fzO(o, L.paket, L.bank, 3)), 1))), FM.hell);
@@ -2019,7 +2093,7 @@
         const sy = y + FELS_TE * (x * FELS_CS + z * FELS_SN);
         let L = null;
         if (T.tb > 0 || T.tf > 0 || T.tj > 0) {
-            const w = 2 * wert3(x * F.fein.xz, (sy * F.fein.y) / F.bank, z * F.fein.xz, FELS_SAAT ^ 0x77) - 1;
+            const w = F.fein.rausch * rauschRaum(x * F.fein.xz, (sy * F.fein.y) / F.bank, z * F.fein.xz);
             L = felsLage(x, y, z, w, _lage);
         }
         // Bank-Pakete (grob) — ihr Mittel ist 1.
@@ -2390,6 +2464,9 @@
 
     root.__gelaendeCore = Object.freeze({
         LINSE: LINSE,
+        RAUSCH: RAUSCH,
+        rauschGitter: rauschGitter,
+        rauschRaum: rauschRaum,
         FELS: FELS,
         HIMMELS_SICHT: HIMMELS_SICHT,
         himmelsSicht: himmelsSicht,

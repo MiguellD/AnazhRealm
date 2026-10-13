@@ -30107,9 +30107,12 @@ class AnazhRealm {
 
     // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
     // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
-    // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben). EIN Rechenwerk je TSL-Modul.
-    static _felsRechenwerkTSL(T) {
-        if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T) return AnazhRealm._felsRwMemo.o;
+    // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
+    // (`raum` aus `_rauschAtlas`, gelaende-core `rauschRaum` auf der CPU). EIN Rechenwerk je TSL-Modul und Atlas.
+    static _felsRechenwerkTSL(T, raum) {
+        if (typeof raum !== "function") throw new Error("_felsRechenwerkTSL: ohne Rausch-Atlas kein Rechenwerk (raum fehlt)");
+        if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T && AnazhRealm._felsRwMemo.raum === raum)
+            return AnazhRealm._felsRwMemo.o;
         const N = (v) => (typeof v === "number" ? T.float(v) : v);
         const U = (v) => (typeof v === "number" ? T.uint(v >>> 0) : T.uint(T.int(v)));
         const o = Object.freeze({
@@ -30129,6 +30132,7 @@ class AnazhRealm {
             clamp01: (v) => N(v).clamp(0, 1),
             // die Wahl als Auswahl, nie als Mischung: mix(−1e9, a, 1) verlöre a in f32 (Stelle 64 bei 1e9)
             wahl: (c, a, b) => T.select(N(c).greaterThan(0.5), N(a), N(b)),
+            rausch: (x, y, z) => raum(T.vec3(N(x), N(y), N(z))),
             // gelaende-core `zufall(sh, i, j, k)`: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1, zwei Misch-Runden
             zufall: (sh, i, j, k) => {
                 const kk = typeof k === "number" ? T.uint(((k | 0) + 1) >>> 0) : T.uint(T.int(k).add(1));
@@ -30142,7 +30146,7 @@ class AnazhRealm {
                 return T.float(h).div(4294967296);
             },
         });
-        AnazhRealm._felsRwMemo = { T, o };
+        AnazhRealm._felsRwMemo = { T, raum, o };
         return o;
     }
 
@@ -30212,12 +30216,16 @@ class AnazhRealm {
     // lookup3-Hash, die Fünftgrad-Blende, die Skala 0,982) — nur der Hash wird nicht mehr je Fragment und Ecke gerechnet
     // (8 Ecken × ~40 Ganzzahl-Operationen je Aufruf), er liegt EINMAL im Rausch-Atlas (`_rauschAtlas`). `P` Gitter-Zellen
     // je Kante (die Ebene wiederholt sich nach P Zellen); die dritte Achse liegt im selben Atlas, je Schicht um `schraeg`
-    // versetzt — das Maximum des kürzesten 3D-Periodenvektors für P = 256 (43 Zellen).
+    // versetzt — das Maximum des kürzesten 3D-Periodenvektors für P = 256 (43 Zellen). Das Gesetz lebt im Gelände-Kern
+    // (gelaende-core `RAUSCH`, `rauschGitter`, `rauschRaum`: derselbe Wert auf der CPU) — Vertex und Pixel lesen EIN Rauschen.
     static get RAUSCH_GESETZ() {
-        return Object.freeze({ P: 256, schraeg: [12, 42], skala: 0.982 });
+        const GK = globalThis.__gelaendeCore;
+        if (!GK || !GK.RAUSCH || typeof GK.rauschGitter !== "function") AnazhRealm._kernPflichtBruch("gelaende:RAUSCH");
+        return GK.RAUSCH;
     }
 
-    // Die Bytes des Rausch-Atlas (rein, ohne THREE): je Gitter-Punkt (i, j) der Gradient von MaterialX — der Hash
+    // Die Bytes des Rausch-Atlas (rein, ohne THREE): je Gitter-Punkt (i, j) der Gradient von MaterialX (gelaende-core
+    // `rauschGitter`) — der Hash
     // `mx_hash_int(i, j, 0)` (Jenkins lookup3, bit-genau wie das vendored WGSL) und die Achsen-Regel `mx_gradient_float`
     // (u = h < 8 ? x : y; v = h < 4 ? y : h ∈ {12, 14} ? x : z; Vorzeichen aus Bit 0 und 1) —, GEPACKT je Komponente: das
     // Texel (3i + c, j) trägt die Komponente c der vier Ecken (i, j) · (i+1, j) · (i, j+1) · (i+1, j+1) als RGBA8 unorm
@@ -30226,33 +30234,7 @@ class AnazhRealm {
     // Feature texture-formats-tier1 — swiftshader fehlt es (Invalid TextureView im Boot, gate:analog-nah).
     static _rauschAtlasDaten() {
         const P = AnazhRealm.RAUSCH_GESETZ.P;
-        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
-        const hash = (x, y, z) => {
-            let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
-            let b = a;
-            let c = a;
-            a = (a + x) >>> 0;
-            b = (b + y) >>> 0;
-            c = (c + z) >>> 0;
-            c = ((c ^ b) - rot(b, 14)) >>> 0;
-            a = ((a ^ c) - rot(c, 11)) >>> 0;
-            b = ((b ^ a) - rot(a, 25)) >>> 0;
-            c = ((c ^ b) - rot(b, 16)) >>> 0;
-            a = ((a ^ c) - rot(c, 4)) >>> 0;
-            b = ((b ^ a) - rot(a, 14)) >>> 0;
-            c = ((c ^ b) - rot(b, 24)) >>> 0;
-            return c;
-        };
-        const g = new Int8Array(P * P * 3);
-        for (let j = 0; j < P; j++)
-            for (let i = 0; i < P; i++) {
-                const h = hash(i, j, 0) & 15;
-                const o = (j * P + i) * 3;
-                const u = h < 8 ? 0 : 1;
-                const v = h < 4 ? 1 : h === 12 || h === 14 ? 0 : 2;
-                g[o + u] += h & 1 ? -1 : 1;
-                g[o + v] += h & 2 ? -1 : 1;
-            }
+        const g = globalThis.__gelaendeCore.rauschGitter();
         const out = new Uint8Array(3 * P * P * 4);
         for (let j = 0; j < P; j++)
             for (let i = 0; i < P; i++) {
@@ -32998,11 +32980,11 @@ class AnazhRealm {
             const FF = FS.gesetz.fein;
             const GK = globalThis.__gelaendeCore;
             // EIN Rechenwerk (K17, Nachbesserung 2): der Fein-Term IST das Gesetz (gelaende-core `felsFein`, `schuttKorn`) —
-            // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, dieselbe
-            // Welle). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
+            // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, die Welle
+            // aus EINER Probe im Rausch-Atlas — der Vertex liest denselben Wert, gelaende-core `rauschRaum`). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
             // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
             // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
-            const _O = AnazhRealm._felsRechenwerkTSL(_T);
+            const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
             const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
