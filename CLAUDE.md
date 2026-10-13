@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.543.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.544.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -81,33 +81,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.543 — DER PFAD OHNE BRUCH, DER FUSS ROLLT, DAS LICHT HAT SEINE TEMPERATUR, DIE BLENDE MISST DIE INSTANZ:** Pflicht-OFFEN B
-fällt (jede der sieben Zahlen an ihrem Ziel, je Zahl ihr Gate); der Fuß rollt über den Ballen (tetrapoda `gangRolle`, Kadenz 0,34 → 1,79
-Schritte/s, Schlupf 0,015), `_bodenSichtAt` ist der EINE Boden-Leser von Stand, Nah-Wiese und Nah-Streu (koerper-stand K6 527/582 → 0/666,
-Rand-Streifen Wiese 0,089 → 0,948), der Spiel-Takt ist an der Wurzel gedeckelt (`TAKT_DECKEL_S` 0,1 s: Weg nach 10 s Pause 40,00 → 0,37 m);
-die Lichtfarbe jeder Wärmequelle aus EINER Größe `kelvin` (Feuerkreis-Luma 0,26 → 0,64, Farbton 14,2° → 28,9°); der Baum schwingt im EINEN
-Wind-Term, die Wind-Daten ohne Leser fallen (Werkstatt-Buche −13,7 %); die LOD-Blende misst je Instanz wie das Studio und bricht laut
-(`_blendeBruch`; OMEN Wiese gpu-bank 13,20 → 11,99 ms, baum 3,40 → 2,53 ms); die Biss-Kopf-Probe hält die Gier des Rehs (Drift 0).
+**V18.544 — DER SPEICHER OHNE DECKEL, EINE BAUM-ABLEITUNG, DIE WAND IN EREIGNISSEN, DIE REIHE DER BÜNDEL, DIE LEBENSWERTE SIND ZUSTAND:** die
+Edit-Karte je Chunk trägt jeden Edit (EINE Engstelle `_voxelEditKarte`, geschrieben nur über `_addVoxelEdit`, der Worker ihr Spiegel; worker-dichte
+256/300 → 300/300, SHA 6/12 → 12/12), der save-server schreibt ganz (tmp + Rename + .bak), das Chat-Graben reist über dslRun; der gefühlte Baum wächst
+aus `treeParams` der Art (P-Zwilling 120/120 → 0/120, `SPECIES_GRAMMAR` 19 → 0, `_skelettPflicht` bricht laut); die Erst-Zeichnungs-Wand urteilt in
+Bau-Ereignissen statt 60/120 s Wanduhr; die Tore werfen aus ihrer NUR-WURF-Stufe, die Reihe der Region-Bündel ist ein Gesetz (`_buendelReihe`; GTX 1060
+Genesis 47,4 → 50,1 fps, Befehle 212 → 172, Dreiecke 924k → 695k), das Band schwingt erst nach dem Satz-Schrumpfen ein (Dorf-VRAM 124,6 → 118,3 MB);
+`recomputePlayerStats` klemmt die Lebenswerte, voll nur Wandlung und Rückkehr (Wege zur Voll-Heilung 4 → 0); Pflicht-OFFEN B trägt die Ankunft.
 
-**V18.496–542 — AAA NAH, KOSTEN-MECHANIK, NACHBARSCHAFT, STUDIO-ZEILE, TOD, PRÜF-WELT, GELÄNDE-KERN, DAS EINE LICHT:** Studio-Mesh mit LOD-Kette,
-EINE geskinnte Haut, FARB-GESETZ, EIN Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft; die GPU-Kette
-(gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (`_erstWartet`, Diät, host-vram) und L (Wasser, Backend-Gesetz);
-V18.536–537 EIN Impuls-Gesetz, `_setzUrteil`, das Blocker-Netz, EIN Leib-Löser; V18.538 Baum- und Gras-Zeile im Studio,
-`_schattenBias`; V18.539 der Tod an EINER Stelle (`_kreaturFaellt`, `_leibSicht`), `_nexusPerfActuate` (CPU p95 10,8 → 5,6 ms),
-die CI in zwei Stufen; V18.540 die Prüf-Welt (`_weltBetreten`), das Haus fern NUR-WURF, EINE Wasser-Wahrheit (`_werkBoden`);
-V18.541 EIN Gelände-Kern (`gelaende-core.js`, 44/44 Dichte-Gitter maxDiff 0), das Licht des Auges ein Term unter Fels, die
-Prüfbühne als GPU-Messort (2σ ≤ 0,064 ms); V18.542 die Kamera als Kugel (25/50 → 0/50), der Hieb im Schwung-Kegel (0/48 → 48/48), EIN Leuchtquellen-Gesetz und der Licht-Pool jedes Stoffs, EIN Detail-Gesetz der Tore (Genesis 2 276k → 977k Dreiecke). Werkbank: `albedo` · `licht` · `zaehlen` · `band`.
+**V18.496–543 — AAA NAH, KOSTEN-MECHANIK, NACHBARSCHAFT, STUDIO-ZEILE, TOD, PRÜF-WELT, GELÄNDE-KERN, DAS EINE LICHT, DER PFAD OHNE BRUCH:** Studio-Mesh
+mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft; die GPU-Kette
+(gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (`_erstWartet`, Diät, host-vram) und L (Wasser, Backend-Gesetz); V18.536–537 EIN
+Impuls-Gesetz, `_setzUrteil`, das Blocker-Netz, EIN Leib-Löser; V18.538 Baum- und Gras-Zeile im Studio, `_schattenBias`; V18.539 der Tod an EINER Stelle
+(`_kreaturFaellt`, `_leibSicht`), `_nexusPerfActuate` (CPU p95 10,8 → 5,6 ms), die CI in zwei Stufen; V18.540 die Prüf-Welt (`_weltBetreten`), das Haus
+fern NUR-WURF, EINE Wasser-Wahrheit (`_werkBoden`); V18.541 EIN Gelände-Kern (`gelaende-core.js`, 44/44 Dichte-Gitter maxDiff 0), die Prüfbühne als GPU-Messort;
+V18.542 die Kamera als Kugel (25/50 → 0/50), der Hieb im Schwung-Kegel (0/48 → 48/48), EIN Leuchtquellen-Gesetz, EIN Detail-Gesetz der Tore (Genesis 2 276k → 977k
+Dreiecke); V18.543 der Pfad ohne Bruch, der Fuß rollt (Kadenz 0,34 → 1,79 Schritte/s), `_bodenSichtAt`, `TAKT_DECKEL_S`, die Lichtfarbe aus `kelvin`, die Blende je Instanz (gpu-bank 13,20 → 11,99 ms). Werkbank: `albedo` · `licht` · `zaehlen` · `band`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE; die Höhe = EIN Gelände-Kern `gelaende-core.js` für Stamm, Worker und Playtest, die Terme des Erbguts, Wildnis = EIN Term, die Prüfbühne `spec/pruefbuehne`) · WELT-MARCH: EIN Pass, je Satz ein
 Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
-Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m), EIN Wind-Term, die LOD-Blende misst je Instanz und bricht laut · BODEN-STOFF = das Rausch-Gesetz, das Licht des Auges ein Term unter Fels, fern Krone × Deckung aus EINER Karte · WALD-ORT = die Kronen-Karte
+Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m), EINE Ableitung aus `treeParams` der Art, EIN Wind-Term, die LOD-Blende misst je Instanz und bricht laut · BODEN-STOFF = das Rausch-Gesetz, das Licht des Auges ein Term unter Fels, fern Krone × Deckung aus EINER Karte · WALD-ORT = die Kronen-Karte
 · GRAS = nah Nah-Wiese, fern Boden-Funktion · BODEN-LESER = EINER (`_bodenSichtAt`) für Stand, Nah-Wiese und Streu · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
 Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, der Bias je Kaskade aus der Texel-Kante, EIN Werfer je Gestalt, der Boden empfängt ihn nach Zuwendung, in der
-Ego-Sicht der ganze Leib, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz (`_passTrifft`), jede Wahl hält nach `_wahlHaelt`
+Ego-Sicht der ganze Leib, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz (`_passTrifft`), jede Wahl hält nach `_wahlHaelt`, die Bündel in EINER Reihe (`_buendelReihe`)
 · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6
-Golden-Sätze + Ofen in der CI, der Bau folgt seiner Budget-Zeile, das Haus fern seiner NUR-WURF-Stufe · MESSORTE = Wiese,
+Golden-Sätze + Ofen in der CI, der Bau folgt seiner Budget-Zeile, Haus und Tor fern ihrer NUR-WURF-Stufe · MESSORTE = Wiese,
 Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz · LEIB = EIN Leib-Löser, der Gang EIN Gesetz (der Fuß rollt über den Ballen) · KAMERA = EINE Kugel · TOD =
-EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff, die Farbe aus `kelvin` · WASSER = EINE Wahrheit, jedes Werk (der Wagen nach EINEM Platz-Gesetz) fragt das Land samt Sockel, der Fern-Ring kein zweites Wasser · TAKT = an der Wurzel gedeckelt (`TAKT_DECKEL_S`) · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie (der volle Playtest ist Gruppe 11) auf integ-probe, main und nachts.
+EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff, die Farbe aus `kelvin` · WASSER = EINE Wahrheit, jedes Werk (der Wagen nach EINEM Platz-Gesetz) fragt das Land samt Sockel, der Fern-Ring kein zweites Wasser · TAKT = an der Wurzel gedeckelt (`TAKT_DECKEL_S`) · SPEICHER = EINE Edit-Karte je Chunk ohne Deckel, der save-server schreibt ganz · LEBENSWERTE = Zustand (`recomputePlayerStats` klemmt) · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie (der volle Playtest ist Gruppe 11) auf integ-probe, main und nachts.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes (5,79 px je Strähne an
