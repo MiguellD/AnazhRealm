@@ -94,7 +94,29 @@ const FORBIDDEN = [
     { token: "0x241712", fiel: "BOOT-LITERAL-ABSCHIED — das Haar zieht aus der HAIR_COLORS-Palette" },
     // DIAL-ZWILLINGS-ABSCHIED 18.07. — die Literal-Kopien der Pflanzen-Tafel:
     // die EINE Quelle ist foundry-core PRESETS (__terrainCore.PHYTO_PRESETS,
-    // Leser _phytoStudioDials); nur SPECIES_PALETTE_DEFAULT (neutral) lebt.
+    // Leser _phytoArt).
+    // K24 (13.10.) — die zweite Baum-Grammatik des Stamms ist gefallen: der gefühlte Baum (Richter) wächst aus der
+    // Rezept-Zeile der Art im Gesetzbuch (_phytoArt) und der EINEN Ableitung treeParams, wie der gesehene.
+    {
+        token: "SPECIES_GRAMMAR",
+        fiel: "K24 — der Richter wächst aus treeParams der Art (_phytoArt), keine Stamm-Grammatik",
+    },
+    { token: "_phytoDialsFor", fiel: "K24 — der dritte Dial-Zwilling (Grammatik-Krone → P)" },
+    { token: "_phytoStudioDials", fiel: "K24 — die Art liest _phytoArt, ihr Phänotyp artPhaenotyp" },
+    { token: "_ensureVariantSeedPool", fiel: "K24 — der Pool wächst je Art (_variantSeedsFor)" },
+    { token: "_generateVariantSeedPool", fiel: "K24 — der Pool wächst je Art (_variantSeedsFor)" },
+    { token: "skeleton.grammar", fiel: "K24 — das Laub der Art am Skelett heißt skeleton.laub (aus P)" },
+    // K24-N1 (13.10.) — der stille Ersatz der Skelett-Leser ist gefallen: jede Größe schreibt der EINE Erzeuger aus treeParams
+    // der Art, die Wand `_skelettPflicht` bricht laut, wo eine fehlt.
+    {
+        token: "SPECIES_PALETTE_DEFAULT",
+        fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz",
+    },
+    { token: "DEFAULT_TREE_FLARE", fiel: "K24-N1 — der Wurzelanlauf ist P.flare der Art, die Rippen STAMM_RIPPEN" },
+    { token: "foliageScale", fiel: "K24-N1 — ein nie geschriebenes Skelett-Feld, die Leser setzten still 1" },
+    { token: "totalH || 10", fiel: "K24-N1 — die Höhe des Skeletts ist P.height, kein Ersatz" },
+    { token: "flareAmp || 0.45", fiel: "K24-N1 — der Farn mit Anlauf 0 bekam still 0,45" },
+    { token: 'test(sp) ? "oak"', fiel: "K24-N1 — die Blatt-Form ist P.leafShape der Art, nie ihr Name" },
     { token: "SPECIES_PHYTO_DIALS", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Studio-Tafel führt (gefühlt == gesehen)" },
     { token: "SPECIES_PALETTE_GIGANT", fiel: "DIAL-ZWILLINGS-ABSCHIED — der Gigant trägt den mammut-Ton der Tafel" },
     { token: "SPECIES_PALETTE[", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Art-Palette wohnt in der Studio-Tafel" },
@@ -613,11 +635,23 @@ const FORBIDDEN = [
     // WELLE LF KAMPF (Vertrags-Akt 09.10., der Biss ist der Ansprung): die Biss-Reichweite um die Mitten (2,4 m, jede Gestalt)
     // und der feste Pirsch-Stopp (1,6 m) kehren nicht zurück — die Reichweite ist der Weg des Ansprungs, gebissen wird, wo der
     // Kopf den Leib berührt.
-    { token: "strikeRange", fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", auch: ["tetrapoda-core.js"] },
-    { token: "pirschStoppM", fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", auch: ["tetrapoda-core.js"] },
+    {
+        token: "strikeRange",
+        fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)",
+        auch: ["tetrapoda-core.js"],
+    },
+    {
+        token: "pirschStoppM",
+        fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs",
+        auch: ["tetrapoda-core.js"],
+    },
     // der Nachklang des Tod-Kippens (0,35 s, dann war der Leib fort) kehrt nicht zurück — ein Tier liegt gefuehl.leichnamSec
     // und sinkt in leichnamSinkSec in die Erde (Vertrags-Akt 09.10., Posten 7)
-    { token: "kippNachklangSec", fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)", auch: ["schmiede-core.js"] },
+    {
+        token: "kippNachklangSec",
+        fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)",
+        auch: ["schmiede-core.js"],
+    },
     // die Frage je Leser („lebt das Tier?") kehrt nicht zurück — der Leichnam verlässt beim Tod die Liste der Wesen und liegt
     // in state.leichname (Nachbesserung 3: vorher fragten 14 Methoden selbst nach dying, 5 Leser über diese Frage)
     { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
@@ -778,8 +812,14 @@ const FORBIDDEN = [
     // S3 wiese-gestalten (08.10.): die Senken der Nah-Wiese hingen unter EINER Gruppe „nahWiese" — die Täter-Klasse las den
     // obersten Knoten und buchte beide Stufen unter „nahWiese" (die Band-Linse sah nie, welche Stufe das Band sprengt). Jetzt
     // ist jede Senke ihr eigener oberster Knoten `nahWiese:L<stufe>:<v>:<teil>` (Täter `nahWiese:L1` · `nahWiese:L2`).
-    { token: "nahWiese:${v}:L${stufe}", fiel: "S3 wiese-gestalten — der Name trägt die Stufe vorn (nahWiese:L<stufe>:<v>:<teil>)" },
-    { token: "nw.gruppe", fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene" },
+    {
+        token: "nahWiese:${v}:L${stufe}",
+        fiel: "S3 wiese-gestalten — der Name trägt die Stufe vorn (nahWiese:L<stufe>:<v>:<teil>)",
+    },
+    {
+        token: "nw.gruppe",
+        fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene",
+    },
     // DIE STUFE 0 HAT EINE BEDEUTUNG (Welle 6, 06.10.): buildInstance baute den Strauch über die Steuer-Globale
     // `__strauchZeile` als Nah-Stufe, das Labor (build() → emitTree, Knopf L0) als Klingen-Krone (~175k Dreiecke, kein
     // Golden, kein Empfänger). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (die Stufen-Wand unten); die Globale
@@ -977,7 +1017,10 @@ const FORBIDDEN = [
     // V18.538 (welle-lf-rudel × S3 kreatur): beide skinnten die Stufe 1 — rudel als zweites Skelett mit einem Spiegel je
     // Auswertung (27 Gelenk-Kopien) und einem Tier-Sonderweg im Gelenk-Guss, S3 als EIN Skelett für Tier UND Mensch.
     // EINE Wahrheit: die Grobstufe bindet an die Knochen der feinen; der Spiegel und der Sonderweg kehren nicht zurück.
-    { token: "_tierFernFolgt", fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)" },
+    {
+        token: "_tierFernFolgt",
+        fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)",
+    },
     {
         token: "fernStarr",
         fiel: "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg",
@@ -997,14 +1040,24 @@ const FORBIDDEN = [
     { token: "_wurfDreiecke", fiel: "S3 — der Wurf-Vorsatz der L1-Rinde", auch: ["foundry-core.js"] },
     { token: "barkFein", fiel: "S3 — die Rinde der L1 ist EIN Teil, der Wurf ein eigenes", auch: ["foundry-core.js"] },
     { token: "nadelKarte", fiel: "S3 — der Nadel-Ast ist sein Wedel (tree[Stufe].wedel)", auch: ["foundry-core.js"] },
-    { token: "BLATT_ATLAS_NADEL", fiel: "S3 — Zelle 3 ist die Wedel-Zelle (BLATT_ATLAS_WEDEL)", auch: ["foundry-core.js", "phyto-core.js"] },
+    {
+        token: "BLATT_ATLAS_NADEL",
+        fiel: "S3 — Zelle 3 ist die Wedel-Zelle (BLATT_ATLAS_WEDEL)",
+        auch: ["foundry-core.js", "phyto-core.js"],
+    },
     { token: "NADEL_ZWEIG", fiel: "S3 — der Maler der Zelle 3 malt den Wedel (WEDEL_ZWEIG)", auch: ["phyto-core.js"] },
     // 0910-3 A (Gegenprüfung): der Wasser-Neubau im resize-Handler war ein Zwilling des Vorher-Textur-Wächters der Diät
     // (`_diaetVorTextur` trägt JEDEN Größenwechsel); was bleibt, ist der Tausch des Tiefen-KNOTENS (`_tiefenKnotenTausch`).
-    { token: "_tiefenLeserNeuBinden", fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler" },
+    {
+        token: "_tiefenLeserNeuBinden",
+        fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler",
+    },
     // S3 haus (10.10.): der Fernkörper des Gesetzbuchs ist die NUR-WURF-Stufe 3 (`huelle()`, Beipack __fern, fernform "huelle") —
     // der Wirts-Fit der Häuser, seine Dach-Prismen-Marke und seine Linse fallen; die Fernform liest `_huelleVon`
-    { token: "_archFachwerkFit", fiel: "S3 haus — die Fernform ist die Hülle des Gesetzbuchs (_huelleVon → _archFoundryZiegel)" },
+    {
+        token: "_archFachwerkFit",
+        fiel: "S3 haus — die Fernform ist die Hülle des Gesetzbuchs (_huelleVon → _archFoundryZiegel)",
+    },
     { token: "prismFlip", fiel: "S3 haus — der Keil trägt seinen Typ (HUELLE_KEIL_TYP: First ±x/±z, Walm)" },
     {
         token: "diag-arch-fachwerk-fit",
@@ -1017,7 +1070,10 @@ const FORBIDDEN = [
     { token: "_kreaturBodenUnter", fiel: "Leben-Schau 2 — jeder Körper liest seinen Boden über _koerperBodenUnter" },
     { token: "_fahrTerrainBoden", fiel: "Leben-Schau 2 — die Ebene des Werks liest _werkBoden (den Boden unter ihm)" },
     { token: "_baumWeltSkala", fiel: "Leben-Schau 2 — _studioWeltSkala trägt die Welt-Skala jedes Studio-Werks" },
-    { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
+    {
+        token: "STUDIO_WORLD_SCALE",
+        fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)",
+    },
     { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
     { token: "_baumHuellenNachBuch", fiel: "Leben-Schau 2 — die Stamm-Hülle misst ab dem Spawn in der Welt-Skala" },
     // DIE TOR-HÜLLE IST GESETZ-DATEN (Gegenprüfung 10.10.): der Wirt baute die Tor-Gestalt am Spawn synchron nach (15–50 ms je
@@ -1033,7 +1089,10 @@ const FORBIDDEN = [
     // trägt (der Zell-Stempel überschreibt eine Wasser-Zelle) — nie ein Merk-Feld, gefragt am Lade-Zustand des Baus (beim
     // Reload „trocken"), nie eine zweite Wahrheit (das Gesetz samt Rand-Füllung weckte am Seerand den Automaten).
     { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt seine Zellen)" },
-    { token: "_stempelImWasser", fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)" },
+    {
+        token: "_stempelImWasser",
+        fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)",
+    },
     // K09a (11.10.) — DAS GELÄNDE-GESETZBUCH: die Makro-Höhe und ihre Hilfen wohnen in gelaende-core.js; die Stamm-
     // Methoden und der Worker-Spiegel sind gefallen (Stamm `_terrainMacroSurfaceY` und Worker rufen `hoehe`).
     ...[
@@ -1067,8 +1126,14 @@ const FORBIDDEN = [
     // DAS EINE LEUCHTQUELLEN-GESETZ (K11 Runde 2): das Licht des Auges ist ein Platz des Licht-Pools (`_augenLeuchte`, mit
     // Himmels-Ersatz), sein eigener Term mit r184-Abfall stand als zweites Punktlicht-Gesetz neben dem Pool; der Glut-Umlauf des
     // Klangs und das Szenen-Licht des Tors fielen (das Verzeichnis „glut“, der Pool).
-    { token: "atmoUniforms.augenLicht", fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)" },
-    { token: "augenLicht: TSL.uniform", fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)" },
+    {
+        token: "atmoUniforms.augenLicht",
+        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+    },
+    {
+        token: "augenLicht: TSL.uniform",
+        fiel: "K11 — die eigene Uniform des Lichts des Auges (ein Platz des Licht-Pools)",
+    },
     { token: "_umweltGlutSweep", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
     { token: "bautenJeFrame", fiel: "K11 — der Glut-Umlauf des Klangs (das Verzeichnis „glut“)" },
     { token: "this._portalLicht ", fiel: "K11 — das Szenen-Licht des Tors (ein Bürger des Licht-Pools)" },
@@ -1220,6 +1285,12 @@ const ZWILLINGE = [
         gesetzbuch: "phyto-core.js",
         verboten: ["foundry-core.js"],
         fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
+    },
+    {
+        fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
+        gesetzbuch: "phyto-core.js",
+        verboten: ["foundry-core.js", "anazhRealm.js"],
+        fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
     },
     {
         fingerprint: "ridges: 14, depth: 0.52",
@@ -1764,14 +1835,15 @@ function scanNormalWand(srcRoh) {
 // DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
 // die Welt (buildInstance). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (foundry-core); `__lod` schreiben nur
 // buildInstance (die Stufe, roh, wie der Labor-Knopf) und emitTree (das Rezept für den Bau, danach zurück auf die Stufe),
-// deriveParamsPlant liest dieselbe Abbildung. Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot
-// mit Zeile; fehlt ein Anker, ist die Abbildung aus emitTree oder deriveParamsPlant gewandert.
+// deriveParamsPlant reicht die rohe Stufe an das Gesetz `treeParams` (phyto-core), das sie über dieselbe Abbildung liest
+// (K24). Jede weitere Zuweisung an `__lod` im Kern ist eine zweite Bedeutung — rot mit Zeile; fehlt ein Anker, ist die
+// Abbildung aus emitTree gewandert oder deriveParamsPlant reicht dem Gesetz eine andere als die rohe Stufe.
 const STUFEN_ANKER = [
     "__lod = lod;",
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "const rezept = stufenRezept(ph.kind, __lod);",
+    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -2035,13 +2107,16 @@ function main() {
         const ohne = scanStufenWand(
             kern
                 .replace("__lod = stufenRezept(P.kind, stufe);", "")
-                .replace("const rezept = stufenRezept(ph.kind, __lod);", "const rezept = __lod;")
+                .replace(
+                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));",
+                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre, __weltSkalaArt(CURRENT));'
+                )
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
             ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /stufenRezept\(ph\.kind, __lod\);` steht 0×/.test(e));
+            ohne.some((e) => /SEED, __lod, pre\);` steht 0×/.test(e));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);
