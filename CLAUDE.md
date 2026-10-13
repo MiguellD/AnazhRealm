@@ -96,9 +96,10 @@ C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band
 
 ## Architektur (die Karte)
 
-- **Stamm** `anazhRealm.js` (~108k, EINE Klasse, `npm run atlas` = 26 Zonen; die Zerlegung in Zonen-Dateien ist geplant,
-  `artifacts/profiband/zerlegung-1310/plan.md`): Boden · Speicher · Spieler · Anschluss + die Verben (appear·place·body·drive·wield·portal·rule) +
-  KIND_POLICY.
+- **Stamm** `stamm/` (~107k Zeilen in 48 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp): der Kern `stamm/01.js` (Konstruktor + §01),
+  die Zonen-Klassen `stamm/NN[x].js`, die Naht in `stamm/26a.js` trägt sie beim Laden auf `AnazhRealm` (VERSION allein dort); die Liste =
+  die Stamm-Tags in index.html; `npm run atlas` die Karte live (+ `--find`), `diag-atlas --check` die Ratsche. Boden · Speicher · Spieler ·
+  Anschluss + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
 - **Kerne** (10, cores.manifest.json): Daten+Mathe, Vertrag v1.2 `PARAMS_BY_KIND` + must-ignore + fail-closed (`docs/studio-vertrag.md`); der
   Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi). **Worker:** Foundry = terrain-Brücke (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; IDB disk-first, SHA-Stempel der Quellen) · voxel-worker. **Server:** save-server (state/.bak · perf-trace · llm-proxy ·
@@ -124,8 +125,11 @@ C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band
 10. **Jede versionierte Datei trägt den `?v=`-Cache-Buster** (Worker/Bootstrap/importScripts).
 11. **Studio-Code nur unter BYTE-BEWEIS:** die Benchmark bewegt sich nie, Goldens eingefroren (Re-Mint = Vertrags-Akt); Kerne außerhalb von
     format:check, nie `prettier --write` auf Gesetzbücher (verbatim-Blöcke), neue Abschnitte additiv; `__`-Schlüssel in ov sind Steuer-Passagiere.
-12. **Monolith-Chirurgie:** `cut-method` (AST-sicher) · sofort `node --check` + eslint · seriell committen, nie Batch; Arbeiter zweigen vom Kopf
-    von integ-probe ab, nie von einem ungemergten R3-Zweig (gestapelte Zweige erben jede Röte).
+12. **Stamm-Chirurgie:** Werkzeug liest den Stamm NUR über `scripts/lib/stamm.cjs` (`text()` = der virtuelle Stamm, `ort()`, `dateiVon()`;
+    die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); über der Decke `node scripts/stamm-umzug.cjs --teile §NN
+    <methode>`, ein Zweig von vor dem Schnitt zieht per `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
+    `npm run stamm:lint` · seriell committen, nie Batch; Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig
+    (gestapelte Zweige erben jede Röte).
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor Framerate
     (der Ring wächst bis `RING_EXIST_FLOOR` ohne fps-Gate, der PID atmet nur darüber).
 14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron auf dem Interaktions-Pfad (der Chunk-Stoff
