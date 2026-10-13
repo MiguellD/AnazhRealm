@@ -62,14 +62,14 @@
         },
         {
             "id": "dorf",
-            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick nach Nordost (45°): der Zug rückt das Dorf in seinen Blickkegel (`_siedlungsAnker`: jedes Haus mit Reichweite + 3,5 m vor dem Spieler — derselbe Plan-Anker −763,2/−828,7 für denselben Spieler-Ort, in jedem Boot). Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick längs der Plan-Achse (K10: die Mitte des Plans v2 liegt um 9,8/−2,0 m versetzt, die Achse 0,953/−0,304 nach Ostsüdost; vorher Nordost 45°): der Zug rückt das Dorf in den Kegel um diese Achse (`_siedlungsAnker`: jedes Haus mit Reichweite + 3,5 m vor dem Spieler — derselbe Plan-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot; bis K10 −763,2/−828,7). Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
             "spieler": [
                 -841,
                 -861
             ],
             "blick": [
-                -834,
-                -854
+                -831.6,
+                -864.1
             ],
             "dorfZug": true,
             "ortTakt": [],
