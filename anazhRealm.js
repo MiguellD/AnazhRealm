@@ -35779,7 +35779,8 @@ class AnazhRealm {
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
         // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
-        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) this._grundrissRaeumen(entry);
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
+            this._grundrissRaeumen(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
@@ -81169,7 +81170,15 @@ class AnazhRealm {
                     z1 = Math.max(z1, q.c[2] + q.h[2]);
                 }
             const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
-            const fp = x1 > x0 && z1 > z0 ? { ex: ((x1 - x0) / 2) * k, ez: ((z1 - z0) / 2) * k, ox: ((x0 + x1) / 2) * k, oz: ((z0 + z1) / 2) * k } : null;
+            const fp =
+                x1 > x0 && z1 > z0
+                    ? {
+                          ex: ((x1 - x0) / 2) * k,
+                          ez: ((z1 - z0) / 2) * k,
+                          ox: ((x0 + x1) / 2) * k,
+                          oz: ((z0 + z1) / 2) * k,
+                      }
+                    : null;
             e._grundrissHuelle = { hu, fp };
             if (fp) return fp;
         }
