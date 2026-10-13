@@ -37777,9 +37777,11 @@ class AnazhRealm {
         const whitewater = smoothstep(float(1.2), float(3.2), aSlopeV).mul(
             float(0.25).add(riverS1.mul(0.75).mul(detailFade))
         );
-        // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
-        // im Wasser); default 0 = exakt das alte Bild.
-        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
+        // V14-Emotions-Haken: uEmotion > 0 hebt den Schaum des GESETZES an (die Welt atmet im Wasser: Ufer, Kamm, Wildwasser
+        // schäumen bis doppelt), nie Schaum, wo das Gesetz keinen hat; 0 = das Bild des Gesetzes. Bis K16 legte die Stimmung
+        // + 0,25 · uEmotion über JEDES Wasser — der ruhige Fluss trug bei der Boot-Stimmung 0,9 ein Schaum-Grau (Makro 300 m
+        // Luma 0,387 gegen den Ring 0,106), das der Blick des Wassers (`_wasserBlick`) nicht kennt.
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).mul(uEmotion.add(1.0)), 0.0, 1.0);
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).

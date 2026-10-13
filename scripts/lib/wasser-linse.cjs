@@ -893,9 +893,9 @@ function wasserBild(opts) {
         // und verschluckte jede Strähne): Licht des Orts 1 (Schaum 0,93 · Deckung 0,7 bleibt unter 1), kein Sonnen-Glanz.
         // Der Spiel-Loop ruht während der Probe (Lehre 17): zwischen den beiden Uhren schrieb der Tag-Nacht-Takt Licht
         // und Himmel neu (06.10.: die Stromschnelle bei Uhr 3600 2,5× heller als bei 60 — das Licht, nicht das Wasser).
-        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum
-        // über JEDEM Wasser, ohne Ort und ohne Gesetz-Grund; die Stimmung driftet mit der Boot-Zeit (lokal 0,06, in der CI
-        // ≈ 0,17: 5,4 % des ruhigen Flusses über der Hell-Schwelle). B1 misst den Schaum des Gesetzes, nicht die Laune.
+        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum des
+        // Gesetzes bis auf das Doppelte (bis K16 legte er + 0,25 · uEmotion über JEDES Wasser); die Stimmung driftet mit der
+        // Boot-Zeit (lokal 0,06, in der CI ≈ 0,17). B1 misst den Schaum des Gesetzes, nicht die Laune.
         renderer.setAnimationLoop(null);
         const irrAlt = U.irr.value.clone();
         const lichtAlt = U.light.value;
