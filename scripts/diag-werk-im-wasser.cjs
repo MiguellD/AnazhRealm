@@ -1426,6 +1426,9 @@ async function probe(A) {
                         frame();
                     } catch (_e) {}
                 stelle(cx, cz);
+                // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier) — die Gier des Birken-Falls zeigte auf
+                // ein anderes Ufer, der Tempel stand 13.10. acht Meter landein und wurde gebaut (E LEER)
+                st.yaw = Math.atan2(A.rand.see[0] - cx, A.rand.see[1] - cz);
                 fall("Tempel im See", "baue tempel hier", 1, "tempel vor dir gebaut", G.wasser);
                 {
                     const vorA = new Set(st.architectures);
@@ -2399,7 +2402,12 @@ async function lauf() {
         });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         // die Orte aus der Welt (K16): Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
-        const ORTE = await page.evaluate(weltOrte, { mess: ((m) => [m.x, m.z])(messort("wiese")), R: 1500, rampeStufe: 0.25, ansaugTief: 1.3 });
+        const ORTE = await page.evaluate(weltOrte, {
+            mess: ((m) => [m.x, m.z])(messort("wiese")),
+            R: 1500,
+            rampeStufe: 0.25,
+            ansaugTief: 1.3,
+        });
         befund.orte = ORTE;
         console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
         if (!ORTE.fluss || !ORTE.see)

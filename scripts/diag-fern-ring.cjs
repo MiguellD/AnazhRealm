@@ -806,6 +806,9 @@ const server = http.createServer((req, res) => {
             const rB = new T9.Vector3();
             const rC = new T9.Vector3();
             const rT = new T9.Vector3();
+            const rN = new T9.Vector3(); // die Normale des getroffenen Dreiecks (die Weiche des Saums liest sie)
+            const rE1 = new T9.Vector3();
+            const rE2 = new T9.Vector3();
             const ringY = (x, z) => {
                 const liste = ringFach.get(Math.floor(x / 8) * 65536 + Math.floor(z / 8));
                 if (!liste) return null;
@@ -818,7 +821,10 @@ const server = http.createServer((req, res) => {
                     rA.fromBufferAttribute(P, I[t]);
                     rB.fromBufferAttribute(P, I[t + 1]);
                     rC.fromBufferAttribute(P, I[t + 2]);
-                    if (ray.ray.intersectTriangle(rA, rB, rC, false, rT) && (best === null || rT.y > best)) best = rT.y;
+                    if (ray.ray.intersectTriangle(rA, rB, rC, false, rT) && (best === null || rT.y > best)) {
+                        best = rT.y;
+                        rN.crossVectors(rE1.subVectors(rB, rA), rE2.subVectors(rC, rA)).normalize();
+                    }
                 }
                 return best;
             };
@@ -839,6 +845,9 @@ const server = http.createServer((req, res) => {
             const muendungOrte9 = [];
             let muendungAlt9 = 0; // SELBSTTEST: dieselben Punkte mit dem Ring auf der 2D-Höhe (die alte Naht)
             let muendungLuecke9 = 0; // das Deck tief, das Feld oben: der Saum füllt eine Lücke über einem tieferen Boden
+            let lueckeOffen9 = 0; // ... und die Weiche zieht den Ring unter ihn (das tiefere Deck gewinnt)
+            const lueckeOrte9 = [];
+            let weicheMax9 = 0; // die größte Weiche des Saums an den Proben (m, senkrecht)
             const proben13 = []; // die Punkte der Loch-Probe für die Treue der Teilung (Band 13)
             const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
             const morphF =
@@ -999,7 +1008,15 @@ const server = http.createServer((req, res) => {
                     if (yr === null) continue;
                     durch[1]++;
                     if (yr > yc + 0.05) durchOhne++;
-                    const ueber = yr - (regel === 1 ? weiche9 : 0) - yc;
+                    // DIE WEICHE AM PUNKT (`_fernRingWeiche`, der CPU-Spiegel des depthNode): fest oder der Fehler der Masche
+                    const weicheP9 =
+                        regel !== 1
+                            ? 0
+                            : typeof r._fernRingWeiche === "function"
+                              ? r._fernRingWeiche(fr9, x, z, rN.x, rN.y, rN.z)
+                              : weiche9;
+                    weicheMax9 = Math.max(weicheMax9, weicheP9);
+                    const ueber = yr - weicheP9 - yc;
                     const gesetz9 = r._terrainMacroSurfaceY(x, z, true);
                     const tief9 = regel !== 2 && yc < gesetz9 - 2; // das Deck mehr als 2 m unter der 2D-Höhe
                     // DER EINSCHNITT AM SAUM: das Deck liegt mehr als 2 m unter der 2D-Höhe des Gesetzes (die Surface-Nets-
@@ -1008,10 +1025,27 @@ const server = http.createServer((req, res) => {
                     // das Feld oben (das Deck unter dem Strahl ist ein tieferer Boden — ein Höhlen-Grund unter der Lücke an der
                     // Bau- oder Stufen-Kante, die der Saum füllt), ist der Ring dort die Fläche des Feldes (gezählt: `luecke`).
                     const feld9 = tief9 ? r._voxelSurfaceY(x, z) : null;
-                    const weicheT9 = regel === 1 ? weiche9 : 0;
-                    if (tief9 && feld9 !== null && feld9 >= gesetz9 - 2) muendungLuecke9++;
+                    const weicheT9 = weicheP9;
+                    if (tief9 && feld9 !== null && feld9 >= gesetz9 - 2) {
+                        muendungLuecke9++;
+                        // DIE LÜCKE UNTER DER WEICHE (gezählt, beim Ort genannt): steht der tiefere Boden näher als die Weiche,
+                        // gewinnt er — ein Deck steht dort (13.10. an der Stufen-Naht 11|12 das gröbere Deck der Stufe 1 unter dem
+                        // Sockel-Rand), das Gesetz des Saums: wo das Deck fehlt, trägt der Ring, wo es steht, gewinnt es
+                        if (yr - weicheT9 < yc - 0.05) {
+                            lueckeOffen9++;
+                            if (lueckeOrte9.length < 4)
+                                lueckeOrte9.push(
+                                    `(${x.toFixed(1)}|${z.toFixed(1)}) Deck ${yc.toFixed(1)} Ring ${yr.toFixed(1)} Weiche ${weicheT9.toFixed(1)}`
+                                );
+                        }
+                    }
                     // SELBSTTEST: der Ring auf der 2D-Höhe des Gesetzes (die alte Naht, `vollY`) stünde über der tiefen Fläche
-                    if (tief9 && feld9 !== null && feld9 < gesetz9 - 2 && gesetz9 - weicheT9 - feld9 > 0.05)
+                    if (
+                        tief9 &&
+                        feld9 !== null &&
+                        feld9 < gesetz9 - 2 &&
+                        gesetz9 - (regel === 1 ? weiche9 : 0) - feld9 > 0.05
+                    )
                         muendungAlt9++;
                     if (tief9 && feld9 !== null && feld9 < gesetz9 - 2 && yr - weicheT9 - feld9 > 0.05) {
                         muendung9[0]++;
@@ -1061,6 +1095,9 @@ const server = http.createServer((req, res) => {
             res.muendungOrte = muendungOrte9;
             res.muendungAlt = muendungAlt9;
             res.muendungLuecke = muendungLuecke9;
+            res.lueckeOffen = lueckeOffen9;
+            res.lueckeOrte = lueckeOrte9;
+            res.weicheMax = +weicheMax9.toFixed(1);
             res.weiche = weiche9;
             // ===== (12) DIE WEICHE KOSTET NUR AN DER NAHT (K16, Prüfung Runde 3) =====
             // Die Tiefe aus dem Fragment (`depthNode`) kostet jedes Fragment, das sie schreibt, den frühen Tiefentest und die
@@ -1398,7 +1435,8 @@ const server = http.createServer((req, res) => {
                 if (!attr) w.ohneAttribut++;
                 if (!(Math.abs(an - c) <= 0.05)) {
                     w.abweichung++;
-                    if (w.orte.length < 4) w.orte.push([Math.round(p.x), Math.round(p.z), +c.toFixed(2), +an.toFixed(2)]);
+                    if (w.orte.length < 4)
+                        w.orte.push([Math.round(p.x), Math.round(p.z), +c.toFixed(2), +an.toFixed(2)]);
                 }
                 if (c > 0.05 && Math.abs(0 - c) > 0.05) w.alt++;
                 r._fernFarbeMasche(p.x, frW.farbLaw[g], p.z, land, p.fuss);
@@ -1643,9 +1681,9 @@ const server = http.createServer((req, res) => {
         `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} seiten=${JSON.stringify(out.durchSeite || {})} weiche=${out.weiche} stufen=${JSON.stringify(out.nahtStufen || {})} zeit=${(out.zeit9 || []).join("+")}ms maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
     );
     check(
-        "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet; Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
+        "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet, und die Weiche des Saums den Fehler der Masche (`_fernRingWeiche`: Steigung × Durchmesser); Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
         !!out.muendung && out.muendung[0] === 0 && out.feldOffen === 0 && out.feldOhne === 0 && out.muendungAlt > 0,
-        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} ohne-flaeche=${out.feldOhne} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
+        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} (davon unter der Weiche ${out.lueckeOffen} ${JSON.stringify(out.lueckeOrte || [])}) weiche-max=${out.weicheMax} m feld: takte=${out.feldTakte} offen=${out.feldOffen} ohne-flaeche=${out.feldOhne} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",
@@ -1709,8 +1747,12 @@ const server = http.createServer((req, res) => {
                     : w.abweichung > 0
                       ? " — TÄTER: der Wasser-Anteil folgt nicht dem Kasten-Filter (`_fernFlussTeil`)"
                       : "") +
-                (w.zwilling > 0 ? " — TÄTER: die Boden-Farbe mischt eine Fern-Wasser-Farbe ein (Zwilling des Wasser-Körpers)" : "") +
-                (w.hoehe > 0 ? " — TÄTER: der Ring trägt den Fluss nicht in der Höhe (`_fernRingY`, Kasten-Mittel zum Spiegel)" : "")
+                (w.zwilling > 0
+                    ? " — TÄTER: die Boden-Farbe mischt eine Fern-Wasser-Farbe ein (Zwilling des Wasser-Körpers)"
+                    : "") +
+                (w.hoehe > 0
+                    ? " — TÄTER: der Ring trägt den Fluss nicht in der Höhe (`_fernRingY`, Kasten-Mittel zum Spiegel)"
+                    : "")
         );
     }
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
