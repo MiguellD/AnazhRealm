@@ -27,8 +27,8 @@
 //       vor keiner Haustür steht dessen Wand — Grundriss und Tür-Vorplatz, abgetastet gegen die Hülle jedes Nicht-Natur-
 //       Baus über dem Boden des Hauses; dann derselbe Akt ein zweites Mal am selben Anker: kein Haus, kein Brunnen, kein
 //       Stand des zweiten Dorfs steht im ersten (seit „vor dir" vorn liegt, gründet das Dorf vor dem Spieler: an der
-//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Dazu der Selbsttest „raster": die Höhe des Footprints aus der
-//       Mitte allein (das gröbste Raster) legt am Hang des Dorf-Orts eine Haustür in den Boden — W1 wird rot.
+//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Dazu der Selbsttest „raster": der Erdbau des Plans fällt aus der
+//       Gelände-Lage (K10: der Plan trägt den Boden y) — am Hang des Dorf-Orts liegt eine Haustür im Boden, W1 wird rot.
 //   W8  DIE LICHTUNG (Entscheid D3): die Genesis-Plattform ist ein Grundriss derselben Wand — über ihrer Scheibe keine Krone
 //       (Wald-Gesetz × Welt-Skala) eines Natur-Eintrags oder einer Streu-Zelle, keine Kachel-Pflanze auf ihr; der Hain der
 //       KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er wächst), jede Absage steht im
@@ -129,22 +129,11 @@ const BASIS = {
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // die Höhe des Footprints aus der Mitte allein, ohne den Tür-Vorplatz (das gröbste Raster) — das Raster lebt seit der
-    // Gegenprüfung 10.10. im EINEN `_fundamentRaster` (Höhe der Siedlung und Land jedes Fundaments). Bis K16 vier Ecken + Mitte
-    // (der Stand vor dem Raster): die neue Landform trägt keine Kuppe zwischen den Ecken (am Hang 0,52 und an einer Kuppe
-    // 0,09 je m blieb die Tür 1–6 m über dem Gelände) — die Mitte allein legt am Hang die bergseitige Tür in den Boden.
-    raster: [
-        ["const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));", "const nx = 1;"],
-        ["const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));", "const nz = 1;"],
-        [
-            "out.push([ox + fp.ex * ((2 * i) / nx - 1), oz + fp.ez * ((2 * j) / nz - 1), true]);",
-            "out.push([ox, oz, true]);",
-        ],
-        [
-            "out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 0.25, false]);\n                out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 1, false]);",
-            "void 0;",
-        ],
-    ],
+    // der Boden des Plans erreicht das Gelände nicht: der Erdbau des Orts (Plan v2, fachwerk `ortPlan`, gelaende-core
+    // `erdbauY`) fällt aus der Gelände-Lage — das Haus steht auf der Höhe des Plans, das Gelände bleibt der Hang. Bis K10 hieß
+    // der Täter „raster" (die Höhe des Footprints aus der Mitte allein): seit der Plan den Boden y trägt, rechnet die Welt
+    // keine Haus-Höhe mehr aus dem Raster, das Gift wanderte an die Stelle, die die Tür heute trägt.
+    raster: [["        if (!E) return out;\n        for (const k of Object.keys(E))", "        return out;\n        for (const k of Object.keys(E))"]],
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
@@ -1140,6 +1129,8 @@ async function proben(phasen) {
                 kultur: k,
                 x: ort.x,
                 z: ort.z,
+                // der Boden des Slots (K10: jeder Slot trägt sein y wie im Plan v2) — die Höhe, die die Suche fand
+                y: ort.hMax,
                 phi: ort.gier,
                 seed: 7,
                 tuer: tu,

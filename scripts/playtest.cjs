@@ -41938,10 +41938,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             waterSpecular =
                 // W10 — das Band WANDERT (Lehre 6): der Glitzer ist jetzt das
                 // STUDIO-Gesetz (reflect-basiert, WASSER_GESETZ.spec, Rayleigh-uSunCol).
-                /pow\(max\(dot\(reflect\(/.test(builderSrc) &&
-                /WG\.spec\[0\]/.test(builderSrc) &&
+                // K16: der Blick des Wassers ist EIN Helfer (`_wasserBlick`), der Builder reicht ihm die gekräuselte
+                // Normale und die Sonne, der Helfer rechnet den Glitzer
+                /pow\(max\(dot\(reflect\(/.test(window.__codeOf(r._wasserBlick)) &&
+                /WG\.spec\[0\]/.test(window.__codeOf(r._wasserBlick)) &&
+                /normalize\(o\.sunDir\)/.test(window.__codeOf(r._wasserBlick)) &&
                 /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
-                /normalize\(uSunDir\)/.test(builderSrc);
+                /this\._wasserBlick\(TSL, WG, \{\s*n: nFlow,[\s\S]{0,200}sunDir: uSunDir/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe — die Szenen-Tiefe ist der EINE Knoten
             // _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei). Seit dem Durchlass-Gesetz
             // (05.10.) in METERN optischen Wegs (wegM, × cameraFar − cameraNear), nie in Viewport-Einheiten.
@@ -42131,10 +42134,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel), treibt Spiegel UND
             // Deckung — seit dem Durchlass-Gesetz (05.10.) spiegelt er DEN Himmel (die Himmels-Umgebung, nie die
             // Zenit-Tönung × Sonnen-Stärke) und deckt mit α = 1 − T·(1 − F)·(1 − Schaum).
+            // K16: Fresnel und Spiegel rechnet der EINE Blick des Wassers (`_wasserBlick`), die Deckung der Builder
+            const blickSrc = window.__codeOf(r._wasserBlick);
             out.waterFresnel =
-                /WG\.fresnel\[0\]/.test(builderSrc) &&
-                /himmel\.mul\(fres\)/.test(builderSrc) &&
-                /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(builderSrc) &&
+                /WG\.fresnel\[0\]/.test(blickSrc) &&
+                /himmel\.mul\(fres\)/.test(blickSrc) &&
+                /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(blickSrc) &&
+                !/uSkyCol/.test(blickSrc) &&
+                /\{ eigen, fres \} = this\._wasserBlick\(/.test(builderSrc) &&
                 /T\.mul\(float\(1\.0\)\.sub\(fres\)\)/.test(builderSrc) &&
                 !/uSkyCol/.test(builderSrc);
         }

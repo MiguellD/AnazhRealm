@@ -570,7 +570,7 @@ scene.add(sun); const hemi=new THREE.HemisphereLight(0xbcd2f0,0x4d4636,0.62); co
 // ════ Tageszeiten ════
 // V18.491.228 — Lab Tageszeiten ← ZEIT_GESETZ fail-soft; Host: das Licht (ZEIT_VIS, K11).
 // Herdfeuer und Fenster-Glut lesen das Leuchtquellen-Gesetz des Kerns (FC.LICHT_GESETZ) — dasselbe Datum wie die Welt.
-const _LG=FC.LICHT_GESETZ, _FEU=_LG.feuer, _FEN=_LG.fenster, _FENF=FC.lichtFarbe(_FEN.kelvin); let _feuerZeit=_FEU.zeit.mittag;
+const _LG=FC.LICHT_GESETZ, _FEU=_LG.feuer, _FEN=_LG.fenster, _FENF=FC.lichtFarbe(_FEN.kelvin), _LAT=_LG.laterne, _LATF=FC.lichtFarbe(_LAT.kelvin); let _feuerZeit=_FEU.zeit.mittag;
 // r128 zeichnet den Legacy-Abfall (1 − d/R)^abfall, nicht das Gesetz (FC.lichtAbfall: 1/d² mit Kern und Saum) — das Herdfeuer des Labors trifft die Welt in 2 m
 const _FEU_LAB=FC.lichtAbfall(_FEU,2)/Math.pow(1-2/_FEU.reichweiteM,_FEU.abfall);   // der Lichtstrom des Herdfeuers zur Tageszeit (setZeit), das Flackern im Bild-Takt
 const _ZG=(FC&&FC.ZEIT_GESETZ)||(window.__fachwerkCore&&window.__fachwerkCore.ZEIT_GESETZ)||null;
@@ -585,7 +585,10 @@ const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0
 function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); _feuerZeit=_FEU.zeit[t]||_FEU.zeit.mittag;
   const glut=_FEN.zeit[t]||0;                                                                 // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake (LICHT_GESETZ.fenster)
   for(const gm of [M.glas, M.glasfern, (typeof _MM!=='undefined')&&_MM.glas, (typeof _MM!=='undefined')&&_MM.glasfern]){ if(!gm) continue;
-    gm.emissive=gm.emissive||new THREE.Color(0); if(glut) gm.emissive.setRGB(..._FENF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=glut; } }
+    gm.emissive=gm.emissive||new THREE.Color(0); if(glut) gm.emissive.setRGB(..._FENF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=glut; }
+  const lat=_LAT.zeit[t]||0;                                                                  // der Kopf der Laterne: SEIN Datum (LICHT_GESETZ.laterne), dasselbe wie in der Welt — nie die Fenster-Glut
+  for(const gm of [M.laternenglas, (typeof _MM!=='undefined')&&_MM.laternenglas]){ if(!gm) continue;
+    gm.emissive=gm.emissive||new THREE.Color(0); if(lat) gm.emissive.setRGB(..._LATF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=lat; } }
 const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),new THREE.MeshStandardMaterial({color:0x4a5238,roughness:1}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 const fire=new THREE.PointLight(0xffffff,_FEU.staerke,_FEU.reichweiteM,_FEU.abfall); fire.color.setRGB(...FC.lichtFarbe(_FEU.kelvin)); scene.add(fire);   // das Herdfeuer: LICHT_GESETZ.feuer, die Farbe aus der Farbtemperatur (linear — r128 liest die Farbe roh)

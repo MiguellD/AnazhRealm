@@ -267,7 +267,11 @@ function ortVerdikt(m) {
         fehl.push(`GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})`);
     if (!(m.quellenGasse >= GASSE_SOLL))
         fehl.push(`Dorf-Licht der Gasse nachts ${m.quellenGasse} sichtbare Quellen (Soll ≥ ${GASSE_SOLL})`);
-    if (!(m.poolGasse >= 1)) fehl.push(`Licht-Pool der Gasse nachts ${m.poolGasse} Quellen des Orts`);
+    // der Pool trägt jede sichtbare Quelle der Gasse, bis er voll ist (LICHT_POOL.plaetze) — ≥ 1 ließ 4 sichtbare Köpfe mit
+    // einem einzigen hellen durch, die Klasse „1 von 6 Laternen im Bild hell“ (97d2606a)
+    const poolSoll = Math.min(m.quellenGasse || 0, m.poolPlaetze || 0);
+    if (!(m.poolGasse >= 1 && m.poolGasse >= poolSoll))
+        fehl.push(`Licht-Pool der Gasse nachts ${m.poolGasse} Quellen des Orts (Soll ≥ ${Math.max(1, poolSoll)})`);
     return fehl;
 }
 const GT_SOLL_M = 60;
@@ -700,13 +704,13 @@ const FIXTURES = [
             obb: { cx: x, cz: z, phi: 0, ex: 2.5, ez: 2.5 },
         });
         const ortT = (slots) => ({
-            ort: { x: 100, z: 100 },
+            ort: { x: 100, z: 100 }, // BÜHNE: reines Urteil-Fixture, kein Welt-Ort
             slots,
             roads: [
                 {
                     pts: [
-                        { x: -20, z: 0 },
-                        { x: 20, z: 0 },
+                        { x: -20, z: 0 }, // BÜHNE: Weg im Plan-Rahmen eines Fixtures
+                        { x: 20, z: 0 }, // BÜHNE: Weg im Plan-Rahmen eines Fixtures
                     ],
                     w: 3,
                 },
@@ -744,7 +748,7 @@ const FIXTURES = [
             laternenWelt: 6,
             laternenPlan: 6,
         };
-        Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4, quellenGasse: 5, poolGasse: 3 });
+        Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4, quellenGasse: 5, poolGasse: 4, poolPlaetze: 4 });
         check("Selbst-Test 12: das Verdikt eines gehaltenen Orts ist leer", ortVerdikt(gut).length === 0);
         const schlecht = Object.assign({}, gut, {
             kronen: 3,
@@ -780,6 +784,7 @@ const FIXTURES = [
             const zu = gassenLicht(lat, [weg], [haus], hfov);
             const leer = gassenLicht([], [weg], [], hfov);
             const vg = ortVerdikt(Object.assign({}, gut, { quellenGasse: 3, poolGasse: 0 })).join(" · ");
+            const vp = ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolGasse: 1 })).join(" · ");
             check(
                 "Selbst-Test 16: die Gasse sieht die Laternen am Weg, ein Haus verdeckt sie, ohne Quellen bleibt 0, das Verdikt nennt Gasse und Pool",
                 frei.n >= 4 &&
@@ -787,7 +792,8 @@ const FIXTURES = [
                     zu.verdeckt > 0 &&
                     leer.n === 0 &&
                     /Dorf-Licht der Gasse nachts 3 sichtbare Quellen/.test(vg) &&
-                    /Licht-Pool der Gasse nachts 0/.test(vg),
+                    /Licht-Pool der Gasse nachts 0/.test(vg) &&
+                    /Licht-Pool der Gasse nachts 1 Quellen des Orts \(Soll ≥ 4\)/.test(vp),
                 JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n })
             );
         }
@@ -809,8 +815,8 @@ const FIXTURES = [
                 },
                 wasserAt: mitWasser ? (x) => Math.abs(x - 100) < 3 : null,
             });
-            const mit = FC.ortPlan(planB, { x: 100, z: 0 }, ctxB(true));
-            const ohne = FC.ortPlan(planB, { x: 100, z: 0 }, ctxB(false));
+            const mit = FC.ortPlan(planB, { x: 100, z: 0 }, ctxB(true)); // BÜHNE: reines ortPlan-Fixture über einer gedachten Rinne
+            const ohne = FC.ortPlan(planB, { x: 100, z: 0 }, ctxB(false)); // BÜHNE: reines ortPlan-Fixture über einer gedachten Rinne
             const yMit = Gb.erdbauY(Gb.erdbauNormal(mit.erdbau), 100, 0, -2);
             const yOhne = Gb.erdbauY(Gb.erdbauNormal(ohne.erdbau), 100, 0, -2);
             const br = mit.roads[0].bruecken || [];
@@ -1690,6 +1696,7 @@ const FIXTURES = [
                         r._leuchtTakt();
                         const pl = (r._leuchtPool && r._leuchtPool.plaetze) || [];
                         const out = {
+                            plaetze: r.constructor.LICHT_POOL.plaetze,
                             pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
                             poolOrt: pl.filter(
                                 (p) => p.staerke > 0 && je.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5)
@@ -1791,6 +1798,7 @@ const FIXTURES = [
         gtEnde: gtO.endeNachS,
         quellenGasse: outO.gasse ? outO.gasse.n : null,
         poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
+        poolPlaetze: outO.gasse ? outO.gasse.plaetze : null,
     };
     console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
     console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));

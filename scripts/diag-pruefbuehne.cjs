@@ -351,8 +351,21 @@ async function s0Probe(page, station, schein) {
             const f = feuer.position;
             out.feuer = { typ: feuer.type, x: +f.x.toFixed(2), z: +f.z.toFixed(2), flaeche: +r._glutFlaeche(feuer).toFixed(3) };
             out.verzeichnis = typeof r._blockerMit === "function" && r._blockerMit("licht").includes(feuer);
-            // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`)
-            r._spawnSettlementErlebnis({ laternen: [{ x: 0, z: 6 }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne" });
+            // die Laterne eines Plans 6 m neben dem Feuer (gehoben im Hebe-Chokepoint als Studio-Gestalt `laterne_dorf`) — an
+            // der ersten Stelle des Rings, die die Wände des Hebe-Chokepoints selbst frei nennen (Wasser `_landAt`, Bau
+            // `_bauFreiRund`): das Feuer landet je Maschine anders (CI 1,46|0,86, lokal −0,6|2,26), fest +6 m in z fiel still.
+            const ring = [[0, 6], [6, 0], [0, -6], [-6, 0], [4.2, 4.2], [-4.2, 4.2], [4.2, -4.2], [-4.2, -4.2]];
+            const frei = ring.find(([dx, dz]) => {
+                const wx = f.x + dx,
+                    wz = f.z + dz,
+                    wy = r.getTerrainHeightAt(wx, wz);
+                return r._landAt(wx, wz, 0.2) && Number.isFinite(wy) && r._bauFreiRund("laterne_dorf", wx, wz, wy);
+            });
+            if (!frei) {
+                out.befunde.push("S0 Laterne: kein Platz in 6 m um das Feuer, den Wasser- und Bau-Wand frei nennen");
+                return out;
+            }
+            r._spawnSettlementErlebnis({ laternen: [{ x: frei[0], z: frei[1] }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne" });
             const cam = s.camera;
             const zaehle = (um) => {
                 const lichter = [];
@@ -409,7 +422,7 @@ async function s0Probe(page, station, schein) {
             }
             if (s.symphony) s.symphony.enabled = false;
             // die Laterne: nachts ein Platz, mittags keiner
-            const lp = { x: f.x, y: f.y + 3, z: f.z + 6 };
+            const lp = { x: f.x + frei[0], y: f.y + 3, z: f.z + frei[1] };
             const laterneAn = () =>
                 ((r._leuchtPool && r._leuchtPool.plaetze) || []).filter(
                     (p) => p.quelle === "laterne_dorf" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1
@@ -430,7 +443,7 @@ async function s0Probe(page, station, schein) {
                 );
             // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
             const glut = () => {
-                const u = s.atmoUniforms && s.atmoUniforms.fensterGlut;
+                const u = s.atmoUniforms && s.atmoUniforms.lichtGlut && s.atmoUniforms.lichtGlut.fenster;
                 const c = u && u.value;
                 return c ? +(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b).toFixed(4) : null;
             };

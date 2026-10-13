@@ -1679,6 +1679,7 @@
         stroh: "stoff",
         kupfer: "stoff",
         glasdunkel: "glas",
+        laternenglas: "glas",
         glasfern: "glas",
     };
     // prettier-ignore
@@ -1710,11 +1711,13 @@
   stroh:  new THREE.MeshStandardMaterial({color:0xcaa44e,roughness:1,metalness:0,side:THREE.DoubleSide}),
   kupfer: new THREE.MeshStandardMaterial({color:0x5a917c,roughness:.55,metalness:.35,side:THREE.DoubleSide}),
   glasdunkel: new THREE.MeshStandardMaterial({color:0x2b4457,roughness:.25,metalness:.1,transparent:true,opacity:0.92}),   // SCHLAF-GLAS: Fenster, die nachts dunkel bleiben — nicht jedes Haus wacht
+  laternenglas: new THREE.MeshStandardMaterial({color:0x33576a,roughness:.15,metalness:0,transparent:true,opacity:.42}),   // DAS GLAS DES LATERNEN-KOPFS: der Stoff des Fensterglases, das Datum der Laterne (__licht laterne)
   glasfern: new THREE.MeshStandardMaterial({color:0x46687e,roughness:.22,metalness:.45}),   // FERN-GLAS-GESETZ: Glas trägt fern als OPAKER Spiegelkörper — Transparenz ohne Innenleben liest sich als Geist
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
+      M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht=M.glasfern.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
       M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
       return M; }
@@ -4579,9 +4582,9 @@
     // DIE MASSE (die Gaslaterne der Gasse): der Fuß Ø 0,30 m bis 0,55 m, der Mast Ø 9 cm bis unter den Kopf, der Kopf ein
     // Glas-Kasten 0,26 × 0,40 m mit dem Licht-Mittelpunkt auf LICHT_GESETZ.laterne `hoeheM` (3,6 m), die Haube eine flache
     // Pyramide (0,40 m breit, 0,2 m hoch), nah mit Kranz und Knauf. ZWEI Rollen (das Budget der Ausstattung: der Stoff und
-    // eine Seh-Klasse): metall und glas — der Kopf ist GLAS, die Rolle des Fensters (`__licht` fenster): er zündet nachts mit
-    // den Fenstern wie die Wandlaterne des Hauses; das Licht auf Boden und Wand trägt das Emitter-Datum der Gestalt (fx.licht
-    // = LICHT_GESETZ.laterne) im EINEN Licht-Pool der Welt. Stufe 1: dieselbe Silhouette, vier Seiten, ohne Rahmen und Knauf.
+    // eine Seh-Klasse): metall und laternenglas — der Kopf ist Glas der Seh-Klasse glas mit dem Datum der Laterne (`__licht` laterne): sein
+    // Glühen und das Licht auf Boden und Wand tragen EIN Datum (fx.licht = LICHT_GESETZ.laterne, 1900 K, Zeitplan) — der Kopf
+    // im Stoff, das Licht im EINEN Licht-Pool der Welt. Stufe 1: dieselbe Silhouette, vier Seiten, ohne Rahmen und Knauf.
     function ausLaterne(g, p, seed, stufe) {
         var m = AUS_MASS.laterne(p.groesse),
             W = p.verwitterung,
@@ -4601,8 +4604,8 @@
         // der Boden des Kopfs, das Glas, nah die vier Eck-Stäbe des Rahmens
         eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
         var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
-        ausFaerbe(glas, "glas", 0, null);
-        ausTeil(g, glas, "glas");
+        ausFaerbe(glas, "laternenglas", 0, null);
+        ausTeil(g, glas, "laternenglas");
         var i, j;
         if (fein) for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) eisen(ausSetze(ausKiste(0.022, m.kh, 0.022, 0), (i * m.kb) / 2, m.yL, (j * m.kb) / 2));
         // die Haube: nah ein Kranz unter der Pyramide und der Knauf auf ihr
@@ -4715,10 +4718,21 @@
                 flaeche(stern.concat([deckel]));
             }
         } else if (rezeptId === "laterne") {
-            pfosten(0, 0, -0.05, m.fh, m.fr * 0.8); // der Fuß
-            pfosten(0, 0, m.fh, m.yK0, m.mr); // der Mast
-            pfosten(0, 0, m.yK0, m.yK1, m.kb / 2); // der Kopf
-            flaeche([[[-m.hb, m.yK1, 0], [m.hb, m.yK1, 0], [0, m.yT, 0]], [[0, m.yK1, -m.hb], [0, m.yK1, m.hb], [0, m.yT, 0]]]); // die Haube
+            // Was die L0 wirft, wirft die Stufe 3: das Glas wirft nicht (Glut), also der Kopf als sein Eisen — der Boden
+            // als Platte, die vier Eck-Stäbe, darüber die Pyramide der Haube; Fuß und Mast als Vierkant nach dem Profil der
+            // L1. Die Vierkante achsparallel wie der Kopf (je Halbweite b der Radius b·√2, um 45° gedreht), 46 Dreiecke.
+            // Gekreuzte Flächen warfen den Kopf als Stern und die Haube als Strich (Wurf-IoU 0,587).
+            var q = Math.SQRT2,
+                kb = m.kb / 2 + 0.02,
+                vier = function (profil) {
+                    var geo = ausDreh(profil, 4, false, false);
+                    geo.rotateY(Math.PI / 4);
+                    teil(geo);
+                };
+            vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
+            platte(-kb, kb, m.yK0, -kb, kb);
+            for (var ex = -1; ex <= 1; ex += 2) for (var ez = -1; ez <= 1; ez += 2) pfosten((ex * m.kb) / 2, (ez * m.kb) / 2, m.yK0, m.yK1, 0.011);
+            vier([[m.hb * q, m.yK1], [0, m.yT]]);
         } else {
             teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
             for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
