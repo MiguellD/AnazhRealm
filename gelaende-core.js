@@ -406,12 +406,25 @@
     function knotenHp(N, kn) {
         if (kn.hp === kn.hp) return kn.hp;
         const gf = knotenGf(N, kn);
-        kn.hp = kn.k === 0 ? gf.K : flaeche(N, kn.k - 1, kn.x, kn.z, gf, null);
+        if (kn.k === 0) kn.hp = gf.K;
+        else {
+            const mess = { steil: 0, nah: 1, hang: 0, aue: false };
+            kn.hp = flaeche(N, kn.k - 1, kn.x, kn.z, gf, mess);
+            kn.inAue = mess.aue;
+        }
         return kn.hp;
     }
     function knotenFluss(N, kn) {
         if (kn.fluss !== undefined) return kn.fluss;
         const h = knotenHp(N, kn);
+        // DIE AUE NIMMT IHR WASSER (K16, Mäander): ein Knoten der Ebene k ≥ 1 in der Aue der Ebene darunter mündet sofort in
+        // ihren Fluss — sonst liefe er als zweiter Strom neben ihm durch dieselbe Aue (am geraden Netz deckungsgleich und
+        // unsichtbar, mit Mäander zwei verflochtene Bahnen).
+        if (kn.k > 0 && kn.inAue) {
+            kn.fluss = null;
+            kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
+            return null;
+        }
         let best = null;
         let bh = h;
         for (let dj = -1; dj <= 1; dj++)
@@ -524,6 +537,7 @@
         omega: 1.2,
         gefaelleVoll: 0.004,
         gefaelleNull: 0.015,
+        gestreckt: 0.25,
         stufen: 12,
         tafel: 128,
         jeWelle: 12,
@@ -657,9 +671,9 @@
             if (n >= 1) {
                 const lam = len / n;
                 const gefaelle = (bed - t.bed) / len;
-                let o = Math.floor(
-                    MAEANDER.stufen * (1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle)) + 1e-9
-                );
+                // gestreckt heißt nie lineal-gerade: der steile Lauf behält ein Viertel des ω (Sinuosität ≈ 1,02)
+                const voll = 1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle);
+                let o = Math.floor(MAEANDER.stufen * (MAEANDER.gestreckt + (1 - MAEANDER.gestreckt) * voll) + 1e-9);
                 while (o > 0 && MAEANDER_KURVE[o].ymax * lam > F - w) o--;
                 if (o > 0) {
                     mo = o;
@@ -786,12 +800,14 @@
         let steil = 0;
         let nah = 1;
         let hang = 0;
+        let aue = false;
         for (let k = 0; k <= kmax; k++) {
             const S = N.S[k];
             const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
             let Hk = H;
             let kSteil = 0;
             let kNah = 1;
+            let kAue = false;
             let kHang = 0;
             for (let q = 0; q < segs.length; q++) {
                 const s = segs[q];
@@ -844,12 +860,14 @@
                     Hk = v;
                     kSteil = g;
                     kNah = w < 1 ? w : 1;
+                    kAue = u <= 0;
                     kHang = gh;
                 }
             }
             if (Hk < H) {
                 if (kSteil > steil) steil = kSteil;
                 if (kNah < nah) nah = kNah;
+                aue = kAue;
                 hang = kHang;
             }
             H = Hk;
@@ -858,6 +876,7 @@
             aus.steil = steil;
             aus.nah = nah;
             aus.hang = hang;
+            aus.aue = aue;
         }
         return H;
     }
