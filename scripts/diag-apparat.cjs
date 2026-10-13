@@ -158,7 +158,101 @@ function scanAnker(playtestSrc, stammSrc) {
     return { entries, errs };
 }
 
-function selftest() {
+// ============================================================================
+// DIE VAKUUM-KLINGE (Meta-Wand der Prüf-Verdichtung 13.10., Plan §3): eine Prüfung ohne Messung ist ROT.
+// Je Regel ein Detektor über den AST (acorn) der Prüf-Dateien; jeder Fund nennt Datei:Zeile und Form.
+//   V3 Stumme Sonde — die EINE Sonde des Playtests (`safeEvaluate`) verbucht einen Wurf UND ein leeres Ergebnis
+//      (null/undefined) als rote Prüfung im laufenden Band. Die Klinge fährt sie in einer Sandbox gegen eine
+//      Seiten-Attrappe (Wurf · null · undefined · Wert), statt ihren Text zu lesen.
+// ============================================================================
+const acorn = require("acorn");
+const vm = require("vm");
+
+function parseJs(src) {
+    const o = {
+        ecmaVersion: "latest",
+        locations: true,
+        allowHashBang: true,
+        allowReturnOutsideFunction: true,
+        allowAwaitOutsideFunction: true,
+    };
+    try {
+        return acorn.parse(src, { ...o, sourceType: "script" });
+    } catch {
+        return acorn.parse(src, { ...o, sourceType: "module" });
+    }
+}
+function astWalk(n, f, anc = []) {
+    f(n, anc);
+    const a2 = anc.concat([n]);
+    for (const k in n) {
+        if (k === "loc") continue;
+        const v = n[k];
+        if (Array.isArray(v)) {
+            for (const c of v) if (c && typeof c.type === "string") astWalk(c, f, a2);
+        } else if (v && typeof v.type === "string") astWalk(v, f, a2);
+    }
+}
+
+// V3: die Sonde aus dem Quelltext des Playtests in eine Sandbox heben und gegen die Attrappe fahren.
+async function pruefeSonde(playtestSrc, datei = "scripts/playtest.cjs") {
+    const ast = parseJs(playtestSrc);
+    const teile = [];
+    let aufrufe = 0;
+    const baender = new Set();
+    for (const s of ast.body) {
+        if (s.type === "FunctionDeclaration" && /^(safeEvaluate|_sondeRot|unmessbar)$/.test(s.id.name))
+            teile.push(playtestSrc.slice(s.start, s.end));
+        if (s.type === "VariableDeclaration" && s.declarations.some((d) => d.id.name === "_sonde"))
+            teile.push(playtestSrc.slice(s.start, s.end).replace(/^(const|let) /, "var "));
+    }
+    astWalk(ast, (n, anc) => {
+        if (n.type !== "CallExpression" || n.callee.type !== "Identifier" || n.callee.name !== "safeEvaluate") return;
+        aufrufe++;
+        const band = anc.find((a) => a.type === "FunctionDeclaration" && a.id);
+        if (band) baender.add(band.id.name);
+    });
+    const funde = [];
+    if (!teile.some((t) => /function safeEvaluate\b/.test(t))) {
+        funde.push(`${datei}: die Sonde safeEvaluate fehlt auf der Top-Ebene`);
+        return { funde, aufrufe, baender: baender.size };
+    }
+    const ctx = { console: { log() {} } };
+    vm.createContext(ctx);
+    vm.runInContext(teile.join("\n"), ctx, { filename: datei });
+    const rote = [];
+    if (ctx._sonde) ctx._sonde.check = (name, ok) => (!ok ? rote.push(name) : null);
+    const faelle = [
+        ["Wurf", () => Promise.reject(new Error("Sonden-Attrappe wirft")), true],
+        ["null", () => Promise.resolve(null), true],
+        ["undefined", () => Promise.resolve(undefined), true],
+        ["Wert", () => Promise.resolve({ gemessen: 1 }), false],
+    ];
+    for (const [fall, evaluate, sollRot] of faelle) {
+        const vorher = rote.length;
+        let res;
+        try {
+            res = await ctx.safeEvaluate({ evaluate }, () => 1);
+        } catch (e) {
+            funde.push(`${datei}: safeEvaluate wirft beim Fall „${fall}" (${(e && e.message) || e})`);
+            continue;
+        }
+        const wurdeRot = rote.length > vorher;
+        if (sollRot && !wurdeRot)
+            funde.push(`${datei}: safeEvaluate liefert beim Fall „${fall}" still ${res} — keine rote Prüfung`);
+        if (!sollRot && (wurdeRot || !res || res.gemessen !== 1))
+            funde.push(`${datei}: safeEvaluate verfälscht einen gemessenen Wert (Fall „${fall}")`);
+    }
+    return { funde, aufrufe, baender: baender.size };
+}
+
+async function vakuumKlinge(root) {
+    const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
+    const v3 = await pruefeSonde(playtestSrc);
+    return { regeln: { V3: v3.funde }, v3 };
+}
+
+async function selftest() {
     const fails = [];
     // Klinge 1a: eine injizierte Probe hebt den Zähler über den Ratchet.
     const inject = "const x = 1;\n" + "y.toString();\n".repeat(FROZEN_TOSTRING + 1);
@@ -178,22 +272,40 @@ function selftest() {
     const r = scanAnker(fakePlaytest, "class A { echteMethode() {} }");
     if (r.errs.length !== 1 || !/phantom/.test(r.errs[0]))
         fails.push("Katalog-Prüfung feuert nicht bei Phantom-Symbol");
+    // Vakuum-Klinge V3: eine Harness-Kopie, deren safeEvaluate still null liefert, wird ROT; die laute bleibt grün.
+    const still =
+        "async function safeEvaluate(page, fn) {\n    return await page.evaluate(fn).catch(() => null);\n}\n";
+    const v3Still = await pruefeSonde(still, "still.cjs");
+    if (v3Still.funde.length !== 3) fails.push(`V3 feuert nicht an der stillen Sonde (${v3Still.funde.length}/3 Fälle)`);
+    const laut =
+        'const _sonde = { band: "B", check: null };\n' +
+        "function _sondeRot(n, d) {\n    _sonde.check(n, false, d);\n}\n" +
+        "async function safeEvaluate(page, fn) {\n    let w = null;\n" +
+        "    const r = await page.evaluate(fn).catch((e) => ((w = e), null));\n" +
+        '    if (w || r == null) _sondeRot("B: Sonde", "x");\n    return r;\n}\n';
+    const v3Laut = await pruefeSonde(laut, "laut.cjs");
+    if (v3Laut.funde.length) fails.push("V3 feuert fälschlich an der lauten Sonde: " + v3Laut.funde.join(" · "));
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
-    console.log("✅ SELBST-TEST: beide Klingen feuern (Ratchet + Katalog), Kommentare zählen nicht");
+    console.log(
+        "✅ SELBST-TEST: die Klingen feuern (Ratchet + Katalog + Vakuum V3 an der stillen Sonde), Kommentare zählen nicht"
+    );
     process.exit(0);
 }
 
-function main() {
-    if (process.argv.includes("--selftest")) selftest();
+async function main() {
+    if (process.argv.includes("--selftest")) await selftest();
     const root = path.join(__dirname, "..");
     const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
     const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);
+    const klinge = await vakuumKlinge(root);
     const errs = ratchet.errs.concat(anker.errs);
+    for (const [regel, funde] of Object.entries(klinge.regeln))
+        for (const fund of funde) errs.push(`Vakuum-Klinge ${regel}: ${fund}`);
     if (errs.length) {
         console.log("⛔ DIE APPARAT-LINSE:");
         for (const e of errs) console.log("   ❌ " + e);
@@ -212,6 +324,13 @@ function main() {
             `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert.`
     );
+    console.log(
+        `✅ DIE VAKUUM-KLINGE steht — V3: die EINE Sonde verbucht Wurf und leeres Ergebnis rot ` +
+            `(${klinge.v3.aufrufe} Aufrufe in ${klinge.v3.baender} Bändern hängen an ihr).`
+    );
 }
 
-main();
+main().catch((e) => {
+    console.log("⛔ DIE APPARAT-LINSE brach: " + ((e && e.stack) || e));
+    process.exit(1);
+});

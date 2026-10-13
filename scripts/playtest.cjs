@@ -39,15 +39,24 @@ function startSaveServer() {
     });
 }
 
-// page.evaluate mit Fang: liefert das Ergebnis oder `null` bei evaluate-Wurf (Browser-Crash-Pfad);
-// Guards `if (!X)` wie `if (!X || X.error)` zweigen damit korrekt in den Fehler-Zweig.
+// DIE SONDEN-WAHRHEIT (Meta-Wand V3, gate:apparat): eine Sonde ohne Messung ist ROT, nie still. `timed` trägt
+// das laufende Band ein, `check` wird beim Lauf-Start gebunden; ohne Senke wirft die Sonde (nie ein stummes null).
+const _sonde = { band: "Vorlauf", check: null };
+function _sondeRot(name, detail) {
+    if (!_sonde.check) throw new Error(`Sonden-Senke fehlt: ${name} — ${detail}`);
+    _sonde.check(name, false, detail);
+}
+// page.evaluate mit Fang: liefert das Ergebnis oder `null` — ein Wurf UND ein leeres Ergebnis (null/undefined)
+// verbuchen je eine rote Prüfung im laufenden Band, die Guards `if (!X)` der Aufrufer zweigen danach weiter.
 async function safeEvaluate(page, fn, ...args) {
-    // Fehler LAUT loggen statt still null (V18.456-Lehre: „page.evaluate
-    // fehlgeschlagen" ohne Botschaft kostet eine ganze Diagnose-Runde).
-    return await page.evaluate(fn, ...args).catch((e) => {
-        console.log(`    [safeEvaluate] ${String((e && e.message) || e).slice(0, 300)}`);
+    let wurf = null;
+    const res = await page.evaluate(fn, ...args).catch((e) => {
+        wurf = String((e && e.message) || e).slice(0, 300);
         return null;
     });
+    if (wurf !== null) _sondeRot(`${_sonde.band}: Sonde warf`, wurf);
+    else if (res === null || res === undefined) _sondeRot(`${_sonde.band}: Sonde lieferte nichts`, String(fn).slice(0, 120));
+    return res;
 }
 
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
@@ -56014,6 +56023,7 @@ async function checkBandRing6Workshop(ctx) {
     const timed = async (fn, c) => {
         if (gateAborted) return; // Seite tot → Rest überspringen (Folge-Fehler unterdrücken)
         const t0 = Date.now();
+        _sonde.band = fn.name;
         try {
             return await fn(c);
         } catch (e) {
@@ -56037,6 +56047,7 @@ async function checkBandRing6Workshop(ctx) {
         console.log(`  ${status} ${name}${detail ? " — " + detail : ""}`);
         if (!ok) failures.push(name);
     }
+    _sonde.check = check;
 
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
