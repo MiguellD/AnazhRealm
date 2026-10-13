@@ -33486,6 +33486,45 @@ class AnazhRealm {
         return u;
     }
 
+    // DAS AUGE DER STUFEN (K36): EIN Ort, von dem jede Stufen-Frage misst — die Welt-Position der Haupt-Kamera. Die Maske
+    // liest ihn je Frame (`uLodAuge`), die Stufen-Wahl, ihr Band, die Verdeckung und der Kalt-Schätzer je Takt; bis K36 maß
+    // die CPU vom Spieler: in der Verfolger-Kamera (Arm 9,6 m) wählte sie für Tore und Bäume die Partner der Spieler-Distanz,
+    // die Maske blendete nach der Auge-Distanz — am Genesis-Ring standen 9 Tore und Ruinen halb durchsichtig im Bild.
+    // Das Auge ist die Kamera, wo zuletzt jemand sie SETZTE — das Rig je Bild (`_lodAugeGesetzt` am Ende von `_loopCamera`),
+    // eine Sonde für ihren Schuss (jede Bewegung der Kamera seit der letzten Lesung ist eine Setzung) —, und es REIST MIT
+    // DEM SPIELER, bis sie neu gesetzt wird: der Welt-Takt läuft vor dem Rig, ein Sprung (Ankunft, Tor, Rettung, ein Gate
+    // ohne Spiel-Takt) trüge die Wahl sonst vom alten Ort. Vor der ersten Setzung steht es, wo das Ego-Rig es setzt: im
+    // Kopf des Spielers (der kopflose Boot hält die Kamera im Ursprung, 36 m neben ihm — das Tor kam ohne L0 und ohne
+    // Flügel). null = weder Kamera noch Spieler.
+    _lodAuge() {
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const cam = this.state.camera;
+        const out = this._lodAugeV || (this._lodAugeV = new THREE.Vector3());
+        const r = this._lodAugeR || (this._lodAugeR = { cam: new THREE.Vector3(), pl: new THREE.Vector3(), stand: 0 });
+        if (!cam) return pm ? out.set(pm.x, pm.y + AnazhRealm.EGO_AUGE_M, pm.z) : null;
+        const c = cam.getWorldPosition(this._lodAugeC || (this._lodAugeC = new THREE.Vector3()));
+        if (r.stand === 0) {
+            r.cam.copy(c); // die Kamera, wie sie geboren wurde: ungesetzt
+            r.stand = 1;
+        } else if (c.distanceToSquared(r.cam) > 1e-10) this._lodAugeGesetzt(c);
+        if (r.stand === 1) return pm ? out.set(pm.x, pm.y + AnazhRealm.EGO_AUGE_M, pm.z) : out.copy(c);
+        out.copy(c);
+        if (pm) out.add(pm).sub(r.pl); // der Sprung des Spielers seit der Setzung
+        return out;
+    }
+    // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
+    _lodAugeGesetzt(c) {
+        const cam = this.state.camera;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!cam) return;
+        const r = this._lodAugeR || (this._lodAugeR = { cam: new THREE.Vector3(), pl: new THREE.Vector3(), stand: 0 });
+        if (c) r.cam.copy(c);
+        else cam.getWorldPosition(r.cam);
+        if (pm) r.pl.copy(pm);
+        else r.pl.set(0, 0, 0);
+        r.stand = 2;
+    }
+
     // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
     // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus ihrer Instanz-
     // Matrix (der Haken an `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen der Ursprung des
@@ -33601,7 +33640,8 @@ class AnazhRealm {
             const _mitte = this._instanzMitteNode(T);
             const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
-            const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
+            // |aH0L|: das Vorzeichen trägt den HALT (`_lodSlotStamp`), der Betrag die Blatt-Sichthöhe
+            const _lkL = _lu.uLodRef.div(_aH0L.abs().max(T.float(1e-3))).min(T.float(1.0));
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
             const _dL = _cd.mul(_lkL); // vLodDL (Blatt-Metrik)
             // __phytoCore.lodCrossfadeMask: f1/f0/f1o — dieselben Rampen, symbolisch.
@@ -33616,7 +33656,9 @@ class AnazhRealm {
             const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
             const _keep1 = _fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh));
             // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
-            const _stageKeep = T.mix(_keep0, _keep1, T.step(T.float(1.5), _aLod));
+            // DER HALT (K36): aH0L < 0 — die Stufe steht ohne ihren Partner und weicht keinem Nichts, sie zeichnet voll.
+            const _halt = T.float(1.0).sub(T.step(T.float(0.0), _aH0L));
+            const _stageKeep = T.mix(_keep0, _keep1, T.step(T.float(1.5), _aLod)).max(_halt);
             const _masked = T.step(T.float(0.5), _aLod);
             const _keep = T.mix(T.float(1.0), _stageKeep, _masked);
             return T.mix(T.float(1.0), _keep, _lu.uLodMaskOn);
@@ -33820,7 +33862,7 @@ class AnazhRealm {
                     const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y))).mul(_lu.uLodPerf);
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
-                    const _lkL = _ref.div(_aH0L.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
+                    const _lkL = _ref.div(_aH0L.abs().max(_Tl.float(1e-3))).min(_Tl.float(1.0)); // |aH0L|: Vorzeichen = Halt
                     const _vLodD = _cd.mul(_lk); // Skelett-SSE
                     const _vLodDL = _cd.mul(_lkL); // Blatt-SSE (absolut-nah)
                     // golden-ratio Screen-Space-Dither (phytogenesis Fragment): wandert mit uDitherT →
@@ -33851,7 +33893,8 @@ class AnazhRealm {
                     const _fadeOut = _f0.mul(2.0).sub(1.0).clamp(0.0, 1.0).max(_f1);
                     // Dither-Discard als reine Arithmetik: keepRaw = step(fadeOut, dh) (1 = behalten); uLodMaskOn faltet
                     // als mix (0 → keep=1, harte Kante); im NAH-Band fadeOut=0 → keep=1 → alpha byte-unverändert.
-                    const _keepRaw = _Tl.step(_fadeOut, _dh);
+                    // DER HALT (K36, `_lodSlotStamp`): aH0L < 0 — die Stufe ohne Partner zeichnet voll
+                    const _keepRaw = _Tl.step(_fadeOut, _dh).max(_Tl.float(1.0).sub(_Tl.step(_Tl.float(0.0), _aH0L)));
                     const _keep = _Tl.mix(_Tl.float(1.0), _keepRaw, _lu.uLodMaskOn);
                     mat.colorNode = _Tl.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keep));
                     mat.userData = mat.userData || {};
@@ -57808,10 +57851,13 @@ class AnazhRealm {
         return false;
     }
 
-    _tickArchitectureLOD(maxSwitchesPerFrame = 5) {
+    // `auge`: der Ort, von dem die Wahl misst — das Auge der Maske (`_lodAuge`, der Takt reicht es), nie der Spieler: die
+    // Maske misst vom Auge, misst die Wahl vom Spieler, steht in der Verfolger-Kamera (9,6 m Arm) die Stufe ohne den Partner,
+    // zu dem ihre Maske blendet (K36, Genesis: 9 halbe Tore und Ruinen im Bild).
+    _tickArchitectureLOD(maxSwitchesPerFrame = 5, auge = null) {
         const atmo = this.state.atmosphere;
         if (atmo && atmo.treeLOD === false) return 0;
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        const pm = auge;
         if (!pm) return 0;
         const archs = this.state.architectures;
         if (!Array.isArray(archs) || archs.length === 0) return 0;
@@ -57898,15 +57944,21 @@ class AnazhRealm {
                 // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
                 // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
                 if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) switches++;
+                if (entry._lodHaltWartet === true) offen++; // der Partner lädt: die Stufe hält, die Wahl bleibt wach
                 continue;
             }
             // LOD-Switch — re-allocate
             const vorher = entry._lodLevel;
-            const success = this._switchArchitectureLOD(entry, newLOD);
+            const success = this._switchArchitectureLOD(entry, newLOD, dist);
             if (success) switches++;
             else if (entry._lodLevel !== vorher)
                 regung++; // nur die Distanz-Autorität gestempelt (Stufen-Klammer)
-            else if (entry._lodLevel !== newLOD) offen++; // die Stufe lädt (oder bäckt): der Eintrag wartet
+            else if (entry._lodLevel !== newLOD) {
+                // die Stufe lädt (oder bäckt): der Eintrag wartet — und seine stehende Stufe hält VOLL, wo ihr Partner
+                // fehlt (die L1 jenseits des Bands vor der ungebackenen Karte war sonst ganz verworfen: ein Loch)
+                offen++;
+                if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) regung++;
+            }
         }
         this._archLODCursor = (this._archLODCursor + besucht) % archs.length;
         // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
@@ -57918,7 +57970,7 @@ class AnazhRealm {
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
     // LOD-Key → _archInstanceAdd. blockerAABBs bleiben (LOD ist reine Render-Schicht).
-    _switchArchitectureLOD(entry, newLOD) {
+    _switchArchitectureLOD(entry, newLOD, dist) {
         if (!entry) return false;
         // Platzierte Studio-Architektur (instFoundry) wechselt über den EINEN Foundry-Zweig unten; der
         // Grammatik-Zweig (grown_..._lodN) bleibt den Wald-Varianten (_lodSpecies + _lodVariantIndex).
@@ -57947,13 +57999,14 @@ class AnazhRealm {
                     // W5.4 — die Band-Mitgliedschaft nach dem Primär-Wechsel SOFORT nachziehen
                     // (im Band wechselt der Primär die Seite → der Partner ist die alte Stufe;
                     // dieselbe EINE Pflege-Quelle wie im Tick, idempotent).
+                    // Die Distanz misst vom Auge der Maske: der Takt reicht seine, ein Ruf ohne fragt `_lodAuge`.
                     if (this.state.foundryCrossfade === true) {
-                        const _pm = this.state.playerMesh && this.state.playerMesh.position;
-                        if (_pm && entry.position) {
-                            const _bdx = entry.position.x - _pm.x;
-                            const _bdz = entry.position.z - _pm.z;
-                            this._updateFoundryLodBand(entry, Math.sqrt(_bdx * _bdx + _bdz * _bdz), preset);
-                        }
+                        const _auge = Number.isFinite(dist) ? null : this._lodAuge();
+                        const _d =
+                            _auge && entry.position
+                                ? Math.hypot(entry.position.x - _auge.x, entry.position.z - _auge.z)
+                                : dist;
+                        if (Number.isFinite(_d)) this._updateFoundryLodBand(entry, _d, preset);
                     }
                     return true;
                 }
@@ -58055,22 +58108,51 @@ class AnazhRealm {
             }
         }
         const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;
-        if (cur === desired) return false;
-        if (entry.instSlotsBand) this._archInstanceRemove(entry, { bandOnly: true });
+        if (cur === desired) {
+            this._lodHaltSetzen(entry, false); // der Partner steht (oder keiner ist verlangt): kein Halt
+            return false;
+        }
+        let geaendert = false;
+        if (entry.instSlotsBand) {
+            this._archInstanceRemove(entry, { bandOnly: true });
+            geaendert = true;
+        }
+        entry._lodBandLevel = null;
         if (desired === null) {
-            entry._lodBandLevel = null;
-            return true;
+            this._lodHaltSetzen(entry, false);
+            return geaendert;
         }
         const flat = this._foundryFlattenFor(entry, preset, desired);
-        if (!flat || !flat.instanceable) return false; // lädt/kann nicht → Band leer, nächster Tick
+        if (!flat || !flat.instanceable) {
+            // lädt (null) oder kann nicht (false, die Bake-Lücke) → Band leer, die Primär-Stufe HÄLT; lädt der Partner,
+            // wartet der Eintrag (der nächste Tick versucht neu), die Lücke hält still
+            this._lodHaltSetzen(entry, flat === null ? "wartet" : true);
+            return geaendert;
+        }
         // Klammer-Wand: kollabiert kindStages den Partner auf dieselbe servierte Stufe wie die Primär-Stufe,
         // wäre das Band ein voll-opaker Doppel-Draw. Flats sind je Stufe gecacht → Identität ist der Test.
         const primFlat = this._foundryFlattenFor(entry, preset, entry._lodLevel | 0);
         if (primFlat && flat === primFlat) {
-            entry._lodBandLevel = null;
-            return cur !== null;
+            this._lodHaltSetzen(entry, false);
+            return geaendert;
         }
         this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true, bandLod: desired });
+        this._lodHaltSetzen(entry, false);
+        return true;
+    }
+
+    // DER HALT DER STUFE (K36, der Geister-Baum): die Maske blendet ein PAAR — eine Stufe weicht ihrem Partner, wo das
+    // Gesetz ihn zeigt. Steht der Partner nicht (die Karte bäckt, die Stufe lädt, die Art trägt keine), wich die Stufe dem
+    // Nichts: die L1 vor der ungebackenen Karte stand halb durchsichtig über der Szene, jenseits des Bands fehlte sie ganz.
+    // Eine Stufe ohne ihren Partner hält VOLL — dasselbe Vorzeichen wie die verdeckte Karte (`_lodSlotVoll` → der Slot-
+    // Stempel: aKarte.w der Karte, aH0L der 3D-Stufen negativ), bis der Partner steht. `halt`: false · true (die Lücke,
+    // still) · "wartet" (der Partner lädt: der Tick bleibt wach). true = der Stempel wechselte.
+    _lodHaltSetzen(entry, halt) {
+        if (!entry) return false;
+        entry._lodHaltWartet = halt === "wartet";
+        if ((entry._lodHalt === true) === !!halt) return false;
+        entry._lodHalt = !!halt;
+        this._lodSlotOcclusionRefresh(entry);
         return true;
     }
     // Der Band-Partner trägt keinen Zwilling, den die Primär-Stufe schon wirft (EIN Werfer je Gestalt: L0 und L1 eines
@@ -58708,6 +58790,10 @@ class AnazhRealm {
         // nie die Live-Position — sonst driftete der emitted-Satz gegen den One-Shot.
         const px = cont ? cont.px : playerPos ? playerPos.x : 0;
         const pz = cont ? cont.pz : playerPos ? playerPos.z : 0;
+        // DAS AUGE DER STUFEN (K36): der Ring streamt um den Spieler (seine Distanz-Gates oben), die Stufe der Geburt und
+        // ihr Band-Partner messen vom Auge der Maske (`_lodAuge`) wie der Takt (`_tickScatterLod`) — sonst trug die Geburt in
+        // der Verfolger-Kamera die Wahl der Spieler-Distanz, bis der Takt die Zelle besuchte.
+        const auge = this._lodAuge() || { x: px, z: pz };
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
         const slopeMax = Number.isFinite(layer.slopeMax) ? layer.slopeMax : SC.slopeMax;
         const floor = Number.isFinite(layer.floor) ? layer.floor : SC.densityFloor;
@@ -58795,7 +58881,8 @@ class AnazhRealm {
                     region._deferredFoundry = true;
                     continue;
                 }
-                const lod = this._chooseLODForDistance(dist, undefined, visH);
+                const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
+                const lod = this._chooseLODForDistance(distAuge, undefined, visH);
                 // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
                 // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
                 // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
@@ -58810,7 +58897,7 @@ class AnazhRealm {
                         cellZ,
                         cellM,
                         tf,
-                        dist,
+                        distAuge,
                         surfY,
                         species,
                         variantIndex,
@@ -59024,7 +59111,12 @@ class AnazhRealm {
         );
         if (!slots) return null;
         // Der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN Stufen — dieselbe Partner-Quelle wie die
-        // Architektur (_lodBandPartnerFor); Partner-Slots reisen in cell.slots (Region-Dispose räumt beide).
+        // Architektur (_lodBandPartnerFor); Partner-Slots reisen in cell.slots (Region-Dispose räumt beide). Steht der
+        // Partner nicht (er lädt, die Karte bäckt), HÄLT die Primär-Stufe voll (K36, `_lodSlotStamp`): die Zelle merkt
+        // Wunsch und Halt, der LOD-Tick pflegt das Band (`_streuBandWechsel`).
+        let bandDient = null,
+            bandWunsch = null,
+            bandHalt = false;
         if (
             foundryFlat &&
             this.state.foundryCrossfade === true &&
@@ -59032,10 +59124,13 @@ class AnazhRealm {
             this._foundryPresetIsTree(foundryPreset)
         ) {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
+            bandDient = _curLod;
             const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
             if (_partner != null && _partner !== _curLod) {
+                bandWunsch = _partner;
                 const pf0 = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
                 const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
+                bandHalt = !(pf && pf.instanceable) ? (pf0 === null ? "wartet" : true) : false;
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
                     const pSlots = this._scatterInstanceAdd(
                         "fscatter:" + foundryPreset + ":" + gestalt + ":" + pf.lod,
@@ -59049,10 +59144,16 @@ class AnazhRealm {
                         pf
                     );
                     if (pSlots) for (const ps of pSlots) slots.push(ps);
+                    else bandHalt = true;
                 }
             }
+            // die Primär-Slots (die Liste trägt bis hier nur sie, der Partner hängt dahinter) halten voll
+            if (bandHalt) for (const ref of slots) this._streuSlotHalt(ref, tf.scale);
         }
         return {
+            dient: bandDient, // die gelieferte Stufe des Bands (K36)
+            bandWunsch,
+            halt: bandHalt,
             cellX,
             cellZ,
             cellM,
@@ -59187,11 +59288,16 @@ class AnazhRealm {
             // Eine WARTENDE Gesetz-Zelle (ihr Satz stand beim Bau nicht: Fit-Takt, Kapsel-Liste) wiederholt den Spawn,
             // solange ihr Fern-Wunsch jenseits der Grenze gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
             const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
-            if (newLod === cell.lod && !warten && !bahnWechsel) continue;
+            // DAS BAND DER STREU (K36): wandert die Zelle durchs Band, folgt ihr Partner dem Auge wie bei der Architektur;
+            // hält sie, weil ihr Partner lud, tauscht sie, sobald er steht — die Zelle materialisiert neu (Partner + Halt).
+            const bandWechsel =
+                !warten && !bahnWechsel && newLod === cell.lod && this._streuBandWechsel(cell, dist, visH, tf);
+            if (!bandWechsel && cell.halt === "wartet") offen++; // der Partner lädt: die Wahl bleibt wach
+            if (newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel) continue;
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
             // Materialisieren, kein Duplikat-Slot.
-            if (!warten && !bahnWechsel && this._scatterGleicheGestalt(cell, newLod, dist)) {
+            if (!warten && !bahnWechsel && !bandWechsel && this._scatterGleicheGestalt(cell, newLod, dist)) {
                 cell.lod = newLod;
                 regung++;
                 continue;
@@ -59249,11 +59355,35 @@ class AnazhRealm {
             cell.feld = rec.feld || null;
             cell.form = rec.form;
             cell.wartet = rec.wartet === true;
+            cell.dient = rec.dient;
+            cell.bandWunsch = rec.bandWunsch;
+            cell.halt = rec.halt;
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }
         this._standMeldet("streuLod", scanned, regung > 0, offen > 0);
         return realloc;
+    }
+
+    // Wechselt das Band einer Streu-Zelle (K36)? Ihr Partner-Wunsch vom Auge (dieselbe Regel wie die Architektur,
+    // `_lodBandPartnerFor` an ihrer gelieferten Stufe) ist ein anderer, als sie trägt — oder sie hält, weil ihr Partner lud,
+    // und er steht jetzt. Eine Zelle ohne Foundry-Band (Grammatik, Nicht-Baum) wechselt nie.
+    _streuBandWechsel(cell, dist, visH, tf) {
+        if (!Number.isFinite(cell.dient) || this.state.foundryCrossfade !== true) return false;
+        const w = this._lodBandPartnerFor(dist, visH, cell.dient, tf.scale);
+        const wunsch = w != null && w !== cell.dient ? w : null;
+        if (wunsch !== (cell.bandWunsch == null ? null : cell.bandWunsch)) return true;
+        if (cell.halt !== "wartet" || wunsch === null) return false;
+        const preset = this._foundryPresetFor(cell.species);
+        const seed = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex);
+        const pf = preset ? this._foundryFlattenFor({ seed }, preset, wunsch) : null;
+        return !!(pf && pf.instanceable);
+    }
+
+    // Der Halt eines Streu-Slots (K36): die Primär-Stufe ohne Partner zeichnet voll (`_lodSlotStamp`, Vorzeichen).
+    _streuSlotHalt(ref, scale) {
+        const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
+        if (g) this._lodSlotStamp(g, ref.slot, scale, true);
     }
 
     _disposeScatterRegion(key) {
@@ -67911,6 +68041,9 @@ class AnazhRealm {
         // diesen Anstoß blieb die Region aufgeschoben, wenn die letzte Lieferung VOR dem Bake kam — an der Mess-Wiese
         // fehlten im frischen Boot die Mammutbäume (9 Instanzen, 556k Dreiecke), bis eine fremde Lieferung sie weckte.
         this._scatterRefillPending = true;
+        // Und die Bau-Takte gehen (K36): eine Stufe, die auf diese Karte als Partner wartet, hält voll (`_lodHalt`) —
+        // die Band-Pflege nimmt die Karte jetzt auf, statt zu schlafen, bis sich zufällig etwas regt.
+        this._bauRegt();
         if (typeof window !== "undefined") window.__impostorRttBaked = (window.__impostorRttBaked || 0) + 1;
         return true;
     }
@@ -70669,9 +70802,10 @@ class AnazhRealm {
         }
     }
     // DER EINE SLOT-STEMPEL (beide Slot-Chokepoints rufen ihn): Sichthöhe = Template ×
-    // Instanz-Skala (exakt das Studio-`aH0*_isy`) + der Occlusion-Zustand (vOcc) + — trägt das Leaf eine Karte —
+    // Instanz-Skala (exakt das Studio-`aH0*_isy`) + VOLL (`_lodSlotVoll`: die Karte des Verdeckten und der Brücke, die
+    // Stufe ohne Partner — das Vorzeichen von aKarte.w bzw. aH0L, die Maske hält) + — trägt das Leaf eine Karte —
     // ihre Atlas-Schicht und ihr Rahmen (der Occlusion-Refresh reicht kein Leaf: Schicht und Rahmen bleiben).
-    _lodSlotStamp(g, slot, scale, occluded, leaf) {
+    _lodSlotStamp(g, slot, scale, voll, leaf) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
         g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): Sichthöhe und Karte der Wahl
@@ -70682,7 +70816,8 @@ class AnazhRealm {
             a0.needsUpdate = true;
             const a0L = geom.attributes.aH0L;
             if (a0L && slot < a0L.array.length) {
-                a0L.array[slot] = geom.userData._h0LTpl * s;
+                // der Halt der 3D-Stufe reist im Vorzeichen der Blatt-Sichthöhe (aH0 liest der Wind, er bleibt positiv)
+                a0L.array[slot] = geom.userData._h0LTpl * s * (voll ? -1 : 1);
                 a0L.needsUpdate = true;
             }
         }
@@ -70698,7 +70833,7 @@ class AnazhRealm {
                 ak.array[slot * 4 + 2] = leaf.rahmen[1];
                 h = leaf.sicht * s;
             }
-            ak.array[slot * 4 + 3] = occluded ? -h : h;
+            ak.array[slot * 4 + 3] = voll ? -h : h;
             ak.needsUpdate = true;
         }
         // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
@@ -70710,19 +70845,23 @@ class AnazhRealm {
     // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
     // nur am WECHSEL, derselbe Wert dazwischen).
     _lodSlotOcclusionRefresh(entry) {
-        const lists = [entry.instSlots, entry.instSlotsBand];
-        for (const list of lists) {
+        for (const band of [false, true]) {
+            const list = band ? entry.instSlotsBand : entry.instSlots;
             if (!Array.isArray(list)) continue;
             for (const ref of list) {
                 const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
-                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, this._lodSlotVoll(entry));
+                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, this._lodSlotVoll(entry, band));
             }
         }
     }
-    // Zeichnet die Karte dieses Eintrags VOLL (vOcc 1, kein Distanz-Fade)? Der verdeckt-demotierte Baum (Studio-vOcc)
-    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`).
-    _lodSlotVoll(entry) {
-        return entry._occluded === true || entry._bruecke === true;
+    // Zeichnet die Stufe dieses Eintrags VOLL (kein Distanz-Fade)? Die Karte des verdeckt-demotierten Baums (Studio-vOcc)
+    // und die Brücke eines kalten Baums, dessen Wunsch-Stufe noch lädt (`_rebuildArchitectureMesh`); die Primär-Stufe, deren
+    // Partner fehlt (`_lodHalt`, K36). Der Band-Partner hält nie: er steht nur neben seiner Primär-Stufe (die 3D-Stufe
+    // neben einer verdeckten Karte zeichnete sonst voll mit ihr doppelt) — nur eine Karte im Band trägt Verdeckung und Brücke.
+    _lodSlotVoll(entry, band, bandLod = entry._lodBandLevel) {
+        const karte = entry._occluded === true || entry._bruecke === true;
+        if (band) return karte && bandLod === 2;
+        return karte || entry._lodHalt === true;
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // W6 — die Karte zeichnet in der EINEN globalen Atlas-Gruppe (leaf.atlasGruppe), gleich welche Art, Gestalt,
@@ -72003,6 +72142,14 @@ class AnazhRealm {
             this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        // DER HALT AB GEBURT (K36): eine neue Primär-Stufe hält VOLL, bis die Band-Pflege ihren Partner geurteilt hat
+        // (`_updateFoundryLodBand` löst ihn, wo der Partner steht oder keiner verlangt ist). Bis K36 blendete sie vom ersten
+        // Bild an — und urteilte die schlafende Stufen-Wahl nie über sie, stand die L1 vor der ungebackenen Karte halb
+        // durchsichtig (Genesis-Ankunft, echte GPU: 5 Bäume nach 71 Takten).
+        if (!(opts && opts.band)) {
+            entry._lodHalt = true;
+            entry._lodHaltWartet = false;
+        }
         const slots = [];
         // instanceColor trägt die Farbe als RGB (0..1); InstancedMesh alloziert mesh.instanceColor LAZY beim
         // ersten setColorAt. OB und WAS geschrieben wird, entscheidet `_archSlotColor`. instanceColor
@@ -72047,7 +72194,13 @@ class AnazhRealm {
             // cullen im Blickfeld; Raycast-Cull, s. _archGroupFree).
             g.mesh.boundingSphere = null;
             // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc), die Karte ihre Schicht.
-            this._lodSlotStamp(g, slot, entry.scale, this._lodSlotVoll(entry), leaf);
+            this._lodSlotStamp(
+                g,
+                slot,
+                entry.scale,
+                this._lodSlotVoll(entry, !!(opts && opts.band), opts && opts.bandLod),
+                leaf
+            );
             slots.push(ref);
         }
         // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
@@ -72190,6 +72343,8 @@ class AnazhRealm {
             entry.instSlots = null;
             entry.instanced = false;
             entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
+            entry._lodHalt = false; // der Halt lebt nur mit seiner Stufe (die Band-Pflege urteilt neu)
+            entry._lodHaltWartet = false;
             // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
             // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
             if (entry.fundament) this._archFundamentFree(entry);
@@ -79582,7 +79737,7 @@ class AnazhRealm {
     // Distanz-LOD (die Vorlagen-LODs 0/1/2): nah = voll (LOD 0 < 25 m), mittel = LOD 1, fern = LOD 2.
     // Perf-bewusst — die meisten Wald-Baeume sind mittel -> das leichte LOD 1.
     _foundryLodForEntry(entry) {
-        const p = this.state.playerMesh ? this.state.playerMesh.position : null;
+        const p = this._lodAuge(); // vom Auge der Maske (K36), wie der LOD-Tick
         if (!p || !entry || !entry.position) return 1;
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
         // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
@@ -98770,7 +98925,8 @@ class AnazhRealm {
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
-        this._tickArchitectureLOD(5);
+        const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
+        this._tickArchitectureLOD(5, auge);
         // DER KARTEN-BÄCKER (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker, die Platte liefert gebackene
         // Karten sofort; lazy beim ersten L2-Bedarf enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
         // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,
@@ -98778,7 +98934,7 @@ class AnazhRealm {
         // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
         this._tickImpostorBake();
         this._tickTrefferGliederVorbacken(); // die Treffer-Glieder einer kalten Gattung, im Takt der EINEN Bake-Uhr
-        this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
+        this._tickScatterLod(auge, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1), vom Auge (K36)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
@@ -99198,7 +99354,7 @@ class AnazhRealm {
                 // Kamera-Clip-Wand: das Ego-Auge sitzt 1.6 m über dem Body-Zentrum (Box-halfExtent 0.5; nicht das
                 // Lab-eyeY 1.62) — die Decken-Probe klemmt es unter eine niedrige Decke (0.12 m Marge), sonst sieht
                 // man den Fels von innen. Die Seitenwände hält die Physik-Box.
-                let eyeY = smoothBodyY + 1.6 + landDip;
+                let eyeY = smoothBodyY + AnazhRealm.EGO_AUGE_M + landDip;
                 const headroomFP = this._ceilingHeadroom();
                 if (Number.isFinite(headroomFP)) {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
@@ -99217,6 +99373,7 @@ class AnazhRealm {
                 const KD1 = AnazhRealm.KAMERA_DURCHSICHT;
                 this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0, KD1.ichM, -KD1.saumM, KD1.ichM);
             }
+            this._lodAugeGesetzt(); // das Rig setzte das Auge der Stufen (K36): die Maske und die Wahl messen von hier
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
                     `Kamera: (${camera.position.x.toFixed(2)}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)})`,
@@ -101150,8 +101307,9 @@ class AnazhRealm {
         const dMin = Math.max(0, d - halt) * L.perf,
             dMax = (d + halt) * L.perf;
         const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
-        const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
-        return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, false);
+        const hL = geo.attributes.aH0L.array[i]; // das Vorzeichen: der Halt der Stufe ohne Partner (sie zeichnet voll)
+        const kL = Math.min(L.ref / Math.max(Math.abs(hL), 1e-3), 1);
+        return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, hL < 0);
     }
 
     // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
@@ -101191,10 +101349,11 @@ class AnazhRealm {
     // einzige Nah-Stufe, Stempel 3, blendet nie ein: f1o < dh), die Karte bei dh ≤ min(2·f1, 1) oder verdeckt — je Rampe
     // die Kante aus `_blendeKanten`. Rein (gate:foundry-crossfade prüft es je Stufe gegen das Gesetz, kein Loch).
     static _blendeBehaelt(K, stufe, dSmin, dSmax, dLmin, dLmax, verdeckt) {
+        if (verdeckt === true) return true; // VOLL: die verdeckte Karte, die Stufe im Halt (K36) — die Maske behält alles
         if (stufe === 1) return dLmin < K.l0Aus;
         if (stufe === 2) return dLmax > K.l1Ein && dSmin < K.l1Aus;
         if (stufe === 3) return dSmin < K.l1Aus;
-        if (stufe === "karte") return verdeckt === true || dSmax > K.karteEin;
+        if (stufe === "karte") return dSmax > K.karteEin;
         return true;
     }
 
@@ -101374,7 +101533,7 @@ class AnazhRealm {
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
-            if (_lu.uLodAuge && this.state.camera) this.state.camera.getWorldPosition(_lu.uLodAuge.value);
+            if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
             if (_lu.uLodPerf) _lu.uLodPerf.value = this._lodPerfMul();
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
@@ -106956,6 +107115,9 @@ AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
 });
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
+// Das Ego-Auge über dem Leib-Zentrum (m): das Rig setzt die Ego-Kamera hier, das Auge der Stufen steht hier, bevor eine
+// Kamera gesetzt ist (`_lodAuge`).
+AnazhRealm.EGO_AUGE_M = 1.6;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
