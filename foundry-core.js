@@ -5788,7 +5788,7 @@ var TIER_FELL = Object.freeze({
 // die Wurzel ist der äußerste Schnitt des Strahls vom Zeilen-Zentrum durch ihren Kappen-Punkt mit der Haut, die Achse
 // steht auf der Haut-Normale, mit der Legerichtung gekämmt (n + kamm · Tangente — das Schalen-Gesetz bei t = 1). Die Karten
 // (__straehnenKarten) gehen nach zuWurzel in den Root-Raum, jede zweiseitig. Je Ecke: Lage · Normale · Wurzel (die Mitte der
-// Wurzel-Ecken ihrer Strähne) · Achse t (aus dem Wurzel-Anker 0,12 der Karten, wie der Wirt die Strähne liest) · Ton.
+// Wurzel-Ecken ihrer Strähne) · Achse t (die Ecke der Kreuz-Karte: Wurzel 0 · 1 · 4 · 5, Spitze 2 · 3 · 6 · 7) · Ton.
 function __tierKarten(row, samen, flaeche, zuWurzel, P) {
     const hx = P["c" + row.ton];
     if (typeof hx !== "number") throw new Error("FELL: der Ton " + row.ton + " der Zeile " + row.teil + " fehlt");
@@ -5820,10 +5820,7 @@ function __tierKarten(row, samen, flaeche, zuWurzel, P) {
     geo.applyMatrix4(zuWurzel);
     const pa = geo.attributes.position.array,
         na = geo.attributes.normal.array,
-        ca = geo.attributes.color.array,
         X = geo.index.array;
-    const lum = (f, i) => 0.2126 * f[i] + 0.7152 * f[i + 1] + 0.0722 * f[i + 2];
-    const tonL = lum(ton, 0);
     const n = pa.length / 3;
     const out = { P: [], N: [], W: [], T: [], X: [], ton };
     for (const seite of [1, -1]) {
@@ -5835,7 +5832,7 @@ function __tierKarten(row, samen, flaeche, zuWurzel, P) {
                 out.N.push(seite * na[i * 3 + k]);
                 out.W.push((pa[b * 3 + k] + pa[(b + 1) * 3 + k] + pa[(b + 4) * 3 + k] + pa[(b + 5) * 3 + k]) / 4);
             }
-            out.T.push(Math.max(0, Math.min(1, (lum(ca, i * 3) / tonL - 0.12) / 0.88)), 0, 0);
+            out.T.push((i % 8) % 4 >= 2 ? 1 : 0, 0, 0);
         }
         for (let q = 0; q < X.length; q += 3)
             if (seite > 0) out.X.push(X[q] + o, X[q + 1] + o, X[q + 2] + o);
