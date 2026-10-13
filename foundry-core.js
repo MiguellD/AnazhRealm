@@ -4938,19 +4938,18 @@ function __tierHautGelenke(geo, skinJoints) {
 // Kreuz-Quads mit WURZEL→SPITZE-Farbverlauf als Vertex-Daten (der Lab-Shader
 // mischte fast-schwarz→Ton über aStrandY — hier reist es als Farbe, kein Shader).
 function __streuGeo(row, seed, tonRGB) {
+    return __straehnenKarten(__streuStraehnen(row, seed), tonRGB);
+}
+// Die Strähnen einer Streu-Zeile (die Lab-Mathe, RNG-Reihenfolge eingefroren): je Strähne Wurzel p, Richtung d (Einheit),
+// Länge l, halbe Wurzel-Breite w, halbe Spitzen-Breite wt; die Kalotten-Zeile trägt dazu ihren Punkt e auf dem Ellipsoid.
+function __streuStraehnen(row, seed) {
     let sLcg = seed >>> 0 || 1;
     const rnd = () => {
         sLcg = (sLcg * 1103515245 + 12345) >>> 0;
         return sLcg / 4294967296;
     };
-    const pos = [];
-    const col = [];
-    const idx = [];
-    const q = new THREE.Quaternion();
-    const AB = new THREE.Vector3(0, -1, 0);
     const d = new THREE.Vector3();
-    const v = new THREE.Vector3();
-    const rootC = [tonRGB[0] * 0.12, tonRGB[1] * 0.12, tonRGB[2] * 0.12];
+    const liste = [];
     // V18.462 — ZEILEN-ARTEN (Frisuren-Gesetz): "streu" = Kalotten-Schale
     // (Default, RNG-Reihenfolge UNVERÄNDERT — die Fell-Streu ist eingefroren),
     // + `radial:1` (Richtung = Schalen-Normale, afro), "quaste" = Punkt-Büschel
@@ -4958,7 +4957,6 @@ function __streuGeo(row, seed, tonRGB) {
     // `lj` = Längen-Streuung (Default 0.015 wie bisher).
     const art = row.art === "quaste" || row.art === "knoten" ? row.art : "streu";
     const lj = row.lj != null ? row.lj : 0.015;
-    let sN = 0;
     for (let j = 0; j < row.n; j++) {
         const phi = rnd() * Math.PI;
         const theta = rnd() * Math.PI * 2;
@@ -4967,6 +4965,7 @@ function __streuGeo(row, seed, tonRGB) {
         const jz = (rnd() - 0.5) * 0.4;
         const qr = rnd();
         let px, py, pz;
+        let e = null;
         if (art === "quaste") {
             px = row.c[0] + (phi / Math.PI - 0.5) * row.box[0];
             py = row.c[1] + (theta / (Math.PI * 2) - 0.5) * row.box[1];
@@ -4992,12 +4991,34 @@ function __streuGeo(row, seed, tonRGB) {
             px = row.r * row.sc[0] * Math.sin(phi) * Math.cos(theta) + row.c[0] - d.x * 0.012;
             py = row.r * row.sc[1] * Math.cos(phi) + row.c[1] - d.y * 0.012;
             pz = row.r * row.sc[2] * Math.sin(phi) * Math.sin(theta) + row.c[2] - d.z * 0.012;
+            e = [
+                row.r * row.sc[0] * Math.sin(phi) * Math.cos(theta) + row.c[0],
+                row.r * row.sc[1] * Math.cos(phi) + row.c[1],
+                row.r * row.sc[2] * Math.sin(phi) * Math.sin(theta) + row.c[2],
+            ];
         }
-        q.setFromUnitVectors(AB, d);
         const l = Math.round((row.l + qr * lj) / 0.004) * 0.004;
         if (l <= 0) continue;
-        const w = row.t * 1.8,
-            wt = Math.max(0.001, row.t * 0.65);
+        liste.push({ p: [px, py, pz], d: d.clone(), l, w: row.t * 1.8, wt: Math.max(0.001, row.t * 0.65), e });
+    }
+    return liste;
+}
+// Die Kreuz-Karten der Strähnen (zwei gekreuzte Vierecke je Strähne, Wurzel → Spitze), WURZEL→SPITZE-Farbverlauf als
+// Vertex-Farben (der Lab-Shader mischte fast-schwarz→Ton über aStrandY — hier reist es als Farbe, kein Shader).
+function __straehnenKarten(liste, tonRGB) {
+    const pos = [];
+    const col = [];
+    const idx = [];
+    const q = new THREE.Quaternion();
+    const AB = new THREE.Vector3(0, -1, 0);
+    const v = new THREE.Vector3();
+    const rootC = [tonRGB[0] * 0.12, tonRGB[1] * 0.12, tonRGB[2] * 0.12];
+    let sN = 0;
+    for (const st of liste) {
+        q.setFromUnitVectors(AB, st.d);
+        const l = st.l,
+            w = st.w,
+            wt = st.wt;
         const ecken = [
             [-w, 0, 0, 0],
             [w, 0, 0, 0],
@@ -5011,7 +5032,7 @@ function __streuGeo(row, seed, tonRGB) {
         const b = sN * 8;
         for (const e of ecken) {
             v.set(e[0], e[1], e[2]).applyQuaternion(q);
-            pos.push(v.x + px, v.y + py, v.z + pz);
+            pos.push(v.x + st.p[0], v.y + st.p[1], v.z + st.p[2]);
             const cc = e[3] ? tonRGB : rootC;
             col.push(cc[0], cc[1], cc[2]);
         }
@@ -5566,10 +5587,10 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, gelenkeHaut, null), 3));
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
-    // Stufe 0: die Kopf-Häute zuerst — ihr Feld trägt die Kopf-Zeile der Schalen (K28).
-    const kopfFeld = fein ? null : __tierKopfHaeute(hk, B, H, matFuer, kern, P);
+    // Die Kopf-Häute vor den Schalen: die Kopf-Haut ist der Boden der Kopf-Zeile (K28).
+    if (!fein) __tierKopfHaeute(hk, B, H, matFuer, kern, P);
     if (fell) {
-        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName, kopfFeld);
+        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName);
         root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
     }
     return skinJoints;
@@ -5702,7 +5723,6 @@ function __tierFeld(prims, vox, blend) {
 // Brauen). Kopf und Kiefer werden je EINE starre Haut an ihrem Gelenk — derselbe SDF-Guss auf einem
 // feineren Raster (das Gesicht ist klein); starr heißt kein Skinning: der Kiefer öffnet (Gähnen, Schnüffeln).
 // Ohren und Lider bleiben eigene Gelenke mit ihren Primitiven; Augen, Nase, Zähne sind keine Fell-Klasse.
-// Rückgabe: das Feld der Kopf-Haut (Kopf-Raum) — die Schalen-Basis der Kopf-Zeile (__tierFellSchalen, K28).
 function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
     const vox = TIER_HAUT.voxKopf * H,
         blend = TIER_HAUT.blendKopf * H;
@@ -5713,7 +5733,6 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
         return false;
     };
     const ohneLider = [t.lidTL, t.lidTR, t.earL, t.earR].filter(Boolean);
-    let kopfFeld = null;
     for (const [g, nimm] of [
         [t.headGroup, (n) => !unterEinem(n, eigen)],
         [t.jawGroup, (n) => !unterEinem(n, ohneLider)],
@@ -5729,9 +5748,7 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
         const name = g === t.jawGroup ? "jawGroup" : "headGroup";
         geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, () => [[name, 1]], zuWurzel), 3));
         g.add(new THREE.Mesh(geo, matFuer("fell"))); // Gelenk-lokal gebacken (Identität)
-        if (g === t.headGroup) kopfFeld = { f: F.f, nx: F.nx, ny: F.ny, nz: F.nz, lo: F.lo, vox, g };
     }
-    return kopfFeld;
 }
 
 // ── DAS SCHALEN-FELL (V18.497): N versetzte Schalen über einer gröberen Haut aus DEMSELBEN Feld (jeder
@@ -5749,33 +5766,156 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
 // Median · Haar-Zellen je Einheit = √Median — das Raster der Lab-Strähnen) · aWurzel (der Bind-Punkt
 // der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
 // color (der gemischte Ton, linear). Das Welt-Material (Klasse fellSchale) maskiert und schattiert.
-// DIE KOPF-ZEILE (K28): die Zeile headGroup des Gesetzes (30 Strähnen, Länge 0,045 + halbe Streu, Dicke 0,005
-// Lab-Einheiten — in der Welt 18,8 mm lang, an der Wurzel 6 mm breit, an Armlänge 4,7–8,5 px) liegt auf der STARREN Kopf-Haut
-// (__tierKopfHaeute), nicht auf der Leib-Haut. Ihre Schalen-Basis kommt aus DEMSELBEN Kopf-Feld (jeder s-te Rasterpunkt;
-// s wächst, bis der Stapel `kopfDreiecke` hält — die Haut kostet ihr Ziel), gebunden mit Gewicht 1 an den Kopf-Knochen,
-// im SELBEN Stapel wie der Leib (kein Befehl mehr). Ihr Raster ist das Gesetz selbst: die Kopf-Haut trägt EINE Zeile
-// gleichmäßig — je Strähne eine Zelle (√ Strähnen je Fläche), die Locke so breit wie die Lab-Strähne an der Wurzel
-// (halbe Breite = wurzelBreite · t, sie läuft zur Spitze zu wie dort). Der Leib trägt das Raster seines Medians (seine
-// Dichte wechselt über EINER Fläche, das Raster darf es nicht); sein Median bleibt der des Leibs. Eine Zeile ohne Haut
-// bricht laut, nie fällt sie still.
+// DIE KOPF-ZEILE (K28): die Zeile des Gesetzes am Kopf (headGroup, 30 Strähnen, Ton D, nach hinten gelegt) liegt auf der
+// STARREN Kopf-Haut, und sie ist dünn: das Raster der Schalen trägt sie nicht (eine Locke von 3 mm in einer Zelle von
+// 47 mm trifft die Fläche mit ≈ 2r/Zelle — im Bild blieben Sprenkel). Der Ofen gießt ihre Strähnen, wie das Lab sie streut
+// (addFurLocal: die Kappe cos φ ≥ −0,05, Richtungs-Streu, Längen-Raster, Kreuz-Karten Wurzel 1,8 t → Spitze 0,65 t), im
+// Ton der Zeile (das Lab: toene[row.ton]), und setzt jede auf die Haut wie die Schalen jede Zeile lesen (__tierKarten):
+// Wurzel auf der Kopf-Haut, Achse auf der Normale, gekämmt — die Lab-Kugel liegt unter Stirn und Scheitel-Kamm, gerade
+// nach hinten gelegt blieb von 19 Strähnen im Armlängen-Bild ein Büschel. Die Karten liegen im SELBEN Schalen-Stapel:
+// Gewicht 1 am Kopf-Knochen, aSchale = (Achse t, 0, 0) — Zellen 0 heißt: die Karte ist das Haar (das Welt-Material maskiert
+// sie nie), beide Seiten gegossen (der Stoff zeichnet vorn). Kein Befehl mehr; eine Zeile ohne Haut bricht laut.
 var TIER_FELL = Object.freeze({
     schalen: 6,
     basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
     clr: 0.5, // × vox: die Basis liegt knapp über der Haut
     reich: 0.6, // die Nähe der Look-Mischung in Ellipsoid-Einheiten um e = 1 (1 / (1 + ((e − 1) / reich)²))
     kamm: 0.6, // Lean zur Spitze (× Länge)
-    // Der Locken-Radius des Welt-Materials (Klasse fellSchale): √(aSchale.y) · locke Zellen — der EINE Wert, der Wirt
-    // liest ihn von hier (die Kopf-Zeile rechnet ihre Dicke in ihn um).
-    locke: 0.62,
-    // Die halbe Wurzel-Breite der Lab-Strähne je Dicke t (worlds/tetrapoda getStrandGeo: w = thick · 1,8, an der Spitze
-    // thick · 0,65) — t ist die Dicke des Gesetzes, nicht die Breite des Haars.
-    wurzelBreite: 1.8,
-    // Das Ziel des Kopf-Stapels (Dreiecke aller Schalen): jede Art hält L0 ≤ 62 000 (tetrapoda lod.budget.kreatur[0]),
-    // der Bär trägt ohne Kopf-Zeile 60 472.
-    kopfDreiecke: 1500,
+    samen: 4242, // der Samen der Strähnen-Streu (V18.460), je Zeile + ihr Platz in der Tabelle
 });
-// Jeder s-te Rasterpunkt eines Felds (die Schalen-Basis: keine neue Füllung).
-function __feldJeder(f, nx, ny, nz, s) {
+// Die Karten einer Zeile auf der starren Kopf-Haut: die Lab-Streu der Zeile (__streuStraehnen — Kappe, Richtungs-Streu,
+// Längen-Raster, Breiten), jede Strähne auf die Haut gesetzt, wie die Schalen jede Zeile lesen (die Deckung folgt der Haut):
+// die Wurzel ist der äußerste Schnitt des Strahls vom Zeilen-Zentrum durch ihren Kappen-Punkt mit der Haut, die Achse
+// steht auf der Haut-Normale, mit der Legerichtung gekämmt (n + kamm · Tangente — das Schalen-Gesetz bei t = 1). Die Karten
+// (__straehnenKarten) gehen nach zuWurzel in den Root-Raum, jede zweiseitig. Je Ecke: Lage · Normale · Wurzel (die Mitte der
+// Wurzel-Ecken ihrer Strähne) · Achse t (aus dem Wurzel-Anker 0,12 der Karten, wie der Wirt die Strähne liest) · Ton.
+function __tierKarten(row, samen, flaeche, zuWurzel, P) {
+    const hx = P["c" + row.ton];
+    if (typeof hx !== "number") throw new Error("FELL: der Ton " + row.ton + " der Zeile " + row.teil + " fehlt");
+    const ton = __tierLin([(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]);
+    const liste = __streuStraehnen(row, samen);
+    if (!liste.length) throw new Error("FELL: die Zeile " + row.teil + " streut keine Strähne");
+    const HP = flaeche.P,
+        HN = flaeche.N,
+        HX = flaeche.X;
+    const c = new THREE.Vector3(row.c[0], row.c[1], row.c[2]),
+        u = new THREE.Vector3(),
+        tg = new THREE.Vector3();
+    for (const st of liste) {
+        if (!st.e) throw new Error("FELL: die Zeile " + row.teil + " ist keine Kalotten-Zeile");
+        u.set(st.e[0] - c.x, st.e[1] - c.y, st.e[2] - c.z).normalize();
+        const treffer = __strahl(HP, HN, HX, c, u, true);
+        if (!treffer) throw new Error("FELL: der Strahl der Zeile " + row.teil + " trifft ihre Haut nicht");
+        st.p = [c.x + u.x * treffer.t, c.y + u.y * treffer.t, c.z + u.z * treffer.t];
+        tg.copy(st.d).addScaledVector(treffer.n, -st.d.dot(treffer.n));
+        const tl = tg.length();
+        st.d = treffer.n.clone().addScaledVector(tg, tl > 1e-9 ? TIER_FELL.kamm / tl : 0).normalize();
+        // Der Kamm legt die Strähne nie in die Haut: schneidet die gekämmte Achse die Haut vor der Spitze (am Scheitel-Kamm,
+        // vor dem Hinterhaupt), steht sie auf der Normale.
+        const o = new THREE.Vector3(st.p[0], st.p[1], st.p[2]).addScaledVector(treffer.n, 1e-4);
+        const vor = __strahl(HP, HN, HX, o, st.d, false);
+        if (vor && vor.t < st.l) st.d = treffer.n.clone();
+    }
+    const geo = __straehnenKarten(liste, ton);
+    geo.applyMatrix4(zuWurzel);
+    const pa = geo.attributes.position.array,
+        na = geo.attributes.normal.array,
+        ca = geo.attributes.color.array,
+        X = geo.index.array;
+    const lum = (f, i) => 0.2126 * f[i] + 0.7152 * f[i + 1] + 0.0722 * f[i + 2];
+    const tonL = lum(ton, 0);
+    const n = pa.length / 3;
+    const out = { P: [], N: [], W: [], T: [], X: [], ton };
+    for (const seite of [1, -1]) {
+        const o = out.P.length / 3;
+        for (let i = 0; i < n; i++) {
+            const b = i - (i % 8); // die Strähne: 8 Ecken, Wurzel-Ecken 0 · 1 · 4 · 5
+            for (let k = 0; k < 3; k++) {
+                out.P.push(pa[i * 3 + k]);
+                out.N.push(seite * na[i * 3 + k]);
+                out.W.push((pa[b * 3 + k] + pa[(b + 1) * 3 + k] + pa[(b + 4) * 3 + k] + pa[(b + 5) * 3 + k]) / 4);
+            }
+            out.T.push(Math.max(0, Math.min(1, (lum(ca, i * 3) / tonL - 0.12) / 0.88)), 0, 0);
+        }
+        for (let q = 0; q < X.length; q += 3)
+            if (seite > 0) out.X.push(X[q] + o, X[q + 1] + o, X[q + 2] + o);
+            else out.X.push(X[q] + o, X[q + 2] + o, X[q + 1] + o);
+    }
+    geo.dispose();
+    return out;
+}
+// Die gezeichnete Fell-Fläche eines starren Teils in seinem Raum: jedes gegossene Fell-Mesh, dessen nächstes Gelenk der Teil
+// ist (die Kopf-Haut und was das Raster als Primitiv ließ, der Scheitel-Kamm) — Lage, Normale, Index.
+function __tierFellFlaeche(teil, nodeName) {
+    teil.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(teil.matrixWorld).invert();
+    const out = { P: [], N: [], X: [] };
+    teil.traverse((m) => {
+        if (!m.isMesh || m.userData.__nichtGiessen || !m.material || !m.material.userData || m.material.userData.__klasse !== "fell") return;
+        let g = m.parent;
+        while (g && g !== teil && !nodeName.has(g)) g = g.parent;
+        if (g !== teil) return;
+        const geo = m.geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+        if (!geo.attributes.normal) geo.computeVertexNormals();
+        const o = out.P.length / 3,
+            pa = geo.attributes.position.array,
+            na = geo.attributes.normal.array;
+        for (let i = 0; i < pa.length; i++) {
+            out.P.push(pa[i]);
+            out.N.push(na[i]);
+        }
+        if (geo.index) for (const x of geo.index.array) out.X.push(x + o);
+        else for (let i = 0; i < pa.length / 3; i++) out.X.push(i + o);
+        geo.dispose();
+    });
+    if (!out.X.length) throw new Error("FELL: der Teil " + (nodeName.get(teil) || "?") + " trägt keine Fell-Fläche");
+    return out;
+}
+// Der äußerste (aussen) bzw. erste Schnitt des Strahls o + t·u (t > 0) mit einer Dreiecks-Fläche (Möller–Trumbore) und
+// die Normale der Fläche dort (die Ecken-Normalen baryzentrisch gemischt), zum Strahl hin gekehrt.
+function __strahl(P, N, X, o, u, aussen) {
+    let best = aussen ? 0 : Infinity,
+        bn = null;
+    for (let q = 0; q < X.length; q += 3) {
+        const a = X[q] * 3,
+            b = X[q + 1] * 3,
+            c = X[q + 2] * 3;
+        const e1x = P[b] - P[a],
+            e1y = P[b + 1] - P[a + 1],
+            e1z = P[b + 2] - P[a + 2];
+        const e2x = P[c] - P[a],
+            e2y = P[c + 1] - P[a + 1],
+            e2z = P[c + 2] - P[a + 2];
+        const px = u.y * e2z - u.z * e2y,
+            py = u.z * e2x - u.x * e2z,
+            pz = u.x * e2y - u.y * e2x;
+        const det = e1x * px + e1y * py + e1z * pz;
+        if (Math.abs(det) < 1e-12) continue;
+        const inv = 1 / det;
+        const sx = o.x - P[a],
+            sy = o.y - P[a + 1],
+            sz = o.z - P[a + 2];
+        const bu = (sx * px + sy * py + sz * pz) * inv;
+        if (bu < 0 || bu > 1) continue;
+        const qx = sy * e1z - sz * e1y,
+            qy = sz * e1x - sx * e1z,
+            qz = sx * e1y - sy * e1x;
+        const bv = (u.x * qx + u.y * qy + u.z * qz) * inv;
+        if (bv < 0 || bu + bv > 1) continue;
+        const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
+        if (t > 1e-9 && (aussen ? t > best : t < best)) {
+            best = t;
+            const w0 = 1 - bu - bv;
+            bn = [0, 1, 2].map((k) => w0 * N[a + k] + bu * N[b + k] + bv * N[c + k]);
+        }
+    }
+    if (!bn) return null;
+    const n = new THREE.Vector3(bn[0], bn[1], bn[2]).normalize();
+    if (n.dot(u) < 0) n.negate();
+    return { t: best, n };
+}
+function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName) {
+    const s = TIER_FELL.basisVox;
     const nx2 = Math.floor((nx - 1) / s) + 1,
         ny2 = Math.floor((ny - 1) / s) + 1,
         nz2 = Math.floor((nz - 1) / s) + 1;
@@ -5783,78 +5923,26 @@ function __feldJeder(f, nx, ny, nz, s) {
     for (let k = 0; k < nz2; k++)
         for (let j = 0; j < ny2; j++)
             for (let i = 0; i < nx2; i++) f2[i + nx2 * (j + ny2 * k)] = f[i * s + nx * (j * s + ny * k * s)];
-    return { f: f2, nx: nx2, ny: ny2, nz: nz2 };
-}
-// Die Schalen-Basis der Kopf-Zeile: aus dem Kopf-Feld, Kopf-Raum → Wurzel-Raum (zuWurzel); die Rasterweite wächst, bis
-// der Stapel (TIER_FELL.schalen Kopien) `ziel` Dreiecke hält.
-function __tierKopfBasis(hk, kopf, zuWurzel, ziel) {
-    let s = TIER_FELL.basisVox;
-    let F = __feldJeder(kopf.f, kopf.nx, kopf.ny, kopf.nz, s);
-    while (2 * __tierKanten(F.f, F.nx, F.ny, F.nz) * TIER_FELL.schalen > ziel) F = __feldJeder(kopf.f, kopf.nx, kopf.ny, kopf.nz, ++s);
-    const geo = __huelleAusFeld(hk, F.f, F.nx, F.ny, F.nz, kopf.lo, kopf.vox * s, 0, 0, null, null, 0, null, true);
-    if (!geo) throw new Error("FELL: die Kopf-Basis lieferte keine Fläche");
-    // Die Ecken kehren auf das FEINE Feld zurück (die Niveau-Fläche clr · vox über der Kopf-Haut; zwei Läufe, je Schritt
-    // höchstens vox/2), dann die Normalen.
-    const pa = geo.attributes.position;
-    const ecken = Array.from({ length: pa.count }, (_, i) => [pa.getX(i), pa.getY(i), pa.getZ(i)]);
-    for (let lauf = 0; lauf < 2; lauf++) __aufsNiveau(ecken, kopf.f, kopf.nx, kopf.ny, kopf.nz, kopf.lo, kopf.vox, TIER_FELL.clr * kopf.vox);
-    ecken.forEach((e, i) => pa.setXYZ(i, e[0], e[1], e[2]));
-    geo.computeVertexNormals();
-    geo.applyMatrix4(zuWurzel);
-    return geo;
-}
-// Leib-Basis + Kopf-Basis als EINE geskinnte Basis: der Kopf hängt mit Gewicht 1 am Knochen jK.
-function __tierBasisMitKopf(leib, kopf, jK) {
-    const nL = leib.attributes.position.count,
-        nK = kopf.attributes.position.count;
-    const geo = new THREE.BufferGeometry();
-    for (const name of ["position", "normal"]) {
-        const a = new Float32Array((nL + nK) * 3);
-        a.set(leib.attributes[name].array);
-        a.set(kopf.attributes[name].array, nL * 3);
-        geo.setAttribute(name, new THREE.BufferAttribute(a, 3));
-    }
-    const si = new Float32Array((nL + nK) * 4),
-        sw = new Float32Array((nL + nK) * 4);
-    si.set(leib.attributes.skinIndex.array);
-    sw.set(leib.attributes.skinWeight.array);
-    for (let i = nL; i < nL + nK; i++) {
-        si[i * 4] = jK;
-        sw[i * 4] = 1;
-    }
-    geo.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
-    geo.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
-    const iL = leib.index.array,
-        iK = kopf.index.array;
-    const ix = new Uint32Array(iL.length + iK.length);
-    ix.set(iL);
-    for (let q = 0; q < iK.length; q++) ix[iL.length + q] = iK[q] + nL;
-    geo.setIndex(new THREE.BufferAttribute(ix, 1));
-    leib.dispose();
-    kopf.dispose();
-    return geo;
-}
-function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName, kopf) {
-    const s = TIER_FELL.basisVox;
-    const F2 = __feldJeder(f, nx, ny, nz, s);
-    let basis = __huelleAusFeld(hk, F2.f, F2.nx, F2.ny, F2.nz, lo, vox * s, 0, TIER_FELL.clr * vox, zentren, skinJoints, eW2, kandidaten);
+    const basis = __huelleAusFeld(
+        hk,
+        f2,
+        nx2,
+        ny2,
+        nz2,
+        lo,
+        vox * s,
+        0,
+        TIER_FELL.clr * vox,
+        zentren,
+        skinJoints,
+        eW2,
+        kandidaten
+    );
     if (!basis) throw new Error("FELL: die Schalen-Basis lieferte keine Fläche");
     // Die Zeilen in den Root-Raum (Ellipsoid-Inverse + Legerichtung), jede an IHREM Gelenk (der Knoten oder sein
     // nächster animierter Ahn — die Wurzel trägt Rumpf und Hals).
     root.updateMatrixWorld(true);
     const invRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
-    // DIE KOPF-ZEILE: der Kopf-Knochen tritt hinten an die Bone-Ordnung (die Indizes der Leib-Haut bleiben), die Kopf-Basis
-    // hinter die Leib-Basis (VsL = die Ecken des Leibs).
-    const VsL = basis.attributes.position.count,
-        XL = basis.index.count;
-    let jK = -1;
-    if (kopf) {
-        const kn = nodeName.get(kopf.g);
-        if (skinJoints.indexOf(kn) < 0) skinJoints.push(kn);
-        jK = skinJoints.indexOf(kn);
-        const zuWurzel = new THREE.Matrix4().multiplyMatrices(invRoot, kopf.g.matrixWorld);
-        basis = __tierBasisMitKopf(basis, __tierKopfBasis(hk, kopf, zuWurzel, TIER_FELL.kopfDreiecke), jK);
-    }
     const NJ = skinJoints.length;
     const jIdx = new Map(skinJoints.map((nm, k) => [nm, k]));
     const gelenkIdx = (node) => {
@@ -5864,9 +5952,8 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const jWurzel = gelenkIdx(root);
     if (jWurzel < 0) throw new Error("FELL: die Wurzel trägt keine Leib-Haut");
     const straehnen = new Float64Array(NJ);
-    const dickeJe = new Float64Array(NJ); // Σ n · t je Gelenk (das Raster der Kopf-Zeile liest die mittlere Dicke)
     const zeilenJe = Array.from({ length: NJ }, () => []);
-    const zeile = (node, c, r, sc, d, n, l, t) => {
+    const zeile = (node, c, r, sc, d, n, l) => {
         if (!(n > 0) || !(l > 0)) return;
         const j = gelenkIdx(node);
         if (j < 0) throw new Error("FELL: die Zeile " + (nodeName.get(node) || node.name || "?") + " liegt auf keiner Haut");
@@ -5876,7 +5963,6 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             ry = r * sc[1],
             rz = r * sc[2];
         straehnen[j] += n;
-        dickeJe[j] += n * (t > 0 ? t : 0);
         zeilenJe[j].push({
             Mi: Float64Array.from(new THREE.Matrix4().copy(M).invert().elements),
             c,
@@ -5890,7 +5976,9 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     };
     // Der Deck-Mantel (Unterwolle · Grannen · helle Spitzen) liegt gleichmäßig auf der Haut der Wurzel.
     const mantel = [];
-    for (const row of fell.rows) {
+    const kopf = B.teile.headGroup;
+    const karten = []; // die Zeilen der starren Kopf-Haut (oben: die Kopf-Zeile)
+    for (const [platz, row] of fell.rows.entries()) {
         if (row.art === "deck") {
             const dw = new THREE.Vector3(row.d[0], row.d[1], row.d[2]).normalize();
             for (const [n, l] of [
@@ -5906,7 +5994,12 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         }
         const node = B.teile[row.teil];
         if (!node) throw new Error("FELL: die Zeile " + row.teil + " hat keinen Teil im Bau");
-        zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + ((row.lj != null ? row.lj : 0.015) / 2) * fell.kl, row.t);
+        if (node === kopf) {
+            if (row.n > 0 && row.l > 0)
+                karten.push(__tierKarten(row, TIER_FELL.samen + platz + 1, __tierFellFlaeche(kopf, nodeName), new THREE.Matrix4().multiplyMatrices(invRoot, kopf.matrixWorld), fell.P));
+            continue;
+        }
+        zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + ((row.lj != null ? row.lj : 0.015) / 2) * fell.kl);
     }
     // Das Schweif-Gesetz des Ofens (Lab-Streu je Segment: (28 − 2i)·9 Strähnen, Länge 0.047 − 0.003·i im
     // Mittel, nach hinten gekämmt) — dieselben Zahlen wie die gefallenen Schweif-Strähnen.
@@ -5943,15 +6036,6 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     }
     const dichteJe = Float64Array.from(straehnen, (n, j) => (flaeche[j] > 0 ? n / flaeche[j] : 0));
     for (const m of mantel) m.dichte = ((4 * Math.PI) / 3) * (m.n / flaeche[jWurzel]);
-    // Das Raster der Kopf-Zeile: je Strähne eine Zelle, die Locke im Wurzel-Radius wurzelBreite · t (in Zellen:
-    // wurzelBreite · t · Zellen = √y · locke).
-    let kopfZellen = 0,
-        kopfY = 0;
-    if (jK >= 0) {
-        if (!(dichteJe[jK] > 0)) throw new Error("FELL: die Kopf-Zeile trägt keine Strähne");
-        kopfZellen = Math.sqrt(dichteJe[jK]);
-        kopfY = Math.pow((TIER_FELL.wurzelBreite * (dickeJe[jK] / straehnen[jK]) * kopfZellen) / TIER_FELL.locke, 2);
-    }
     const len = new Float32Array(Vs),
         dichte = new Float32Array(Vs),
         kamm = new Float32Array(Vs * 3),
@@ -6017,58 +6101,76 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     ton.set(__tierMusterFarben(fell.kern, fell.P, B.masse, pa, __tierHautGelenke(basis, skinJoints), null));
     // Das Haar-Raster folgt der Gesetz-Dichte: Zellen je Einheit = √(Median Strähnen je Fläche) — der
     // Abstand der Lab-Strähnen (Wolf ~0.012); die lokale Dichte (relativ zum Median) skaliert die Locke.
-    const belegt = Array.from(dichte.subarray(0, VsL))
+    const belegt = Array.from(dichte)
         .filter((w) => w > 0)
         .sort((a, b) => a - b);
     const median = belegt.length ? belegt[belegt.length >> 1] : 1;
     const zellen = Math.sqrt(median);
-    // Der Schalen-Stapel: N Kopien der Basis, jede auf ihrer Höhe, gekämmt, gleich gewichtet — erst der Leib, dann der Kopf
-    // (die Leib-Schalen bleiben der Anfang der Puffer).
+    // Der Schalen-Stapel: N Kopien der Basis, jede auf ihrer Höhe, gekämmt, gleich gewichtet; dahinter die Karten der
+    // Kopf-Zeile (die Schalen bleiben der Anfang der Puffer).
     const N = TIER_FELL.schalen;
-    const P = new Float32Array(Vs * N * 3),
-        Nn = new Float32Array(Vs * N * 3),
-        C = new Float32Array(Vs * N * 3),
-        Wz = new Float32Array(Vs * N * 3),
-        T = new Float32Array(Vs * N * 3),
-        SI = new Float32Array(Vs * N * 4),
-        SW = new Float32Array(Vs * N * 4),
-        I = new Uint32Array(hX.length * N);
-    const teile = [[0, VsL, 0, XL]];
-    if (Vs > VsL) teile.push([VsL, Vs, XL, hX.length]);
-    let o = 0,
-        q0 = 0;
-    for (const [v0, v1, x0, x1] of teile)
-        for (let sN = 0; sN < N; sN++, o += v1 - v0) {
-            const t = (sN + 1) / N;
-            for (let q = x0; q < x1; q++) I[q0++] = hX[q] - v0 + o;
-            for (let i = v0; i < v1; i++) {
-                const v = o + i - v0;
-                const lt = len[i] * t,
-                    lk = len[i] * t * t * TIER_FELL.kamm;
-                const nx0 = na.getX(i),
-                    ny0 = na.getY(i),
-                    nz0 = na.getZ(i);
-                P[v * 3] = pa.getX(i) + nx0 * lt + kamm[i * 3] * lk;
-                P[v * 3 + 1] = pa.getY(i) + ny0 * lt + kamm[i * 3 + 1] * lk;
-                P[v * 3 + 2] = pa.getZ(i) + nz0 * lt + kamm[i * 3 + 2] * lk;
-                Nn[v * 3] = nx0;
-                Nn[v * 3 + 1] = ny0;
-                Nn[v * 3 + 2] = nz0;
-                Wz[v * 3] = pa.getX(i);
-                Wz[v * 3 + 1] = pa.getY(i);
-                Wz[v * 3 + 2] = pa.getZ(i);
-                C[v * 3] = ton[i * 3];
-                C[v * 3 + 1] = ton[i * 3 + 1];
-                C[v * 3 + 2] = ton[i * 3 + 2];
-                T[v * 3] = t;
-                T[v * 3 + 1] = i < VsL ? Math.min(1.6, dichte[i] / median) : kopfY;
-                T[v * 3 + 2] = i < VsL ? zellen : kopfZellen;
-                for (let k = 0; k < 4; k++) {
-                    SI[v * 4 + k] = hI[i * 4 + k];
-                    SW[v * 4 + k] = hW[i * 4 + k];
-                }
+    const VK = karten.reduce((s, k) => s + k.P.length / 3, 0),
+        XK = karten.reduce((s, k) => s + k.X.length, 0);
+    const P = new Float32Array((Vs * N + VK) * 3),
+        Nn = new Float32Array((Vs * N + VK) * 3),
+        C = new Float32Array((Vs * N + VK) * 3),
+        Wz = new Float32Array((Vs * N + VK) * 3),
+        T = new Float32Array((Vs * N + VK) * 3),
+        SI = new Float32Array((Vs * N + VK) * 4),
+        SW = new Float32Array((Vs * N + VK) * 4),
+        I = new Uint32Array(hX.length * N + XK);
+    for (let sN = 0; sN < N; sN++) {
+        const t = (sN + 1) / N;
+        const o = sN * Vs;
+        for (let i = 0; i < Vs; i++) {
+            const v = o + i;
+            const lt = len[i] * t,
+                lk = len[i] * t * t * TIER_FELL.kamm;
+            const nx0 = na.getX(i),
+                ny0 = na.getY(i),
+                nz0 = na.getZ(i);
+            P[v * 3] = pa.getX(i) + nx0 * lt + kamm[i * 3] * lk;
+            P[v * 3 + 1] = pa.getY(i) + ny0 * lt + kamm[i * 3 + 1] * lk;
+            P[v * 3 + 2] = pa.getZ(i) + nz0 * lt + kamm[i * 3 + 2] * lk;
+            Nn[v * 3] = nx0;
+            Nn[v * 3 + 1] = ny0;
+            Nn[v * 3 + 2] = nz0;
+            Wz[v * 3] = pa.getX(i);
+            Wz[v * 3 + 1] = pa.getY(i);
+            Wz[v * 3 + 2] = pa.getZ(i);
+            C[v * 3] = ton[i * 3];
+            C[v * 3 + 1] = ton[i * 3 + 1];
+            C[v * 3 + 2] = ton[i * 3 + 2];
+            T[v * 3] = t;
+            T[v * 3 + 1] = Math.min(1.6, dichte[i] / median);
+            T[v * 3 + 2] = zellen;
+            for (let k = 0; k < 4; k++) {
+                SI[v * 4 + k] = hI[i * 4 + k];
+                SW[v * 4 + k] = hW[i * 4 + k];
             }
         }
+        for (let q = 0; q < hX.length; q++) I[sN * hX.length + q] = hX[q] + o;
+    }
+    // Die Karten: der Kopf-Knochen tritt hinten an die Bone-Ordnung (die Indizes der Leib-Haut bleiben).
+    if (karten.length) {
+        const kn = nodeName.get(kopf);
+        if (skinJoints.indexOf(kn) < 0) skinJoints.push(kn);
+        const jK = skinJoints.indexOf(kn);
+        let v = Vs * N,
+            q0 = hX.length * N;
+        for (const k of karten) {
+            for (const x of k.X) I[q0++] = x + v;
+            for (let i = 0; i < k.P.length / 3; i++, v++) {
+                P.set(k.P.slice(i * 3, i * 3 + 3), v * 3);
+                Nn.set(k.N.slice(i * 3, i * 3 + 3), v * 3);
+                Wz.set(k.W.slice(i * 3, i * 3 + 3), v * 3);
+                T.set(k.T.slice(i * 3, i * 3 + 3), v * 3);
+                C.set(k.ton, v * 3);
+                SI[v * 4] = jK;
+                SW[v * 4] = 1;
+            }
+        }
+    }
     basis.dispose();
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(P, 3));
