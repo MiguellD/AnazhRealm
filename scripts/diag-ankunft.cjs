@@ -646,11 +646,16 @@ async function probe(arg) {
                         const nVor = v.ohneLeser.length;
                         v.phaseVorBild = f._vorrat;
                         v.vorBild = v.ohneLeser.concat(v.karten ? [`${v.karten} Karten`] : []);
-                        st._weltbildDa = merkDa || performance.now();
+                        // das Bild steht über den EINEN Schreiber (sein Ereignis weckt den Vorrat), dann die Zeit der Ankunft zurück
+                        r._weltbildSteht();
+                        if (merkDa) st._weltbildDa = merkDa;
                         if (lauf) await Promise.race([lauf, sleep(60000)]);
                         v.nachBild = v.ohneLeser.length - nVor;
                     } finally {
-                        if (!st._weltbildDa) st._weltbildDa = merkDa || performance.now();
+                        if (!st._weltbildDa) {
+                            r._weltbildSteht();
+                            if (merkDa) st._weltbildDa = merkDa;
+                        }
                         for (const k of Object.keys(alt)) {
                             if (alt[k] === P[k]) delete r[k];
                             else r[k] = alt[k];
@@ -661,7 +666,7 @@ async function probe(arg) {
                 }
             }
             await sleep(800);
-            if (!st._weltbildDa) st._weltbildDa = performance.now();
+            if (!st._weltbildDa) r._weltbildSteht();
             ls.classList.add("weg");
         } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
         m.gestartet = true;

@@ -159,7 +159,9 @@ function KALT_PROBE() {
 async function kaltLauf() {
     const ECHT = ARGV.includes("--echt");
     const SEK = Number(OPT("--sek", 120));
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
+    // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
+    const { linsenWebGpuArgs, echteWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const profil = fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
     const browser = await puppeteer.launch({
@@ -167,8 +169,9 @@ async function kaltLauf() {
         userDataDir: profil,
         protocolTimeout: 600000,
         defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : { width: 1280, height: 720 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : softwareWebGpuArgs(),
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     let out = null;
     try {
         const page = await browser.newPage();

@@ -78557,10 +78557,12 @@ class AnazhRealm {
         // Schlange mit. Sein Merker `f._vorrat` nennt die PHASE (`VORRAT_PHASE`), nie nur „an": der Merker `_prefetching`
         // stand ab dem Worker-Start auf true, und die Kalt-Zeile las „Vorrat läuft", solange er auf das Bild wartete
         // (Radeon 8–44 s, die erste Bestellung bei 45 s). Der Null-Renderer setzt das Weltbild beim Renderer-Bau, dort
-        // bestellt er sofort; false = durch (warm).
+        // bestellt er sofort; false = durch (warm). Er wartet auf das EREIGNIS des Bildes (`_weltbildKommt`), nie auf die Uhr
+        // (die Stoff-Wand: ein Bau, der in einer Schleife auf die Uhr wartet, ist ein Uhr-Deckel — die Integration von K30
+        // auf K22-3 pollte `_weltbildDa` alle 200 ms).
         const PH = AnazhRealm.VORRAT_PHASE;
         f._vorrat = PH.wartet;
-        while (!this.state._weltbildDa) await new Promise((r) => setTimeout(r, 200));
+        await this._weltbildKommt();
         f._vorrat = PH.bestellt;
         const spec = this._foundryLibrarySpec();
         // Die Stufen je Art (kindStages) und die Gestalten-Budgets kommen mit dem Studio-Buch: der Vorrat wartet auf sein
@@ -95969,10 +95971,7 @@ class AnazhRealm {
         this.state.renderer = renderer;
         // Der Null-Renderer zeigt kein Bild, auf das der Ladeschirm warten könnte (sein Loop pumpt nur auf Zuruf):
         // er weicht sofort, die UI der Linsen bleibt klickbar.
-        if (renderer._isHeadlessNull) {
-            this.state._weltbildDa = performance.now();
-            this._ladeschirmWeg();
-        }
+        if (renderer._isHeadlessNull) this._weltbildSteht();
         this.log("Renderer initialisiert mit Schattenunterstützung (webgpu)", "INFO");
         this.state.selfAwareness.components.push("renderer");
 
@@ -101754,9 +101753,33 @@ class AnazhRealm {
                 "WARN"
             );
         }
-        st._weltbildDa = performance.now();
-        this._ladeschirmWeg();
+        this._weltbildSteht();
         return true;
+    }
+
+    // DAS ERSTE WELTBILD ALS EREIGNIS: wer darauf wartet (der Vorrat, K30), wartet auf dieses Versprechen, nie auf die Uhr.
+    // Steht das Bild schon, ist es erfüllt; sonst erfüllt es der EINE Schreiber `_weltbildSteht`. Nullt eine Probe das Bild
+    // (`_weltbildDa = 0`), wartet der nächste Frager auf ein neues Versprechen.
+    _weltbildKommt() {
+        const st = this.state;
+        if (st._weltbildDa) return Promise.resolve(st._weltbildDa);
+        if (!st._weltbildWarten) {
+            const w = {};
+            w.da = new Promise((r) => (w.erfuellt = r));
+            st._weltbildWarten = w;
+        }
+        return st._weltbildWarten.da;
+    }
+
+    // Der EINE Schreiber des ersten Weltbilds: seine Zeit (`_weltbildDa`, ab Navigation — gate:boot-stage liest sie), das
+    // Ereignis für jeden Wartenden (`_weltbildKommt`), dann weicht der Ladeschirm.
+    _weltbildSteht() {
+        const st = this.state;
+        st._weltbildDa = performance.now();
+        const w = st._weltbildWarten;
+        st._weltbildWarten = null;
+        if (w) w.erfuellt(st._weltbildDa);
+        this._ladeschirmWeg();
     }
 
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
