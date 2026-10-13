@@ -31284,7 +31284,11 @@ class AnazhRealm {
         let idx = null;
         if (gezeichnet) {
             if (quelle) {
-                pos = quelle.geometry.attributes.position.array;
+                // DAS NETZ TRÄGT SEINE BYTES (K37): die Positionen des gezeichneten Sheets sind ein View in den Puffer des
+                // Wasser-Satzes (`_chunkSatzViews`); verdichtet sich der Satz, schiebt er die Bereiche im alten Puffer nach
+                // vorn (`copyWithin`) und zeigt neue Views — ein Netz, das den alten View hielt, las danach fremde Bytes. Am
+                // Damm im Tal 26/−120 verlor `_nassAt` so 285–1 309 von 2 070 nassen Punkten eines Sees, dessen Sheet stand.
+                pos = Float32Array.from(quelle.geometry.attributes.position.array);
                 idx = quelle.geometry.index.array;
             }
         } else if (this._wasserSheetTraegt(cx, cz)) {
@@ -31583,8 +31587,7 @@ class AnazhRealm {
                 // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
                 if (dach) {
                     const floodRel = (sc.floodTopJ + 1) * step;
-                    const liveRel = live < 0 ? 0 : live * step;
-                    let d = liveRel - floodRel;
+                    let d = live * step - floodRel; // live ≥ 0: die geleerte Spalte ist oben schon trocken
                     if (d > -0.05 && d < 0.05) d = 0;
                     if (d !== 0) ruht = false;
                     top += Math.max(-14, Math.min(4, d));
@@ -81604,7 +81607,10 @@ class AnazhRealm {
                     cap[c] = flutJ >= 0 ? flutJ : raumOffen ? capRaum : -1;
                     // Stau-Spiegel: liegt die Spalte in einem Werk-Feld, hebt sich die Kappe auf den gehaltenen Pegel
                     // (Spill-Wahrheit, gedeckelt MAX_CELLS); eine gehobene Quell-Spalte wird STAU-Quelle (src=2), der Pin
-                    // tropft sie über die Ruhe hinaus (s. _tickWorldWaterCA).
+                    // tropft sie über die Ruhe hinaus (s. _tickWorldWaterCA). Gehoben wird nur, wo der Pegel eine Zelle
+                    // über dem Boden hält (stauJ > gj): die Krone des Damms selbst und eine trockene Spalte, deren Pegel
+                    // auf ihrem Boden liegt, halten kein Wasser und werden nie Quelle (am Kopf a0d6a81b 21 solche Quellen
+                    // am Damm des Tals 26/−120, an der Furt −937/−1064 20).
                     if (stauFields) {
                         const gx = cx * dim + i;
                         const gz = cz * dim + k;
@@ -81618,7 +81624,7 @@ class AnazhRealm {
                                 capRaum + stauMax,
                                 dimY - 1
                             );
-                            if (stauJ > cap[c]) {
+                            if (stauJ > cap[c] && stauJ > gj) {
                                 cap[c] = stauJ;
                                 if (src[c] === 1) src[c] = 2;
                             }

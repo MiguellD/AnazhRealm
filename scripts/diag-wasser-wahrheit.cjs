@@ -27,6 +27,10 @@
 //   F6 „Grube im See": eine vom Automaten geleerte Flut-Spalte zeichnete das
 //      Sheet 14 m unter dem Spiegel (die Klemme des Live-Deltas). Fix: die
 //      geleerte Spalte ist trocken (`_computeWaterSheetData`, Worker-Spiegel).
+//   F7 „Der See verschwindet für die Welt" (K37, Damm im Tal 26/−120): das
+//      Netz des gezeichneten Wassers (`_wasserNetz`, Leser `_nassAt`) hielt
+//      einen View in den Puffer des Wasser-Satzes; das Verdichten schob fremde
+//      Bytes darunter. Fix: das Netz kopiert seine Positionen.
 //
 // Jede Fixture ist PURE (synthetische Arrays / direkte Funktions-Fragen) und
 // trägt ihren SELBST-TEST: der Fix wird per Quell-Patch künstlich deaktiviert
@@ -533,6 +537,63 @@ const server = http.createServer((req, res) => {
                         fail(`F6-Selbsttest: ohne die Regel keine Grube (${b6.grube} m) — Linse blind`);
                 }
             }
+
+            // ── FIXTURE 7 (F7) — DAS NETZ TRÄGT SEINE BYTES: das gezeichnete Wasser überlebt das Verdichten des Satzes ──
+            // Das Sheet eines Chunks ist ein View in den Puffer des Wasser-Satzes; verdichtet sich der Satz, schiebt er die
+            // Bereiche im alten Puffer nach vorn (copyWithin) und zeigt neue Views. Ein Netz (`_wasserNetz`), das den alten
+            // View hielt, las danach die Bytes eines anderen Bereichs (am Damm im Tal 26/−120: 285–1 309 nasse Punkte weg).
+            // Bühne: ein Quad bei y 8 (Bereich 2 eines Satzes), dahinter ein fremder Bereich bei y 2 weit weg; das Netz wird
+            // gefragt, der Satz verdichtet (fremd rückt in den alten Bereich, der View zeigt neu), das Netz erneut gefragt.
+            const runNetz = (netzFn) => {
+                const quad = (x0, z0, y) => [x0, y, z0, x0 + 9, y, z0, x0, y, z0 + 9, x0 + 9, y, z0 + 9];
+                const alt = new Float32Array(24);
+                alt.set(quad(30, 30, 2), 0); // Bereich 1 (fremd)
+                alt.set(quad(1, 1, 8), 12); // Bereich 2 (das Sheet des Chunks 0,0)
+                const mesh = {
+                    geometry: {
+                        attributes: { position: { array: alt.subarray(12, 24) } },
+                        index: { array: new Uint32Array([0, 2, 1, 1, 2, 3]) },
+                    },
+                };
+                const entry = { waterCells: new Uint8Array(1) };
+                const shim = Object.create(r);
+                shim.state = {
+                    voxelChunks: new Map([["0,0", entry]]),
+                    voxelChunkWaterIso: new Map([["0,0", mesh]]),
+                };
+                const h0 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
+                // das Verdichten: Bereich 2 rückt nach vorn, ein dritter Bereich (fremd, y 2) zieht in seinen alten Platz
+                alt.copyWithin(0, 12, 24);
+                alt.set(quad(30, 30, 2), 12);
+                const neu = new Float32Array(12);
+                neu.set(alt.subarray(0, 12));
+                mesh.geometry.attributes.position.array = neu.subarray(0, 12);
+                const h1 = AR._wasserNetzHoehe(netzFn.call(shim, 0, 0), 5, 5);
+                return { h0, h1 };
+            };
+            if (typeof r._wasserNetz !== "function") fail("F7: _wasserNetz existiert nicht");
+            else {
+                const f7 = runNetz(r._wasserNetz);
+                o.netz = f7;
+                if (!(f7.h0 === 8 && f7.h1 === 8))
+                    fail(`F7: das gezeichnete Wasser nach dem Verdichten des Satzes ${f7.h1} statt ${f7.h0} (Soll 8)`);
+                // KONSUM: `_nassAt` liest das gezeichnete Wasser über `_wasserBildAt` → `_wasserNetz`.
+                if (!/_wasserBildAt/.test(String(r._nassAt)) || !/_wasserNetz/.test(String(r._wasserBildAt)))
+                    fail("F7: _nassAt liest das Netz nicht (über _wasserBildAt)");
+                const broken7 = patchFn(
+                    r._wasserNetz,
+                    "_wasserNetz",
+                    "pos = Float32Array.from(quelle.geometry.attributes.position.array);",
+                    "pos = quelle.geometry.attributes.position.array;"
+                );
+                if (!broken7) fail("F7-Selbsttest: Kopie-Marker nicht in der Quelle (Fix fehlt?)");
+                else {
+                    const b7 = runNetz(broken7);
+                    o.netzBroken = b7.h1;
+                    if (b7.h1 === 8)
+                        fail("F7-Selbsttest: mit dem gehaltenen View blieb das Netz richtig — Linse blind");
+                }
+            }
             return o;
         });
     } catch (e) {
@@ -568,14 +629,17 @@ const server = http.createServer((req, res) => {
     console.log(
         `F6 geleerte Spalte: Grube=${out.leer ? out.leer.grube : "?"} m (Soll < 0,05); Selbsttest-Grube=${out.leerBroken} m`
     );
+    console.log(
+        `F7 Netz nach dem Verdichten: ${out.netz ? `${out.netz.h0} → ${out.netz.h1}` : "?"} (Soll 8 → 8); Selbsttest=${out.netzBroken}`
+    );
     if (out.fails.length) {
         console.log(`\nROT — ${out.fails.length} Fail(s):`);
         for (const f of out.fails) console.log("  ✗ " + f);
         process.exit(1);
     }
     console.log(
-        "\nGRÜN — alle 6 Fixtures + Selbst-Tests OK (F1 Höhen-Gate · F2 Rim-Wand · F3 Verdunstung · F4 Stau-Qualifikation · " +
-            "F5 Ruhe-Fixpunkt · F6 geleerte Spalte)."
+        "\nGRÜN — alle 7 Fixtures + Selbst-Tests OK (F1 Höhen-Gate · F2 Rim-Wand · F3 Verdunstung · F4 Stau-Qualifikation · " +
+            "F5 Ruhe-Fixpunkt · F6 geleerte Spalte · F7 Netz trägt seine Bytes)."
     );
     process.exit(0);
 })();

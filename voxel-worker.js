@@ -1120,8 +1120,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             let ruht = L > -Infinity && top === L;
             if (dach) {
                 const floodRel = (sc.floodTopJ + 1) * step;
-                const liveRel = live < 0 ? 0 : live * step;
-                let d = liveRel - floodRel;
+                let d = live * step - floodRel; // live ≥ 0 (Doku im Main)
                 if (d > -0.05 && d < 0.05) d = 0;
                 if (d !== 0) ruht = false;
                 top += Math.max(-14, Math.min(4, d));
