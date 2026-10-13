@@ -27,7 +27,8 @@
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
 //   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,05
-//             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
+//             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs) — am Hang der Welt UND an
+//             der festen Rampe der Prüfbühne (K16-Q, S2 aus spec/pruefbuehne/stationen.json, der zweite Lauf: `hangOrt`)
 //   ferngang  (Welle LF) laufende Hirsche in der Grobstufen-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
 //             in ≥ 95 % der laufenden Takte (nie ein Standbild, nie eingefrorene Knochen)
 "use strict";
@@ -2344,41 +2345,50 @@ async function kreaturProben(r, T, opts) {
             );
         }
         const h = (x, z) => r.getTerrainHeightAt(x, z);
-        // der Hang: 20–30° über 6 m eben (die Fall-Linie trägt die Neigung, quer kaum Krümmung), kein Bau und kein Wasser
+        // der Hang an (x, z): seine Neigung im Band [lo, hi] über 6 m eben (die Fall-Linie trägt die Neigung, quer kaum
+        // Krümmung), kein Bau und kein Wasser in der Gasse des Laufs — sonst der Grund, der ihn verwirft
+        const hangAn = (x, z, lo, hi) => {
+            if (!r._landAt(x, z)) return { grund: "kein Land" };
+            const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
+                gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
+            const g = Math.hypot(gx, gz);
+            const grad0 = (Math.atan(g) * 180) / Math.PI;
+            if (!(grad0 >= lo && grad0 <= hi)) return { grund: `Neigung ${grad0.toFixed(1)}° außerhalb ${lo}–${hi}°` };
+            const ux = gx / g,
+                uz = gz / g; // bergauf
+            for (const t of [-3, -1.5, 1.5, 3])
+                for (const o of [-3, 3]) {
+                    const px = x + ux * t - uz * o,
+                        pz = z + uz * t + ux * o;
+                    if (Math.abs(h(px, pz) - (h(x, z) + g * t)) > 0.5) return { grund: "nicht eben über 6 m" };
+                }
+            // die Gasse des Laufs: längs der Höhenlinie −4 … +10 m (Stand ±1,6 m, der Spieler geht 7 m und zurück, die
+            // Folger hinter ihm), quer von 2 m talab bis 6 m bergauf (der Spieler geht 4 m über dem Hang-Punkt)
+            for (let l = -4; l <= 10; l += 1.5)
+                for (let o = -2; o <= 6; o += 2) {
+                    const px = x - uz * l + ux * o,
+                        pz = z + ux * l + uz * o;
+                    if (!r._landAt(px, pz) || huelleNah(px, pz, h(px, pz), 1.5))
+                        return { grund: `die Gasse ist nicht frei (${px.toFixed(1)}|${pz.toFixed(1)})` };
+                }
+            return { hang: { x, z, ux, uz, grad: grad0 } };
+        };
+        // DER ORT (K16-Q): in der Welt der erste Hang von 20–30° nahe dem Spieler — welcher, entscheidet die Welt (im
+        // K16-Gelände fand die CI 22,2°, lokal fand dieselbe Suche je nach Bestand 22,2° oder 25,5°); auf der Prüfbühne die
+        // feste Rampe ihrer Station (`opts.hangOrt`, spec/pruefbuehne/stationen.json): ihre Neigung ≤ 1° an der Spec, sonst
+        // trägt die Bühne nicht, was die Probe misst — ein Fehler, nie ein Ausweichen auf einen anderen Hang
+        const ort = (opts && opts.hangOrt) || null;
         let hang = null;
+        if (ort) {
+            const a = hangAn(ort.x, ort.z, ort.winkel - 1, ort.winkel + 1);
+            if (!a.hang) return { fehler: `die Rampe ${ort.id} (${ort.winkel}°) trägt den Querhang nicht: ${a.grund}` };
+            hang = a.hang;
+        }
         for (let ring = 1; ring < 70 && !hang; ring++) {
             const n = ring * 8;
             for (let q = 0; q < n && !hang; q++) {
                 const a = (q / n) * Math.PI * 2;
-                const x = P0.x + Math.cos(a) * ring * 5,
-                    z = P0.z + Math.sin(a) * ring * 5;
-                if (!r._landAt(x, z)) continue;
-                const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
-                    gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
-                const g = Math.hypot(gx, gz);
-                const grad0 = (Math.atan(g) * 180) / Math.PI;
-                if (grad0 < 20 || grad0 > 30) continue;
-                const ux = gx / g,
-                    uz = gz / g; // bergauf
-                let eben = true;
-                for (const t of [-3, -1.5, 1.5, 3])
-                    for (const o of [-3, 3]) {
-                        const px = x + ux * t - uz * o,
-                            pz = z + uz * t + ux * o;
-                        if (Math.abs(h(px, pz) - (h(x, z) + g * t)) > 0.5) eben = false;
-                    }
-                if (!eben) continue;
-                // die Gasse des Laufs: längs der Höhenlinie −4 … +10 m (Stand ±1,6 m, der Spieler geht 7 m und zurück, die
-                // Folger hinter ihm), quer von 2 m talab bis 6 m bergauf (der Spieler geht 4 m über dem Hang-Punkt)
-                let gasseFrei = true;
-                for (let l = -4; l <= 10 && gasseFrei; l += 1.5)
-                    for (let o = -2; o <= 6 && gasseFrei; o += 2) {
-                        const px = x - uz * l + ux * o,
-                            pz = z + ux * l + uz * o;
-                        if (!r._landAt(px, pz) || huelleNah(px, pz, h(px, pz), 1.5)) gasseFrei = false;
-                    }
-                if (!gasseFrei) continue;
-                hang = { x, z, ux, uz, grad: grad0 };
+                hang = hangAn(P0.x + Math.cos(a) * ring * 5, P0.z + Math.sin(a) * ring * 5, 20, 30).hang || null;
             }
         }
         if (!hang) return { fehler: "kein Hang von 20–30° ohne Bau nahe dem Spieler" };
@@ -2491,6 +2501,7 @@ async function kreaturProben(r, T, opts) {
             return weg > 0.05 ? +(fuss / weg).toFixed(3) : null;
         });
         return {
+            ort: ort ? ort.id : "welt",
             hangGrad: +hang.grad.toFixed(1),
             stand: { wolf: stand[0], hirsch: stand[1] },
             schlupf: { wolf: schlupf[0], hirsch: schlupf[1] },
@@ -3021,19 +3032,30 @@ function urteil(name, z) {
         }
     }
     if (name === "querhang") {
-        for (const [wer, a] of [
-            ["Wolf", z.stand.wolf],
-            ["Hirsch", z.stand.hirsch],
-        ])
-            soll(
-                a.lotMaxGrad <= 10,
-                `Bein-Lot am Querhang (${z.hangGrad}°): ${wer} ${a.lotMaxGrad}° (Soll ≤ 10°; der Leib rollt ${a.rollGrad}°)`
-            );
-        for (const [wer, sl] of [
-            ["Wolf", z.schlupf.wolf],
-            ["Hirsch", z.schlupf.hirsch],
-        ])
-            soll(sl !== null && sl <= 0.05, `Stand-Schlupf am Querhang: ${wer} ${sl} (Soll ≤ 0,05, Ratsche K07)`);
+        // ZWEI ORTE (K16-Q): der Hang, den die Welt nahe dem Spieler trägt, UND die feste Rampe der Prüfbühne (z.rampe, der
+        // Lauf auf der Bühne) — das Urteil hängt nie am Zufall der Welt; fehlt die Rampe, ist die Probe nicht gemessen
+        const orte = [["am Querhang", z]];
+        if (!z.rampe) soll(false, "die Rampe der Prüfbühne ist nicht gemessen (der Querhang hängt am Zufall der Welt)");
+        else if (z.rampe.fehler) soll(false, z.rampe.fehler);
+        else orte.push([`an der Rampe ${z.rampe.ort}`, z.rampe]);
+        for (const [wo, Z] of orte)
+            for (const [wer, a] of [
+                ["Wolf", Z.stand.wolf],
+                ["Hirsch", Z.stand.hirsch],
+            ])
+                soll(
+                    a.lotMaxGrad <= 10,
+                    `Bein-Lot ${wo} (${Z.hangGrad}°): ${wer} ${a.lotMaxGrad}° (Soll ≤ 10°; der Leib rollt ${a.rollGrad}°)`
+                );
+        for (const [wo, Z] of orte)
+            for (const [wer, sl] of [
+                ["Wolf", Z.schlupf.wolf],
+                ["Hirsch", Z.schlupf.hirsch],
+            ])
+                soll(
+                    sl !== null && sl <= 0.05,
+                    `Stand-Schlupf ${wo} (${Z.hangGrad}°): ${wer} ${sl} (Soll ≤ 0,05, Ratsche K07)`
+                );
     }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
@@ -3094,9 +3116,10 @@ const TAETER = {
     ],
     rudel: [["rudel", /umstellt nicht/]],
     sockel: [["sockel", /steht im Sockel/]],
+    // je Täter nennen BEIDE Orte ihn: der Hang der Welt und die Rampe der Prüfbühne
     querhang: [
-        ["querhang", /Bein-Lot am Querhang/],
-        ["querhang-gleiten", /Stand-Schlupf am Querhang/],
+        ["querhang", /Bein-Lot am Querhang[\s\S]*Bein-Lot an der Rampe/],
+        ["querhang-gleiten", /Stand-Schlupf am Querhang[\s\S]*Stand-Schlupf an der Rampe/],
     ],
     ferngang: [
         ["ferngang", /ferner Gang gleitet/],
