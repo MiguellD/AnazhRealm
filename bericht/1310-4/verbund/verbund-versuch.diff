@@ -1,0 +1,275 @@
+diff --git a/anazhRealm.js b/anazhRealm.js
+index 32157180..d08deae8 100644
+--- a/anazhRealm.js
++++ b/anazhRealm.js
+@@ -54607,6 +54607,10 @@ class AnazhRealm {
+             // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
+             // Fern-Tick WEICH statt zu springen. Tore (gebacken zu): Start 0.
+             rec._fluegelWinkel = rec._fluegelStart || 0;
++            // DER FLÜGEL-VERBUND (1310-4): eine wiederverwendete Geometrie steht noch in der alten Lage — sie folgt dem
++            // Start-Winkel (sonst hielte das Einschwingen sie offen)
++            for (const f of rec._fluegel)
++                if (f.tuer.verbund && f.g.mesh) this._fluegelVerbundDrehen(f.g, f.tuer, rec._fluegelWinkel);
+         }
+         if (!rec._fluegel || !rec._fluegel.length) return;
+         // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
+@@ -54623,6 +54627,10 @@ class AnazhRealm {
+         const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
+         for (const f of rec._fluegel) {
+             const t = f.tuer;
++            if (t.verbund) {
++                if (f.g.mesh) this._fluegelVerbundDrehen(f.g, t, neu);
++                continue;
++            }
+             // Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu:
+             // fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut.
+             const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
+@@ -59328,6 +59336,11 @@ class AnazhRealm {
+             // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
+             this._archBundleSceneRemove(g.mesh);
+             this._instanzAbschied(g.mesh);
++            // DER FLÜGEL-VERBUND (1310-4): Lage und Normale gehören der Gruppe des Eintrags allein (der Rest der Vorlage)
++            if (g.tuer && g.tuer.eintrag) {
++                this._gpuAbschied(g.tuer.pos);
++                this._gpuAbschied(g.tuer.nor);
++            }
+             // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
+             // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
+             // (`_evicted`), gibt jetzt der letzte Halter ihre geteilte Geometrie frei (deferred).
+@@ -72018,7 +72031,12 @@ class AnazhRealm {
+         // 256-m-Region brachte keinen Cull (ihre Kugel R·√½ + 140 m schneidet das Frustum praktisch immer), sie
+         // vervielfachte nur die Gruppen je Leaf (@p:).
+         for (let i = 0; i < flat.leaves.length; i++) {
+-            const leaf = flat.leaves[i];
++            // DER FLÜGEL-VERBUND (1310-4): ein verbundenes Flügel-Leaf zeichnet je Eintrag in SEINER Gruppe (die Drehung
++            // lebt in seiner Geometrie, `_fluegelVerbundFuer`).
++            const leaf =
++                flat.leaves[i].tuer && flat.leaves[i].tuer.verbund
++                    ? this._fluegelVerbundFuer(entry, flat.leaves[i])
++                    : flat.leaves[i];
+             // Der Leaf-Schluessel ist normal der Array-Index; ein Leaf DARF ihn ueberschreiben
+             // (leaf.leafKey) — so bekommt Foundry-Geometrie je Art:Variante:LOD:Teil eine EIGENE
+             // InstancedMesh-Gruppe im BESTEHENDEN HISM (Vielfalt + LOD + Instancing, kein Parallelpfad).
+@@ -79018,6 +79036,7 @@ class AnazhRealm {
+                 });
+             }
+             this._foundryFlatVerschmelzen(group, leaves);
++            this._foundryFluegelVerbund(group, leaves);
+             // DIE RÄDER (Welle L, Q13 F-D8): ein Rad-Leaf (die Teile der Ecke 0, nabenrelativ, je Dreh-Klasse
+             // verschmolzen) steht je Ecke als EIGENE Instanz derselben Gruppe (derselbe leafKey): Ruhe-Lage =
+             // Welt-Skala · Nabe(Ecke) · Drehung π für die Gegenseite. Der Ritt schreibt ihre Matrix je Schritt neu
+@@ -79464,7 +79483,7 @@ class AnazhRealm {
+     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
+     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
+     // und Region. Teile gleichen Materials und gleicher Attribut-Form liegen im selben Template-Raum (localMatrix
+-    // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel bleiben einzeln (eigene Scharnier-Matrix), schwere
++    // je Flat geteilt) → EINE Geometrie, ein Leaf. Tür-Flügel verbinden sich nach ihrem eigenen Gesetz (`_foundryFluegelVerbund`), schwere
+     // Teile (Baum-L0 — Konifere ~143k je Teil —, über phyto-core `BUDGET_GESETZ.verschmelzVerts` zusammen) auch —
+     // die Kopie verdoppelte ihren Speicher für einen Draw. WAS verschmilzt, sagt das Budget-Gesetz: die Sippe des Teils
+     // (phyto-core `budgetSippe`, am Mesh gestempelt) — dieselbe Regel, mit der es die Draws zählt (`budgetSippen`);
+@@ -79503,6 +79522,157 @@ class AnazhRealm {
+             if (f && Number.isFinite(f.cacheBytes)) f.cacheBytes += bytes;
+         }
+     }
++    // DER FLÜGEL-VERBUND (1310-4, OMEN): die Tür-Flügel eines Baus (je Flügel × Stoff ein Leaf — `budgetSippe` ist für
++    // `tuer` null) zeichneten je Flügel einen Befehl: am Genesis-Ring 40 Gruppen der 122 Hauptbild-Befehle, in EINER Sitzung
++    // ohne sie CPU-Takt p95 −0,8 ms. Die Flügel EINES Stoffs (und Wurf-Rechts) werden EIN Leaf: die Geometrie hängt
++    // aneinander (`_geoVerbinden`, derselbe Template-Raum), je Ecke der Index ihres Flügels (`ecke`), je Flügel sein
++    // Scharnier (`fluegel`). `leaf.tuer` bleibt der Schwenk-Träger; die Drehung lebt in der Geometrie des Eintrags
++    // (`_fluegelVerbundFuer`, `_fluegelVerbundDrehen`), nie mehr in einer Instanz-Matrix je Flügel. Die verbundene Geometrie
++    // gehört der Cache-Gruppe (`_eigen`), ihre Bytes laufen mit.
++    _foundryFluegelVerbund(group, leaves) {
++        const nach = new Map();
++        for (let i = 0; i < leaves.length; i++) {
++            const lf = leaves[i];
++            if (!lf.tuer || lf.tuer.verbund || lf.rad || lf.teil) continue;
++            const k = lf.mat.uuid + "|" + (lf.castShadow ? 1 : 0) + "|" + (lf.teilWirft ? 1 : 0);
++            if (!nach.has(k)) nach.set(k, []);
++            nach.get(k).push(i);
++        }
++        const weg = new Set();
++        let bytes = 0;
++        for (const idx of nach.values()) {
++            if (idx.length < 2) continue;
++            const geo = AnazhRealm._geoVerbinden(idx.map((i) => leaves[i].geom));
++            if (!geo)
++                throw new Error(
++                    "FLÜGEL-VERBUND: die Flügel von " + leaves[idx[0]].leafKey + " tragen verschiedene Attribut-Formen"
++                );
++            const ecke = new Uint8Array(geo.attributes.position.count);
++            let o = 0;
++            idx.forEach((i, w) => {
++                const n = leaves[i].geom.attributes.position.count;
++                ecke.fill(w, o, o + n);
++                o += n;
++            });
++            const erst = leaves[idx[0]];
++            leaves[idx[0]] = Object.assign({}, erst, {
++                geom: geo,
++                _eigen: true,
++                leafKey: erst.leafKey + ":fv",
++                tuer: { verbund: true, ecke, fluegel: idx.map((i) => leaves[i].tuer) },
++            });
++            for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
++            for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
++            if (geo.index) bytes += geo.index.array.byteLength;
++        }
++        if (!weg.size) return;
++        for (let i = leaves.length - 1; i >= 0; i--) if (weg.has(i)) leaves.splice(i, 1);
++        const f = this._foundry;
++        if (Number.isFinite(group._cacheBytes)) {
++            group._cacheBytes += bytes;
++            if (f && Number.isFinite(f.cacheBytes)) f.cacheBytes += bytes;
++        }
++    }
++
++    // Das Flügel-Leaf EINES Eintrags (seine Flügel stehen anders als die eines Zwillings-Tors): eine eigene Gruppe, deren
++    // Geometrie nur Lage und Normale selbst trägt — Index, Farbe, UV und Stufe teilt sie mit der Vorlage (die Fassade-Regel).
++    // Die Vorlage bleibt die Ruhe-Lage der Drehung. Lebt die Gruppe nicht mehr (der Reaper nahm sie), entsteht eine frische.
++    _fluegelVerbundFuer(entry, leaf) {
++        // ein Gedächtnis des Laufs, nie des Spielstands (eine JSON-Kopie des Eintrags trägt hier ein leeres Objekt)
++        let m = entry._fluegelVerbund;
++        if (!(m instanceof Map)) m = entry._fluegelVerbund = new Map();
++        let e = m.get(leaf.leafKey);
++        const groups = this.state.archInstanceGroups;
++        if (!e || e.tuer.quelle !== leaf.geom || !(groups && groups.has(e.leafKey))) {
++            const q = leaf.geom;
++            const geo = new THREE.BufferGeometry();
++            if (q.index) geo.setIndex(q.index);
++            for (const k in q.attributes) geo.setAttribute(k, q.attributes[k]);
++            const pos = new THREE.BufferAttribute(Float32Array.from(q.attributes.position.array), 3);
++            geo.setAttribute("position", pos);
++            const nor = q.attributes.normal
++                ? new THREE.BufferAttribute(Float32Array.from(q.attributes.normal.array), 3)
++                : null;
++            if (nor) geo.setAttribute("normal", nor);
++            geo.boundingSphere = q.boundingSphere ? q.boundingSphere.clone() : null;
++            geo.boundingBox = q.boundingBox ? q.boundingBox.clone() : null;
++            geo.setDrawRange(q.drawRange.start, q.drawRange.count);
++            this._fluegelVerbundNr = (this._fluegelVerbundNr || 0) + 1;
++            e = Object.assign({}, leaf, {
++                geom: geo,
++                _eigen: false,
++                leafKey: leaf.leafKey + "@" + this._fluegelVerbundNr,
++                tuer: Object.assign({}, leaf.tuer, { eintrag: true, quelle: q, pos, nor }),
++            });
++            m.set(leaf.leafKey, e);
++        }
++        return e;
++    }
++
++    // Die Flügel eines Verbunds drehen in SEINER Geometrie (Template-Raum, vor Welt-Skala und Eintrags-Matrix): je Ecke um
++    // das Scharnier ihres Flügels (hx, zf) um die Hochachse — dieselbe Rechnung wie T(h)·R_y(w)·T(−h) je Flügel, derselbe
++    // Winkel wie `_tickTorFluegel`. Lage und Normale aus der Vorlage (der Ruhe-Lage), nie aus der eigenen letzten Lage; die
++    // Höhe (y) dreht nie mit — sie steht seit der Kopie. Je Flügel liegen Scharnier, Kosinus und Sinus in kleinen Feldern, der
++    // Ecken-Lauf greift nur über Indizes (er trägt die Kosten, solange ein Tor schwingt — beim Gehen am Ring jeden Takt).
++    _fluegelVerbundDrehen(g, t, neu) {
++        const geo = g.mesh.geometry;
++        const gz = AnazhRealm._tuerOffenRad() || 1;
++        const n = t.fluegel.length;
++        if (!t.hx) {
++            t.hx = new Float64Array(n);
++            t.hz = new Float64Array(n);
++            t.cs = new Float64Array(n);
++            t.sn = new Float64Array(n);
++            for (let w = 0; w < n; w++) {
++                t.hx[w] = t.fluegel[w].hx || 0;
++                t.hz[w] = t.fluegel[w].zf || 0;
++            }
++        }
++        const { hx, hz, cs, sn } = t;
++        for (let w = 0; w < n; w++) {
++            const fl = t.fluegel[w];
++            const sign = (fl.seite || 1) * (fl.zf >= 0 ? 1 : -1);
++            const a = Number.isFinite(fl.offen) && fl.offen !== 0 ? (neu / gz - 1) * fl.offen : sign * neu;
++            cs[w] = Math.cos(a);
++            sn[w] = Math.sin(a);
++        }
++        const ecke = t.ecke;
++        const nv = ecke.length;
++        // R_y(a) wie Matrix4.makeRotationY: x' = x·c + z·s, z' = −x·s + z·c — um das Scharnier (hx, hz)
++        const bp = t.quelle.attributes.position.array;
++        const pa = t.pos.array;
++        for (let v = 0, k = 0; v < nv; v++, k += 3) {
++            const w = ecke[v];
++            const c = cs[w];
++            const s = sn[w];
++            const ox = hx[w];
++            const oz = hz[w];
++            const x = bp[k] - ox;
++            const z = bp[k + 2] - oz;
++            pa[k] = x * c + z * s + ox;
++            pa[k + 2] = z * c - x * s + oz;
++        }
++        t.pos.needsUpdate = true;
++        if (t.nor) {
++            const bn = t.quelle.attributes.normal.array;
++            const na = t.nor.array;
++            for (let v = 0, k = 0; v < nv; v++, k += 3) {
++                const w = ecke[v];
++                const c = cs[w];
++                const s = sn[w];
++                const x = bn[k];
++                const z = bn[k + 2];
++                na[k] = x * c + z * s;
++                na[k + 2] = z * c - x * s;
++            }
++            t.nor.needsUpdate = true;
++        }
++        // die Hülle folgt der Drehung (Raycast): Fassade und Senke rechnen sie beim nächsten Leser neu
++        geo.boundingSphere = null;
++        geo.boundingBox = null;
++        g.mesh.boundingSphere = null;
++    }
++
+     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
+     // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
+     static _geoVerbinden(geoms) {
+diff --git a/scripts/diag-portal-membran.cjs b/scripts/diag-portal-membran.cjs
+index 03110369..54ce44e5 100644
+--- a/scripts/diag-portal-membran.cjs
++++ b/scripts/diag-portal-membran.cjs
+@@ -319,6 +319,26 @@ async function blickStufe(check) {
+             geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
+             winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,
+         };
++        // DER FLÜGEL-VERBUND (1310-4): die Flügel EINES Stoffs zeichnen in EINEM Zug, und der Zug dreht wirklich — die
++        // gezeichnete Lage weicht von der Vorlage (der Ruhe-Lage), nicht nur das Winkel-Gedächtnis.
++        if (recF && recF._fluegel) {
++            let fluegel = 0;
++            let verbund = 0;
++            let versatz = 0;
++            for (const f of recF._fluegel) {
++                const t = f.tuer;
++                if (!t.verbund) {
++                    fluegel++;
++                    continue;
++                }
++                verbund++;
++                fluegel += t.fluegel.length;
++                const a = f.g.mesh.geometry.attributes.position.array;
++                const b = t.quelle.attributes.position.array;
++                for (let i = 0; i < a.length; i++) versatz = Math.max(versatz, Math.abs(a[i] - b[i]));
++            }
++            Object.assign(res.f, { zuege: recF._fluegel.length, fluegel, verbund, versatz: +versatz.toFixed(3) });
++        }
+ 
+         // ── W: Hindurchgehen (Ebenen-Kreuzung in der Apertur → enterPortal) ──
+         let entered = 0;
+@@ -395,6 +415,16 @@ async function blickStufe(check) {
+             `anzahl=${out.f.anzahl}`
+         );
+         check(`F: die Flügel ÖFFNEN sich dem Reisenden (Winkel ${out.f.winkel})`, out.f.geoeffnet === true);
++        check(
++            `F: die Flügel eines Stoffs zeichnen in EINEM Zug (${out.f.zuege} Züge für ${out.f.fluegel} Flügel, Verbund ${out.f.verbund})`,
++            out.f.verbund > 0 && out.f.zuege < out.f.fluegel,
++            `zuege=${out.f.zuege} fluegel=${out.f.fluegel} verbund=${out.f.verbund}`
++        );
++        check(
++            `F: der Verbund dreht in seiner Geometrie (größter Versatz zur Ruhe-Lage ${out.f.versatz})`,
++            out.f.versatz > 0.05,
++            `versatz=${out.f.versatz}`
++        );
+     } else check("F: Flügel-Block erreicht", false);
+     if (out.w) {
+         check("W: Hindurchgehen durch die Apertur feuert enterPortal (genau 1×)", out.w.feuert === true);

@@ -1,0 +1,368 @@
+{
+ "vramMB": 127.3,
+ "pufferMB": 38.3,
+ "texturenMB": 89,
+ "gcMB": 0,
+ "puffer": {
+  "mb": 38.23,
+  "halter": {
+   "szene": 38.23,
+   "bild": 0
+  },
+  "klassen": [
+   {
+    "klasse": "szene:bodenSatz",
+    "mb": 17.25,
+    "n": 7
+   },
+   {
+    "klasse": "szene:bauSatz",
+    "mb": 2.83,
+    "n": 42
+   },
+   {
+    "klasse": "szene:spieler",
+    "mb": 1.67,
+    "n": 36
+   },
+   {
+    "klasse": "szene:f:verkalkt:L0",
+    "mb": 1.46,
+    "n": 72
+   },
+   {
+    "klasse": "szene:formationenSatz",
+    "mb": 1.44,
+    "n": 12
+   },
+   {
+    "klasse": "szene:f:drachentor:L0",
+    "mb": 1.43,
+    "n": 72
+   },
+   {
+    "klasse": "szene:f:maurentor:L0",
+    "mb": 1.29,
+    "n": 72
+   },
+   {
+    "klasse": "szene:streuSatz",
+    "mb": 1.25,
+    "n": 15
+   },
+   {
+    "klasse": "szene:f:kathedrale:L0",
+    "mb": 0.87,
+    "n": 40
+   },
+   {
+    "klasse": "szene:f:gt:L0",
+    "mb": 0.84,
+    "n": 56
+   },
+   {
+    "klasse": "szene:f:maschine:L0",
+    "mb": 0.78,
+    "n": 64
+   },
+   {
+    "klasse": "szene:wasserSatz",
+    "mb": 0.57,
+    "n": 6
+   },
+   {
+    "klasse": "szene:fern-ring",
+    "mb": 0.56,
+    "n": 15
+   },
+   {
+    "klasse": "szene:f:ruine:L0",
+    "mb": 0.53,
+    "n": 40
+   },
+   {
+    "klasse": "szene:portal-membran",
+    "mb": 0.43,
+    "n": 18
+   },
+   {
+    "klasse": "szene:f:birke:L1",
+    "mb": 0.33,
+    "n": 54
+   },
+   {
+    "klasse": "szene:f:fichte:L1",
+    "mb": 0.31,
+    "n": 54
+   },
+   {
+    "klasse": "szene:f:tanne:L1",
+    "mb": 0.29,
+    "n": 54
+   },
+   {
+    "klasse": "szene:f:verkalkt:L3",
+    "mb": 0.28,
+    "n": 9
+   },
+   {
+    "klasse": "szene:f:fichte:L0",
+    "mb": 0.26,
+    "n": 18
+   },
+   {
+    "klasse": "szene:leer:f:fichte:L0",
+    "mb": 0.25,
+    "n": 18
+   },
+   {
+    "klasse": "szene:f:tanne:L0",
+    "mb": 0.24,
+    "n": 18
+   },
+   {
+    "klasse": "szene:f:maurentor:L3",
+    "mb": 0.21,
+    "n": 9
+   },
+   {
+    "klasse": "szene:f:geisttor:L0",
+    "mb": 0.21,
+    "n": 40
+   },
+   {
+    "klasse": "szene:leer:f:maurentor:L0",
+    "mb": 0.21,
+    "n": 32
+   },
+   {
+    "klasse": "szene:leer:f:kathedrale:L0",
+    "mb": 0.21,
+    "n": 16
+   },
+   {
+    "klasse": "szene:dsl-insel",
+    "mb": 0.21,
+    "n": 12
+   },
+   {
+    "klasse": "szene:nahWiese:L1",
+    "mb": 0.19,
+    "n": 16
+   },
+   {
+    "klasse": "szene:leer:f:ruine:L0",
+    "mb": 0.18,
+    "n": 16
+   },
+   {
+    "klasse": "szene:fimp:atlas:L2",
+    "mb": 0.18,
+    "n": 6
+   },
+   {
+    "klasse": "szene:leer:f:drachentor:L0",
+    "mb": 0.17,
+    "n": 32
+   },
+   {
+    "klasse": "szene:leer:f:verkalkt:L0",
+    "mb": 0.17,
+    "n": 32
+   },
+   {
+    "klasse": "szene:leer:f:maschine:L0",
+    "mb": 0.16,
+    "n": 16
+   },
+   {
+    "klasse": "szene:f:eiche:L1",
+    "mb": 0.12,
+    "n": 27
+   },
+   {
+    "klasse": "szene:f:ruine:L3",
+    "mb": 0.11,
+    "n": 9
+   },
+   {
+    "klasse": "szene:farWater",
+    "mb": 0.1,
+    "n": 6
+   },
+   {
+    "klasse": "szene:leer:f:geisttor:L0",
+    "mb": 0.09,
+    "n": 16
+   },
+   {
+    "klasse": "szene:f:maschine:L3",
+    "mb": 0.08,
+    "n": 9
+   },
+   {
+    "klasse": "szene:bauWurf",
+    "mb": 0.06,
+    "n": 7
+   },
+   {
+    "klasse": "szene:f:drachentor:L3",
+    "mb": 0.06,
+    "n": 9
+   }
+  ]
+ },
+ "gross": [
+  {
+   "k": "buf:szene:bodenSatz",
+   "mb": 17.25,
+   "n": 7
+  },
+  {
+   "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+   "mb": 15.82,
+   "n": 1
+  },
+  {
+   "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+   "mb": 15.82,
+   "n": 1
+  },
+  {
+   "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+   "mb": 8,
+   "n": 1
+  },
+  {
+   "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+   "mb": 8,
+   "n": 1
+  },
+  {
+   "k": "tex:output rg11b10ufloat 1920x1080x1",
+   "mb": 7.91,
+   "n": 1
+  },
+  {
+   "k": "tex:depth depth24plus 1920x1080x1",
+   "mb": 7.91,
+   "n": 1
+  },
+  {
+   "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x32",
+   "mb": 5.332,
+   "n": 1
+  },
+  {
+   "k": "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1",
+   "mb": 3.955,
+   "n": 1
+  },
+  {
+   "k": "tex:szene:tiefenabbild r32float 960x1080x1",
+   "mb": 3.955,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:bauSatz",
+   "mb": 2.832,
+   "n": 42
+  },
+  {
+   "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x32",
+   "mb": 2.664,
+   "n": 1
+  },
+  {
+   "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+   "mb": 2,
+   "n": 1
+  },
+  {
+   "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+   "mb": 2,
+   "n": 1
+  },
+  {
+   "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+   "mb": 1.875,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:spieler",
+   "mb": 1.675,
+   "n": 36
+  },
+  {
+   "k": "buf:szene:f:verkalkt:L0",
+   "mb": 1.458,
+   "n": 72
+  },
+  {
+   "k": "buf:szene:formationenSatz",
+   "mb": 1.437,
+   "n": 12
+  },
+  {
+   "k": "buf:szene:f:drachentor:L0",
+   "mb": 1.435,
+   "n": 72
+  },
+  {
+   "k": "buf:szene:f:maurentor:L0",
+   "mb": 1.287,
+   "n": 72
+  },
+  {
+   "k": "buf:szene:streuSatz",
+   "mb": 1.255,
+   "n": 15
+  },
+  {
+   "k": "buf:szene:f:kathedrale:L0",
+   "mb": 0.872,
+   "n": 40
+  },
+  {
+   "k": "buf:szene:f:gt:L0",
+   "mb": 0.839,
+   "n": 56
+  },
+  {
+   "k": "buf:szene:f:maschine:L0",
+   "mb": 0.781,
+   "n": 64
+  },
+  {
+   "k": "tex:rausch-atlas rgba8unorm 768x256x1",
+   "mb": 0.75,
+   "n": 1
+  },
+  {
+   "k": "tex:laub-cluster-atlas bc1-rgba-unorm-srgb 2048x512x1",
+   "mb": 0.667,
+   "n": 1
+  },
+  {
+   "k": "tex:PMREM.cubeUv rgba16float 336x128x1",
+   "mb": 0.656,
+   "n": 2
+  },
+  {
+   "k": "buf:szene:wasserSatz",
+   "mb": 0.571,
+   "n": 6
+  },
+  {
+   "k": "buf:szene:fern-ring",
+   "mb": 0.556,
+   "n": 15
+  },
+  {
+   "k": "buf:szene:f:ruine:L0",
+   "mb": 0.534,
+   "n": 40
+  }
+ ],
+ "ms": 487
+}

@@ -1,0 +1,35 @@
+Blick       Paar         MSSIM ganz  MSSIM Boden  |ΔLuma| Boden  Pixel >8 (%)  Farbton-Blöcke >6 (%)
+offen-drachentor Rauschen A       0.9995       0.9996           0.06          0.05                      0
+offen-drachentor Rauschen B       0.9995       0.9996           0.07          0.07                      0
+offen-drachentor A1↔B1            0.9995       0.9996           0.06          0.04                      0
+offen-drachentor A2↔B2            0.9993       0.9994           0.09          0.08                      0
+offen-drachentor A1↔B2            0.9997       0.9997           0.05          0.01                      0
+offen-drachentor A2↔B1            0.9996       0.9997           0.06          0.01                      0
+offen-schmiede Rauschen A       0.9957       0.9982           0.19          0.31                      0
+offen-schmiede Rauschen B       0.9956       0.9979            0.2          0.32                      0
+offen-schmiede A1↔B1            0.9948       0.9975           0.21          0.37                      0
+offen-schmiede A2↔B2            0.9954       0.9981           0.22          0.34                      0
+offen-schmiede A1↔B2            0.9955       0.9987           0.14          0.18                      0
+offen-schmiede A2↔B1            0.9955        0.998            0.2          0.31                      0
+zu-drachentor Rauschen A       0.9994       0.9997           0.05          0.02                      0
+zu-drachentor Rauschen B       0.9993       0.9996           0.06          0.03                      0
+zu-drachentor A1↔B1            0.9993       0.9996           0.06          0.03                      0
+zu-drachentor A2↔B2            0.9994       0.9996           0.06          0.02                      0
+zu-drachentor A1↔B2            0.9996       0.9998           0.03             0                      0
+zu-drachentor A2↔B1            0.9993       0.9996           0.06          0.03                      0
+zu-schmiede Rauschen A       0.9954       0.9975           0.16          0.25                   0.02
+zu-schmiede Rauschen B       0.9954       0.9982           0.17          0.25                      0
+zu-schmiede A1↔B1            0.9948       0.9976           0.19          0.31                      0
+zu-schmiede A2↔B2            0.9949       0.9976           0.18          0.29                      0
+zu-schmiede A1↔B2            0.9948       0.9982           0.14          0.18                      0
+zu-schmiede A2↔B1            0.9957       0.9981           0.16          0.22                      0
+
+Mittel je Bild (Luma 0–255 · R−G · B−G), Seiten aus1 · aus2 · an1 · an2; ΔB−A = Mittel B − Mittel A
+offen-drachentor 122.8/3.0/-17.1  122.8/3.0/-17.1  122.8/3.0/-17.1  122.8/3.0/-17.1   ΔLuma 0.00 (Rausch 0.00/0.00)  ΔB−G 0.00
+offen-schmiede 97.2/-6.2/-10.7  97.2/-6.2/-10.7  97.2/-6.2/-10.7  97.2/-6.2/-10.7   ΔLuma 0.02 (Rausch 0.01/0.00)  ΔB−G 0.00
+zu-drachentor 114.5/2.5/-15.6  114.5/2.5/-15.6  114.5/2.5/-15.6  114.5/2.5/-15.6   ΔLuma 0.00 (Rausch 0.00/0.00)  ΔB−G 0.00
+zu-schmiede 95.7/-6.3/-10.7  95.7/-6.3/-10.7  95.7/-6.3/-10.7  95.7/-6.3/-10.7   ΔLuma -0.01 (Rausch 0.00/0.00)  ΔB−G 0.00
+
+Ruhe (mittlere |ΔLuma| zweier Aufnahmen nacheinander, ganzes Bild)
+
+GRÜN — jedes Quer-Paar liegt im Rausch-Boden zweier Boots desselben Stands

@@ -1,0 +1,11 @@
+21:10:42 puls (ci-lokal) EXIT=0 · 18 grün · 
+21:11:24 gate:tor-fern EXIT=0 42 s · ✅ GRÜN — die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile oh
+21:12:14 gate:foundry-crossfade EXIT=0 50 s · ✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Parti
+21:12:21 gate:profiband EXIT=0 7 s · ✅ SELBST-TEST: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb;
+21:12:55 gate:portal-membran EXIT=0 34 s · ✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen
+21:13:18 gate:portal-gestalt EXIT=0 23 s · ✅ GRÜN — W-A3 STEHT: die 7 welt_-Portale (dynamisch aus der Quelle) tragen ihre porta-Gestalt als DATEN-Zeile, der 
+21:13:58 gate:freie-slots EXIT=0 40 s · ✅ gate:freie-slots GRÜN — nach 7 Umzügen ist jede Instanz-Senke dicht: kein freier Slot, keine sichtbare leere Hü
+21:14:52 gate:haus-fern EXIT=0 54 s · ✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, j
+21:23:14 gate:haus-welt EXIT=0 502 s · 
+21:23:45 playtest:fast EXIT=0 31 s · Laufzeit: 29s · 22 ✅ · 0 ❌
+21:23:45 WAENDE ENDE

@@ -1,0 +1,10 @@
+G\lauf-1-an.txt        an   cpu 23 29.5 33.3 fps 39.2 befehle 146 haupt 100
+G\lauf-2-aus.txt       aus  cpu 20.6 27.9 31.5 fps 42.6 befehle 174 haupt 129
+G\lauf-3-aus.txt       aus  cpu 20.4 27.2 30 fps 42.8 befehle 173 haupt 127
+G\lauf-4-an.txt        an   cpu 23.9 30.7 33.7 fps 38 befehle 147 haupt 102
+G\lauf-5-an.txt        an   cpu 23.6 30.8 33.5 fps 38.2 befehle 145 haupt 100
+G\lauf-6-aus.txt       aus  cpu 20.4 27 29.2 fps 43 befehle 173 haupt 125
+G\lauf-7-aus.txt       aus  cpu 20.6 27 29.5 fps 43.1 befehle 174 haupt 128
+G\lauf-8-an.txt        an   cpu 22.4 29.8 32.8 fps 40.5 befehle 145 haupt 99
+an   n=4  p50 23.23 [22.4–23.9]  p95 30.20 [29.5–30.8]  p99 33.33 [32.8–33.7]  fps 38.98 [38–40.5]  befehle 145.75 [145–147]  haupt 100.25 [99–102]
+aus  n=4  p50 20.50 [20.4–20.6]  p95 27.27 [27–27.9]  p99 30.05 [29.2–31.5]  fps 42.88 [42.6–43.1]  befehle 173.50 [173–174]  haupt 127.25 [125–129]

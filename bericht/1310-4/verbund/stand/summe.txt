@@ -1,0 +1,14 @@
+T2\lauf-1-an.txt       an   cpu 6.1 8.1 11.8 fps 51.8 befehle 140 haupt 94
+T2\lauf-10-aus.txt     aus  cpu 6.4 7.8 10.4 fps 52.3 befehle 169 haupt 122
+T2\lauf-11-aus.txt     aus  cpu 6.4 7.9 11.1 fps 52.3 befehle 169 haupt 122
+T2\lauf-12-an.txt      an   cpu 5.9 7.3 9.3 fps 52.1 befehle 141 haupt 94
+T2\lauf-2-aus.txt      aus  cpu 6.5 8.6 10.3 fps 51.9 befehle 168 haupt 122
+T2\lauf-3-aus.txt      aus  cpu 6.3 7.7 10.4 fps 52.3 befehle 169 haupt 122
+T2\lauf-4-an.txt       an   cpu 5.9 7.6 10.4 fps 51.8 befehle 141 haupt 94
+T2\lauf-5-an.txt       an   cpu 5.8 7.2 9.7 fps 52.2 befehle 141 haupt 94
+T2\lauf-6-aus.txt      aus  cpu 6.1 7.6 9.4 fps 52.4 befehle 169 haupt 122
+T2\lauf-7-aus.txt      aus  cpu 6.1 7.5 9.8 fps 52.3 befehle 169 haupt 122
+T2\lauf-8-an.txt       an   cpu 5.9 7.3 10.3 fps 52.1 befehle 141 haupt 94
+T2\lauf-9-an.txt       an   cpu 5.8 7.2 9.2 fps 52 befehle 141 haupt 94
+an   n=6  p50 5.90 [5.8–6.1]  p95 7.45 [7.2–8.1]  p99 10.12 [9.2–11.8]  fps 52.00 [51.8–52.2]  befehle 140.83 [140–141]  haupt 94.00 [94–94]
+aus  n=6  p50 6.30 [6.1–6.5]  p95 7.85 [7.5–8.6]  p99 10.23 [9.4–11.1]  fps 52.25 [51.9–52.4]  befehle 168.83 [168–169]  haupt 122.00 [122–122]
