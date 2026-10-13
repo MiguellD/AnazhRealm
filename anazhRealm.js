@@ -42088,11 +42088,16 @@ class AnazhRealm {
         this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
         const fr = this.state.fernRing;
         if (!fr) return;
-        for (const m of fr.meshes || []) if (m && this.state.scene) this.state.scene.remove(m);
-        // je Schale die volle Geometrie und die zwei Teile der Schale 0 (sie teilen deren Attribute)
-        const T = fr.teilung || {};
-        for (const g of [...(fr.geos || []), T.frei, T.naht]) if (g) this._queueGeometryDispose(g);
-        for (const m of Object.values(fr.stoffe || {})) if (m && typeof m.dispose === "function") m.dispose();
+        // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
+        // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
+        for (const m of fr.meshes || []) {
+            if (!m) continue;
+            if (this.state.scene) this.state.scene.remove(m);
+            this._queueGeometryDispose(m.geometry);
+            if (m.material && typeof m.material.dispose === "function") m.material.dispose();
+        }
+        // die volle Schale 0: der Träger der Attribute, die ihre zwei Teile teilen (sie zeichnet kein Mesh)
+        if (fr.geos && fr.geos[0]) this._queueGeometryDispose(fr.geos[0]);
         if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
