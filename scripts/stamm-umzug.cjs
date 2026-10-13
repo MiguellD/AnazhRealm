@@ -328,12 +328,17 @@ function codemodDatei(datei, src) {
     const req = `require("${rel.startsWith(".") ? rel : "./" + rel}")`;
     if (!neu.includes(`const ${LIB_NAME} = ${req};`)) {
         if (new RegExp(`\\b${LIB_NAME}\\b`).test(src)) return { hand: `der Name \`${LIB_NAME}\` ist belegt` };
+        // der Import steht VOR der ersten Nutzung (eine Nutzung über einem späteren require — diag-streu-wahrheit las
+        // stammLib in der TDZ): nach dem ersten require darüber, sonst nach "use strict", sonst nach dem Shebang, sonst oben
         const L = neu.split("\n");
-        let at = -1;
-        for (let i = 0; i < Math.min(L.length, 200); i++) if (/^const \w+ = require\("[^"]+"\);$/.test(L[i])) at = i;
-        if (at < 0) at = L.findIndex((z) => z === '"use strict";');
-        if (at < 0 && L[0].startsWith("#!")) at = 0;
-        L.splice(at + 1, 0, `const ${LIB_NAME} = ${req};`);
+        const erste = L.findIndex((z) => z.includes(`${LIB_NAME}.`));
+        const kandidaten = [
+            L.findIndex((z) => /^const \w+ = require\("[^"]+"\);$/.test(z)),
+            L.findIndex((z) => z === '"use strict";'),
+            L[0].startsWith("#!") ? 0 : -1,
+        ];
+        const at = kandidaten.find((k) => k >= 0 && k < erste);
+        L.splice(at === undefined ? 0 : at + 1, 0, `const ${LIB_NAME} = ${req};`);
         neu = L.join("\n");
     }
     // ein `fs`, das nur der Stamm-Leser brauchte, fällt mit (eslint no-unused-vars)
@@ -551,6 +556,13 @@ function selbsttest() {
         const c1 = codemodDatei(probe, fxLeser);
         const c2 = c1.neu ? codemodDatei(probe, c1.neu) : { neu: "?" };
         const belegt = codemodDatei(probe, fxLeser.replace('"use strict";', '"use strict";\nconst stammLib = 1;'));
+        // ein require UNTER der ersten Nutzung (die Form von diag-streu-wahrheit): der Import steht trotzdem davor
+        const spaet = codemodDatei(probe, fxLeser + 'const vm = require("vm");\n').neu || "";
+        const spaetL = spaet.split("\n");
+        const vorNutzung =
+            spaetL.findIndex((z) => z.startsWith("const stammLib = require(")) >= 0 &&
+            spaetL.findIndex((z) => z.startsWith("const stammLib = require(")) <
+                spaetL.findIndex((z) => z.includes("stammLib.text("));
         pruef(
             "Codemod: 2 Leser → stammLib.text, ein Import, fs fällt, zweiter Lauf = id, belegter Name → Hand",
             !!c1.neu &&
@@ -559,8 +571,9 @@ function selbsttest() {
                 !/const fs = require/.test(c1.neu) &&
                 !c1.neu.includes(A) &&
                 c2.neu === undefined &&
-                !!belegt.hand,
-            belegt.hand
+                !!belegt.hand &&
+                vorNutzung,
+            `${belegt.hand} · Import vor der Nutzung trotz späterem require: ${vorNutzung}`
         );
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
