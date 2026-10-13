@@ -66,6 +66,7 @@ const path = require("path");
 const vm = require("vm");
 const http = require("http");
 const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.CROSSFADE_PORT || 4418);
@@ -107,7 +108,7 @@ function fnBody(src, sigRe) {
 // ===== TEIL 1: die Studio-GLSL-Wahrheit parsen (foundry-core.js + phytogenesis.js, NUR LESEN) =====
 const foundrySrc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
 const phytogenSrc = fs.readFileSync(path.join(root, "worlds", "terrain", "phytogenesis.js"), "utf8");
-const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const anazhSrc = stammLib.text(root);
 const coreSrcRaw = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 
 function parseStudio() {

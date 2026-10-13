@@ -45,6 +45,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
@@ -354,7 +355,7 @@ async function bereit(page, weltId) {
 // EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel `_weltWechselNeuLaden`. Jeder andere Ort fällt
 // beim Namen seiner Methode.
 function absenz() {
-    const zeilen = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8").split("\n");
+    const zeilen = stammLib.text(root).split("\n");
     const methodeAn = (i) => {
         for (let j = i; j >= 0; j--) {
             const m = /^ {4}(?:static |async )*([A-Za-z_$][\w$]*)\(.*\)\s*\{\s*$/.exec(zeilen[j]);

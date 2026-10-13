@@ -73,6 +73,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
@@ -4100,7 +4101,7 @@ function quellenAbgriff() {
             );
         }
         // Die statischen Wände feuern auf den Vor-Stand.
-        const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const quelle = stammLib.text(root);
         const garage = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
         const kern = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
         const gruen = taktWand(quelle);
@@ -4411,7 +4412,7 @@ function quellenAbgriff() {
         process.exit(0);
     }
 
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     console.log("=== W — DIE STATISCHE WAND DES RITT-TAKTS (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of taktWand(quelle)) check(name, ok, detail);
     console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");

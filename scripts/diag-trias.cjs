@@ -28,6 +28,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const errs = [];
@@ -155,7 +156,7 @@ function triasStaticLaws(anazhSrc) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
 
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {

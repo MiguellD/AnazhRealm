@@ -27,6 +27,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const root = path.resolve(__dirname, "..");
@@ -60,7 +61,7 @@ function check(name, ok, detail) {
 (async () => {
     // ── Quell-Proben (Konsum-Tripwires: die Naht-Zeilen leben im Stamm) ──
     console.log("=== PRÄGUNG-WELT — Quell-Proben (die Naht lebt im Stamm) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     check(
         "Q: _foundryFlattenFor liest den Entry-Stempel + reicht ihn als 4. Arg",
         /const entryOv = this\._artifactStudioOv\(entry\);/.test(stamm) &&

@@ -14,6 +14,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 // Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
 // fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
@@ -1246,7 +1247,7 @@ function scan(files) {
 
 function checkSoulKeys() {
     // Die Schlüssel-Menge aus dem lebenden Literal ziehen (klammer-bewusst).
-    const src = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const src = stammLib.text(path.join(__dirname, ".."));
     const start = src.indexOf("AnazhRealm.CREATURE_SOULS = Object.freeze({");
     if (start < 0) return ["CREATURE_SOULS-Literal nicht gefunden"];
     let depth = 0;
@@ -1514,7 +1515,7 @@ function scanLabBuster() {
     // (18.467 während package.json 18.471 trug) — jeder Flugschreiber-Trace + Panel-Kopf
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
-    const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stammSrc = stammLib.text(root);
     const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
@@ -1965,7 +1966,7 @@ function main() {
 
     if (process.argv.includes("--selftest")) {
         // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.
-        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const stamm = stammLib.text(root);
         const instanzFeuert =
             scanInstanzWand(stamm).length === 0 &&
             scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1 &&
@@ -2246,10 +2247,10 @@ function main() {
         .concat(checkSoulKeys())
         .concat(scanZwillinge())
         .concat(scanLabBuster())
-        .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanEntsorgungsWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanInstanzWand(stammLib.text(root)))
+        .concat(scanEntsorgungsWand(stammLib.text(root)))
+        .concat(scanKartenWand(stammLib.text(root)))
+        .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))

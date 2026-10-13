@@ -30,11 +30,12 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 const { WORKER_SCRIPTS } = require("./lib/asset-worker-harness.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FAHRZEUG_FERN_PORT || 4553);
-const STAMM = fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8");
+const STAMM = stammLib.text(ROOT);
 const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
 const MIME = {
     ".html": "text/html",

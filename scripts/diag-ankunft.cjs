@@ -52,6 +52,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
@@ -1316,7 +1317,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");

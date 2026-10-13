@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 const SK = require("./lib/shader-kosten.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -39189,7 +39190,7 @@ async function checkBandW3UiPuls(ctx) {
     let srcOk = false;
     let migratedCount = 0;
     try {
-        const src = fs.readFileSync(path.resolve(__dirname, "..", "anazhRealm.js"), "utf8");
+        const src = stammLib.text(path.join(__dirname, ".."));
         migratedCount = (src.match(/_uiDirty\("hof"\)/g) || []).length;
         const directMechanic = (
             src.match(/if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/g) ||

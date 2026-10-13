@@ -32,6 +32,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const root = path.resolve(__dirname, "..");
@@ -64,7 +65,7 @@ function check(name, ok, detail) {
 
 (async () => {
     // ── P: die Quell-Probe (der Promotions-Block walkt den Region-Fächer) ──
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     const promoIdx = src.indexOf("baum-D2-Heilung");
     const promoBlock = promoIdx >= 0 ? src.slice(promoIdx, promoIdx + 1800) : "";
     check(

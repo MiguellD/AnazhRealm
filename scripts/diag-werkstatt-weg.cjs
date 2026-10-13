@@ -46,6 +46,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
@@ -1218,7 +1219,7 @@ async function probe(argW) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {

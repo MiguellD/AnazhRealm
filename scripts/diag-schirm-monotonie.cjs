@@ -34,6 +34,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
@@ -462,7 +463,7 @@ function konsumBefunde(reihe) {
         if (befunde.length > 12) console.log(`      … ${befunde.length - 12} weitere`);
         if (!gut) ok = false;
     };
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     console.log("=== Schirm-Wand: Q · die EINE Quelle ===");
     check("Q jede Schirm-Größe liest `_schirm` (Erzeuger und UI-Lage namentlich erlaubt)", quellBefunde(src));
 

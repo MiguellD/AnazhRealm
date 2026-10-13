@@ -34,10 +34,11 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const QUELLE = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const QUELLE = stammLib.text(root);
 const PHYTO = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 const KERN = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
 const vm = require("vm");
+const stammLib = require("./lib/stamm.cjs");
 
 // Der Karten-Codec aus einer phyto-core-Quelle (echt oder injiziert), in einer eigenen Sandbox geladen.
 function codecAus(phytoSrc) {

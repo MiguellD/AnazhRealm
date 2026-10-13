@@ -36,6 +36,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
 const root = path.resolve(__dirname, "..");
@@ -158,7 +159,7 @@ function boxWand(quelle) {
 if (process.argv.includes("--selftest")) {
     console.log("=== BLOCKER-NETZ — Selbsttest der Box-Wand (ohne Browser) ===");
     const v = [];
-    const stamm = boxWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const stamm = boxWand(stammLib.text(root));
     for (const b of stamm.befunde) v.push(`STAMM: ${b.methode} Zeile ${b.zeile}: ${b.art} — ${b.text}`);
     if (stamm.zuweisungen < 6) v.push(`STUMPF: die Wand sieht nur ${stamm.zuweisungen} Zuweisungen an .blockerAABBs`);
     const klasse = (rumpf) => `class X { ${rumpf} }`;
@@ -911,7 +912,7 @@ function urteil(S, stamm, pageErrors) {
 // (Q) der Stamm: jeder Schreiber des Bestands — push/splice/pop/shift/unshift auf `this.state.architectures` oder einem Alias,
 // eine Zuweisung des Arrays — steht an einer gestempelten Stelle (Zuweisung: das neue Array baut das Netz neu)
 function stammSchreiber() {
-    const z = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8").split("\n");
+    const z = stammLib.text(root).split("\n");
     const fremd = [];
     const alias = new Map();
     z.forEach((l, i) => {
@@ -1007,7 +1008,7 @@ function stammSchreiber() {
         );
     console.log(`  Quelle: ${JSON.stringify(S.quelle)}`);
     const rot = urteil(S, stamm, pageErrors);
-    const wand = boxWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const wand = boxWand(stammLib.text(root));
     console.log(
         `  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`
     );

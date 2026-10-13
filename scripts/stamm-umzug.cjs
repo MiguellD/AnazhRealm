@@ -299,37 +299,45 @@ const beweisZeile = (r) =>
 
 // ── --leser: der Codemod ──────────────────────────────────────────────────────────────────────────────────────────
 // Kanonisch: (fs|require("fs")) .readFileSync( path.(join|resolve)( <wurzel>, "anazhRealm.js" ), "utf8" ) mit <wurzel> = ein
-// Bezeichner (root, ROOT, PK.ROOT …) oder `__dirname, ".."` → stamm.text(<wurzel>). Was er nicht kennt, nennt die Absenz-Linse.
+// Bezeichner (root, ROOT, PK.ROOT …) oder `__dirname, ".."` → stammLib.text(<wurzel>). Der Import heißt `stammLib` (29
+// Skripte tragen schon eine Variable `stamm` — den gelesenen Text). Idempotent: ein zweiter Lauf findet keine kanonische
+// Stelle mehr und ändert nichts. Was er nicht kennt, nennt die Absenz-Linse (diag-altlasten, Stamm-Leser-Wand).
+const LIB_NAME = "stammLib";
 const KANON = [
     [
-        /\b(?:fs|require\("fs"\))\s*\.readFileSync\(\s*(path|require\("path"\))\.(?:join|resolve)\(__dirname, "\.\.", "anazhRealm\.js"\),\s*"utf8"\s*\)/g,
-        (_m, p) => `stamm.text(${p}.join(__dirname, ".."))`,
+        /\b(?:fs|require\("fs"\))\s*\.readFileSync\(\s*(path|require\("path"\))\.(?:join|resolve)\(\s*__dirname,\s*"\.\.",\s*"anazhRealm\.js"\s*\),\s*"utf8"\s*\)/g,
+        (_m, p) => `${LIB_NAME}.text(${p}.join(__dirname, ".."))`,
     ],
     [
-        /\b(?:fs|require\("fs"\))\s*\.readFileSync\(\s*(?:path|require\("path"\))\.(?:join|resolve)\(([A-Za-z_$][\w$.]*), "anazhRealm\.js"\),\s*"utf8"\s*\)/g,
-        (_m, w) => `stamm.text(${w})`,
+        /\b(?:fs|require\("fs"\))\s*\.readFileSync\(\s*(?:path|require\("path"\))\.(?:join|resolve)\(\s*([A-Za-z_$][\w$.]*),\s*"anazhRealm\.js"\s*\),\s*"utf8"\s*\)/g,
+        (_m, w) => `${LIB_NAME}.text(${w})`,
     ],
 ];
 function codemodDatei(datei, src) {
     let neu = src;
     for (const [rx, f] of KANON) neu = neu.replace(rx, f);
     if (neu === src) return {};
+    if (/\.mjs$/.test(datei)) return { hand: "ein ES-Modul (kein require)" };
     const rel = path
         .relative(path.dirname(datei), path.join(ROOT, "scripts", "lib", "stamm.cjs"))
         .split(path.sep)
         .join("/");
     const req = `require("${rel.startsWith(".") ? rel : "./" + rel}")`;
-    if (!neu.includes(req)) {
-        if (/\b(?:const|let|var|function)\s+stamm\b|[(,]\s*stamm\s*[,)=]/.test(neu))
-            return { hand: "der Name `stamm` ist belegt" };
+    if (!neu.includes(`const ${LIB_NAME} = ${req};`)) {
+        if (new RegExp(`\\b${LIB_NAME}\\b`).test(src)) return { hand: `der Name \`${LIB_NAME}\` ist belegt` };
         const L = neu.split("\n");
         let at = -1;
         for (let i = 0; i < Math.min(L.length, 200); i++) if (/^const \w+ = require\("[^"]+"\);$/.test(L[i])) at = i;
         if (at < 0) at = L.findIndex((z) => z === '"use strict";');
         if (at < 0 && L[0].startsWith("#!")) at = 0;
-        L.splice(at + 1, 0, `const stamm = ${req};`);
+        L.splice(at + 1, 0, `const ${LIB_NAME} = ${req};`);
         neu = L.join("\n");
     }
+    // ein `fs`, das nur der Stamm-Leser brauchte, fällt mit (eslint no-unused-vars)
+    const fsZeile = /^\s*const fs = require\("fs"\);\s*$/;
+    const rest = neu.split("\n").filter((z) => !fsZeile.test(z));
+    if (/\bconst fs = require\("fs"\)/.test(neu) && !rest.some((z) => /\bfs\b/.test(z.replace(/\/\/.*$/, ""))))
+        neu = rest.join("\n");
     return { neu };
 }
 function lesbareDateien(dir) {

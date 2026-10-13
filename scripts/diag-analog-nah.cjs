@@ -24,6 +24,7 @@ const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
@@ -88,7 +89,7 @@ function klassenWand(src) {
     return { ok: S1 && S2 && S3, S1, S2, S3 };
 }
 {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const heil = klassenWand(stamm);
     if (SELBST) {
         const brueche = [

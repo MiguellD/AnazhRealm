@@ -22,6 +22,7 @@
 const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -818,14 +819,13 @@ function validateManifest(m) {
     // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
     check(
         "Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)",
-        /LEGACY_LICHT\s*=\s*Math\.PI/.test(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))
+        /LEGACY_LICHT\s*=\s*Math\.PI/.test(stammLib.text(root))
     );
 
     // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
     // gestrippt (die V18.267-Falle).
-    const realm = fs
-        .readFileSync(path.join(root, "anazhRealm.js"), "utf8")
+    const realm = stammLib.text(root)
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
     const reg = realm.match(/_foundryAutoRegisterSpecies\(book\)\s*\{[\s\S]{0,2500}/);
@@ -1062,7 +1062,7 @@ function validateManifest(m) {
     (function zwillingsAbsenz() {
         let src = null;
         try {
-            src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+            src = stammLib.text(root);
         } catch (_e) {}
         const treffer = src ? zwillingsTreffer(src) : ZWILLINGE;
         check(

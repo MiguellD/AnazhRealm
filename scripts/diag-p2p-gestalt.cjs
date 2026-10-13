@@ -27,6 +27,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const root = path.resolve(__dirname, "..");
@@ -60,7 +61,7 @@ function check(name, ok, detail) {
 (async () => {
     // ── Quell-Proben (die Naht lebt im Stamm — Broadcast · Empfang · Konsum) ──
     console.log("=== P2P-GESTALT — Quell-Proben (die Übergabe reist im soul-Kanal) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     check(
         "Q: der soul-Broadcast trägt die Avatar-Übergabe additiv (nur koerper, kein toter Kreatur-Kanal)",
         /msg\.uebergabe = \{ koerper: su\.koerper \};/.test(stamm)

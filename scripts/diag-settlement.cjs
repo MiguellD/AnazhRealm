@@ -31,6 +31,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -136,7 +137,7 @@ const FIXTURES = [
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
         // V3 (Nachlese-Welle): die Auto-Dorf-Struktur-Gesetze feuern auf Injektion.
-        const anazhSrcST = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const anazhSrcST = stammLib.text(root);
         const okAll = autoStaticLaws(anazhSrcST).every((l) => l[1] === true);
         check("Selbst-Test 3: die Auto-Dorf-Gesetze sind am HEAD gruen (Vorbedingung)", okAll);
         const broken1 = anazhSrcST.replace("settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
@@ -833,7 +834,7 @@ const FIXTURES = [
     );
     check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
-    for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
+    for (const [name, ok] of autoStaticLaws(stammLib.text(root))) check(name, ok);
     const c = out.c || {};
     check(
         "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich, Γ5)",

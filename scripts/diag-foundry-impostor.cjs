@@ -15,6 +15,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
 const root = path.resolve(__dirname, "..");
@@ -517,7 +518,7 @@ function strichWand(src) {
 
     console.log("\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ===");
     {
-        const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const quelle = stammLib.text(root);
         const echt = strichWand(quelle);
         console.log(`  echte Quelle: ${echt.length ? echt.join(" · ") : "hält"}`);
         for (const f of echt) errs.push("D: " + f);

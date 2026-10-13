@@ -20,6 +20,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RELOAD_TREUE_PORT || 4459);
 const root = path.resolve(__dirname, "..");
@@ -52,7 +53,7 @@ function check(name, ok, detail) {
 
 (async () => {
     console.log("=== RELOAD-TREUE — Quell-Proben (der Guss-Pin lebt im Stamm) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     check(
         "Q: spawnCreatureAt reicht opts.dialsOv in den Guss (Restore-Pin)",
         /const gussOv = opts\.dialsOv && typeof opts\.dialsOv === "object" \? opts\.dialsOv : null;/.test(stamm) &&

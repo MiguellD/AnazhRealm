@@ -55,6 +55,7 @@ const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 
@@ -337,7 +338,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec();
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const S = stammKlasse(stamm);
     const tests = [];
     const t = (name, ok) => tests.push({ name, ok: !!ok });
@@ -1063,7 +1064,7 @@ function selbsttest() {
     // S30 — DIE REIHE DER BÜNDEL (H7): der Stamm hält sie; ohne den Aufruf nach einem neuen Bündel, mit @wahl im ersten Rang
     // und ohne die Reihe im Stamm wird die Wand rot (jede Verfälschung trifft die Quelle).
     {
-        const st = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const st = stammLib.text(root);
         const ohneRuf = st.replace("this._buendelReihe(scene);", "");
         const wahlVorn = st.replace(
             'return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;',
@@ -1100,7 +1101,7 @@ function main() {
     // (ein Toggle-Ort mit `bank` trägt keine Ratsche — H1 prüft sein Schema)
     const orte = (haushalt.messorte || []).filter((o) => o.ratsche).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
     for (const { o, r } of orte) for (const f of BAND.ratschePruefen(r, haushalt)) errs.push(`H2 [${o.id}] ${f}`);
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const nw = namensWand(stamm);
     for (const f of nw.errs) errs.push("H3 " + f);
     const tw = taeterWand(stamm);

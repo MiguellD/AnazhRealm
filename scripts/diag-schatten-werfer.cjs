@@ -88,6 +88,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
 const SELBSTTEST = process.argv.includes("--selftest");
@@ -1476,7 +1477,7 @@ function probe(selbsttest) {
     };
     try {
         // Z2 — die Bildziele je Leser im Stamm (GPU-frei, vor dem Boot)
-        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const stamm = stammLib.text(root);
         const z2 = bildZiele(stamm);
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {

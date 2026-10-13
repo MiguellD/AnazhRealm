@@ -63,6 +63,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const SCHWELLE = {
     tiefeStamm: 0.05, // m sichtbares Wasser über dem Fuß eines Stamms
@@ -1884,7 +1885,7 @@ function selbsttest() {
         if (!t) ok = false;
     }
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm
-    const src = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const src = stammLib.text(path.join(__dirname, ".."));
     const echt = leserUrteil(src);
     const gifte = [
         [
@@ -2110,7 +2111,7 @@ async function lauf() {
         ".woff2": "font/woff2",
     };
     const befund = {};
-    befund.leser = leserUrteil(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.leser = leserUrteil(stammLib.text(root));
     require(path.join(root, "vehicle-core.js"));
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = http.createServer((req, res) => {

@@ -28,9 +28,10 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
-const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stammSrc = stammLib.text(root);
 
 const errs = [];
 function check(name, ok, detail) {

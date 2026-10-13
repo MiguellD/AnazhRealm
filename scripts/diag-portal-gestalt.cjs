@@ -34,6 +34,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PORTAL_GESTALT_PORT || 4437);
 const root = path.resolve(__dirname, "..");
@@ -110,7 +111,7 @@ function deriveGestalt(srcNC) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const anazhNC = stripComments(anazhSrc);
     const GESTALT = deriveGestalt(anazhNC);
 

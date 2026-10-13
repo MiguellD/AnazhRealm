@@ -46,6 +46,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
@@ -696,7 +697,7 @@ function windDatenUrteil(quellen) {
     }
     const quellen = {
         "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
-        "anazhRealm.js": fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8"),
+        "anazhRealm.js": stammLib.text(ROOT),
     };
     // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle), der Kern nur die Wind-Daten
     const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");

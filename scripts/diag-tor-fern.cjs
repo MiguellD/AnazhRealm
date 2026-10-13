@@ -21,8 +21,8 @@
 // "sicht" in K; eine Liste ohne ihre wurf-Teile in W (drachentor, maurentor); aufgeblähte Kapseln (+0,15 m) in I (geisttor).
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
-const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -40,7 +40,7 @@ const ZEILE = PC.PORTAL_RENDER_CONFIG.lod.budget.gate[3];
 const SOLL = { fernTeile: 24, wurfIou: 0.85, wurfMedian: 0.92, innenP95: 0.1 };
 
 // ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` aus der Quelle (die Fernform liest, was er liest) ──
-const STAMM = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const STAMM = stammLib.text(root);
 function methodeAus(src, kopf) {
     const i = src.indexOf(kopf);
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);

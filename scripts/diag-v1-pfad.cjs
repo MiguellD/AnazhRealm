@@ -60,6 +60,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -1091,7 +1092,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesund = { gestartet: true, renders: 1, vertices: 1200, anteil: 1, maskeImRender: 0, maskeWelt: 1, maskeDanach: 1 };

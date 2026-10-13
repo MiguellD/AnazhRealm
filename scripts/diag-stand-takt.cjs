@@ -35,6 +35,7 @@
 "use strict";
 
 const STAND = require("./lib/stand-linse.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const urteil = (b) => STAND.standUrteil(b);
 
@@ -267,9 +268,8 @@ function selbsttest() {
 // und `_scatterRegionWork` (der Hauptpfad von `_scatterRegion`) beim Namen; jede Form eines Schreibers und jeder ungedeckte
 // Pfad wird gefunden; Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt und Leser bleiben grün.
 function schreiberSelbsttest(fehler) {
-    const fs = require("fs");
     const path = require("path");
-    const stamm = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(path.join(__dirname, ".."));
     const wand = STAND.schreiberWand(stamm);
     const wv = STAND.schreiberUrteil(wand);
     const zahl = Object.entries(wand.schreiber)
@@ -831,7 +831,7 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     befund.pageErrors = pageErrors;
-    befund.schreiber = STAND.schreiberWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.schreiber = STAND.schreiberWand(stammLib.text(root));
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
         `  ${n.padEnd(8)} ${x.frames} Frames · Σ ${x.summe} Einheiten · ` +

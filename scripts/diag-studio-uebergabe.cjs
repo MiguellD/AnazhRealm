@@ -33,6 +33,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
 const root = path.resolve(__dirname, "..");
@@ -66,7 +67,7 @@ function check(name, ok, detail) {
 (async () => {
     // ── Quell-Proben (Konsum-Tripwires: die Naht lebt in Stamm + Shells) ──
     console.log("=== STUDIO-ÜBERGABE — Quell-Proben (die Naht lebt in Stamm + Shells) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const shellK = fs.readFileSync(path.join(root, "worlds/koerperstudio/koerperstudio.js"), "utf8");
     const shellT = fs.readFileSync(path.join(root, "worlds/tetrapoda/tetrapoda.js"), "utf8");
     const htmlK = fs.readFileSync(path.join(root, "worlds/koerperstudio/index.html"), "utf8");
