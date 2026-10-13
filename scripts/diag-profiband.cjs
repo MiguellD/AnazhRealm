@@ -1008,7 +1008,8 @@ function selbsttest() {
             !BAND.messortePruefen(haushalt).length
     );
     // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
-    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts.
+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts. Und auf den SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz
+    // über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
     const welt28 = (z) =>
         Object.assign(
             {
@@ -1029,6 +1030,24 @@ function selbsttest() {
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
             /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
     );
+    {
+        const satzWelt = (ueber) =>
+            welt28({
+                state: {
+                    voxelMeshPending: new Set(),
+                    scatterRegions: new Map(),
+                    chunkSaetze: new Map([
+                        ["boden", { ueberSeit: -1 }],
+                        ["bauSatz|x|-", { ueberSeit: ueber }],
+                    ]),
+                },
+            });
+        t(
+            "Einschwingen: ein Satz über seinem Ziel (ueberSeit ≥ 0) hält offen, ein ruhender nicht",
+            BAND.einschwingOffen(satzWelt(12)).satzSchrumpft === 1 &&
+                Object.keys(BAND.einschwingOffen(satzWelt(-1))).length === 0
+        );
+    }
     // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; dieselben Büschel mit dem Maximum
     // über die Samen (jede Gestalt trüge die schwerste) liegen darüber und werden rot; eine Gestalt ohne Golden und eine
     // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
