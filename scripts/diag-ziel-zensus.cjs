@@ -426,7 +426,7 @@ function rundungProbe() {
         };
         if (!A) return Object.assign(aus, { gelaufen: true, verbrauch: 0, zurueck: 0 });
         const mittel = async () => {
-            const u8 = (await window.__ausgabeAufnahme(64, 48, 1)).u8;
+            const u8 = (await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" })).u8;
             let s = 0;
             for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
             return s / (u8.length / 4);
