@@ -30997,64 +30997,6 @@ class AnazhRealm {
             nassOben[idx0] = 1;
             offen.push(idx0);
         }
-        // 4c) DIE UFER-SENKE (K37, 13.10.): grenzt eine trockene Spalte an Wasser und liegt schon die Mitte ihrer
-        //    ersten freien Zelle unter ihrem Spiegel (kein Deck-Fall), erreichte der Flood sie nie — die Nachbar-Spalte
-        //    trägt ihr Wasser in der Deck-Zelle (die nichts weiter flutet) oder ist in dieser Höhe fest. Das Sheet
-        //    stand am Rand auf dem Spiegel und tauchte über der Senke zum Anker ab: eine Wand aus Wasser über trockenem
-        //    Gras (Ufer der Solitär-Eiche −751/−796: 10 Senken 1,7–2,5 m unter dem Spiegel, 9 Wand-Dreiecke, weiß).
-        //    Die Senke flutet bis zu ihrem Spiegel — nie höher als das Wasser, an das sie grenzt — und der Flood läuft
-        //    von ihr weiter. Worker bit-identisch.
-        const flutSenke = (i, k, quelle) => {
-            const idx0 = i + k * dim;
-            const lvl = colL[idx0];
-            if (!(lvl > -Infinity) || lvl > colL[quelle] || !(lvl > colBoden[idx0])) return;
-            let topJ = -1;
-            for (let j = jMax; j >= 0; j--) {
-                const c = cells[idx0 + j * dimSq];
-                if (c === AIR) continue;
-                if (c === STATE.SOLID) topJ = j;
-                break;
-            }
-            if (topJ < 0 || topJ + 1 > jMax) return;
-            const topCy = oy + (topJ + 0.5) * step;
-            if (!(topCy + step <= lvl)) return; // die erste freie Zelle reicht über den Spiegel: der Deck-Fall
-            const start = queue.length;
-            for (let j = topJ + 1; j <= jMax; j++) {
-                const cy = oy + (j + 0.5) * step;
-                if (cy > lvl) break;
-                const cidx = idx0 + j * dimSq;
-                if (cells[cidx] === AIR && !caveDry(i, k, cy)) {
-                    cells[cidx] = WATER;
-                    queue.push(cidx);
-                }
-            }
-            for (let qh = start; qh < queue.length; qh++) {
-                const cidx = queue[qh];
-                const j = (cidx / dimSq) | 0;
-                const rem = cidx - j * dimSq;
-                const kk = (rem / dim) | 0;
-                const ii = rem - kk * dim;
-                pushN(ii + 1, kk, j);
-                pushN(ii - 1, kk, j);
-                pushN(ii, kk + 1, j);
-                pushN(ii, kk - 1, j);
-                pushN(ii, kk, j + 1);
-                pushN(ii, kk, j - 1);
-            }
-            for (let qh = start; qh < queue.length; qh++) {
-                const n0 = queue[qh] % dimSq;
-                if (nassOben[n0]) continue;
-                for (let j = jMax; j >= 0; j--) {
-                    const c = cells[n0 + j * dimSq];
-                    if (c === AIR) continue;
-                    if (c === WATER) {
-                        nassOben[n0] = 1;
-                        offen.push(n0);
-                    }
-                    break;
-                }
-            }
-        };
         for (let h = 0; h < offen.length; h++) {
             const i = offen[h] % dim;
             const k = (offen[h] / dim) | 0;
@@ -31068,10 +31010,7 @@ class AnazhRealm {
                 const n0 = ni + nk * dim;
                 if (nassOben[n0]) continue;
                 const d = deckZelle(ni, nk);
-                if (d < 0) {
-                    flutSenke(ni, nk, offen[h]);
-                    continue;
-                }
+                if (d < 0) continue;
                 cells[d] = WATER;
                 nassOben[n0] = 1;
                 offen.push(n0);
@@ -31615,6 +31554,10 @@ class AnazhRealm {
                     }
                     continue; // sonst trocken (topG bleibt NaN)
                 }
+                // DIE GELEERTE SPALTE IST TROCKEN (K37): trägt das gezeichnete Dach des Automaten in einer Flut-Spalte kein
+                // Wasser mehr (−1), ist die Spalte trocken. Bis K37 zeichnete das Sheet sie 14 m unter dem Spiegel (die Klemme
+                // des Live-Deltas): eine Grube mit weißen Wänden, Spalte für Spalte eine Treppe. Worker bit-identisch.
+                if (dach && live < 0) continue;
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
                 // RUHE: sub-zellig der Body-Spiegel `L` (das Gesetz `_atlasWaterLevelAt`: Ozean, See, der Fluss-Spiegel
                 // — stromab nie steigend, quer waagrecht), geklemmt von der Unterkante der Zelle unter dem Dach bis eine
@@ -81606,9 +81549,17 @@ class AnazhRealm {
         }
         // Quell-Spalten (einmalig je Eintrag, 576 Atlas-Probes) = unendliches Reservoir, der Pin füllt ihre
         // WATER-Zellen nach. Dazu die Kappe `waterCapJ` je Spalte (höchste Zeile, in die Wasser ZUFLIESSEN
-        // darf): im Atlas-Gebiet rim + 0.5 m (nie über den Spiegel), jenseits (rim = −Inf) Boden + 2 Zellen
-        // (fließende Skin). Reine EMPFÄNGER-Regel im Lateral-Pass → erhaltungs-neutral; Decay allein bändigt
-        // den hydrostatischen Pool neben der Quelle nicht.
+        // darf). Reine EMPFÄNGER-Regel im Lateral-Pass → erhaltungs-neutral; Decay allein bändigt den
+        // hydrostatischen Pool neben der Quelle nicht.
+        // DIE RUHE IST DER FIXPUNKT (K37, 13.10.): die Kappe einer Spalte, die das Gesetz flutet, ist ihre oberste
+        // Flut-Zelle — erwacht der Automat über ruhendem Wasser (jede Werk-Setzung am Ufer weckt ihn), bewegt er
+        // nichts. Bis K37 lag die Kappe dort eine Zeile über der Ruhe (Spiegel + 0,5 m): die Deck-Zelle (4b, eine
+        // volle Zelle über dem Spiegel ihrer Nachbarn) floss in die Zeile über dem See und aufs Land, die flachen
+        // Ufer-Spalten leerten sich, und das Sheet zeichnete sie 14 m unter dem Spiegel — das weiße Treppen-Band am
+        // See der Solitär-Eiche (nach dem Wecken 424 von 1594 Spalten gerissen, Wildwasser 105 → 1944 Vertices).
+        // Eine trockene Spalte nimmt nur Wasser, wo ein Schnitt Raum öffnete (`_chunkRegionHasCarve`, das Gate der
+        // reaktiven Flut): im Atlas-Gebiet bis Spiegel + 0,5 m, jenseits Boden + 2 Zellen (die fließende Haut);
+        // sonst nie. Ein Stau hebt die Kappe (unten).
         if (!this.state.waterSourceCols) this.state.waterSourceCols = new Map();
         if (!this.state.waterCapJ) this.state.waterCapJ = new Map();
         if (!this.state.waterSourceCols.has(key) || !this.state.waterCapJ.has(key)) {
@@ -81626,6 +81577,8 @@ class AnazhRealm {
             // V18.129 — die Stau-Felder der Spieler-Werke (null im häufigen Fall).
             const stauFields = this._stauFieldsNear(cx, cz);
             const stauMax = AnazhRealm.CA_STAU.MAX_CELLS;
+            const WATER = AnazhRealm.CELL_STATE.WATER;
+            const raumOffen = this._chunkRegionHasCarve(cx, cz); // ein Schnitt öffnete Raum (s. o.)
             for (let k = 0; k < dim; k++) {
                 for (let i = 0; i < dim; i++) {
                     const c = i + k * dim;
@@ -81635,20 +81588,20 @@ class AnazhRealm {
                     // Spalten-Boden ZUERST (höchste SOLID-Zelle), die Rim-Frage trägt das echte Bett: Boden unter dem
                     // Spiegel ⇒ rim-Kappe (der See speist bis zu SEINEM Niveau), darüber ⇒ Boden+Skin-Kappe (2 Zellen).
                     let gj = -1;
-                    for (let j = dimY - 1; j >= 0; j--) {
-                        if (cells[c + j * dimSq] === SOLID) {
-                            gj = j;
-                            break;
-                        }
+                    let flutJ = -1; // die oberste Flut-Zelle: die Ruhe des Gesetzes in dieser Spalte
+                    for (let j = dimY - 1; j >= 0 && (gj < 0 || flutJ < 0); j--) {
+                        const zs = cells[c + j * dimSq];
+                        if (zs === SOLID && gj < 0) gj = j;
+                        else if (zs === WATER && flutJ < 0) flutJ = j;
                     }
                     const bedTop = oy + (gj + 1) * cfg.step; // Boden-OBERFLÄCHE (gj=-1 → oy)
                     const rim = this._atlasWaterLevelAt(wx, wz, bedTop);
-                    if (rim > -Infinity) {
-                        cap[c] = Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)));
-                    } else {
-                        // jenseits des Atlas / Boden über dem Spiegel: Boden + 2 Zellen Skin.
-                        cap[c] = Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
-                    }
+                    // jenseits des Atlas / Boden über dem Spiegel: Boden + 2 Zellen Skin.
+                    const capRaum =
+                        rim > -Infinity
+                            ? Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)))
+                            : Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
+                    cap[c] = flutJ >= 0 ? flutJ : raumOffen ? capRaum : -1;
                     // Stau-Spiegel: liegt die Spalte in einem Werk-Feld, hebt sich die Kappe auf den gehaltenen Pegel
                     // (Spill-Wahrheit, gedeckelt MAX_CELLS); eine gehobene Quell-Spalte wird STAU-Quelle (src=2), der Pin
                     // tropft sie über die Ruhe hinaus (s. _tickWorldWaterCA).
@@ -81660,7 +81613,11 @@ class AnazhRealm {
                             const fk = gz - f.gz0;
                             if (fi < 0 || fk < 0 || fi >= f.w || fk >= f.h) continue;
                             const fillY = f.fillY[fi + fk * f.w];
-                            const stauJ = Math.min(Math.floor((fillY - oy) / cfg.step) - 1, cap[c] + stauMax, dimY - 1);
+                            const stauJ = Math.min(
+                                Math.floor((fillY - oy) / cfg.step) - 1,
+                                capRaum + stauMax,
+                                dimY - 1
+                            );
                             if (stauJ > cap[c]) {
                                 cap[c] = stauJ;
                                 if (src[c] === 1) src[c] = 2;

@@ -150,7 +150,9 @@ const server = http.createServer((req, res) => {
             if (!cliff.built) fail("F1: Klippen-Fixture baute kein Sheet");
             else {
                 if (!(cliff.rise <= K * step + 1e-6))
-                    fail(`F1: geglättetes Tal-Dach kletterte die Wand hoch (rise=${cliff.rise.toFixed(2)} m > ${K * step} m)`);
+                    fail(
+                        `F1: geglättetes Tal-Dach kletterte die Wand hoch (rise=${cliff.rise.toFixed(2)} m > ${K * step} m)`
+                    );
                 if (!(cliff.curtainVerts > 0))
                     fail("F1: kein Lippe+Vorhang an der Klippe (der ECHTE Wasserfall muss weiterleben)");
             }
@@ -208,7 +210,9 @@ const server = http.createServer((req, res) => {
                 o.shoreLevels = { lInf, lUnder, lOver, rim: shore.rim };
                 if (lInf !== -Infinity) fail(`F2: terrainTopY=−Inf liefert Wasser an Land-Spalte (L=${lInf})`);
                 if (lUnder !== shore.rim)
-                    fail(`F2: endliches topY UNTER rim verlor die Rim-Füllung (L=${lUnder}, rim=${shore.rim}) — echte Ufer müssen bleiben!`);
+                    fail(
+                        `F2: endliches topY UNTER rim verlor die Rim-Füllung (L=${lUnder}, rim=${shore.rim}) — echte Ufer müssen bleiben!`
+                    );
                 if (lOver !== -Infinity) fail(`F2: topY ÜBER rim wurde nass (L=${lOver})`);
             }
             // Fluss-Wand: Bank-Punkt (centerness=0, kein Körper im 3×3) vs Kern-Punkt.
@@ -250,14 +254,16 @@ const server = http.createServer((req, res) => {
                 const le = r._atlasWaterLevelAt(bank.x, bank.z, Infinity);
                 o.bankLevels = { lb, le };
                 if (lb !== -Infinity) fail(`F2: Fluss-BANK zählt bei −Inf nass (L=${lb}) — die Rampe ist kein Kern`);
-                if (!(le > -Infinity)) fail("F2: +Inf-Existenz-Probe verlor die volle Carve-Breite (colSrc/CA-Quellen!)");
+                if (!(le > -Infinity))
+                    fail("F2: +Inf-Existenz-Probe verlor die volle Carve-Breite (colSrc/CA-Quellen!)");
             }
             if (core) {
                 const lc = r._atlasWaterLevelAt(core.x, core.z, -Infinity);
                 o.coreLevel = lc;
                 if (!(lc > -Infinity)) fail("F2: Fluss-KERN verlor sein Fern-Wasser (centerness>0 muss zählen)");
             }
-            if (!bank && !core) o.riverNote = "kein isolierter Fluss-Punkt gefunden — Fluss-Wand unmessbar (Rim-Kern grün)";
+            if (!bank && !core)
+                o.riverNote = "kein isolierter Fluss-Punkt gefunden — Fluss-Wand unmessbar (Rim-Kern grün)";
             // Selbst-Test F2: isFinite-Wand entfernt → Land-Spalte MUSS wieder nass werden.
             if (shore) {
                 const brokenAtlas = patchFn(
@@ -271,7 +277,9 @@ const server = http.createServer((req, res) => {
                     const lBroken = brokenAtlas.call(r, shore.px, shore.pz, -Infinity);
                     o.shoreBroken = lBroken;
                     if (lBroken !== shore.rim)
-                        fail(`F2-Selbsttest: deaktivierte Wand blieb trocken (L=${lBroken}, erwartet rim=${shore.rim})`);
+                        fail(
+                            `F2-Selbsttest: deaktivierte Wand blieb trocken (L=${lBroken}, erwartet rim=${shore.rim})`
+                        );
                 }
             }
 
@@ -308,14 +316,19 @@ const server = http.createServer((req, res) => {
                 const e2 = runEvap(r._caEvaporateSettled, 120);
                 o.evap = { N3, afterN: e1.tongue, srcAfterN: e1.src, after120: e2.tongue, srcAfter120: e2.src };
                 if (!(e1.tongue < RENDER))
-                    fail(`F3: Zunge nach ${N3} Ticks nicht unter der Render-Schwelle (${e1.tongue.toFixed(3)} ≥ ${RENDER})`);
+                    fail(
+                        `F3: Zunge nach ${N3} Ticks nicht unter der Render-Schwelle (${e1.tongue.toFixed(3)} ≥ ${RENDER})`
+                    );
                 if (e2.tongue !== 0) fail(`F3: Zunge verdunstete nicht auf 0 (${e2.tongue})`);
-                if (e1.src !== 1 || e2.src !== 1) fail(`F3: QUELL-Zelle verdunstete (${e2.src} ≠ 1) — der Pin-Vertrag!`);
+                if (e1.src !== 1 || e2.src !== 1)
+                    fail(`F3: QUELL-Zelle verdunstete (${e2.src} ≠ 1) — der Pin-Vertrag!`);
                 // KONSUM (Lehre 5): der Welt-Tick ruft den Chokepoint + hält Verdunster aktiv.
                 const wt = String(r._tickWorldWaterCA);
-                o.evapWired =
-                    /_caEvaporateSettled/.test(wt) && /_caStillTicks/.test(wt) && /a\.evap > 0/.test(wt);
-                if (!o.evapWired) fail("F3: _tickWorldWaterCA konsumiert die Verdunstung nicht (Chokepoint/Ruhe-Zählung/Settle-Wächter)");
+                o.evapWired = /_caEvaporateSettled/.test(wt) && /_caStillTicks/.test(wt) && /a\.evap > 0/.test(wt);
+                if (!o.evapWired)
+                    fail(
+                        "F3: _tickWorldWaterCA konsumiert die Verdunstung nicht (Chokepoint/Ruhe-Zählung/Settle-Wächter)"
+                    );
                 // Selbst-Test F3: RATE genullt → Zunge MUSS stehenbleiben.
                 const brokenEvap = patchFn(
                     r._caEvaporateSettled,
@@ -327,7 +340,8 @@ const server = http.createServer((req, res) => {
                 else {
                     const b = runEvap(brokenEvap, 120);
                     o.evapBroken = b.tongue;
-                    if (b.tongue !== 0.6) fail(`F3-Selbsttest: deaktivierte Verdunstung bewegte die Zunge (${b.tongue})`);
+                    if (b.tongue !== 0.6)
+                        fail(`F3-Selbsttest: deaktivierte Verdunstung bewegte die Zunge (${b.tongue})`);
                 }
             }
 
@@ -377,6 +391,140 @@ const server = http.createServer((req, res) => {
                         fail(`F4-Selbsttest: deaktivierte Qualifikation ergab ${bc.length} statt 3 Werke`);
                 }
             }
+
+            // ── FIXTURE 5 (F5) — DIE RUHE IST DER FIXPUNKT: der erwachte Automat bewegt ruhendes Wasser nicht ──
+            // K37 (Auge 13.10., Solitär-Eiche): jede Werk-Setzung am Ufer weckt den Automaten; die Kappe lag eine Zeile über
+            // der Ruhe, die Deck-Zelle (4b) floss in die Zeile über dem See und aufs Land, die flache Ufer-Spalte leerte sich.
+            // Bühne: See (i ≤ 3, Flut j 4..6, Quelle), Deck-Spalte (i = 4, Boden j ≤ 6, Deck-Zelle j 7), Land (i ≥ 5, Boden
+            // j ≤ 6). Gezählt: Spalten, deren Live-Dach nach 200 Takten vom Flut-Dach abweicht (> 0,6 Zelle oder leer/fremd).
+            const runRuhe = (capFn) => {
+                const SOLID = AR.CELL_STATE.SOLID;
+                const WATER = AR.CELL_STATE.WATER;
+                const d = 8,
+                    dy = 16,
+                    dSq = d * d,
+                    st5 = 1.8;
+                const cells = new Uint8Array(dSq * dy);
+                const L5 = 7 * st5 + 0.2; // Mitte j 6 (11,7) ≤ L < Mitte j 7 (13,5): Flut-Dach j 6
+                for (let k = 0; k < d; k++)
+                    for (let i = 0; i < d; i++) {
+                        const c = i + k * d;
+                        const boden = i <= 3 ? 3 : 6;
+                        for (let j = 0; j <= boden; j++) cells[c + j * dSq] = SOLID;
+                        if (i <= 3) for (let j = 4; j <= 6; j++) cells[c + j * dSq] = WATER;
+                        if (i === 4) cells[c + 7 * dSq] = WATER; // die Deck-Zelle
+                    }
+                const shim = Object.create(r);
+                shim.state = { voxelChunks: new Map([["0,0", { waterCells: cells }]]), terrainBaseHeight: 0 };
+                shim._voxelChunkConfig = () => ({ dim: d, dimY: dy, step: st5, span: d * st5, floorDrop: 0 });
+                shim._atlasWaterLevelAt = (x, z, t) => {
+                    if (x < 4 * st5) return L5; // See: Quelle
+                    if (x < 5 * st5) return Number.isFinite(t) && t < L5 ? L5 : -Infinity; // Rand über flachem Grund
+                    return -Infinity;
+                };
+                shim._stauFieldsNear = () => null;
+                shim._chunkRegionHasCarve = () => false;
+                const level = capFn.call(shim, 0, 0);
+                const cap = shim.state.waterCapJ.get("0,0");
+                const src = shim.state.waterSourceCols.get("0,0");
+                for (let t = 0; t < 200; t++) {
+                    for (let c = 0; c < dSq; c++)
+                        if (src[c])
+                            for (let j = 0; j < dy; j++) if (cells[c + j * dSq] === WATER) level[c + j * dSq] = 1;
+                    r._tickWaterCA(level, cells, d, dy, 0.25, null, null, cap);
+                }
+                let gerissen = 0;
+                for (let c = 0; c < dSq; c++) {
+                    const sc = r._caColumnScan(cells, level, c, dSq, dy);
+                    const fl = sc.floodTopJ >= 0 ? sc.floodTopJ + 1 : -1;
+                    const li = sc.liveTopJ >= 0 ? sc.liveTopJ + sc.liveFrac : -1;
+                    if (fl < 0 && li < 0) continue;
+                    if (fl < 0 || li < 0 || Math.abs(li - fl) > 0.6) gerissen++;
+                }
+                return { gerissen, capDeck: cap[4], capSee: cap[0], capLand: cap[5] };
+            };
+            if (typeof r._ensureWaterCALevel !== "function") fail("F5: _ensureWaterCALevel existiert nicht");
+            else {
+                const f5 = runRuhe(r._ensureWaterCALevel);
+                o.ruhe = f5;
+                if (f5.gerissen !== 0) fail(`F5: der erwachte Automat riss ${f5.gerissen} ruhende Spalte(n) (Soll 0)`);
+                // KONSUM: der Welt-Tick liest die Kappe dieses Chokepoints (`_ensureWaterCALevel` → `waterCapJ`).
+                if (
+                    !/_ensureWaterCALevel/.test(String(r._tickWorldWaterCA)) ||
+                    !/waterCapJ/.test(String(r._tickWorldWaterCA))
+                )
+                    fail("F5: _tickWorldWaterCA liest die Kappe des Chokepoints nicht");
+                // Selbst-Test F5: die Kappe der Ruhe fällt (die Zeile über dem Spiegel) → die Deck-Spalte MUSS reißen.
+                const broken5 = patchFn(
+                    r._ensureWaterCALevel,
+                    "_ensureWaterCALevel",
+                    "cap[c] = flutJ >= 0 ? flutJ : raumOffen ? capRaum : -1;",
+                    "cap[c] = capRaum;"
+                );
+                if (!broken5) fail("F5-Selbsttest: Ruhe-Marker nicht in der Quelle (Fix fehlt?)");
+                else {
+                    const b5 = runRuhe(broken5);
+                    o.ruheBroken = b5.gerissen;
+                    if (!(b5.gerissen > 0)) fail("F5-Selbsttest: die alte Kappe ließ die Ruhe stehen (Linse blind)");
+                }
+            }
+
+            // ── FIXTURE 6 (F6) — DIE GELEERTE SPALTE IST TROCKEN: nie ein Dach 14 m unter dem Spiegel ──
+            // Ein See (Flut-Dach j 40) mit Live-Dach überall gleich, nur EINE Spalte hat der Automat geleert (−1). Bis K37
+            // zeichnete das Sheet sie 14 m unter dem Spiegel (die Klemme des Live-Deltas) — eine Grube mit weißen Wänden.
+            const runLeer = (computeFn) => {
+                const WATER = AR.CELL_STATE.WATER;
+                const SOLID = AR.CELL_STATE.SOLID;
+                const dimSq = dim * dim;
+                const cells = new Uint8Array(dimSq * dimY);
+                for (let c = 0; c < dimSq; c++) {
+                    for (let j = 0; j <= 30; j++) cells[c + j * dimSq] = SOLID;
+                    for (let j = 31; j <= 40; j++) cells[c + j * dimSq] = WATER;
+                }
+                const dach = new Float64Array(dimSq).fill(41);
+                dach[12 + 12 * dim] = -1; // die geleerte Spalte
+                const shim = Object.create(r);
+                shim.state = { terrainBaseHeight: 0, waterLevel: 0 };
+                shim._atlasWaterLevelAt = () => -Infinity;
+                shim._hydroRiverAt = () => null;
+                shim._hydrosphereLakeAt = () => false;
+                const ctx = {
+                    smoothPasses: 4,
+                    getCells: (ncx, ncz) => (ncx === 0 && ncz === 0 ? cells : null),
+                    getDach: (ncx, ncz) => (ncx === 0 && ncz === 0 ? dach : undefined),
+                };
+                const data = computeFn.call(shim, 0, 0, ctx);
+                const faceY = 0 - cfg0.floorDrop + 41 * step;
+                let minY = Infinity;
+                const pos = data ? data.positions : [];
+                // nur das Innere (der Rand des Sheets taucht als Anker unter, s. F1)
+                for (let v = 0; v < pos.length / 3; v++) {
+                    const x = pos[v * 3],
+                        z = pos[v * 3 + 2];
+                    if (x < 4 * step || z < 4 * step || x > (dim - 4) * step || z > (dim - 4) * step) continue;
+                    if (pos[v * 3 + 1] < minY) minY = pos[v * 3 + 1];
+                }
+                return { grube: +(faceY - minY).toFixed(3) };
+            };
+            {
+                const f6 = runLeer(r._computeWaterSheetData);
+                o.leer = f6;
+                if (!(f6.grube < 0.05))
+                    fail(`F6: die geleerte Spalte liegt ${f6.grube} m unter dem Spiegel (Soll trocken, < 0,05)`);
+                const broken6 = patchFn(
+                    r._computeWaterSheetData,
+                    "_computeWaterSheetData",
+                    "if (dach && live < 0) continue;",
+                    ""
+                );
+                if (!broken6) fail("F6-Selbsttest: Leer-Marker nicht in der Quelle (Fix fehlt?)");
+                else {
+                    const b6 = runLeer(broken6);
+                    o.leerBroken = b6.grube;
+                    if (!(b6.grube > 1))
+                        fail(`F6-Selbsttest: ohne die Regel keine Grube (${b6.grube} m) — Linse blind`);
+                }
+            }
             return o;
         });
     } catch (e) {
@@ -405,11 +553,21 @@ const server = http.createServer((req, res) => {
             `verdrahtet=${out.evapWired}; Selbsttest-Zunge=${out.evapBroken}`
     );
     console.log(`F4 Stau: Cluster=${JSON.stringify(out.stauClusters)}; Selbsttest-Cluster=${out.stauBroken}`);
+    console.log(
+        `F5 Ruhe: gerissen=${out.ruhe ? out.ruhe.gerissen : "?"} (Soll 0), Kappen See/Deck/Land=` +
+            `${out.ruhe ? `${out.ruhe.capSee}/${out.ruhe.capDeck}/${out.ruhe.capLand}` : "?"}; Selbsttest-gerissen=${out.ruheBroken}`
+    );
+    console.log(
+        `F6 geleerte Spalte: Grube=${out.leer ? out.leer.grube : "?"} m (Soll < 0,05); Selbsttest-Grube=${out.leerBroken} m`
+    );
     if (out.fails.length) {
         console.log(`\nROT — ${out.fails.length} Fail(s):`);
         for (const f of out.fails) console.log("  ✗ " + f);
         process.exit(1);
     }
-    console.log("\nGRÜN — alle 4 Fixtures + Selbst-Tests OK (F1 Höhen-Gate · F2 Rim-Wand · F3 Verdunstung · F4 Stau-Qualifikation).");
+    console.log(
+        "\nGRÜN — alle 6 Fixtures + Selbst-Tests OK (F1 Höhen-Gate · F2 Rim-Wand · F3 Verdunstung · F4 Stau-Qualifikation · " +
+            "F5 Ruhe-Fixpunkt · F6 geleerte Spalte)."
+    );
     process.exit(0);
 })();
