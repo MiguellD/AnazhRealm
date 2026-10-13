@@ -36,11 +36,23 @@ Schnitt: **welle-m-e-satz-ruhe c956311e** `[ci voll]` (ab welle-m-e-torwurf 198e
 - Der Konsum-Leser ist die Band-Messung (`werkbank band`, die Messfolge an jedem Ort). Das Einschwingen am Dorf dauert damit
   ~60 s länger.
 
+## Neu eingeschwungen: Wiese, Genesis, Bühne (je ein Boot mit der Satz-Wache, `1310-1/dorf/W1-*`, `G1-*`)
+
+| Ort | altes Instrument (abab4, 3 Boots, Median) | mit der Satz-Wache | Einschwingen |
+|---|---|---|---|
+| Wiese | VRAM 112,0 MB | 112,7 MB, GPU 16,63 ms/Frame (IM BAND) | 886 Takte (59 s) |
+| Genesis | VRAM 122,7 MB | 122,5 MB | 800 Takte (62 s) |
+| Dorf | 124,6 MB | 118,3 MB | 843 Takte (62 s) |
+
+- An Wiese und Genesis ändert die Wache das VRAM nicht. Sie wartet dort ~600 Takte auf einen kleinen Schrumpf, das kostet
+  je Boot ~1 min Einschwingen.
+- Die Prüfbühne liest `einschwingOffen` nicht. Nur die Band-Messung ruft es, und die Bühne misst als Toggle-Ort über
+  `gpu-bank` ohne Band. Für sie ändert die Wache nichts.
+
 ## Pflicht-OFFEN Rest
 
 - 0,3 MB über 118 am Dorf.
-- Wiese, Genesis und Prüfbühne mit der neuen Liste neu einschwingen. Ihre Bänder und Ratschen enthielten denselben
-  Ankunfts-Puffer, wo ein Satz noch schrumpfte.
+- Die Ratschen der Orte ziehen mit dem Re-Mint K26 nach; an Wiese und Genesis bewegt die Wache das VRAM nicht.
 - Karte (2) bleibt offen mit dem Flügel-Hebel (`bericht/1310-1-band-delta.md` §7).
 
 ## Status ZWISCHENSTAND + Übergabe

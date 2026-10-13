@@ -1,0 +1,54 @@
+BAND IM BAND: Befehle 79/208 (0.38×) · Dreiecke 426k/680k (0.63×) · VRAM MB 112.7/118 (0.96×) · GPU ms/Frame 16.63/16.7 (1×)
+ORT wiese — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1          166k/200k  bodenSatz 3 · fern-ring 3 · wasserSatz 1 · farWater 1
+streu                         5/9          5/0/0            30k/40k  streuSatz 5
+nahWiese                      4/4          4/0/0            57k/80k  nahWiese:L1 2 · nahWiese:L2 2
+karten                        1/1          1/0/0              1k/1k !fimp:atlas:L2 1
+baum                        35/40         24/9/2           74k/150k  fscatter:fichte:L1 8 · f:tanne:L1 6 · f:fichte:L1 6 · f:eiche:L1 6
+busch                         6/8          4/2/0            18k/40k  f:strauch:L1 4 · f:strauch:L0 2
+tier*                        0/30          0/0/0              0/60k  
+bau                          4/40          2/1/1            19k/60k  bauSatz 2 · bauWurf 2
+    bauSatz haupt: f:feuerstelle:L1 60 Zellen = 17 850
+    bauWurf k0: f:feuerstelle:L3 31 Zellen = 744
+    bauWurf k1: f:feuerstelle:L3 19 Zellen = 456
+formationen                  3/20          1/1/1            10k/30k  formationenSatz 3
+    formationenSatz k0: f:zacken:L0 14 Zellen = 4 480
+    formationenSatz k1: f:zacken:L0 6 Zellen = 1 920
+    formationenSatz haupt: f:zacken:L0 12 Zellen = 3 840
+einzelstuecke               13/25          8/5/0            50k/15k !spieler 5 · dsl-insel 3 · feld-pass 2 · himmel 1
+reserve                      0/19          0/0/0               0/4k  
+SUMME                      79/208        55/19/5          426k/680k  Abstand 0.38× Befehle · 0.63× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 112.7 MB / Band 118 MB (0.96×) — je Erzeuger:
+     27.4 MB  505   buf:szene  (bodenSatz · streuSatz · bauSatz)
+     19.8 MB  2     tex:TRAANode.history
+     15.8 MB  1     tex:TRAANode.resolve
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.9 MB  1     tex:output
+      7.9 MB  1     tex:depth
+      4.0 MB  2     tex:szene
+      4.0 MB  2     tex:wege-karte
+      2.7 MB  1     tex:karte-albedo
+      1.9 MB  1     tex:feld-pass-panorama
+      1.3 MB  1     tex:karte-normal
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+      0.7 MB  1     tex:laub-cluster-atlas
+      0.5 MB  1     tex:welt-march-liste
+      0.5 MB  2     tex:kronen-streu
+      0.3 MB  6     buf:tier  (:tier:fuchs)
+
+erst-Boot, Ladung 1 · eingeschwungen nach 886 Takten (59 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 190 Antworten 41.7 MB — von der Platte 13 (0.7 MB), Neubau 41 MB
+
+BAND IM BAND: Befehle 79/208 (0.38×) · Dreiecke 426k/680k (0.63×) · VRAM MB 112.7/118 (0.96×) · GPU ms/Frame 16.63/16.7 (1×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] einzelstuecke k0: 5 befehle über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)
+  [ratsche] einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 104/2048
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\dorf\daten\W1-band.json
