@@ -35,7 +35,7 @@
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
         "gate:schatten-bias": "node scripts/diag-schatten-bias.cjs --selftest && node scripts/diag-schatten-terminator.cjs --selftest",
         "gate:schatten-terminator": "node scripts/diag-schatten-terminator.cjs",
-        "gate:persistence": "node scripts/diag-persistence.cjs",
+        "gate:persistence": "node scripts/diag-persistence.cjs --selftest",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
         "gate:render-tap": "node scripts/diag-render-tap.cjs",

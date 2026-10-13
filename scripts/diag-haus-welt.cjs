@@ -72,7 +72,9 @@ const BASIS = {
         // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit); seit Schau-2
         // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss
         ["const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "const g = false;"],
-        ["if (entry) this._grundrissRaeumen(entry);", ""],
+        // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
+        ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
+        ["if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) this._grundrissRaeumen(entry);", ""],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
     streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],

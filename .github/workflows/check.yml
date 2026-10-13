@@ -378,6 +378,9 @@ jobs:
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
               # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
+              # K23: (L) 300 Löcher über den Spielpfad stehen nach dem Reload alle (vorher 256/300, FIFO-Deckel), (S) der
+              # save-server stirbt an jedem Schreib-Punkt und lässt den alten oder neuen Stand ganz, der .bak hält den
+              # vorigen; der Selbsttest setzt das direkte fs.writeFile ein und sieht ROT. Lokal 16 → 30 s.
               run: npm run gate:persistence
 
             - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
@@ -1332,7 +1335,9 @@ jobs:
             - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
               if: matrix.gruppe == 4
               # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
-              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT.
+              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
+              # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
+              # Graben-Nachricht doppelt an und (c) muss ROT werden (die erste Fassung, ohne die Laenge, blieb gruen).
               run: npm run gate:mp-sync
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
