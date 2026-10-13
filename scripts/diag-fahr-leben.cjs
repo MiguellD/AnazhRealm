@@ -2295,7 +2295,12 @@ async function probeLeben(expected) {
                         return t;
                     };
                     tasten(true);
+                    // DER ANLAUF: die langsamste Fahrt in den Wagen auf den letzten 30 cm vor der Hülle (Kapsel-Abstand
+                    // 0,05–0,3 m). Nicht die Fahrt EINES Frames davor: die Kapsel klemmt ihren Schritt auf den Rest-Spalt
+                    // (Spalt ÷ Takt), und je nach Lage der Gasse fällt dieser Klemm-Frame vor die 0,02-m-Schwelle (K16:
+                    // 1,19 m/s über den ganzen Anlauf, der Frame davor 0,22 m/s — die Linse rief „vakuös").
                     let vorher = 0;
+                    let anlauf = Infinity;
                     for (let i = 0; i < 240; i++) {
                         frame(i);
                         const ab = kapselAbstand(e);
@@ -2305,9 +2310,10 @@ async function probeLeben(expected) {
                         }
                         m.minAbstand = Math.min(m.minAbstand, ab);
                         const vU = st.playerVel.x() * ux + st.playerVel.z() * uz; // die Fahrt des Spielers in den Wagen
+                        if (m.kontakt < 0 && ab > 0.05 && ab <= 0.3) anlauf = Math.min(anlauf, vU);
                         if (m.kontakt < 0 && ab <= 0.02) {
                             m.kontakt = i;
-                            m.vorKontakt = vorher;
+                            m.vorKontakt = Number.isFinite(anlauf) ? anlauf : vorher;
                         }
                         if (m.kontakt >= 0 && i - m.kontakt <= 10) m.nachKontakt = Math.min(m.nachKontakt, vU);
                         vorher = vU;
@@ -3563,31 +3569,39 @@ async function probeBahn(B) {
             m.grund = `kein ${zielTyp} vor dem Bug`;
             return m;
         }
-        const e = r.spawnArchitecture(
-            "fahrzeug_gt",
-            { x: sx, y: boden(sx, sz) + 0.5, z: sz },
-            { silent: true, precise: true, rotationY: fahrt - Math.PI / 2, id: "fahr-bahn-stoss" }
-        );
-        if (!e) {
-            m.grund = "kein GT an der Stelle der Schau";
-            if (fixture) r.removeArchitecture(fixture);
-            return m;
-        }
-        await gebaut(e);
-        tippe("e");
-        frame();
-        if (st.player.mountedArch !== e.id) {
-            m.grund = "E steigt an der Stelle der Schau nicht ein";
-            if (r._portalOverlay && typeof r.exitPortal === "function") r.exitPortal();
-            wagenWeg(e);
-            if (fixture) r.removeArchitecture(fixture);
-            return m;
-        }
-        takt(12);
+        // JEDER VERSUCH VON DER STATION: der Wagen steht je Seite neu am Ort der Schau, Bug auf das Ziel. Fuhr der zweite
+        // Versuch dort los, wo die Befreiung des ersten endete, lag das Ziel um deren Lenk-Drehung schief vor dem Bug (K16:
+        // 19,4° — bei 5,7 m Abstand 1,9 m quer, mehr als halbe Wagen-Breite + Ring-Radius, der GT fuhr 23 m vorbei).
+        const wagenAnDerStation = async () => {
+            const e = r.spawnArchitecture(
+                "fahrzeug_gt",
+                { x: sx, y: boden(sx, sz) + 0.5, z: sz },
+                { silent: true, precise: true, rotationY: fahrt - Math.PI / 2, id: "fahr-bahn-stoss" }
+            );
+            if (!e) return { grund: "kein GT an der Stelle der Schau" };
+            await gebaut(e);
+            stelle(sx - Math.cos(fahrt) * 1.5, sz + Math.sin(fahrt) * 1.5);
+            tippe("e");
+            frame();
+            if (st.player.mountedArch !== e.id) {
+                if (r._portalOverlay && typeof r.exitPortal === "function") r.exitPortal();
+                wagenWeg(e);
+                return { grund: "E steigt an der Stelle der Schau nicht ein" };
+            }
+            takt(12);
+            return { e };
+        };
         for (const [seite, lenk] of [
             ["mit A", "a"],
             ["mit D", "d"],
         ]) {
+            const ws = await wagenAnDerStation();
+            if (!ws.e) {
+                m.grund = ws.grund;
+                if (fixture) r.removeArchitecture(fixture);
+                return m;
+            }
+            const e = ws.e;
             // der Stoß: Gas gegen das Ziel, bis der Wagen steht (höchstens 3 s), dann 0,5 s drücken
             halte(["w"]);
             let stoss = false;
@@ -3607,6 +3621,7 @@ async function probeBahn(B) {
                 const dz = ziel.position.z - e.position.z;
                 const bx = ziel.blockerAABBs || [];
                 m.ohneStoss = {
+                    seite,
                     weg: +Math.hypot(e.position.x - w0.x, e.position.z - w0.z).toFixed(2),
                     vMax: +vMax.toFixed(2),
                     zielLaengs: +(dx * fX + dz * fZ).toFixed(2),
@@ -3643,9 +3658,9 @@ async function probeBahn(B) {
             halte([]);
             m.versuche.push({ seite, freiFrame, weg, vMinKmh: vMin * 3.6 });
             takt(30);
+            wagenWeg(e);
         }
         m.da = true;
-        wagenWeg(e);
         if (fixture) r.removeArchitecture(fixture);
         return m;
     };
