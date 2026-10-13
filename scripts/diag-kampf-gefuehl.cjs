@@ -322,6 +322,52 @@ function ausdauerVerdict(A) {
             );
     return v;
 }
+// (T27) LEBENSWERTE SIND ZUSTAND (K27 — pure Funktion, Probe UND Selbst-Test): ein Biss senkt hp, ein Hieb die Ausdauer;
+// kein Rufer der Stat-Neuberechnung hebt hp, Ausdauer oder Mana über Regen·dt; die Rückkehr steht voll; auf das Maximum
+// setzen nur applyPlayerSoul und _playerDeathRespawn. Jede Verletzung nennt den Rufer und seinen Weg (Gerät · Panel ·
+// Boost · Tod-Takt). Befund K27: recomputePlayerStats setzte hp, Ausdauer und Mana bei JEDER Neuberechnung auf das Maximum.
+const LEBEN_SOLL = { vollRufer: ["_playerDeathRespawn", "applyPlayerSoul"], eps: 1e-3 };
+function lebenswerteVerdict(L) {
+    if (!L || !Array.isArray(L.schritte) || L.schritte.length < 10) return ["lebenswerte keine Probe"];
+    const v = [];
+    if (!(L.erst && L.erst.hp > 0)) v.push("lebenswerte-biss: der Biss senkte hp nicht (keine Probe)");
+    if (!(L.erst && L.erst.st > 0)) v.push("lebenswerte-hieb: der Hieb senkte die Ausdauer nicht (keine Probe)");
+    for (const x of L.schritte) {
+        if (x.fehler) v.push(`lebenswerte-abbruch: ${x.rufer} warf ${x.fehler}`);
+        for (const [k, name] of [
+            ["hp", "hp"],
+            ["st", "Ausdauer"],
+            ["mana", "Mana"],
+        ]) {
+            const [a, b] = x[k] || [];
+            if (!Number.isFinite(a) || !Number.isFinite(b)) {
+                v.push(`lebenswerte-leer: ${x.rufer} ohne ${name} (${a} → ${b})`);
+                continue;
+            }
+            if (b - a > (x.regen[k] || 0) + LEBEN_SOLL.eps)
+                v.push(
+                    `lebenswerte-heilt: ${x.rufer} (${x.weg}) hob ${name} ${a} → ${b}, erlaubt + ${x.regen[k] || 0} (Regen·dt)`
+                );
+        }
+    }
+    const R = L.rueckkehr;
+    if (!R || !(R.wunde > 0) || !(Math.abs(R.hp - R.hpMax) <= LEBEN_SOLL.eps))
+        v.push(`lebenswerte-rueckkehr: nach dem Tod steht hp ${R && R.hp} von ${R && R.hpMax} (Wunde ${R && R.wunde})`);
+    if (!L.boostAn || !L.boostAb) v.push(`lebenswerte-boost: an ${!!L.boostAn} · ab ${!!L.boostAb} (keine Probe)`);
+    const vr = (L.vollRufer || []).join(",");
+    if (vr !== LEBEN_SOLL.vollRufer.join(","))
+        v.push(`lebenswerte-voll: auf das Maximum setzen [${vr}], Soll [${LEBEN_SOLL.vollRufer.join(",")}]`);
+    return v;
+}
+function lebenswerteWege(L) {
+    const wege = new Set();
+    for (const x of (L && L.schritte) || [])
+        for (const k of ["hp", "st", "mana"]) {
+            const [a, b] = x[k] || [];
+            if (b - a > (x.regen[k] || 0) + LEBEN_SOLL.eps) wege.add(x.weg);
+        }
+    return [...wege];
+}
 // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Welle LF kampf, Posten 6 — pure Funktion, Probe UND Selbst-Test): Biss, Haut
 // und Leben eines Tiers steigen streng mit der Masse seines Leibs — über alle Gattungen und Größen hinweg (die Masse IST
 // Gattung × Größe). Befund 07.10.: damage 19,75 und defense 11,9 für jede Gattung und Größe.
@@ -2555,6 +2601,200 @@ async function WELLE_L() {
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         });
+        // (T27) LEBENSWERTE SIND ZUSTAND (K27): im Modus pfad senkt ein Biss (damagePlayer, jagd) hp und ein Hieb
+        // (_beginPlayerSwing) die Ausdauer; danach geht jeder Rufer der Stat-Neuberechnung einmal — Gerät (equipHeld an und
+        // ab, equipArmor an und ab, repairHeldDevice), Panel (_ichHandleOverlay), Boost (die Trauer der Bisse über der
+        // Schwelle: tickPlayerBoosts an, addPlayerBoost, der Ablauf ab) und der Tod-Takt (drei tickPlayerVitals nach dem Tod
+        // über damagePlayer). Vor jedem Rufer verwunden derselbe Biss und Hieb; gemessen werden hp, Ausdauer und Mana davor
+        // und danach, erlaubt ist Regen·dt (hp hat kein Regen-Gesetz: 0). Auf das Maximum setzen nur die Wandlung
+        // (applyPlayerSoul) und die Rückkehr (_playerDeathRespawn) — die Rufer mit `voll` liest die Probe aus dem Quelltext.
+        // Selbst-Test (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei JEDER Neuberechnung) als Hülle → der erste
+        // Rufer heißt equipHeld. Befund K27: 4 Wege zur Voll-Heilung (Gerät, Panel, Boost, Tod-Takt).
+        await teil("T27", async () => {
+            const modeL = r.getGameMode();
+            const inv = p.inventory;
+            const savedL = {
+                hp: p.hp,
+                stamina: p.stamina,
+                mana: p.mana,
+                wound: p.deathWoundIntensity,
+                grace: p.respawnGraceUntil,
+                deathTick: p.deathLastTick,
+                boosts: Array.isArray(p.boosts) ? p.boosts.slice() : p.boosts,
+                boostTick: p.boostLastTick,
+                trig: p.boostLastTriggered ? { ...p.boostLastTriggered } : p.boostLastTriggered,
+                emo: p.emotions ? { ...p.emotions } : p.emotions,
+                armor: p.equipped ? p.equipped.armor : null,
+                ort: pm.position.clone(),
+            };
+            const zurueck = () => {
+                p.hp = savedL.hp;
+                p.stamina = savedL.stamina;
+                p.mana = savedL.mana;
+                p.deathWoundIntensity = savedL.wound;
+                p.respawnGraceUntil = savedL.grace;
+                p.deathLastTick = savedL.deathTick;
+                p.boosts = Array.isArray(savedL.boosts) ? savedL.boosts.slice() : savedL.boosts;
+                p.boostLastTick = savedL.boostTick;
+                p.boostLastTriggered = savedL.trig ? { ...savedL.trig } : savedL.trig;
+                if (savedL.emo) p.emotions = { ...savedL.emo };
+                pm.position.copy(savedL.ort);
+                pm.updateMatrixWorld(true);
+                if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+            };
+            const r3 = (x) => (Number.isFinite(x) ? +x.toFixed(3) : null);
+            const WEG = {
+                equipHeld: "Gerät",
+                equipArmor: "Gerät",
+                repairHeldDevice: "Gerät",
+                _ichHandleOverlay: "Panel",
+                tickPlayerBoosts: "Boost",
+                addPlayerBoost: "Boost",
+                tickPlayerVitals: "Tod-Takt",
+            };
+            const lauf = () => {
+                r.setGameMode("pfad");
+                p.deathWoundIntensity = 0;
+                p.respawnGraceUntil = -Infinity;
+                p.boosts = [];
+                p.hp = p.hpMax;
+                p.stamina = p.staminaMax;
+                const lage = () => ({ hp: p.hp, st: p.stamina, mana: p.mana });
+                const verwunde = () => {
+                    const a = lage();
+                    r.damagePlayer(6, "jagd");
+                    p._swing = null;
+                    r._beginPlayerSwing();
+                    p._swing = null;
+                    const b = lage();
+                    return { hp: r3(a.hp - b.hp), st: r3(a.st - b.st) };
+                };
+                const schritte = [];
+                const schritt = (rufer, f, regen) => {
+                    verwunde();
+                    if (p.manaMax > 0) p.mana = Math.min(Number.isFinite(p.mana) ? p.mana : 0, 0.3 * p.manaMax);
+                    const a = lage();
+                    let fehler = null;
+                    try {
+                        f();
+                    } catch (e) {
+                        fehler = String((e && e.message) || e).slice(0, 120);
+                    }
+                    const b = lage();
+                    schritte.push({
+                        rufer,
+                        weg: WEG[rufer.split(" ")[0]] || "?",
+                        hp: [r3(a.hp), r3(b.hp)],
+                        st: [r3(a.st), r3(b.st)],
+                        mana: [r3(a.mana), r3(b.mana)],
+                        regen: regen || { hp: 0, st: 0, mana: 0 },
+                        fehler,
+                    });
+                };
+                const erst = verwunde();
+                // Gerät
+                schritt("equipHeld an", () => ausruesten("klinge_dolch"));
+                schritt("equipHeld ab", () => ausruesten(null));
+                schritt("equipArmor an", () => r.equipArmor("ruestung_brustpanzer"));
+                schritt("equipArmor ab", () => r.equipArmor(null));
+                ausruesten("klinge_dolch");
+                const dolch = s.blueprints.klinge_dolch;
+                r._setBlueprintWear(dolch, 0.5);
+                const kosten = r.computeBuildCost("klinge_dolch") || {};
+                const invAlt = {};
+                for (const m of Object.keys(kosten)) {
+                    invAlt[m] = inv[m];
+                    inv[m] = (inv[m] || 0) + 1000;
+                }
+                schritt("repairHeldDevice", () => r.repairHeldDevice());
+                for (const m of Object.keys(invAlt)) {
+                    if (invAlt[m] === undefined) delete inv[m];
+                    else inv[m] = invAlt[m];
+                }
+                r._setBlueprintWear(dolch, 1);
+                ausruesten(null);
+                // Panel
+                schritt("_ichHandleOverlay", () => r._ichHandleOverlay(true));
+                try {
+                    r._ichHandleOverlay(false);
+                } catch (_e) {}
+                // Boost: die Trauer der Bisse steht über der Schwelle (die Refrakt-Pause frei), der Takt löst den Boost aus
+                p.emotions.sorrow = 0.9;
+                p.boostLastTriggered = { ...(p.boostLastTriggered || {}), "emotion:sorrow": -Infinity };
+                p.boostLastTick = -Infinity;
+                schritt("tickPlayerBoosts an", () => r.tickPlayerBoosts(T + 1000));
+                const boostAn = (p.boosts || []).some((b) => b.source === "emotion:sorrow");
+                schritt("addPlayerBoost", () =>
+                    r.addPlayerBoost({ source: "consume:_t27", tagDelta: { dichte: 0.1 }, durationSeconds: 5 })
+                );
+                p.emotions.sorrow = 0;
+                for (const b of p.boosts || []) b.expiresAt = performance.now() / 1000 - 1;
+                p.boostLastTick = -Infinity;
+                schritt("tickPlayerBoosts ab", () => r.tickPlayerBoosts(T + 2000));
+                // ab: die beiden gesetzten Boosts sind abgelaufen (die Wut der Bisse darf einen eigenen auslösen)
+                const boostAb = !(p.boosts || []).some(
+                    (b) => b.source === "emotion:sorrow" || b.source === "consume:_t27"
+                );
+                // Tod über den Schadens-Weg, dann drei Vitals-Takte (je 1 s)
+                p.respawnGraceUntil = -Infinity;
+                r.damagePlayer(1000, "sturz");
+                const rueckkehr = { hp: r3(p.hp), hpMax: r3(p.hpMax), wunde: r3(p.deathWoundIntensity) };
+                p.respawnGraceUntil = -Infinity; // die Gnade (8 s) ist um — die Bisse der Vitals-Takte treffen wieder
+                let tv = 1e6;
+                for (let i = 0; i < 3; i++) {
+                    const mag = (p.stats && p.stats.tags && p.stats.tags.magieleitung) || 0;
+                    const regen = {
+                        hp: 0,
+                        st: s.playerUnderwater ? 0 : A.STAMINA_REGEN_PER_SEC || 5,
+                        mana: (A.MANA_REGEN_PER_SEC || 3) * (1 + mag),
+                    };
+                    schritt(
+                        "tickPlayerVitals " + (i + 1),
+                        () => {
+                            p.deathLastTick = tv;
+                            tv += 1;
+                            r.tickPlayerVitals(tv);
+                        },
+                        regen
+                    );
+                }
+                return { erst, schritte, rueckkehr, boostAn, boostAb };
+            };
+            const ohneKommentar = (f) =>
+                String(f)
+                    .replace(/\/\/.*$/gm, "")
+                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const vollRufer = Object.getOwnPropertyNames(A.prototype)
+                .filter((n) => n !== "constructor" && typeof A.prototype[n] === "function")
+                .filter((n) => /recomputePlayerStats\(\s*\{\s*voll\s*:\s*true/.test(ohneKommentar(A.prototype[n])))
+                .sort();
+            try {
+                w.z.leben = { ...lauf(), vollRufer };
+                zurueck();
+                // Selbst-Test (S11): die alte Zeile als Hülle um die Neuberechnung
+                const neu = A.prototype.recomputePlayerStats;
+                r.recomputePlayerStats = function (...a) {
+                    const c = neu.apply(this, a);
+                    const pl = this.state.player;
+                    pl.hp = pl.hpMax;
+                    pl.stamina = pl.staminaMax;
+                    pl.mana = pl.manaMax;
+                    return c;
+                };
+                try {
+                    w.z.lebenSelbst = { ...lauf(), vollRufer };
+                } finally {
+                    delete r.recomputePlayerStats; // die Hülle fällt, die Methode der Klasse trägt wieder
+                }
+            } finally {
+                try {
+                    ausruesten(null);
+                    r.equipArmor(savedL.armor || null);
+                } catch (_e) {}
+                zurueck();
+                if (r.getGameMode() !== modeL) r.setGameMode(modeL);
+            }
+        });
         // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
         // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
         // seines Leibs (_leibMasse). Befund: damage 19,75 und defense 11,9 überall, nur hpMax 99,8–158,9.
@@ -4373,6 +4613,29 @@ async function WELLE_L() {
         check(
             avGut.length === 0 && avAlt.some((x) => x.startsWith("ausdauer-flach")),
             "Selbst-Test T19: der Befund (5 je Hieb für jede Waffe) nennt die flache Reihe; eine Reihe nach Masse bleibt grün"
+        );
+        const zL = z.leben || null;
+        const fmtL = (x) =>
+            `${x.rufer} hp ${x.hp[0]}→${x.hp[1]} · Ausdauer ${x.st[0]}→${x.st[1]} · Mana ${x.mana[0]}→${x.mana[1]}`;
+        console.log(
+            `  (T27) Lebenswerte im Modus pfad: Biss −${zL && zL.erst && zL.erst.hp} hp · Hieb −${zL && zL.erst && zL.erst.st} Ausdauer · ` +
+                `Rückkehr ${JSON.stringify(zL && zL.rueckkehr)} · voll setzen [${zL && (zL.vollRufer || []).join(", ")}]`
+        );
+        for (const x of (zL && zL.schritte) || []) console.log(`        ${fmtL(x)}`);
+        const lv = lebenswerteVerdict(zL);
+        const wegeL = lebenswerteWege(zL);
+        check(
+            lv.length === 0,
+            `K27 T27: Lebenswerte sind Zustand — Wege zur Voll-Heilung außerhalb von Wandlung und Rückkehr ${wegeL.length}` +
+                (wegeL.length ? ` (${wegeL.join(", ")})` : "") +
+                ", kein Rufer hebt hp, Ausdauer oder Mana über Regen·dt" +
+                (lv.length ? " — " + lv.join(" · ") : "")
+        );
+        const lvSelbst = lebenswerteVerdict(z.lebenSelbst);
+        const erstSelbst = lvSelbst.find((x) => x.startsWith("lebenswerte-heilt")) || "";
+        check(
+            erstSelbst.startsWith("lebenswerte-heilt: equipHeld an") && lebenswerteWege(z.lebenSelbst).length === 4,
+            `SELBST-TEST (S11): die alte Zeile (hp, Ausdauer, Mana = Maximum bei jeder Neuberechnung) als Hülle → der erste Rufer heißt equipHeld, 4 Wege (${lebenswerteWege(z.lebenSelbst).join(", ")}; ${erstSelbst || "kein Täter"})`
         );
         console.log(
             `  (T20) Kampf-Werte (kg → Biss/Haut/Leben): ${(z.kampfWerte || []).map((x) => `${x.seele}@${x.L} ${x.kg} → ${x.damage}/${x.defense}/${x.hpMax}`).join(" · ")}`
