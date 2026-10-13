@@ -1187,7 +1187,9 @@ jobs:
               # BRICHT (rot) = der Bau wirft, bleibt leer, trägt NaN oder den Not-Körper. Ratschen (spec/vertraege/ratsche.json):
               # reglerTot 18 von 113 → Soll 0 · reglerBudget (Rand-Wert über der Budget-Zeile) 9 → Soll 0. --selftest zuerst:
               # die Brücke ohne ov → jeder vehicle-Regler tot; ein Regler-Bau, der wirft bzw. NaN rechnet → BRICHT; der Ofen
-              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT.
+              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT. WURF (1110-9): die
+              # NUR-WURF-Stufe am Regler-Rand richtet die Kosten-Regel des Wirts (Tor: volle Regler-Hülle, 385 Paare; Haus mit
+              # Abstand); der Täter „der Zwilling wirft immer" → rot an kathedrale.
               run: npm run gate:regler-wirkt
 
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
@@ -1293,6 +1295,11 @@ jobs:
             - name: Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)
               if: matrix.gruppe == 4
               run: npm run gate:kopplung
+
+            - name: Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)
+              # Gruppe 9 (die leichteste, 8,9 min Median): in Gruppe 4 trug sie nach main bb554abf 11,6 min (Waage 11).
+              if: matrix.gruppe == 9
+              run: npm run gate:tor-fern
 
             - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
               if: matrix.gruppe == 6

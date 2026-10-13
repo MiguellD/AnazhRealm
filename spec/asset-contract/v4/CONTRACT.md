@@ -29,9 +29,11 @@ ruine · maurentor` (Schlüssel aus `__portaCore.PRESETS`, Namensraum
   `mulberry32(0x50FA)` — byte-treu zur Vorlage; derselbe Bauplan bei seed 7 und
   12345 ist byte-gleich. Das Gate prüft die Invarianz AKTIV: wer Seed-Variation
   einführt, bricht die Goldens bewusst (Re-Mint-Entscheid, cv-Bump-Frage).
-- `lod`: Tore tragen NUR Stufe 0 (`PORTAL_RENDER_CONFIG.lod.kindStages =
-{ gate: [0] }`); jede andere Stufe wird auf 0 geklemmt — L1=L0-Grade und
-  L2-Auto-Impostor sind Sache des Wirts (Studio-Vertrag B2/N7.5-Merge).
+- `lod`: Tore zeigen NUR Stufe 0 (`PORTAL_RENDER_CONFIG.lod.kindStages =
+{ gate: [0, 3] }`; 3 = die NUR-WURF-Stufe, 1110-9: die Hüllen-Liste des Tors als EIN
+  Gitter im Schatten-Stoff, Beipack `__fern`); jede Stufe klemmt auf die größte
+  deklarierte ≤ lod (0·1·2 → 0, ab 3 → 3) — L1=L0-Grade und L2-Auto-Impostor sind
+  Sache des Wirts (Studio-Vertrag B2/N7.5-Merge).
 - `ov` (optional): Parameter-Override im Slider-id-Raum, gemergt NACH s+fx
   (Merge = Slider-DEFAULTS → `s` → `fx` → `ov`, jeder Schlüssel durch das
   `pk`-Mapping `rise→riseScale`/`horse→horseshoe` — exakt die Lab-Semantik
@@ -55,8 +57,9 @@ abweichendes Byte kippt den Hash.
 
 Fälle: 7 Ordnungen × 2 Seeds (7, 12345) × LOD 0 + 2 ov-Fälle
 (drachentor+mass, kathedrale+orders/glow — friert auch die
-Override-Merge-Semantik ein) = 16; plus die aktive lod-Klemmen-Probe
-(lod 2 == lod 0, nicht golden-gespeichert).
+Override-Merge-Semantik ein) = 16, plus die NUR-WURF-Stufe 3 je Ordnung
+(seed 7, 1110-9 additiv — die 16 blieben byte-gleich) = 23; dazu die aktive
+lod-Klemmen-Probe (lod 2 == lod 0, lod 5 == lod 3, nicht golden-gespeichert).
 
 ## Laufzeit des Gates
 

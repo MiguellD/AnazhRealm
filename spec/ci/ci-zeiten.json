@@ -1125,6 +1125,11 @@
         "38212701381"
       ]
     },
+    "Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)": {
+      "s": 110,
+      "geschaetzt": "lokal 55 s (12.10., OMEN i7-8750H, Node 24: K über die Regler-Hülle 385 Listen samt Gitter, W/I an 7 Rezepten, Selbsttest an 3); der CI-Läufer rechnet Node-Geometrie etwa doppelt so lang (gate:haus-fern, Node allein)",
+      "lauf": "npm run gate:tor-fern"
+    },
     "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
       "s": 9,
       "n": 5,
