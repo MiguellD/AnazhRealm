@@ -222,7 +222,7 @@ function shellPfad(name, seed, stufe) {
         const bx = new THREE.Box3().setFromObject(mass.g);
         const B = {
             p,
-            q: { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0 } },
+            q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } },
             lod: "chunk",
             dyn: false,
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },

@@ -27974,9 +27974,10 @@ class AnazhRealm {
         let z0 = Infinity;
         let z1 = -Infinity;
         for (const p of splats) {
-            const r = p.art === "platte" ? Math.hypot(p.ex, p.ez) : p.w / 2;
-            const xs = p.art === "platte" ? [p.cx] : [p.x0, p.x1];
-            const zs = p.art === "platte" ? [p.cz] : [p.z0, p.z1];
+            const flaeche = p.art !== "trasse"; // platte und frei: ein Rechteck um (cx, cz)
+            const r = flaeche ? Math.hypot(p.ex, p.ez) : p.w / 2;
+            const xs = flaeche ? [p.cx] : [p.x0, p.x1];
+            const zs = flaeche ? [p.cz] : [p.z0, p.z1];
             for (const x of xs) {
                 x0 = Math.min(x0, x - r);
                 x1 = Math.max(x1, x + r);
@@ -28010,14 +28011,13 @@ class AnazhRealm {
         const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
         if (ple.has(key)) return ple.get(key);
-        const G = globalThis.__gelaendeCore;
-        const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, {
-            hoeheAt: (x, z) => this._terrainMacroSurfaceY(x, z, true),
-            flaeche: (splats) => {
-                const E = G.erdbauNormal(splats);
-                return (x, z) => G.erdbauFlaeche(E, x, z);
-            },
+        // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das vom
+        // Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der Erdbau nichts
+        const ctx = globalThis.__gelaendeCore.ortCtx(this._gelaende(), (x, z) => {
+            const w = this._atlasWaterLevelAt(x, z, -1e9);
+            return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
         });
+        const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, ctx);
         this._erdbauSetzen(key, v2.erdbau);
         ple.set(key, v2);
         return v2;
@@ -28062,6 +28062,7 @@ class AnazhRealm {
         if (!liste) return true;
         for (const i of liste) {
             const p = E.splats[i];
+            if (p.frei) continue; // unter einer Brücke ist der Grund frei
             let d;
             if (p.platte) {
                 const dx = x - p.cx;

@@ -210,7 +210,7 @@ function ortUrteil(v2, hoehe, o) {
         if (Math.abs(schwelle) <= STUFE && vorStufe <= STUFE && !zelle(i0, j0).zu) {
             const seen = new Set([i0 * 131072 + j0]);
             const st = [[i0, j0]];
-            for (let kopf = 0; kopf < st.length && !erreicht && seen.size < KAPPE; ) {
+            for (let kopf = 0; kopf < st.length && !erreicht && seen.size < KAPPE;) {
                 const [i, j] = st[kopf++];
                 const z = zelle(i, j);
                 if (z.ziel) {
@@ -260,7 +260,11 @@ function ortVerdikt(m) {
         fehl.push(`Laternen Welt ${m.laternenWelt} / Plan ${m.laternenPlan}`);
     if (!(m.planHashGleich === true)) fehl.push("Plan-Hash Studio ≠ Welt");
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
-    if (!(m.gtWeg >= GT_SOLL_M)) fehl.push(`GT auf dem Dorfweg ${m.gtWeg} m in 8 s (Soll ≥ ${GT_SOLL_M})`);
+    // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
+    // als das Soll, nie der Wagen langsamer
+    const gt8 = m.gtEnde > 0 ? Math.round(((m.gtWeg / m.gtEnde) * 8) * 100) / 100 : m.gtWeg;
+    if (!(gt8 >= GT_SOLL_M))
+        fehl.push(`GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})`);
     return fehl;
 }
 const GT_SOLL_M = 60;
@@ -279,7 +283,8 @@ async function gtDorfweg(v2, anker, sek) {
         const wege = (v2.roads || []).filter((w) => w.gen === 0 && Array.isArray(w.pts) && w.pts.length > 1);
         const laenge = (w) => {
             let L = 0;
-            for (let k = 1; k < w.pts.length; k++) L += Math.hypot(w.pts[k].x - w.pts[k - 1].x, w.pts[k].z - w.pts[k - 1].z);
+            for (let k = 1; k < w.pts.length; k++)
+                L += Math.hypot(w.pts[k].x - w.pts[k - 1].x, w.pts[k].z - w.pts[k - 1].z);
             return L;
         };
         let best = null;
@@ -288,7 +293,9 @@ async function gtDorfweg(v2, anker, sek) {
             let L = laenge(w0);
             for (;;) {
                 const ende = kette[kette.length - 1].pts[kette[kette.length - 1].pts.length - 1];
-                const nx = wege.find((w) => !kette.includes(w) && Math.hypot(w.pts[0].x - ende.x, w.pts[0].z - ende.z) < 0.5);
+                const nx = wege.find(
+                    (w) => !kette.includes(w) && Math.hypot(w.pts[0].x - ende.x, w.pts[0].z - ende.z) < 0.5
+                );
                 if (!nx) break;
                 kette.push(nx);
                 L += laenge(nx);
@@ -336,9 +343,15 @@ async function gtDorfweg(v2, anker, sek) {
             tMs += 1000 / 60;
             r._gameLoopTick(tMs);
         };
-        const TASTE = { w: { key: "w", code: "KeyW" }, a: { key: "a", code: "KeyA" }, d: { key: "d", code: "KeyD" }, e: { key: "e", code: "KeyE" } };
+        const TASTE = {
+            w: { key: "w", code: "KeyW" },
+            a: { key: "a", code: "KeyA" },
+            d: { key: "d", code: "KeyD" },
+            e: { key: "e", code: "KeyE" },
+        };
         const gehalten = new Set();
-        const ereignis = (art, k) => window.dispatchEvent(new KeyboardEvent(art, Object.assign({ bubbles: true }, TASTE[k])));
+        const ereignis = (art, k) =>
+            window.dispatchEvent(new KeyboardEvent(art, Object.assign({ bubbles: true }, TASTE[k])));
         const halte = (liste) => {
             for (const k of Array.from(gehalten))
                 if (!liste.includes(k)) {
@@ -354,7 +367,11 @@ async function gtDorfweg(v2, anker, sek) {
         const a0 = punkt(2);
         const a1 = punkt(4);
         const fahrt = Math.atan2(a1.x - a0.x, a1.z - a0.z); // Bug (sin, cos)
-        st.playerMesh.position.set(a0.x + Math.cos(fahrt) * 1.5, r.getTerrainHeightAt(a0.x, a0.z) + 1.8, a0.z - Math.sin(fahrt) * 1.5);
+        st.playerMesh.position.set(
+            a0.x + Math.cos(fahrt) * 1.5,
+            r.getTerrainHeightAt(a0.x, a0.z) + 1.8,
+            a0.z - Math.sin(fahrt) * 1.5
+        );
         if (st.playerVel) st.playerVel.setValue(0, 0, 0);
         for (let i = 0; i < 20; i++) frame();
         const e = r.spawnArchitecture(
@@ -408,14 +425,19 @@ async function gtDorfweg(v2, anker, sek) {
                 let naechster = null;
                 let nd = Infinity;
                 for (const a of st.architectures) {
-                    if (!a || a === e || !a.position || !Array.isArray(a.blockerAABBs) || !a.blockerAABBs.length) continue;
+                    if (!a || a === e || !a.position || !Array.isArray(a.blockerAABBs) || !a.blockerAABBs.length)
+                        continue;
                     const dd = Math.hypot(a.position.x - pos.x, a.position.z - pos.z);
                     if (dd < nd) {
                         nd = dd;
                         naechster = a.type;
                     }
                 }
-                res.verlassen = { s: Math.round((nach.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10 };
+                res.verlassen = {
+                    s: Math.round((nach.s - s0) * 10) / 10,
+                    naechster,
+                    abstand: Math.round(nd * 10) / 10,
+                };
             }
         }
         halte([]);
@@ -461,7 +483,16 @@ const FIXTURES = [
             fs.readFile(fp, (err, data) => {
                 if (err) return ((res.statusCode = 404), res.end());
                 const ext = path.extname(fp);
-                res.setHeader("Content-Type", ext === ".html" ? "text/html" : ext === ".js" ? "application/javascript" : ext === ".json" ? "application/json" : "application/octet-stream");
+                res.setHeader(
+                    "Content-Type",
+                    ext === ".html"
+                        ? "text/html"
+                        : ext === ".js"
+                          ? "application/javascript"
+                          : ext === ".json"
+                            ? "application/json"
+                            : "application/octet-stream"
+                );
                 res.end(data);
             });
         });
@@ -469,7 +500,12 @@ const FIXTURES = [
         const browser = await puppeteer.launch({
             headless: true,
             protocolTimeout: 240000,
-            args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
+            args: [
+                "--use-angle=swiftshader",
+                "--enable-unsafe-swiftshader",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+            ],
         });
         for (const datei of dateien) {
             const save = JSON.parse(fs.readFileSync(datei, "utf8"));
@@ -484,21 +520,41 @@ const FIXTURES = [
                 while (performance.now() < dl) {
                     const r0 = window.anazhRealm;
                     const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null;
-                    if (f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch) break;
+                    if (f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch)
+                        break;
                     await new Promise((ok) => setTimeout(ok, 100));
                 }
                 const r = window.anazhRealm;
-                const out = { arten: {}, natur: 0, gebaut: 0, auf: 0, verschoben: 0, schwebend: 0, dhMax: 0, nebenMax: 0 };
+                const out = {
+                    arten: {},
+                    natur: 0,
+                    gebaut: 0,
+                    auf: 0,
+                    verschoben: 0,
+                    schwebend: 0,
+                    dhMax: 0,
+                    nebenMax: 0,
+                };
                 try {
                     r.loadState(s);
                     const G = globalThis.__gelaendeCore;
                     const L = r._gelaende();
-                    const L0 = { seed: L.seed, noise: L.noise, baseHeight: L.baseHeight, waterLevel: L.waterLevel, erbgut: L.erbgut, regionSize: L.regionSize, erdbau: null };
+                    const L0 = {
+                        seed: L.seed,
+                        noise: L.noise,
+                        baseHeight: L.baseHeight,
+                        waterLevel: L.waterLevel,
+                        erbgut: L.erbgut,
+                        regionSize: L.regionSize,
+                        erdbau: null,
+                    };
                     out.erdbauSplats = L.erdbau ? L.erdbau.n : 0;
                     out.orte = r.state.architectures.filter((e) => e.fundament).length;
                     for (const e of r.state.architectures) {
                         if (!e || !e.position || e.fundament || /_dorf$/.test(e.type)) continue;
-                        const dh = Math.abs(G.hoehe(L, e.position.x, e.position.z, true) - G.hoehe(L0, e.position.x, e.position.z, true));
+                        const dh = Math.abs(
+                            G.hoehe(L, e.position.x, e.position.z, true) - G.hoehe(L0, e.position.x, e.position.z, true)
+                        );
                         const auf = !r._ortFrei(e.position.x, e.position.z, 0.01);
                         if (!(dh > 0.05) && !auf) continue;
                         const natur = /^(baum_|grown_|fels|kristall)/.test(e.type);
@@ -577,7 +633,15 @@ const FIXTURES = [
         const ortT = (slots) => ({
             ort: { x: 100, z: 100 },
             slots,
-            roads: [{ pts: [{ x: -20, z: 0 }, { x: 20, z: 0 }], w: 3 }],
+            roads: [
+                {
+                    pts: [
+                        { x: -20, z: 0 },
+                        { x: 20, z: 0 },
+                    ],
+                    w: 3,
+                },
+            ],
             platz: null,
         });
         const eben = () => 10;
@@ -602,16 +666,69 @@ const FIXTURES = [
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
-        const gut = { sockelMax: 0, sockelMedian: 0, tuerenOk: 2, tuerenN: 2, kronen: 0, laternenWelt: 6, laternenPlan: 6 };
+        const gut = {
+            sockelMax: 0,
+            sockelMedian: 0,
+            tuerenOk: 2,
+            tuerenN: 2,
+            kronen: 0,
+            laternenWelt: 6,
+            laternenPlan: 6,
+        };
         Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4 });
         check("Selbst-Test 12: das Verdikt eines gehaltenen Orts ist leer", ortVerdikt(gut).length === 0);
-        const schlecht = Object.assign({}, gut, { kronen: 3, laternenWelt: 0, planHashGleich: false, sockelMax: 2.72, gtWeg: 5.2 });
+        const schlecht = Object.assign({}, gut, {
+            kronen: 3,
+            laternenWelt: 0,
+            planHashGleich: false,
+            sockelMax: 2.72,
+            gtWeg: 5.2,
+        });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
             "Selbst-Test 13: das Verdikt nennt Sockel, Kronen, Laternen, Plan-Hash und den GT auf dem Dorfweg beim Namen",
-            /Sockel max 2.72/.test(vs) && /Kronen in Grundrissen 3/.test(vs) && /Laternen Welt 0/.test(vs) && /Plan-Hash/.test(vs) && /GT auf dem Dorfweg 5.2 m/.test(vs),
+            /Sockel max 2.72/.test(vs) &&
+                /Kronen in Grundrissen 3/.test(vs) &&
+                /Laternen Welt 0/.test(vs) &&
+                /Plan-Hash/.test(vs) &&
+                /GT auf dem Dorfweg 5.2 m/.test(vs),
             vs
         );
+        check(
+            "Selbst-Test 13b: endet der Dorfweg vor 8 s, zählt das Tempo bis zum Ende (48 m in 5,1 s hält, 20 m in 5,1 s fällt)",
+            ortVerdikt(Object.assign({}, gut, { gtWeg: 48.16, gtEnde: 5.1 })).length === 0 &&
+                /GT auf dem Dorfweg 20 m in 5.1 s/.test(ortVerdikt(Object.assign({}, gut, { gtWeg: 20, gtEnde: 5.1 })).join(" · "))
+        );
+        // V7 (K10, das Brücken-Etikett): ein Weg quer über einen Fluss (die Rinne |x| < 3, 2 m tief) trägt eine Brücke von
+        // Widerlager zu Widerlager, unter ihr keine Trasse und ein FREI-Splat: der Grund in der Rinne bleibt (kein Damm). Ohne
+        // das Wasser-Urteil (ctx.wasserAt) staut der Erdbau die Rinne auf die Höhe des Wegs — die Linse sieht den Unterschied.
+        {
+            require(path.join(root, "gelaende-core.js"));
+            const Gb = globalThis.__gelaendeCore;
+            const pts = [];
+            for (let x = -20; x <= 20; x += 2) pts.push({ x, z: 0 });
+            const planB = { slots: [], roads: [{ pts, w: 3 }], laternen: [] };
+            const rinne = (x) => (Math.abs(x) < 3 ? -2 : 0);
+            const ctxB = (mitWasser) => ({
+                hoeheAt: (x) => rinne(x - 100),
+                flaeche: (sp) => {
+                    const E = Gb.erdbauNormal(sp);
+                    return (x, z) => Gb.erdbauFlaeche(E, x, z);
+                },
+                wasserAt: mitWasser ? (x) => Math.abs(x - 100) < 3 : null,
+            });
+            const mit = FC.ortPlan(planB, { x: 100, z: 0 }, ctxB(true));
+            const ohne = FC.ortPlan(planB, { x: 100, z: 0 }, ctxB(false));
+            const yMit = Gb.erdbauY(Gb.erdbauNormal(mit.erdbau), 100, 0, -2);
+            const yOhne = Gb.erdbauY(Gb.erdbauNormal(ohne.erdbau), 100, 0, -2);
+            const br = mit.roads[0].bruecken || [];
+            const freiN = mit.erdbau.filter((p) => p.art === "frei").length;
+            check(
+                "Selbst-Test 14: das Brücken-Etikett — der Weg über die Rinne trägt EINE Brücke, ein FREI-Splat hält den Grund (kein Damm), ohne Wasser-Urteil staut der Erdbau",
+                br.length === 1 && freiN === 1 && yMit === -2 && yOhne > -1.5 && Math.abs(mit.roads[0].ys[10]) < 1e-9,
+                JSON.stringify({ br, freiN, yMit, yOhne, deck: mit.roads[0].ys[10] })
+            );
+        }
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -713,7 +830,11 @@ const FIXTURES = [
         const bwN = FC.brandwand(Bs, gap);
         check(
             "Brandwand-Probe: die anliegenden Seiten sind markiert (x1 am linken, x0 am rechten Haus)",
-            bwN === 2 && Bs[0].p.brandwand && Bs[0].p.brandwand.x1 === 1 && Bs[1].p.brandwand && Bs[1].p.brandwand.x0 === 1,
+            bwN === 2 &&
+                Bs[0].p.brandwand &&
+                Bs[0].p.brandwand.x1 === 1 &&
+                Bs[1].p.brandwand &&
+                Bs[1].p.brandwand.x0 === 1,
             `bwN=${bwN}`
         );
         const weit = FC.reihenSnap(
@@ -876,7 +997,7 @@ const FIXTURES = [
         res.ovTravels =
             e1.length > 0 &&
             e1.every((e) => {
-                const s = plan.slots.find((sl) => (sl.seed >>> 0) === e.seed);
+                const s = plan.slots.find((sl) => sl.seed >>> 0 === e.seed);
                 return (
                     s && e.studioOv && typeof e.studioOv === "object" && e.studioOv.rolle === (s.rolle || "wohnhaus")
                 );
@@ -920,7 +1041,9 @@ const FIXTURES = [
         const codeOf = (f) => (window.__codeOf ? window.__codeOf(f) : f.toString());
         const fl = typeof r._fundamentLand === "function" ? codeOf(r._fundamentLand) : "";
         res.waterWall =
-            /_fundamentLand\(/.test(codeOf(r._spawnSettlementSlot)) && /_fundamentRaster\(/.test(fl) && /_landAt\(/.test(fl);
+            /_fundamentLand\(/.test(codeOf(r._spawnSettlementSlot)) &&
+            /_fundamentRaster\(/.test(fl) &&
+            /_landAt\(/.test(fl);
         // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
         // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
         res.anchorChokepoint = /this\._siedlungsAnker\(plan/.test(src) && !/_structureSpawnPos/.test(src);
@@ -1105,7 +1228,8 @@ const FIXTURES = [
                 const ringVorher = r.state.architectures.filter(
                     (e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 400
                 ).length;
-                for (let t5 = 0; t5 < 30 && !wm5.genesisPortalRing; t5++) r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z });
+                for (let t5 = 0; t5 < 30 && !wm5.genesisPortalRing; t5++)
+                    r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z });
                 const ringNachher = r.state.architectures.filter(
                     (e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 400
                 ).length;
@@ -1232,24 +1356,15 @@ const FIXTURES = [
             try {
                 const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
                 const L = r._gelaende();
-                let ort = null;
-                for (let rr = 1500; rr < 4000 && !ort; rr += 40)
-                    for (let k = 0; k < 48 && !ort; k++) {
-                        const x = Math.cos((k / 48) * 2 * Math.PI) * rr;
-                        const z = Math.sin((k / 48) * 2 * Math.PI) * rr;
-                        const g = Math.hypot(H(x + 8, z) - H(x - 8, z), H(x, z + 8) - H(x, z - 8)) / 16;
-                        if (!(g >= 0.12 && g <= 0.25) || !(H(x, z) > L.waterLevel + 3)) continue;
-                        let land = 0;
-                        for (let a = 0; a < 8; a++)
-                            if (r._landAt(x + 40 * Math.cos(a * 0.785), z + 40 * Math.sin(a * 0.785), 0.2)) land++;
-                        if (land === 8) ort = { x, z, g };
-                    }
+                const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
                 res.hang = ort;
                 if (!ort) return res;
                 const plan = await r._foundryRequestSettlement(dp);
                 const vorher = r.state.architectures.length;
                 const zellenVor = new Set(Object.keys((r.state.worldMeta && r.state.worldMeta.settlementCells) || {}));
-                await r.spawnSettlement(Object.assign({}, dp, { position: { x: ort.x, y: H(ort.x, ort.z), z: ort.z } }));
+                await r.spawnSettlement(
+                    Object.assign({}, dp, { position: { x: ort.x, y: H(ort.x, ort.z), z: ort.z } })
+                );
                 const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
                 const neuKey = Object.keys(sc).find((k) => !zellenVor.has(k));
                 const anker = neuKey ? { x: sc[neuKey].x, z: sc[neuKey].z } : null;
@@ -1267,8 +1382,18 @@ const FIXTURES = [
                     if (!sl || !anker) continue;
                     const lx = e.position.x - anker.x;
                     const lz = e.position.z - anker.z;
-                    const ob = sl.obb ? Object.assign({}, sl.obb, { cx: sl.obb.cx + lx - sl.x, cz: sl.obb.cz + lz - sl.z }) : null;
-                    slots.push({ x: lx, z: lz, phi: e.rotationY || 0, y: e.position.y - 0.5, rolle: sl.rolle, tuer: sl.tuer, obb: ob });
+                    const ob = sl.obb
+                        ? Object.assign({}, sl.obb, { cx: sl.obb.cx + lx - sl.x, cz: sl.obb.cz + lz - sl.z })
+                        : null;
+                    slots.push({
+                        x: lx,
+                        z: lz,
+                        phi: e.rotationY || 0,
+                        y: e.position.y - 0.5,
+                        rolle: sl.rolle,
+                        tuer: sl.tuer,
+                        obb: ob,
+                    });
                 }
                 const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
                 res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
@@ -1326,8 +1451,27 @@ const FIXTURES = [
                         }
                 res.fremdBauten = fremd;
                 res.v2Json = v2 ? JSON.stringify(v2) : null;
+                // DER PLAN-HASH STUDIO = WELT (in derselben Seite, kein Plattform-Bit dazwischen): der Export des Fachwerk-Kerns
+                // (die Foundry rechnet ihn, das Labor baut dasselbe Layout — Teil A friert ihn ein) am Anker über die Lage des
+                // STUDIOS (gelaende-core `lageGrund` der Saat) und seinen ctx (`ortCtx`) — byte-gleich mit dem Plan v2 der Welt,
+                // oder der Wirt weicht vom Grund der Lage ab.
+                if (v2 && anker) {
+                    const Gs = globalThis.__gelaendeCore;
+                    const studio = globalThis.__fachwerkCore.ortPlan(
+                        plan,
+                        anker,
+                        Gs.ortCtx(Gs.lageGrund(L.seed, window.SimplexNoise))
+                    );
+                    res.planHashGleich = JSON.stringify(studio) === res.v2Json;
+                }
                 res.planJson = JSON.stringify({ roads: P.roads || [] });
-                res.lage = { seed: L.seed, baseHeight: L.baseHeight, waterLevel: L.waterLevel, erbgut: L.erbgut, regionSize: L.regionSize };
+                res.lage = {
+                    seed: L.seed,
+                    baseHeight: L.baseHeight,
+                    waterLevel: L.waterLevel,
+                    erbgut: L.erbgut,
+                    regionSize: L.regionSize,
+                };
             } catch (e) {
                 res.err = (e && e.stack) || String(e);
             }
@@ -1367,10 +1511,7 @@ const FIXTURES = [
         out.planV2 === true && out.slotAnchorExact === true,
         `v2=${out.planV2}`
     );
-    check(
-        "B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}",
-        out.fundamentTravels === true
-    );
+    check("B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}", out.fundamentTravels === true);
     check(
         "B: DORF-IN-TERRAIN — das Podest ist gefallen (keine _archFundamentBox, kein Sockel-Pool)",
         out.podestAbsent === true
@@ -1402,26 +1543,11 @@ const FIXTURES = [
     check(
         "O: ein Hang trägt den Akt (Gefälle 0,12–0,25 über 16 m, trocken)",
         !!outO.hang,
-        outO.hang ? `${outO.hang.x.toFixed(1)}/${outO.hang.z.toFixed(1)} Gefälle ${outO.hang.g.toFixed(3)}` : "kein Hang"
+        outO.hang
+            ? `${outO.hang.x.toFixed(1)}/${outO.hang.z.toFixed(1)} Gefälle ${outO.hang.g.toFixed(3)}`
+            : "kein Hang"
     );
-    // DER PLAN-HASH STUDIO = WELT: derselbe Export, derselbe Ort, dieselbe Gelände-Funktion (gelaende-core mit der Lage der
-    // Welt) — der Kern rechnet in Node den Plan v2, den die Welt trägt, byte-gleich.
-    let planHashGleich = false;
-    if (outO.v2Json && outO.anker) {
-        global.THREE = global.THREE || require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-        require(path.join(root, "gelaende-core.js"));
-        const Gk = globalThis.__gelaendeCore;
-        const SimplexNoise = require(path.join(root, "vendor/simplex-noise.js"));
-        const Lw = Object.assign({}, outO.lage, { noise: new SimplexNoise(outO.lage.seed + ":voxel"), erdbau: null });
-        const studio = FC.ortPlan(FC.exportSettlement(dpO), outO.anker, {
-            hoeheAt: (x, z) => Gk.hoehe(Lw, x, z, true),
-            flaeche: (splats) => {
-                const E = Gk.erdbauNormal(splats);
-                return (x, z) => Gk.erdbauFlaeche(E, x, z);
-            },
-        });
-        planHashGleich = sha(JSON.stringify(studio)) === sha(outO.v2Json);
-    }
+    const planHashGleich = outO.planHashGleich === true;
     const u = outO.urteil || {};
     const m = {
         sockelMedian: u.sockelMedian,
@@ -1434,16 +1560,36 @@ const FIXTURES = [
         planHashGleich,
         fremdBauten: outO.fremdBauten,
         gtWeg: gtO.gtWeg,
+        gtEnde: gtO.endeNachS,
     };
     console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
     console.log(
         "  ORT-ZAHLEN " +
-            JSON.stringify(Object.assign({ haeuser: outO.haeuser, slots: outO.slots, planV2: outO.planV2, zellen: u.zellen, fremdArten: outO.fremdArten || {} }, m))
+            JSON.stringify(
+                Object.assign(
+                    {
+                        haeuser: outO.haeuser,
+                        slots: outO.slots,
+                        planV2: outO.planV2,
+                        zellen: u.zellen,
+                        fremdArten: outO.fremdArten || {},
+                    },
+                    m
+                )
+            )
     );
     if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
     const fehlO = ortVerdikt(m);
-    check("O: das Dorf trägt jedes Haus (alle Slots stehen)", outO.haeuser > 0 && outO.haeuser === outO.slots, `${outO.haeuser}/${outO.slots}`);
-    check("O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg)", fehlO.length === 0, fehlO.join(" · ") || "gehalten");
+    check(
+        "O: das Dorf trägt jedes Haus (alle Slots stehen)",
+        outO.haeuser > 0 && outO.haeuser === outO.slots,
+        `${outO.haeuser}/${outO.slots}`
+    );
+    check(
+        "O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg)",
+        fehlO.length === 0,
+        fehlO.join(" · ") || "gehalten"
+    );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
     const c = out.c || {};

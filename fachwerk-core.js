@@ -1943,7 +1943,7 @@
       const m=new THREE.Mesh(new THREE.BoxGeometry(hi-lo,o0.h,0.1),mat2); m.position.set((lo+hi)/2,o0.cy,o0.cz+(o0.cz>0?0.05:-0.05)); grp2.add(m); }
     else { let lo=1e9,hi=-1e9; os.forEach(o=>{lo=Math.min(lo,o.cz-o.w/2);hi=Math.max(hi,o.cz+o.w/2);});
       const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,o0.h,hi-lo),mat2); m.position.set(o0.cx+(o0.cx>0?0.05:-0.05),o0.cy,(lo+hi)/2); grp2.add(m); } }
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp2); wrap.updateMatrixWorld(true);
+  const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
     // prettier-ignore
@@ -2446,7 +2446,7 @@
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
     if(x.faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=x.faktor[0]; att[i*3+1]=x.faktor[1]; att[i*3+2]=x.faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     grp2.add(new THREE.Mesh(bg, M[x.rolle]||M.putz)); }
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp2); wrap.updateMatrixWorld(true);
+  const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
     // Die Hülle eines Baus in der EINEN Form: die Liste des Fernkörpers (Stufe 3, rolle "sicht").
@@ -2514,6 +2514,13 @@
         return huelleVonBau(B);
     }
     // prettier-ignore
+    // DER BAU-ORT (K10): der Rahmen, in dem ein Haus der Siedlung bakt — Gier phi, Ort x/z und sein BODEN y (der Plan v2,
+    // fachwerk `ortPlan`: das Labor setzt q.y = Slot-y − Bezug; die Einzel-Sonde und der Vertrag stehen auf y = 0). Fail-
+    // closed: ein Bau-Ort ohne Höhe wirft (vorher stand jedes Haus auf y = 0, gleich wo sein Grund lag). Leser: fragFuer,
+    // hofFuer und die Stufen-Bakes.
+    function bauOrtWrap(B){
+      if(!B||!B.q||!Number.isFinite(B.q.y)) throw new Error("fachwerk: der Bau-Ort q trägt keine Höhe y (der Boden des Hauses)");
+      const w=new THREE.Group(); w.rotation.y=B.q.phi; w.position.set(B.q.x,B.q.y,B.q.z); return w; }
     function mischeGeoms(ziel, teil){ for(const role in teil){ const S=teil[role]; if(!S.vo) continue;   // FRAGMENT-MISCHUNG: fertige Bakes verketten — kein Neubau, nur Index-Versatz
   const G=ziel[role]||(ziel[role]={pos:[],nrm:[],col:[],idx:[],uv:[],vo:0}), off=G.vo;
   const P=S.pos,N=S.nrm,C2=S.col,I=S.idx,U=S.uv||[];
@@ -2572,7 +2579,7 @@
   if((B.p.baujahr||1900)<1800 && rnd()<0.35){ const ex3=(rnd()<0.5)?e.x0-0.03:e.x1+0.03;      // SCHICHT-2: EFEU — das Alter begrünt die Wetterecke
     for(let k3=0;k3<3;k3++) box(ex3, 0.7+k3*1.05+rnd()*0.3, e.z1-0.5-k3*0.4-rnd()*0.5, 0.1, 0.9+rnd()*0.5, 0.5+rnd()*0.4, M.laub); }
   if(rolle==='schmiede'){ box(e.x1+0.7, 0.24, e.z0+0.6, 1.35,0.42,0.5, mLay('stein')); }            // ROLLE → TRÄNKTROG
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp); wrap.updateMatrixWorld(true);
+  const wrap=bauOrtWrap(B); wrap.add(grp); wrap.updateMatrixWorld(true);
   bakeLOD(grp, B.p.col, geoms, 0, true);
   return geoms; }
     // prettier-ignore
@@ -2592,7 +2599,7 @@
           for(let i2=0;i2<72;i2++) att[i2]=0.92;                                              // KALIBRIERT auf die GEMESSENE Voll-Interieur-Leuchtdichte (176 vs 60 bei 0.34): der Stufen-Sprung an Fenstern fällt von 51.8k Pixeln auf ~0
           lg.setAttribute('color', new THREE.Float32BufferAttribute(att,3));
           const li=new THREE.Mesh(lg, M.putz); li.position.set((f2.x0+f2.x1)/2, lh/2+0.05, (f2.z0+f2.z1)/2); st.g.add(li); } } }
-    const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(st.g);
+    const wrap=bauOrtWrap(B); wrap.add(st.g);
     wrap.updateMatrixWorld(true);                                                             // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
     if(stufe===2||turm){ lod2Koerper(B, geoms); bandFassade(st.H, B, geoms); if(st.topH) bandFassade(st.topH, B, geoms); }
@@ -2805,17 +2812,15 @@
     // ════════════ STRASSENGRAPH-GESETZ ════════════ Straßen wachsen als Graph: Kurvensegmente von Knoten zu Knoten;
     // SNAP: endet ein Trieb nahe Bestand, VERBINDET er sich (Knoten/Kantensplit) → ZYKLEN → BLÖCKE. Das ist der Unterschied Stadt/Straßendorf.
     // prettier-ignore
-    function strassengraph(rnd, plan, sW, lw, Rw, fluss){
+    function strassengraph(rnd, plan, sW, lw, Rw){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
   const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
   const grid=(plan.region==='antik')||(staedt&&jahr>=1800);
   const nodes=[{x:0,z:0}], edges=[];
   const deg=k=>{ let d=0; for(const e of edges){ if(e.a===k||e.b===k)d++; } return d; };
-  const dFluss=(x,z)=>{ if(!fluss)return 1e9; let m=1e9; for(const q of fluss.pts){ const d=Math.hypot(x-q.x,z-q.z); if(d<m)m=d; } return m; };
   function walk(x0,z0,th0,len,gen){ const pts=[]; let x=x0,z=z0,dev=0;
     for(let u=0;u<=len;u+=DS){ const th=th0+dev; pts.push({x,z,th});
       if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
-      if(fluss&&gen>0&&dFluss(x+Math.cos(th)*DS, z+Math.sin(th)*DS)<fluss.w/2+2){ break; }   // FLUSS-GESETZ: nur Arterien queren
       dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; x+=Math.cos(th0+dev)*DS; z+=Math.sin(th0+dev)*DS; }
     return pts; }
   const nT= staedt? ((plan.groesse==='grossstadt'||plan.groesse==='metropole')?4:(rnd()<0.5?4:3)) : 2;
@@ -2864,13 +2869,7 @@
           if(Math.hypot(pts[k2].x-q.x,pts[k2].z-q.z)<RUNDE.fr){frei=false;break;} } if(!frei)break; } }
         if(!frei)continue;
         edges.push({a:i2,b:j2,pts,w:sW*0.78,gen:1}); added++; } } } }
-  const bruecken=[];
-  if(fluss){ for(const e of edges){ if(e.gen!==0) continue;
-    let i0=-1,i1=-1;
-    e.pts.forEach((q,k)=>{ if(dFluss(q.x,q.z)<fluss.w/2+0.5){ if(i0<0)i0=k; i1=k; } });
-    if(i0>=0){ const A=e.pts[Math.max(0,i0-1)], B=e.pts[Math.min(e.pts.length-1,i1+1)];
-      bruecken.push({x:(A.x+B.x)/2, z:(A.z+B.z)/2, th:Math.atan2(B.z-A.z,B.x-A.x), len:Math.hypot(B.x-A.x,B.z-A.z)+3, w:e.w+1.2}); } } }
-  return {nodes, edges, gates, bruecken};
+  return {nodes, edges, gates};
 }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
@@ -2882,17 +2881,7 @@
   const DS=3;
   const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
   const Rw= walled? Math.min(195, 26+Math.sqrt(n)*8.4) : 0;
-  let fluss=null;                                                                            // FLUSS-GESETZ: der große Städtebauer
-  if(rnd()<(staedt?0.45:0.30)){ const fth=rnd()*Math.PI, off=(16+rnd()*26)*(rnd()<0.5?1:-1), fw=8+rnd()*6;
-    const fpts=[]; let dev=0; const R0=Math.max(340, Rw*2+120);
-    for(let u=-R0;u<=R0;u+=6){ const th=fth+dev;
-      fpts.push({x:Math.cos(fth)*u - Math.sin(fth)*off + Math.sin(fth)*dev*0, z:Math.sin(fth)*u + Math.cos(fth)*off, th});
-      dev+=(rnd()-0.5)*0.05; }
-    for(let k2=0;k2<fpts.length;k2++){ const b2=(rnd()-0.5); fpts[k2].x+=-Math.sin(fth)*b2; fpts[k2].z+=Math.cos(fth)*b2;
-      if(k2>0) fpts[k2-1].th=Math.atan2(fpts[k2].z-fpts[k2-1].z, fpts[k2].x-fpts[k2-1].x); }
-    fluss={pts:fpts, w:fw}; }
-  const dFl=(x,z)=>{ if(!fluss)return 1e9; let m=1e9; for(const q of fluss.pts){ const d=Math.hypot(x-q.x,z-q.z); if(d<m)m=d; } return m; };
-  const G=strassengraph(rnd, plan, sW, lw, Rw, fluss);
+  const G=strassengraph(rnd, plan, sW, lw, Rw);
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
     const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
@@ -2915,7 +2904,6 @@
           if(Math.abs(Math.sin(qth-P.th))<0.55) continue;                                      /*quer, nicht parallel*/
           let frei9=true;
           for(let u9=3;u9<Q.d-3&&frei9;u9+=3){ const wx=P.x+Math.cos(qth)*u9, wz=P.z+Math.sin(qth)*u9;
-            if(dFl(wx,wz)<(fluss?fluss.w/2:0)+3.5){frei9=false;break;}
             for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){frei9=false;break;} } }
           if(!frei9) continue;
           const gp=[]; const gl=Q.d; for(let u9=0;u9<=gl;u9+=DS) gp.push({x:P.x+Math.cos(qth)*Math.min(u9,gl), z:P.z+Math.sin(qth)*Math.min(u9,gl), th:qth});
@@ -2926,7 +2914,6 @@
             if(Q2.d>=13&&Q2.d<=48){ const th2=Math.atan2(Q2.z-P2.z,Q2.x-P2.x);
               if(Math.abs(Math.sin(th2-P2.th))>=0.55){ let fr2=true;
                 for(let u9=3;u9<Q2.d-3&&fr2;u9+=3){ const wx=P2.x+Math.cos(th2)*u9, wz=P2.z+Math.sin(th2)*u9;
-                  if(dFl(wx,wz)<(fluss?fluss.w/2:0)+3.5){fr2=false;break;}
                   for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){fr2=false;break;} } }
                 if(fr2){ const gp2=[]; for(let u9=0;u9<=Q2.d;u9+=DS) gp2.push({x:P2.x+Math.cos(th2)*Math.min(u9,Q2.d), z:P2.z+Math.sin(th2)*Math.min(u9,Q2.d), th:th2});
                   gp2.push({x:Q2.x,z:Q2.z,th:th2});
@@ -2988,7 +2975,6 @@
       if(ok) for(let j2=0;j2<obbs.length;j2++){ if(skipPair===obbs[j2].i)continue;
         if(obbSep(o,obbs[j2].o)<gap-1e-6){ ok=false; if(rd.quer)QD.obb++; break; } }
       if(ok&&platzObb&&obbSep(o,platzObb)<0.5) ok=false;
-      if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+Math.hypot(exH,ezH)) ok=false;                 // UFER-FREIHALTUNG
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
           for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
@@ -3027,7 +3013,6 @@
         if(ok) for(const q2 of obbs){ if(q2.i===j){ if(obbSep(o,q2.o)<0.9)ok=false; }
           else if(obbSep(o,q2.o)<gap-1e-6)ok=false; if(!ok)break; }
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+Math.hypot(exS,ezS))ok=false;
         if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o, parent:j};
@@ -3044,7 +3029,6 @@
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+rq)ok=false;
         if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok&&Rw&&Math.abs(Math.hypot(ccx,ccz)-Rw)<2.0+rq)ok=false;
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
@@ -3085,7 +3069,6 @@
       const fcx=q.x+Math.cos(q.th)*(6+fwd/2)+sgn*nx2*(sW/2+2+fd/2), fcz=q.z+Math.sin(q.th)*(6+fwd/2)+sgn*nz2*(sW/2+2+fd/2);
       const fo={cx:fcx,cz:fcz,phi:q.th,ex:fwd/2,ez:fd/2};
       let ok=true; for(const q2 of obbs) if(obbSep(fo,q2.o)<0.5){ok=false;break;}
-      if(ok&&fluss){ for(const qf of fluss.pts){ if(distPunktOBB(qf.x,qf.z,fo)<fluss.w/2+0.5){ok=false;break;} } }
       if(ok&&Rw){ let mn=1e9; for(let a2=0;a2<12;a2++){ const wx=Math.cos(a2/12*2*Math.PI)*Rw, wz=Math.sin(a2/12*2*Math.PI)*Rw;
         mn=Math.min(mn,distPunktOBB(wx,wz,fo)); } if(Math.hypot(fcx,fcz)<Rw+3&&mn<1.5)ok=false; }
       if(ok) felder.push(fo); } }
@@ -3115,7 +3098,6 @@
     if(ok) for(const rd of roads){ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); if(Math.hypot(tx-q.x,tz-q.z)<rd.w/2+0.9){ok=false;break;} } if(!ok)break; }
     if(ok&&platzObb&&distPunktOBB(tx,tz,platzObb)<(platz&&platz.typ==='weg'?0.8:-1))ok=false;
     if(ok&&felder.some(f=>distPunktOBB(tx,tz,f)<0.8))ok=false;
-    if(ok&&fluss&&dFl(tx,tz)<fluss.w/2+0.8)ok=false;
     if(ok&&brunnen.some(b2=>Math.hypot(tx-b2.x,tz-b2.z)<3.5))ok=false;
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
@@ -3127,7 +3109,6 @@
       const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
       let ok=true;
       for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<0.45){ok=false;break;} }
-      if(ok&&fluss&&dFl(lx2,lz2)<fluss.w/2+0.6)ok=false;
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
@@ -3137,7 +3118,7 @@
   const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
   return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
-          fluss, bruecken:G.bruecken||[], laternen,
+          laternen,
           graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
           welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
 }
@@ -3269,7 +3250,7 @@
         var bx = new THREE.Box3().setFromObject(mass.g);
         var B = {
             p: p,
-            q: { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0 } },
+            q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, // das Einzel-Haus des Ofens steht im eigenen Rahmen (y = 0; der Wirt setzt es auf seinen Slot)
             lod: "chunk",
             dyn: false,
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },
@@ -4901,7 +4882,7 @@
     //    DATEN: name/region/groesse + slots[] (je Haus: Anker x/z/phi [exakt die
     //    Lab-wrap-Semantik: position.set(x,0,z) + rotation.y=phi], obb, kultur,
     //    seed, rolle, baujahr, ov = der volle Haus-P-Vektor als benannte Daten)
-    //    + die BENANNTEN Siedlungs-Schichten (roads/platz/brunnen/mauer/fluss/
+    //    + die BENANNTEN Siedlungs-Schichten (roads/platz/brunnen/mauer/
     //    laternen/… — dürfen v1 unkonsumiert bleiben, must-ignore). Der Fußab-
     //    druck je Haus kommt aus massBau (der MASS-BUILD, Δext=0-bewiesen) —
     //    exakt der buildDorf-Pfad der Shell. DETERMINISTISCH: DORF/dorfLayout
@@ -4997,17 +4978,13 @@
             slots: slots,
             // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
             // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
-            // + Hof-Bäume (Architektur-Spawns). Die Schichten ohne Welt-Wahrheit
-            // (fluss/bruecken = Layout-interner Deko-Fluss, das Welt-Wasser ist
-            // _landAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
-            // Gestalt) sind aus dem Export GESTRICHEN — das Lab liest sein Layout
-            // direkt aus dorfLayout. Der Grund (Welle L, 06.10.; die frühere
-            // Begründung zitierte eine CLAUDE.md-Zeile, die es nie gab): die
-            // Stadt-Genese mit Mauer, Fluss und Brücken in der Welt ist NEUES
-            // Verhalten hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1;
-            // Leben-Synthese §5.3, NACH-V1) — offen, benannt: die Welt-Stadt zeigt
-            // keine Mauer, keine Laternen, keinen Siedlungs-Fluss (Messname
-            // gate:settlement „SCHICHT-VOLLENDUNG"); das Lab baut sie als Vorschau.
+            // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
+            // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
+            // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
+            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; Messname
+            // gate:settlement „SCHICHT-VOLLENDUNG"). Einen Siedlungs-Fluss plant das
+            // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
+            // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
@@ -5033,7 +5010,8 @@
     //    absolut) und `hang` (plattform · hanghaus · stelzen: die Spanne des Grunds unter dem Grundriss), die Wege mit `ys`, der
     //    Platz und die Laternen mit `y`, und `erdbau[]` — die Splats des ERDBAU-Terms (gelaende-core `erdbauNormal`): `platte`
     //    {cx, cz, phi, ex, ez, y} und `trasse` {x0, z0, y0, x1, z1, y1, w}, absolut in Welt-Koordinaten, in der Reihenfolge
-    //    ihrer Auswertung (Wege, Platz, je Haus Grundriss und Vorplatz). REIN: derselbe Plan + derselbe Ort + dieselbe Höhe ⇒
+    //    ihrer Auswertung (Wege, Platz, je Haus Grundriss und Vorplatz), zuletzt `frei` {cx, cz, phi, ex, ez} unter jeder
+    //    Brücke. ctx.wasserAt(x, z) (optional) nennt das Welt-Wasser: ein Weg darüber trägt `bruecken` [[Widerlager a, b]]. REIN: derselbe Plan + derselbe Ort + dieselbe Höhe ⇒
     //    byte-derselbe Plan v2 (gate:settlement, Plan-Hash Studio = Welt). Leser: der Wirt (`_ortPlanSetzen`).
     var ORT_GESETZ = {
         glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
@@ -5043,6 +5021,7 @@
         gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
         hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
+        brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
     };
     function ortPlan(plan, origin, ctx) {
         if (
@@ -5089,6 +5068,7 @@
         var erdbau = [];
         var wegSaeume = [];
         var wegKerne = [];
+        var freiSplats = [];
         // 1) DER PLATZ
         var pz = plan.platz;
         var platzY = null;
@@ -5132,6 +5112,14 @@
                     }
                 }
             }
+            // das Welt-Wasser unter dem Weg (ctx.wasserAt, das Brücken-Etikett unten): sein Grund ist das Bett, nie der Weg —
+            // die Glättung liest nur trockene Punkte
+            var nass = [];
+            var trocken = 0;
+            for (k = 0; k < n; k++) {
+                nass.push(!!(ctx.wasserAt && ctx.wasserAt(ox + pts[k].x, oz + pts[k].z)));
+                if (!nass[k]) trocken++;
+            }
             var ys = [];
             for (k = 0; k < n; k++) {
                 if (pin[k] !== null) {
@@ -5141,7 +5129,7 @@
                 var sum = 0;
                 var cnt = 0;
                 for (var m = 0; m < n; m++)
-                    if (Math.abs(sw[m] - sw[k]) <= O.glaettM) {
+                    if (Math.abs(sw[m] - sw[k]) <= O.glaettM && (!nass[m] || !trocken)) {
                         sum += roh[m];
                         cnt++;
                     }
@@ -5157,13 +5145,40 @@
                     var g2 = O.gefaelle * (sw[k + 1] - sw[k]);
                     ys[k] = Math.min(ys[k + 1] + g2, Math.max(ys[k + 1] - g2, ys[k]));
                 }
+            // DAS BRÜCKEN-ETIKETT: wo der Weg Welt-Wasser kreuzt (ctx.wasserAt), trägt er eine Brücke — ihr Deck spannt gerade
+            // von Widerlager zu Widerlager (den trockenen Punkten davor und danach), unter ihr legt der Erdbau keine Trasse, und
+            // ein FREI-Splat hält den Grund unter der Spanne samt brueckeM je Seite unberührt (der Weg staut das Wasser nicht).
+            var bruecken = [];
+            for (k = 0; k < n; k++) {
+                if (!nass[k] || (k > 0 && nass[k - 1])) continue;
+                var e = k;
+                while (e + 1 < n && nass[e + 1]) e++;
+                var wa = k > 0 ? k - 1 : k;
+                var wb = e + 1 < n ? e + 1 : e;
+                var ya = nass[wa] ? ys[wb] : ys[wa];
+                var yb = nass[wb] ? ya : ys[wb];
+                for (var m2 = k; m2 <= e; m2++) ys[m2] = sw[wb] > sw[wa] ? ya + ((yb - ya) * (sw[m2] - sw[wa])) / (sw[wb] - sw[wa]) : ya;
+                bruecken.push([wa, wb]);
+                var mx = (pts[wa].x + pts[wb].x) / 2;
+                var mz = (pts[wa].z + pts[wb].z) / 2;
+                var phiB = Math.atan2(-(pts[wb].z - pts[wa].z), pts[wb].x - pts[wa].x);
+                freiSplats.push({
+                    art: "frei",
+                    cx: r6(ox + mx),
+                    cz: r6(oz + mz),
+                    phi: r6(phiB),
+                    ex: r6(Math.hypot(pts[wb].x - pts[wa].x, pts[wb].z - pts[wa].z) / 2),
+                    ez: r6(hw + O.brueckeM),
+                });
+            }
             for (k = 0; k < n; k++) {
                 ys[k] = r6(ys[k]);
                 profil.push([pts[k].x, pts[k].z, ys[k], hw]);
             }
             // je Strecke ZWEI Trassen derselben Höhe: der Saum (Weg + saumM je Seite) liegt unter den Grundrissen, der Weg selbst
-            // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand
+            // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand; eine Strecke an der Brücke trägt keine
             for (k = 1; k < n; k++)
+                if (!nass[k - 1] && !nass[k])
                 for (var tier = 0; tier < 2; tier++)
                     (tier ? wegKerne : wegSaeume).push({
                         art: "trasse",
@@ -5176,7 +5191,7 @@
                         w: r6(2 * (hw + (tier ? 0 : O.saumM))),
                         weg: 2 * ri + tier, // die Strecken EINES Wegs: unter ihnen trägt die nächste Mitte (gelaende-core erdbauY)
                     });
-            wege.push(Object.assign({}, rd, { ys: ys }));
+            wege.push(bruecken.length ? Object.assign({}, rd, { ys: ys, bruecken: bruecken }) : Object.assign({}, rd, { ys: ys }));
         }
         if (platzY !== null)
             erdbau.push({
@@ -5310,7 +5325,7 @@
             // DIE REIHENFOLGE DER FLÄCHEN (die letzte gewinnt, wo sie sich decken): die Säume der Wege, die Grundrisse, die Wege
             // selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines Nachbarn liegt auf der Gasse), zuletzt die
             // Vorplätze (die Stufe vor der Tür liegt auf allem)
-            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze),
+            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
         });
     }
 

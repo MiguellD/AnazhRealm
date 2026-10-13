@@ -15,7 +15,10 @@
 //       Austritt steht der Körper (PH) unter der sichtbaren Decke (der Speicherlauf dreigeschossiger Häuser trat unter der
 //       Schräge aus: Kopfraum 1,2 m)
 //   B4  KELLER: der erste Strahl-Treffer aus dem Keller nach oben ist nie die Dorf-Boden-Platte
-//   B5  FLUSS: der erste Strahl-Treffer von oben auf die Flussmitte ist das Wasser (nie die Boden-Platte)
+//   B5  WELTGRUND (K10): das Labor plant das Dorf auf der Welt-Zelle — es trägt den Plan v2 (fachwerk ortPlan, ein Slot je
+//       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
+//       der Fuß steht auf dem Bild (Strahlen von oben auf den Dorf-Boden: Treffer = dorfBodenY ± 0,05 m). Der Deko-Fluss
+//       (B5 FLUSS bis K10) fiel mit seiner Klasse; das Wasser ist das der Welt.
 //   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser)
 //   --selftest: je Defekt wird die Basis-Zeile zurückgesetzt — als QUELL-Patch der servierten Datei (der Server reicht dem
 //   Labor die Basis-Form der geheilten Zeile) bzw. als Basis-Platte in der Seite — und GENAU die Probe dieses Defekts MUSS
@@ -65,13 +68,17 @@ const BASIS = {
     spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
     austritt: [[KERN, "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;", ""]],
-    // S-S5: das Wasser-Material lebte nur im Fluss-Block
-    antike: [
-        [LAB, "  const wm=lay.fluss?new THREE.MeshLambertMaterial({color:0x3d6d9c, side:THREE.DoubleSide}):null;", ""],
+    // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
+    flach: [
         [
             LAB,
-            "  if(lay.fluss){                                                                              // FLUSS: Wasserband + Ufer",
-            "  if(lay.fluss){ const wm=new THREE.MeshLambertMaterial({color:0x3d6d9c, side:THREE.DoubleSide});",
+            "    dorfBodenY=(x,z)=>{ let fx=(x-x0)/gx,",
+            "    dorfBodenY=(x,z)=>0; const _k10=(x,z)=>{ let fx=(x-x0)/gx,",
+        ],
+        [
+            LAB,
+            "for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i]; if(!geparkt(q)) q.y-=yRef; }",
+            "for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i]; if(!geparkt(q)) q.y=0; }",
         ],
     ],
 };
@@ -105,7 +112,7 @@ const server = http.createServer((req, res) => {
 // `platte` setzt in der Seite die Basis-Boden-Platte (0,3 m, −0,32 … −0,02) zurück.
 function proben(inj) {
     /* global buildDorf, dorfB, solids, promoteB, demoteB, player, keys, walkUpdate, dorfGroup, dorfCellars, dorf,
-       STEP, PH, overlap */
+       STEP, PH, overlap, dorfBodenY */
     const out = { fehler: null };
     const T = window.THREE;
     // ── B6 Epochen: Antike × 18/40/120 baut (die städtische Antike stürzte an `wm is not defined` ab, 3 von 3) ──
@@ -143,7 +150,7 @@ function proben(inj) {
                 Math.abs(s.max[0] - B.ext.x1) < 1e-9 &&
                 Math.abs(s.min[2] - B.ext.z0) < 1e-9 &&
                 Math.abs(s.max[2] - B.ext.z1) < 1e-9 &&
-                s.min[1] === 0
+                s.min[1] === B.q.y
         ).length;
     // haus-lokal → Welt (das Lab-Gesetz: wrap.rotation.y = phi, wrap.position = q)
     const welt = (B, lx, lz) => {
@@ -225,7 +232,7 @@ function proben(inj) {
                 let st = null;
                 for (let a = 0.35; a <= 1.2 && !st; a += 0.05) {
                     const w = welt(B, xm, f.zFoot - dir * a);
-                    const q = { x: w.x, y: f.base + 0.1, z: w.z }; // über der Dielen-Oberkante (Boden-Solid ±0,06 um die Ebene)
+                    const q = { x: w.x, y: B.q.y + f.base + 0.1, z: w.z }; // über der Dielen-Oberkante (Boden-Solid ±0,06 um die Ebene)
                     if (!solids.some((s) => overlap(q, s))) st = w;
                 }
                 if (!st) {
@@ -233,9 +240,9 @@ function proben(inj) {
                     continue;
                 }
                 const zi = welt(B, xm, f.zFoot + dir * (N * go + 1));
-                player.pos.set(st.x, f.base + 0.1, st.z);
+                player.pos.set(st.x, B.q.y + f.base + 0.1, st.z); // das Haus steht auf q.y (K10)
                 player.vy = 0;
-                player.groundY = f.base;
+                player.groundY = B.q.y + f.base;
                 for (let i = 0; i < 10; i++) walkUpdate(1 / 60);
                 const y0 = player.pos.y;
                 const soll = N * f.rise;
@@ -274,13 +281,15 @@ function proben(inj) {
                 o.geometry.type === "BoxGeometry" &&
                 o.geometry.parameters &&
                 o.geometry.parameters.height === 0.3 &&
-                o.position.y < -0.1 &&
-                o.position.y > -0.25));
+                o.userData.basisPlatte === true));
     if (inj === "platte") {
-        const W2 = dorf.lay.welt;
-        const g = new T.Mesh(new T.BoxGeometry(W2.x1 - W2.x0, 0.3, W2.z1 - W2.z0), new T.MeshBasicMaterial());
-        g.position.set((W2.x0 + W2.x1) / 2, -0.17, (W2.z0 + W2.z1) / 2);
-        dorfGroup.add(g);
+        for (const bi of keller) {
+            const B = dorfB[bi];
+            const g = new T.Mesh(new T.BoxGeometry(80, 0.3, 80), new T.MeshBasicMaterial());
+            g.position.set(B.q.x, B.q.y - 0.17, B.q.z);
+            g.userData.basisPlatte = true;
+            dorfGroup.add(g);
+        }
         dorfGroup.updateMatrixWorld(true);
     }
     const b4 = { keller: 0, platteDecke: 0 };
@@ -294,31 +303,58 @@ function proben(inj) {
         const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
         if (hit && istBodenPlatte(hit.object)) b4.platteDecke++;
     }
-    // ── B5 Fluss: von oben auf die Mitte (ohne Brücken-Spannen) ──
-    const b5 = { punkte: 0, wasser: 0, platte: 0 };
-    const fl = dorf.lay.fluss;
-    if (fl && Array.isArray(fl.pts)) {
-        for (const q of fl.pts) {
-            const unterBruecke = (dorf.lay.bruecken || []).some((bk) => {
-                const dx = q.x - bk.x,
-                    dz = q.z - bk.z;
-                const lp = dx * Math.cos(bk.th) + dz * Math.sin(bk.th),
-                    lq = -dx * Math.sin(bk.th) + dz * Math.cos(bk.th);
-                return Math.abs(lp) < bk.len / 2 + 1 && Math.abs(lq) < bk.w / 2 + 1;
-            });
-            if (unterBruecke) continue;
-            ray.set(new T.Vector3(q.x, 6, q.z), new T.Vector3(0, -1, 0));
-            const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
-            if (!hit) continue;
-            b5.punkte++;
-            if (hit.object.material && hit.object.material.color && hit.object.material.color.getHex() === 0x3d6d9c)
-                b5.wasser++;
-            else if (istBodenPlatte(hit.object)) b5.platte++;
-            else
-                (b5.andere = b5.andere || []).push(
-                    (hit.object.geometry && hit.object.geometry.type) + "@" + hit.point.y.toFixed(2)
-                );
-        }
+    // ── B5 WELTGRUND (K10): der Plan v2 im Labor, die Höhen-Spanne der Häuser, der Fuß auf dem Bild ──
+    const b5 = {
+        v2: 0,
+        slots: 0,
+        haeuser: 0,
+        spanne: 0,
+        strahlen: 0,
+        aufBild: 0,
+        abw: 0,
+        v2Json: null,
+        ort: null,
+        planHash: null,
+    };
+    const O = dorf.ort;
+    if (O && O.v2) {
+        b5.v2 = O.v2.version;
+        b5.slots = O.v2.slots.length;
+        b5.v2Json = JSON.stringify(O.v2);
+        b5.ort = O.ort;
+        // der Plan-Hash: der Kern rechnet in DERSELBEN Seite den Plan des Exports 7/18 am Ort über die Lage der Saat
+        // (lageGrund) und den ctx des Orts (ortCtx) — das Labor zeigt genau ihn (Teil O von gate:settlement hält Kern = Welt)
+        const FCk = window.__fachwerkCore;
+        const Gk = window.__gelaendeCore;
+        const kern = FCk.ortPlan(
+            FCk.exportSettlement({ seed: 7, nH: 18, epoche: "gewuerfelt", budget: 170000 }),
+            O.ort,
+            Gk.ortCtx(Gk.lageGrund(Gk.LAGE_GRUND.seed, window.SimplexNoise))
+        );
+        b5.planHash = JSON.stringify(kern) === b5.v2Json;
+        b5.v2Json = null;
+    }
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const B of dorfB) {
+        const q = B.q;
+        if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
+        b5.haeuser++;
+        lo = Math.min(lo, q.y);
+        hi = Math.max(hi, q.y);
+    }
+    b5.spanne = +(hi - lo).toFixed(2);
+    const W = dorf.lay.welt;
+    for (let i = 0; i < 600 && b5.strahlen < 150; i++) {
+        const x = W.x0 + (W.x1 - W.x0) * ((i * 0.618034) % 1);
+        const z = W.z0 + (W.z1 - W.z0) * ((i * 0.381966 + 0.5) % 1);
+        ray.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+        const hit = ray.intersectObject(dorfGroup, true).find((h) => h.object.visible !== false);
+        if (!hit || hit.object !== boden) continue;
+        b5.strahlen++;
+        const d = Math.abs(hit.point.y + 0.02 - dorfBodenY(x, z));
+        if (d <= 0.05) b5.aufBild++;
+        else b5.abw = Math.max(b5.abw, +d.toFixed(2));
     }
     out.PH = PH;
     out.b1 = b1;
@@ -398,9 +434,12 @@ function urteil(o) {
         );
     if (!(o.b4.keller >= 1)) f.push(`B4 kein Keller-Haus promoviert`);
     if (o.b4.platteDecke) f.push(`B4 Keller-Decke = Boden-Platte in ${o.b4.platteDecke} von ${o.b4.keller}`);
-    if (!(o.b5.punkte >= 5)) f.push(`B5 zu wenig Fluss-Punkte (${o.b5.punkte})`);
-    if (o.b5.platte || !(o.b5.wasser >= 0.95 * o.b5.punkte))
-        f.push(`B5 Fluss: ${o.b5.wasser} von ${o.b5.punkte} Punkten zeigen Wasser (${o.b5.platte} die Platte)`);
+    if (o.b5.v2 !== 2 || !(o.b5.haeuser > 0) || o.b5.slots !== o.b5.haeuser)
+        f.push(`B5 Weltgrund: kein Plan v2 im Labor (v${o.b5.v2}, ${o.b5.slots} Slots, ${o.b5.haeuser} Häuser)`);
+    if (!(o.b5.spanne >= 1)) f.push(`B5 Weltgrund: die Häuser stehen eben (Spanne ${o.b5.spanne} m)`);
+    if (!(o.b5.strahlen >= 50) || o.b5.aufBild !== o.b5.strahlen)
+        f.push(`B5 Weltgrund: der Fuß steht neben dem Bild (${o.b5.aufBild}/${o.b5.strahlen}, max ${o.b5.abw} m)`);
+    if (o.b5.planHash !== true) f.push(`B5 Weltgrund: Plan-Hash Labor ≠ Kern (${o.b5.planHash})`);
     for (const c of o.b6.faelle)
         if (c.fehler || !(c.haeuser > 0)) f.push(`B6 Antike ${c.seed}/${c.nH}: ${c.fehler || "0 Häuser"}`);
     return f;
@@ -412,7 +451,7 @@ function zeile(o) {
     return (
         `B1 Hülle promoviert ${o.b1.huelleNachPromotion}/${o.b1.promoviert} · demotiert ${o.b1.huelleNachDemotion}/${o.b1.demotiert}` +
         ` · B2 Tür ${o.b2.hinein}/${o.b2.tueren} · B3 Klemme ${z.klemm}/${z.laeufe} · Kopfraum am Austritt min ${z.kopfMin} m · oben EG→OG ${z.egOben}/${z.eg} · OG→OG ${z.ogOben}/${z.og} · Speicher ${z.speicherOben}/${z.speicher}` +
-        ` · B4 Platte ${o.b4.platteDecke}/${o.b4.keller} · B5 Wasser ${o.b5.wasser}/${o.b5.punkte}` +
+        ` · B4 Platte ${o.b4.platteDecke}/${o.b4.keller} · B5 v${o.b5.v2} ${o.b5.slots}/${o.b5.haeuser} Spanne ${o.b5.spanne} m Fuß ${o.b5.aufBild}/${o.b5.strahlen} Hash ${o.b5.planHash}` +
         ` · B6 ${o.b6.faelle.map((c) => (c.fehler ? "x" : c.haeuser)).join("/")}`
     );
 }
@@ -448,8 +487,8 @@ function zeile(o) {
                 kappe: ["B3 Steigen"],
                 spur: ["B3 Steigen"],
                 austritt: ["B3 Kopfraum"],
-                platte: ["B4 Keller-Decke", "B5 Fluss"],
-                antike: ["B6 Antike"],
+                platte: ["B4 Keller-Decke"],
+                flach: ["B5 Weltgrund"],
             };
             for (const inj of Object.keys(soll)) {
                 const { o, patchFehler: pf } = await lauf(inj);

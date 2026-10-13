@@ -93,11 +93,11 @@ function rebakeChunk(ck, wechsel){ const C=dorfChunks&&dorfChunks[ck]; if(!C) re
   if(alt.length){ if(wechsel) dorfSterben.push({meshes:alt, t:performance.now()+300});        // Blende: das Alte lebt bis zum Ende der Blende
     else alt.forEach(m=>{ m.geometry.dispose(); dorfGroup.remove(m); }); } }                  // Tausch: das Alte stirbt im selben Frame
 function bauSolidsUndTueren(B, H, bi){
-  H.solids.forEach(s=>solids.push({min:s.min,max:s.max, th:B.q.phi, tx:B.q.x, tz:B.q.z, bi}));
-  if(H.cellar){ const c=H.cellar; dorfCellars.push({x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1,floorY:c.floorY, th:B.q.phi, tx:B.q.x, tz:B.q.z, bi}); }
+  const y0=B.q.y; H.solids.forEach(s=>solids.push({min:[s.min[0],s.min[1]+y0,s.min[2]],max:[s.max[0],s.max[1]+y0,s.max[2]], th:B.q.phi, tx:B.q.x, tz:B.q.z, bi}));   // DER BODEN DES HAUSES (K10): Solids, Keller und Türen stehen auf q.y
+  if(H.cellar){ const c=H.cellar; dorfCellars.push({x0:c.x0,x1:c.x1,z0:c.z0,z1:c.z1,floorY:c.floorY+y0, th:B.q.phi, tx:B.q.x, tz:B.q.z, bi}); }
   ['innenwaende','tueren','anbau','fluegel','balkon','fenster','moebel'].forEach(k=>H.subsystems[k]&&H.subsystems[k].traverse(o=>{
     if(o.userData&&(o.userData.door||o.userData.window)){
-      doorList.push({leaf:o, openA:o.userData.openA, axis:o.userData.axis||'y', block:o.userData.block||null, th:B.q.phi, tx:B.q.x, tz:B.q.z, open:(o.userData.open!==undefined)?o.userData.open:true, blockObj:null, bi}); } })); }
+      doorList.push({leaf:o, openA:o.userData.openA, axis:o.userData.axis||'y', block:o.userData.block||null, th:B.q.phi, tx:B.q.x, tz:B.q.z, open:(o.userData.open!==undefined)?o.userData.open:true, blockObj:null, ty:y0, bi}); } })); }
 function promoteBauen(bi){ const B=dorfB[bi]; if(!B||B.lod!=='chunk') return null;             // PHASE 1 (schwer, abbrechbar): NUR bauen — kein Szenen-Effekt, kein Zustand
   const sN=(B.p.storeys||1), turm2=sN>=6;
   const hp2=Object.assign({},B.p,{nur: turm2? {moebel:false,innenwaende:false} : (B.p.arm? {moebel:false} : {})});   // RING-A-WÜRDE: Armut spart Möbel, aber INNENWÄNDE baut die Nahstufe immer — sonst schaut man DURCH das Haus (max 9 Gebäude, der Preis ist es wert; Türme behalten den Schacht: Glasetagen zeigen Böden)
@@ -106,7 +106,7 @@ function promoteBauen(bi){ const B=dorfB[bi]; if(!B||B.lod!=='chunk') return nul
   return {bi, st}; }
 function promoteFertig(pend){ const bi=pend.bi, B=dorfB[bi], st=pend.st;                      // PHASE 2: Bake + Szene + Solids/Türen — die vordefinierte Feinstufe
   if(!B||B.lod!=='chunk'){ st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); return; }   // Welt hat sich gedreht (demotiert/neu gebaut) → Bau verwerfen, kein Leck
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(st.g); wrap.updateMatrixWorld(true);
+  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,B.q.y,B.q.z); wrap.add(st.g); wrap.updateMatrixWorld(true);
   const geoms={}; bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
   wrap.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });            // FLÜGEL-GESETZ: was bakeLOD lebend ließ (Türen/Fenster), muss auch GERENDERT werden
   dorfGroup.add(wrap); B.liveWrap=wrap;                                                      // FIX: wrap hing nie in der Szene → promovierte Häuser hatten unsichtbare Türen/Fenster (Loch-Fassade)
@@ -114,7 +114,7 @@ function promoteFertig(pend){ const bi=pend.bi, B=dorfB[bi], st=pend.st;        
   { const ix=solids.indexOf(B.huelle); if(ix>=0) solids.splice(ix,1); }                     // HAUS-LEBENSZYKLUS: die Hülle fällt im selben Tick, in dem die Haus-Solids kommen — die offene Tür ist begehbar (vorher 4 von 4 promovierten Häusern zu)
   bauSolidsUndTueren(B,st.H,bi);
   if(st.H.chimney){ const mc=st.H.chimney, mcx=(mc.min[0]+mc.max[0])/2, mcz=(mc.min[2]+mc.max[2])/2, c2=Math.cos(B.q.phi), s3=Math.sin(B.q.phi);
-    dorfRauch.quellen.push({bi, x:B.q.x+mcx*c2+mcz*s3, y:mc.max[1]+0.2, z:B.q.z-mcx*s3+mcz*c2});          // RAUCH folgt der Promotion
+    dorfRauch.quellen.push({bi, x:B.q.x+mcx*c2+mcz*s3, y:B.q.y+mc.max[1]+0.2, z:B.q.z-mcx*s3+mcz*c2});          // RAUCH folgt der Promotion
     if(dorfRauch.quellen.length===1) fire.position.set(dorfRauch.quellen[0].x, dorfRauch.quellen[0].y+0.3, dorfRauch.quellen[0].z); }
   rebakeChunk(B.chunk, false); }
 function promoteB(bi){ const p=promoteBauen(bi); if(p) promoteFertig(p); }                    // SYNCHRON-Pfad (Selbsttest & Direktaufrufe) — identisches Ergebnis, ein Tick
@@ -166,6 +166,47 @@ function ausstattungAm(id, x, z, ry){
   g.traverse(o=>{ if(o.isMesh) o.receiveShadow=true; });
   return g;
 }
+// ═══ DER ORT AUF DEM WELTGRUND (K10) — das Studio plant das Dorf auf derselben Gelände-Funktion wie die Welt ═══
+// Die Lage der Welt (gelaende-core lageGrund: Saat ?welt=, sonst die Eingangs-Welt) und der Ort (?ort=x,z, sonst der erste
+// Hang der Ring-Suche hangOrt): der Export (exportSettlement, dasselbe Layout wie dieses Labor) wird dort zum Plan v2 (fachwerk
+// ortPlan über gelaende-core ortCtx — dieselbe Formel, die der Wirt rechnet: Plan-Hash Studio = Welt, gate:settlement Teil O).
+// Jedes Haus steht auf seinem y (q.y = Slot-y − yRef, der Bezug ist der Platz), der Dorf-Boden ist die Höhe samt Erdbau.
+// Fail-closed: weicht das Labor-Layout vom Export ab, wirft der Ort (das Studio zeigte sonst ein anderes Dorf als die Welt).
+const GK=window.__gelaendeCore;
+const WELT=(()=>{ const u=new URLSearchParams(location.search), o=(u.get('ort')||'').split(',').map(Number);
+  return {seed:u.get('welt')||GK.LAGE_GRUND.seed, ort:(o.length===2&&o.every(Number.isFinite))?{x:o[0],z:o[1]}:null, L:null}; })();
+function ortAufWelt(dp, plan, lay){
+  const L=WELT.L||(WELT.L=GK.lageGrund(WELT.seed, window.SimplexNoise));
+  if(!WELT.ort){ const h=GK.hangOrt(L, (x,z)=>GK.hoehe(L,x,z,true)>L.waterLevel+3); if(!h) throw new Error('fachwerk: kein Hang auf der Welt '+WELT.seed); WELT.ort={x:Math.round(h.x), z:Math.round(h.z)}; }
+  const v2=FC.ortPlan(FC.exportSettlement({seed:dp.seed, nH:dp.nH, epoche:dp.epoche, budget:dp.budget}), WELT.ort, GK.ortCtx(L));
+  let k=0; const ys=[];
+  const geparkt=(q)=>!q||!q.obb||Math.abs(q.obb.cx)>5000||Math.abs(q.obb.cz)>5000;                // die ±9999-Parkplätze des Layouts reisen nicht
+  for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i];
+    if(geparkt(q)){ if(q) q.y=0; continue; }
+    const sl=v2.slots[k++];
+    if(!sl||sl.x!==q.x||sl.z!==q.z||sl.phi!==q.phi) throw new Error('fachwerk: das Labor-Layout weicht vom Export ab (Haus '+i+')');
+    ys.push(sl.y); q.y=sl.y; }
+  if(k!==v2.slots.length) throw new Error('fachwerk: der Export trägt '+v2.slots.length+' Häuser, das Labor '+k);
+  const yRef=(v2.platz&&Number.isFinite(v2.platz.y))? v2.platz.y : ys.slice().sort((a,b)=>a-b)[ys.length>>1];
+  for(let i=0;i<plan.houses.length;i++){ const q=lay.pl[i]; if(!geparkt(q)) q.y-=yRef; }
+  return {v2, ort:WELT.ort, yRef, L:Object.assign({},L,{erdbau:GK.erdbauNormal(v2.erdbau)})}; }
+// DER BODEN-FALL (K10): die Ausstattung des Dorfs (Wege, Platz, Zäune, Felder, Brunnen, Stände, Bäume, …) baut im ebenen
+// Rahmen; hier fällt sie EINMAL auf den Dorf-Boden — je Instanz der Grund an ihrem Ort, jedes andere Mesh Ecke für Ecke
+// (y += dorfBodenY(x, z) im Welt-Rahmen: der Weg folgt dem Hang, der Mast steht senkrecht), jedes Solid um den Grund an
+// seiner Mitte. Was schon steht (geerdet: die Laternen), bleibt; die Häuser stehen auf q.y.
+function bodenFall(kind0, solid0){
+  const kinder=dorfGroup.children.slice(kind0), m4=new THREE.Matrix4(), p3=new THREE.Vector3(), q4=new THREE.Quaternion(), s3=new THREE.Vector3();
+  for(const c of kinder){ if(c.userData.dorfBoden||c.userData.geerdet) continue;
+    if(c.isInstancedMesh){ for(let i=0;i<c.count;i++){ c.getMatrixAt(i,m4); m4.decompose(p3,q4,s3); p3.y+=dorfBodenY(p3.x,p3.z); c.setMatrixAt(i,m4.compose(p3,q4,s3)); } c.instanceMatrix.needsUpdate=true; continue; }
+    c.updateMatrixWorld(true); const meshes=[]; c.traverse(o=>{ if(o.isMesh) meshes.push(o); });
+    for(const m of meshes){ const g=m.geometry.clone(); g.applyMatrix4(m.matrixWorld); const P=g.attributes.position;
+      for(let i=0;i<P.count;i++) P.setY(i, P.getY(i)+dorfBodenY(P.getX(i),P.getZ(i)));
+      P.needsUpdate=true; g.computeBoundingSphere(); m.geometry=g; m.position.set(0,0,0); m.rotation.set(0,0,0); m.scale.set(1,1,1); m.updateMatrix();
+      if(m!==c) dorfGroup.add(m); }
+    if(!c.isMesh) dorfGroup.remove(c); }
+  for(let i=solid0;i<solids.length;i++){ const s=solids[i]; if(s.geerdet||s.bi!==undefined) continue;
+    const cx=s.th!=null? s.tx : (s.min[0]+s.max[0])/2, cz=s.th!=null? s.tz : (s.min[2]+s.max[2])/2, y=dorfBodenY(cx,cz);
+    s.min=[s.min[0],s.min[1]+y,s.min[2]]; s.max=[s.max[0],s.max[1]+y,s.max[2]]; } }
 function buildDorf(dp){
   if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; }
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
@@ -191,13 +232,14 @@ function buildDorf(dp){
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
     if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)'); }
+  const ORT=ortAufWelt(dp, plan, lay);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
   dorfB.forEach((B,i)=>{ const q=lay.pl[i]; B.q=q; ymax=Math.max(ymax, ext[i].y1||0);
     if(B.lod==='voll'){ const wrap=new THREE.Group();
-      wrap.rotation.y=q.phi; wrap.position.set(q.x,0,q.z); wrap.add(B.g); dorfGroup.add(wrap); wrap.updateMatrixWorld(true);
+      wrap.rotation.y=q.phi; wrap.position.set(q.x,q.y,q.z); wrap.add(B.g); dorfGroup.add(wrap); wrap.updateMatrixWorld(true);
       const geoms={}; bakeHaus(B.g, B.p.col, geoms); B.meshes=finalizeGeoms(geoms);
       bauSolidsUndTueren(B, B.H, i); }
     else { B.ext=ext[i];
-      const e=ext[i]; B.huelle={min:[e.x0,0,e.z0],max:[e.x1,e.y1,e.z1], th:q.phi, tx:q.x, tz:q.z, bi:i}; solids.push(B.huelle);   // HAUS-LEBENSZYKLUS: die Ganz-Haus-Hülle trägt fern; die Promotion tauscht sie gegen die Haus-Solids, die Demotion setzt sie zurück (EIN Zyklus je Haus)
+      const e=ext[i]; B.huelle={min:[e.x0,q.y,e.z0],max:[e.x1,q.y+e.y1,e.z1], th:q.phi, tx:q.x, tz:q.z, bi:i}; solids.push(B.huelle);   // HAUS-LEBENSZYKLUS: die Ganz-Haus-Hülle trägt fern; die Promotion tauscht sie gegen die Haus-Solids, die Demotion setzt sie zurück (EIN Zyklus je Haus)
       B.chunk=chunkKey(q.obb.cx,q.obb.cz);
       (dorfChunks[B.chunk]=dorfChunks[B.chunk]||{list:[],meshes:[],stufe:3,cx:0,cz:0,n:0}).list.push(i); } });
   for(const ck in dorfChunks){ const C=dorfChunks[ck]; C.cx=0; C.cz=0;
@@ -231,23 +273,23 @@ function buildDorf(dp){
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); bg.computeVertexNormals(); return bg; };
   const modernS=plan.jahr>1880&&plan.staedtisch;                                              // EPOCHEN-BELAG-GESETZ: Erde → Pflaster → Asphalt, Gehweg-Material je Zeit getrennt (Michis Raumplanung)
   const pflasterS=!modernS&&plan.staedtisch&&plan.jahr>=1640;                                 // Barock pflastert (1719 fiel durch die alte 1720-Grenze — GEMESSEN)                                 // Barock/Gründerzeit: gepflasterte Stadt
-  // DER DORF-BODEN — EINE Funktion dorfBodenY(x,z) trägt Bild UND Schritt (gravity liest dieselbe): 0 auf dem Land, im Fluss sein Bett (Mitte −1,25,
-  // Rand −0,75, das Ufer steigt bis zur Kaimauer bzw. über die Böschung auf 0) — der Wasserspiegel −0,53 liegt sichtbar darüber. Vorher deckte eine
-  // 0,3-m-Platte (−0,32 … −0,02) das Wasserband zu (37 von 112 Fluss-Punkten zeigten Wiese) und lief durch jeden Keller. Das Gitter zeigt nur seine
-  // OBERSEITE (FrontSide): aus dem Keller sieht man die Fundament-Unterseite (die Keller-Decke des Gesetzbuchs), nie die Wiese.
-  { const fp=lay.fluss?glatt(lay.fluss.pts):null, h=lay.fluss?lay.fluss.w/2:0, aus=(pflasterS||modernS)?h+0.62:h+1.6, B16=16, segs=[], fach=new Map();
-    if(fp){ for(let k=0;k+1<fp.length;k++){ const A=fp[k], B=fp[k+1], s={ax:A.x,az:A.z,dx:B.x-A.x,dz:B.z-A.z}; s.l2=s.dx*s.dx+s.dz*s.dz||1e-9; segs.push(s);
-        for(let gx=Math.floor((Math.min(A.x,B.x)-aus)/B16); gx<=Math.floor((Math.max(A.x,B.x)+aus)/B16); gx++) for(let gz=Math.floor((Math.min(A.z,B.z)-aus)/B16); gz<=Math.floor((Math.max(A.z,B.z)+aus)/B16); gz++){ const kk=gx+'_'+gz; (fach.get(kk)||fach.set(kk,[]).get(kk)).push(s); } } }
-    dorfBodenY=(x,z)=>{ if(!fp) return 0; const L=fach.get(Math.floor(x/B16)+'_'+Math.floor(z/B16)); if(!L) return 0; let d2=Infinity;
-      for(const s of L){ const t=Math.max(0,Math.min(1,((x-s.ax)*s.dx+(z-s.az)*s.dz)/s.l2)), ex=x-s.ax-s.dx*t, ez=z-s.az-s.dz*t, e2=ex*ex+ez*ez; if(e2<d2)d2=e2; }
-      const d=Math.sqrt(d2); if(d>=aus) return 0; if(d<=h) return -1.25+0.5*Math.pow(d/Math.max(0.01,h),2);
-      const u=(d-h)/(aus-h); return -0.75*(1-u*u*(3-2*u)); };
-    const SX=W2.x1-W2.x0, SZ=W2.z1-W2.z0, zelle=Math.max(1.0, Math.max(SX,SZ)/180), nx=Math.max(1,Math.ceil(SX/zelle)), nz=Math.max(1,Math.ceil(SZ/zelle));
+  // DER DORF-BODEN (K10) — EINE Funktion dorfBodenY(x,z) trägt Bild UND Schritt (gravity liest dieselbe): die Höhe der Welt samt
+  // dem Erdbau des Plans v2 (gelaende-core hoehe über ORT.L) im Bezug des Platzes, ein Raster der Kante ≥ 1 m über dem Dorf und
+  // seinem Rand; zwischen den Knoten die Ebene des Dreiecks, das das Gitter zeigt (der Fuß steht auf dem Bild). Vorher war er 0
+  // auf dem Land und im Deko-Fluss dessen Bett: das Dorf stand flach, gleich wo die Welt es trug.
+  { const RAND=24, x0=W2.x0-RAND, z0=W2.z0-RAND, SX=W2.x1-W2.x0+2*RAND, SZ=W2.z1-W2.z0+2*RAND, zelle=Math.max(1.0, Math.max(SX,SZ)/240);
+    const nx=Math.max(1,Math.ceil(SX/zelle)), nz=Math.max(1,Math.ceil(SZ/zelle)), gx=SX/nx, gz=SZ/nz, hy=new Float32Array((nx+1)*(nz+1));
+    for(let j=0;j<=nz;j++) for(let i=0;i<=nx;i++) hy[j*(nx+1)+i]=GK.hoehe(ORT.L, ORT.ort.x+x0+gx*i, ORT.ort.z+z0+gz*j, true)-ORT.yRef;
+    dorfBodenY=(x,z)=>{ let fx=(x-x0)/gx, fz=(z-z0)/gz, i=Math.floor(fx), j=Math.floor(fz);
+      i=Math.max(0,Math.min(nx-1,i)); j=Math.max(0,Math.min(nz-1,j)); fx=Math.max(0,Math.min(1,fx-i)); fz=Math.max(0,Math.min(1,fz-j));
+      const a=hy[j*(nx+1)+i], b=hy[j*(nx+1)+i+1], c=hy[(j+1)*(nx+1)+i], d=hy[(j+1)*(nx+1)+i+1];
+      return fx+fz<=1? a+(b-a)*fx+(c-a)*fz : d+(c-d)*(1-fx)+(b-d)*(1-fz); };
     const pos=new Float32Array((nx+1)*(nz+1)*3), idx=[];
-    for(let j=0;j<=nz;j++) for(let i=0;i<=nx;i++){ const x=W2.x0+SX*i/nx, z=W2.z0+SZ*j/nz, o=(j*(nx+1)+i)*3; pos[o]=x; pos[o+1]=dorfBodenY(x,z)-0.02; pos[o+2]=z; }
+    for(let j=0;j<=nz;j++) for(let i=0;i<=nx;i++){ const o=(j*(nx+1)+i)*3; pos[o]=x0+gx*i; pos[o+1]=hy[j*(nx+1)+i]-0.02; pos[o+2]=z0+gz*j; }
     for(let j=0;j<nz;j++) for(let i=0;i<nx;i++){ const a=j*(nx+1)+i, b=a+1, c=a+nx+1, d=c+1; idx.push(a,c,b, b,c,d); }   // CCW von oben → Normale +y, FrontSide = Oberseite
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); bg.setIndex(idx); bg.computeVertexNormals();
     const gnd=new THREE.Mesh(bg,M.gras); gnd.receiveShadow=true; gnd.userData.dorfBoden=true; dorfGroup.add(gnd); }
+  const ausstattung0=dorfGroup.children.length, solids0=solids.length;                       // ab hier: die Ausstattung, die auf den Boden fällt (bodenFall)
   const asMat= modernS? new THREE.MeshLambertMaterial({color:0x43464c, side:THREE.DoubleSide})
              : pflasterS? new THREE.MeshLambertMaterial({color:0x8f8a82, side:THREE.DoubleSide}) : M.weg;
   const gwMat= modernS? new THREE.MeshLambertMaterial({color:0x9aa0a6, side:THREE.DoubleSide})
@@ -301,46 +343,6 @@ function buildDorf(dp){
     lay.mauer.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(3.6,8.4,3.6),mLay('stein')); tm.position.set(tw.x,4.2,tw.z); tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
       const td=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.5,4.2),M.ziegel); td.position.set(tw.x,9.1,tw.z); td.castShadow=true; dorfGroup.add(td);
       solids.push({min:[tw.x-1.8,0,tw.z-1.8],max:[tw.x+1.8,8.4,tw.z+1.8]}); }); }
-  const wm=lay.fluss?new THREE.MeshLambertMaterial({color:0x3d6d9c, side:THREE.DoubleSide}):null;   // DAS WASSER-MATERIAL lebt im Funktions-Scope: die Antike-Ausstattung (Trog) liest es auch ohne Fluss (vorher `wm is not defined` in 3 von 3 städtischen Antiken)
-  if(lay.fluss){                                                                              // FLUSS: Wasserband + Ufer
-    if(pflasterS||modernS){ const fp2=lay.fluss.pts, fw2=lay.fluss.w;                          // KAIMAUER-GESETZ: die Stadt fasst ihren Fluss in Stein — Uferkante 0.42 hoch entlang beider Seiten
-      for(const sg2 of [-1,1]){ for(let k2=0;k2+1<fp2.length;k2++){ const A2=fp2[k2], B3=fp2[k2+1];
-        const mx2=(A2.x+B3.x)/2 - Math.sin(A2.th)*sg2*(fw2/2+0.62), mz2=(A2.z+B3.z)/2 + Math.cos(A2.th)*sg2*(fw2/2+0.62);
-        let anBk=false; for(const bk2 of lay.bruecken){ const dx3=mx2-bk2.x, dz3=mz2-bk2.z;    // KAI-LÜCKE: kein Steinblock quer über der Brückenzufahrt
-          const lp=dx3*Math.cos(bk2.th)+dz3*Math.sin(bk2.th), lq=-dx3*Math.sin(bk2.th)+dz3*Math.cos(bk2.th);
-          if(Math.abs(lp)<bk2.len/2+0.9&&Math.abs(lq)<bk2.w/2+1.1){ anBk=true; break; } }
-        if(anBk) continue;
-        const ln2=Math.hypot(B3.x-A2.x,B3.z-A2.z)+0.25;
-        const km2=new THREE.Mesh(new THREE.BoxGeometry(ln2,1.02,0.4), mLay('stein'));                                  // FLUSS-TAL-GESETZ: die Kaimauer STÜTZT — Oberkante 0.34 bleibt, Fuß gründet unter dem Wasserspiegel
-        km2.position.set(mx2,-0.17,mz2); km2.rotation.y=-A2.th; km2.receiveShadow=true; km2.castShadow=true; dorfGroup.add(km2); } } }
-    if(!(pflasterS||modernS)){ const fp4=lay.fluss.pts, fw4=lay.fluss.w, neig=Math.atan2(0.55,1.6);   // LÄNDLICH: geneigte BÖSCHUNGEN — der Fluss gräbt sein Bett, das Ufer fällt ihm zu
-      for(const sg4 of [-1,1]){ for(let k4=0;k4+1<fp4.length;k4++){ const A4=fp4[k4], B4=fp4[k4+1];
-        const ln4=Math.hypot(B4.x-A4.x,B4.z-A4.z)+0.3;
-        const bx4=new THREE.Mesh(new THREE.BoxGeometry(ln4,0.14,1.75), mLay('lehm'));
-        bx4.position.set((A4.x+B4.x)/2 - Math.sin(A4.th)*sg4*(fw4/2+0.72), -0.24, (A4.z+B4.z)/2 + Math.cos(A4.th)*sg4*(fw4/2+0.72));
-        bx4.rotation.order='YXZ'; bx4.rotation.y=-A4.th; bx4.rotation.x=-neig*sg4; /*EULER-ORDER-GESETZ: erst ausrichten (Y), dann quer kippen (X) — bei XYZ kippte X um die WELTachse, 52/226*/ bx4.receiveShadow=true; dorfGroup.add(bx4); } } }
-    const m=new THREE.Mesh(rib(lay.fluss.pts, lay.fluss.w, -0.53), wm); m.receiveShadow=true; dorfGroup.add(m); }   // WASSERSPIEGEL −0.53: Brücken bekommen LICHTE HÖHE, Pfeiler gründen echt — der Schritt liest das Bett (dorfBodenY), die flachen Platten über dem Wasser fielen
-  lay.bruecken.forEach(bk=>{ const ang=-bk.th;                                               // BRÜCKE: Deck + Geländer über dem Band
-    const deck=new THREE.Mesh(new THREE.BoxGeometry(bk.len,0.26,bk.w),mLay('stein'));
-    deck.position.set(bk.x,0.16,bk.z); deck.rotation.y=ang; deck.castShadow=true; deck.receiveShadow=true; dorfGroup.add(deck);
-    solids.push({min:[-bk.len/2,0.03,-bk.w/2],max:[bk.len/2,0.29,bk.w/2], th:ang, tx:bk.x, tz:bk.z});   // das DECK trägt (über dem Fluss-Bett): Oberkante 0,29 wie das Bild
-    const tx2=Math.cos(bk.th), tz2=Math.sin(bk.th);                                           // BRÜCKEN-WÜRDE-GESETZ: sichtbare WAND-PFEILER + steinerne BOGENBLENDEN (alte Zeit) + WIDERLAGER — das Deck von R2 las sich als Brett, die 3cm-Pylonen verschwanden GESEHEN unsichtbar
-    const spannT=(bk.len>16)? [-0.25,0,0.25] : (bk.len>9? [-0.22,0.22] : []);
-    for(const t of spannT){ const py=new THREE.Mesh(new THREE.BoxGeometry(0.55,1.7,Math.max(1.2,bk.w-1.4)), mLay('stein'));
-      py.position.set(bk.x+tx2*bk.len*t, -0.68, bk.z+tz2*bk.len*t); py.rotation.y=ang; dorfGroup.add(py); }
-    for(const e2 of [-0.5,0.5]){ const wl=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.55,bk.w+0.5), mLay('stein'));  // WIDERLAGER an beiden Enden
-      wl.position.set(bk.x+tx2*bk.len*e2*0.96, -0.14, bk.z+tz2*bk.len*e2*0.96); wl.rotation.y=ang; dorfGroup.add(wl); }
-    if(!modernS){ const felder2=spannT.length? spannT.concat([-0.5,0.5]).sort((q1,q2)=>q1-q2) : [-0.5,0.5];          // BOGENBLENDEN: je Feld ein flacher Bogen aus 5 hängenden Fascia-Steinen — von der Seite eine Steinbrücke
-      for(let f2=0;f2+1<felder2.length;f2++){ const m0=felder2[f2], m1=felder2[f2+1];
-        for(const sz2 of [-1,1]){ for(let k2=0;k2<5;k2++){ const u=(k2+0.5)/5, tm=m0+(m1-m0)*u;
-          const hb=0.42-0.34*Math.sin(u*Math.PI);                                             // tief am Pfeiler, flach im Scheitel
-          const fa=new THREE.Mesh(new THREE.BoxGeometry((m1-m0)*bk.len/5+0.06, hb, 0.12), mLay('stein'));
-          fa.position.set(bk.x+tx2*bk.len*tm - Math.sin(bk.th)*sz2*(bk.w/2-0.06), 0.03-hb/2, bk.z+tz2*bk.len*tm + Math.cos(bk.th)*sz2*(bk.w/2-0.06));
-          fa.rotation.y=ang; dorfGroup.add(fa); } } } }
-    for(const sz of [-1,1]){ const ra=new THREE.Mesh(new THREE.BoxGeometry(bk.len,0.85,0.14),mLay('stein'));
-      const ox=-Math.sin(bk.th)*sz*(bk.w/2-0.1), oz=Math.cos(bk.th)*sz*(bk.w/2-0.1);
-      ra.position.set(bk.x+ox,0.7,bk.z+oz); ra.rotation.y=ang; ra.castShadow=true; dorfGroup.add(ra);
-      solids.push({min:[-bk.len/2,0,-0.1],max:[bk.len/2,1.1,0.1], th:ang, tx:bk.x+ox, tz:bk.z+oz}); } });
   lay.brunnen.forEach(b3=>{ const bg2=ausstattungAm('brunnen', b3.x, b3.z, 0); dorfGroup.add(bg2);   // AUSSTATTUNG: der Ziehbrunnen kommt aus dem Gesetzbuch (Lab = Welt)
     solids.push({min:[b3.x-0.95,0,b3.z-0.95],max:[b3.x+0.95,0.75,b3.z+0.95]}); });
   lay.fences.forEach(f=>{ const dx=f.x1-f.x0, dz=f.z1-f.z0, len=Math.hypot(dx,dz); if(len<0.8)return;
@@ -364,7 +366,6 @@ function buildDorf(dp){
       for(const rd2 of lay.roads){ for(let i2=0;i2+1<rd2.pts.length;i2++){ const A2=rd2.pts[i2],B3=rd2.pts[i2+1];
         const dx2=B3.x-A2.x,dz2=B3.z-A2.z,L3=dx2*dx2+dz2*dz2||1; let t2=((x-A2.x)*dx2+(z-A2.z)*dz2)/L3; t2=Math.max(0,Math.min(1,t2));
         if(Math.hypot(x-(A2.x+dx2*t2), z-(A2.z+dz2*t2)) < rd2.w/2+r) return false; } }
-      if(lay.fluss){ for(const q2 of lay.fluss.pts){ if(Math.hypot(x-q2.x,z-q2.z)<lay.fluss.w/2+r+0.8) return false; } }
       return true; };
     const setzFrei=(fn,x,z,r,streu)=>{ for(let v2=0;v2<7;v2++){ const ax=x+(v2?(dr()*2-1)*streu:0), az=z+(v2?(dr()*2-1)*streu:0);
       if(frei(ax,az,r)){ fn(ax,az); return true; } } return false; };
@@ -404,11 +405,6 @@ function buildDorf(dp){
     lay.felder.forEach(f3=>{ const nH2=1+((dr()*3)|0);                                        /*VORGEWENDE-GESETZ: Heuballen am Wendestreifen der Schmalseiten — nie ueber den Furchen*/
       for(let k3=0;k3<nH2;k3++){ const sk=(dr()<0.5)?-1:1;
         heu(f3.cx + sk*f3.ex*0.82, f3.cz - f3.ez*0.7 + dr()*f3.ez*1.4); } });
-    if((pflasterS||modernS)&&lay.fluss){ const fp3=lay.fluss.pts, fw3=lay.fluss.w;             // KAI → POLLER alle ~9m + Fass-Gruppen an Brückenköpfen (Handelsufer)
-      for(const sg3 of [-1,1]){ for(let k3=0;k3<fp3.length;k3+=3){ const A3=fp3[k3];
-        const px3=A3.x-Math.sin(A3.th)*sg3*(fw3/2+1.15), pz4=A3.z+Math.cos(A3.th)*sg3*(fw3/2+1.15);
-        const po3=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.5,0.22), M.dunkel); po3.position.set(px3,0.25,pz4); dorfGroup.add(po3); } }
-      lay.bruecken.forEach(bk3=>{ for(let k3=0;k3<2+((dr()*2)|0);k3++) fass(bk3.x+Math.cos(bk3.th)*(bk3.len/2+1.2)+dr()*1.4, bk3.z+Math.sin(bk3.th)*(bk3.len/2+1.2)+dr()*1.4); }); }
     if(fuzMat&&pzk&&lay.laternen.length>1){ const nahL=lay.laternen.filter(l3=>Math.hypot(l3.x-pzk.x,l3.z-pzk.z)<pzk.r+6);   // SCHICHT-4: WIMPELKETTEN über der Fußgängerzone — der Markt feiert
       for(let k3=0;k3+1<nahL.length&&k3<6;k3+=2){ const A5=nahL[k3], B5=nahL[k3+1];
         const dx5=B5.x-A5.x, dz5=B5.z-A5.z, L5=Math.hypot(dx5,dz5); if(L5<3||L5>26) continue;
@@ -437,7 +433,7 @@ function buildDorf(dp){
         const zi8=zi7.clone(); zi8.rotation.y=0.4+Math.PI/4; dorfGroup.add(zi8); }
       if(lay.brunnen.length){ const b7=lay.brunnen[0];
         const tr7=new THREE.Mesh(new THREE.BoxGeometry(1.7,0.42,0.62), mLay('stein')); tr7.position.set(b7.x+1.9,0.21,b7.z+0.4); dorfGroup.add(tr7);
-        const wa7=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.05,0.46), wm||new THREE.MeshLambertMaterial({color:0x5f88a8})); wa7.position.set(b7.x+1.9,0.40,b7.z+0.4); dorfGroup.add(wa7); }
+        const wa7=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.05,0.46), new THREE.MeshLambertMaterial({color:0x5f88a8})); wa7.position.set(b7.x+1.9,0.40,b7.z+0.4); dorfGroup.add(wa7); }
       const lang7=lay.roads.filter(r7=>r7.gen<2).sort((a7,b7)=>(b7.len||0)-(a7.len||0))[0];
       if(lang7){ for(const u7 of [10, (lang7.len||30)*0.6]){ const k7=Math.min(lang7.pts.length-1,(u7/2.2)|0), q7=lang7.pts[k7];
         const ms=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.95,0.3), mLay('stein')); ms.position.set(q7.x-Math.sin(q7.th)*(lang7.w/2+0.9),0.475,q7.z+Math.cos(q7.th)*(lang7.w/2+0.9)); dorfGroup.add(ms);
@@ -448,7 +444,6 @@ function buildDorf(dp){
         const rd7=lay.roads[(dr()*lay.roads.length)|0]; if(!rd7||rd7.pts.length<4) continue;
         const q7=rd7.pts[1+((dr()*(rd7.pts.length-2))|0)], sg7=dr()<0.5?-1:1;
         const bx7=q7.x-Math.sin(q7.th)*sg7*(rd7.w/2+0.9+dr()*0.8), bz7=q7.z+Math.cos(q7.th)*sg7*(rd7.w/2+0.9+dr()*0.8);
-        if(lay.fluss&&(()=>{for(const qf of lay.fluss.pts){if(Math.hypot(bx7-qf.x,bz7-qf.z)<lay.fluss.w/2+1.4)return true;}return false;})()) continue;
         posB.push({x:bx7,z:bz7,th:dr()*6.28}); }
       if(lay.platz) for(let p7=0;p7<Math.min(8,nB/3|0);p7++) posB.push({x:lay.platz.cx+(dr()-0.5)*lay.platz.ex*1.4, z:lay.platz.cz+(dr()-0.5)*lay.platz.ez*1.4, th:dr()*6.28});
       const mtxB=new THREE.Matrix4();
@@ -486,14 +481,14 @@ function buildDorf(dp){
       const pf=new THREE.InstancedMesh(new THREE.BoxGeometry(pfD,lichtH,pfD),M.metall,n);
       const arm2=new THREE.InstancedMesh(new THREE.BoxGeometry(ausl,pfD*0.7,pfD*0.7),M.metall,n);
       const kopf=new THREE.InstancedMesh(new THREE.BoxGeometry(kW,kH,kW), new THREE.MeshLambertMaterial({color:gas?0xffd9a0:0xfff2cc, emissive:gas?0xcf8f2e:0xb8a86a}), n);
-      liste.forEach((la,i)=>{ const lth=la.th||0, ax=Math.cos(lth), az=Math.sin(lth);
-        pf.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x,lichtH/2,la.z));
-        arm2.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x+ax*ausl/2, lichtH-pfD, la.z+az*ausl/2));
+      liste.forEach((la,i)=>{ const lth=la.th||0, ax=Math.cos(lth), az=Math.sin(lth), ly=dorfBodenY(la.x,la.z);
+        pf.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x,ly+lichtH/2,la.z));
+        arm2.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x+ax*ausl/2, ly+lichtH-pfD, la.z+az*ausl/2));
         const ky=gas? lichtH-pfD-kH/2-0.02 : lichtH-pfD+kH/2+0.02;
-        kopf.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x+ax*(ausl-kW*0.4), ky, la.z+az*(ausl-kW*0.4)));
-        solids.push({min:[la.x-0.1,0,la.z-0.1],max:[la.x+0.1,lichtH,la.z+0.1]}); });
+        kopf.setMatrixAt(i, mtx.makeRotationY(-lth).setPosition(la.x+ax*(ausl-kW*0.4), ly+ky, la.z+az*(ausl-kW*0.4)));
+        solids.push({min:[la.x-0.1,ly,la.z-0.1],max:[la.x+0.1,ly+lichtH,la.z+0.1], geerdet:true}); });
       pf.castShadow=true; pf.name='inst_laternen_'+(gas?'gas':'e');
-      [pf,arm2,kopf].forEach(im=>{ im.instanceMatrix.needsUpdate=true; dorfGroup.add(im); }); }
+      [pf,arm2,kopf].forEach(im=>{ im.instanceMatrix.needsUpdate=true; im.userData.geerdet=true; dorfGroup.add(im); }); }
     if(modernS){ lay.laternen.forEach((la,i)=>{ if(i%2) return;                                /*MUELLEIMER hinter dem Mast: Gehwegseite = GEGEN die Arm-Richtung — nie zur Fahrbahn*/
       const bx7=la.x-Math.cos(la.th||0)*0.5, bz7=la.z-Math.sin(la.th||0)*0.5;
       const mu=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.55,0.34), M.dunkel); mu.position.set(bx7,0.275,bz7); dorfGroup.add(mu);
@@ -514,15 +509,13 @@ function buildDorf(dp){
     const strFrei=(x,z,r)=>{ for(const rd9 of lay.roads){ for(let i9=0;i9+1<rd9.pts.length;i9++){ const A9=rd9.pts[i9],B9=rd9.pts[i9+1];
         const dx9=B9.x-A9.x,dz9=B9.z-A9.z,L9=dx9*dx9+dz9*dz9||1; let t9=((x-A9.x)*dx9+(z-A9.z)*dz9)/L9; t9=Math.max(0,Math.min(1,t9));
         if(Math.hypot(x-(A9.x+dx9*t9), z-(A9.z+dz9*t9)) < rd9.w/2+r) return false; } }
-      if(lay.fluss){ for(const q9 of lay.fluss.pts){ if(Math.hypot(x-q9.x,z-q9.z)<lay.fluss.w/2+r) return false; } } return true; };
+      return true; };
     const blob=(x,z)=>{ const h9=Math.sin(x*0.061+7.3)*Math.cos(z*0.053-2.1)+Math.sin((x+z)*0.031); return h9>0.55; };
     let nW=0; for(let v9=0; v9<5200 && nW<2100; v9++){ const a9=wr()*6.283, rr9=R9*(1.04+wr()*0.85);
       const wx9=lay.spawn.x+Math.cos(a9)*rr9, wz9=lay.spawn.z+Math.sin(a9)*rr9;
       if(!blob(wx9,wz9)) continue; if(!strFrei(wx9,wz9,2.2)) continue;
       lay.trees.push({x:wx9+wr()*3-1.5, z:wz9+wr()*3-1.5, h:2.1+wr()*2.7}); nW++; }
-    if(lay.fluss){ for(let k9=0;k9<lay.fluss.pts.length;k9+=2){ const q9=lay.fluss.pts[k9]; if(wr()<0.45) continue;
-      for(const sg9 of [-1,1]){ const ux9=q9.x-Math.sin(q9.th)*sg9*(lay.fluss.w/2+2.4+wr()*2.2), uz9=q9.z+Math.cos(q9.th)*sg9*(lay.fluss.w/2+2.4+wr()*2.2);
-        if(strFrei(ux9,uz9,1.6)) lay.trees.push({x:ux9, z:uz9, h:2.4+wr()*2.2}); } } } }
+    }
   if(lay.trees.length){ const n=lay.trees.length, mtx=new THREE.Matrix4(), _p=new THREE.Vector3(), _q=new THREE.Quaternion(), _s=new THREE.Vector3();
     const stI=M.stamm.clone(); stI.vertexColors=false;                                        // Instanz-Box trägt keine Vertexfarben — geerbtes vertexColors hätte SCHWARZ multipliziert
     const st2=new THREE.InstancedMesh(new THREE.BoxGeometry(0.3,1,0.3), stI, n);              // Einheits-Stamm: Höhe je Instanz über die Skalenmatrix
@@ -548,11 +541,12 @@ function buildDorf(dp){
   const chd=document.getElementById('chronik')||(()=>{ const d2=document.createElement('div'); d2.id='chronik';
     d2.style.cssText='position:fixed;left:12px;bottom:10px;padding:7px 12px;background:rgba(12,15,20,.82);border:1px solid #2a3442;border-radius:8px;color:#dce6f5;font:12px ui-sans-serif;z-index:30;pointer-events:none';
     document.body.appendChild(d2); return d2; })();
-  chd.textContent=plan.name+' · gegr. '+plan.jahr+' · '+plan.groesse+' · '+plan.houses.length+' Gebäude'+(lay.fluss?' · am Fluss ('+lay.bruecken.length+' Brücken)':'')+(lay.mauer?' · ummauert':'')+(lay.laternen.length?' · '+lay.laternen.length+' Laternen':'');
+  chd.textContent=plan.name+' · gegr. '+plan.jahr+' · '+plan.groesse+' · '+plan.houses.length+' Gebäude'+(lay.mauer?' · ummauert':'')+(lay.laternen.length?' · '+lay.laternen.length+' Laternen':'');
   chd.style.display='block';
-  dorf={plan, lay, spawn:{x:lay.spawn.x, z:lay.spawn.z}, prims, R:R2, ymax, maxDyn};          // BUDGET-ADER-FIX: maxDyn wurde seit Ära 8 berechnet, aber NIE angeschlossen — lodTick las immer den Fallback 5, der Budget-Regler war tot
+  bodenFall(ausstattung0, solids0);                                                          // die Ausstattung steht auf dem Weltgrund (K10)
+  dorf={plan, lay, ort:ORT, spawn:{x:lay.spawn.x, z:lay.spawn.z}, prims, R:R2, ymax, maxDyn};          // BUDGET-ADER-FIX: maxDyn wurde seit Ära 8 berechnet, aber NIE angeschlossen — lodTick las immer den Fallback 5, der Budget-Regler war tot
   D={W:R2*2, D:R2*2, ridgeY:Math.max(8,ymax), baseY:0}; P=dorfB[0].lod==='voll'?dorfB[0].H.P:P;
-  console.log('DORF:',plan.region,plan.groesse,plan.kernel,'ab',plan.jahr,'+'+plan.spanne+'J ·',nVoll,'voll +',nProxy,'im Strom (Hülle/Destillat) ·',prims,'Prims · Graph V='+lay.graph.nV,'E='+lay.graph.nE,'Zyklen='+lay.graph.zyklen,(lay.mauer?'· MAUER R'+lay.mauer.R.toFixed(0)+' Tore:'+lay.mauer.gates.length:''),(lay.fluss?'· FLUSS+'+lay.bruecken.length+'Brücken':''),'· R='+R2.toFixed(0)+'m');
+  console.log('DORF:',plan.region,plan.groesse,plan.kernel,'ab',plan.jahr,'+'+plan.spanne+'J ·',nVoll,'voll +',nProxy,'im Strom (Hülle/Destillat) ·',prims,'Prims · Graph V='+lay.graph.nV,'E='+lay.graph.nE,'Zyklen='+lay.graph.zyklen,(lay.mauer?'· MAUER R'+lay.mauer.R.toFixed(0)+' Tore:'+lay.mauer.gates.length:''),'· R='+R2.toFixed(0)+'m');
 }
 function frameDorf(){ orb.r=Math.min(90,(dorf?dorf.R:30)*2.0+12); orb.ty=6; applyOrbit(); }
 // ════════════ META-GESETZ ════════════ wohnt im Kern (U6c, __fachwerkCore.metaParams) — eine Quelle für Browser + Sweep
@@ -647,7 +641,7 @@ function buildHouse(params){
   solids=haus.solids;                                  // neue Kollisions-Liste
   doorList.length=0;                                   // Türen neu sammeln (Array-Identität halten)
   ['innenwaende','tueren','anbau','fluegel','balkon','fenster','moebel'].forEach(k=>haus.subsystems[k] && haus.subsystems[k].traverse(o=>{
-    if(o.userData&&(o.userData.door||o.userData.window)){ doorList.push({leaf:o, openA:o.userData.openA, axis:o.userData.axis||'y', block:o.userData.block||null, open:(o.userData.open!==undefined)?o.userData.open:true, blockObj:null}); }}));
+    if(o.userData&&(o.userData.door||o.userData.window)){ doorList.push({leaf:o, openA:o.userData.openA, axis:o.userData.axis||'y', block:o.userData.block||null, open:(o.userData.open!==undefined)?o.userData.open:true, blockObj:null, ty:0}); }}));
   if(haus.chimney){const c=haus.chimney; fire.position.set((c.min[0]+c.max[0])/2, D.baseY+0.6, (c.min[2]+c.max[2])/2);}
   // Checkbox-Zustände + Explosion auf neues Haus anwenden
   ORDER.forEach(k=>{ if(haus.subsystems[k]){ haus.subsystems[k].visible=checks[k].checked; haus.subsystems[k].position.y=explode*(EXPL[k]||0); } });
@@ -677,7 +671,7 @@ function buildHausLOD(params, stufe){
   haus=null; solids=[]; doorList.length=0;
   const mass=stapelBau(Object.assign({},params,{nur:MASSNUR}), LOD1F);                       // MASS-BUILD liefert ext/dims — identisch zu buildDorf
   const bx=new THREE.Box3().setFromObject(mass.g);
-  const B={p:params, q:{phi:0,x:0,z:0,obb:{cx:0,cz:0}}, lod:'chunk', dyn:false,
+  const B={p:params, q:{phi:0,x:0,y:0,z:0,obb:{cx:0,cz:0}}, lod:'chunk', dyn:false,
            ext:{x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}, dims:mass.H.dims, fp:fpVon(mass.H), masse:masseVon(mass),
            spawnL:{x:mass.H.spawn.x, z:mass.H.spawn.z}, hofGap:2.5, meshes:[]};              // Sonde zeigt den LÄNDLICHEN Hof (gap 2.5) — Stadt-gap 0.06 wäre korrekt hofleer
   D=mass.H.dims; P=mass.H.P; lodSpawn=mass.H.spawn;
@@ -850,7 +844,7 @@ const G=(_BG&&Number.isFinite(_BG.g))?_BG.g:20;
 const JUMP_VY=(_BG&&Number.isFinite(_BG.jumpVy))?_BG.jumpVy:6.0;
 const raycaster=new THREE.Raycaster();
 function toggleDoor(d){ d.open=!d.open;
-  if(!d.open && d.block){ d.blockObj={min:[d.block[0],d.block[1],d.block[2]],max:[d.block[3],d.block[4],d.block[5]], th:d.th, tx:d.tx, tz:d.tz}; solids.push(d.blockObj); }
+  if(!d.open && d.block){ d.blockObj={min:[d.block[0],d.block[1]+d.ty,d.block[2]],max:[d.block[3],d.block[4]+d.ty,d.block[5]], th:d.th, tx:d.tx, tz:d.tz}; solids.push(d.blockObj); }
   else if(d.blockObj){ const i=solids.indexOf(d.blockObj); if(i>=0)solids.splice(i,1); d.blockObj=null; } }
 function targetedDoor(){ if(mode!=='walk')return null;
   raycaster.set(camera.position, new THREE.Vector3(-Math.sin(yaw)*Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw)*Math.cos(pitch)));
@@ -886,7 +880,7 @@ function enterWalk(){mode='walk';$('ui').style.display='none';
   if(haus)ORDER.forEach(k=>{if(haus.subsystems[k]){haus.subsystems[k].visible=true;haus.subsystems[k].position.y=0;}checks[k].checked=true;});
   renderer.clippingPlanes=[];$('cut').checked=false;expS.value=0;expV.textContent='0 %';explode=0;
   const sp=dorf?dorf.spawn:(haus?haus.spawn:(lodSpawn||{x:0,z:-8}));                        // LOD-SONDE: begehbar ohne Kollision (durchlaufen = inspizieren)
-  player.pos.set(sp.x,0,sp.z);player.vy=0;player.groundY=0;yaw=Math.PI;pitch=0;
+  player.pos.set(sp.x,(dorf&&dorfBodenY)?dorfBodenY(sp.x,sp.z):0,sp.z);player.vy=0;player.groundY=player.pos.y;yaw=Math.PI;pitch=0;
   cv.requestPointerLock();}
 function exitWalk(){mode='orbit';$('ui').style.display='';
   $('hud').style.display='none';$('esc').style.display='none';dhint.style.display='none';

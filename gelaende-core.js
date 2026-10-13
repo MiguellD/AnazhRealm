@@ -916,6 +916,9 @@
     const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16 });
     const ERDBAU_ZAHL = ["cx", "cz", "phi", "ex", "ez", "y"];
     const TRASSE_ZAHL = ["x0", "z0", "y0", "x1", "z1", "y1", "w"];
+    // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
+    // keine Böschung (der Weg über das Welt-Wasser staut es nicht).
+    const FREI_ZAHL = ["cx", "cz", "phi", "ex", "ez"];
     // Die NORMALFORM des Erdbaus: roh = die Splat-Liste (der Wirt fügt die Pläne seiner Orte in ihrer Reihenfolge an) →
     // { n, splats, zellen } mit einem Raster der Kante `zelleM` (je Zelle die Splats, deren Reichweite sie berührt). Fail-
     // closed: eine fremde Art oder eine fehlende Zahl wirft. Leer → null (der Term ruht).
@@ -930,7 +933,7 @@
         for (let i = 0; i < roh.length; i++) {
             const p = roh[i];
             const art = p && p.art;
-            const namen = art === "platte" ? ERDBAU_ZAHL : art === "trasse" ? TRASSE_ZAHL : null;
+            const namen = art === "platte" ? ERDBAU_ZAHL : art === "trasse" ? TRASSE_ZAHL : art === "frei" ? FREI_ZAHL : null;
             if (!namen) throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt die fremde Art " + art);
             for (const k of namen)
                 if (!Number.isFinite(p[k])) throw new Error("gelaende-core: Erdbau-Splat " + i + " ohne Zahl " + k);
@@ -939,12 +942,13 @@
             let x1;
             let z0;
             let z1;
-            if (art === "platte") {
+            if (art === "platte" || art === "frei") {
                 const c = Math.cos(p.phi);
                 const sn = Math.sin(p.phi);
-                s = { platte: true, cx: p.cx, cz: p.cz, c, s: sn, ex: p.ex, ez: p.ez, y: p.y };
-                const hx = Math.abs(p.ex * c) + Math.abs(p.ez * sn) + R;
-                const hz = Math.abs(p.ex * sn) + Math.abs(p.ez * c) + R;
+                const frei = art === "frei";
+                s = { platte: !frei, frei, cx: p.cx, cz: p.cz, c, s: sn, ex: p.ex, ez: p.ez, y: frei ? NaN : p.y };
+                const hx = Math.abs(p.ex * c) + Math.abs(p.ez * sn) + (frei ? 0 : R);
+                const hz = Math.abs(p.ex * sn) + Math.abs(p.ez * c) + (frei ? 0 : R);
                 x0 = p.cx - hx;
                 x1 = p.cx + hx;
                 z0 = p.cz - hz;
@@ -986,6 +990,14 @@
         let festMitte = Infinity;
         for (let k = 0; k < liste.length; k++) {
             const p = E.splats[liste[k]];
+            if (!p.frei) continue;
+            const dx = x - p.cx;
+            const dz = z - p.cz;
+            if (Math.abs(dx * p.c - dz * p.s) <= p.ex && Math.abs(dx * p.s + dz * p.c) <= p.ez) return h; // unter der Brücke: der Grund
+        }
+        for (let k = 0; k < liste.length; k++) {
+            const p = E.splats[liste[k]];
+            if (p.frei) continue;
             let d;
             let y;
             let mitte = 0;
@@ -1034,6 +1046,62 @@
         if (!E) return null;
         const y = erdbauY(E, x, z, NaN);
         return y === y ? y : null;
+    }
+
+    // DER ORT LIEST DAS GELÄNDE (K10): die Lese-Funktionen, die der Plan v2 (fachwerk `ortPlan`) an der Lage L erhält — die
+    // Höhe samt dem Erdbau früherer Orte (`hoehe`) und die Fläche seiner eigenen Splats (`erdbauFlaeche`). EIN ctx für den
+    // Wirt (`_ortPlanSetzen` über seine lebende Lage), das Fachwerk-Studio (`buildDorf` über `lageGrund`) und die Linse
+    // (gate:settlement Plan-Hash Studio = Welt): derselbe Export am selben Ort über derselben Lage ⇒ byte-derselbe Plan.
+    // `wasserAt` (optional) nennt das Welt-Wasser für das Brücken-Etikett — der Wirt reicht sein Urteil (`_landAt`: Meer, See
+    // und Fluss), ohne ihn gilt das Meer der Lage (Höhe unter `waterLevel`).
+    function ortCtx(L, wasserAt) {
+        return {
+            hoeheAt: (x, z) => hoehe(L, x, z, true),
+            wasserAt: typeof wasserAt === "function" ? wasserAt : (x, z) => hoehe(L, x, z, true) < L.waterLevel,
+            flaeche: (splats) => {
+                const E = erdbauNormal(splats);
+                return (x, z) => erdbauFlaeche(E, x, z);
+            },
+        };
+    }
+    // DIE LAGE EINER WELT OHNE WIRT (K10): Saat → die Lage, die der Wirt einer Welt ohne Erbgut trägt (die Eingangs-Welt
+    // und jede Welt aus einer Saat): die Basis 0 (Stamm `state.terrainBaseHeight`), der Meeresspiegel Basis − 3 (Stamm
+    // `state.waterLevel`), die Hydro-Kachel 2048 m (Stamm `HYDROSPHERE.regionSize`), das Erbgut [wildnis], kein Erdbau.
+    // `Noise` ist der SimplexNoise-Bau (vendor/simplex-noise.js), der Strom seed + ":voxel" wie im Wirt. Weicht der Wirt
+    // ab, bricht der Plan-Hash Studio = Welt (gate:settlement Teil O) beim Namen. Leser: das Fachwerk-Studio (`buildDorf`),
+    // die Linse.
+    const LAGE_GRUND = Object.freeze({ seed: "anazh-realm-seed", baseHeight: 0, meerUnterBasis: 3, regionSize: 2048 });
+    function lageGrund(seed, Noise) {
+        if (typeof Noise !== "function") throw new Error("gelaende-core: lageGrund braucht den SimplexNoise-Bau");
+        const s = typeof seed === "string" && seed.length ? seed : LAGE_GRUND.seed;
+        const terme = erbgutNormal(undefined);
+        return {
+            seed: s,
+            noise: new Noise(s + ":voxel"),
+            baseHeight: LAGE_GRUND.baseHeight,
+            waterLevel: LAGE_GRUND.baseHeight - LAGE_GRUND.meerUnterBasis,
+            erbgut: { terme, wildnis: 1 },
+            regionSize: LAGE_GRUND.regionSize,
+            erdbau: null,
+        };
+    }
+    // DER HANG EINES ORTS (K10): die Ring-Suche ab r0 (Schritt 40 m, 48 Richtungen) nach dem ersten Ort, dessen Gefälle über
+    // 16 m in [gMin, gMax] liegt und der trocken ist — 3 m über dem Meer und `trocken(x, z)` an acht Punkten in 40 m (der
+    // Wirt reicht sein Wasser-Urteil, das Studio die Höhe über dem Meer). Leser: das Fachwerk-Studio (der Ort des Dorfs ohne
+    // `?ort=`), gate:settlement Teil O (der Ort des Akts).
+    function hangOrt(L, trocken, r0 = 1500, r1 = 4000, gMin = 0.12, gMax = 0.25) {
+        const H = (x, z) => hoehe(L, x, z, true);
+        for (let rr = r0; rr < r1; rr += 40)
+            for (let k = 0; k < 48; k++) {
+                const x = Math.cos((k / 48) * 2 * Math.PI) * rr;
+                const z = Math.sin((k / 48) * 2 * Math.PI) * rr;
+                const g = Math.hypot(H(x + 8, z) - H(x - 8, z), H(x, z + 8) - H(x, z - 8)) / 16;
+                if (!(g >= gMin && g <= gMax) || !(H(x, z) > L.waterLevel + 3)) continue;
+                let land = 0;
+                for (let a = 0; a < 8; a++) if (trocken(x + 40 * Math.cos(a * 0.785), z + 40 * Math.sin(a * 0.785))) land++;
+                if (land === 8) return { x, z, g };
+            }
+        return null;
     }
 
     // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres Erbguts: der erste Term setzt den Startwert (die Wildnis oder
@@ -1503,6 +1571,10 @@
         erdbauNormal: erdbauNormal,
         erdbauY: erdbauY,
         erdbauFlaeche: erdbauFlaeche,
+        ortCtx: ortCtx,
+        LAGE_GRUND: LAGE_GRUND,
+        lageGrund: lageGrund,
+        hangOrt: hangOrt,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,
         BODEN_GENERATION: BODEN_GENERATION,
