@@ -81,12 +81,50 @@ function pruefeTraceFelder(trace) {
     return maengel;
 }
 
+// DIE BAU-UHR (K25, vor dem ersten Skript der Seite): jeder Pipeline-Bau des Geräts (createRenderPipelineAsync ·
+// createComputePipelineAsync, am Prototyp — auch der Abgriff des Stamms `_erstAbsageWache` ruft ihn) steht im Flug, bis
+// sein Versprechen sich erfüllt oder absagt. Die Uhr der Wand ist dieser Bau, nie die Sekunde des Runners: auf dem CI-
+// Runner übersetzte swiftshader eine Pipeline in 1 s oder in über 120 s (Lauf 38375094658), die alten Fristen (Ruhe 60 s,
+// Sichtbarkeit 120 s) urteilten über das Tempo des Runners statt über die Welt.
+function bauUhrInstall() {
+    if (typeof GPUDevice === "undefined" || window.__bauUhr) return;
+    const U = { imFlug: new Map(), angelegt: 0, gebaut: 0, abgesagt: 0, maxMs: 0, summeMs: 0 };
+    const haken = (name) => {
+        const roh = GPUDevice.prototype[name];
+        if (typeof roh !== "function") return;
+        GPUDevice.prototype[name] = function (d) {
+            const p = roh.call(this, d);
+            const t0 = performance.now();
+            U.angelegt++;
+            U.imFlug.set(p, (d && d.label) || name);
+            const ende = (ok) => {
+                const ms = performance.now() - t0;
+                U.imFlug.delete(p);
+                if (ok) U.gebaut++;
+                else U.abgesagt++;
+                U.summeMs += ms;
+                if (ms > U.maxMs) U.maxMs = ms;
+            };
+            p.then(
+                () => ende(true),
+                () => ende(false)
+            );
+            return p;
+        };
+    };
+    haken("createRenderPipelineAsync");
+    haken("createComputePipelineAsync");
+    window.__bauUhr = U;
+}
+
 // DIE ERST-ZEICHNUNGS-WAND (Seite): Haken und Proben unter `window.__erstWand`; jede Probe ist ein eigener, benannter
-// Aufruf aus Node (je unter der Protokoll-Frist — swiftshader kompiliert eine Pipeline in Sekunden).
+// Aufruf aus Node. Keine Probe trägt eine Sekunden-Frist: jede wartet auf ihr EREIGNIS (`bisEreignis`) und gibt nur auf,
+// wenn die Erst-Zeichnung still steht — dann kann nichts mehr kommen.
 function erstWandInstall() {
     const r = window.anazhRealm;
     const rend = r.state.renderer;
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+    const U = window.__bauUhr || null;
     // (4b) Welle K — DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
     // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
     // am Gerät (createRenderPipeline synchron · …Async) und am Knoten-Bau (Nodes.getForRender ohne Cache-Treffer) je
@@ -99,6 +137,7 @@ function erstWandInstall() {
             ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
             : null,
         budgetMs: r.constructor.ERST_BAU_MS,
+        bauUhr: U ? { angelegt: U.angelegt, gebaut: U.gebaut, imFlug: U.imFlug.size } : null,
     };
     const welt = r.state.scene;
     const Z = { cur: null, sync: 0, async: 0, bau: new Map() };
@@ -150,7 +189,7 @@ function erstWandInstall() {
         try {
             if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
             r._loopRender(performance.now() / 1000);
-        } catch (_e) {
+        } catch {
             /* die Linse misst, nie stören */
         }
     };
@@ -167,15 +206,37 @@ function erstWandInstall() {
             cam.layers.mask = maske;
         }
     };
-    // DIE RUHE vor jeder Probe (auf der Bühne): keine Pipeline der Welt ist mehr offen — sie kompiliert sonst neben der
-    // Probe (höchstens 60 s; was danach noch offen ist, trägt die Probe als `ruheOffen`, das Band urteilt).
+    // DIE EREIGNIS-FRIST jeder Probe: Bilder schalten, bis `ziel()` gilt — oder bis die Erst-Zeichnung STILL steht:
+    // STILL_BILDER Bilder hintereinander ohne einen Pipeline-Bau des Geräts im Flug (die Bau-Uhr), ohne neu angelegten
+    // Bau, ohne Knoten-Bau und ohne verschobenen Erst-Bau. Dann kann nichts mehr kommen, was `ziel` wahr macht, und die
+    // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe (bis K25: 60 s und 120 s Wanduhr).
+    const STILL_BILDER = 3;
+    const bisEreignis = async (ziel, pauseMs) => {
+        let bilder = 0,
+            still = 0;
+        while (!ziel()) {
+            const b0 = ESt ? ESt.bauN : 0,
+                v0 = ESt ? ESt.verschoben : 0,
+                a0 = U ? U.angelegt : 0;
+            bild();
+            bilder++;
+            await sleep(pauseMs);
+            const ruhig =
+                (!U || (U.imFlug.size === 0 && U.angelegt === a0)) &&
+                (!ESt || (ESt.bauN === b0 && ESt.verschoben === v0));
+            still = ruhig ? still + 1 : 0;
+            if (still >= STILL_BILDER) break;
+        }
+        return bilder;
+    };
+    // DIE RUHE vor jeder Probe (auf der Bühne): kein Pipeline-Bau des Geräts mehr im Flug und keine Pipeline der Welt
+    // offen — sonst übersetzt der GPU-Prozess sie vor der Probe (ein Bau-Rückstau verschob am Runner jede weitere Probe
+    // um Minuten). Was nach dem Stillstand noch offen ist, wird nie mehr bereit: die Probe trägt es als `ruheOffen`,
+    // das Band urteilt.
     let ruheOffen = 0;
     const ruhe = async () => {
         const t0 = performance.now();
-        while (ESt && ESt.offen.size > 0 && performance.now() - t0 < 60000) {
-            bild();
-            await sleep(50);
-        }
+        await bisEreignis(() => (!ESt || ESt.offen.size === 0) && (!U || U.imFlug.size === 0), 50);
         ruheOffen = ESt ? ESt.offen.size : 0;
         return Math.round(performance.now() - t0);
     };
@@ -215,11 +276,7 @@ function erstWandInstall() {
         let frames = 0;
         const t0 = performance.now();
         try {
-            while (gezeichnet.size < meshes.length && performance.now() - t0 < 200000) {
-                bild();
-                frames++;
-                await sleep(20);
-            }
+            frames = await bisEreignis(() => gezeichnet.size >= meshes.length, 20);
         } finally {
             rend.backend.draw = drawRoh;
             if (vendor && eigen) rend._renderObjectDirect = stamm;
@@ -276,11 +333,7 @@ function erstWandInstall() {
         const gedaechtnis = ESt ? ESt.gezeichnet : null;
         let sofort = false;
         try {
-            const t0 = performance.now();
-            while (bilder === 0 && performance.now() - t0 < 200000) {
-                bild();
-                await sleep(20);
-            }
+            await bisEreignis(() => bilder > 0, 20);
             if (vergessen && ESt) ESt.gezeichnet = new WeakMap();
             m.alphaTest = 0.5;
             m.needsUpdate = true;
@@ -356,7 +409,8 @@ function erstWandInstall() {
         return m;
     };
     // bis die Aufnahme des Bundles den Bürger trägt: gezählt die Frames ab der fertigen Pipeline (r184-Zustand); 30 Frames
-    // danach (oder 120 s) ist er unsichtbar
+    // danach ist er unsichtbar. Bis die Pipeline steht, wartet die Probe auf ihr Ereignis (`bisEreignis`) — steht die
+    // Erst-Zeichnung still, ehe sie bereit ist, wird sie es nie, und der Bürger ist unsichtbar (bis K25: 120 s Wanduhr).
     const bisSichtbar = async (bg, obj) => {
         const t0 = performance.now();
         let frames = 0,
@@ -368,15 +422,15 @@ function erstWandInstall() {
             const p = rend.backend.get(pipe).pipeline;
             return p !== undefined && p !== null;
         };
-        while (!traegtIn(bg, obj)) {
-            if (nachBereit < 0 && bereit()) {
-                nachBereit = 0;
-                bereitMs = Math.round(performance.now() - t0);
-            }
-            if (nachBereit >= 30 || performance.now() - t0 > 120000) break;
+        frames += await bisEreignis(() => traegtIn(bg, obj) || bereit(), 20);
+        if (bereit()) {
+            nachBereit = 0;
+            bereitMs = Math.round(performance.now() - t0);
+        }
+        while (nachBereit >= 0 && nachBereit < 30 && !traegtIn(bg, obj)) {
             bild();
             frames++;
-            if (nachBereit >= 0) nachBereit++;
+            nachBereit++;
             await sleep(20);
         }
         return {
@@ -530,12 +584,7 @@ function erstWandInstall() {
         let offenDanach = -1,
             frames = 0;
         try {
-            const t0 = performance.now();
-            while (zeilen.length === 0 && performance.now() - t0 < 60000) {
-                bild();
-                frames++;
-                await sleep(20);
-            }
+            frames = await bisEreignis(() => zeilen.length > 0, 20);
             for (let i = 0; i < 3; i++) bild();
             offenDanach = ESt.offen.size;
             try {
@@ -587,6 +636,9 @@ function erstWandInstall() {
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    // die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht in ihr (die Ruhe wartet auch
+    // auf ihn)
+    await page.evaluateOnNewDocument(bauUhrInstall);
     // KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -642,7 +694,7 @@ function erstWandInstall() {
                 for (let i = 0; i < 30; i++) {
                     try {
                         r._gameLoopTick(performance.now());
-                    } catch (_e) {
+                    } catch {
                         /* die Linse misst, nie stören */
                     }
                     await sleep(30);
@@ -728,9 +780,13 @@ function erstWandInstall() {
     }, LAUFZEIT_MS);
     // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
+        // eine Probe ohne Sekunden-Frist: hängt der GPU-Prozess selbst (ein Bau, der sich nie erfüllt), bricht erst die
+        // Protokoll-Frist (600 s) — dann nennt der Wurf die Probe beim Namen
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
-            const v = await page.evaluate(fn, arg);
+            const v = await page.evaluate(fn, arg).catch((e) => {
+                throw new Error(`[Erst-Zeichnung] ${name} nach ${Math.round((Date.now() - t0) / 1000)} s: ${(e && e.message) || e}`);
+            });
             console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
             return v;
         };
@@ -749,6 +805,12 @@ function erstWandInstall() {
         await page.evaluate(AUSGABE_INSTALL);
         out.erst.aufnahme = await ruf("Beweis-Aufnahme mit offener Pipeline", () => window.__erstWand.aufnahme());
         out.erst.absage = await ruf("Absage einer Pipeline", () => window.__erstWand.absage());
+        out.erst.bauUhrEnde = await page.evaluate(() => {
+            const U = window.__bauUhr;
+            return U
+                ? { angelegt: U.angelegt, gebaut: U.gebaut, abgesagt: U.abgesagt, imFlug: U.imFlug.size, maxMs: Math.round(U.maxMs), summeMs: Math.round(U.summeMs) }
+                : null;
+        });
     }
 
     await browser.close();
@@ -836,10 +898,16 @@ function erstWandInstall() {
     // Gegen-Lauf derselben Probe auf dem Vendor-Weg ist ROT (sonst wäre die Wand blind).
     const ez = out.erst || {};
     const eb = ez.boot || {};
+    // die Bau-Uhr (die Uhr der Ereignis-Fristen) sah die Bauten des Boots und sah Bauten sich erfüllen — ohne sie stünde
+    // jede Probe sofort still. Wie viele beim Einbau der Wand schon gebaut waren, ist das Tempo des Runners und urteilt nie.
+    const bu = ez.bauUhr || {},
+        bue = ez.bauUhrEnde || {};
     band(
-        ez.daStamm === true && eb.bauN > 0 && eb.pipeAsync > 0,
+        ez.daStamm === true && eb.bauN > 0 && eb.pipeAsync > 0 && bu.angelegt > 0 && bue.gebaut > 0,
         "ERST-ZEICHNUNG (Konsum im Boot)",
-        `am Renderer=${ez.daStamm} · Knoten-Bauten im Pass ${eb.bauN} (Σ ${eb.bauMs} ms) · verschoben ${eb.verschoben} · Pipelines asynchron ${eb.pipeAsync}`
+        `am Renderer=${ez.daStamm} · Knoten-Bauten im Pass ${eb.bauN} (Σ ${eb.bauMs} ms) · verschoben ${eb.verschoben} · Pipelines asynchron ${eb.pipeAsync} · ` +
+            `Bau-Uhr beim Einbau der Wand ${bu.angelegt} angelegt, ${bu.gebaut} gebaut, ${bu.imFlug} im Flug · am Ende ${bue.angelegt} angelegt, ` +
+            `${bue.gebaut} gebaut, ${bue.abgesagt} abgesagt, ${bue.imFlug} im Flug, längster Bau ${bue.maxMs} ms (Σ ${bue.summeMs} ms)`
     );
     const pr = ez.probe || {};
     band(
@@ -954,7 +1022,7 @@ function erstWandInstall() {
     console.error("DIAG-FEHLER:", e);
     try {
         server.close();
-    } catch (_e) {
+    } catch {
         /* Abbau fail-soft */
     }
     process.exit(1);
