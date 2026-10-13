@@ -39115,6 +39115,8 @@ class AnazhRealm {
             // die Masken-Karte des Gebauten (`maskNode`, `_fernRingMaske`): je Texel 255 = ein gezeichneter Chunk
             maske: { tex: maskeTex, daten: maskeDaten, n: maskeN, uZelle0: uMaskeZelle0, schluessel: "" },
             vollY: new Float32Array(off).fill(NaN),
+            // die Fläche des FELDES am Rand der Naht (`_fernRingFeldY`): NaN = noch nicht gemessen
+            feldY: new Float32Array(off).fill(NaN),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
             // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
@@ -39355,6 +39357,19 @@ class AnazhRealm {
         return false;
     }
 
+    // DIE FLÄCHE DES FELDES an der Naht (K16, der Einschnitt): der Chunk zeichnet das FELD (Gesetz + 3D-Rauheit + Höhlen-
+    // Mündung + Edits), die 2D-Höhe kennt keinen Einschnitt. Jede Ecke eines Naht-Dreiecks (`teilung.randV`: dort zeichnet der
+    // Ring über oder neben dem Gebauten) trägt darum die oberste Fläche des Feldes (`_voxelSurfaceY`, derselbe Leser wie Gras
+    // und Stand), gemerkt je Anker und Edit-Stand; ohne Fläche das volle Gesetz. Gemessen wird sie nur in der Deck-Wache
+    // (`_fernRingDeckWache`, gedeckelt je Takt), nie im Refresh-Strom.
+    _fernRingFeldY(fr, p) {
+        const voll = fr.vollY[p.g];
+        if (!(voll === voll)) return NaN;
+        const y = this._voxelSurfaceY(p.x, p.z);
+        fr.feldY[p.g] = y === null || !(y === y) ? voll : y;
+        return fr.feldY[p.g];
+    }
+
     // DIE REGEL DES maskNode, ihr CPU-Spiegel (K16, die Naht; die Herleitung steht am Stoff in `_fernRingEnsure`): 2 = der Ring
     // verwirft (ein Deck trägt sicher), 1 = Saum (der Ring zeichnet und weicht dem Chunk um `nahtWeiche` in die Tiefe), 0 = frei.
     // Leser: gate:fern-ring Band 9 (das Loch, der Durchstich) — dieselbe Rechnung wie der Knoten, Texel für Texel.
@@ -39488,6 +39503,10 @@ class AnazhRealm {
         }
         fa.fill(0, kf); // die Rest-Plätze entartet (0, 0, 0): kein Fragment, der Zeichen-Bereich bleibt
         na.fill(0, kn);
+        // die Ecken der Naht-Dreiecke tragen die Fläche des Feldes (`_fernRingFeldY`)
+        const randV = T.randV || (T.randV = new Uint8Array(geo.attributes.position.count));
+        randV.fill(0);
+        for (let o = 0; o < kn; o++) randV[na[o]] = 1;
         T.frei.index.needsUpdate = true;
         T.naht.index.needsUpdate = true;
         T.n = [kf / 3, kn / 3, neu.length - (kf + kn) / 3];
@@ -39615,7 +39634,10 @@ class AnazhRealm {
     // ihn per Tiefe — über jeder Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
-        if (this._fernRingNaht(fr, p)) {
+        const rand = fr.teilung.randV;
+        const f = p.s === 0 && rand && rand[p.li] ? fr.feldY[p.g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
+        if (f === f) law = f;
+        else if (this._fernRingNaht(fr, p)) {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
@@ -39961,8 +39983,18 @@ class AnazhRealm {
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
         }
+        // die Feld-Fläche des Rands (`_fernRingFeldY`) gilt je Edit-Stand: ein Edit schreibt das Feld um
+        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const edN = Array.isArray(ed) ? ed.length : 0;
+        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
+            fr.feldEdits = ed;
+            fr.feldEditsN = edN;
+            fr.feldY.fill(NaN);
+        }
         const pos = fr.geos[0].attributes.position;
         let neu = false;
+        let feldMessungen = 0;
+        let offen = false;
         for (let n = 0; n < 128; n++) {
             const i = fr.deckCursor % fr.zoneVerts;
             const p = this._fernRingPunkt(fr, i);
@@ -39973,13 +40005,21 @@ class AnazhRealm {
                 fr.vollY[p.g] = voll;
                 law = fr.deckLaw[i] = this._fernRingDeckMisch(fr, p.rad, makro, voll);
             }
+            // DIE ECKE EINES NAHT-DREIECKS misst die Fläche des Feldes (gedeckelt je Takt: eine Spalten-Probe liest die
+            // Dichte von der Garantie-Luft bis zum Boden)
+            if (fr.feldY[p.g] !== fr.feldY[p.g] && fr.teilung.randV && fr.teilung.randV[p.li]) {
+                if (feldMessungen < F.feldJeTakt) {
+                    this._fernRingFeldY(fr, p);
+                    feldMessungen++;
+                } else offen = true;
+            }
             if (Math.fround(this._fernRingY(fr, p, law, wl)) !== pos.getY(p.li)) {
                 this._fernRingSetzVertex(fr, p, law, wl);
                 neu = true;
             }
             fr.deckCursor++;
         }
-        this._standMeldet("deckWache", 128, neu, false);
+        this._standMeldet("deckWache", 128, neu, offen);
         if (!neu) return;
         this._fernRingHoch(fr, [true]);
     }
@@ -42014,6 +42054,7 @@ class AnazhRealm {
             fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
             fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
             fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
+            fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
             fr.gpuFlug = false;
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
@@ -102650,6 +102691,8 @@ AnazhRealm.FERN_RING = Object.freeze({
     // (±0,4 m); längs des Strahls gekappt (`nahtWeicheMax`), damit der streifende Blick nicht ferne Hänge durch den Saum zieht.
     nahtWeiche: 6,
     nahtWeicheMax: 24,
+    // die Feld-Flächen des Naht-Rands, die die Deck-Wache je Takt misst (`_fernRingFeldY`)
+    feldJeTakt: 12,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,
