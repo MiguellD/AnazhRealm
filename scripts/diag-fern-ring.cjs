@@ -229,6 +229,9 @@ const server = http.createServer((req, res) => {
                         naht = r._chunkDecktRing(...orte(row + dr, (ai + da + F.winkel) % F.winkel));
                     }
             }
+            // die Ecke eines Naht-Dreiecks trägt die Fläche des Feldes, sobald die Deck-Wache sie maß (`feldY`, K16)
+            const randV = fr.teilung && fr.teilung.randV;
+            const feld = s === 0 && randV && randV[li] && fr.feldY ? fr.feldY[gIdx] : NaN;
             let law = r._terrainMacroSurfaceY(sx, sz, false);
             // LOCH-DECKEL-Formel (gespiegelt): Zone = volles Gesetz −0.3, ×1.35-Blende auf Makro.
             if (s === 0 && rad <= fr.deckZoneRad * 1.35) {
@@ -236,7 +239,8 @@ const server = http.createServer((req, res) => {
                 const voll = r._terrainMacroSurfaceY(sx, sz, true);
                 law = law + (voll - law) * w - 0.3 * w;
             }
-            if (naht) law = r._terrainMacroSurfaceY(sx, sz, true);
+            if (feld === feld) law = feld;
+            else if (naht) law = r._terrainMacroSurfaceY(sx, sz, true);
             let expY = law < wl ? wl - r._fernRingWasserTiefe() : law;
             if (row === 0) expY -= F.saumDrop;
             // Im Gebauten taucht der Ring nicht mehr (K16): er trägt dort das volle Gesetz und verwirft sein Fragment (die
@@ -697,6 +701,35 @@ const server = http.createServer((req, res) => {
                 const f9 = r.state.fernRing;
                 if (f9 && f9.cursor >= f9.totalVerts && f9.farbN === 0) break;
             }
+            // DIE DECK-WACHE SCHWINGT EIN (K16): der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
+            // Takt (`_fernRingFeldY`, FERN_RING.feldJeTakt) — wie im Spiel nach jedem Anker: die Linse pumpt, bis jeder
+            // Rand-Punkt sie trägt (höchstens 3 000 Takte), und nennt die Takte und die Kosten einer Spalten-Probe.
+            {
+                const f9 = r.state.fernRing;
+                const randOffen = () => {
+                    if (!f9 || !f9.feldY || f9.zoneVerts === undefined) return -1;
+                    let n = 0;
+                    for (let g = 0; g < f9.zoneVerts; g++)
+                        if (f9.feldY[g] !== f9.feldY[g] && f9.teilung.randV && f9.teilung.randV[g]) n++;
+                    return n;
+                };
+                let t = 0;
+                for (; t < 3000; t++) {
+                    r._tickFernRing(pos9);
+                    if (t % 25 === 24 && randOffen() <= 0) break;
+                }
+                res.feldTakte = t + 1;
+                res.feldOffen = randOffen();
+                const rand = [];
+                for (let g = 0; f9 && f9.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
+                    const p = r._fernRingPunkt(f9, g);
+                    if (f9.teilung.randV && f9.teilung.randV[g]) rand.push(p);
+                }
+                const tF = performance.now();
+                for (const p of rand) r._voxelSurfaceY(p.x, p.z);
+                res.feldUs = rand.length ? Math.round(((performance.now() - tF) * 1000) / rand.length) : NaN;
+                res.feldRand = rand.length;
+            }
             delete r._terrainGeologyAlbedo;
             delete r._wegeBodenFarbe;
             const fr9 = r.state.fernRing;
@@ -782,6 +815,9 @@ const server = http.createServer((req, res) => {
             const lochOrte = []; // die ersten Löcher beim Ort (Punkt, Chunk, Stufe)
             const durchSeite = {}; // ebenso der Durchstich: je Kante:Regel [Zahl, größte Höhe über dem Deck]
             const muendung9 = [0, 0]; // der Einschnitt am Saum (Höhle, Kanal): [Punkte, größte Höhe des Rings über dem Deck]
+            const muendungOrte9 = [];
+            let muendungAlt9 = 0; // SELBSTTEST: dieselben Punkte mit dem Ring auf der 2D-Höhe (die alte Naht)
+            let muendungLuecke9 = 0; // das Deck tief, das Feld oben: der Saum füllt eine Lücke über einem tieferen Boden
             const proben13 = []; // die Punkte der Loch-Probe für die Treue der Teilung (Band 13)
             const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
             const morphF =
@@ -943,12 +979,28 @@ const server = http.createServer((req, res) => {
                     durch[1]++;
                     if (yr > yc + 0.05) durchOhne++;
                     const ueber = yr - (regel === 1 ? weiche9 : 0) - yc;
-                    if (regel !== 2 && ueber > 0.05 && yc < r._terrainMacroSurfaceY(x, z, true) - 2) {
-                        // DER EINSCHNITT AM SAUM: das Deck liegt mehr als 2 m unter dem Gesetz (Höhlen-Mündung, Kanal — die
-                        // Surface-Nets-Abweichung ist ±0,45 m), der Ring trägt das Gesetz (er kennt keinen Einschnitt) — benannt und
-                        // gezählt, nicht die Sehne der Naht
+                    const gesetz9 = r._terrainMacroSurfaceY(x, z, true);
+                    const tief9 = regel !== 2 && yc < gesetz9 - 2; // das Deck mehr als 2 m unter der 2D-Höhe
+                    // DER EINSCHNITT AM SAUM: das Deck liegt mehr als 2 m unter der 2D-Höhe des Gesetzes (die Surface-Nets-
+                    // Abweichung ist ±0,45 m). Der Richter ist das FELD, das der Chunk zeichnet (`_voxelSurfaceY`, die oberste
+                    // Fläche): liegt seine Fläche tief (Höhlen-Mündung, Kanal, Edit), darf der Ring nicht über ihr stehen; trägt
+                    // das Feld oben (das Deck unter dem Strahl ist ein tieferer Boden — ein Höhlen-Grund unter der Lücke an der
+                    // Bau- oder Stufen-Kante, die der Saum füllt), ist der Ring dort die Fläche des Feldes (gezählt: `luecke`).
+                    const feld9 = tief9 ? r._voxelSurfaceY(x, z) : null;
+                    const weicheT9 = regel === 1 ? weiche9 : 0;
+                    if (tief9 && feld9 !== null && feld9 >= gesetz9 - 2) muendungLuecke9++;
+                    // SELBSTTEST: der Ring auf der 2D-Höhe des Gesetzes (die alte Naht, `vollY`) stünde über der tiefen Fläche
+                    if (tief9 && feld9 !== null && feld9 < gesetz9 - 2 && gesetz9 - weicheT9 - feld9 > 0.05)
+                        muendungAlt9++;
+                    if (tief9 && feld9 !== null && feld9 < gesetz9 - 2 && yr - weicheT9 - feld9 > 0.05) {
                         muendung9[0]++;
-                        muendung9[1] = Math.max(muendung9[1], +ueber.toFixed(1));
+                        muendung9[1] = Math.max(muendung9[1], +(yr - weicheT9 - feld9).toFixed(1));
+                        if (muendungOrte9.length < 6)
+                            muendungOrte9.push(
+                                `(${x.toFixed(1)}|${z.toFixed(1)}) ${seite} R${regel} Deck ${yc.toFixed(1)} Feld ${feld9.toFixed(1)} Ring ${yr.toFixed(1)} Gesetz ${gesetz9.toFixed(1)}`
+                            );
+                    } else if (tief9) {
+                        // das Deck tief, der Ring auf dem Feld (oder darunter): kein Durchstich der Sehne
                     } else if (regel !== 2 && ueber > 0.05) {
                         durch[0]++;
                         const k = `${seite}:${regel}`;
@@ -985,6 +1037,9 @@ const server = http.createServer((req, res) => {
             res.morph = morphF;
             res.durchSeite = durchSeite;
             res.muendung = muendung9;
+            res.muendungOrte = muendungOrte9;
+            res.muendungAlt = muendungAlt9;
+            res.muendungLuecke = muendungLuecke9;
             res.weiche = weiche9;
             // ===== (12) DIE WEICHE KOSTET NUR AN DER NAHT (K16, Prüfung Runde 3) =====
             // Die Tiefe aus dem Fragment (`depthNode`) kostet jedes Fragment, das sie schreibt, den frühen Tiefentest und die
@@ -1444,7 +1499,12 @@ const server = http.createServer((req, res) => {
             out.maskeTreue[1] > 0 &&
             out.maskeTreue[0] === out.maskeTreue[1] &&
             out.durchOhne > 0.02,
-        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} seiten=${JSON.stringify(out.durchSeite || {})} weiche=${out.weiche} einschnitt=${(out.muendung || []).join("/")} stufen=${JSON.stringify(out.nahtStufen || {})} zeit=${(out.zeit9 || []).join("+")}ms maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
+        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)} seiten=${JSON.stringify(out.durchSeite || {})} weiche=${out.weiche} stufen=${JSON.stringify(out.nahtStufen || {})} zeit=${(out.zeit9 || []).join("+")}ms maskNode=${out.maskNode} karte=${(out.maskeTreue || []).join("/")} selbsttest-ohne-karte=${(+out.durchOhne).toFixed(4)}`
+    );
+    check(
+        "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet; Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
+        !!out.muendung && out.muendung[0] === 0 && out.feldOffen === 0 && out.muendungAlt > 0,
+        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",
