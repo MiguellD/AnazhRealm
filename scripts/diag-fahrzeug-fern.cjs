@@ -200,8 +200,10 @@ function pruefeQuelle(quelle) {
         const pm = { x: 100, y: 5, z: -30 };
         // Der Schätzer fragt die EINE Stufen-Wahl (`_chooseLODForDistance`) mit der Sichthöhe (`_lodTreeVisHeight`,
         // ein Fahrzeug ist kein Baum: 0 = rohe Distanz) — beide aus der Quelle, nie nachgebaut.
+        // Die Stufen-Wahl misst vom Auge der Stufen (`_lodAuge`, K36): der Reiter sitzt im Gefährt, das Ego-Auge mit ihm.
         const stub = {
             state: { playerMesh: { position: pm } },
+            _lodAuge: () => pm,
             _chooseLODForDistance: wahl({ LOD_DISTANCES: D }),
             _lodTreeVisHeight: () => 0,
         };

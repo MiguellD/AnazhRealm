@@ -143,6 +143,9 @@ async function driveImpostor(page) {
                     // die Sichthöhe je Slot = Höhe der Höhen-Stufe × Instanz-Skala (dieselbe Zahl wie der aH0-Stempel)
                     sicht: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[3]),
                     erwartetSicht: [l1.sicht * 1.1, l2.sicht * 0.9, l1.sicht * 1.2],
+                    // VOLL je Slot (das Vorzeichen): die Streu-Slots frei, die frisch gesetzte Primär-Stufe hält, bis ihre
+                    // Band-Pflege urteilt (K36, `_lodSlotVoll`)
+                    voll: [false, false, r._lodSlotVoll(entry)],
                     instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
                     vertexPuffer: puffer,
                     attribute: geo ? Object.keys(geo.attributes) : [],
@@ -459,9 +462,12 @@ function strichWand(src) {
                 errs.push(`A: aKarte.x je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
             const rOk = G.rahmen.every((v, i) => Math.abs(v - G.erwartetRahmen[i]) < 1e-5);
             if (!rOk) errs.push(`A: aKarte.yz je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
-            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv
-            const sOk = G.sicht.every((v, i) => v > 0 && Math.abs(v - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i]));
-            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ${JSON.stringify(G.erwartetSicht)} (Sichthöhe × Skala)`);
+            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv,
+            // VOLL (verdeckt, Brücke, die Stufe im Halt — K36) = negativ
+            const sOk = G.sicht.every(
+                (v, i) => v < 0 === G.voll[i] && Math.abs(Math.abs(v) - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i])
+            );
+            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
     if (A.vereinigung) {
