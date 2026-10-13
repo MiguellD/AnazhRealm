@@ -12,8 +12,9 @@
 //                                                           genesis · dorf · buehne): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts;
 //                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
-//   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
-//                                                           Bühne + echter Frame (Ausgabe-Pfad)
+//   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--uhr 0..1]
+//                                                           Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe Bühne zu
+//                                                           dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -1041,6 +1042,21 @@ async function starte() {
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
             window.__buehne();
+            // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
+            // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
+            if (Number.isFinite(k.uhr)) {
+                const st = r.state;
+                if (st.world) st.world.timeOfDay = k.uhr;
+                st.timeOfDay = k.uhr;
+                st._skyEnvLastRegenMs = -Infinity;
+                if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(false);
+                if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                for (let i = 0; i < 20 && typeof r._leuchtTakt === "function"; i++) {
+                    r._leuchtTakt();
+                    await new Promise((ok) => setTimeout(ok, 50));
+                }
+            }
             if (r.state.playerMesh) r.state.playerMesh.visible = false;
             let auf = null;
             for (let i = 0; i < 2; i++) {
@@ -2309,6 +2325,7 @@ async function starte() {
             ly: a[4],
             lz: a[5],
             datei: opt("--datei"),
+            uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")),
             w: Number(opt("--w", 640)),
             h: Number(opt("--h", 360)),
         });

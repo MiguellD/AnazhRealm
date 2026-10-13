@@ -260,7 +260,177 @@ function ortVerdikt(m) {
         fehl.push(`Laternen Welt ${m.laternenWelt} / Plan ${m.laternenPlan}`);
     if (!(m.planHashGleich === true)) fehl.push("Plan-Hash Studio ≠ Welt");
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
+    if (!(m.gtWeg >= GT_SOLL_M)) fehl.push(`GT auf dem Dorfweg ${m.gtWeg} m in 8 s (Soll ≥ ${GT_SOLL_M})`);
     return fehl;
+}
+const GT_SOLL_M = 60;
+
+// DER GT AUF DEM DORFWEG (K10 × Auge 10.10. Bild 05: 8 s Vollgas, 5,2 m — der Wagen hing am Sockel-Kasten): im Browser,
+// durch den echten Spiel-Takt (`_gameLoopTick`, feste 60-Hz-Frames) und echte Tasten. Der Weg ist die längste Kette der
+// Hauptwege (gen 0, Weg an Weg, wo der nächste beginnt, wo der vorige endet) des Plans, den die Welt trägt; der Wagen startet
+// 2 m hinter ihrem Anfang in ihrer Richtung, der Fahrer hält W und lenkt (A/D) zum Punkt 6 m voraus auf der Kette. Gemessen:
+// der Fortschritt längs der Kette in `sek` Sekunden (gtWeg), die gefahrene Strecke, die größte Ablage von der Kette und der
+// Anteil der Frames auf dem Weg. Läuft im Browser (page.evaluate) — selbstgenügsam.
+async function gtDorfweg(v2, anker, sek) {
+    const res = {};
+    try {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const wege = (v2.roads || []).filter((w) => w.gen === 0 && Array.isArray(w.pts) && w.pts.length > 1);
+        const laenge = (w) => {
+            let L = 0;
+            for (let k = 1; k < w.pts.length; k++) L += Math.hypot(w.pts[k].x - w.pts[k - 1].x, w.pts[k].z - w.pts[k - 1].z);
+            return L;
+        };
+        let best = null;
+        for (const w0 of wege) {
+            const kette = [w0];
+            let L = laenge(w0);
+            for (;;) {
+                const ende = kette[kette.length - 1].pts[kette[kette.length - 1].pts.length - 1];
+                const nx = wege.find((w) => !kette.includes(w) && Math.hypot(w.pts[0].x - ende.x, w.pts[0].z - ende.z) < 0.5);
+                if (!nx) break;
+                kette.push(nx);
+                L += laenge(nx);
+            }
+            if (!best || L > best.L) best = { kette, L };
+        }
+        if (!best) return { err: "kein Hauptweg im Plan" };
+        const P = [];
+        for (const w of best.kette)
+            for (const p of w.pts) {
+                const q = { x: anker.x + p.x, z: anker.z + p.z };
+                if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 1e-3) P.push(q);
+            }
+        const S = [0];
+        for (let k = 1; k < P.length; k++) S.push(S[k - 1] + Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z));
+        const hw = (best.kette[0].w || 5) / 2;
+        // die Lage auf der Kette: Bogenlänge s und Ablage
+        const lage = (x, z) => {
+            let bs = 0;
+            let bd = Infinity;
+            for (let k = 1; k < P.length; k++) {
+                const dx = P[k].x - P[k - 1].x;
+                const dz = P[k].z - P[k - 1].z;
+                const l2 = dx * dx + dz * dz || 1e-9;
+                let t = ((x - P[k - 1].x) * dx + (z - P[k - 1].z) * dz) / l2;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                const d = Math.hypot(x - P[k - 1].x - dx * t, z - P[k - 1].z - dz * t);
+                if (d < bd) {
+                    bd = d;
+                    bs = S[k - 1] + Math.sqrt(l2) * t;
+                }
+            }
+            return { s: bs, d: bd };
+        };
+        const punkt = (s) => {
+            s = Math.max(0, Math.min(S[S.length - 1], s));
+            let k = 1;
+            while (k < P.length - 1 && S[k] < s) k++;
+            const t = (s - S[k - 1]) / Math.max(1e-9, S[k] - S[k - 1]);
+            return { x: P[k - 1].x + (P[k].x - P[k - 1].x) * t, z: P[k - 1].z + (P[k].z - P[k - 1].z) * t };
+        };
+        res.kette = Math.round(S[S.length - 1] * 10) / 10;
+        let tMs = performance.now();
+        const frame = () => {
+            tMs += 1000 / 60;
+            r._gameLoopTick(tMs);
+        };
+        const TASTE = { w: { key: "w", code: "KeyW" }, a: { key: "a", code: "KeyA" }, d: { key: "d", code: "KeyD" }, e: { key: "e", code: "KeyE" } };
+        const gehalten = new Set();
+        const ereignis = (art, k) => window.dispatchEvent(new KeyboardEvent(art, Object.assign({ bubbles: true }, TASTE[k])));
+        const halte = (liste) => {
+            for (const k of Array.from(gehalten))
+                if (!liste.includes(k)) {
+                    ereignis("keyup", k);
+                    gehalten.delete(k);
+                }
+            for (const k of liste)
+                if (!gehalten.has(k)) {
+                    ereignis("keydown", k);
+                    gehalten.add(k);
+                }
+        };
+        const a0 = punkt(2);
+        const a1 = punkt(4);
+        const fahrt = Math.atan2(a1.x - a0.x, a1.z - a0.z); // Bug (sin, cos)
+        st.playerMesh.position.set(a0.x + Math.cos(fahrt) * 1.5, r.getTerrainHeightAt(a0.x, a0.z) + 1.8, a0.z - Math.sin(fahrt) * 1.5);
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        for (let i = 0; i < 20; i++) frame();
+        const e = r.spawnArchitecture(
+            "fahrzeug_gt",
+            { x: a0.x, y: r.getTerrainHeightAt(a0.x, a0.z) + 0.5, z: a0.z },
+            { silent: true, precise: true, rotationY: fahrt - Math.PI / 2, id: "k10-gt-dorfweg" }
+        );
+        if (!e) return Object.assign(res, { err: "kein GT" });
+        for (let i = 0; i < 60 && !e.instanced && !e.mesh; i++) {
+            r._rebuildArchitectureMesh(e);
+            await new Promise((ok) => setTimeout(ok, 50));
+        }
+        ereignis("keydown", "e");
+        ereignis("keyup", "e");
+        frame();
+        if (st.player.mountedArch !== e.id) return Object.assign(res, { err: "der Fahrer sitzt nicht im GT" });
+        for (let i = 0; i < 12; i++) frame();
+        const s0 = lage(st.playerMesh.position.x, st.playerMesh.position.z).s;
+        let px = st.playerMesh.position.x;
+        let pz = st.playerMesh.position.z;
+        let strecke = 0;
+        let ablage = 0;
+        let aufWeg = 0;
+        let gezaehlt = 0;
+        const N = Math.round(sek * 60);
+        for (let i = 0; i < N; i++) {
+            const z = e._fahr;
+            const pos = st.playerMesh.position;
+            const lg = lage(pos.x, pos.z);
+            const ziel = punkt(lg.s + 6);
+            let fehler = 0;
+            if (z && Number.isFinite(z.yaw)) {
+                fehler = Math.atan2(-(ziel.z - pos.z), ziel.x - pos.x) - z.yaw; // die Fahrt-Richtung ist (cos yaw, −sin yaw)
+                fehler = Math.atan2(Math.sin(fehler), Math.cos(fehler));
+            }
+            halte(fehler > 0.04 ? ["w", "a"] : fehler < -0.04 ? ["w", "d"] : ["w"]);
+            frame();
+            strecke += Math.hypot(pos.x - px, pos.z - pz);
+            px = pos.x;
+            pz = pos.z;
+            const nach = lage(pos.x, pos.z);
+            ablage = Math.max(ablage, nach.d);
+            if (nach.s >= S[S.length - 1] - 1) {
+                res.endeNachS = Math.round(((i + 1) / 60) * 10) / 10;
+                break;
+            }
+            gezaehlt++;
+            if (nach.d <= hw) aufWeg++;
+            else if (!res.verlassen) {
+                // der Täter beim Namen: der nächste Bau mit Blocker am Ort, wo der Wagen den Weg verlässt
+                let naechster = null;
+                let nd = Infinity;
+                for (const a of st.architectures) {
+                    if (!a || a === e || !a.position || !Array.isArray(a.blockerAABBs) || !a.blockerAABBs.length) continue;
+                    const dd = Math.hypot(a.position.x - pos.x, a.position.z - pos.z);
+                    if (dd < nd) {
+                        nd = dd;
+                        naechster = a.type;
+                    }
+                }
+                res.verlassen = { s: Math.round((nach.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10 };
+            }
+        }
+        halte([]);
+        const s1 = lage(st.playerMesh.position.x, st.playerMesh.position.z).s;
+        res.gtWeg = Math.round((s1 - s0) * 100) / 100;
+        res.strecke = Math.round(strecke * 100) / 100;
+        res.ablage = Math.round(ablage * 100) / 100;
+        res.aufWeg = Math.round((1000 * aufWeg) / Math.max(1, gezaehlt)) / 1000;
+        res.start = { x: Math.round(a0.x * 10) / 10, z: Math.round(a0.z * 10) / 10 };
+        r.dismountArchitecture();
+        r.removeArchitecture(e);
+    } catch (err) {
+        res.err = (err && err.stack) || String(err);
+    }
+    return res;
 }
 
 // Die dp-Fixtures der Goldens (klein = schnell; ein Dorf + ein Weiler).
@@ -273,6 +443,89 @@ const FIXTURES = [
     global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
     require(path.join(root, "fachwerk-core.js"));
     const FC = globalThis.__fachwerkCore;
+
+    // ===== DIE ALTWELTEN (K10 × Entscheid §5.4) — Mess-Modus, kein Tor: `--altwelt <save.json> …` lädt jeden Save durch den
+    // echten Lade-Pfad (`loadState`: Boden-Umzug, die alten Orte ziehen auf ihren Erdbau) und zählt die Bauten, die kein Ort
+    // trägt (kein Grundriss, keine Dorf-Ausstattung), deren Boden der Erdbau verschiebt (|Δh| > 5 cm gegen dieselbe Welt ohne
+    // Erdbau) bzw. die AUF einer Erdbau-Fläche stehen — je Art, Natur (Baum, Busch, Fels, Kristall) getrennt.
+    const iAlt = process.argv.indexOf("--altwelt");
+    if (iAlt >= 0) {
+        const dateien = process.argv.slice(iAlt + 1).filter((a) => !a.startsWith("--"));
+        const puppeteer = require("puppeteer");
+        const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
+        const server = require("http").createServer((req, res) => {
+            let p = req.url.split("?")[0];
+            if (p === "/") p = "/index.html";
+            const fp = path.join(root, p);
+            if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
+            fs.readFile(fp, (err, data) => {
+                if (err) return ((res.statusCode = 404), res.end());
+                const ext = path.extname(fp);
+                res.setHeader("Content-Type", ext === ".html" ? "text/html" : ext === ".js" ? "application/javascript" : ext === ".json" ? "application/json" : "application/octet-stream");
+                res.end(data);
+            });
+        });
+        await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+        const browser = await puppeteer.launch({
+            headless: true,
+            protocolTimeout: 240000,
+            args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
+        });
+        for (const datei of dateien) {
+            const save = JSON.parse(fs.readFileSync(datei, "utf8"));
+            const page = await browser.newPage();
+            await page.evaluateOnNewDocument(() => {
+                window.__anazhForceFoundry = true;
+                window.__anazhHeadlessNullRenderer = true;
+            });
+            await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+            const z = await page.evaluate(async (s) => {
+                const dl = performance.now() + 90000;
+                while (performance.now() < dl) {
+                    const r0 = window.anazhRealm;
+                    const f0 = r0 && typeof r0._ensureAssetFoundry === "function" ? r0._ensureAssetFoundry() : null;
+                    if (f0 && f0.ready && f0.recipes && r0.state.blueprints && r0.state.blueprints.haus_alemannisch) break;
+                    await new Promise((ok) => setTimeout(ok, 100));
+                }
+                const r = window.anazhRealm;
+                const out = { arten: {}, natur: 0, gebaut: 0, auf: 0, verschoben: 0, schwebend: 0, dhMax: 0, nebenMax: 0 };
+                try {
+                    r.loadState(s);
+                    const G = globalThis.__gelaendeCore;
+                    const L = r._gelaende();
+                    const L0 = { seed: L.seed, noise: L.noise, baseHeight: L.baseHeight, waterLevel: L.waterLevel, erbgut: L.erbgut, regionSize: L.regionSize, erdbau: null };
+                    out.erdbauSplats = L.erdbau ? L.erdbau.n : 0;
+                    out.orte = r.state.architectures.filter((e) => e.fundament).length;
+                    for (const e of r.state.architectures) {
+                        if (!e || !e.position || e.fundament || /_dorf$/.test(e.type)) continue;
+                        const dh = Math.abs(G.hoehe(L, e.position.x, e.position.z, true) - G.hoehe(L0, e.position.x, e.position.z, true));
+                        const auf = !r._ortFrei(e.position.x, e.position.z, 0.01);
+                        if (!(dh > 0.05) && !auf) continue;
+                        const natur = /^(baum_|grown_|fels|kristall)/.test(e.type);
+                        out[natur ? "natur" : "gebaut"]++;
+                        if (auf) out.auf++;
+                        if (dh > 0.05) {
+                            out.verschoben++;
+                            // folgt der Bau seinem Boden? (Fuß-Höhe 0,5 über dem Grund, wie jeder Bau gesetzt wird)
+                            const neben = Math.abs(e.position.y - 0.5 - G.hoehe(L, e.position.x, e.position.z, true));
+                            out.nebenMax = Math.max(out.nebenMax, Math.round(neben * 100) / 100);
+                            if (neben > 0.05) out.schwebend++;
+                        }
+                        out.dhMax = Math.max(out.dhMax, Math.round(dh * 100) / 100);
+                        out.arten[e.type] = (out.arten[e.type] || 0) + 1;
+                    }
+                } catch (err) {
+                    out.err = (err && err.stack) || String(err);
+                }
+                return out;
+            }, save);
+            console.log(`ALTWELT ${datei}: ` + JSON.stringify(z));
+            await page.close();
+        }
+        await browser.close();
+        server.close();
+        process.exit(0);
+    }
 
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {
@@ -350,13 +603,13 @@ const FIXTURES = [
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
         const gut = { sockelMax: 0, sockelMedian: 0, tuerenOk: 2, tuerenN: 2, kronen: 0, laternenWelt: 6, laternenPlan: 6 };
-        Object.assign(gut, { planHashGleich: true, fremdBauten: 0 });
+        Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4 });
         check("Selbst-Test 12: das Verdikt eines gehaltenen Orts ist leer", ortVerdikt(gut).length === 0);
-        const schlecht = Object.assign({}, gut, { kronen: 3, laternenWelt: 0, planHashGleich: false, sockelMax: 2.72 });
+        const schlecht = Object.assign({}, gut, { kronen: 3, laternenWelt: 0, planHashGleich: false, sockelMax: 2.72, gtWeg: 5.2 });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
-            "Selbst-Test 13: das Verdikt nennt Sockel, Kronen, Laternen und Plan-Hash beim Namen",
-            /Sockel max 2.72/.test(vs) && /Kronen in Grundrissen 3/.test(vs) && /Laternen Welt 0/.test(vs) && /Plan-Hash/.test(vs),
+            "Selbst-Test 13: das Verdikt nennt Sockel, Kronen, Laternen, Plan-Hash und den GT auf dem Dorfweg beim Namen",
+            /Sockel max 2.72/.test(vs) && /Kronen in Grundrissen 3/.test(vs) && /Laternen Welt 0/.test(vs) && /Plan-Hash/.test(vs) && /GT auf dem Dorfweg 5.2 m/.test(vs),
             vs
         );
         if (errs.length) {
@@ -1073,6 +1326,7 @@ const FIXTURES = [
                         }
                 res.fremdBauten = fremd;
                 res.v2Json = v2 ? JSON.stringify(v2) : null;
+                res.planJson = JSON.stringify({ roads: P.roads || [] });
                 res.lage = { seed: L.seed, baseHeight: L.baseHeight, waterLevel: L.waterLevel, erbgut: L.erbgut, regionSize: L.regionSize };
             } catch (e) {
                 res.err = (e && e.stack) || String(e);
@@ -1082,6 +1336,11 @@ const FIXTURES = [
         ortUrteil.toString(),
         dpO
     );
+    // DER GT AUF DEM DORFWEG des Orts, den die Welt trägt (Plan v2, sonst der Export)
+    const gtO =
+        outO.anker && (outO.v2Json || outO.planJson)
+            ? await page.evaluate(gtDorfweg, JSON.parse(outO.v2Json || outO.planJson), outO.anker, 8)
+            : { err: "kein Ort" };
 
     await browser.close();
     server.close();
@@ -1174,7 +1433,9 @@ const FIXTURES = [
         laternenPlan: outO.laternenPlan,
         planHashGleich,
         fremdBauten: outO.fremdBauten,
+        gtWeg: gtO.gtWeg,
     };
+    console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
     console.log(
         "  ORT-ZAHLEN " +
             JSON.stringify(Object.assign({ haeuser: outO.haeuser, slots: outO.slots, planV2: outO.planV2, zellen: u.zellen, fremdArten: outO.fremdArten || {} }, m))
@@ -1182,7 +1443,7 @@ const FIXTURES = [
     if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
     const fehlO = ortVerdikt(m);
     check("O: das Dorf trägt jedes Haus (alle Slots stehen)", outO.haeuser > 0 && outO.haeuser === outO.slots, `${outO.haeuser}/${outO.slots}`);
-    check("O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0)", fehlO.length === 0, fehlO.join(" · ") || "gehalten");
+    check("O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg)", fehlO.length === 0, fehlO.join(" · ") || "gehalten");
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
     const c = out.c || {};

@@ -27938,7 +27938,11 @@ class AnazhRealm {
     _erdbauLage() {
         const wm = this.state.worldMeta;
         const roh = wm ? wm.erdbau : undefined;
-        if (this._erdbauGemerkt === true && this._erdbauGemerktRoh === roh && this._erdbauGemerktStand === this._erdbauStand)
+        if (
+            this._erdbauGemerkt === true &&
+            this._erdbauGemerktRoh === roh &&
+            this._erdbauGemerktStand === this._erdbauStand
+        )
             return this._erdbauNorm;
         this._erdbauNorm = globalThis.__gelaendeCore.erdbauNormal(this._erdbauRoh());
         this._erdbauGemerkt = true;
@@ -28021,21 +28025,18 @@ class AnazhRealm {
     // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4: „alte Welten ziehen um, ihre Bauten werden auf das neue Gelände
     // geerdet"): ein Haus eines Orts (`fundament`), das kein Erdbau trägt — ein Save vor dem Plan v2 stellte es auf die höchste
     // Ecke seines Grunds über ein Podest, das mit dem Erdbau fiel —, erhält die Platte seines Grundrisses samt Saum (fachwerk
-    // `ORT_GESETZ.saumM`) auf seinem Boden (y − 0,5): der Grund steigt zum Haus, das Haus bleibt, wo es stand. Ein Boden-Umzug
-    // (`umzug`, `_bodenUmzug`) verwirft den Erdbau des alten Bodens (seine Höhen standen auf einem Gelände, das es nicht mehr
-    // gibt): die Häuser stehen dann in ihrer Höhe über Grund und legen ihn neu. Gibt die Zahl der geerdeten Häuser.
-    _erdbauAltOrte(umzug) {
-        const wm = this.state.worldMeta || (this.state.worldMeta = {});
-        if (umzug && wm.erdbau) {
-            delete wm.erdbau;
-            this._erdbauStand = (this._erdbauStand || 0) + 1;
-        }
+    // `ORT_GESETZ.saumM`) auf seinem Boden (`yVon(haus)` − 0,5): der Grund steigt zum Haus, das Haus bleibt, wo es stand.
+    // `liste` sind die Bauten (gespeichert oder lebend), `yVon` ihre Höhe. Der Boden-Umzug ruft es, BEVOR er die Höhen aller
+    // Bauten rechnet (`_bodenUmzug`: Baum, Brunnen und Bau neben einem Haus stehen dann auf dem geerdeten Grund), das Laden
+    // danach für die Häuser eines Saves desselben Bodens. Gibt die Zahl der geerdeten Häuser.
+    _erdbauAltOrte(liste, yVon) {
         const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
         const platten = [];
-        for (const e of this.state.architectures) {
+        for (const e of liste) {
             const f = e && e.fundament;
             if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez) || !e.position) continue;
-            if (!Number.isFinite(e.position.y)) continue;
+            const y = yVon(e);
+            if (!Number.isFinite(y)) continue;
             const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
             const c = Math.cos(ry);
             const s = Math.sin(ry);
@@ -28044,7 +28045,7 @@ class AnazhRealm {
             const cx = e.position.x + lx * c + lz * s;
             const cz = e.position.z - lx * s + lz * c;
             if (!this._ortFrei(cx, cz, 0.01)) continue; // ein Erdbau trägt das Haus schon
-            platten.push({ art: "platte", cx, cz, phi: ry, ex: f.ex + saum, ez: f.ez + saum, y: e.position.y - 0.5 });
+            platten.push({ art: "platte", cx, cz, phi: ry, ex: f.ex + saum, ez: f.ez + saum, y: y - 0.5 });
         }
         if (!platten.length) return 0;
         const p0 = platten[0];
@@ -47201,6 +47202,19 @@ class AnazhRealm {
         const hoehen = new Map();
         const dh = [];
         const liste = Array.isArray(state.architectures) ? state.architectures : [];
+        // DIE ALTEN ORTE ZUERST (K10): der Erdbau des alten Bodens fällt (seine Höhen standen auf einem Gelände, das es nicht
+        // mehr gibt), die Häuser jedes Orts legen ihre Platten auf den neuen Boden in ihrer Höhe über Grund — erst danach fallen
+        // die Höhen aller Bauten, auf dem geerdeten Grund (vorher stand der Baum am Rand eines Orts bis 2,28 m neben seinem Boden).
+        const wmU = this.state.worldMeta;
+        if (wmU && wmU.erdbau) {
+            delete wmU.erdbau;
+            this._erdbauStand = (this._erdbauStand || 0) + 1;
+        }
+        const geerdet = this._erdbauAltOrte(liste, (a) => {
+            const p = a.position;
+            const g = Number.isFinite(p.x) && Number.isFinite(p.z) ? this._voxelSurfaceY(p.x, p.z) : NaN;
+            return g + (Number.isFinite(a.ueberGrund) ? a.ueberGrund : fuss);
+        });
         for (let i = 0; i < liste.length; i++) {
             const a = liste[i];
             const p = a && a.position;
@@ -47229,6 +47243,7 @@ class AnazhRealm {
             nach: gen,
             bauten: dh.length,
             bewegt: dh.filter((d) => d > 0.05).length,
+            geerdet,
             dhP50: q(0.5),
             dhMax: q(1),
             spieler,
@@ -47303,7 +47318,7 @@ class AnazhRealm {
             }
         }
         // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4): jedes Haus eines Orts steht auf seinem Erdbau
-        const geerdet = this._erdbauAltOrte(umzug);
+        const geerdet = this._erdbauAltOrte(this.state.architectures, (e) => e.position.y);
         if (geerdet) this.log(`Erdbau: ${geerdet} Häuser eines älteren Stands auf ihren Grund geerdet.`, "INFO");
         // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Natur, die vor dem Dorf in seine Häuser
         // wuchs (der Wurf kam vor dem Haus), und Bäume über der Genesis-Scheibe — jeder Bau mit Grundriss (Haus, Lichtung)
@@ -74759,7 +74774,10 @@ class AnazhRealm {
         // Welt erfindet keine Höhe mehr: die hMax-Suche über das Raster, das Podest, die Klippen-Wand und die Ersatz-Orte fielen,
         // der Erdbau des Orts trägt das Haus. Ein Slot ohne y fällt geschlossen und laut.
         if (!Number.isFinite(slot.y)) {
-            this.log(`SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`, "ERROR");
+            this.log(
+                `SIEDLUNG: der Slot „${slot.kultur}" trägt keinen Boden y — der Plan v2 fehlt (fail-closed)`,
+                "ERROR"
+            );
             return false;
         }
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
@@ -74791,7 +74809,8 @@ class AnazhRealm {
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
         // jedes Werks) und DIE BAU-WAND (kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand, `_bauFrei`): der
         // Slot fällt an seinem Ort geschlossen — der Plan ist das Dorf, die Welt rückt kein Haus.
-        if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0)) return false;
+        if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0))
+            return false;
         if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
         const wy = slot.y + 0.5; // der Bauplan-Boden liegt 0,5 m unter dem Ursprung (`_archEntryWorldMatrix` baseY)
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
