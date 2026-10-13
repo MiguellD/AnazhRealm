@@ -1268,17 +1268,22 @@
   const perimWall=(fixed,horiz,alo,ahi,yB,yT,ops)=>{ const seg=(s,e,y0,y1)=>{ if(e-s<0.04||y1-y0<0.03)return; if(horiz)addSolid((s+e)/2,(y0+y1)/2,fixed,e-s,y1-y0,0.3); else addSolid(fixed,(y0+y1)/2,(s+e)/2,0.3,y1-y0,e-s); };
     if(!ops.length){ seg(alo,ahi,yB,yT); return; }
     const yb=Math.max(yB,Math.min(...ops.map(o=>o.y0))), yt=Math.min(yT,Math.max(...ops.map(o=>o.y1))); if(yb>yB+0.02)seg(alo,ahi,yB,yb);
-    const gaps=ops.map(o=>[o.a0,o.a1]).sort((a,b)=>a[0]-b[0]); let p=alo; gaps.forEach(([g0,g1])=>{ seg(p,g0,yb,yt); p=Math.max(p,g1); }); seg(p,ahi,yb,yt);
+    // JEDE Öffnung in IHREM Höhenband (K10): zwischen den Öffnungs-Kanten trägt jeder überdeckte Abschnitt die Wand außerhalb der Bänder, die ihn überdecken — das EINE Band aller Öffnungen ließ die Vorderwand über der Haustür bis zur Traufe offen (im 2. OG ging der Körper hinaus und fiel 5,6 m)
+    const ks=[...new Set([alo,ahi,...ops.flatMap(o=>[o.a0,o.a1])])].filter(a=>a>=alo&&a<=ahi).sort((a,b)=>a-b); let p=alo;
+    for(let i=0;i+1<ks.length;i++){ const a=ks[i], e=ks[i+1], dk=ops.filter(o=>o.a0<=a&&o.a1>=e); if(!dk.length) continue;
+      seg(p,a,yb,yt); p=e; let y=yb; dk.map(o=>[Math.max(yb,o.y0),Math.min(yt,o.y1)]).sort((u,v)=>u[0]-v[0]).forEach(([u,v])=>{ if(u>y) seg(a,e,y,u); y=Math.max(y,v); }); if(yt>y) seg(a,e,y,yt); }
+    seg(p,ahi,yb,yt);
     if(yT>yt+0.02)seg(alo,ahi,yt,yT); };
   const wingOp=sd=>{ const w=wings.find(x=>x.side===sd); if(!(w&&w.door))return [];
     if(!w.outIsX) return [{a0:w.x0+0.2,a1:w.x1-0.2,y0:baseY,y1:eaveY}];                                  // senkrechter (verschmelzender) Flügel: Hauswand über ALLE Geschosse offen → ein Raum
     return [{a0:w.door.lo,a1:w.door.hi,y0:baseY,y1:dpH}]; };
-  perimWall(-W/2,false,-Dp/2,Dp/2,baseY,eaveY, (balcDoor&&balcDoor.side==='W')?[...wingOp('W'),{a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:eT,y1:eaveY}]:wingOp('W'));   // +Balkontür-OG falls Balkon hier                                            // −x Seitenwand (W-Durchgang)
-  perimWall( W/2,false,-Dp/2,Dp/2,baseY,eaveY, (balcDoor&&balcDoor.side==='E')?[...wingOp('E'),{a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:eT,y1:eaveY}]:wingOp('E'));   // +Balkontür-OG falls Balkon hier                                            // +x Seitenwand (E-Durchgang)
+  const balkOp=sd=>(balcDoor&&balcDoor.side===sd)?levels.slice(1).map(L=>({a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:L.y,y1:L.y+2.06})):[];   // die Balkontür je Balkon-Geschoss in IHRER Höhe (das Balkon-Gesetz: Hochhaus je OG, sonst das OG)
+  perimWall(-W/2,false,-Dp/2,Dp/2,baseY,eaveY, [...wingOp('W'),...balkOp('W')]);   // −x Seitenwand (W-Durchgang + Balkontür)
+  perimWall( W/2,false,-Dp/2,Dp/2,baseY,eaveY, [...wingOp('E'),...balkOp('E')]);   // +x Seitenwand (E-Durchgang + Balkontür)
   { const ops=wingOp('N'); if(backDoor)ops.push({a0:backDoor.cx-0.55,a1:backDoor.cx+0.55,y0:baseY,y1:dpH});
     perimWall(Dp/2,true,-W/2,W/2,baseY,eT, ops);                                                        // +z Rückwand EG (Hintertür + N-Durchgang)
-    if(eaveY-eT>0.1) perimWall(Dp/2,true,-W/2,W/2,eT,eaveY, (balcDoor&&balcDoor.side==='N')?[{a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:eT,y1:eaveY}]:[]); }   // OG Balkontür
-  { const ops=wingOp('S'); ops.push({a0:-doorW/2,a1:doorW/2,y0:baseY,y1:eaveY});
+    if(eaveY-eT>0.1) perimWall(Dp/2,true,-W/2,W/2,eT,eaveY, balkOp('N')); }   // OG Balkontür
+  { const ops=wingOp('S'); ops.push({a0:-doorW/2,a1:doorW/2,y0:baseY,y1:dpH});
     perimWall(-Dp/2,true,-W/2,W/2,baseY,eaveY, ops); }                                                  // −z Vorderwand (Haustür + S-Durchgang)
 
   function gelaende(){ const g=grp(); g.noDeform=true; if(P.terrain===0) return g;
