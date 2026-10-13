@@ -1044,7 +1044,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     else {
-        // kein Stoff schneidet über opacityNode aus (die Fell-Schale samt Kopf-Karten trägt ihn in colorNode.a, K28) — nur die
+        // kein Stoff schneidet über opacityNode aus (die Fell-Schale samt Kopf-Schalen trägt ihn in colorNode.a, K28) — nur die
         // Blende multipliziert einen schon gesetzten Kanal
         const erlaubt = new Set(["mat.opacityNode.mul(_keepX)"]);
         for (const m of stoff.matchAll(/mat\.opacityNode = ([^;]+);/g))
@@ -1223,11 +1223,11 @@ async function main() {
             ["Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf", nc.replace('if (wurf && !(typeof wurfTeil === "string" && wurfTeil))', "if (false)")],
             ["Schatten-Teil fehlt still", nc.replace("if (!hat)", "if (false)")],
             [
-                // die Fell-Schale (Haar · Wolle · Kopf-Karte) schnitt bis K28 über opacityNode aus — der Ausschnitt zurück dorthin
+                // die Fell-Schale (Haar · Wolle, Leib und Kopf) schnitt bis K28 über opacityNode aus — der Ausschnitt zurück dorthin
                 "Fell-Schale über opacityNode",
                 nc.replace(
-                    /(TSL\.mix\(TSL\.float\(FS\.wurzel\), TSL\.float\(FS\.spitze\), t\)\),\s*)TSL\.max\(TSL\.max\(haar, wolle\), karte\)(\s*\);)/,
-                    (_m, a, b) => a + "1.0" + b + " mat.opacityNode = TSL.max(TSL.max(haar, wolle), karte);"
+                    /(TSL\.mix\(TSL\.float\(FS\.wurzel\), TSL\.float\(FS\.spitze\), t\)\),\s*)TSL\.max\(haar, wolle\)(\s*\);)/,
+                    (_m, a, b) => a + "1.0" + b + " mat.opacityNode = TSL.max(haar, wolle);"
                 ),
             ],
             ["Schatten-Stoff über opacityNode", nc.replace("mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
