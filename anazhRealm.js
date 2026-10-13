@@ -66930,15 +66930,22 @@ class AnazhRealm {
     // Nadeln als dunkle Fussel. Leser: der Laub-Stoff (`_foundryMaterial`, foliageTex) und der Grammatik-Pfad
     // (`_buildPbrNodeMaterial`, foliageLeaf); `gate:pflanzen-nah` (F) misst die Fracht je Format und Stufe gegen das
     // Labor. Headless (kein Atlas) → null.
+    // DIE FARBE LIEST IHRE STUFE `BLATT_FARBE_OKTAVE` ÜBER DER DECKUNG (K20, 13.10.): die Alpha (die Blattform, der alphaTest)
+    // liest die Stufe des Schirms, die Farbe (rgb ÷ alpha) dieselbe Textur zwei Oktaven gröber — kein Farb-Detail unter vier
+    // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
+    // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
+    // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
     _blattAtlasProbe(T) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex || !T.texture || !T.attribute) return null;
-        const s = T.texture(tex, T.attribute("uv", "vec2"));
+        const uv = T.attribute("uv", "vec2");
+        const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
+        const deckung = T.texture(tex, uv);
         const w = tex.userData.wert;
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: s.a,
+            a: deckung.a,
         };
     }
 
@@ -80181,9 +80188,9 @@ class AnazhRealm {
     // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
     // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum. Ein Nachbar steht nur, wo ihn auch der Pflanz-Gang
     // setzt (`_enqueueVegetationSpawn`): die Wildnis trägt seinen Ort (`_wildnisTraegt`) und die Wand des Orts lässt ihn durch
-    // (`_ortWand`: kein Grundriss — der Wagen fährt, das Wasser des Gesetzes trägt schon der Dart) — der Wurf im Haus stand nie
-    // (gate:fernwald F: die Eiche neben einem Haus über ihrem einzigen Nachbarn blieb Bestand). Wer die Antwort merkt, merkt sie
-    // am Stand der Grundrisse (`_grundrissStand`).
+    // (`_ortWand` fragt nur den Grundriss; den Wagen fragt sie nicht, er fährt, und das Wasser des Gesetzes trägt schon
+    // der Dart) — der Wurf im Haus stand nie (gate:fernwald F: die Eiche neben einem Haus über ihrem einzigen Nachbarn
+    // blieb Bestand). Wer die Antwort merkt, merkt sie am Stand der Grundrisse (`_grundrissStand`).
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
@@ -103986,6 +103993,10 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
 // Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
 AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
+// DIE OKTAVE DER LAUB-FARBE (K20): der EINE Leser des Blatt-Atlas (`_blattAtlasProbe`) liest die Farbe so viele Mip-Stufen
+// über der Stufe der Deckung — 2 = kein Farb-Detail unter vier Pixeln (Eiche 25 m, nur L1: Δ-Luma 3,41 → 2,62).
+AnazhRealm.BLATT_FARBE_OKTAVE = 2;
+
 AnazhRealm.LOD_DISTANCES = {
     thresh01: 12, // Studio LOD_D0 — dist > 12 m → LOD1 (Default == Post-Ingest, headless == live)
     thresh12: 26, // Studio LOD_D1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)

@@ -492,6 +492,107 @@ function kornReihe(mips, zBasis) {
         return { lambda, N, zellen };
     };
 }
+// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20, 13.10.): das Kanten-Korn (oben) misst die Deckung, das Bild
+// der Welt flimmerte aber IN der Krone — Radeon, Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma 3,41 je Pixel, davon 2,54 im
+// Kronen-Inneren; dieselbe Krone mit flacher Farbe (Atlas-Alpha, ohne Atlas-rgb) 2,04, das Innere 0,97 (K20n10/g1). Der
+// Täter ist das Detail der Atlas-FARBE unter zwei Pixeln. Messname: die Krone als Karte (wie oben), je voll deckendem
+// Pixel die Luma der Farbe (rgb ÷ alpha, wie der Leser `_blattAtlasProbe`) über die Halton-Unterproben, die deckend
+// sind; Farb-Korn = Σ|ΔL| / Σ L beim ½-Pixel-Versatz. Die Farbe liest ihre Stufe λ + Oktave (AnazhRealm.BLATT_FARBE_OKTAVE,
+// aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
+const FARB_KORN_ANTEIL = 0.5;
+function farbKornReihe(mips, zBasis) {
+    const lin = new Float64Array(256);
+    for (let i = 0; i < 256; i++) {
+        const v = i / 255;
+        lin[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    const stufe = (m, c, u, v) => {
+        const W = m.width,
+            H = m.height,
+            d = m.data;
+        const x = ((c + u) / 4) * W - 0.5,
+            y = v * H - 0.5;
+        const x0 = Math.floor(x),
+            y0 = Math.floor(y),
+            fx = x - x0,
+            fy = y - y0;
+        let l = 0,
+            a = 0;
+        for (let q = 0; q < 4; q++) {
+            const dx = q & 1,
+                dy = q >> 1;
+            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
+            const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
+            l += w * (0.2126 * lin[d[o]] + 0.7152 * lin[d[o + 1]] + 0.0722 * lin[d[o + 2]]);
+            a += (w * d[o + 3]) / 255;
+        }
+        return [l, a];
+    };
+    const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
+    const probe = (lam, c, u, v) => {
+        const l = Math.max(0, lam - versatz),
+            l0 = Math.min(mips.length - 1, Math.floor(l)),
+            l1 = Math.min(mips.length - 1, l0 + 1),
+            f = l - Math.floor(l);
+        const p0 = stufe(mips[l0], c, u, v);
+        if (l1 === l0 || f === 0) return p0;
+        const p1 = stufe(mips[l1], c, u, v);
+        return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
+    };
+    return (lambda, oktave) => {
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
+        const pixel = (px, py) => {
+            let s = 0;
+            for (const [hx, hy] of KORN_HALTON) {
+                const u = (px + hx) / N,
+                    v = (py + hy) / N;
+                if (probe(lambda, 0, u, v)[1] < kornSchwelle()) return null; // nur voll deckende Pixel: das Innere
+                const [l, a] = probe(lambda + oktave, 0, u, v);
+                s += l / Math.max(a, 1e-3);
+            }
+            return s / KORN_HALTON.length;
+        };
+        let d = 0,
+            summe = 0;
+        for (let j = 0; j < N; j++)
+            for (let i = 0; i < N; i++) {
+                const l1 = pixel(i, j),
+                    l2 = pixel(i + 0.5, j + 0.5);
+                if (l1 == null || l2 == null) continue;
+                d += Math.abs(l1 - l2);
+                summe += (l1 + l2) / 2;
+            }
+        return summe > 0 ? d / summe : 0;
+    };
+}
+// Die Oktave der Farbe, wie der Stamm sie trägt (Kommentare zitieren — gelesen wird die Zuweisung); fehlt sie: 0.
+function farbOktave(quelle) {
+    const m = /\nAnazhRealm\.BLATT_FARBE_OKTAVE = ([0-9.]+);/.exec(quelle);
+    return m ? Number(m[1]) : 0;
+}
+function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
+    const v = [],
+        m = {};
+    const bc = fr.bc.mips.map((x) => ({
+        width: x.width,
+        height: x.height,
+        data: PC.bcDekodiere(x.data, x.width, x.height, bcFmt),
+    }));
+    for (const [fmt, mips] of [
+        ["bc", bc],
+        ["rgba", fr.rgba.mips],
+    ]) {
+        const r = farbKornReihe(mips, mips[0].width / 4);
+        const ohne = r(lambdaKrone, 0),
+            welt = r(lambdaKrone, oktave);
+        m[fmt] = { ohne, welt };
+        if (!(welt <= FARB_KORN_ANTEIL * ohne))
+            v.push(
+                `Farb-Korn ${fmt}: die Eichen-Krone auf 25 m (λ ${lambdaKrone.toFixed(2)}, Oktave ${oktave}) ${welt.toFixed(4)} > ${FARB_KORN_ANTEIL} × ${ohne.toFixed(4)} (ohne Oktave) — der Täter: _blattAtlasProbe liest die Farbe in der Stufe der Deckung`
+            );
+    }
+    return { v, m };
+}
 // Die Reihen je Format der Welt (die Fracht, wie die GPU sie liest) — `fr` = blattAtlasFracht(bild, true).
 function kornReihen(fr, bcFmt) {
     const bc = fr.bc.mips.map((m) => ({
@@ -996,6 +1097,15 @@ function windDatenUrteil(quellen) {
                 `  Eichen-Krone auf 25 m (λ ${lamKrone.toFixed(2)}): bc ${korn.m.bc.toFixed(3)} · rgba ${korn.m.rgba.toFixed(3)} (≤ ${KORN_MAX})\n` +
                 KORN_LAMBDA.map((l) => `  λ ${l}: bc ${korn.m["bc@" + l]} | rgba ${korn.m["rgba@" + l]}`).join("\n")
         );
+        const fk = farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(quellen["anazhRealm.js"]));
+        fails.push(...fk.v);
+        console.log(
+            `Farb-Korn (Σ|ΔL|/ΣL im Kronen-Inneren, ½-Pixel-Versatz; Oktave ${farbOktave(quellen["anazhRealm.js"])}): ` +
+                Object.entries(fk.m)
+                    .map(([f, x]) => `${f} ${x.welt.toFixed(4)} (ohne Oktave ${x.ohne.toFixed(4)})`)
+                    .join(" · ") +
+                ` — Ziel ≤ ${FARB_KORN_ANTEIL} × ohne`
+        );
     }
 
     // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
@@ -1117,6 +1227,15 @@ function windDatenUrteil(quellen) {
             rgba: kornReihe(kornig(frK.rgba.mips), frK.rgba.mips[0].width / 4),
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
+        // Farb-Korn: der Stamm ohne Oktave (die Farbe in der Stufe der Deckung) MUSS den Leser beim Namen nennen.
+        const ohneOktave = quellen["anazhRealm.js"].replace(
+            /\nAnazhRealm\.BLATT_FARBE_OKTAVE = [0-9.]+;/,
+            "\nAnazhRealm.BLATT_FARBE_OKTAVE = 0;"
+        );
+        st.push([
+            "Farb-Korn ohne Oktave",
+            farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(ohneOktave)).v.length > 0,
+        ]);
     }
     // (H) an kranken Kopien des Zensus (K20): die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
     // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
