@@ -877,6 +877,44 @@ const FIXTURES = [
                 stadt.graph === undefined,
             `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
         );
+        // DAS DORF-LICHT (K10, Auge 13.10.): das Start-Dorf trug 0 Laternen, „Dorf-Lichter nachts = Laternenzahl" hielt
+        // mit 0 = 0 vakuös. Jeder Plan mit Wegen trägt je Platz eine und je 25 m Weg eine Laterne (das Dorf-Licht des
+        // Gesetzbuchs, dorfLayout) — über Dörfer, Weiler und Märkte, jede Epoche. Selbsttest: derselbe Plan ohne Laternen.
+        const dorfLicht = (pl) => {
+            let wegM = 0;
+            for (const rd of pl.roads || []) wegM += rd.len || 0;
+            const soll = (pl.platz ? 1 : 0) + Math.floor(wegM / 25);
+            const n = Array.isArray(pl.laternen) ? pl.laternen.length : 0;
+            return { n, soll, wegM: Math.round(wegM), ok: !(wegM > 0) || n >= soll };
+        };
+        const lichtFehl = [];
+        let lichtN = 0;
+        for (const [seed, nH] of [
+            [7, 12],
+            [12345, 6],
+            [4291161376, 13],
+            [3, 9],
+            [7, 18],
+            [11, 40],
+        ])
+            for (const epoche of [undefined, "antike"]) {
+                const pl = FC.exportSettlement({ seed, nH, epoche });
+                const d = dorfLicht(pl);
+                lichtN++;
+                if (!d.ok) lichtFehl.push(`${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen < ${d.soll} (${d.wegM} m Weg)`);
+            }
+        check(
+            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne (${lichtN} Pläne)`,
+            lichtFehl.length === 0,
+            lichtFehl.slice(0, 3).join(" · ")
+        );
+        {
+            const pl = FC.exportSettlement({ seed: 7, nH: 12 });
+            check(
+                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht",
+                dorfLicht(pl).ok && !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok
+            );
+        }
     }
 
     // ===== TEIL B: der lebende Kanal (Browser, foundry-ON) =====
