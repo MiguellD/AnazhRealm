@@ -1,0 +1,10 @@
+WebGPU-Probe: adapter ok
+  [Erst-Zeichnung] Stand: 0 s
+  [Erst-Zeichnung] Probe: 12 s
+  [Erst-Zeichnung] Gegen-Lauf: 0 s
+  [Erst-Zeichnung] zurück: 0 s
+DIAG-FEHLER: Error: [Erst-Zeichnung] Neubau nach 600 s: Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.
+    at C:\Users\micha\Desktop\AnazhRealm-OMEN\ip-k25\scripts\diag-hitch-telemetrie.cjs:788:23
+    at async ruf (C:\Users\micha\Desktop\AnazhRealm-OMEN\ip-k25\scripts\diag-hitch-telemetrie.cjs:787:23)
+    at async C:\Users\micha\Desktop\AnazhRealm-OMEN\ip-k25\scripts\diag-hitch-telemetrie.cjs:798:27
+EXIT=1 

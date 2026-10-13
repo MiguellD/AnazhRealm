@@ -1,0 +1,61 @@
+A p3/hitch/M3-bauliste.json: 28 Bauten · B p3/hitch/O3-bauliste.json: 25 Bauten
+  UNGLEICH renderPipeline_MeshBasicMaterial: A 1 · B 0
+  UNGLEICH renderPipeline_MeshBasicNodeMaterial: A 18 · B 17
+  UNGLEICH renderPipeline_MeshStandardNodeMaterial: A 9 · B 8
+
+A (Reihenfolge der Fertigstellung):
+   0 t0    3411 ms ·    1395 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_16
+   1 t0    4710 ms ·    1070 ms · Flug 2 · renderPipeline_MeshStandardNodeMaterial_22
+   2 t0    5179 ms ·     600 ms · Flug 1 · renderPipeline_MeshStandardNodeMaterial_69
+   3 t0    4985 ms ·     794 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_81
+   4 t0    5957 ms ·    1556 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_84
+   5 t0    7877 ms ·    1834 ms · Flug 2 · renderPipeline_MeshBasicNodeMaterial_90
+   6 t0    8601 ms ·    1825 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_86
+   7 t0    9671 ms ·    1013 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_88
+   8 t0   10461 ms ·    3978 ms · Flug 1 · renderPipeline_MeshBasicMaterial_17
+   9 t0   13934 ms ·    2012 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_89
+  10 t0   14539 ms ·    2450 ms · Flug 1 · renderPipeline_MeshStandardNodeMaterial_194
+  11 t0   16910 ms ·    1610 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_201
+  12 t0   25329 ms ·    2101 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_200
+  13 t0   41295 ms ·    2149 ms · Flug 1 · renderPipeline_MeshStandardNodeMaterial_219
+  14 t0   42508 ms ·    2056 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_220
+  15 t0   49095 ms ·    3469 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_209
+  16 t0   66732 ms ·    1064 ms · Flug 2 · renderPipeline_MeshBasicNodeMaterial_288
+  17 t0   66784 ms ·    1863 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_289
+  18 t0   66813 ms ·    2662 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_290
+  19 t0   69581 ms ·   11081 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_294
+  20 t0   81002 ms ·   41991 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_295
+  21 t0  123166 ms ·   42667 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_295
+  22 t0  165960 ms ·   42621 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_297
+  23 t0  208809 ms ·   42793 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_297
+  24 t0  251819 ms ·   42351 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_298
+  25 t0  294392 ms ·   42017 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_298
+  26 t0  340045 ms ·   42393 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_300
+  27 t0  382678 ms ·   42287 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_314
+
+B:
+   0 t0    3631 ms ·    1350 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_16
+   1 t0    4888 ms ·     639 ms · Flug 2 · renderPipeline_MeshStandardNodeMaterial_22
+   2 t0    5350 ms ·     489 ms · Flug 2 · renderPipeline_MeshStandardNodeMaterial_69
+   3 t0    5186 ms ·    3173 ms · Flug 2 · renderPipeline_MeshStandardNodeMaterial_81
+   4 t0    5832 ms ·    2527 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_84
+   5 t0    6544 ms ·    1819 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_90
+   6 t0    8607 ms ·    3399 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_86
+   7 t0    8897 ms ·    5313 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_88
+   8 t0   13476 ms ·    1732 ms · Flug 1 · renderPipeline_MeshStandardNodeMaterial_196
+   9 t0   14310 ms ·    2346 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_197
+  10 t0   17892 ms ·    2400 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_200
+  11 t0   23019 ms ·    2341 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_204
+  12 t0   43414 ms ·    3214 ms · Flug 0 · renderPipeline_MeshStandardNodeMaterial_213
+  13 t0   72902 ms ·    3578 ms · Flug 2 · renderPipeline_MeshBasicNodeMaterial_287
+  14 t0   72929 ms ·    4344 ms · Flug 1 · renderPipeline_MeshBasicNodeMaterial_288
+  15 t0   72933 ms ·    4340 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_289
+  16 t0   77404 ms ·   97186 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_293
+  17 t0  176992 ms ·  292589 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_295
+  18 t0  471093 ms ·  212195 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_295
+  19 t0  683410 ms ·   43508 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_297
+  20 t0  727164 ms ·   42901 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_297
+  21 t0  770232 ms ·   42735 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_298
+  22 t0  813197 ms ·   42241 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_298
+  23 t0  859218 ms ·   43163 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_312
+  24 t0  902632 ms ·   42632 ms · Flug 0 · renderPipeline_MeshBasicNodeMaterial_313

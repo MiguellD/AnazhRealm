@@ -1,0 +1,7 @@
+17:47:22 M1 ip-mit 1584 s · EXIT=0  ·   [Erst-Zeichnung] Bundle-Neubau bei offener Pipeline: 550 s ·  · ✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT.
+18:03:43 O1 ip-ohne 980 s · EXIT=0  ·   [Erst-Zeichnung] Bundle-Neubau bei offener Pipeline: 216 s ·  · ✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT.
+18:17:57 K1 ip-k25 853 s · EXIT=1  ·  ·  · 
+18:17:57 SERIE ENDE
+18:26:24 M3 ip-mit 484 s · EXIT=0  ·   [Erst-Zeichnung] Bundle-Neubau bei offener Pipeline: 129 s ·  · ✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT.
+18:43:10 O3 ip-ohne 1005 s · EXIT=0  ·   [Erst-Zeichnung] Bundle-Neubau bei offener Pipeline: 299 s ·  · ✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT.
+18:43:10 SERIE ENDE

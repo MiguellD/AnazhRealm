@@ -1,0 +1,35 @@
+WebGPU-Probe: adapter ok
+  [Erst-Zeichnung] Stand: 0 s
+  [Erst-Zeichnung] Probe: 3 s
+  [Erst-Zeichnung] Gegen-Lauf: 0 s
+  [Erst-Zeichnung] zurück: 0 s
+  [Erst-Zeichnung] Neubau: 27 s
+  [Erst-Zeichnung] Neubau ohne Gedächtnis: 186 s
+  [Erst-Zeichnung] Bundle-Neubau bei offener Pipeline: 550 s
+  [Erst-Zeichnung] Bundle-Neubau ohne Anmeldung: 359 s
+  [Erst-Zeichnung] Hängender Fehler-Scope: 72 s
+  [Erst-Zeichnung] Hängender Fehler-Scope ohne Anmeldung: 79 s
+  [Erst-Zeichnung] Beweis-Aufnahme mit offener Pipeline: 81 s
+  [Erst-Zeichnung] Absage einer Pipeline: 4 s
+
+===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====
+Renderer: webgpu · frames=45 (Δ Laufzeit 2) · performance.memory=da
+✅ LONGTASKS (Konsum) — ltN=84 · ltMs=63891 ms · ltMaxMs=3935 ms · Observer=true
+✅ HEAP/GC-RING — gcRing[180] da=true · Sekunden=43 · nonZero-Slots=42 · heapLast=166 MB · gcN=8
+✅ PIPELINE-COMPILES (Konsum) — pipesN=18 · caches.size=22 · sense.total=22 · neuProS=0.24
+✅ UPLOAD-BYTES (Konsum) — Tap=true · kumuliert=12.3 MB · EwmaProFrame=347.1 KB
+✅ TRACE-FELDER (_flightRecorderBuildTrace) — longTasks={"n":84,"ms":63891,"maxMs":3935} · gcN=8 · pipelines={"total":22,"neuProS":0.24,"erstBauN":40,"erstBauMs":17821,"erstVerschoben":1434,"erstPipeAsync":19,"erstPipeOffen":1,"erstPipeAbsagen":0,"erstNeubauN":0} · uploadKBProS=62.1
+✅ ERST-ZEICHNUNG (Konsum im Boot) — am Renderer=true · Knoten-Bauten im Pass 40 (Σ 17821 ms) · verschoben 1434 · Pipelines asynchron 19 · Bau-Uhr beim Einbau der Wand 19 angelegt, 18 gebaut, 1 im Flug · am Ende 31 angelegt, 31 gebaut, 0 abgesagt, 0 im Flug, längster Bau 184506 ms (Σ 1379713 ms)
+✅ ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget) — Ruhe davor 0 ms (offen danach 0) · gezeichnet 3/3 nach 47 Frames (2780 ms) · synchron 0 · asynchron 3 · Aufrufe mit Bau 3 · max 1 Bauten je Aufruf · über dem Budget (4 ms) 0
+✅ ERST-ZEICHNUNG Gegen-Lauf (der Vendor-Weg MUSS rot sein: synchrone Pipeline, alle Bauten in einem Aufruf) — synchron 3 · asynchron 0 · max 3 Bauten je Aufruf · über dem Budget 1 · gezeichnet 3/3 nach 1 Frames · der EINE Ort danach zurück=true
+✅ ERST-ZEICHNUNG Neubau (ein gezeichnetes Objekt wechselt die Variante: im nächsten Bild gezeichnet; vergessen MUSS es blinken) — gezeichnet im nächsten Bild true · Neubauten 1 · Gegen-Lauf ohne Gedächtnis gezeichnet false
+✅ ERST-ZEICHNUNG Bundle-Neubau bei offener Pipeline (der Bürger steht ≤ 2 Frames nach seiner Pipeline wieder in der Aufnahme; ohne Anmeldung MUSS er fehlen) — B im Bundle true (182962 ms) · Neubau traf die offene Pipeline der Erst-Zeichnung true · sichtbar 1 Frames nach der fertigen Pipeline (bereit nach 183131 ms, 373 Frames, 183639 ms) · Ruhe offen 0 · Gegen-Lauf: Treffer true, UNSICHTBAR 30 Frames nach der fertigen Pipeline (bereit nach 169512 ms, 402 Frames, 175173 ms)
+✅ ERST-ZEICHNUNG hängender Fehler-Scope (das Vendor-Versprechen erfüllt sich nie: der Bürger steht ≤ 2 Frames nach seiner Pipeline in der Aufnahme; ohne Anmeldung MUSS er fehlen) — popErrorScope hängend 1× · sichtbar 1 Frames nach der fertigen Pipeline (bereit nach 71714 ms, 372 Frames, 71911 ms) · Ruhe offen 0 · Gegen-Lauf: hängend 1×, UNSICHTBAR 30 Frames nach der fertigen Pipeline (bereit nach 72833 ms, 401 Frames, 78485 ms)
+✅ BEWEIS-AUFNAHME bricht laut ab (eine nie bereite Pipeline: Wurf mit ihrem Namen; ohne sie das Bild mit erst.offen 0) — Wurf: ERST-ZEICHNUNG OFFEN — die Aufnahme bricht ab: offen 1 nach 3 s (davon 3 s ohne Fortschritt), Bauten 0 und verschoben 0 im letzten Frame; offene Pipelines: wand-attrappe [nie-bereit] · danach Bild 2304 Bytes, erst {"offen":0,"warteMs":62}
+✅ ERST-ZEICHNUNG Absage einer Pipeline (ERROR mit dem Stoff-Namen, aus der Schlange, die Beweis-Aufnahme bricht beim Namen ab) — ERROR: GPU-VALIDIERUNG (pipeline, #1): PIPELINE-ABSAGE renderPipeline_wand-absage-stoff_417: der Stummel der Wand sagt ab · Absagen 1 nach 1 Frames · GPU-Wache +1 (Soll = Absagen, EIN Melder) · Log-Zeilen 1 (Soll 1) · offen danach 0 · Aufnahme: -; ein Draw wartet auf renderPipeline_wand-absage-stoff_417 (ABGESAGT)
+✅ ERST-ZEICHNUNG WebGL2-Weiche (kein Bundle, kein Setter: die Anmeldung trägt sich nicht ein, der wartende Draw zählt) — Schlange +0 · wartende Draws +1
+✅ KEIN PAGE-ERROR — sauber
+✅ SELBST-TEST (Fake-Trace ohne neue Felder MUSS rot) — gemeldete Mängel=5 (erwartet ≥3): session.longTasks {n,ms,maxMs} fehlt oder ist nicht numerisch · memory.gcN fehlt oder ist nicht numerisch · steadyState.pipelines {total,neuProS} fehlt oder ist nicht numerisch · steadyState.pipelines {erstBauN,erstVerschoben,erstPipeAsync} fehlt oder ist nicht numerisch · steadyState.uploadKBProS fehlt oder ist nicht numerisch
+
+✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT.
+EXIT=0 

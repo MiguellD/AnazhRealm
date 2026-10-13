@@ -1,0 +1,29 @@
+diff --git a/scripts/diag-hitch-telemetrie.cjs b/scripts/diag-hitch-telemetrie.cjs
+index 9b2f1b65..115cacb9 100644
+--- a/scripts/diag-hitch-telemetrie.cjs
++++ b/scripts/diag-hitch-telemetrie.cjs
+@@ -88,7 +88,7 @@ function pruefeTraceFelder(trace) {
+ // Sichtbarkeit 120 s) urteilten über das Tempo des Runners statt über die Welt.
+ function bauUhrInstall() {
+     if (typeof GPUDevice === "undefined" || window.__bauUhr) return;
+-    const U = { imFlug: new Map(), angelegt: 0, gebaut: 0, abgesagt: 0, maxMs: 0, summeMs: 0 };
++    const U = { imFlug: new Map(), angelegt: 0, gebaut: 0, abgesagt: 0, maxMs: 0, summeMs: 0, liste: [] };
+     const haken = (name) => {
+         const roh = GPUDevice.prototype[name];
+         if (typeof roh !== "function") return;
+@@ -104,6 +104,7 @@ function bauUhrInstall() {
+                 else U.abgesagt++;
+                 U.summeMs += ms;
+                 if (ms > U.maxMs) U.maxMs = ms;
++                U.liste.push({ l: (d && d.label) || name, t0: Math.round(t0), ms: Math.round(ms), ok, flug: U.imFlug.size });
+             };
+             p.then(
+                 () => ende(true),
+@@ -805,6 +806,7 @@ function erstWandInstall() {
+         await page.evaluate(AUSGABE_INSTALL);
+         out.erst.aufnahme = await ruf("Beweis-Aufnahme mit offener Pipeline", () => window.__erstWand.aufnahme());
+         out.erst.absage = await ruf("Absage einer Pipeline", () => window.__erstWand.absage());
++        if (process.env.HITCH_BAULISTE) fs.writeFileSync(process.env.HITCH_BAULISTE, JSON.stringify(await page.evaluate(() => (window.__bauUhr ? window.__bauUhr.liste : null)), null, 1));
+         out.erst.bauUhrEnde = await page.evaluate(() => {
+             const U = window.__bauUhr;
+             return U
