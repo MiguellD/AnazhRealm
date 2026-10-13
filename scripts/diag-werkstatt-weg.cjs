@@ -399,13 +399,16 @@ function wand(src) {
             const leser = {
                 Vorschau: /\n {4}_workshopFoundryPreviewGroup\(bpName\) \{/,
                 Hand: /\n {4}_heldFoundryGroup\(bpName\) \{/,
-                Phantom: /\n {4}_buildStudioPlacementGhost\(bp\) \{/,
+                // das Werk des Phantoms (K20: mit seinem Ort — die Gestalt des Orts); der Ghost liest es (unten)
+                Phantom: /\n {4}_phantomWerk\(bp, wo\) \{/,
                 Setzen: /\n {4}confirmBuild\(\) \{/,
             };
             const ohne = Object.entries(leser)
                 .filter(([, re]) => !/this\._werkSame\(/.test(fnBody(nc, re) || ""))
                 .map(([n]) => n);
             const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
+            const ghost = fnBody(nc, /\n {4}_buildStudioPlacementGhost\(bp, wo\) \{/) || "";
+            if (!/this\._phantomWerk\(bp, wo\)/.test(ghost)) ohne.push("Phantom-Ghost (_phantomWerk)");
             return [
                 "W8 EIN Same je Werk (`_werkSame`: Vorschau · Hand · Phantom · Setzen), das Setzen trägt Same und Drehung des Phantoms, die Nachricht an den Mitspieler den Samen des Werks",
                 hash === 1 && !ohne.length && /rotationY: dreh/.test(setzen) && !null0,

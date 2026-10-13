@@ -1022,7 +1022,7 @@ const VERHALTEN = [
         const t6 = statisch(
             bruch(
                 stamm,
-                "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset);",
+                "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);",
                 "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0);"
             )
         ).gesetze.find((g) => g[0].startsWith("S4a"));

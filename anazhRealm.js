@@ -66675,14 +66675,31 @@ class AnazhRealm {
     // (`_studioStampFor` — die Prägung, die das Setzen mitgibt). Foundry aus/kalt → null: der Donor-Ghost bleibt,
     // `tickBuildMode` swappt, sobald das Asset dockt. Geteilte Studio-Geometrie ist sharedGeom-markiert + hält
     // `foundrySrcGroup` (`_disposeSoulGroup` lässt sie stehen); Material = der gecachte Klon (`_ghostMaterialFor`).
-    _buildStudioPlacementGhost(bp) {
+    // `wo` = der Ort des Phantoms (`_phantomWerk`): ein Baum zeigt die Gestalt dieses Orts, die Gruppe trägt sie
+    // (`userData.studioGestalt`), `tickBuildMode` tauscht, sobald der Ort eine andere wählt.
+    // DAS WERK DES PHANTOMS (K20): der Eintrag, den `confirmBuild` an diesem Ort stellt — der Same des nächsten Setzens
+    // (`_werkSame` mit dem Bau-Modus), der Stempel (`_studioStampFor`) und der Ort (`wo`, der Spawn-Ort des Setzens: x, z
+    // des Phantoms): ein Baum fragt die Gestalt seines Orts (`_foundryGestaltFor`) wie das gesetzte Werk. Befund: das
+    // Phantom fragte ohne Ort den rohen Samen und zeigte den Solitär (eiche|3), an seinem Ort im Bestand stand eiche|2.
+    _phantomWerk(bp, wo) {
+        const werk = { seed: this._werkSame(bp, bp.name, this.state.buildMode), type: bp.name };
+        const stempel = this._studioStampFor(bp.name);
+        if (stempel) werk.studioOv = stempel;
+        if (wo && Number.isFinite(wo.x) && Number.isFinite(wo.z)) werk.position = { x: wo.x, y: wo.y + 0.5, z: wo.z };
+        return werk;
+    }
+    // Die Gestalt, die das Phantom am Ort `wo` zeigen muss (das Gedächtnis des Orts `_ortGestaltSame` merkt jeden Ort);
+    // null = kein Studio-Werk oder der Ort wartet.
+    _phantomGestalt(bp, wo) {
+        const preset = this._foundryPresetForEntry({ type: bp.name });
+        return preset ? this._foundryGestaltFor(this._phantomWerk(bp, wo), preset) : null;
+    }
+    _buildStudioPlacementGhost(bp, wo) {
         if (!bp || typeof bp.name !== "string") return null;
         if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
         const preset = this._foundryPresetForEntry({ type: bp.name });
         if (!preset) return null;
-        const werk = { seed: this._werkSame(bp, bp.name, this.state.buildMode), type: bp.name };
-        const stempel = this._studioStampFor(bp.name);
-        if (stempel) werk.studioOv = stempel;
+        const werk = this._phantomWerk(bp, wo);
         const flat = this._foundryFlattenFor(werk, preset, 0);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length) {
             // null = lädt noch (die Anfrage ist unterwegs) → tickBuildMode heilt den Donor-
@@ -66709,6 +66726,7 @@ class AnazhRealm {
             grp.userData.foundrySrcGroup = src;
         }
         grp.userData.studioGhost = true;
+        grp.userData.studioGestalt = this._foundryGestaltFor(werk, preset);
         if (this.state.buildMode && this.state.buildMode.phantomStudioPending === bp.name) {
             this.state.buildMode.phantomStudioPending = null;
         }
@@ -66718,10 +66736,10 @@ class AnazhRealm {
     // Platzier-Phantom: mergeable (≥6 Teile, keine connections) → gecachte Merge-Geometrie + gecachter
     // Ghost-Mat-Klon; sonst `_buildFromBlueprint` mit FRISCHEN Per-Teil-Materialien. castShadow aus.
     // ZUERST die Studio-Gestalt (Quelle des finalen Eintrags), sonst der Donor-Bau; `opts.donorOnly` =
-    // Prebake-Pfad (Cache/Pipeline wärmen ohne Studio-Bake je Katalog-Bauplan).
+    // Prebake-Pfad (Cache/Pipeline wärmen ohne Studio-Bake je Katalog-Bauplan); `opts.wo` = der Ort des Phantoms.
     _buildPlacementGhost(bp, opts) {
         if (!(opts && opts.donorOnly)) {
-            const studio = this._buildStudioPlacementGhost(bp);
+            const studio = this._buildStudioPlacementGhost(bp, opts && opts.wo);
             if (studio) return studio;
         }
         const group = this._buildArchMeshMerged(bp);
@@ -82902,7 +82920,9 @@ class AnazhRealm {
         }
         bm.phantomMesh = null;
         bm.phantomStudioPending = null; // B1 — frisches Phantom, kein Alt-Pending
-        const phantom = this._buildPlacementGhost(this.state.blueprints[bm.blueprintName]);
+        // der Ort des Phantoms: der des alten, sonst der Blick (die Gestalt eines Baums folgt ihm, `_phantomWerk`)
+        const wo = alt ? alt.position : this.state.playerMesh && bm.active ? this._resolvePhantomTarget() : null;
+        const phantom = this._buildPlacementGhost(this.state.blueprints[bm.blueprintName], { wo });
         phantom.name = "bau-phantom";
         if (alt) {
             phantom.position.copy(alt.position);
@@ -83284,13 +83304,22 @@ class AnazhRealm {
     tickBuildMode() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
+        const target = this._resolvePhantomTarget();
+        // DAS PHANTOM ZEIGT DIE GESTALT SEINES ORTS (K20): wählt der Ort unter ihm eine andere Gestalt als die gezeigte (ein
+        // Baum tritt aus dem Bestand ins Freie — der Solitär), heilt es zu ihr wie der Donor-Ghost, sofort versucht.
+        const ud = bm.phantomMesh.userData;
+        const bpJetzt = this.state.blueprints && this.state.blueprints[bm.blueprintName];
+        if (ud.studioGhost && bpJetzt && ud.studioGestalt !== this._phantomGestalt(bpJetzt, target)) {
+            if (bm.phantomStudioPending !== bm.blueprintName) bm._studioGhostRetryAt = 0;
+            bm.phantomStudioPending = bm.blueprintName;
+        }
         // B1 — der Donor-Ghost HEILT zur Studio-Gestalt, sobald das Asset dockt (fail-soft-
         // Rückweg der Geist-Vorschau; ratenbegrenzt — kein Per-Frame-Flatten-Versuch).
         if (bm.phantomStudioPending === bm.blueprintName && this.state.blueprints) {
             const nowMs = performance.now();
             if (!bm._studioGhostRetryAt || nowMs >= bm._studioGhostRetryAt) {
                 bm._studioGhostRetryAt = nowMs + 500;
-                const studio = this._buildStudioPlacementGhost(this.state.blueprints[bm.blueprintName]);
+                const studio = this._buildStudioPlacementGhost(this.state.blueprints[bm.blueprintName], target);
                 if (studio) {
                     if (this.state.scene) this.state.scene.remove(bm.phantomMesh);
                     this._disposeSoulGroup(bm.phantomMesh);
@@ -83300,7 +83329,6 @@ class AnazhRealm {
                 }
             }
         }
-        const target = this._resolvePhantomTarget();
         bm.phantomMesh.position.set(target.x, target.y, target.z);
         bm.phantomMesh.rotation.y = -this.state.yaw;
         bm.phantomOnGround = target.isStable;
