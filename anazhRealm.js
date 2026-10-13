@@ -27987,7 +27987,8 @@ class AnazhRealm {
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
         if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
         const G = globalThis.__gelaendeCore;
-        G.erdbauNormal(splats);
+        // gefragt VOR dem Eintrag: ändert dieser Erdbau den Grund an gezeichnetem Wasser? (`_erdbauAmWasser`)
+        const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
         wm.erdbau[key] = splats;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
         if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
@@ -28025,10 +28026,47 @@ class AnazhRealm {
             for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
                 this.state.grassDirtyChunks.add(`${a},${b}`);
         this._remeshVoxelChunksAround(cx, cz, rad);
-        this._invalidateWaterCapsAround(cx, cz, rad);
+        if (amWasser) this._invalidateWaterCapsAround(cx, cz, rad);
         this._invalidateBakedRegionsAround(cx, cz, rad);
         if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return true;
+    }
+    // DAS WASSER DES ERDBAUS (K10): ändert der Erdbau E (die Normalform seiner Splats) den Grund an gezeichnetem Wasser? Die
+    // Regel des Zell-Stempels — ein Bau weckt den Automaten nur, wenn er eine Wasser-Zelle berührt (gate:werk-im-wasser R:
+    // das Dorf am Seerand weckte ihn, ohne Wasser zu verdrängen). Je Zelle seiner Reichweite (gelaende-core `zellen`) ein
+    // 2-m-Raster: an jeder nassen Spalte (`_nassAt`) ändert E den Grund, oder eine Sim-Zelle daneben schneidet E ihn unter
+    // den Spiegel (ein Schnitt öffnet dem Wasser einen Weg; eine Schüttung neben dem Wasser verdrängt keins).
+    _erdbauAmWasser(E) {
+        if (!E) return false;
+        const G = globalThis.__gelaendeCore;
+        const Z = G.ERDBAU.zelleM;
+        const d = this._voxelChunkConfig(0).step;
+        let spiegel = -Infinity;
+        const aendert = (x, z, nurSchnitt) => {
+            const h0 = this._terrainMacroSurfaceY(x, z, true);
+            const h1 = G.erdbauY(E, x, z, h0);
+            return nurSchnitt ? h1 < h0 - 0.01 && h1 < spiegel : Math.abs(h1 - h0) > 0.01;
+        };
+        for (const key of E.zellen.keys()) {
+            const a = Math.floor(key / 65536) - 32768;
+            const b = (key % 65536) - 32768;
+            for (let i = 1; i < Z; i += 2)
+                for (let j = 1; j < Z; j += 2) {
+                    const x = a * Z + i;
+                    const z = b * Z + j;
+                    if (!this._nassAt(x, z)) continue;
+                    if (aendert(x, z, false)) return true;
+                    spiegel = this._atlasWaterLevelAt(x, z, -1e9);
+                    if (
+                        aendert(x + d, z, true) ||
+                        aendert(x - d, z, true) ||
+                        aendert(x, z + d, true) ||
+                        aendert(x, z - d, true)
+                    )
+                        return true;
+                }
+        }
+        return false;
     }
     // DER ORT AUF DEM GELÄNDE (K10): der Export des Studios (2D) wird am Anker zum Plan v2 — dieselbe Formel, die das Studio
     // rechnet (fachwerk `ortPlan`), über DIESELBE Gelände-Funktion (`_terrainMacroSurfaceY`, das Gesetz samt dem Erdbau früherer
@@ -78184,10 +78222,11 @@ class AnazhRealm {
                   : null;
         // Die Physical-Klasse lebt in der Node-Bibliothek des Renderers (r184 — die Bootstrap-Brücke reicht sie nicht als
         // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
-        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
+        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek — gefragt wird die Bibliothek selbst, nie
+        // die Flagge (eine Linse lüftet `_isHeadlessNull` am Null-Renderer, gate:leistungs-vertrag: die Lieferung brach).
         const rendM = this.state && this.state.renderer;
         const MatK =
-            ccSoll && rendM && !rendM._isHeadlessNull
+            ccSoll && rendM && rendM.library
                 ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
                 : T.MeshStandardNodeMaterial;
         mat = new MatK({
@@ -82003,7 +82042,7 @@ class AnazhRealm {
         const barrier = new Float64Array(w * h);
         const init = new Float64Array(w * h).fill(Infinity);
         let anySource = false;
-        let teil = 0; // Spalten, deren Boden das Makro trägt (Chunk noch nicht geladen)
+        const fehlend = new Set(); // die Chunks, deren Boden das Makro trägt (noch nicht geladen)
         for (let kz = 0; kz < h; kz++) {
             for (let ix = 0; ix < w; ix++) {
                 const gx = gx0 + ix;
@@ -82028,7 +82067,7 @@ class AnazhRealm {
                 } else {
                     const m = this._terrainMacroSurfaceY(x, z);
                     bY = Number.isFinite(m) ? m : oy;
-                    teil++;
+                    fehlend.add(`${ccx},${ccz}`);
                 }
                 barrier[c] = bY;
                 if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
@@ -82046,28 +82085,25 @@ class AnazhRealm {
             // DAS FELD AUS HALBER WAHRHEIT IST VORLÄUFIG (K37): las es Rand-Spalten aus dem Makro, baut es neu, sobald ein
             // Chunk seines Fensters seine Zellen bringt (`_stauFeldVorlaeufig`, gerufen vom Zell-Stempel jedes Chunks). Nach dem
             // Reload baute der Damm im Tal 26/−120 sein Feld im ersten Takt mit 894 Makro-Spalten, das gecachte wich vom
-            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte.
-            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), teil: teil > 0 };
+            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte. Es merkt sich, WELCHE
+            // Chunks fehlten (`fehlend`): ein Chunk, dessen Zellen es schon las, bringt bei einem Neubau nichts Neues (K10: der
+            // Erdbau eines Dorfs am Seerand baute 13 Chunks neu, jedes weckte den Automaten, ohne Wasser zu verdrängen).
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), fehlend: fehlend.size ? fehlend : null };
         }
         this.state.waterStauFields.set(cluster.key, field);
         return field;
     }
 
-    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld (`teil`, aus Makro-Rand gebaut), dessen
-    // Fenster ihn schneidet, fällt samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
+    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld, das ihn aus dem Makro las (`fehlend`), fällt
+    // samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
     _stauFeldVorlaeufig(ox, oz) {
         const felder = this.state.waterStauFields;
         if (!felder || felder.size === 0) return;
         const cfg = this._voxelChunkConfig(0);
-        const gxA = Math.round(ox / cfg.step);
-        const gzA = Math.round(oz / cfg.step);
+        const schluessel = `${Math.round(ox / cfg.span)},${Math.round(oz / cfg.span)}`;
         let fallen = null;
-        for (const f of felder.values()) {
-            if (!f || !f.teil) continue;
-            if (f.gx0 > gxA + cfg.dim - 1 || f.gx0 + f.w - 1 < gxA) continue;
-            if (f.gz0 > gzA + cfg.dim - 1 || f.gz0 + f.h - 1 < gzA) continue;
-            (fallen || (fallen = [])).push(f);
-        }
+        for (const f of felder.values())
+            if (f && f.fehlend && f.fehlend.has(schluessel)) (fallen || (fallen = [])).push(f);
         if (!fallen) return;
         for (const f of fallen)
             this._invalidateWaterCapsAround(

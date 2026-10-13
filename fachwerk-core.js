@@ -5307,18 +5307,28 @@
                         sum += roh[m];
                         cnt++;
                     }
-                ys.push(sum / cnt);
+                // ein nasser Punkt, dessen Fenster nur Wasser sieht, hat noch keine Höhe: das Brücken-Deck unten gibt sie ihm
+                ys.push(cnt ? sum / cnt : null);
             }
-            for (k = 1; k < n; k++)
-                if (pin[k] === null) {
-                    var g = O.gefaelle * (sw[k] - sw[k - 1]);
-                    ys[k] = Math.min(ys[k - 1] + g, Math.max(ys[k - 1] - g, ys[k]));
+            // das Gefälle gekappt gegen den letzten Punkt MIT Höhe (eine Spanne ohne Höhe trägt die Brücke, nie ein NaN)
+            var pv = -1;
+            for (k = 0; k < n; k++) {
+                if (ys[k] === null) continue;
+                if (pin[k] === null && pv >= 0) {
+                    var g = O.gefaelle * (sw[k] - sw[pv]);
+                    ys[k] = Math.min(ys[pv] + g, Math.max(ys[pv] - g, ys[k]));
                 }
-            for (k = n - 2; k >= 0; k--)
-                if (pin[k] === null) {
-                    var g2 = O.gefaelle * (sw[k + 1] - sw[k]);
-                    ys[k] = Math.min(ys[k + 1] + g2, Math.max(ys[k + 1] - g2, ys[k]));
+                pv = k;
+            }
+            pv = -1;
+            for (k = n - 1; k >= 0; k--) {
+                if (ys[k] === null) continue;
+                if (pin[k] === null && pv >= 0) {
+                    var g2 = O.gefaelle * (sw[pv] - sw[k]);
+                    ys[k] = Math.min(ys[pv] + g2, Math.max(ys[pv] - g2, ys[k]));
                 }
+                pv = k;
+            }
             // DAS BRÜCKEN-ETIKETT: wo der Weg Welt-Wasser kreuzt (ctx.wasserAt), trägt er eine Brücke — ihr Deck spannt gerade
             // von Widerlager zu Widerlager (den trockenen Punkten davor und danach), unter ihr legt der Erdbau keine Trasse, und
             // ein FREI-Splat hält den Grund unter der Spanne samt brueckeM je Seite unberührt (der Weg staut das Wasser nicht).
@@ -5391,9 +5401,6 @@
         //    dem Wohnhaus — vor ihrer Tür liegt kein Weg, sondern der Grund eines Nachbarn): sie stehen auf der Höhe der ersten
         //    gesetzten Fläche, die ihr Blick aus der Tür trifft (der Hof ist EIN Niveau), bis keines mehr dazukommt; der Rest
         //    auf dem Median seines Grundrisses.
-        var NS = plan.slots.length;
-        var hy = [];
-        var grunde = [];
         var vorne = function (sl, lz) {
             var c = Math.cos(sl.phi || 0);
             var s = Math.sin(sl.phi || 0);
@@ -5402,8 +5409,49 @@
         var hatTuer = function (sl) {
             return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
         };
+        // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
+        // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
+        // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
+        var wasserAm = function (x, z) {
+            return !!(ctx.wasserAt && ctx.wasserAt(ox + x, oz + z));
+        };
+        var imWasser = function (sl) {
+            var ob = sl.obb;
+            if (ob && isFinite(ob.ex) && isFinite(ob.ez)) {
+                var c = Math.cos(ob.phi || 0);
+                var s = Math.sin(ob.phi || 0);
+                var ex = ob.ex + O.saumM;
+                var ez = ob.ez + O.saumM;
+                var nx = Math.min(12, Math.max(1, Math.ceil(ex)));
+                var nz = Math.min(12, Math.max(1, Math.ceil(ez)));
+                for (var i = 0; i <= nx; i++)
+                    for (var j = 0; j <= nz; j++) {
+                        var lx = ex * ((2 * i) / nx - 1);
+                        var lz = ez * ((2 * j) / nz - 1);
+                        if (wasserAm(ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) return true;
+                    }
+            } else if (wasserAm(sl.x, sl.z)) return true;
+            if (hatTuer(sl) && isFinite(sl.tuer.w))
+                for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
+                    for (var u = -1; u <= 1; u++) {
+                        var v = vorne(sl, sl.tuer.z - t);
+                        var cu = Math.cos(sl.phi || 0);
+                        var su = Math.sin(sl.phi || 0);
+                        var du = (u * sl.tuer.w) / 2;
+                        if (wasserAm(v[0] + du * cu, v[1] - du * su)) return true;
+                    }
+            return false;
+        };
+        var ps = [];
+        var wasserSlots = 0;
+        for (var si0 = 0; si0 < plan.slots.length; si0++)
+            if (imWasser(plan.slots[si0])) wasserSlots++;
+            else ps.push(plan.slots[si0]);
+        var NS = ps.length;
+        var hy = [];
+        var grunde = [];
         for (var si = 0; si < NS; si++) {
-            var sl = plan.slots[si];
+            var sl = ps[si];
             var ob = sl.obb;
             grunde.push(ob ? rechteck(ob.cx, ob.cz, ob.phi || 0, ob.ex, ob.ez) : [H(sl.x, sl.z)]);
             var y0 = null;

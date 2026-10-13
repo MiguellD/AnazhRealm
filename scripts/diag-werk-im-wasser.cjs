@@ -55,7 +55,9 @@
 //       DER ORT TRÄGT EINEN STAU (K37, 13.10.): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
 //       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
 //       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. Der Damm steht darum
-//       im Tal 26/−120 (`DAMM_ORT`), und D misst das Feld gegen die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort
+//       in einem TAL (`dammTal`: der nächste Fluss-Querschnitt der Welt, dessen Ufer 12 m quer ≥ 3 m über dem Spiegel
+//       stehen — seit dem Gelände-Kern K16 liegt das Tal 26/−120 nicht mehr am Fluss), quer so dick wie eine Sim-Zelle (ein
+//       dünnerer Damm versiegelt keine Spalte, `_stauWorkClusters`), und D misst das Feld gegen die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort
 //       keinen Stau), in ≥ 50 % davon hält der Automat Wasser über der Flut, keine Stau-Quelle ohne Raum über ihrem Boden
 //       (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37: gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
@@ -95,10 +97,8 @@ const SCHWELLE = {
     quelleOhneRaum: 0, // Stau-Quellen (src 2), deren Kappe nicht über ihrem Boden liegt
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
     randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
+    talUferM: 3, // D: so hoch stehen beide Ufer 12 m quer über dem Spiegel, damit der Damm ein Tal fasst (s. Kopf D)
 };
-
-// Der Ort der Damm-Probe D: ein Fluss im Tal, dessen Ufer ein Damm fasst (s. Kopf D).
-const DAMM_ORT = [26, -120];
 
 // ── DAS URTEIL (rein; Lauf und Selbsttest). Rückgabe: die Täter beim Namen. ──
 function urteil(b) {
@@ -282,7 +282,7 @@ function urteil(b) {
     if (!D || D.fehler) v.push(`D: ${D ? D.fehler : "die Damm-Probe lief nicht"}`);
     else if (!(D.hub >= S.hubMin))
         v.push(
-            `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Fluss-Spalten über ihre Flut (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau`
+            `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Fluss-Spalten über ihre Flut (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau${Number.isFinite(D.gefaelle) ? ` (der Fluss fällt ${D.gefaelle} m auf 60 m: das Fenster des Felds hält den Rand auf Spiegel + 0,5 m)` : ""}`
         );
     else {
         if (!(D.hubNass >= S.hubFuell * D.hub))
@@ -1782,7 +1782,30 @@ async function dammProbe(A) {
         return out;
     };
     if (A.phase === "bau") {
-        const [X, Z] = A.ort;
+        // DAS TAL AUS DER WELT (`dammTal`): Ringe um den Ursprung (40 m), je Punkt die Fluss-Mitte des Gesetzes
+        // (`_hydroRiverAt`, achsentreu — der Damm steht quer zur Achse), beide Ufer 12 m quer ≥ `talUferM` über dem Spiegel
+        // (das Gelände-Gesetz `_terrainMacroSurfaceY`); der nächste gewinnt. `--damm x,z` fragt einen anderen Ort.
+        let tal = A.ort;
+        for (let R = 40; !tal && R <= 8000; R += 40) {
+            const n = Math.max(16, Math.round((2 * Math.PI * R) / 20));
+            for (let a = 0; a < n && !tal; a++) {
+                const x = R * Math.cos((a / n) * 2 * Math.PI);
+                const z = R * Math.sin((a / n) * 2 * Math.PI);
+                r._ensureHydroTilesAround(x, z, 0);
+                const rv = r._hydroRiverAt(x, z);
+                if (!rv || !(rv.centerness > 0.7)) continue;
+                const fm = Math.hypot(rv.flowX, rv.flowZ);
+                if (!(fm > 1e-6) || Math.max(Math.abs(rv.flowX), Math.abs(rv.flowZ)) / fm < 0.94) continue;
+                const q = Math.abs(rv.flowX) > Math.abs(rv.flowZ) ? [0, 1] : [1, 0];
+                const ufer = Math.min(
+                    r._terrainMacroSurfaceY(x + q[0] * 12, z + q[1] * 12, true),
+                    r._terrainMacroSurfaceY(x - q[0] * 12, z - q[1] * 12, true)
+                );
+                if (ufer - rv.surfaceY >= A.talUferM) tal = [Math.round(x), Math.round(z)];
+            }
+        }
+        if (!tal) return { fehler: `kein Tal: kein Fluss-Querschnitt bis 8 km, dessen Ufer ≥ ${A.talUferM} m stehen` };
+        const [X, Z] = tal;
         await stroemen(X, Z);
         let ort = null;
         for (let gz = -60; gz <= 60; gz += 2)
@@ -1806,22 +1829,34 @@ async function dammProbe(A) {
         if (!ort) return { fehler: `kein Fluss-Querschnitt (2–14 m) im Umkreis von 60 m um ${X}/${Z}` };
         const w0 = nass(ort.x, ort.z);
         const grund = r._voxelSurfaceY(ort.x, ort.z);
-        // der Damm des Studios (8 × 3 × 1,2 m) quer zur Strömung, so breit, dass er das Ufer fasst, 0,3 m im Grund
+        // der Damm des Studios (8 × 3 × 1,2 m) quer zur Strömung, so breit, dass er das Ufer fasst, 0,3 m im Grund, und
+        // mindestens eine Sim-Zelle dick (ein dünnerer versiegelt keine Spalte: `_stauWorkClusters` (b) geschlossen)
+        const zelle = r._voxelChunkConfig(0).step;
         const e = r.spawnArchitecture(
             "damm",
             { x: ort.x, y: grund + 0.2, z: ort.z },
-            { precise: true, scale: Math.max(1, (ort.breite + 6) / 8), rotationY: ort.quer[0] === 1 ? 0 : Math.PI / 2 }
+            {
+                precise: true,
+                scale: Math.max(1, (ort.breite + 6) / 8, (zelle + 0.05) / 1.2),
+                rotationY: ort.quer[0] === 1 ? 0 : Math.PI / 2,
+            }
         );
         if (!e) return { fehler: "der Damm wurde nicht gebaut" };
         await takte(A.takte);
         const w1 = nass(ort.x, ort.z);
         const fb = feld(ort.x, ort.z);
+        // das Gefälle des Flusses am Damm (Spiegel 30 m stromauf − 30 m stromab): was der Stau über dem Rand des Felds hebt
+        const rvD = r._hydroRiverAt(ort.x, ort.z);
+        const fD = rvD ? Math.hypot(rvD.flowX, rvD.flowZ) : 0;
+        const auf = fD > 1e-6 ? r._hydroRiverAt(ort.x - (rvD.flowX / fD) * 30, ort.z - (rvD.flowZ / fD) * 30) : null;
+        const ab = fD > 1e-6 ? r._hydroRiverAt(ort.x + (rvD.flowX / fD) * 30, ort.z + (rvD.flowZ / fD) * 30) : null;
         st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
         r.saveState();
         return {
             x: ort.x,
             z: ort.z,
             breite: ort.breite,
+            gefaelle: auf && ab ? +(auf.surfaceY - ab.surfaceY).toFixed(2) : null,
             id: e.id,
             w0,
             w1,
@@ -2575,9 +2610,9 @@ async function lauf() {
                     waitUntil: "domcontentloaded",
                     timeout: 120000,
                 });
-                const D = { takte: 1200, R: 40 };
-                // der Ort: ein Fluss im Tal, dessen Ufer der Damm fasst (`--damm x,z` fragt einen anderen; s. Kopf D)
-                const dammOrt = argListe("--damm") ? argListe("--damm").map(Number) : DAMM_ORT;
+                const D = { takte: 1200, R: 40, talUferM: SCHWELLE.talUferM };
+                // der Ort: das Tal aus der Welt (`dammTal` in der Probe; `--damm x,z` fragt einen anderen; s. Kopf D)
+                const dammOrt = argListe("--damm") ? argListe("--damm").map(Number) : null;
                 const bau = await p2.evaluate(dammProbe, Object.assign({ phase: "bau", ort: dammOrt }, D));
                 if (bau.fehler) befund.damm = bau;
                 else {
