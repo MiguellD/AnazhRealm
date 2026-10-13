@@ -265,9 +265,78 @@ function ortVerdikt(m) {
     const gt8 = m.gtEnde > 0 ? Math.round(((m.gtWeg / m.gtEnde) * 8) * 100) / 100 : m.gtWeg;
     if (!(gt8 >= GT_SOLL_M))
         fehl.push(`GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})`);
+    if (!(m.quellenGasse >= GASSE_SOLL))
+        fehl.push(`Dorf-Licht der Gasse nachts ${m.quellenGasse} sichtbare Quellen (Soll ≥ ${GASSE_SOLL})`);
+    if (!(m.poolGasse >= 1)) fehl.push(`Licht-Pool der Gasse nachts ${m.poolGasse} Quellen des Orts`);
     return fehl;
 }
 const GT_SOLL_M = 60;
+
+// DAS DORF-LICHT DER GASSE (K10 × Pflicht-OFFEN C, 13.10.: „≥ 4 sichtbare Quellen im Nachtbild der Gasse — nie 0 = 0") — rein:
+// quellen = die brennenden Leuchtquellen des Orts mit Leib ([x, z] je Quelle, Welt), wege = die Wege des Plans ([[x, z], …]
+// je Weg, Welt), haeuser = die Grundrisse mit Dach ({cx, cz, ex, ez, phi}, Welt), hfov = der waagrechte Öffnungswinkel des
+// Bildes (rad). Die Gasse ist der Stand auf einem Weg-Punkt mit Blick längs des Wegs zu einem Punkt 12–40 m weiter, nie
+// 2,5 m an einer Quelle (das Bild der Abnahme, x-gasse3 der Karte); sichtbar ist eine Quelle 2–100 m vor dem Auge im
+// Öffnungswinkel, deren Sicht-Linie keinen Grundriss schneidet (die Laterne trägt ihr Licht in 3,6 m, jede Traufe liegt
+// darüber). Gewählt wird die Gasse mit den meisten sichtbaren Quellen (gleich viele: die nähere). Liefert { n, pose, je,
+// verdeckt }.
+function gassenLicht(quellen, wege, haeuser, hfov) {
+    const halb = hfov / 2;
+    const schneidet = (ax, az, bx, bz, h) => {
+        const c = Math.cos(h.phi || 0);
+        const s = Math.sin(h.phi || 0);
+        const lok = (x, z) => [(x - h.cx) * c - (z - h.cz) * s, (x - h.cx) * s + (z - h.cz) * c];
+        const [u0, v0] = lok(ax, az);
+        const [u1, v1] = lok(bx, bz);
+        let t0 = 0;
+        let t1 = 1;
+        for (const [p, d, e] of [
+            [u0, u1 - u0, h.ex],
+            [v0, v1 - v0, h.ez],
+        ]) {
+            if (Math.abs(d) < 1e-12) {
+                if (Math.abs(p) > e) return false;
+                continue;
+            }
+            let ta = (-e - p) / d;
+            let tb = (e - p) / d;
+            if (ta > tb) [ta, tb] = [tb, ta];
+            t0 = Math.max(t0, ta);
+            t1 = Math.min(t1, tb);
+            if (t0 > t1) return false;
+        }
+        return true;
+    };
+    let best = null;
+    for (const w of wege)
+        for (let i = 0; i < w.length; i++)
+            for (let j = 0; j < w.length; j++) {
+                const [px, pz] = w[i];
+                const [qx, qz] = w[j];
+                const L = Math.hypot(qx - px, qz - pz);
+                if (L < 12 || L > 40) continue;
+                if (quellen.some(([x, z]) => Math.hypot(x - px, z - pz) < 2.5)) continue;
+                const ux = (qx - px) / L;
+                const uz = (qz - pz) / L;
+                const je = [];
+                let verdeckt = 0;
+                for (const [x, z] of quellen) {
+                    const d = Math.hypot(x - px, z - pz);
+                    if (d < 2 || d > 100) continue;
+                    if (Math.acos(Math.max(-1, Math.min(1, ((x - px) * ux + (z - pz) * uz) / d))) > halb) continue;
+                    if (haeuser.some((h) => schneidet(px, pz, x, z, h))) {
+                        verdeckt++;
+                        continue;
+                    }
+                    je.push([Math.round(x * 10) / 10, Math.round(z * 10) / 10, Math.round(d * 10) / 10]);
+                }
+                const s = je.reduce((a, q) => a + q[2], 0);
+                if (!best || je.length > best.n || (je.length === best.n && s < best.s))
+                    best = { n: je.length, s, pose: [px, pz, qx, qz], je, verdeckt };
+            }
+    return best ? { n: best.n, pose: best.pose, je: best.je, verdeckt: best.verdeckt } : { n: 0, pose: null, je: [], verdeckt: 0 };
+}
+const GASSE_SOLL = 4;
 
 // DER GT AUF DEM DORFWEG (K10 × Auge 10.10. Bild 05: 8 s Vollgas, 5,2 m — der Wagen hing am Sockel-Kasten): im Browser,
 // durch den echten Spiel-Takt (`_gameLoopTick`, feste 60-Hz-Frames) und echte Tasten. Der Weg ist die längste Kette der
@@ -675,7 +744,7 @@ const FIXTURES = [
             laternenWelt: 6,
             laternenPlan: 6,
         };
-        Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4 });
+        Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4, quellenGasse: 5, poolGasse: 3 });
         check("Selbst-Test 12: das Verdikt eines gehaltenen Orts ist leer", ortVerdikt(gut).length === 0);
         const schlecht = Object.assign({}, gut, {
             kronen: 3,
@@ -699,6 +768,29 @@ const FIXTURES = [
             ortVerdikt(Object.assign({}, gut, { gtWeg: 48.16, gtEnde: 5.1 })).length === 0 &&
                 /GT auf dem Dorfweg 20 m in 5.1 s/.test(ortVerdikt(Object.assign({}, gut, { gtWeg: 20, gtEnde: 5.1 })).join(" · "))
         );
+        // Selbst-Test 16 (das Dorf-Licht der Gasse): ein Weg von 60 m, fünf Laternen 3 m neben ihm alle 10 m — die Gasse
+        // sieht vier, ein Haus zwischen Weg und Laternen verdeckt zwei, ohne Quellen bleibt nichts, und das Verdikt nennt die Gasse
+        {
+            const weg = [];
+            for (let x = 0; x <= 60; x += 2) weg.push([x, 0]);
+            const lat = [10, 20, 30, 40, 50].map((x) => [x, 3]);
+            const hfov = 2 * Math.atan(Math.tan((75 * Math.PI) / 360) * (16 / 9));
+            const frei = gassenLicht(lat, [weg], [], hfov);
+            const haus = { cx: 35, cz: 2, ex: 6, ez: 0.5, phi: 0 };
+            const zu = gassenLicht(lat, [weg], [haus], hfov);
+            const leer = gassenLicht([], [weg], [], hfov);
+            const vg = ortVerdikt(Object.assign({}, gut, { quellenGasse: 3, poolGasse: 0 })).join(" · ");
+            check(
+                "Selbst-Test 16: die Gasse sieht die Laternen am Weg, ein Haus verdeckt sie, ohne Quellen bleibt 0, das Verdikt nennt Gasse und Pool",
+                frei.n >= 4 &&
+                    zu.n < frei.n &&
+                    zu.verdeckt > 0 &&
+                    leer.n === 0 &&
+                    /Dorf-Licht der Gasse nachts 3 sichtbare Quellen/.test(vg) &&
+                    /Licht-Pool der Gasse nachts 0/.test(vg),
+                JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n })
+            );
+        }
         // V7 (K10, das Brücken-Etikett): ein Weg quer über einen Fluss (die Rinne |x| < 3, 2 m tief) trägt eine Brücke von
         // Widerlager zu Widerlager, unter ihr keine Trasse und ein FREI-Splat: der Grund in der Rinne bleibt (kein Damm). Ohne
         // das Wasser-Urteil (ctx.wasserAt) staut der Erdbau die Rinne auf die Höhe des Wegs — die Linse sieht den Unterschied.
@@ -1499,6 +1591,41 @@ const FIXTURES = [
                             (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
                         }
                 res.fremdBauten = fremd;
+                // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
+                // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
+                // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
+                // der Gasse liest `gassenPool`. Der Schein: derselbe Ort mit dunklem Zeitplan.
+                if (anker) {
+                    const uhr0 = r.state.timeOfDay;
+                    if (!r._uhrSetzen(0, "regler")) throw new Error("die Uhr nimmt Mitternacht nicht");
+                    const brennend = () =>
+                        r
+                            ._leuchtQuellen(anker.x, H(anker.x, anker.z), anker.z, 250, null)
+                            .filter(
+                                (q) =>
+                                    q.id &&
+                                    q.id.position &&
+                                    (r._lichtDatumDerGestalt(q.id) || r._glutFlaeche(q.id) > 0) &&
+                                    Math.hypot(q.x - anker.x, q.z - anker.z) < 250
+                            )
+                            .map((q) => [q.x, q.z]);
+                    const qs = brennend();
+                    r._lichtZeitplan = () => 0;
+                    let dunkel;
+                    try {
+                        dunkel = brennend();
+                    } finally {
+                        delete r._lichtZeitplan;
+                    }
+                    r._uhrSetzen(uhr0, "regler");
+                    res.gasseIn = {
+                        qs,
+                        dunkel,
+                        wege: (P.roads || []).map((w) => (w.pts || []).map((p) => [anker.x + p.x, anker.z + p.z])),
+                        haeuser: dachW,
+                        hfov: 2 * Math.atan(Math.tan((r.state.camera.fov * Math.PI) / 360) * (16 / 9)),
+                    };
+                }
                 res.v2Json = v2 ? JSON.stringify(v2) : null;
                 // DER PLAN-HASH STUDIO = WELT (in derselben Seite, kein Plattform-Bit dazwischen): der Export des Fachwerk-Kerns
                 // (die Foundry rechnet ihn, das Labor baut dasselbe Layout — Teil A friert ihn ein) am Anker über die Lage des
@@ -1529,6 +1656,58 @@ const FIXTURES = [
         ortUrteil.toString(),
         dpO
     );
+    // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
+    // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt.
+    if (outO.gasseIn) {
+        const gi = outO.gasseIn;
+        const g = gassenLicht(gi.qs, gi.wege, gi.haeuser, gi.hfov);
+        outO.gasse = {
+            n: g.n,
+            pose: g.pose && g.pose.map((v) => Math.round(v * 10) / 10),
+            je: g.je,
+            verdeckt: g.verdeckt,
+            brennend: gi.qs.length,
+            schein: gassenLicht(gi.dunkel, gi.wege, gi.haeuser, gi.hfov).n,
+        };
+        if (g.pose)
+            Object.assign(
+                outO.gasse,
+                await page.evaluate(
+                    (pose, je) => {
+                        const r = window.anazhRealm;
+                        const cam = r.state.camera;
+                        const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+                        const uhr0 = r.state.timeOfDay;
+                        const cam0 = { p: cam.position.clone(), q: cam.quaternion.clone(), a: cam.aspect };
+                        const [px, pz, lx, lz] = pose;
+                        r._uhrSetzen(0, "regler");
+                        cam.aspect = 16 / 9;
+                        cam.updateProjectionMatrix();
+                        cam.position.set(px, H(px, pz) + 1.7, pz);
+                        cam.lookAt(lx, H(lx, lz) + 1.7, lz);
+                        cam.updateMatrixWorld(true);
+                        r._leuchtPool = null;
+                        r._leuchtTakt();
+                        const pl = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                        const out = {
+                            pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
+                            poolOrt: pl.filter(
+                                (p) => p.staerke > 0 && je.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5)
+                            ).length,
+                        };
+                        r._uhrSetzen(uhr0, "regler");
+                        cam.position.copy(cam0.p);
+                        cam.quaternion.copy(cam0.q);
+                        cam.aspect = cam0.a;
+                        cam.updateProjectionMatrix();
+                        r._leuchtPool = null;
+                        return out;
+                    },
+                    g.pose,
+                    g.je
+                )
+            );
+    }
     // DER GT AUF DEM DORFWEG des Orts, den die Welt trägt (Plan v2, sonst der Export)
     const gtO =
         outO.anker && (outO.v2Json || outO.planJson)
@@ -1610,7 +1789,10 @@ const FIXTURES = [
         fremdBauten: outO.fremdBauten,
         gtWeg: gtO.gtWeg,
         gtEnde: gtO.endeNachS,
+        quellenGasse: outO.gasse ? outO.gasse.n : null,
+        poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
     };
+    console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
     console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
     console.log(
         "  ORT-ZAHLEN " +
@@ -1635,9 +1817,14 @@ const FIXTURES = [
         `${outO.haeuser}/${outO.slots}`
     );
     check(
-        "O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg)",
+        "O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts)",
         fehlO.length === 0,
         fehlO.join(" · ") || "gehalten"
+    );
+    check(
+        "O: Selbst-Schein — der Zeitplan der Welt dunkel, die Gasse sieht keine Quelle (die Zahl liest das Licht-Gesetz der Welt)",
+        !!outO.gasse && outO.gasse.schein === 0 && outO.gasse.n > 0,
+        outO.gasse ? `hell ${outO.gasse.n} · dunkel ${outO.gasse.schein}` : "keine Gasse"
     );
     check(
         "O: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (`_laternenLesen` gefallen)",
