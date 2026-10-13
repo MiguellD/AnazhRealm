@@ -39229,9 +39229,6 @@ class AnazhRealm {
             vollY: new Float32Array(off).fill(NaN),
             // die Fläche des FELDES am Rand der Naht (`_fernRingFeldY`): NaN = noch nicht gemessen
             feldY: new Float32Array(off).fill(NaN),
-            // der Stand des Feldes je gemessener Ecke (`_voxelStand` ihres Chunks): ein Edit verwirft nur die Ecken, deren
-            // Chunk-Nachbarschaft er ändert
-            feldStand: new Array(off),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
             // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
@@ -39480,11 +39477,9 @@ class AnazhRealm {
     _fernRingFeldY(fr, p) {
         const voll = fr.vollY[p.g];
         if (!(voll === voll)) return NaN;
-        const span = this._voxelChunkConfig().span;
-        fr.feldStand[p.g] = this._voxelStand(Math.floor(p.x / span), Math.floor(p.z / span));
         const y = this._voxelSurfaceY(p.x, p.z);
-        // OHNE FLÄCHE (die Spalte trägt keinen Boden — Luft bis zur Garantie-Tiefe) bleibt die Ecke auf dem Gesetz, und
-        // das ist gezählt (`feldOhne`, gate:fern-ring Band 9 nennt es), nie still
+        // OHNE FLÄCHE (die Spalte trägt keinen Boden bis zur Garantie-Tiefe) bleibt die Ecke auf dem Gesetz — gezählt
+        // (`feldOhne`, gate:fern-ring Band 9 nennt es), nie still
         if (y === null || !(y === y)) {
             fr.feldOhne = (fr.feldOhne | 0) + 1;
             fr.feldY[p.g] = voll;
@@ -40093,10 +40088,7 @@ class AnazhRealm {
         if (!fr.zoneVerts) return;
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
-        // Ein Edit weckt sie (die Edit-Generation der Karte, `_voxelEditKarte`): bis K16-Prüfung 2 stand die Edit-Frage hinter
-        // der Wache und wurde in Ruhe nie erreicht (27,4 s nach einem Edit rückte der Cursor um 0).
-        this._voxelEditKarte();
-        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) + "|" + (this._editGenZaehler | 0), "boden")) return;
+        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
@@ -40108,7 +40100,14 @@ class AnazhRealm {
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
         }
-        const span = this._voxelChunkConfig().span;
+        // die Feld-Fläche des Rands (`_fernRingFeldY`) gilt je Edit-Stand: ein Edit schreibt das Feld um
+        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const edN = Array.isArray(ed) ? ed.length : 0;
+        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
+            fr.feldEdits = ed;
+            fr.feldEditsN = edN;
+            fr.feldY.fill(NaN);
+        }
         const pos = fr.geos[0].attributes.position;
         let neu = false;
         let feldMessungen = 0;
@@ -40125,15 +40124,7 @@ class AnazhRealm {
             }
             // DIE ECKE EINES NAHT-DREIECKS misst die Fläche des Feldes (gedeckelt je Takt: eine Spalten-Probe liest die
             // Dichte von der Garantie-Luft bis zum Boden)
-            const rand = fr.teilung.randV && fr.teilung.randV[p.li];
-            // die Feld-Fläche des Rands gilt je Stand ihres Chunks: nur die Ecken, deren Nachbarschaft ein Edit ändert, messen neu
-            if (
-                rand &&
-                fr.feldY[p.g] === fr.feldY[p.g] &&
-                fr.feldStand[p.g] !== this._voxelStand(Math.floor(p.x / span), Math.floor(p.z / span))
-            )
-                fr.feldY[p.g] = NaN;
-            if (fr.feldY[p.g] !== fr.feldY[p.g] && rand) {
+            if (fr.feldY[p.g] !== fr.feldY[p.g] && fr.teilung.randV && fr.teilung.randV[p.li]) {
                 if (feldMessungen < F.feldJeTakt) {
                     this._fernRingFeldY(fr, p);
                     feldMessungen++;
