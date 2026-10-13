@@ -540,6 +540,28 @@ function selbsttest() {
             groesste <= 4000 && stamm.fuege(S1) === T1 && tokenSha(T1) === tokenSha(T),
             `${S1.length} Dateien, größte ${groesste} Z., ${v.schnitte.filter((c) => c.art === "Block").length} Block-Schnitte`
         );
+        // 8) der Codemod (--leser): beide kanonischen Formen werden stammLib.text, der Import steht einmal, ein nur dafür
+        //    gebrauchtes fs fällt, ein zweiter Lauf ändert nichts (das Fenster fährt ihn erneut); ein belegter Name geht an die Hand
+        const A = stamm.ALT;
+        const fxLeser =
+            `"use strict";\nconst fs = require("fs");\nconst path = require("path");\nconst root = path.join(__dirname, "..");\n` +
+            `const a = fs.readFileSync(path.join(root, "${A}"), "utf8");\n` +
+            `const b = require("fs").readFileSync(require("path").join(__dirname, "..", "${A}"), "utf8");\n`;
+        const probe = path.join(ROOT, "scripts", "diag-probe.cjs");
+        const c1 = codemodDatei(probe, fxLeser);
+        const c2 = c1.neu ? codemodDatei(probe, c1.neu) : { neu: "?" };
+        const belegt = codemodDatei(probe, fxLeser.replace('"use strict";', '"use strict";\nconst stammLib = 1;'));
+        pruef(
+            "Codemod: 2 Leser → stammLib.text, ein Import, fs fällt, zweiter Lauf = id, belegter Name → Hand",
+            !!c1.neu &&
+                (c1.neu.match(/stammLib\.text\(/g) || []).length === 2 &&
+                (c1.neu.match(/const stammLib = require\("\.\/lib\/stamm\.cjs"\);/g) || []).length === 1 &&
+                !/const fs = require/.test(c1.neu) &&
+                !c1.neu.includes(A) &&
+                c2.neu === undefined &&
+                !!belegt.hand,
+            belegt.hand
+        );
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
