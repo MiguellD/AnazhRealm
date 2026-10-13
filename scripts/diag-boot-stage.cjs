@@ -28,7 +28,7 @@
 // Haupt-Thread blockiert war (Langaufgaben, darin der Pipeline-Bau) und was die Foundry-Schlange trägt. Urteil: t(Weltbild)
 // ≤ 5 s und kein halbes Weltbild (kein „steht ohne" im Log). Ohne `--echt` swiftshader (das Spiel wählt kienspan), mit
 // `--echt` die Hardware-GPU im Fenster (1920×1080) — die Zeit richtet der OMEN an beiden Messplätzen.
-//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei]
+//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -144,6 +144,41 @@ async function kaltLauf() {
                 .catch(() => 0);
             if (da) break;
         }
+        // DAS BILD DER ANKUNFT (`--bild datei.png`): der erste Blick des Spielers aus dem Ausgabe-Pfad
+        // (scripts/lib/ausgabe-aufnahme.cjs), der Loop ruht, die Bühne hält Mittag · Sonne · Sommer.
+        const bildDatei = OPT("--bild", null);
+        let bildInfo = null;
+        if (bildDatei) {
+            const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+            await page.evaluate(AUSGABE_INSTALL);
+            bildInfo = await page.evaluate(
+                async (W, H) => {
+                    const r = window.anazhRealm;
+                    if (!r || !r.state._weltbildDa) return { fehlt: "kein Weltbild" };
+                    r.state.renderer.setAnimationLoop(null);
+                    window.__buehne();
+                    let auf = null;
+                    for (let i = 0; i < 2; i++) {
+                        r._schattenAlleNeu();
+                        auf = await window.__ausgabeAufnahme(W, H, 1);
+                    }
+                    const cv = document.createElement("canvas");
+                    cv.width = W;
+                    cv.height = H;
+                    const ctx = cv.getContext("2d");
+                    const img = ctx.createImageData(W, H);
+                    img.data.set(auf.u8.subarray(0, W * H * 4));
+                    ctx.putImageData(img, 0, 0);
+                    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
+                },
+                ECHT ? 960 : 640,
+                ECHT ? 540 : 360
+            );
+            if (bildInfo && bildInfo.png) {
+                fs.writeFileSync(path.resolve(bildDatei), Buffer.from(bildInfo.png.split(",")[1], "base64"));
+                delete bildInfo.png;
+            }
+        }
         out = await page.evaluate(() => {
             const r = window.anazhRealm;
             const st = (r && r.state) || {};
@@ -160,6 +195,7 @@ async function kaltLauf() {
                 ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             });
         });
+        if (bildInfo) out.bild = Object.assign({ datei: path.resolve(bildDatei) }, bildInfo);
     } catch (e) {
         out = { __err: (e && e.message) || String(e) };
     }
@@ -205,6 +241,7 @@ async function kaltLauf() {
     for (const [t, was, id] of out.ev || []) if (!/_foundryVorrat/.test(was)) console.log(`  ${(t / 1000).toFixed(1)} s  ${was} ${id}`);
     const wagen = (out.ev || []).filter((e) => e[1] === "_foundryVorrat an").map((e) => e[0]);
     if (wagen.length) console.log(`  ${(Math.max(...wagen) / 1000).toFixed(1)} s  der Vorrat der Wagen steht (${wagen.length})`);
+    if (out.bild) console.log(`  das Bild der Ankunft: ${out.bild.datei || out.bild.fehlt} (${out.bild.dc} Befehle · ${out.bild.dreiecke} Dreiecke)`);
     const t = out.weltbildDa;
     const halb = out.ohne && out.ohne.length ? out.ohne[0] : null;
     console.log(`\n  t(Weltbild) = t(Kontrolle) ${t != null ? (t / 1000).toFixed(2) + " s" : "— (nicht erreicht)"} ab Navigation`);
