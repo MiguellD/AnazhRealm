@@ -77791,12 +77791,14 @@ class AnazhRealm {
                             // DIE KARTE (K28): Zellen 0 trägt kein Raster — die Ecke gehört einer gegossenen Strähne
                             // (die Kopf-Zeile, foundry-core __tierKarten), ihr Umriss ist die Karte selbst.
                             const karte = TSL.step(aS.z, 0.0);
-                            mat.opacityNode = TSL.max(TSL.max(haar, wolle), karte);
+                            // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
+                            // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
+                            // nicht wirft.
                             mat.alphaTest = 0.5;
                             const FS = AnazhRealm.FELL_SCHALE;
                             mat.colorNode = TSL.vec4(
                                 vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
-                                1.0
+                                TSL.max(TSL.max(haar, wolle), karte)
                             );
                         }
                         const sT = schale
