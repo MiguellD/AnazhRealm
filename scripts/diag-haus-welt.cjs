@@ -27,8 +27,8 @@
 //       vor keiner Haustür steht dessen Wand — Grundriss und Tür-Vorplatz, abgetastet gegen die Hülle jedes Nicht-Natur-
 //       Baus über dem Boden des Hauses; dann derselbe Akt ein zweites Mal am selben Anker: kein Haus, kein Brunnen, kein
 //       Stand des zweiten Dorfs steht im ersten (seit „vor dir" vorn liegt, gründet das Dorf vor dem Spieler: an der
-//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Dazu der Selbsttest „raster": der Erdbau des Plans fällt aus der
-//       Gelände-Lage (K10: der Plan trägt den Boden y) — am Hang des Dorf-Orts liegt eine Haustür im Boden, W1 wird rot.
+//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Der Selbsttest „raster" fiel mit K10 (der Plan v2 trägt den Boden
+//       y, die Tür am Hang wacht in gate:settlement Teil O).
 //   W8  DIE LICHTUNG (Entscheid D3): die Genesis-Plattform ist ein Grundriss derselben Wand — über ihrer Scheibe keine Krone
 //       (Wald-Gesetz × Welt-Skala) eines Natur-Eintrags oder einer Streu-Zelle, keine Kachel-Pflanze auf ihr; der Hain der
 //       KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er wächst), jede Absage steht im
@@ -129,11 +129,10 @@ const BASIS = {
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // der Boden des Plans erreicht das Gelände nicht: der Erdbau des Orts (Plan v2, fachwerk `ortPlan`, gelaende-core
-    // `erdbauY`) fällt aus der Gelände-Lage — das Haus steht auf der Höhe des Plans, das Gelände bleibt der Hang. Bis K10 hieß
-    // der Täter „raster" (die Höhe des Footprints aus der Mitte allein): seit der Plan den Boden y trägt, rechnet die Welt
-    // keine Haus-Höhe mehr aus dem Raster, das Gift wanderte an die Stelle, die die Tür heute trägt.
-    raster: [["        if (!E) return out;\n        for (const k of Object.keys(E))", "        return out;\n        for (const k of Object.keys(E))"]],
+    // Der Täter „raster" (die Höhe des Footprints aus der Mitte allein) fiel mit K10: die Welt rechnet keine Haus-Höhe mehr
+    // aus dem Raster, der Plan v2 trägt den Boden y und sein Erdbau den Grund. Die Klasse „Tür im Boden am Hang" wacht dort,
+    // wo ihr Chokepoint lebt: gate:settlement Teil O (Türen erreichbar, Sockel, Selbst-Test V6 „ein Absatz vor der Tür") —
+    // hier blieb das Gift ohne Erdbau blind (die Türen des Plans liegen zum Weg, W1 8/8 auch ohne Erdbau).
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
@@ -1129,8 +1128,6 @@ async function proben(phasen) {
                 kultur: k,
                 x: ort.x,
                 z: ort.z,
-                // der Boden des Slots (K10: jeder Slot trägt sein y wie im Plan v2) — die Höhe, die die Suche fand
-                y: ort.hMax,
                 phi: ort.gier,
                 seed: 7,
                 tuer: tu,
@@ -1143,7 +1140,11 @@ async function proben(phasen) {
                 },
             };
             const vorSlot = new Set(s.architectures);
-            r._spawnSettlementSlot(slot, { x: 0, z: 0 }, r._foundry);
+            // K10: der Slot geht den Weg des Plans v2 — `_ortPlanSetzen` legt seinen Boden y und den Erdbau, bevor das Haus
+            // steht (je Haus ein eigener Ort: der Samen trägt die Kultur)
+            const v2 = r._ortPlanSetzen({ seed: 700 + orte.length, slots: [slot], roads: [], laternen: [] }, { x: 0, z: 0 });
+            const slotV2 = v2 && Array.isArray(v2.slots) ? v2.slots[0] : null;
+            if (slotV2) r._spawnSettlementSlot(slotV2, { x: 0, z: 0 }, r._foundry);
             const e = s.architectures.find((q) => !vorSlot.has(q) && q.type === "haus_" + k);
             if (!e) {
                 w.fehler = "Slot fiel";
@@ -1452,7 +1453,6 @@ function zeile(o) {
                 fernstufe: ["W6 Fernstufe"],
                 kern: ["W6 Kern-Hülle"],
                 bauwand: ["W7 Bau im Bau"],
-                raster: ["W1 Tür"],
             };
             // die Phase je Täter (eine Welt fährt nur, was ihr Selbsttest rot machen soll — der Hauptlauf fährt alle)
             const phasenVon = {
@@ -1470,7 +1470,6 @@ function zeile(o) {
                 fernstufe: ["w6"],
                 kern: ["w6"],
                 bauwand: ["haus"],
-                raster: ["haus"],
             };
             for (const inj of Object.keys(soll).filter((k) => !NUR.length || NUR.includes(k))) {
                 const { o, pf } = await lauf(inj, phasenVon[inj]);
