@@ -2013,9 +2013,151 @@
         return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0]);
     }
 
+    // DIE HIMMELS-SICHT EINES BODEN-NETZES (K02a, Auge 11 bei 762/−138; K17-2 aus dem Stamm in den Kern — der voxel-worker
+    // baut sie, wo er das Netz baut): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht (der Boden-Stoff liest ihn als
+    // Verdeckung). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft, −1 = Himmels-Luft): jede Fläche
+    // der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt (`step` m) um exp(−step / m) — über
+    // die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine Höhle ohne Himmels-Fläche im Netz sieht ihn nie (0).
+    // Ohne Höhlen-Graph sieht jede Fläche den Himmel.
+    const HIMMELS_SICHT = Object.freeze({ m: 3 });
+    function himmelsSicht(index, tri, n, step) {
+        const V = new Float32Array(n);
+        if (!tri) return V.fill(1);
+        const nT = (index.length / 3) | 0;
+        if (tri.length !== nT) throw new Error(`himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const schritt = Math.exp(-step / HIMMELS_SICHT.m);
+        const hop = new Int8Array(n).fill(-1);
+        for (let t = 0; t < nT; t++)
+            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
+        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
+        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
+        for (let k = 1; k <= schritte; k++) {
+            let neu = 0;
+            for (let t = 0; t < nT; t++) {
+                const a = index[3 * t],
+                    b = index[3 * t + 1],
+                    c = index[3 * t + 2];
+                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
+                    if (hop[a] < 0) ((hop[a] = k), neu++);
+                    if (hop[b] < 0) ((hop[b] = k), neu++);
+                    if (hop[c] < 0) ((hop[c] = k), neu++);
+                }
+            }
+            if (!neu) break;
+        }
+        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
+        return V;
+    }
+
+    // DER FELS-STOFF EINES BODEN-NETZES (K17; K17-2 aus dem Stamm `_felsStoff` in den Kern — der voxel-worker rechnet ihn beim
+    // Chunk-Bau und reicht ihn per Transfer, der Haupt-Thread rechnet ihn nur im Sync-Bau): die Säulen-Farbe C ist eine Funktion
+    // von (x, z); wo das Netz Fels ist, trägt der Vertex den Fels-Stoff (`felsFarbe`: Pakete, Rinde an konvexen Kanten aus der
+    // Krümmung des Netzes, Mulden, Flechte am trockenen Licht, Moos am feuchten Sims). Das Gewicht je Vertex: was den Himmel
+    // nicht sieht (1 − H, die Höhle), was steil steht (die Steile der Normale über `rockLo` … `rockHi`) und darunter der Schutt
+    // des Schicht-Gesetzes (`hoehe(…, aus).schutt` auf einem Gitter der Kante `schuttGitter` über die Vertices unter dem Himmel,
+    // die steiler als `schuttKandidat` stehen, bilinear gelesen; × `schutt`), je das größere. Die Krümmung nur an Fels und Höhle
+    // (der Schutt bricht, er rundet nicht), die Feuchte EINMAL je Netz am Schwerpunkt seines Felsens unter dem Himmel.
+    // L die Gelände-Lage · B `felsBasis` · o { rockLo, rockHi, schuttKandidat, schuttGitter, schutt, fuss } · P N I das Netz
+    // (n Vertices) · H `himmelsSicht` (null: alles unter dem Himmel) · C die Säulen-Farbe (wird zum Stoff gemischt) ·
+    // feuchte(x, z, y) die Feuchte des Wirts. → { schutt: Float32Array(n) (das Gewicht des Schutts, der Detail-Term legt sein
+    // Korn auf), feuchte (womit das Moos gerechnet wurde; undefined ohne Fels) }.
+    function felsStoff(L, B, o, P, N, I, H, C, n, feuchte) {
+        const SW = new Float32Array(n);
+        let gx0 = Infinity,
+            gx1 = -Infinity,
+            gz0 = Infinity,
+            gz1 = -Infinity;
+        for (let i = 0; i < n; i++) {
+            if (1 - N[3 * i + 1] < o.schuttKandidat || (H && H[i] < 1)) continue;
+            const x = P[3 * i],
+                z = P[3 * i + 2];
+            if (x < gx0) gx0 = x;
+            if (x > gx1) gx1 = x;
+            if (z < gz0) gz0 = z;
+            if (z > gz1) gz1 = z;
+        }
+        if (gx1 >= gx0) {
+            const nx = Math.max(2, Math.ceil((gx1 - gx0) / o.schuttGitter) + 1);
+            const nz = Math.max(2, Math.ceil((gz1 - gz0) / o.schuttGitter) + 1);
+            const dx = (gx1 - gx0) / (nx - 1) || 1;
+            const dz = (gz1 - gz0) / (nz - 1) || 1;
+            const aus = {};
+            const Gw = new Float32Array(nx * nz);
+            let jede = 0;
+            for (let j = 0; j < nz; j++)
+                for (let i = 0; i < nx; i++) {
+                    hoehe(L, gx0 + i * dx, gz0 + j * dz, false, aus);
+                    if ((Gw[j * nx + i] = aus.schutt > 0 ? aus.schutt : 0) > 0) jede++;
+                }
+            if (jede)
+                for (let i = 0; i < n; i++) {
+                    if (H && H[i] < 1) continue;
+                    let u = (P[3 * i] - gx0) / dx,
+                        v = (P[3 * i + 2] - gz0) / dz;
+                    u = u < 0 ? 0 : u > nx - 1 ? nx - 1 : u;
+                    v = v < 0 ? 0 : v > nz - 1 ? nz - 1 : v;
+                    const iu = Math.min(nx - 2, Math.floor(u)),
+                        iv = Math.min(nz - 2, Math.floor(v));
+                    const fu = u - iu,
+                        fv = v - iv;
+                    const a = Gw[iv * nx + iu] + (Gw[iv * nx + iu + 1] - Gw[iv * nx + iu]) * fu;
+                    const b = Gw[(iv + 1) * nx + iu] + (Gw[(iv + 1) * nx + iu + 1] - Gw[(iv + 1) * nx + iu]) * fu;
+                    SW[i] = a + (b - a) * fv;
+                }
+        }
+        const W = new Float32Array(n);
+        const KM = new Uint8Array(n);
+        let jeder = 0;
+        let kante = 0;
+        let sx = 0,
+            sy = 0,
+            sz = 0,
+            sn = 0;
+        for (let i = 0; i < n; i++) {
+            const st = 1 - N[3 * i + 1];
+            let t = (st - o.rockLo) / (o.rockHi - o.rockLo);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const wr = t * t * (3 - 2 * t);
+            const ws = o.schutt * SW[i] * (1 - wr);
+            SW[i] = ws;
+            const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
+            if (!(w > 0)) continue;
+            W[i] = w;
+            jeder++;
+            if (wr > 0 || (H && H[i] < 1)) {
+                KM[i] = 1;
+                kante++;
+            }
+            if (!H || H[i] > 0) {
+                sx += P[3 * i];
+                sy += P[3 * i + 1];
+                sz += P[3 * i + 2];
+                sn++;
+            }
+        }
+        if (!jeder) return { schutt: SW, feuchte: undefined };
+        const K = kante ? felsKruemmung(P, N, I, n, null, KM) : null;
+        const fe = sn ? feuchte(sx / sn, sz / sn, sy / sn) : 0;
+        const t = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+            const w = W[i];
+            if (!(w > 0)) continue;
+            const h = H ? H[i] : 1;
+            const kr = K && KM[i] ? K[i] : 0;
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t);
+            C[3 * i] += (t[0] - C[3 * i]) * w;
+            C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
+            C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
+        }
+        return { schutt: SW, feuchte: fe };
+    }
+
     root.__gelaendeCore = Object.freeze({
         LINSE: LINSE,
         FELS: FELS,
+        HIMMELS_SICHT: HIMMELS_SICHT,
+        himmelsSicht: himmelsSicht,
+        felsStoff: felsStoff,
         felsBasis: felsBasis,
         felsFarbe: felsFarbe,
         felsKruemmung: felsKruemmung,

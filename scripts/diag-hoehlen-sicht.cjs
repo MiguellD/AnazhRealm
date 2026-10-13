@@ -27,7 +27,7 @@
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging);
 //   (i) HIMMELS-LICHT (K02a, Auge 11 bei 762/−138) — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
-//       `aHimmel`, `_himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
+//       `aHimmel`, gelaende-core `himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
 //       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell. Vorher lag der volle Himmel auf jeder Höhlen-Wand: 22 m
 //       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
@@ -48,6 +48,11 @@
 //       durch die Fuge ≥ 0,4; der Detail-Term des Boden-Shaders liest dieselben Größen (paketDicke · fugeWelle · kehle ·
 //       kluftVersatz · fugeLambda). Vorher (9f400dd5) lasen sich gleich hohe Bänke mit geraden Strich-Fugen und je Bank neu
 //       ansetzenden Klüften als Ziegelmauer: im Shader CV 0, am Gesetz 0,20, Welligkeit 0, Durchlauf 0,13.
+//   (n) DER STOFF ENTSTEHT IM WORKER (K17-2) — wo der Worker das Netz baut, baut er Himmels-Sicht, Fels-Stoff und Schutt
+//       (gelaende-core `himmelsSicht` · `felsStoff` in `buildChunkMesh`) und reicht sie per Transfer: im Ring der Mess-Wiese
+//       ruft der Haupt-Thread in keinem Worker-Bau (`_buildVoxelChunkDataFromWorkerMesh`) das Fels-Gesetz, und (a) prüft
+//       Himmel, Schutt und Farbe des Workers byte-gleich gegen den Sync-Bau. Gegenprobe: der Sync-Bau ruft es (sonst
+//       zählte die Wand blind). Vorher (c8e46330) rechnete `_felsStoff` je Worker-Bau im Haupt-Thread: Wiese Σ 59,4 ms.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -279,6 +284,22 @@ function urteil(b) {
                     `${KLUFT_DURCHLAUF_MIN}: ihre Lage je Paket, gelaende-core kluftVersatz)`
             );
     }
+    // (n) DER STOFF ENTSTEHT IM WORKER: kein Ruf des Fels-Gesetzes im Haupt-Thread je Worker-Bau
+    const sw = b.stoffWorker;
+    if (!sw || !(sw.bauten > 0))
+        v.push("LEER: (n) Stoff im Worker: kein Worker-Bau im Ring der Mess-Wiese (die Wand prüfte nichts)");
+    else {
+        if (sw.rufe > 0)
+            v.push(
+                `FELS-STOFF IM HAUPT-THREAD: ${sw.rufe} Rufe des Fels-Gesetzes (${sw.namen.join(" · ")}) in ${sw.bauten} ` +
+                    `Worker-Bauten (\`_buildVoxelChunkDataFromWorkerMesh\` → \`_felsStoff\`, Σ ${sw.ms} ms) — der Stoff ` +
+                    "entsteht im Worker (voxel-worker `buildChunkMesh`, gelaende-core `felsStoff`)"
+            );
+        if (!(sw.syncRufe > 0))
+            v.push(
+                "LINSE BLIND: (n) Stoff im Worker: auch der Sync-Bau ruft das Fels-Gesetz nicht (die Zählung sieht nichts)"
+            );
+    }
     if (c.feinRuft === false || c.feinEigenHash === true)
         v.push(
             "CODE: der Detail-Term (`_terrainGeologyAlbedo`) rechnet nicht das Gesetz (" +
@@ -345,9 +366,13 @@ function selbsttest() {
                     seiten: true,
                     kanten: true,
                     rand: true,
+                    himmel: true,
+                    schutt: true,
+                    farbe: true,
                 },
             },
         ],
+        stoffWorker: { bauten: 81, rufe: 0, namen: [], ms: 9, msMax: 0.4, syncRufe: 5200 },
         blicke: [
             {
                 name: "wiese",
@@ -430,6 +455,19 @@ function selbsttest() {
     const faelle = [
         ["Spiegel-Drift", (b) => (b.spiegel[0].felder.tri = false), /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
         ["kein Spiegel", (b) => (b.spiegel = []), /SPIEGEL: kein Chunk/],
+        // (n) der Stand c8e46330: der Fels-Stoff rechnet je Worker-Bau im Haupt-Thread, der Worker reicht keinen Himmel
+        [
+            "Himmel nur im Haupt-Thread",
+            (b) => (b.spiegel[0].felder.himmel = false),
+            /SPIEGEL: Chunk 0,0 .*himmel weicht ab/,
+        ],
+        [
+            "Fels-Stoff im Haupt-Thread",
+            (b) => Object.assign(b.stoffWorker, { rufe: 4100, namen: ["felsFarbe", "felsKruemmung"], ms: 59.4 }),
+            /FELS-STOFF IM HAUPT-THREAD: 4100 Rufe des Fels-Gesetzes \(felsFarbe · felsKruemmung\) in 81 Worker-Bauten/,
+        ],
+        ["Zählung blind", (b) => (b.stoffWorker.syncRufe = 0), /LINSE BLIND: \(n\) Stoff im Worker/],
+        ["kein Worker-Bau", (b) => (b.stoffWorker.bauten = 0), /LEER: \(n\) Stoff im Worker/],
         [
             "Höhle ohne Mündung",
             (b) => (b.muendungen = { anzahl: 0, km2: 4, jeKm2: 0 }),
@@ -699,12 +737,48 @@ const server = http.createServer((req, res) => {
                     if (i % 5 === 0) await pause(10);
                 }
             };
+            // ── (n) DER STOFF ENTSTEHT IM WORKER: der Kern ist eingefroren — die Wand reicht dem Haupt-Thread eine zählende
+            // Kopie (jeder Leser fragt `globalThis.__gelaendeCore` je Ruf) und zählt die Rufe des Fels-Gesetzes je Worker-Bau
+            const GK0 = globalThis.__gelaendeCore;
+            const FELS_NAMEN = ["felsStoff", "felsFarbe", "felsKruemmung", "felsNetz", "himmelsSicht"];
+            const felsZaehl = { an: false, rufe: 0, namen: new Set() };
+            const GKz = Object.assign({}, GK0);
+            for (const k of FELS_NAMEN)
+                if (typeof GK0[k] === "function")
+                    GKz[k] = function () {
+                        if (felsZaehl.an) {
+                            felsZaehl.rufe++;
+                            felsZaehl.namen.add(k);
+                        }
+                        return GK0[k].apply(this, arguments);
+                    };
+            globalThis.__gelaendeCore = GKz;
+            const stoffWorker = { bauten: 0, rufe: 0, namen: [], ms: 0, msMax: 0, syncRufe: 0 };
+            r._buildVoxelChunkDataFromWorkerMesh = function () {
+                const r0 = felsZaehl.rufe,
+                    t0 = performance.now();
+                felsZaehl.an = true;
+                try {
+                    return Object.getPrototypeOf(r)._buildVoxelChunkDataFromWorkerMesh.apply(this, arguments);
+                } finally {
+                    felsZaehl.an = false;
+                    const dt = performance.now() - t0;
+                    stoffWorker.bauten++;
+                    stoffWorker.ms += dt;
+                    if (dt > stoffWorker.msMax) stoffWorker.msMax = dt;
+                    stoffWorker.rufe += felsZaehl.rufe - r0;
+                }
+            };
             // ── an die Mess-Wiese
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
             await schwinge();
+            delete r._buildVoxelChunkDataFromWorkerMesh;
+            stoffWorker.namen = [...felsZaehl.namen];
+            stoffWorker.ms = +stoffWorker.ms.toFixed(1);
+            stoffWorker.msMax = +stoffWorker.msMax.toFixed(2);
             r._tickChunkSatz();
             const s = st.chunkSaetze.get("boden");
-            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size };
+            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size, stoffWorker };
 
             // ── (a) SPIEGEL: Main-Sync gegen Worker für Chunks verschiedener Stufe
             const lpc = st.lastPlayerVoxelChunk;
@@ -736,7 +810,15 @@ const server = http.createServer((req, res) => {
             for (const c of wahl) {
                 try {
                     const w = await r._voxelWorkerComputeChunkMesh(c.cx, c.cz, c.lod);
-                    const m = r._buildVoxelChunkData(c.cx, c.cz, c.lod);
+                    const r0 = felsZaehl.rufe;
+                    felsZaehl.an = true;
+                    let m;
+                    try {
+                        m = r._buildVoxelChunkData(c.cx, c.cz, c.lod);
+                    } finally {
+                        felsZaehl.an = false;
+                        stoffWorker.syncRufe += felsZaehl.rufe - r0;
+                    }
                     const g = m && m.mesh ? m.mesh.geometry : null;
                     if (!g || w.empty) {
                         aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: "leer auf einer Seite" });
@@ -757,6 +839,10 @@ const server = http.createServer((req, res) => {
                             seiten: gleich(W.seiten, H && H.seiten),
                             kanten: gleich(W.kanten, H && H.kanten),
                             rand: gleich(W.rand, H && H.rand),
+                            // (n) der Stoff des Workers: die rohe Antwort gegen den fertigen Sync-Bau
+                            himmel: gleich(w.himmel, g.attributes.aHimmel && g.attributes.aHimmel.array),
+                            schutt: gleich(w.schutt, g.attributes.aSchutt && g.attributes.aSchutt.array),
+                            farbe: gleich(w.colors, g.attributes.color.array),
                         },
                     });
                     g.dispose();
@@ -764,6 +850,7 @@ const server = http.createServer((req, res) => {
                     aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: String((e && e.message) || e) });
                 }
             }
+            globalThis.__gelaendeCore = GK0;
 
             // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mess-Wiese jede Spalte mit einer Flanke
             // ab 30° (der Hang der Welt-Höhe, unabhängig vom Mündungs-Term des Kerns), dann das Kriterium an ihr und ihren
@@ -1111,7 +1198,7 @@ const server = http.createServer((req, res) => {
                             if (hoehleV.has(j) && kn.tore.some((t) => t.box && t.box.containsPoint(pm))) mundV.add(j);
                         }
                     }
-                const L = A.HIMMELS_SICHT ? A.HIMMELS_SICHT.m : 3;
+                const L = window.__gelaendeCore.HIMMELS_SICHT.m;
                 const TIEF = 14,
                     R = 2,
                     GR = 15;
@@ -1480,6 +1567,13 @@ const server = http.createServer((req, res) => {
                     Object.entries(sp.felder)
                         .map(([k, x]) => `${k} ${x ? "=" : "≠"}`)
                         .join(" · "))
+        );
+    const swb = befund.stoffWorker;
+    if (swb)
+        console.log(
+            `  (n) Stoff im Worker: ${swb.bauten} Worker-Bauten, ${swb.rufe} Rufe des Fels-Gesetzes im Haupt-Thread` +
+                (swb.namen.length ? ` (${swb.namen.join(" · ")})` : "") +
+                `, Σ ${swb.ms} ms, max ${swb.msMax} ms je Bau · Gegenprobe Sync-Bau ${swb.syncRufe} Rufe`
         );
     console.log(`  Orte: Mündung ${JSON.stringify(befund.orte.muendung)} · Höhle ${JSON.stringify(befund.orte.raum)}`);
     if (befund.muendungen)

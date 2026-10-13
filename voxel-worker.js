@@ -85,6 +85,9 @@ const state = {
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
     // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
     erbgut: null,
+    // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
+    // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
+    felsStoff: null,
 };
 
 self.onmessage = function (e) {
@@ -122,6 +125,10 @@ self.onmessage = function (e) {
                         normals: mesh.normals.buffer,
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
+                        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+                        himmel: mesh.himmel.buffer,
+                        schutt: mesh.schutt.buffer,
+                        felsFeuchte: mesh.felsFeuchte,
                         waterCells: mesh.waterCells.buffer,
                         // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
                         hTri: mesh.hTri.buffer,
@@ -139,6 +146,8 @@ self.onmessage = function (e) {
                         mesh.normals.buffer,
                         mesh.indices.buffer,
                         mesh.colors.buffer,
+                        mesh.himmel.buffer,
+                        mesh.schutt.buffer,
                         mesh.waterCells.buffer,
                         mesh.hTri.buffer,
                         mesh.hKnoten.buffer,
@@ -231,6 +240,7 @@ function applyStateSnapshot(snap) {
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
+    if (snap.felsStoff) state.felsStoff = snap.felsStoff;
 }
 
 function applyStateDelta(delta) {
@@ -2684,6 +2694,27 @@ function buildChunkMesh(cx, cz, lod) {
     // identische Eingangs-Werte für die Color-Mix-Pipeline.
     const positionsF32 = new Float32Array(positions);
     const colors = attachFieldColors(positionsF32);
+    // DER STOFF ENTSTEHT, WO DAS NETZ ENTSTEHT (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt aus dem EINEN
+    // Gelände-Kern — derselbe Code wie im Sync-Bau des Mains (`_felsStoff`), der Main setzt nur die Attribute. Bis K17-2 rechnete
+    // der Main ihn je Chunk nach (Mess-Wiese Σ 59,4 ms je Ring).
+    const FS = state.felsStoff;
+    if (!FS) throw new Error("buildChunkMesh: der Fels-Stoff fehlt im Worker-Zustand (felsStoff)");
+    const indicesU32 = new Uint32Array(indices);
+    const hTri = Int32Array.from(triZelle);
+    const nV = positionsF32.length / 3;
+    const himmel = G.himmelsSicht(indicesU32, hTri, nV, step);
+    const fels = G.felsStoff(
+        state,
+        FS.basis,
+        FS.netz,
+        positionsF32,
+        normals,
+        indicesU32,
+        himmel,
+        colors,
+        nV,
+        feuchteAt
+    );
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
     // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für
@@ -2719,11 +2750,14 @@ function buildChunkMesh(cx, cz, lod) {
     return {
         empty: false,
         positions: positionsF32,
-        indices: new Uint32Array(indices),
+        indices: indicesU32,
         normals,
         colors,
+        himmel,
+        schutt: fels.schutt,
+        felsFeuchte: fels.feuchte,
         waterCells,
-        hTri: Int32Array.from(triZelle),
+        hTri,
         hN: hoehle.n,
         hKnoten: hoehle.knoten,
         hMuend: hoehle.muend,

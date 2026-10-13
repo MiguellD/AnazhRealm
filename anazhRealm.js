@@ -24449,6 +24449,10 @@ class AnazhRealm {
                                 normals: new Float32Array(msg.normals),
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
+                                // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+                                himmel: new Float32Array(msg.himmel),
+                                schutt: new Float32Array(msg.schutt),
+                                felsFeuchte: msg.felsFeuchte,
                                 waterCells: new Uint8Array(msg.waterCells),
                                 // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
                                 hoehle: msg.hTri
@@ -24547,6 +24551,9 @@ class AnazhRealm {
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
+            // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
+            // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
+            felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -25008,14 +25015,16 @@ class AnazhRealm {
                 `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen passenden Höhlen-Graph`
             );
         geom.hoehle = Object.assign({}, H, { step: this._voxelChunkConfig(lod).step });
-        geom.setAttribute(
-            "aHimmel",
-            new THREE.Float32BufferAttribute(
-                AnazhRealm._himmelsSicht(meshData.indices, H.tri, meshData.positions.length / 3, geom.hoehle.step),
-                1
-            )
-        );
-        this._felsStoff(geom);
+        // DER STOFF KOMMT FERTIG (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt baut der Worker, wo er das Netz baut
+        // (gelaende-core `himmelsSicht` · `felsStoff`) — hier fällt kein Ruf des Fels-Gesetzes (`gate:hoehlen-sicht` (n)).
+        const nV = meshData.positions.length / 3;
+        if (!meshData.himmel || meshData.himmel.length !== nV || !meshData.schutt || meshData.schutt.length !== nV)
+            throw new Error(
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff (Himmels-Sicht · Schutt)`
+            );
+        geom.setAttribute("aHimmel", new THREE.Float32BufferAttribute(meshData.himmel, 1));
+        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(meshData.schutt, 1));
+        if (meshData.felsFeuchte !== undefined) geom.userData.felsFeuchte = meshData.felsFeuchte;
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -28719,7 +28728,10 @@ class AnazhRealm {
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setAttribute(
             "aHimmel",
-            new THREE.Float32BufferAttribute(AnazhRealm._himmelsSicht(indices, triZelle, positions.length / 3, step), 1)
+            new THREE.Float32BufferAttribute(
+                globalThis.__gelaendeCore.himmelsSicht(indices, triZelle, positions.length / 3, step),
+                1
+            )
         );
         if (hoehle)
             geom.hoehle = {
@@ -29563,18 +29575,12 @@ class AnazhRealm {
         this._felsStoff(geom);
     }
 
-    // DER FELS HAT STOFF (K17; davor K02a „unter Fels wächst nichts"): die Boden-Farbe ist eine Funktion von (x, z) — Wiese,
-    // Feuchte, Schnee liegen auf der Säule. Wo das Netz Fels ist, trägt der Vertex den Fels-Stoff des Gesetzes (gelaende-core
-    // `felsFarbe`: die Pakete, die Verwitterungsrinde an konvexen Kanten aus der Krümmung des Netzes (`felsKruemmung`),
-    // Mulden dunkel, Flechte am trockenen Licht, Moos am feuchten Sims, und die Mittel der Bänke, Kanten und Klüfte, die
-    // die 1,8-m-Masche nicht trägt): was den Himmel nicht sieht (1 − `aHimmel`, die Höhle; an der Mündung ein Saum) und
-    // was steil steht (die Steile der Vertex-Normale über die Schwellen von `TERRAIN_GEOLOGY`: der Fels ganz, der
-    // Schutthang des Schicht-Gesetzes mit `schutt` — dieselben Gewichte, mit denen der Shader das Feine auflegt). Bis K17
-    // lag in der Höhle EIN Palette-Stein (σ der Leuchtdichte 0 über 64 576 Vertices) und auf dem Kliff die Säule. Beide
-    // Bau-Wege rufen es: der synchrone über `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht
-    // (`_buildVoxelChunkDataFromWorkerMesh`). Der Takt kostet, was ihn betrifft (Lehre 25): Krümmung nur an Dreiecken mit
-    // Fels, die Feuchte (das Moos) EINMAL je Chunk am Schwerpunkt seines Felsens unter dem Himmel — sie wechselt über
-    // Dutzende Meter, die Punkt-Probe je Vertex kostete 0,6 ms je Chunk.
+    // DER FELS HAT STOFF (K17; davor K02a „unter Fels wächst nichts"): das EINE Gesetz rechnet ihn — gelaende-core `felsStoff`
+    // (die Pakete, die Rinde aus der Krümmung, Mulden, Flechte, Moos und der Schutt des Schicht-Gesetzes, Gewicht aus Himmels-
+    // Sicht und Steile). Er entsteht, wo das Netz entsteht (K17-2): der Streaming-Pfad bekommt ihn fertig vom voxel-worker
+    // (`buildChunkMesh`, per Transfer — `_buildVoxelChunkDataFromWorkerMesh` setzt nur die Attribute), der Haupt-Thread rechnet
+    // ihn nur im Sync-Bau (`_attachVoxelFieldColors`: Spieler-Chunk, Graben, Voxel-Test). Bis K17-2 rechnete `_felsStoff` je
+    // Worker-Bau im Haupt-Thread (Mess-Wiese Σ 59,4 ms je Ring, max 7,3 ms je Chunk, `gate:hoehlen-sicht` (n)).
     _felsStoff(geom) {
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
@@ -29584,126 +29590,21 @@ class AnazhRealm {
             throw new Error("_felsStoff: der Boden trägt nicht color · normal · position (fail-closed)");
         // Ohne Höhlen-Graph (nur der Voxel-Test `_voxelTest`: ein Gitter ohne Sicht-Graph) steht jeder Vertex unter dem
         // Himmel — jeder Chunk trägt `aHimmel` (`_buildVoxelChunkData*` bauen den Graph fail-closed).
-        const GK = globalThis.__gelaendeCore;
-        const FS = AnazhRealm.FELS_STOFF;
-        const G = AnazhRealm.TERRAIN_GEOLOGY;
-        const C = col.array;
-        const N = nor.array;
-        const P = pos.array;
-        const n = pos.count;
-        const H = him ? him.array : null;
-        const ss = (e0, e1, v) => {
-            let t = (v - e0) / (e1 - e0);
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            return t * t * (3 - 2 * t);
-        };
-        // DER SCHUTT DES GESETZES (Nachbesserung 2): wo ein Vertex unter dem Himmel steiler als `schuttKandidat` steht, fragt
-        // der Chunk das Schicht-Gesetz auf einem Gitter der Kante `schuttGitter` über diese Vertices (`hoehe(…, aus).schutt`, ohne
-        // Detail) und liest je Vertex bilinear — das Gewicht des Schutts ist eine Funktion des Orts, nie der Facette.
-        const SW = new Float32Array(n);
-        let gx0 = Infinity,
-            gx1 = -Infinity,
-            gz0 = Infinity,
-            gz1 = -Infinity;
-        for (let i = 0; i < n; i++) {
-            if (1 - N[3 * i + 1] < G.schuttKandidat || (H && H[i] < 1)) continue;
-            const x = P[3 * i],
-                z = P[3 * i + 2];
-            if (x < gx0) gx0 = x;
-            if (x > gx1) gx1 = x;
-            if (z < gz0) gz0 = z;
-            if (z > gz1) gz1 = z;
-        }
-        if (gx1 >= gx0) {
-            const nx = Math.max(2, Math.ceil((gx1 - gx0) / G.schuttGitter) + 1);
-            const nz = Math.max(2, Math.ceil((gz1 - gz0) / G.schuttGitter) + 1);
-            const dx = (gx1 - gx0) / (nx - 1) || 1;
-            const dz = (gz1 - gz0) / (nz - 1) || 1;
-            const L = this._gelaende();
-            const aus = {};
-            const Gw = new Float32Array(nx * nz);
-            let jede = 0;
-            for (let j = 0; j < nz; j++)
-                for (let i = 0; i < nx; i++) {
-                    GK.hoehe(L, gx0 + i * dx, gz0 + j * dz, false, aus);
-                    if ((Gw[j * nx + i] = aus.schutt > 0 ? aus.schutt : 0) > 0) jede++;
-                }
-            if (jede)
-                for (let i = 0; i < n; i++) {
-                    if (H && H[i] < 1) continue;
-                    let u = (P[3 * i] - gx0) / dx,
-                        v = (P[3 * i + 2] - gz0) / dz;
-                    u = u < 0 ? 0 : u > nx - 1 ? nx - 1 : u;
-                    v = v < 0 ? 0 : v > nz - 1 ? nz - 1 : v;
-                    const iu = Math.min(nx - 2, Math.floor(u)),
-                        iv = Math.min(nz - 2, Math.floor(v));
-                    const fu = u - iu,
-                        fv = v - iv;
-                    const a = Gw[iv * nx + iu] + (Gw[iv * nx + iu + 1] - Gw[iv * nx + iu]) * fu;
-                    const b = Gw[(iv + 1) * nx + iu] + (Gw[(iv + 1) * nx + iu + 1] - Gw[(iv + 1) * nx + iu]) * fu;
-                    SW[i] = a + (b - a) * fv;
-                }
-        }
-        // Das Gewicht des Stoffs je Vertex: die Höhle, der Fels nach der Steile (dort hält kein Boden) und darunter der Schutt
-        // des Gesetzes, je das größere. `aSchutt` trägt dem Shader den Anteil des Schutts (sein Korn).
-        const W = new Float32Array(n);
-        // die Kante: nur Fels und Höhle tragen Rinde und Mulde aus der Krümmung — der Schutt bricht, er rundet nicht
-        const KM = new Uint8Array(n);
-        let jeder = 0;
-        let kante = 0;
-        let sx = 0,
-            sy = 0,
-            sz = 0,
-            sn = 0;
-        for (let i = 0; i < n; i++) {
-            const st = 1 - N[3 * i + 1];
-            const wr = ss(G.rockLo, G.rockHi, st);
-            const ws = G.schutt * SW[i] * (1 - wr);
-            SW[i] = ws;
-            const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
-            if (!(w > 0)) continue;
-            W[i] = w;
-            jeder++;
-            if (wr > 0 || (H && H[i] < 1)) {
-                KM[i] = 1;
-                kante++;
-            }
-            if (!H || H[i] > 0) {
-                sx += P[3 * i];
-                sy += P[3 * i + 1];
-                sz += P[3 * i + 2];
-                sn++;
-            }
-        }
-        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SW, 1));
-        if (!jeder) return;
-        const K = kante ? GK.felsKruemmung(P, N, geom.index ? geom.index.array : null, n, null, KM) : null;
-        const fe = sn ? this._feuchteAt(sx / sn, sz / sn, sy / sn) : 0;
-        geom.userData.felsFeuchte = fe; // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
-        const t = [0, 0, 0];
-        for (let i = 0; i < n; i++) {
-            const w = W[i];
-            if (!(w > 0)) continue;
-            const h = H ? H[i] : 1;
-            const kr = K && KM[i] ? K[i] : 0;
-            GK.felsFarbe(
-                FS.basis,
-                P[3 * i],
-                P[3 * i + 1],
-                P[3 * i + 2],
-                N[3 * i],
-                N[3 * i + 1],
-                N[3 * i + 2],
-                kr,
-                h,
-                h > 0 ? fe : 0,
-                FS.fuss,
-                t
-            );
-            C[3 * i] += (t[0] - C[3 * i]) * w;
-            C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
-            C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
-        }
+        const S = globalThis.__gelaendeCore.felsStoff(
+            this._gelaende(),
+            AnazhRealm.FELS_STOFF.basis,
+            AnazhRealm.FELS_STOFF.netz,
+            pos.array,
+            nor.array,
+            geom.index ? geom.index.array : null,
+            him ? him.array : null,
+            col.array,
+            pos.count,
+            (x, z, y) => this._feuchteAt(x, z, y)
+        );
+        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(S.schutt, 1));
+        // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
+        if (S.feuchte !== undefined) geom.userData.felsFeuchte = S.feuchte;
         col.needsUpdate = true;
     }
 
@@ -30186,6 +30087,25 @@ class AnazhRealm {
         });
     }
 
+    // DER ZWEIG IM STOFF (K17-2): ein Term, der nur rechnen soll, wo sein Gewicht trägt (der Fels-Term: die Wiese zahlt ihn
+    // nicht), reist als ARGUMENT in EINEN Fn-Rumpf, der nur seine Argumente liest — TSL erzeugt den Code des Arguments dort,
+    // wo es zuerst gebraucht wird: im Zweig. Der Knoten-Graph sieht den Inhalt (die Argumente sind Kinder des Aufrufs), die
+    // Shader-Kosten-Linse (`stoffGraph`) kennt diesen Rumpf (`zweig`); jeder andere Fn ohne Layout bleibt `verborgen` (bis
+    // K17-2 trug der Fels-Term seinen Inhalt im Rumpf: RAUSCH-GESETZ (B) 1 verborgener Rumpf). EIN Zweig je TSL-Modul.
+    // zweig(inhalt: vec3, gewicht: float) → inhalt, wo gewicht > 1e-3, sonst vec3(1).
+    static _zweigTSL(T) {
+        if (AnazhRealm._zweigMemo && AnazhRealm._zweigMemo.T === T) return AnazhRealm._zweigMemo.fn;
+        const fn = T.Fn(([inhalt, gewicht]) => {
+            const v = T.vec3(1, 1, 1).toVar("zweig");
+            T.If(gewicht.greaterThan(1e-3), () => {
+                v.assign(inhalt);
+            });
+            return v;
+        });
+        AnazhRealm._zweigMemo = { T, fn };
+        return fn;
+    }
+
     // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
     // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
     // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben). EIN Rechenwerk je TSL-Modul.
@@ -30243,10 +30163,21 @@ class AnazhRealm {
         )
             AnazhRealm._kernPflichtBruch("gelaende:felsFarbe");
         const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
+        const G = AnazhRealm.TERRAIN_GEOLOGY;
         AnazhRealm._felsStoffMemo = Object.freeze({
             gesetz: GK.FELS,
             basis,
             fuss: 1.8,
+            // die Geologie des Boden-Netzes für gelaende-core `felsStoff` — der Stamm (Sync-Bau) und der voxel-worker (der
+            // Init-Schnappschuss `felsStoff`) lesen DIESELBEN Zahlen
+            netz: Object.freeze({
+                rockLo: G.rockLo,
+                rockHi: G.rockHi,
+                schuttKandidat: G.schuttKandidat,
+                schuttGitter: G.schuttGitter,
+                schutt: G.schutt,
+                fuss: 1.8,
+            }),
             mittel: Object.freeze(GK.felsMittel(basis)),
             mittelWerte: GK.felsMittelWerte(),
         });
@@ -32559,7 +32490,7 @@ class AnazhRealm {
                     // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
                     // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
                     // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
-                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, `_himmelsSicht`)
+                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, gelaende-core `himmelsSicht`)
                     // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
                     // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
                     // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
@@ -33040,7 +32971,7 @@ class AnazhRealm {
             // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt — das Gewicht trägt der Vertex (`aSchutt`, `_felsStoff`
             // aus gelaende-core `hoehe(…, aus).schutt`), nie die Steile der Masche: bis zur Nachbesserung 2 lag er ab 28° auf
             // jedem Hang (der grüne Hügel grau, der 42°-Dorfhang zu 85 % Schutt), und das 28°–34°-Band streifte die 30°-Rampe in
-            // den Reihen des Netzes. Der Fern-Ring trägt keinen Schutt.
+            // den Reihen des Netzes. Die Ferne trägt das Mittel des Schutts in ihrer Farbe (`_fernSchutt`, dasselbe Gesetz).
             const _screeW = felsImVertex ? _T.attribute("aSchutt", "float") : _T.float(0);
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
             // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
@@ -33068,14 +32999,8 @@ class AnazhRealm {
             const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
-            const _feinV = _T.Fn(() => {
-                const v = _T.vec3(1, 1, 1).toVar("felsFein");
-                _T.If(_gate.greaterThan(1e-3), () => {
-                    const f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
-                    v.assign(_T.vec3(f.bank, f.kante, GK.schuttKorn(_O, wp.x, wp.z)));
-                });
-                return v;
-            })();
+            const _f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
+            const _feinV = AnazhRealm._zweigTSL(_T)(_T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, wp.x, wp.z)), _gate);
             const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
             const _rockCol = _felsGrund.mul(_fein);
@@ -39575,6 +39500,7 @@ class AnazhRealm {
                 "Fern-Farbe: phyto-core forestNische/forestGeburt/forestBestand/forestKronenDeckung fehlen (KERN-PFLICHT)"
             );
         this._bodenFarbeAt(x, y, z, out, fussM);
+        this._fernSchutt(x, z, out);
         const ctx =
             this._fernNischeCtx ||
             (this._fernNischeCtx = {
@@ -39624,6 +39550,26 @@ class AnazhRealm {
         out[3] = r * k;
         out[4] = g * k;
         out[5] = b * k;
+        return out;
+    }
+
+    // DER SCHUTT DER FERNE (K17-2, nah = fern aus EINEM Gesetz): wo das Schicht-Gesetz den Schutthang legt (gelaende-core
+    // `hoehe(…, aus).schutt`), trägt die Ferne das Mittel dessen, was der Chunk dort zeichnet — den Boden mit dem Gewicht
+    // `TERRAIN_GEOLOGY.schutt` × Schutt zum Mittel des Fels-Stoffs gemischt (`FELS_STOFF.mittel`; im Chunk `felsStoff` je
+    // Vertex) und × das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich; im Chunk der Detail-Term mit dem Gewicht
+    // des Schutts). Bis K17-2 trug die Ferne keinen Schutt (`_terrainGeologyAlbedo` liest `aSchutt` nur am Chunk): jenseits der
+    // Bau-Kante lag der graue Schutthang in der Farbe der Säule. Ring, Kronen-Karte und Feld-Pass lesen ihn über die Fern-Farbe.
+    _fernSchutt(x, z, out) {
+        const GK = globalThis.__gelaendeCore;
+        const aus = this._fernSchuttAus || (this._fernSchuttAus = {});
+        aus.schutt = 0;
+        GK.hoehe(this._gelaende(), x, z, false, aus);
+        const s = aus.schutt > 0 ? aus.schutt : 0;
+        if (!(s > 0)) return out;
+        const ws = AnazhRealm.TERRAIN_GEOLOGY.schutt * s;
+        const M = AnazhRealm.FELS_STOFF.mittel;
+        const k = 1 + (GK.schuttMittel() - 1) * s;
+        for (let c = 0; c < 3; c++) out[c] = (out[c] + (M[c] - out[c]) * ws) * k;
         return out;
     }
 
@@ -69672,43 +69618,6 @@ class AnazhRealm {
     // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
     // Zellen, nie die Weltgröße.
 
-    // DIE HIMMELS-SICHT des Bodens (K02a, Auge 11 bei 762/−138): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht —
-    // die Umgebung (der EINE Himmel), Hemi und Ambient sind Himmels-Licht, und der Boden-Stoff liest diesen Wert als seine
-    // Verdeckung (`aoNode` des Chunk-Materials). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft,
-    // −1 = Himmels-Luft): jede Fläche der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt
-    // (`step` m) um exp(−step / HIMMELS_SICHT.m) — über die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine
-    // Höhle ohne Himmels-Fläche im Chunk sieht ihn nie (0). Vorher lag der Himmel auf jeder Höhlen-Wand: 22 m unter dem Fels
-    // stand die Ich-Sicht in einem blaugrauen Schleier (Sonne im Schatten, Umgebung voll; ohne Umgebung Helligkeit 0).
-    // Ohne Höhlen-Graph (kein Boden-Chunk) sieht jede Fläche den Himmel.
-    static _himmelsSicht(index, tri, n, step) {
-        const V = new Float32Array(n);
-        if (!tri) return V.fill(1);
-        const nT = (index.length / 3) | 0;
-        if (tri.length !== nT) throw new Error(`_himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
-        const schritt = Math.exp(-step / AnazhRealm.HIMMELS_SICHT.m);
-        const hop = new Int8Array(n).fill(-1);
-        for (let t = 0; t < nT; t++)
-            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
-        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
-        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
-        for (let k = 1; k <= schritte; k++) {
-            let neu = 0;
-            for (let t = 0; t < nT; t++) {
-                const a = index[3 * t],
-                    b = index[3 * t + 1],
-                    c = index[3 * t + 2];
-                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
-                    if (hop[a] < 0) ((hop[a] = k), neu++);
-                    if (hop[b] < 0) ((hop[b] = k), neu++);
-                    if (hop[c] < 0) ((hop[c] = k), neu++);
-                }
-            }
-            if (!neu) break;
-        }
-        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
-        return V;
-    }
-
     // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
     // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).
     _hoehlenKnoten(s, b, H) {
@@ -93563,7 +93472,7 @@ class AnazhRealm {
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
-    // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
+    // Höhle der Boden-Funktion bekommt kein Himmels-Licht (gelaende-core `himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
     // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
     // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
@@ -102258,8 +102167,10 @@ AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand; seit
 // Runde 3 trägt die Deck-Zelle das flache Wasser und das Ufer liest den Boden der Spalte: alte Zellen zeichneten den Bach nicht;
 // und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht; seit Runde 4 trägt der
-// Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief.
-AnazhRealm.CHUNK_IDB_FORM = "damm-krone";
+// Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief; seit K17-2
+// trägt die Antwort den Stoff (Himmels-Sicht, Schutt, die Feuchte des Mooses, der Fels in `colors`): ein alter Chunk trüge die
+// Säulen-Farbe ohne Stoff.
+AnazhRealm.CHUNK_IDB_FORM = "fels-im-worker";
 // Der Saum des gezeichneten Wassers (`_wasserBildAt`): die Vertices eines Wasser-Sheets sind bis 0,3 · 1,8 m = 0,54 m versetzt
 // (der Gitter-Jitter in `_computeWaterSheetData`) — ein Punkt bis so nah an der Chunk-Kante kann im Sheet des Nachbarn liegen.
 AnazhRealm.WASSER_BILD_RAND = 0.6;
@@ -102267,9 +102178,6 @@ AnazhRealm.WASSER_BILD_RAND = 0.6;
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
 AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
-// DIE HIMMELS-SICHT des Bodens (`_himmelsSicht`): das Himmels-Licht fällt in der Höhlen-Luft je Meter Netz-Weg von der
-// nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
-AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
 // Helligkeit wie am Tag — die 18-%-Karte in `karteM` das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge
 // adaptiert an sein Licht). Es ist ein Platz des Licht-Pools mit Himmels-Ersatz (K11) und fällt nach dem EINEN Punktlicht-
