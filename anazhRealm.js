@@ -31138,6 +31138,7 @@ class AnazhRealm {
     // keine); danach weckte ein Haus am Seerand den Automaten (die Frage las das Gesetz samt Rand-Füllung, die Zellen fluten
     // den Rand nur, wo er mit der Quelle verbunden ist).
     _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
+        if (lod === 0) this._stauFeldVorlaeufig(ox, oz);
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
         const { dim, dimY, step } = this._voxelChunkConfig(lod);
         const STATE = AnazhRealm.CELL_STATE;
@@ -31284,7 +31285,11 @@ class AnazhRealm {
         let idx = null;
         if (gezeichnet) {
             if (quelle) {
-                pos = quelle.geometry.attributes.position.array;
+                // DAS NETZ TRÄGT SEINE BYTES (K37): die Positionen des gezeichneten Sheets sind ein View in den Puffer des
+                // Wasser-Satzes (`_chunkSatzViews`); verdichtet sich der Satz, schiebt er die Bereiche im alten Puffer nach
+                // vorn (`copyWithin`) und zeigt neue Views — ein Netz, das den alten View hielt, las danach fremde Bytes. Am
+                // Damm im Tal 26/−120 verlor `_nassAt` so 285–1 309 von 2 070 nassen Punkten eines Sees, dessen Sheet stand.
+                pos = Float32Array.from(quelle.geometry.attributes.position.array);
                 idx = quelle.geometry.index.array;
             }
         } else if (this._wasserSheetTraegt(cx, cz)) {
@@ -31554,6 +31559,10 @@ class AnazhRealm {
                     }
                     continue; // sonst trocken (topG bleibt NaN)
                 }
+                // DIE GELEERTE SPALTE IST TROCKEN (K37): trägt das gezeichnete Dach des Automaten in einer Flut-Spalte kein
+                // Wasser mehr (−1), ist die Spalte trocken. Bis K37 zeichnete das Sheet sie 14 m unter dem Spiegel (die Klemme
+                // des Live-Deltas): eine Grube mit weißen Wänden, Spalte für Spalte eine Treppe. Worker bit-identisch.
+                if (dach && live < 0) continue;
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
                 // RUHE: sub-zellig der Body-Spiegel `L` (das Gesetz `_atlasWaterLevelAt`: Ozean, See, der Fluss-Spiegel
                 // — stromab nie steigend, quer waagrecht), geklemmt von der Unterkante der Zelle unter dem Dach bis eine
@@ -31579,8 +31588,7 @@ class AnazhRealm {
                 // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
                 if (dach) {
                     const floodRel = (sc.floodTopJ + 1) * step;
-                    const liveRel = live < 0 ? 0 : live * step;
-                    let d = liveRel - floodRel;
+                    let d = live * step - floodRel; // live ≥ 0: die geleerte Spalte ist oben schon trocken
                     if (d > -0.05 && d < 0.05) d = 0;
                     if (d !== 0) ruht = false;
                     top += Math.max(-14, Math.min(4, d));
@@ -81579,6 +81587,7 @@ class AnazhRealm {
         const barrier = new Float64Array(w * h);
         const init = new Float64Array(w * h).fill(Infinity);
         let anySource = false;
+        let teil = 0; // Spalten, deren Boden das Makro trägt (Chunk noch nicht geladen)
         for (let kz = 0; kz < h; kz++) {
             for (let ix = 0; ix < w; ix++) {
                 const gx = gx0 + ix;
@@ -81603,6 +81612,7 @@ class AnazhRealm {
                 } else {
                     const m = this._terrainMacroSurfaceY(x, z);
                     bY = Number.isFinite(m) ? m : oy;
+                    teil++;
                 }
                 barrier[c] = bY;
                 if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
@@ -81617,10 +81627,38 @@ class AnazhRealm {
         let field = null;
         if (anySource) {
             const fill = this._stauSpillLevels(barrier, w, h, init);
-            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill) };
+            // DAS FELD AUS HALBER WAHRHEIT IST VORLÄUFIG (K37): las es Rand-Spalten aus dem Makro, baut es neu, sobald ein
+            // Chunk seines Fensters seine Zellen bringt (`_stauFeldVorlaeufig`, gerufen vom Zell-Stempel jedes Chunks). Nach dem
+            // Reload baute der Damm im Tal 26/−120 sein Feld im ersten Takt mit 894 Makro-Spalten, das gecachte wich vom
+            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte.
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), teil: teil > 0 };
         }
         this.state.waterStauFields.set(cluster.key, field);
         return field;
+    }
+
+    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld (`teil`, aus Makro-Rand gebaut), dessen
+    // Fenster ihn schneidet, fällt samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
+    _stauFeldVorlaeufig(ox, oz) {
+        const felder = this.state.waterStauFields;
+        if (!felder || felder.size === 0) return;
+        const cfg = this._voxelChunkConfig(0);
+        const gxA = Math.round(ox / cfg.step);
+        const gzA = Math.round(oz / cfg.step);
+        let fallen = null;
+        for (const f of felder.values()) {
+            if (!f || !f.teil) continue;
+            if (f.gx0 > gxA + cfg.dim - 1 || f.gx0 + f.w - 1 < gxA) continue;
+            if (f.gz0 > gzA + cfg.dim - 1 || f.gz0 + f.h - 1 < gzA) continue;
+            (fallen || (fallen = [])).push(f);
+        }
+        if (!fallen) return;
+        for (const f of fallen)
+            this._invalidateWaterCapsAround(
+                (f.gx0 + f.w * 0.5) * cfg.step,
+                (f.gz0 + f.h * 0.5) * cfg.step,
+                Math.max(f.w, f.h) * 0.5 * cfg.step
+            );
     }
 
     // Die Stau-Felder, deren Fenster den Chunk schneiden (für den Kappen-Bau).
@@ -81703,9 +81741,17 @@ class AnazhRealm {
         }
         // Quell-Spalten (einmalig je Eintrag, 576 Atlas-Probes) = unendliches Reservoir, der Pin füllt ihre
         // WATER-Zellen nach. Dazu die Kappe `waterCapJ` je Spalte (höchste Zeile, in die Wasser ZUFLIESSEN
-        // darf): im Atlas-Gebiet rim + 0.5 m (nie über den Spiegel), jenseits (rim = −Inf) Boden + 2 Zellen
-        // (fließende Skin). Reine EMPFÄNGER-Regel im Lateral-Pass → erhaltungs-neutral; Decay allein bändigt
-        // den hydrostatischen Pool neben der Quelle nicht.
+        // darf). Reine EMPFÄNGER-Regel im Lateral-Pass → erhaltungs-neutral; Decay allein bändigt den
+        // hydrostatischen Pool neben der Quelle nicht.
+        // DIE RUHE IST DER FIXPUNKT (K37, 13.10.): die Kappe einer Spalte, die das Gesetz flutet, ist ihre oberste
+        // Flut-Zelle — erwacht der Automat über ruhendem Wasser (jede Werk-Setzung am Ufer weckt ihn), bewegt er
+        // nichts. Bis K37 lag die Kappe dort eine Zeile über der Ruhe (Spiegel + 0,5 m): die Deck-Zelle (4b, eine
+        // volle Zelle über dem Spiegel ihrer Nachbarn) floss in die Zeile über dem See und aufs Land, die flachen
+        // Ufer-Spalten leerten sich, und das Sheet zeichnete sie 14 m unter dem Spiegel — das weiße Treppen-Band am
+        // See der Solitär-Eiche (nach dem Wecken 424 von 1594 Spalten gerissen, Wildwasser 105 → 1944 Vertices).
+        // Eine trockene Spalte nimmt nur Wasser, wo ein Schnitt Raum öffnete (`_chunkRegionHasCarve`, das Gate der
+        // reaktiven Flut): im Atlas-Gebiet bis Spiegel + 0,5 m, jenseits Boden + 2 Zellen (die fließende Haut);
+        // sonst nie. Ein Stau hebt die Kappe (unten).
         if (!this.state.waterSourceCols) this.state.waterSourceCols = new Map();
         if (!this.state.waterCapJ) this.state.waterCapJ = new Map();
         if (!this.state.waterSourceCols.has(key) || !this.state.waterCapJ.has(key)) {
@@ -81723,6 +81769,8 @@ class AnazhRealm {
             // V18.129 — die Stau-Felder der Spieler-Werke (null im häufigen Fall).
             const stauFields = this._stauFieldsNear(cx, cz);
             const stauMax = AnazhRealm.CA_STAU.MAX_CELLS;
+            const WATER = AnazhRealm.CELL_STATE.WATER;
+            const raumOffen = this._chunkRegionHasCarve(cx, cz); // ein Schnitt öffnete Raum (s. o.)
             for (let k = 0; k < dim; k++) {
                 for (let i = 0; i < dim; i++) {
                     const c = i + k * dim;
@@ -81732,23 +81780,26 @@ class AnazhRealm {
                     // Spalten-Boden ZUERST (höchste SOLID-Zelle), die Rim-Frage trägt das echte Bett: Boden unter dem
                     // Spiegel ⇒ rim-Kappe (der See speist bis zu SEINEM Niveau), darüber ⇒ Boden+Skin-Kappe (2 Zellen).
                     let gj = -1;
-                    for (let j = dimY - 1; j >= 0; j--) {
-                        if (cells[c + j * dimSq] === SOLID) {
-                            gj = j;
-                            break;
-                        }
+                    let flutJ = -1; // die oberste Flut-Zelle: die Ruhe des Gesetzes in dieser Spalte
+                    for (let j = dimY - 1; j >= 0 && (gj < 0 || flutJ < 0); j--) {
+                        const zs = cells[c + j * dimSq];
+                        if (zs === SOLID && gj < 0) gj = j;
+                        else if (zs === WATER && flutJ < 0) flutJ = j;
                     }
                     const bedTop = oy + (gj + 1) * cfg.step; // Boden-OBERFLÄCHE (gj=-1 → oy)
                     const rim = this._atlasWaterLevelAt(wx, wz, bedTop);
-                    if (rim > -Infinity) {
-                        cap[c] = Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)));
-                    } else {
-                        // jenseits des Atlas / Boden über dem Spiegel: Boden + 2 Zellen Skin.
-                        cap[c] = Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
-                    }
+                    // jenseits des Atlas / Boden über dem Spiegel: Boden + 2 Zellen Skin.
+                    const capRaum =
+                        rim > -Infinity
+                            ? Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)))
+                            : Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
+                    cap[c] = flutJ >= 0 ? flutJ : raumOffen ? capRaum : -1;
                     // Stau-Spiegel: liegt die Spalte in einem Werk-Feld, hebt sich die Kappe auf den gehaltenen Pegel
                     // (Spill-Wahrheit, gedeckelt MAX_CELLS); eine gehobene Quell-Spalte wird STAU-Quelle (src=2), der Pin
-                    // tropft sie über die Ruhe hinaus (s. _tickWorldWaterCA).
+                    // tropft sie über die Ruhe hinaus (s. _tickWorldWaterCA). Gehoben wird nur, wo der Pegel eine Zelle
+                    // über dem Boden hält (stauJ > gj): die Krone des Damms selbst und eine trockene Spalte, deren Pegel
+                    // auf ihrem Boden liegt, halten kein Wasser und werden nie Quelle (am Kopf a0d6a81b 21 solche Quellen
+                    // am Damm des Tals 26/−120, an der Furt −937/−1064 20).
                     if (stauFields) {
                         const gx = cx * dim + i;
                         const gz = cz * dim + k;
@@ -81757,8 +81808,12 @@ class AnazhRealm {
                             const fk = gz - f.gz0;
                             if (fi < 0 || fk < 0 || fi >= f.w || fk >= f.h) continue;
                             const fillY = f.fillY[fi + fk * f.w];
-                            const stauJ = Math.min(Math.floor((fillY - oy) / cfg.step) - 1, cap[c] + stauMax, dimY - 1);
-                            if (stauJ > cap[c]) {
+                            const stauJ = Math.min(
+                                Math.floor((fillY - oy) / cfg.step) - 1,
+                                capRaum + stauMax,
+                                dimY - 1
+                            );
+                            if (stauJ > cap[c] && stauJ > gj) {
                                 cap[c] = stauJ;
                                 if (src[c] === 1) src[c] = 2;
                             }
