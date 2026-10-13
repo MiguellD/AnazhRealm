@@ -28078,23 +28078,26 @@ class AnazhRealm {
                 d -= hallCarve * caveEnv * 72;
             }
         }
-        if (ctx.hydroActive) {
-            // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
-            // dem Kanal (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken danach.
-            const kn = ctx.hydroCarve;
-            if (kn) {
-                const dL = kn.L - y;
-                let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-                const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-                const dP = kn.P - y;
-                hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-                d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-            }
-            const lk = ctx.lake;
-            if (lk) {
-                const flatD = lk.bedY - y;
-                d = d * (1 - lk.w) + flatD * lk.w;
-            }
+        if (ctx.hydroActive) d = AnazhRealm._gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+        return d;
+    }
+
+    // DIE FORM DES GEWÄSSERS (EINE Formel für die Dichte des Chunks und die Fläche der Ferne, `_fernNass`): der Fluss-Kanal
+    // `kn` (`_hydrosphereCarveAt`) als weiches Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal
+    // (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken `lk` danach. `d` ist die Dichte
+    // an der Höhe `y` (die Fläche − y); mit y = 0 und d = der Höhe einer Spalte ist das Ergebnis ihre Fläche.
+    static _gewaesserForm(d, y, kn, lk) {
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
+        if (lk) {
+            const flatD = lk.bedY - y;
+            d = d * (1 - lk.w) + flatD * lk.w;
         }
         return d;
     }
@@ -39462,6 +39465,7 @@ class AnazhRealm {
             // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
             farbOffen: new Uint8Array(off),
             farbLaw: new Float32Array(off),
+            nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser (`_fernNass`)
             farbN: 0,
             farbMin: off,
             refreshed: 0, // Budget-Zähler (Linse)
@@ -39945,11 +39949,13 @@ class AnazhRealm {
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
-        const wet = law < wl;
         const geo = fr.geos[p.s];
         const pos = geo.attributes.position;
         if (p.s === 0 && (pos.getX(p.li) !== p.x || pos.getZ(p.li) !== p.z)) fr.xzGen++; // die Teilung folgt der Lage
-        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
+        const nass = this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
+        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl, nass), p.z);
+        const wet = nass.y < nass.spiegel;
+        fr.nass[p.g] = wet ? 1 : 0;
         // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
@@ -39976,7 +39982,8 @@ class AnazhRealm {
     // ohne die Loch-Senkung) — die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er
     // nicht (die Masken-Karte, `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte
     // ihn per Tiefe — über jeder Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
-    _fernRingY(fr, p, law, wl) {
+    // Das Wasser des Punkts ist das Wasser des Bodens (`_fernNass`: Kanal, See, Meer; `nass` trägt Fläche und Spiegel).
+    _fernRingY(fr, p, law, wl, nass) {
         const F = AnazhRealm.FERN_RING;
         const rand = fr.teilung.randV;
         const f = p.s === 0 && rand && rand[p.li] ? fr.feldY[p.g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
@@ -39985,9 +39992,29 @@ class AnazhRealm {
             const v = fr.vollY[p.g];
             if (v === v) law = v;
         }
-        let y = law < wl ? wl - this._fernRingWasserTiefe() : law;
+        const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
+        let y = this._fernNass(p.x, p.z, law, wl, aus) ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
         if (p.row === 0) y -= F.saumDrop;
         return y;
+    }
+
+    // DIE NÄSSE DER FERNE (K16, die Naht: dieselbe Höhe UND dasselbe Wasser aus EINEM Gesetz): ein Punkt mit der Gesetzes-
+    // Höhe `law` trägt die Form des Gewässers, die die Dichte des Chunks trägt (`_gewaesserForm`: Kanal, Damm, See-Becken),
+    // und sein Spiegel ist die EINE Wasser-Wahrheit (`_atlasWaterLevelAt`: Meer, See, Fluss; jenseits der Kacheln der
+    // Meeresspiegel; vor der Hydrosphäre der Meeresspiegel `wl`). Schreibt `aus.y` (die Fläche) und `aus.spiegel`
+    // (−Infinity = trocken) und liefert, ob der Punkt nass ist. Bis K16 nässte jeder Fern-Leser (Ring, Kronen-Karte, Feld-
+    // Pass) nur unter dem Meeresspiegel (`law < wl`): Fluss und See endeten an der Bau-Kante.
+    _fernNass(x, z, law, wl, aus) {
+        const h = this.state.hydrosphere;
+        if (!h || !h.ready || this._hydroComputing) {
+            aus.y = law;
+            aus.spiegel = wl;
+            return law < wl;
+        }
+        const y = AnazhRealm._gewaesserForm(law, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
+        aus.y = y;
+        aus.spiegel = this._atlasWaterLevelAt(x, z, y);
+        return y < aus.spiegel;
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
@@ -40012,7 +40039,7 @@ class AnazhRealm {
         let n = 0;
         const bis = Math.min(fr.totalVerts, fr.cursor);
         for (let g = 0; g < bis; g++) {
-            if (!(fr.farbLaw[g] < wl)) continue;
+            if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
             this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl);
             dirty[p.s] = true;
@@ -40064,15 +40091,13 @@ class AnazhRealm {
     // mindestens `mindest` Punkte (nie verhungert). Liefert den Rest des Mindest-Kontingents.
     _fernRingFaerben(fr, ende, mindest) {
         if (!fr.farbN) return mindest;
-        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let n = 0;
         let g = fr.farbMin;
         for (; g < fr.totalVerts && fr.farbN > 0; g++) {
             if (!fr.farbOffen[g]) continue;
             const p = this._fernRingPunkt(fr, g);
-            const law = fr.farbLaw[g];
-            const f = this._fernRingTeile(p.x, p.z, law, law < wl, true, p.fuss);
+            const f = this._fernRingTeile(p.x, p.z, fr.farbLaw[g], fr.nass[g] === 1, true, p.fuss);
             AnazhRealm._fernRingSchreibe(fr.geos[p.s], p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
@@ -40197,12 +40222,13 @@ class AnazhRealm {
             const iz = (j.i / N) | 0;
             const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
             const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
-            const law = this._terrainMacroSurfaceY(x, z, false);
+            const nass = k.nass || (k.nass = { y: 0, spiegel: 0 });
             const o = j.i * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
-            if (law < wl) k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
+            if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false), wl, nass))
+                k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
             else {
-                this._fernFarbeTeile(x, law, z, t);
+                this._fernFarbeTeile(x, nass.y, z, t);
                 k.puffer[o] = sRGB(t[3]);
                 k.puffer[o + 1] = sRGB(t[4]);
                 k.puffer[o + 2] = sRGB(t[5]);
@@ -40313,9 +40339,33 @@ class AnazhRealm {
             fr.zoneVerts = rows * F.winkel;
         }
         if (!fr.zoneVerts) return;
+        // DIE EDIT-WACHE (K16, VOR der Stand-Wache): ein Edit schreibt das Feld um — die Feld-Fläche des Rands
+        // (`_fernRingFeldY`) fällt nur an den Ecken um den neuen Edit (Radius + 4 m), und die Edit-Generation weckt die
+        // Wache. Vorher stand die Prüfung hinter der Stand-Wache: bei ruhendem Stand sah sie keinen Edit (27,4 s, Deck-
+        // Cursor +0), und weckte sie später ein Chunk-Wechsel, löschte sie alle 1 081 Rand-Flächen.
+        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const edN = Array.isArray(ed) ? ed.length : 0;
+        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
+            const rand = fr.teilung && fr.teilung.randV;
+            if (fr.feldEdits === ed && edN > (fr.feldEditsN | 0) && rand) {
+                for (let k = fr.feldEditsN | 0; k < edN; k++) {
+                    const e = ed[k];
+                    if (!e || !Number.isFinite(e.x) || !Number.isFinite(e.z)) continue;
+                    const r2 = ((Number(e.r) || 0) + 4) ** 2;
+                    for (let i = 0; i < fr.zoneVerts; i++) {
+                        const p = this._fernRingPunkt(fr, i);
+                        if (rand[p.li] && (p.x - e.x) ** 2 + (p.z - e.z) ** 2 <= r2) fr.feldY[p.g] = NaN;
+                    }
+                }
+            } else fr.feldY.fill(NaN);
+            fr.feldEdits = ed;
+            fr.feldEditsN = edN;
+            fr.feldEditGen = (fr.feldEditGen | 0) + 1;
+        }
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
-        // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
-        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
+        // Wasserspiegel, dem Anker und der Edit-Generation — steht das alles, ging eine volle Runde ohne neuen Punkt,
+        // schläft die Wache.
+        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
@@ -40326,14 +40376,6 @@ class AnazhRealm {
             fr.deckLaw = new Float64Array(fr.zoneVerts).fill(NaN);
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
-        }
-        // die Feld-Fläche des Rands (`_fernRingFeldY`) gilt je Edit-Stand: ein Edit schreibt das Feld um
-        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        const edN = Array.isArray(ed) ? ed.length : 0;
-        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
-            fr.feldEdits = ed;
-            fr.feldEditsN = edN;
-            fr.feldY.fill(NaN);
         }
         const pos = fr.geos[0].attributes.position;
         let neu = false;
@@ -40940,30 +40982,8 @@ class AnazhRealm {
                 "    var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
                 "    if (e < 0.0) { sV = -sV; }\n" +
                 "    let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "    // DIE SILHOUETTE BILINEAR (K16): vier Texel um den Strahl (Texel-Mitten, der Azimut umlaufend), nur die\n" +
-                "    // Treffer tragen Farbe und Distanz; der Himmel beginnt, wo ihre Deckung unter die Hälfte fällt — die\n" +
-                "    // nächste Texel-Lesung zeigte jenseits 8 km Zinnen (je Texel 0,47° ≈ 6,7 px bei 1080p/75°).\n" +
-                "    let W = i32(dim.x);\n" +
-                "    let H = i32(dim.y);\n" +
-                "    let fx = u * f32(dim.x) - 0.5;\n" +
-                "    let fy = v * f32(dim.y) - 0.5;\n" +
-                "    let tx = fx - floor(fx);\n" +
-                "    let ty = fy - floor(fy);\n" +
-                "    let x0 = ((i32(floor(fx)) % W) + W) % W;\n" +
-                "    let x1 = (x0 + 1) % W;\n" +
-                "    let y0 = clamp(i32(floor(fy)), 0, H - 1);\n" +
-                "    let y1 = clamp(i32(floor(fy)) + 1, 0, H - 1);\n" +
-                "    let p00 = textureLoad(pano, vec2<i32>(x0, y0), 0);\n" +
-                "    let p10 = textureLoad(pano, vec2<i32>(x1, y0), 0);\n" +
-                "    let p01 = textureLoad(pano, vec2<i32>(x0, y1), 0);\n" +
-                "    let p11 = textureLoad(pano, vec2<i32>(x1, y1), 0);\n" +
-                "    let w00 = (1.0 - tx) * (1.0 - ty) * select(0.0, 1.0, p00.a > 0.0);\n" +
-                "    let w10 = tx * (1.0 - ty) * select(0.0, 1.0, p10.a > 0.0);\n" +
-                "    let w01 = (1.0 - tx) * ty * select(0.0, 1.0, p01.a > 0.0);\n" +
-                "    let w11 = tx * ty * select(0.0, 1.0, p11.a > 0.0);\n" +
-                "    let deck = w00 + w10 + w01 + w11;\n" +
-                "    if (deck < 0.5) { return vec4<f32>(0.0); }\n" +
-                "    let pT = (p00 * w00 + p10 * w10 + p01 * w01 + p11 * w11) / deck;\n" +
+                "    let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
+                "    if (pT.a <= 0.0) { return vec4<f32>(0.0); }\n" +
                 "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
                 "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
                 "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
@@ -41188,13 +41208,13 @@ class AnazhRealm {
         const k0 = job.k;
         let ende = job.n;
         for (let k = job.k; k < ende; k++) {
-            const law = job.werte[k];
-            const wet = law < wl;
-            const y = wet ? wl : law;
             // die Masche des Texels (`_fernFarbeMasche`): Azimut-Breite am Radius, die radiale Zeile des Felds
             const P = AnazhRealm.FELD_PASS;
             const px = job.punkte[k * 2];
             const pz = job.punkte[k * 2 + 1];
+            const nass = job.nass || (job.nass = { y: 0, spiegel: 0 });
+            const wet = this._fernNass(px, pz, job.werte[k], wl, nass);
+            const y = wet ? nass.spiegel : nass.y;
             const fuss = job.fuss || (job.fuss = { ax: job.ankerX, az: job.ankerZ, ht: 0, hr: 0 });
             fuss.ht = (Math.PI * Math.hypot(px - job.ankerX, pz - job.ankerZ)) / P.az;
             fuss.hr =
