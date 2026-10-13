@@ -406,12 +406,25 @@
     function knotenHp(N, kn) {
         if (kn.hp === kn.hp) return kn.hp;
         const gf = knotenGf(N, kn);
-        kn.hp = kn.k === 0 ? gf.K : flaeche(N, kn.k - 1, kn.x, kn.z, gf, null);
+        if (kn.k === 0) kn.hp = gf.K;
+        else {
+            const mess = { steil: 0, nah: 1, hang: 0, aue: false };
+            kn.hp = flaeche(N, kn.k - 1, kn.x, kn.z, gf, mess);
+            kn.inAue = mess.aue;
+        }
         return kn.hp;
     }
     function knotenFluss(N, kn) {
         if (kn.fluss !== undefined) return kn.fluss;
         const h = knotenHp(N, kn);
+        // DIE AUE NIMMT IHR WASSER (K16, Mäander): ein Knoten der Ebene k ≥ 1 in der Aue der Ebene darunter mündet sofort in
+        // ihren Fluss — sonst liefe er als zweiter Strom neben ihm durch dieselbe Aue (am geraden Netz deckungsgleich und
+        // unsichtbar, mit Mäander zwei verflochtene Bahnen).
+        if (kn.k > 0 && kn.inAue) {
+            kn.fluss = null;
+            kn.aus = muendung(N, kn.k - 1, kn.x, kn.z);
+            return null;
+        }
         let best = null;
         let bh = h;
         for (let dj = -1; dj <= 1; dj++)
@@ -524,9 +537,10 @@
         omega: 1.2,
         gefaelleVoll: 0.004,
         gefaelleNull: 0.015,
+        gestreckt: 0.25,
         stufen: 12,
         tafel: 128,
-        jeWelle: 12,
+        knick: 0.6,
     });
     // Die Kurve je ω-Stufe, EINMAL beim Laden: über eine Welle (φ = 2π·s/M) X(φ) und Y(φ) in Wellenlängen der Sehne
     // (X(2π) = 1), dazu Y über X gleichmäßig (die Fläche fragt am Ort auf der Sehne; X steigt streng, ω < π/2), die größte
@@ -562,7 +576,15 @@
             }
             let ymax = 0;
             for (let k = 0; k <= fein; k++) ymax = Math.max(ymax, Math.abs(ys[k]) / L);
-            stufen.push({ omega: om, bogen: (2 * Math.PI) / L, phiX, phiY, yX, ymax });
+            // DIE KNICKE DER WELLE (die Abtastung folgt der Krümmung): die Orte φ/2π, an denen die Richtung θ = ω·cos φ um je
+            // höchstens `knick` springt — dicht im Scheitel (dort die Krümmung), weit an der Querung (dort keine). Je halbe
+            // Welle ⌈2ω/knick⌉ Stücke, mindestens zwei: bei ω 1,2 acht je Welle (bis 13.10. zwölf gleich verteilte, die
+            // 2,3- bis 2,5-fache Punktzahl der Sehne bei demselben größten Sprung), bei kleinem ω vier.
+            const halb = Math.max(2, Math.ceil((2 * om) / MAEANDER.knick));
+            const knicke = [];
+            for (let k = 0; k <= halb; k++) knicke.push(Math.acos(1 - (2 * k) / halb) / (2 * Math.PI));
+            for (let k = halb - 1; k >= 0; k--) knicke.push(1 - Math.acos(1 - (2 * k) / halb) / (2 * Math.PI));
+            stufen.push({ omega: om, bogen: (2 * Math.PI) / L, phiX, phiY, yX, ymax, knicke });
         }
         return stufen;
     })();
@@ -576,8 +598,9 @@
         const y = j >= MAEANDER.tafel ? yX[MAEANDER.tafel] : yX[j] + (yX[j + 1] - yX[j]) * (f - j);
         return s.mv * s.ml * y;
     }
-    // Die Bahn eines Segments als Punkte (Abstand ≤ `schritt` m auf dem Bogen, je Welle mindestens `jeWelle`): je Punkt der
-    // Ort auf der Sehne t, die Lage (x, z), die Bogenlänge s ab dem Knoten und die Richtung (fx, fz). Ohne Mäander die Sehne.
+    // Die Bahn eines Segments als Punkte (Abstand ≤ `schritt` m auf dem Bogen, zwischen zwei Punkten springt die Richtung um
+    // höchstens `knick` — die Knicke der Welle, `MAEANDER_KURVE`): je Punkt der Ort auf der Sehne t, die Lage (x, z), die
+    // Bogenlänge s ab dem Knoten und die Richtung (fx, fz). Ohne Mäander die Sehne.
     function bahnPunkte(s, schritt) {
         const len = Math.sqrt(s.len2);
         const ux = s.ex / len;
@@ -593,29 +616,37 @@
         }
         const K = MAEANDER_KURVE[s.mo];
         const M = K.bogen * s.ml;
-        const je = Math.max(MAEANDER.jeWelle, Math.ceil(M / schritt));
         const n = MAEANDER.tafel;
+        const kn = K.knicke;
+        // der Punkt am Anteil ph ∈ [0, 1] der Welle w
+        const punkt = (w, ph) => {
+            const f = ph * n;
+            const j = Math.min(n - 1, f | 0);
+            const r = f - j;
+            const X = K.phiX[j] + (K.phiX[j + 1] - K.phiX[j]) * r;
+            const Y = K.phiY[j] + (K.phiY[j + 1] - K.phiY[j]) * r;
+            const t = (w + X) / s.mn;
+            const y = s.mv * s.ml * Y;
+            const th = s.mv * K.omega * Math.cos(2 * Math.PI * ph);
+            const c = Math.cos(th);
+            const sn = Math.sin(th);
+            P.push({
+                t,
+                x: s.ax + s.ex * t - uz * y,
+                z: s.az + s.ez * t + ux * y,
+                s: (w + ph) * M,
+                fx: ux * c - uz * sn,
+                fz: uz * c + ux * sn,
+            });
+        };
         for (let w = 0; w < s.mn; w++)
-            for (let q = 0; q < je || (q === je && w === s.mn - 1); q++) {
-                const f = (q / je) * n;
-                const j = Math.min(n - 1, f | 0);
-                const r = f - j;
-                const X = K.phiX[j] + (K.phiX[j + 1] - K.phiX[j]) * r;
-                const Y = K.phiY[j] + (K.phiY[j + 1] - K.phiY[j]) * r;
-                const t = (w + X) / s.mn;
-                const y = s.mv * s.ml * Y;
-                const th = s.mv * K.omega * Math.cos((2 * Math.PI * q) / je);
-                const c = Math.cos(th);
-                const sn = Math.sin(th);
-                P.push({
-                    t,
-                    x: s.ax + s.ex * t - uz * y,
-                    z: s.az + s.ez * t + ux * y,
-                    s: (w + q / je) * M,
-                    fx: ux * c - uz * sn,
-                    fz: uz * c + ux * sn,
-                });
+            for (let k = 0; k + 1 < kn.length; k++) {
+                const a = kn[k];
+                const b = kn[k + 1];
+                const teile = Math.max(1, Math.ceil((M * (b - a)) / schritt));
+                for (let u = 0; u < teile; u++) punkt(w, a + ((b - a) * u) / teile);
             }
+        punkt(s.mn - 1, 1);
         return P;
     }
 
@@ -657,9 +688,9 @@
             if (n >= 1) {
                 const lam = len / n;
                 const gefaelle = (bed - t.bed) / len;
-                let o = Math.floor(
-                    MAEANDER.stufen * (1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle)) + 1e-9
-                );
+                // gestreckt heißt nie lineal-gerade: der steile Lauf behält ein Viertel des ω (Sinuosität ≈ 1,02)
+                const voll = 1 - glatt(MAEANDER.gefaelleVoll, MAEANDER.gefaelleNull, gefaelle);
+                let o = Math.floor(MAEANDER.stufen * (MAEANDER.gestreckt + (1 - MAEANDER.gestreckt) * voll) + 1e-9);
                 while (o > 0 && MAEANDER_KURVE[o].ymax * lam > F - w) o--;
                 if (o > 0) {
                     mo = o;
@@ -796,12 +827,14 @@
         let nah = 1;
         let hang = 0;
         let schutt = 0;
+        let aue = false;
         for (let k = 0; k <= kmax; k++) {
             const S = N.S[k];
             const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
             let Hk = H;
             let kSteil = 0;
             let kNah = 1;
+            let kAue = false;
             let kHang = 0;
             let kSchutt = 0;
             for (let q = 0; q < segs.length; q++) {
@@ -857,6 +890,7 @@
                     Hk = v;
                     kSteil = g;
                     kNah = w < 1 ? w : 1;
+                    kAue = u <= 0;
                     kHang = gh;
                     kSchutt = sch;
                 }
@@ -864,6 +898,7 @@
             if (Hk < H) {
                 if (kSteil > steil) steil = kSteil;
                 if (kNah < nah) nah = kNah;
+                aue = kAue;
                 hang = kHang;
                 schutt = kSchutt;
             }
@@ -874,6 +909,7 @@
             aus.nah = nah;
             aus.hang = hang;
             aus.schutt = schutt;
+            aus.aue = aue;
         }
         return H;
     }

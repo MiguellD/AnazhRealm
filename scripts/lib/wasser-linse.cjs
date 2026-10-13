@@ -2009,6 +2009,9 @@ function wasserQuelle(opts) {
 // dem gezeichneten Boden, `__wasserSichtNetz`): die Breiten-Summen des Körper-Wassers, des gezeichneten, des Unsichtbaren
 // (der Körper liest Wasser, das niemand sieht) und der Phantome (gezeichnetes Wasser, in dem der Körper trocken steht). Dazu
 // die Pflanzen am Lauf (`__wasserFlora`, ±6 m um die Mittellinie).
+// die Länge der Bach-Probe (m auf der Bahn ab der Quelle; F8 urteilt ab 80 Querschnitten zu 2 m) — die Seite erhält sie mit
+// `WASSER_INSTALL`
+const BACH_PROBE_M = 200;
 function wasserBach(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
@@ -2032,7 +2035,11 @@ function wasserBach(opts) {
     if (!rv || bd > 40) return { fehler: `kein Fluss an ${ZX}/${ZZ} (nächster Punkt ${R(bd)} m)` };
     const P = rv.points;
     const sicht = window.__wasserSichtNetz();
-    const segmente = Math.min(o.segmente || 10, P.length - 1);
+    // DIE ERSTEN `BACH_PROBE_M` METER des Bachs, nie eine Zahl seiner Punkte: die Abtastung der Bahn ist Sache des Gesetzes
+    // (K16: der Mäander tastet nach seinen Knicken ab, zehn Stücke trugen 13.10. nur noch 140 m, F8 fiel LEER)
+    let segmente = 0;
+    for (let lang = 0; segmente < P.length - 1 && lang < BACH_PROBE_M; segmente++)
+        lang += Math.hypot(P[segmente + 1].x - P[segmente].x, P[segmente + 1].z - P[segmente].z);
     const aus = {
         quelle: [R(P[0].x, 0), R(P[0].z, 0)],
         segmente,
@@ -2549,7 +2556,10 @@ function wasserOrte(opts) {
                 const d = Math.hypot(p.x - MX, p.z - MZ);
                 if (d < fd) ((fd = d), (aus.fluss = { x: R1(p.x), z: R1(p.z), breite: R1(p.width) }));
             }
-            if (P.length >= 11) {
+            let lang = 0;
+            for (let k = 1; k < P.length && lang < BACH_PROBE_M; k++)
+                lang += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+            if (lang >= BACH_PROBE_M) {
                 const d = Math.hypot(P[0].x - MX, P[0].z - MZ);
                 if (d < bd) ((bd = d), (aus.bach = { x: R1(P[0].x), z: R1(P[0].z) }));
             }
@@ -2652,6 +2662,7 @@ function wasserOrte(opts) {
 module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
+        `var BACH_PROBE_M = ${BACH_PROBE_M};` +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +
