@@ -73,7 +73,11 @@ lint 0 Fehler (8 Warnungen, alt), format:check, `node --check`, playtest:fast 22
 ## Status ZWISCHENSTAND + Übergabe
 
 - Kein Zweig ab main.
-- Nebenterm-Commit **grund-fels ab39dad3** (auf K17 87b4d2f6), gepusht `[ci voll]`. **CI 38481361902 läuft.**
+- Nebenterm-Commit **grund-fels ab39dad3** (auf K17 87b4d2f6), gepusht `[ci voll]`. **CI 38481361902: 11 von 13 grün,
+  darunter der volle Playtest (Gruppe 11) mit der geänderten Invariante.**
+  - Rot sind genau die zwei Schritte, die schon an der Basis 87b4d2f6 rot waren (CI 38463298081): voll 7/11 Schritt 74
+    „Fahr-Linse des Lebens“ und voll 9/11 Schritt 92 „Kreatur-Linse“.
+  - Keine neue Röte; die zwei gehören K17.
 - Messbaum `k17-fels` (lokaler Zweig `k11-streu-wurf` = ab39dad3), sauber.
 - Werkzeug `p3/k11`: `sitzung.sh` (Albedo + Bild), `stein.cjs`, `wurf.cjs` (zaehle · an · aus), `sitzung-wurf.sh`,
   `sitzung-beweis.sh`, `alle.cjs` + `sitzung-alle.sh`, `vergleich.cjs`.
