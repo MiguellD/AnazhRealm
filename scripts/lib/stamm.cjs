@@ -582,9 +582,12 @@ if (require.main === module && process.argv.includes("--selftest")) {
             liefere(z, url, T).toString("utf8") === S[3].text && liefere(z, "/index.html", T) === null,
             url
         );
+        // im Datei-Layout liefert die alte URL den ganzen Text, im Zonen-Baum ist sie keine Stamm-URL mehr (null → 404 laut)
         pruef(
-            "liefere(Datei) = der ganze Text",
-            liefere(root, "/" + ALT, T).length === Buffer.byteLength(T) || lay !== "datei"
+            lay === "datei" ? "liefere(Datei) = der ganze Text" : "liefere(alte URL) im Zonen-Baum = null",
+            lay === "datei"
+                ? liefere(root, "/" + ALT, T).length === Buffer.byteLength(T)
+                : liefere(root, "/" + ALT, T) === null
         );
         // 6) ein Zonen-Baum, der nicht im Bild von S liegt, wirft: Datei ohne Tag · fehlende Datei · Rahmen verändert · beide Formen
         fs.writeFileSync(path.join(z, DIR, "99.js"), "// fremd\n");
