@@ -1,7 +1,8 @@
 # Bericht 1310-1 — das Band-Delta der Tore an der Genesis
 
-**Status: ZWISCHENSTAND (Sicherung, UNGEPRÜFT: der Schnitt steht lokal, die Wände laufen, das Boot-ABAB nach dem Schnitt
-fehlt).**
+**Status: ZWISCHENSTAND.** Schnitt **welle-m-e-torwurf 198e80f3** `[ci voll]`. Nach dem Schnitt liegt torwurf an der
+Genesis bei 50,1 fps statt 47,4 (main 49,7), die Wiese ist gleich. Die CI ist rot in einem Gate, das lokal vor und nach
+dem Schnitt gleich grün läuft (§5).
 
 **Urteil:** Der Täter hat einen Namen, und er heißt nicht Tor. Es ist **die Reihe der Region-Bündel**. r184 zeichnet die
 BundleGroups in der Reihenfolge der Szene, vor jedem losen Objekt. `_archRegionBundleFor` legt `@global` und `@wahl` beim
@@ -13,8 +14,8 @@ ersten Gebrauch an, also entschied bisher die Ankunft beim Boot.
   - lange Bank +1,0 bis +1,7 ms,
   - unter Regler voll 2,9 bis 4,6 fps.
 - Es wirkt in beiden Welten und in beiden Richtungen.
-- Der Zwilling selbst kostet −0,2 bis +0,2 ms, die Fernform der Tore nichts. Alle Schatten-Kaskaden zusammen kosten an der
-  Genesis 0,24 ms.
+- Der Zwilling selbst kostet 0,2–0,4 ms („Zwilling weg“: Band −0,20 / −0,21, lange Bank −0,38, beide im Rauschband), die
+  Fernform der Tore nichts. Alle Schatten-Kaskaden zusammen kosten an der Genesis 0,24 ms.
 
 Auftrag: Nachricht des Koordinators 13.10. (1310-1).
 - Kopf vorher: welle-m-e-torwurf 52ac16d8.
@@ -109,7 +110,7 @@ Die Seiten:
 | torwurf (s3) | @global zuerst | **−0,93** ±0,39 | **−1,01** ±0,48 | **+2,85** ±1,06 (→ 50,1 · 51,0 · 50,9) | grün (+0,13) |
 | main (s4) | @wahl zuerst | **+1,68** ±0,39 | **+1,67** ±0,57 | **−4,57** ±0,28 (→ 46,0 · 46,0 · 44,8) | rot/blind: 2 von 3 Null-Blöcken an der Takt-Wache, Null-Block 10 −1,05 fps bei gleicher Reihe (offen) |
 
-## 5. Der Schnitt (lokal auf welle-m-e-torwurf, Wände laufen)
+## 5. Der Schnitt — welle-m-e-torwurf **198e80f3** `[ci voll]`
 
 - `_buendelRang` / `_buendelReihe` in `anazhRealm.js`:
   - Die Bündel-Plätze der Szene tragen `@global` · die Regionen (in Ankunft) · `@wahl`.
@@ -117,21 +118,68 @@ Die Seiten:
   - `_archRegionBundleFor` ruft die Reihe nach jedem neuen Bündel.
 - Linse **H7** in `gate:profiband` (Band-Wand, Puls):
   - `_buendelReihe` aus dem Stamm über eine Szene mit der Ankunft `@wahl · 3,4 · @global · s:1,2`.
-  - Selbsttest: rot ohne den Aufruf, mit `@wahl` im ersten Rang und ohne die Reihe im Stamm. 32/32.
-- Bisher grün: node --check, Prettier, ESLint, gate:profiband (Selbsttest + Wand). Der Rest: `p3/tor/reihe/waende/summe.txt`.
+  - Selbsttest 32/32: rot ohne den Aufruf, mit `@wahl` im ersten Rang und ohne die Reihe im Stamm.
+- **Wände** (`1310-1/waende/summe.txt`), je EXIT=0:
+  - Puls ci-lokal 18/18;
+  - gate:profiband, gate:tor-fern, gate:worker-dichte;
+  - gate:schatten-werfer, gate:chunk-satz, gate:kamera-treue, gate:verdeckungs-abfrage, gate:scatter-lod,
+    gate:foundry-crossfade;
+  - **voller Playtest „Alle Invarianten OK“** (97 s).
+- **CI 38386835509: 12 von 13 grün, voll 3/11 Schritt 8 `gate:hitch-telemetrie` ROT** nach 14 min. Sonst läuft der
+  Schritt 3–6 min: 38369194216 5:51, 38245061535 5:28, 38238777403 3:11.
+  - Lokal ist das Gate grün auf 198e80f3 (516 s) UND auf 07e1d785 vor dem Schnitt (480 s).
+  - Die Phasen sind gleich lang: Bundle-Neubau 136 / 134 s, ohne Anmeldung 94 / 91 s.
+  - Rohdaten: `1310-1/waende/hitch-*.txt`.
+  - Die Probe des Gates baut eigene BundleGroups ohne `regionKey`; `_buendelReihe` fasst nur Region-Bündel an.
+  - **Bitte:** das Job-Log lesen (Admin-Rechte) und Gruppe 3 neu starten. Ich nenne es nicht „nicht meins“, bevor das Log
+    gelesen ist.
+
+## 6. Nach dem Schnitt: Boot-ABAB, A = main bb554abf · B = torwurf 198e80f3 (je 3 + 3; `1310-1/abab4/`)
+
+12/12 grün, Seiten-Wache per anazhRealm.js-Hash (A 6922c974, B 714da48a).
+
+| Genesis (Median, je Boot) | A main | B torwurf + Reihe | Δ B − A |
+|---|---|---|---|
+| fps Regler voll | 49,7 (50,8 · 49,7 · 49,7) | **50,1** (50,2 · 50,0 · 50,1) | +0,4 (vor dem Schnitt T − M −2,9) |
+| gpu-bank ms (Gier des Orts) | 17,48 | 16,88 | −0,60 |
+| Band GPU ms je Frame | 18,97 | 19,20 | +0,23 (vor dem Schnitt +1,24) |
+| CPU-Takt p95 voll / frei | 7,6 / 6,2 | 7,2 / 6,0 | −0,4 / −0,2 |
+| Befehle / Dreiecke (Band) | 212 / 924k | 172 / 695k | −40 / −230k |
+| VRAM MB | 121,6 | 122,7 | +1,1 (die Stufe 3) |
+
+| Wiese (Median) | A main | B torwurf + Reihe | Δ B − A |
+|---|---|---|---|
+| fps Regler voll | 68,6 | 68,8 | +0,2 |
+| gpu-bank Blick 0 / −0,88 ms | 12,47 / 10,49 | 12,48 / 10,52 | +0,01 / +0,03 |
+| Band GPU ms | 15,62 | 15,70 | +0,08 |
+| CPU-Takt p95 voll / frei | 5,8 / 5,5 | 5,7 / 5,3 | −0,1 / −0,2 |
+
+- **Urteil:** torwurf ist an der Genesis nicht mehr langsamer als main und an der Wiese gleich.
+- Die Tor-Ersparnis (Befehle −40, Dreiecke −230k, CPU-Takt p95 −0,4) bleibt.
+- Main trägt dieselbe Lotterie. An dieser Genesis stand main zufällig richtig (`@global` vorn). Ein main-Boot mit `@wahl` vorn
+  kostet 4,6 fps (s4). Mit dem Schnitt gilt EINE Reihe für jeden Boot und jeden Ort.
 
 ## Pflicht-OFFEN Rest
 
-- Boot-ABAB nach dem Schnitt (main gegen torwurf + Reihe), Genesis UND Wiese, je 3 + 3.
-- Die Wände des Schnitts, Push `[ci voll]`.
-- Null-Block 10 in s4: −1,05 fps bei gleicher Bündel-Reihe, ohne Namen.
-- Die Zerlege-Posten `bau`/`post` an der Genesis (Abschalten verteuert).
-- Danach Karte (2): 13 Stoff-Züge je Tor. Vermerk: die Tore sind nur wegen der Flügel aus `BAU_SATZ` ausgenommen, der
-  Satz filtert `leaf.tuer` schon je Leaf. Danach (3) Dorf-VRAM.
+- CI-Gruppe 3: `gate:hitch-telemetrie` rot nach 14 min, lokal grün vor und nach dem Schnitt — Job-Log lesen, neu starten.
+- Null-Block 10 in s4 (main): −1,05 fps bei gleicher Bündel-Reihe, ohne Namen.
+- Die Zerlege-Posten `bau`/`post` an der Genesis: Abschalten verteuert um 26 ms, die Linse ist dort blind.
+- Weitere Session-Lotterien derselben Klasse? Die Lehre aus 1110-6 („bimodal je Sitzung“, S6 hoch in 9 von 10) gehört mit
+  `reihenfolge.cjs` noch einmal angesehen.
+- Karte (2): 13 Stoff-Züge je Tor. Vermerk: die Tore sind nur wegen der Flügel aus `BAU_SATZ` ausgenommen, der Satz filtert
+  `leaf.tuer` schon je Leaf. Danach (3) Dorf-VRAM.
 
 ## Status ZWISCHENSTAND + Übergabe
 
-- Branch welle-m-e-torwurf, Kopf 07e1d785 + Arbeitsbaum (Schnitt + H7, ungepusht).
-- Werkzeug `p3/tor/erst` (Linse), `p3/tor/zerleg` (Zerlegung, Reihenfolge), `p3/tor/abab4/serie.sh` (Nachweis-Serie,
-  bereit).
-- Nächster Schritt: Wände → Commit → Push `[ci voll]` → abab4 → Bericht ohne UNGEPRÜFT.
+- **Branch** welle-m-e-torwurf, Kopf **198e80f3**, Arbeitsbaum sauber.
+  - 0fc1fe3d: Linsen-Fix foundry-crossfade, CI 13/13.
+  - 07e1d785: WIP Schalter-Urteil.
+  - 198e80f3: die Reihe der Bündel + H7.
+- **Werkzeug auf dem OMEN:**
+  - `p3/tor/erst`: Schalter-Sitzungen s1–s4, `schalter.cjs` mit null · zwilling-* · fern-march · l0-wirft ·
+    global-zuerst / wahl-zuerst / reihe-null.
+  - `p3/tor/zerleg`: Zerlegung, `reihenfolge.cjs`.
+  - `p3/tor/abab3`, `p3/tor/abab4`.
+  - Varianten-Worktrees tw-ohne-zwilling und tw-gesetz (52ac16d8 + eine Zeile, bleiben bis zur Annahme).
+- **Nächster Schritt:** Karte (2), die 13 Stoff-Züge je Tor über den Bau-Satz, sobald der Koordinator die CI-Gruppe 3 gelesen
+  hat.

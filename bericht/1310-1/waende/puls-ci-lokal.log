@@ -1,0 +1,20 @@
+2026-10-13T10:47:31.628Z START 162 Schritte in C:/Users/micha/Desktop/AnazhRealm-OMEN/welle-m-e-torwurf
+10:47:41 1/162 puls/1 EXIT=0 10 s | Prettier-Format-Check | ✅ Alle Dateien formatiert (8.0 s).
+10:47:48 2/162 puls/1 EXIT=0 7 s | ESLint | ✖ 2 problems (0 errors, 2 warnings)
+10:47:53 3/162 puls/1 EXIT=0 5 s | Syntax-Check JS-Dateien | 
+10:47:53 4/162 puls/1 EXIT=0 0 s | Duplikate Methodendefinitionen | ✅ Keine Duplikate (2644 Methoden in class AnazhRealm)
+10:49:06 5/162 puls/1 EXIT=0 72 s | Statik (npm run check:statik — Atlas, Source-Probe | ✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt
+10:49:51 6/162 puls/2 EXIT=0 45 s | Haus-Fernkörper (S3 haus - der Werfer jeder Stufe, | ✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen
+10:49:56 7/162 puls/2 EXIT=0 5 s | Streu-Wahrheit (die Studio-Arten der Nah-Streu tra | ✅ DIE STREU-WAHRHEIT steht — 7 Studio-Arten der Nah-Streu (placement.boden ring "nah"), 4 mit weichem Gewebe b
+10:49:58 8/162 puls/2 EXIT=0 1 s | Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesich | ✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß).
+10:50:01 9/162 puls/2 EXIT=0 3 s | EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei  | ✅ GRÜN — EIN Wuchs (growSkeleton deterministisch) + die zwei Konsumenten-Eingänge differieren dokumentiert (Ø-
+10:50:01 10/162 puls/1 EXIT=0 0 s | Single-Quote-Template-Strings (B2-Pattern) | ✅ Keine fehlgeschlagenen Template-Strings
+10:50:01 11/162 puls/1 EXIT=0 0 s | Verbotenes dynamisches Auswerten (eval / new Funct | ✅ Kein dynamisches Code-Eval
+10:50:01 12/162 puls/1 EXIT=0 0 s | innerHTML-Schreibzugriffe (Hinweis, kein Fail) | 
+10:50:02 13/162 puls/1 EXIT=0 0 s | TODO/FIXME-Übersicht (Hinweis, kein Fail) | 
+10:50:09 14/162 puls/2 EXIT=0 7 s | Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInsta | ✅ GRÜN — der Fahrzeug-Asset-Vertrag steht: buildInstance ist deterministisch, die Geometrie seed-invariant, de
+10:50:18 15/162 puls/2 EXIT=0 9 s | Tor-Asset-Vertrag v4 (porta-core buildInstance byt | ✅ GRÜN — der Tor-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:4), der ov-Kanal 
+10:50:21 16/162 puls/2 EXIT=0 3 s | Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core bu | ✅ GRÜN — der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Ka
+10:50:22 17/162 puls/2 EXIT=0 1 s | Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne b | ✅ GRÜN — DER DATEN-VERTRAG v7 STEHT: die drei MESHFREI-Kerne erfüllen §8 (klang/motion-Schema, place none, B4-
+10:50:48 18/162 puls/2 EXIT=0 26 s | Schnell-Playtest (Kern-Gesundheit, ~13 Checks) | ✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll).
+2026-10-13T10:50:48.087Z ENDE

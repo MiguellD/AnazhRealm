@@ -1,0 +1,12 @@
+12:50:48 puls (ci-lokal) EXIT=0 · 18 grün · 
+12:50:54 gate:profiband EXIT=0 6 s · ✅ SELBST-TEST: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb; ein Wald über dem 
+12:51:33 gate:tor-fern EXIT=0 39 s · ✅ GRÜN — die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wu
+12:51:46 gate:worker-dichte EXIT=0 13 s · ✅ SELBSTTEST GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot
+12:52:04 gate:schatten-werfer EXIT=0 18 s · GRÜN schatten-werfer
+12:52:22 gate:chunk-satz EXIT=0 18 s · ✅ GRÜN — der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.
+12:52:31 gate:kamera-treue EXIT=0 9 s · ✅ GRÜN — LAUF: 0 Spiel-Bilder, 0 Kehraus-Puffer in der Bühne; die Aufnahme verfolgt 13 von 13 Draws trotz Schatten-Render, kein Bundle
+12:53:31 gate:verdeckungs-abfrage EXIT=0 60 s · ✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach (-872/-728) aufgesessen, 14 m
+12:54:21 gate:scatter-lod EXIT=0 50 s · ✅ GRÜN — die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei), die Promot
+12:55:03 gate:foundry-crossfade EXIT=0 42 s · ✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überla
+12:56:40 playtest EXIT=0 97 s · ✅ Alle Invarianten OK
+12:56:40 WAENDE ENDE

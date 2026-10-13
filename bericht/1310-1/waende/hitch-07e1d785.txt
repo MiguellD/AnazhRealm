@@ -1,0 +1,38 @@
+
+> anazhrealm@18.543.0 gate:hitch-telemetrie
+> node scripts/diag-hitch-telemetrie.cjs
+
+WebGPU-Probe: adapter ok
+  [Erst-Zeichnung] Stand: 0 s
+  [Erst-Zeichnung] Probe: 1 s
+  [Erst-Zeichnung] Gegen-Lauf: 0 s
+  [Erst-Zeichnung] zurück: 0 s
+  [Erst-Zeichnung] Neubau: 5 s
+  [Erst-Zeichnung] Neubau ohne Gedächtnis: 21 s
+  [Erst-Zeichnung] Bundle-Neubau bei offener Pipeline: 134 s
+  [Erst-Zeichnung] Bundle-Neubau ohne Anmeldung: 91 s
+  [Erst-Zeichnung] Hängender Fehler-Scope: 45 s
+  [Erst-Zeichnung] Hängender Fehler-Scope ohne Anmeldung: 49 s
+  [Erst-Zeichnung] Beweis-Aufnahme mit offener Pipeline: 54 s
+  [Erst-Zeichnung] Absage einer Pipeline: 3 s
+
+===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====
+Renderer: webgpu · frames=57 (Δ Laufzeit 13) · performance.memory=da
+✅ LONGTASKS (Konsum) — ltN=98 · ltMs=18924 ms · ltMaxMs=2135 ms · Observer=true
+✅ HEAP/GC-RING — gcRing[180] da=true · Sekunden=42 · nonZero-Slots=41 · heapLast=216 MB · gcN=11
+✅ PIPELINE-COMPILES (Konsum) — pipesN=13 · caches.size=17 · sense.total=17 · neuProS=0.12
+✅ UPLOAD-BYTES (Konsum) — Tap=true · kumuliert=12.6 MB · EwmaProFrame=71.5 KB
+✅ TRACE-FELDER (_flightRecorderBuildTrace) — longTasks={"n":98,"ms":18924,"maxMs":2135} · gcN=11 · pipelines={"total":17,"neuProS":0.12,"erstBauN":52,"erstBauMs":5189,"erstVerschoben":2384,"erstPipeAsync":14,"erstPipeOffen":0,"erstPipeAbsagen":0,"erstNeubauN":0} · uploadKBProS=52.3
+✅ ERST-ZEICHNUNG (Konsum im Boot) — am Renderer=true · Knoten-Bauten im Pass 52 (Σ 5189 ms) · verschoben 2384 · Pipelines asynchron 14
+✅ ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget) — Ruhe davor 0 ms (offen danach 0) · gezeichnet 3/3 nach 36 Frames (1034 ms) · synchron 0 · asynchron 3 · Aufrufe mit Bau 3 · max 1 Bauten je Aufruf · über dem Budget (4 ms) 0
+✅ ERST-ZEICHNUNG Gegen-Lauf (der Vendor-Weg MUSS rot sein: synchrone Pipeline, alle Bauten in einem Aufruf) — synchron 3 · asynchron 0 · max 3 Bauten je Aufruf · über dem Budget 2 · gezeichnet 3/3 nach 1 Frames · der EINE Ort danach zurück=true
+✅ ERST-ZEICHNUNG Neubau (ein gezeichnetes Objekt wechselt die Variante: im nächsten Bild gezeichnet; vergessen MUSS es blinken) — gezeichnet im nächsten Bild true · Neubauten 1 · Gegen-Lauf ohne Gedächtnis gezeichnet false
+✅ ERST-ZEICHNUNG Bundle-Neubau bei offener Pipeline (der Bürger steht ≤ 2 Frames nach seiner Pipeline wieder in der Aufnahme; ohne Anmeldung MUSS er fehlen) — B im Bundle true (45144 ms) · Neubau traf die offene Pipeline der Erst-Zeichnung true · sichtbar 1 Frames nach der fertigen Pipeline (bereit nach 43204 ms, 374 Frames, 43338 ms) · Ruhe offen 0 · Gegen-Lauf: Treffer true, UNSICHTBAR 30 Frames nach der fertigen Pipeline (bereit nach 44527 ms, 401 Frames, 48126 ms)
+✅ ERST-ZEICHNUNG hängender Fehler-Scope (das Vendor-Versprechen erfüllt sich nie: der Bürger steht ≤ 2 Frames nach seiner Pipeline in der Aufnahme; ohne Anmeldung MUSS er fehlen) — popErrorScope hängend 1× · sichtbar 1 Frames nach der fertigen Pipeline (bereit nach 44869 ms, 373 Frames, 44996 ms) · Ruhe offen 0 · Gegen-Lauf: hängend 1×, UNSICHTBAR 30 Frames nach der fertigen Pipeline (bereit nach 45109 ms, 402 Frames, 48728 ms)
+✅ BEWEIS-AUFNAHME bricht laut ab (eine nie bereite Pipeline: Wurf mit ihrem Namen; ohne sie das Bild mit erst.offen 0) — Wurf: ERST-ZEICHNUNG OFFEN — die Aufnahme bricht ab: offen 1 nach 3 s (davon 3 s ohne Fortschritt), Bauten 0 und verschoben 0 im letzten Frame; offene Pipelines: wand-attrappe [nie-bereit] · danach Bild 2304 Bytes, erst {"offen":0,"warteMs":7}
+✅ ERST-ZEICHNUNG Absage einer Pipeline (ERROR mit dem Stoff-Namen, aus der Schlange, die Beweis-Aufnahme bricht beim Namen ab) — ERROR: GPU-VALIDIERUNG (pipeline, #1): PIPELINE-ABSAGE renderPipeline_wand-absage-stoff_325: der Stummel der Wand sagt ab · Absagen 1 nach 1 Frames · GPU-Wache +1 (Soll = Absagen, EIN Melder) · Log-Zeilen 1 (Soll 1) · offen danach 0 · Aufnahme: -; ein Draw wartet auf renderPipeline_wand-absage-stoff_325 (ABGESAGT)
+✅ ERST-ZEICHNUNG WebGL2-Weiche (kein Bundle, kein Setter: die Anmeldung trägt sich nicht ein, der wartende Draw zählt) — Schlange +0 · wartende Draws +1
+✅ KEIN PAGE-ERROR — sauber
+✅ SELBST-TEST (Fake-Trace ohne neue Felder MUSS rot) — gemeldete Mängel=5 (erwartet ≥3): session.longTasks {n,ms,maxMs} fehlt oder ist nicht numerisch · memory.gcN fehlt oder ist nicht numerisch · steadyState.pipelines {total,neuProS} fehlt oder ist nicht numerisch · steadyState.pipelines {erstBauN,erstVerschoben,erstPipeAsync} fehlt oder ist nicht numerisch · steadyState.uploadKBProS fehlt oder ist nicht numerisch
+
+✅ GRÜN — alle Hitch-Zähler werden KONSUMIERT.
