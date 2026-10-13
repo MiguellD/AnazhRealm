@@ -13,7 +13,9 @@
 // Drift-Check erzwingt: gleiche IDs, gleiche Ordnung, gleiche Namen — ein
 // neuer/verschobener Abschnitt OHNE Registry-Pflege wird rot. Zeilen-Nummern
 // leben NIE in der Registry (sie rotten) — diese Karte druckt sie LIVE.
+const fs = require("fs");
 const path = require("path");
+const vm = require("vm");
 const stammLib = require("./lib/stamm.cjs");
 const ROOT = path.resolve(__dirname, "..");
 // der virtuelle Stamm (scripts/lib/stamm.cjs) und sein Name: die eine Datei oder die Zonen-Dateien
@@ -65,6 +67,15 @@ for (let i = 0; i < n; i++) {
 for (let i = 1; i < marker.length; i++) {
     if (ordnung(marker[i].id) <= ordnung(marker[i - 1].id))
         fehler.push(`Marker-Ordnung bricht: §${marker[i - 1].id} → §${marker[i].id} (Zeile ${marker[i].line})`);
+}
+
+// 4) Syntax je Stamm-Datei — V8 wie `node --check` (das check:statik-Glied des Stamms), ein Bruch nennt seine Datei.
+for (const p of DATEIEN) {
+    try {
+        new vm.Script(fs.readFileSync(path.join(ROOT, p), "utf8"), { filename: p });
+    } catch (e) {
+        fehler.push(`Syntax ${p}: ${e.message}`);
+    }
 }
 
 const argCheck = process.argv.includes("--check");

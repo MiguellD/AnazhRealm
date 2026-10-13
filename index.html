@@ -8131,7 +8131,7 @@
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
         <!-- DER TACHO (Leben-Schau 2, fahr-bahn): im Sattel eines Gesetz-Wagens die km/h seines Fahr-Zustands
              (|vlong| × vehicle:FAHR.kmh, dieselbe Zahl wie die Probefahrt) und die Fahr-Tasten (AnazhRealm.FAHR_TASTEN).
-             Schreiber: `_fahrAnzeige` (anazhRealm.js); ohne Ritt verborgen. -->
+             Schreiber: `_fahrAnzeige` (Stamm); ohne Ritt verborgen. -->
         <div id="fahr-tacho" role="status" aria-label="Tacho" hidden>
             <div class="fahr-tacho-anzeige">
                 <span class="fahr-tacho-zahl" data-kmh>0</span><span class="fahr-tacho-einheit">km/h</span>
@@ -9682,7 +9682,7 @@
              WebGPURenderer-Addon-Loading in V10.0-c). Import-Map mappt das
              nackte "three"-Specifier auf unseren vendored ESM-Build; ein
              Inline-Module-Script importiert + setzt window.THREE für den
-             defer-geladenen anazhRealm.js. Module-Scripts laufen vor defer-
+             defer-geladenen Stamm (stamm/). Module-Scripts laufen vor defer-
              Scripts in document order (WHATWG-Spec) — Reihenfolge garantiert.
              V10.0-d wird die WebGPURenderer-Addon-Files dazu vendoren mit
              "three/addons/" Import-Pattern. UMD `vendor/three.min.js` bleibt
@@ -9715,15 +9715,15 @@
          garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
          DOMContentLoaded ohne Inline-Listener.
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
-         (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
+         (githack) bei einem Version-Sprung einen stalen Stamm gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor anazhRealm.js
+        <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor dem Stamm
              laden (defer bewahrt die Reihenfolge) — der Baum-Bau liest das globale
              __phytoCore.growSkeleton. Derselbe Code läuft im voxel-worker + im Terrain-Portal. -->
         <script src="phyto-core.js?v=18.544.0" defer></script>
         <!-- K09a — DAS GELÄNDE-GESETZBUCH: die EINE 2D-Höhe (Erbgut-Terme, Wildnis-Term, Makro-Anker, Rauheit) als
              reine Funktion der Lage; Stamm, voxel-worker (importScripts) und Foundry-Worker (Manifest) lesen DIESE
-             Datei. MUSS vor anazhRealm.js laden (defer bewahrt die Reihenfolge). -->
+             Datei. MUSS vor dem Stamm (stamm/) laden (defer bewahrt die Reihenfolge). -->
         <script src="gelaende-core.js?v=18.544.0" defer></script>
         <!-- DIE EINE PIPE (V18.458): das Bake-Gesetzbuch der Pipe (Gattungs-Bäcker-
              Tisch BAKERS_BY_KIND) lädt auch auf dem Stamm — der Kalt-/Headless-Pfad
@@ -9758,6 +9758,53 @@
              Daten+Mathe) lädt VOR dem Stamm — der bladeProfile-Bau (Werkstatt/DSL)
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
         <script src="schmiede-core.js?v=18.544.0" defer></script>
-        <script src="anazhRealm.js?v=18.544.0" defer></script>
+        <script src="stamm/01.js?v=18.544.0" defer></script>
+        <script src="stamm/02a.js?v=18.544.0" defer></script>
+        <script src="stamm/02b.js?v=18.544.0" defer></script>
+        <script src="stamm/03a.js?v=18.544.0" defer></script>
+        <script src="stamm/03b.js?v=18.544.0" defer></script>
+        <script src="stamm/04.js?v=18.544.0" defer></script>
+        <script src="stamm/05a.js?v=18.544.0" defer></script>
+        <script src="stamm/05b.js?v=18.544.0" defer></script>
+        <script src="stamm/06a.js?v=18.544.0" defer></script>
+        <script src="stamm/06b.js?v=18.544.0" defer></script>
+        <script src="stamm/06c.js?v=18.544.0" defer></script>
+        <script src="stamm/07.js?v=18.544.0" defer></script>
+        <script src="stamm/08.js?v=18.544.0" defer></script>
+        <script src="stamm/09.js?v=18.544.0" defer></script>
+        <script src="stamm/10.js?v=18.544.0" defer></script>
+        <script src="stamm/11a.js?v=18.544.0" defer></script>
+        <script src="stamm/11b.js?v=18.544.0" defer></script>
+        <script src="stamm/11c.js?v=18.544.0" defer></script>
+        <script src="stamm/11d.js?v=18.544.0" defer></script>
+        <script src="stamm/12.js?v=18.544.0" defer></script>
+        <script src="stamm/13a.js?v=18.544.0" defer></script>
+        <script src="stamm/13b.js?v=18.544.0" defer></script>
+        <script src="stamm/13c.js?v=18.544.0" defer></script>
+        <script src="stamm/14.js?v=18.544.0" defer></script>
+        <script src="stamm/15a.js?v=18.544.0" defer></script>
+        <script src="stamm/15b.js?v=18.544.0" defer></script>
+        <script src="stamm/15c.js?v=18.544.0" defer></script>
+        <script src="stamm/16.js?v=18.544.0" defer></script>
+        <script src="stamm/17a.js?v=18.544.0" defer></script>
+        <script src="stamm/17b.js?v=18.544.0" defer></script>
+        <script src="stamm/17c.js?v=18.544.0" defer></script>
+        <script src="stamm/18.js?v=18.544.0" defer></script>
+        <script src="stamm/19.js?v=18.544.0" defer></script>
+        <script src="stamm/20a.js?v=18.544.0" defer></script>
+        <script src="stamm/20b.js?v=18.544.0" defer></script>
+        <script src="stamm/20c.js?v=18.544.0" defer></script>
+        <script src="stamm/20d.js?v=18.544.0" defer></script>
+        <script src="stamm/21.js?v=18.544.0" defer></script>
+        <script src="stamm/22.js?v=18.544.0" defer></script>
+        <script src="stamm/23a.js?v=18.544.0" defer></script>
+        <script src="stamm/23b.js?v=18.544.0" defer></script>
+        <script src="stamm/24.js?v=18.544.0" defer></script>
+        <script src="stamm/25a.js?v=18.544.0" defer></script>
+        <script src="stamm/25b.js?v=18.544.0" defer></script>
+        <script src="stamm/25c.js?v=18.544.0" defer></script>
+        <script src="stamm/26a.js?v=18.544.0" defer></script>
+        <script src="stamm/26b.js?v=18.544.0" defer></script>
+        <script src="stamm/26c.js?v=18.544.0" defer></script>
     </body>
 </html>
