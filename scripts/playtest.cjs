@@ -36047,8 +36047,9 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
+        // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
         out.defaultFlareExists =
-            !!A.DEFAULT_TREE_FLARE && Number.isFinite(A.DEFAULT_TREE_FLARE.amp) && A.DEFAULT_TREE_FLARE.amp > 0;
+            Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
         out.speciesTreeParamsExists =
             !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
@@ -36062,7 +36063,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 "baum_birke",
                 "baum_eiche",
                 "baum_erle",
-            ].every((k) => tp[k] && tp[k].flare && Number.isFinite(tp[k].flare.amp));
+            ].every((k) => tp[k] && !("flare" in tp[k]));
         }
 
         // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
@@ -36111,7 +36112,10 @@ async function checkBandV18214SkeletonMesh(ctx) {
                 out.skelBranchCount = bp._skeleton.branches.length;
                 out.skelAnchorCount = Array.isArray(bp._skeleton.anchors) ? bp._skeleton.anchors.length : 0;
                 out.skelHasTrunk = bp._skeleton.branches.some((b) => b.isTrunk === true);
-                out.skelHasFlare = Number.isFinite(bp._skeleton.flareAmp) && bp._skeleton.flareAmp > 0;
+                out.skelHasFlare =
+                    Number.isFinite(bp._skeleton.flareAmp) &&
+                    bp._skeleton.flareAmp > 0 &&
+                    bp._skeleton.flareLobes === A.STAMM_RIPPEN;
             }
 
             // ─── (T5) Behavioral: archFlattenBlueprint baut Tube+Cards ───
@@ -36194,13 +36198,13 @@ async function checkBandV18214SkeletonMesh(ctx) {
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
     );
-    check("V18.214 (T1f) DEFAULT_TREE_FLARE definiert + amp>0", res.defaultFlareExists === true);
+    check("V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)", res.defaultFlareExists === true);
     check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
     check(
         "V18.214 (T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
         res.tannenSlopeHigher === true
     );
-    check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
+    check("V18.214 (T1i) keine der 6 Arten trägt eine Hand-Anlauf-Zeile (K24-N1)", res.allSpeciesHaveFlare === true);
     check(
         "K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)",
         res.skelettWindDaten === true
@@ -36217,7 +36221,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     );
     check(`V18.214 (T4d) Skeleton hat ≥1 Foliage-Anchor — gemessen ${res.skelAnchorCount}`, res.skelAnchorCount >= 1);
     check("V18.214 (T4e) Skeleton trägt einen isTrunk-Branch", res.skelHasTrunk === true);
-    check("V18.214 (T4f) Skeleton trägt flareAmp>0 (Wurzelanlauf)", res.skelHasFlare === true);
+    check("V18.214 (T4f) Skeleton trägt den Anlauf des Gesetzes (flareAmp>0, STAMM_RIPPEN)", res.skelHasFlare === true);
     check("V18.214 (T5a) archFlattenBlueprint markiert skeleton: true", res.flatIsSkeleton === true);
     check(
         "V18.214 (T5b) archFlattenBlueprint markiert merged: true (Diagnose-Kompat)",
@@ -36406,7 +36410,11 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         if (out.karstInTreeParams) {
             const p = A.SPECIES_TREE_PARAMS.baum_karst;
             out.karstSlope16 = Math.abs(p.slopeMax - 1.6) < 1e-9; // klettert Klippen
-            out.karstFlareAmp = !!p.flare && Math.abs(p.flare.amp - 0.9) < 1e-9;
+            // K24-N1: der knorrige Sockel ist das Gesetz der Art (P.flare 0,9 im Phänotyp), nie eine Hand-Zeile
+            r._growTreeBlueprintRich("baum_karst", "pt-karst-anlauf");
+            const skK = r._lastTreeSkeleton;
+            r._lastTreeSkeleton = null;
+            out.karstFlareAmp = !("flare" in p) && !!skK && Math.abs(skK.flareAmp - 0.9) < 1e-9;
         }
         out.karstInTagVariation = !!(A.SPECIES_TAG_VARIATION && A.SPECIES_TAG_VARIATION.baum_karst);
         if (out.karstInTagVariation) {
@@ -36534,7 +36542,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
     check("K24 (A1) baum_karst ist die Studio-Art karst (_phytoArt)", res.grammarHasKarst === true);
     check("V18.216 (A5) Karst in SPECIES_TREE_PARAMS", res.karstInTreeParams === true);
     check("V18.216 (A6) Karst slopeMax=1.6 (klettert Klippen)", res.karstSlope16 === true);
-    check("V18.216 (A7) Karst flare amp=0.9 (Sockel knorrig)", res.karstFlareAmp === true);
+    check("V18.216 (A7) Karst-Anlauf 0,9 aus dem Gesetz (Sockel knorrig)", res.karstFlareAmp === true);
     check("V18.216 (A8) Karst in SPECIES_TAG_VARIATION", res.karstInTagVariation === true);
     check("V18.216 (A9) Karst dichte+0.10 (hart)", res.karstDichteVar === true);
     check("V18.216 (A10) Karst lebendig-0.05 (weniger saftig)", res.karstLebendigVar === true);

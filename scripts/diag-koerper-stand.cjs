@@ -19,7 +19,7 @@
 //       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe; der
 //       Täter heißt mit seiner Box, wenn ein Werk den Sprung trägt) — und (K4c, K24-N1) keine FUGE trägt einen Leib: die
 //       Oberkante einer Box, auf der eine Box desselben Werks sitzt (zwei Stamm-Abschnitte), hebt weder die Kapsel noch das
-//       Tier. Vorher stieg das Tier an einer Tanne 0,6 m auf die erste Stamm-Fuge (Treppe 55,1 cm, 1084 von 2803 Fugen trugen)
+//       Tier. Vorher stieg das Tier an einer Tanne 0,6 m auf die erste Stamm-Fuge (Treppe 55,1 cm, jede der 2803 Fugen trug)
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
 //       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
 //       steht dort; die flachste Stelle war ein Seegrund, der Wolf schwamm 16 cm über ihm, und der Selbsttest las nur die

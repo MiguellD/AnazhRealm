@@ -36032,7 +36032,7 @@ class AnazhRealm {
     // trägt keinen Leib (`gedeckt`; die Auflage der Kapsel `_resolveCapsuleVsAABB` und die des Tiers `_kreaturAuflage`
     // übergehen sie). Eine Treppe bleibt Treppe: die nächste Stufe deckt nie die Mitte der vorigen. Gedrehte Boxen messen im
     // Rahmen der deckenden (`obb`). Vorher stand jeder Leib, der einen Baum berührte, auf der ersten Stamm-Fuge in der Box
-    // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, 1084 von 2803 Fugen trugen).
+    // darüber (gate:koerper-stand K4: das Tier stieg an einer Tanne 0,6 m je Takt, jede der 2803 Fugen trug).
     _blockerFugen(boxes) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
@@ -59915,17 +59915,17 @@ class AnazhRealm {
             totalH,
             branches: [], // [{ points: [{x,y,z,r}, ...], level: int, isTrunk: bool }]
             anchors: [], // [{x,y,z}]
-            flareAmp: 0,
-            flareLobes: 0,
+            // Der Wurzelanlauf aus dem Gesetz (P.flare, der Phänotyp der Art — die Studio-Gestalt liest dieselbe Größe);
+            // die Rippen sind ein Maß der Werkstatt-Röhre (der Stamm des Studios ist glatt). Die Hand-Zeile je Art
+            // (SPECIES_TREE_PARAMS.flare) und ihr stiller Ersatz DEFAULT_TREE_FLARE sind gefallen (K24-N1).
+            flareAmp: P0.flare,
+            flareLobes: AnazhRealm.STAMM_RIPPEN,
+            // die Blatt-Form der Art (Superformel des Phänotyps) — die Klingen der Werkstatt lesen sie wie das Studio
+            leafShape: P0.leafShape,
             // V18.218 — die LOD-Stufe reist in den Skeleton; die Tube-/Cards-
             // Geometrie-Builder können sie lesen (z.B. radialSegs reduzieren).
             lodLevel: lodLevel,
         };
-        // Flare am Stamm-Fuß je Spezies aus SPECIES_TREE_PARAMS; ohne Eintrag DEFAULT_TREE_FLARE.
-        const sParams = AnazhRealm.SPECIES_TREE_PARAMS && AnazhRealm.SPECIES_TREE_PARAMS[speciesKey];
-        const flareDef = (sParams && sParams.flare) || AnazhRealm.DEFAULT_TREE_FLARE;
-        skeleton.flareAmp = flareDef.amp;
-        skeleton.flareLobes = flareDef.lobes;
         // emitCylinderBetween: die EINE Stelle, die eine Segment-Kante zu einem holz-Zylinder-
         // Part macht (Trunk/Äste/Buttress teilen sie). Tag-neutral (material "holz").
         const emitCylinderBetween = (a, b, segments) => {
@@ -66495,14 +66495,14 @@ class AnazhRealm {
     // verbunden, Radius = radii[i]; lobed flare am Stamm-Fuß. Alle Äste zu EINER Geometrie gemerged.
     _buildTreeTubeGeometry(skeleton, opts) {
         if (!skeleton || !Array.isArray(skeleton.branches) || skeleton.branches.length === 0) return null;
+        AnazhRealm._skelettPflicht(skeleton);
         const radialSegs = (opts && opts.radialSegs) || 6;
-        const totalH = Math.max(1, skeleton.totalH || 10);
-        // DAS NEUE KLEID K1 (V18.385) — die RINDEN-FARBE aus der Phyto-Palette: barkA (Fuß-
+        const totalH = Math.max(1, skeleton.totalH);
+        // DAS NEUE KLEID K1 (V18.385) — die RINDEN-FARBE aus dem Gesetz der Art (P.barkA/barkB): barkA (Fuß-
         // dunkel) → barkB (Wipfel-hell), ein Höhen-Gradient wie in der Vorlage (buildTube
         // barkBase→barkTip). Die Birke trägt so ihre weiße Rinde, der Mammut sein Rot-Braun.
-        const _pal = AnazhRealm.SPECIES_PALETTE_DEFAULT;
-        const _bA = skeleton.barkA != null ? skeleton.barkA : _pal.barkA;
-        const _bB = skeleton.barkB != null ? skeleton.barkB : _pal.barkB;
+        const _bA = skeleton.barkA;
+        const _bB = skeleton.barkB;
         const bAr = ((_bA >> 16) & 0xff) / 255,
             bAg = ((_bA >> 8) & 0xff) / 255,
             bAb = (_bA & 0xff) / 255;
@@ -66521,8 +66521,8 @@ class AnazhRealm {
             totalH,
             barkColorA: [bAr, bAg, bAb],
             barkColorB: [bBr, bBg, bBb],
-            flareAmp: skeleton.flareAmp || 0.45,
-            flareLobes: skeleton.flareLobes || 5,
+            flareAmp: skeleton.flareAmp,
+            flareLobes: skeleton.flareLobes,
         });
         const geomList = [];
         for (const s of snippets) {
@@ -66680,8 +66680,8 @@ class AnazhRealm {
     // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (der Phyto-Pfad gewinnt). Das Farb-Gesetz
     // der Vegetation (foundry-core `vegFarbe`, V18.506): der Hex ist eine sRGB-Absicht, die Albedo sein
     // linearer Wert — `THREE.Color(hex)` dekodiert unter der Farb-Verwaltung von r184 genau so.
-    _treeLeafBaseColor(skeleton, fo) {
-        const c = new THREE.Color((skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a);
+    _treeLeafBaseColor(skeleton) {
+        const c = new THREE.Color(AnazhRealm._skelettPflicht(skeleton).foliageColor);
         return [c.r, c.g, c.b];
     }
 
@@ -66690,6 +66690,7 @@ class AnazhRealm {
     // aH0/aH0L). Nadeln bleiben Spray-Quads (Einzel-Nadeln trügen beim 480er-Blatt-Budget die Deckung
     // nicht). null (kein Kern/Blätter/THREE) → der Aufrufer bleibt beim Karten-Pfad.
     _buildTreeFoliageBladeGeometry(skeleton) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.phytoLeaves) || !skeleton.phytoLeaves.length) return null;
         const fo = skeleton.laub;
         if (!fo || fo.kind === "none") return null;
@@ -66697,17 +66698,15 @@ class AnazhRealm {
         if (!core || typeof core.buildLeafBlades !== "function" || typeof THREE === "undefined") return null;
         const blades = skeleton.phytoLeaves.filter((l) => l && !l.needle);
         if (!blades.length) return null;
-        // Blatt-Form je Art (die Vorlagen-Zuordnung Z.929-935: eiche→oak · weide→lance ·
-        // birke/übrige Laub-Arten→ovate).
-        const sp = String(skeleton.art || skeleton.species || "");
-        const shapeKey = /eiche/.test(sp) ? "oak" : /weide/.test(sp) ? "lance" : "ovate";
+        // Blatt-Form der Art aus dem Gesetz (die Superformel des Phänotyps, P.leafShape) — wie die Studio-Gestalt; die
+        // Zuordnung nach dem Namen der Art (eiche→oak · weide→lance · sonst ovate) fiel K24-N1.
         const q = core.buildLeafBlades(blades, {
-            leafColor: this._treeLeafBaseColor(skeleton, fo),
+            leafColor: this._treeLeafBaseColor(skeleton),
             // Vorlagen-roh (pushLeaf bekommt l.scale unskaliert): AnazhRealms leafSize trägt
             // schon den ×1.3-Dial → die Klinge liest als Blatt-Büschel-Größe, kein Mega-Blatt.
             scale: 1.0,
             cup: 0.5, // die Quer-Mulde (Vorlagen-Aufruf Z.660)
-            leafShape: shapeKey,
+            leafShape: skeleton.leafShape,
         });
         if (!q || !(q.count > 0)) return null;
         const g = new THREE.BufferGeometry();
@@ -66722,13 +66721,14 @@ class AnazhRealm {
         this._stampFoliageDomeNormals(g);
         // S1-SHADER — dieselben Wahrnehmungs-Höhen wie die Karten → das Dither-Crossfade
         // blendet die Klingen am L0→L1-Band weich aus (kein Pop auf die Karten-Krone).
-        this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
+        this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
         g.computeBoundingBox();
         g.computeBoundingSphere();
         return g;
     }
 
     _buildTreeFoliageCardGeometry(skeleton, _opts) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length === 0) return null;
         const fo = skeleton.laub;
         if (!fo) return null;
@@ -66748,15 +66748,14 @@ class AnazhRealm {
             const _skipB = _opts && _opts.skipBroadleaf === true;
             const _quadLeaves = _skipB ? skeleton.phytoLeaves.filter((l) => l && l.needle) : skeleton.phytoLeaves;
             if (_skipB && !_quadLeaves.length) return null;
-            const leafColor = this._treeLeafBaseColor(skeleton, fo);
-            const fScaleQ = Math.max(0.4, skeleton.foliageScale || 1);
+            const leafColor = this._treeLeafBaseColor(skeleton);
             const q = core.buildFoliageQuads(_quadLeaves, {
                 leafColor,
-                scale: 2.35 * fScaleQ,
+                scale: 2.35,
                 // Nadeln: das gewachsene Blatt IST eine EINZELNE Nadel (scale ~0.15) — als
                 // Spray-Quad braucht es einen grossen Faktor, damit die Zelle-3-Nadel-Silhouette
                 // sichtbar wird + die Kegel-Krone füllt (sonst unsichtbare 7-cm-Punkte).
-                needleScale: 5.5 * fScaleQ,
+                needleScale: 5.5,
             });
             if (q && q.count > 0) {
                 const g = new THREE.BufferGeometry();
@@ -66766,7 +66765,7 @@ class AnazhRealm {
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
                 // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
-                this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
+                this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
                 g.computeBoundingBox();
                 g.computeBoundingSphere();
                 return g;
@@ -66775,10 +66774,9 @@ class AnazhRealm {
         // KIND-Spalte im 4×2-Atlas + Karten-Proportion je Kind: Breitblatt(0) breit, Nadel(1) lang-schmal,
         // Palme(2) lange Wedel, Schuppe(3) feine Sprays. EINE Textur, die Spalte routet die UVs.
         const kindCol = fo.kind === "needleSpray" ? 1 : fo.kind === "palm" ? 2 : fo.kind === "scale" ? 3 : 0;
-        const baseSize = fo.size || 0.5;
+        const baseSize = fo.size;
         // Karten-Größe: proportionierte Büschel (1.5–2 m am ~10-m-Baum), die Fülle trägt FOLIAGE_DENSITY;
-        // Nadel-Sprays drapen größer. Skaliert mit skeleton.foliageScale (Größe/Alter; Alt-Skelette: 1).
-        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
+        // Nadel-Sprays drapen größer.
         // V18.235 (§5 Ω-O9) — fd/lod/K hier gehoistet (vor cardW/cardH), damit der LOD-Karten-
         // Boost die Karten-Größe trifft. cardsPerAnchor dünnt LOD1/2 aus (5→2→1), das trägt die FPS.
         const fd = (this.state.atmosphere && this.state.atmosphere.foliageDensity) || AnazhRealm.FOLIAGE_DENSITY;
@@ -66792,9 +66790,9 @@ class AnazhRealm {
         // je-Kind-Aspekt: Nadel lang-schmal, Palme große breite Wedel, Schuppe feine Sprays.
         const _wByKind = kindCol === 1 ? 2.4 : kindCol === 2 ? 3.0 : kindCol === 3 ? 1.7 : 2.1;
         const _hByKind = kindCol === 1 ? 3.4 : kindCol === 2 ? 3.4 : kindCol === 3 ? 1.7 : 1.85;
-        const cardW = baseSize * _wByKind * fScale * _lodCardBoost;
-        const cardH = baseSize * _hByKind * fScale * _lodCardBoost;
-        const totalH = Math.max(1, skeleton.totalH || 10);
+        const cardW = baseSize * _wByKind * _lodCardBoost;
+        const cardH = baseSize * _hByKind * _lodCardBoost;
+        const totalH = Math.max(1, skeleton.totalH);
         // Kronen-Zentrum (Mitte der Anchor-Wolke, leicht angehoben) — NUR für Positionen (innerFill-Pull +
         // Spitzen-Curl); die Shading-Normale stempelt _stampFoliageDomeNormals.
         let cx = 0,
@@ -66826,7 +66824,7 @@ class AnazhRealm {
         const indices = new Uint32Array(M * 12);
         // foliageColor aus dem skeleton (der Farb-Wurf des Gesetzes, P.leafCol in _growTreeBlueprintRich), gelesen über
         // `_treeLeafBaseColor` — dieselbe rohe Quelle wie der Phyto-Pfad, kein Pfad-Dämpfer.
-        const _lc = this._treeLeafBaseColor(skeleton, fo);
+        const _lc = this._treeLeafBaseColor(skeleton);
         const fr = _lc[0];
         const fg = _lc[1];
         const fb = _lc[2];
@@ -66965,6 +66963,7 @@ class AnazhRealm {
     // verwirft verdeckte Hinter-Karten (die Laub-Last ist Overdraw von ~100 DoubleSide-Alpha-Karten).
     // Nur LOD0, opak, kein Schatten. A/B-Toggle `state.foliageOpaqueCore`.
     _buildTreeFoliageCoreGeometry(skeleton) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
         if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
         const fo = skeleton.laub;
@@ -66999,8 +66998,7 @@ class AnazhRealm {
         cx /= n;
         cy /= n;
         cz /= n;
-        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
-        const baseSize = (fo.size || 0.5) * 2.0 * fScale; // ~Karten-Halb-Reichweite
+        const baseSize = fo.size * 2.0; // ~Karten-Halb-Reichweite
         // CORE_FILL < 1 → der Kern sitzt INNERHALB der Karten-Spitzen (die Karten reichen bis
         // ~(Anker-Spanne + baseSize)) → die Silhouette-Karten verdecken ihn → kein Heraus-Poken.
         const CORE_FILL = 0.6;
@@ -67024,7 +67022,7 @@ class AnazhRealm {
         const uvs = new Float32Array(vCount * 2);
         // Kern-Farbe: das DUNKLE Innen-Grün (tiefer Kronen-Schatten) — die instanceColor (per-Spawn)
         // moduliert es wie die Karten, so matcht der Kern den Baum.
-        const _kl = this._treeLeafBaseColor(skeleton, fo);
+        const _kl = this._treeLeafBaseColor(skeleton);
         const cr = _kl[0] * 0.5,
             cg = _kl[1] * 0.62,
             cb = _kl[2] * 0.38;
@@ -67065,6 +67063,7 @@ class AnazhRealm {
     // Ellipsoid-Hülle mit der echten Anker-Reichweite). Unsichtbar → darf jede Kronenform tragen, auch
     // Koniferen. Deterministisch, kein Math.random.
     _buildTreeShadowTwinGeometry(skeleton) {
+        if (skeleton) AnazhRealm._skelettPflicht(skeleton);
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
         if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
         const fo = skeleton.laub;
@@ -67094,8 +67093,7 @@ class AnazhRealm {
         cx /= n;
         cy /= n;
         cz /= n;
-        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
-        const baseSize = (fo.size || 0.5) * 2.0 * fScale; // ~Karten-Halb-Reichweite
+        const baseSize = fo.size * 2.0; // ~Karten-Halb-Reichweite
         // TWIN_FILL 0.9 (> der Kern-CORE_FILL 0.6): der Zwilling füllt bis nahe die Karten-Spitzen →
         // sein Schatten deckt die volle sichtbare Krone (er ist unsichtbar, darf also groß sein).
         const TWIN_FILL = 0.9;
@@ -67201,7 +67199,7 @@ class AnazhRealm {
         // (`_baumWindStoff` über `opts.baumWind`), die Welt-Höhe jedes Teils im Stempel aH0: `_stampFoliageVisHeights` trägt
         // die Vorlage, die Instanz-Fassade (`_lodInstanceFacade`, je Slot gestempelt) Vorlage × Instanz-Skala.
         const baumWind = this._skelettWindDaten(skel);
-        const totalH = Math.max(1, skel.totalH || 10);
+        const totalH = Math.max(1, AnazhRealm._skelettPflicht(skel).totalH);
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
         if (barkGeom) {
@@ -67636,7 +67634,7 @@ class AnazhRealm {
     // sitzt unverzerrt. halfH = volle Baumhöhe (+2 %), halfW ≥ Zell-Proportion (cw/ch = 0.5) bzw. die
     // radiale Kronen-Spanne (+4 %).
     _impostorFrame(skeleton) {
-        const totalH = Math.max(1, (skeleton && skeleton.totalH) || 10);
+        const totalH = Math.max(1, AnazhRealm._skelettPflicht(skeleton).totalH);
         let maxR = 0;
         if (skeleton && Array.isArray(skeleton.anchors)) {
             for (const a of skeleton.anchors) {
@@ -103549,82 +103547,87 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
     innerFill: 0.2, // etwas Füllung, das Ast-Gerüst bleibt aber sichtbar
 });
 
-// SPECIES_PALETTE_DEFAULT — nur der neutrale Default eines Skeletts ohne Rinde; die EINE Farb-Tafel je Art ist der
-// Phänotyp im Gesetzbuch (phyto-core artPhaenotyp über foundry-core PRESETS, Leser treeParams). Nur Render-Farbe, kein Tag.
-AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c });
+// STAMM_RIPPEN — die Rippen-Zahl des Wurzelanlaufs der Werkstatt-Röhre (sin(Winkel·Rippen)·P.flare, phyto-core
+// buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der
+// Stamm des Studios ist glatt). Die Hand-Tafeln SPECIES_PALETTE_DEFAULT (Rinde/Laub) und DEFAULT_TREE_FLARE fielen K24-N1.
+AnazhRealm.STAMM_RIPPEN = 5;
 
-// DEFAULT_TREE_FLARE — Wurzelanlauf am Fuß: amp = seitliche Aufweitung (1.0 = +100 % Radius am
-// Sockel), lobes = Rippen-Zahl (sin(angle·lobes)·amp). Die Tube-Geometrie verbreitert die ersten
-// ~2 Punkte → der Stamm wurzelt sichtbar im Boden.
-AnazhRealm.DEFAULT_TREE_FLARE = Object.freeze({ amp: 0.45, lobes: 5 });
+// DAS SKELETT DES GESETZES (K24-N1): der EINE Erzeuger `_growTreeBlueprintRich` schreibt jede Größe, die die Bauer der
+// Werkstatt-Gestalt lesen (Röhre, Klingen, Karten, Kern, Schatten-Zwilling, Impostor-Rahmen) — Höhe, Rinde, Wurzelanlauf,
+// Laub-Farbe, Laub-Art und -Maß, Blatt-Form, alle aus treeParams der Art. Fehlt eine, bricht der Bau laut beim Namen. Vorher
+// setzten die Leser still einen Ersatz ein: Rinde SPECIES_PALETTE_DEFAULT, Höhe 10, Anlauf 0,45 × 5 (der Farn mit Anlauf 0
+// bekam ihn: `|| 0.45`), Laub 0x4a8a3a und Maß 0,5, Blatt-Form nach dem Namen der Art, ein nie geschriebenes foliageScale.
+AnazhRealm._skelettPflicht = function (sk) {
+    const fehlt = [];
+    if (!sk) fehlt.push("Skelett");
+    else {
+        if (!(sk.totalH > 0)) fehlt.push("totalH");
+        for (const k of ["barkA", "barkB", "foliageColor", "flareAmp", "flareLobes"])
+            if (!Number.isFinite(sk[k])) fehlt.push(k);
+        if (!sk.laub || typeof sk.laub.kind !== "string" || !(sk.laub.kind === "none" || sk.laub.size > 0))
+            fehlt.push("laub");
+        if (!sk.leafShape || typeof sk.leafShape !== "object") fehlt.push("leafShape");
+    }
+    if (fehlt.length)
+        throw new Error(
+            "SKELETT-PFLICHT verletzt: " + fehlt.join(", ") + " fehlt (der Erzeuger _growTreeBlueprintRich)"
+        );
+    return sk;
+};
 
-// SPECIES_TREE_PARAMS — Welt-Bezug je Spezies: flare, slopeMax (ab diesem Slope kein Spawn),
+// SPECIES_TREE_PARAMS — Welt-Bezug je Spezies: slopeMax (ab diesem Slope kein Spawn),
 // heightRange [min,max] (Spawn-Höhenfenster über `state.terrainBaseHeight`).
 AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
     baum_tanne: Object.freeze({
-        flare: Object.freeze({ amp: 0.5, lobes: 5 }),
         slopeMax: 1.2,
         heightRange: Object.freeze([-30, 200]),
     }),
     baum_kiefer: Object.freeze({
-        flare: Object.freeze({ amp: 0.42, lobes: 4 }),
         slopeMax: 1.3,
         heightRange: Object.freeze([-20, 180]),
     }),
     baum_buche: Object.freeze({
-        flare: Object.freeze({ amp: 0.55, lobes: 6 }),
         slopeMax: 0.8,
         heightRange: Object.freeze([-40, 120]),
     }),
     baum_birke: Object.freeze({
-        flare: Object.freeze({ amp: 0.32, lobes: 4 }),
         slopeMax: 0.6,
         heightRange: Object.freeze([-30, 90]),
     }),
     baum_eiche: Object.freeze({
-        flare: Object.freeze({ amp: 0.55, lobes: 6 }),
         slopeMax: 0.7,
         heightRange: Object.freeze([-40, 110]),
     }),
     baum_erle: Object.freeze({
-        flare: Object.freeze({ amp: 0.5, lobes: 5 }),
         slopeMax: 0.9,
         heightRange: Object.freeze([-40, 100]),
     }),
-    // KARST: slopeMax 1.6 (höchster aller Arten), heightRange [-30, 80] bewusst eng (Klippen-Zone);
-    // flare amp 0.9 × lobes 6 (knorriger Sockel).
+    // KARST: slopeMax 1.6 (höchster aller Arten), heightRange [-30, 80] bewusst eng (Klippen-Zone).
     baum_karst: Object.freeze({
-        flare: Object.freeze({ amp: 0.9, lobes: 6 }),
         slopeMax: 1.6,
         heightRange: Object.freeze([-30, 80]),
     }),
-    // V18.216 (Plan §3.5) — Büsche: dezenter flare (kleinere Sockel-Aufweitung),
-    // mittlere bis kleine slopeMax (Hazel klettert leichter, Blume meidet Steile),
+    // V18.216 (Plan §3.5) — Büsche: mittlere bis kleine slopeMax (Hazel klettert leichter, Blume meidet Steile),
     // weite heightRange (Understory wächst überall, wo der Baum-Schatten fällt).
     busch_hazel: Object.freeze({
-        flare: Object.freeze({ amp: 0.2, lobes: 3 }),
         slopeMax: 0.9,
         heightRange: Object.freeze([-30, 90]),
     }),
     farn_busch: Object.freeze({
-        flare: Object.freeze({ amp: 0.0, lobes: 0 }),
         slopeMax: 0.5,
         heightRange: Object.freeze([-40, 60]),
     }),
     blume_gross: Object.freeze({
-        flare: Object.freeze({ amp: 0.0, lobes: 0 }),
         slopeMax: 0.4,
         heightRange: Object.freeze([-30, 50]),
     }),
     // T1 (wahrerwuchs §4.1) — PALME: warmes Tiefland, meidet Steile + Höhe (Küsten/Oasen).
     baum_palme: Object.freeze({
-        flare: Object.freeze({ amp: 0.3, lobes: 4 }),
         slopeMax: 0.6,
         heightRange: Object.freeze([-30, 35]),
     }),
     // T1 — ZYPRESSE: säulen-förmig, tolerant (Hügel + mittlere Höhe).
     baum_zypresse: Object.freeze({
-        flare: Object.freeze({ amp: 0.35, lobes: 5 }),
         slopeMax: 1.0,
         heightRange: Object.freeze([-30, 120]),
     }),
