@@ -3627,7 +3627,7 @@ async function probeBahn(B) {
                     zielLaengs: +(dx * fX + dz * fZ).toFixed(2),
                     zielQuer: +(dx * fZ - dz * fX).toFixed(2),
                     quelle: fixture ? "gesetzt" : "Welt",
-                    kaesten: bx.length,
+                    blocker: bx.length,
                     unten: bx.length
                         ? +(Math.min(...bx.map((b) => b.botY)) - boden(ziel.position.x, ziel.position.z)).toFixed(2)
                         : null,
