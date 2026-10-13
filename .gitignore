@@ -15,6 +15,9 @@ anazhRealmState.json
 
 # Runtime-Flugschreiber-Artefakt (POST /api/perf-trace) — wie anazhRealmState.json nicht getrackt
 anazhRealmPerf.json
+# Das ganze Schreiben des save-servers (K23): der vorige Stand und die tmp-Datei eines Schreibens im Flug
+anazhRealmState.json.bak
+anazhRealm*.json.*.tmp
 
 # blick-Sonde (diag-blick): RT-Readback-Schuss je Lauf — Proben-Artefakt, nie Repo-Gut.
 blick-*.png

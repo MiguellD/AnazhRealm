@@ -22777,11 +22777,24 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             syncResult.mesh.geometry.dispose();
             workerResult.mesh.geometry.dispose();
         }
-        // 5) voxelEdit notify: state-gen bumpt + cache geleert
-        const beforeStateGen = r.state.voxelWorkerStateGen;
-        r._voxelWorkerNotifyEdit({ x: 1000, y: 0, z: 1000, r: 3, strength: 48, mode: "carve" });
-        out.editBumpedStateGen = r.state.voxelWorkerStateGen === beforeStateGen + 1;
-        out.editClearedCache = !r.state.voxelDensityCache || r.state.voxelDensityCache.size === 0;
+        // 5) voxelEdit notify (K23, die Generation je Chunk): ein Edit über den Spielpfad ändert den Stand SEINES Chunks,
+        // nicht den eines fernen, und aus dem Density-Cache fällt nur seine Nachbarschaft.
+        const span5 = r._voxelChunkConfig().span;
+        const ecx = Math.floor(1000 / span5);
+        const standNahVor = r._voxelStand(ecx, ecx);
+        const standFernVor = r._voxelStand(ecx + 10, ecx + 10);
+        if (!r.state.voxelDensityCache) r.state.voxelDensityCache = new Map();
+        r.state.voxelDensityCache.set(`${ecx},${ecx},0`, new Float32Array(1));
+        r.state.voxelDensityCache.set(`${ecx + 10},${ecx + 10},0`, new Float32Array(1));
+        const editsVor5 = r.state.worldMeta.voxelEdits;
+        r.state.worldMeta.voxelEdits = (editsVor5 || []).slice();
+        r.carveVoxelSphere(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
+        out.editBumpedStateGen = r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
+        out.editClearedCache =
+            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) && r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
+        r.state.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
+        r.state.worldMeta.voxelEdits = editsVor5 || [];
+        r._voxelWorkerSyncState({ op: "state-set" });
         // 6) Source-Probes
         // V12.0-perf.a — Worker-Density-Stufe lebt in `_acquireVoxelChunkBuild`.
         out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(window.__codeOf(r._acquireVoxelChunkBuild));
@@ -22817,8 +22830,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
         );
     }
-    check("Welle Perf-3.c V9.90: voxelEdit bumpt state-gen", res.editBumpedStateGen);
-    check("Welle Perf-3.c V9.90: voxelEdit leert Density-Cache", res.editClearedCache);
+    check("K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)", res.editBumpedStateGen);
+    check("K23: ein voxelEdit leert den Density-Cache nur in seiner Nachbarschaft", res.editClearedCache);
     check(
         "Welle Perf-3.c V9.90: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensity (Source-Probe)",
         res.ensureUsesFetch
@@ -24830,10 +24843,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
                 Array.isArray(snap.worldMeta.voxelEdits) &&
                 snap.worldMeta.voxelEdits.length >= 1
             );
-            // FIFO-Deckel — die Edit-Liste wächst nicht unbegrenzt.
+            // Kein Edit fällt still (K23): 270 Schnitte → 270 Edits (bis K23 verdrängte ein FIFO-Deckel ab 257).
             r.state.worldMeta.voxelEdits = [];
             for (let i = 0; i < 270; i++) r.carveVoxelSphere(i * 3, base, i * 3, 3);
-            out.capHeld = r.state.worldMeta.voxelEdits.length <= 256;
+            out.capHeld = r.state.worldMeta.voxelEdits.length === 270;
             // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
             // V9.35: voxelTerrainActive ist permanent — kein Setup nötig.
             r.state.worldMeta.voxelEdits = [];
@@ -24858,7 +24871,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Voxel P3: der Schnitt-Edit landet in worldMeta.voxelEdits", voxelP3Results.editStored);
         check("Voxel P3: ein fester Punkt wird durch den Schnitt zu Luft (echtes Loch)", voxelP3Results.solidToAir);
         check("Voxel P3: der Schnitt-Edit reist im Welt-Snapshot (überlebt Reload)", voxelP3Results.snapshotHasEdit);
-        check("Voxel P3: die Edit-Liste ist FIFO-gedeckelt (≤ 256)", voxelP3Results.capHeld);
+        check("Voxel P3: kein Edit fällt still — 270 Schnitte, 270 Edits (K23)", voxelP3Results.capHeld);
         check("Voxel P3: der Chat-Befehl `voxel carve` schnitzt eine Mulde", voxelP3Results.chatCarveAddsEdit);
     }
 
