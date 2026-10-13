@@ -68270,6 +68270,17 @@ class AnazhRealm {
     // Zwilling @wahl vor @global an — bei gleichen Befehlen in EINER Sitzung gpu-bank +1,6 ms und 47,5 statt 50,1 fps unter
     // Regler voll (OMEN, GTX 1060). Jedes neue Bündel stellt die Reihe neu (stabil im Rang); die Plätze der übrigen Kinder
     // der Szene bleiben, nur die Bündel tauschen ihre Plätze untereinander.
+    // DIE REIHE IM BÜNDEL (1310-8): auch die Gruppen EINES Bündels zeichnen in seiner Kinder-Folge — bis 1310-8 die Ankunft ihrer
+    // Assets beim Boot. Die nahe Stufe zuerst (L0 vor L1 vor der Atlas-Karte), im Gleichstand der Schlüssel: wer nah steht,
+    // schreibt die Tiefe, hinter der die fernen Stufen ihre Fragmente verwerfen. Gemessen an der Mess-Wiese (OMEN, GTX 1060,
+    // EINE Sitzung, Gier 0, alle Bäume an/aus): der Baum-Preis in der Ankunft 5,02/5,25 ms, nach Stufe aufsteigend 3,46/3,33,
+    // absteigend 7,26 — gpu-bank 14,1 → 12,4 ms. Jede Aufnahme eines Kinds stellt die Reihe neu (`_archInstanceGroupFor`, das
+    // Wachsen der Gruppe); das Bündel nimmt danach ohnehin neu auf.
+    static _buendelKinderReihe(bundle) {
+        const rang = (c) => (c.userData && Number.isFinite(c.userData.buendelStufe) ? c.userData.buendelStufe : 0);
+        const key = (c) => String((c.userData && c.userData.archInstanceKey) || "");
+        bundle.children.sort((a, b) => rang(a) - rang(b) || (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
+    }
     static _buendelRang(key) {
         return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;
     }
@@ -70764,6 +70775,8 @@ class AnazhRealm {
         // regional → lokale BBox → die Engine cullt beim Umsehen; global → die Instanz-Wahl je Pass (`_instanzWahlPass`).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
+        // der Rang im Bündel (`_buendelKinderReihe`): die Stufe des Leafs, die Atlas-Karte (fern) zuletzt
+        mesh.userData.buendelStufe = atlasGruppe ? 9 : Number.isFinite(leaf.stufe) ? leaf.stufe : 0;
         const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
         if (wahl) mesh.userData.instanzWahl = wahl;
         // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
@@ -70787,6 +70800,7 @@ class AnazhRealm {
         } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
+            AnazhRealm._buendelKinderReihe(bundle);
             bundle.needsUpdate = true; // ein Bürger ohne fertige Pipeline: die Erst-Zeichnung nimmt neu auf, wenn sie steht
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotRef: Slot-Index → die Slot-Marke {key, slot} (der Rückverweis des Umzugs, `_archGroupAlloc`); slotEntry:
@@ -70872,6 +70886,7 @@ class AnazhRealm {
         next.receiveShadow = true;
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
+        next.userData.buendelStufe = g.mesh.userData.buendelStufe;
         if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
         if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
@@ -70904,7 +70919,10 @@ class AnazhRealm {
         if (parent) {
             parent.remove(g.mesh);
             parent.add(next);
-            if (parent.isBundleGroup) parent.needsUpdate = true;
+            if (parent.isBundleGroup) {
+                AnazhRealm._buendelKinderReihe(parent);
+                parent.needsUpdate = true;
+            }
         } else if (!g.satz && this.state.scene) this.state.scene.add(next);
         this._instanzAbschied(g.mesh); // die eigenen Instanz-Puffer verlassen die GPU (geom/mat geteilt → bleiben)
         g.mesh = next;
@@ -79007,6 +79025,7 @@ class AnazhRealm {
                     teil:
                         child.userData && typeof child.userData.__teil === "string" ? child.userData.__teil : undefined,
                     leafKey: "f:" + key + ":" + p,
+                    stufe: lod, // die Stufe des Leafs — der Rang seiner Gruppe im Bündel (`_buendelKinderReihe`)
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
                     _srcGroup: group,

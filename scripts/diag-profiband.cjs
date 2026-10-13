@@ -139,7 +139,25 @@ function buendelReiheWand(src) {
     const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · ");
     const soll = ["voxelChunk:0,0", "@global", "3,4", "himmel", "s:1,2", "@wahl"].join(" · ");
     if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft @wahl · 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
-    return { errs, n: 4 };
+    // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
+    // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
+    const kinder = rumpf(code, /\n {4}static _buendelKinderReihe\(bundle\)\s*\{/);
+    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\(name, leafIdx, leaf, regionKey\)\s*\{/);
+    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\(g\)\s*\{/);
+    if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
+    if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle\);/.test(gruppe))
+        errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
+    if (!gruppe || !/mesh\.userData\.buendelStufe\s*=/.test(gruppe))
+        errs.push("_archInstanceGroupFor gibt der Gruppe keinen Rang (mesh.userData.buendelStufe)");
+    if (!wachsen || !/AnazhRealm\._buendelKinderReihe\(parent\)/.test(wachsen))
+        errs.push("_archInstanceGroupGrow stellt die Reihe im Bündel nach dem Tausch nicht neu");
+    const K = (stufe, key) => ({ userData: { buendelStufe: stufe, archInstanceKey: key } });
+    const bundle = { children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")] };
+    new Function("bundle", kinder)(bundle);
+    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · ");
+    const sollK = ["f:a|1|0:2", "f:b|1|0:0", "f:a|1|1:0", "f:a|1|1:0#S", "atlas"].join(" · ");
+    if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
+    return { errs, n: 8 };
 }
 
 // H3 — jede Textur-/Bildziel-Erzeugung trägt ihren Erzeuger-Namen in ihrem Statement-Fenster (700 Zeichen): eine
@@ -1098,6 +1116,19 @@ function selbsttest() {
                 buendelReiheWand(wahlVorn).errs.some((x) => /Reihe der Bündel nach der Ankunft/.test(x)) &&
                 buendelReiheWand(ohneReihe).errs.some((x) => /hängt an der Ankunft/.test(x))
         );
+        // DIE REIHE IM BÜNDEL (1310-8): ohne den Aufruf nach der Aufnahme, verkehrt herum und ohne die Reihe rot
+        const ohneKinderRuf = st.replace("bundle.add(mesh);\n            AnazhRealm._buendelKinderReihe(bundle);", "bundle.add(mesh);");
+        const verkehrt = st.replace("rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
+        const ohneKinder = st.replace("static _buendelKinderReihe(bundle) {", "static _buendelKinderReiheAlt(bundle) {");
+        t(
+            "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
+            ohneKinderRuf !== st &&
+                verkehrt !== st &&
+                ohneKinder !== st &&
+                buendelReiheWand(ohneKinderRuf).errs.some((x) => /nach der Aufnahme nicht neu/.test(x)) &&
+                buendelReiheWand(verkehrt).errs.some((x) => /Reihe im Bündel nach der Ankunft/.test(x)) &&
+                buendelReiheWand(ohneKinder).errs.some((x) => /in der Ankunft/.test(x))
+        );
     }
 
     const rot = tests.filter((x) => !x.ok);
@@ -1189,7 +1220,7 @@ function main() {
             `${ratsche.gemessen ? ", " + ratsche.gemessen.datum.slice(0, 10) : ""}, Toleranz ${ratsche.toleranzPct} % / ` +
             `+${ratsche.toleranzAbs.befehle} Befehle) · H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl).`
+            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
     );
 }
 
