@@ -20073,7 +20073,10 @@ async function checkBandHydrosphere(ctx) {
 
     if (voxelV947Results && !voxelV947Results.error) {
         const ev = voxelV947Results;
-        check("Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren", ev.methodsExist);
+        check(
+            "Voxel V9.47: _computeErosion + _erosionIncisionPass + gelaende-core erosionDelta existieren",
+            ev.methodsExist
+        );
         check("Voxel V9.47: state.erosion ist deklariert", ev.stateDeclared);
         check("Voxel V9.47: state.erosion ist nach Worldgen verdrahtet (delta/dim/cell)", ev.wired);
         if (ev.methodsExist && ev.wired) {
@@ -21433,7 +21436,17 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // T2 Cross-LOD-Geomorph: feine Boundary-Vertices an LOD0↔LOD1-Grenzen auf die GROBE Nachbar-Fläche
         // ziehen → die T-junction schließt (render-only, `geomorph`-Uniform). Probe: Material kompiliert,
         // Morph-Attribute auf JEDER Terrain-Geometrie (WebGPU-strikt), Finalize ruft ihn, ≥1 hasMorph.
-        out.t2NoMorphError = !window.__terrainMorphError;
+        {
+            const zM = window.__stoffZeuge(r);
+            let mM = null;
+            try {
+                mM = r._buildToonNodeMaterial({ vertexColors: true });
+            } finally {
+                zM.zu();
+            }
+            out.t2NoMorphError = zM.brueche.length === 0 && !!(mM && mM.positionNode); // der Geomorph baut (K22-Zeuge)
+            if (mM && typeof mM.dispose === "function") mM.dispose();
+        }
         out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
         out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
         out.t2MaterialHasMorph = /positionNode\s*=/.test(window.__codeOf(r._buildPbrNodeMaterial)); // V18.236: PBR ist der EINE Builder
@@ -28023,7 +28036,10 @@ async function checkBandV18132FerneSeen(ctx) {
                 for (let j = 0; j < 6; j++) {
                     const x = -900 + i * 360;
                     const z = -900 + j * 360;
-                    v.push(r._atlasWaterLevelAt(x, z, -Infinity), window.__gelaendeCore.erosionDelta(r._gelaende(), x, z));
+                    v.push(
+                        r._atlasWaterLevelAt(x, z, -Infinity),
+                        window.__gelaendeCore.erosionDelta(r._gelaende(), x, z)
+                    );
                 }
             return JSON.stringify(v);
         };
@@ -28047,7 +28063,10 @@ async function checkBandV18132FerneSeen(ctx) {
         check("V18.132 Ferne Seen: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)", res.machinery);
+    check(
+        "V18.132 Ferne Seen: Kachel-Maschinerie steht (_hydroFor/gelaende-core erosionFuer/_ensure...)",
+        res.machinery
+    );
     check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
     check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
     check(
@@ -33050,7 +33069,8 @@ async function checkBandV18193MakroErbgut(ctx) {
             out.validatorRejectsNull = A._isValidMacroAnker(null) === false;
             out.validatorRejectsPlain = A._isValidMacroAnker({}) === false;
             out.validatorRejectsPartial = A._isValidMacroAnker({ massivC: { x: 0, z: 0 } }) === false;
-            out.validatorAcceptsValid = A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
+            out.validatorAcceptsValid =
+                A._isValidMacroAnker(window.__gelaendeCore.ankerAusSaat("validator-test")) === true;
             // NaN/Infinity werden abgelehnt (must-ignore, Taille-Geist).
             const badNaN = window.__gelaendeCore.ankerAusSaat("nan-test");
             badNaN.massivR = NaN;
@@ -35743,7 +35763,8 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             const e = (U, zeta, t) => ({ t, U, g: 1, f0: 0.4, H: 20, zeta, rho: 0, phi: 0, psi: 1 });
             const spitze = (U, zeta) => {
                 let m = 0;
-                for (let t = 0; t < 10; t += 0.01) m = Math.max(m, Math.abs(PC.windAusschlag(Z, e(U, zeta, t), true).quer));
+                for (let t = 0; t < 10; t += 0.01)
+                    m = Math.max(m, Math.abs(PC.windAusschlag(Z, e(U, zeta, t), true).quer));
                 return m;
             };
             out.wQuadraticCrown = Math.abs(spitze(1, 1) / spitze(1, 0.5) - 4) < 0.2;
@@ -36197,7 +36218,10 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) Alle 6 Arten haben flare-Werte", res.allSpeciesHaveFlare === true);
-    check("K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)", res.skelettWindDaten === true);
+    check(
+        "K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)",
+        res.skelettWindDaten === true
+    );
     check(
         "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
         res.spawnReadsSlopeHeight === true
@@ -37765,15 +37789,18 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         out.geoMossDefault1 = !!(au && au.geoMoss && Math.abs(au.geoMoss.value - 1) < 1e-9);
 
         // (D) Behavioral — der Helfer baut einen Node-Graph ohne zu werfen
-        if (THREE && THREE.TSL && THREE.TSL.attribute && THREE.TSL.positionWorld) {
-            const vc = THREE.TSL.attribute("color", "vec3");
-            const wp = THREE.TSL.positionWorld;
-            const node = r._terrainGeologyAlbedo(THREE.TSL, vc, wp);
-            out.helperReturnsNode = !!node && typeof node === "object";
-            out.helperNoThrow = true; // ein Bruch der Geologie würfe laut aus dem Aufruf oben (`_stoffBruch`, K22)
-        } else {
-            out.helperReturnsNode = true;
-            out.helperNoThrow = true;
+        {
+            const zD = window.__stoffZeuge(r);
+            try {
+                const node = r._terrainGeologyAlbedo(
+                    THREE.TSL,
+                    THREE.TSL.attribute("color", "vec3"),
+                    THREE.TSL.positionWorld
+                );
+                out.helperReturnsNode = !!node && typeof node === "object";
+            } finally {
+                out.helperNoThrow = zD.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
+            }
         }
         // LAUT (K22): ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
         {
@@ -37791,18 +37818,28 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
 
         // (E) Toon-Terrain trägt den colorNode (kein Fehler in der Geologie-Schicht)
         const savedMode = r.state.atmosphere && r.state.atmosphere.materialMode;
-        const mToon = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const zE = window.__stoffZeuge(r);
+        let mToon = null;
+        try {
+            mToon = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        } finally {
+            out.toonTerrainNoGeoError = zE.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
+        }
         out.toonTerrainColorNode = !!(mToon && mToon.colorNode);
-        out.toonTerrainNoGeoError = true; // ein Bruch der Geologie würfe laut aus dem Bau oben (K22)
         if (mToon && typeof mToon.dispose === "function") mToon.dispose();
 
         // (F) PBR-Terrain trägt JETZT denselben Geologie-colorNode (die geheilte Lücke)
         try {
             r.state.atmosphere.materialMode = "pbr";
-            const mPbr = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+            const zF = window.__stoffZeuge(r);
+            let mPbr = null;
+            try {
+                mPbr = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+            } finally {
+                out.pbrTerrainNoGeoError = zF.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
+            }
             out.pbrTerrainIsPbr = !!(mPbr && mPbr.userData && mPbr.userData.isPbrMaterial);
             out.pbrTerrainColorNode = !!(mPbr && mPbr.colorNode);
-            out.pbrTerrainNoGeoError = true; // ein Bruch der Geologie würfe laut aus dem Bau oben (K22)
             if (mPbr && typeof mPbr.dispose === "function") mPbr.dispose();
         } finally {
             if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
@@ -38918,7 +38955,14 @@ async function checkBandKonvergenzTierBaum(ctx) {
         const lauf = trabLauf(1.6);
         const stand = trabLauf(0);
         out.trabZahlen = { lauf, stand };
-        out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen > 0.3 && stand.falte < 0.05 && stand.gegen < 0.05);
+        out.trab = !!(
+            lauf &&
+            stand &&
+            lauf.falte > 0.3 &&
+            lauf.gegen > 0.3 &&
+            stand.falte < 0.05 &&
+            stand.gegen < 0.05
+        );
         // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
         // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
         // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
@@ -38942,10 +38986,14 @@ async function checkBandKonvergenzTierBaum(ctx) {
                 r.isInFrustum = () => true;
                 t5.position.set(pm5.position.x + 200, pm5.position.y, pm5.position.z + 200);
                 r.updateCreatures(0.016);
-                out.fernFar = gl5.istFern === true && gl5.nah.visible === false && gl5.meshes.every((m) => m.layers.isEnabled(0));
+                out.fernFar =
+                    gl5.istFern === true && gl5.nah.visible === false && gl5.meshes.every((m) => m.layers.isEnabled(0));
                 t5.position.set(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2);
                 r.updateCreatures(0.016);
-                out.fernNear = gl5.istFern === false && gl5.nah.visible === true && gl5.meshes.every((m) => !m.layers.isEnabled(0));
+                out.fernNear =
+                    gl5.istFern === false &&
+                    gl5.nah.visible === true &&
+                    gl5.meshes.every((m) => !m.layers.isEnabled(0));
             }
         } finally {
             r.isInFrustum = origFrustum5;
@@ -39095,8 +39143,14 @@ async function checkBandWGGelenke(ctx) {
         // (b) ACHSEN-GEISTER: der Viewer-Build erzeugt Achsen-Linien (isJointAxis).
         out.axisGhosts = false;
         out.axisTeachAttached = false;
+        const zA = window.__stoffZeuge(r);
         if (wagen) {
-            const grp = r._buildFromBlueprint(wagen, 0, undefined, { connectionLines: true });
+            let grp = null;
+            try {
+                grp = r._buildFromBlueprint(wagen, 0, undefined, { connectionLines: true });
+            } finally {
+                zA.zu();
+            }
             let axes = 0;
             grp.traverse((o) => {
                 if (o.userData && o.userData.isJointAxis && o.isLine) axes++;
@@ -39104,7 +39158,7 @@ async function checkBandWGGelenke(ctx) {
             });
             out.axisGhosts = axes >= 1;
         }
-        out.axisNoError = true; // ein Bruch der Achsen würfe laut aus dem Bau oben (`_stoffBruch`, K22)
+        out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
@@ -41695,14 +41749,18 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
         // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
         out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
-        // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE geschluckte Exception — ein still
-        // gefangener Fehler ließe die Render-Schicht lautlos verschwinden. `window.__toonColorNodeError`
-        // ist der Marker (null = sauber).
-        window.__toonColorNodeError = null;
-        const _terrMat =
-            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
-        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
-        out.terrainColorNodeError = window.__toonColorNodeError || null;
+        // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE Stoff-Bruch — der Zeuge zählt jede Meldung
+        // „STOFF: …" über den Bau (K22; der Marker `__toonColorNodeError` hatte keinen Schreiber mehr).
+        const _zTerr = window.__stoffZeuge(r);
+        let _terrMat = null;
+        try {
+            _terrMat = r._buildToonNodeMaterial({ vertexColors: true });
+        } finally {
+            _zTerr.zu();
+        }
+        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && _zTerr.brueche.length === 0;
+        out.terrainColorNodeError = _zTerr.brueche[0] || null;
+        const _zAer = window.__stoffZeuge(r); // der Zeuge der Aerial-Prüfung (6): Struktur und Phantom
         // Die 2.5D-Lichtung flacht nur die SHADING-Normale (normalNode, eingefrorene Konstante); die
         // GEOMETRIE behält die echte Normale (Schatten-Bias-Vertrag — gebackene Normalen = Akne an Hängen).
         out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode);
@@ -41760,8 +41818,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 : null;
         out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
-        out.aerialNoError = true; // ein Bruch der Umgebungs-Antwort würfe laut aus dem Bau oben (`_stoffBruch`, K22)
-        out.aerialOutputError = null;
+        const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
+        out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
+        out.aerialOutputError = _aerBrueche[0] || null;
         // (7) Die Luft ist AUGEN-relativ (V18.530: der Luft-Knoten integriert vom Auge `cameraPosition` zum Punkt,
         // die Höhen-Abnahme über die Skalenhöhe) — nie absolute Welt-Höhe, sonst bleicht Klettern den Boden.
         const _aerSrc = window.__codeOf(r._luftEnsure);
@@ -55893,6 +55952,26 @@ async function checkBandRing6Workshop(ctx) {
         // DIE DOKU-LINSE (bewusst UNGESTRIPPT) für Marker, die per Definition im KOMMENTAR wohnen — nie
         // rohes .toString() (Apparat-Ratchet), nie __codeOf; CODE-Behauptungen gehören in __codeOf/__consumes.
         window.__dokuOf = (fnOrSrc) => String(fnOrSrc);
+        // DER STOFF-ZEUGE (K22): jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
+        // Fehler" zählt diese Meldungen über ihren Bau (`const z = __stoffZeuge(r); …bauen…; z.zu()` → die Brüche) — nie
+        // eine Konstante, nie eine Fenster-Variable; der Spion reicht an `log` durch und kehrt eigen-treu zurück.
+        window.__stoffZeuge = (r) => {
+            const eigen = Object.prototype.hasOwnProperty.call(r, "log");
+            const alt = r.log;
+            const brueche = [];
+            r.log = function (m, lv) {
+                if (lv === "ERROR" && /^STOFF:/.test(String(m))) brueche.push(String(m));
+                return alt.apply(this, arguments);
+            };
+            return {
+                brueche,
+                zu() {
+                    if (eigen) r.log = alt;
+                    else delete r.log;
+                    return brueche;
+                },
+            };
+        };
         // KONSUM-Beweis statt Quelltext-Zitat: providerObj[providerKey] wird temporär ein Zähl-Spy (delegiert
         // ans Original), obj[methodName](...args) läuft, dann own-Property-treu restauriert. true = der
         // Konsument hat den Provider WIRKLICH gerufen; wirft nie.
@@ -56484,6 +56563,7 @@ async function checkBandRing6Workshop(ctx) {
                 why: "Vendor-Lib nicht geladen",
             },
             { re: /Failed to execute 'compile' on 'WebAssembly'.*MIME/, why: "WASM-MIME falsch konfiguriert" },
+            { re: /\[ERROR\] STOFF:/, why: "Stoff-Bruch (K22, _stoffBruch)" },
         ];
         for (const { re, why } of criticalPatterns) {
             const hits = logs.filter((l) => re.test(l.text));
