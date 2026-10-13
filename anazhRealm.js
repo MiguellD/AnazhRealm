@@ -40713,8 +40713,30 @@ class AnazhRealm {
                 "    var sV = sqrt(abs(e) / max(elevMax, 1e-6));\n" +
                 "    if (e < 0.0) { sV = -sV; }\n" +
                 "    let v = clamp(sV * 0.5 + 0.5, 0.0, 0.9999);\n" +
-                "    let pT = textureLoad(pano, vec2<i32>(i32(u * f32(dim.x)), i32(v * f32(dim.y))), 0);\n" +
-                "    if (pT.a <= 0.0) { return vec4<f32>(0.0); }\n" +
+                "    // DIE SILHOUETTE BILINEAR (K16): vier Texel um den Strahl (Texel-Mitten, der Azimut umlaufend), nur die\n" +
+                "    // Treffer tragen Farbe und Distanz; der Himmel beginnt, wo ihre Deckung unter die Hälfte fällt — die\n" +
+                "    // nächste Texel-Lesung zeigte jenseits 8 km Zinnen (je Texel 0,47° ≈ 6,7 px bei 1080p/75°).\n" +
+                "    let W = i32(dim.x);\n" +
+                "    let H = i32(dim.y);\n" +
+                "    let fx = u * f32(dim.x) - 0.5;\n" +
+                "    let fy = v * f32(dim.y) - 0.5;\n" +
+                "    let tx = fx - floor(fx);\n" +
+                "    let ty = fy - floor(fy);\n" +
+                "    let x0 = ((i32(floor(fx)) % W) + W) % W;\n" +
+                "    let x1 = (x0 + 1) % W;\n" +
+                "    let y0 = clamp(i32(floor(fy)), 0, H - 1);\n" +
+                "    let y1 = clamp(i32(floor(fy)) + 1, 0, H - 1);\n" +
+                "    let p00 = textureLoad(pano, vec2<i32>(x0, y0), 0);\n" +
+                "    let p10 = textureLoad(pano, vec2<i32>(x1, y0), 0);\n" +
+                "    let p01 = textureLoad(pano, vec2<i32>(x0, y1), 0);\n" +
+                "    let p11 = textureLoad(pano, vec2<i32>(x1, y1), 0);\n" +
+                "    let w00 = (1.0 - tx) * (1.0 - ty) * select(0.0, 1.0, p00.a > 0.0);\n" +
+                "    let w10 = tx * (1.0 - ty) * select(0.0, 1.0, p10.a > 0.0);\n" +
+                "    let w01 = (1.0 - tx) * ty * select(0.0, 1.0, p01.a > 0.0);\n" +
+                "    let w11 = tx * ty * select(0.0, 1.0, p11.a > 0.0);\n" +
+                "    let deck = w00 + w10 + w01 + w11;\n" +
+                "    if (deck < 0.5) { return vec4<f32>(0.0); }\n" +
+                "    let pT = (p00 * w00 + p10 * w10 + p01 * w01 + p11 * w11) / deck;\n" +
                 "    // DAS LICHT DER WELT auf der Ferne: die Rampen-Farbe ist Albedo, das Gelände liegt flach\n" +
                 "    // (Normale oben) — dieselbe Diffus-Formel wie der Feld-Treffer; die Luft legt der Pass-Knoten auf\n" +
                 "    // (EINE Luft für Mesh, Feld und Panorama).\n" +
