@@ -191,3 +191,18 @@ Vertrags-Akt (Studio-Welle S3 „Kosten ins Asset", Plan §3.3; Lehre 19: die Ko
 - **DIE HAUS-KARTE IST FINAL GESTRICHEN**: das Befehle-Ziel trägt seit W6 der Bau-Satz, eine Karte zeigte bei 26–64 m
   Parallaxe; die Fernstufe ist die grundriss-treue L2, jenseits 64 m die Hülle (`fernform: "huelle"`).
 - Byte-Beweis siehe den Commit des Akts (die L0/L1-Fälle und `siedlung.json` byte-gleich, die L2 neu, die Stufe 3 neu).
+
+## Nachtrag FENSTER-GESETZ (13.10.2026, K38) — das Fenster jeder Stufe
+
+Vertrags-Akt (Auge 1310 Nr. 11: die Fensterreihen der L2 und der Turm-L1 waren schwarze Bänder, tags und nachts; Linse
+`gate:haus-fern` G). Die Stufe wechselt die Kosten, nie das Material:
+
+- **DER EINE SCHLAF-WÜRFEL** (`fensterSchlaeft`: Samen, Wand-Achse, Seite, Lage längs der Wand und Höhe auf 0,25 m): der
+  Bau jeder Stufe fragt ihn — vorher würfelte nur die L1 in Lauf-Reihenfolge (nah wachten alle Fenster, ab 12 m schlief
+  fast die Hälfte; Glut L1/L0 Median 0,648).
+- **DAS FERN-FENSTER** (`fensterFern` statt `bandFassade`): je Öffnung von `H.windows` Rahmen, Innenkörper (Putz ×
+  `INNEN_DAEMMER`, dieselbe Zahl wie die L1) und das Glas der L0; ein schlafendes Fenster trägt fern seine Mischung opak
+  im Stoff. Das Fern-Glas des Glas-Stils glüht nicht mehr als Körper (die Fenster glühen).
+- Budget-Zeilen (gemessen, dicht): L0 Draws 11 → 12 (das schlafende Glas), L2 3 → 4 (volle_moderne).
+- Byte-Beweis: von 258 Golden-Fällen bleiben 46 byte-gleich (Stufe 3: 45 von 64), neu sind L0 63/64, L1 64/64, L2
+  64/64 und die beiden Siedlungs-Fälle; `ausstattung.json` byte-gleich.

@@ -70,6 +70,9 @@ const SOLL = {
     wand: -0.015,
     dach: -0.03,
     tuer: 0.05,
+    glut: [2 / 3, 3 / 2],
+    glasTag: [1 / 4, 4],
+    glasFarbe: 0.08,
 };
 
 // ── T: DER TÜRBLATT-FANG — die Flügel, die der Bau anlegt (`tueren()`: userData.door + side), bevor die L1 sie an Ort und
@@ -460,8 +463,164 @@ const median = (a) => {
 };
 const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 
+// ── G: DAS GLAS JE STUFE (K38, Auge 1310 Nr. 11). Je Öffnung des Gesetzbuchs (`H.windows`: Stockwerk, Giebel, Anbau) wird
+//    ihr Rechteck von außen abgetastet (Raster 5 cm, entlang der Wand-Normale): je Pixel die Stoffe, die der Strahl trifft,
+//    von vorn gemischt (Deckkraft des Stoffs, ein opaker Stoff schließt) — TAG die Stoff-Antwort (lineare Albedo × Vertex-
+//    Farbe, die Mischung der Scheibe über dem Raum), NACHT die Glut (ein Stoff mit `__licht` "fenster" glüht in
+//    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
+//    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht: die L1 liegt kalibriert über der L0 — ihr
+//    Innenkörper steht im Schatten), Farbe (Anteile r/g/b) höchstens 0,08 entfernt. Vorher (Kern c5a4d0f8): die L2 legte
+//    Bänder im Stoff `dunkel` über die Reihen — Glut 0, Tag L2/L0 0,02–0,17; die L1 würfelte den Schlaf allein — Glut
+//    L1/L0 0,6.
+const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
+const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+const GLAS_R = 0.05;
+function stoffFlaechen(g) {
+    const out = [];
+    g.updateMatrixWorld(true);
+    g.traverse((o) => {
+        if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+        for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
+        const m = o.material || {};
+        const ud = m.userData || {};
+        const al = m.transparent && m.opacity < 1 ? m.opacity : 1;
+        const mc = m.color ? [m.color.r, m.color.g, m.color.b] : [1, 1, 1];
+        const gl = ud.__licht === "fenster" ? GLUT : null;
+        const P = o.geometry.attributes.position.array;
+        const C = o.geometry.attributes.color ? o.geometry.attributes.color.array : null;
+        const I = o.geometry.index ? o.geometry.index.array : null;
+        const e = o.matrixWorld.elements;
+        const n = I ? I.length : P.length / 3;
+        const w = new Float64Array(n * 3),
+            c = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) {
+            const k = (I ? I[i] : i) * 3;
+            const x = P[k],
+                y = P[k + 1],
+                z = P[k + 2];
+            w[i * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
+            w[i * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+            w[i * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+            for (let j = 0; j < 3; j++) c[i * 3 + j] = (C ? C[k + j] : 1) * mc[j];
+        }
+        out.push({ w, c, al, gl });
+    });
+    return out;
+}
+// ein Fenster: je Pixel die Mischung von vorn → Summen (Tag-Farbe, Glut) über das Rechteck
+const FACH = 0.5;
+function stoffFaecher(F) {
+    const fach = new Map();
+    F.forEach((f, fi) => {
+        const w = f.w;
+        for (let t = 0; t < w.length; t += 9) {
+            const y0 = Math.min(w[t + 1], w[t + 4], w[t + 7]),
+                y1 = Math.max(w[t + 1], w[t + 4], w[t + 7]);
+            for (let b = Math.floor(y0 / FACH); b <= Math.floor(y1 / FACH); b++) {
+                let l = fach.get(b);
+                if (!l) fach.set(b, (l = []));
+                l.push(fi, t);
+            }
+        }
+    });
+    return fach;
+}
+function fensterMisch(F, o, sum, fach) {
+    const horiz = o.perp === "z";
+    const sg = horiz ? (o.cz < 0 ? -1 : 1) : o.cx < 0 ? -1 : 1;
+    const wand = sg * (horiz ? o.cz : o.cx);
+    const u0 = (horiz ? o.cx : o.cz) - o.w / 2,
+        v0 = o.cy - o.h / 2;
+    const nu = Math.max(1, Math.round(o.w / GLAS_R)),
+        nv = Math.max(1, Math.round(o.h / GLAS_R));
+    const px = Array.from({ length: nu * nv }, () => []);
+    const gesehen = new Set();
+    for (let b = Math.floor(v0 / FACH); b <= Math.floor((v0 + o.h) / FACH); b++) {
+        const l = fach.get(b) || [];
+        for (let q = 0; q < l.length; q += 2) {
+            const f = F[l[q]],
+                t = l[q + 1],
+                w = f.w;
+            if (gesehen.has(l[q] * 1e7 + t)) continue;
+            gesehen.add(l[q] * 1e7 + t);
+            const ax = horiz ? w[t] : w[t + 2],
+                bx = horiz ? w[t + 3] : w[t + 5],
+                cx = horiz ? w[t + 6] : w[t + 8];
+            const ay = w[t + 1],
+                by = w[t + 4],
+                cy = w[t + 7];
+            if (Math.max(ax, bx, cx) < u0 || Math.min(ax, bx, cx) > u0 + o.w) continue;
+            if (Math.max(ay, by, cy) < v0 || Math.min(ay, by, cy) > v0 + o.h) continue;
+            const da = sg * (horiz ? w[t + 2] : w[t]),
+                db = sg * (horiz ? w[t + 5] : w[t + 3]),
+                dc = sg * (horiz ? w[t + 8] : w[t + 6]);
+            // vor der Wand höchstens 1,5 m (Laden, offener Flügel, Bank), dahinter der Raum bis 3 m
+            if (Math.max(da, db, dc) < wand - 3 || Math.min(da, db, dc) > wand + 1.5) continue;
+            const ar = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+            if (Math.abs(ar) < 1e-12) continue;
+            const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - u0) / GLAS_R)),
+                i1 = Math.min(nu - 1, Math.ceil((Math.max(ax, bx, cx) - u0) / GLAS_R));
+            const k0 = Math.max(0, Math.floor((Math.min(ay, by, cy) - v0) / GLAS_R)),
+                k1 = Math.min(nv - 1, Math.ceil((Math.max(ay, by, cy) - v0) / GLAS_R));
+            const ci = t / 3;
+            for (let k = k0; k <= k1; k++) {
+                const py = v0 + (k + 0.5) * GLAS_R;
+                for (let i = i0; i <= i1; i++) {
+                    const qx = u0 + (i + 0.5) * GLAS_R;
+                    const w0 = ((bx - qx) * (cy - py) - (by - py) * (cx - qx)) / ar,
+                        w1 = ((cx - qx) * (ay - py) - (cy - py) * (ax - qx)) / ar,
+                        w2 = 1 - w0 - w1;
+                    if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+                    const col = [0, 1, 2].map(
+                        (j) => w0 * f.c[ci * 3 + j] + w1 * f.c[ci * 3 + 3 + j] + w2 * f.c[ci * 3 + 6 + j]
+                    );
+                    px[k * nu + i].push([w0 * da + w1 * db + w2 * dc, f.al, col, f.gl]);
+                }
+            }
+        }
+    }
+    for (const L of px) {
+        L.sort((a, b) => b[0] - a[0]);
+        let tr = 1;
+        for (const [, al, col, gl] of L) {
+            for (let j = 0; j < 3; j++) {
+                sum.tag[j] += tr * al * col[j];
+                if (gl) sum.nacht[j] += tr * al * gl[j];
+            }
+            tr *= 1 - al;
+            if (tr < 1e-3) break;
+        }
+        sum.n++;
+    }
+}
+function glasJeStufe(g, fenster) {
+    const F = stoffFlaechen(g);
+    const sum = { tag: [0, 0, 0], nacht: [0, 0, 0], n: 0 };
+    const fach = stoffFaecher(F);
+    for (const o of fenster) fensterMisch(F, o, sum, fach);
+    const n = sum.n || 1,
+        tag = sum.tag.map((x) => x / n),
+        s = tag[0] + tag[1] + tag[2] || 1;
+    return { tag: luma(tag), nacht: luma(sum.nacht.map((x) => x / n)), farbe: tag.map((x) => x / s) };
+}
+const glasAbstand = (a, b) =>
+    Math.abs(a.farbe[0] - b.farbe[0]) + Math.abs(a.farbe[1] - b.farbe[1]) + Math.abs(a.farbe[2] - b.farbe[2]);
+function glasUrteil(G, f) {
+    const g0 = G[0];
+    for (const s of [1, 2]) {
+        const gs = G[s];
+        const rn = g0.nacht > 0 ? gs.nacht / g0.nacht : null,
+            rt = g0.tag > 0 ? gs.tag / g0.tag : null,
+            df = glasAbstand(gs, g0);
+        if (rn == null || !(rn >= SOLL.glut[0] && rn <= SOLL.glut[1]))
+            f.push(`Glas L${s}: Glut L${s}/L0 ${f3(rn)} (nachts ${f3(gs.nacht)} gegen ${f3(g0.nacht)})`);
+        if (rt == null || !(rt >= SOLL.glasTag[0] && rt <= SOLL.glasTag[1])) f.push(`Glas L${s}: Tag L${s}/L0 ${f3(rt)}`);
+        if (!(df <= SOLL.glasFarbe)) f.push(`Glas L${s}: Farbe ${f3(df)} von der L0 entfernt`);
+    }
+}
+
 // ── Ein Haus-Fall → seine Zahlen ──
-function hausFall(id, seed, ersatz3, tuerDefekt) {
+function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt) {
     const B = LOD.budget.haus;
     const g = {};
     const tuer = {};
@@ -483,6 +642,8 @@ function hausFall(id, seed, ersatz3, tuerDefekt) {
     p.seed = seed;
     const M = massen(p);
     const z = { id, seed, wurf: {}, kosten: {}, befund: [] };
+    if (glasDefekt) glasDefekt(g, M.H);
+    z.glas = [0, 1, 2].map((s) => glasJeStufe(g[s], M.H.windows || []));
     const wurfJe = {}; // je Werfer-Stufe einmal gerechnet (alle Stufen zeigen auf dieselbe)
     for (const s of [0, 1, 2]) {
         const w = B[s] ? B[s].schatten : undefined;
@@ -520,6 +681,7 @@ function hausUrteil(z) {
     if (z.aufbl == null || z.aufbl > SOLL.aufblaehung) f.push(`Aufblähung ${f3(z.aufbl)} m > ${SOLL.aufblaehung}`);
     if (!(z.innen.wand <= SOLL.wand + RASTER)) f.push(`Wand ${f3(z.innen.wand)} m (Soll ≤ ${SOLL.wand})`);
     if (!(z.innen.dach <= SOLL.dach + RASTER)) f.push(`Dach ${f3(z.innen.dach)} m über der Haut − 3 cm`);
+    glasUrteil(z.glas, f);
     for (const s of [0, 1, 2]) {
         const weg = z.tuer[s].filter((d) => !(d <= SOLL.tuer));
         if (weg.length)
@@ -607,6 +769,18 @@ function selbsttest() {
     };
     if (!hausUrteil(hausFall("alemannisch", 1, null, doppelt)).some((x) => /^Türblatt L0/.test(x)))
         fehler.push("T: ein Türblatt vor seinem Scharnier ist nicht rot");
+    // G: die Band-Fassade vor dem Akt (K38) — je Öffnung ein Kasten im Stoff `dunkel` 5 cm vor der Wand über der L2
+    const band = (g, H) => {
+        const dunkel = FC.materials().dunkel;
+        for (const o of H.windows || []) {
+            const z = o.perp === "z";
+            const k = new T.Mesh(new T.BoxGeometry(z ? o.w + 0.4 : 0.1, o.h, z ? 0.1 : o.w + 0.4), dunkel);
+            k.position.set(o.cx + (z ? 0 : o.cx < 0 ? -0.05 : 0.05), o.cy, o.cz + (z ? (o.cz < 0 ? -0.05 : 0.05) : 0));
+            g[2].add(k);
+        }
+    };
+    if (!hausUrteil(hausFall("alemannisch", 1, null, null, band)).some((x) => /^Glas L2: Glut/.test(x)))
+        fehler.push("G: die schwarzen Bänder der L2 sind nicht rot");
     return fehler;
 }
 
@@ -671,6 +845,15 @@ function selbsttest() {
         })
         .join(" · ");
     console.log(`  Türblatt am Scharnier (T, Soll ≤ ${SOLL.tuer} m): ${tuerZeile}`);
+    const glasZeile = [1, 2]
+        .map((s) => {
+            const rn = zeilen.map((z) => (z.glas[0].nacht > 0 ? z.glas[s].nacht / z.glas[0].nacht : 0));
+            const rt = zeilen.map((z) => (z.glas[0].tag > 0 ? z.glas[s].tag / z.glas[0].tag : 0));
+            const df = zeilen.map((z) => glasAbstand(z.glas[s], z.glas[0]));
+            return `L${s}/L0 Glut Median ${f3(median(rn))} [${f3(Math.min(...rn))}, ${f3(Math.max(...rn))}] · Tag Median ${f3(median(rt))} [${f3(Math.min(...rt))}, ${f3(Math.max(...rt))}] · Farbe max ${f3(Math.max(...df))}`;
+        })
+        .join(" · ");
+    console.log(`  Glas je Stufe (G, Soll Glut ${f3(SOLL.glut[0])}–${f3(SOLL.glut[1])}, Tag ${f3(SOLL.glasTag[0])}–${SOLL.glasTag[1]}, Farbe ≤ ${SOLL.glasFarbe}): ${glasZeile}`);
     console.log(
         `  Ausstattung ${aus.length}: ` +
             aus
@@ -685,7 +868,7 @@ function selbsttest() {
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     if (rot.length) {
         console.log(`\n❌ ROT — ${rot.length} Befunde:`);
