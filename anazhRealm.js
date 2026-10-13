@@ -78608,8 +78608,8 @@ class AnazhRealm {
         if (!this._foundryEnabled()) return 0;
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
-        // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis ein Frame ohne Chunk-Bau den Scan trägt.
-        if (this.state._frameChunksBuilt) return 1;
+        // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis die Terrain-zuerst-Regel den Scan trägt.
+        if (this._dekoWartet()) return 1;
         const f = this._foundry;
         if (!f || !f.ready) return 0; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
@@ -98519,8 +98519,16 @@ class AnazhRealm {
         return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - mandatory);
     }
 
-    // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). `!chunksBuilt`-Gate (Terrain vor
-    // Deko): der Stream-Job (prio 0) setzt `_frameChunksBuilt`, der Scatter-Deko-Job (prio 2) liest es.
+    // DIE TERRAIN-ZUERST-REGEL (EINE Stelle, Leser: der Deko-Job und `_foundryRewarmColdTrees`): baute dieser Takt
+    // Terrain, wartet die Deko — nie länger als bis zum Existenz-Boden des Dispatchers (jeder 4. Takt, wie das leere
+    // Budget), dann trägt sie ihren Boden-Anteil. Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
+    // baute jeder von 160 Takten nach einem Umzug Terrain, die Nah-Wiese lief 0-mal und 925 Büschel blieben am alten Ort.
+    _dekoWartet() {
+        return !!this.state._frameChunksBuilt && (this._schedFrameNo || 0) % 4 !== 0;
+    }
+
+    // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
+    // `_frameChunksBuilt`, der Scatter-Deko-Job (prio 2) fragt `_dekoWartet`.
     _buildDeferrableJobs(playerPos) {
         const st = this.state;
         return [
@@ -98555,13 +98563,14 @@ class AnazhRealm {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
-                    if (st._frameChunksBuilt) return; // !chunksBuilt-Gate: erst der Boden, dann der Wald
+                    if (this._dekoWartet()) return; // erst der Boden, dann der Wald — nie verhungert
                     // Scatter mit `_perfSenseLap`-Tap (phase.scatter in perfSense + Flugschreiber — neue welt-formende
                     // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
                     // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
-                    // Headless: budget=Infinity → One-Shot.
-                    const _dl = Number.isFinite(ms)
-                        ? performance.now() + Math.min(ms, AnazhRealm.SCATTER_SLICE_MS)
+                    // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
+                    const msDeko = st._frameChunksBuilt ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                    const _dl = Number.isFinite(msDeko)
+                        ? performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS)
                         : undefined;
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
@@ -98779,7 +98788,7 @@ class AnazhRealm {
 
     _loopVoxelStreaming() {
         // Der Frame-Budget-Scheduler dirigiert die deferrable Streaming-Arbeit: Streaming heilig [prio 0],
-        // Wasser [prio 1], Deko [prio 2]; `!chunksBuilt`-Gate via `_frameChunksBuilt`. EIN Pfad.
+        // Wasser [prio 1], Deko [prio 2]; Terrain zuerst über `_dekoWartet` (nie verhungert). EIN Pfad.
         return this._runFrameScheduler(this.state.playerMesh.position);
     }
 
