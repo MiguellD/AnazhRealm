@@ -48961,10 +48961,9 @@ class AnazhRealm {
             if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
             this.state._fieldVy = 0;
         }
-        // HP kehrt voll zurück — die WUNDE (Stat-Penalty, 10-min-Regen) trägt
-        // die Erinnerung, nicht ein HP-Malus.
-        this.state.player.hp = this.state.player.hpMax || 100;
-        this.recomputePlayerStats();
+        // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,
+        // 10-min-Regen) trägt die Erinnerung, nicht ein HP-Malus.
+        this.recomputePlayerStats({ voll: true });
         this.journalAppend("loss", `Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`, {
             source: source || null,
             at: now,
@@ -57510,8 +57509,9 @@ class AnazhRealm {
             if (status) status.textContent = def.label;
         }
         // Stats neu berechnen: bei Seelen-Wechsel tauschen die Tag-Profile (HP-Max, Speed, Sprung, Ausdauer,
-        // Resistenzen). DSL-Tuning (player_speed/player_jump_power) überschreibt bis zum nächsten Wechsel.
-        this.recomputePlayerStats();
+        // Resistenzen), die Wandlung füllt die Lebenswerte. DSL-Tuning (player_speed/player_jump_power) überschreibt
+        // bis zum nächsten Wechsel.
+        this.recomputePlayerStats({ voll: true });
         // S9 (kampf-plan §10-F4) — das gehaltene Gerät an den NEUEN Körper re-attachen (der alte
         // Körper + sein heldMesh-Kind wurden oben disposed); liest equipped.held — deckt damit auch
         // den Restore (init() ruft applyPlayerSoul nach Mesh-Bau erneut, wenn equipped.held gesetzt ist).
@@ -60500,28 +60500,31 @@ class AnazhRealm {
 
     // DER EINE Stat-Chokepoint: jede Mutation der Spieler-Stats ruft recomputePlayerStats
     // (computePlayerStats ist die EINE Berechnung) — nie inline neu rechnen, sonst driftet eine zweite
-    // Stat-Wahrheit. HP+Stamina gehen beim Wechsel auf max (der Todes-Respawn nutzt das: Wandlung heilt);
+    // Stat-Wahrheit. Die LEBENSWERTE (hp · stamina · mana) sind ZUSTAND: jede Neuberechnung klemmt sie auf das
+    // neue Maximum, keine hebt sie. Auf das Maximum setzen nur die Wandlung (applyPlayerSoul) und die Rückkehr
+    // (_playerDeathRespawn) mit `{ voll: true }` — vorher heilte jeder Rufer voll: Gerät, Panel, Boost und der
+    // Tod-Takt (K27, gate:kampf-gefuehl T27). Ein fehlender Wert (vor der ersten Wandlung) ist nie 0: er steht voll.
     // player_speed/player_jump_power dürfen danach überschreiben.
-    recomputePlayerStats() {
+    recomputePlayerStats(opts) {
         const computed = this.computePlayerStats();
         if (!this.state.player) return computed;
-        this.state.player.stats = computed.stats;
-        this.state.player.statTags = computed.tags;
+        const pl = this.state.player;
+        pl.stats = computed.stats;
+        pl.statTags = computed.tags;
         // Anwendung auf die Live-Bewegungs-Werte. V9.44-b: speed + sprintSpeed
         // über den kanonischen Setter — Sprint = 2× speed konsistent gehalten.
         this._applyPlayerSpeed(computed.stats.speed);
         this.state.jumpPower = computed.stats.jumpPower;
-        // HP + Stamina als Lebens-Werte (V1 noch ohne Schadens-System; werden
-        // mit 6.C2 pfad-Modus aktiv). Auf MAX setzen bei jedem Soul-Wechsel.
-        this.state.player.hpMax = computed.stats.hpMax;
-        this.state.player.hp = computed.stats.hpMax;
-        this.state.player.staminaMax = computed.stats.staminaMax;
-        this.state.player.stamina = computed.stats.staminaMax;
-        // Mana als zweite Ausdauer-Achse: bei jedem Soul-Wechsel auf MAX; Verbrauch + Regeneration im
-        // Game-Loop analog stamina.
-        this.state.player.manaMax = computed.stats.manaMax;
-        this.state.player.mana = computed.stats.manaMax;
-        // UI-Render anstoßen, falls Spieler-Drawer offen ist.
+        // Die Lebenswerte: das Maximum aus der Berechnung, der Zustand geklemmt (Mana ist die zweite Ausdauer-Achse;
+        // Verbrauch und Regen leben in den Verben und tickPlayerVitals).
+        const voll = !!(opts && opts.voll);
+        const lebenswert = (v, max) => (voll || v == null ? max : Math.min(v, max));
+        pl.hpMax = computed.stats.hpMax;
+        pl.hp = lebenswert(pl.hp, pl.hpMax);
+        pl.staminaMax = computed.stats.staminaMax;
+        pl.stamina = lebenswert(pl.stamina, pl.staminaMax);
+        pl.manaMax = computed.stats.manaMax;
+        pl.mana = lebenswert(pl.mana, pl.manaMax);
         return computed;
     }
 
@@ -84925,8 +84928,7 @@ class AnazhRealm {
         // wear zehrt zusätzlich zur Stamina, modus-unabhängig — sonst wäre Werkzeug im frieden ein Perpetuum.
         // Die Wand oben verhindert negative wear.
         // Derselbe Verschleiß wie im Kampf (_kampfVerschleiss). Kein Stat-Neubau: kein Stat liest wear (der Faktor
-        // _wearStatFactor wirkt im Treffer-Schaden), und recomputePlayerStats setzt HP und Ausdauer auf das Maximum —
-        // jeder Abbau-Hieb heilte und gab die eben gezahlte Ausdauer zurück (Welle L, K-D6).
+        // _wearStatFactor wirkt im Treffer-Schaden).
         this._kampfVerschleiss(heldBp);
         entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
         if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
@@ -101906,7 +101908,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.543.0";
+AnazhRealm.VERSION = "18.544.0";
 // Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
 // räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
 // `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
