@@ -982,9 +982,12 @@ async function lichtLauf() {
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
                         await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
+                        // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
+                        // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
+                        // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
                         for (let i = 0; i < 2; i++) {
                             r._schattenAlleNeu();
-                            auf = await window.__ausgabeAufnahme(w, h, 1);
+                            auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
                     } finally {
                         r._leuchtTakt = alt;
