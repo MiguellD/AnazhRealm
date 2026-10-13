@@ -41,6 +41,21 @@ Bei gleichem Takt (B Bank 1 bei 1735 gegen A Bank 3 bei 1742 MHz) bleiben +0,83 
 **Nebenbefund:** Auch ohne Bäume rechnet B mehr CPU je Bank-Frame: 2,76–2,88 gegen 2,23–2,48 ms. Das passt zum CPU-Takt p95 +0,4
 der Serie an der Wiese. Nicht vermessen.
 
+## Nachtrag 1310-6 — leafShape trennt nicht
+
+Byte-Beweis statt Messung (Gebot 9):
+- `leafShape` erreicht die Karten-Bäume nicht. Die Karte wählt ihre Atlas-Zelle reihum (foundry-core
+  `zelle = _strauchKarte ? GROSS : _lq++ % BREIT.zellen`, in A und B dieselbe Zeile), den Atlas malt phyto-core
+  `bakeLeafAtlasCanvas` (A = B byte-gleich). `P.leafShape` liest nur der Zweig ohne Karte (`pushLeaf`).
+- Die Studio-Goldens main bb554abf gegen V18.544 (`spec/asset-contract/v1/golden`): birke, eiche, buche, weide, karst, totholz
+  und die Sträucher sind byte-gleich; neu geprägt sind nur fichte, tanne und mammut (36 Goldens, 1abe2b5f).
+- Laut 1abe2b5f sind die 180 Fälle „byte-gleich bis auf whorlSpacing (54 Koniferen-Fälle)“: Laubfarbe und Form sind gleich, nur
+  der Quirl-Abstand der Nadelbäume ändert sich.
+
+Der Name wird enger: der Quirl-Abstand der Koniferen (`whorlSpacing` aus treeParams, fichte/tanne) oder der Wirts-Stoff der
+Bäume. Die Laubbäume sind byte-gleich und können den Preis nicht tragen; ihre Einzel-Toggles (±0,3 ms) sind Rauschen. Kein
+Schnitt.
+
 ## Pflicht-OFFEN Rest
 
 - Der Pixel-Preis der Baum-Stoffe von V18.544 an der Wiese, +0,35 bis +1,0 ms GPU je Sitzung: benannt, nicht geschnitten.
