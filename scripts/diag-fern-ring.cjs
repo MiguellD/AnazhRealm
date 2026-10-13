@@ -720,6 +720,37 @@ const server = http.createServer((req, res) => {
                 }
                 res.feldTakte = t + 1;
                 res.feldOffen = randOffen();
+                // die Ecken ohne Fläche des Feldes (`_fernRingFeldY` zählt sie, `feldOhne`): dort stünde der Ring auf dem Gesetz
+                res.feldOhne = f9 ? f9.feldOhne | 0 : -1;
+                // DIE NAHT MERKT DEN EDIT (K16, Prüfung 2): die Wache ruht; ein Edit an einer gemessenen Rand-Ecke weckt sie, und
+                // NUR die Ecken der Chunk-Nachbarschaft des Edits messen neu (`feldStand` je Ecke). Vorher stand die Edit-Frage
+                // hinter der ruhenden Wache (Cursor +0 in 27,4 s), und ein späteres Wecken verwarf jede der ~1 000 Rand-Ecken.
+                res.edit = null;
+                if (f9 && f9.feldStand && typeof r.carveVoxelSphere === "function") {
+                    let gE = -1;
+                    for (let g = 0; g < f9.zoneVerts && gE < 0; g++)
+                        if (f9.teilung.randV && f9.teilung.randV[g] && f9.feldY[g] === f9.feldY[g] && f9.feldY[g] - 3 > -1e9) gE = g;
+                    if (gE >= 0) {
+                        for (let t = 0; t < 5; t++) r._tickFernRing(pos9);
+                        const pE = r._fernRingPunkt(f9, gE);
+                        const vorStand = f9.feldStand.slice(0, f9.zoneVerts);
+                        const vorY = f9.feldY[gE];
+                        r.carveVoxelSphere(pE.x, vorY, pE.z, 2.5);
+                        let tE = 0;
+                        for (; tE < 150; tE++) {
+                            r._tickFernRing(pos9);
+                            if (f9.feldStand[gE] !== vorStand[gE] && randOffen() <= 0) break;
+                        }
+                        let neuGemessen = 0,
+                            randN = 0;
+                        for (let g = 0; g < f9.zoneVerts; g++) {
+                            if (!(f9.teilung.randV && f9.teilung.randV[g])) continue;
+                            randN++;
+                            if (f9.feldStand[g] !== vorStand[g]) neuGemessen++;
+                        }
+                        res.edit = { takte: tE + 1, ecke: f9.feldStand[gE] !== vorStand[gE], vorY: +vorY.toFixed(2), nachY: +f9.feldY[gE].toFixed(2), neu: neuGemessen, rand: randN };
+                    }
+                }
                 const rand = [];
                 for (let g = 0; f9 && f9.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
                     const p = r._fernRingPunkt(f9, g);
@@ -1503,8 +1534,16 @@ const server = http.createServer((req, res) => {
     );
     check(
         "9: DIE NAHT — kein Einschnitt: wo das Deck mehr als 2 m unter der 2D-Höhe liegt (Höhlen-Mündung, Kanal, Edit) und der Ring zeichnet, steht er nicht über ihm — die Naht trägt die Fläche des Feldes, das der Chunk zeichnet; Selbsttest: der Ring auf der 2D-Höhe (die alte Naht) schneidet ein",
-        !!out.muendung && out.muendung[0] === 0 && out.feldOffen === 0 && out.muendungAlt > 0,
-        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
+        !!out.muendung &&
+            out.muendung[0] === 0 &&
+            out.feldOffen === 0 &&
+            out.feldOhne === 0 &&
+            out.muendungAlt > 0 &&
+            !!out.edit &&
+            out.edit.ecke &&
+            out.edit.neu > 0 &&
+            out.edit.neu <= out.edit.rand * 0.25,
+        `einschnitt=${(out.muendung || []).join("/")} orte=${JSON.stringify(out.muendungOrte || [])} luecke=${out.muendungLuecke} feld: takte=${out.feldTakte} offen=${out.feldOffen} ohne-flaeche=${out.feldOhne} edit=${JSON.stringify(out.edit)} spalte=${out.feldUs} µs (${out.feldRand} Rand-Punkte) selbsttest-2d-hoehe=${out.muendungAlt}`
     );
     check(
         "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",

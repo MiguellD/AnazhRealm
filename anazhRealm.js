@@ -27765,8 +27765,8 @@ class AnazhRealm {
             { x: spot.x, y: platCenterY + 0.5, z: spot.z },
             { silent: true }
         );
-        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus
-        if (plat) this._grundrissRaeumen(plat);
+        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus —
+        // geräumt an der Wurzel (`spawnArchitecture`)
         // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
         // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
         const spawnY = platCenterY + 2.2;
@@ -35530,6 +35530,8 @@ class AnazhRealm {
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
+        // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry)) this._grundrissRaeumen(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
@@ -39227,6 +39229,9 @@ class AnazhRealm {
             vollY: new Float32Array(off).fill(NaN),
             // die Fläche des FELDES am Rand der Naht (`_fernRingFeldY`): NaN = noch nicht gemessen
             feldY: new Float32Array(off).fill(NaN),
+            // der Stand des Feldes je gemessener Ecke (`_voxelStand` ihres Chunks): ein Edit verwirft nur die Ecken, deren
+            // Chunk-Nachbarschaft er ändert
+            feldStand: new Array(off),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
             // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
@@ -39475,8 +39480,15 @@ class AnazhRealm {
     _fernRingFeldY(fr, p) {
         const voll = fr.vollY[p.g];
         if (!(voll === voll)) return NaN;
+        const span = this._voxelChunkConfig().span;
+        fr.feldStand[p.g] = this._voxelStand(Math.floor(p.x / span), Math.floor(p.z / span));
         const y = this._voxelSurfaceY(p.x, p.z);
-        fr.feldY[p.g] = y === null || !(y === y) ? voll : y;
+        // OHNE FLÄCHE (die Spalte trägt keinen Boden — Luft bis zur Garantie-Tiefe) bleibt die Ecke auf dem Gesetz, und
+        // das ist gezählt (`feldOhne`, gate:fern-ring Band 9 nennt es), nie still
+        if (y === null || !(y === y)) {
+            fr.feldOhne = (fr.feldOhne | 0) + 1;
+            fr.feldY[p.g] = voll;
+        } else fr.feldY[p.g] = y;
         return fr.feldY[p.g];
     }
 
@@ -40081,7 +40093,10 @@ class AnazhRealm {
         if (!fr.zoneVerts) return;
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
-        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
+        // Ein Edit weckt sie (die Edit-Generation der Karte, `_voxelEditKarte`): bis K16-Prüfung 2 stand die Edit-Frage hinter
+        // der Wache und wurde in Ruhe nie erreicht (27,4 s nach einem Edit rückte der Cursor um 0).
+        this._voxelEditKarte();
+        if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) + "|" + (this._editGenZaehler | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
@@ -40093,14 +40108,7 @@ class AnazhRealm {
             fr.deckLawGen = fr.gen | 0;
             fr.deckLawWl = wl;
         }
-        // die Feld-Fläche des Rands (`_fernRingFeldY`) gilt je Edit-Stand: ein Edit schreibt das Feld um
-        const ed = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        const edN = Array.isArray(ed) ? ed.length : 0;
-        if (fr.feldEdits !== ed || fr.feldEditsN !== edN) {
-            fr.feldEdits = ed;
-            fr.feldEditsN = edN;
-            fr.feldY.fill(NaN);
-        }
+        const span = this._voxelChunkConfig().span;
         const pos = fr.geos[0].attributes.position;
         let neu = false;
         let feldMessungen = 0;
@@ -40117,7 +40125,15 @@ class AnazhRealm {
             }
             // DIE ECKE EINES NAHT-DREIECKS misst die Fläche des Feldes (gedeckelt je Takt: eine Spalten-Probe liest die
             // Dichte von der Garantie-Luft bis zum Boden)
-            if (fr.feldY[p.g] !== fr.feldY[p.g] && fr.teilung.randV && fr.teilung.randV[p.li]) {
+            const rand = fr.teilung.randV && fr.teilung.randV[p.li];
+            // die Feld-Fläche des Rands gilt je Stand ihres Chunks: nur die Ecken, deren Nachbarschaft ein Edit ändert, messen neu
+            if (
+                rand &&
+                fr.feldY[p.g] === fr.feldY[p.g] &&
+                fr.feldStand[p.g] !== this._voxelStand(Math.floor(p.x / span), Math.floor(p.z / span))
+            )
+                fr.feldY[p.g] = NaN;
+            if (fr.feldY[p.g] !== fr.feldY[p.g] && rand) {
                 if (feldMessungen < F.feldJeTakt) {
                     this._fernRingFeldY(fr, p);
                     feldMessungen++;
@@ -72909,7 +72925,6 @@ class AnazhRealm {
                 /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
             }
         }
-        if (this._grundrissVon(entry)) this._grundrissGitter = null; // ein Bau mit Grundriss (Haus, Lichtung): das Gitter baut neu
         // KAMIN-RAUCH (.105): Spitze haus-lokal → userData.rauchQuelle (Invariant: Rauch ⟺ chimney).
         if (
             opts.chimney &&
@@ -72990,6 +73005,9 @@ class AnazhRealm {
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+        // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung): was die Natur dort schon geworfen hat,
+        // weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Plattform, Spieler, KI und Probe gleich.
+        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
@@ -75033,7 +75051,6 @@ class AnazhRealm {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
-        if (entry) this._grundrissRaeumen(entry);
         return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
@@ -80868,6 +80885,30 @@ class AnazhRealm {
             return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
         const t = e.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
+        // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament- und Tür-Zeile (gesetzt vom
+        // Spieler, der KI, einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der
+        // Mess-Wiese). Die festen Boxen der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle.
+        const hu = e._hausHuelle;
+        if (hu) {
+            const m = e._grundrissHuelle;
+            if (m && m.hu === hu) return m.fp;
+            const fest = AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || [];
+            let x0 = Infinity,
+                x1 = -Infinity,
+                z0 = Infinity,
+                z1 = -Infinity;
+            for (const q of fest)
+                if (q.art === "box") {
+                    x0 = Math.min(x0, q.c[0] - q.h[0]);
+                    x1 = Math.max(x1, q.c[0] + q.h[0]);
+                    z0 = Math.min(z0, q.c[2] - q.h[2]);
+                    z1 = Math.max(z1, q.c[2] + q.h[2]);
+                }
+            const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+            const fp = x1 > x0 && z1 > z0 ? { ex: ((x1 - x0) / 2) * k, ez: ((z1 - z0) / 2) * k, ox: ((x0 + x1) / 2) * k, oz: ((z0 + z1) / 2) * k } : null;
+            e._grundrissHuelle = { hu, fp };
+            if (fp) return fp;
+        }
         const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
@@ -80971,7 +81012,8 @@ class AnazhRealm {
     // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
     // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
     // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
-    // (Lehre 25). Leser: `_spawnSettlementSlot`, `_ensureGenesisPlatform` und das Laden. Gibt die Zahl der geräumten
+    // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
+    // und das Laden. Gibt die Zahl der geräumten
     // Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);

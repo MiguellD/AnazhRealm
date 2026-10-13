@@ -3017,6 +3017,18 @@ async function WELLE_L() {
                             Math.abs(r._standSicht(x, z, gy, false) - gy) < 0.15
                         );
                     };
+                    const eben = (x, z) => {
+                        const h = [
+                            [x, z + 1.6],
+                            [x, z],
+                            [x, z + 0.3],
+                            [x - 0.8, z + 1.6],
+                            [x + 0.8, z + 1.6],
+                            [x - 0.8, z],
+                            [x + 0.8, z],
+                        ].map(([a, b]) => r.getTerrainHeightAt(a, b));
+                        return Math.max(...h) - Math.min(...h) <= 0.12;
+                    };
                     const ortR = [
                         [-14, 14],
                         [14, -14],
@@ -3028,10 +3040,20 @@ async function WELLE_L() {
                         [70, 0],
                         [0, 70],
                         [-70, 0],
+                        // weiter draußen je 8 Richtungen (das Gelände des Kerns trägt Hänge und Kliffe: der Ort kommt aus der Welt)
+                        ...[100, 140, 180].flatMap((rr) =>
+                            [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
+                                Math.round(Math.cos((k * Math.PI) / 4) * rr),
+                                Math.round(Math.sin((k * Math.PI) / 4) * rr),
+                            ])
+                        ),
                     ].find(
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
+                            // EBEN (K16): Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
+                            // Gelände) stand der Wolf 0,76 m über dem Gesetz, der Kopf zielte an die Klemme
+                            eben(P.x + ox, P.z + oz) &&
                             trocken(r2, P.x + ox, P.z + oz + 1.6) &&
                             trocken(j2, P.x + ox, P.z + oz) &&
                             trocken(j2, P.x + ox, P.z + oz + 0.3)

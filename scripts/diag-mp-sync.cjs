@@ -98,6 +98,7 @@ function installiere(alteTuer) {
         peerTakte: 0,
         ursprung: 0,
         ursprungOhneOrt: 0,
+        ortZuletzt: new Map(),
         ursprungBeispiel: null,
         ortGesehen: new Set(),
         inits: 0,
@@ -118,6 +119,9 @@ function installiere(alteTuer) {
     const msgPos = r._p2pMsgPos;
     r._p2pMsgPos = function (msg, p2p) {
         if (msg && typeof msg.peerId === "string") mp.ortGesehen.add(msg.peerId);
+        // der zuletzt empfangene Ort: steht der Mitspieler WIRKLICH im Ursprung (die Welt setzt jeden Erst-Spawn auf 0/0, und
+        // das Gelände des Kerns trägt dort ebenen Grund — er bleibt stehen), ist der Ursprung sein Ort, kein Täter
+        if (msg && typeof msg.peerId === "string") mp.ortZuletzt.set(msg.peerId, { x: msg.x, z: msg.z });
         return msgPos.call(this, msg, p2p);
     };
     const tick = r.p2pTick;
@@ -133,7 +137,9 @@ function installiere(alteTuer) {
             const ortBekannt = mp.ortGesehen.has(pid) || !!(ls && ls.seeded && ls.doneSeq >= 0);
             for (const o of [e.mesh, e.nameLabel]) {
                 if (!o || !o.parent || !o.visible) continue;
-                if (o.position.x === 0 && o.position.z === 0) {
+                const oz = mp.ortZuletzt.get(pid);
+                const wirklich = (oz && oz.x === 0 && oz.z === 0) || (ls && ls.seeded && ls.x === 0 && ls.z === 0);
+                if (o.position.x === 0 && o.position.z === 0 && !wirklich) {
                     mp.ursprung++;
                     if (!ortBekannt) mp.ursprungOhneOrt++;
                     if (!mp.ursprungBeispiel)
