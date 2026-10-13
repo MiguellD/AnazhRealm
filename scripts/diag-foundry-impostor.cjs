@@ -180,7 +180,10 @@ async function driveImpostor(page) {
                 if ((window.__impostorRttBaked || 0) > out.rttBaked) break;
             }
             out.rttBakedAfter = (typeof window !== "undefined" && window.__impostorRttBaked) || 0;
-            out.rttErrorAfter = (typeof window !== "undefined" && window.__impostorRttError) || null;
+            // der Bruch der Karte steht beim Namen im Log (`_stoffBruch`, K22); hier zählt der Zensus die gescheiterten
+            const cz = r._impostorCensus && r._impostorCensus();
+            out.rttErrorAfter =
+                cz && cz.gescheitert ? `gescheitert ${cz.gescheitert} (${cz.gescheitertArten.join(", ")})` : null;
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -227,7 +230,7 @@ async function kleberProbe(page, fmtWunsch) {
             r.state.foundryCrossfade = prevCf;
             out.billboard = !!(mat && mat.userData && mat.userData.impostorBillboard);
             if (!out.billboard) {
-                out.err = "Impostor-TSL-Wiring fehlgeschlagen: " + (window.__impostorAtlasError || "unbekannt");
+                out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
                 return out;
             }
             // (1) die synthetische Studio-Karte: Albedo linear, links oben opak; Normale zur Kamera

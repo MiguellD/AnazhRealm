@@ -72,6 +72,11 @@ const server = http.createServer((req, res) => {
     });
     const page = await browser.newPage();
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+    // der Stoff-Zeuge (K22): ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
+    const stoffBrueche = [];
+    page.on("console", (m) => {
+        if (/\[ERROR\] STOFF:/.test(m.text())) stoffBrueche.push(m.text());
+    });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
@@ -540,7 +545,6 @@ const server = http.createServer((req, res) => {
             hiW,
             hiWonSurfPct: hiW ? +((100 * hiWonSurf) / hiW).toFixed(1) : 0,
             hiWmeanGap: hiW ? +(hiWsumGap / hiW).toFixed(3) : 0,
-            morphError: window.__terrainMorphError || null,
         };
     });
 
@@ -797,7 +801,8 @@ const server = http.createServer((req, res) => {
     }
 
     console.log("── D · T2-GEOMORPH — schliesst der Morph die Cross-LOD-Naht? ──");
-    if (morph.morphError) console.log(`   ⚠ Morph-Material-Fehler: ${morph.morphError}`);
+    for (const b of stoffBrueche.filter((t) => /Geomorph/.test(t)))
+        console.log(`   ⚠ Morph-Material-Fehler: ${b.slice(0, 200)}`);
     if (morph.crossPairs === 0) {
         console.log("   (keine Cross-LOD-Grenze gestreamt)\n");
     } else if (morph.morphedVerts === 0) {
@@ -898,7 +903,8 @@ const server = http.createServer((req, res) => {
     // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.
-        const sharedPct = spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
+        const sharedPct =
+            spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
         const crossPairs = spatial.cross ? spatial.cross.pairs : 0;
         const SAME_BASELINE = 45; // V18.371-Baseline ~50% (G1 hebt das auf ~100%)
         let bad = false;

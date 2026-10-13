@@ -15771,13 +15771,6 @@ class AnazhRealm {
         // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): DSL skybox_color (nebulaColor),
         // _dayNightApplySkybox (nebulaColor + cloudCover), _loopSkyboxZeit (time pro Frame).
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            // Sicherheits-Wand: ohne Node-Build fällt nichts in die Szene.
-            // Sollte nie eintreten — der Bootstrap legt beides ab. Defensive
-            // Diagnose-Hilfe falls Vendor-Bruch.
-            this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
-            return;
-        }
         // Idempotent am Chokepoint: ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel zu
         // stapeln (kein Doppel-Heap).
         if (this.state.skybox) {
@@ -15793,7 +15786,6 @@ class AnazhRealm {
             float,
             positionLocal,
             normalize,
-            sin,
             dot,
             floor,
             fract,
@@ -15807,7 +15799,7 @@ class AnazhRealm {
         // Der Himmel nutzt DIESELBE Noise-Sprache wie Terrain + Vegetation: das vendored `mx_noise_float`
         // (MaterialX-Simplex, präzisions-stabil). fract(sin(dot·43758))-Hash-Noise kippt bei großen
         // Koordinaten in Float-Chaos (Flackern) — hash3 ist nur der Fallback ohne mx_noise.
-        const mxNoise = TSL.mx_noise_float || null;
+        const mxNoise = TSL.mx_noise_float;
 
         // Drei Live-Uniforms (uniform-Knoten, .value-mutable). nebulaColor
         // als Color-Vector (TSL erkennt Color → vec3 via Type-Detection).
@@ -15825,35 +15817,12 @@ class AnazhRealm {
         // 3D-Hash-Noise (Spiegel der alten GLSL `noise(vec3)`, Fallback ohne mx_noise): dieselben
         // Magic-Konstanten, Smoothstep, 8-Corner-Trilinear-Mix. Nicht bit-identisch (TSL sin/fract sind
         // auf WebGPU implementation-defined), das Smoothing absorbiert die <1e-4-Drift.
-        const hash3 = Fn(([st]) => {
-            return fract(sin(dot(st, vec3(12.9898, 78.233, 45.5432))).mul(43758.5453123));
-        });
-        const noise3 = Fn(([st]) => {
-            const i = floor(st);
-            const f = fract(st);
-            // smoothstep-Approximation f² · (3 − 2f), identisch zur GLSL-Variante
-            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
-            const c000 = hash3(i);
-            const c100 = hash3(i.add(vec3(1.0, 0.0, 0.0)));
-            const c010 = hash3(i.add(vec3(0.0, 1.0, 0.0)));
-            const c110 = hash3(i.add(vec3(1.0, 1.0, 0.0)));
-            const c001 = hash3(i.add(vec3(0.0, 0.0, 1.0)));
-            const c101 = hash3(i.add(vec3(1.0, 0.0, 1.0)));
-            const c011 = hash3(i.add(vec3(0.0, 1.0, 1.0)));
-            const c111 = hash3(i.add(vec3(1.0, 1.0, 1.0)));
-            return mix(
-                mix(mix(c000, c100, u.x), mix(c010, c110, u.x), u.y),
-                mix(mix(c001, c101, u.x), mix(c011, c111, u.x), u.y),
-                u.z
-            );
-        });
-
         // vDir = normalize(positionLocal) — stabile Welt-Achse, V8.26-Bug-Schutz.
         const vDir = normalize(positionLocal);
 
         // Nebula-Tint aus mx_noise ([-1,1] → [0,1]). Oktaven von Hand (mx_fractal nimmt nur eine
         // Position, die Zeit-Drift soll je Oktave verschieden sein); 2 Oktaven (Fragment-Budget).
-        const _nebN = (p) => (mxNoise ? mxNoise(p).mul(0.5).add(0.5) : noise3(p));
+        const _nebN = (p) => mxNoise(p).mul(0.5).add(0.5);
         const n1 = _nebN(vDir.mul(1.0).add(uTime.mul(0.02)));
         const n2 = _nebN(vDir.mul(2.0).add(uTime.mul(0.01)));
         const nebulaTint = float(0.5).add(n1.add(n2).div(2.0).mul(0.5));
@@ -16000,8 +15969,8 @@ class AnazhRealm {
         try {
             this._buildStarField();
         } catch (err) {
-            // Fern-Deko darf den ewigen Loop nie reißen — laut, aber nicht tödlich.
-            this.log(`Fern-Deko-Bau (Sterne) fehlgeschlagen: ${err.message}`, "WARN");
+            // Fern-Deko reißt den ewigen Loop nie — laut beim Namen (K22), nie tödlich
+            this._stoffBruch("die Fern-Deko (Sterne)", err);
         }
     }
 
@@ -16085,10 +16054,6 @@ class AnazhRealm {
         // worldSize ≈ aSize × 1.0: bei RADIUS=480, FOV 70° und 720p ist 1 Welt-Einheit ≈ 1 px — kein
         // pixelRatio-Uniform, DPR wirkt über die Render-Auflösung.
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            this.log("Stern-Feld-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
-            return;
-        }
         const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
         const uOpacity = uniform(0.5);
@@ -16380,14 +16345,14 @@ class AnazhRealm {
         // (ampX 1.5, kein windScale). Die Höhengewichtung steckt in der Geometrie
         // (geo.translate(0, 0.425, 0) zentriert auf die Wurzel). KEIN onBeforeCompile.
         const sway = this._windSwayOffset(TSL, { ampX: 1.5 });
-        mat.positionNode = sway ? positionLocal.add(sway) : positionLocal;
+        mat.positionNode = positionLocal.add(sway);
 
         // Gras-Albedo-Variation (render-only): (a) Spitzen-Gradient (Wurzel dunkler/kühler → Spitze
         // heller) + (b) per-Clump-Noise über die Welt-Position (~1,6 m Wellenlänge). `colorNode` ist auf
         // lit NodeMaterial die DIFFUSE Albedo — Licht, Wind, Tag-Nacht bleiben aktiv. Kein
         // attribute()-Lookup (sonst Schwärze-Klasse), kein Geometrie-Eingriff. try/catch → flach-grün.
-        try {
-            if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
+        {
+            {
                 const hfN = TSL.clamp(positionLocal.y.div(wu.uBladeH), float(0.0), float(1.0));
                 // Die Wurzel liest das geteilte MEADOW_GREEN (= der Wiesen-Boden-Tint) → der Halm wächst ohne
                 // Farb-Bruch aus dem Boden; die Spitze bleibt sattes Grün, nicht gelb.
@@ -16405,7 +16370,7 @@ class AnazhRealm {
                 // `attribute("instanceColor")` lesen (Doppel-Multiply; die geteilte Geometrie trägt es nicht).
                 // Gegenlicht-Translucency: wrap = pow(max(dot(viewDir, -sunDir), 0), k) → Halme leuchten nur im
                 // Gegenlicht golden-grün, höhen-gewichtet, rein additiv.
-                if (TSL.normalize && TSL.dot && TSL.pow && wu.uSunDir) {
+                {
                     const viewDir = TSL.normalize(positionWorld.sub(TSL.cameraPosition));
                     const sunBack = TSL.normalize(wu.uSunDir).mul(float(-1.0));
                     const wrap = TSL.pow(max(TSL.dot(viewDir, sunBack), float(0.0)), float(3.0));
@@ -16414,33 +16379,28 @@ class AnazhRealm {
                 }
                 // Rispen-Spitzen (aSeed=1) tragen den strohigen Samenkopf-Ton (seedTan 0xc8b27a, sRGB→linear).
                 // aSeed lebt auf der GETEILTEN Tuff-Geometrie (Halm 0, Granne 1) → das Attribut ist immer da.
-                if (TSL.attribute) {
+                {
                     const aSeed = TSL.attribute("aSeed", "float");
                     albedo = TSL.mix(albedo, vec3(0.46, 0.38, 0.18), aSeed);
                 }
                 // Die Wiese folgt der Saison: Albedo × die EINE Saison-Tönung `uSeasonMul` (aus seasonPhase in
                 // `_tickSeason`); Licht/Wind/Translucency bleiben aktiv.
-                const _su = this._ensureSeasonUniforms();
-                if (_su && _su.uSeasonMul) albedo = albedo.mul(_su.uSeasonMul);
+                albedo = albedo.mul(this._ensureSeasonUniforms().uSeasonMul);
                 mat.colorNode = TSL.vec4(albedo, float(1.0));
             }
-        } catch {
-            /* TSL/Noise nicht verfuegbar -> flaches Grün (Default-color) */
         }
 
         // Das Gras dockt ans Frequenzband: dieselben Band-Uniforms über den EINEN Empfänger (kein
         // Material-Merge) → Füll-Licht + Aerial-Haze. Albedo = mittlere Wiesen-Farbe als Konstante (reicht
         // fürs 0.06-Füll-Licht; kein attribute()-Lookup).
-        try {
+        {
             this._ensureAtmoUniforms();
             const _SRg = AnazhRealm.SUBSTANCE_RESPONSE;
             this._applySubstanceResponse(mat, _SRg.defaults.gras, {
                 // V18.386 — PHYTO-KLEID: die mittlere Wiesen-Farbe fürs Band-Füll-Licht folgt dem
                 // Vorlagen-Gras (Mittel aus Wurzel-Boden-Ton und Sommer-Akzent-Spitze, sRGB→linear).
-                albedoNode: TSL.vec3 ? TSL.vec3(0.108, 0.225, 0.031) : null,
+                albedoNode: TSL.vec3(0.108, 0.225, 0.031),
             });
-        } catch {
-            /* Band optional — Gras bleibt ohne Band */
         }
 
         // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
@@ -16458,8 +16418,7 @@ class AnazhRealm {
     // liest dieselben, `_windBoeAt`).
     // uBend-Sphären biegen Halme radial weg (min(hf,1)). Render-rein; gibt den vec3-Versatz zurück.
     _windSwayOffset(TSL, opts = {}) {
-        const wu = this.state.windUniforms;
-        if (!wu) return null;
+        const wu = this._windUniformsEnsure();
         this._ensureWindCoupling(TSL);
         const { vec3, float, sin, cos, max, positionWorld } = TSL;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
@@ -16544,11 +16503,7 @@ class AnazhRealm {
     // (GRAS_BEND_SLOTS × vec4). Idempotent; ohne TSL.uniform (Skalar-Mock in gate:kopplung) bleibt ein
     // gesetztes wu stehen. `_loopRender` speist beide pro Frame (`_windDirAt`, `_tickGrasBend`).
     _ensureWindCoupling(TSL) {
-        const wu = this.state.windUniforms;
-        if (!wu) return null;
-        if (!TSL || typeof TSL.uniform !== "function" || typeof THREE === "undefined") {
-            return wu.uWindDir ? wu : null;
-        }
+        const wu = this._windUniformsEnsure();
         if (!wu.uWindDir) {
             const d0 = this._windDirAt(0);
             wu.uWindDir = TSL.uniform(new THREE.Vector2(d0.x, d0.z));
@@ -24449,25 +24404,11 @@ class AnazhRealm {
             try {
                 worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
             } catch (_workerErr) {
-                if (!srcUrl && !this._voxelWorkerBlobTried) {
-                    this._voxelWorkerBlobTried = true;
-                    fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
-                        .then((r) => r.text())
-                        .then((src) => {
-                            // V18.112 — die absolute Basis injizieren: ein blob:-Worker
-                            // kann relative importScripts nicht auflösen (Sonden-Fang).
-                            const base = new URL(".", document.baseURI).href;
-                            const blobUrl = URL.createObjectURL(
-                                new Blob([`self.__anazhBase=${JSON.stringify(base)};\n`, src], {
-                                    type: "application/javascript",
-                                })
-                            );
-                            this._getVoxelWorker(blobUrl);
-                            if (this.state.voxelWorker)
-                                this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
-                        })
-                        .catch((e2) => this.log(`Voxel-Worker Blob-Fallback scheiterte: ${e2.message}`, "INFO"));
-                }
+                // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
+                // er laut (der äußere Fang meldet ERROR) — nie wieder still mit null, während der Haupt-Thread jeden Chunk
+                // selbst baut.
+                if (srcUrl || this._voxelWorkerBlobTried) throw _workerErr;
+                this._voxelFadenBlobWeg();
                 return null;
             }
             this.state.voxelWorkerPending = new Map();
@@ -24563,6 +24504,29 @@ class AnazhRealm {
             this.log(`Voxel-Worker-Spawn-Fehler: ${e.message}`, "ERROR");
             return null;
         }
+    }
+
+    // DER SANDBOX-WEG DES VOXEL-FADENS (EIN Versuch): die Quelle per fetch (ACAO *) → Blob-URL → `_getVoxelWorker`
+    // re-entrant. Scheitert er, bricht er laut beim Namen (K22).
+    _voxelFadenBlobWeg() {
+        this._voxelWorkerBlobTried = true;
+        fetch(`voxel-worker.js?v=${AnazhRealm.VERSION}`)
+            .then((r) => r.text())
+            .then((src) => {
+                // V18.112 — die absolute Basis injizieren: ein blob:-Worker
+                // kann relative importScripts nicht auflösen (Sonden-Fang).
+                const base = new URL(".", document.baseURI).href;
+                const blobUrl = URL.createObjectURL(
+                    new Blob([`self.__anazhBase=${JSON.stringify(base)};\n`, src], {
+                        type: "application/javascript",
+                    })
+                );
+                this._getVoxelWorker(blobUrl);
+                if (this.state.voxelWorker)
+                    this.log("Voxel-Worker über Blob-URL gestartet (Sandbox-Rekursion)", "INFO");
+            })
+            // LAUT (K22): ohne Faden baut der Haupt-Thread jeden Chunk selbst — der Bruch meldet sich beim Namen
+            .catch((e2) => this._stoffBruch("der Voxel-Faden startet nicht (Blob-Weg)", e2));
     }
 
     // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, erosion, tarns, voxelEdits, …).
@@ -25152,13 +25116,41 @@ class AnazhRealm {
     // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
     // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
     // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
+    // EXISTENZ VOR FRAMERATE (Lehre 13, Prüfer K22-3): über dem Budget drosselt der Frame das TEMPO des Wachstums, nie
+    // seine Existenz — je WUCHS_DROSSEL_MS (Wanduhr) wächst EIN Chunk, der nächste zum Spieler. Bis hierher kehrte das
+    // Wachstum über dem Budget still um: auf der Radeon (Werkbank, Dorf) war das Budget in 60 von 60 und 160 von 160
+    // Takten überschritten, die offenen Chunks im 64-m-Kreis blieben kahl (4 → 4), und ob Wald oder kahler Hügel im Bild
+    // stand, entschied allein der frei laufende Boot.
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
-        // V18.282 — RESPONSIVITÄT VOR DURCHSATZ: ist der Frame über Budget (gemessene Frame-ZEIT
-        // über dem Sollwert), PAUSIERT das Vegetations-Wachstum (reine Deko, kann warten) → der
-        // Frame bekommt Luft. Es wächst weiter, sobald die Zeit es trägt (die echte Kapazität).
-        if (this.state._frameOverBudget) return;
+        if (this.state._frameOverBudget) {
+            const jetzt = typeof performance !== "undefined" ? performance.now() : Date.now();
+            if (this._wuchsNaechster !== undefined && jetzt < this._wuchsNaechster) return;
+            const pm = this.state.playerMesh;
+            const { span } = this._voxelChunkConfig();
+            let naechster = null;
+            let naechsterD = Infinity;
+            for (const key of pending) {
+                const ci = key.indexOf(",");
+                const cx = parseInt(key.slice(0, ci), 10),
+                    cz = parseInt(key.slice(ci + 1), 10);
+                if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+                const d = pm
+                    ? Math.hypot(cx * span + span / 2 - pm.position.x, cz * span + span / 2 - pm.position.z)
+                    : 0;
+                if (d < naechsterD) {
+                    naechsterD = d;
+                    naechster = { key, cx, cz };
+                }
+            }
+            if (!naechster) return;
+            this._wuchsNaechster = jetzt + AnazhRealm.WUCHS_DROSSEL_MS; // Instanz-Feld (nie im Spielstand)
+            pending.delete(naechster.key);
+            if (this.state.voxelChunks && this.state.voxelChunks.has(naechster.key))
+                this._populateVoxelChunkVegetation(naechster.cx, naechster.cz);
+            return;
+        }
         let budget = 2;
         for (const key of pending) {
             if (budget <= 0) break;
@@ -25307,8 +25299,8 @@ class AnazhRealm {
         // dieselbe Eigenschaft trägt jetzt EINEN Uniform-Knoten, die CSM baut ihren Knoten einmal je Instanz (TSL baut einen
         // Knoten in jedem Programm für sich); Verweise ohne festes Objekt (je Zeichen-Objekt) bleiben je Knoten.
         // gate:vendor-anker pinnt beide Stellen und den Schlüssel, gate:kamera-treue zählt die Gruppen am echten Bild.
-        const REF = THREE.TSL && typeof THREE.TSL.reference === "function" ? THREE.TSL.reference : null;
-        let refProto = REF ? Object.getPrototypeOf(REF("x", "float", { x: 0 })) : null;
+        const REF = THREE.TSL.reference;
+        let refProto = Object.getPrototypeOf(REF("x", "float", { x: 0 }));
         while (refProto && !Object.prototype.hasOwnProperty.call(refProto, "setNodeType"))
             refProto = Object.getPrototypeOf(refProto);
         if (!refProto) this.log("EIN KNOTEN: r184-ReferenceNode.setNodeType nicht gefunden (Vendor-Drift)", "ERROR");
@@ -32057,9 +32049,8 @@ class AnazhRealm {
     }
 
     _uniformHeimatTeilen(satz) {
-        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
-        const rg = TSL && TSL.renderGroup;
-        if (!rg || !satz) return satz;
+        const rg = THREE.TSL.renderGroup;
+        if (!satz) return satz;
         const teile = (u) => {
             if (u && u.isUniformNode === true && typeof u.setGroup === "function") u.setGroup(rg);
         };
@@ -32082,7 +32073,6 @@ class AnazhRealm {
         // PFLICHT-PAAR-WÄCHTER (Review-Notiz C): ohne renderGroup-Export wäre die
         // Uniform-Heimat ein No-op — die Diät fröre dann per-Objekt-Klone ein.
         // Kein renderGroup → keine Diät (byte-alt, der Vendor refresht weiter).
-        if (!(typeof THREE !== "undefined" && THREE.TSL && THREE.TSL.renderGroup)) return mat;
         mat._anazhDiaet = true;
         const alt = mat.setupObserver;
         mat.setupObserver = function (builder) {
@@ -32105,8 +32095,7 @@ class AnazhRealm {
 
     _ensureAtmoUniforms() {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
-        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
-        if (!TSL || !TSL.uniform || !TSL.vec3) return null;
+        const TSL = THREE.TSL;
         this.state.atmoUniforms = {
             // Tag-Licht-Achse (0 = tiefe Nacht, 1 = voller Tag); Schreiber: das EINE Himmels-Update
             // (_celestialHorizonFade). Konsument: die Impostor-Karte — ihr eingebackenes Tageslicht MUSS mit der
@@ -32279,8 +32268,7 @@ class AnazhRealm {
         if (!mat) return;
         try {
             const _T = THREE.TSL;
-            const _au = this.state.atmoUniforms;
-            if (!_T || !_T.output || !_T.positionWorld || !_T.smoothstep || !_T.mix || !_au) return;
+            const _au = this._ensureAtmoUniforms();
             const cfg = AnazhRealm.AERIAL || {
                 microStrength: 0.1,
                 aoStrength: 0.35,
@@ -32293,7 +32281,7 @@ class AnazhRealm {
             const _wp = _T.positionWorld;
             // (J2) Mikro-Tiefe/Kavitäts-AO — die tiefe-Antenne (das Terrain trägt
             // seine eigene reichere triplanar-Schicht im colorNode → Gewicht 0).
-            if (_p("micro") > 0 && _T.fwidth && _T.normalWorld && _T.float) {
+            if (_p("micro") > 0) {
                 const _ra = this._rauschAtlas();
                 const _n1 = _ra.raum(_wp.mul(0.33));
                 const _n2 = _ra.raum(_wp.mul(1.6));
@@ -32317,7 +32305,7 @@ class AnazhRealm {
             // Warmes RIM-Licht: ein Fresnel-Saum hebt die Kontur im Gegenlicht — POST-lighting im selben Output-
             // Chain (kein zweiter outputNode: zwei Zuweisungen überschrieben sich). glanz wichtet die Stärke,
             // waerme tönt die Farbe. Live: anazhRealm.state.atmoUniforms.rimStrength.value.
-            if (_p("rim") > 0 && _T.normalWorld && _T.cameraPosition && _au.rimStrength) {
+            if (_p("rim") > 0 && _au.rimStrength) {
                 const _vd = _T.cameraPosition.sub(_wp).normalize();
                 const _fres = _T.normalWorld.dot(_vd).clamp(0.0, 1.0).oneMinus().pow(3.0);
                 const _rimCol = _T.mix(_T.vec3(0.85, 0.88, 0.98), _T.vec3(1.0, 0.72, 0.45), _p("waerme"));
@@ -32332,7 +32320,7 @@ class AnazhRealm {
             }
             // Mond-Rim als mond-Antenne: kühler Fresnel-Saum; der Uniform-Wert IST das Gate (nachts > 0, mittags
             // 0, kein Branch). Dieselbe Fresnel-Form wie das warme Rim → Licht-Parität der Ebenen.
-            if (_p("mond") > 0 && _au.terrainMoonRim && _T.cameraPosition && _T.normalWorld) {
+            if (_p("mond") > 0 && _au.terrainMoonRim) {
                 const _mvd = _T.cameraPosition.sub(_wp).normalize();
                 const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
                 const _moonCol = _T.vec3(0.55, 0.66, 1.0);
@@ -32340,7 +32328,7 @@ class AnazhRealm {
             }
             mat.outputNode = _T.vec4(_rgb, _o.w);
         } catch (_e) {
-            if (typeof window !== "undefined") window.__aerialOutputError = String((_e && _e.message) || _e);
+            throw this._stoffBruch("die Umgebungs-Antwort (outputNode)", _e);
         }
     }
 
@@ -32425,7 +32413,7 @@ class AnazhRealm {
             let albedoNode = null;
             try {
                 const _Ta = THREE.TSL;
-                if (opts.vertexColors === true && _Ta && _Ta.attribute) {
+                if (opts.vertexColors === true) {
                     // PBR-Terrain trägt denselben Geologie-Albedo wie Toon: per-Vertex-Feldfarbe → per-Fragment
                     // Multi-Klassen-Geologie, als Füll-Licht-Albedo UND als colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
@@ -32444,12 +32432,8 @@ class AnazhRealm {
                             albedoNode = _rk.albedo || albedoNode;
                             if (_rk.roughNode) mat.roughnessNode = _rk.roughNode;
                         }
-                        if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
-                    } else if (
-                        !opts.pflanzenStoff &&
-                        typeof this._terrainGeologyAlbedo === "function" &&
-                        _Ta.positionWorld
-                    ) {
+                        mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                    } else if (!opts.pflanzenStoff && typeof this._terrainGeologyAlbedo === "function") {
                         // Roughness-Variation für den Boden aus DEMSELBEN Substanz-Kern wie die Geologie
                         // (`_terrainGeologyAlbedo` → `_substanceCharacter`), sonst uniform 0.7 = Plastik-Sheen unterm IBL.
                         // Out-Param statt neuem Rückgabe-Typ → die `_terrainGeologyAlbedo`-Tests bleiben unberührt.
@@ -32463,19 +32447,19 @@ class AnazhRealm {
                             _Ta.positionWorld,
                             _terrRough
                         );
-                        if (_geo) {
+                        {
                             // Der Chunk-Boden (Wege-Karte) trägt dort, wo kein echter Wald zeichnet, das Kronendach des
                             // Fern-Rings (`_fernKroneNahMisch`, 0910-8) — dieselbe Boden-Farbe je Ort nah und fern.
                             const _alb = opts.wegeKarte === true ? this._fernKroneNahMisch(_Ta, _geo) : _geo;
                             albedoNode = _alb;
-                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
+                            mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
-                    } else if (opts.pflanzenStoff && _Ta.vec4) {
+                    } else if (opts.pflanzenStoff) {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —
                         // sonst fällt sie aus `_T.output` und die Krone wäscht zur reinen Licht-Farbe.
                         let _alpha = _Ta.float(1.0);
-                        if (opts.impostorAtlas && _Ta.attribute) {
+                        if (opts.impostorAtlas) {
                             // DIE KARTE (der EINE Karten-Atlas, `_impostorAtlas`): der ferne LOD2-Baum ist EIN camera-facing
                             // Quad, das die ZWEI angrenzenden Peilungs-Ansichten SEINER Atlas-Schicht (aKarte.x) sampelt (Blend
                             // über fract) und die Instanz-Rotation respektiert. Instanz-Dekodierung ohne Instanz-Matrix: die
@@ -32484,10 +32468,11 @@ class AnazhRealm {
                             // negativ = verdeckt) reisen je Instanz in EINEM vec4 (aKarte): EIN Programm für jede Karte jeder
                             // Art, fünf Vertex-Puffer (position · normal · uv · aKarte · instanceColor). Normal-Atlas (rg) →
                             // mat.normalNode (VIEW-space) an die EINE PBR-Lichtung.
-                            let _wired = false;
                             try {
                                 const _at = this._impostorAtlas();
-                                if (_at && this._impostorAtlasTexturen(_at) && _Ta.texture && _Ta.positionGeometry) {
+                                if (!this._impostorAtlasTexturen(_at))
+                                    throw this._stoffBruch("die Karte: der Karten-Atlas fehlt beim Bau ihres Stoffs");
+                                {
                                     if (!_at.mapNode) {
                                         _at.mapNode = _Ta.texture(_at.map);
                                         _at.nmapNode = _Ta.texture(_at.nmap);
@@ -32582,20 +32567,14 @@ class AnazhRealm {
                                     // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
                                     // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
                                     const _suK = this._ensureSeasonUniforms();
-                                    const _albK =
-                                        _suK && _suK.uSeasonMul
-                                            ? _rgbK.mul(
-                                                  _Ta.mix(
-                                                      _Ta.vec3(1.0, 1.0, 1.0),
-                                                      _suK.uSeasonMul,
-                                                      _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
-                                                  )
-                                              )
-                                            : _rgbK;
-                                    albedoNode =
-                                        _auN && _auN.tagLicht
-                                            ? _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)))
-                                            : _albK;
+                                    const _albK = _rgbK.mul(
+                                        _Ta.mix(
+                                            _Ta.vec3(1.0, 1.0, 1.0),
+                                            _suK.uSeasonMul,
+                                            _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
+                                        )
+                                    );
+                                    albedoNode = _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)));
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nxy = _Ta
@@ -32671,26 +32650,20 @@ class AnazhRealm {
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
                                     // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
-                                    _wired = true;
                                     // DAS LAUB-LICHT DER KARTE (K19): die ferne Stufe lichtet mit dem EINEN Laub-Licht-Term der
                                     // nahen (phyto-core `laubDurchlass`) über der Normale des Normal-Atlas; die Nadel trägt ihre
                                     // Schicht (`_karteNadel`). Bis K19 leuchtete die nahe Krone im Gegenlicht, ihre Karte nicht.
                                     this._laubLichtStoff(mat, () => this._karteNadel(_Ta).element(_schicht.toInt()));
                                 }
                             } catch (_e) {
-                                // der Bruch der Blende fällt nie in die Fernstufen-Geometrie: er bricht den Bau
-                                if (_e && _e.blende === true) throw _e;
-                                if (typeof window !== "undefined")
-                                    window.__impostorAtlasError = String((_e && _e.message) || _e);
+                                // die Karten-Verdrahtung fällt nie in die Fernstufen-Geometrie: ihr Bruch bricht den Bau
+                                throw this._stoffBruch("die Karten-Verdrahtung", _e);
                             }
-                            // Ohne Wiring trägt das Material keinen Marker → `_impostorAtlasMaterial` meldet LAUT und der
-                            // Aufrufer serviert Geometrie.
-                            if (!_wired) mat.alphaTest = 0.5;
                         } else if (opts.foliageLeaf && opts.foliageBlade) {
                             // Die Klinge ist Geometrie: das L0-Blatt (phyto-core `buildLeafBlades`) braucht keinen Atlas, alpha
                             // bleibt 1. alphaTest bleibt gesetzt, damit das Dither-Crossfade die Klingen am L0→L1-Band ausblendet.
                             mat.alphaTest = 0.5;
-                        } else if (opts.foliageLeaf && _Ta.attribute) {
+                        } else if (opts.foliageLeaf) {
                             // Die Karte sampelt den EINEN Blatt-Atlas über den EINEN Leser (`_blattAtlasProbe`): ALPHA = die
                             // Zweig-Silhouette, RGB = der Blatt-Wert, der die Vertex-Farbe tönt. Fehlt der Kern, bricht
                             // `_ensureFoliageClusterAtlas` laut (KERN-PFLICHT) — die stille Ellipsen-Maske hinter einem
@@ -32710,13 +32683,7 @@ class AnazhRealm {
                         // (transformDirection, NIE transformNormalToView). Lokal → Sicht ist MATRIX.transformDirection(n)
                         // (MV·n); n.transformDirection(MATRIX) rechnete MVᵀ·n und drehte das Sonnen-Licht der Krone mit
                         // der Blick-Richtung (Normal-Sonde 06.10.: 19–35 Grauwerte neben three's eigener Normale).
-                        if (
-                            opts.foliageLeaf === true &&
-                            !opts.impostorAtlas &&
-                            _Ta.normalLocal &&
-                            _Ta.modelViewMatrix &&
-                            _Ta.normalize
-                        ) {
+                        if (opts.foliageLeaf === true && !opts.impostorAtlas) {
                             mat.normalNode = _Ta.modelViewMatrix.transformDirection(_Ta.normalLocal);
                         }
                         // Rinden-Maserung prozedural aus dem holz-Tag (keine Bitmap): Längs-Faser (hohe Frequenz quer x/z,
@@ -32746,7 +32713,7 @@ class AnazhRealm {
                     // Karte ersetzt sie durch den Atlas und hat kein color-Attribut. Bis 06.10. schaltete nur der Boden ab:
                     // Grammatik-Rinde/-Laub und der Fels zeichneten Farbe², die Werkstatt-Vorschau desselben Baums Farbe¹.
                     if (mat.colorNode) mat.vertexColors = false;
-                } else if (isFlatStructure && _Ta && _Ta.vec3) {
+                } else if (isFlatStructure) {
                     // Flach-Farb-Werke (Tempel · Schwert · Rüstung · Esse · …) fließen durch den EINEN Substanz-
                     // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness · Bump),
                     // instanz-stabil (positionLocal), tag-getrieben, LOD-gegated.
@@ -32760,12 +32727,12 @@ class AnazhRealm {
                         bump: true,
                     });
                     albedoNode = _r.albedo;
-                    if (_Ta.vec4) mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
+                    mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
                     if (_r.roughNode) mat.roughnessNode = _r.roughNode;
                     if (_r.normalNode) mat.normalNode = _r.normalNode;
                 }
             } catch (_e) {
-                /* ohne Albedo-Quelle fällt nur das Füll-Licht */
+                throw this._stoffBruch("der PBR-Stoff (Albedo-Quelle)", _e);
             }
             this._applySubstanceResponse(mat, responseProfile, { albedoNode });
         }
@@ -32775,13 +32742,10 @@ class AnazhRealm {
         if (opts.vertexColors && !opts.pflanzenStoff && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
-                const _aun = this.state.atmoUniforms;
-                if (_Tn && _Tn.normalWorldGeometry && _Tn.faceDirection && _Tn.normalize && _Tn.mix && _Tn.vec3) {
+                const _aun = this._ensureAtmoUniforms();
+                {
                     const _up = _Tn.vec3(0.0, 1.0, 0.0);
-                    const _flat =
-                        _aun && _aun.terrainFlatten
-                            ? _aun.terrainFlatten
-                            : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
+                    const _flat = _aun.terrainFlatten;
                     // DIE GEOMETRIE-NORMALE DIESES GRAPHEN ist `normalWorldGeometry` × Flächen-Vorzeichen, nie r184s
                     // `normalWorld`: das ist EINE Variable je Programm, und las dieser normalNode (er baut in der
                     // NORMAL-Stufe) sie zuerst, übernahmen der Schatten-Lookup (normalBias), das Halbkugel- und das
@@ -32805,7 +32769,7 @@ class AnazhRealm {
                         : _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
-                    if (_Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
+                    {
                         const _B = AnazhRealm.TERRAIN_BUMP;
                         const _ra = this._rauschAtlas();
                         const _wp = _Tn.positionWorld;
@@ -32863,7 +32827,7 @@ class AnazhRealm {
                     mat.receivedShadowNode = (schatten) => schatten.mul(_zu);
                 }
             } catch (_e) {
-                /* TSL fehlt → volle 3D-Lichtung */
+                throw this._stoffBruch("die Boden-Normale (Flatten · Relief · Zuwendung)", _e);
             }
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
@@ -32875,15 +32839,15 @@ class AnazhRealm {
             if (opts.geomorph) {
                 try {
                     const _Tm = THREE.TSL;
-                    const _aum = this.state.atmoUniforms;
-                    if (_Tm && _Tm.attribute && _Tm.positionLocal && _aum && _aum.geomorph) {
+                    const _aum = this._ensureAtmoUniforms();
+                    {
                         const _tgt = _Tm.attribute("aMorphTarget", "vec3");
                         const _w = _Tm.attribute("aMorphWeight", "float");
                         const _f = _aum.geomorph.mul(_w);
                         mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
                     }
                 } catch (_e) {
-                    if (typeof window !== "undefined") window.__terrainMorphErrorPbr = String((_e && _e.message) || _e);
+                    throw this._stoffBruch("der Geomorph des Bodens", _e);
                 }
             }
         }
@@ -33090,12 +33054,11 @@ class AnazhRealm {
     _substanceCharacter(_T, baseAlbedo, opts = {}) {
         const out = { albedo: baseAlbedo, roughNode: null, normalNode: null };
         try {
-            if (!_T || !_T.float || !_T.vec3 || !_T.mix) return out;
             const _ra = this._rauschAtlas();
             const f = (v) => _T.float(v);
             const asNode = (v, d) => (v == null ? f(d) : v && v.mul ? v : f(v));
             const pos = opts.pos || _T.positionLocal;
-            const wp = opts.worldPos || _T.positionWorld || pos;
+            const wp = opts.worldPos || _T.positionWorld;
             const t = opts.tags || {};
             const ht = Math.max(0, Math.min(1, Number(t["härte"]) || 0.4));
             const di = Math.max(0, Math.min(1, (Number(t.dichte) || 0) / 3));
@@ -33109,7 +33072,7 @@ class AnazhRealm {
             const _BD = AnazhRealm.TERRAIN_BUMP;
             let fineFade = f(1.0);
             let bumpFade = f(1.0);
-            if (_T.cameraPosition && wp && _T.smoothstep) {
+            {
                 const dist = wp.sub(_T.cameraPosition).length();
                 fineFade = f(1.0)
                     .sub(_T.smoothstep(f(_BD.fineNear), f(_BD.fineFar), dist))
@@ -33165,7 +33128,7 @@ class AnazhRealm {
             const cavityAmpJs = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
             const strataAmpJs = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
             const strata =
-                strataAmpJs > 0 || (opts.bump && _T.bumpMap)
+                strataAmpJs > 0 || opts.bump
                     ? _ra.raum(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)))
                     : null;
             let mod = f(1.0).add(
@@ -33244,7 +33207,7 @@ class AnazhRealm {
             // (7) MIKRO-RELIEF (Bump) — der transformative Hebel für FLACHE Low-Poly-Facetten:
             //     die Höhe perturbiert die Normale → die Fläche fängt Licht als echte Mikro-Struktur.
             //     LOD-gegated (fern aus). Nur wo angefragt (Werke; Terrain/Rinde haben echtes Relief).
-            if (opts.bump && _T.bumpMap) {
+            if (opts.bump) {
                 const h = mottle
                     .mul(f(0.5))
                     .add(crN.mul(f(0.5)))
@@ -33253,8 +33216,7 @@ class AnazhRealm {
                 out.normalNode = _T.bumpMap(h, scale);
             }
         } catch (_e) {
-            if (typeof window !== "undefined") window.__substanceCharError = String((_e && _e.message) || _e);
-            return { albedo: baseAlbedo, roughNode: null, normalNode: null };
+            throw this._stoffBruch("der Substanz-Charakter", _e);
         }
         return out;
     }
@@ -33265,7 +33227,6 @@ class AnazhRealm {
     // unveränderte Albedo.
     _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
         try {
-            if (!_T || !_T.smoothstep || !_T.normalWorldGeometry || !_T.vec3 || !_T.mix || !_T.float) return albedo;
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
             const _ra = this._rauschAtlas();
@@ -33333,7 +33294,7 @@ class AnazhRealm {
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
             // Schattierung des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund). ≈0 Kosten (Noise + Mix),
             // DIESELBEN Gras-Farben wie das Nah-Gras.
-            if (_T.cameraPosition) {
+            {
                 // Die Wiese mit Tiefe: die Halme sind eine PARALLAX-FUNKTION — ein Halm-Noise-Höhenfeld, das der
                 // Blick in 8 Schichten durchsticht (Relief-March): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund. Das Höhenfeld wird per smoothstep an die ECHTE
@@ -33430,8 +33391,7 @@ class AnazhRealm {
             if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
             return _r.albedo;
         } catch (_e) {
-            if (typeof window !== "undefined") window.__terrainGeologyError = (_e && _e.message) || String(_e);
-            return albedo;
+            throw this._stoffBruch("die Boden-Geologie", _e);
         }
     }
 
@@ -33443,53 +33403,46 @@ class AnazhRealm {
     _ensureLodUniforms() {
         const st = this.state;
         if (st.lodUniforms) return st.lodUniforms;
-        let u = null;
-        try {
-            const _T = typeof THREE !== "undefined" && THREE.TSL;
-            if (_T && typeof _T.uniform === "function") {
-                const _ref = Number.isFinite(st.lodRef) && st.lodRef > 0 ? +st.lodRef : 14;
-                // Crossfade-Band-Zahlen als LIVE-Uniforms, geseedet aus der EINEN Quelle `AnazhRealm.LOD_DISTANCES`
-                // und pro Frame in `_loopRender` gespiegelt → ein Studio-Live-Ingest (`_foundryIngestRenderConfig`)
-                // greift sofort in der Shader-Maske (kein eingefrorener Zweit-Satz).
-                const _D = AnazhRealm.LOD_DISTANCES || {};
-                u = {
-                    uLodRef: _T.uniform(_ref),
-                    uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
-                    uDitherT: _T.uniform(0),
-                    uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
-                    uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
-                    uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),
-                    uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
-                    // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
-                    // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
-                    // `renderer.render(scene, shadow.camera)`; bis V18.529 stand sie 200 m über der Box, heute über
-                    // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
-                    // verwarf ihre Schatten-Fragmente alle.
-                    uLodAuge: _T.uniform(new THREE.Vector3()),
-                    // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
-                    // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
-                    uLodPerf: _T.uniform(1),
-                    // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
-                    // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
-                    // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
-                    uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
-                    uKamAuge: _T.uniform(new THREE.Vector3()),
-                    // DIE NAH-KUGEL der Durchsicht um das Auge (Leben-Schau 2, 09.10.): ihr Radius je Stoff-Art — x Laub,
-                    // y Rinde, z Boden (die wiegende Nah-Streu) — `_kamZielSetzen`; −Saum heißt: nichts fällt.
-                    uKamNah: _T.uniform(
-                        new THREE.Vector3(
-                            -AnazhRealm.KAMERA_DURCHSICHT.saumM,
-                            -AnazhRealm.KAMERA_DURCHSICHT.saumM,
-                            -AnazhRealm.KAMERA_DURCHSICHT.saumM
-                        )
-                    ),
-                };
-            }
-        } catch (_e) {
-            u = null;
-        }
+        const _T = THREE.TSL;
+        const _ref = Number.isFinite(st.lodRef) && st.lodRef > 0 ? +st.lodRef : 14;
+        // Crossfade-Band-Zahlen als LIVE-Uniforms, geseedet aus der EINEN Quelle `AnazhRealm.LOD_DISTANCES`
+        // und pro Frame in `_loopRender` gespiegelt → ein Studio-Live-Ingest (`_foundryIngestRenderConfig`)
+        // greift sofort in der Shader-Maske (kein eingefrorener Zweit-Satz).
+        const _D = AnazhRealm.LOD_DISTANCES || {};
+        const u = {
+            uLodRef: _T.uniform(_ref),
+            uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
+            uDitherT: _T.uniform(0),
+            uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
+            uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
+            uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),
+            uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
+            // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
+            // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
+            // `renderer.render(scene, shadow.camera)`; bis V18.529 stand sie 200 m über der Box, heute über
+            // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
+            // verwarf ihre Schatten-Fragmente alle.
+            uLodAuge: _T.uniform(new THREE.Vector3()),
+            // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
+            // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
+            uLodPerf: _T.uniform(1),
+            // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
+            // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
+            // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
+            uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
+            uKamAuge: _T.uniform(new THREE.Vector3()),
+            // DIE NAH-KUGEL der Durchsicht um das Auge (Leben-Schau 2, 09.10.): ihr Radius je Stoff-Art — x Laub,
+            // y Rinde, z Boden (die wiegende Nah-Streu) — `_kamZielSetzen`; −Saum heißt: nichts fällt.
+            uKamNah: _T.uniform(
+                new THREE.Vector3(
+                    -AnazhRealm.KAMERA_DURCHSICHT.saumM,
+                    -AnazhRealm.KAMERA_DURCHSICHT.saumM,
+                    -AnazhRealm.KAMERA_DURCHSICHT.saumM
+                )
+            ),
+        };
         // UNIFORM-HEIMAT: der geteilte LOD-Satz reist als EIN renderGroup-Buffer.
-        if (u) this._uniformHeimatTeilen(u);
+        this._uniformHeimatTeilen(u);
         st.lodUniforms = u;
         return u;
     }
@@ -33569,11 +33522,49 @@ class AnazhRealm {
     // der Baum-Stoff ohne Maske (L0 und Band-L1 deckungsgleich voll, die Instanz-Wahl ohne Fenster), die Karte ohne
     // Ausblendung, die Blatt-Karte ohne Stufen-Blende — gate:foundry-crossfade (9) DIE LAUTE BLENDE.
     _blendeBruch(was) {
-        const text = "BLENDE: " + was + " — kein Stoff zeichnet ohne seine Maske";
-        this.log(text, "ERROR");
-        const e = new Error(text);
+        const e = this._stoffBruch("BLENDE: " + was + " — kein Stoff zeichnet ohne seine Maske");
         e.blende = true;
         return e;
+    }
+
+    // DER BRUCH DES STOFFS (K22): fehlt einem Stoff oder dem Render-Graphen ein Glied — ein Uniform-Satz, ein Knoten, eine
+    // Karte, ein Bau-Schritt wirft —, bricht der Bau LAUT beim Namen: ERROR ins Log, ein Fehler mit der Marke `stoff`. Bis
+    // hierher fingen 95 Stellen den Fehler still (ein catch ohne Wurf, eine Fenster-Variable ohne Leser, ein Wenn um ein
+    // TSL-Glied, ein Knoten-Bauer, der null gab), und der Stoff zeichnete byte-alt ohne sein Glied weiter — gate:altlasten
+    // DIE STOFF-WAND. `ursache`: ein fremder Fehler wird einmal mit dem Ort eingewickelt, ein Bruch reist unverändert weiter.
+    _stoffBruch(was, ursache) {
+        if (ursache && ursache.stoff === true) return ursache;
+        const text = "STOFF: " + was + (ursache ? " — " + ((ursache && ursache.message) || ursache) : "");
+        this._bruchMelden(text);
+        const e = new Error(text);
+        e.stoff = true;
+        return e;
+    }
+
+    // DER EINE MELDER (K22 Nachbesserung 3): jeder Bruch meldet ERROR — eine NEUE Meldung sofort, dieselbe wieder (ein
+    // Bruch, der jeden Frame wirft) zählt in ihrem Buch-Eintrag und meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
+    // Zähler, nie still. Bis hierher kannte die Drossel des Loops nur die LETZTE Meldung (zwei abwechselnde Frame-Fehler
+    // meldeten je Frame ERROR), und `_stoffBruch` meldete einen Bruch im Takt je Frame. Das Buch hält die jüngsten
+    // BRUCH_BUCH_MAX Meldungen (ein Instanz-Feld: nie im Spielstand). Die Wiederholung meldet sich über ihre FRIST: die
+    // erste Wiederholung nach einer Meldung stellt sie (BRUCH_WIEDER_MS), und die Frist meldet den Zähler — auch wenn die
+    // Folge davor endet (Prüfer K22-3: eine Folge, die binnen 2 s nach der letzten Meldung endete, blieb ungemeldet).
+    _bruchMelden(text) {
+        const buch = this._bruchBuch || (this._bruchBuch = new Map());
+        const e = buch.get(text);
+        if (!e) {
+            if (buch.size >= AnazhRealm.BRUCH_BUCH_MAX) buch.delete(buch.keys().next().value);
+            buch.set(text, { n: 1, still: 0, frist: null });
+            this.log(text, "ERROR");
+            return;
+        }
+        e.n++;
+        e.still++;
+        if (e.frist != null) return;
+        e.frist = setTimeout(() => {
+            e.frist = null;
+            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, "ERROR");
+            e.still = 0;
+        }, AnazhRealm.BRUCH_WIEDER_MS);
     }
 
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
@@ -33693,21 +33684,6 @@ class AnazhRealm {
         const a = art === "rinde" || art === "boden" ? art : "laub";
         if (knoten[a]) return knoten[a];
         const lu = this._ensureLodUniforms();
-        if (
-            !T ||
-            !lu ||
-            !lu.uKamAuge ||
-            !lu.uKamZiel ||
-            !lu.uKamNah ||
-            !lu.uDitherT ||
-            !T.positionWorld ||
-            !T.screenCoordinate ||
-            !T.dot ||
-            !T.length ||
-            !T.fract ||
-            !T.float
-        )
-            return null;
         const A = {
             k: (n) => T.float(n),
             sub: (a, b) => a.sub(b),
@@ -33798,16 +33774,8 @@ class AnazhRealm {
         if (responseProfile && responseProfile.detail > 0.4 && opts.foliageLeaf !== true) {
             try {
                 const _Td = THREE.TSL;
-                const _wu = this.state.windUniforms;
-                if (
-                    _Td &&
-                    _Td.cameraPosition &&
-                    _Td.positionWorld &&
-                    _Td.normalWorld &&
-                    _Td.pow &&
-                    _wu &&
-                    _wu.uSunDir
-                ) {
+                const _wu = this._windUniformsEnsure();
+                {
                     const _vd = _Td.normalize(_Td.cameraPosition.sub(_Td.positionWorld));
                     const _sunBack = _wu.uSunDir.mul(_Td.float(-1.0));
                     const _backDot = _vd.dot(_sunBack).clamp(0.0, 1.0);
@@ -33819,7 +33787,7 @@ class AnazhRealm {
                     mat.outputNode = _currentOutput.add(_Td.vec4(_glow, _Td.float(0.0)));
                 }
             } catch (_e) {
-                if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
+                throw this._stoffBruch("das Gegenlicht der Vegetation", _e);
             }
         }
         // DAS LAUB-LICHT (K19): das Grammatik-Laub (Blatt-Karte und Klinge) lichtet mit dem EINEN Laub-Licht-Term des Foundry-
@@ -33837,9 +33805,8 @@ class AnazhRealm {
                 const _lu = this._ensureLodUniforms();
                 const _fehlt = [
                     ["TSL", _Tl],
-                    ["der LOD-Uniform-Satz", _lu],
-                    ["uLodRef", _lu && _lu.uLodRef],
-                    ["uLodAuge", _lu && _lu.uLodAuge],
+                    ["uLodRef", _lu.uLodRef],
+                    ["uLodAuge", _lu.uLodAuge],
                     [
                         "die Farbe mit Alpha",
                         mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined,
@@ -33856,7 +33823,7 @@ class AnazhRealm {
                             "fract",
                             "step",
                             "mix",
-                        ].map((k) => ["TSL." + k, _Tl && _Tl[k]])
+                        ].map((k) => ["TSL." + k, _Tl[k]])
                     )
                     .filter((x) => !x[1])
                     .map((x) => x[0]);
@@ -37958,10 +37925,6 @@ class AnazhRealm {
         // state.hydroSurfaceUniforms (Schlüssel ohne u-Präfix, TSL-Konvention), mutiert von
         // _loopSkyboxZeit (time) + _dayNightApplyWaterMaterials (sunDir, light).
         const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            this.log("HydroSurface-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
-            return null;
-        }
         const {
             uniform,
             attribute,
@@ -39975,8 +39938,7 @@ class AnazhRealm {
     _fernKroneNahEnsure() {
         const st = this.state;
         if (st.fernKroneNah) return st.fernKroneNah;
-        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
-        if (!TSL || !TSL.uniform) return null;
+        const TSL = THREE.TSL;
         const K = AnazhRealm.FERN_KRONE_NAH;
         const daten = new Uint8Array(K.N * K.N * 4);
         const tex = new THREE.DataTexture(daten, K.N, K.N, THREE.RGBAFormat, THREE.UnsignedByteType);
@@ -40381,8 +40343,9 @@ class AnazhRealm {
                     for (const m of fr.meshes) m.visible = true; // das Feld malte — der Horizont steht JETZT
                 }
             })
-            .catch(() => {
+            .catch((e) => {
                 if (this.state.fernRing === fr && fr.gen === gen) fr.gpuFlug = false;
+                this._stoffBruch("der Fern-Ring (GPU-Malen)", e);
             });
     }
 
@@ -40410,21 +40373,9 @@ class AnazhRealm {
         if (!this._weltMarchGezeichnet() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
             return null;
         const TSL = THREE.TSL;
-        if (
-            !TSL ||
-            !TSL.wgslFn ||
-            !TSL.texture ||
-            !TSL.Fn ||
-            !TSL.Discard ||
-            !TSL.uniform ||
-            !TSL.positionGeometry ||
-            !TSL.instanceIndex
-        )
-            return null;
         // DER EINE WELT-MARCH: Feld-Liste + Kapsel-Liste sind Pass-Bindings — ohne das
         // Organ existiert der Pass nicht (die Schalen tragen, byte-alt).
         const wm = this._weltMarchEnsure();
-        if (!wm) return null;
         // DIE LUFT: der Pass dunstet mit denselben Knoten wie jedes Mesh (Szene und THREE stehen hier, `_luftEnsure`
         // bricht ohne TSL-Organe laut).
         const luft = this._luftEnsure();
@@ -41164,8 +41115,7 @@ class AnazhRealm {
         if (st.weltMarch) return st.weltMarch;
         // KEIN Renderer-Gate: der Feld-Pass (gate:fern-ring fährt einen EIGENEN
         // Probe-Renderer neben dem Null-Renderer) braucht die Bindings; im
-        // headless Playtest ruft niemand hierher (alle Konsumenten sind gewallt).
-        if (typeof THREE === "undefined") return null;
+        // headless Playtest ruft niemand hierher (alle Konsumenten sind gewallt). Der Satz ist Pflicht (K22).
         const W = AnazhRealm.WELT_MARCH;
         // LISTE v2, 8 Texel je Feld: [wAABB.min|d] [wAABB.max|einheit] [inv r0] [inv r1] [inv r2]
         // [lokalMin|0] [lokalGroesse|0] [frei]. Die inverse Welt-Matrix trägt Rotation + Animation, die
@@ -42100,8 +42050,9 @@ class AnazhRealm {
                 fp.mesh.visible = true; // erst mit gebackenem Panorama sichtbar (Panorama und March gemeinsam)
                 fp.march.visible = true;
             })
-            .catch(() => {
+            .catch((e) => {
                 if (this.state.feldPass === fp && fp.panoGen === gen) fp.panoFlug = false;
+                this._stoffBruch("das Feld-Panorama (Malen)", e);
             });
     }
 
@@ -42722,11 +42673,7 @@ class AnazhRealm {
         // Der Foundry-Worker startet VOR dem synchronen Worldgen-Block: er lädt Kerne + wärmt die
         // Bibliothek, während Main die Welt rechnet. Billig (Worker + Posts); das Boot-Gate prüft
         // `_ensureAssetFoundry` selbst (foundry-aus → null) — der Aufrufer dupliziert es nicht.
-        if (!this._foundry) {
-            try {
-                this._ensureAssetFoundry();
-            } catch (_efb) {}
-        }
+        if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
         this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
         return true;
     }
@@ -44913,6 +44860,7 @@ class AnazhRealm {
                 }
             }
         } catch (err) {
+            this._stoffBruch("die Chunk-Rechnung der Prüfung", err);
             return { ok: false, reason: "local_compute_failed", error: err.message };
         }
         if (!localHash) return { ok: false, reason: "local_hash_failed" };
@@ -49207,7 +49155,7 @@ class AnazhRealm {
             pm.add(g);
             pm.userData._wornArmorMesh = g;
         } catch (_e) {
-            /* Rüstungs-Optik ist Deko — nie den Loop reißen */
+            this._stoffBruch("die Rüstungs-Optik " + worn, _e);
         }
     }
 
@@ -49336,7 +49284,7 @@ class AnazhRealm {
                 try {
                     room.render();
                 } catch (_e) {
-                    if (typeof window !== "undefined") window.__uiPulseError = String((_e && _e.message) || _e);
+                    this.log(`UI-PULS: der Raum ${r} zeichnete nicht — ${(_e && _e.message) || _e}`, "ERROR");
                 }
             }
         };
@@ -49550,7 +49498,9 @@ class AnazhRealm {
                         f._heldWaiting = false;
                         try {
                             this._refreshHeldMesh();
-                        } catch (_e) {}
+                        } catch (_e) {
+                            this._stoffBruch("die Hand (Neubau nach dem Buch)", _e);
+                        }
                     } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
                     else f._heldWaiting = false;
                 };
@@ -49578,7 +49528,9 @@ class AnazhRealm {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
                         try {
                             this._refreshHeldMesh(); // Ankunft → die Hand einmal neu (Cache-Treffer, kein Loop)
-                        } catch (_e) {}
+                        } catch (_e) {
+                            this._stoffBruch("die Hand (Neubau nach der Lieferung)", _e);
+                        }
                     } else {
                         f.requested.delete(key); // Timeout: nicht dauerhaft doomen — der nächste Equip fragt neu
                     }
@@ -49595,7 +49547,9 @@ class AnazhRealm {
                         f._heldCacheWait = null;
                         try {
                             this._refreshHeldMesh();
-                        } catch (_e) {}
+                        } catch (_e) {
+                            this._stoffBruch("die Hand (Neubau nach dem Cache)", _e);
+                        }
                     } else if (performance.now() - tw0 < 45000) setTimeout(cachePoll, 150);
                     else f._heldCacheWait = null;
                 };
@@ -50906,7 +50860,7 @@ class AnazhRealm {
             if (item && item.kind === "recipe") group = this._buildFromBlueprint(item.prof.bp, 0);
             else if (item && item.kind === "creature") group = this._buildCreatureGroup(item.prof.soul);
         } catch (_e) {
-            group = null;
+            throw this._stoffBruch("die Vorschau im Feed", _e);
         }
         if (!group || !group.children || !group.children.length) {
             if (hint) {
@@ -50944,9 +50898,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
-                if (rr && typeof rr.catch === "function")
-                    rr.catch((e) => this.log(`Feed-Vorschau-Render: ${e && e.message}`, "INFO"));
+                this._buehneRender(s.renderer, s.scene, s.camera, "Feed-Vorschau");
             }
             s.rafId = requestAnimationFrame(tick);
         };
@@ -53391,7 +53343,7 @@ class AnazhRealm {
             try {
                 this.applyPlayerSoul((this.state.player && this.state.player.soul) || "human");
             } catch (_e) {
-                /* fail-soft: die Übergabe steht im State — der nächste Guss trägt sie */
+                this._stoffBruch("der Avatar (Studio-Übergabe)", _e);
             }
             this.log("Studio-Übergabe angenommen: der Avatar trägt die Schöpfer-Gestalt (Da-Vinci-Studio).", "INFO");
             // KÖRPER GANZ (T6) — die Übergabe ist SICHTBAR am mensch-Eintrag des
@@ -54378,7 +54330,7 @@ class AnazhRealm {
     // Chokepoint wie die E-Taste). Scan 1 Hz (bounded), Uniform-Atem pro Frame.
     _tickPortalMembranes(currentTime) {
         const st = this.state;
-        if (!st || !st.scene || typeof THREE === "undefined" || !THREE.MeshBasicNodeMaterial || !THREE.TSL) return;
+        if (!st || !st.scene || typeof THREE === "undefined") return;
         if (!this._portalMembranes) this._portalMembranes = new Map();
         const reg = this._portalMembranes;
         const pm = st.playerMesh;
@@ -54578,9 +54530,8 @@ class AnazhRealm {
         q.L.staerke = PC.glutIntensity(rec._act, rec.u && rec.u.pulse ? rec.u.pulse.value : 1);
     }
 
-    // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
-    // fehl, trägt die Passage eine schlichte Kern-Farb-Fläche statt GAR
-    // nichts — sichtbar-hässlich schlägt unsichtbar-stumm).
+    // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau fehl, bricht er beim Namen —
+    // `_stoffBruch`; die schlichte Ersatz-Fläche ist gefallen, K22).
     _membranBauFor(entry, tor) {
         const st = this.state;
         let mesh = null;
@@ -54590,20 +54541,7 @@ class AnazhRealm {
             u = built.u;
             mesh = new THREE.Mesh(this._membranGeometryFor(tor), built.mat);
         } catch (err) {
-            this.log(`Welt-Membran-Bau fehlgeschlagen (${tor.gestalt}): ${err && err.message}`, "WARN");
-            const pc = tor.mu.pal && tor.mu.pal.core;
-            const col = pc
-                ? new THREE.Color(Math.min(1, pc[0]), Math.min(1, pc[1]), Math.min(1, pc[2]))
-                : new THREE.Color(0.4, 0.6, 1.0);
-            const flach = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
-            mesh = new THREE.Mesh(this._membranGeometryFor(tor), flach);
-            u = {
-                time: { value: 0 },
-                camL: { value: new THREE.Vector3() },
-                act: { value: 0 },
-                pulse: { value: 1 },
-                waveDepth: { value: 0 },
-            };
+            throw this._stoffBruch(`die Welt-Membran (${tor.gestalt})`, err);
         }
         mesh.position.set(entry.position.x, entry.position.y - 0.5, entry.position.z);
         if (Number.isFinite(entry.rotationY) && entry.rotationY !== 0) mesh.rotation.y = entry.rotationY;
@@ -54613,10 +54551,10 @@ class AnazhRealm {
         // das Culling bleibt an: die Hülle der geteilten Geometrie trägt die Welle (`_membranGeometryFor`)
         mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
         st.scene.add(mesh);
-        // Bodennebel-Kasten am Tor-Fuß. Fail-soft LEISE: die Membran ist Pflicht, der Nebel Kür — ein TSL-Fehl
-        // lässt das Tor nackt, nie die Welt kaputt. Reiner Render, nie Blocker (Hit-Tests sehen ihn nicht).
+        // Bodennebel-Kasten am Tor-Fuß, wo das Gesetz des Tors Nebel trägt (mu.fog > 0): sein Bau bricht laut beim Namen
+        // wie die Membran (K22). Reiner Render, nie Blocker (Hit-Tests sehen ihn nicht).
         let nebel = null;
-        if (u && u.time && tor.mu && Number.isFinite(tor.mu.fog) && tor.mu.fog > 0 && THREE.TSL) {
+        if (tor.mu && Number.isFinite(tor.mu.fog) && tor.mu.fog > 0) {
             try {
                 const neb = this._nebelMaterialFor(tor, u);
                 nebel = new THREE.Mesh(this._nebelGeometryFor(tor), neb.mat);
@@ -54630,8 +54568,7 @@ class AnazhRealm {
                 nebel.userData.inventar = "portal-nebel"; // Identitäts-Stempel
                 st.scene.add(nebel);
             } catch (err) {
-                this.log(`Portal-Nebel-Bau fehlgeschlagen (${tor.gestalt}): ${err && err.message}`, "WARN");
-                nebel = null;
+                throw this._stoffBruch(`der Portal-Nebel (${tor.gestalt})`, err);
             }
         }
         this._portalMembranes.set(entry.id, { entry, tor, mesh, nebel, u, armed: true, lastLz: null });
@@ -55002,6 +54939,8 @@ class AnazhRealm {
         try {
             built = this._buildHumanoidRig(g);
         } catch (_e) {
+            // ein Wurf im Mensch-Bau (Ofen, Rig, Haut) bricht LAUT beim Namen (K22); der Not-Körper unten steht sichtbar
+            this._stoffBruch("der Mensch-Bau (Rig) — Not-Körper statt Gestalt", _e);
             built = null;
         }
         if (built && built.rig) {
@@ -62526,7 +62465,7 @@ class AnazhRealm {
                 }
             }
         } catch (_e) {
-            if (typeof window !== "undefined") window.__jointAxisError = String((_e && _e.message) || _e);
+            throw this._stoffBruch("die Gelenk-Achsen der Verbindungslinien", _e);
         }
     }
 
@@ -66536,7 +66475,7 @@ class AnazhRealm {
             try {
                 merged = this._mergeBlueprintByMaterial(bp);
             } catch (_e) {
-                merged = null;
+                throw this._stoffBruch("der Bauplan-Merge (Stoff-Gruppen)", _e);
             }
             if (!merged || !Array.isArray(merged.leaves) || merged.leaves.length === 0) {
                 return this._buildFromBlueprint(bp); // nested/animate → Per-Teil-Wahrheit
@@ -66594,8 +66533,7 @@ class AnazhRealm {
     // ihn je Takt (grün: das Setzen trägt, rot: es wird abgelehnt). Es gibt nur ein Phantom zugleich.
     _phantomTint() {
         if (!this._phantomTintU) {
-            const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
-            if (!TSL || typeof TSL.uniform !== "function") return null;
+            const TSL = THREE.TSL;
             this._phantomTintU = TSL.uniform(new THREE.Color(0x88ff88));
         }
         return this._phantomTintU;
@@ -66707,7 +66645,7 @@ class AnazhRealm {
                 // entsteht bei seiner ersten Zeichnung (die Erst-Zeichnung, `_configureRenderer`).
                 this._disposeSoulGroup(this._buildPlacementGhost(bp, { donorOnly: true }));
             } catch (_e) {
-                /* defensiv — ein einzelner Bauplan-Fehler darf das Idle-Vorbacken nicht abbrechen */
+                this._stoffBruch("das Vorbacken des Bauplans " + name, _e);
             }
             done.add(name);
             return; // EINS pro Idle-Tick
@@ -66860,7 +66798,7 @@ class AnazhRealm {
     // Labor. Headless (kein Atlas) → null.
     _blattAtlasProbe(T) {
         const tex = this._ensureFoliageClusterAtlas();
-        if (!tex || !T.texture || !T.attribute) return null;
+        if (!tex) return null;
         const s = T.texture(tex, T.attribute("uv", "vec2"));
         const w = tex.userData.wert;
         return {
@@ -67578,7 +67516,6 @@ class AnazhRealm {
     // Pipelines; das Umdrehen je Karte malte im Haupt-Thread.
     _impostorAtlas() {
         if (this._kartenAtlas !== undefined) return this._kartenAtlas;
-        if (typeof THREE === "undefined") return null;
         this._kartenAtlas = {
             fmt: null, // "bc" | "rgba8" — beim ersten Textur-Bau aus dem Renderer
             cw: 0,
@@ -67798,8 +67735,9 @@ class AnazhRealm {
         return g;
     }
 
-    // Das EINE Karten-Material (der Atlas-Zweig in `_buildPbrNodeMaterial`). Fehlt der impostorBillboard-Marker
-    // (TSL-Wiring gescheitert), wäre jede Karte unsichtbar → LAUT + null, der Aufrufer serviert Geometrie.
+    // Das EINE Karten-Material (der Atlas-Zweig in `_buildPbrNodeMaterial`). Scheitert seine Verdrahtung, bricht der Bau
+    // laut beim Namen (`_stoffBruch` „die Karten-Verdrahtung", K22), fehlt der Karten-Codec, bricht `_impostorAtlasTexturen`
+    // (KERN-PFLICHT) — kein Zweig gibt still null, und keine Karte zeichnet unsichtbar.
     _impostorAtlasMaterial() {
         const at = this._impostorAtlas();
         if (!at || !this._impostorAtlasTexturen(at)) return null;
@@ -67814,16 +67752,6 @@ class AnazhRealm {
         };
         if (laubMat && laubMat.tags) matOpts.tags = laubMat.tags;
         const mat = this._sharedFoliageMaterial(matOpts);
-        if (!(mat && mat.userData && mat.userData.impostorBillboard)) {
-            if (!this._impostorWiringWarned) {
-                this._impostorWiringWarned = true;
-                this.log(
-                    `Impostor-TSL-Wiring fehlgeschlagen (${(typeof window !== "undefined" && window.__impostorAtlasError) || "unbekannt"}) — die Fernstufe serviert Geometrie.`,
-                    "WARN"
-                );
-            }
-            return null;
-        }
         at.mat = mat;
         return mat;
     }
@@ -68003,8 +67931,10 @@ class AnazhRealm {
                 // V18.464 (baum-D7): bounded Retry — der Flatten serviert Geometrie, die Art heilt beim nächsten Versuch.
                 z.versuche++;
                 if (z.versuche < 3 && this._impostorBakeQueue) this._impostorBakeQueue.push(key);
-                else z.gescheitert = true;
-                if (typeof window !== "undefined") window.__impostorRttError = String((e && e.message) || e);
+                else {
+                    z.gescheitert = true;
+                    this._stoffBruch(`die Karte ${key} scheiterte ${z.versuche}× — die Fernstufe bleibt Geometrie`, e);
+                }
             })
             .finally(() => {
                 // die späte finally eines vom Watchdog verworfenen Bakes darf den NÄCHSTEN Bake nicht löschen
@@ -71359,13 +71289,10 @@ class AnazhRealm {
                 schmutz: null,
                 upload: 0,
             };
-            const U =
-                TSL && TSL.uniform
-                    ? this._uniformHeimatTeilen({
-                          mitte: TSL.uniform(new THREE.Vector2(0, 0)),
-                          groesse: TSL.uniform(S.fensterM),
-                      })
-                    : null;
+            const U = this._uniformHeimatTeilen({
+                mitte: TSL.uniform(new THREE.Vector2(0, 0)),
+                groesse: TSL.uniform(S.fensterM),
+            });
             return { S, N, daten, tex, kronen, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
         // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
@@ -73991,11 +73918,17 @@ class AnazhRealm {
             retry: [],
             _prefetching: false,
             recipes: null,
+            // DAS BUCH IST EIN EREIGNIS (K22, Nachbesserung 4): wer auf das Studio-Buch wartet (der Vorrat, der Dorf-Spawn,
+            // die Portal-Vorschau), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
+            // 2 s auf die Uhr und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen im Buch).
+            buchDa: null,
+            buchKam: null,
             // V4(B) — die Leck-Linse: gebaute vs. deferred-freigegebene Foundry-Geometrien (die
             // Schnitte heben sie ohnehin lazy via `|| 0`; hier explizit für die Auffindbarkeit).
             _geomBuiltCount: 0,
             _geomDisposedCount: 0,
         };
+        f.buchDa = new Promise((r) => (f.buchKam = r));
         this._foundry = f;
         try {
             // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; init() kehrt vor jedem Renderer
@@ -74008,7 +73941,9 @@ class AnazhRealm {
                 .then((res) => res.text())
                 .then((manifestText) => {
                     const manifest = JSON.parse(manifestText);
-                    if (!Array.isArray(manifest) || !manifest.length) return; // fail-closed: kein Kern-Satz, kein Worker
+                    // kein Kern-Satz, kein Faden: der Boot bricht laut (der catch unten reicht den Bruch unverändert weiter)
+                    if (!Array.isArray(manifest) || !manifest.length)
+                        throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
                     const rel = [
                         "worlds/terrain/lib/three-r128.min.js",
                         "worlds/terrain/lib/OrbitControls.js",
@@ -74076,9 +74011,12 @@ class AnazhRealm {
                     f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
                     const worker = new Worker(f.bootUrl);
                     f.worker = worker;
-                    worker.onerror = () => {
-                        /* Boot-/Laufzeit-Fehler des Workers: f.ready bleibt false -> alles fällt auf den Alt-Pfad */
-                    };
+                    // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
+                    // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
+                    worker.onerror = (ev) =>
+                        this._stoffBruch(
+                            "der Foundry-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler")
+                        );
                     worker.onmessage = (ev) => {
                         const m = ev.data;
                         if (!m || typeof m !== "object") return;
@@ -74086,9 +74024,13 @@ class AnazhRealm {
                             f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
                             // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung) in
                             // EINEM Roundtrip ziehen, DANN die Assets vorwärmen.
+                            // Der Vorrat wartet ohne Frist auf das Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT
+                            // beim Namen (K22), nie wartet der Vorrat still für immer.
                             try {
                                 worker.postMessage({ type: "get-book", reqId: "book" });
-                            } catch (_e) {}
+                            } catch (_e) {
+                                throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
+                            }
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
                             // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze).
@@ -74099,11 +74041,9 @@ class AnazhRealm {
                         this._foundryPumpe(f); // ein Platz im Worker wurde frei → der nächste Wartende (nah zuerst)
                     };
                 })
-                .catch(() => {
-                    /* FAIL-CLOSED: Manifest nicht ladbar/parsebar → kein Worker, f.ready bleibt false → Alt-Pfad */
-                });
+                .catch((e) => this._stoffBruch("die Foundry bootet nicht (Kern-Manifest, Faden-Boot)", e));
         } catch (_e) {
-            this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
+            this._stoffBruch("die Foundry bootet nicht", _e);
         }
         return f;
     }
@@ -74151,9 +74091,9 @@ class AnazhRealm {
         if (f.baecker || !f.bootUrl) return f.baecker;
         const w = new Worker(f.bootUrl);
         f.baecker = w;
-        w.onerror = () => {
-            /* Boot-Fehler: der Bäcker bleibt unbereit, die Karten warten in der Schlange (der Zensus nennt sie wartend) */
-        };
+        // ein Boot-/Laufzeit-Fehler des Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte für immer in der Schlange
+        w.onerror = (ev) =>
+            this._stoffBruch("der Bäcker-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
         w.onmessage = (ev) => {
             const m = ev.data;
             if (!m || typeof m !== "object") return;
@@ -74177,6 +74117,10 @@ class AnazhRealm {
         // `_ensureFoliageClusterAtlas` lädt sie, ohne im Haupt-Thread zu malen.
         if (m.blattAtlas && m.blattAtlas.rgba && Array.isArray(m.blattAtlas.rgba.mips) && m.blattAtlas.rgba.mips.length)
             this._blattAtlasBild = m.blattAtlas;
+        // das Ereignis für jeden, der auf das Buch wartet (`buchDa`); ein Buch ohne Rezepte bricht laut, die Wartenden
+        // sehen es (der Vorrat: FOUNDRY WARM je kritischem Preset, der Dorf-Spawn: FOUNDRY KALT)
+        if (!m.book || typeof m.book !== "object") this._stoffBruch("das Studio-Buch kam ohne Rezepte (get-book)");
+        if (this._foundry && this._foundry.buchKam) this._foundry.buchKam();
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
         // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
@@ -74269,7 +74213,7 @@ class AnazhRealm {
                 this.applyPlayerSoul(this.state.player.soul || "human");
             }
         } catch (_e) {
-            /* fail-soft: der Avatar bleibt auf der Konstanten-Gestalt bis zum nächsten Seelen-Wechsel */
+            this._stoffBruch("der Avatar (Körper-Studio-Gestalt)", _e);
         }
     }
     _foundryAutoRegisterSpecies(book) {
@@ -75228,11 +75172,11 @@ class AnazhRealm {
                     if (nearest.e.mesh) nearest.e.mesh.visible = true;
                     this._archZiegelFern?.(nearest.e);
                 } catch (_r) {
-                    /* fail-soft */
+                    this._stoffBruch("das Dorf-Haus (Neubau nach der Orientierung)", _r);
                 }
             }
         } catch (_e) {
-            /* fail-soft */
+            this._stoffBruch("die Dorf-Orientierung", _e);
         }
     }
 
@@ -75546,8 +75490,9 @@ class AnazhRealm {
                     awaiting[worldKey] = false;
                     if (warm && warm.ok) this._ensurePortalPreview(worldKey, type, id);
                 })
-                .catch(() => {
+                .catch((e) => {
                     awaiting[worldKey] = false;
+                    this._stoffBruch("die Portal-Vorschau " + worldKey, e);
                 });
             return;
         }
@@ -75663,8 +75608,9 @@ class AnazhRealm {
             .then(() => {
                 this._portalApproachAwaiting = false;
             })
-            .catch(() => {
+            .catch((e) => {
                 this._portalApproachAwaiting = false;
+                this._stoffBruch("das Studio-Buch vor dem Portal (Foundry-Boot)", e);
             });
     }
 
@@ -75966,11 +75912,9 @@ class AnazhRealm {
         for (let i = 0; i < n && q.length; i++) {
             const frei = q.shift();
             this._foundryIngestFrei = (this._foundryIngestFrei || 0) + 1; // Linse (freigegeben gesamt)
-            try {
-                frei();
-            } catch (_e) {
-                /* eine gerissene Freigabe darf den Takt nie stoppen */
-            }
+            // die Freigabe erfüllt nur ein Versprechen (`res(x)` wirft nie); der Bau des Aufrufers läuft danach in SEINER
+            // Kette, deren Fang laut bricht (K22: kein toter catch um die Freigabe)
+            frei();
         }
     }
     // DIE EINE FOUNDRY-FRIST: der Worker arbeitet seine Aufträge FIFO ab — die Uhr eines Auftrags läuft erst,
@@ -76875,7 +76819,7 @@ class AnazhRealm {
             tex.needsUpdate = true;
             this._foundryBarkNormal = tex;
         } catch (_e) {
-            this._foundryBarkNormal = null;
+            throw this._stoffBruch("die Rinden-Normale (Vorlagen-Textur)", _e);
         }
         return this._foundryBarkNormal;
     }
@@ -77912,7 +77856,7 @@ class AnazhRealm {
                           : kind === "fell"
                             ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
                             : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
-                if (L && TSL.normalView && TSL.positionViewDirection && TSL.float && TSL.vec3) {
+                if (L) {
                     const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
                     const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
                     let add = null;
@@ -77984,16 +77928,8 @@ class AnazhRealm {
                         // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
                         // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
                         const mf = L.microFur;
-                        if (
-                            mf &&
-                            Array.isArray(mf.farbe) &&
-                            TSL.positionLocal &&
-                            TSL.floor &&
-                            TSL.fract &&
-                            TSL.sin &&
-                            TSL.step
-                        ) {
-                            const cell = TSL.floor((TSL.positionGeometry || TSL.positionLocal).xz.mul(mf.dichte));
+                        if (mf && Array.isArray(mf.farbe)) {
+                            const cell = TSL.floor(TSL.positionGeometry.xz.mul(mf.dichte));
                             const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
                             term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                         }
@@ -78001,7 +77937,7 @@ class AnazhRealm {
                     if (add) mat.emissiveNode = add;
                     // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
                     // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
-                    if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
+                    if (Number.isFinite(L.wrap)) {
                         const w = ndv
                             .max(0.0)
                             .mul(L.wrap)
@@ -78013,14 +77949,7 @@ class AnazhRealm {
                     // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
                     // Die haut-Hülle des Menschen bleibt still.
                     const at = L.atem;
-                    if (
-                        at &&
-                        (kind === "fell" || kind === "skin") &&
-                        TSL.positionLocal &&
-                        TSL.normalLocal &&
-                        TSL.mx_noise_float &&
-                        TSL.time
-                    ) {
+                    if (at && (kind === "fell" || kind === "skin")) {
                         mat.positionNode = TSL.positionLocal.add(
                             TSL.normalLocal.mul(
                                 TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(at.amp)
@@ -78029,9 +77958,9 @@ class AnazhRealm {
                     }
                 }
             } catch (_eL) {
-                /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
+                throw this._stoffBruch("die Look-Addition (Haut · Fell · Haar)", _eL);
             }
-        } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
+        } else if (mp && mp.webe) {
             // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
             // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt.
             const wf =
@@ -78100,10 +78029,8 @@ class AnazhRealm {
         // maskNode, den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
         if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
             const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");
-            if (_durch) {
-                mat.maskNode = _durch;
-                mat.maskShadowNode = TSL.bool(true);
-            }
+            mat.maskNode = _durch;
+            mat.maskShadowNode = TSL.bool(true);
         }
         // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
         // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
@@ -78113,7 +78040,7 @@ class AnazhRealm {
             if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
-            if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+            mat.positionNode = TSL.positionLocal.add(_sway);
         } else if (wiegen === true) {
             // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
             // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
@@ -78124,7 +78051,7 @@ class AnazhRealm {
             // Klein-Vegetations-Zwillings.
             if (!this.state.windUniforms) this._grassInstanceMat();
             const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
-            if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
+            mat.positionNode = TSL.positionLocal.add(_sway);
         }
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
         this._leuchtStoff(mat, mp);
@@ -78487,7 +78414,7 @@ class AnazhRealm {
                 if (mesh) group.add(mesh);
             }
         } catch (_e) {
-            return null;
+            throw this._stoffBruch("die Gruppe der Foundry-Lieferung", _e);
         }
         // DIE HÖHE EINES BAUM-KÖRPERS (Template-Höhe × Preset-Welt-Skala) — eine Eigenschaft des Körpers, auch ohne
         // Masken-Stempel: das Höhen-Buch (_foundryCacheSet) hält sie über jede Cache-Räumung.
@@ -78535,7 +78462,14 @@ class AnazhRealm {
                     ch.geometry.setAttribute("aH0", new T.BufferAttribute(new Float32Array(_n).fill(_h0), 1));
                     ch.geometry.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(_n).fill(_h0L), 1));
                 }
-            } catch (_eS) {}
+            } catch (_eS) {
+                // LAUT (K22): ohne Stempel liest der Blenden-Stoff aLodLevel 0 (ungemaskt), der Baum stünde doppelt mit
+                // seiner Karte — der Bau bricht beim Namen, nie still ohne Stempel
+                throw this._stoffBruch(
+                    "die Stufen-Stempel aLodLevel · aH0 · aH0L (" + ((stage && stage.preset) || "?") + ")",
+                    _eS
+                );
+            }
         }
         if (group && group.children.length) {
             // V4(B) — die Bilanz-Zahl (gebaute Foundry-Baum-Geometrien) für die Leck-Linse
@@ -78554,12 +78488,13 @@ class AnazhRealm {
         if (!f) return { ok: false, reason: "foundry_aus" };
         const budget = Number.isFinite(timeoutMs) ? timeoutMs : 45000;
         const t0 = performance.now();
-        while (performance.now() - t0 < budget) {
-            if (f.ready && f.recipes && f.recipeCount > 0) {
-                return { ok: true, ms: Math.round(performance.now() - t0), recipeCount: f.recipeCount };
-            }
-            await new Promise((r) => setTimeout(r, 50));
-        }
+        // das EREIGNIS des Buchs (`buchDa`), nie eine Uhr-Schleife; die Frist ist die Geduld des Rufers, ihr Ende meldet
+        // er laut (FOUNDRY KALT am Dorf-Spawn)
+        let frist = 0;
+        await Promise.race([f.buchDa, new Promise((r) => (frist = setTimeout(r, budget)))]);
+        clearTimeout(frist);
+        if (f.ready && f.recipes && f.recipeCount > 0)
+            return { ok: true, ms: Math.round(performance.now() - t0), recipeCount: f.recipeCount };
         return {
             ok: false,
             reason: "foundry_kalt",
@@ -78625,11 +78560,10 @@ class AnazhRealm {
         if (!f || !f.ready || f._prefetching) return;
         f._prefetching = true;
         const spec = this._foundryLibrarySpec();
-        // Die Stufen je Art kommen aus den Vertrags-Daten (kindStages via get-render-config); die Replies sind
-        // winzig und reisen vor den Bakes — ein kurzer Warte-Deckel (~2 s) lässt den Prefetch exakt die
-        // deklarierten Stufen wärmen statt zu raten.
-        for (let _w = 0; _w < 40 && !(f.recipeCount > 0 && AnazhRealm._studioRenderConfig); _w++)
-            await new Promise((r) => setTimeout(r, 50));
+        // Die Stufen je Art (kindStages) und die Gestalten-Budgets kommen mit dem Studio-Buch: der Vorrat wartet auf sein
+        // EREIGNIS (`buchDa`), nie auf die Uhr. Bis K22 (Nachbesserung 4) wartete er 2 s und wärmte danach ohne Rezepte
+        // (FOUNDRY WARM: fünf kritische Presets fehlen, kein Boden-Vorrat); die Regionen bauen erst nach dem Vorrat.
+        await f.buchDa;
         // Paralleler Saug: ALLE Anfragen feuern SOFORT (der Worker arbeitet seine serielle Queue Rücken an
         // Rücken ab) statt await je Asset (Worker idle zwischen Antworten). Post kostet den Main-Frame nichts.
         const jobs = [];
@@ -78655,7 +78589,7 @@ class AnazhRealm {
                                 if (meshes)
                                     this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
                             })
-                            .catch(() => {})
+                            .catch((e) => this._stoffBruch("die Bibliothek (Vorab-Bau " + key + ")", e))
                     );
                 }
             }
@@ -78669,7 +78603,9 @@ class AnazhRealm {
             for (let v = 1; v <= _VK; v++) {
                 try {
                     this._foundryEnsureImpostorRecord(sp, v);
-                } catch (_e) {}
+                } catch (_e) {
+                    this._stoffBruch("die Karte (Vorab-Bau " + sp + " #" + v + ")", _e);
+                }
             }
         }
         await Promise.all(jobs);
@@ -79768,8 +79704,7 @@ class AnazhRealm {
     // (audit-strict-Whitelist).
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
-        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
-        if (!TSL || !TSL.uniform) return null;
+        const TSL = THREE.TSL;
         this.state.seasonUniforms = { uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)) };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
@@ -79855,7 +79790,7 @@ class AnazhRealm {
     // Pixel groß: im Sturm lag kein Tropfen im Bild, senkrecht bei jedem Wind, und das Labor zeichnete andere Zahlen.
     _ensureRainSystem() {
         if (this._rainSystem) return this._rainSystem;
-        if (!this.state.scene || typeof THREE === "undefined" || !THREE.TSL || !THREE.PointsNodeMaterial) return null;
+        if (!this.state.scene || typeof THREE === "undefined") return null;
         const RG =
             AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
         const T = THREE.TSL;
@@ -81086,8 +81021,10 @@ class AnazhRealm {
                 }
                 this._finalizeWaterSheetMesh(cx, cz, key, data);
             })
-            .catch(() => {
-                // Worker-Fehler → sync-Fallback (kein verlorenes Wasser).
+            .catch((e) => {
+                // ein Worker-Fehler bricht laut beim Namen (K22); das Blatt baut danach der Haupt-Thread nach demselben
+                // Gesetz (bit-identischer Spiegel) — kein verlorenes Wasser
+                this._stoffBruch("das Wasser-Blatt " + key + " (Worker)", e);
                 if (this.state.voxelChunks && this.state.voxelChunks.has(key))
                     this._buildVoxelChunkWaterIsoSurface(cx, cz);
             });
@@ -86702,9 +86639,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
-                if (rr && typeof rr.catch === "function")
-                    rr.catch((e) => this.log(`Hof-Bühne-Render: ${e && e.message}`, "INFO"));
+                this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");
             }
             s.rafId = requestAnimationFrame(tick);
         };
@@ -87361,9 +87296,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
-                if (rr && typeof rr.catch === "function")
-                    rr.catch((e) => this.log(`Ich-Bühne-Render: ${e && e.message}`, "INFO"));
+                this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");
             }
             s.rafId = requestAnimationFrame(tick);
         };
@@ -88834,7 +88767,7 @@ class AnazhRealm {
         try {
             leavesObj = this._buildTreeSkeletonLeaves(bp);
         } catch (_e) {
-            return null;
+            throw this._stoffBruch("das Blatt-Skelett der Werkstatt-Vorschau", _e);
         }
         if (!leavesObj || !Array.isArray(leavesObj.leaves) || !leavesObj.leaves.length) return null;
         // Eigenes Vorschau-Material (opak, Vertex-Farbe) statt der Welt-Materialien — die lesen
@@ -89017,7 +88950,9 @@ class AnazhRealm {
         const rebuild = () => {
             try {
                 this._workshopRebuildPreviewMesh();
-            } catch (_e) {}
+            } catch (_e) {
+                this._stoffBruch("die Werkstatt-Vorschau (Studio-Neubau)", _e);
+            }
         };
         if (!f.ready) {
             // Foundry bootet noch → sobald sie bereit ist, die Vorschau EINMAL neu bauen.
@@ -89491,13 +89426,10 @@ class AnazhRealm {
         // Welle 6.B Phase 2 — Gizmo synchronisieren (Position + Distance-
         // Scale + Mode-Visibility) VOR dem Render.
         this._workshopSyncGizmo();
-        // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate). render() ist
-        // auf der GPU async — ein Pipeline-Compile-Reject wird geloggt statt unhandled.
+        // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate); ein Render-Fehler bricht in
+        // `_buehneRender` laut beim Namen.
         if (!p.rendererReady) return;
-        const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);
-        if (renderResult && typeof renderResult.catch === "function") {
-            renderResult.catch((err) => this.log(`Workshop-Preview-Render: ${err && err.message}`, "INFO"));
-        }
+        this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");
     }
 
     // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): ein Neben-Renderer (Werkstatt-Vorschau, Feed-, Hof-,
@@ -89505,13 +89437,17 @@ class AnazhRealm {
     // (`uLodAuge`, je Frame aus der Haupt-Kamera) und gehört der Welt: die Vorschau-Eiche im Ursprung lag vom Auge
     // auf der Plattform 36 m weit, jenseits ihrer L0-Kante — 29 Meshes mit 21 108 Dreiecken in der Szene, 0 im Bild.
     // Um den Bühnen-Render steht die Maske aus (uLodMaskOn 0; der geteilte renderGroup-Satz lädt je render() neu),
-    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier.
-    _buehneRender(renderer, scene, camera) {
+    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier. r184s render() ist SYNCHRON (es gibt
+    // kein Versprechen, dessen catch einen Fehler sähe — vier `.catch(… "INFO")` der Bühnen fingen nie etwas): ein
+    // Render-Fehler der Bühne bricht hier laut beim Namen (`wer`), und ihr Takt steht.
+    _buehneRender(renderer, scene, camera, wer) {
         const lu = this.state.lodUniforms;
         const an = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         if (an !== null) lu.uLodMaskOn.value = 0;
         try {
-            return renderer.render(scene, camera);
+            renderer.render(scene, camera);
+        } catch (e) {
+            throw this._stoffBruch("die " + wer + " (Bühnen-Render)", e);
         } finally {
             if (an !== null) lu.uLodMaskOn.value = an;
         }
@@ -96102,7 +96038,7 @@ class AnazhRealm {
                 this.state.csmNode = csm;
                 this.log("Schatten-CSM aktiv (2 Kaskaden: Band 0 · Rest bis zur Schatten-Reichweite)", "INFO");
             } catch (e) {
-                this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
+                throw this._stoffBruch("die Schatten-Kaskaden (CSM)", e);
             }
         }
         // DIE SICHT JE PASS: der Hauptpass liest das Haupt-Urteil der Region-Bundles, jeder Schatten-Pass sein eigenes
@@ -96602,11 +96538,7 @@ class AnazhRealm {
                 // entstünde sonst erst lazy beim ersten Foundry-Baum (`_foundryRewarmColdTrees` liest `_foundry`,
                 // erzeugt es nicht). Billig (nur iframe); das Gate (foundry-aus → null, headless-Null → No-op)
                 // prüft `_ensureAssetFoundry` selbst.
-                if (!this._foundry) {
-                    try {
-                        this._ensureAssetFoundry();
-                    } catch (_efk) {}
-                }
+                if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
 
                 // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
                 this._loopNexusUpdate();
@@ -96909,18 +96841,14 @@ class AnazhRealm {
         return ms;
     }
 
-    // Die EINE Fehler-Grenze des ewigen Loops: ein Frame-Throw landet hier statt den Loop zu brechen —
-    // gezählt + gedrosselt geloggt (max 1×/2 s, mit Stack), nie verschluckt. `_loopErrorCount`/
-    // `-LastLog` sind undefined-sichere Laufzeit-Felder (audit:strict-whitelisted).
+    // Die EINE Fehler-Grenze des ewigen Loops: ein Frame-Throw landet hier statt den Loop zu brechen — gezählt
+    // (`_loopErrorCount`, undefined-sicheres Laufzeit-Feld, audit:strict-whitelisted) und gemeldet über den EINEN Melder
+    // (`_bruchMelden`: jede neue Meldung sofort ERROR mit Stack, dieselbe wieder mit ihrem Zähler), nie verschluckt.
     _loopErrorBoundary(err) {
         const st = this.state;
         st._loopErrorCount = (st._loopErrorCount || 0) + 1;
-        const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-        if (!st._loopErrorLastLog || now - st._loopErrorLastLog > 2000) {
-            st._loopErrorLastLog = now;
-            const msg = (err && (err.stack || err.message)) || String(err);
-            this.log(`Loop-Frame-Fehler abgefangen (#${st._loopErrorCount}, die Welt läuft weiter): ${msg}`, "ERROR");
-        }
+        const msg = (err && (err.stack || err.message)) || String(err);
+        this._bruchMelden(`Loop-Frame-Fehler abgefangen (die Welt läuft weiter): ${msg}`);
     }
 
     // Substanz-Kosten eines DSL-Programms in WIRK-Einheiten (AST-Walk über die Op-Köpfe): spawn_blueprint
@@ -98724,7 +98652,7 @@ class AnazhRealm {
                 job.run(sacred ? Infinity : ms);
                 ran.push(job.name);
             } catch (e) {
-                if (typeof this._loopErrorBoundary === "function") this._loopErrorBoundary(e);
+                this._loopErrorBoundary(e);
             }
         }
         return ran;
@@ -99835,14 +99763,6 @@ class AnazhRealm {
                     : typeof THREE.PostProcessing === "function"
                       ? THREE.PostProcessing
                       : null;
-            if (!TSL || !PPCtor || !TSL.pass) {
-                this.state.postProcessingFailed = true;
-                this.log(
-                    "Post-Processing nicht verfuegbar (PostProcessing/pass fehlt) — direkter Render-Pfad.",
-                    "INFO"
-                );
-                return null;
-            }
             const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
@@ -100068,8 +99988,9 @@ class AnazhRealm {
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
             return pp;
         } catch (err) {
+            // der Schirm zeichnet dann direkt (nie schwarz) — aber nie still: der Bruch steht beim Namen im Log
             this.state.postProcessingFailed = true;
-            this.log(`Post-Processing-Aufbau scheiterte (${err && err.message}) — direkter Render-Pfad.`, "INFO");
+            this._stoffBruch("die Post-Kette (TRAA · Bloom · Grading) — der Schirm zeichnet direkt", err);
             return null;
         }
     }
@@ -101665,12 +101586,16 @@ class AnazhRealm {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
                 if (this.state.traaNode) this._traaReprojektion();
-                if (typeof pp.render === "function") pp.render();
-                else pp.renderAsync();
+                pp.render();
             } catch (err) {
+                // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
+                // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt
                 this.state.postProcessingFailed = true;
-                this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
                 direkt = true;
+                this._stoffBruch(
+                    "die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt",
+                    err
+                );
             }
         }
         if (direkt) {
@@ -106193,6 +106118,13 @@ AnazhRealm.PERF_TARGET_MS = 17;
 // DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
 // Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
 AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
+// DER EINE MELDER (`_bruchMelden`, K22): dieselbe Bruch-Meldung wieder meldet sich höchstens alle BRUCH_WIEDER_MS mit ihrem
+// Zähler; das Buch hält die jüngsten BRUCH_BUCH_MAX Meldungen
+AnazhRealm.BRUCH_WIEDER_MS = 2000;
+AnazhRealm.BRUCH_BUCH_MAX = 64;
+// DAS WACHSTUM ÜBER BUDGET (`_tickFoliageGrowth`, Lehre 13): je WUCHS_DROSSEL_MS wächst EIN Chunk (der nächste) —
+// das Budget drosselt das Tempo, nie die Existenz (dieselbe Garantie wie der Bau über Budget, `_handBauErlaubt`).
+AnazhRealm.WUCHS_DROSSEL_MS = 250;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
