@@ -157,7 +157,12 @@ function setzeStamm(root, T, form) {
         if (fs.existsSync(dir)) gitOk(root, ["rm", "-r", "-q", "-f", "--ignore-unmatch", stamm.DIR]);
         fs.rmSync(dir, { recursive: true, force: true });
         fs.writeFileSync(alt, T);
-        git(root, ["add", "--", stamm.ALT]);
+        // ein Zonen-Zweig auf ein Datei-Ziel: die Tags folgen der Form (EIN Tag, sonst lüde die Seite fehlende Zonen)
+        const html = path.join(root, "index.html");
+        const h = fs.readFileSync(html, "utf8");
+        if (/^<<<<<<< /m.test(h)) throw new Error("Re-Home: index.html trägt git-Konflikte — erst lösen, dann --weiter");
+        fs.writeFileSync(html, stamm.tagsSetzen(h, [stamm.ALT]));
+        git(root, ["add", "--", stamm.ALT, "index.html"]);
         return [stamm.ALT];
     }
     const S = stamm.schneide(T);
