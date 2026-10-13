@@ -273,8 +273,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
     im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L). Das Soll der L1 (12)
     steigt offen auf 13: mit 12 deckte die Laub-L1 von unten (60°) im Mittel 0,90–0,94 ihres Bilds von V18.536, die
     Weiden-L1 0,86 (Gegenprüfung R1, Bild-Tafel);
-  - `quote` (tree[1] 0,4): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,29, Koniferen ≤ 0,39 (Mammut: 14 Furchen am
-    Stamm); das Soll 0,35 hält der Mammut nicht, die Zeile steht offen bei 0,4. Ein Baum ohne Krone (Totholz) ist in der
+  - `quote` (tree[1] 0,35, K20): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,26, Koniferen ≤ 0,35; im Kronenraum (ab
+    dem tiefsten Ast-Ansatz) trägt der L1-Stamm nur seine Bahn (Mammut 0,371 → 0,346). Ein Baum ohne Krone (Totholz) ist in der
     L1 nie Gerüst + Karte — die Quote gilt ihm nicht (unten: sein Gerüst);
   - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
     feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)

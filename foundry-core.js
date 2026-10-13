@@ -339,7 +339,7 @@ const PORTAL_RENDER_CONFIG = {
                     draws: 2,
                     schatten: 1,
                     lagen: 13,
-                    quote: 0.4,
+                    quote: 0.35,
                     blattKarte: 2.2,
                     geruest: 0.25,
                     wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.05, rand: 0.3, winkel: 5, holz: 0.15 },
@@ -1529,12 +1529,15 @@ function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick
 // lodRef Hoehe betritt die L1 bei Distanz = Hoehe, 1080 Zeilen bei 75 Grad Sichtfeld = 704 px je Baumhoehe). Befund
 // (Mess-Wiese, werkbank band 05.10.): die Nadel-Aeste der Tanne trugen 42 x 100 Dreiecke auf geraden Bahnen — 59 % der
 // L1. Kein rnd()-Zug: der Wuchs und jeder Strom bleiben die von L0 (FIX v35).
-function __ringBahn(R, tol) {
+// `festUnter` (K20, Höhe in Vorlagen-Einheiten): Ringe darunter bleiben alle — der Stamm unter dem Kronenraum trägt sein
+// Rinden-Bild, im Kronenraum nur seine Bahn.
+function __ringBahn(R, tol, festUnter) {
     const n = R.length;
     if (!(tol > 0) || n <= 2) return R;
     const keep = new Uint8Array(n);
     keep[0] = keep[n - 1] = 1;
-    for (let i = 0; i < n; i++) if (R[i].fuss || R[i].zeile !== undefined) keep[i] = 1;
+    for (let i = 0; i < n; i++)
+        if (R[i].fuss || R[i].zeile !== undefined || (festUnter !== undefined && R[i].c[1] < festUnter)) keep[i] = 1;
     const stapel = [0, n - 1];
     while (stapel.length) {
         const b = stapel.pop(),
@@ -2102,6 +2105,22 @@ function emitTreeRezept(P, stufe) {
     const _ringTol1 = __lod === 1 && P.kind === "tree" ? _b1.ringToleranz : 0;
     if (__lod === 1 && P.kind === "tree" && !(_ringTol1 > 0 && _ringTol1 < 0.01))
         throw new Error("[phyto] lod.budget.tree[1].ringToleranz fehlt (0 < ringToleranz < 0,01 Baumhoehen)");
+    // DER KRONENRAUM DER L1 (K20, 13.10.): ab dem tiefsten Ast-Ansatz steht der Stamm in der Krone — dort trägt er nur seine
+    // Bahn (dieselbe Toleranz), darunter sein ganzes Rinden-Bild. Befund: der Mammut-Stamm trug 21 Ringe zu 28 Seiten,
+    // 46 % der L1 (L1/L0 0,371 über der Quote 0,35).
+    // Der Ast-Ansatz ist der erste Ring eines Seiten-Laufs oder, bei der Konifere, der erste Punkt der Bahn eines Nadel-Asts
+    // (`_aeste`; seine Läufe reisen als Wedel und fehlen den Röhren).
+    let _kronenRaumY;
+    const _ansatz = (y0) => {
+        if (_kronenRaumY === undefined || y0 < _kronenRaumY) _kronenRaumY = y0;
+    };
+    if (_ringTol1 > 0) {
+        for (const rid of runs.keys()) {
+            const mm = meta[rid];
+            if (mm && !mm.isLead && mm.parentRun >= 0) _ansatz(runs.get(rid)[0].p0[1]);
+        }
+        for (const [k, A] of _aeste) if (k >= 0 && A.pfad && A.pfad.length) _ansatz(A.pfad[0][1]);
+    }
     for (const rid of runs.keys()) {
         const mm = meta[rid];
         if (mm && mm.isLead) continue;
@@ -2113,6 +2132,8 @@ function emitTreeRezept(P, stufe) {
         let rings = strandRings(rid);
         if (_ringTol1 > 0 && rings[0].r - nodes.trunkR * 0.12 <= nodes.trunkR * 0.88 * 0.6)
             rings = __ringBahn(rings, _ringTol1 * nodes.height);
+        else if (_ringTol1 > 0 && _kronenRaumY !== undefined)
+            rings = __ringBahn(rings, _ringTol1 * nodes.height, _kronenRaumY);
         if (_wedel && _aeste.has(rid)) rings = __bahnBis(rings, _wedel.ab);
         if (rings.length < 2) continue;
         const baseRing = rings[0];
