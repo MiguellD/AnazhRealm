@@ -134,6 +134,7 @@ function probe(modus) {
     fp.mesh.visible = true;
     fp.march.visible = true;
     const cam = r.state.camera;
+    // BÜHNE: die Kamera vor dem gestellten Stellvertreter (Anordnung, nicht das Gelände)
     cam.position.set(12, 30, -40);
     cam.lookAt(0, 0, 0);
     cam.updateMatrixWorld(true);

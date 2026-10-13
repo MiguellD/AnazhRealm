@@ -496,6 +496,7 @@ function laborAlbedo(o) {
             alt.vis.set(karte, true);
             karte.position.set(0, 50, 0);
             karte.updateMatrixWorld(true);
+            // BÜHNE: die Karte der Albedo-Tafel 50 m über der Welt
             cam.position.set(0, 50, 2.2);
             cam.lookAt(0, 50, 0);
             cam.updateMatrixWorld(true);
