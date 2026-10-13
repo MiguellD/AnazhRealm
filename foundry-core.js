@@ -5750,13 +5750,14 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
 // der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
 // color (der gemischte Ton, linear). Das Welt-Material (Klasse fellSchale) maskiert und schattiert.
 // DIE KOPF-ZEILE (K28): die Zeile headGroup des Gesetzes (30 Strähnen, Länge 0,045 + halbe Streu, Dicke 0,005
-// Lab-Einheiten — in der Welt 18,8 × 1,67 mm, an Armlänge 5,8 px lang) liegt auf der STARREN Kopf-Haut
+// Lab-Einheiten — in der Welt 18,8 mm lang, an der Wurzel 6 mm breit, an Armlänge 4,7–8,5 px) liegt auf der STARREN Kopf-Haut
 // (__tierKopfHaeute), nicht auf der Leib-Haut. Ihre Schalen-Basis kommt aus DEMSELBEN Kopf-Feld (jeder s-te Rasterpunkt;
 // s wächst, bis der Stapel `kopfDreiecke` hält — die Haut kostet ihr Ziel), gebunden mit Gewicht 1 an den Kopf-Knochen,
 // im SELBEN Stapel wie der Leib (kein Befehl mehr). Ihr Raster ist das Gesetz selbst: die Kopf-Haut trägt EINE Zeile
-// gleichmäßig — je Strähne eine Zelle (√ Strähnen je Fläche), die Locke so dick wie die Strähne (Radius t/2: sie deckt,
-// was die Strähnen decken). Der Leib trägt das Raster seines Medians (seine Dichte wechselt über EINER Fläche, das
-// Raster darf es nicht); sein Median bleibt der des Leibs. Eine Zeile ohne Haut bricht laut, nie fällt sie still.
+// gleichmäßig — je Strähne eine Zelle (√ Strähnen je Fläche), die Locke so breit wie die Lab-Strähne an der Wurzel
+// (halbe Breite = wurzelBreite · t, sie läuft zur Spitze zu wie dort). Der Leib trägt das Raster seines Medians (seine
+// Dichte wechselt über EINER Fläche, das Raster darf es nicht); sein Median bleibt der des Leibs. Eine Zeile ohne Haut
+// bricht laut, nie fällt sie still.
 var TIER_FELL = Object.freeze({
     schalen: 6,
     basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
@@ -5766,6 +5767,9 @@ var TIER_FELL = Object.freeze({
     // Der Locken-Radius des Welt-Materials (Klasse fellSchale): √(aSchale.y) · locke Zellen — der EINE Wert, der Wirt
     // liest ihn von hier (die Kopf-Zeile rechnet ihre Dicke in ihn um).
     locke: 0.62,
+    // Die halbe Wurzel-Breite der Lab-Strähne je Dicke t (worlds/tetrapoda getStrandGeo: w = thick · 1,8, an der Spitze
+    // thick · 0,65) — t ist die Dicke des Gesetzes, nicht die Breite des Haars.
+    wurzelBreite: 1.8,
     // Das Ziel des Kopf-Stapels (Dreiecke aller Schalen): jede Art hält L0 ≤ 62 000 (tetrapoda lod.budget.kreatur[0]),
     // der Bär trägt ohne Kopf-Zeile 60 472.
     kopfDreiecke: 1500,
@@ -5939,13 +5943,14 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     }
     const dichteJe = Float64Array.from(straehnen, (n, j) => (flaeche[j] > 0 ? n / flaeche[j] : 0));
     for (const m of mantel) m.dichte = ((4 * Math.PI) / 3) * (m.n / flaeche[jWurzel]);
-    // Das Raster der Kopf-Zeile: je Strähne eine Zelle, die Locke im Radius t/2 (in Zellen: (t/2)·Zellen = √y · locke).
+    // Das Raster der Kopf-Zeile: je Strähne eine Zelle, die Locke im Wurzel-Radius wurzelBreite · t (in Zellen:
+    // wurzelBreite · t · Zellen = √y · locke).
     let kopfZellen = 0,
         kopfY = 0;
     if (jK >= 0) {
         if (!(dichteJe[jK] > 0)) throw new Error("FELL: die Kopf-Zeile trägt keine Strähne");
         kopfZellen = Math.sqrt(dichteJe[jK]);
-        kopfY = Math.pow(((dickeJe[jK] / straehnen[jK] / 2) * kopfZellen) / TIER_FELL.locke, 2);
+        kopfY = Math.pow((TIER_FELL.wurzelBreite * (dickeJe[jK] / straehnen[jK]) * kopfZellen) / TIER_FELL.locke, 2);
     }
     const len = new Float32Array(Vs),
         dichte = new Float32Array(Vs),
