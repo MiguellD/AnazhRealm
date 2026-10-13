@@ -22738,9 +22738,11 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         const editsVor5 = r.state.worldMeta.voxelEdits;
         r.state.worldMeta.voxelEdits = (editsVor5 || []).slice();
         r.carveVoxelSphere(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
-        out.editBumpedStateGen = r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
+        out.editBumpedStateGen =
+            r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
         out.editClearedCache =
-            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) && r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
+            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) &&
+            r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
         r.state.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
         r.state.worldMeta.voxelEdits = editsVor5 || [];
         r._voxelWorkerSyncState({ op: "state-set" });
@@ -22779,7 +22781,10 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
         );
     }
-    check("K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)", res.editBumpedStateGen);
+    check(
+        "K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)",
+        res.editBumpedStateGen
+    );
     check("K23: ein voxelEdit leert den Density-Cache nur in seiner Nachbarschaft", res.editClearedCache);
     check(
         "Welle Perf-3.c V9.90: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensity (Source-Probe)",
@@ -35791,8 +35796,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
-        out.defaultFlareExists =
-            Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
+        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
         out.speciesTreeParamsExists =
             !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
@@ -35941,7 +35945,10 @@ async function checkBandV18214SkeletonMesh(ctx) {
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
     );
-    check("V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)", res.defaultFlareExists === true);
+    check(
+        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)",
+        res.defaultFlareExists === true
+    );
     check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
     check(
         "V18.214 (T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
@@ -41935,13 +41942,16 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup. W-F (V18.175,
             // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
             // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
+            // K16: der Glitzer lebt im EINEN Blick des Wassers (`_wasserBlick`, Wasser-Stoff UND Fern-Ring) — der
+            // Builder reicht ihm die gekräuselte Normale und die Sonne.
+            const blickSrc = window.__codeOf(r._wasserBlick);
             waterSpecular =
                 // W10 — das Band WANDERT (Lehre 6): der Glitzer ist jetzt das
                 // STUDIO-Gesetz (reflect-basiert, WASSER_GESETZ.spec, Rayleigh-uSunCol).
-                /pow\(max\(dot\(reflect\(/.test(builderSrc) &&
-                /WG\.spec\[0\]/.test(builderSrc) &&
+                /pow\(max\(dot\(reflect\(normalize\(o\.sunDir\)/.test(blickSrc) &&
+                /WG\.spec\[0\]/.test(blickSrc) &&
                 /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
-                /normalize\(uSunDir\)/.test(builderSrc);
+                /this\._wasserBlick\(TSL, WG, \{[\s\S]{0,80}?n: nFlow[\s\S]{0,200}?sunDir: uSunDir/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe — die Szenen-Tiefe ist der EINE Knoten
             // _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei). Seit dem Durchlass-Gesetz
             // (05.10.) in METERN optischen Wegs (wegM, × cameraFar − cameraNear), nie in Viewport-Einheiten.
@@ -42131,12 +42141,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel), treibt Spiegel UND
             // Deckung — seit dem Durchlass-Gesetz (05.10.) spiegelt er DEN Himmel (die Himmels-Umgebung, nie die
             // Zenit-Tönung × Sonnen-Stärke) und deckt mit α = 1 − T·(1 − F)·(1 − Schaum).
+            // K16: Spiegel und Fresnel leben im EINEN Blick des Wassers (`_wasserBlick`), die Deckung im Builder.
+            const blickSrc = window.__codeOf(r._wasserBlick);
             out.waterFresnel =
-                /WG\.fresnel\[0\]/.test(builderSrc) &&
-                /himmel\.mul\(fres\)/.test(builderSrc) &&
-                /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(builderSrc) &&
+                /WG\.fresnel\[0\]/.test(blickSrc) &&
+                /himmel\.mul\(fres\)/.test(blickSrc) &&
+                /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(blickSrc) &&
+                /const \{ eigen, fres \} = this\._wasserBlick\(/.test(builderSrc) &&
                 /T\.mul\(float\(1\.0\)\.sub\(fres\)\)/.test(builderSrc) &&
-                !/uSkyCol/.test(builderSrc);
+                !/uSkyCol/.test(builderSrc + blickSrc);
         }
 
         // V18.530: der Fog-Regler ist mit dem Nebel gefallen (die Luft ist Physik) — weder Slider noch Setter.
