@@ -30171,7 +30171,7 @@ class AnazhRealm {
         AnazhRealm._felsStoffMemo = Object.freeze({
             gesetz: GK.FELS,
             basis,
-            fuss: 1.8,
+            // die Kante des Nah-Netzes (1,8 m) lebt EINMAL in `netz.fuss` (bis K17-2 NB1 stand ein ungelesener Zwilling daneben)
             // die Geologie des Boden-Netzes für gelaende-core `felsStoff` — der Stamm (Sync-Bau) und der voxel-worker (der
             // Init-Schnappschuss `felsStoff`) lesen DIESELBEN Zahlen
             netz: Object.freeze({
@@ -102355,8 +102355,9 @@ AnazhRealm.KEINE_EDITS = Object.freeze([]);
 // und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht; seit Runde 4 trägt der
 // Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief; seit K17-2
 // trägt die Antwort den Stoff (Himmels-Sicht, Schutt, die Feuchte des Mooses, der Fels in `colors`): ein alter Chunk trüge die
-// Säulen-Farbe ohne Stoff.
-AnazhRealm.CHUNK_IDB_FORM = "fels-im-worker";
+// Säulen-Farbe ohne Stoff; seit K17-2 NB1 wellt EIN Gradienten-Rauschen die Bänke und das Geröll streut wie die Referenz:
+// ein alter Chunk trüge die Welle aus dem Wert-Rauschen.
+AnazhRealm.CHUNK_IDB_FORM = "fels-rausch-atlas";
 // Der Saum des gezeichneten Wassers (`_wasserBildAt`): die Vertices eines Wasser-Sheets sind bis 0,3 · 1,8 m = 0,54 m versetzt
 // (der Gitter-Jitter in `_computeWaterSheetData`) — ein Punkt bis so nah an der Chunk-Kante kann im Sheet des Nachbarn liegen.
 AnazhRealm.WASSER_BILD_RAND = 0.6;

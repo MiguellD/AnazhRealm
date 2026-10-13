@@ -1315,7 +1315,7 @@ const server = http.createServer((req, res) => {
                             FE.fill(Number.isFinite(ud) ? ud : NaN, bl.vStart, bl.vStart + bl.vAnzahl);
                         }
                     const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
-                    const fuss = FS ? FS.fuss : 1.8;
+                    const fuss = FS.netz.fuss; // die Kante des Nah-Netzes, die das Spiel liest (`FELS_STOFF.netz`, kein Zwilling daneben)
                     const soll = [0, 0, 0];
                     const pruefe = (i, him, z) => {
                         const x = P3[3 * i],
@@ -1527,8 +1527,43 @@ const server = http.createServer((req, res) => {
                     step: (e, x) => mk(V(x) >= V(e) ? 1 : 0, "f"),
                     smoothstep: glatt,
                     select: (c, a, b) => (V(c) ? a : b),
+                    vec3: (a, b, c) => ({ x: a, y: b, z: c }),
                 };
-                const O = r.constructor._felsRechenwerkTSL(Tm);
+                // `raum` des Rausch-Atlas, Schritt für Schritt aus den Atlas-Bytes (`_rauschAtlasDaten`, Texel = Byte / 127 − 1)
+                // wie `_rauschAtlas().raum` — die Welle der Bänke liest im Shader EINE Probe im Atlas (K17-2 NB1)
+                const RG = r.constructor.RAUSCH_GESETZ,
+                    AD = r.constructor._rauschAtlasDaten();
+                const raumMock = (p) => {
+                    const P = RG.P,
+                        m = P - 1,
+                        [SA, SB] = RG.schraeg;
+                    const x = V(p.x),
+                        y = V(p.y),
+                        z = V(p.z);
+                    const cx = Math.floor(x),
+                        cy = Math.floor(y),
+                        cz = Math.floor(z);
+                    const f = [x - cx, y - cy, z - cz];
+                    const i0 = (cx + cz * SA) & m,
+                        j0 = (cy + cz * SB) & m;
+                    const ecken = (i, j, c) => [0, 1, 2, 3].map((e) => AD[(j * 3 * P + 3 * i + c) * 4 + e] / 127 - 1);
+                    const fx4 = [f[0], f[0] - 1, f[0], f[0] - 1],
+                        fy4 = [f[1], f[1], f[1] - 1, f[1] - 1];
+                    const schicht = (i, j, fz) => {
+                        const a = ecken(i, j, 0),
+                            b = ecken(i, j, 1),
+                            c = ecken(i, j, 2);
+                        return [0, 1, 2, 3].map((e) => a[e] * fx4[e] + b[e] * fy4[e] + c[e] * fz);
+                    };
+                    const bl = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+                    const mix = (a, b, t) => a + (b - a) * t;
+                    const u = f.map(bl);
+                    const s0 = schicht(i0, j0, f[2]),
+                        s1 = schicht((i0 + SA) & m, (j0 + SB) & m, f[2] - 1);
+                    const d = [0, 1, 2, 3].map((e) => mix(s0[e], s1[e], u[2]));
+                    return mk(mix(mix(d[0], d[1], u[0]), mix(d[2], d[3], u[0]), u[1]) * RG.skala, "f");
+                };
+                const O = r.constructor._felsRechenwerkTSL(Tm, raumMock);
                 const B = r.constructor.FELS_STOFF.basis;
                 let maxDiff = 0,
                     n = 0;

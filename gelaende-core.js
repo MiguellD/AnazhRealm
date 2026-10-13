@@ -1669,8 +1669,11 @@
         fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, rausch: 1.4, fern: [120, 260], fugeFern: [30, 80] }),
         // Der Schutthang (Geröll = halb Fels) trägt im Detail-Term statt der Bänke den Schutt: Steine der Kante `korn` (m), je
         // Stein ± `kontrast` und je Stein sein Maß `groesse`, eine Kuppe `kuppe`, `offen` der Fugen klafft (`spalt` der Kante, um `tiefe`
-        // dunkel) — sein Mittel `schuttMittel()` < 1: das Geröll wirft Schatten in sich, nah wie fern (`schuttKornO`).
-        geroell: Object.freeze({ korn: 0.7, groesse: [0.45, 1.45], kontrast: 0.8, kuppe: 0.7, spalt: 0.06, tiefe: 0.8, offen: 0.25, welle: 0.18 }),
+        // dunkel) — sein Mittel `schuttMittel()` < 1: das Geröll wirft Schatten in sich, nah wie fern (`schuttKornO`). Die
+        // Streuung des Gesetzes in 2-m-Fenstern trägt die Geröll-Referenz (real-bergsee.jpg, Geröll vorn σ/Mittel 0,773): K17-2
+        // NB1 0,573 → 0,769, sein Mittel 0,631 → 0,514 (Wand : Schutt der Referenz 0,72, das Kliff-Bild trug 0,54 und σ/Mittel
+        // 0,375 < 0,43 — kontrast 0,8 → 0,9, kuppe 0,7 → 0,9, tiefe 0,8 → 0,95, offen 0,25 → 0,45).
+        geroell: Object.freeze({ korn: 0.7, groesse: [0.45, 1.45], kontrast: 0.9, kuppe: 0.9, spalt: 0.06, tiefe: 0.95, offen: 0.45, welle: 0.18 }),
     });
     const FELS_SAAT = saatHash("fels-stoff");
     const TAU = 2 * Math.PI;
