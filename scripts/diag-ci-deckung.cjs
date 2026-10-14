@@ -42,10 +42,25 @@
 // steht an GENAU einer Stelle (G)/(D), ein dritter Job ist ROT (er stünde außerhalb der Waage):
 //   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte aus spec/ci/ci-zeiten.json (gemessen von
 //                scripts/ci-zeiten.cjs über die GitHub-API; die CI fragt die API nie): ein Job je Push ≤ 2 min, eine
-//                Voll-Gruppe ≤ 11 min — wer drüber liegt, steht mit Minuten und seinem größten Schritt beim Namen; ein Schritt
+//                Voll-Gruppe ≤ 7 min — wer drüber liegt, steht mit Minuten und seinem größten Schritt beim Namen; ein Schritt
 //                ohne Zeit ist UNGEMESSEN (ROT: erst messen oder mit „geschaetzt" und Quelle eintragen).
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
 // integ-probe, Merge-Regel entscheidung.md §2.8) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
+//
+// DIE WANDUHR DER VOLLEN BATTERIE (K61 CI-Diät, 14.10.). Befund (Prüfung K61-1): 20 Voll- und 2 Puls-Gruppen, jede unter
+// ihrem Deckel, und doch 12,3 min Wanduhr (38632403330) — das Konto fährt 20 Jobs zugleich (gemessen: 20 um 20:01:04Z,
+// die übrigen warteten), 22 Jobs ließen zwei auf einen freien Platz warten, und derselbe Kopf fuhr die Batterie mehrfach
+// (d2e06032 auf integ-probe und 14 min später auf main) und belegte die Plätze mit einem Urteil, das schon stand. Dazu
+// hingen beide Caches der Vorbereitung am Hash des Lockfiles, das die Projektversion trägt: jede Versions-Stufe lud den
+// Chrome in jedem Job neu (am 14.10. riss der Download mit ECONNRESET eine Gruppe, 38588243782).
+//   (T) PLÄTZE    die Jobs, die ein voller Lauf zugleich fährt (der Puls und die Voll-Gruppen; ein Job, auf den ein anderer
+//                wartet, endet vor ihm), ≤ LAEUFER_PLAETZE — sonst wartet der Überschuss und trägt die Wanduhr doppelt
+//   (V) KOPF      vor der Batterie richtet der Job `kopf` (unter VOLL_WENN, ohne Matrix, EIN Schritt scripts/ci-kopf.cjs, nie
+//                stumm): trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie, läuft sie nicht noch einmal;
+//                `voll` wartet auf ihn (`needs: kopf`, `if: VOLL_NACH_KOPF`) — so hält ihr Rot den Merge wie zuvor
+//   (V) SCHLÜSSEL kein Cache hasht package.json/package-lock.json (die Projektversion), jeder trägt restore-keys, setup-node
+//                trägt keinen eigenen Cache (dessen Schlüssel IST der Lockfile-Hash); die Schlüssel kommen aus
+//                scripts/ci-schluessel.cjs (Inhalt allein), der Schritt steht vor den Caches, die Caches vor npm ci
 //
 // DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10. nachts). Befund: K15 kam mit grüner Zweig-CI an und fiel erst am
 // Merge im vollen playtest (RAUSCH-GESETZ (B), ein verborgener Fn-Rumpf) — `npm run playtest` lief in keiner Gruppe, nur
@@ -61,7 +76,9 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs } = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
+const { schluessel } = require("./ci-schluessel.cjs");
+const { kopfUrteil } = require("./ci-kopf.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -75,7 +92,27 @@ const VOLL_WENN =
     "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || " +
     "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
     "contains(github.event.head_commit.message, '[ci voll]')";
-const istVollWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ") === VOLL_WENN;
+const normWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ");
+const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
+// EIN URTEIL JE KOPF (K61): der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
+// grünes Urteil der vollen Batterie trägt (scripts/ci-kopf.cjs)
+const KOPF_JOB = "kopf";
+const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
+const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
+const needsVon = (J) => [].concat((J && J.needs) || []);
+// die volle Stufe: der Kopf-Richter unter VOLL_WENN und die Batterie hinter ihm (ihr Rot hält den Merge, (S))
+function vollArt(doc, job) {
+    const J = doc && doc.jobs && doc.jobs[job];
+    if (!J) return false;
+    if (job === KOPF_JOB) return istVollWenn(J.if) && !needsVon(J).length;
+    if (job === VOLL_JOB)
+        return normWenn(J.if) === VOLL_NACH_KOPF && needsVon(J).includes(KOPF_JOB) && vollArt(doc, KOPF_JOB);
+    return false;
+}
+// läuft der Job im vollen Lauf? die volle Stufe — oder eine Batterie direkt unter VOLL_WENN (ihr Rot hält den Merge auch;
+// dass sie hinter dem Kopf-Richter steht, verlangt (V) BEDINGUNG)
+const imVollenLauf = (doc, job) =>
+    vollArt(doc, job) || (job === VOLL_JOB && !!doc && !!doc.jobs && !!doc.jobs[job] && istVollWenn(doc.jobs[job].if));
 // Die Deckel der Waage (Median samt Vorbereitung): ein Job je Push trägt den Puls, eine Voll-Gruppe ihre Breite.
 const WAAGE_S = { push: 120, voll: 420 };
 const DECKEL_MIN = 45;
@@ -85,11 +122,12 @@ const VORBEREITUNG = [
     ["System-Libs", (s) => /apt-get install/.test(String(s.run || ""))],
     ["npm ci", (s) => /\bnpm ci\b/.test(String(s.run || ""))],
 ];
-// der Browser-Cache (K61): der puppeteer-Chrome aus dem Actions-Cache, vor npm ci (dessen postinstall lädt ihn sonst je Job
-// neu — am 14.10. riss der Download mit ECONNRESET eine ganze Gruppe); er steht im Vorbereitungs-Block, ohne Gruppe
-const BROWSER_CACHE = (s) =>
-    typeof s.uses === "string" && s.uses.startsWith("actions/cache@") && /puppeteer/.test(String((s.with || {}).path || ""));
-const IST_VORBEREITUNG = (s) => BROWSER_CACHE(s) || VORBEREITUNG.some(([, f]) => f(s));
+// die Caches (K61): der npm-Cache und der puppeteer-Chrome aus dem Actions-Cache, vor npm ci (dessen postinstall lädt den
+// Chrome sonst je Job neu — am 14.10. riss der Download mit ECONNRESET eine ganze Gruppe), ihre Schlüssel aus dem
+// Schlüssel-Schritt (scripts/ci-schluessel.cjs); sie stehen im Vorbereitungs-Block, ohne Gruppe
+const CACHE = (s) => typeof s.uses === "string" && /^actions\/cache(\/restore)?@/.test(s.uses);
+const SCHLUESSEL = (s) => /^node scripts\/ci-schluessel\.cjs$/.test(String(s.run || "").trim());
+const IST_VORBEREITUNG = (s) => CACHE(s) || SCHLUESSEL(s) || VORBEREITUNG.some(([, f]) => f(s));
 const GRUPPE_RE = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/;
 
 const lauf = (s) => String(s.run || "").trim();
@@ -112,7 +150,7 @@ const AUSNAHMEN = {
         klasse: KLASSEN.GPU,
         grund:
             "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
-            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in der vollen Batterie (voll 8)",
+            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in der vollen Batterie (Frost-Wand)",
     },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
@@ -276,7 +314,9 @@ function schrittStumm(datei, doc, job, j, s) {
     if (!haeltMerge(doc)) return `${datei} läuft nicht auf push/pull_request (blockt keinen Merge)`;
     const an = (x) => x !== undefined && x !== false && x !== "false";
     if (an(j["continue-on-error"])) return `continue-on-error am Job „${job}"`;
-    const vollStufe = datei === path.basename(DATEI) && job === VOLL_JOB && istVollWenn(j.if);
+    // die volle Stufe hält den Merge: der Kopf-Richter feuert unter VOLL_WENN, die Batterie hinter ihm läuft, solange
+    // der Kopf kein grünes Urteil der vollen Batterie trägt — wo sie nicht läuft, steht das Urteil des Kopfs schon
+    const vollStufe = datei === path.basename(DATEI) && imVollenLauf(doc, job);
     if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe) return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
@@ -452,20 +492,31 @@ function gateSchritte(doc) {
 function urteil(doc) {
     const v = [];
     for (const job of Object.keys((doc && doc.jobs) || {}))
-        if (!GRUPPEN_JOBS.includes(job))
-            v.push(`(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} — die Waage sähe ihn nicht`);
+        if (!GRUPPEN_JOBS.includes(job) && job !== KOPF_JOB)
+            v.push(
+                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}") — die Waage sähe ihn nicht`
+            );
     for (const job of GRUPPEN_JOBS) {
         const J = doc && doc.jobs && doc.jobs[job];
         if (!J) {
             v.push(`(V) LEER: kein Job „${job}" in ${DATEI}`);
             continue;
         }
-        if (job === PULS_JOB && J.if !== undefined)
-            v.push(`(V) PULS: „${job}" trägt die Bedingung „${J.if}" — der Puls läuft je Push, ohne Bedingung`);
-        if (job === VOLL_JOB && !istVollWenn(J.if))
-            v.push(`(V) BEDINGUNG: „${job}" läuft unter „${J.if}" statt der EINEN Voll-Bedingung (${VOLL_WENN})`);
+        if (job === PULS_JOB && (J.if !== undefined || needsVon(J).length))
+            v.push(
+                `(V) PULS: „${job}"` +
+                    [J.if !== undefined ? ` trägt die Bedingung „${J.if}"` : "", needsVon(J).length ? ` wartet auf ${needsVon(J).join(", ")}` : ""]
+                        .filter(Boolean)
+                        .join(" und") +
+                    " — der Puls läuft je Push, ohne Bedingung"
+            );
+        if (job === VOLL_JOB && (normWenn(J.if) !== VOLL_NACH_KOPF || !needsVon(J).includes(KOPF_JOB)))
+            v.push(
+                `(V) BEDINGUNG: „${job}" läuft unter „${J.if}"${needsVon(J).includes(KOPF_JOB) ? "" : " ohne needs: " + KOPF_JOB} statt hinter dem Kopf-Richter (needs: ${KOPF_JOB}, if: ${VOLL_NACH_KOPF})`
+            );
         v.push(...gruppenUrteil(job, J));
     }
+    v.push(...kopfForm(doc));
     // (D) über ALLE Jobs: ein Befehl, ein Name
     const alle = gateSchritte(doc);
     const zaehle = (key) => {
@@ -496,10 +547,11 @@ function gruppenUrteil(job, J) {
         v.push(`(V) DECKEL: „${job}" timeout-minutes ${J["timeout-minutes"]} (Soll 1–${DECKEL_MIN} je Gruppe)`);
     const steps = J.steps || [];
     // der Vorbereitungs-Block: die führenden Schritte der Vorbereitung; in ihm checkout · setup-node · System-Libs · npm ci
-    // in dieser Reihenfolge, daneben nur der Browser-Cache (K61)
+    // in dieser Reihenfolge, daneben nur der Schlüssel-Schritt und die Caches (K61) — der Schlüssel vor jedem Cache, der
+    // ihn liest, jeder Cache vor npm ci (danach hätte die Installation ihn nicht gelesen)
     let blockEnde = 0;
     while (blockEnde < steps.length && IST_VORBEREITUNG(steps[blockEnde])) blockEnde++;
-    const block = steps.slice(0, blockEnde).filter((s) => !BROWSER_CACHE(s));
+    const block = steps.slice(0, blockEnde).filter((s) => !CACHE(s) && !SCHLUESSEL(s));
     VORBEREITUNG.forEach(([n, f], i) => {
         const s = block[i];
         if (!s || !f(s))
@@ -507,9 +559,17 @@ function gruppenUrteil(job, J) {
         else if (s.if)
             v.push(`(V) VORBEREITUNG: „${job}" „${n}" trägt eine Bedingung (${s.if}) — jede Gruppe braucht sie`);
     });
-    for (const s of steps.slice(0, blockEnde))
-        if (BROWSER_CACHE(s) && s.if)
-            v.push(`(V) VORBEREITUNG: „${job}" „Browser-Cache" trägt eine Bedingung (${s.if}) — jede Gruppe braucht ihn`);
+    const npmCi = steps.findIndex((s) => VORBEREITUNG[3][1](s));
+    steps.slice(0, blockEnde).forEach((s, i) => {
+        if (!CACHE(s) && !SCHLUESSEL(s)) return;
+        const wer = CACHE(s) ? `Cache „${String((s.with || {}).path || "").trim()}"` : "Cache-Schlüssel";
+        if (s.if) v.push(`(V) VORBEREITUNG: „${job}" ${wer} trägt eine Bedingung (${s.if}) — jede Gruppe braucht ihn`);
+        if (npmCi >= 0 && i > npmCi) v.push(`(V) VORBEREITUNG: „${job}" ${wer} steht nach npm ci — die Installation las ihn nie`);
+        const ids = [...String((s.with || {}).key || "").matchAll(/steps\.([\w-]+)\.outputs/g)].map((m) => m[1]);
+        for (const id of ids)
+            if (!steps.slice(0, i).some((x) => x.id === id))
+                v.push(`(V) VORBEREITUNG: „${job}" ${wer} liest steps.${id}, der vor ihm nicht steht — sein Schlüssel wäre leer`);
+    });
     const gruppen = new Set(Array.isArray(M) ? M : []);
     const je = new Map([...gruppen].map((g) => [g, 0]));
     for (const s of steps.slice(blockEnde)) {
@@ -526,6 +586,62 @@ function gruppenUrteil(job, J) {
     }
     for (const [g, n] of je)
         if (n === 0) v.push(`(G) LEER: „${job}" Gruppe ${g} trägt keinen Schritt (ein Läufer ohne Arbeit)`);
+    return v;
+}
+
+// (V) KOPF (K61): der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm (ein stummer Richter
+// ließe bei einem Fehler der API die Batterie still aus), EIN Schritt außer checkout: scripts/ci-kopf.cjs mit id, dessen
+// Ausgabe `voll` der Job weiterreicht
+function kopfForm(doc) {
+    const v = [];
+    const K = doc && doc.jobs && doc.jobs[KOPF_JOB];
+    if (!K) return [`(V) KOPF: kein Job „${KOPF_JOB}" — die volle Batterie richtet denselben Kopf auf jedem Zweig neu`];
+    if (!istVollWenn(K.if)) v.push(`(V) KOPF: „${KOPF_JOB}" läuft unter „${K.if}" statt der EINEN Voll-Bedingung (${VOLL_WENN})`);
+    if (needsVon(K).length) v.push(`(V) KOPF: „${KOPF_JOB}" wartet auf ${needsVon(K).join(", ")} — er steht am Anfang des Laufs`);
+    if (K.strategy) v.push(`(V) KOPF: „${KOPF_JOB}" trägt eine Matrix — er richtet einmal je Lauf`);
+    if (K["continue-on-error"] !== undefined && K["continue-on-error"] !== false)
+        v.push(`(V) KOPF: „${KOPF_JOB}" trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
+    const eigen = (K.steps || []).filter((s) => !(typeof s.uses === "string" && s.uses.startsWith("actions/checkout@")));
+    const r = eigen.find((s) => KOPF_LAUF.test(lauf(s)));
+    if (eigen.length !== 1 || !r)
+        v.push(
+            `(V) KOPF: „${KOPF_JOB}" trägt ${eigen.length} Schritte neben checkout (${eigen.map(name).join(" · ") || "keinen"}) statt EINEM: node scripts/ci-kopf.cjs`
+        );
+    if (r) {
+        if (r["continue-on-error"] !== undefined && r["continue-on-error"] !== false)
+            v.push(`(V) KOPF: der Richter-Schritt trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
+        if (r.if !== undefined) v.push(`(V) KOPF: der Richter-Schritt trägt die Bedingung „${r.if}"`);
+        const soll = r.id ? `\${{ steps.${r.id}.outputs.voll }}` : null;
+        if (!soll || normWenn((K.outputs || {}).voll) !== soll)
+            v.push(`(V) KOPF: „${KOPF_JOB}" reicht outputs.voll nicht aus dem Richter-Schritt (Soll ${soll || "eine id am Schritt"})`);
+    }
+    return v;
+}
+
+// (V) SCHLÜSSEL (K61) über ALLE Workflows: ein Cache-Schlüssel hasht nur, was der Cache trägt
+const VERSIONS_HASH = /hashFiles\(([^)]*\bpackage(?:-lock)?\.json[^)]*)\)/;
+function schluesselUrteil(docs) {
+    const v = [];
+    for (const [datei, doc] of Object.entries(docs))
+        for (const [job, J] of Object.entries((doc && doc.jobs) || {}))
+            for (const s of J.steps || []) {
+                const u = typeof s.uses === "string" ? s.uses : "";
+                const w = s.with || {};
+                if (u.startsWith("actions/setup-node@") && w.cache)
+                    v.push(
+                        `(V) SCHLÜSSEL: „${datei} ${job}" setup-node cache: ${w.cache} — sein Schlüssel ist der Hash des Lockfiles samt ` +
+                            `Projektversion, ohne restore-keys: jede Versions-Stufe lädt alles neu (den Schlüssel trägt scripts/ci-schluessel.cjs)`
+                    );
+                if (!CACHE(s)) continue;
+                const wo = `„${datei} ${job}" Cache „${String(w.path || "").trim()}"`;
+                const m = VERSIONS_HASH.exec(String(w.key || ""));
+                if (m)
+                    v.push(
+                        `(V) SCHLÜSSEL: ${wo} hasht ${m[1].trim()} — die Datei trägt die Projektversion: jede Versions-Stufe verliert den Cache`
+                    );
+                if (!String(w["restore-keys"] || "").trim())
+                    v.push(`(V) SCHLÜSSEL: ${wo} ohne restore-keys — ein neuer Schlüssel beginnt leer`);
+            }
     return v;
 }
 
@@ -631,20 +747,27 @@ function selbsttestKlasse() {
 }
 
 // (T) DIE WAAGE: je Job und Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte. Ein Job ohne Bedingung läuft je
-// Push (Deckel 2 min), der Job unter VOLL_WENN trägt die Breite (11 min je Gruppe); ein Job ohne Matrix ist EINE Gruppe.
-// → { v: Befunde, zeilen: je Gruppe „job g/N: x,y min" }
+// Push (Deckel 2 min), die volle Stufe (der Kopf-Richter und die Batterie hinter ihm) trägt die Breite (7 min je Gruppe);
+// ein Job ohne Matrix ist EINE Gruppe. Dazu (K61) die PLÄTZE: die Jobs, die ein voller Lauf zugleich fährt (ein Job, auf den
+// ein anderer wartet, endet vor ihm), ≤ LAEUFER_PLAETZE — und die WANDUHR: der längste Weg durch den Lauf (der Puls, der
+// Kopf-Richter samt der schwersten Voll-Gruppe) ≤ 8 min.
+// → { v: Befunde, zeilen: je Gruppe „job g/N: x,y min", plaetze, wanduhr_s }
 const minuten = (s) => (s / 60).toFixed(1).replace(".", ",");
+const WANDUHR_S = 480;
 function waage(doc, zeiten) {
     const v = [];
     const zeilen = [];
     const Z = (zeiten && zeiten.schritte) || {};
     const vorb = zeiten && Number(zeiten.vorbereitung_s);
     if (!(vorb >= 0)) return { v: [`(T) ZEITEN: ${ZEITEN} trägt keine vorbereitung_s`], zeilen };
+    const imLauf = [];
+    const schwerste = new Map();
     for (const [job, J] of Object.entries((doc && doc.jobs) || {})) {
-        const art = J.if === undefined ? "push" : istVollWenn(J.if) ? "voll" : null;
+        const art = J.if === undefined && !needsVon(J).length ? "push" : imVollenLauf(doc, job) ? "voll" : null;
         if (!art) continue; // eine andere Bedingung urteilt (V)/(S)
         const M = (J.strategy && J.strategy.matrix && J.strategy.matrix.gruppe) || null;
         const gs = Array.isArray(M) ? M : [null];
+        imLauf.push([job, J, gs.length]);
         const steps = (J.steps || []).filter((s) => s.run && !IST_VORBEREITUNG(s));
         for (const g of gs) {
             const mein = steps.filter((s) => {
@@ -668,6 +791,7 @@ function waage(doc, zeiten) {
             const kl = ((J.strategy && J.strategy.matrix && J.strategy.matrix.include) || []).find((e) => e && e.gruppe === g);
             const wer = g === null ? job : `${job} ${g}/${gs.length}` + (kl && kl.klasse ? ` ${kl.klasse}` : "");
             zeilen.push(`${wer} ${minuten(summe)}`);
+            if (!schwerste.has(job) || summe > schwerste.get(job)[1]) schwerste.set(job, [wer, summe]);
             if (summe > WAAGE_S[art])
                 v.push(
                     `(T) WAAGE: „${wer}" trägt ${minuten(summe)} min (Deckel ${minuten(WAAGE_S[art])} min ${art === "push" ? "je Push" : "je Voll-Gruppe"})` +
@@ -675,7 +799,30 @@ function waage(doc, zeiten) {
                 );
         }
     }
-    return { v, zeilen };
+    // (T) PLÄTZE: zugleich laufen alle Jobs des vollen Laufs außer denen, auf die ein anderer wartet
+    const gewartet = new Set(imLauf.flatMap(([, J]) => needsVon(J)));
+    const zugleich = imLauf.filter(([job]) => !gewartet.has(job));
+    const plaetze = zugleich.reduce((a, [, , n]) => a + n, 0);
+    if (plaetze > LAEUFER_PLAETZE)
+        v.push(
+            `(T) PLÄTZE: ein voller Lauf fährt ${plaetze} Jobs zugleich (${zugleich.map(([j, , n]) => `${j} ${n}`).join(" · ")}) — ` +
+                `das Konto hat ${LAEUFER_PLAETZE} Läufer-Plätze: ${plaetze - LAEUFER_PLAETZE} warten auf einen freien Platz und tragen die Wanduhr doppelt`
+        );
+    // (T) WANDUHR: der längste Weg — je Job seine schwerste Gruppe plus die schwersten Gruppen der Jobs, auf die er wartet
+    const weg = (job, tiefe = 0) => {
+        const J = doc.jobs[job];
+        const eigen = schwerste.has(job) ? schwerste.get(job)[1] : 0;
+        const vor = tiefe < 8 ? needsVon(J).map((n) => (doc.jobs[n] ? weg(n, tiefe + 1) : [0, ""])) : [];
+        const v0 = vor.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
+        return [v0[0] + eigen, (v0[1] ? v0[1] + " → " : "") + (schwerste.has(job) ? schwerste.get(job)[0] : job)];
+    };
+    const wege = imLauf.map(([job]) => weg(job));
+    const laengster = wege.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
+    if (laengster[0] > WANDUHR_S)
+        v.push(
+            `(T) WANDUHR: der längste Weg „${laengster[1]}" trägt ${minuten(laengster[0])} min (Ziel ${minuten(WANDUHR_S)} min je vollem Lauf)`
+        );
+    return { v, zeilen, plaetze, wanduhr: laengster };
 }
 
 // (Z) die Gate-Schritte zweier Stände: was fehlt nachher, was steht nachher öfter als vorher
@@ -718,6 +865,135 @@ function gruppenBericht(doc) {
     }).join(" | ");
 }
 
+// Fixture-Bausteine (K61): der Kopf-Richter in seiner Form, ein Cache-Schritt
+const kopfJob = () => ({
+    if: VOLL_WENN,
+    outputs: { voll: "${{ steps.kopf.outputs.voll }}" },
+    steps: [{ uses: "actions/checkout@v4" }, { name: "Kopf", id: "kopf", run: "node scripts/ci-kopf.cjs" }],
+});
+const cacheSchritt = (p, key, restore = p.replace(/\W+/g, "") + "-") => ({
+    uses: "actions/cache@v4",
+    with: { path: p, key, ...(restore ? { "restore-keys": restore } : {}) },
+});
+
+// (V) SCHLÜSSEL gegen Fixtures: die Form der Caches über alle Workflows — und `schluessel()` gegen Lockfiles, die sich nur
+// in der Projektversion unterscheiden (gleicher Schlüssel) oder in einer Abhängigkeit (anderer Schlüssel)
+function selbsttestSchluessel() {
+    const doc = () => ({
+        jobs: {
+            voll: {
+                steps: [
+                    { uses: "actions/checkout@v4" },
+                    { uses: "actions/setup-node@v4", with: { "node-version": "22" } },
+                    { name: "Cache-Schlüssel", id: "schluessel", run: "node scripts/ci-schluessel.cjs" },
+                    cacheSchritt("~/.npm", "npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}", "npm-${{ runner.os }}-"),
+                    cacheSchritt(
+                        "~/.cache/puppeteer",
+                        "puppeteer-${{ runner.os }}-${{ steps.schluessel.outputs.chrome }}",
+                        "puppeteer-${{ runner.os }}-"
+                    ),
+                ],
+            },
+        },
+    });
+    const S = (d) => d.jobs.voll.steps;
+    const faelle = [
+        ["die Caches am Inhalt (grün)", () => {}, null],
+        [
+            "setup-node mit eigenem Cache",
+            (d) => (S(d)[1].with.cache = "npm"),
+            /\(V\) SCHLÜSSEL: „t\.yml voll" setup-node cache: npm — sein Schlüssel ist der Hash des Lockfiles/,
+        ],
+        [
+            "der Chrome am Lockfile (K61-Befund)",
+            (d) => (S(d)[4].with.key = "puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}"),
+            /\(V\) SCHLÜSSEL: „t\.yml voll" Cache „~\/\.cache\/puppeteer" hasht 'package-lock\.json' — die Datei trägt die Projektversion/,
+        ],
+        [
+            "ein Cache an package.json",
+            (d) => (S(d)[3].with.key = "npm-${{ hashFiles('**/package.json') }}"),
+            /\(V\) SCHLÜSSEL: „t\.yml voll" Cache „~\/\.npm" hasht '\*\*\/package\.json'/,
+        ],
+        [
+            "ein Cache ohne restore-keys",
+            (d) => delete S(d)[4].with["restore-keys"],
+            /\(V\) SCHLÜSSEL: „t\.yml voll" Cache „~\/\.cache\/puppeteer" ohne restore-keys/,
+        ],
+    ];
+    const f = [];
+    for (const [n, tat, soll] of faelle) {
+        const d = doc();
+        tat(d);
+        const u = schluesselUrteil({ "t.yml": d });
+        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
+        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
+    }
+    const lock = (pv = "1.0.0", a = "1.2.3", pc = "24.43.1", dep = "^1.2.0") => ({
+        name: "p",
+        version: pv,
+        lockfileVersion: 3,
+        packages: {
+            "": { name: "p", version: pv, dependencies: { a: dep, "puppeteer-core": "^24.0.0" } },
+            "node_modules/a": { version: a },
+            "node_modules/puppeteer-core": { version: pc },
+        },
+    });
+    const k0 = schluessel(lock());
+    const proben = [
+        ["eine Versions-Stufe (V18.546.1 → .2)", schluessel(lock("1.0.1")), true, true],
+        ["eine Abhängigkeit neu", schluessel(lock("1.0.0", "1.2.4")), false, true],
+        ["ein Abhängigkeits-Bereich neu", schluessel(lock("1.0.0", "1.2.3", "24.43.1", "^1.3.0")), false, true],
+        ["puppeteer-core neu (ein anderer Chrome)", schluessel(lock("1.0.0", "1.2.3", "24.44.0")), false, false],
+    ];
+    for (const [n, k, npmGleich, chromeGleich] of proben) {
+        const ok = (k.npm === k0.npm) === npmGleich && (k.chrome === k0.chrome) === chromeGleich;
+        console.log(
+            `  ${ok ? "✅" : "❌"} Selbsttest Schlüssel „${n}" → npm ${k.npm === k0.npm ? "gleich" : "neu"} · chrome ${k.chrome === k0.chrome ? "gleich" : "neu"}`
+        );
+        if (!ok) f.push(`Schlüssel „${n}": npm ${npmGleich ? "soll gleich" : "soll neu"}, chrome ${chromeGleich ? "soll gleich" : "soll neu"}`);
+    }
+    return f;
+}
+
+// (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
+function selbsttestKopf() {
+    const gruen = (id, event = "push", voll = ["success", "success"]) => ({
+        lauf: { id, event, status: "completed", conclusion: "success", head_branch: "integ-probe" },
+        jobs: [{ name: "puls 1/2", conclusion: "success" }].concat(voll.map((c, i) => ({ name: `voll ${i + 1}/2 cpu`, conclusion: c }))),
+    });
+    const fall = (ereignis, ...laeufe) => ({
+        ereignis,
+        eigenerLauf: 9,
+        laeufe: laeufe.map((x) => x.lauf),
+        jobsJe: Object.fromEntries(laeufe.map((x) => [x.lauf.id, x.jobs])),
+    });
+    const faelle = [
+        ["derselbe Kopf grün auf integ-probe (d2e06032)", fall("push", gruen(1)), "nein"],
+        ["kein anderer Lauf", fall("push"), "ja"],
+        ["nur der eigene Lauf", fall("push", gruen(9)), "ja"],
+        ["nachts läuft sie immer", fall("schedule", gruen(1)), "ja"],
+        ["auf Abruf läuft sie immer", fall("workflow_dispatch", gruen(1)), "ja"],
+        ["ein PR prüft den Merge, nie den Kopf", fall("pull_request", gruen(1)), "ja"],
+        ["der grüne Lauf war ein PR", fall("push", gruen(1, "pull_request")), "ja"],
+        ["der grüne Lauf trug nur den Puls", fall("push", gruen(1, "push", [])), "ja"],
+        ["eine Voll-Gruppe übersprungen", fall("push", gruen(1, "push", ["success", "skipped"])), "ja"],
+        [
+            "der andere Lauf läuft noch",
+            fall("push", { ...gruen(1), lauf: { ...gruen(1).lauf, status: "in_progress", conclusion: null } }),
+            "ja",
+        ],
+    ];
+    const f = [];
+    for (const [n, e, soll] of faelle) {
+        const u = kopfUrteil(e);
+        const ok = u.voll === soll;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest Kopf „${n}" → voll=${u.voll} (${u.grund})`);
+        if (!ok) f.push(`Kopf „${n}": voll=${u.voll} statt ${soll}`);
+    }
+    return f;
+}
+
 function selbsttest() {
     const prep = () => [
         { uses: "actions/checkout@v4" },
@@ -732,8 +1008,10 @@ function selbsttest() {
                 "timeout-minutes": 10,
                 steps: prep().concat([{ name: "Lint", if: "matrix.gruppe == 1", run: "npm run lint" }]),
             },
+            kopf: kopfJob(),
             voll: {
-                if: VOLL_WENN,
+                needs: KOPF_JOB,
+                if: VOLL_NACH_KOPF,
                 strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
                 "timeout-minutes": 30,
                 steps: prep().concat([
@@ -806,6 +1084,44 @@ function selbsttest() {
             /\(V\) PULS: „puls" trägt die Bedingung/,
         ],
         ["kein Job voll", (d) => delete d.jobs.voll, /\(V\) LEER: kein Job „voll"/],
+        // EIN URTEIL JE KOPF (K61): der Kopf-Richter vor der Batterie, nie stumm, EIN Schritt
+        ["kein Kopf-Richter", (d) => delete d.jobs.kopf, /\(V\) KOPF: kein Job „kopf"/],
+        [
+            "die Batterie ohne den Kopf-Richter",
+            (d) => {
+                V(d).if = VOLL_WENN;
+                delete V(d).needs;
+            },
+            /\(V\) BEDINGUNG: „voll" läuft unter „github\.event_name == 'schedule'.*" ohne needs: kopf/,
+        ],
+        [
+            "der Kopf-Richter unter einer anderen Bedingung",
+            (d) => (d.jobs.kopf.if = "github.ref == 'refs/heads/main'"),
+            /\(V\) KOPF: „kopf" läuft unter „github\.ref == 'refs\/heads\/main'"/,
+        ],
+        [
+            "der Kopf-Richter stumm",
+            (d) => (d.jobs.kopf.steps[1]["continue-on-error"] = true),
+            /\(V\) KOPF: der Richter-Schritt trägt continue-on-error/,
+        ],
+        [
+            "ein Gate im Kopf-Richter",
+            (d) => d.jobs.kopf.steps.push({ name: "X", run: "npm run gate:x" }),
+            /\(V\) KOPF: „kopf" trägt 2 Schritte neben checkout/,
+        ],
+        ["die Ausgabe nicht weitergereicht", (d) => delete d.jobs.kopf.outputs, /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
+        ["der Puls wartet auf den Kopf", (d) => (d.jobs.puls.needs = KOPF_JOB), /\(V\) PULS: „puls" .*wartet auf kopf/],
+        // die Caches (K61): der Schlüssel vor dem Cache, der Cache vor npm ci
+        [
+            "ein Cache nach npm ci",
+            (d) => V(d).steps.splice(4, 0, cacheSchritt("~/.npm", "npm-${{ runner.os }}-x")),
+            /\(V\) VORBEREITUNG: „voll" Cache „~\/\.npm" steht nach npm ci/,
+        ],
+        [
+            "der Cache vor seinem Schlüssel",
+            (d) => V(d).steps.splice(1, 0, cacheSchritt("~/.npm", "npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}")),
+            /\(V\) VORBEREITUNG: „voll" Cache „~\/\.npm" liest steps\.schluessel, der vor ihm nicht steht/,
+        ],
     ];
     const f = [];
     const g0 = urteil(gut());
@@ -845,7 +1161,14 @@ function selbsttest() {
         `  ${ok3 ? "✅" : "❌"} Selbsttest „in npm run check gewandert" → verloren ${JSON.stringify(z3.verloren)}`
     );
     if (!ok3) f.push("(Z) ein Schritt, dessen Befehle ein anderer Schritt fährt, zählt als verloren");
-    return f.concat(selbsttestWaage(), selbsttestGegenrichtung(), selbsttestPlaytest(), selbsttestKlasse());
+    return f.concat(
+        selbsttestWaage(),
+        selbsttestGegenrichtung(),
+        selbsttestPlaytest(),
+        selbsttestKlasse(),
+        selbsttestSchluessel(),
+        selbsttestKopf()
+    );
 }
 
 // (T) Die Waage gegen ein Fixture — und gegen das heutige check.yml (b5eb02e9, das eingefrorene `vorher` in ci-zeiten.json):
@@ -875,6 +1198,12 @@ function selbsttestWaage() {
         },
     });
     const zeiten = () => ({ vorbereitung_s: 20, schritte: { Lint: { s: 30 }, A: { s: 200 }, B: { s: 300 }, C: { s: 150 } } });
+    const mitKopf = (d, z) => {
+        d.jobs.kopf = kopfJob();
+        d.jobs.voll.needs = KOPF_JOB;
+        d.jobs.voll.if = VOLL_NACH_KOPF;
+        z.schritte.Kopf = { s: 3 };
+    };
     const faelle = [
         ["die Waage im Lot (grün)", () => {}, null],
         [
@@ -893,6 +1222,28 @@ function selbsttestWaage() {
             "ein Schritt aus voll in den Puls gezogen",
             (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })),
             /\(T\) WAAGE: „puls 1\/1" trägt 5,8 min .*„B" 5,0 min/,
+        ],
+        // (T) PLÄTZE und WANDUHR (K61): 1 Puls- und 20 Voll-Gruppen auf 20 Plätzen; der Kopf-Richter endet vor der Batterie
+        [
+            "mehr Jobs zugleich als Läufer-Plätze (K61-Befund: 22 gegen 20)",
+            (d) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: 20 }, (_, i) => i + 1)),
+            /\(T\) PLÄTZE: ein voller Lauf fährt 21 Jobs zugleich \(puls 1 · voll 20\) — das Konto hat 20 Läufer-Plätze: 1 warten/,
+        ],
+        [
+            "der Kopf-Richter belegt keinen Platz neben der Batterie",
+            (d, z) => {
+                mitKopf(d, z);
+                d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: 19 }, (_, i) => i + 1);
+            },
+            null,
+        ],
+        [
+            "der längste Weg über 8 min",
+            (d, z) => {
+                mitKopf(d, z);
+                z.schritte.Kopf.s = 120;
+            },
+            /\(T\) WANDUHR: der längste Weg „kopf → voll 1\/2" trägt 8,5 min \(Ziel 8,0 min je vollem Lauf\)/,
         ],
     ];
     const f = [];
@@ -923,8 +1274,12 @@ function selbsttestWaage() {
     const soll = [
         /\(T\) WAAGE: „check" trägt \d+,\d min \(Deckel 2,0 min je Push\) — der größte Schritt „Prettier-Format-Check" 2,1 min/,
         /\(T\) WAAGE: „playtest [123]\/3" trägt (1\d|2\d),\d min \(Deckel 2,0 min je Push\)/,
+        /\(T\) WANDUHR: der längste Weg „playtest 2\/3" trägt 26,0 min \(Ziel 8,0 min je vollem Lauf\)/,
     ];
-    const ok = soll.every((r) => u.some((x) => r.test(x))) && u.length === Object.values(Z.vorher.jobs).reduce((a, j) => a + (j.matrix ? j.matrix.length : 1), 0);
+    const ok =
+        soll.every((r) => u.some((x) => r.test(x))) &&
+        u.filter((x) => /^\(T\) WAAGE/.test(x)).length ===
+            Object.values(Z.vorher.jobs).reduce((a, j) => a + (j.matrix ? j.matrix.length : 1), 0);
     console.log(`  ${ok ? "✅" : "❌"} Selbsttest „das heutige check.yml (${Z.vorher.ref.split(" ")[0]})" → ${u.join(" · ") || "grün"}`);
     if (!ok) f.push(`das heutige check.yml fällt nicht rot mit seinen Tätern (${u.join(" · ") || "grün"})`);
     return f;
@@ -1218,6 +1573,7 @@ if (i > 0) {
 const alleWorkflows = workflowsLesen();
 const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
 v.push(...g.v);
+v.push(...schluesselUrteil(alleWorkflows));
 v.push(...playtestUrteil(alleWorkflows, skripte));
 const zeitenDatei = path.join(root, ZEITEN);
 const w = fs.existsSync(zeitenDatei)
@@ -1237,6 +1593,10 @@ console.log(
         ` · ohne Workflow ${g.zahl.offen}`
 );
 console.log(`  Waage (Median samt Vorbereitung, min): ${w.zeilen.join(" · ")}`);
+if (w.wanduhr)
+    console.log(
+        `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
+    );
 if (z)
     console.log(
         `  gegen ${process.argv[i + 1]}: vorher ${z.vorher}, nachher ${z.nachher}, verloren ${z.verloren.length}, doppelt ${z.doppelt.length}, neu ${z.neu.length}`
@@ -1246,5 +1606,5 @@ if (v.length) {
     process.exit(1);
 }
 console.log(
-    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 7 min), jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt."
+    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 7 min), ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich und sein längster Weg ≤ 8 min, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt.`
 );

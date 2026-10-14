@@ -88,4 +88,9 @@ function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
     return bedingt || { klasse: "cpu" };
 }
 
-module.exports = { GPU_REZEPTE, befehle, klasseDerDatei, klasseDesLaufs };
+// DIE LÄUFER-PLÄTZE des Kontos: GitHub fährt hier höchstens 20 Jobs zugleich (gemessen über alle Läufe des 14.10.: 20 um
+// 20:01:04Z, als 38628488866 und 38628426005 zusammen 32 Jobs trugen — die übrigen warteten bis 344 s). Die EINE Zahl für
+// die Waage (gate:ci-deckung (T) PLÄTZE) und das Verteilen (scripts/ci-zeiten.cjs --verteilen).
+const LAEUFER_PLAETZE = 20;
+
+module.exports = { GPU_REZEPTE, LAEUFER_PLAETZE, befehle, klasseDerDatei, klasseDesLaufs };

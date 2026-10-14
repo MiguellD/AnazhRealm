@@ -1,17 +1,19 @@
 // ci-zeiten.cjs — DIE ZEITEN DER CI (K14, CI in zwei Stufen, 11.10.): je Schritt von check.yml der Median seiner Laufzeit
 // über die letzten 5 grünen Läufe, die ihn tragen, aus der GitHub-API → spec/ci/ci-zeiten.json. Die Datei liest die Waage
-// von gate:ci-deckung (jede Puls-Gruppe ≤ 2 min, jede Voll-Gruppe ≤ 11 min, Median samt Vorbereitung); die CI selbst
-// fragt die API nie. Ein Schritt wird über Umbenennungen hinweg erkannt: sein Name ODER sein run-Text (aus check.yml am
-// Kopf des jeweiligen Laufs). Ein Schritt ohne Lauf behält einen Eintrag mit `geschaetzt` (lokal gemessen, mit Quelle).
+// von gate:ci-deckung (jede Puls-Gruppe ≤ 2 min, jede Voll-Gruppe ≤ 7 min, Median samt Vorbereitung); die CI selbst
+// fragt die API nie. Ein Schritt misst nur, wo er DENSELBEN Befehl fuhr: sein run-Text an diesem Lauf (aus check.yml am
+// Kopf des jeweiligen Laufs) gleicht dem jetzigen — eine Umbenennung misst weiter, ein Umbau (anderer Befehl unter altem
+// Namen) misst erst ab seinem eigenen Lauf, auf jedem Zweig (K61: die Lauf-Id-Schwelle `seit` ließ main und integ-probe
+// mit dem alten haus-welt unter dem neuen Namen mitzählen, Median 421 s statt 293 s). Ein Schritt ohne Lauf behält einen
+// Eintrag mit `geschaetzt` (lokal gemessen, mit Quelle).
 //
 //   node scripts/ci-zeiten.cjs [--zuerst <lauf-id,…>] [--verteilen]
 //     --zuerst    diese Läufe zuerst (die eigenen Messläufe nach einem Umbau), dann die neuesten grünen
-//     --verteilen schlägt die Voll-Gruppen vor, JE KLASSE getrennt (K61: cpu · gpu, scripts/lib/ci-klasse.cjs — erst die
-//                 CPU-, dann die GPU-Gruppen): die Schritte nach Median absteigend, je in die leichteste Gruppe ihrer
-//                 Klasse (Bin-Packing, größte zuerst), so viele Gruppen, dass jede ≤ 6 min Median trägt — Rand zum
-//                 7-min-Deckel der Waage und zur 8-min-Wanduhr (dieselbe Gruppe lief auf verschiedenen Läufern bis 1,5-fach)
-//   `seit` (K61): ein umgebauter Schritt trägt in ci-zeiten.json `seit: <lauf-id>` — ältere Läufe messen den alten Bau und
-//                 zählen für ihn nicht; bis ein neuer Lauf ihn trägt, gilt sein `geschaetzt`-Eintrag
+//     --verteilen schlägt die Voll-Gruppen vor, JE KLASSE getrennt (K61: cpu · gpu, scripts/lib/ci-klasse.cjs): so viele
+//                 Gruppen, wie Läufer-Plätze neben dem Puls frei sind (gate:ci-deckung (T) PLÄTZE — ein Job über den
+//                 Plätzen wartet auf einen freien und trägt die Wanduhr doppelt), der volle Playtest in seiner eigenen,
+//                 der Rest je Klasse nach Median absteigend in die leichteste Gruppe (Bin-Packing, größte zuerst), die
+//                 Aufteilung cpu:gpu mit der kleinsten schwersten Gruppe
 // Der Schlüssel: GITHUB_TOKEN oder die git-Anmeldung (git credential fill).
 "use strict";
 const fs = require("fs");
@@ -28,9 +30,8 @@ const JE_SCHRITT = 5;
 // höchstens so viele Messungen (ein neuer Schritt, den erst wenige Läufe tragen, liest sonst die ganze Liste)
 const HOECHSTENS = 40;
 const VORBEREITUNG =
-    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|System-Libs|Dependencies installieren|Post Run |Complete job)/;
-const ZIEL_VOLL_S = 6 * 60;
-const { klasseDesLaufs } = require("./lib/ci-klasse.cjs");
+    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Post Run |Complete job)/;
+const { klasseDesLaufs, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 
 const token =
     process.env.GITHUB_TOKEN ||
@@ -87,7 +88,6 @@ function schritteAus(doc) {
     // je Schritt die ersten JE_SCHRITT Messungen, die ihn tragen
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     const altDatei = fs.existsSync(path.join(root, AUS)) ? JSON.parse(fs.readFileSync(path.join(root, AUS), "utf8")) : {};
-    const seit = (n) => Number((altDatei.schritte && altDatei.schritte[n] && altDatei.schritte[n].seit) || 0);
     const vorb = [];
     const ymlAm = new Map();
     let gelesen = 0;
@@ -116,12 +116,7 @@ function schritteAus(doc) {
                 }
                 const dLauf = damals.get(s.name);
                 for (const [n, l] of soll)
-                    if (
-                        (n === s.name || (dLauf && dLauf === l)) &&
-                        proben.get(n).length < JE_SCHRITT &&
-                        r.id >= seit(n) &&
-                        !proben.get(n).some((p) => p.lauf === messung)
-                    )
+                    if (dLauf && dLauf === l && proben.get(n).length < JE_SCHRITT && !proben.get(n).some((p) => p.lauf === messung))
                         proben.get(n).push({ lauf: messung, s: t });
             }
             if (vorb.length < 25) vorb.push(v);
@@ -138,7 +133,6 @@ function schritteAus(doc) {
                 n: p.length,
                 lauf: l,
                 laeufe: p.map((x) => x.lauf),
-                ...(seit(n) ? { seit: seit(n) } : {}),
             };
         else if (alt.schritte && alt.schritte[n] && alt.schritte[n].geschaetzt)
             schritte[n] = { ...alt.schritte[n], lauf: l };
@@ -164,26 +158,36 @@ function schritteAus(doc) {
         const v = jetzt.jobs.voll;
         const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
         const alle = v.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
-        // je Klasse die Gruppen (ein bedingter Schritt läuft als CPU: die Weiche urteilt zur Laufzeit)
-        const packe = (gs) => {
-            const summe = gs.reduce((x, s) => x + schritte[s.name].s, 0);
-            for (let k = Math.max(1, Math.ceil(summe / (ZIEL_VOLL_S - out.vorbereitung_s))); ; k++) {
-                const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
-                for (const s of [...gs].sort((x, y) => schritte[y.name].s - schritte[x.name].s)) {
-                    const g = last.reduce((m, x) => (x.s < m.s ? x : m), last[0]);
-                    g.s += schritte[s.name].s;
-                    g.n.push(s.name);
-                }
-                if (last.every((g) => g.s <= ZIEL_VOLL_S) || k >= gs.length) return last;
+        // in k Gruppen: größte zuerst in die leichteste (LPT)
+        const packe = (gs, k) => {
+            const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
+            for (const s of [...gs].sort((x, y) => schritte[y.name].s - schritte[x.name].s)) {
+                const g = last.reduce((m, x) => (x.s < m.s ? x : m), last[0]);
+                g.s += schritte[s.name].s;
+                g.n.push(s.name);
             }
+            return last;
         };
+        // je Klasse die Gruppen (ein bedingter Schritt läuft als CPU: die Weiche urteilt zur Laufzeit)
         const gpu = (s) => klasseDesLaufs(s.run, skripte).klasse === "gpu";
         // der volle Playtest trägt seine EIGENE Gruppe (gate:ci-deckung (P) EIGEN)
         const pt = (s) => /\bnpm run playtest\b(?!:)/.test(s.run);
+        // die Plätze neben dem Puls (ein Job, auf den die Batterie wartet — der Kopf-Richter —, endet vor ihr)
+        const puls = ((jetzt.jobs.puls.strategy || {}).matrix || {}).gruppe || [1];
+        const frei = LAEUFER_PLAETZE - puls.length - alle.filter(pt).length;
+        const cpu = alle.filter((s) => !gpu(s) && !pt(s));
+        const gp = alle.filter(gpu);
+        let best = null;
+        for (let kc = 1; kc < frei; kc++) {
+            const a = packe(cpu, kc);
+            const b = packe(gp, frei - kc);
+            const max = Math.max(...a.concat(b).map((g) => g.s));
+            if (!best || max < best.max) best = { max, a, b };
+        }
         const gruppen = [
             ...alle.filter(pt).map((s) => ({ s: out.vorbereitung_s + schritte[s.name].s, n: [s.name], klasse: "cpu" })),
-            ...packe(alle.filter((s) => !gpu(s) && !pt(s))).map((g) => ({ ...g, klasse: "cpu" })),
-            ...packe(alle.filter(gpu)).map((g) => ({ ...g, klasse: "gpu" })),
+            ...best.a.map((g) => ({ ...g, klasse: "cpu" })),
+            ...best.b.map((g) => ({ ...g, klasse: "gpu" })),
         ];
         gruppen.forEach((g, i) =>
             console.log(`  voll ${i + 1}/${gruppen.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte`)
