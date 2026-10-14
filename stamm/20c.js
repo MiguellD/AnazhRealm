@@ -1263,8 +1263,9 @@ class AnazhRealm_Z20c {
                     q.attr = Object.assign({}, a);
                     q.n = n;
                 }
-                f.drawRange.start = g.drawRange.start;
-                f.drawRange.count = g.drawRange.count;
+                // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
+                // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
+                f.setDrawRange(g.drawRange.start, g.drawRange.count);
                 f.instanceCount = s.count;
                 return f;
             }
