@@ -675,7 +675,11 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) nur die Nähe des Feuers — jedes Objekt der Welt-Szene,
 // dessen Hülle (Kugel in Welt-Lage, Instanz- und Batch-Hülle eingeschlossen) die Kugel um das Feuer schneidet. Die Sätze
 // (`bodenSatz`, `bauSatz`: Boden und Bauten je Stoff in EINEM Mesh) tragen die Überall-Hülle (1e9) und zeichnen; eine
-// Hülle ≥ 1 km ist die Ferne (Panorama, Fern-Ring) und fällt. Fremde Szenen (Post, PMREM) und die Lichter bleiben. Gemessen 12.10. (24 Kerne):
+// Hülle ≥ 1 km ist die Ferne (das Panorama) und fällt, der Fern-Ring fällt an seinem Stempel (`userData.inventar`
+// "fern-ring", wie `licht-linsen` ihn liest): seit K16 trägt seine Schale 0 die Hülle 803 m (vorher 1 413 m) in zwei Teilen
+// (frei und Naht), die Kilometer-Regel nahm beide in die Nähe — der Schuss übersetzte 13 statt 11 Programme (lokal Schuss
+// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
+// Gemessen 12.10. (24 Kerne):
 // die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
 // mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
 const S0_NAH_INSTALL = () => {
@@ -700,6 +704,7 @@ const S0_NAH_INSTALL = () => {
                 k = o.geometry.boundingSphere;
             }
             if (wurzel !== welt || !k) u = true;
+            else if (o.userData && o.userData.inventar === "fern-ring") u = false;
             else {
                 kugel.copy(k).applyMatrix4(o.matrixWorld);
                 u =
