@@ -373,23 +373,35 @@ function windStempel(geo, tmpl, S) {
     }
     geo.setAttribute("aWindB", new THREE.Float32BufferAttribute(a, 2));
 }
+// DIE GESTALT DES LABORS in `subject`: die Ableitung aus den Dials (DIALS = __dials) und der Emitter der Art — dieselbe Tafel
+// wie buildInstance. `build` (das Bild) und die Kosten-Leiste (je Stufe, laborGestaltDerStufe) rufen sie.
+function emitGestalt(pre) {
+    if (pre.panel === "rock") {
+        const P = deriveParamsRock(pre);
+        __rockKind = P.kind;
+        emitRock(P);
+        return { P, baum: false };
+    }
+    const P = deriveParamsPlant(pre);
+    let baum = false;
+    if (P.kind === "flower") emitFlower(P);
+    else if (P.kind === "grass") emitGrass(P);
+    else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P); // der Waldboden: dieselbe Tafel wie buildInstance
+    else {
+        emitTree(P);
+        baum = true;
+    }
+    return { P, baum };
+}
 function build() {
     RNG = mulberry32(Math.floor(SEED));
     disposeSubject();
     subject = new THREE.Group();
     scene.add(subject);
     const pre = PRESETS[CURRENT];
-    if (pre.panel === "rock") {
-        const P = deriveParamsRock(pre);
-        __rockKind = P.kind;
-        emitRock(P);
-    } else {
-        const P = deriveParamsPlant(pre);
-        if (P.kind === "flower") emitFlower(P);
-        else if (P.kind === "grass") emitGrass(P);
-        else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P); // der Waldboden: dieselbe Tafel wie buildInstance
-        else {
-            const nodes = emitTree(P);
+    const { P, baum } = emitGestalt(pre);
+    if (pre.panel !== "rock") {
+        if (baum) {
             const _pl = PORTAL_RENDER_CONFIG.placement || {},
                 _S = ((_pl.scale && _pl.scale[CURRENT]) || 1) * (P.kind === "tree" ? _pl.treeScaleMul || 1 : 1),
                 _w = windDaten(subject, _S);
@@ -412,6 +424,7 @@ function build() {
         if (_bbTo) clearTimeout(_bbTo);
         _bbTo = setTimeout(studioBillboard, 80);
     } // FIX v34: zentral — egal ob Art-Wechsel, Neue Saat, Wuerfeln oder Slider: L2 zeigt IMMER die Fernstufe des Waldes (entprellt: Slider-Ziehen bakt max ~12x/s)
+    kostenMessen(); // die Kosten-Leiste der Hülle misst je Stufe neu (entprellt, eine Stufe je Leerlauf)
 }
 /* ========================================================================== *
    STUDIO — bewusst nahe am Tetrapoda-Labor gehalten (Geometrie ist der Star):
@@ -814,6 +827,7 @@ function init() {
     );
     buildMaterials();
     setSeasonColors("summer");
+    huelleAufbauen(); // die Hülle vor dem ersten Bau: er liest die Dials aus ihr (DIALS = __dials)
     build();
     wireUI();
     wireForest();
@@ -2986,12 +3000,9 @@ let _rScale = 1.25,
     _fpsN = 0,
     _fpsEl = null,
     _fpsTarget = 60,
-    _fpsSlider = null,
     _folRes = 0.5,
     _sightDist = PORTAL_RENDER_CONFIG.sight,
-    _ctrlPanel = null,
-    _folSlider = null,
-    _sightSlider = null;
+    _ctrlPanel = null;
 let _dcLast = 0,
     _triLast = 0; // FIX v27: Frame-Totale (Drawcalls/Dreiecke) — nach composer.render() eingesammelt, vom HUD gelesen
 let _grassTiles = [];
@@ -3198,11 +3209,7 @@ let WSEASONPLAY = false,
     WSEASONSPEED = 0.01; // Jahreszeit-Drift (Anteil pro Sekunde)
 let WXPLAY = false; // Wetter-Autoplay: Wolkenfelder ziehen durch (kontinuierlicher Drift statt hartem Preset-Sprung)
 const _wxPh = [1.7, 4.1, 0.3, 2.9]; // Phasen-Offsets fuer unabhaengige Drift je Kanal (Fog/Sun/Grey/Wind)
-let _timeSlider = null,
-    _seasonSlider = null,
-    _timeVal = null,
-    _seasonVal = null,
-    _lastSeasonBuild = 0.28;
+let _lastSeasonBuild = 0.28;
 let wxFog = 0.16,
     wxFogT = 0.16,
     wxSun = 1,
@@ -3326,14 +3333,10 @@ function updateWorld(dt) {
     if (WPLAY) {
         WTIME = (WTIME + dt * WSPEED) % 24;
         if (WTIME < 0) WTIME += 24;
-        if (_timeSlider) _timeSlider.value = WTIME;
-        if (_timeVal) _timeVal.textContent = fmtHM(WTIME);
     }
-    if (WSEASONPLAY) {
-        WSEASON = (((WSEASON + dt * WSEASONSPEED) % 1) + 1) % 1;
-        if (_seasonSlider) _seasonSlider.value = WSEASON;
-        if (_seasonVal) _seasonVal.textContent = SEASON_NAMES[Math.floor((((WSEASON % 1) + 1) % 1) * 8) % 8];
-    } // KONTINUITAET STATT REBUILD (Profi-Gesetz): im Autoplay NIE synchron neu bauen -- uLeafPresence, uBloom und uSeasonMul tragen das Jahr kontinuierlich; ein echter Wald baut sich auch nicht um. Manuelle Saison-Wahl backt weiterhin exakt.
+    if (WSEASONPLAY) WSEASON = (((WSEASON + dt * WSEASONSPEED) % 1) + 1) % 1;
+    if (WPLAY || WSEASONPLAY) welteZeigen(); // die Regler der Hülle folgen der laufenden Zeit
+    // KONTINUITAET STATT REBUILD (Profi-Gesetz): im Autoplay NIE synchron neu bauen -- uLeafPresence, uBloom und uSeasonMul tragen das Jahr kontinuierlich; ein echter Wald baut sich auch nicht um. Manuelle Saison-Wahl backt weiterhin exakt.
     if (WXPLAY) {
         _wxT += dt * 0.05; // langsame Wolkenfeld-Drift, eigenes Tempo (unabhaengig von Zeit-/Jahreszeit-Speed)
         const n = (ph) =>
@@ -3939,41 +3942,35 @@ function animate() {
                 _fpsEl = document.createElement("div");
                 _fpsEl.style.cssText = "margin-bottom:4px;color:#dff";
                 _ctrlPanel.appendChild(_fpsEl);
-                const mkRow = (label, min, max, step, val, fn) => {
-                    const w = document.createElement("div");
-                    w.style.cssText = "margin-top:6px";
-                    const l = document.createElement("div");
-                    l.textContent = label;
-                    l.style.cssText = "opacity:.82;margin-bottom:1px;font-weight:500";
-                    const sl = document.createElement("input");
-                    sl.type = "range";
-                    sl.min = min;
-                    sl.max = max;
-                    sl.step = step;
-                    sl.value = val;
-                    sl.style.cssText = "width:100%;accent-color:#6cc;cursor:pointer";
-                    sl.oninput = () => fn(+sl.value);
-                    w.appendChild(l);
-                    w.appendChild(sl);
-                    _ctrlPanel.appendChild(w);
-                    return sl;
+                // die Wald-Regler baut die EINE Hülle (AnazhHuelle.regler): live je Zug, kein Rückgängig-Schritt (Ansicht)
+                const waldW = { fps: _fpsTarget, laub: Math.round(_folRes * 100), sicht: _sightDist };
+                const wald = {
+                    fps: (v) => {
+                        _fpsTarget = v;
+                    },
+                    laub: (v) => {
+                        _folRes = v / 100;
+                        if (_foliagePass) _foliagePass.resizeFol();
+                    },
+                    sicht: (v) => {
+                        _sightDist = v;
+                        if (scene.fog) {
+                            scene.fog.far = _sightDist;
+                            scene.fog.near = _sightDist * 0.35;
+                        }
+                        camera.far = _sightDist + 20;
+                        camera.updateProjectionMatrix();
+                    },
                 };
-                _fpsSlider = mkRow("Ziel-FPS  (scharf - fluessig)", 30, 60, 5, _fpsTarget, (v) => {
-                    _fpsTarget = v;
-                });
-                _folSlider = mkRow("Laub-Aufloesung", 25, 100, 5, Math.round(_folRes * 100), (v) => {
-                    _folRes = v / 100;
-                    if (_foliagePass) _foliagePass.resizeFol();
-                });
-                _sightSlider = mkRow("Sichtweite  (Dunst)", 40, 120, 5, _sightDist, (v) => {
-                    _sightDist = v;
-                    if (scene.fog) {
-                        scene.fog.far = _sightDist;
-                        scene.fog.near = _sightDist * 0.35;
-                    }
-                    camera.far = _sightDist + 20;
-                    camera.updateProjectionMatrix();
-                });
+                AnazhHuelle.regler(
+                    _ctrlPanel.appendChild(document.createElement("div")),
+                    [
+                        { id: "fps", lab: "Ziel-FPS  (scharf - flüssig)", min: 30, max: 60, step: 5 },
+                        { id: "laub", lab: "Laub-Auflösung", min: 25, max: 100, step: 5 },
+                        { id: "sicht", lab: "Sichtweite  (Dunst)", min: 40, max: 120, step: 5 },
+                    ],
+                    { werte: waldW, ruheMs: 0, gruppen: false, zuruecksetzen: false, bei: (id, v) => wald[id](v) }
+                );
                 document.body.appendChild(_ctrlPanel);
             }
             _ctrlPanel.style.display = "";
@@ -4210,102 +4207,195 @@ addEventListener("resize", () => {
     fxaa.uniforms["resolution"].value.set(1 / innerWidth, 1 / innerHeight);
 });
 
-/* ---------- UI-Verdrahtung ------------------------------------------------ */
-function setSliders(pre) {
-    if (pre.panel === "plant") {
-        const s = pre.s;
-        document.getElementById("sApi").value = s.api;
-        document.getElementById("sDelta").value = s.delta;
-        document.getElementById("sSlim").value = s.slim;
-        document.getElementById("sTrop").value = s.trop;
-        document.getElementById("sLeaf").value = s.leaf;
-    } else {
-        const s = pre.s;
-        document.getElementById("rGen").value = s.gen;
-        document.getElementById("rSph").value = s.sph;
-        document.getElementById("rElo").value = s.elong;
-        document.getElementById("rRnd").value = s.rnd;
-        document.getElementById("rRgh").value = s.rgh;
-        document.getElementById("rStr").value = s.str;
-    }
-    refreshVals();
+/* ---------- UI-Verdrahtung: DIE EINE STUDIO-HÜLLE (K47, worlds/huelle/huelle.js) -------------------------------------
+ * Regler (die Dials der Pflanze und des Felses, Tageszeit und Jahr, die Wald-Regler), die Sitzung (Undo/Redo · Same ·
+ * Sperre je Achse), die Kosten-Leiste je LOD-Stufe gegen die Budget-Zeile des Kerns und die Portal-Brücke mit dem
+ * DSL-Adapter kommen aus der Hülle. Die Shell liest ihr DIALS-Objekt, nie das DOM: es IST der Dial-Kontext des Kerns
+ * (`__dials`, foundry-bruecke.js) — deriveParamsPlant/deriveParamsRock lesen es wie die Preset-Dials des Waldes. */
+// Die Dial-Zeilen in der B4-Form (id = der Dial-Schlüssel der Presets, PRESETS[*].s); `wurf` = der Bereich des Würfels.
+// Kein Gesetz und kein Rezept des Kerns — die Lehrsätze am Regler (studio-vertrag B4: die Pflanzen-Dials leben in der Shell,
+// benannte Schuld; ihr Umzug in PARAMS_BY_KIND ist Synthese W4e).
+const DIAL_ZEILEN = {
+    plant: [
+        { id: "api", lab: "Apikaldominanz", min: 0, max: 1, step: 0.01, def: 0.3, wurf: [0.12, 0.95], law: "Leittrieb vs. Verzweigung — Nadelbaum(hoch)→Laubkrone(tief)" },
+        { id: "delta", lab: "Verästelung Δ", min: 1.8, max: 3.0, step: 0.05, def: 2.3, wurf: [2.0, 2.5], law: "r_Stamm^Δ = Σ r_Ast^Δ — da Vinci / Pipe-Modell (2 mech · 3 hydr)" },
+        { id: "slim", lab: "Schlankheit", min: 0, max: 1, step: 0.01, def: 0.45, wurf: [0.2, 0.85], law: "H = k·D^(2/3) — McMahon elastische Knickgrenze" },
+        { id: "trop", lab: "Gravitropismus", min: -1, max: 1, step: 0.02, def: -0.14, wurf: [-0.2, 0.9], law: "Sollwinkel z. Vertikalen — aufrecht(−) bis Trauerwuchs(+)" },
+        { id: "leaf", lab: "Belaubung", min: 0, max: 1, step: 0.01, def: 0.6, wurf: [0.35, 0.9], law: "Blattdichte + Blattgröße (Corner-Regel: Axialkonformität)" },
+    ],
+    rock: [
+        { id: "gen", lab: "Genese", min: 0, max: 1, step: 0.01, def: 0.55, wurf: [0.05, 0.95], law: "kristallin → vulkanisch-säulig → massiv → klastisch (Genese-Achse leitet die Sorte ab)" },
+        { id: "sph", lab: "Sphärizität", min: 0, max: 1, step: 0.01, def: 0.3, wurf: [0.2, 0.8], law: "Zingg c/b — kugelig(hoch) bis plattig/scheibig(tief)" },
+        { id: "elong", lab: "Streckung", min: 0, max: 1, step: 0.01, def: 0.2, wurf: [0.1, 0.7], law: "Zingg b/a — gedrungen bis stängelig/säulig" },
+        { id: "rnd", lab: "Rundung", min: 0, max: 1, step: 0.01, def: 0.35, wurf: [0.1, 0.8], law: "Wadell-Rundung — eckig(gebrochen) bis gerundet(transportiert)" },
+        { id: "rgh", lab: "Rauheit D", min: 0, max: 1, step: 0.01, def: 0.55, wurf: [0.3, 0.7], law: "fraktale Oberfläche (fBm-Oktaven) — Verwitterungsgrad" },
+        { id: "str", lab: "Schichtung", min: 0, max: 1, step: 0.01, def: 0.15, wurf: [0.05, 0.85], law: "Sediment-Bänderung + differentielle Erosion (Simse)" },
+    ],
+};
+const DIALS = {}; // die Werte beider Dial-Regler (in place) = der Dial-Kontext des Kerns
+const WELT_W = {}; // Tageszeit + Jahr (Welt-Steuerung, kein Rückgängig-Schritt: die Zeit läuft auch von selbst)
+let sitz = null,
+    reglerPflanze = null,
+    reglerFels = null,
+    reglerZeit = null,
+    reglerJahr = null,
+    kostenLeiste = null,
+    kostenArt = null;
+const dialPanel = (pre) => (pre.panel === "rock" ? "rock" : "plant");
+function neuBauen() {
+    if (forestMode) rebuildForestInPlace();
+    else build();
 }
-function refreshVals() {
-    const map = {
-        sApi: "vApi",
-        sDelta: "vDelta",
-        sSlim: "vSlim",
-        sTrop: "vTrop",
-        sLeaf: "vLeaf",
-        rGen: "vGen",
-        rSph: "vSph",
-        rElo: "vElo",
-        rRnd: "vRnd",
-        rRgh: "vRgh",
-        rStr: "vStr",
-    };
-    for (const id in map) {
-        const el = document.getElementById(id);
-        if (el) document.getElementById(map[id]).textContent = parseFloat(el.value).toFixed(2);
-    }
-}
-let rebuildTimer = null;
-function debouncedBuild() {
-    clearTimeout(rebuildTimer);
-    rebuildTimer = setTimeout(build, 180);
-}
-function setVal(id, v) {
-    const el = document.getElementById(id);
-    if (el) el.value = v;
-}
-function diceAll() {
-    const ids = Object.keys(PRESETS);
-    CURRENT = ids[Math.floor(Math.random() * ids.length)];
+function artSetzen(id) {
+    CURRENT = id;
     const pre = PRESETS[CURRENT];
     document.querySelectorAll("#ui [data-p]").forEach((x) => x.classList.toggle("active", x.dataset.p === CURRENT));
     document.getElementById("panelPlant").classList.toggle("hidden", pre.panel !== "plant");
     document.getElementById("panelRock").classList.toggle("hidden", pre.panel !== "rock");
-    const rr = (a, b) => a + Math.random() * (b - a);
-    if (pre.panel === "plant") {
-        setVal("sApi", rr(0.12, 0.95));
-        setVal("sDelta", rr(2.0, 2.5));
-        setVal("sSlim", rr(0.2, 0.85));
-        setVal("sTrop", rr(-0.2, 0.9));
-        setVal("sLeaf", rr(0.35, 0.9));
-    } else {
-        setVal("rGen", rr(0.05, 0.95));
-        setVal("rSph", rr(0.2, 0.8));
-        setVal("rElo", rr(0.1, 0.7));
-        setVal("rRnd", rr(0.1, 0.8));
-        setVal("rRgh", rr(0.3, 0.7));
-        setVal("rStr", rr(0.05, 0.85));
+}
+// DIE GESTALT DES LABORS je LOD-Stufe für die Kosten-Leiste: dieselbe Ableitung und derselbe Emitter wie `build` (die Dials
+// aus DIALS, derselbe Same), in eine eigene Gruppe — die Szene, die Stufe und der Strom des Labors bleiben unberührt. Eine
+// Stufe, die die Studio-Karte IST (budget.karte), zählt als ihr Achsen-Quad (2 Dreiecke, 1 Stoff), wie der Host sie zeichnet.
+function laborGestaltDerStufe(s) {
+    const pre = PRESETS[CURRENT];
+    const zeile = PORTAL_RENDER_CONFIG.lod.budget[pre.kind];
+    if (zeile && zeile[s] && zeile[s].karte) return new THREE.Mesh(new THREE.PlaneGeometry(1, 1), _impMat || foliageMat);
+    const sS = subject,
+        sL = __lod,
+        sR = RNG,
+        sK = __rockKind;
+    const g = new THREE.Group();
+    subject = g;
+    __lod = s;
+    RNG = mulberry32(Math.floor(SEED));
+    try {
+        emitGestalt(pre);
+    } finally {
+        subject = sS;
+        __lod = sL;
+        RNG = sR;
+        __rockKind = sK;
     }
-    refreshVals();
-    SEED = Math.floor(Math.random() * 1e6);
-    if (forestMode) rebuildForestInPlace();
-    else build();
+    return g;
+}
+function kostenMessen() {
+    if (!sitz) return; // der Foundry-Modus und der Boot vor der Hülle messen nicht
+    const kind = PRESETS[CURRENT].kind;
+    if (kind !== kostenArt) {
+        kostenArt = kind;
+        const ziel = document.getElementById("kosten");
+        ziel.textContent = "";
+        const L = PORTAL_RENDER_CONFIG.lod;
+        kostenLeiste = AnazhHuelle.kosten(ziel, {
+            budget: L.budget[kind],
+            stufen: L.kindStages[kind],
+            bauen: laborGestaltDerStufe,
+            titel: "KOSTEN JE STUFE · " + kind,
+            quelle:
+                "gemessen an der Labor-Gestalt je Stufe (dieselben Dials, derselbe Same) gegen die Budget-Zeile des Kerns (PORTAL_RENDER_CONFIG.lod.budget." +
+                kind +
+                "); die Karten-Stufe zählt als Achsen-Quad",
+        });
+    }
+    kostenLeiste.neu();
+}
+// Die Hülle steht VOR dem ersten Bau: der erste `build` liest DIALS (die Lehr-Startwerte der Zeilen).
+function huelleAufbauen() {
+    __dials = DIALS;
+    sitz = AnazhHuelle.sitzung({
+        werte: DIALS,
+        seed: SEED,
+        sperren: true,
+        zustand: () => ({ art: CURRENT, saat: SEED }),
+        zustandSetzen: (z) => {
+            artSetzen(z.art);
+            SEED = z.saat;
+            sitz.seedSetzen(SEED, true);
+        },
+        // der Same aus dem Feld: EIN Schritt (der Rückweg kennt die alte Saat)
+        beiSeed: (n) => {
+            sitz.schritt(() => {
+                SEED = n;
+            });
+            neuBauen();
+        },
+        anwenden: () => neuBauen(),
+    });
+    sitz.leiste(document.getElementById("sitzung"));
+    const dialOpt = () => ({
+        werte: DIALS,
+        sitzung: sitz,
+        gruppen: false,
+        basis: () => PRESETS[CURRENT].s, // ↺ = die Vorlage (die Dials des gewählten Presets)
+        nachRuhe: () => build(),
+    });
+    reglerPflanze = AnazhHuelle.regler(document.getElementById("panelPlant"), DIAL_ZEILEN.plant, dialOpt());
+    reglerFels = AnazhHuelle.regler(document.getElementById("panelRock"), DIAL_ZEILEN.rock, dialOpt());
+    reglerZeit = AnazhHuelle.regler(document.getElementById("reglerZeit"), [{ id: "zeit", lab: "Tageszeit", min: 0, max: 24, step: 0.05, def: 10 }], {
+        werte: WELT_W,
+        start: () => WTIME,
+        ruheMs: 0,
+        gruppen: false,
+        zuruecksetzen: false,
+        format: (z, v) => fmtHM(v),
+        bei: (id, v) => {
+            WTIME = v;
+        },
+    });
+    reglerJahr = AnazhHuelle.regler(document.getElementById("reglerJahr"), [{ id: "jahr", lab: "Jahr", min: 0, max: 1, step: 0.005, def: 0.28 }], {
+        werte: WELT_W,
+        start: () => WSEASON,
+        ruheMs: 400, // der Zug fließt (Tönung je Bild), der exakte Saison-Bau wartet, bis der Regler ruht
+        gruppen: false,
+        zuruecksetzen: false,
+        format: (z, v) => SEASON_NAMES[Math.floor((((v % 1) + 1) % 1) * 8) % 8],
+        bei: (id, v) => {
+            WSEASON = v;
+        },
+        nachRuhe: () => {
+            _lastSeasonBuild = WSEASON;
+            worldRebuild();
+        },
+    });
+}
+function welteZeigen() {
+    if (!reglerZeit) return;
+    WELT_W.zeit = WTIME;
+    WELT_W.jahr = WSEASON;
+    reglerZeit.sync();
+    reglerJahr.sync();
+}
+// DER WÜRFEL — EINE Tat: ein neuer Same zieht die Art, jede freie Dial-Achse (in ihrem Würfel-Bereich, auf ihr Raster) und
+// die Saat aus EINEM Strom (AnazhHuelle.zufall); derselbe Same gibt dieselbe Variante, das Schloss hält eine Achse fest.
+function diceAll() {
+    sitz.schritt(() => {
+        const neu = (Date.now() ^ ((Math.random() * 4294967296) >>> 0)) >>> 0 || 1;
+        const r = AnazhHuelle.zufall(neu);
+        const ids = Object.keys(PRESETS);
+        artSetzen(ids[Math.floor(r() * ids.length)]);
+        const panel = dialPanel(PRESETS[CURRENT]);
+        const w = {};
+        for (const z of DIAL_ZEILEN[panel]) {
+            const v = z.wurf[0] + r() * (z.wurf[1] - z.wurf[0]);
+            if (!sitz.gesperrt(z.id)) w[z.id] = +(z.min + Math.round((v - z.min) / z.step) * z.step).toFixed(6);
+        }
+        (panel === "rock" ? reglerFels : reglerPflanze).setzen(w, true);
+        SEED = neu;
+        sitz.seedSetzen(neu, true);
+    });
+    neuBauen();
 }
 function wireUI() {
     document.querySelectorAll("#ui [data-p]").forEach((b) =>
         b.addEventListener("click", () => {
-            document.querySelectorAll("#ui [data-p]").forEach((x) => x.classList.remove("active"));
-            b.classList.add("active");
-            CURRENT = b.dataset.p;
-            const pre = PRESETS[CURRENT];
-            document.getElementById("panelPlant").classList.toggle("hidden", pre.panel !== "plant");
-            document.getElementById("panelRock").classList.toggle("hidden", pre.panel !== "rock");
-            setSliders(pre);
+            sitz.schritt(() => {
+                artSetzen(b.dataset.p);
+                const pre = PRESETS[CURRENT];
+                (dialPanel(pre) === "rock" ? reglerFels : reglerPflanze).setzen(pre.s, true);
+            });
             build();
         })
     );
-    ["sApi", "sDelta", "sSlim", "sTrop", "sLeaf", "rGen", "rSph", "rElo", "rRnd", "rRgh", "rStr"].forEach((id) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener("input", () => {
-            refreshVals();
-            debouncedBuild();
-        });
-    });
     document.querySelectorAll("#ui [data-w]").forEach((b) =>
         b.addEventListener("click", () => {
             document.querySelectorAll("#ui [data-w]").forEach((x) => x.classList.remove("active"));
@@ -4321,37 +4411,12 @@ function wireUI() {
             const m = { spring: 0.0, summer: 0.25, autumn: 0.5, winter: 0.75 };
             WSEASON = b.dataset.s in m ? m[b.dataset.s] : 0.25;
             _lastSeasonBuild = WSEASON;
-            if (_seasonSlider) _seasonSlider.value = WSEASON;
-            if (_seasonVal) _seasonVal.textContent = SEASON_NAMES[Math.floor(WSEASON * 8) % 8];
+            welteZeigen();
             worldRebuild();
         })
     );
-    // ===== WELT-Steuerung: Tageszeit / Wetter / Jahreszeit + Autoplay =====
+    // ===== WELT-Steuerung: Autoplay von Zeit, Jahr und Wetter (die Regler baut die Hülle) =====
     (function () {
-        const ts = document.getElementById("wTime"),
-            tv = document.getElementById("wTimeV");
-        if (ts) {
-            _timeSlider = ts;
-            _timeVal = tv;
-            ts.addEventListener("input", () => {
-                WTIME = parseFloat(ts.value);
-                if (tv) tv.textContent = fmtHM(WTIME);
-            });
-        }
-        const ssl = document.getElementById("wSeason"),
-            sv = document.getElementById("wSeasonV");
-        if (ssl) {
-            _seasonSlider = ssl;
-            _seasonVal = sv;
-            ssl.addEventListener("input", () => {
-                WSEASON = parseFloat(ssl.value);
-                if (sv) sv.textContent = SEASON_NAMES[Math.floor((((WSEASON % 1) + 1) % 1) * 8) % 8];
-            });
-            ssl.addEventListener("change", () => {
-                _lastSeasonBuild = WSEASON;
-                worldRebuild();
-            });
-        }
         const pb = document.getElementById("wPlay");
         if (pb)
             pb.addEventListener("click", () => {
@@ -4416,9 +4481,11 @@ function wireUI() {
     document.querySelectorAll("#ui [data-x]").forEach((b) =>
         b.addEventListener("click", () => {
             if (b.dataset.x === "seed") {
-                SEED = Math.floor(Math.random() * 1e6);
-                if (forestMode) rebuildForestInPlace();
-                else build();
+                sitz.schritt(() => {
+                    SEED = Math.floor(Math.random() * 1e6);
+                    sitz.seedSetzen(SEED, true);
+                });
+                neuBauen();
             } else if (b.dataset.x === "dice") {
                 diceAll();
             } else {
@@ -4427,22 +4494,16 @@ function wireUI() {
             }
         })
     );
-    refreshVals();
 }
 init();
 
 /* ==========================================================================
-   AnazhRealm-PORTAL-BRÜCKE (W12-Protokoll) — der Welt-Adapter.
-   Phytogenesis kennt AnazhRealm nicht; diese Brücke übersetzt DSL-Wörter
-   in die ECHTEN UI-Pfade der Welt (Button-Klicks — eine Quelle, kein
-   Parallel-Pfad) und trägt enter/ready/exit/event über postMessage.
+   AnazhRealm-PORTAL-BRÜCKE (W12-Protokoll) — die EINE Brücke der Hülle (AnazhHuelle.bruecke, K47).
+   Phytogenesis kennt AnazhRealm nicht; die Wörter gehen in die ECHTEN UI-Pfade der Welt (Knopf-Klicks — eine Quelle, kein
+   Parallel-Pfad), ready meldet die Hülle aus ./manifest.json, jede andere Nachricht der Heimat (die Asset-Kanäle) beantwortet
+   die Foundry-Brücke (foundryKanal, foundry-bruecke.js) — im Labor-Fenster dieselbe Funktion wie im Worker.
    ========================================================================== */
 (() => {
-    // Das Labor-Fenster spricht über DENSELBEN Transport wie die Brücke (foundryPost, foundry-bruecke.js).
-    const __post = foundryPost;
-    function sendEvent(text) {
-        __post({ type: "event", text: String(text) });
-    }
     function clickBtn(sel) {
         const b = document.querySelector(sel);
         if (b) {
@@ -4451,95 +4512,47 @@ init();
         }
         return false;
     }
-    // DSL-Wort → UI-Pfad. Die Presets tragen ihren eigenen Namen; Wetter/
-    // Jahreszeit/Tageszeit sprechen die eigene Sprache der Welt (KEIN
+    // Die Presets tragen ihren eigenen Namen; Wetter/Jahreszeit/Tageszeit sprechen die eigene Sprache der Welt (KEIN
     // skybox_color-Fake: den Himmel führt hier das Tag/Nacht-System).
     const WX = { klar: 1, bewoelkt: 1, nebel: 1, sturm: 1 };
     const SEASONS = { fruehling: "spring", sommer: "summer", herbst: "autumn", winter: "winter" };
-    function applyDsl(program) {
-        if (!Array.isArray(program) || typeof program[0] !== "string") return;
-        const op = program[0];
-        if (op === "chain") {
-            for (let i = 1; i < program.length; i++) applyDsl(program[i]);
-            return;
-        }
-        try {
-            if (Object.prototype.hasOwnProperty.call(PRESETS, op)) {
-                if (clickBtn(String.fromCharCode(35) + 'ui [data-p="' + op + '"]'))
-                    sendEvent("Im Morphologie-Labor wuchs: " + op + ".");
-            } else if (op === "wald") {
-                if (!forestMode) {
-                    enterForest();
-                    sendEvent("Der Wald der Phytogenesis-Welt wurde betreten.");
+    const B = AnazhHuelle.bruecke({
+        welt: "terrain",
+        manifest: true,
+        wort: (op) => {
+            try {
+                if (Object.prototype.hasOwnProperty.call(PRESETS, op)) {
+                    if (clickBtn('#ui [data-p="' + op + '"]')) B.ereignis("Im Morphologie-Labor wuchs: " + op + ".");
+                } else if (op === "wald") {
+                    if (!forestMode) {
+                        enterForest();
+                        B.ereignis("Der Wald der Phytogenesis-Welt wurde betreten.");
+                    }
+                } else if (SEASONS[op]) {
+                    if (clickBtn('#ui [data-s="' + SEASONS[op] + '"]')) B.ereignis("Die Jahreszeit wandelte sich: " + op + ".");
+                } else if (WX[op]) {
+                    if (clickBtn('#ui [data-wx="' + op + '"]')) B.ereignis("Das Wetter wandelte sich: " + op + ".");
+                } else if (op === "tag" || op === "nacht") {
+                    WTIME = op === "tag" ? 11 : 23;
+                    welteZeigen();
+                    B.ereignis(op === "tag" ? "Die Sonne stieg über das Labor." : "Die Nacht legte sich über das Labor.");
+                } else if (op === "neu") {
+                    if (clickBtn('#ui [data-x="seed"]')) B.ereignis("Eine neue Saat keimte im Morphologie-Labor.");
                 }
-            } else if (SEASONS[op]) {
-                if (clickBtn(String.fromCharCode(35) + 'ui [data-s="' + SEASONS[op] + '"]'))
-                    sendEvent("Die Jahreszeit wandelte sich: " + op + ".");
-            } else if (WX[op]) {
-                if (clickBtn(String.fromCharCode(35) + 'ui [data-wx="' + op + '"]'))
-                    sendEvent("Das Wetter wandelte sich: " + op + ".");
-            } else if (op === "tag" || op === "nacht") {
-                WTIME = op === "tag" ? 11 : 23;
-                const ts = document.getElementById("wTime");
-                if (ts) ts.value = WTIME;
-                const tv = document.getElementById("wTimeV");
-                if (tv) tv.textContent = fmtHM(WTIME);
-                sendEvent(op === "tag" ? "Die Sonne stieg über das Labor." : "Die Nacht legte sich über das Labor.");
-            } else if (op === "neu") {
-                SEED = Math.floor(Math.random() * 1e6);
-                if (forestMode) rebuildForestInPlace();
-                else build();
-                sendEvent("Eine neue Saat keimte im Morphologie-Labor.");
+            } catch (err) {
+                console.warn("Phytogenesis-Portal: Befehl fehlgeschlagen —", err && err.message);
             }
-        } catch (err) {
-            console.warn("Phytogenesis-Portal: Befehl fehlgeschlagen —", err && err.message);
-        }
-    }
-    function __portalOnMessage(msg) {
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
+        },
+        enter: (avatar) => {
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
             const el = document.getElementById("avatar-name");
             // W13 V2 — der Vibe-Pass trägt die Identität des Reisenden mit.
             if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
-        } else if (msg.type === "dsl") {
-            applyDsl(msg.program);
-        } else {
-            // DIE ASSET-KANÄLE (build-asset · bake-impostor · render-native · get-book · export-settlement) beantwortet
-            // die Foundry-Brücke — im Labor-Fenster dieselbe Funktion wie im Worker.
-            foundryKanal(msg);
-        }
-    }
-    window.addEventListener("message", (event) => {
-        if (event.source !== window.parent) return;
-        __portalOnMessage(event.data);
+        },
+        // Escape verlässt das Portal NUR im Studio: im Wald gehört Escape dem PointerLock ("Maus frei") und der ✕-Knopf dem
+        // Wald-Ausgang (kein Doppel-Sinn).
+        esc: () => !(forestMode || document.pointerLockElement),
+        // DIE ASSET-KANÄLE (build-asset · bake-impostor · render-native · get-book · export-settlement)
+        sonst: (msg) => foundryKanal(msg),
     });
-    // Escape verlässt das Portal — aber NUR im Studio: im Wald gehört Escape
-    // dem PointerLock ("Maus frei") und der ✕-Knopf dem Wald-Ausgang; das
-    // Portal verlässt man erst aus dem Studio heraus (kein Doppel-Sinn).
-    // (Nur im Fenster-Kontext — der Foundry-Worker hat keine Tasten.)
-    if (typeof window !== "undefined")
-        window.addEventListener("keydown", (event) => {
-            if (event.key !== "Escape") return;
-            if (forestMode || document.pointerLockElement) return;
-            if (window.parent && window.parent !== window) {
-                __post({ type: "exit", world: "terrain" }, "*");
-            }
-        });
-    // W12 Phase 3 — die native Manifest-Stufe: die Welt liest ihr eigenes
-    // manifest.json und meldet dsl + label im ready-Handshake.
-    function announceReady(extra) {
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(Object.assign({ type: "ready", world: "terrain" }, extra || {}), "*");
-        }
-    }
-    fetch("./manifest.json")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((m) => {
-            const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
-            const label = m && typeof m.label === "string" ? m.label : null;
-            announceReady(dsl ? { dsl, label } : {});
-        })
-        .catch(() => announceReady({}));
 })();
