@@ -1494,6 +1494,10 @@ class AnazhRealm_Z20b {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
             for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return; // die Grobstufe wäre der Doppel-Körper
+            // Das Fell ist kein Leib (K28): die Glieder (Treffer, Biss, Fern-Bild) passen auf Haut und starre Teile — die
+            // Schalen und Strähnen über ihnen trügen ihre Länge in jedes Volumen (der Biss reichte um das Kopf-Fell weiter).
+            const kl = o.userData && o.userData.__klasse;
+            if (typeof kl === "string" && (kl === "fellSchale" || kl.indexOf("straehne") === 0)) return;
             // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
             // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
             // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
@@ -2060,12 +2064,14 @@ class AnazhRealm_Z20b {
                                 .mul(TSL.float(1.0).sub(t.mul(0.75)));
                             const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
                             const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
-                            mat.opacityNode = TSL.max(haar, wolle);
+                            // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
+                            // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
+                            // nicht wirft. Die Kopf-Schalen (K28) tragen dasselbe Raster: Leib und Kopf EIN Stoff.
                             mat.alphaTest = 0.5;
                             const FS = AnazhRealm.FELL_SCHALE;
                             mat.colorNode = TSL.vec4(
                                 vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
-                                1.0
+                                TSL.max(haar, wolle)
                             );
                         }
                         const sT = schale
