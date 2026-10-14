@@ -1,0 +1,4 @@
+{
+ "ergebnis": "{\"ticks\":120,\"affordanzAufrufe\":120,\"msJeAufruf\":0.083,\"netzNeubauten\":0,\"archArrays\":1,\"arch\":175}",
+ "ms": 7510
+}

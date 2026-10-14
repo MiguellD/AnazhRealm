@@ -1,0 +1,4 @@
+{
+ "ergebnis": "{\"arch\":142,\"radiating\":11,\"broadcasting\":86,\"focusing\":1,\"balancing\":1,\"lifting\":0,\"radiatingTypen\":{\"kristall_var6\":10,\"esse\":1},\"broadcastingTypen\":{\"felsturm\":6,\"baum_tanne\":43,\"baum_birke\":17,\"baum_kiefer\":20},\"spieler\":[-900,107.9,-850],\"msTickAffordances\":0.042,\"msRadiating\":0.031,\"msFocusing\":0.001}",
+ "ms": 5258
+}

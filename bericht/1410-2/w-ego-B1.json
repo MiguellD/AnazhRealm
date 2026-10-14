@@ -1,0 +1,5817 @@
+{
+ "folge": [
+  "boot",
+  "dorf-aus",
+  "fenster",
+  "umstellen",
+  "buehne",
+  "lauf-voll",
+  "lauf-frei",
+  "gpu-bank",
+  "band",
+  "profil"
+ ],
+ "stand": {
+  "sha": "08b57ed8b2471c141d8507bf343d436033a03ae0",
+  "zweig": "HEAD",
+  "schmutzig": true,
+  "version": "18.546.0"
+ },
+ "start": "2026-10-14T08:21:10.338Z",
+ "rechner": {
+  "name": "LAPTOP-4BN3RL0L",
+  "cpu": "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz"
+ },
+ "parameter": {
+  "port": 4490,
+  "seite": "http://localhost:4312",
+  "serie": null,
+  "ort": "wiese",
+  "sicht": "ego",
+  "basis": "C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1410b/w-ego-A1.json",
+  "fenster": [
+   1920,
+   1080
+  ],
+  "laufSek": 30,
+  "ein": 20,
+  "ruhe": 300,
+  "profilSek": 12,
+  "proben": 6
+ },
+ "schritte": [
+  {
+   "name": "boot",
+   "ergebnis": {
+    "spieler": [
+     0,
+     97.1,
+     0
+    ],
+    "chunks": 1,
+    "wetter": "sunny",
+    "saison": "summer",
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\werkbank-profil-4490-1791966070912",
+     "serieNeu": true,
+     "ladungen": 1
+    },
+    "zerstoert": 0,
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "gpuFehler": null
+   },
+   "ms": 679,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": 0.5,
+     "fest": false,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": false,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": true,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      0,
+      0
+     ],
+     "kamera": "first",
+     "ort": null,
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 32
+   }
+  },
+  {
+   "name": "dorf-aus",
+   "ergebnis": {
+    "ergebnis": true,
+    "ms": 11
+   },
+   "ms": 13,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": 0.5,
+     "fest": false,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": false,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      0,
+      0
+     ],
+     "kamera": "first",
+     "ort": null,
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 19
+   }
+  },
+  {
+   "name": "fenster",
+   "ergebnis": {
+    "fenster": [
+     1920,
+     1080
+    ],
+    "ms": 13
+   },
+   "ms": 15,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": 0.5,
+     "fest": false,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 0,
+     "gehalten": false,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      0,
+      0
+     ],
+     "kamera": "first",
+     "ort": null,
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 0,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 18
+   }
+  },
+  {
+   "name": "umstellen",
+   "ergebnis": {
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -900,
+     -850
+    ],
+    "takte": 61,
+    "chunks": 25,
+    "gier": 0,
+    "dorfZug": false,
+    "ortTakt": [],
+    "ms": 17285
+   },
+   "ms": 17287,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": -999999994,
+     "fest": true,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 2,
+     "gehalten": true,
+     "blind": false,
+     "buch": [
+      {
+       "art": "verweigert",
+       "op": "skybox_color",
+       "quelle": "emotion:joy",
+       "seq": 1,
+       "t": 13317
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_emotion",
+       "quelle": "emotion:hope",
+       "seq": 2,
+       "t": 17567
+      }
+     ]
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 16,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 23
+   }
+  },
+  {
+   "name": "buehne",
+   "ergebnis": {
+    "ergebnis": {
+     "saison": "summer",
+     "phase": 0.375,
+     "wetter": "sunny"
+    },
+    "ms": 13
+   },
+   "ms": 14,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 0,
+     "wetter": "sunny",
+     "uhr": -999999994,
+     "fest": true,
+     "buch": []
+    },
+    "weltakt": {
+     "seq": 2,
+     "gehalten": true,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 1,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 1
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 16,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 23
+   }
+  },
+  {
+   "name": "lauf-voll",
+   "ergebnis": {
+    "regler": "voll",
+    "sekunden": 30,
+    "frames": 1727,
+    "fps": 57.6,
+    "frameMs": {
+     "p50": 16.7,
+     "p95": 25,
+     "p99": 25.2,
+     "max": 66.3
+    },
+    "cpuTaktMs": {
+     "p50": 5,
+     "p95": 6.8,
+     "p99": 9.2,
+     "max": 57.2
+    },
+    "taktMs": {
+     "p50": 8.3,
+     "p95": 8.5,
+     "p99": 8.8,
+     "max": 66.3
+    },
+    "leine": {
+     "ausgesetztPct": 51.6,
+     "imFlug": 0
+    },
+    "gpuMs": {
+     "p50": 1.97,
+     "p95": 2.49,
+     "p99": 2.68,
+     "max": 2.83,
+     "n": 865,
+     "quelle": "echt"
+    },
+    "gpuDurchsatzMs": {
+     "p50": 17,
+     "p95": 20,
+     "p99": 22.3,
+     "max": 66
+    },
+    "gpuVerzugMs": {
+     "p50": 25.2,
+     "p95": 31.2,
+     "p99": 32.6,
+     "max": 74
+    },
+    "gpuJePassMs": {
+     "post": {
+      "p50": 0.64,
+      "p95": 0.84,
+      "frames": 1727
+     },
+     "TRAA": {
+      "p50": 0.6,
+      "p95": 0.8,
+      "frames": 1727
+     },
+     "haupt": {
+      "p50": 0.08,
+      "p95": 0.08,
+      "frames": 1727
+     },
+     "k0": {
+      "p50": 0.28,
+      "p95": 0.82,
+      "frames": 1727
+     },
+     "k1": {
+      "p50": 0.07,
+      "p95": 0.52,
+      "frames": 578
+     }
+    },
+    "stempel": {
+     "imLauf": 0,
+     "seitBoot": 0,
+     "spitze": 20,
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "gueltig": true,
+     "warnung": 0
+    },
+    "befehle": {
+     "frames": 1727,
+     "mittel": 85,
+     "p95": 90,
+     "max": 90,
+     "jePass": {
+      "k0": {
+       "anteil": 1,
+       "p50": 25,
+       "max": 25
+      },
+      "haupt": {
+       "anteil": 1,
+       "p50": 56,
+       "max": 56
+      },
+      "TRAA": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "post": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "k1": {
+       "anteil": 0.33,
+       "p50": 7,
+       "max": 7
+      }
+     }
+    },
+    "dreiecke": {
+     "frames": 1727,
+     "mittel": 458348,
+     "p95": 494181,
+     "max": 494217,
+     "jePass": {
+      "k0": {
+       "anteil": 1,
+       "p50": 83192,
+       "max": 83462
+      },
+      "haupt": {
+       "anteil": 1,
+       "p50": 358326,
+       "max": 358338
+      },
+      "TRAA": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "post": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "k1": {
+       "anteil": 0.33,
+       "p50": 52189,
+       "max": 52423
+      }
+     }
+    },
+    "ueber17": 9.7,
+    "ueber33": 0.2,
+    "vramMB": {
+     "jetzt": 110.1,
+     "puffer": 21.9,
+     "texturen": 88.1,
+     "spitze": 116,
+     "nPuffer": 700,
+     "nTexturen": 32,
+     "wuchsImFenster": -3.7,
+     "gross": [
+      {
+       "k": "buf:?",
+       "mb": 21.87,
+       "n": 545
+      },
+      {
+       "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+       "mb": 15.82,
+       "n": 1
+      },
+      {
+       "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+       "mb": 15.82,
+       "n": 1
+      },
+      {
+       "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+       "mb": 8,
+       "n": 1
+      },
+      {
+       "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+       "mb": 8,
+       "n": 1
+      },
+      {
+       "k": "tex:output rg11b10ufloat 1920x1080x1",
+       "mb": 7.91,
+       "n": 1
+      },
+      {
+       "k": "tex:depth depth24plus 1920x1080x1",
+       "mb": 7.91,
+       "n": 1
+      },
+      {
+       "k": "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1",
+       "mb": 3.955,
+       "n": 1
+      },
+      {
+       "k": "tex:szene:tiefenabbild r32float 960x1080x1",
+       "mb": 3.955,
+       "n": 1
+      },
+      {
+       "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18",
+       "mb": 2.999,
+       "n": 1
+      },
+      {
+       "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+       "mb": 2,
+       "n": 1
+      },
+      {
+       "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+       "mb": 2,
+       "n": 1
+      },
+      {
+       "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+       "mb": 1.875,
+       "n": 1
+      },
+      {
+       "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18",
+       "mb": 1.499,
+       "n": 1
+      }
+     ]
+    },
+    "stellgroessen": {
+     "loadScale": 1,
+     "renderScale": 1,
+     "pixelRatio": 1,
+     "foliageRadius": 216,
+     "foliageDichte": 1,
+     "archRadius": 150,
+     "ring": 4,
+     "schattenIntervall": 1,
+     "holz": "voll"
+    },
+    "phasenEwmaMs": {
+     "streaming": 0.33,
+     "waterIso": 0,
+     "archCulling": 0.02,
+     "creatures": 1,
+     "physics": 0.2,
+     "render": 3.26,
+     "gpuMs": 1.77
+    },
+    "kamera": {
+     "pos": [
+      -900,
+      109.5,
+      -850
+     ],
+     "blick": [
+      0,
+      0,
+      1
+     ]
+    },
+    "chunks": 81,
+    "ruhe": {
+     "ruhig": true,
+     "sek": 3,
+     "chunks": 81,
+     "foundry": 0,
+     "karten": 0,
+     "meshOffen": 0
+    },
+    "wetter": "sunny",
+    "wetterHalt": {
+     "vorher": "sunny",
+     "nachher": "sunny",
+     "uhrVorher": -999999994,
+     "uhrNachher": -999999941.7,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 1,
+       "t": 76881,
+       "uhr": -999999942.9
+      }
+     ],
+     "urteil": "GRUEN",
+     "taeter": [],
+     "verweigert": {
+      "rule:nexus → rainy": 1
+     }
+    },
+    "saison": "summer",
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "ms": 53166,
+    "takt": {
+     "mhz": 1748.7,
+     "min": 1404,
+     "max": 1835,
+     "temp": 82.5,
+     "watt": 65.9,
+     "drossel": {
+      "0x0000000000000001": 63,
+      "0x0000000000000000": 45,
+      "0x0000000000000004": 92
+     },
+     "n": 200
+    }
+   },
+   "ms": 53178,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 1,
+     "wetter": "sunny",
+     "uhr": -999999941.7,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 1,
+       "t": 76881,
+       "uhr": -999999942.9
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 6,
+     "gehalten": true,
+     "blind": false,
+     "buch": [
+      {
+       "art": "verweigert",
+       "op": "skybox_color",
+       "quelle": "emotion:joy",
+       "seq": 3,
+       "t": 43322
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_emotion",
+       "quelle": "emotion:hope",
+       "seq": 4,
+       "t": 47572
+      },
+      {
+       "art": "verweigert",
+       "op": "skybox_color",
+       "quelle": "emotion:joy",
+       "seq": 5,
+       "t": 73330
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_emotion",
+       "quelle": "emotion:hope",
+       "seq": 6,
+       "t": 77580
+      }
+     ]
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 20,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 4
+   },
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  {
+   "name": "lauf-frei",
+   "ergebnis": {
+    "regler": "frei",
+    "sekunden": 30,
+    "frames": 1921,
+    "fps": 64,
+    "frameMs": {
+     "p50": 16.7,
+     "p95": 16.9,
+     "p99": 24.9,
+     "max": 275
+    },
+    "cpuTaktMs": {
+     "p50": 4.5,
+     "p95": 6.2,
+     "p99": 9.5,
+     "max": 31.7
+    },
+    "taktMs": {
+     "p50": 8.3,
+     "p95": 8.5,
+     "p99": 8.8,
+     "max": 266.3
+    },
+    "leine": {
+     "ausgesetztPct": 45.8,
+     "imFlug": 0
+    },
+    "gpuMs": {
+     "p50": 1.5,
+     "p95": 2.05,
+     "p99": 2.34,
+     "max": 2.61,
+     "n": 961,
+     "quelle": "echt"
+    },
+    "gpuDurchsatzMs": {
+     "p50": 15.7,
+     "p95": 17.6,
+     "p99": 19.4,
+     "max": 276.5
+    },
+    "gpuVerzugMs": {
+     "p50": 22.9,
+     "p95": 25.9,
+     "p99": 27.2,
+     "max": 283.7
+    },
+    "gpuJePassMs": {
+     "post": {
+      "p50": 0.63,
+      "p95": 0.85,
+      "frames": 1921
+     },
+     "TRAA": {
+      "p50": 0.6,
+      "p95": 0.81,
+      "frames": 1921
+     },
+     "haupt": {
+      "p50": 0.08,
+      "p95": 0.09,
+      "frames": 1921
+     },
+     "k0": {
+      "p50": 0.21,
+      "p95": 0.72,
+      "frames": 963
+     },
+     "k1": {
+      "p50": 0.08,
+      "p95": 0.49,
+      "frames": 217
+     }
+    },
+    "stempel": {
+     "imLauf": 0,
+     "seitBoot": 0,
+     "spitze": 24,
+     "pool": {
+      "stand": 8,
+      "max": 2048
+     },
+     "gueltig": true,
+     "warnung": 0
+    },
+    "befehle": {
+     "frames": 1921,
+     "mittel": 58,
+     "p95": 71,
+     "max": 73,
+     "jePass": {
+      "k0": {
+       "anteil": 0.5,
+       "p50": 19,
+       "max": 20
+      },
+      "haupt": {
+       "anteil": 1,
+       "p50": 46,
+       "max": 46
+      },
+      "TRAA": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "post": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "k1": {
+       "anteil": 0.11,
+       "p50": 5,
+       "max": 5
+      }
+     }
+    },
+    "dreiecke": {
+     "frames": 1921,
+     "mittel": 362202,
+     "p95": 438848,
+     "max": 447030,
+     "jePass": {
+      "k0": {
+       "anteil": 0.5,
+       "p50": 74778,
+       "max": 76334
+      },
+      "haupt": {
+       "anteil": 1,
+       "p50": 321115,
+       "max": 321139
+      },
+      "TRAA": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "post": {
+       "anteil": 1,
+       "p50": 1,
+       "max": 1
+      },
+      "k1": {
+       "anteil": 0.11,
+       "p50": 49469,
+       "max": 49555
+      }
+     }
+    },
+    "ueber17": 2.3,
+    "ueber33": 0.1,
+    "vramMB": {
+     "jetzt": 109.9,
+     "puffer": 21.8,
+     "texturen": 88.1,
+     "spitze": 116,
+     "nPuffer": 653,
+     "nTexturen": 32,
+     "wuchsImFenster": -0.1,
+     "gross": [
+      {
+       "k": "buf:?",
+       "mb": 21.73,
+       "n": 498
+      },
+      {
+       "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+       "mb": 15.82,
+       "n": 1
+      },
+      {
+       "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+       "mb": 15.82,
+       "n": 1
+      },
+      {
+       "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+       "mb": 8,
+       "n": 1
+      },
+      {
+       "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+       "mb": 8,
+       "n": 1
+      },
+      {
+       "k": "tex:output rg11b10ufloat 1920x1080x1",
+       "mb": 7.91,
+       "n": 1
+      },
+      {
+       "k": "tex:depth depth24plus 1920x1080x1",
+       "mb": 7.91,
+       "n": 1
+      },
+      {
+       "k": "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1",
+       "mb": 3.955,
+       "n": 1
+      },
+      {
+       "k": "tex:szene:tiefenabbild r32float 960x1080x1",
+       "mb": 3.955,
+       "n": 1
+      },
+      {
+       "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18",
+       "mb": 2.999,
+       "n": 1
+      },
+      {
+       "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+       "mb": 2,
+       "n": 1
+      },
+      {
+       "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+       "mb": 2,
+       "n": 1
+      },
+      {
+       "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+       "mb": 1.875,
+       "n": 1
+      },
+      {
+       "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18",
+       "mb": 1.499,
+       "n": 1
+      }
+     ]
+    },
+    "stellgroessen": {
+     "loadScale": 0.41,
+     "renderScale": 1,
+     "pixelRatio": 1,
+     "foliageRadius": 140,
+     "foliageDichte": 0.54,
+     "archRadius": 121,
+     "ring": 4,
+     "schattenIntervall": 3.4,
+     "holz": "voll"
+    },
+    "phasenEwmaMs": {
+     "streaming": 0.27,
+     "waterIso": 0,
+     "archCulling": 0.01,
+     "creatures": 0.88,
+     "physics": 0.17,
+     "render": 2.4,
+     "gpuMs": 1.39
+    },
+    "kamera": {
+     "pos": [
+      -900,
+      109.5,
+      -850
+     ],
+     "blick": [
+      0,
+      0,
+      1
+     ]
+    },
+    "chunks": 81,
+    "ruhe": {
+     "ruhig": true,
+     "sek": 3,
+     "chunks": 81,
+     "foundry": 0,
+     "karten": 0,
+     "meshOffen": 0
+    },
+    "wetter": "sunny",
+    "wetterHalt": {
+     "vorher": "sunny",
+     "nachher": "sunny",
+     "uhrVorher": -999999941.7,
+     "uhrNachher": -999999888.7,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 2,
+       "t": 81595,
+       "uhr": -999999938.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 3,
+       "t": 86297,
+       "uhr": -999999933.6
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 4,
+       "t": 91005,
+       "uhr": -999999928.9
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 5,
+       "t": 95705,
+       "uhr": -999999924.2
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 6,
+       "t": 100413,
+       "uhr": -999999919.5
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 7,
+       "t": 105113,
+       "uhr": -999999914.8
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 8,
+       "t": 109822,
+       "uhr": -999999910
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 9,
+       "t": 114530,
+       "uhr": -999999905.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 10,
+       "t": 119258,
+       "uhr": -999999900.9
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 11,
+       "t": 123955,
+       "uhr": -999999896.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 12,
+       "t": 124897,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 13,
+       "t": 124898,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 14,
+       "t": 124898,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 15,
+       "t": 124898,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 16,
+       "t": 128663,
+       "uhr": -999999891.4
+      }
+     ],
+     "urteil": "GRUEN",
+     "taeter": [],
+     "verweigert": {
+      "rule:nexus → rainy": 11,
+      "nexus → rainy": 4
+     }
+    },
+    "saison": "summer",
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "ms": 53135,
+    "takt": {
+     "mhz": 1713.3,
+     "min": 1683,
+     "max": 1809,
+     "temp": 86,
+     "watt": 73.7,
+     "drossel": {
+      "0x0000000000000000": 6,
+      "0x0000000000000004": 127,
+      "0x0000000000000001": 68
+     },
+     "n": 201
+    }
+   },
+   "ms": 53145,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 16,
+     "wetter": "sunny",
+     "uhr": -999999888.7,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 2,
+       "t": 81595,
+       "uhr": -999999938.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 3,
+       "t": 86297,
+       "uhr": -999999933.6
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 4,
+       "t": 91005,
+       "uhr": -999999928.9
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 5,
+       "t": 95705,
+       "uhr": -999999924.2
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 6,
+       "t": 100413,
+       "uhr": -999999919.5
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 7,
+       "t": 105113,
+       "uhr": -999999914.8
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 8,
+       "t": 109822,
+       "uhr": -999999910
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 9,
+       "t": 114530,
+       "uhr": -999999905.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 10,
+       "t": 119258,
+       "uhr": -999999900.9
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 11,
+       "t": 123955,
+       "uhr": -999999896.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 12,
+       "t": 124897,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 13,
+       "t": 124898,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 14,
+       "t": 124898,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "nexus",
+       "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+       "seq": 15,
+       "t": 124898,
+       "uhr": -999999895.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 16,
+       "t": 128663,
+       "uhr": -999999891.4
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 15,
+     "gehalten": true,
+     "blind": false,
+     "buch": [
+      {
+       "art": "verweigert",
+       "op": "skybox_color",
+       "quelle": "emotion:joy",
+       "seq": 7,
+       "t": 103338
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_emotion",
+       "quelle": "emotion:hope",
+       "seq": 8,
+       "t": 107588
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 9,
+       "t": 124899
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 10,
+       "t": 124899
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 11,
+       "t": 124899
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 12,
+       "t": 124899
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 13,
+       "t": 124899
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 14,
+       "t": 124899
+      },
+      {
+       "art": "verweigert",
+       "op": "creatures_color",
+       "quelle": "nexus",
+       "seq": 15,
+       "t": 124899
+      }
+     ]
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 24,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 3
+   },
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  {
+   "name": "gpu-bank",
+   "ergebnis": {
+    "0": {
+     "n": 12,
+     "runden": 3,
+     "gpuJeFrameMs": 15.02,
+     "cpuJeFrameMs": 2.43,
+     "gpuGebunden": true,
+     "nachlaufMs": 151.5,
+     "ms": 612,
+     "tiere": {
+      "gesamt": 11,
+      "sicht": 1,
+      "sichtNah": 0,
+      "schatten": {
+       "k0": 0,
+       "k1": 0
+      },
+      "arten": {
+       "bear": 5,
+       "deer": 2,
+       "fox": 4
+      },
+      "artenSicht": {
+       "bear": 1
+      }
+     },
+     "takt": {
+      "mhz": 1703.7,
+      "min": 1695,
+      "max": 1721,
+      "temp": 86,
+      "watt": 72.3,
+      "drossel": {
+       "0x0000000000000001": 1,
+       "0x0000000000000004": 2
+      },
+      "n": 3
+     }
+    },
+    "-0.88": {
+     "n": 12,
+     "runden": 3,
+     "gpuJeFrameMs": 13.2,
+     "cpuJeFrameMs": 2.03,
+     "gpuGebunden": true,
+     "nachlaufMs": 134.2,
+     "ms": 533,
+     "tiere": {
+      "gesamt": 11,
+      "sicht": 3,
+      "sichtNah": 0,
+      "schatten": {
+       "k0": 0,
+       "k1": 0
+      },
+      "arten": {
+       "bear": 5,
+       "deer": 2,
+       "fox": 4
+      },
+      "artenSicht": {
+       "bear": 2,
+       "fox": 1
+      }
+     },
+     "takt": {
+      "mhz": 1733,
+      "min": 1695,
+      "max": 1771,
+      "temp": 86,
+      "watt": 77,
+      "drossel": {
+       "0x0000000000000001": 1,
+       "0x0000000000000004": 1
+      },
+      "n": 2
+     }
+    }
+   },
+   "ms": 2718,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 17,
+     "wetter": "sunny",
+     "uhr": -999999886.9,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 17,
+       "t": 133657,
+       "uhr": -999999887.5
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 15,
+     "gehalten": true,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 88,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 2
+   },
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  {
+   "name": "band",
+   "ergebnis": {
+    "urteil": "ROT",
+    "linse": "ROT",
+    "stempel": {
+     "einschwingen": 0,
+     "proben": 0,
+     "bank": 0,
+     "seitBoot": 0,
+     "warnung": 0,
+     "spitze": 104,
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "taeter": {},
+     "urteil": "GRUEN"
+    },
+    "tabelle": "BAND ROT: Befehle 88/208 (0.42×) · Dreiecke 412k/680k (0.61×) · VRAM MB 110.3/118 (0.93×) · GPU ms/Frame 17.03/16.7 (1.02×)\nORT wiese — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)\n\nKlasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)\nboden                        8/12          6/1/1          170k/200k  fern-ring 4 · bodenSatz 3 · farWater 1\nstreu                         4/9          3/1/0            25k/40k  streuSatz 4\nnahWiese                      4/4          4/0/0            65k/80k  nahWiese:L2 2 · nahWiese:L1 2\nkarten                        1/1          1/0/0             904/1k  fimp:atlas:L2 1\nbaum                        51/40        31/16/4          107k/150k !fscatter:fichte:L1 12 · f:tanne:L1 9 · f:fichte:L1 9 · f:birke:L1 7\nbusch                         0/8          0/0/0              0/40k  \ntier*                        0/30          0/0/0              0/60k  \nbau                          4/40          2/1/1             9k/60k  bauSatz 2 · bauWurf 2\n    bauSatz haupt: f:feuerstelle:L1 28 Zellen = 8 330\n    bauWurf k0: f:feuerstelle:L3 16 Zellen = 384\n    bauWurf k1: f:feuerstelle:L3 2 Zellen = 48\nformationen                  3/20          1/1/1            10k/30k  formationenSatz 3\n    formationenSatz k0: f:zacken:L0 14 Zellen = 4 480\n    formationenSatz k1: f:zacken:L0 6 Zellen = 1 920\n    formationenSatz haupt: f:zacken:L0 12 Zellen = 3 840\neinzelstuecke               13/25          8/5/0            25k/15k !spieler 5 · dsl-insel 3 · feld-pass 2 · himmel 1\nreserve                      0/19          0/0/0               0/4k  \nSUMME                      88/208        56/25/7          412k/680k  Abstand 0.42× Befehle · 0.61× Dreiecke\n* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.\naußerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle\n\nVRAM 110.3 MB / Band 118 MB (0.93×) — je Erzeuger:\n     22.1 MB  541   buf:szene  (bodenSatz · streuSatz · bauSatz)\n     19.8 MB  2     tex:TRAANode.history\n     15.8 MB  1     tex:TRAANode.resolve\n      8.0 MB  1     tex:kaskade0\n      8.0 MB  1     tex:kaskade1\n      7.9 MB  1     tex:output\n      7.9 MB  1     tex:depth\n      4.0 MB  2     tex:szene\n      4.0 MB  2     tex:wege-karte\n      3.0 MB  1     tex:karte-albedo\n      2.0 MB  2     tex:fluss-karte\n      1.9 MB  1     tex:feld-pass-panorama\n      1.5 MB  1     tex:karte-normal\n      1.3 MB  1     tex:laub-cluster-atlas\n      1.0 MB  4     tex:PMREM.cubeUv\n      0.8 MB  1     tex:rausch-atlas\n      0.5 MB  1     tex:welt-march-liste\n      0.5 MB  2     tex:kronen-streu\n\nerst-Boot, Ladung 1 · eingeschwungen nach 715 Takten (43 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 174 Antworten 36.9 MB — von der Platte 0 (0 MB), Neubau 36.9 MB\n\nBAND ROT: Befehle 88/208 (0.42×) · Dreiecke 412k/680k (0.61×) · VRAM MB 110.3/118 (0.93×) · GPU ms/Frame 17.03/16.7 (1.02×)\nLINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:\n  [ratsche] boden haupt: 87219 dreiecke über der Ratsche 70379 (Täter: fern-ring, bodenSatz, farWater)\n  [ratsche] nahWiese haupt: 64504 dreiecke über der Ratsche 57046 (Täter: nahWiese:L2, nahWiese:L1)\n  [ratsche] baum haupt: 31 befehle über der Ratsche 24 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)\n  [ratsche] baum haupt: 83060 dreiecke über der Ratsche 62336 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)\n  [ratsche] baum k0: 16 befehle über der Ratsche 9 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)\n  [ratsche] baum k0: 20452 dreiecke über der Ratsche 12950 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)\n  [ratsche] Summe (gebunden) 88 Befehle über der Ratsche 79\n  [weit] boden k0 dreiecke: Ratsche 48972 über der Messung 39742 — zu weit\n  [weit] boden k1 dreiecke: Ratsche 54564 über der Messung 43189 — zu weit\n  [weit] busch haupt befehle: Ratsche 4 über der Messung 0 — zu weit\n  [weit] busch haupt dreiecke: Ratsche 11672 über der Messung 0 — zu weit\n  [weit] busch k0 dreiecke: Ratsche 6120 über der Messung 0 — zu weit\n  [weit] streu haupt dreiecke: Ratsche 30386 über der Messung 22032 — zu weit\n  [weit] bau haupt dreiecke: Ratsche 17850 über der Messung 8330 — zu weit\n  [weit] einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13514 — zu weit\n  [weit] Summe (gebunden) Dreiecke: Ratsche 436360 über der Messung 411599 — zu weit\n  [weit] VRAM buf:szene: Ratsche 27.3 über der Messung 22.1 — zu weit\n  [weit] VRAM (gebunden): Ratsche 112.4 über der Messung 110.3 — zu weit\nSTEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 104/2048",
+    "ms": 50288,
+    "messung": {
+     "urteil": "ROT",
+     "linse": "ROT",
+     "bandUrteil": "UEBER",
+     "groessen": [
+      {
+       "name": "Befehle",
+       "ist": 88,
+       "soll": 208,
+       "faktor": 0.42
+      },
+      {
+       "name": "Dreiecke",
+       "ist": 411599,
+       "soll": 680000,
+       "faktor": 0.61
+      },
+      {
+       "name": "VRAM MB",
+       "ist": 110.3,
+       "soll": 118,
+       "faktor": 0.93
+      },
+      {
+       "name": "GPU ms/Frame",
+       "ist": 17.03,
+       "soll": 16.7,
+       "faktor": 1.02
+      }
+     ],
+     "rot": [
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:boden:haupt:dreiecke",
+       "ist": 87219,
+       "groesse": "dreiecke",
+       "text": "boden haupt: 87219 dreiecke über der Ratsche 70379 (Täter: fern-ring, bodenSatz, farWater)"
+      },
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:nahWiese:haupt:dreiecke",
+       "ist": 64504,
+       "groesse": "dreiecke",
+       "text": "nahWiese haupt: 64504 dreiecke über der Ratsche 57046 (Täter: nahWiese:L2, nahWiese:L1)"
+      },
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:baum:haupt:befehle",
+       "ist": 31,
+       "groesse": "befehle",
+       "text": "baum haupt: 31 befehle über der Ratsche 24 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)"
+      },
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:baum:haupt:dreiecke",
+       "ist": 83060,
+       "groesse": "dreiecke",
+       "text": "baum haupt: 83060 dreiecke über der Ratsche 62336 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)"
+      },
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:baum:k0:befehle",
+       "ist": 16,
+       "groesse": "befehle",
+       "text": "baum k0: 16 befehle über der Ratsche 9 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)"
+      },
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:baum:k0:dreiecke",
+       "ist": 20452,
+       "groesse": "dreiecke",
+       "text": "baum k0: 20452 dreiecke über der Ratsche 12950 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)"
+      },
+      {
+       "art": "ratsche",
+       "schluessel": "ratsche:gesamt:befehle",
+       "ist": 88,
+       "groesse": "befehle",
+       "text": "Summe (gebunden) 88 Befehle über der Ratsche 79"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:boden:k0:dreiecke",
+       "ist": 48972,
+       "groesse": null,
+       "text": "boden k0 dreiecke: Ratsche 48972 über der Messung 39742 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:boden:k1:dreiecke",
+       "ist": 54564,
+       "groesse": null,
+       "text": "boden k1 dreiecke: Ratsche 54564 über der Messung 43189 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:busch:haupt:befehle",
+       "ist": 4,
+       "groesse": null,
+       "text": "busch haupt befehle: Ratsche 4 über der Messung 0 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:busch:haupt:dreiecke",
+       "ist": 11672,
+       "groesse": null,
+       "text": "busch haupt dreiecke: Ratsche 11672 über der Messung 0 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:busch:k0:dreiecke",
+       "ist": 6120,
+       "groesse": null,
+       "text": "busch k0 dreiecke: Ratsche 6120 über der Messung 0 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:streu:haupt:dreiecke",
+       "ist": 30386,
+       "groesse": null,
+       "text": "streu haupt dreiecke: Ratsche 30386 über der Messung 22032 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:bau:haupt:dreiecke",
+       "ist": 17850,
+       "groesse": null,
+       "text": "bau haupt dreiecke: Ratsche 17850 über der Messung 8330 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:einzelstuecke:k0:dreiecke",
+       "ist": 37964,
+       "groesse": null,
+       "text": "einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13514 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:gesamt:dreiecke",
+       "ist": 436360,
+       "groesse": null,
+       "text": "Summe (gebunden) Dreiecke: Ratsche 436360 über der Messung 411599 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:vram:buf:szene",
+       "ist": 27.3,
+       "groesse": null,
+       "text": "VRAM buf:szene: Ratsche 27.3 über der Messung 22.1 — zu weit"
+      },
+      {
+       "art": "weit",
+       "schluessel": "weit:gesamt:vramMB",
+       "ist": 112.4,
+       "groesse": null,
+       "text": "VRAM (gebunden): Ratsche 112.4 über der Messung 110.3 — zu weit"
+      }
+     ],
+     "band": {
+      "befehle": 208,
+      "dreiecke": 680000,
+      "vramMB": 118,
+      "gpuMs": 16.7,
+      "fps": 60
+     },
+     "summe": {
+      "befehle": 88,
+      "dreiecke": 411599,
+      "je": {
+       "haupt": 56,
+       "k0": 25,
+       "k1": 7
+      },
+      "gebunden": {
+       "befehle": 88,
+       "dreiecke": 411599
+      }
+     },
+     "abstand": {
+      "befehle": 0.42,
+      "dreiecke": 0.61,
+      "vram": 0.93,
+      "gpu": 1.02
+     },
+     "ausserhalb": {
+      "OrthographicCamera": 2
+     },
+     "klassen": [
+      {
+       "id": "boden",
+       "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
+       "soll": {
+        "befehle": 12,
+        "dreiecke": 200000
+       },
+       "ist": {
+        "befehle": 8,
+        "dreiecke": 170150
+       },
+       "je": {
+        "haupt": {
+         "befehle": 6,
+         "dreiecke": 87219
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 39742
+        },
+        "k1": {
+         "befehle": 1,
+         "dreiecke": 43189
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "fern-ring",
+         "befehle": 4,
+         "dreiecke": 39936,
+         "je": {
+          "haupt": {
+           "befehle": 4,
+           "dreiecke": 39936
+          }
+         },
+         "dMax": 31
+        },
+        {
+         "klasse": "bodenSatz",
+         "befehle": 3,
+         "dreiecke": 129850,
+         "je": {
+          "k0": {
+           "befehle": 1,
+           "dreiecke": 39742
+          },
+          "k1": {
+           "befehle": 1,
+           "dreiecke": 43189
+          },
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 46919
+          }
+         },
+         "dMax": 1243
+        },
+        {
+         "klasse": "farWater",
+         "befehle": 1,
+         "dreiecke": 364,
+         "je": {
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 364
+          }
+         },
+         "dMax": 67
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 6,
+         "dreiecke": 70379
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 48972
+        },
+        "k1": {
+         "befehle": 1,
+         "dreiecke": 54564
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "streu",
+       "titel": "Nah-Streu (die Studio-Arten des Waldbodens je Stoff im Streu-Satz, die Klein-Streu der Streu-Regionen)",
+       "soll": {
+        "befehle": 9,
+        "dreiecke": 40000
+       },
+       "ist": {
+        "befehle": 4,
+        "dreiecke": 24592
+       },
+       "je": {
+        "haupt": {
+         "befehle": 3,
+         "dreiecke": 22032
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 2560
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "streuSatz",
+         "befehle": 4,
+         "dreiecke": 24592,
+         "je": {
+          "k0": {
+           "befehle": 1,
+           "dreiecke": 2560
+          },
+          "haupt": {
+           "befehle": 3,
+           "dreiecke": 22032
+          }
+         },
+         "dMax": 1243
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 5,
+         "dreiecke": 30386
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "nahWiese",
+       "titel": "Nah-Wiese",
+       "soll": {
+        "befehle": 4,
+        "dreiecke": 80000
+       },
+       "ist": {
+        "befehle": 4,
+        "dreiecke": 64504
+       },
+       "je": {
+        "haupt": {
+         "befehle": 4,
+         "dreiecke": 64504
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "nahWiese:L2",
+         "befehle": 2,
+         "dreiecke": 33112,
+         "je": {
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 33112
+          }
+         },
+         "dMax": 16
+        },
+        {
+         "klasse": "nahWiese:L1",
+         "befehle": 2,
+         "dreiecke": 31392,
+         "je": {
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 31392
+          }
+         },
+         "dMax": 5
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 4,
+         "dreiecke": 57046
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "karten",
+       "titel": "Karten (jede Fernstufe L2)",
+       "soll": {
+        "befehle": 1,
+        "dreiecke": 1000
+       },
+       "ist": {
+        "befehle": 1,
+        "dreiecke": 904
+       },
+       "je": {
+        "haupt": {
+         "befehle": 1,
+         "dreiecke": 904
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "fimp:atlas:L2",
+         "befehle": 1,
+         "dreiecke": 904,
+         "je": {
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 904
+          }
+         },
+         "dMax": 239
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 1,
+         "dreiecke": 1168
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "baum",
+       "titel": "Baum L0/L1 + Werfer",
+       "soll": {
+        "befehle": 40,
+        "dreiecke": 150000
+       },
+       "ist": {
+        "befehle": 51,
+        "dreiecke": 107080
+       },
+       "je": {
+        "haupt": {
+         "befehle": 31,
+         "dreiecke": 83060
+        },
+        "k0": {
+         "befehle": 16,
+         "dreiecke": 20452
+        },
+        "k1": {
+         "befehle": 4,
+         "dreiecke": 3568
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "fscatter:fichte:L1",
+         "befehle": 12,
+         "dreiecke": 16116,
+         "je": {
+          "k0": {
+           "befehle": 3,
+           "dreiecke": 3078
+          },
+          "k1": {
+           "befehle": 3,
+           "dreiecke": 3078
+          },
+          "haupt": {
+           "befehle": 6,
+           "dreiecke": 9960
+          }
+         },
+         "dMax": 113
+        },
+        {
+         "klasse": "f:tanne:L1",
+         "befehle": 9,
+         "dreiecke": 27834,
+         "je": {
+          "k0": {
+           "befehle": 3,
+           "dreiecke": 7710
+          },
+          "haupt": {
+           "befehle": 6,
+           "dreiecke": 20124
+          }
+         },
+         "dMax": 45
+        },
+        {
+         "klasse": "f:fichte:L1",
+         "befehle": 9,
+         "dreiecke": 18370,
+         "je": {
+          "k0": {
+           "befehle": 3,
+           "dreiecke": 5178
+          },
+          "haupt": {
+           "befehle": 6,
+           "dreiecke": 13192
+          }
+         },
+         "dMax": 75
+        },
+        {
+         "klasse": "f:birke:L1",
+         "befehle": 7,
+         "dreiecke": 10622,
+         "je": {
+          "k0": {
+           "befehle": 3,
+           "dreiecke": 2834
+          },
+          "haupt": {
+           "befehle": 4,
+           "dreiecke": 7788
+          }
+         },
+         "dMax": 45
+        },
+        {
+         "klasse": "fscatter:tanne:L1",
+         "befehle": 4,
+         "dreiecke": 2728,
+         "je": {
+          "k0": {
+           "befehle": 1,
+           "dreiecke": 490
+          },
+          "k1": {
+           "befehle": 1,
+           "dreiecke": 490
+          },
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 1748
+          }
+         },
+         "dMax": 96
+        },
+        {
+         "klasse": "f:eiche:L1",
+         "befehle": 4,
+         "dreiecke": 2326,
+         "je": {
+          "k0": {
+           "befehle": 2,
+           "dreiecke": 804
+          },
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 1522
+          }
+         },
+         "dMax": 30
+        },
+        {
+         "klasse": "f:tanne:L0",
+         "befehle": 2,
+         "dreiecke": 15992,
+         "je": {
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 15992
+          }
+         },
+         "dMax": 15
+        },
+        {
+         "klasse": "f:birke:L0",
+         "befehle": 2,
+         "dreiecke": 8290,
+         "je": {
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 8290
+          }
+         },
+         "dMax": 5
+        },
+        {
+         "klasse": "f:fichte:L0",
+         "befehle": 1,
+         "dreiecke": 4444,
+         "je": {
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 4444
+          }
+         },
+         "dMax": 17
+        },
+        {
+         "klasse": "f:weide:L1",
+         "befehle": 1,
+         "dreiecke": 358,
+         "je": {
+          "k0": {
+           "befehle": 1,
+           "dreiecke": 358
+          }
+         },
+         "dMax": null
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 24,
+         "dreiecke": 62336
+        },
+        "k0": {
+         "befehle": 9,
+         "dreiecke": 12950
+        },
+        "k1": {
+         "befehle": 2,
+         "dreiecke": 1612
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "busch",
+       "titel": "Busch",
+       "soll": {
+        "befehle": 8,
+        "dreiecke": 40000
+       },
+       "ist": {
+        "befehle": 0,
+        "dreiecke": 0
+       },
+       "je": {
+        "haupt": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [],
+       "ratsche": {
+        "haupt": {
+         "befehle": 4,
+         "dreiecke": 11672
+        },
+        "k0": {
+         "befehle": 2,
+         "dreiecke": 6120
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "tier",
+       "titel": "Tier",
+       "soll": {
+        "befehle": 30,
+        "dreiecke": 60000
+       },
+       "ist": {
+        "befehle": 0,
+        "dreiecke": 0
+       },
+       "je": {
+        "haupt": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [],
+       "ratsche": {
+        "haupt": {
+         "befehle": null,
+         "dreiecke": null
+        },
+        "k0": {
+         "befehle": null,
+         "dreiecke": null
+        },
+        "k1": {
+         "befehle": null,
+         "dreiecke": null
+        }
+       },
+       "frei": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
+      },
+      {
+       "id": "bau",
+       "titel": "Bau (Haus · Tor · Fahrzeug · Ausstattung: Feuerstelle, Marktstand, Brunnen · Fundament · Zaun; das Haus zeichnet im Bau-Satz seines Stoffs)",
+       "soll": {
+        "befehle": 40,
+        "dreiecke": 60000
+       },
+       "ist": {
+        "befehle": 4,
+        "dreiecke": 8762
+       },
+       "je": {
+        "haupt": {
+         "befehle": 2,
+         "dreiecke": 8330
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 384
+        },
+        "k1": {
+         "befehle": 1,
+         "dreiecke": 48
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "bauSatz",
+         "befehle": 2,
+         "dreiecke": 8330,
+         "je": {
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 8330
+          }
+         },
+         "dMax": 1243,
+         "inhalt": {
+          "haupt": [
+           {
+            "klasse": "f:feuerstelle:L1",
+            "stufe": 1,
+            "art": "ausstattung",
+            "zellen": 28,
+            "tris": 8330,
+            "eintraege": [
+             141,
+             158,
+             467,
+             701,
+             705,
+             97,
+             115,
+             116,
+             117,
+             157,
+             293,
+             294,
+             700,
+             699
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "klasse": "bauWurf",
+         "befehle": 2,
+         "dreiecke": 432,
+         "je": {
+          "k0": {
+           "befehle": 1,
+           "dreiecke": 384
+          },
+          "k1": {
+           "befehle": 1,
+           "dreiecke": 48
+          }
+         },
+         "dMax": null,
+         "inhalt": {
+          "k0": [
+           {
+            "klasse": "f:feuerstelle:L3",
+            "stufe": 3,
+            "art": "ausstattung",
+            "zellen": 16,
+            "tris": 384,
+            "eintraege": [
+             141,
+             158,
+             467,
+             701,
+             705,
+             95,
+             97,
+             115,
+             116,
+             117,
+             157,
+             293,
+             294,
+             700,
+             699,
+             698
+            ]
+           }
+          ],
+          "k1": [
+           {
+            "klasse": "f:feuerstelle:L3",
+            "stufe": 3,
+            "art": "ausstattung",
+            "zellen": 2,
+            "tris": 48,
+            "eintraege": [
+             467,
+             705
+            ]
+           }
+          ]
+         }
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 2,
+         "dreiecke": 17850
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 744
+        },
+        "k1": {
+         "befehle": 1,
+         "dreiecke": 504
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "formationen",
+       "titel": "Formationen (gesetzter Fels, Kristall, Säulen; zeichnen im Formationen-Satz ihres Stoffs)",
+       "soll": {
+        "befehle": 20,
+        "dreiecke": 30000
+       },
+       "ist": {
+        "befehle": 3,
+        "dreiecke": 10240
+       },
+       "je": {
+        "haupt": {
+         "befehle": 1,
+         "dreiecke": 3840
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 4480
+        },
+        "k1": {
+         "befehle": 1,
+         "dreiecke": 1920
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "formationenSatz",
+         "befehle": 3,
+         "dreiecke": 10240,
+         "je": {
+          "k0": {
+           "befehle": 1,
+           "dreiecke": 4480
+          },
+          "k1": {
+           "befehle": 1,
+           "dreiecke": 1920
+          },
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 3840
+          }
+         },
+         "dMax": 1243,
+         "inhalt": {
+          "k0": [
+           {
+            "klasse": "f:zacken:L0",
+            "stufe": 0,
+            "art": "rock",
+            "zellen": 14,
+            "tris": 4480,
+            "eintraege": [
+             118,
+             626,
+             308,
+             339,
+             96,
+             114,
+             424,
+             140,
+             210,
+             338,
+             410,
+             426,
+             425,
+             529
+            ]
+           }
+          ],
+          "k1": [
+           {
+            "klasse": "f:zacken:L0",
+            "stufe": 0,
+            "art": "rock",
+            "zellen": 6,
+            "tris": 1920,
+            "eintraege": [
+             626,
+             627,
+             308,
+             339,
+             338,
+             410
+            ]
+           }
+          ],
+          "haupt": [
+           {
+            "klasse": "f:zacken:L0",
+            "stufe": 0,
+            "art": "rock",
+            "zellen": 12,
+            "tris": 3840,
+            "eintraege": [
+             118,
+             626,
+             627,
+             308,
+             339,
+             96,
+             114,
+             210,
+             338,
+             410,
+             425,
+             529
+            ]
+           }
+          ]
+         }
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 1,
+         "dreiecke": 3840
+        },
+        "k0": {
+         "befehle": 1,
+         "dreiecke": 4480
+        },
+        "k1": {
+         "befehle": 1,
+         "dreiecke": 1920
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "einzelstuecke",
+       "titel": "Einzelstücke (Himmel, Spieler, Feld-Pass, Inseln, Portal, Wetter, Bau-Werkzeug …)",
+       "soll": {
+        "befehle": 25,
+        "dreiecke": 15000
+       },
+       "ist": {
+        "befehle": 13,
+        "dreiecke": 25367
+       },
+       "je": {
+        "haupt": {
+         "befehle": 8,
+         "dreiecke": 11853
+        },
+        "k0": {
+         "befehle": 5,
+         "dreiecke": 13514
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [
+        {
+         "klasse": "spieler",
+         "befehle": 5,
+         "dreiecke": 13514,
+         "je": {
+          "k0": {
+           "befehle": 5,
+           "dreiecke": 13514
+          }
+         },
+         "dMax": null
+        },
+        {
+         "klasse": "dsl-insel",
+         "befehle": 3,
+         "dreiecke": 9064,
+         "je": {
+          "haupt": {
+           "befehle": 3,
+           "dreiecke": 9064
+          }
+         },
+         "dMax": 1211
+        },
+        {
+         "klasse": "feld-pass",
+         "befehle": 2,
+         "dreiecke": 13,
+         "je": {
+          "haupt": {
+           "befehle": 2,
+           "dreiecke": 13
+          }
+         },
+         "dMax": 1243
+        },
+        {
+         "klasse": "himmel",
+         "befehle": 1,
+         "dreiecke": 1984,
+         "je": {
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 1984
+          }
+         },
+         "dMax": 0
+        },
+        {
+         "klasse": "himmel-sonne",
+         "befehle": 1,
+         "dreiecke": 480,
+         "je": {
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 480
+          }
+         },
+         "dMax": 395
+        },
+        {
+         "klasse": "dorf-rauch",
+         "befehle": 1,
+         "dreiecke": 312,
+         "je": {
+          "haupt": {
+           "befehle": 1,
+           "dreiecke": 312
+          }
+         },
+         "dMax": 1222
+        }
+       ],
+       "ratsche": {
+        "haupt": {
+         "befehle": 8,
+         "dreiecke": 11853
+        },
+        "k0": {
+         "befehle": 5,
+         "dreiecke": 37964
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "leerHuellen",
+       "titel": "Leere Hüllen (tote Draws: eine Instanz-Gruppe ohne lebende Instanz in der Gnadenfrist des Leer-Chokepoints)",
+       "soll": {
+        "befehle": 0,
+        "dreiecke": 0
+       },
+       "ist": {
+        "befehle": 0,
+        "dreiecke": 0
+       },
+       "je": {
+        "haupt": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [],
+       "ratsche": {
+        "haupt": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      },
+      {
+       "id": "reserve",
+       "titel": "Reserve",
+       "soll": {
+        "befehle": 19,
+        "dreiecke": 4000
+       },
+       "ist": {
+        "befehle": 0,
+        "dreiecke": 0
+       },
+       "je": {
+        "haupt": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "taeter": [],
+       "ratsche": {
+        "haupt": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k0": {
+         "befehle": 0,
+         "dreiecke": 0
+        },
+        "k1": {
+         "befehle": 0,
+         "dreiecke": 0
+        }
+       },
+       "frei": null
+      }
+     ],
+     "vram": {
+      "mb": 110.3,
+      "gebunden": 110.3,
+      "band": 118,
+      "erzeuger": [
+       {
+        "erzeuger": "buf:szene",
+        "mb": 22.1,
+        "n": 541,
+        "form": [
+         "buf:szene:bodenSatz",
+         "buf:szene:streuSatz",
+         "buf:szene:bauSatz"
+        ]
+       },
+       {
+        "erzeuger": "tex:TRAANode.history",
+        "mb": 19.8,
+        "n": 2,
+        "form": [
+         "tex:TRAANode.history rgba16float 1920x1080x1",
+         "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:TRAANode.resolve",
+        "mb": 15.8,
+        "n": 1,
+        "form": [
+         "tex:TRAANode.resolve rgba16float 1920x1080x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:kaskade0",
+        "mb": 8,
+        "n": 1,
+        "form": [
+         "tex:kaskade0:tiefe depth16unorm 2048x2048x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:kaskade1",
+        "mb": 8,
+        "n": 1,
+        "form": [
+         "tex:kaskade1:tiefe depth16unorm 2048x2048x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:output",
+        "mb": 7.9,
+        "n": 1,
+        "form": [
+         "tex:output rg11b10ufloat 1920x1080x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:depth",
+        "mb": 7.9,
+        "n": 1,
+        "form": [
+         "tex:depth depth24plus 1920x1080x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:szene",
+        "mb": 4,
+        "n": 2,
+        "form": [
+         "tex:szene:tiefenabbild r32float 960x1080x1",
+         "tex:szene:tiefenabbild:bruch depth24plus 1x1x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:wege-karte",
+        "mb": 4,
+        "n": 2,
+        "form": [
+         "tex:wege-karte:fern rg8unorm 1024x1024x1",
+         "tex:wege-karte:nah rg8unorm 1024x1024x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:karte-albedo",
+        "mb": 3,
+        "n": 1,
+        "form": [
+         "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18"
+        ]
+       },
+       {
+        "erzeuger": "tex:fluss-karte",
+        "mb": 2,
+        "n": 2,
+        "form": [
+         "tex:fluss-karte:fern r8unorm 1024x1024x1",
+         "tex:fluss-karte:nah r8unorm 1024x1024x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:feld-pass-panorama",
+        "mb": 1.9,
+        "n": 1,
+        "form": [
+         "tex:feld-pass-panorama rgba32float 768x160x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:karte-normal",
+        "mb": 1.5,
+        "n": 1,
+        "form": [
+         "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18"
+        ]
+       },
+       {
+        "erzeuger": "tex:laub-cluster-atlas",
+        "mb": 1.3,
+        "n": 1,
+        "form": [
+         "tex:laub-cluster-atlas bc3-rgba-unorm-srgb 2048x512x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:PMREM.cubeUv",
+        "mb": 1,
+        "n": 4,
+        "form": [
+         "tex:PMREM.cubeUv rgba16float 336x128x1",
+         "tex:PMREM.cubeUv:tiefe depth24plus 336x128x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:rausch-atlas",
+        "mb": 0.8,
+        "n": 1,
+        "form": [
+         "tex:rausch-atlas rgba8unorm 768x256x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:welt-march-liste",
+        "mb": 0.5,
+        "n": 1,
+        "form": [
+         "tex:welt-march-liste rgba32float 4096x8x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:kronen-streu",
+        "mb": 0.5,
+        "n": 2,
+        "form": [
+         "tex:kronen-streu:fern r8unorm 512x512x1",
+         "tex:kronen-streu:nah r8unorm 512x512x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:welt-march-kapseln",
+        "mb": 0.3,
+        "n": 1,
+        "form": [
+         "tex:welt-march-kapseln rgba32float 4096x4x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:himmel-umgebung",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "tex:himmel-umgebung rgba8unorm-srgb 128x64x1"
+        ]
+       },
+       {
+        "erzeuger": "buf:bindingBuffer",
+        "mb": 0,
+        "n": 144,
+        "form": [
+         "buf:bindingBuffer#_object_(vertex,fragment,compute)",
+         "buf:bindingBuffer#_render_(vertex,fragment,compute)"
+        ]
+       },
+       {
+        "erzeuger": "buf:buffer_timestamp_resolve_render",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "buf:buffer_timestamp_resolve_render"
+        ]
+       },
+       {
+        "erzeuger": "buf:buffer_timestamp_result_render",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "buf:buffer_timestamp_result_render"
+        ]
+       },
+       {
+        "erzeuger": "tex:fern-krone-nah",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "tex:fern-krone-nah rgba8unorm-srgb 64x64x1"
+        ]
+       },
+       {
+        "erzeuger": "buf:bindingBufferundefined_UniformBuffer_",
+        "mb": 0,
+        "n": 22,
+        "form": [
+         "buf:bindingBufferundefined_UniformBuffer_#_(vertex)",
+         "buf:bindingBufferundefined_UniformBuffer_#_(fragment)"
+        ]
+       },
+       {
+        "erzeuger": "tex:portal-membran",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "tex:portal-membran rgba8unorm 64x16x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:fern-ring-maske",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "tex:fern-ring-maske rgba8unorm 27x27x1"
+        ]
+       },
+       {
+        "erzeuger": "tex:DFG_LUT",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "tex:DFG_LUT rg16float 16x16x1"
+        ]
+       },
+       {
+        "erzeuger": "buf:bild",
+        "mb": 0,
+        "n": 2,
+        "form": [
+         "buf:bild:vertex"
+        ]
+       },
+       {
+        "erzeuger": "buf:?",
+        "mb": 0,
+        "n": 2,
+        "form": [
+         "buf:?"
+        ]
+       },
+       {
+        "erzeuger": "tex:TRAANode.vortiefe",
+        "mb": 0,
+        "n": 1,
+        "form": [
+         "tex:TRAANode.vortiefe depth24plus 1x1x1"
+        ]
+       }
+      ]
+     },
+     "texturen": {
+      "n": 32,
+      "mb": 66.48,
+      "erzeuger": [
+       {
+        "erzeuger": "TRAANode.resolve",
+        "mb": 15.82,
+        "n": 1
+       },
+       {
+        "erzeuger": "kaskade0",
+        "mb": 8,
+        "n": 1
+       },
+       {
+        "erzeuger": "kaskade1",
+        "mb": 8,
+        "n": 1
+       },
+       {
+        "erzeuger": "output",
+        "mb": 7.91,
+        "n": 1
+       },
+       {
+        "erzeuger": "depth",
+        "mb": 7.91,
+        "n": 1
+       },
+       {
+        "erzeuger": "wege-karte",
+        "mb": 4,
+        "n": 2
+       },
+       {
+        "erzeuger": "TRAANode.history",
+        "mb": 3.96,
+        "n": 2
+       },
+       {
+        "erzeuger": "szene",
+        "mb": 3.96,
+        "n": 2
+       },
+       {
+        "erzeuger": "fluss-karte",
+        "mb": 2,
+        "n": 2
+       },
+       {
+        "erzeuger": "feld-pass-panorama",
+        "mb": 1.88,
+        "n": 1
+       },
+       {
+        "erzeuger": "PMREM.cubeUv",
+        "mb": 0.98,
+        "n": 4
+       },
+       {
+        "erzeuger": "rausch-atlas",
+        "mb": 0.75,
+        "n": 1
+       },
+       {
+        "erzeuger": "kronen-streu",
+        "mb": 0.5,
+        "n": 2
+       },
+       {
+        "erzeuger": "welt-march-liste",
+        "mb": 0.5,
+        "n": 1
+       },
+       {
+        "erzeuger": "welt-march-kapseln",
+        "mb": 0.25,
+        "n": 1
+       },
+       {
+        "erzeuger": "himmel-umgebung",
+        "mb": 0.04,
+        "n": 1
+       },
+       {
+        "erzeuger": "fern-krone-nah",
+        "mb": 0.02,
+        "n": 1
+       },
+       {
+        "erzeuger": "portal-membran",
+        "mb": 0,
+        "n": 1
+       },
+       {
+        "erzeuger": "fern-ring-maske",
+        "mb": 0,
+        "n": 1
+       },
+       {
+        "erzeuger": "DFG_LUT",
+        "mb": 0,
+        "n": 1
+       },
+       {
+        "erzeuger": "TRAANode.vortiefe",
+        "mb": 0,
+        "n": 1
+       },
+       {
+        "erzeuger": "laub-cluster-atlas",
+        "mb": 0,
+        "n": 1
+       },
+       {
+        "erzeuger": "karte-albedo",
+        "mb": 0,
+        "n": 1
+       },
+       {
+        "erzeuger": "karte-normal",
+        "mb": 0,
+        "n": 1
+       }
+      ]
+     },
+     "ort": "wiese",
+     "soll": [],
+     "toleranz": {
+      "toleranzPct": 1,
+      "toleranzAbs": {
+       "befehle": 2,
+       "dreiecke": 5000,
+       "vramMB": 2
+      }
+     },
+     "kamera": [
+      -900,
+      109.5,
+      -850
+     ],
+     "spieler": [
+      -900,
+      -850
+     ],
+     "amMessort": true,
+     "zustand": {
+      "ort": "wiese",
+      "dorfZug": false,
+      "ortTakt": [],
+      "gier": 0,
+      "sicht": "ego"
+     },
+     "ortGestellt": [],
+     "geraet": {
+      "schluessel": "gtx",
+      "text": "nvidia pascal"
+     },
+     "sicht": "ego",
+     "version": "18.546.0",
+     "ratscheDatei": "ratsche-wiese-gtx-ego.json",
+     "boot": {
+      "art": "erst",
+      "serie": null,
+      "ladungen": 1
+     },
+     "messung": {
+      "proben": 6,
+      "eingeschwungen": true,
+      "takte": 715,
+      "ms": 42847,
+      "stand": {
+       "chunks": 81,
+       "instanzen": 2071,
+       "ungebaut": 0,
+       "loadScale": 1
+      },
+      "offen": null
+     },
+     "fluss": {
+      "n": 174,
+      "platte": 0,
+      "mb": 36.9,
+      "platteMb": 0,
+      "neuMb": 36.9
+     },
+     "gpu": {
+      "n": 12,
+      "runden": 3,
+      "gpuJeFrameMs": 17.03,
+      "cpuJeFrameMs": 2.83,
+      "gpuGebunden": true,
+      "nachlaufMs": 172
+     },
+     "stempel": {
+      "einschwingen": 0,
+      "proben": 0,
+      "bank": 0,
+      "seitBoot": 0,
+      "warnung": 0,
+      "spitze": 104,
+      "pool": {
+       "stand": 0,
+       "max": 2048
+      },
+      "taeter": {},
+      "urteil": "GRUEN"
+     },
+     "puffer": {
+      "mb": 22.06,
+      "halter": {
+       "szene": 22.06,
+       "bild": 0
+      },
+      "klassen": [
+       {
+        "klasse": "szene:bodenSatz",
+        "mb": 12.95,
+        "n": 8
+       },
+       {
+        "klasse": "szene:streuSatz",
+        "mb": 2.12,
+        "n": 16
+       },
+       {
+        "klasse": "szene:bauSatz",
+        "mb": 1.91,
+        "n": 14
+       },
+       {
+        "klasse": "szene:fern-ring",
+        "mb": 0.93,
+        "n": 19
+       },
+       {
+        "klasse": "szene:spieler",
+        "mb": 0.69,
+        "n": 39
+       },
+       {
+        "klasse": "szene:f:fichte:L1",
+        "mb": 0.44,
+        "n": 81
+       },
+       {
+        "klasse": "szene:formationenSatz",
+        "mb": 0.43,
+        "n": 6
+       },
+       {
+        "klasse": "szene:f:tanne:L1",
+        "mb": 0.42,
+        "n": 81
+       },
+       {
+        "klasse": "szene:f:birke:L1",
+        "mb": 0.31,
+        "n": 63
+       },
+       {
+        "klasse": "szene:f:birke:L0",
+        "mb": 0.27,
+        "n": 18
+       },
+       {
+        "klasse": "szene:f:tanne:L0",
+        "mb": 0.26,
+        "n": 18
+       },
+       {
+        "klasse": "szene:himmel-sterne",
+        "mb": 0.25,
+        "n": 8
+       },
+       {
+        "klasse": "szene:dsl-insel",
+        "mb": 0.21,
+        "n": 12
+       },
+       {
+        "klasse": "szene:nahWiese:L1",
+        "mb": 0.19,
+        "n": 16
+       },
+       {
+        "klasse": "szene:fimp:atlas:L2",
+        "mb": 0.18,
+        "n": 6
+       },
+       {
+        "klasse": "szene:f:eiche:L1",
+        "mb": 0.14,
+        "n": 36
+       },
+       {
+        "klasse": "szene:f:fichte:L0",
+        "mb": 0.14,
+        "n": 8
+       },
+       {
+        "klasse": "szene:bauWurf",
+        "mb": 0.08,
+        "n": 7
+       },
+       {
+        "klasse": "szene:nahWiese:L2",
+        "mb": 0.05,
+        "n": 16
+       },
+       {
+        "klasse": "szene:himmel",
+        "mb": 0.04,
+        "n": 3
+       },
+       {
+        "klasse": "szene:f:weide:L1",
+        "mb": 0.03,
+        "n": 9
+       },
+       {
+        "klasse": "szene:farWater",
+        "mb": 0.02,
+        "n": 6
+       },
+       {
+        "klasse": "szene:fscatter:fichte:L1",
+        "mb": 0.01,
+        "n": 30
+       },
+       {
+        "klasse": "szene:himmel-sonne",
+        "mb": 0.01,
+        "n": 3
+       },
+       {
+        "klasse": "szene:fscatter:tanne:L1",
+        "mb": 0,
+        "n": 10
+       },
+       {
+        "klasse": "szene:dorf-rauch",
+        "mb": 0,
+        "n": 5
+       },
+       {
+        "klasse": "szene:feld-pass",
+        "mb": 0,
+        "n": 3
+       },
+       {
+        "klasse": "bild:vertex",
+        "mb": 0,
+        "n": 2
+       }
+      ]
+     },
+     "unbenannt": [],
+     "frameMs": [
+      28,
+      22,
+      21,
+      22,
+      23,
+      22
+     ],
+     "programme": {
+      "vertex": 37,
+      "fragment": 36,
+      "familien": 34,
+      "pipelines": 37
+     },
+     "proben": [
+      {
+       "OrthographicCamera": {
+        "cmd": 2,
+        "tris": 2
+       },
+       "haupt": {
+        "cmd": 56,
+        "tris": 281718
+       },
+       "k0": {
+        "cmd": 25,
+        "tris": 81132
+       },
+       "k1": {
+        "cmd": 7,
+        "tris": 48725
+       }
+      },
+      {
+       "OrthographicCamera": {
+        "cmd": 2,
+        "tris": 2
+       },
+       "haupt": {
+        "cmd": 56,
+        "tris": 281730
+       },
+       "k0": {
+        "cmd": 25,
+        "tris": 81132
+       },
+       "k1": {
+        "cmd": 7,
+        "tris": 48725
+       }
+      },
+      {
+       "OrthographicCamera": {
+        "cmd": 2,
+        "tris": 2
+       },
+       "haupt": {
+        "cmd": 56,
+        "tris": 281730
+       },
+       "k0": {
+        "cmd": 25,
+        "tris": 81132
+       },
+       "k1": {
+        "cmd": 7,
+        "tris": 48725
+       }
+      },
+      {
+       "OrthographicCamera": {
+        "cmd": 2,
+        "tris": 2
+       },
+       "haupt": {
+        "cmd": 56,
+        "tris": 281742
+       },
+       "k0": {
+        "cmd": 25,
+        "tris": 81132
+       },
+       "k1": {
+        "cmd": 7,
+        "tris": 48725
+       }
+      },
+      {
+       "OrthographicCamera": {
+        "cmd": 2,
+        "tris": 2
+       },
+       "haupt": {
+        "cmd": 56,
+        "tris": 281730
+       },
+       "k0": {
+        "cmd": 25,
+        "tris": 81132
+       },
+       "k1": {
+        "cmd": 7,
+        "tris": 48725
+       }
+      },
+      {
+       "OrthographicCamera": {
+        "cmd": 2,
+        "tris": 2
+       },
+       "haupt": {
+        "cmd": 56,
+        "tris": 281730
+       },
+       "k0": {
+        "cmd": 25,
+        "tris": 81132
+       },
+       "k1": {
+        "cmd": 7,
+        "tris": 48725
+       }
+      }
+     ],
+     "echt": true,
+     "roh": {
+      "zensus": [
+       {
+        "klasse": "fscatter:fichte:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 12,
+        "tris": 16116,
+        "je": {
+         "k0": 3,
+         "k1": 3,
+         "haupt": 6
+        },
+        "jeTris": {
+         "k0": 3078,
+         "k1": 3078,
+         "haupt": 9960
+        },
+        "inst": 12,
+        "exemplare": 6,
+        "dMin": 86,
+        "dMax": 113
+       },
+       {
+        "klasse": "f:tanne:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 9,
+        "tris": 27834,
+        "je": {
+         "k0": 3,
+         "haupt": 6
+        },
+        "jeTris": {
+         "k0": 7710,
+         "haupt": 20124
+        },
+        "inst": 25,
+        "exemplare": 8,
+        "dMin": 10,
+        "dMax": 45
+       },
+       {
+        "klasse": "f:fichte:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 9,
+        "tris": 18370,
+        "je": {
+         "k0": 3,
+         "haupt": 6
+        },
+        "jeTris": {
+         "k0": 5178,
+         "haupt": 13192
+        },
+        "inst": 16,
+        "exemplare": 5,
+        "dMin": 17,
+        "dMax": 75
+       },
+       {
+        "klasse": "f:birke:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 7,
+        "tris": 10622,
+        "je": {
+         "k0": 3,
+         "haupt": 4
+        },
+        "jeTris": {
+         "k0": 2834,
+         "haupt": 7788
+        },
+        "inst": 7,
+        "exemplare": 1,
+        "dMin": 12,
+        "dMax": 45
+       },
+       {
+        "klasse": "spieler",
+        "stufe": null,
+        "art": null,
+        "cmd": 5,
+        "tris": 13514,
+        "je": {
+         "k0": 5
+        },
+        "jeTris": {
+         "k0": 13514
+        },
+        "inst": 0,
+        "exemplare": 0,
+        "dMin": null,
+        "dMax": null
+       },
+       {
+        "klasse": "fscatter:tanne:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 4,
+        "tris": 2728,
+        "je": {
+         "k0": 1,
+         "k1": 1,
+         "haupt": 2
+        },
+        "jeTris": {
+         "k0": 490,
+         "k1": 490,
+         "haupt": 1748
+        },
+        "inst": 2,
+        "exemplare": 1,
+        "dMin": 96,
+        "dMax": 96
+       },
+       {
+        "klasse": "f:eiche:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 4,
+        "tris": 2326,
+        "je": {
+         "k0": 2,
+         "haupt": 2
+        },
+        "jeTris": {
+         "k0": 804,
+         "haupt": 1522
+        },
+        "inst": 2,
+        "exemplare": 1,
+        "dMin": 30,
+        "dMax": 30
+       },
+       {
+        "klasse": "streuSatz",
+        "stufe": null,
+        "art": null,
+        "cmd": 4,
+        "tris": 24592,
+        "je": {
+         "k0": 1,
+         "haupt": 3
+        },
+        "jeTris": {
+         "k0": 2560,
+         "haupt": 22032
+        },
+        "inst": 3,
+        "exemplare": 1,
+        "dMin": 1243,
+        "dMax": 1243
+       },
+       {
+        "klasse": "fern-ring",
+        "stufe": null,
+        "art": null,
+        "cmd": 4,
+        "tris": 39936,
+        "je": {
+         "haupt": 4
+        },
+        "jeTris": {
+         "haupt": 39936
+        },
+        "inst": 4,
+        "exemplare": 3,
+        "dMin": 22,
+        "dMax": 31
+       },
+       {
+        "klasse": "bodenSatz",
+        "stufe": null,
+        "art": null,
+        "cmd": 3,
+        "tris": 129850,
+        "je": {
+         "k0": 1,
+         "k1": 1,
+         "haupt": 1
+        },
+        "jeTris": {
+         "k0": 39742,
+         "k1": 43189,
+         "haupt": 46919
+        },
+        "inst": 1,
+        "exemplare": 1,
+        "dMin": 1243,
+        "dMax": 1243
+       },
+       {
+        "klasse": "formationenSatz",
+        "stufe": null,
+        "art": null,
+        "cmd": 3,
+        "tris": 10240,
+        "je": {
+         "k0": 1,
+         "k1": 1,
+         "haupt": 1
+        },
+        "jeTris": {
+         "k0": 4480,
+         "k1": 1920,
+         "haupt": 3840
+        },
+        "inst": 1,
+        "exemplare": 1,
+        "dMin": 1243,
+        "dMax": 1243,
+        "inhalt": {
+         "k0": [
+          {
+           "klasse": "f:zacken:L0",
+           "stufe": 0,
+           "art": "rock",
+           "zellen": 14,
+           "tris": 4480,
+           "eintraege": [
+            118,
+            626,
+            308,
+            339,
+            96,
+            114,
+            424,
+            140,
+            210,
+            338,
+            410,
+            426,
+            425,
+            529
+           ]
+          }
+         ],
+         "k1": [
+          {
+           "klasse": "f:zacken:L0",
+           "stufe": 0,
+           "art": "rock",
+           "zellen": 6,
+           "tris": 1920,
+           "eintraege": [
+            626,
+            627,
+            308,
+            339,
+            338,
+            410
+           ]
+          }
+         ],
+         "haupt": [
+          {
+           "klasse": "f:zacken:L0",
+           "stufe": 0,
+           "art": "rock",
+           "zellen": 12,
+           "tris": 3840,
+           "eintraege": [
+            118,
+            626,
+            627,
+            308,
+            339,
+            96,
+            114,
+            210,
+            338,
+            410,
+            425,
+            529
+           ]
+          }
+         ]
+        }
+       },
+       {
+        "klasse": "dsl-insel",
+        "stufe": null,
+        "art": null,
+        "cmd": 3,
+        "tris": 9064,
+        "je": {
+         "haupt": 3
+        },
+        "jeTris": {
+         "haupt": 9064
+        },
+        "inst": 3,
+        "exemplare": 3,
+        "dMin": 1203,
+        "dMax": 1211
+       },
+       {
+        "klasse": "f:birke:L0",
+        "stufe": 0,
+        "art": "tree",
+        "cmd": 2,
+        "tris": 8290,
+        "je": {
+         "haupt": 2
+        },
+        "jeTris": {
+         "haupt": 8290
+        },
+        "inst": 2,
+        "exemplare": 1,
+        "dMin": 5,
+        "dMax": 5
+       },
+       {
+        "klasse": "bauWurf",
+        "stufe": null,
+        "art": null,
+        "cmd": 2,
+        "tris": 432,
+        "je": {
+         "k0": 1,
+         "k1": 1
+        },
+        "jeTris": {
+         "k0": 384,
+         "k1": 48
+        },
+        "inst": 0,
+        "exemplare": 0,
+        "dMin": null,
+        "dMax": null,
+        "inhalt": {
+         "k0": [
+          {
+           "klasse": "f:feuerstelle:L3",
+           "stufe": 3,
+           "art": "ausstattung",
+           "zellen": 16,
+           "tris": 384,
+           "eintraege": [
+            141,
+            158,
+            467,
+            701,
+            705,
+            95,
+            97,
+            115,
+            116,
+            117,
+            157,
+            293,
+            294,
+            700,
+            699,
+            698
+           ]
+          }
+         ],
+         "k1": [
+          {
+           "klasse": "f:feuerstelle:L3",
+           "stufe": 3,
+           "art": "ausstattung",
+           "zellen": 2,
+           "tris": 48,
+           "eintraege": [
+            467,
+            705
+           ]
+          }
+         ]
+        }
+       },
+       {
+        "klasse": "f:tanne:L0",
+        "stufe": 0,
+        "art": "tree",
+        "cmd": 2,
+        "tris": 15992,
+        "je": {
+         "haupt": 2
+        },
+        "jeTris": {
+         "haupt": 15992
+        },
+        "inst": 5,
+        "exemplare": 1,
+        "dMin": 10,
+        "dMax": 15
+       },
+       {
+        "klasse": "nahWiese:L1",
+        "stufe": 1,
+        "art": null,
+        "cmd": 2,
+        "tris": 31392,
+        "je": {
+         "haupt": 2
+        },
+        "jeTris": {
+         "haupt": 31392
+        },
+        "inst": 31,
+        "exemplare": 30,
+        "dMin": 2,
+        "dMax": 5
+       },
+       {
+        "klasse": "nahWiese:L2",
+        "stufe": 2,
+        "art": null,
+        "cmd": 2,
+        "tris": 33112,
+        "je": {
+         "haupt": 2
+        },
+        "jeTris": {
+         "haupt": 33112
+        },
+        "inst": 311,
+        "exemplare": 294,
+        "dMin": 5,
+        "dMax": 16
+       },
+       {
+        "klasse": "bauSatz",
+        "stufe": null,
+        "art": null,
+        "cmd": 2,
+        "tris": 8330,
+        "je": {
+         "haupt": 2
+        },
+        "jeTris": {
+         "haupt": 8330
+        },
+        "inst": 2,
+        "exemplare": 1,
+        "dMin": 1243,
+        "dMax": 1243,
+        "inhalt": {
+         "haupt": [
+          {
+           "klasse": "f:feuerstelle:L1",
+           "stufe": 1,
+           "art": "ausstattung",
+           "zellen": 28,
+           "tris": 8330,
+           "eintraege": [
+            141,
+            158,
+            467,
+            701,
+            705,
+            97,
+            115,
+            116,
+            117,
+            157,
+            293,
+            294,
+            700,
+            699
+           ]
+          }
+         ]
+        }
+       },
+       {
+        "klasse": "feld-pass",
+        "stufe": null,
+        "art": null,
+        "cmd": 2,
+        "tris": 13,
+        "je": {
+         "haupt": 2
+        },
+        "jeTris": {
+         "haupt": 13
+        },
+        "inst": 2,
+        "exemplare": 2,
+        "dMin": 1243,
+        "dMax": 1243
+       },
+       {
+        "klasse": "Render Pipeline",
+        "stufe": null,
+        "art": null,
+        "cmd": 1,
+        "tris": 1,
+        "je": {
+         "OrthographicCamera": 1
+        },
+        "jeTris": {
+         "OrthographicCamera": 1
+        },
+        "inst": 0,
+        "exemplare": 0,
+        "dMin": null,
+        "dMax": null
+       },
+       {
+        "klasse": "TRAA",
+        "stufe": null,
+        "art": null,
+        "cmd": 1,
+        "tris": 1,
+        "je": {
+         "OrthographicCamera": 1
+        },
+        "jeTris": {
+         "OrthographicCamera": 1
+        },
+        "inst": 0,
+        "exemplare": 0,
+        "dMin": null,
+        "dMax": null
+       },
+       {
+        "klasse": "f:weide:L1",
+        "stufe": 1,
+        "art": "tree",
+        "cmd": 1,
+        "tris": 358,
+        "je": {
+         "k0": 1
+        },
+        "jeTris": {
+         "k0": 358
+        },
+        "inst": 0,
+        "exemplare": 0,
+        "dMin": null,
+        "dMax": null
+       },
+       {
+        "klasse": "f:fichte:L0",
+        "stufe": 0,
+        "art": "tree",
+        "cmd": 1,
+        "tris": 4444,
+        "je": {
+         "haupt": 1
+        },
+        "jeTris": {
+         "haupt": 4444
+        },
+        "inst": 1,
+        "exemplare": 1,
+        "dMin": 17,
+        "dMax": 17
+       },
+       {
+        "klasse": "fimp:atlas:L2",
+        "stufe": 2,
+        "art": null,
+        "cmd": 1,
+        "tris": 904,
+        "je": {
+         "haupt": 1
+        },
+        "jeTris": {
+         "haupt": 904
+        },
+        "inst": 452,
+        "exemplare": 384,
+        "dMin": 28,
+        "dMax": 239
+       },
+       {
+        "klasse": "himmel",
+        "stufe": null,
+        "art": null,
+        "cmd": 1,
+        "tris": 1984,
+        "je": {
+         "haupt": 1
+        },
+        "jeTris": {
+         "haupt": 1984
+        },
+        "inst": 1,
+        "exemplare": 1,
+        "dMin": 0,
+        "dMax": 0
+       },
+       {
+        "klasse": "dorf-rauch",
+        "stufe": null,
+        "art": null,
+        "cmd": 1,
+        "tris": 312,
+        "je": {
+         "haupt": 1
+        },
+        "jeTris": {
+         "haupt": 312
+        },
+        "inst": 26,
+        "exemplare": 11,
+        "dMin": 1221,
+        "dMax": 1222
+       },
+       {
+        "klasse": "himmel-sonne",
+        "stufe": null,
+        "art": null,
+        "cmd": 1,
+        "tris": 480,
+        "je": {
+         "haupt": 1
+        },
+        "jeTris": {
+         "haupt": 480
+        },
+        "inst": 1,
+        "exemplare": 1,
+        "dMin": 395,
+        "dMax": 395
+       },
+       {
+        "klasse": "farWater",
+        "stufe": null,
+        "art": null,
+        "cmd": 1,
+        "tris": 364,
+        "je": {
+         "haupt": 1
+        },
+        "jeTris": {
+         "haupt": 364
+        },
+        "inst": 1,
+        "exemplare": 1,
+        "dMin": 67,
+        "dMax": 67
+       }
+      ],
+      "vram": {
+       "mb": 110.3,
+       "puffer": 22.1,
+       "texturen": 88.1,
+       "spitze": 116,
+       "gc": 0,
+       "liste": [
+        {
+         "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+         "mb": 15.82,
+         "n": 1
+        },
+        {
+         "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+         "mb": 15.82,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:bodenSatz",
+         "mb": 12.946,
+         "n": 8
+        },
+        {
+         "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+         "mb": 8,
+         "n": 1
+        },
+        {
+         "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+         "mb": 8,
+         "n": 1
+        },
+        {
+         "k": "tex:output rg11b10ufloat 1920x1080x1",
+         "mb": 7.91,
+         "n": 1
+        },
+        {
+         "k": "tex:depth depth24plus 1920x1080x1",
+         "mb": 7.91,
+         "n": 1
+        },
+        {
+         "k": "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1",
+         "mb": 3.955,
+         "n": 1
+        },
+        {
+         "k": "tex:szene:tiefenabbild r32float 960x1080x1",
+         "mb": 3.955,
+         "n": 1
+        },
+        {
+         "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18",
+         "mb": 2.999,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:streuSatz",
+         "mb": 2.122,
+         "n": 16
+        },
+        {
+         "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+         "mb": 2,
+         "n": 1
+        },
+        {
+         "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+         "mb": 2,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:bauSatz",
+         "mb": 1.911,
+         "n": 14
+        },
+        {
+         "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+         "mb": 1.875,
+         "n": 1
+        },
+        {
+         "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18",
+         "mb": 1.499,
+         "n": 1
+        },
+        {
+         "k": "tex:laub-cluster-atlas bc3-rgba-unorm-srgb 2048x512x1",
+         "mb": 1.333,
+         "n": 1
+        },
+        {
+         "k": "tex:fluss-karte:fern r8unorm 1024x1024x1",
+         "mb": 1,
+         "n": 1
+        },
+        {
+         "k": "tex:fluss-karte:nah r8unorm 1024x1024x1",
+         "mb": 1,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:fern-ring",
+         "mb": 0.926,
+         "n": 19
+        },
+        {
+         "k": "tex:rausch-atlas rgba8unorm 768x256x1",
+         "mb": 0.75,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:spieler",
+         "mb": 0.694,
+         "n": 39
+        },
+        {
+         "k": "tex:PMREM.cubeUv rgba16float 336x128x1",
+         "mb": 0.656,
+         "n": 2
+        },
+        {
+         "k": "tex:welt-march-liste rgba32float 4096x8x1",
+         "mb": 0.5,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:f:fichte:L1",
+         "mb": 0.441,
+         "n": 81
+        },
+        {
+         "k": "buf:szene:formationenSatz",
+         "mb": 0.434,
+         "n": 6
+        },
+        {
+         "k": "buf:szene:f:tanne:L1",
+         "mb": 0.418,
+         "n": 81
+        },
+        {
+         "k": "tex:PMREM.cubeUv:tiefe depth24plus 336x128x1",
+         "mb": 0.328,
+         "n": 2
+        },
+        {
+         "k": "buf:szene:f:birke:L1",
+         "mb": 0.308,
+         "n": 63
+        },
+        {
+         "k": "buf:szene:f:birke:L0",
+         "mb": 0.267,
+         "n": 18
+        },
+        {
+         "k": "buf:szene:f:tanne:L0",
+         "mb": 0.256,
+         "n": 18
+        },
+        {
+         "k": "tex:kronen-streu:fern r8unorm 512x512x1",
+         "mb": 0.25,
+         "n": 1
+        },
+        {
+         "k": "tex:kronen-streu:nah r8unorm 512x512x1",
+         "mb": 0.25,
+         "n": 1
+        },
+        {
+         "k": "tex:welt-march-kapseln rgba32float 4096x4x1",
+         "mb": 0.25,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:himmel-sterne",
+         "mb": 0.246,
+         "n": 8
+        },
+        {
+         "k": "buf:szene:dsl-insel",
+         "mb": 0.206,
+         "n": 12
+        },
+        {
+         "k": "buf:szene:nahWiese:L1",
+         "mb": 0.191,
+         "n": 16
+        },
+        {
+         "k": "buf:szene:fimp:atlas:L2",
+         "mb": 0.18,
+         "n": 6
+        },
+        {
+         "k": "buf:szene:f:eiche:L1",
+         "mb": 0.144,
+         "n": 36
+        },
+        {
+         "k": "buf:szene:f:fichte:L0",
+         "mb": 0.136,
+         "n": 8
+        },
+        {
+         "k": "buf:szene:bauWurf",
+         "mb": 0.079,
+         "n": 7
+        },
+        {
+         "k": "buf:szene:nahWiese:L2",
+         "mb": 0.046,
+         "n": 16
+        },
+        {
+         "k": "tex:himmel-umgebung rgba8unorm-srgb 128x64x1",
+         "mb": 0.042,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:himmel",
+         "mb": 0.036,
+         "n": 3
+        },
+        {
+         "k": "buf:szene:f:weide:L1",
+         "mb": 0.028,
+         "n": 9
+        },
+        {
+         "k": "buf:bindingBuffer#_object_(vertex,fragment,compute)",
+         "mb": 0.022,
+         "n": 116
+        },
+        {
+         "k": "buf:szene:farWater",
+         "mb": 0.02,
+         "n": 6
+        },
+        {
+         "k": "buf:buffer_timestamp_resolve_render",
+         "mb": 0.016,
+         "n": 1
+        },
+        {
+         "k": "buf:buffer_timestamp_result_render",
+         "mb": 0.016,
+         "n": 1
+        },
+        {
+         "k": "tex:fern-krone-nah rgba8unorm-srgb 64x64x1",
+         "mb": 0.016,
+         "n": 1
+        },
+        {
+         "k": "buf:bindingBufferundefined_UniformBuffer_#_(vertex)",
+         "mb": 0.014,
+         "n": 10
+        },
+        {
+         "k": "buf:bindingBuffer#_render_(vertex,fragment,compute)",
+         "mb": 0.013,
+         "n": 28
+        },
+        {
+         "k": "buf:szene:fscatter:fichte:L1",
+         "mb": 0.01,
+         "n": 30
+        },
+        {
+         "k": "buf:szene:himmel-sonne",
+         "mb": 0.009,
+         "n": 3
+        },
+        {
+         "k": "tex:portal-membran rgba8unorm 64x16x1",
+         "mb": 0.004,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:fscatter:tanne:L1",
+         "mb": 0.003,
+         "n": 10
+        },
+        {
+         "k": "tex:fern-ring-maske rgba8unorm 27x27x1",
+         "mb": 0.003,
+         "n": 1
+        },
+        {
+         "k": "buf:szene:dorf-rauch",
+         "mb": 0.002,
+         "n": 5
+        },
+        {
+         "k": "tex:DFG_LUT rg16float 16x16x1",
+         "mb": 0.001,
+         "n": 1
+        },
+        {
+         "k": "buf:bindingBufferundefined_UniformBuffer_#_(fragment)",
+         "mb": 0.001,
+         "n": 12
+        },
+        {
+         "k": "buf:szene:feld-pass",
+         "mb": 0,
+         "n": 3
+        },
+        {
+         "k": "buf:bild:vertex",
+         "mb": 0,
+         "n": 2
+        },
+        {
+         "k": "buf:?",
+         "mb": 0,
+         "n": 2
+        },
+        {
+         "k": "tex:TRAANode.vortiefe depth24plus 1x1x1",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "k": "tex:szene:tiefenabbild:bruch depth24plus 1x1x1",
+         "mb": 0,
+         "n": 1
+        }
+       ]
+      },
+      "texturen": {
+       "n": 32,
+       "mb": 66.48,
+       "erzeuger": [
+        {
+         "erzeuger": "TRAANode.resolve",
+         "mb": 15.82,
+         "n": 1
+        },
+        {
+         "erzeuger": "kaskade0",
+         "mb": 8,
+         "n": 1
+        },
+        {
+         "erzeuger": "kaskade1",
+         "mb": 8,
+         "n": 1
+        },
+        {
+         "erzeuger": "output",
+         "mb": 7.91,
+         "n": 1
+        },
+        {
+         "erzeuger": "depth",
+         "mb": 7.91,
+         "n": 1
+        },
+        {
+         "erzeuger": "wege-karte",
+         "mb": 4,
+         "n": 2
+        },
+        {
+         "erzeuger": "TRAANode.history",
+         "mb": 3.96,
+         "n": 2
+        },
+        {
+         "erzeuger": "szene",
+         "mb": 3.96,
+         "n": 2
+        },
+        {
+         "erzeuger": "fluss-karte",
+         "mb": 2,
+         "n": 2
+        },
+        {
+         "erzeuger": "feld-pass-panorama",
+         "mb": 1.88,
+         "n": 1
+        },
+        {
+         "erzeuger": "PMREM.cubeUv",
+         "mb": 0.98,
+         "n": 4
+        },
+        {
+         "erzeuger": "rausch-atlas",
+         "mb": 0.75,
+         "n": 1
+        },
+        {
+         "erzeuger": "kronen-streu",
+         "mb": 0.5,
+         "n": 2
+        },
+        {
+         "erzeuger": "welt-march-liste",
+         "mb": 0.5,
+         "n": 1
+        },
+        {
+         "erzeuger": "welt-march-kapseln",
+         "mb": 0.25,
+         "n": 1
+        },
+        {
+         "erzeuger": "himmel-umgebung",
+         "mb": 0.04,
+         "n": 1
+        },
+        {
+         "erzeuger": "fern-krone-nah",
+         "mb": 0.02,
+         "n": 1
+        },
+        {
+         "erzeuger": "portal-membran",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "erzeuger": "fern-ring-maske",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "erzeuger": "DFG_LUT",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "erzeuger": "TRAANode.vortiefe",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "erzeuger": "laub-cluster-atlas",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "erzeuger": "karte-albedo",
+         "mb": 0,
+         "n": 1
+        },
+        {
+         "erzeuger": "karte-normal",
+         "mb": 0,
+         "n": 1
+        }
+       ],
+       "unbenannt": []
+      }
+     }
+    }
+   },
+   "ms": 50289,
+   "befunde": [
+    "BAND-LINSE ratsche: boden haupt: 87219 dreiecke über der Ratsche 70379 (Täter: fern-ring, bodenSatz, farWater)",
+    "BAND-LINSE ratsche: nahWiese haupt: 64504 dreiecke über der Ratsche 57046 (Täter: nahWiese:L2, nahWiese:L1)",
+    "BAND-LINSE ratsche: baum haupt: 31 befehle über der Ratsche 24 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+    "BAND-LINSE ratsche: baum haupt: 83060 dreiecke über der Ratsche 62336 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+    "BAND-LINSE ratsche: baum k0: 16 befehle über der Ratsche 9 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+    "BAND-LINSE ratsche: baum k0: 20452 dreiecke über der Ratsche 12950 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+    "BAND-LINSE ratsche: Summe (gebunden) 88 Befehle über der Ratsche 79",
+    "BAND-LINSE weit: boden k0 dreiecke: Ratsche 48972 über der Messung 39742 — zu weit",
+    "BAND-LINSE weit: busch haupt befehle: Ratsche 4 über der Messung 0 — zu weit",
+    "BAND-LINSE weit: busch haupt dreiecke: Ratsche 11672 über der Messung 0 — zu weit",
+    "BAND-LINSE weit: busch k0 dreiecke: Ratsche 6120 über der Messung 0 — zu weit",
+    "BAND-LINSE weit: streu haupt dreiecke: Ratsche 30386 über der Messung 22032 — zu weit",
+    "BAND-LINSE weit: bau haupt dreiecke: Ratsche 17850 über der Messung 8330 — zu weit",
+    "BAND-LINSE weit: einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13514 — zu weit",
+    "BAND-LINSE weit: VRAM buf:szene: Ratsche 27.3 über der Messung 22.1 — zu weit",
+    "BAND-LINSE weit: VRAM (gebunden): Ratsche 112.4 über der Messung 110.3 — zu weit"
+   ],
+   "wache": {
+    "wetter": {
+     "seq": 27,
+     "wetter": "sunny",
+     "uhr": -999999838.1,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 18,
+       "t": 138393,
+       "uhr": -999999882.7
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 19,
+       "t": 143097,
+       "uhr": -999999878
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 20,
+       "t": 147822,
+       "uhr": -999999873.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 21,
+       "t": 152536,
+       "uhr": -999999868.6
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 22,
+       "t": 157264,
+       "uhr": -999999863.9
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 23,
+       "t": 161997,
+       "uhr": -999999859.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 24,
+       "t": 166736,
+       "uhr": -999999854.4
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 25,
+       "t": 171438,
+       "uhr": -999999849.7
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 26,
+       "t": 176180,
+       "uhr": -999999844.9
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 27,
+       "t": 180922,
+       "uhr": -999999840.2
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 15,
+     "gehalten": true,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 104,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 4
+   },
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  {
+   "name": "profil",
+   "ergebnis": {
+    "gesampeltMs": 15478,
+    "selbst": [
+     " 33.2 %    5132 ms  (idle) :0",
+     " 21.8 %    3374 ms  (program) :0",
+     "  3.4 %     523 ms  tickAffordances 15a.js:2377",
+     "  3.3 %     510 ms  _tickRadiatingAffordances 15a.js:2236",
+     "  2.0 %     310 ms  updateMatrixWorld three.core.min.js:6",
+     "  1.6 %     247 ms  loop 25a.js:1891",
+     "  1.3 %     196 ms  updateCreatures 06c.js:2631",
+     "  1.0 %     151 ms  update three.webgpu.min.js:6",
+     "  0.9 %     132 ms  _weltFeldMatrix 11d.js:710",
+     "  0.7 %     111 ms  updateByType three.webgpu.min.js:6",
+     "  0.7 %     102 ms  get three.webgpu.min.js:6",
+     "  0.6 %      99 ms  _projectObject three.webgpu.min.js:6",
+     "  0.6 %      96 ms  zeichne 07.js:1223",
+     "  0.6 %      96 ms  equals three.webgpu.min.js:6",
+     "  0.6 %      96 ms  talgrund gelaende-core.js:837",
+     "  0.6 %      89 ms  (garbage collector) :0",
+     "  0.5 %      79 ms  AnazhRealm._diaetRefresh 26c.js:1667",
+     "  0.5 %      74 ms  _kreaturHuellenKontakt 06c.js:1057",
+     "  0.4 %      68 ms  _update three.webgpu.min.js:6",
+     "  0.4 %      66 ms  setVertexBuffer :0",
+     "  0.4 %      64 ms  submit :0",
+     "  0.4 %      62 ms  _loopWeatherAndGrowth 25b.js:1419",
+     "  0.4 %      62 ms  updateForRender three.webgpu.min.js:6",
+     "  0.4 %      56 ms  _terrainColumnContextIn 08.js:441",
+     "  0.4 %      56 ms  writeTexture :0",
+     "  0.4 %      55 ms  writeBuffer :0",
+     "  0.4 %      54 ms  AnazhRealm._diaetGeteiltSchreiben 26c.js:1630",
+     "  0.3 %      54 ms  _tickKreaturZiegel 06c.js:2459",
+     "  0.3 %      51 ms  beginRenderPass :0",
+     "  0.3 %      50 ms  multiplyMatrices three.core.min.js:6",
+     "  0.3 %      46 ms  renderer._renderObjectDirect 07.js:1252",
+     "  0.3 %      45 ms  _tickBlueprintPrebake 17a.js:485",
+     "  0.3 %      45 ms  _kaskadenWerferOben 25c.js:1015",
+     "  0.3 %      44 ms  _draw three.webgpu.min.js:6",
+     "  0.3 %      44 ms  _applyDayNightToScene 24.js:79",
+     "  0.3 %      43 ms  _bodenSichtAt 06a.js:936",
+     "  0.3 %      43 ms  _instanzWahlPass 25c.js:1702",
+     "  0.3 %      41 ms  draw three.webgpu.min.js:6",
+     "  0.3 %      40 ms  getPropertyValue :0",
+     "  0.2 %      38 ms  noise2D simplex-noise.js:83",
+     "  0.2 %      37 ms  _tickScatterStreaming 15b.js:1877",
+     "  0.2 %      35 ms  push three.webgpu.min.js:6",
+     "  0.2 %      34 ms  leib 25b.js:1857",
+     "  0.2 %      33 ms  getCacheKey three.webgpu.min.js:6",
+     "  0.2 %      33 ms  setBindGroup :0",
+     "  0.2 %      32 ms  getCurrentTexture :0",
+     "  0.2 %      31 ms  _renderScene three.webgpu.min.js:6",
+     "  0.2 %      31 ms  getForRender three.webgpu.min.js:6",
+     "  0.2 %      30 ms  _runFrameScheduler 25b.js:1773",
+     "  0.2 %      30 ms  flaeche gelaende-core.js:861",
+     "  0.2 %      29 ms  _builtRingRadius 09.js:62",
+     "  0.2 %      28 ms  run 25b.js:1580",
+     "  0.2 %      28 ms  _passSicht 25c.js:1231",
+     "  0.2 %      28 ms  updateBefore three.webgpu.min.js:6",
+     "  0.2 %      27 ms  _wasserBildAt 09.js:1209",
+     "  0.2 %      25 ms  now :0",
+     "  0.2 %      24 ms  _loopRender 25c.js:2048",
+     "  0.2 %      24 ms  _standRuht 25b.js:1706",
+     "  0.2 %      24 ms  updatePlayerEmotions 03b.js:779",
+     "  0.2 %      23 ms  requestAnimationFrame :0"
+    ],
+    "gesamt": [
+     "100.0 %   15478 ms  (root) :0",
+     " 44.2 %    6836 ms  e three.webgpu.min.js:6",
+     " 43.8 %    6787 ms  (anonym) pptr:evaluate;IncomingMessage.%3Canonymous%3E%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-i546b%5Cscripts%5Cwerkbank.cjs%3A2232%3A42):30",
+     " 43.6 %    6744 ms  loop 25a.js:1891",
+     " 33.2 %    5132 ms  (idle) :0",
+     " 21.8 %    3374 ms  (program) :0",
+     " 18.6 %    2884 ms  _loopRender 25c.js:2048",
+     " 18.1 %    2802 ms  render three.webgpu.min.js:6",
+     " 18.1 %    2794 ms  (anonym) pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-i546b%5Cscripts%5Cwerkbank.cjs%3A891%3A20):29",
+     " 18.0 %    2789 ms  renderer._renderScene 07.js:986",
+     " 18.0 %    2783 ms  _renderScene three.webgpu.min.js:6",
+     " 17.3 %    2684 ms  _renderObjects three.webgpu.min.js:6",
+     " 17.3 %    2683 ms  renderer.renderObject 07.js:1159",
+     " 17.3 %    2683 ms  renderObject three.webgpu.min.js:6",
+     " 17.3 %    2682 ms  renderer._renderObjectDirect 07.js:1252",
+     " 17.2 %    2662 ms  zeichne 07.js:1223",
+     " 17.0 %    2628 ms  updateBefore three.webgpu.min.js:6",
+     " 17.0 %    2624 ms  updateBefore TRAANode.js:346",
+     "  7.3 %    1123 ms  o.needsRefresh 10.js:69",
+     "  7.2 %    1112 ms  AnazhRealm._diaetRefresh 26c.js:1667",
+     "  7.1 %    1091 ms  tickAffordances 15a.js:2377",
+     "  6.5 %    1008 ms  renderer._renderBundles 07.js:1027",
+     "  6.5 %    1003 ms  _renderBundles three.webgpu.min.js:6",
+     "  6.5 %    1001 ms  renderer._renderBundle 07.js:943",
+     "  6.4 %     992 ms  _renderBundle three.webgpu.min.js:6",
+     "  6.3 %     980 ms  needsRefresh three.webgpu.min.js:6",
+     "  6.0 %     934 ms  AnazhRealm._diaetGeteiltSchreiben 26c.js:1630",
+     "  5.7 %     888 ms  _loopWeatherAndGrowth 25b.js:1419",
+     "  5.3 %     813 ms  updateCreatures 06c.js:2631",
+     "  4.8 %     749 ms  updateShadow three.webgpu.min.js:6",
+     "  4.8 %     744 ms  renderShadow three.webgpu.min.js:6",
+     "  3.3 %     511 ms  _tickRadiatingAffordances 15a.js:2236",
+     "  3.1 %     478 ms  i three.webgpu.min.js:6",
+     "  2.8 %     437 ms  _update three.webgpu.min.js:6",
+     "  2.4 %     373 ms  _loopVoxelStreaming 25b.js:1805",
+     "  2.4 %     366 ms  _runFrameScheduler 25b.js:1773",
+     "  2.3 %     350 ms  updateMatrixWorld three.core.min.js:6",
+     "  2.1 %     320 ms  update three.webgpu.min.js:6",
+     "  2.0 %     307 ms  _terrainColumnContextIn 08.js:441",
+     "  1.8 %     275 ms  _terrainBaseDensityAt 08.js:530",
+     "  1.7 %     262 ms  _passSicht 25c.js:1231",
+     "  1.7 %     256 ms  scene.onBeforeRender 25a.js:1428",
+     "  1.6 %     249 ms  draw three.webgpu.min.js:6",
+     "  1.6 %     245 ms  _loopCamera 25b.js:1999",
+     "  1.5 %     231 ms  tickDayNight 24.js:1257",
+     "  1.5 %     227 ms  wildnisY gelaende-core.js:1015",
+     "  1.4 %     215 ms  _applyDayNightToScene 24.js:79",
+     "  1.3 %     207 ms  _tickKreaturZiegel 06c.js:2459",
+     "  1.3 %     207 ms  _draw three.webgpu.min.js:6",
+     "  1.3 %     204 ms  _fieldSolid 11a.js:825",
+     "  1.3 %     197 ms  _dispatchFrameJobs 25b.js:1496",
+     "  1.2 %     179 ms  _ceilingHeadroom 25a.js:1753",
+     "  1.1 %     178 ms  _loopFixedStep 25a.js:2465",
+     "  1.1 %     175 ms  _runRaycast 24.js:1564",
+     "  1.1 %     173 ms  _stepFixedSim 25a.js:2444",
+     "  1.1 %     171 ms  _fieldRaycast 11a.js:937",
+     "  1.0 %     157 ms  get three.webgpu.min.js:6",
+     "  0.9 %     147 ms  _weltFeldMatrix 11d.js:710",
+     "  0.9 %     147 ms  flaeche gelaende-core.js:861",
+     "  0.9 %     146 ms  run 25b.js:1580"
+    ],
+    "fps": 55.8,
+    "frames": 670,
+    "wetterHalt": {
+     "vorher": "sunny",
+     "nachher": "sunny",
+     "uhrVorher": -999999838.1,
+     "uhrNachher": -999999824,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 28,
+       "t": 185830,
+       "uhr": -999999838.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 29,
+       "t": 190528,
+       "uhr": -999999833.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 30,
+       "t": 195237,
+       "uhr": -999999828.6
+      }
+     ],
+     "urteil": "GRUEN",
+     "taeter": [],
+     "verweigert": {
+      "rule:nexus → rainy": 3
+     }
+    },
+    "ms": 15524
+   },
+   "ms": 15526,
+   "befunde": [],
+   "wache": {
+    "wetter": {
+     "seq": 30,
+     "wetter": "sunny",
+     "uhr": -999999824,
+     "fest": true,
+     "buch": [
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 28,
+       "t": 185830,
+       "uhr": -999999838.1
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 29,
+       "t": 190528,
+       "uhr": -999999833.3
+      },
+      {
+       "art": "verweigert",
+       "von": "sunny",
+       "zu": "rainy",
+       "quelle": "rule:nexus",
+       "stapel": "weather ← dslEval ← _tickWorldRules ← (anonym)",
+       "seq": 30,
+       "t": 195237,
+       "uhr": -999999828.6
+      }
+     ]
+    },
+    "weltakt": {
+     "seq": 15,
+     "gehalten": true,
+     "blind": false,
+     "buch": []
+    },
+    "ort": {
+     "dorfZug": false,
+     "ortTakt": [],
+     "gier": 0,
+     "spieler": [
+      -900,
+      -850
+     ],
+     "kamera": "first",
+     "ort": "wiese",
+     "sicht": "ego"
+    },
+    "fenster": {
+     "innen": [
+      1920,
+      1080
+     ],
+     "puffer": [
+      1920,
+      1080
+     ]
+    },
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     },
+     "artenSicht": {
+      "bear": 1
+     }
+    },
+    "version": "18.546.0",
+    "stempel": {
+     "warnung": 0,
+     "ueberlauf": 0,
+     "spitze": 104,
+     "taeter": {},
+     "pool": {
+      "stand": 0,
+      "max": 2048
+     },
+     "an": true
+    },
+    "boot": {
+     "art": "erst",
+     "serie": null,
+     "ladungen": 1
+    },
+    "echt": true,
+    "fehler": [
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+     "[konsole] [AnazhRealm V18.546.0] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+    ],
+    "zerstoert": 0,
+    "ms": 3
+   },
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  }
+ ],
+ "befunde": [
+  "BAND-LINSE ratsche: boden haupt: 87219 dreiecke über der Ratsche 70379 (Täter: fern-ring, bodenSatz, farWater)",
+  "BAND-LINSE ratsche: nahWiese haupt: 64504 dreiecke über der Ratsche 57046 (Täter: nahWiese:L2, nahWiese:L1)",
+  "BAND-LINSE ratsche: baum haupt: 31 befehle über der Ratsche 24 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+  "BAND-LINSE ratsche: baum haupt: 83060 dreiecke über der Ratsche 62336 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+  "BAND-LINSE ratsche: baum k0: 16 befehle über der Ratsche 9 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+  "BAND-LINSE ratsche: baum k0: 20452 dreiecke über der Ratsche 12950 (Täter: fscatter:fichte:L1, f:tanne:L1, f:fichte:L1)",
+  "BAND-LINSE ratsche: Summe (gebunden) 88 Befehle über der Ratsche 79",
+  "BAND-LINSE weit: boden k0 dreiecke: Ratsche 48972 über der Messung 39742 — zu weit",
+  "BAND-LINSE weit: busch haupt befehle: Ratsche 4 über der Messung 0 — zu weit",
+  "BAND-LINSE weit: busch haupt dreiecke: Ratsche 11672 über der Messung 0 — zu weit",
+  "BAND-LINSE weit: busch k0 dreiecke: Ratsche 6120 über der Messung 0 — zu weit",
+  "BAND-LINSE weit: streu haupt dreiecke: Ratsche 30386 über der Messung 22032 — zu weit",
+  "BAND-LINSE weit: bau haupt dreiecke: Ratsche 17850 über der Messung 8330 — zu weit",
+  "BAND-LINSE weit: einzelstuecke k0 dreiecke: Ratsche 37964 über der Messung 13514 — zu weit",
+  "BAND-LINSE weit: VRAM buf:szene: Ratsche 27.3 über der Messung 22.1 — zu weit",
+  "BAND-LINSE weit: VRAM (gebunden): Ratsche 112.4 über der Messung 110.3 — zu weit"
+ ],
+ "kurz": {
+  "laufVoll": {
+   "fps": 57.6,
+   "frames": 1727,
+   "frameMs": {
+    "p50": 16.7,
+    "p95": 25,
+    "p99": 25.2,
+    "max": 66.3
+   },
+   "cpuTaktMs": {
+    "p50": 5,
+    "p95": 6.8,
+    "p99": 9.2,
+    "max": 57.2
+   },
+   "gpuDurchsatzMs": {
+    "p50": 17,
+    "p95": 20,
+    "p99": 22.3,
+    "max": 66
+   },
+   "renderEwmaMs": 3.26,
+   "befehle": {
+    "mittel": 85,
+    "max": 90
+   },
+   "dreiecke": {
+    "mittel": 458348,
+    "max": 494217
+   },
+   "vramMB": 110.1,
+   "stempelGueltig": true,
+   "takt": {
+    "mhz": 1748.7,
+    "min": 1404,
+    "max": 1835,
+    "temp": 82.5,
+    "watt": 65.9,
+    "drossel": {
+     "0x0000000000000001": 63,
+     "0x0000000000000000": 45,
+     "0x0000000000000004": 92
+    },
+    "n": 200
+   },
+   "wetter": "GRUEN",
+   "ruhe": true,
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  "laufFrei": {
+   "fps": 64,
+   "frames": 1921,
+   "frameMs": {
+    "p50": 16.7,
+    "p95": 16.9,
+    "p99": 24.9,
+    "max": 275
+   },
+   "cpuTaktMs": {
+    "p50": 4.5,
+    "p95": 6.2,
+    "p99": 9.5,
+    "max": 31.7
+   },
+   "gpuDurchsatzMs": {
+    "p50": 15.7,
+    "p95": 17.6,
+    "p99": 19.4,
+    "max": 276.5
+   },
+   "renderEwmaMs": 2.4,
+   "befehle": {
+    "mittel": 58,
+    "max": 73
+   },
+   "dreiecke": {
+    "mittel": 362202,
+    "max": 447030
+   },
+   "vramMB": 109.9,
+   "stempelGueltig": true,
+   "takt": {
+    "mhz": 1713.3,
+    "min": 1683,
+    "max": 1809,
+    "temp": 86,
+    "watt": 73.7,
+    "drossel": {
+     "0x0000000000000000": 6,
+     "0x0000000000000004": 127,
+     "0x0000000000000001": 68
+    },
+    "n": 201
+   },
+   "wetter": "GRUEN",
+   "ruhe": true,
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  "gpuBank": {
+   "0": {
+    "gpuJeFrameMs": 15.02,
+    "cpuJeFrameMs": 2.43,
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 1,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     }
+    },
+    "takt": {
+     "mhz": 1703.7,
+     "min": 1695,
+     "max": 1721,
+     "temp": 86,
+     "watt": 72.3,
+     "drossel": {
+      "0x0000000000000001": 1,
+      "0x0000000000000004": 2
+     },
+     "n": 3
+    }
+   },
+   "-0.88": {
+    "gpuJeFrameMs": 13.2,
+    "cpuJeFrameMs": 2.03,
+    "tiere": {
+     "gesamt": 11,
+     "sicht": 3,
+     "sichtNah": 0,
+     "schatten": {
+      "k0": 0,
+      "k1": 0
+     },
+     "arten": {
+      "bear": 5,
+      "deer": 2,
+      "fox": 4
+     }
+    },
+    "takt": {
+     "mhz": 1733,
+     "min": 1695,
+     "max": 1771,
+     "temp": 86,
+     "watt": 77,
+     "drossel": {
+      "0x0000000000000001": 1,
+      "0x0000000000000004": 1
+     },
+     "n": 2
+    }
+   }
+  },
+  "band": {
+   "urteil": "ROT",
+   "linse": "ROT",
+   "stempel": "GRUEN",
+   "gestellt": true,
+   "vramMB": 110.3,
+   "geraet": "gtx",
+   "sicht": "ego",
+   "rot": 18,
+   "befunde": 16,
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  },
+  "profil": {
+   "frames": 670,
+   "fps": 55.8,
+   "selbst": [
+    " 33.2 %    5132 ms  (idle) :0",
+    " 21.8 %    3374 ms  (program) :0",
+    "  3.4 %     523 ms  tickAffordances 15a.js:2377",
+    "  3.3 %     510 ms  _tickRadiatingAffordances 15a.js:2236",
+    "  2.0 %     310 ms  updateMatrixWorld three.core.min.js:6",
+    "  1.6 %     247 ms  loop 25a.js:1891",
+    "  1.3 %     196 ms  updateCreatures 06c.js:2631",
+    "  1.0 %     151 ms  update three.webgpu.min.js:6",
+    "  0.9 %     132 ms  _weltFeldMatrix 11d.js:710",
+    "  0.7 %     111 ms  updateByType three.webgpu.min.js:6",
+    "  0.7 %     102 ms  get three.webgpu.min.js:6",
+    "  0.6 %      99 ms  _projectObject three.webgpu.min.js:6"
+   ],
+   "tiere": {
+    "gesamt": 11,
+    "sicht": 1,
+    "sichtNah": 0,
+    "schatten": {
+     "k0": 0,
+     "k1": 0
+    },
+    "arten": {
+     "bear": 5,
+     "deer": 2,
+     "fox": 4
+    }
+   }
+  }
+ },
+ "urteil": "ROT",
+ "werkbankEnde": "stop",
+ "ende": "2026-10-14T08:24:32.819Z",
+ "werkbankLog": [
+  "[linse-gpu] nvidia/pascal",
+  "[seite] 2026-10-14T08:21:12.621Z navigiert http://localhost:4312/index.html",
+  "WERKBANK bereit: Steuer 127.0.0.1:4490 · Seite :4489",
+  "[seite] 2026-10-14T08:24:32.305Z GESCHLOSSEN",
+  "[seite] 2026-10-14T08:24:32.381Z Browser getrennt",
+  "[werkbank] Ende mit 0"
+ ]
+}
