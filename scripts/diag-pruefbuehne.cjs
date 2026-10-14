@@ -36,7 +36,6 @@
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 
@@ -656,7 +655,11 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Hülle ≥ 1 km ist die Ferne (das Panorama) und fällt, der Fern-Ring fällt an seinem Stempel (`userData.inventar`
 // "fern-ring", wie `licht-linsen` ihn liest): seit K16 trägt seine Schale 0 die Hülle 803 m (vorher 1 413 m) in zwei Teilen
 // (frei und Naht), die Kilometer-Regel nahm beide in die Nähe — der Schuss übersetzte 13 statt 11 Programme (lokal Schuss
-// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
+// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Der Portal-Nebel (`userData.inventar` "portal-nebel") fällt
+// an seinem Stempel: ein durchsichtiger Schleier vor dem Tor (kein Boden, kein Werfer, kein Empfänger), dessen Hülle (r 4,7–5,7 m
+// in 7,9–13,4 m) die Kugel streift — er trug das größte Programm des Schusses (139 967 Zeichen Fragment-WGSL von 354 645; auf dem
+// Runner Schuss 84 s neben 7–8 s je Schein ohne Übersetzen, die Frist riss im Schein farbe bei 145–171 s); ohne ihn Luma 0,7105 →
+// 0,7104, Farbton 37,6° gleich (gemessen 14.10.). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
 // Gemessen 12.10. (24 Kerne):
 // die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
 // mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
@@ -682,7 +685,7 @@ const S0_NAH_INSTALL = () => {
                 k = o.geometry.boundingSphere;
             }
             if (wurzel !== welt || !k) u = true;
-            else if (o.userData && o.userData.inventar === "fern-ring") u = false;
+            else if (o.userData && (o.userData.inventar === "fern-ring" || o.userData.inventar === "portal-nebel")) u = false;
             else {
                 kugel.copy(k).applyMatrix4(o.matrixWorld);
                 u =
@@ -742,7 +745,6 @@ const S0_STOFF = (() => {
 })();
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
-    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
@@ -768,13 +770,15 @@ async function lichtLauf() {
         }
     };
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        protocolTimeout: (S0_FRIST_S + 60) * 1000,
-        defaultViewport: ECHT ? null : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : linsenWebGpuArgs(),
+        frist: (S0_FRIST_S + 60) * 1000,
+        viewport: ECHT ? null : { width: 640, height: 360 },
+        zusatz: ECHT ? ["--window-size=1280,800"] : [],
     });
-    await adapterZeile(browser);
+    const { adapterZeile } = require("./lib/software-gpu.cjs");
+    const adapter = await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
@@ -1012,7 +1016,8 @@ async function lichtLauf() {
                         // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
                         // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
                         // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
-                        for (let i = 0; i < 2; i++) {
+                        // der Schein übersetzt nichts (dieselben Programme, nur Uniform-Werte): EINE Aufnahme mit ihren 32 Warm-Frames
+                        for (let i = 0; i < (schein ? 1 : 2); i++) {
                             r._schattenAlleNeu();
                             auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
@@ -1248,7 +1253,7 @@ async function lichtLauf() {
         pass = pass && getroffen && farbGetroffen && grossGetroffen;
     }
     console.log(
-        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : "swiftshader"} · Holz ${HOLZ})\n`
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
     );
     process.exit(pass ? 0 : 1);
 }

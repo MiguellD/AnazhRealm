@@ -5,7 +5,7 @@
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -55800,24 +55800,25 @@ async function checkBandRing6Workshop(ctx) {
     const server = await startSaveServer();
     console.log(`Lade ${SERVER_URL} für ${DURATION_MS / 1000}s ...`);
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        // Hängt ein page.evaluate (toter Renderer, detached frame), wird er nach diesem Timeout eine
-        // FANGBARE Rejection statt einer Endlos-Blockade — großzügig (≫ teuerstes Band ~57 s), aber endlich.
-        protocolTimeout: 240000,
-        args: [
-            // Das Gate läuft GPU-frei: der Null-Renderer (Default) braucht keinen GPU, und der swiftshader-
-            // GPU-Prozess crashte unter kumulativer Last im Schwanz (detached frame). PLAYTEST_REAL_RENDERER=1
-            // schaltet swiftshader zurück (nur für das Screenshot-Artefakt).
-            ...(REAL_RENDERER
-                ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
-                : ["--disable-gpu", "--disable-software-rasterizer"]),
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            // Ring 4: erlaubt AudioContext im Headless-Modus ohne User-Geste,
-            // sonst bleibt der Context im "suspended" und initSymphony tut nix.
-            "--autoplay-policy=no-user-gesture-required",
-        ],
+    // Der Browser über die EINE Weiche (scripts/lib/welt-boot.cjs) mit dem Fehler-Sammler an der Seite: jeder Seitenfehler,
+    // jedes console.error und jeder Absturz macht den Lauf ROT beim Namen, neben dem Urteil der Bänder.
+    const browser = await starteBrowser({
+        // Das Gate läuft GPU-frei: der Null-Renderer (Default) braucht keinen GPU, und der swiftshader-GPU-Prozess crashte
+        // unter kumulativer Last im Schwanz (detached frame). PLAYTEST_REAL_RENDERER=1 schaltet swiftshader zurück (nur für
+        // das Screenshot-Artefakt).
+        art: REAL_RENDERER ? "webgl" : "null",
+        // GPU-frei entsteht kein WebGL-Kontext: der Offscreen-Bäcker der Foundry (foundry-bruecke `__foundryBakeRenderer`)
+        // schließt dann zu (null) — r128 meldet das mit drei console.error, erwartet und beim Namen.
+        erwartet: REAL_RENDERER
+            ? null
+            : /THREE\.WebGLRenderer: (A WebGL context could not be created|Error creating WebGL context)/,
+        // Hängt ein page.evaluate (toter Renderer, detached frame), wird er nach dieser Frist eine FANGBARE Rejection statt
+        // einer Endlos-Blockade — großzügig (≫ teuerstes Band ~57 s), aber endlich.
+        frist: 240000,
+        // Ring 4: AudioContext im Headless-Modus ohne User-Geste (sonst bleibt er "suspended" und initSymphony tut nix).
+        zusatz: REAL_RENDERER
+            ? ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"]
+            : ["--disable-software-rasterizer", "--disable-setuid-sandbox", "--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });

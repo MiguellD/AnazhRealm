@@ -8,7 +8,6 @@
 // Die Bilder sind das GATE der Vollendungs-Welle; die Zahlen sind die Zwischen-Linse.
 //   node scripts/diag-parity.cjs [--skip-studio] [--skip-anazh]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 const PORT = Number(process.env.PARITY_PORT || 4399);
@@ -18,21 +17,11 @@ const server = statikServer();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const W = 960,
     H = 600;
-const LAUNCH = {
-    headless: true,
-    protocolTimeout: 600000,
-    args: [
-        "--use-angle=swiftshader",
-        "--enable-unsafe-swiftshader",
-        "--enable-webgl",
-        "--ignore-gpu-blocklist",
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-    ],
-};
+// WebGL2 auf swiftshader (das Rezept webgl der EINEN Weiche) samt WebGL-Schaltern der Parität
+const LAUNCH = { art: "webgl", frist: 600000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] };
 
 async function renderStudio() {
-    const browser = await puppeteer.launch(LAUNCH);
+    const browser = await starteBrowser(LAUNCH);
     const out = { ms: NaN, ok: false };
     try {
         const page = await browser.newPage();
@@ -84,7 +73,7 @@ async function renderStudio() {
 }
 
 async function renderAnazh() {
-    const browser = await puppeteer.launch(LAUNCH);
+    const browser = await starteBrowser(LAUNCH);
     const out = { ms: NaN, ok: false, scene: null };
     try {
         const page = await browser.newPage();

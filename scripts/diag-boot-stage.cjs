@@ -34,7 +34,6 @@
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -141,7 +140,6 @@ async function kaltLauf() {
     const SEK = Number(OPT("--sek", 120));
     // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
     // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
-    const { linsenWebGpuArgs, echteWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
     // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
@@ -149,14 +147,14 @@ async function kaltLauf() {
     const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
     const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
     fs.mkdirSync(profil, { recursive: true });
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        userDataDir: profil,
-        protocolTimeout: 600000,
-        defaultViewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : { width: 1280, height: 720 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1940,1200"] : linsenWebGpuArgs(),
+        profil,
+        frist: 600000,
+        viewport: ECHT ? { width: 1920, height: 1080, deviceScaleFactor: 1 } : { width: 1280, height: 720 },
+        zusatz: ECHT ? ["--window-size=1940,1200"] : [],
     });
-    await adapterZeile(browser);
     let out = null;
     try {
         const page = await browser.newPage();
