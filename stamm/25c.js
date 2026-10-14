@@ -2072,7 +2072,9 @@ class AnazhRealm_Z25c {
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
         // DIE KOSTEN AN DER ÄNDERUNG (Gebot 7): bewegt sich die Kamera (Gang, Drehung, die Kamera folgt dem Spieler), folgt
         // die nahe Kaskade jedem Frame im Regler-Takt und beide dürfen in einen Frame — der Schatten des gehenden Spielers
-        // stünde sonst jeden zweiten Frame einen Frame zurück. In Ruhe gilt je Frame höchstens eine Kaskade.
+        // stünde sonst jeden zweiten Frame einen Frame zurück. In Ruhe gilt je Frame höchstens eine Kaskade. Gemessen in
+        // EINER Sitzung (Genesis Third): stehend CPU-Takt p50/p95 5,7/7,4 → 5,25/6,95 ms (die Kamera in 0 von 2 700 Frames
+        // bewegt), gehend und drehend gleich — dort gilt das Gesetz vor 1410-3 (p95 21,7 gegen 22,6/23,1 ms).
         const cam = this.state.camera;
         const me = cam && cam.matrixWorld ? cam.matrixWorld.elements : null;
         let bewegt = false;
