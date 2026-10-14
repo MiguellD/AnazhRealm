@@ -46,8 +46,6 @@
             "fachwerk:haus:bend": "bend=1 an alemannisch L0: tris 159946 > 132000",
             "fachwerk:haus:doppel": "doppel=1 an alemannisch L0: tris 155208 > 132000",
             "fachwerk:haus:storeys": "storeys=12 an alemannisch L0: tris 150162 > 132000",
-            "koerper:koerper:hairVol": "hairVol=2 an mensch L0 (Host-Ofen): tris 166520 > 166000",
-            "koerper:koerper:tone": "tone=1 an mensch L0 (Host-Ofen): tris 166840 > 166000",
             "porta:gate:ruin": "ruin=1 an drachentor L0: draws 14 > 13",
             "porta:gate:wMason": "wMason=1 an drachentor L0: draws 14 > 13",
             "porta:gate:wMono": "wMono=1 an drachentor L0: draws 14 > 13",
