@@ -1,0 +1,181 @@
+{
+ "A": {
+  "L0": {
+   "dreiecke": 162412,
+   "budget": {
+    "stufe": 0,
+    "vorher": {
+     "tris": 162412,
+     "draws": 15
+    },
+    "nachher": {
+     "tris": 162412,
+     "draws": 8
+    },
+    "faltungen": 5
+   },
+   "je": {
+    "skin|haut|torso": 23272,
+    "skin|haut|arm-1": 2600,
+    "skin|haut|elbow-1": 1040,
+    "skin|haut|arm1": 2600,
+    "skin|haut|elbow1": 1040,
+    "skin|haut|lidTL": 520,
+    "skin|haut|lidBL": 520,
+    "skin|haut|lidTR": 520,
+    "skin|haut|lidBR": 520,
+    "skin|haut|hip-1": 2600,
+    "skin|haut|knee-1": 1040,
+    "skin|haut|ankle-1": 6760,
+    "skin|haut|hip1": 2600,
+    "skin|haut|knee1": 1040,
+    "skin|haut|ankle1": 6760,
+    "skin|haut|head": 14968,
+    "skin|haut|hand-1": 9984,
+    "skin|haut|hand1": 9860,
+    "unknown|auge|eyeL": 1040,
+    "unknown|auge|eyeR": 1040,
+    "unknown|auge|irisL": 520,
+    "unknown|auge|irisR": 520,
+    "hair|haar|head": 4628,
+    "unknown|stoff|mensch": 1560,
+    "haut|haut|huelle": 33500,
+    "unknown|stoff|huelle": 31360
+   }
+  },
+  "L1": {
+   "dreiecke": 38444,
+   "budget": {
+    "stufe": 1,
+    "vorher": {
+     "tris": 38444,
+     "draws": 15
+    },
+    "nachher": {
+     "tris": 38444,
+     "draws": 6
+    },
+    "faltungen": 8
+   },
+   "je": {
+    "skin|haut|huelle": 14400,
+    "unknown|auge|huelle": 480,
+    "hair|haar|huelle": 240,
+    "haut|haut|huelle": 11972,
+    "unknown|stoff|huelle": 11352
+   }
+  }
+ },
+ "B2": {
+  "L0": {
+   "dreiecke": 95683,
+   "budget": {
+    "stufe": 0,
+    "vorher": {
+     "tris": 95683,
+     "draws": 12
+    },
+    "nachher": {
+     "tris": 95683,
+     "draws": 8
+    },
+    "faltungen": 3
+   },
+   "je": {
+    "haut|haut|hand-1": 9984,
+    "haut|haut|hand1": 9860,
+    "haut|haut|head": 14968,
+    "haut|haut|arm-1": 520,
+    "haut|haut|arm1": 520,
+    "unknown|auge|eyeL": 1040,
+    "unknown|auge|eyeR": 1040,
+    "unknown|auge|irisL": 520,
+    "unknown|auge|irisR": 520,
+    "skin|haut|lidTL": 520,
+    "skin|haut|lidBL": 520,
+    "skin|haut|lidTR": 520,
+    "skin|haut|lidBR": 520,
+    "hair|haar|head": 4628,
+    "haut|haut|huelle": 18643,
+    "unknown|stoff|huelle": 31360
+   }
+  },
+  "L1": {
+   "dreiecke": 24338,
+   "budget": {
+    "stufe": 1,
+    "vorher": {
+     "tris": 24338,
+     "draws": 13
+    },
+    "nachher": {
+     "tris": 24338,
+     "draws": 6
+    },
+    "faltungen": 6
+   },
+   "je": {
+    "unknown|auge|huelle": 480,
+    "hair|haar|huelle": 240,
+    "haut|haut|huelle": 12506,
+    "unknown|stoff|huelle": 11112
+   }
+  }
+ },
+ "E3": {
+  "L0": {
+   "dreiecke": 39995,
+   "budget": {
+    "stufe": 0,
+    "vorher": {
+     "tris": 39995,
+     "draws": 12
+    },
+    "nachher": {
+     "tris": 39995,
+     "draws": 8
+    },
+    "faltungen": 3
+   },
+   "je": {
+    "haut|haut|hand-1": 3264,
+    "haut|haut|hand1": 3222,
+    "haut|haut|head": 6294,
+    "haut|haut|arm-1": 520,
+    "haut|haut|arm1": 520,
+    "unknown|auge|eyeL": 1040,
+    "unknown|auge|eyeR": 1040,
+    "unknown|auge|irisL": 520,
+    "unknown|auge|irisR": 520,
+    "skin|haut|lidTL": 520,
+    "skin|haut|lidBL": 520,
+    "skin|haut|lidTR": 520,
+    "skin|haut|lidBR": 520,
+    "hair|haar|head": 4628,
+    "haut|haut|huelle": 6095,
+    "unknown|stoff|huelle": 10252
+   }
+  },
+  "L1": {
+   "dreiecke": 13994,
+   "budget": {
+    "stufe": 1,
+    "vorher": {
+     "tris": 13994,
+     "draws": 13
+    },
+    "nachher": {
+     "tris": 13994,
+     "draws": 6
+    },
+    "faltungen": 6
+   },
+   "je": {
+    "unknown|auge|huelle": 480,
+    "hair|haar|huelle": 240,
+    "haut|haut|huelle": 8866,
+    "unknown|stoff|huelle": 4408
+   }
+  }
+ }
+}

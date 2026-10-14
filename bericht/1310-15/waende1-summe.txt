@@ -1,0 +1,13 @@
+04:52:41 asset-contract EXIT=1 ❌ ROT — erste Befunde:   • render-config: divergiert vom eingefrorenen JSON 
+04:55:07 regler-wirkt EXIT=1 ❌ BUDGET GEHEILT: koerper:koerper:hairVol — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerBudget.bruch) ❌ BUDGET GEHEILT: koerper:koerper:tone — die Zeile fällt im 
+04:55:29 kreatur-kosten EXIT=0   ✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze)  
+04:55:31 mensch-anatomie EXIT=0  ✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß). 
+04:55:32 koerper-kern EXIT=0 ✅ Selbsttest: alle drei injizierten Abweichungen erkannt (1458/1/5 Treffer). ✅ DER MENSCH IST EINER — Dial-Gitter 729 Punkte, 396659 Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmar
+04:59:02 koerper-stand EXIT=0   K1 Becken 0 cm · Sprung 0 cm · K2 Höhlen-Probe 2.2 cm · K3 Tier 0.06 m · K4 Leib−Karte Median 2.3 cm · Sohle−Karte Median 1.9 cm (p90 19.7) · Treppe 6.3 cm · K4 Fuge 0/2803 tragen · K5 
+04:59:19 koerper-bewegung EXIT=0   ✅ GRÜN — der Körper geht den Weg: Phase ∝ Distanz · Blend ohne Plopp · Füße am Boden · Tier am Hang  
+04:59:20 daten-contract EXIT=0  ✅ GRÜN — DER DATEN-VERTRAG v7 STEHT: die drei MESHFREI-Kerne erfüllen §8 (klang/motion-Schema, place none, B4-Bänder), die Skala kommt aus der EINEN Lab-Formel, und die Daten sind determinist
+04:59:46 ego-schatten EXIT=0  ✅ GRÜN — in der Ego-Sicht wirft der Leib 776 px Schatten am Boden, IoU 1 gegen dieselbe Pose in der 3rd-Person (776 px); die Haupt-Kamera sieht 0 Bildpunkte Leib, kein Leib-Mesh liegt auf Ebene 
+04:59:54 format EXIT=0   52 Teile auf 12 Arbeitern ✅ Alle Dateien formatiert (6.1 s). 
+05:00:01 lint EXIT=0 ✖ 2 problems (0 errors, 2 warnings)  
+05:00:28 playtest-fast EXIT=0  ✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll). 
+ENDE

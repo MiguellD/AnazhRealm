@@ -1,0 +1,8 @@
+05:22:18 asset-contract EXIT=0  ✅ GRÜN — der Generator trifft die eingefrorenen Goldens byte-genau (cv:1). Kein stiller Drift. 
+05:24:45 regler-wirkt EXIT=0   WURF gate verkalkt depth=0: der Zwilling wirft (17 640 über der Zeile, billiger als Stufe 0 mit 39 922) ✅ gate:regler-wirkt: 95/113 Regler wirken · 0 brechen · 18 tot = Ratsche 18 (Soll 0, Synt
+05:25:07 kreatur-kosten EXIT=0   ✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze)  
+05:25:08 studio-vertrag EXIT=0  ✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, must-ignore ist am Chokepoint verankert, und der Selb
+05:25:35 ego-schatten EXIT=0  ✅ GRÜN — in der Ego-Sicht wirft der Leib 776 px Schatten am Boden, IoU 1 gegen dieselbe Pose in der 3rd-Person (776 px); die Haupt-Kamera sieht 0 Bildpunkte Leib, kein Leib-Mesh liegt auf Ebene 
+05:25:44 format EXIT=0   52 Teile auf 12 Arbeitern ✅ Alle Dateien formatiert (6.1 s). 
+05:25:50 lint EXIT=0 ✖ 2 problems (0 errors, 2 warnings)  
+ENDE

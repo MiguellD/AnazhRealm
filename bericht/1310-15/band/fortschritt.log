@@ -1,0 +1,6 @@
+05:07:24 START A=9fb869a5 B=aba612c5+Arbeitsbaum Instrument=06b8975b
+05:08:54 gA1 fp=2673a0ec07b5d2ba 61 48 exit=0  laufVoll: 56.3 fps · Frame p50/p95/max 16.7/25.1/33.7 ms · CPU p50/p95 5.4/7.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.17 · Tiere 10 (Sicht 0, nah 0, Sc
+05:10:39 gB1 fp=8200ae97dabe1a33 61 48 exit=1  laufVoll: 55.6 fps · Frame p50/p95/max 16.7/25.1/33.7 ms · CPU p50/p95 5.8/8.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.38 · Tiere 10 (Sicht 0, nah 0, Sc
+05:12:24 gA2 fp=2673a0ec07b5d2ba 61 48 exit=0  laufVoll: 54.9 fps · Frame p50/p95/max 16.7/25.1/33.4 ms · CPU p50/p95 5.9/8.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.61 · Tiere 10 (Sicht 0, nah 0, Sc
+05:14:10 gB2 fp=8200ae97dabe1a33 61 48 exit=1  laufVoll: 55.3 fps · Frame p50/p95/max 16.7/25.1/33.5 ms · CPU p50/p95 5.9/8.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.48 · Tiere 10 (Sicht 0, nah 0, Sc
+05:14:29 ENDE
