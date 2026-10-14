@@ -120,3 +120,15 @@ Flackern), lokale Linsen auf swiftshader (Pipeline-Bau 42–292 s, gate:haus-wel
 - **Messplatz-Schutz:** der Runner nimmt keine Jobs an, solange das GPU-Schloss gehalten wird (ABAB, Ratschen) — sonst fälscht er die Zeiten.
 - **Sicherheit (das Repo MiguellD/AnazhRealm ist ÖFFENTLICH):** der Runner bekommt ein eigenes Label (z. B. `omen-gpu`), Jobs darauf NUR aus `push` auf eigene Zweige, nie aus `pull_request`; Repo-Einstellung „Require approval for all outside collaborators“ ist GESETZT (14.10., auf Weisung des Schöpfers per API, approval_policy all_external_contributors). Den Runner aus der offiziellen Quelle (github.com/actions/runner Releases) laden, Datei/Quelle/Größe vor dem Download nennen.
 - **Einrichtung:** die OMEN-Sitzung (Remote Control, koordination auftrag/) — Registrierungs-Token per API mit Admin-Recht (vorhanden).
+
+## NOTBREMSE 14.10. ~19:15 (Woche 98 %) — der Stand beim Anhalten
+
+| Zweig | Kopf | Zustand | nächster Schritt |
+|---|---|---|---|
+| main | 062ec357 (V18.546.1) | alles Gemessene des Tages | — |
+| boden-stufen | 9e2f9c7c | K51-3..6 auf main gemergt, Linsen grün (K51-6 CI 13/13 an c682ae9d), CI an 9e2f9c7c lief | **ERSTER Messauftrag:** OMEN-Gehend-ABAB gegen main 062ec357 (bericht/1410-uebergabe.md) → hält das Einströmen ≤ 33 ms, FF |
+| mess-wiese | d75c7ce9 | K55 + GTX-Ratschen, main gemergt; Rote: werk-im-wasser H/S, fahr-leben S4/L6/L8, hoehlen-sicht „hinaus“, koerper-stand K7 | Übergabe Temp\claude\mess-wiese\UEBERGABE.md; Täter nach Wirkung |
+| ci-diaet | 85463744 (WIP Notbremse) | CI-Diät angehalten mitten im Schnitt | Übergabe Temp\claude\ci-diaet\UEBERGABE.md (falls angelegt) und Commit-Rumpf lesen; Ziel volle Batterie ≤ 8 min; danach der OMEN-Runner (oben) |
+| takt-kreatur | (nur lokal, ohne Änderung) | K59 hatte noch nicht geschnitten | neu starten: Kreaturen außerhalb des Bilds 0,75 ms, updateMatrixWorld 0,44 ms (OMEN bericht/1410-3-takt.md) |
+
+Fork-PR-Freigabe steht auf `all_external_contributors` (Voraussetzung des OMEN-Runners). Notbremse-Lehre: erst bei 98 % bremsen, vorher keine Drosselung.
