@@ -551,7 +551,6 @@ class AnazhRealm_Z08 {
             const W = AnazhRealm.ORT_WAHL;
             let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
             for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
-            this._ensureHydroTilesAround(origin.x, origin.z, W.ringe * W.schrittM + reich);
             for (let ring = 0; ring <= W.ringe && !v2; ring++) {
                 const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
                 for (let i = 0; i < n && !v2; i++) {
@@ -560,6 +559,9 @@ class AnazhRealm_Z08 {
                         x: origin.x + Math.cos(a) * ring * W.schrittM,
                         z: origin.z + Math.sin(a) * ring * W.schrittM,
                     };
+                    // das Wasser des Kandidaten ist gekachelt, bevor er urteilt — je Kandidat, nie die ganze Suche voraus (eine neue
+                    // Kachel kostet ~200 ms; die Wahl reicht sie erst, wenn ihr Ring sie braucht)
+                    if (this._ensureHydroTilesAround(o.x, o.z, reich)) yield;
                     const k = globalThis.__fachwerkCore.ortPlan(plan, o, ctx);
                     mass.kandidaten++;
                     yield;
