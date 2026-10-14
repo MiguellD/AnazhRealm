@@ -48,6 +48,8 @@ const ROH = (() => {
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 const LATENZ_MS = 150;
+// (d) die Länge eines langen Takts bei B (ms): der Ghost braucht dann mehr als 10 Schritte je Takt (60 je Sekunde × 0,3 s = 18).
+const LANG_MS = 300;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
 
@@ -184,6 +186,7 @@ function installiere(alteTuer) {
         }
         return res;
     };
+    mp.p2pTickProbe = r.p2pTick; // (d) die langen Takte legen sich um die Probe, nie an ihr vorbei
     window.__mpPumpe = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
@@ -378,69 +381,133 @@ function bericht(p) {
         );
         await sleep(800);
 
-        // ── A läuft über die Tastatur, B sieht zu ──
-        const vorLauf = await pageA.evaluate(() => {
-            const p = window.anazhRealm.state.playerMesh.position;
-            return { x: p.x, y: p.y, z: p.z };
-        });
-        await pageB.evaluate((id) => {
-            const e = window.anazhRealm.state.p2p.peers.get(id);
-            window.__mp.blick = { pid: id, x: e.mesh.position.x, z: e.mesh.position.z };
-            window.__mp.blickBewegtAm = null;
-        }, idA);
-        await pageA.bringToFront();
-        await pageA.evaluate(() => {
-            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-            const p = window.anazhRealm.state.playerMesh.position;
-            window.__mp.eigenStart = { x: p.x, z: p.z };
-            window.__mp.eigenBewegtAm = null;
-        });
-        await pageA.keyboard.down("w");
-        await sleep(1600);
-        await pageA.keyboard.up("w");
-        await waitFor(
-            pageA,
-            () => {
+        // ── A läuft über die Tastatur, B sieht zu ── (ein Lauf: A geht 1,6 s, steht wieder, B zeigt ihn an dessen Ort)
+        const laufUndSicht = async () => {
+            const vorLauf = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
-                const prev = window.__mpP;
-                window.__mpP = { x: p.x, z: p.z };
-                return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
-            },
-            15000,
-            "A steht wieder"
-        );
-        await sleep(1200);
-        const wahrA = await pageA.evaluate(() => {
-            const p = window.anazhRealm.state.playerMesh.position;
-            return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
-        });
-        const sichtB = await pageB.evaluate((id) => {
-            const e = window.anazhRealm.state.p2p.peers.get(id);
-            const p = e.mesh.position;
-            return {
-                x: p.x,
-                y: p.y,
-                z: p.z,
-                art: e.meshKind,
-                sichtbar: e.mesh.visible,
-                gesehenAm: window.__mp.blickBewegtAm,
-            };
-        }, idA);
-        const lauf = Math.hypot(wahrA.x - vorLauf.x, wahrA.z - vorLauf.z);
-        const abstand = Math.hypot(sichtB.x - wahrA.x, sichtB.z - wahrA.z);
-        const latenz = wahrA.bewegtAm && sichtB.gesehenAm ? sichtB.gesehenAm - wahrA.bewegtAm : null;
-        roh.lauf = { ladeschirmMs: ladeMs, laufM: lauf, abstandM: abstand, latenzMs: latenz, wahrA, sichtB };
-        check("A lief über die Tastatur (> 1 m)", lauf > 1, `${lauf.toFixed(2)} m`);
+                return { x: p.x, y: p.y, z: p.z };
+            });
+            await pageB.evaluate((id) => {
+                const e = window.anazhRealm.state.p2p.peers.get(id);
+                window.__mp.blick = { pid: id, x: e.mesh.position.x, z: e.mesh.position.z };
+                window.__mp.blickBewegtAm = null;
+            }, idA);
+            await pageA.bringToFront();
+            await pageA.evaluate(() => {
+                if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                const p = window.anazhRealm.state.playerMesh.position;
+                window.__mp.eigenStart = { x: p.x, z: p.z };
+                window.__mp.eigenBewegtAm = null;
+                window.__mpP = undefined;
+            });
+            await pageA.keyboard.down("w");
+            await sleep(1600);
+            await pageA.keyboard.up("w");
+            await waitFor(
+                pageA,
+                () => {
+                    const p = window.anazhRealm.state.playerMesh.position;
+                    const prev = window.__mpP;
+                    window.__mpP = { x: p.x, z: p.z };
+                    return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
+                },
+                15000,
+                "A steht wieder"
+            );
+            await sleep(1200);
+            const wahrA = await pageA.evaluate(() => {
+                const p = window.anazhRealm.state.playerMesh.position;
+                return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
+            });
+            const sichtB = await pageB.evaluate((id) => {
+                const e = window.anazhRealm.state.p2p.peers.get(id);
+                const p = e.mesh.position;
+                const ls = e.lockstep;
+                return {
+                    x: p.x,
+                    y: p.y,
+                    z: p.z,
+                    art: e.meshKind,
+                    sichtbar: e.mesh.visible,
+                    gesehenAm: window.__mp.blickBewegtAm,
+                    rueckstau: ls ? ls.buf.length : null,
+                };
+            }, idA);
+            const lauf = Math.hypot(wahrA.x - vorLauf.x, wahrA.z - vorLauf.z);
+            const abstand = Math.hypot(sichtB.x - wahrA.x, sichtB.z - wahrA.z);
+            const latenz = wahrA.bewegtAm && sichtB.gesehenAm ? sichtB.gesehenAm - wahrA.bewegtAm : null;
+            return { lauf, abstand, latenz, wahrA, sichtB };
+        };
+        const sichtSatz = (l) =>
+            `Abstand ${l.abstand.toFixed(3)} m, Leib ${l.sichtB.art}, sichtbar=${l.sichtB.sichtbar}, ` +
+            `Rückstau ${l.sichtB.rueckstau} Schritte, Latenz ${l.latenz === null ? "n/a" : l.latenz + " ms"}`;
+        const l0 = await laufUndSicht();
+        roh.lauf = Object.assign({ ladeschirmMs: ladeMs }, l0);
+        check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m`);
         check(
             `B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
-            sichtB.sichtbar && abstand <= ABSTAND_M,
-            `Abstand ${abstand.toFixed(3)} m, Leib ${sichtB.art}, sichtbar=${sichtB.sichtbar}`
+            l0.sichtB.sichtbar && l0.abstand <= ABSTAND_M,
+            sichtSatz(l0)
         );
         console.log(
-            `  INFO Latenz A bewegt → B sieht: ${latenz === null ? "n/a" : latenz + " ms"} (Soll lokal ≤ ${LATENZ_MS} ms, in der CI berichtet)`
+            `  INFO Latenz A bewegt → B sieht: ${l0.latenz === null ? "n/a" : l0.latenz + " ms"} (Soll lokal ≤ ${LATENZ_MS} ms, in der CI berichtet)`
         );
-        if (!process.env.CI && latenz !== null)
-            check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, latenz <= LATENZ_MS, `${latenz} ms`);
+        if (!process.env.CI && l0.latenz !== null)
+            check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
+
+        // ── (d) LANGE TAKTE (K60): B trägt Takte von LANG_MS (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
+        // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
+        // (`_lockstepTickPeers`). Befund CI 38639169868: B unter seinem Ladeschirm, 56 Peer-Takte, A nach dem Lauf 1,924 m
+        // daneben ohne eine Regung — je Takt höchstens 10 Schritte, der Sender schickt 60 je Sekunde. Der Selbsttest gleich
+        // danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein Frame von 1/60 s): (d) muss ROT werden.
+        const langeTakte = (an, alteKappe) =>
+            pageB.evaluate(
+                (an, ms, alteKappe) => {
+                    const r = window.anazhRealm;
+                    const probe = window.__mp.p2pTickProbe;
+                    r.p2pTick = probe;
+                    delete r._lockstepTickPeers;
+                    if (!an) return;
+                    r.p2pTick = function (t) {
+                        const t0 = performance.now();
+                        while (performance.now() - t0 < ms) {
+                            /* ein langer Takt */
+                        }
+                        return probe.call(this, t);
+                    };
+                    if (alteKappe) {
+                        const echt = Object.getPrototypeOf(r)._lockstepTickPeers;
+                        r._lockstepTickPeers = function (nowMs) {
+                            this.state.p2p._lockstepTickMs = nowMs - 1000 / 60;
+                            return echt.call(this, nowMs);
+                        };
+                    }
+                },
+                an,
+                LANG_MS,
+                !!alteKappe
+            );
+        await langeTakte(true, false);
+        const l1 = await laufUndSicht();
+        await langeTakte(false);
+        roh.langeTakte = Object.assign({ taktMs: LANG_MS }, l1);
+        check(
+            `(d) lange Takte bei B (${LANG_MS} ms): B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
+            l1.lauf > 1 && l1.sichtB.sichtbar && l1.abstand <= ABSTAND_M,
+            `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)}` +
+                (l1.abstand > ABSTAND_M ? " — Täter _lockstepTickPeers: die Aufhol-Kappe zählt Frames statt Wanduhr" : "")
+        );
+        await sleep(1500); // B holt bei kurzen Takten auf
+        await langeTakte(true, true);
+        const l2 = await laufUndSicht();
+        await langeTakte(false);
+        roh.langeTakteAlteKappe = l2;
+        check(
+            "(d) Selbsttest: die alte Kappe je Frame macht (d) ROT",
+            l2.lauf > 1 && l2.abstand > ABSTAND_M,
+            `Lauf ${l2.lauf.toFixed(2)} m · ${sichtSatz(l2)} — (d) ${l2.abstand > ABSTAND_M ? "ROT" : "GRÜN, die Linse ist blind"}`
+        );
+        await sleep(1500);
 
         // ── (c) DAS CHAT-GRABEN REIST (K23) ──
         // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss

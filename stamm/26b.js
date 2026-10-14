@@ -783,9 +783,10 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 });
 
 // Lockstep-MP (nur Inputs übers Netz): `jitterReserve` = Frame-Reserve gegen Netz-Jitter (2 Frames
-// ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `maxStepsPerTick` = Aufhol-Burst-Kappe je Frame,
+// ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `aufholJeSchritt` = Aufhol-Burst-Kappe je Fix-Schritt WANDUHR (ein Takt
+// von dt Sekunden verbraucht höchstens aufholJeSchritt × dt/FIXED_DT, mindestens aufholJeSchritt — `_lockstepTickPeers`),
 // `driftMax` (m) = Ghost-vs-pos-Schwelle fürs Ent-Seeden (der 1-Hz-Anker heilt danach).
-AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, driftMax: 2.5 });
+AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, aufholJeSchritt: 10, driftMax: 2.5 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // Band 0 ist 5×5 (maxRing 2): seine Kante (~108 m) teilt Kaskade 0 und 1 des Schattens. (Die Deko-Bänder fielen 04.10.
