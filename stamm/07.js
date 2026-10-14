@@ -1089,14 +1089,14 @@ class AnazhRealm_Z07 {
             }
             // DAS BEFEHLS-BÜNDEL (K62 — ein Draw, dessen Befehl sich nicht ändert, kodiert nichts neu; r184 gelesen): r184
             // kodiert jeden direkten Draw in jedem Frame neu (`backend.draw` → `_draw`: setPipeline · setBindGroup je Gruppe ·
-            // setIndexBuffer · setVertexBuffer je Puffer · drawIndexed), auch wenn sich nichts davon änderte. Gemessen an Genesis
-            // Third (Radeon 890M, EINE Welt, Sonde je Station): 84 direkte Draws je Frame (61 Hauptbild, 22 Schatten), die
-            // Kodier-Rufe ~0,9 ms je Frame. Jetzt trägt jedes Render-Objekt sein EIGENES Bündel: `_befehlZeichnen` stempelt
-            // genau, was `_draw` kodieren würde (`_befehlStempel`); hielt der Stempel seit dem letzten Draw, zeichnet das
-            // Bündel an derselben Stelle des Passes (`executeBundles` — die Reihenfolge des Passes bleibt, auch Verdeckungs-
-            // Abfragen und Pass-Brüche um ihn), sonst kodiert der Draw roh. Ein Befehl, der sich je Frame ändert, nimmt nie auf;
-            // einer, der einen Frame hielt, nimmt einmal auf. Der Eingriff lebt am WebGPU-Backend: der GL-Rückfall tauscht in
-            // init() das Backend und kennt ihn nie.
+            // setIndexBuffer · setVertexBuffer je Puffer · drawIndexed), auch wenn sich nichts davon änderte: gemessen (Radeon
+            // 890M, Wiese Third) 12 µs je Draw, an Genesis Third 84 direkte Draws je Frame (61 Hauptbild, 22 Schatten). Jetzt
+            // trägt jedes Render-Objekt sein EIGENES Bündel: `_befehlZeichnen` stempelt genau, was `_draw` kodieren würde
+            // (`_befehlStempel`); hielt der Stempel, zeichnet das Bündel an derselben Stelle des Passes (`executeBundles` —
+            // die Reihenfolge des Passes bleibt, auch Verdeckungs-Abfragen und Pass-Brüche um ihn; 7–8 µs je Draw), sonst
+            // kodiert der Draw roh. Ein Befehl, der sich je Frame ändert, nimmt nie auf; einer, der `BEFEHL_REIFE` Draws hielt,
+            // nimmt einmal auf. Der Eingriff lebt am WebGPU-Backend: der GL-Rückfall tauscht in init() das Backend und kennt
+            // ihn nie.
             if (
                 typeof be._draw !== "function" ||
                 !be.pipelineUtils ||
@@ -1405,11 +1405,19 @@ class AnazhRealm_Z07 {
         const d = be.get(ro);
         if (AnazhRealm._befehlStempel(be, ro, d, pipe, bindungen, puffer, dp) !== true) {
             d._befehl = undefined;
+            d._befehlReife = 0;
             B.roh++;
             return kodiere.call(be, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets);
         }
         let b = d._befehl;
         if (b === undefined) {
+            // erst ein Befehl, der BEFEHL_REIFE Draws hielt, nimmt auf — einer, der flackert (eine Senke, deren Anzahl
+            // je zweiten Frame wechselt), zahlte je Wechsel eine Aufnahme und gewönne nie
+            d._befehlReife = (d._befehlReife | 0) + 1;
+            if (d._befehlReife < AnazhRealm.BEFEHL_REIFE) {
+                B.roh++;
+                return kodiere.call(be, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets);
+            }
             // r184s eigener Kodierer eines Bündels für diesen Render-Kontext (Farb- und Tiefen-Format, Proben), frisch gesetzt
             const auf = be.pipelineUtils.createBundleEncoder(ro.context, "befehl");
             kodiere.call(be, ro, info, kd, pipe, bindungen, puffer, dp, auf, {

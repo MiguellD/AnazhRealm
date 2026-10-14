@@ -1386,6 +1386,11 @@ AnazhRealm.WUCHS_DROSSEL_MS = 250;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
+// DAS BEFEHLS-BÜNDEL (`_befehlZeichnen`): so viele Draws muss der Stempel eines Befehls halten, bevor er sein Bündel aufnimmt.
+// Gemessen (Radeon 890M, Wiese Third, je Draw): eine Aufnahme 66–80 µs, ein roher Draw 12 µs, eine Wiedergabe 7–8 µs — eine
+// Aufnahme zahlt sich erst nach ~11 Wiedergaben aus. Gehend bricht fast nur die Anzahl der Senken (`instanz-zeichner`: 384 der
+// ~480 Aufnahmen eines Laufs); der Zeichen-Weg kostete je Frame gehend 557 µs bei Reife 1, 460 bei 4, 476 bei 8 (Stand 381/355/350).
+AnazhRealm.BEFEHL_REIFE = 4;
 // DIE PHASEN DES VORRATS (`_foundryPrefetchLibrary`, Merker `f._vorrat`): er wartet auf das erste Weltbild, dann bestellt er;
 // durch ist er false. Jeder Leser (Kalt-Zeile, Warm-Anker, gate:ankunft) nennt die Phase, nie nur „an".
 AnazhRealm.VORRAT_PHASE = Object.freeze({ wartet: "wartet auf das erste Bild", bestellt: "bestellt" });

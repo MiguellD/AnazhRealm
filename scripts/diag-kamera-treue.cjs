@@ -783,20 +783,21 @@ function buehne() {
                         A._befehlStempel = alt;
                     }
                 };
+                // ein Befehl nimmt auf, wenn sein Stempel BEFEHL_REIFE Draws hielt: so viele Schüsse und einer mehr stellen jedes Bündel
+                const reifen = async () => {
+                    for (let i = 0; i <= (A.BEFEHL_REIFE | 0); i++) await schuss();
+                };
                 blick(1);
-                await schuss();
-                await schuss();
+                await reifen();
                 const z0 = zahl();
                 for (let i = 0; i < 4; i++) await schuss();
                 const z1 = zahl();
                 befehl.stand = { auf: (z1.auf - z0.auf) / 4, roh: (z1.roh - z0.roh) / 4, wieder: (z1.wieder - z0.wieder) / 4 };
                 aendereBefehl(1);
-                await schuss(); // der Stempel bricht: roh
-                await schuss(); // er hielt einen Frame: aufgenommen
+                await reifen(); // der Stempel bricht (roh), hält, nimmt auf
                 const befehlBild = await mitStempel(null); // die Wiedergabe des neuen Bündels
                 const wahr = await mitStempel(() => false); // der rohe Weg
-                await schuss(); // die Bündel des Zustands stehen wieder (der Stempel hielt: aufgenommen)
-                await schuss();
+                await reifen(); // die Bündel dieses Zustands stehen wieder
                 aendereBefehl(2);
                 const taeterBild = await mitStempel(() => true);
                 const wahr2 = await mitStempel(() => false);
