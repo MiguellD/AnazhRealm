@@ -31,6 +31,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
@@ -78,7 +79,7 @@ const server = http.createServer((req, res) => {
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function",
             { timeout: 120000 }
         );
-        out = await page.evaluate(async () => {
+        out = await page.evaluate(async (stammDateien) => {
             const r = window.anazhRealm;
             const AR = r.constructor;
             const o = { fails: [], zahlen: {} };
@@ -444,7 +445,8 @@ const server = http.createServer((req, res) => {
 
             // ══ KONSUM-PROBEN (Lehre 5/6: verifiziere KONSUM, nicht Existenz) ══
             {
-                const src = await fetch("anazhRealm.js").then((x) => x.text());
+                // der Stamm-Text, wie die Seite ihn lädt: jede Stamm-Datei der EINEN Liste (scripts/lib/stamm.cjs)
+                const src = (await Promise.all(stammDateien.map((p) => fetch(p).then((x) => x.text())))).join("\n");
                 const count = (needle) => src.split(needle).length - 1;
                 if (!String(r.updateCreatures).includes("_waterFlowAt"))
                     fail("KONSUM: `updateCreatures` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
@@ -456,7 +458,7 @@ const server = http.createServer((req, res) => {
                     fail("KONSUM: der Frame-Tick speist uWindDir/uBend nicht (`_loopRender`)");
             }
             return o;
-        });
+        }, stammLib.dateien(root));
     } catch (e) {
         console.error("LINSE-FEHLER:", e.message);
         out = { fails: [`Harness: ${e.message}`], zahlen: {} };

@@ -26,7 +26,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const argv = process.argv.slice(2);
@@ -745,16 +746,19 @@ function ninja(arg) {
     return out;
 }
 
+// KAMERA_LAUB_STAMM: der Stamm-Text des Vorher (eine Stamm-Datei oder ein Baum, scripts/lib/stamm.cjs), ausgeliefert in
+// der Form dieses Baums (`liefere`: die Datei, die die Zeile trägt)
+const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
     if (p === "/") p = "/index.html";
-    const fp =
-        STAMM && p === "/anazhRealm.js"
-            ? STAMM
-            : STUDIO && p === "/worlds/koerperstudio/koerperstudio.js"
-              ? STUDIO
-              : path.join(root, p);
-    if (fp !== STAMM && fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
+    const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
+    if (vorher) {
+        res.setHeader("Content-Type", mime[".js"]);
+        return res.end(vorher);
+    }
+    const fp = STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? STUDIO : path.join(root, p);
+    if (fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
         res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
@@ -1097,7 +1101,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(STAMM || path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = STAMM_TEXT || stammLib.text(root);
     const studioQuelle = fs.readFileSync(STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
@@ -1169,6 +1173,24 @@ async function probe(arg) {
         const vorStudio = studioQuelle.replace(/_kamSeg\(LX,LY,LZ/g, "camG(LX,LY,LZ");
         const rot = wand(vorStand, vorStudio);
         check("Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));
+        // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
+        // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
+        // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
+        // Beweisbilder vom 13.10. (spec/abnahme) fallen ROT, und die Aufnahme misst, urteilt und wirft (der Vor-Stand ohne Wurf feuert).
+        const AU = require("./lib/abnahme-urteil.cjs");
+        const fdir = path.join(root, "spec", "abnahme");
+        const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
+        check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
+        for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
+            console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
+        const aufWand = (q) =>
+            /window\.__abnahmeUrteil\(m\)/.test(q) &&
+            /fehler\.abnahme = m;\s*throw fehler;/.test(q) &&
+            /return \{ u8, info, ms, abnahme: abnahme\(u8, W, H\) \}/.test(q) &&
+            /return \{ u8: voll, info, ms, abnahme: abnahme\(voll, W, H\) \}/.test(q);
+        const aufQuelle = fs.readFileSync(path.join(root, "scripts", "lib", "ausgabe-aufnahme.cjs"), "utf8");
+        check("K4 W: die EINE Aufnahme misst, urteilt und wirft beim Namen (jeder Rückweg trägt die Abnahme)", aufWand(aufQuelle), "");
+        check("K4 W: der Vor-Stand (die Aufnahme ohne Wurf) → die Wand feuert", !aufWand(aufQuelle.replace("throw fehler;", "")), "");
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1185,7 +1207,8 @@ async function probe(arg) {
 
     const t0 = Date.now();
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {

@@ -42,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.DRIVE_PORT || 4411);
 const root = path.resolve(__dirname, "..");
@@ -261,7 +262,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
 (async () => {
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const garageSrc = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
 
     if (process.argv.includes("--selftest")) {

@@ -735,7 +735,7 @@ const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
@@ -765,8 +765,9 @@ async function lichtLauf() {
         headless: !ECHT,
         protocolTimeout: (S0_FRIST_S + 60) * 1000,
         defaultViewport: ECHT ? null : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : softwareWebGpuArgs(),
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
@@ -800,9 +801,11 @@ async function lichtLauf() {
     await page.evaluateOnNewDocument(() => {
         window.__s0Still = true;
         const warte = setInterval(() => {
+            // die Klasse steht ab stamm/01.js, ihre Glieder trägt erst die Naht (stamm/26a.js) auf: gewartet wird auf das
+            // Glied selbst — ein vorher gesetztes `_loopRender` wäre ein Zwilling, an dem die Naht laut bricht
             // eslint-disable-next-line no-undef
             const K = typeof AnazhRealm === "function" ? AnazhRealm : null;
-            if (!K) return;
+            if (!K || typeof K.prototype._loopRender !== "function") return;
             clearInterval(warte);
             const zeichne = K.prototype._loopRender;
             K.prototype._loopRender = function (t) {
@@ -981,9 +984,12 @@ async function lichtLauf() {
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
                         await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
+                        // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
+                        // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
+                        // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
                         for (let i = 0; i < 2; i++) {
                             r._schattenAlleNeu();
-                            auf = await window.__ausgabeAufnahme(w, h, 1);
+                            auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
                     } finally {
                         r._leuchtTakt = alt;

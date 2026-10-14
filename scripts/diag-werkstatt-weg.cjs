@@ -46,7 +46,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const root = path.resolve(__dirname, "..");
@@ -506,7 +507,7 @@ async function probe(argW) {
         n = 0;
         Math.random = function () {
             const rufer = (new Error().stack || "").split("\n")[2] || "";
-            if (/anazhRealm\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
+            if (/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
             return orig();
         };
         try {
@@ -1218,7 +1219,7 @@ async function probe(argW) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {
@@ -1755,7 +1756,8 @@ async function probe(argW) {
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {

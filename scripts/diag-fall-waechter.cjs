@@ -43,6 +43,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -431,7 +432,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
     // die Quellen-Wand am Stamm (grün) und an einer Kopie mit dem alten Leser (rot, beim Namen)
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const amStamm = quellenWand(stamm);
     console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
     if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
@@ -1226,7 +1227,7 @@ async function probe(K) {
         process.exit(1);
     }
     befund.pageErrors = pageErrors;
-    befund.quelle = quellenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.quelle = quellenWand(stammLib.text(root));
     const fx = (v) => (Number.isFinite(v) ? v.toFixed(3) : String(v));
     for (const p of befund.proben)
         console.log(

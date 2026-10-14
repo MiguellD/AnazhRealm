@@ -25,6 +25,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über GRASS_THIN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4331.
@@ -140,7 +141,7 @@ function stripComments(src) {
     }
 
     // Statische Doppel-Wand (Node-seitig, ohne Browser-Umweg): das Symbol lebt nirgends im Stamm.
-    const anazhNC = stripComments(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const anazhNC = stripComments(stammLib.text(root));
     const staticTuftGone = !/_grassBladeTuftGeometry/.test(anazhNC) && !/GRASS_TUFT_BLADES/.test(anazhNC);
     const staticThinGone = !/_tickGrassThin/.test(anazhNC) && !/voxelChunkGrassDensity/.test(anazhNC);
 

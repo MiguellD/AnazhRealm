@@ -918,18 +918,32 @@ function wasserBild(opts) {
         // und verschluckte jede Strähne): Licht des Orts 1 (Schaum 0,93 · Deckung 0,7 bleibt unter 1), kein Sonnen-Glanz.
         // Der Spiel-Loop ruht während der Probe (Lehre 17): zwischen den beiden Uhren schrieb der Tag-Nacht-Takt Licht
         // und Himmel neu (06.10.: die Stromschnelle bei Uhr 3600 2,5× heller als bei 60 — das Licht, nicht das Wasser).
-        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum
-        // über JEDEM Wasser, ohne Ort und ohne Gesetz-Grund; die Stimmung driftet mit der Boot-Zeit (lokal 0,06, in der CI
-        // ≈ 0,17: 5,4 % des ruhigen Flusses über der Hell-Schwelle). B1 misst den Schaum des Gesetzes, nicht die Laune.
+        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum des
+        // Gesetzes bis auf das Doppelte (bis K16 legte er + 0,25 · uEmotion über JEDES Wasser); die Stimmung driftet mit der
+        // Boot-Zeit (lokal 0,06, in der CI ≈ 0,17). B1 misst den Schaum des Gesetzes, nicht die Laune.
         renderer.setAnimationLoop(null);
+        // DER HIMMEL DER PROBE FEST (K40, Lehre 17): das Wasser spiegelt die Himmels-Umgebung der Tageszeit — der Boot
+        // dauert je Adapter verschieden lang, also spiegelte jeder Adapter eine andere Stunde (ruhiger Fluss hell auf
+        // swiftshader 6,7 %, auf dem Radeon 0,9 % bei bit-gleichem Rauschen). Die Probe spiegelt den Mittag.
+        const tagAlt = st.timeOfDay;
+        const weltTagAlt = st.world ? st.world.timeOfDay : undefined;
+        const himmelMittag = (zeit, welt) => {
+            st.timeOfDay = zeit;
+            if (st.world && welt !== undefined) st.world.timeOfDay = welt;
+            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(true);
+        };
+        himmelMittag(0.5, 0.5);
+        // Das Gefühl der Welt ruht (uEmotion hebt den Schaum, der Takt schreibt es aus dem Feld): je nach Boot-Dauer
+        // trug die Probe ein anderes Gefühl — zwei Zustände (ruhig hell 0,9 % oder 6,7 %), je Lauf, nie je Adapter.
+        const gefuehlAlt = U.emotion ? U.emotion.value : null;
+        if (U.emotion) U.emotion.value = 0;
         const irrAlt = U.irr.value.clone();
         const lichtAlt = U.light.value;
-        const stimmungAlt = U.emotion.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
             U.irr.value.setRGB(1, 1, 1);
             U.light.value = 0;
-            U.emotion.value = 0;
             const px = await lese();
             const L = new Float32Array(W * H);
             for (let p = 0; p < W * H; p++) L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
@@ -992,7 +1006,8 @@ function wasserBild(opts) {
             U.time.value = zeitAlt;
             U.irr.value.copy(irrAlt);
             U.light.value = lichtAlt;
-            U.emotion.value = stimmungAlt;
+            himmelMittag(tagAlt, weltTagAlt);
+            if (U.emotion) U.emotion.value = gefuehlAlt;
             geom.dispose();
             maskMat.dispose();
             rt.dispose();

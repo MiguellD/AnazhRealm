@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
 const SK = require("./lib/shader-kosten.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -18730,14 +18731,24 @@ async function checkBandV18275FoliageGrowth(ctx) {
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
-        // (4) V18.282 — RESPONSIVITÄT: Frame ÜBER BUDGET → das Wachstum PAUSIERT; Frame frei → es läuft.
+        // (4) EXISTENZ VOR FRAMERATE (Lehre 13, K22-3): Frame ÜBER BUDGET → das Wachstum drosselt sein TEMPO, nie seine
+        // Existenz: EIN Chunk je WUCHS_DROSSEL_MS, der NÄCHSTE zuerst; innerhalb der Frist keiner; Frame frei → es läuft.
+        // Bis V18.543 PAUSIERTE es über Budget ganz (die Dorf-Chunks im 64-m-Kreis blieben auf der Radeon kahl).
         const tk2 = `${pcx + 2},${pcz + 2}`;
-        if (st.voxelChunks && st.voxelChunks.has(tk2)) r._disposeVoxelChunk(tk2);
+        const tk3 = `${pcx + 4},${pcz + 4}`;
+        for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
         st.foliageRadius = 9999;
-        st.pendingFoliageChunks = new Set([tk2]);
+        st.pendingFoliageChunks = new Set([tk3, tk2]); // der fernere zuerst eingereiht: die Wahl folgt der Nähe
         st._frameOverBudget = true;
+        r._wuchsNaechster = undefined;
         r._tickFoliageGrowth();
-        out.growthPausesOverBudget = st.pendingFoliageChunks.has(tk2); // NICHT gedrainiert
+        out.growthNearestOverBudget = !st.pendingFoliageChunks.has(tk2) && st.pendingFoliageChunks.has(tk3);
+        r._tickFoliageGrowth();
+        out.growthThrottledOverBudget = st.pendingFoliageChunks.has(tk3); // in der Frist: keiner
+        r._wuchsNaechster = 0; // die Frist ist um
+        r._tickFoliageGrowth();
+        out.growthNeverStarves = !st.pendingFoliageChunks.has(tk3);
+        st.pendingFoliageChunks = new Set([tk2]);
         st._frameOverBudget = false;
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
@@ -18913,8 +18924,9 @@ async function checkBandV18275FoliageGrowth(ctx) {
             res.growthDrains
         );
         check(
-            "V18.282 CONSUM: Frame über Budget → das Vegetations-Wachstum PAUSIERT (Optik wartet, Bewegung nie)",
-            res.growthPausesOverBudget
+            "K22-3 EXISTENZ VOR FRAMERATE: Frame über Budget → EIN Chunk je Frist, der nächste zuerst, nie verhungert",
+            res.growthNearestOverBudget && res.growthThrottledOverBudget && res.growthNeverStarves,
+            `nächster ${res.growthNearestOverBudget} · Frist ${res.growthThrottledOverBudget} · nie verhungert ${res.growthNeverStarves}`
         );
         check("V18.282: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
@@ -21381,7 +21393,17 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // T2 Cross-LOD-Geomorph: feine Boundary-Vertices an LOD0↔LOD1-Grenzen auf die GROBE Nachbar-Fläche
         // ziehen → die T-junction schließt (render-only, `geomorph`-Uniform). Probe: Material kompiliert,
         // Morph-Attribute auf JEDER Terrain-Geometrie (WebGPU-strikt), Finalize ruft ihn, ≥1 hasMorph.
-        out.t2NoMorphError = !window.__terrainMorphError;
+        {
+            const zM = window.__stoffZeuge(r);
+            let mM = null;
+            try {
+                mM = r._buildToonNodeMaterial({ vertexColors: true, geomorph: true }); // wie der Boden-Stoff
+            } finally {
+                zM.zu();
+            }
+            out.t2NoMorphError = zM.brueche.length === 0 && !!(mM && mM.positionNode); // der Geomorph baut (K22-Zeuge)
+            if (mM && typeof mM.dispose === "function") mM.dispose();
+        }
         out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
         out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
         out.t2MaterialHasMorph = /positionNode\s*=/.test(window.__codeOf(r._buildPbrNodeMaterial)); // V18.236: PBR ist der EINE Builder
@@ -22738,9 +22760,11 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         const editsVor5 = r.state.worldMeta.voxelEdits;
         r.state.worldMeta.voxelEdits = (editsVor5 || []).slice();
         r.carveVoxelSphere(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
-        out.editBumpedStateGen = r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
+        out.editBumpedStateGen =
+            r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
         out.editClearedCache =
-            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) && r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
+            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) &&
+            r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
         r.state.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
         r.state.worldMeta.voxelEdits = editsVor5 || [];
         r._voxelWorkerSyncState({ op: "state-set" });
@@ -22779,7 +22803,10 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
             `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
         );
     }
-    check("K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)", res.editBumpedStateGen);
+    check(
+        "K23: ein voxelEdit ändert den Stand seines Chunks, nicht den eines fernen (Generation je Chunk)",
+        res.editBumpedStateGen
+    );
     check("K23: ein voxelEdit leert den Density-Cache nur in seiner Nachbarschaft", res.editClearedCache);
     check(
         "Welle Perf-3.c V9.90: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensity (Source-Probe)",
@@ -30993,10 +31020,11 @@ async function checkBandV18177AAA(ctx) {
         out.aoStrength = aer.aoStrength;
         out.aoCap = aer.aoCap;
         out.frozen = Object.isFrozen(aer);
-        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse; __codeOf strippt die
-        // Kommentare (sie dürfen das Wort zitieren), gesucht wird die echte Method-Definition.
-        const srcNoComments = window.__codeOf(A);
-        out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
+        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse — gelesen am lebenden Deskriptor,
+        // nie am Klassen-Text (der trüge nach dem Stamm-Schnitt nur den Kern): ein statischer Getter machte AERIAL zum
+        // Accessor, und die §26-Zuweisung liefe im sloppy-Skript still ins Leere.
+        const dAerial = Object.getOwnPropertyDescriptor(A, "AERIAL") || {};
+        out.noGetterShadow = "value" in dAerial && !dAerial.get;
         return out;
     });
     check(
@@ -33972,9 +34000,10 @@ async function checkBandV18201ManaKonsum(ctx) {
             out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
 
             // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
-            const dslOpsSrc = window.__codeOf(r.constructor).substring(0, 100000);
-            // grobe Probe: kein "drain_mana" oder "consume_mana" als DSL-Op-Key
-            out.noDslDrainMana = !/\bdrain_mana\s*:\s*\(/.test(dslOpsSrc) && !/\bconsume_mana\s*:\s*\(/.test(dslOpsSrc);
+            // die lebende Op-Tafel (nie der Klassen-Text: nach dem Stamm-Schnitt trüge er nur den Kern): kein
+            // "drain_mana" oder "consume_mana" als DSL-Op-Key
+            const dslOps = r.dslEffects || {};
+            out.noDslDrainMana = Object.keys(dslOps).length > 0 && !("drain_mana" in dslOps) && !("consume_mana" in dslOps);
 
             // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
             if (r.setGameMode) r.setGameMode("pfad");
@@ -35795,8 +35824,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
-        out.defaultFlareExists =
-            Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
+        out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
         out.speciesTreeParamsExists =
             !!A.SPECIES_TREE_PARAMS && !!A.SPECIES_TREE_PARAMS.baum_tanne && !!A.SPECIES_TREE_PARAMS.baum_birke;
         if (out.speciesTreeParamsExists) {
@@ -35945,7 +35973,10 @@ async function checkBandV18214SkeletonMesh(ctx) {
         "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
         res.flattenHasSkeletonPath === true
     );
-    check("V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)", res.defaultFlareExists === true);
+    check(
+        "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)",
+        res.defaultFlareExists === true
+    );
     check("V18.214 (T1g) SPECIES_TREE_PARAMS definiert (alle 6 Arten)", res.speciesTreeParamsExists === true);
     check(
         "V18.214 (T1h) Plan §3.7: Tanne slopeMax > Birke slopeMax (Birke meidet Steilhang)",
@@ -37530,36 +37561,57 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         out.geoMossDefault1 = !!(au && au.geoMoss && Math.abs(au.geoMoss.value - 1) < 1e-9);
 
         // (D) Behavioral — der Helfer baut einen Node-Graph ohne zu werfen
-        if (THREE && THREE.TSL && THREE.TSL.attribute && THREE.TSL.positionWorld) {
-            delete window.__terrainGeologyError;
-            const vc = THREE.TSL.attribute("color", "vec3");
-            const wp = THREE.TSL.positionWorld;
-            const node = r._terrainGeologyAlbedo(THREE.TSL, vc, wp);
-            out.helperReturnsNode = !!node && typeof node === "object";
-            out.helperNoThrow = typeof window.__terrainGeologyError === "undefined";
-        } else {
-            out.helperReturnsNode = true;
-            out.helperNoThrow = true;
+        {
+            const zD = window.__stoffZeuge(r);
+            try {
+                const node = r._terrainGeologyAlbedo(
+                    THREE.TSL,
+                    THREE.TSL.attribute("color", "vec3"),
+                    THREE.TSL.positionWorld
+                );
+                out.helperReturnsNode = !!node && typeof node === "object";
+            } finally {
+                out.helperNoThrow = zD.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
+            }
         }
-        // Graceful: ohne TSL gibt der Helfer den Eingangs-Albedo unverändert zurück
-        out.helperGraceful = r._terrainGeologyAlbedo(null, "ALBEDO_SENTINEL", null) === "ALBEDO_SENTINEL";
+        // LAUT (K22): ohne TSL bricht der Helfer beim Namen (`_stoffBruch`), nie still mit dem Eingangs-Albedo
+        {
+            const logAlt = r.log;
+            r.log = () => {};
+            try {
+                r._terrainGeologyAlbedo(null, "ALBEDO_SENTINEL", null);
+                out.helperGraceful = false;
+            } catch (e) {
+                out.helperGraceful = !!(e && e.stoff === true);
+            } finally {
+                r.log = logAlt;
+            }
+        }
 
         // (E) Toon-Terrain trägt den colorNode (kein Fehler in der Geologie-Schicht)
-        delete window.__terrainGeologyError;
         const savedMode = r.state.atmosphere && r.state.atmosphere.materialMode;
-        const mToon = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const zE = window.__stoffZeuge(r);
+        let mToon = null;
+        try {
+            mToon = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        } finally {
+            out.toonTerrainNoGeoError = zE.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
+        }
         out.toonTerrainColorNode = !!(mToon && mToon.colorNode);
-        out.toonTerrainNoGeoError = typeof window.__terrainGeologyError === "undefined";
         if (mToon && typeof mToon.dispose === "function") mToon.dispose();
 
         // (F) PBR-Terrain trägt JETZT denselben Geologie-colorNode (die geheilte Lücke)
         try {
             r.state.atmosphere.materialMode = "pbr";
-            delete window.__terrainGeologyError;
-            const mPbr = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+            const zF = window.__stoffZeuge(r);
+            let mPbr = null;
+            try {
+                mPbr = r._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide });
+            } finally {
+                out.pbrTerrainNoGeoError = zF.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Baus (K22)
+            }
             out.pbrTerrainIsPbr = !!(mPbr && mPbr.userData && mPbr.userData.isPbrMaterial);
             out.pbrTerrainColorNode = !!(mPbr && mPbr.colorNode);
-            out.pbrTerrainNoGeoError = typeof window.__terrainGeologyError === "undefined";
             if (mPbr && typeof mPbr.dispose === "function") mPbr.dispose();
         } finally {
             if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
@@ -37638,7 +37690,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
 
     check("Ω-OPSIS S1 (D1) Helfer baut Node-Graph (kein Wurf)", res.helperReturnsNode === true);
     check("Ω-OPSIS S1 (D2) Helfer wirft keinen Fehler (Marker leer)", res.helperNoThrow === true);
-    check("Ω-OPSIS S1 (D3) Helfer graceful ohne TSL (gibt Albedo zurück)", res.helperGraceful === true);
+    check("Ω-OPSIS S1 (D3) Helfer bricht ohne TSL laut beim Namen (_stoffBruch, K22)", res.helperGraceful === true);
 
     check("Ω-OPSIS S1 (E1) Toon-Terrain setzt colorNode", res.toonTerrainColorNode === true);
     check("Ω-OPSIS S1 (E2) Toon-Terrain: kein Geologie-Fehler", res.toonTerrainNoGeoError === true);
@@ -38877,11 +38929,16 @@ async function checkBandWGGelenke(ctx) {
                 (sm.length === 0 || Math.min(...sp) >= Math.max(...sm));
         }
         // (b) ACHSEN-GEISTER: der Viewer-Build erzeugt Achsen-Linien (isJointAxis).
-        window.__jointAxisError = null;
         out.axisGhosts = false;
         out.axisTeachAttached = false;
+        const zA = window.__stoffZeuge(r);
         if (wagen) {
-            const grp = r._buildFromBlueprint(wagen, 0, undefined, { connectionLines: true });
+            let grp = null;
+            try {
+                grp = r._buildFromBlueprint(wagen, 0, undefined, { connectionLines: true });
+            } finally {
+                zA.zu();
+            }
             let axes = 0;
             grp.traverse((o) => {
                 if (o.userData && o.userData.isJointAxis && o.isLine) axes++;
@@ -38889,7 +38946,7 @@ async function checkBandWGGelenke(ctx) {
             });
             out.axisGhosts = axes >= 1;
         }
-        out.axisNoError = !window.__jointAxisError;
+        out.axisNoError = zA.zu().length === 0; // der Zeuge zählt jeden Stoff-Bruch des Achsen-Baus (K22)
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
@@ -38935,7 +38992,7 @@ async function checkBandW3UiPuls(ctx) {
         r._uiDirty("hof");
         out.dedup = r._uiPulseQueued === true && r._uiDirtyRooms.size === 1;
         // (4) Migration: Grep-Wand am Quelltext (s. unten).
-        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt den Puls nicht (try/catch, __uiPulseError).
+        // (5) INSEL-ISOLATION: ein werfender Raum-Render killt den Puls nicht (try/catch, ERROR beim Namen des Raums).
         out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(window.__codeOf(r._uiDirty));
         // (6) der ON-OPEN-Render im Hof-Hook (so darf die Insel isOpen-skippen).
         out.hofOnOpen = /_renderCreatureListUI\(\)/.test(window.__codeOf(r._hofHandleDrawerChange));
@@ -38947,7 +39004,7 @@ async function checkBandW3UiPuls(ctx) {
     let srcOk = false;
     let migratedCount = 0;
     try {
-        const src = fs.readFileSync(path.resolve(__dirname, "..", "anazhRealm.js"), "utf8");
+        const src = stammLib.text(path.join(__dirname, ".."));
         migratedCount = (src.match(/_uiDirty\("hof"\)/g) || []).length;
         const directMechanic = (
             src.match(/if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/g) ||
@@ -41490,14 +41547,18 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
         // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
         out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
-        // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE geschluckte Exception — ein still
-        // gefangener Fehler ließe die Render-Schicht lautlos verschwinden. `window.__toonColorNodeError`
-        // ist der Marker (null = sauber).
-        window.__toonColorNodeError = null;
-        const _terrMat =
-            typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ vertexColors: true }) : null;
-        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && !window.__toonColorNodeError;
-        out.terrainColorNodeError = window.__toonColorNodeError || null;
+        // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE Stoff-Bruch — der Zeuge zählt jede Meldung
+        // „STOFF: …" über den Bau (K22; der Marker `__toonColorNodeError` hatte keinen Schreiber mehr).
+        const _zTerr = window.__stoffZeuge(r);
+        let _terrMat = null;
+        try {
+            _terrMat = r._buildToonNodeMaterial({ vertexColors: true });
+        } finally {
+            _zTerr.zu();
+        }
+        out.terrainColorNodeBuilds = !!(_terrMat && _terrMat.colorNode) && _zTerr.brueche.length === 0;
+        out.terrainColorNodeError = _zTerr.brueche[0] || null;
+        const _zAer = window.__stoffZeuge(r); // der Zeuge der Aerial-Prüfung (6): Struktur und Phantom
         // Die 2.5D-Lichtung flacht nur die SHADING-Normale (normalNode, eingefrorene Konstante); die
         // GEOMETRIE behält die echte Normale (Schatten-Bias-Vertrag — gebackene Normalen = Akne an Hängen).
         out.terrainNormalFlatten = !!(_terrMat && _terrMat.normalNode);
@@ -41524,7 +41585,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
         // KONSUM: `_applySubstanceResponse` setzt outputNode IDENTISCH auf Terrain UND Strukturen;
         // transparente Phantome bleiben unberührt, material.color bleibt setzbar (kein colorNode-Override).
-        window.__aerialOutputError = null;
         out.aerialHelperExists = typeof r._applySubstanceResponse === "function";
         // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
         out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
@@ -41556,8 +41616,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 : null;
         out.phantomNoAerial = !!_phantomMat && !_phantomMat.outputNode;
         // (6) kein still gefangener Node-Fehler (V17.12-Marker-Disziplin).
-        out.aerialNoError = !window.__aerialOutputError;
-        out.aerialOutputError = window.__aerialOutputError || null;
+        const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
+        out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
+        out.aerialOutputError = _aerBrueche[0] || null;
         // (7) Die Luft ist AUGEN-relativ (V18.530: der Luft-Knoten integriert vom Auge `cameraPosition` zum Punkt,
         // die Höhen-Abnahme über die Skalenhöhe) — nie absolute Welt-Höhe, sonst bleicht Klettern den Boden.
         const _aerSrc = window.__codeOf(r._luftEnsure);
@@ -41960,17 +42021,16 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup. W-F (V18.175,
             // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
             // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
-            // W10 — das Band WANDERT (Lehre 6): der Glitzer ist das STUDIO-Gesetz (reflect-basiert, WASSER_GESETZ.spec,
-            // Rayleigh-uSunCol) und lebt seit K16 im EINEN Blick des Wassers (`_wasserBlick`), den der Builder mit der
-            // flow-gekräuselten Normale und der Sonnen-Richtung ruft — die Probe liest das Gesetz, wo es lebt.
+            // K16: der Glitzer lebt im EINEN Blick des Wassers (`_wasserBlick`, Wasser-Stoff UND Fern-Ring) — der
+            // Builder reicht ihm die gekräuselte Normale und die Sonne.
             const blickSrc = window.__codeOf(r._wasserBlick);
             waterSpecular =
-                /this\._wasserBlick\(TSL, WG,/.test(builderSrc) &&
+                // W10 — das Band WANDERT (Lehre 6): der Glitzer ist jetzt das
+                // STUDIO-Gesetz (reflect-basiert, WASSER_GESETZ.spec, Rayleigh-uSunCol).
                 /pow\(max\(dot\(reflect\(normalize\(o\.sunDir\)/.test(blickSrc) &&
                 /WG\.spec\[0\]/.test(blickSrc) &&
                 /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
-                /n:\s*nFlow,/.test(builderSrc) &&
-                /sunDir:\s*uSunDir,/.test(builderSrc);
+                /this\._wasserBlick\(TSL, WG, \{[\s\S]{0,80}?n: nFlow[\s\S]{0,200}?sunDir: uSunDir/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe — die Szenen-Tiefe ist der EINE Knoten
             // _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei). Seit dem Durchlass-Gesetz
             // (05.10.) in METERN optischen Wegs (wegM, × cameraFar − cameraNear), nie in Viewport-Einheiten.
@@ -42160,13 +42220,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel), treibt Spiegel UND
             // Deckung — seit dem Durchlass-Gesetz (05.10.) spiegelt er DEN Himmel (die Himmels-Umgebung, nie die
             // Zenit-Tönung × Sonnen-Stärke) und deckt mit α = 1 − T·(1 − F)·(1 − Schaum).
-            // Seit K16 lebt der Fresnel im EINEN Blick des Wassers (`_wasserBlick`), die Deckung im Builder.
+            // K16: Spiegel und Fresnel leben im EINEN Blick des Wassers (`_wasserBlick`), die Deckung im Builder.
             const blickSrc = window.__codeOf(r._wasserBlick);
             out.waterFresnel =
-                /const \{ eigen, fres \} = this\._wasserBlick\(TSL, WG,/.test(builderSrc) &&
                 /WG\.fresnel\[0\]/.test(blickSrc) &&
                 /himmel\.mul\(fres\)/.test(blickSrc) &&
                 /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(blickSrc) &&
+                /const \{ eigen, fres \} = this\._wasserBlick\(/.test(builderSrc) &&
                 /T\.mul\(float\(1\.0\)\.sub\(fres\)\)/.test(builderSrc) &&
                 !/uSkyCol/.test(builderSrc + blickSrc);
         }
@@ -46745,7 +46805,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     void errors;
     void finalState;
     // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
-    const v840Results = await safeEvaluate(page, () => {
+    const v840Results = await safeEvaluate(page, (stammDateien) => {
         const r = window.anazhRealm;
         const out = {};
         const ring = document.getElementById("slider-ring");
@@ -46778,21 +46838,20 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
         out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
 
-        // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
-        const appScript = [...document.querySelectorAll("script")].find((s) =>
-            (s.getAttribute("src") || "").includes("anazhRealm.js")
-        );
-        out.cacheBust = !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
+        // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
+        const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
+        const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
+        out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
 
         return out;
-    });
+    }, stammLib.dateien(path.join(__dirname, "..")));
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("V8.40 → V18.530: kein Fog-Regler-Setter mehr", v840Results.fogTripleRange);
         check("V8.40 → V18.530: kein persistiertes fogDistance mehr", v840Results.fogDefault3);
         check("V8.40 → V18.530: keine Fog-Slider-Verdrahtung mehr", v840Results.fogHandlerTriples);
-        check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
+        check("V8.41: jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
     } else {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
@@ -55871,6 +55930,26 @@ async function checkBandRing6Workshop(ctx) {
             if (fresh && fresh !== "pending") r._finalizeVoxelChunkBuild(cx, cz, 0, fresh, true);
             return r.state.voxelChunks.has(key) ? key : null;
         };
+        // DER STOFF-ZEUGE (K22): jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
+        // Fehler" zählt diese Meldungen über ihren Bau (`const z = __stoffZeuge(r); …bauen…; z.zu()` → die Brüche) — nie
+        // eine Konstante, nie eine Fenster-Variable; der Spion reicht an `log` durch und kehrt eigen-treu zurück.
+        window.__stoffZeuge = (r) => {
+            const eigen = Object.prototype.hasOwnProperty.call(r, "log");
+            const alt = r.log;
+            const brueche = [];
+            r.log = function (m, lv) {
+                if (lv === "ERROR" && /^STOFF:/.test(String(m))) brueche.push(String(m));
+                return alt.apply(this, arguments);
+            };
+            return {
+                brueche,
+                zu() {
+                    if (eigen) r.log = alt;
+                    else delete r.log;
+                    return brueche;
+                },
+            };
+        };
         // KONSUM-Beweis statt Quelltext-Zitat: providerObj[providerKey] wird temporär ein Zähl-Spy (delegiert
         // ans Original), obj[methodName](...args) läuft, dann own-Property-treu restauriert. true = der
         // Konsument hat den Provider WIRKLICH gerufen; wirft nie.
@@ -56065,7 +56144,7 @@ async function checkBandRing6Workshop(ctx) {
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
             // Foundry-Warm-Anker: der Studio-Worker bootet ASYNC (ein anderer Worker als der ausgehängte
-            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_prefetching (im ready-Handler synchron
+            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_vorrat (im ready-Handler synchron
             // true, also „false nach ready“ = Prefetch fertig). Der Loop pumpt weiter; der Deckel ist nur
             // Hänger-Schutz — ein Cap-Treffer lässt die Bänder ehrlich rot werden.
             const _fdry = r._foundry || (typeof r._ensureAssetFoundry === "function" ? r._ensureAssetFoundry() : null);
@@ -56075,7 +56154,7 @@ async function checkBandRing6Workshop(ctx) {
                 const FOUNDRY_WARM_CAP_MS = 120000;
                 const fDeadline = performance.now() + FOUNDRY_WARM_CAP_MS;
                 while (
-                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false) &&
+                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false) &&
                     performance.now() < fDeadline
                 ) {
                     try {
@@ -56086,7 +56165,7 @@ async function checkBandRing6Workshop(ctx) {
                     await new Promise((resolve) => setTimeout(resolve, 25));
                 }
                 foundryReadyMs =
-                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false
+                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)
                         : -1;
                 // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,
@@ -56461,6 +56540,7 @@ async function checkBandRing6Workshop(ctx) {
                 why: "Vendor-Lib nicht geladen",
             },
             { re: /Failed to execute 'compile' on 'WebAssembly'.*MIME/, why: "WASM-MIME falsch konfiguriert" },
+            { re: /\[ERROR\] STOFF:/, why: "Stoff-Bruch (K22, _stoffBruch)" },
         ];
         for (const { re, why } of criticalPatterns) {
             const hits = logs.filter((l) => re.test(l.text));

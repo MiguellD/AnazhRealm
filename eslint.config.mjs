@@ -1,11 +1,28 @@
 // ESLint Flat-Config für AnazhRealm.
-// anazhRealm.js läuft im Browser und nutzt CDN-Globale; save-server.js ist Node.
+// Der Stamm läuft im Browser und nutzt CDN-Globale; save-server.js ist Node.
 import js from "@eslint/js";
+import { createRequire } from "module";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+// die Stamm-Dateien aus der EINEN Liste (scripts/lib/stamm.cjs: die eine Datei, nach dem Schnitt stamm/NN.js)
+const stammLib = createRequire(import.meta.url)("./scripts/lib/stamm.cjs");
+const STAMM = stammLib.dateien(dirname(fileURLToPath(import.meta.url)));
+// Kern (stamm/01.js: Kopf, `class AnazhRealm`, die Naht-Funktion) und Zonen (stamm/NN[x].js): klassische defer-Skripte in
+// EINEM globalen lexikalischen Raum. Die Zonen lesen die Klasse des Kerns, die Naht (erste Außen-Datei) dazu _stammZonen
+// und die Zonen-Klassen — ihre Namen kommen aus derselben Liste (S benennt sie `AnazhRealm_Z<NN[x]>`).
+const ZONEN = STAMM.slice(1);
+const ZONEN_GLOBALE = Object.fromEntries(
+    ["AnazhRealm", "_stammZonen", ...ZONEN.map((p) => `AnazhRealm_Z${p.replace(/^.*\/|\.js$/g, "")}`)].map((n) => [
+        n,
+        "readonly",
+    ])
+);
 
 export default [
     js.configs.recommended,
     {
-        files: ["anazhRealm.js"],
+        files: STAMM,
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
@@ -61,15 +78,32 @@ export default [
             },
         },
         rules: {
+            // die Klassen des Stamms liest die NAHT in einer anderen Datei (der Kern `AnazhRealm`, die Zonen `AnazhRealm_Z…`)
             "no-unused-vars": [
                 "warn",
-                { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+                {
+                    argsIgnorePattern: "^_",
+                    caughtErrorsIgnorePattern: "^_",
+                    varsIgnorePattern: "^AnazhRealm(_Z\\w+)?$",
+                },
             ],
             "no-empty": ["warn", { allowEmptyCatch: true }],
             "no-prototype-builtins": "off",
             "no-inner-declarations": "off",
         },
     },
+    ...(ZONEN.length
+        ? [
+              {
+                  files: ZONEN,
+                  languageOptions: { globals: ZONEN_GLOBALE },
+                  rules: {
+                      // die eigene Zonen-Klasse ist zugleich ein Global der Liste: kein Zwilling (den fängt die Naht laut)
+                      "no-redeclare": ["error", { builtinGlobals: false }],
+                  },
+              },
+          ]
+        : []),
     {
         files: ["voxel-worker.js", "bake-worker.js", "bake-core.js", "phyto-core.js", "gelaende-core.js"],
         languageOptions: {
@@ -87,6 +121,39 @@ export default [
                 Float32Array: "readonly",
                 Uint8Array: "readonly",
                 Uint32Array: "readonly",
+            },
+        },
+        rules: {
+            "no-unused-vars": ["warn", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+        },
+    },
+    {
+        // DAS GELÄNDE-STUDIO (K16b): das Panel im Browser (studio.js) und sein Makro-Worker (makro-worker.js).
+        files: ["worlds/gelaende/*.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "script",
+            globals: {
+                window: "readonly",
+                self: "readonly",
+                document: "readonly",
+                location: "readonly",
+                localStorage: "readonly",
+                performance: "readonly",
+                crypto: "readonly",
+                importScripts: "readonly",
+                postMessage: "readonly",
+                Worker: "readonly",
+                Blob: "readonly",
+                URL: "readonly",
+                URLSearchParams: "readonly",
+                ImageData: "readonly",
+                fetch: "readonly",
+                Event: "readonly",
+                alert: "readonly",
+                setTimeout: "readonly",
+                setInterval: "readonly",
+                console: "readonly",
             },
         },
         rules: {

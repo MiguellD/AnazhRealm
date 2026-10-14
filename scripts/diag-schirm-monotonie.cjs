@@ -34,7 +34,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.SCHIRM_PORT || 4579);
@@ -170,7 +171,8 @@ async function welt() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument(() => {
@@ -462,7 +464,7 @@ function konsumBefunde(reihe) {
         if (befunde.length > 12) console.log(`      … ${befunde.length - 12} weitere`);
         if (!gut) ok = false;
     };
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     console.log("=== Schirm-Wand: Q · die EINE Quelle ===");
     check("Q jede Schirm-Größe liest `_schirm` (Erzeuger und UI-Lage namentlich erlaubt)", quellBefunde(src));
 

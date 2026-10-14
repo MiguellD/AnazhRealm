@@ -16,10 +16,11 @@
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
@@ -78,7 +79,7 @@ function nakedLifetimeReads(src) {
         // Der Flugschreiber trennt vergiftete Alt-Traces: der Perf-Payload trägt `version:`
         // (≥ V18.427 = geheilte Traces) + sein drawCalls-Feld liest die (bounded) sense-Zahl,
         // nie ein rohes info-Objekt. Anker = das eindeutige drawCalls-Feld, version davor.
-        const nc = stripComments(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+        const nc = stripComments(stammLib.text(root));
         const dcIdx = nc.search(/drawCalls:\s*Math\.round\(s\.renderCalls/);
         const before = dcIdx >= 0 ? nc.slice(Math.max(0, dcIdx - 2500), dcIdx) : "";
         staticChecks.push({
@@ -96,8 +97,9 @@ function nakedLifetimeReads(src) {
     const browser = await puppeteer.launch({
         headless: "new",
         protocolTimeout: 300000,
-        args: REAL ? softwareWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
+        args: REAL ? linsenWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
     });
+    if (REAL) await adapterZeile(browser);
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((real) => {
         if (!real) window.__anazhHeadlessNullRenderer = true;
