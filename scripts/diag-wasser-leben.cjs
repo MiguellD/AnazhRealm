@@ -51,6 +51,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const SCHWELLE = {
@@ -764,7 +765,6 @@ else lauf();
 
 async function lauf() {
     const puppeteer = require("puppeteer");
-    const http = require("http");
     const fs = require("fs");
     const path = require("path");
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -773,26 +773,7 @@ async function lauf() {
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const root = path.resolve(__dirname, "..");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-        ".woff2": "font/woff2",
-    };
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: ECHT ? false : "new",

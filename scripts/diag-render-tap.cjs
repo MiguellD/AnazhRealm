@@ -15,9 +15,9 @@
 // `.calls` nackt (drawCalls-first), der Flugschreiber trägt das version-Feld
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
+const { statikServer } = require("./lib/welt-boot.cjs");
 const puppeteer = require("puppeteer");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -25,26 +25,7 @@ const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── Der STATISCHE Teil: kein Konsument liest den Lebenszeit-Zähler nackt ──
 // (die drei Render-Linsen wanderten V18.427 mit — hier bleibt das so; die
