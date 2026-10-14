@@ -357,7 +357,7 @@ function sucheVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
-    const buehne = fnBody(nc, /\n {4}_buehneRender\(renderer, scene, camera, wer\) \{/) || "";
+    const buehne = fnBody(nc, /\n {4}_buehneRender\([^)]*\) \{/) || "";
     // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
     // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
     const direkt = (nc.match(/\b[ps]\.renderer\.render\(/g) || []).length;
@@ -367,12 +367,12 @@ function wand(src) {
     const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
     // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie).
     const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length;
-    const plattQuelle = /\.type === "start_plattform"/.test(fnBody(nc, /\n {4}_genesisPlattform\(\) \{/) || "");
+    const plattQuelle = /\.type === "start_plattform"/.test(fnBody(nc, /\n {4}_genesisPlattform\([^)]*\) \{/) || "");
     // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
     // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
     // Ort an der Engstelle.
     const positionen = fnBody(nc, /\n {4}get dslPositions\(\) \{/) || "";
-    const regelPos = fnBody(nc, /\n {4}_dslRulePos\(posNode, ctx\) \{/) || "";
+    const regelPos = fnBody(nc, /\n {4}_dslRulePos\([^)]*\) \{/) || "";
     const ersatz = [
         (positionen.match(/_defaultSpawnPos\(\)/g) || []).length,
         (positionen.match(/dslClamp\(/g) || []).length,

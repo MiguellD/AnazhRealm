@@ -58,7 +58,7 @@ function kartenGesetz(buch, zelleF) {
 // S — die Ziegel-Schlange: im Mesh-Zonen-Zweig von tickArchitectureCulling ruft ein Bau ohne Slot den
 // Ziegel NIE direkt (Listen-Reihenfolge), er reiht sich in die Distanz-Schlange.
 function schlangenGesetz(src) {
-    const a = src.indexOf("\n    tickArchitectureCulling() {");
+    const a = stammLib.kopf(src, "tickArchitectureCulling"); // am Namen (gate:apparat Klinge 3)
     if (a < 0) return { ok: false, grund: "tickArchitectureCulling fehlt" };
     const b = src.indexOf("\n    }\n", a);
     const body = src.slice(a, b);

@@ -82,10 +82,10 @@ function rumpf(code, kopfRe) {
 // H4 — DIE TÄTER-KLASSE DES STAMMS, aus dem Quelltext (kein Zwilling hier): `klasse(obj, state)` und `instanz(key)`.
 function stammKlasse(src) {
     const code = PK.stripComments(src);
-    const kl = rumpf(code, /\n {4}_taeterKlasse\(obj\)\s*\{/);
-    const nm = rumpf(code, /\n {4}static _taeterName\(x\)\s*\{/);
-    const ik = rumpf(code, /\n {4}static _instanzKlasse\(key\)\s*\{/);
-    const tg = rumpf(code, /\n {4}_taeterGruppe\(key\)\s*\{/);
+    const kl = rumpf(code, /\n {4}_taeterKlasse\([^)]*\)\s*\{/);
+    const nm = rumpf(code, /\n {4}static _taeterName\([^)]*\)\s*\{/);
+    const ik = rumpf(code, /\n {4}static _instanzKlasse\([^)]*\)\s*\{/);
+    const tg = rumpf(code, /\n {4}_taeterGruppe\([^)]*\)\s*\{/);
     if (!kl || !nm || !ik || !tg) return null;
     const AR = { _taeterName: new Function("x", nm), _instanzKlasse: new Function("key", ik) };
     const fn = new Function("AnazhRealm", "obj", kl);
@@ -131,9 +131,9 @@ function taeterWand(src) {
 function buendelReiheWand(src) {
     const errs = [];
     const code = PK.stripComments(src);
-    const rang = rumpf(code, /\n {4}static _buendelRang\(key\)\s*\{/);
-    const reihe = rumpf(code, /\n {4}_buendelReihe\(scene\)\s*\{/);
-    const fuer = rumpf(code, /\n {4}_archRegionBundleFor\(regionKey\)\s*\{/);
+    const rang = rumpf(code, /\n {4}static _buendelRang\([^)]*\)\s*\{/);
+    const reihe = rumpf(code, /\n {4}_buendelReihe\([^)]*\)\s*\{/);
+    const fuer = rumpf(code, /\n {4}_archRegionBundleFor\([^)]*\)\s*\{/);
     if (!rang || !reihe)
         return { errs: ["_buendelRang / _buendelReihe fehlen im Stamm — die Reihe der Bündel hängt an der Ankunft beim Boot"], n: 0 };
     if (!fuer || !/scene\.add\(bg\);[\s\S]*?this\._buendelReihe\(scene\);/.test(fuer))
@@ -149,8 +149,8 @@ function buendelReiheWand(src) {
     // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
     // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
     const kinder = rumpf(code, /\n {4}static _buendelKinderReihe\(bundle(?:, auge)?\)\s*\{/);
-    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\(name, leafIdx, leaf, regionKey\)\s*\{/);
-    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\(g\)\s*\{/);
+    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\([^)]*\)\s*\{/);
+    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\([^)]*\)\s*\{/);
     if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
     if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe))
         errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
@@ -166,7 +166,7 @@ function buendelReiheWand(src) {
     if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
     // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
     // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
-    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\(pos\)\s*\{/);
+    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\([^)]*\)\s*\{/);
     // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
     const takt = rumpf(code, /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/);
     if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
@@ -1189,7 +1189,7 @@ function selbsttest() {
             'return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;',
             'return key === "@wahl" ? 0 : key === "@global" ? 2 : 1;'
         );
-        const ohneReihe = st.replace("_buendelReihe(scene) {", "_buendelReiheAlt(scene) {");
+        const ohneReihe = st.replace(/(\n {4}_buendelReihe)\(/, "$1Alt(");
         const getroffen = ohneRuf !== st && wahlVorn !== st && ohneReihe !== st;
         t(
             "Bündel-Reihe: der Stamm stellt @global · Regionen · @wahl; ohne den Aufruf, mit @wahl vorn und ohne die Reihe rot",
@@ -1205,7 +1205,7 @@ function selbsttest() {
             "bundle.add(mesh);"
         );
         const verkehrt = st.replace("rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
-        const ohneKinder = st.replace("static _buendelKinderReihe(bundle, auge) {", "static _buendelKinderReiheAlt(bundle, auge) {");
+        const ohneKinder = st.replace(/(\n {4}static _buendelKinderReihe)\(/, "$1Alt(");
         t(
             "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
             ohneKinderRuf !== st &&

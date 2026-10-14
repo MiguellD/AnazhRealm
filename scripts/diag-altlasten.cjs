@@ -1722,7 +1722,8 @@ function scanInstanzWand(srcRoh) {
         errs.push(
             `Instanz-Wand: eine InstancedMesh entsteht ${treffer.length}× im Stamm (erlaubt: 1, der Chokepoint _instanzMesh) — Zeilen ${treffer.join(", ")}`
         );
-    const kopf = code.indexOf("static _instanzMesh(geom, mat, cap) {");
+    const k0 = stammLib.kopf(code, "_instanzMesh"); // am Namen (gate:apparat Klinge 3), gezählt ab `static`
+    const kopf = k0 < 0 ? -1 : k0 + 5;
     if (kopf < 0 || code.indexOf("new THREE.InstancedMesh(", kopf) - kopf > 200)
         errs.push("Instanz-Wand: der Chokepoint `static _instanzMesh(geom, mat, cap)` trägt den Bau nicht");
     if (!/StorageInstancedBufferAttribute\(m\.instanceMatrix\.array, 16\)/.test(code))
@@ -1924,32 +1925,32 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
 // getContext/putImageData (bis V18.528: je Karte zwei 1024×256-Canvases, Pixel je Zelle umgedreht). Die Schicht
 // kommt kodiert aus dem Worker und wird kopiert (`_impostorAtlasSchreibe`).
 const KARTEN_METHODEN = [
-    "_impostorAtlas() {",
-    "_impostorAtlasTexturen(at, bedarf) {",
-    "_impostorAtlasSchreibe(at, idx, payload) {",
-    "_impostorZelleNeu(at, key, preset, variant, ov) {",
-    "_impostorQuad(at) {",
-    "_impostorAtlasMaterial() {",
-    "_impostorLeaf(z, localMatrix, sicht) {",
-    "_tickImpostorBake() {",
-    "_applyStudioImpostorPayload(z, payload) {",
-    "_buildImpostorLeaf(bp, skel) {",
-    "_foundryEnsureImpostorRecord(preset, variant, ov, wer) {",
-    "_foundryBuildImpostorFlat(entry, preset, wer) {",
+    "_impostorAtlas",
+    "_impostorAtlasTexturen",
+    "_impostorAtlasSchreibe",
+    "_impostorZelleNeu",
+    "_impostorQuad",
+    "_impostorAtlasMaterial",
+    "_impostorLeaf",
+    "_tickImpostorBake",
+    "_applyStudioImpostorPayload",
+    "_buildImpostorLeaf",
+    "_foundryEnsureImpostorRecord",
+    "_foundryBuildImpostorFlat",
 ];
 function scanKartenWand(srcRoh) {
     const code = stripComments(srcRoh);
     const errs = [];
-    for (const kopf of KARTEN_METHODEN) {
-        const a = code.indexOf("\n    " + kopf);
+    for (const name of KARTEN_METHODEN) {
+        const a = stammLib.kopf(code, name);
         const b = a < 0 ? -1 : code.indexOf("\n    }\n", a);
         if (a < 0 || b < 0) {
-            errs.push(`Karten-Wand: die Methode \`${kopf.split("(")[0]}\` fehlt (der Atlas braucht den Anker)`);
+            errs.push(`Karten-Wand: die Methode \`${name}\` fehlt (der Atlas braucht den Anker)`);
             continue;
         }
         const rumpf = code.slice(a, b);
         for (const t of ["CanvasTexture", 'createElement("canvas")', "getContext(", "putImageData", "drawImage("])
-            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${kopf.split("(")[0]}\` malt wieder (${t})`);
+            if (rumpf.indexOf(t) >= 0) errs.push(`Karten-Wand: \`${name}\` malt wieder (${t})`);
     }
     return errs;
 }
@@ -3545,7 +3546,8 @@ function main() {
         //   D Zwischen-Variable · E reine Stoff-Schleife material.forEach · F for…of über die Stoff-Liste · G der Regel-
         //   Besitzer entsorgt einen Stoff (Stoffe nie) · H eine tote Zeile der Besitzer-Liste
         const ichNeu = "            this._disposeSoulGroup(stage.pivot);\n            stage.pivot = null;";
-        const iIch = stamm.indexOf("    _ichStageShow(soul) {");
+        const kIch = stammLib.kopf(stamm, "_ichStageShow");
+        const iIch = kIch < 0 ? -1 : kIch + 1;
         const jIch = iIch < 0 ? -1 : stamm.indexOf(ichNeu, iIch);
         const formA =
             jIch < 0
@@ -3637,8 +3639,8 @@ function main() {
             scanKartenWand(stamm).length === 0 &&
             scanKartenWand(
                 stamm.replace(
-                    "    _impostorAtlasSchreibe(at, idx, payload) {",
-                    '    _impostorAtlasSchreibe(at, idx, payload) {\n        const cv = document.createElement("canvas");'
+                    /(\n {4}_impostorAtlasSchreibe\([^)]*\) \{)/,
+                    '$1\n        const cv = document.createElement("canvas");'
                 )
             ).length === 1;
         if (!kartenFeuert) {

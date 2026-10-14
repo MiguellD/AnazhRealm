@@ -293,6 +293,17 @@ function dateiVon(root, methode) {
     return null;
 }
 
+// Der Kopf einer Klassen-Methode am NAMEN: der Index des Zeilenumbruchs vor `    [static ][async ][get |set ]name(`, ab
+// `ab`; -1 ohne Treffer. Eine Linse findet eine Methode an ihrem Namen, nie an ihrer Parameter-Liste — ein neuer Parameter
+// bricht keine Linse, die ihn nicht prüft (gate:apparat, Klinge 3).
+function kopf(t, methode, ab = 0) {
+    const name = methode.replace(/[$]/g, "\\$");
+    const rx = new RegExp(`\\n {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${name}\\(`, "g");
+    rx.lastIndex = ab;
+    const m = rx.exec(t);
+    return m ? m.index : -1;
+}
+
 // Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
 // Pfad; keine → null; mehrere → wirft (der Patch wäre mehrdeutig).
 function dateiMit(root, stelle) {
@@ -438,6 +449,7 @@ module.exports = {
     textAusRev,
     ort,
     dateiVon,
+    kopf,
     dateiMit,
     istStammDatei,
     istStammUrl,

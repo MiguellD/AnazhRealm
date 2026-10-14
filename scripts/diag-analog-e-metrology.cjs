@@ -50,8 +50,8 @@ function extrahiereDcTris(trace) {
     worstN: worst.length
   };
 }
-function schneide(quelle, marker) {
-  const i = quelle.indexOf(marker);
+function schneide(quelle, name) {
+  const i = stammLib.kopf(quelle, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
   if (i < 0) return null;
   const start = quelle.indexOf("{", i);
   if (start < 0) return null;
@@ -88,8 +88,7 @@ function selbstTest() {
   return pruefeWeltMarch(fake.steadyState.weltMarch, "fake.steadyState").length > 0;
 }
 function smokeMetrologieZeile(src) {
-  const marker = "_analogEMetrologieZeile() {";
-  const block = schneide(src, marker);
+  const block = schneide(src, "_analogEMetrologieZeile");
   if (!block) return { ok: false, detail: "Methode nicht extrahierbar" };
   const body = block.slice(block.indexOf("{"));
   let fn;

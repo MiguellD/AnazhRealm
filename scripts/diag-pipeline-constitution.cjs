@@ -199,8 +199,8 @@ law(
     "AnazhRealm clampt auf die deklarierten Stufen (EINE Klammer `_foundryServierStufe` → `_foundryDeclaredStage` liest `kindStages`, der Flatten-Chokepoint ruft sie für JEDE Art)",
     true,
     /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
-        /_foundryServierStufe\(preset, lod\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
-        /_foundryFlattenFor\(entry, preset, lodOverride\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(
+        /_foundryServierStufe\([^)]*\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
+        /_foundryFlattenFor\([^)]*\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(
             anazhNC
         )
 );
@@ -212,7 +212,7 @@ console.log("\nGesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-
 law(
     "der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)",
     true,
-    /_effectiveFoliageDensity\(\)\s*\{/.test(anazhNC)
+    /_effectiveFoliageDensity\([^)]*\)\s*\{/.test(anazhNC)
 );
 {
     const _fnBody = (name) => {
@@ -252,7 +252,7 @@ law(
 {
     const nakedCalls = (anazhNC.match(/render\.calls/g) || []).length;
     const fallbackCalls = (anazhNC.match(/drawCalls[^;]{0,160}render\.calls/g) || []).length;
-    const kehrausZaehler = (anazhNC.match(/_gpuKehrausMarke\(\) \{[^}]{0,160}render\.calls/g) || []).length;
+    const kehrausZaehler = (anazhNC.match(/_gpuKehrausMarke\([^)]*\) \{[^}]{0,160}render\.calls/g) || []).length;
     law(
         "kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback und als der EINE Kehraus-Zähler)",
         true,
@@ -265,7 +265,7 @@ law(
 // Ein Refactor, der einen `if (rec.kind === ...)`-Zweig zurueckbringt, wird hier rot.
 {
     const _autoBody = (() => {
-        const m = anazhNC.match(/_foundryAutoRegisterSpecies\(book\) \{/);
+        const m = anazhNC.match(/_foundryAutoRegisterSpecies\([^)]*\) \{/);
         if (!m) return "";
         let i = anazhNC.indexOf(m[0]) + m[0].length,
             depth = 1,
@@ -397,7 +397,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     law(
         "N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp",
         true,
-        /_foundryTreeMaterial\(kind, mp, wiegen, baum\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
+        /_foundryTreeMaterial\([^)]*\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
             anazhNC
         ) &&
             /rough = R\.r,\s*metal = R\.mt,[\s\S]{0,40}?env = R\.env\b/.test(anazhNC) &&
@@ -447,7 +447,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
         /vehicle:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
     );
     {
-        const treeBody = _fnBodyN4(/_foundryPresetIsTree\(preset\) \{/);
+        const treeBody = _fnBodyN4(/_foundryPresetIsTree\([^)]*\) \{/);
         law(
             "N4.4: `_foundryPresetIsTree` liest die Policy-Tabelle, kein tree|shrub-kind-Literal im Body",
             true,
@@ -479,7 +479,7 @@ console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Choke
         }
         return out;
     };
-    const extrasBody = _fnBodyN5(/_forestExtraSpecies\(\) \{/);
+    const extrasBody = _fnBodyN5(/_forestExtraSpecies\([^)]*\) \{/);
     law(
         "N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)",
         true,
@@ -491,7 +491,7 @@ console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Choke
         /placeExtra/.test(extrasBody),
         "die Nischen-Quelle greift wieder direkt auf placeExtra"
     );
-    const policyBody = _fnBodyN5(/_placePolicyFor\(rec, kindPolicy\) \{/);
+    const policyBody = _fnBodyN5(/_placePolicyFor\([^)]*\) \{/);
     law(
         "N5: der `.placeExtra`-READ lebt genau EINMAL — in `_placePolicyFor` (die Ableitung)",
         true,

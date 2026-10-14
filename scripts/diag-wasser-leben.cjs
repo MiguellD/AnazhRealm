@@ -74,7 +74,7 @@ const SCHWELLE = {
 // ±π beliebig ungenau, der alte Hash fract(sin(dot(p, ·)) · 43758) zerfiel auf dem Radeon mit Welt-Ort und Wasser-Uhr zum Zebra
 // (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Wand liest die Quelle (Kommentare fallen) und nennt die Zeile.
 function hashSin(quelle) {
-    const a = quelle.indexOf("\n    _ensureHydroSurfaceMaterial() {");
+    const a = stammLib.kopf(quelle, "_ensureHydroSurfaceMaterial"); // am Namen (gate:apparat Klinge 3)
     if (a < 0) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
     const rest = quelle.slice(a + 1);
     const ende = rest.search(/\n {4}[_A-Za-z$][\w$]*\([^)]*\) \{\n/);

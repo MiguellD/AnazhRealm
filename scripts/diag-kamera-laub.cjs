@@ -136,9 +136,9 @@ function fnBody(src, sigRe) {
 }
 function wand(quelle, studio) {
     const nc = ohneKommentare(quelle);
-    const pick = fnBody(nc, /\n {4}_pickArchitectureAtCrosshair\(\) \{/) || "";
-    const streu = fnBody(nc, /\n {4}_pickScatterAtCrosshair\(\) \{/) || "";
-    const kam = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
+    const pick = fnBody(nc, /\n {4}_pickArchitectureAtCrosshair\([^)]*\) \{/) || "";
+    const streu = fnBody(nc, /\n {4}_pickScatterAtCrosshair\([^)]*\) \{/) || "";
+    const kam = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
     const lab = ohneKommentare(studio || "");
     return [
         [

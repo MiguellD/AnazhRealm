@@ -169,7 +169,7 @@ function pruefeQuelle(quelle) {
     // Schlüssel-Münzer `_foundryKartenKey`/`_foundryKoerperKey` hängen ihn an).
     if (
         !/const key = "fimp:" \+ this\._foundryKartenKey\(preset, variant, ovK\);/.test(quelle) ||
-        !/_foundryKartenKey\(preset, gestalt, ov\) \{\s*\n\s*return preset \+ "\|" \+ gestalt \+ \(ov \? "\|ov:" \+ this\._studioOvHash\(ov\) : ""\);/.test(
+        !/_foundryKartenKey\([^)]*\) \{\s*\n\s*return preset \+ "\|" \+ gestalt \+ \(ov \? "\|ov:" \+ this\._studioOvHash\(ov\) : ""\);/.test(
             quelle
         )
     )

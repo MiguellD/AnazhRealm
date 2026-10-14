@@ -114,7 +114,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
     // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
     // im File VOR der Definition und schnitte sonst den falschen Body.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8) und loest den Donor ueber KIND_SUBSTANCE + donorTool (AUSLÖSCHUNGS-WELLE)",
         autoReg !== null &&
@@ -157,9 +157,9 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     // Anker = die DEFINITIONS-Form (Zeilenanfang + Methoden-Einzug): ein Regex auf den
     // nackten Namen traefe die CALL-SITE zuerst (this._refreshHeldMesh() im Restore liegt
     // VOR der Definition) und lieferte den falschen Body — gemessen (W-A4b-Heilung).
-    const refreshBody = fnBody(anazhNC, /\n    _refreshHeldMesh\(\)\s*\{/);
-    const heldSrcBody = fnBody(anazhNC, /\n    _heldFoundryGroup\(bpName\)\s*\{/);
-    const disposeBody = fnBody(anazhNC, /\n    _disposeSoulGroup\(group\)\s*\{/);
+    const refreshBody = fnBody(anazhNC, /\n    _refreshHeldMesh\([^)]*\)\s*\{/);
+    const heldSrcBody = fnBody(anazhNC, /\n    _heldFoundryGroup\([^)]*\)\s*\{/);
+    const disposeBody = fnBody(anazhNC, /\n    _disposeSoulGroup\([^)]*\)\s*\{/);
     out.push([
         "S8: der Hand-Konsument ist verdrahtet — buildHand liest _heldFoundryGroup (die erste Zeichnung traegt die Erst-Zeichnung des Renderers, kein Vorwaermen), die Quelle nutzt die EINE Wrapper-Quelle (_workshopWrapFoundryGroup) + den Welt-Cache (_foundryCacheGet), der Dispose-Chokepoint traegt die sharedGeom-Wand + Ref-Rueckgabe",
         refreshBody !== null &&

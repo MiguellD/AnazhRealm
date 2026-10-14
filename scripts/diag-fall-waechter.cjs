@@ -437,7 +437,7 @@ function selbsttest() {
     console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
     if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
     const kopie = stamm.replace(
-        /(\n {4}_werkBoden\(entry\) \{)/,
+        /(\n {4}_werkBoden\([^)]*\) \{)/,
         "$1\n        if (entry.__schmuggel) return () => this.getTerrainHeightAt(0, 0);"
     );
     const anKopie = quellenWand(kopie);
@@ -462,7 +462,7 @@ function selbsttest() {
     // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
     {
         const k3 = stamm.replace(
-            /(\n {4}_todHebeTafel\(creature, hx, hz\) \{)/,
+            /(\n {4}_todHebeTafel\([^)]*\) \{)/,
             "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
         );
         const a3 = quellenWand(k3, Object.assign({ _nieGelesen: [["getTerrainHeightAt"], "Test"] }, OBERKANTE_BENANNT));

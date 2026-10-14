@@ -903,7 +903,7 @@ function validateManifest(m) {
         .text(root)
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
-    const reg = realm.match(/_foundryAutoRegisterSpecies\(book\)\s*\{[\s\S]{0,2500}/);
+    const reg = realm.match(/_foundryAutoRegisterSpecies\([^)]*\)\s*\{[\s\S]{0,2500}/);
     check(
         // N1-migriert (V9.56-i): der kind-Filter ist die KIND_POLICY-Tabelle — ein
         // unbekannter kind hat keine Policy-Zeile und wird uebersprungen (must-ignore).
@@ -976,7 +976,7 @@ function validateManifest(m) {
         .replace(/\/\/[^\n]*/g, "");
     const leserUrteil = (realmSrc, phytoSrc) => {
         const f = [];
-        const reply = phytoSrc.match(/function __replyBuildAsset\(msg\) \{[\s\S]*?\n {4}\}\n/);
+        const reply = phytoSrc.match(/function __replyBuildAsset\([^)]*\) \{[\s\S]*?\n {4}\}\n/);
         if (
             !reply ||
             !/if \(isZweitKern\) \{[\s\S]*?budgetZeile\(zweit\.kern\.PORTAL_RENDER_CONFIG[\s\S]*?budgetErzwingen\(meshes/.test(
@@ -984,7 +984,7 @@ function validateManifest(m) {
             )
         )
             f.push("Brücke: __replyBuildAsset faltet die Zweit-Kern-Gestalt nicht (budgetErzwingen)");
-        const ofen = realmSrc.match(/\n {4}_ofenBudget\(core, kind, lod, eintraege, name\) \{[\s\S]*?\n {4}\}/);
+        const ofen = realmSrc.match(/\n {4}_ofenBudget\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!ofen || !/budgetErzwingen\(eintraege/.test(ofen[0])) f.push("Wirt: _ofenBudget faltet nicht");
         const ofenRufe = (
             realmSrc.match(/this\._ofenAssembleAsset\(this\._ofenBudget\(core, "(kreatur|koerper)"/g) || []
@@ -998,21 +998,21 @@ function validateManifest(m) {
         const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern(?:, basisInv)?\) \{[\s\S]*?\n {4}\}\n/);
         if (!ex || !/out\.mat\.seh = mat\.userData\.__seh/.test(ex[0]))
             f.push("Brücke: __extractAssetMesh reicht die Seh-Klasse nicht (mat.seh)");
-        const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\(mesh\) \{[\s\S]*?\n {4}\}/);
+        const oe = realmSrc.match(/\n {4}_ofenMeshEintragAusThree\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe[0]))
             f.push("Wirt: _ofenMeshEintragAusThree reicht die Seh-Klasse nicht (mat.seh)");
         // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
         // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
         // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
-        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\(m, baum\) \{[\s\S]*?\n {4}\}/);
+        const bm = realmSrc.match(/\n {4}_foundryBuildMesh\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm[0]))
             f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
         if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))
             f.push("Wirt: der Flatten trägt die Sippe nicht aufs Leaf");
-        const fv = realmSrc.match(/\n {4}_foundryFlatVerschmelzen\(group, leaves\) \{[\s\S]*?\n {4}\}/);
+        const fv = realmSrc.match(/\n {4}_foundryFlatVerschmelzen\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (!fv || !/lf\.sippe \? lf\.sippe \+/.test(fv[0]) || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(fv[0]))
             f.push("Wirt: _foundryFlatVerschmelzen gruppiert nicht nach der Sippe des Gesetzes");
-        const sb = realmSrc.match(/\n {4}static _ofenStarrBinden\(root\) \{[\s\S]*?\n {4}\}/);
+        const sb = realmSrc.match(/\n {4}static _ofenStarrBinden\([^)]*\) \{[\s\S]*?\n {4}\}/);
         if (
             !sb ||
             !/n\.userData \? n\.userData\.__sippe/.test(sb[0]) ||
@@ -1235,7 +1235,7 @@ function validateManifest(m) {
             // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
             // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle — seit der Leben-Schau 2 je Gestalt (fx.huellen).
             const pbaM =
-                src && src.match(/_populateBlockerAABBs\(entry\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
+                src && src.match(/_populateBlockerAABBs\([^)]*\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
             check(
                 "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad",
                 !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huellen: \[\n\s+\[-?\d/.test(fc)

@@ -45,8 +45,8 @@ const PORT = Number(process.env.FLUSS_PORT || 4561);
 const stamm = stammLib.text(root);
 
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
-function methode(src, kopf) {
-    const a = src.indexOf("\n    " + kopf);
+function methode(src, name) {
+    const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
     if (a < 0) return null;
     const b = src.indexOf("\n    }\n", a);
     return b < 0 ? null : src.slice(a + 1, b + 6);
@@ -61,7 +61,7 @@ function statisch(src) {
         // die Liste darf über Zeilen laufen (Prettier bricht sie mit Schluss-Komma um)
         lesen = m ? JSON.parse(m[1].replace(/,\s*\]$/, "]")) : null;
     } catch (_e) {}
-    const bau = methode(src, "_foundryBuildMesh(m, baum) {");
+    const bau = methode(src, "_foundryBuildMesh");
     const gelesen = new Set();
     if (bau) {
         const code = strip(bau);
@@ -72,12 +72,12 @@ function statisch(src) {
     const a = lesen ? [...lesen].sort().join(",") : "?";
     const b = [...gelesen].sort().join(",");
     pruef("S1 FOUNDRY_LESEN == Leser von _foundryBuildMesh", lesen && bau && a === b, `Wand [${a}] · Leser [${b}]`);
-    const schale = methode(src, "static _foundrySchale(cfg) {");
+    const schale = methode(src, "_foundrySchale");
     const ohneSchale = strip(schale ? src.replace(schale, "") : src);
     pruef("S2a die Schale steht im Stamm", !!schale);
     pruef("S2b der Asset-Store lebt NUR in der Schale", schale && !/anazhFoundryAssets/.test(ohneSchale));
     pruef("S2c die Haupt-Thread-Platte ist fort", !/_foundryIdb(Init|Get|Put)\b/.test(strip(src)));
-    const boot = methode(src, "_ensureAssetFoundry() {");
+    const boot = methode(src, "_ensureAssetFoundry");
     const bootCode = boot ? strip(boot) : "";
     pruef(
         "S3 der Worker-Boot stellt die Schale voran (FOUNDRY_LESEN + FOUNDRY_PLATTE_FORMAT)",
@@ -93,14 +93,14 @@ function statisch(src) {
         !einArg.length && !/_foundryVariantCount/.test(code),
         einArg.length ? `ein-Argument-Aufruf: ${einArg[0][0]}` : ""
     );
-    const pre = methode(src, "async _foundryPrefetchLibrary() {");
+    const pre = methode(src, "_foundryPrefetchLibrary");
     pruef(
         "S4b der Vorrat wärmt die Gestalten 1..V (kein Samen-/Karten-Literal)",
         pre && /_foundryGestalten\(sp\)/.test(strip(pre)) && !/<=\s*16\b|seeds:\s*\[1, 2/.test(strip(pre))
     );
     const formel = (code.match(/\*\s*73856093\)\s*\^\s*\(cellZ\s*\*\s*19349663\)\s*\^\s*\(variantIndex \+ 1\)/g) || [])
         .length;
-    const prom = methode(src, "_promoteScatterCell(cellEntry) {");
+    const prom = methode(src, "_promoteScatterCell");
     pruef(
         "S4c EIN Streu-Same (_scatterFoundrySeed), die Promotion trägt ihn (kein Math.random-Same)",
         formel === 1 &&
@@ -116,16 +116,16 @@ function statisch(src) {
         return m ? strip(m) : null;
     };
     const saisonfrei = [
-        "_foundryKoerperKey(preset, gestalt, lod, ov) {",
-        "_foundryKartenKey(preset, gestalt, ov) {",
-        "_foundryRequest(presetId, seed, lod, ov, wo) {",
-        "_foundryWorkerRequest(",
-        "_foundryBakeImpostorRequest(",
-        "_foundryEnsureImpostorRecord(",
-        "_foundryFlattenFor(",
-        "_foundryEntryReady(",
+        "_foundryKoerperKey",
+        "_foundryKartenKey",
+        "_foundryRequest",
+        "_foundryWorkerRequest",
+        "_foundryBakeImpostorRequest",
+        "_foundryEnsureImpostorRecord",
+        "_foundryFlattenFor",
+        "_foundryEntryReady",
     ].map((k) => [k, teil(k)]);
-    const traeger = saisonfrei.filter(([, t]) => !t || /season/i.test(t)).map(([k]) => k.split("(")[0]);
+    const traeger = saisonfrei.filter(([, t]) => !t || /season/i.test(t)).map(([k]) => k);
     pruef(
         "S5a kein Körper-/Karten-Schlüssel und kein Auftrag trägt die Saison",
         !traeger.length,
@@ -149,7 +149,7 @@ function statisch(src) {
         "S6a der Vorrat bestellt für Karten-Arten keine Geometrie (kein L2-Körper ohne Leser)",
         iSkip >= 0 && iReq > iSkip && !/lods:\s*\[2\]/.test(code)
     );
-    const recS = teil("_foundryEnsureImpostorRecord(");
+    const recS = teil("_foundryEnsureImpostorRecord");
     const iStudio = recS ? recS.indexOf("this._impostorZelleNeu(at, key, preset, variant, ovK)") : -1;
     const iZug = recS ? recS.indexOf("this._foundryZug(") : -1; // der Körper reist im EINEN Zug je Schlüssel (K38)
     pruef(
@@ -176,12 +176,12 @@ function statisch(src) {
             !/["']worlds\//.test(bootCode) &&
             !/core\.shell/.test(bootCode)
     );
-    const reqS = teil("_foundryRequest(presetId, seed, lod, ov, wo) {") || "";
+    const reqS = teil("_foundryRequest") || "";
     pruef(
         "S7b jeder Welt-Körper schickt seinen Schlüssel (geprägt mit ov-Hash), die Schale entscheidet über die Platte",
         !/f\.platte/.test(reqS) && /this\._foundryKoerperKey\(presetId, seed, lod, hasOv \? ov : null\)/.test(reqS)
     );
-    const bakeS = teil("_foundryBakeImpostorRequest(") || "";
+    const bakeS = teil("_foundryBakeImpostorRequest") || "";
     pruef(
         "S7c Karten tragen ihren Platten-Schlüssel mit Schicht-Format, die Schale schreibt jede kodierte Schicht",
         /msg\.platte =\s*"karte\|" \+ this\._foundryKartenKey\([^;]*\+ "\|" \+ fmt;/.test(bakeS) &&
@@ -246,10 +246,10 @@ function gestalten(src) {
     );
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
     const teile = [
-        "_foundryVariantFor(seed, preset, Vk) {",
-        "_foundryGestalten(preset) {",
-        "_scatterRohSame(cellX, cellZ, variantIndex) {",
-        "_foundryGestaltSame(seed, preset, stehtFrei) {",
+        "_foundryVariantFor",
+        "_foundryGestalten",
+        "_scatterRohSame",
+        "_foundryGestaltSame",
     ].map((k) => methode(src, k));
     if (!G || teile.some((t) => !t) || !(KNUTH_INVERS > 0))
         return { ok: false, detail: "Budget, Methode oder KNUTH_INVERS fehlt", arten: {} };
@@ -1057,8 +1057,8 @@ const VERHALTEN = [
         const t2 = statisch(
             bruch(
                 stamm,
-                "    _foundryRequest(presetId, seed, lod, ov, wo) {",
-                '    _foundryRequest(presetId, seed, lod, ov, wo) {\n        indexedDB.open("anazhFoundryAssets", 1);'
+                /(\n {4}_foundryRequest\([^)]*\) \{)/,
+                '$1\n        indexedDB.open("anazhFoundryAssets", 1);'
             )
         ).gesetze.find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);

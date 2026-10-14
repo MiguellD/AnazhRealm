@@ -117,7 +117,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         // V18.512: die EINE Stufen-Klammer (`_foundryDeclaredStage`) liest kindStages; seit der gedockten Stufe
         // (0df5344) serviert `_foundryServierStufe` sie, und ein BEKANNTES Rezept ohne Eintrag fällt dort fail-closed
         // auf [0] (die Probe wandert mit dem Chokepoint).
-        /_foundryServierStufe\(preset, lod\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);[\s\S]{0,200}?if \(f && f\.recipes && f\.recipes\[preset\]\) lod = 0;/.test(
+        /_foundryServierStufe\([^)]*\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);[\s\S]{0,200}?if \(f && f\.recipes && f\.recipes\[preset\]\) lod = 0;/.test(
             anazhNC
         ),
     ]);
@@ -149,7 +149,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
     // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
     // im File VOR der Definition und schnitte sonst den falschen Body.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
         "A9: KIND_POLICY traegt die vehicle-Zeile (prefix fahrzeug_, donor fahrzeug_wagen)",
         /vehicle:\s*Object\.freeze\(\{\s*prefix:\s*"fahrzeug_",\s*donor:\s*"fahrzeug_wagen"/.test(anazhNC),
@@ -184,8 +184,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         );
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const broken2 = anazhSrc.replace(
-            "_foundryRequestSettlement(dp) {",
-            "_foundryRequestSettlement(dp) {\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
+            /(_foundryRequestSettlement\([^)]*\) \{)/,
+            "$1\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );
         const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc, pcSrc).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);

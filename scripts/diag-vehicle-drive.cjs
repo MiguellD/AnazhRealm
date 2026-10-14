@@ -204,7 +204,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     // B2 (14.07.) — der GERITTENE Eintrag haengt am EINEN Bewegungs-Chokepoint: Position
     // folgt dem Reiter, die Instanz-Matrix zieht ueber den EINEN Update-Weg mit, die
     // Blocker folgen. [^.] vor dem Namen = die DEFINITION, nie der this.-Aufruf.
-    const tmm = fnBody(anazhNC, /[^.]_tickMountedMovement\(_?dt\)\s*\{/);
+    const tmm = fnBody(anazhNC, /[^.]_tickMountedMovement\([^)]*\)\s*\{/);
     out.push([
         "A6/B2: _tickMountedMovement bindet den Eintrag an den Chokepoint (pos folgt pm + _archInstanceUpdate + Blocker)",
         tmm !== null &&
@@ -212,7 +212,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             /_archInstanceUpdate\(entry\)/.test(tmm) &&
             /_populateBlockerAABBs\(entry\)/.test(tmm),
     ]);
-    const aiu = fnBody(anazhNC, /[^.]_archInstanceUpdate\(entry\)\s*\{/);
+    const aiu = fnBody(anazhNC, /[^.]_archInstanceUpdate\([^)]*\)\s*\{/);
     out.push([
         "A6/B2: _archInstanceUpdate liest die EINE Flat-Quelle (foundry-bewusst: _foundryFlattenFor ODER _archFlattenBlueprint)",
         aiu !== null && /_foundryFlattenFor/.test(aiu) && /_archFlattenBlueprint/.test(aiu),
@@ -220,7 +220,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     // DONOR-ABSCHIED (18.07.) — die Struktur-Wand: der Blocker-Chokepoint traegt
     // den Fahrzeug-Zweig VOR dem generischen bp.parts-Pfad (die Tor-Klasse), der
     // Sitz liest _fahrzeugGesetzFor, und der Kern exportiert sitz + huelle.
-    const pba = fnBody(anazhNC, /[^.]_populateBlockerAABBs\(entry\)\s*\{/);
+    const pba = fnBody(anazhNC, /[^.]_populateBlockerAABBs\([^)]*\)\s*\{/);
     out.push([
         "A7/DONOR: _populateBlockerAABBs traegt den _fahrzeugBlockerParts-Zweig VOR dem generischen Parts-Pfad",
         pba !== null &&
