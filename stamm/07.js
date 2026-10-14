@@ -49,6 +49,10 @@ class AnazhRealm_Z07 {
                                 normals: new Float32Array(msg.normals),
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
+                                // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+                                himmel: new Float32Array(msg.himmel),
+                                schutt: new Float32Array(msg.schutt),
+                                felsFeuchte: msg.felsFeuchte,
                                 waterCells: new Uint8Array(msg.waterCells),
                                 // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
                                 hoehle: msg.hTri
@@ -170,6 +174,9 @@ class AnazhRealm_Z07 {
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
+            // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
+            // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
+            felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -631,14 +638,16 @@ class AnazhRealm_Z07 {
                 `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen passenden Höhlen-Graph`
             );
         geom.hoehle = Object.assign({}, H, { step: this._voxelChunkConfig(lod).step });
-        geom.setAttribute(
-            "aHimmel",
-            new THREE.Float32BufferAttribute(
-                AnazhRealm._himmelsSicht(meshData.indices, H.tri, meshData.positions.length / 3, geom.hoehle.step),
-                1
-            )
-        );
-        this._bodenFarbeUnterFels(geom);
+        // DER STOFF KOMMT FERTIG (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt baut der Worker, wo er das Netz baut
+        // (gelaende-core `himmelsSicht` · `felsStoff`) — hier fällt kein Ruf des Fels-Gesetzes (`gate:hoehlen-sicht` (n)).
+        const nV = meshData.positions.length / 3;
+        if (!meshData.himmel || meshData.himmel.length !== nV || !meshData.schutt || meshData.schutt.length !== nV)
+            throw new Error(
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff (Himmels-Sicht · Schutt)`
+            );
+        geom.setAttribute("aHimmel", new THREE.Float32BufferAttribute(meshData.himmel, 1));
+        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(meshData.schutt, 1));
+        if (meshData.felsFeuchte !== undefined) geom.userData.felsFeuchte = meshData.felsFeuchte;
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);

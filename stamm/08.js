@@ -1144,7 +1144,10 @@ class AnazhRealm_Z08 {
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setAttribute(
             "aHimmel",
-            new THREE.Float32BufferAttribute(AnazhRealm._himmelsSicht(indices, triZelle, positions.length / 3, step), 1)
+            new THREE.Float32BufferAttribute(
+                globalThis.__gelaendeCore.himmelsSicht(indices, triZelle, positions.length / 3, step),
+                1
+            )
         );
         if (hoehle)
             geom.hoehle = {
@@ -1985,29 +1988,39 @@ class AnazhRealm_Z08 {
             colors[i * 3 + 2] = out[2];
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-        this._bodenFarbeUnterFels(geom);
+        this._felsStoff(geom);
     }
 
-    // UNTER FELS WÄCHST NICHTS (K02a, Auge 11 bei 762/−138): die Boden-Farbe ist eine Funktion von (x, z) — Wiese, Feuchte,
-    // Schnee liegen auf der Säule —, und der Höhlen-Boden 25 m unter der Wiese trug ihr Grün (der Stoff liest daraus noch
-    // seine Wiese, `_terrainGeologyAlbedo`). Was den Himmel nicht sieht, ist Fels: die Farbe fällt mit der Himmels-Sicht
-    // (`aHimmel`, `_himmelsSicht`) auf den Stein der Palette (`BODEN_FARBE.rock`) — an der Mündung ein Saum, in der Höhle
-    // Stein; unter dem Himmel (aHimmel 1) bleibt jede Zahl, wie sie war. Beide Bau-Wege rufen es: der synchrone über
-    // `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht (`_buildVoxelChunkDataFromWorkerMesh`).
-    _bodenFarbeUnterFels(geom) {
+    // DER FELS HAT STOFF (K17; davor K02a „unter Fels wächst nichts"): das EINE Gesetz rechnet ihn — gelaende-core `felsStoff`
+    // (die Pakete, die Rinde aus der Krümmung, Mulden, Flechte, Moos und der Schutt des Schicht-Gesetzes, Gewicht aus Himmels-
+    // Sicht und Steile). Er entsteht, wo das Netz entsteht (K17-2): der Streaming-Pfad bekommt ihn fertig vom voxel-worker
+    // (`buildChunkMesh`, per Transfer — `_buildVoxelChunkDataFromWorkerMesh` setzt nur die Attribute), der Haupt-Thread rechnet
+    // ihn nur im Sync-Bau (`_attachVoxelFieldColors`: Spieler-Chunk, Graben, Voxel-Test). Bis K17-2 rechnete `_felsStoff` je
+    // Worker-Bau im Haupt-Thread (Mess-Wiese Σ 59,4 ms je Ring, max 7,3 ms je Chunk, `gate:hoehlen-sicht` (n)).
+    _felsStoff(geom) {
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
-        if (!col || !him) return;
-        const fels = AnazhRealm.BODEN_FARBE.rock;
-        const C = col.array;
-        const H = him.array;
-        for (let i = 0; i < H.length; i++) {
-            const t = 1 - H[i];
-            if (!(t > 0)) continue;
-            C[3 * i] += (fels[0] - C[3 * i]) * t;
-            C[3 * i + 1] += (fels[1] - C[3 * i + 1]) * t;
-            C[3 * i + 2] += (fels[2] - C[3 * i + 2]) * t;
-        }
+        const nor = geom.attributes.normal;
+        const pos = geom.attributes.position;
+        if (!col || !nor || !pos)
+            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position (fail-closed)");
+        // Ohne Höhlen-Graph (nur der Voxel-Test `_voxelTest`: ein Gitter ohne Sicht-Graph) steht jeder Vertex unter dem
+        // Himmel — jeder Chunk trägt `aHimmel` (`_buildVoxelChunkData*` bauen den Graph fail-closed).
+        const S = globalThis.__gelaendeCore.felsStoff(
+            this._gelaende(),
+            AnazhRealm.FELS_STOFF.basis,
+            AnazhRealm.FELS_STOFF.netz,
+            pos.array,
+            nor.array,
+            geom.index ? geom.index.array : null,
+            him ? him.array : null,
+            col.array,
+            pos.count,
+            (x, z, y) => this._feuchteAt(x, z, y)
+        );
+        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(S.schutt, 1));
+        // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
+        if (S.feuchte !== undefined) geom.userData.felsFeuchte = S.feuchte;
         col.needsUpdate = true;
     }
 

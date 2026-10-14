@@ -556,7 +556,8 @@ class AnazhRealm_Z11c {
     // Befehl, und das Frustum jedes Passes wählt je Pflanze (`_chunkSatzPass`, der EINE Haken). Der wiegende Stoff trägt
     // keine Dither-Stempel (die Nah-Streu blendet nie, ihr Stufen-Wechsel ist die Armlänge): Position · Normale · Farbe ·
     // `aWiege`; ein stehender Stoff ist der Studio-Stoff (`lf.mat`) mit den Stempeln des Bau-Satzes. Fail-closed: ein Stoff,
-    // der eine Karte liest (uv — der Blatt-Atlas), hat im Satz keine Quelle.
+    // der eine Karte liest (uv — der Blatt-Atlas), hat im Satz keine Quelle. DER WURF (1310-11): der stehende Stoff (Holz und
+    // Stein — Geröll · Totstamm · Stumpf) wirft in die Kaskaden, der wiegende nie (Gras, Blüte, Farn bleiben schattenlos).
     _streuSatzArt(a) {
         const mat = a.mat;
         const u = mat.userData || {};
@@ -571,7 +572,7 @@ class AnazhRealm_Z11c {
             st.satzStoffe.set(art, {
                 name: "streuSatz",
                 mat,
-                wurf: false,
+                wurf: !a.wiegt,
                 attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.BAU_SATZ_ATTR,
                 kapazitaet: "streu",
                 userData: { streuSatz: "streuSatz" },
@@ -1481,6 +1482,7 @@ class AnazhRealm_Z11c {
             // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
             farbOffen: new Uint8Array(off),
             farbLaw: new Float32Array(off),
+            farbSchutt: new Float32Array(off), // je Punkt das Gewicht des Schutts aus demselben Höhen-Ruf (`aus.schutt`)
             nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser (`_fernNass`)
             farbN: 0,
             farbMin: off,
@@ -1503,10 +1505,21 @@ class AnazhRealm_Z11c {
     // Abtastung einer Masche): ihre Kante in Metern — die Nische trägt darunter das Mosaik-Mittel (phyto-core `forestNische`).
     // DAS WASSER DES FLUSSES (K16): die Masche (oder der Punkt ohne Abtastung) trägt den Anteil, den der Fluss deckt
     // (`_fernFlussDeckung`), als Wasser-Farbe ohne Krone — dieselbe Farbe, die ein nasser Ring-Punkt trägt.
-    _fernFarbeTeile(x, y, z, out, fuss, fussM) {
+    // DER SCHUTT (`schutt`, K17-2 Nachbesserung 1): das Gewicht des Schutthangs aus dem Höhen-Ruf, der `y` gab (`aus.schutt`
+    // von `_terrainMacroSurfaceY`) — der Rufer zieht die Höhe ohnehin, das Gesetz läuft nie zweimal. Fehlt er (null: ein Leser
+    // ohne eigenen Höhen-Ruf), zieht ihn `_fernSchuttAt` EINMAL je Punkt bzw. Masche (die Abtastungen der Masche teilen ihn
+    // wie die Höhe `y`). Bis zur Nachbesserung zog `_fernSchutt` das ganze Höhen-Gesetz je Abtastung neu (je Masche 9 ×).
+    _fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
+        if (schutt == null) schutt = this._fernSchuttAt(x, z);
         if (fuss)
-            return this._fernFlussTeil(x, z, this._fernFarbeMasche(x, y, z, out, fuss), Math.max(fuss.ht, fuss.hr));
-        if (fussM === undefined) return this._fernFlussTeil(x, z, this._fernFarbeTeile(x, y, z, out, null, 0), 0);
+            return this._fernFlussTeil(
+                x,
+                z,
+                this._fernFarbeMasche(x, y, z, out, fuss, schutt),
+                Math.max(fuss.ht, fuss.hr)
+            );
+        if (fussM === undefined)
+            return this._fernFlussTeil(x, z, this._fernFarbeTeile(x, y, z, out, null, 0, schutt), 0);
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (
             !core ||
@@ -1519,6 +1532,7 @@ class AnazhRealm_Z11c {
                 "Fern-Farbe: phyto-core forestNische/forestGeburt/forestBestand/forestKronenDeckung fehlen (KERN-PFLICHT)"
             );
         this._bodenFarbeAt(x, y, z, out, fussM);
+        this._fernSchutt(schutt, out);
         const ctx =
             this._fernNischeCtx ||
             (this._fernNischeCtx = {
@@ -1571,6 +1585,31 @@ class AnazhRealm_Z11c {
         return out;
     }
 
+    // DER SCHUTT DER FERNE (K17-2, nah = fern aus EINEM Gesetz): wo das Schicht-Gesetz den Schutthang legt (gelaende-core
+    // `hoehe(…, aus).schutt`), trägt die Ferne das Mittel dessen, was der Chunk dort zeichnet — den Boden mit dem Gewicht
+    // `TERRAIN_GEOLOGY.schutt` × Schutt zum Mittel des Fels-Stoffs gemischt (`FELS_STOFF.mittel`; im Chunk `felsStoff` je
+    // Vertex) und × das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich; im Chunk der Detail-Term mit dem Gewicht
+    // des Schutts). Bis K17-2 trug die Ferne keinen Schutt (`_terrainGeologyAlbedo` liest `aSchutt` nur am Chunk): jenseits der
+    // Bau-Kante lag der graue Schutthang in der Farbe der Säule. Ring, Kronen-Karte und Feld-Pass lesen ihn über die Fern-Farbe.
+    // `s` = das Gewicht des Schutts am Punkt (`aus.schutt` des Höhen-Rufs; fehlt es, bricht die Ferne laut — nie still 0).
+    _fernSchutt(s, out) {
+        if (typeof s !== "number" || s !== s) throw new Error("_fernSchutt: das Gewicht des Schutts fehlt (" + s + ")");
+        if (!(s > 0)) return out;
+        const GK = globalThis.__gelaendeCore;
+        const ws = AnazhRealm.TERRAIN_GEOLOGY.schutt * s;
+        const M = AnazhRealm.FELS_STOFF.mittel;
+        const k = 1 + (GK.schuttMittel() - 1) * s;
+        for (let c = 0; c < 3; c++) out[c] = (out[c] + (M[c] - out[c]) * ws) * k;
+        return out;
+    }
+
+    // Der Schutt am Punkt für einen Leser ohne eigenen Höhen-Ruf (die Kronen-Karte, Linsen): EIN Ruf des Höhen-Gesetzes.
+    _fernSchuttAt(x, z) {
+        const aus = this._fernSchuttAus || (this._fernSchuttAus = { hang: 0, schutt: 0 });
+        this._terrainMacroSurfaceY(x, z, false, aus);
+        return aus.schutt > 0 ? aus.schutt : 0;
+    }
+
     // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
     // linear nach dem FARB-GESETZ (das Paletten-Hex ist eine sRGB-Absicht; THREE.Color wandelt). Einmal je Sitzung —
     // ohne Studio-Laub bricht die Fern-Farbe laut.
@@ -1590,7 +1629,7 @@ class AnazhRealm_Z11c {
     // Die zusammengesetzte Fern-Farbe (CPU-Leser, der Feld-Pass): Wasser flach, sonst der Boden unter dem Kronendach ×
     // die Saison (`saison` = `_saisonMul` der laufenden Phase — dieselbe Zahl, die `uSeasonMul` trägt) zur Deckung.
     // `out` = [r, g, b] (linear).
-    _fernFarbeAt(x, y, z, wet, out, saison, fuss) {
+    _fernFarbeAt(x, y, z, wet, out, saison, fuss, schutt) {
         const R = this._fernWasserKoerper();
         if (wet) {
             out[0] = R[0];
@@ -1598,7 +1637,15 @@ class AnazhRealm_Z11c {
             out[2] = R[2];
             return out;
         }
-        const t = this._fernFarbeTeile(x, y, z, this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(8)), fuss);
+        const t = this._fernFarbeTeile(
+            x,
+            y,
+            z,
+            this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(8)),
+            fuss,
+            undefined,
+            schutt
+        );
         const c = t[7];
         out[0] = (t[0] + (t[3] * saison.r - t[0]) * t[6]) * (1 - c) + R[0] * c;
         out[1] = (t[1] + (t[4] * saison.g - t[1]) * t[6]) * (1 - c) + R[1] * c;
@@ -1612,7 +1659,7 @@ class AnazhRealm_Z11c {
     // (phyto-core `forestNische`, patch λ ≈ 20 m) wechselte unter einer 11 × 34-m-Masche je Punkt die Art (Kronen-Grün
     // 0,035 … 0,128) — jede Masche zog als radialer Streifen um den Spieler. Das Mittel ist exakt für jede Saison s:
     // Deckung ā = ⟨a⟩, Krone k' = ⟨k·a⟩/ā, Boden c' = (⟨c⟩ − ⟨c·a⟩)/(1 − ā), also c' + (k'·s − c')·ā = ⟨c + (k·s − c)·a⟩.
-    _fernFarbeMasche(x, y, z, out, fuss) {
+    _fernFarbeMasche(x, y, z, out, fuss, schutt) {
         const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(8));
         const S = this._fernMascheSumme || (this._fernMascheSumme = new Float64Array(10));
         S.fill(0);
@@ -1634,7 +1681,7 @@ class AnazhRealm_Z11c {
             for (let j = 0; j < 3; j++) {
                 const ur = U[i] * h;
                 const ut = U[j] * h;
-                this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM);
+                this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM, schutt);
                 const a = t[6];
                 for (let c = 0; c < 3; c++) {
                     S[c] += t[c];
@@ -1989,7 +2036,7 @@ class AnazhRealm_Z11c {
     // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
-    _fernRingSetzVertex(fr, p, law, wl) {
+    _fernRingSetzVertex(fr, p, law, wl, schutt) {
         const geo = fr.geos[p.s];
         const pos = geo.attributes.position;
         if (p.s === 0 && (pos.getX(p.li) !== p.x || pos.getZ(p.li) !== p.z)) fr.xzGen++; // die Teilung folgt der Lage
@@ -2003,7 +2050,9 @@ class AnazhRealm_Z11c {
         // Naht sofort — der Horizont erscheint nie schwarz.
         const g = p.g;
         fr.farbLaw[g] = law;
-        const f = this._fernRingTeile(p.x, p.z, law, wet, !fr.ready, p.fuss);
+        // der Schutt aus dem Höhen-Ruf des Rufers; ein Rufer ohne ihn (Linsen) zieht ihn EINMAL hier
+        fr.farbSchutt[g] = schutt = schutt == null ? this._fernSchuttAt(p.x, p.z) : schutt;
+        const f = this._fernRingTeile(p.x, p.z, law, wet, !fr.ready, p.fuss, schutt);
         if (f) {
             AnazhRealm._fernRingSchreibe(geo, p.li, f);
             if (fr.farbOffen[g]) {
@@ -2142,7 +2191,7 @@ class AnazhRealm_Z11c {
         for (let g = 0; g < bis; g++) {
             if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
-            this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl);
+            this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl, fr.farbSchutt[g]);
             dirty[p.s] = true;
             n++;
         }
@@ -2165,7 +2214,7 @@ class AnazhRealm_Z11c {
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
     // Deckung 0), trocken aus dem Gedächtnis — oder, mit `rechnen`, frisch und gemerkt. null = offen (das Budget färbt
     // ihn). Die Saison legt der Ring-Stoff auf (`uSeasonMul`), das Gedächtnis bleibt über das Jahr gültig.
-    _fernRingTeile(x, z, law, wet, rechnen, fuss) {
+    _fernRingTeile(x, z, law, wet, rechnen, fuss, schutt) {
         if (wet) {
             const w = this._fernWasserKoerper();
             return (
@@ -2179,7 +2228,7 @@ class AnazhRealm_Z11c {
         if (f) return f;
         f = m.alt.get(key) || null;
         if (!f && !rechnen) return null;
-        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(8), fuss);
+        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(8), fuss, undefined, schutt);
         // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
         // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
         if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
@@ -2200,7 +2249,7 @@ class AnazhRealm_Z11c {
         for (; g < fr.totalVerts && fr.farbN > 0; g++) {
             if (!fr.farbOffen[g]) continue;
             const p = this._fernRingPunkt(fr, g);
-            const f = this._fernRingTeile(p.x, p.z, fr.farbLaw[g], fr.nass[g] === 1, true, p.fuss);
+            const f = this._fernRingTeile(p.x, p.z, fr.farbLaw[g], fr.nass[g] === 1, true, p.fuss, fr.farbSchutt[g]);
             AnazhRealm._fernRingSchreibe(fr.geos[p.s], p.li, f);
             dirty[p.s] = true;
             fr.farbOffen[g] = 0;
@@ -2330,10 +2379,11 @@ class AnazhRealm_Z11c {
             const nass = k.nass || (k.nass = { y: 0, spiegel: 0 });
             const o = j.i * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
-            if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false), wl, nass))
+            const aus = k.aus || (k.aus = { hang: 0, schutt: 0 });
+            if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false, aus), wl, nass))
                 k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
             else {
-                this._fernFarbeTeile(x, nass.y, z, t);
+                this._fernFarbeTeile(x, nass.y, z, t, undefined, undefined, aus.schutt > 0 ? aus.schutt : 0);
                 k.puffer[o] = sRGB(t[3]);
                 k.puffer[o + 1] = sRGB(t[4]);
                 k.puffer[o + 2] = sRGB(t[5]);
@@ -2402,7 +2452,9 @@ class AnazhRealm_Z11c {
         let done = 0;
         while (done < budget && fr.cursor < fr.totalVerts) {
             const p = this._fernRingPunkt(fr, fr.cursor);
-            let law = this._terrainMacroSurfaceY(p.x, p.z, false);
+            const aus = this._fernRingAus || (this._fernRingAus = { hang: 0, schutt: 0 });
+            let law = this._terrainMacroSurfaceY(p.x, p.z, false, aus);
+            const schutt = aus.schutt > 0 ? aus.schutt : 0;
             // Loch-Deckel + Naht-Veredelung, EINE Formel (_fernRingDeckMisch, geteilt mit dem GPU-Maler):
             // Schale-0-Reihen in der Chunk-Ziel-Zone tragen das VOLLE Gesetz (includeDetail), −0.3 gesenkt —
             // stehende Chunks decken sie per Depth, fehlende zeigen wahres Terrain statt der Wasser-Plane. In der Bau-Zone
@@ -2412,7 +2464,7 @@ class AnazhRealm_Z11c {
                 fr.vollY[p.g] = voll;
                 law = this._fernRingDeckMisch(fr, p.rad, law, voll);
             }
-            this._fernRingSetzVertex(fr, p, law, wl);
+            this._fernRingSetzVertex(fr, p, law, wl, schutt);
             dirty[p.s] = true;
             fr.cursor++;
             done++;
@@ -2505,7 +2557,7 @@ class AnazhRealm_Z11c {
                 } else offen = true;
             }
             if (Math.fround(this._fernRingY(fr, p, law, wl)) !== pos.getY(p.li)) {
-                this._fernRingSetzVertex(fr, p, law, wl);
+                this._fernRingSetzVertex(fr, p, law, wl, fr.farbSchutt[p.g]);
                 neu = true;
             }
             fr.deckCursor++;
@@ -2521,9 +2573,11 @@ class AnazhRealm_Z11c {
     // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task so viele Punkte, wie das
     // Takt-Budget des Streamings trägt (`_voxelStreamBudgetMs`, der Regler atmet es), mindestens 16 — nie eine feste Zahl
     // (bis K16 fest 1 500 je Task: bei 25 µs je Spalte 37 ms am Stück auf dem Haupt-Thread, Lehre 14).
-    _feldZeichnerHoehen(punkte, includeDetail) {
+    // `schutt` (optional, Float32Array n): je Punkt das Gewicht des Schutts aus DEMSELBEN Ruf (`aus.schutt`).
+    _feldZeichnerHoehen(punkte, includeDetail, schutt) {
         const n = (punkte.length / 2) | 0;
         const werte = new Float32Array(n);
+        const aus = schutt ? { hang: 0, schutt: 0 } : undefined;
         let k = 0;
         return new Promise((fertig) => {
             const scheibe = () => {
@@ -2531,7 +2585,8 @@ class AnazhRealm_Z11c {
                 const frist = performance.now() + (Number.isFinite(budget) && budget > 0 ? budget : 4);
                 const mindest = k + 16;
                 for (; k < n; k++) {
-                    werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail);
+                    werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail, aus);
+                    if (aus) schutt[k] = aus.schutt > 0 ? aus.schutt : 0;
                     if (k >= mindest && (k & 15) === 0 && performance.now() > frist) {
                         k++;
                         break;
@@ -2593,8 +2648,9 @@ class AnazhRealm_Z11c {
             zonenPunkte[k * 2] = punkte[zonenIdx[k] * 2];
             zonenPunkte[k * 2 + 1] = punkte[zonenIdx[k] * 2 + 1];
         }
+        const ringSchutt = new Float32Array((punkte.length / 2) | 0);
         Promise.all([
-            this._feldZeichnerHoehen(punkte, false),
+            this._feldZeichnerHoehen(punkte, false, ringSchutt),
             zonenIdx.length ? this._feldZeichnerHoehen(zonenPunkte, true) : Promise.resolve(null),
         ])
             .then(([werte, vollWerte]) => {
@@ -2611,7 +2667,7 @@ class AnazhRealm_Z11c {
                 const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
                 // NUR ab dem Live-Cursor malen: Vertices davor hat die CPU schon
                 // aufs f64-Gesetz verfeinert — f32 überschreibt nie exakter.
-                for (let g = fr.cursor; g < n; g++) this._fernRingSetzVertex(fr, pts[g], werte[g], wl);
+                for (let g = fr.cursor; g < n; g++) this._fernRingSetzVertex(fr, pts[g], werte[g], wl, ringSchutt[g]);
                 this._fernRingHoch(fr, [true, true, true]);
                 this._fernRingTeilung(fr); // die Ecken der Schale 0 stehen am neuen Anker: die Teilung folgt im selben Takt
                 fr.gpuLaeufe = (fr.gpuLaeufe || 0) + 1;
@@ -3276,7 +3332,8 @@ class AnazhRealm_Z11c {
         const ankerX = fr.anchorX;
         const ankerZ = fr.anchorZ;
         const saison = this._fernSaison({ r: 1, g: 1, b: 1 });
-        this._feldZeichnerHoehen(punkte, false)
+        const feldSchutt = new Float32Array((punkte.length / 2) | 0);
+        this._feldZeichnerHoehen(punkte, false, feldSchutt)
             .then((werte) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
@@ -3285,6 +3342,7 @@ class AnazhRealm_Z11c {
                 // (`_feldPassFaerben`), das alte Feld bleibt sichtbar, bis das neue steht.
                 fp.farbJob = {
                     werte,
+                    schutt: feldSchutt,
                     punkte,
                     k: 0,
                     n,
@@ -3335,7 +3393,7 @@ class AnazhRealm_Z11c {
             fuss.ht = (Math.PI * Math.hypot(px - job.ankerX, pz - job.ankerZ)) / P.az;
             fuss.hr =
                 (P.rMaxM - AnazhRealm.FERN_RING.schalen[AnazhRealm.FERN_RING.schalen.length - 1].aussen) / (2 * P.rad);
-            this._fernFarbeAt(px, y, pz, wet, f, job.saison, fuss);
+            this._fernFarbeAt(px, y, pz, wet, f, job.saison, fuss, job.schutt[k]);
             job.daten[k * 4] = y;
             job.daten[k * 4 + 1] = f[0];
             job.daten[k * 4 + 2] = f[1];

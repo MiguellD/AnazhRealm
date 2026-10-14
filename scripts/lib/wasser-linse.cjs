@@ -729,29 +729,54 @@ function wasserUferFarbe(opts) {
                 }
             }
         }
-        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen `_bodenFarbeAt` im Main.
+        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen DASSELBE Gesetz im Stamm —
+        // die Spalten-Farbe `_bodenFarbeAt` und der Fels-Stoff `_felsStoff` darüber, auf dem Netz des Workers. Seit K17-2
+        // mischt der Worker den Fels-Stoff in seine Farbe (der Stamm setzt nur die Attribute); der Leser komponiert, was die
+        // Farbe heute bedeutet (bis K17-2 verglich er nur die Spalten-Farbe: 529/2579 Ufer-Vertices „abweichend").
         let paritaet = null;
         if (typeof r._voxelWorkerComputeChunkMesh === "function" && r._getVoxelWorker() && proben.length) {
             await r._voxelWorkerSyncState({ op: "init" });
+            const T = window.THREE;
             const span = r._voxelChunkConfig(0).span;
             let vertices = 0,
                 abweichend = 0,
-                maxDiff = 0;
+                maxDiff = 0,
+                fels = 0;
             for (const [a] of proben.slice(0, o.chunks || 3)) {
                 const m = await r._voxelWorkerComputeChunkMesh(Math.floor(a.x / span), Math.floor(a.z / span), 0);
                 if (!m || m.empty) continue;
                 const pos = new Float32Array(m.positions),
                     col = new Float32Array(m.colors);
+                const soll = new Float32Array(pos.length);
                 for (let i = 0; i < pos.length; i += 3) {
                     r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c);
+                    soll[i] = c[0];
+                    soll[i + 1] = c[1];
+                    soll[i + 2] = c[2];
+                }
+                const spalte = soll.slice();
+                const g = new T.BufferGeometry();
+                g.setAttribute("position", new T.BufferAttribute(pos, 3));
+                g.setAttribute("normal", new T.BufferAttribute(new Float32Array(m.normals), 3));
+                g.setAttribute("aHimmel", new T.BufferAttribute(new Float32Array(m.himmel), 1));
+                g.setAttribute("color", new T.BufferAttribute(soll, 3));
+                g.setIndex(new T.BufferAttribute(new Uint32Array(m.indices), 1));
+                r._felsStoff(g);
+                for (let i = 0; i < pos.length; i += 3) {
                     vertices++;
-                    let dmax = 0;
-                    for (let k = 0; k < 3; k++) dmax = Math.max(dmax, Math.abs(Math.fround(c[k]) - col[i + k]));
+                    let dmax = 0,
+                        dfels = 0;
+                    for (let k = 0; k < 3; k++) {
+                        dmax = Math.max(dmax, Math.abs(soll[i + k] - col[i + k]));
+                        dfels = Math.max(dfels, Math.abs(soll[i + k] - spalte[i + k]));
+                    }
+                    if (dfels > 0) fels++;
                     if (dmax > 0) abweichend++;
                     if (dmax > maxDiff) maxDiff = dmax;
                 }
+                g.dispose();
             }
-            paritaet = { vertices, abweichend, maxDiff };
+            paritaet = { vertices, abweichend, maxDiff, fels };
         }
         return {
             proben: proben.length,
@@ -2184,8 +2209,8 @@ function wasserFlora(opts) {
 // Je Fluss-Punkt (Heimat-Region und Kacheln) in einem geladenen Nah-Chunk (LOD 0) ein Profil-Schnitt quer zum Lauf: der
 // Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
 // die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
-// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels, ab screeLo
-// (≈ 37°) Geröll. Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
+// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels; Geröll-Kandidat
+// ist ein Profil ab `schuttKandidat` (≈ 23°) — Schutt trägt nur der Schutthang des Schicht-Gesetzes (je Vertex `aSchutt`, K17). Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
 // des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
 // der Geometrie-Normale. Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe, und dahinter glitt eine Wand ins Gelände.
 function wasserBank(opts) {
@@ -2200,7 +2225,7 @@ function wasserBank(opts) {
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
-        geroellGrad = grad(G.screeLo);
+        geroellGrad = grad(G.schuttKandidat);
     const nah = (x, z) => {
         const e = st.voxelChunks && st.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
         return e && e.mesh && e.lod === 0 ? e : null;
@@ -2312,11 +2337,12 @@ function wasserBank(opts) {
             n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
             const steile = Math.max(0, Math.min(1, 1 - n.y));
             const rw = ss(G.rockLo, G.rockHi, steile);
-            const sw = ss(G.screeLo, G.screeHi, steile) * (1 - rw);
+            const sch = e.mesh.geometry.attributes.aSchutt;
+            const sw = sch ? sch.getX(i) : 0;
             vertices++;
             gewicht += rw + sw;
             if (steile > G.rockLo) felsV++;
-            else if (steile > G.screeLo) geroellV++;
+            else if (sw > 0.5) geroellV++;
         }
     }
     const s = winkel.slice().sort((x, y) => x - y);

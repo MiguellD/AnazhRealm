@@ -22916,7 +22916,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.idxMismatches = idxMismatches;
         out.idxBitIdentical = idxMismatches === 0;
         // Colors bit-identisch? Der Worker-Weg ist das Worker-Mesh UND sein Haupt-Thread-Schritt (die Himmels-Sicht und
-        // der Stein unter Fels, `_bodenFarbeUnterFels`, K02a): verglichen wird der FERTIGE Bau beider Wege — vorher las
+        // der Fels-Stoff, `_felsStoff`, K17): verglichen wird der FERTIGE Bau beider Wege — vorher las
         // der Vergleich die rohen Worker-Farben gegen den fertigen Sync-Bau (8 328 Abweichungen am Spawn-Chunk, 0,071).
         // Die Zellen reisen als Kopie (der Bau stempelt sie, der Zellen-Vergleich unten liest die ungestempelten).
         const wFertig = r._buildVoxelChunkDataFromWorkerMesh(
@@ -24711,8 +24711,9 @@ async function checkBandNahStreu(ctx) {
             );
         const ns = r.state.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
-        // Satz in der Szene (wirft nicht), jede Senke ist ein Studio-Teil (leafKey f:…) ohne Mesh, ihre Blöcke treu
-        // (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im Satz ihres Stoffs.
+        // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
+        // ohne Mesh, ihre Blöcke treu (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im
+        // Satz ihres Stoffs.
         let selbst = 0;
         r.state.scene.traverse((o) => {
             if (o.isMesh && ((o.userData && o.userData.inventar === "streu-klein") || /^streuNah:/.test(o.name || "")))
@@ -24722,12 +24723,15 @@ async function checkBandNahStreu(ctx) {
         for (const [art, satz] of r.state.chunkSaetze || [])
             if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
         const stoffe = new Set([...ns.senken.values()].map((a) => a.mat.uuid));
+        const stehtJe = new Map([...ns.senken.values()].map((a) => [a.satz, !a.wiegt]));
         out.jeStoffEinSatz =
             selbst === 0 &&
             [...ns.senken.values()].every((a) => stoffSaetze.has(a.satz)) &&
             new Set([...stoffSaetze.values()].map((x) => x.spec.mat.uuid)).size === stoffSaetze.size &&
             stoffSaetze.size <= stoffe.size &&
-            [...stoffSaetze.values()].every((x) => x.mesh.parent === r.state.scene && x.mesh.castShadow === false);
+            [...stoffSaetze].every(
+                ([art, x]) => x.mesh.parent === r.state.scene && x.mesh.castShadow === (stehtJe.get(art) === true)
+            );
         out.studioTeile = [...ns.senken.values()].every(
             (a) => a.mesh === undefined && typeof a.leafKey === "string" && a.leafKey.startsWith("f:")
         );
@@ -24793,7 +24797,7 @@ async function checkBandNahStreu(ctx) {
         JSON.stringify(res.wind)
     );
     check(
-        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, keiner wirft",
+        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, der stehende Stoff wirft, der wiegende nie",
         res.jeStoffEinSatz === true
     );
     check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), Daten ohne Mesh", res.studioTeile === true);
@@ -37528,12 +37532,18 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const G = A.TERRAIN_GEOLOGY;
         out.configFrozen = !!G && Object.isFrozen(G);
         out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
-        out.slopeOrderScree = !!G && G.screeLo < G.screeHi;
-        out.screeBeforeRock = !!G && G.screeLo < G.rockLo;
+        out.slopeOrderScree = !!G && G.schuttGitter > 0 && G.schuttGitter <= 2 * 3.6;
+        out.screeBeforeRock = !!G && G.schuttKandidat < G.rockLo;
+        // Der Fels-Ton ist das Gesetz (K17, gelaende-core `felsBasis` über `FELS_STOFF`), kein Tint der Geologie mehr.
+        const FS = A.FELS_STOFF;
         out.tintsAreRgb =
             !!G &&
-            Array.isArray(G.rockTint) &&
-            G.rockTint.length === 3 &&
+            !("rockTint" in G) &&
+            !!FS &&
+            Array.isArray(FS.basis.basis) &&
+            FS.basis.basis.length === 3 &&
+            Array.isArray(FS.mittel) &&
+            FS.mittel.length === 3 &&
             Array.isArray(G.mossTint) &&
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
@@ -37662,9 +37672,12 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (A1) _terrainGeologyAlbedo Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
-    check("Ω-OPSIS S1 (A4) Geröll-Schwellen geordnet (screeLo < screeHi)", res.slopeOrderScree === true);
-    check("Ω-OPSIS S1 (A5) Geröll beginnt vor Fels (screeLo < rockLo)", res.screeBeforeRock === true);
-    check("Ω-OPSIS S1 (A6) rockTint + mossTint sind RGB-Tripel", res.tintsAreRgb === true);
+    check("Ω-OPSIS S1 (A4) Schutt-Gitter des Gesetzes trägt das Schicht-Band (0 < schuttGitter ≤ 7,2 m)", res.slopeOrderScree === true);
+    check("Ω-OPSIS S1 (A5) Schutt-Kandidat beginnt vor Fels (schuttKandidat < rockLo)", res.screeBeforeRock === true);
+    check(
+        "Ω-OPSIS S1 (A6) Fels-Stoff (Basis + Mittel) und mossTint sind RGB-Tripel, kein rockTint-Zwilling",
+        res.tintsAreRgb === true
+    );
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
 
     check("Ω-OPSIS S1 (B1) CONSUM: Toon-Builder ruft _terrainGeologyAlbedo", res.toonCallsGeology === true);
@@ -37874,7 +37887,11 @@ async function checkBandWahrerAnblickGras(ctx) {
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
 // Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 78 Ladungen des Atlas — 7 Raum-
-// Werte × 6 + 18 Ebenen × 2 —, kein verborgener Fn-Rumpf; die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · die
+// Werte × 6 + 18 Ebenen × 2; die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
+// gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
+// reist als Argument, der Graph sieht ihn); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
+// Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
+// Fragment: die Ladungen fielen 78 → 72, die Absenz sah es nicht) · die
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
 // gegen CPU) und das Budget des erzeugten WGSL misst dieselbe Linse am echten Renderer (`werkbank shader --stoff boden
 // --rauschprobe`).
@@ -37894,6 +37911,14 @@ async function checkBandRauschGesetz(ctx) {
                 "_buildPbrNodeMaterial",
             ];
             out.absenz = stoffe.filter((n) => /mx_noise_float/.test(window.__codeOf(r[n])));
+            // das Rechenwerk des Fels-Gesetzes (gelaende-core): Fein-Term und Schutt-Korn laufen im Fragment — ein Rauschen
+            // lesen sie nur über `o.rausch` (EINE Probe im Rausch-Atlas), nie ein Gitter-Rauschen aus Ziehungen (`wert3`)
+            const GK = window.__gelaendeCore;
+            const feinSrc = GK && GK.felsFein ? window.__codeOf(GK.felsFein) : "";
+            const kornSrc = GK && GK.schuttKorn ? window.__codeOf(GK.schuttKorn) : "";
+            if (!feinSrc || !/o\.rausch\(/.test(feinSrc)) out.absenz.push("felsFein ohne o.rausch");
+            for (const [n, src] of [["felsFein", feinSrc], ["schuttKorn", kornSrc]])
+                if (/wert3|mx_noise/.test(src)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
@@ -37962,7 +37987,7 @@ async function checkBandRauschGesetz(ctx) {
             return out;
         })) || {};
     check(
-        `RAUSCH-GESETZ (A) Absenz: kein mx_noise_float in den Boden- und Substanz-Stoffen (${(res.absenz || []).join(", ") || "keiner"})`,
+        `RAUSCH-GESETZ (A) Absenz: kein mx_noise_float in den Boden- und Substanz-Stoffen, kein Gitter-Rauschen aus Ziehungen im Rechenwerk des Fels-Gesetzes (${(res.absenz || []).join(", ") || "keiner"})`,
         Array.isArray(res.absenz) && res.absenz.length === 0
     );
     const g = res.graph || {};
@@ -37971,7 +37996,7 @@ async function checkBandRauschGesetz(ctx) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
         !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
     );
     check(

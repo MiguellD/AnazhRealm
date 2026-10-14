@@ -400,7 +400,7 @@ class AnazhRealm_Z10 {
                     // Multi-Klassen-Geologie, als Füll-Licht-Albedo UND als colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
                     if (opts.vertexColorAlbedo) {
-                        // FELS: die per-Vertex-Geologie (phyto-core `withColor`) IST die Albedo; der EINE Substanz-Kern legt
+                        // FELS: der Stoff am Vertex (das Fels-Gesetz, gelaende-core `felsNetz`) IST die Albedo; der EINE Substanz-Kern legt
                         // Korn + Kavität + Roughness drauf (instanz-stabil via positionLocal). KEIN Terrain-Geologie-Overlay
                         // (positionWorld schmiert über instanzierte Felsen), KEIN Normal-Flatten/Bump (plättet die Krümmung).
                         if (typeof this._substanceCharacter === "function") {
@@ -427,7 +427,8 @@ class AnazhRealm_Z10 {
                             _Ta,
                             _bodenVc || albedoNode,
                             _Ta.positionWorld,
-                            _terrRough
+                            _terrRough,
+                            opts.felsImVertex === true
                         );
                         {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
@@ -756,7 +757,7 @@ class AnazhRealm_Z10 {
                     // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
                     // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
                     // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
-                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, `_himmelsSicht`)
+                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, gelaende-core `himmelsSicht`)
                     // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
                     // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
                     // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
@@ -1222,7 +1223,7 @@ class AnazhRealm_Z10 {
     // (rohe Geometrie-Normale) → Fels/Geröll bricht durch; FLACH + FEUCHT (dampEarth im Basis-Albedo) →
     // Moos. smoothstep-Konkurrenz, per-Fragment (kein Vertex-Trapez). Render-only; Fehler → der
     // unveränderte Albedo.
-    _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
+    _terrainGeologyAlbedo(_T, albedo, wp, roughOut, felsImVertex) {
         try {
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
@@ -1231,21 +1232,49 @@ class AnazhRealm_Z10 {
             // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
             const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
             const _rockW = _T.smoothstep(_T.float(G.rockLo), _T.float(G.rockHi), _steep);
-            const _screeW = _T
-                .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
-                .mul(_T.float(1.0).sub(_rockW));
+            // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt — das Gewicht trägt der Vertex (`aSchutt`, `_felsStoff`
+            // aus gelaende-core `hoehe(…, aus).schutt`), nie die Steile der Masche: bis zur Nachbesserung 2 lag er ab 28° auf
+            // jedem Hang (der grüne Hügel grau, der 42°-Dorfhang zu 85 % Schutt), und das 28°–34°-Band streifte die 30°-Rampe in
+            // den Reihen des Netzes. Die Ferne trägt das Mittel des Schutts in ihrer Farbe (`_fernSchutt`, dasselbe Gesetz).
+            const _screeW = felsImVertex ? _T.attribute("aSchutt", "float") : _T.float(0);
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
-            // FELS-FARBE regional konsistent: die Basis-Luminanz tönt den kühlen
-            // Stein (so bleibt Gipfel-Fels heller, Glut-Hang wärmer), gebändert vom
-            // Schichtungs-Noise (Sediment-Strata in Welt-Y).
-            const _lum = albedo.x.mul(0.3).add(albedo.y.mul(0.59)).add(albedo.z.mul(0.11));
-            const _stone = _T.vec3(G.rockTint[0], G.rockTint[1], G.rockTint[2]);
-            const _bandN = _ra.raum(_T.vec3(wp.x.mul(0.05), wp.y.mul(0.6), wp.z.mul(0.05)));
-            let _rockCol = _T.mix(_stone, _T.vec3(_lum, _lum, _lum), _T.float(G.rockLumMix));
-            _rockCol = _rockCol.mul(_T.float(1.0).add(_bandN.mul(_T.float(G.rockBand))));
-            const _screeCol = _T.mix(albedo, _rockCol, _T.float(G.screeMix));
-            // Konkurrenz: erst Geröll, dann Fels (Fels dominiert die Mischung).
-            let _out = _T.mix(albedo, _screeCol, _screeW.mul(_gRock));
+            // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
+            // IST die Vertex-Farbe der Fels — `_felsStoff` hat Pakete, Rinde, Mulden, Flechte und Moos aus dem Gesetz
+            // aufgelegt und trägt die Mittel dessen, was die Masche nicht trägt (`felsMittelWerte`); die Ferne (Fern-Ring)
+            // trägt das Mittel des Stoffs (`FELS_STOFF.mittel`). Der EINE Detail-Term legt das Feine nach DEMSELBEN Gesetz
+            // (`felsLage`, `felsKanten`) relativ zu diesen Mitteln auf: die Bank im Paket (Mächtigkeit je Paket, Grenzen
+            // gezogen und je Fuge gewellt — wo zwei Fugen sich kreuzen, keilt die Bank aus), die Fuge als KANTE (die Kehle
+            // dunkel, die Oberkante hell, je Fuge ihre Weite, auf einem Teil der Länge ausgekeilt) und die Klüfte (schräg,
+            // ihre Lage je Paket, an der Fuge nur ein Versatz). EINE Probe im Rausch-Atlas wellt die Schichten im Großen,
+            // das Auge blendet aus, was der Pixel nicht trägt. Bis zur Nachbesserung lasen sich gleich hohe Bänke mit
+            // geraden Strich-Fugen und je Bank neu ansetzenden Klüften als Ziegelmauer.
+            const FS = AnazhRealm.FELS_STOFF;
+            const FF = FS.gesetz.fein;
+            const GK = globalThis.__gelaendeCore;
+            // EIN Rechenwerk (K17, Nachbesserung 2): der Fein-Term IST das Gesetz (gelaende-core `felsFein`, `schuttKorn`) —
+            // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, die Welle
+            // aus EINER Probe im Rausch-Atlas — der Vertex liest denselben Wert, gelaende-core `rauschRaum`). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
+            // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
+            // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
+            const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
+            const _camD = wp.sub(_T.cameraPosition).length();
+            const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
+            const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
+            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+            const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
+            const _gate = _rockW.add(_screeW).mul(_gRock);
+            const _f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
+            const _feinV = AnazhRealm._zweigTSL(_T)(_T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, wp.x, wp.z)), _gate);
+            const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
+            const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
+            const _rockCol = _felsGrund.mul(_fein);
+            // Der Schutthang trägt sein Korn mit dem Gewicht des Schutts im Vertex (`aSchutt`, `_felsStoff`); der Fels dominiert.
+            // Wo der Pixel den Stein nicht trägt, bleibt das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich).
+            // Die Steine liegen, wo das Gesetz Schutt sagt, ganz (`aSchutt` / `schutt`): die 15 % Boden im Ton des Vertex tragen
+            // kein eigenes Korn — mit dem Gewicht des Tons (0,85) fehlte dem Hang ein Sechstel seiner Streuung.
+            const _kornFern = _T.mix(_T.float(GK.schuttMittel()), _feinV.z, _kornSicht);
+            const _kornW = _screeW.div(G.schutt).clamp(0, 1).mul(_gRock);
+            let _out = albedo.mul(_T.mix(_T.float(1), _kornFern, _kornW));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber

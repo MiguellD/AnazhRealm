@@ -457,7 +457,10 @@ class AnazhRealm_Z11a {
             N = [],
             C = [],
             HS = [],
+            SC = [],
             I = [];
+        const sch = geom.attributes.aSchutt;
+        if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
         const seen = new Set();
         for (let t = 0; t < idx.length; t += 3) {
             const i0 = idx[t],
@@ -491,6 +494,7 @@ class AnazhRealm_Z11a {
                     N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
                     C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
                     HS.push(him.getX(v));
+                    SC.push(sch.getX(v));
                 }
                 I.push(base, base + 1, base + 2, base, base + 2, base + 3);
                 // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
@@ -502,6 +506,7 @@ class AnazhRealm_Z11a {
                     const cv = s === 1 || s === 2 ? b : a;
                     C.push(col ? col.getX(cv) : 0.5, col ? col.getY(cv) : 0.5, col ? col.getZ(cv) : 0.5);
                     HS.push(him.getX(cv));
+                    SC.push(sch.getX(cv));
                 }
                 I.push(sBase, sBase + 1, sBase + 2, sBase, sBase + 2, sBase + 3);
             }
@@ -515,6 +520,7 @@ class AnazhRealm_Z11a {
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
         // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
         bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
+        bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));
         bg.setIndex(I);
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         this._chunkSatzEin("boden", "stitch:" + key, bg, key);

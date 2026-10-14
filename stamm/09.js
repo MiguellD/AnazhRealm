@@ -224,13 +224,14 @@ class AnazhRealm_Z09 {
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
-            screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
-            screeHi: 0.48,
-            rockTint: P.rock,
-            rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
-            //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
-            rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
-            screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
+            // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt (gelaende-core `hoehe(…, aus).schutt`: der Abschnitt
+            // Schutthang der Treppe × Stil), nie nach der Steile der Masche — `schutt` sein Gewicht im Vertex (`_felsStoff`, an
+            // `aSchutt` weitergereicht, der Detail-Term legt sein Korn auf). Das Gesetz fragt der Chunk nur, wo ein Vertex unter
+            // dem Himmel steiler als `schuttKandidat` (≈ 23°) steht, auf einem Gitter der Kante `schuttGitter` (m, 3 Netz-Schritte;
+            // das Band ist 16,7 m breit). Bis zur Nachbesserung 2 lag er ab 28° auf jedem Hang (Steile 0,117 … 0,171).
+            schuttKandidat: 0.08,
+            schuttGitter: 5.4,
+            schutt: 0.85,
             mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
             gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
             mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
@@ -241,6 +242,108 @@ class AnazhRealm_Z09 {
             //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
             //                  statt eines toten uniformen Sheens unterm Sky-IBL.
         });
+    }
+
+    // DER ZWEIG IM STOFF (K17-2): ein Term, der nur rechnen soll, wo sein Gewicht trägt (der Fels-Term: die Wiese zahlt ihn
+    // nicht), reist als ARGUMENT in EINEN Fn-Rumpf, der nur seine Argumente liest — TSL erzeugt den Code des Arguments dort,
+    // wo es zuerst gebraucht wird: im Zweig. Der Knoten-Graph sieht den Inhalt (die Argumente sind Kinder des Aufrufs), die
+    // Shader-Kosten-Linse (`stoffGraph`) kennt diesen Rumpf (`zweig`); jeder andere Fn ohne Layout bleibt `verborgen` (bis
+    // K17-2 trug der Fels-Term seinen Inhalt im Rumpf: RAUSCH-GESETZ (B) 1 verborgener Rumpf). EIN Zweig je TSL-Modul.
+    // zweig(inhalt: vec3, gewicht: float) → inhalt, wo gewicht > 1e-3, sonst vec3(1).
+    static _zweigTSL(T) {
+        if (AnazhRealm._zweigMemo && AnazhRealm._zweigMemo.T === T) return AnazhRealm._zweigMemo.fn;
+        const fn = T.Fn(([inhalt, gewicht]) => {
+            const v = T.vec3(1, 1, 1).toVar("zweig");
+            T.If(gewicht.greaterThan(1e-3), () => {
+                v.assign(inhalt);
+            });
+            return v;
+        });
+        AnazhRealm._zweigMemo = { T, fn };
+        return fn;
+    }
+
+    // DAS RECHENWERK DES FELS-GESETZES IM SHADER (K17, Nachbesserung 2): gelaende-core rechnet seinen Fein-Term (`felsFein`,
+    // `schuttKorn`) über ein Rechenwerk — hier dieselben Schritte als TSL-Knoten, die Ziehung `zufall` als dieselben 32-Bit-
+    // Ganzzahl-Schritte (u32: Multiplikation modulo 2^32, Xor, logisches Schieben), `rausch` als EINE Probe im Rausch-Atlas
+    // (`raum` aus `_rauschAtlas`, gelaende-core `rauschRaum` auf der CPU). EIN Rechenwerk je TSL-Modul und Atlas.
+    static _felsRechenwerkTSL(T, raum) {
+        if (typeof raum !== "function")
+            throw new Error("_felsRechenwerkTSL: ohne Rausch-Atlas kein Rechenwerk (raum fehlt)");
+        if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T && AnazhRealm._felsRwMemo.raum === raum)
+            return AnazhRealm._felsRwMemo.o;
+        const N = (v) => (typeof v === "number" ? T.float(v) : v);
+        const U = (v) => (typeof v === "number" ? T.uint(v >>> 0) : T.uint(T.int(v)));
+        const o = Object.freeze({
+            add: (a, b) => N(a).add(N(b)),
+            sub: (a, b) => N(a).sub(N(b)),
+            mul: (a, b) => N(a).mul(N(b)),
+            div: (a, b) => N(a).div(N(b)),
+            min: (a, b) => T.min(N(a), N(b)),
+            max: (a, b) => T.max(N(a), N(b)),
+            floor: (a) => T.floor(N(a)),
+            sin: (a) => T.sin(N(a)),
+            exp: (a) => T.exp(N(a)),
+            abs: (a) => T.abs(N(a)),
+            sqrt: (a) => T.sqrt(N(a)),
+            step: (e, v) => T.step(N(e), N(v)),
+            glatt: (a, b, v) => T.smoothstep(N(a), N(b), N(v)),
+            clamp01: (v) => N(v).clamp(0, 1),
+            // die Wahl als Auswahl, nie als Mischung: mix(−1e9, a, 1) verlöre a in f32 (Stelle 64 bei 1e9)
+            wahl: (c, a, b) => T.select(N(c).greaterThan(0.5), N(a), N(b)),
+            rausch: (x, y, z) => raum(T.vec3(N(x), N(y), N(z))),
+            // gelaende-core `zufall(sh, i, j, k)`: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1, zwei Misch-Runden
+            zufall: (sh, i, j, k) => {
+                const kk = typeof k === "number" ? T.uint(((k | 0) + 1) >>> 0) : T.uint(T.int(k).add(1));
+                let h = T.uint(sh >>> 0)
+                    .bitXor(U(i).mul(T.uint(0x27d4eb2d)))
+                    .bitXor(U(j).mul(T.uint(0x165667b1)))
+                    .bitXor(kk.mul(T.uint(0x9e3779b1)));
+                h = h.bitXor(h.shiftRight(T.uint(15))).mul(T.uint(0x85ebca6b));
+                h = h.bitXor(h.shiftRight(T.uint(13))).mul(T.uint(0xc2b2ae35));
+                h = h.bitXor(h.shiftRight(T.uint(16)));
+                return T.float(h).div(4294967296);
+            },
+        });
+        AnazhRealm._felsRwMemo = { T, raum, o };
+        return o;
+    }
+
+    // DER FELS-STOFF DER WELT (K17): das EINE Gesetz (gelaende-core `FELS`, `felsFarbe`) mit dem Stein der Boden-Palette als
+    // Grundton (`felsBasis`: die dunkle Lage und die helle Bank aus ihm), der Kante des Nah-Netzes (1,8 m: was es nicht trägt,
+    // trägt sein Mittel) und dem Mittel für die Ferne (`felsMittel`). Ohne den Kern bricht der Boden laut (Kern-Pflicht).
+    static get FELS_STOFF() {
+        if (AnazhRealm._felsStoffMemo) return AnazhRealm._felsStoffMemo;
+        const GK = globalThis.__gelaendeCore;
+        if (
+            !GK ||
+            typeof GK.felsFarbe !== "function" ||
+            typeof GK.felsKruemmung !== "function" ||
+            typeof GK.felsFein !== "function" ||
+            typeof GK.schuttKorn !== "function" ||
+            !GK.FELS
+        )
+            AnazhRealm._kernPflichtBruch("gelaende:felsFarbe");
+        const basis = GK.felsBasis(AnazhRealm.BODEN_FARBE.rock);
+        const G = AnazhRealm.TERRAIN_GEOLOGY;
+        AnazhRealm._felsStoffMemo = Object.freeze({
+            gesetz: GK.FELS,
+            basis,
+            // die Kante des Nah-Netzes (1,8 m) lebt EINMAL in `netz.fuss` (bis K17-2 NB1 stand ein ungelesener Zwilling daneben)
+            // die Geologie des Boden-Netzes für gelaende-core `felsStoff` — der Stamm (Sync-Bau) und der voxel-worker (der
+            // Init-Schnappschuss `felsStoff`) lesen DIESELBEN Zahlen
+            netz: Object.freeze({
+                rockLo: G.rockLo,
+                rockHi: G.rockHi,
+                schuttKandidat: G.schuttKandidat,
+                schuttGitter: G.schuttGitter,
+                schutt: G.schutt,
+                fuss: 1.8,
+            }),
+            mittel: Object.freeze(GK.felsMittel(basis)),
+            mittelWerte: GK.felsMittelWerte(),
+        });
+        return AnazhRealm._felsStoffMemo;
     }
 
     // Terrain-Mikro-Relief (Bump): ein Noise-Höhengradient kippt die geflattete Normale fein → der Boden
@@ -272,12 +375,16 @@ class AnazhRealm_Z09 {
     // lookup3-Hash, die Fünftgrad-Blende, die Skala 0,982) — nur der Hash wird nicht mehr je Fragment und Ecke gerechnet
     // (8 Ecken × ~40 Ganzzahl-Operationen je Aufruf), er liegt EINMAL im Rausch-Atlas (`_rauschAtlas`). `P` Gitter-Zellen
     // je Kante (die Ebene wiederholt sich nach P Zellen); die dritte Achse liegt im selben Atlas, je Schicht um `schraeg`
-    // versetzt — das Maximum des kürzesten 3D-Periodenvektors für P = 256 (43 Zellen).
+    // versetzt — das Maximum des kürzesten 3D-Periodenvektors für P = 256 (43 Zellen). Das Gesetz lebt im Gelände-Kern
+    // (gelaende-core `RAUSCH`, `rauschGitter`, `rauschRaum`: derselbe Wert auf der CPU) — Vertex und Pixel lesen EIN Rauschen.
     static get RAUSCH_GESETZ() {
-        return Object.freeze({ P: 256, schraeg: [12, 42], skala: 0.982 });
+        const GK = globalThis.__gelaendeCore;
+        if (!GK || !GK.RAUSCH || typeof GK.rauschGitter !== "function") AnazhRealm._kernPflichtBruch("gelaende:RAUSCH");
+        return GK.RAUSCH;
     }
 
-    // Die Bytes des Rausch-Atlas (rein, ohne THREE): je Gitter-Punkt (i, j) der Gradient von MaterialX — der Hash
+    // Die Bytes des Rausch-Atlas (rein, ohne THREE): je Gitter-Punkt (i, j) der Gradient von MaterialX (gelaende-core
+    // `rauschGitter`) — der Hash
     // `mx_hash_int(i, j, 0)` (Jenkins lookup3, bit-genau wie das vendored WGSL) und die Achsen-Regel `mx_gradient_float`
     // (u = h < 8 ? x : y; v = h < 4 ? y : h ∈ {12, 14} ? x : z; Vorzeichen aus Bit 0 und 1) —, GEPACKT je Komponente: das
     // Texel (3i + c, j) trägt die Komponente c der vier Ecken (i, j) · (i+1, j) · (i, j+1) · (i+1, j+1) als RGBA8 unorm
@@ -286,33 +393,7 @@ class AnazhRealm_Z09 {
     // Feature texture-formats-tier1 — swiftshader fehlt es (Invalid TextureView im Boot, gate:analog-nah).
     static _rauschAtlasDaten() {
         const P = AnazhRealm.RAUSCH_GESETZ.P;
-        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
-        const hash = (x, y, z) => {
-            let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
-            let b = a;
-            let c = a;
-            a = (a + x) >>> 0;
-            b = (b + y) >>> 0;
-            c = (c + z) >>> 0;
-            c = ((c ^ b) - rot(b, 14)) >>> 0;
-            a = ((a ^ c) - rot(c, 11)) >>> 0;
-            b = ((b ^ a) - rot(a, 25)) >>> 0;
-            c = ((c ^ b) - rot(b, 16)) >>> 0;
-            a = ((a ^ c) - rot(c, 4)) >>> 0;
-            b = ((b ^ a) - rot(a, 14)) >>> 0;
-            c = ((c ^ b) - rot(b, 24)) >>> 0;
-            return c;
-        };
-        const g = new Int8Array(P * P * 3);
-        for (let j = 0; j < P; j++)
-            for (let i = 0; i < P; i++) {
-                const h = hash(i, j, 0) & 15;
-                const o = (j * P + i) * 3;
-                const u = h < 8 ? 0 : 1;
-                const v = h < 4 ? 1 : h === 12 || h === 14 ? 0 : 2;
-                g[o + u] += h & 1 ? -1 : 1;
-                g[o + v] += h & 2 ? -1 : 1;
-            }
+        const g = globalThis.__gelaendeCore.rauschGitter();
         const out = new Uint8Array(3 * P * P * 4);
         for (let j = 0; j < P; j++)
             for (let i = 0; i < P; i++) {
@@ -1772,6 +1853,7 @@ class AnazhRealm_Z09 {
             geomorph: true,
             wegeKarte: true,
             himmelsSicht: true, // die Verdeckung des Himmels-Lichts und die Normale der Höhle (`_buildPbrNodeMaterial`)
+            felsImVertex: true, // die Vertex-Farbe IST der Fels-Stoff (`_felsStoff`), der Shader legt nur die feinen Bänke auf
         });
         // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
         // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/

@@ -401,6 +401,7 @@ class AnazhRealm_Z17b {
                     ["aMorphTarget", 3],
                     ["aMorphWeight", 1],
                     ["aHimmel", 1],
+                    ["aSchutt", 1],
                 ],
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
@@ -1348,43 +1349,6 @@ class AnazhRealm_Z17b {
     // die Schatten-Karte trägt je Strahl die ERSTE Fläche vom Licht, und die liegt in Himmels-Luft oder hinter einer Mündung —
     // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
     // Zellen, nie die Weltgröße.
-
-    // DIE HIMMELS-SICHT des Bodens (K02a, Auge 11 bei 762/−138): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht —
-    // die Umgebung (der EINE Himmel), Hemi und Ambient sind Himmels-Licht, und der Boden-Stoff liest diesen Wert als seine
-    // Verdeckung (`aoNode` des Chunk-Materials). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft,
-    // −1 = Himmels-Luft): jede Fläche der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt
-    // (`step` m) um exp(−step / HIMMELS_SICHT.m) — über die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine
-    // Höhle ohne Himmels-Fläche im Chunk sieht ihn nie (0). Vorher lag der Himmel auf jeder Höhlen-Wand: 22 m unter dem Fels
-    // stand die Ich-Sicht in einem blaugrauen Schleier (Sonne im Schatten, Umgebung voll; ohne Umgebung Helligkeit 0).
-    // Ohne Höhlen-Graph (kein Boden-Chunk) sieht jede Fläche den Himmel.
-    static _himmelsSicht(index, tri, n, step) {
-        const V = new Float32Array(n);
-        if (!tri) return V.fill(1);
-        const nT = (index.length / 3) | 0;
-        if (tri.length !== nT) throw new Error(`_himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
-        const schritt = Math.exp(-step / AnazhRealm.HIMMELS_SICHT.m);
-        const hop = new Int8Array(n).fill(-1);
-        for (let t = 0; t < nT; t++)
-            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
-        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
-        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
-        for (let k = 1; k <= schritte; k++) {
-            let neu = 0;
-            for (let t = 0; t < nT; t++) {
-                const a = index[3 * t],
-                    b = index[3 * t + 1],
-                    c = index[3 * t + 2];
-                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
-                    if (hop[a] < 0) ((hop[a] = k), neu++);
-                    if (hop[b] < 0) ((hop[b] = k), neu++);
-                    if (hop[c] < 0) ((hop[c] = k), neu++);
-                }
-            }
-            if (!neu) break;
-        }
-        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
-        return V;
-    }
 
     // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
     // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).
