@@ -42,6 +42,11 @@
 //      (gefiltertes rgb ÷ alpha ÷ wert): Luminanz und Deckung der Welt = Labor (± FRACHT_TOL). Dazu die Quelle: der Leser
 //      `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest sonst niemand. Vorher (BC1 ohne Teilen): Laub
 //      Y 0,96 → 0,84 je Stufe, die Nadel-Zelle 0,86 — die Welt dunkler als Labor und L2-Karte (Prüfer W5).
+//  (T) TEPPICH — die Halm-Deckung der Wiese (K56): je gelieferte Gras-Stufe (L1, L2) und Gestalt die Vorlage nach dem
+//      Wiesen-Gesetz gekachelt (Raster understory.grassStep, Jitter ±0,34, Drehung, Skala placement.scale.gras ·
+//      0,7…1,4, volle Wiese) und parallel unter TEPPICH_NEIGUNG projiziert (der Boden 4,4 m vor dem Ego-Auge): der Anteil
+//      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Vorher Büschel von 0,15 m auf dem 0,72-m-Raster (Augen-Befund 14.10.:
+//      Büschel auf glattem Grün). Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
 // Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
 // Atlas-Leser ohne ÷ alpha) — die Linse
@@ -308,6 +313,83 @@ function weidenZelle(fall, T) {
 function klingenL1(fall, T) {
     const n = T.filter((t) => t.kind === "foliage").reduce((s, t) => s + (t.idx ? t.idx.length / 3 : 0), 0);
     return { v: n ? [`${fall}: L1-Krone aus ${n} Klingen-Dreiecken (Papier-Streifen)`] : [], m: { klingen: n } };
+}
+// (T) Die Wiese aus EINER Vorlage nach dem Gesetz der Nah-Wiese gekachelt (`_nahWieseKachelBueschel`: Raster, Jitter
+// ±0,34, Drehung, Skala 0,7…1,4; hier volle Wiese) und parallel unter `neigung` Grad auf die Blick-Ebene projiziert; das
+// Fenster ist das Bild des Boden-Quadrats [−1, 1]² m, Raster 5 mm, die Kacheln reichen 3 m weit (jeder Halm, der ins
+// Fenster ragt). Rückgabe: der gedeckte Anteil des Fensters.
+const TEPPICH_NEIGUNG = 20;
+const TEPPICH_MIN = { 1: 0.85, 2: 0.55 }; // vorher L1 0,425/0,504 · L2 0,322/0,415, K56 L1 0,901/0,954 · L2 0,586/0,702
+function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
+    const e = (neigung * Math.PI) / 180,
+        se = Math.sin(e),
+        ce = Math.cos(e);
+    const RES = 0.005,
+        NU = Math.round(2 / RES),
+        NV = Math.round((2 * se) / RES),
+        bild = new Uint8Array(NU * NV);
+    const pu = [0, 0, 0],
+        pv = [0, 0, 0];
+    for (let gj = Math.ceil(-3 / step); gj * step <= 3; gj++)
+        for (let gi = Math.ceil(-3 / step); gi * step <= 3; gi++) {
+            let hs = ((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1;
+            const w = () => {
+                hs = (hs + 0x6d2b79f5) >>> 0;
+                let t = hs;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            const cx = gi * step + (w() - 0.5) * 0.68,
+                cz = gj * step + (w() - 0.5) * 0.68,
+                s = skala * (0.7 + w() * 0.7),
+                rot = w() * Math.PI * 2,
+                c = Math.cos(rot) * s,
+                sn = Math.sin(rot) * s;
+            for (const t of T) {
+                if (!t.idx) continue;
+                const P = t.pos,
+                    I = t.idx;
+                for (let k = 0; k < I.length; k += 3) {
+                    for (let q = 0; q < 3; q++) {
+                        const o = I[k + q] * 3,
+                            x = cx + c * P[o] + sn * P[o + 2],
+                            z = cz - sn * P[o] + c * P[o + 2];
+                        pu[q] = (x + 1) / RES;
+                        pv[q] = (P[o + 1] * s * ce - z * se + se) / RES;
+                    }
+                    const u0 = Math.max(0, Math.floor(Math.min(pu[0], pu[1], pu[2]))),
+                        u1 = Math.min(NU - 1, Math.ceil(Math.max(pu[0], pu[1], pu[2]))),
+                        v0 = Math.max(0, Math.floor(Math.min(pv[0], pv[1], pv[2]))),
+                        v1 = Math.min(NV - 1, Math.ceil(Math.max(pv[0], pv[1], pv[2])));
+                    if (u0 > u1 || v0 > v1) continue;
+                    const fl = (pu[1] - pu[0]) * (pv[2] - pv[0]) - (pv[1] - pv[0]) * (pu[2] - pu[0]);
+                    if (Math.abs(fl) < 1e-9) continue;
+                    for (let v = v0; v <= v1; v++)
+                        for (let u = u0; u <= u1; u++) {
+                            const x = u + 0.5,
+                                y = v + 0.5;
+                            const a = ((pu[1] - x) * (pv[2] - y) - (pv[1] - y) * (pu[2] - x)) / fl,
+                                b = ((pu[2] - x) * (pv[0] - y) - (pv[2] - y) * (pu[0] - x)) / fl;
+                            if (a >= 0 && b >= 0 && a + b <= 1) bild[v * NU + u] = 1;
+                        }
+                }
+            }
+        }
+    let n = 0;
+    for (let i = 0; i < bild.length; i++) n += bild[i];
+    return n / bild.length;
+}
+function teppichUrteil(fall, T, lod, step, skala) {
+    const d = teppichDeckung(T, step, skala),
+        min = TEPPICH_MIN[lod];
+    return {
+        v:
+            min != null && d >= min
+                ? []
+                : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`],
+        m: { teppich: d },
+    };
 }
 function unterseiteUrteil(quellen) {
     const v = [];
@@ -1003,6 +1085,9 @@ function windDatenUrteil(quellen) {
             for (const l of [0, 1]) await fall(p, l, 1);
         for (const p of Object.keys(buch).filter((x) => art(x) === "flower"))
             for (const s of [1, 2]) await fall(p, 0, s);
+        // (T) jede gelieferte Gras-Stufe, beide Gestalten der Nah-Wiese
+        for (const p of Object.keys(buch).filter((x) => art(x) === "grass"))
+            for (const l of rc.lod.kindStages.grass) for (const s of [1, 2]) await fall(p, l, s);
     });
     const pl = rc.placement || {};
     // Die Welt-Skala der Art: placement.scale, der Wald-Zusatzfaktor treeScaleMul NUR für Bäume (foundry-core).
@@ -1036,6 +1121,7 @@ function windDatenUrteil(quellen) {
             u.v.push(...b.v);
             Object.assign(u.m, b.m);
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
+        else if (kind === "grass") u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
         if (kind === "tree" && trauerArt) {
             const w = weidenZelle(k, f.T);
             u.v.push(...w.v);
@@ -1330,11 +1416,24 @@ function windDatenUrteil(quellen) {
             "foundry-core.js": quellen["foundry-core.js"],
         }).length >= 1,
     ]);
+    // (T) der Büschel auf 30 % seiner Weite gestaucht (das Bild vor K56: 0,15 m auf dem 0,72-m-Raster)
+    const gras1 = roh["gras-s1-L1"];
+    if (gras1) {
+        const T = gras1.T.map((t) => {
+            const p = Float32Array.from(t.pos);
+            for (let i = 0; i < p.length; i += 3) (p[i] *= 0.3), (p[i + 2] *= 0.3);
+            return Object.assign({}, t, { pos: p });
+        });
+        st.push([
+            "Büschel gestaucht (0,3)",
+            teppichUrteil("gestaucht", T, 1, rc.understory.grassStep, skala("gras")).v.length > 0,
+        ]);
+    } else st.push(["Gras-Fall fehlt", false]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht · Wind ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht · Wind · Teppich ==="
     );
     if (fails.length) {
         console.error("\n❌ ROT:");
