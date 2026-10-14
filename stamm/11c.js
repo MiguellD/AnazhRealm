@@ -2222,7 +2222,9 @@ class AnazhRealm_Z11c {
             );
         }
         // Schnapp-Punkte sind ganzzahlig, |x|, |z| < 2^21 m; die Maschen-Breite (Viertel-Oktaven) steht über 2^44 — eindeutig.
-        const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
+        // Ohne `fuss` steht der Punkt für sich (wie in `_fernFarbeTeile`): die Masche unter 1 m — die Nah-Fern-Linse ruft so
+        // das Gesetz an der Stelle und brach seit dem Fußabdruck (K16) an `fuss.ht`.
+        const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss ? fuss.ht : 0))) * 17592186044416;
         const m = this._fernFarbeMemo || (this._fernFarbeMemo = { neu: new Map(), alt: new Map() });
         let f = m.neu.get(key);
         if (f) return f;
@@ -2405,22 +2407,33 @@ class AnazhRealm_Z11c {
     // oder jenseits der Karten-Sicht des Baums vom Auge —, trägt der Boden das Kronendach × Saison nach der Deckung, wie der
     // Fern-Ring. Der Ring reicht seine Ecken-Krone (`kroneVertex`, aKrone): über dem Chunk-Quadrat liest er die Karte wie der
     // Chunk daneben (dieselbe Farbe an der Naht), jenseits seine Ecken. Ohne Karte, Saison oder TSL bricht der Boden-Stoff laut.
+    // DIE EINE GRENZE ZWISCHEN WALD UND DACH (K53): diesseits zeichnet der echte Wald (Laub-Radius vom Spieler, Karten-Sicht vom
+    // Auge), jenseits trägt der Boden das Kronendach der Deckung (`_fernKroneNahMisch`). Die Laubstreu der echten Kronen
+    // (`_wegeBodenFarbe`) liest dieselbe Grenze: unter dem Dach liegt sie im Mittel des Gesetzes, nie ein zweites Mal — bis K53
+    // lag sie jenseits unter dem Dach UND im Boden (gate:nah-fern Luft aus: Y −2,5 %, Grün −0,02 gegen das Gesetz).
+    _fernKroneOhneWald(_T) {
+        const k = this._fernKroneNahEnsure();
+        if (!k || !_T.positionWorld || !_T.cameraPosition)
+            throw new Error("Fern-Krone (nah): die Grenze des Walds braucht Karte und TSL");
+        const K = AnazhRealm.FERN_KRONE_NAH;
+        const dSp = _T.positionWorld.xz.sub(k.U.spieler).length();
+        const dAuge = _T.positionWorld.sub(_T.cameraPosition).length();
+        return _T.max(
+            _T.smoothstep(k.U.waldR, k.U.waldR.add(K.saumM), dSp),
+            _T.smoothstep(_T.float(K.sichtM - K.saumM), _T.float(K.sichtM), dAuge)
+        );
+    }
+
     _fernKroneNahMisch(_T, alb, kroneVertex = null) {
         const k = this._fernKroneNahEnsure();
         const su = this._ensureSeasonUniforms();
         if (!k || !su || !su.uSeasonMul || !_T.texture || !_T.positionWorld || !_T.cameraPosition)
             throw new Error("Fern-Krone (nah): der Boden-Stoff braucht Karte, Saison-Uniform und TSL");
-        const K = AnazhRealm.FERN_KRONE_NAH;
         const xz = _T.positionWorld.xz;
         const uv = xz.sub(k.U.mitte).div(k.U.groesse).add(0.5);
         const s = _T.texture(k.tex, uv);
         const innen = _T.step(_T.max(uv.x.sub(0.5).abs(), uv.y.sub(0.5).abs()), _T.float(0.5));
-        const dSp = xz.sub(k.U.spieler).length();
-        const dAuge = _T.positionWorld.sub(_T.cameraPosition).length();
-        const ohneWald = _T.max(
-            _T.smoothstep(k.U.waldR, k.U.waldR.add(K.saumM), dSp),
-            _T.smoothstep(_T.float(K.sichtM - K.saumM), _T.float(K.sichtM), dAuge)
-        );
+        const ohneWald = this._fernKroneOhneWald(_T);
         const karte = innen.mul(k.U.bereit);
         if (!kroneVertex) return _T.mix(alb, s.rgb.mul(su.uSeasonMul), s.a.mul(ohneWald).mul(karte));
         const krone = _T.mix(kroneVertex, s, karte);

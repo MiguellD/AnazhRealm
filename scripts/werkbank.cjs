@@ -8,8 +8,9 @@
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan]
 //                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
-//   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
-//                                                           genesis · dorf · buehne): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts;
+//   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
+//                                                           `messorte`: wiese · genesis · dorf · buehne): Spieler, Blick, Dorf-Zug,
+//                                                           Ort-Takt und Sicht (ohne Wahl Ego, K26) des Orts;
 //                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
@@ -144,12 +145,16 @@
 //                                                           (spec/profiband/, scripts/lib/band-urteil.cjs) → Tabelle
 //                                                           Ist/Soll/Täter, BAND (Befehle · Dreiecke · VRAM · GPU-ms)
 //                                                           und LINSE; Exit 1, solange eins ROT ist. `--ort` urteilt gegen
-//                                                           die Ratsche des Orts (ohne: die Mess-Wiese) und nennt seine
-//                                                           Soll-Zeilen (am Genesis-Ring die Tor-Hülle je Tor)
-//   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json …> [--nur vram]  DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4
-//                                                           Läufe der echten GPU am Messort (jeder Lauf an DIESEM Ort), eingeschwungen, Erst- und Zweit-Boot — die
-//                                                           Hülle zieht nach (setzt, senkt, hebt nie), nur bei sauberer
-//                                                           LINSE
+//                                                           die Ratsche des Orts × Geräts × Sicht (der Adapter-Text und der
+//                                                           Kamera-Modus wählen sie, `umstellen --sicht ego|third` stellt
+//                                                           sie; ohne Ort: die Mess-Wiese) und nennt seine Soll-Zeilen
+//   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json | messfolge-*.json …> [--nur vram] [--neu]
+//                                                           DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten GPU
+//                                                           an EINEM Ort × Gerät × Sicht und EINER Version, eingeschwungen,
+//                                                           Erst- und Zweit-Boot — die Hülle zieht nach (setzt, senkt, hebt
+//                                                           nie), nur bei sauberer LINSE; `--neu` = der RE-MINT (K26): die
+//                                                           Ratsche wird die Hülle, auch nach oben, jede gehobene Zeile beim
+//                                                           Namen
 //   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE: jede WebGPU-Validierung (Device-Meldung mit
 //                                                           Pass) und jeder Draw ohne gesetzten Vertex-Slot, mit Pipeline,
 //                                                           Pass und three-Objekt (scripts/lib/gpu-fehler.cjs); nur nach
@@ -519,7 +524,7 @@ function lauf(k) {
                 },
                 stellgroessen: {
                     loadScale: Number.isFinite(s.loadScale) ? +s.loadScale.toFixed(2) : null,
-                    renderScale: st._renderScale != null ? +(+st._renderScale).toFixed(2) : null,
+                    szeneSkala: typeof r._szeneSkalaWirk === "function" ? r._szeneSkalaWirk() : null,
                     pixelRatio: rend.getPixelRatio ? rend.getPixelRatio() : null,
                     foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
@@ -916,6 +921,9 @@ async function starte() {
     // der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
+    // DIE SICHT des gestellten Orts (K26): Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
+    // Ratsche dieses Orts × Geräts × Sicht.
+    let aktSicht = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`, 1110-6): die Prüfbühne ist eine geborene Welt — sie betritt die
     // Seite wie im Spiel durch das Welt-Tor (importWorldBeside + aktiv + Neuladen). Steht die Seite schon in ihr (derselbe
     // slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
@@ -943,6 +951,13 @@ async function starte() {
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };
+    // Der Adapter-Text des Geräts (WebGPU `adapterInfo`: Hersteller · Architektur · Beschreibung) — EIN Leser für Albedo und Band.
+    const geraetInfo = () =>
+        page.evaluate(async () => {
+            const a = navigator.gpu ? await navigator.gpu.requestAdapter() : null;
+            const i = a && a.info ? a.info : null;
+            return i ? [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") : null;
+        });
     const umstellen = (x, z, o) =>
         page.evaluate(
             async (x, z, o) => {
@@ -995,6 +1010,7 @@ async function starte() {
                     r.state.yaw = o.gier;
                     r.state.pitch = 0;
                 }
+                if (o && o.kamera) r.setCameraMode(o.kamera);
                 r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                 let stabil = 0,
                     last = -1,
@@ -1189,6 +1205,7 @@ async function starte() {
                                     ortTakt: window.__ortTakt || [],
                                     gier: st.yaw,
                                     spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)),
+                                    kamera: st.cameraMode,
                                 },
                                 fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
                                 tiere: typeof window.__tierZahl === "function" ? window.__tierZahl() : null,
@@ -1198,6 +1215,7 @@ async function starte() {
                         { seit: Number(b.seit) || 0, seitWelt: Number(b.seitWelt) || 0 }
                     );
                     w.ort.ort = aktOrt;
+                    w.ort.sicht = BAND.sichtSchluessel(BAND.ladeSpec().haushalt, w.ort.kamera);
                     return send(
                         Object.assign(w, {
                             stempel: await stempel(),
@@ -1243,8 +1261,14 @@ async function starte() {
                     );
                 if (req.url === "/umstellen") {
                     if (b.ort) {
-                        const ort = BAND.ladeSpec(b.ort).ort;
+                        const { ort, haushalt } = BAND.ladeSpec(b.ort);
+                        // die Sicht des Orts: verlangt (`--sicht`) oder Ego, der Start jeder Welt — nie die zuletzt gespeicherte
+                        // (`anazhRealmCameraMode` überlebt im Profil der Serie den Zweit-Boot)
+                        const sicht = b.sicht || "ego";
+                        if (!haushalt.sichten[sicht])
+                            throw new Error(`keine Sicht „${sicht}" (${Object.keys(haushalt.sichten).join(", ")})`);
                         aktOrt = ort.id;
+                        aktSicht = sicht;
                         const welt = ort.welt ? await weltDesOrts(ort) : null;
                         // DIE POSE (Toggle-Ort): eine Station des Orts mit eigenem Spieler-Platz und Blick
                         const pose = b.pose ? (ort.posen || []).find((p) => p.id === b.pose) : null;
@@ -1260,10 +1284,11 @@ async function starte() {
                             dorfZug: ort.dorfZug,
                             takt: ort.ortTakt,
                             stell: ort.stell || null,
+                            kamera: haushalt.sichten[sicht].kamera,
                         });
                         return send(
                             Object.assign(
-                                { ort: ort.id, pose: pose ? pose.id : null, welt, spieler: stelle.spieler },
+                                { ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler },
                                 o,
                                 {
                                     ms: Date.now() - t0,
@@ -1272,6 +1297,7 @@ async function starte() {
                         );
                     }
                     aktOrt = null;
+                    aktSicht = null;
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/bild") {
@@ -1370,6 +1396,23 @@ async function starte() {
                         };
                         let q = quadrat(),
                             takte = 0;
+                        // DIE KARTE GEHÖRT DIESEM ORT (K53): ihr Anker ist die Chunk-Mitte des Spielers in der Größe des Rings
+                        // (`_fernKroneNahTakt`) — bereit 1 ohne Job hiess nach dem Umstellen zweimal von acht: die Karte des alten
+                        // Orts (Welt stand nach 2 Takten), dann füllte sie neu und der Boden mischte im Schuss nichts (ROT „Karte“).
+                        const karteHier = (k) => {
+                            const a = k && k.anker;
+                            const span = r._voxelChunkConfig().span;
+                            const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+                            const p = st.playerMesh.position;
+                            return (
+                                !!a &&
+                                k.U.bereit.value === 1 &&
+                                !k.job &&
+                                a.x === (Math.floor(p.x / span) + 0.5) * span &&
+                                a.z === (Math.floor(p.z / span) + 0.5) * span &&
+                                a.groesse === span * (2 * ring + 1 + r.constructor.FERN_KRONE_NAH.rand)
+                            );
+                        };
                         const zustand = (gestanden) => {
                             const k = st.fernKroneNah;
                             return {
@@ -1381,7 +1424,7 @@ async function starte() {
                                 gebaut: r._builtRingRadius(),
                                 ring: st.chunkRingRadius,
                                 imBau: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
-                                karte: k ? (k.U.bereit.value === 1 && !k.job ? 1 : 0) : null,
+                                karte: k ? (karteHier(k) ? 1 : 0) : null,
                             };
                         };
                         while (performance.now() < frist) {
@@ -1390,8 +1433,7 @@ async function starte() {
                             const k = st.fernKroneNah;
                             const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
                             q = quadrat();
-                            if (q.fehlt.length === 0 && !baut && (!k || (k.U.bereit.value === 1 && !k.job)))
-                                return zustand(true);
+                            if (q.fehlt.length === 0 && !baut && (!k || karteHier(k))) return zustand(true);
                             try {
                                 if (window.__buehne) window.__buehne();
                                 if (window.__ortSchritt) window.__ortSchritt();
@@ -1526,11 +1568,7 @@ async function starte() {
                                   }
                                 : { Y: null, fehler: e.fehler || "kein Pixel" };
                     }
-                    const geraet = await page.evaluate(async () => {
-                        const a = navigator.gpu ? await navigator.gpu.requestAdapter() : null;
-                        const i = a && a.info ? a.info : null;
-                        return i ? [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") : null;
-                    });
+                    const geraet = await geraetInfo();
                     const spieler = await page.evaluate(() => {
                         const p = window.anazhRealm.state.playerMesh.position;
                         return [p.x, p.z].map((v) => +v.toFixed(1));
@@ -1803,8 +1841,18 @@ async function starte() {
                     // VRAM je Erzeuger, die Szenen-Puffer je Klasse, der Fluss und die GPU-Bank — geurteilt gegen Haushalt
                     // und Ratsche (spec/profiband).
                     // Ein Toggle-Ort (bank, 1110-6) trägt keine Ratsche: das Band bricht VOR dem Messen laut.
-                    const bandSpec = BAND.ladeSpec(b.ort);
-                    BAND.ratscheVon(bandSpec);
+                    BAND.ratscheVon(BAND.ladeSpec(b.ort));
+                    // DAS GERÄT und DIE SICHT (K26): sie wählen die Ratsche — der Adapter-Text gegen die Muster des Haushalts, der
+                    // Kamera-Modus des Stamms; ohne Schlüssel richtet keine Ratsche (das Urteil nennt es `ungemessen`).
+                    const hh = BAND.ladeSpec(b.ort).haushalt;
+                    const geraetText = await geraetInfo();
+                    const kamera = await page.evaluate(() => window.anazhRealm.state.cameraMode);
+                    const geraet = { schluessel: BAND.geraetSchluessel(hh, geraetText), text: geraetText };
+                    const sicht = BAND.sichtSchluessel(hh, kamera);
+                    const bandSpec =
+                        geraet.schluessel && sicht
+                            ? BAND.ladeSpec(b.ort, { geraet: geraet.schluessel, sicht })
+                            : BAND.ladeSpec(b.ort);
                     // DIE STEMPEL-WACHE je Phase: welche Frames den Pool füllen, ohne ihn aufzulösen, steht beim Namen.
                     const w0 = await stempel();
                     const messung = await page.evaluate(bandEinschwingen, {
@@ -1881,6 +1929,9 @@ async function starte() {
                         haushalt,
                         ratsche,
                         ort,
+                        ratscheDatei:
+                            bandSpec.ratscheDatei ||
+                            `(Gerät ${geraet.schluessel || "? — " + (geraetText || "kein Adapter")} × Sicht ${sicht || "? — " + kamera})`,
                     });
                     // Der Foundry-Kanal dieser Ladung über alle Antwort-Arten (asset · impostor · book …): Platte gegen
                     // Neubau — im Zweit-Boot der Serie die Neubau-Zahl, die der Spieler beim zweiten Start bezahlt.
@@ -1900,14 +1951,19 @@ async function starte() {
                             dorfZug: window.__anazhAutoSettlement !== false,
                             ortTakt: window.__ortTakt || [],
                             gier: window.anazhRealm.state.yaw,
-                        }))
+                        })),
+                        { sicht }
                     );
                     Object.assign(u, {
                         kamera: proben.length ? proben[proben.length - 1].kamera : null,
                         spieler: roh.spieler,
                         amMessort,
                         zustand,
-                        ortGestellt: BAND.ortGestellt(ort, zustand),
+                        ortGestellt: BAND.ortGestellt(ort, zustand, aktSicht),
+                        geraet,
+                        sicht,
+                        version: await page.evaluate(() => window.anazhRealm.constructor.VERSION),
+                        ratscheDatei: bandSpec.ratscheDatei,
                         boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
                         messung: Object.assign({ proben: proben.length }, messung),
                         fluss: fl,
@@ -2321,7 +2377,15 @@ async function starte() {
                 }
                 send({ fehler: "unbekannter Weg " + req.url });
             } catch (e) {
-                send({ fehler: String((e && e.message) || e).split("\n")[0], ms: Date.now() - t0 });
+                // der Fehler mit seinen ersten Rahmen (der Täter beim Namen, nicht nur die Meldung)
+                send({
+                    fehler: String((e && e.message) || e).split("\n")[0],
+                    stapel: String((e && e.stack) || "")
+                        .split("\n")
+                        .slice(1, 5)
+                        .map((s) => s.trim()),
+                    ms: Date.now() - t0,
+                });
             }
         });
     });
@@ -2336,7 +2400,7 @@ async function starte() {
     let o;
     if (cmd === "status") o = await rufe("/status");
     else if (cmd === "umstellen")
-        o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose") });
+        o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -2684,17 +2748,49 @@ async function starte() {
             process.exit(o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN") ? 0 : 1);
         }
     } else if (cmd === "ratsche") {
-        // DIE RATSCHE AUS EINER SERIE (nur Node, keine Welt nötig): jede Datei ist eine Band-Messung der echten GPU am
-        // Messort, eingeschwungen; die Serie trägt mindestens vier Läufe aus Erst- UND Zweit-Boot. Die Hülle (Maximum je
-        // Klasse × Pass, VRAM je Erzeuger) wird gegen den Haushalt von heute geurteilt — nur bei sauberer LINSE zieht
-        // sie nach (setzt ungemessene Felder, senkt gemessene, hebt nie).
-        const dateien = a.map((f) => path.resolve(f));
-        const laeufe = dateien.map((f) => JSON.parse(fs.readFileSync(f, "utf8")));
-        const ratscheSpec = BAND.ladeSpec(opt("--ort"));
-        const { haushalt, ort } = ratscheSpec;
-        const ratsche = BAND.ratscheVon(ratscheSpec);
+        // DIE RATSCHE AUS EINER SERIE (nur Node, keine Welt nötig): jede Datei ist eine Band-Messung der echten GPU am Messort
+        // (`band --datei` oder das JSON eines Boots der Messfolge, ihr Schritt „band"), eingeschwungen; die Serie trägt
+        // mindestens vier Läufe aus Erst- UND Zweit-Boot, alle an EINEM Ort × Gerät × Sicht und an EINER Version (K26). Die
+        // Hülle (Maximum je Klasse × Pass, VRAM je Erzeuger) wird gegen den Haushalt von heute geurteilt — nur bei sauberer
+        // LINSE zieht sie nach (setzt ungemessene Felder, senkt gemessene, hebt nie). `--neu` ist der RE-MINT: die Ratsche
+        // wird die Hülle der Serie, auch nach oben (die alte Ratsche richtet ihn nicht, nur Haushalt, Namen und Lecks).
+        // die Serie: jede .json der Befehlszeile (`--neu` ist ein Schalter ohne Wert — die Lese-Regel der Optionen nähme ihm
+        // sonst die erste Datei)
+        const dateien = argv
+            .slice(1)
+            .filter((x) => /\.json$/i.test(x))
+            .map((f) => path.resolve(f));
+        const laeufe = dateien.map((f) => {
+            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
+            return e ? (e.ergebnis && e.ergebnis.messung) || null : j;
+        });
+        const neu = argv.includes("--neu");
+        const nurVram = opt("--nur") === "vram";
         const fehler = [];
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
+        const eins = (name, werte) => {
+            const w = [...new Set(werte)];
+            if (w.length !== 1 || w[0] == null) fehler.push(`${name} ${w.join(" / ") || "?"} — die Serie steht an EINEM ${name}`);
+            return w[0];
+        };
+        const ortId = eins("Ort", laeufe.map((u) => (u ? u.ort : null)));
+        const geraet = eins("Gerät", laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null)));
+        const sicht = eins("Sicht", laeufe.map((u) => (u ? u.sicht : null)));
+        const version = eins("Version", laeufe.map((u) => (u ? u.version : null)));
+        if (opt("--ort") && opt("--ort") !== ortId) fehler.push(`--ort ${opt("--ort")}, die Serie steht an ${ortId}`);
+        if (fehler.length) {
+            console.log("Ratsche NICHT nachgezogen:\n  " + fehler.join("\n  "));
+            process.exit(1);
+        }
+        const ratscheSpec = BAND.ladeSpec(ortId, { geraet, sicht });
+        const { haushalt, ort } = ratscheSpec;
+        const alt = BAND.ratscheVon(ratscheSpec);
+        if (!alt) {
+            console.log(`Ratsche NICHT nachgezogen: ${ratscheSpec.ratscheDatei} fehlt — jeder Ort × Gerät × Sicht trägt seine Datei`);
+            process.exit(1);
+        }
+        const ratsche = neu ? BAND.ratscheNeu(alt) : alt;
         const boots = new Set(laeufe.map((u) => u.boot && u.boot.art));
         if (!boots.has("erst") || !boots.has("zweit"))
             fehler.push(`Boot-Arten ${[...boots].join("/")} — Erst- UND Zweit-Boot`);
@@ -2702,12 +2798,9 @@ async function starte() {
             const n = path.basename(dateien[i]);
             if (!u.roh) fehler.push(`${n}: kein Rohes (eine Messung vor der Serien-Ratsche)`);
             if (u.echt !== true) fehler.push(`${n}: nicht die echte GPU (start --echt)`);
-            // Ein Lauf ohne Ort-Feld stammt von vor den Messorten (S1): er stand an der Mess-Wiese.
-            if ((u.ort || "wiese") !== ort.id)
-                fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
             if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
-            // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick).
-            for (const f of BAND.ortGestellt(ort, u.zustand)) fehler.push(`${n}: ${f}`);
+            // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick, Sicht).
+            for (const f of BAND.ortGestellt(ort, u.zustand, sicht)) fehler.push(`${n}: ${f}`);
             if (!u.messung || u.messung.eingeschwungen !== true) fehler.push(`${n}: nicht eingeschwungen`);
         });
         if (fehler.length) {
@@ -2715,13 +2808,15 @@ async function starte() {
             process.exit(1);
         }
         const h = BAND.bandHuelle(laeufe.map((u) => u.roh));
-        const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche, ort }, h));
+        const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche: alt, ort, ratscheDatei: ratscheSpec.ratscheDatei }, h));
         Object.assign(u, { messung: null, boot: null });
         console.log(BAND.bandTabelle(u));
-        // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE.
-        const nurVram = opt("--nur") === "vram";
-        if (nurVram ? BAND.vramBefunde(u).length > 0 : u.linse !== "SAUBER") {
-            console.log("\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen");
+        // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE; der Re-Mint lässt die
+        // Ratschen-Zeilen der alten Ratsche aus (er ersetzt sie), Haushalt, Namen und Lecks nie.
+        const linse = (u.rot || []).filter((r) => ["unbenannt", "haushalt", "ratsche", "leck"].includes(r.art));
+        const sperrt = nurVram ? BAND.vramBefunde(u) : neu ? linse.filter((r) => r.art !== "ratsche") : linse;
+        if (sperrt.length) {
+            console.log("\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen:\n  " + sperrt.map((r) => r.text).join("\n  "));
             process.exit(1);
         }
         const r = BAND.ratscheNachziehen(
@@ -2729,17 +2824,33 @@ async function starte() {
             u,
             {
                 datum: new Date().toISOString(),
+                version,
                 ort: ort.id,
-                geraet: haushalt.geraet,
+                geraet,
+                geraetText: laeufe[0].geraet.text,
+                sicht,
                 eingeschwungen: true,
+                neu: neu || undefined,
                 laeufe: laeufe.length,
                 boots: laeufe.map((x) => x.boot.art + "/" + x.boot.ladungen),
+                dateien: dateien.map((d) => path.basename(d)),
             },
             opt("--nur")
         );
-        if (r.aenderungen.length) BAND.schreibeRatsche(ort, r.ratsche);
+        // Was der Re-Mint HEBT, steht beim Namen (der Commit trägt es): jede Zeile über der alten Ratsche.
+        const hebt = [];
+        if (neu)
+            for (const [id, rz] of Object.entries(r.ratsche.klassen))
+                for (const [p, z] of Object.entries(rz))
+                    for (const g of ["befehle", "dreiecke"]) {
+                        const a0 = ((alt.klassen[id] || {})[p] || {})[g];
+                        if (z[g] != null && a0 != null && z[g] > a0) hebt.push(`${id}.${p}.${g} ${a0} → ${z[g]}`);
+                    }
+        BAND.schreibeRatsche(ratscheSpec.ratscheDatei, r.ratsche);
         console.log(
-            `\nRatsche ${ort.ratsche} (Ort ${ort.id}) nachgezogen (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}`
+            `\nRatsche ${ratscheSpec.ratscheDatei} (Ort ${ort.id} × ${geraet} × ${sicht}, V${version}) ` +
+                `${neu ? "NEU GEMINTET" : "nachgezogen"} (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}` +
+                (neu ? `\nDer Re-Mint hebt ${hebt.length} Zeilen: ${hebt.join(" · ") || "keine"}` : "")
         );
         process.exit(0);
     } else if (cmd === "lauf") {

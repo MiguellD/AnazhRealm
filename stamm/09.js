@@ -1,15 +1,20 @@
 class AnazhRealm_Z09 {
     // ===== ATLAS §09 · KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten =====
-    // Terrain-Chunk-LOD aus der Kaskaden-Tabelle (r≤2→0, r3-8→1, r9-10→2, r≥11→3). Mit `currentLod`
-    // (Streaming-Tick) hält die Hysterese den Chunk im Deadband am Grat; ohne ist es die reine Band-LOD.
+    // Terrain-Chunk-Stufe aus der Kette des Boden-Netzes (`BODEN_STUFEN`: r≤1→0, r2→1, r3-9→2, r≥10→3). Mit `currentLod`
+    // (Streaming-Tick) hält die Hysterese den Chunk im Deadband am Grat; ohne ist es die reine Stufe des Rings.
     _voxelChunkLodFor(cx, cz, pcx, pcz, currentLod = null) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        const lod = this._detailBand(r).lod;
-        // Hysterese nur beim VERGRÖBERN: ein Chunk wird gehalten, bis r die obere Grenze seines Bandes um
+        const band = AnazhRealm.BODEN_STUFEN;
+        let lod = band[band.length - 1].lod;
+        for (let i = 0; i < band.length; i++)
+            if (r <= band[i].maxRing) {
+                lod = band[i].lod;
+                break;
+            }
+        // Hysterese nur beim VERGRÖBERN: ein Chunk wird gehalten, bis r die obere Grenze seiner Stufe um
         // LOD_HYSTERESIS_RINGS überschreitet. Verfeinern greift sofort — Detail erscheint prompt, nur das
         // Entfernen ist träge.
         if (currentLod === null || !Number.isFinite(currentLod) || currentLod >= lod) return lod;
-        const band = AnazhRealm.DETAIL_CASCADE;
         for (let i = 0; i < band.length; i++) {
             if (band[i].lod === currentLod) {
                 return r <= band[i].maxRing + AnazhRealm.LOD_HYSTERESIS_RINGS ? currentLod : lod;
@@ -190,8 +195,26 @@ class AnazhRealm_Z09 {
         return [dek(((hex >> 16) & 255) / 255), dek(((hex >> 8) & 255) / 255), dek((hex & 255) / 255)];
     }
 
-    // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
-    // Boden-Tint (`_terrainGeologyAlbedo`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
+    // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache `gruenSchwelle`: g − (r+b)/2), deckt ihn
+    // das Gras — aus der Ferne das MITTEL des Halms, das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
+    // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese; die karge Stelle (Fleck
+    // λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn (`_bodenFarbeAt`, der Worker
+    // `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der Boden-Stoff (V18.346), der
+    // Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
+    static get WIESEN_GRUND() {
+        if (AnazhRealm._wiesenGrundMemo) return AnazhRealm._wiesenGrundMemo;
+        const mg = AnazhRealm.MEADOW_GREEN;
+        const sp = AnazhRealm.GRAS_SPITZE;
+        AnazhRealm._wiesenGrundMemo = Object.freeze({
+            farbe: Object.freeze([0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i])),
+            schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
+            rauschM: 1 / 0.13,
+        });
+        return AnazhRealm._wiesenGrundMemo;
+    }
+
+    // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Wiesen-
+    // Grund (`WIESEN_GRUND`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
     // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant. Es IST der Wiesen-Grund
     // der Boden-Palette (`mead`), dieselbe Farbe wie der Vertex der Wiese.
     static get MEADOW_GREEN() {
@@ -273,8 +296,47 @@ class AnazhRealm_Z09 {
         if (AnazhRealm._felsRwMemo && AnazhRealm._felsRwMemo.T === T && AnazhRealm._felsRwMemo.raum === raum)
             return AnazhRealm._felsRwMemo.o;
         const N = (v) => (typeof v === "number" ? T.float(v) : v);
-        const U = (v) => (typeof v === "number" ? T.uint(v >>> 0) : T.uint(T.int(v)));
+        // gelaende-core `zufall(sh, i, j, k)` als EINE WGSL-Funktion: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1,
+        // zwei Misch-Runden (u32: Multiplikation modulo 2^32, Xor, logisches Schieben) — i, j, k ganz, als f32 gereicht
+        const zufallFn = T.Fn(([sh, i, j, k]) => {
+            let h = sh
+                .bitXor(T.uint(T.int(i)).mul(T.uint(0x27d4eb2d)))
+                .bitXor(T.uint(T.int(j)).mul(T.uint(0x165667b1)))
+                .bitXor(T.uint(T.int(k).add(1)).mul(T.uint(0x9e3779b1)));
+            h = h.bitXor(h.shiftRight(T.uint(15))).mul(T.uint(0x85ebca6b));
+            h = h.bitXor(h.shiftRight(T.uint(13))).mul(T.uint(0xc2b2ae35));
+            h = h.bitXor(h.shiftRight(T.uint(16)));
+            return T.float(h).div(4294967296);
+        }).setLayout({
+            name: "felsZufall",
+            type: "float",
+            inputs: [
+                { name: "sh", type: "uint" },
+                { name: "i", type: "float" },
+                { name: "j", type: "float" },
+                { name: "k", type: "float" },
+            ],
+        });
         const o = Object.freeze({
+            // gelaende-core `fest` (K17-3): ein Wert, den das Gesetz mehrfach liest, als EINE Variable an der Stelle seiner
+            // Rechnung — r184 zählt die Leser eines Knotens in einem Fn-Rumpf nicht und baute ihn je Leser neu (die Lage des
+            // Pakets stand 13-mal in der Fels-Funktion)
+            fest: (v) => N(v).toVar(),
+            // gelaende-core `falte` (K17-3): EINE Schleife — der Zustand lebt in Variablen, je Durchlauf rechnet der Schritt
+            // alle neuen Werte aus den alten, erst dann gehen sie in den Zustand (ein Wert liest nie den neuen Nachbarn). Nur
+            // in einem Fn-Rumpf (der Stapel der Schleife): der Fels-Term rechnet in `felsFein` (`_terrainGeologyAlbedo`).
+            falte: (n, start, schritt) => {
+                if (start.length !== 4)
+                    throw new Error("_felsRechenwerkTSL.falte: der Zustand trägt vier Werte (ein vec4)");
+                const z = T.vec4(...start.map(N)).toVar();
+                const zl = [z.x, z.y, z.z, z.w];
+                T.Loop(n, ({ i }) => {
+                    // EINE Anweisung je Durchlauf: r184 zählt die Leser eines Knotens nur in seiner Anweisung — getrennt
+                    // gebaut stand die Bank-Grenze je Ausgang neu (fünfmal je Durchlauf)
+                    z.assign(T.vec4(...schritt(T.float(i), zl).map(N)));
+                });
+                return zl;
+            },
             add: (a, b) => N(a).add(N(b)),
             sub: (a, b) => N(a).sub(N(b)),
             mul: (a, b) => N(a).mul(N(b)),
@@ -289,21 +351,12 @@ class AnazhRealm_Z09 {
             step: (e, v) => T.step(N(e), N(v)),
             glatt: (a, b, v) => T.smoothstep(N(a), N(b), N(v)),
             clamp01: (v) => N(v).clamp(0, 1),
-            // die Wahl als Auswahl, nie als Mischung: mix(−1e9, a, 1) verlöre a in f32 (Stelle 64 bei 1e9)
-            wahl: (c, a, b) => T.select(N(c).greaterThan(0.5), N(a), N(b)),
+            // die Wahl als Auswahl, nie als Mischung: mix(−1e9, a, 1) verlöre a in f32 (Stelle 64 bei 1e9) — als WGSL `select`
+            // (`uniformFlow`), nie als if-Block: r184 baut je Zweig eines Blocks jeden noch ungebauten Vorgänger neu (die Lage
+            // des Pakets stand je Wahl in jedem Zweig, K17-3: die Fels-Funktion 18 458 Zeichen)
+            wahl: (c, a, b) => T.uniformFlow(T.select(N(c).greaterThan(0.5), N(a), N(b))),
             rausch: (x, y, z) => raum(T.vec3(N(x), N(y), N(z))),
-            // gelaende-core `zufall(sh, i, j, k)`: h = sh ^ i·0x27d4eb2d ^ j·0x165667b1 ^ (k + 1)·0x9e3779b1, zwei Misch-Runden
-            zufall: (sh, i, j, k) => {
-                const kk = typeof k === "number" ? T.uint(((k | 0) + 1) >>> 0) : T.uint(T.int(k).add(1));
-                let h = T.uint(sh >>> 0)
-                    .bitXor(U(i).mul(T.uint(0x27d4eb2d)))
-                    .bitXor(U(j).mul(T.uint(0x165667b1)))
-                    .bitXor(kk.mul(T.uint(0x9e3779b1)));
-                h = h.bitXor(h.shiftRight(T.uint(15))).mul(T.uint(0x85ebca6b));
-                h = h.bitXor(h.shiftRight(T.uint(13))).mul(T.uint(0xc2b2ae35));
-                h = h.bitXor(h.shiftRight(T.uint(16)));
-                return T.float(h).div(4294967296);
-            },
+            zufall: (sh, i, j, k) => zufallFn(T.uint(sh >>> 0), N(i), N(j), N(k)),
         });
         AnazhRealm._felsRwMemo = { T, raum, o };
         return o;

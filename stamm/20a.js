@@ -1193,9 +1193,10 @@ class AnazhRealm_Z20a {
             const r = R + (e._blockerReach || 0) + 8;
             if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
             if (this._istNatur(e)) continue;
-            // Die Lichtung eines Baus (die Genesis-Plattform, `_grundrissVon`) sperrt in jeder Höhe: ihr Stein ist im Feld
-            // gestempelt, ein Haus fand dort „ebenen Boden" auf Höhe der Scheibe und stand auf ihr (der Ersatz-Ort eines
-            // Slots an der Plattform: 6,0 m von ihrer Mitte, die Scheibe trägt 6,5 m).
+            // Die Lichtung eines Baus (der Genesis-Platz: Scheibe und Ring der Tore, `_grundrissVon`) sperrt in jeder Höhe: ihr
+            // Stein ist im Feld gestempelt, ein Haus fand dort „ebenen Boden" auf Höhe der Scheibe und stand auf ihr (der
+            // Ersatz-Ort eines Slots an der Plattform: 6,0 m von ihrer Mitte, die Scheibe trägt 6,5 m); seit K52 steht kein Haus
+            // zwischen den Toren.
             const gL = this._grundrissVon(e);
             if (gL && gL.lichtung) {
                 b2.cx = e.position.x;
@@ -1915,7 +1916,7 @@ class AnazhRealm_Z20a {
                 return;
             }
         }
-        const R = 11;
+        const R = AnazhRealm.GENESIS_PLATZ.ringR; // der Kreis der Tore auf dem Genesis-Platz (seine Lichtung trägt ihn)
         let gebaut = 0;
         for (let i = 0; i < namen.length; i++) {
             const a = (i / namen.length) * 2 * Math.PI;

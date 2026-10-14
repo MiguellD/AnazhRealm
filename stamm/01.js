@@ -791,18 +791,11 @@ class AnazhRealm {
             perfTargetMs: 17,
             perfRegulator: true,
             perfSense: null,
-            // User-Regler des Wald-Renderers als kanonische State-Felder für den EINEN Perf-Regler
-            // (_nexusPerfActuate), kein Parallel-Regler: foliageResCeiling = User-Obergrenze, unter der
-            // _foliageResScale adaptiv skaliert; _renderScale = adaptive Render-Auflösung, zielsuchend auf die
-            // Ziel-FPS (dieselbe loadScale-PID-Quelle). lodRef + _foliageResScale leben anderswo (nicht doppelt).
-            foliageResCeiling: 1, // die User-Obergrenze der Szene-Auflösung (0.25..1); der Regler skaliert darunter
-            _renderScale: 1, // Swapchain-DPR-Faktor (KONSTANT 1 × Klassen-Pixel-Kappe): die adaptive Auflösung lebt jetzt FLICKER-FREI im Szene-RenderTarget (`_foliageResScale` → scenePass.setResolutionScale), nicht mehr in setPixelRatio (V18.390-Verbot geehrt)
+            // DIE EINE SZENEN-SKALA (K50): die interne Auflösung der Szene relativ zur Ausgabe (0,5..1), der Regler
+            // „Szene-Auflösung“ im Menü, im Snapshot; null = `SZENE_SKALA` (`_szeneSkalaWirk`). Kein Stellglied des Reglers.
+            szeneSkala: null,
             _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter DPR-Cap-Wert (Dead-Band gegen Churn)
-            // Wahrnehmung als Kostenterm: _camMotion01 misst Blick-/Translations-Tempo (0 = Stand → 1 = schnell).
-            // Bei schneller Bewegung ist Detail unsichtbar (sakkadische Maskierung) → die Szene-Auflösung darf
-            // fallen, die frei werdende GPU-Zeit trägt das Streaming. Reine Beobachtung.
-            _camMotion01: 0,
-            // Standalone-Perf-Panel (top-right, eine Zeile {fps} · {rScale}% · Laub {folRes}% · {dc}dc · {tri}k▲),
+            // Standalone-Perf-Panel (top-right, eine Zeile {fps} · Szene {skala}% · {dc}dc · {tri}k▲),
             // liest perfSense (kein Parallel-Zähler); der PERF-SENSE-Debug-Dump bleibt hinter perfOverlay.
             // Toggle im Einstellungen-Drawer, persistiert via Snapshot.
             perfPanel: false, // V18.390 — das zweite Panel retiret: die Trias lebt jetzt SYNERGETISCH in der Status-Bar (Schöpfer-Befund). Toggle in Einstellungen bringt das Standalone-Panel zurück, falls gewünscht.

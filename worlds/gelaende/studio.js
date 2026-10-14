@@ -34,6 +34,41 @@
         if (!r.ok) throw new Error(`bedienung.json: HTTP ${r.status}`);
         return r.json();
     });
+    // Der Haushalt des Profi-Bands: die Budget-Zeile der Kosten-Leiste (die Boden-Klasse), dieselbe Datei wie gate:profiband.
+    const HAUSHALT = fetch(new URL("../../spec/profiband/haushalt.json" + (V ? "?v=" + V : ""), SKRIPT).href).then((r) => {
+        if (!r.ok) throw new Error(`spec/profiband/haushalt.json: HTTP ${r.status}`);
+        return r.json();
+    });
+    function bodenKlasse(H) {
+        const k = H && Array.isArray(H.klassen) && H.klassen.find((x) => x.id === "boden");
+        if (!k || !(k.dreiecke > 0) || !Array.isArray(k.regeln) || !k.regeln.length)
+            throw new Error("der Haushalt (spec/profiband/haushalt.json) trägt keine Boden-Klasse mit Dreiecken und Regeln");
+        return {
+            budget: { tris: k.dreiecke, draws: k.befehle },
+            muster: new RegExp(k.regeln.map((g) => "(?:" + g.muster + ")").join("|")),
+        };
+    }
+    // Die Boden-Klasse der gebauten Welt: jedes Mesh im Sicht-Kegel der Kamera (das Hauptbild; die Kaskaden zählt der
+    // Haushalt dazu), dessen Täter-Klasse (`_taeterKlasse`, dieselbe Zuordnung wie die Band-Linse) die Regel der Klasse
+    // trägt — in Augenhöhe misst die Leiste wie die Band-Linse am Spieler; zwei Messungen je Sekunde reichen.
+    const kegel = { F: null, M: null };
+    function kostenMessen() {
+        const r = st.realm;
+        const sc = r && r.state && r.state.scene;
+        const cam = r && r.state && r.state.camera;
+        if (!st.kosten || !sc || !cam) return;
+        if (!kegel.F) {
+            kegel.F = new THREE.Frustum();
+            kegel.M = new THREE.Matrix4();
+        }
+        kegel.F.setFromProjectionMatrix(kegel.M.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+        const treffer = [];
+        sc.traverse((o) => {
+            if (!o.isMesh || !o.geometry || !st.haushalt.muster.test(r._taeterKlasse(o))) return;
+            if (o.frustumCulled === false || kegel.F.intersectsObject(o)) treffer.push(o);
+        });
+        st.kosten.messen({ traverse: (fn) => treffer.forEach(fn) }, 0);
+    }
 
     const CSS = `
 #gelaende-studio{--panel:rgba(9,14,20,.72);--ink:#cdd8e2;--mut:#7f8f9c;--hair:rgba(90,140,170,.18);--steel:#4f8fa6;
@@ -73,13 +108,8 @@
 #gelaende-studio .hist{grid-column:1/3;height:30px;position:relative}
 #gelaende-studio .hist canvas{width:100%;height:100%}
 #gelaende-studio .sec{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--steel);margin:10px 2px 3px}
-#gelaende-studio .sl{margin:5px 2px 6px}
-#gelaende-studio .sl-h{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:2px}
-#gelaende-studio .sl-h .v{font-family:var(--mono);color:var(--hell)}
-#gelaende-studio .sl-h .v.std{color:var(--mut)}
-#gelaende-studio input[type=range]{width:100%;height:3px;-webkit-appearance:none;appearance:none;background:rgba(120,150,175,.24);border-radius:2px;outline:none;margin:4px 0}
-#gelaende-studio input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--hell);cursor:pointer;box-shadow:0 0 0 3px rgba(111,208,232,.16)}
-#gelaende-studio input[type=range]::-moz-range-thumb{width:12px;height:12px;border:none;border-radius:50%;background:var(--hell);cursor:pointer}
+#gelaende-studio{--h-akzent:var(--hell);--h-tinte:var(--ink);--h-matt:var(--mut);--h-haar:var(--hair);--h-feld:var(--panel);--h-mono:var(--mono)}
+#gelaende-studio .h-gruppe{color:var(--steel);opacity:1;margin:10px 2px 3px}
 #gelaende-studio details>summary{cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--mut);margin:10px 2px 2px;list-style:none}
 #gelaende-studio details>summary::before{content:"▸ ";} #gelaende-studio details[open]>summary::before{content:"▾ ";}
 #gelaende-studio .law{font-family:var(--mono);font-size:8.5px;color:var(--mut);opacity:.8;line-height:1.3}
@@ -105,6 +135,11 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         naechsteId: 1,
         erg: { A: null, B: null }, // je Spur: { id, lage, plan (nur B), grob, voll, schicht }
         jobs: new Map(), // id → "A" | "B"
+        W: {}, // die Werte der Regler (die Hülle schreibt in place; der Entwurf liest sie, `entwurfAusWerten`)
+        regler: [], // die zwei Regler-Blöcke der Hülle (Haupt-Regler je Gruppe · „mehr")
+        sitz: null, // die Sitzung der Hülle (Undo/Redo über Regler + Saat)
+        kosten: null, // die Kosten-Leiste der Hülle (die Boden-Klasse des Haushalts an der gebauten Welt)
+        haushalt: null, // { budget, muster } der Boden-Klasse (spec/profiband/haushalt.json)
         warten: [],
         abdruck: new Map(),
     };
@@ -370,42 +405,32 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         }
     }
 
-    // ── das Panel ──
+    // ── das Panel: Regler, Sitzung und Kosten-Leiste der EINEN Hülle (worlds/huelle/huelle.js, die Heimat lädt sie vor dem Studio) ──
     function regler(id) {
         return st.G.LANDFORM_REGLER.find((r) => r.id === id);
     }
-    function schieber(R) {
-        const d = document.createElement("div");
-        d.className = "sl";
-        d.title = R.law;
-        d.innerHTML = `<div class="sl-h"><span class="n"></span><span class="v"></span></div><input type="range">`;
-        d.querySelector(".n").textContent = st.B.namen[R.id];
-        const inp = d.querySelector("input");
-        inp.min = R.min;
-        inp.max = R.max;
-        inp.step = R.step;
-        inp.dataset.regler = R.id;
-        inp.addEventListener("input", () => {
-            const v = Number(inp.value);
-            st.planB = Object.assign({}, st.planB, { regler: Object.assign({}, st.planB.regler, { [R.id]: v }) });
-            zeigeWerte();
-            entwurfGeaendert();
-        });
-        inp.addEventListener("dblclick", () => {
-            inp.value = R.def;
-            inp.dispatchEvent(new Event("input"));
-        });
-        return d;
+    // eine Zeile des Kerns (LANDFORM_REGLER) in der Form der Hülle — der Name aus der Bedienung, die Gruppe als Titel
+    function hZeile(R) {
+        return {
+            id: R.id,
+            lab: st.B.namen[R.id],
+            min: R.min,
+            max: R.max,
+            step: R.step,
+            def: R.def,
+            law: R.law,
+            grp: st.B.gruppen[R.gruppe].name.toUpperCase(),
+        };
+    }
+    // der Entwurf trägt die Werte der Regler (W, in place beschrieben von der Hülle)
+    function entwurfAusWerten() {
+        st.planB = Object.assign({}, st.planB, { regler: Object.assign({}, st.W) });
+        zeigeWerte();
+        entwurfGeaendert();
     }
     function zeigeWerte() {
-        for (const inp of document.querySelectorAll("#gelaende-studio input[data-regler]")) {
-            const R = regler(inp.dataset.regler);
-            const v = st.planB.regler[R.id];
-            if (Number(inp.value) !== v) inp.value = v;
-            const w = inp.parentNode.querySelector(".v");
-            w.textContent = zahlFmt(v, R);
-            w.classList.toggle("std", v === R.def);
-        }
+        Object.assign(st.W, st.planB.regler);
+        for (const R of st.regler) R.sync();
         const s = $(".saat");
         if (s) s.textContent = st.planB.saat;
         for (const k of document.querySelectorAll("#gelaende-studio [data-preset]")) {
@@ -442,6 +467,11 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
     }
     function baue() {
         const style = document.createElement("style");
+        // die Formen der Hülle (Regler · Sitzung · Kosten-Leiste), die Palette setzt das Studio (CSS oben)
+        const huelleCss = document.createElement("link");
+        huelleCss.rel = "stylesheet";
+        huelleCss.href = new URL("../huelle/huelle.css" + (V ? "?v=" + V : ""), SKRIPT).href;
+        document.head.appendChild(huelleCss);
         style.textContent = CSS;
         document.head.appendChild(style);
         document.body.classList.add("gelaende-studio-an");
@@ -450,10 +480,11 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         p.setAttribute("aria-label", "Gelände-Studio");
         p.innerHTML = `<div class="kopf"><span class="eb">GELÄNDE-STUDIO</span><span class="saat"></span><button type="button" class="zu-knopf" title="einklappen">–</button></div>
 <div class="leib"><div class="makro"><canvas class="relief" width="536" height="536"></canvas><canvas class="ort" width="274" height="274"></canvas><span class="marke"></span><span class="rechnet"></span></div>
-<div class="reihe ab"></div><div class="abweichung" role="status"></div><div class="leiste"></div><div class="sec">LANDSCHAFT</div><div class="reihe presets"></div><div class="gruppen"></div>
+<div class="reihe ab"></div><div class="sitzung"></div><div class="abweichung" role="status"></div><div class="leiste"></div><div class="sec">LANDSCHAFT</div><div class="reihe presets"></div><div class="gruppen"></div>
 <details class="mehr"><summary>MEHR</summary><div class="mehr-leib"></div></details>
+<div class="kosten"></div>
 <div class="sec">KAMERA</div><div class="reihe kamera"></div><div class="reihe bauen"></div><div class="reihe datei"></div>
-<div class="hinweis">Der Entwurf rechnet sofort im Kern; „Welt bauen" legt ihn durch die Welt-Tür — die Welt erwacht neu auf ihm. Doppelklick auf einen Regler: Standard.</div></div>`;
+<div class="hinweis">Der Entwurf rechnet sofort im Kern; „Welt bauen" legt ihn durch die Welt-Tür — die Welt erwacht neu auf ihm. Doppelklick auf einen Regler: Standard · Strg+Z: zurück.</div></div>`;
         document.body.appendChild(p);
         p.querySelector(".zu-knopf").addEventListener("click", () => {
             p.classList.toggle("zu");
@@ -473,12 +504,25 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                 { ab: "B" }
             )
         );
+        // DIE SITZUNG der Hülle: jede Tat (ein Regler-Zug, eine Landschaft, eine Saat, ein geladener Plan) ist EIN Schritt
+        // über die Regler-Werte und die Saat; der Rückweg legt beide in den Entwurf.
+        st.sitz = AnazhHuelle.sitzung({
+            werte: st.W,
+            zustand: () => ({ saat: st.planB.saat }),
+            zustandSetzen: (z) => {
+                st.planB = Object.assign({}, st.planB, { saat: z.saat });
+            },
+            anwenden: entwurfAusWerten,
+        });
+        st.sitz.leiste($(".sitzung"), { seed: false });
         abR.appendChild(
             knopf("⚂ Saat", "eine neue Saat würfeln", () => {
                 const z = (k) =>
                     Array.from(crypto.getRandomValues(new Uint8Array(k)), (x) => (x % 36).toString(36)).join("");
-                st.planB = Object.assign({}, st.planB, { saat: `w-${z(12)}-${z(6)}` });
-                zeigeWerte();
+                st.sitz.schritt(() => {
+                    st.planB = Object.assign({}, st.planB, { saat: `w-${z(12)}-${z(6)}` });
+                    zeigeWerte();
+                });
                 entwurfGeaendert();
             })
         );
@@ -491,38 +535,52 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                     () => {
                         const rg = {};
                         for (const R of st.G.LANDFORM_REGLER) rg[R.id] = R.id in P.regler ? P.regler[R.id] : R.def;
-                        st.planB = Object.assign({}, st.planB, { regler: rg });
-                        zeigeWerte();
+                        st.sitz.schritt(() => {
+                            st.planB = Object.assign({}, st.planB, { regler: rg });
+                            zeigeWerte();
+                        });
                         entwurfGeaendert();
                     },
                     { preset: P.id }
                 )
             );
-        const gruppen = $(".gruppen");
-        const mehr = $(".mehr-leib");
-        const haupt = new Set();
-        for (const g of Object.keys(st.B.gruppen)) {
-            const sec = document.createElement("div");
-            sec.className = "sec";
-            sec.textContent = st.B.gruppen[g].name.toUpperCase();
-            gruppen.appendChild(sec);
-            for (const id of st.B.gruppen[g].haupt) {
-                haupt.add(id);
-                gruppen.appendChild(schieber(regler(id)));
-            }
-        }
-        let gruppe = null;
-        for (const R of st.G.LANDFORM_REGLER) {
-            if (haupt.has(R.id)) continue;
-            if (R.gruppe !== gruppe) {
-                gruppe = R.gruppe;
-                const sec = document.createElement("div");
-                sec.className = "sec";
-                sec.textContent = st.B.gruppen[gruppe].name.toUpperCase();
-                mehr.appendChild(sec);
-            }
-            mehr.appendChild(schieber(R));
-        }
+        // DIE REGLER der Hülle aus den Zeilen des Kerns: die Haupt-Regler je Gruppe der Bedienung, der Rest hinter „mehr";
+        // ein Zug rechnet sofort (ruheMs 0: ein Rückgängig-Schritt je Bild), Doppelklick legt den Standard des Kerns.
+        Object.assign(st.W, st.planB.regler);
+        const haupt = [];
+        for (const g of Object.keys(st.B.gruppen)) for (const id of st.B.gruppen[g].haupt) haupt.push(regler(id));
+        const mehr = st.G.LANDFORM_REGLER.filter((R) => !haupt.includes(R));
+        const reglerOpt = {
+            werte: st.W,
+            sitzung: st.sitz,
+            ruheMs: 0,
+            zuruecksetzen: false,
+            gesetze: false,
+            format: (z, v) => zahlFmt(v, regler(z.id)),
+            bei: entwurfAusWerten,
+            zusatz: (z, zeile) => {
+                const inp = zeile.querySelector("input");
+                inp.dataset.regler = z.id; // die Studio-Probe greift jeden Regler beim Namen (gate:gelaende-studio)
+                zeile.title = z.law;
+                inp.addEventListener("dblclick", () => {
+                    st.sitz.schritt(() => st.regler.forEach((R) => R.setzen({ [z.id]: z.def }, true)));
+                    entwurfAusWerten();
+                });
+            },
+        };
+        st.regler = [
+            AnazhHuelle.regler($(".gruppen"), haupt.map(hZeile), reglerOpt),
+            AnazhHuelle.regler($(".mehr-leib"), mehr.map(hZeile), reglerOpt),
+        ];
+        // DIE KOSTEN-LEISTE der Hülle: die Boden-Klasse des Profi-Band-Haushalts (spec/profiband/haushalt.json — Boden-Satz ·
+        // Wasser-Satz · Fern-Ring · Fern-Wasser, über die Täter-Klasse des Stamms) gemessen an der gebauten Welt (A).
+        if (st.haushalt)
+            st.kosten = AnazhHuelle.kosten($(".kosten"), {
+                budget: { 0: st.haushalt.budget },
+                stufen: [0],
+                titel: "KOSTEN · BODEN",
+                quelle: "gemessen an der gebauten Welt (A) im Sicht-Kegel der Kamera (Hauptbild; Augenhöhe = der Ort der Band-Linse) gegen die Boden-Klasse des Profi-Band-Haushalts (spec/profiband/haushalt.json)",
+            });
         const kam = $(".reihe.kamera");
         kam.appendChild(knopf("Makro-Flug", "hoch über dem Land", () => kamera("makro"), { kamera: "makro" }));
         kam.appendChild(knopf("Orbit", "langsam um den Ort", () => kamera("orbit"), { kamera: "orbit" }));
@@ -541,6 +599,8 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         kameraKnoepfe();
         zeigeWerte();
         setInterval(zeichneOrt, 250);
+        kostenMessen();
+        setInterval(kostenMessen, 2000);
     }
 
     // ── Bauen, Export, Laden ──
@@ -587,8 +647,11 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             if (!f) return;
             f.text().then((t) => {
                 try {
-                    st.planB = st.G.planNormal(JSON.parse(t));
-                    zeigeWerte();
+                    const plan = st.G.planNormal(JSON.parse(t));
+                    st.sitz.schritt(() => {
+                        st.planB = plan;
+                        zeigeWerte();
+                    });
                     entwurfGeaendert();
                 } catch (e) {
                     alert(String((e && e.message) || e));
@@ -704,10 +767,15 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             setTimeout(start, 120);
             return;
         }
-        BEDIENUNG.then(
-            (B) => oeffne(r, G, bedienungPruefen(B, G)),
-            (e) => bruch(r, e)
-        ).catch((e) => bruch(r, e));
+        Promise.all([BEDIENUNG, HAUSHALT])
+            .then(
+                ([B, H]) => {
+                    st.haushalt = bodenKlasse(H);
+                    oeffne(r, G, bedienungPruefen(B, G));
+                },
+                (e) => bruch(r, e)
+            )
+            .catch((e) => bruch(r, e));
     }
     // EIN BRUCH IST LAUT: ein Studio ohne lesbare Bedienung öffnet nicht (kein Panel mit Ids statt Namen, keine stummen Knöpfe).
     function bruch(r, e) {

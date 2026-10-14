@@ -151,11 +151,15 @@ class AnazhRealm_Z20c {
     // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
     // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
     // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
-    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
-    // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
-    // positionNode VOR der Instanzierung: die Phase liest die Welt-Lage aus der EINEN Naht (`_weltNaht`), der Ausschlag
-    // (Welt-Meter in Windrichtung, das Flattern entlang der Welt-Normale) geht über sie in die Vorlage zurück — bis K20-N1
-    // wehte der Wind jedes Baums in der Drehung seiner Instanz und wuchs mit ihrer Skala (gate:foundry-impostor C4).
+    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind ein Stoff-Wert
+    // (`userData.windArt`, `_stoffWert`): jede Art zeichnet ihren eigenen Stoff mit DEMSELBEN Knoten — EIN Graph für Laub, einer
+    // für Rinde, Wurf und Bau (1310-18; bis dahin eine frische Uniform je Stoff, für r184 ein Programm je Art). r184 rechnet den
+    // positionNode VOR der Instanzierung (vendor three.webgpu.min.js: `setupPosition` legt die Zuweisung des positionNode
+    // auf den Stapel, die Instanz-, Batch- und Skin-Knoten hängen ihr `positionLocal = M × positionLocal` erst in ihrem
+    // setup an, und `StackNode.build` baut die nachgereichten Knoten NACH den ersten): die Phase liest die Welt-Lage aus der
+    // EINEN Naht (`_weltNaht`), der Ausschlag (Welt-Meter in Windrichtung, das Flattern entlang der Welt-Normale) geht über
+    // sie in die Vorlage zurück — bis K20-N1 wehte der Wind jedes Baums in der Drehung seiner Instanz und wuchs mit ihrer
+    // Skala (gate:foundry-impostor C4). Die Naht ist EIN Satz Knoten (`_weltNaht` teilt ihn), der Knoten je Art bleibt einer.
     // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
     // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
     // trägt er nicht: sein Hub (WIND_GESETZ.blatt.hub 0,035 m im Sturm) liegt unter dem Kaskaden-Texel (wurf 0,17 m).
@@ -163,12 +167,21 @@ class AnazhRealm_Z20c {
     _baumWindStoff(mat, kind, baum) {
         if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
         if (!this.state.windUniforms) this._grassInstanceMat();
+        const laub = kind === "foliage" || kind === "foliageTex";
+        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
+        mat.userData.windArt = new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0);
+        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
+        if (!this._baumWindKnoten) this._baumWindKnoten = {};
+        const da = this._baumWindKnoten[laub ? "laub" : "ast"];
+        if (da) {
+            mat.positionNode = da;
+            return;
+        }
         const T = THREE.TSL;
         const wu = this._ensureWindCoupling(T);
         const WG = globalThis.__phytoCore.WIND_GESETZ;
         const B = AnazhRealm.WIND_BOE;
-        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
-        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
+        const uB = this._stoffWert(T, "userData.windArt", "vec3");
         const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
         const naht = this._weltNaht(T);
@@ -190,13 +203,11 @@ class AnazhRealm_Z20c {
             phi: ort.mul(-B.k),
             psi: pG.x.mul(1.7).add(pG.y.mul(0.9)).add(pG.z.mul(1.3)).div(ht).mul(6.2832),
         };
-        const laub = kind === "foliage" || kind === "foliageTex";
         const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
         const quer = w.quer.mul(uB.z);
         let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
         if (laub) off = off.add(naht.richtung(T.normalLocal).mul(w.flattern.mul(uB.z)));
-        mat.positionNode = T.positionLocal.add(naht.vorlage(off));
-        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
+        mat.positionNode = this._baumWindKnoten[laub ? "laub" : "ast"] = T.positionLocal.add(naht.vorlage(off));
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
@@ -1224,11 +1235,208 @@ class AnazhRealm_Z20c {
     // und eine eigene Pipeline, kompiliert beim Laufen. Gemessen 02.10. an der Mess-Wiese: 756 Vertex-
     // Programme auf 60 Fragment-Programme. Der Storage-Puffer ist laufzeit-dimensioniert (`array<mat4x4f>`):
     // EIN Programm je Material × Attribut-Form, gleich wie viele Instanzen.
+    // DER ZEICHNER (1410-1): die Senke bleibt für die Welt eine InstancedMesh (Slots, `count`, Raycast, Wurf, Bündel) — gezeichnet
+    // wird sie von ihrem Zeichner (`_instanzZeichner`), einem Mesh über einer InstancedBufferGeometry. r184 hängt an den
+    // Programm-Schlüssel jeder InstancedMesh ihre uuid (`isInstancedMesh || count > 1`): jede Senke baute ihr eigenes Programm,
+    // auch bei EINEM geteilten Graphen (1310-18: 51 Bauten an der Ankunft). Der Zeichner trägt keinen der beiden Terme; seine
+    // Instanz-Zahl ist `instanceCount` der Geometrie, die Matrizen liest EIN geteilter Knoten (`_senkenKnoten`) je Zeichen-Objekt.
     static _instanzMesh(geom, mat, cap) {
         const m = new THREE.InstancedMesh(geom, mat, cap);
         if (typeof THREE.StorageInstancedBufferAttribute === "function")
             m.instanceMatrix = new THREE.StorageInstancedBufferAttribute(m.instanceMatrix.array, 16);
+        AnazhRealm._instanzZeichner(m);
         return m;
+    }
+    // Die Senke projiziert r184 als LOD OHNE TAKT (`_projectObject`: ein LOD zeichnet nicht, ohne `autoUpdate` stellt er nichts,
+    // seine Kinder projizieren mit der Reihe seiner Eltern) — sie zeichnet nur über ihr Kind, den Zeichner, und der sortiert wie
+    // die Senke zuvor (Reihe der Eltern · ihre renderOrder · ihr Abstand). Als GRUPPE setzte sie die Reihe ihrer Kinder auf ihre
+    // eigene renderOrder (r = e.renderOrder): eine Senke außerhalb der Bündel zeichnete in anderer Folge (gpu-bank am Tor nah
+    // +0,29 ms, 1410-1). Die Gänge der Welt (`traverse`) sehen den Zeichner nicht: er ist r184s Werkzeug, nicht ein Teil der
+    // Welt (Zählungen, Kehraus und Linsen lesen die Senke, wie bisher).
+    static _instanzZeichner(m) {
+        const Z = AnazhRealm._instanzZeichnerKlasse();
+        const z = new Z(m);
+        m.isLOD = true;
+        m.add(z);
+        m.__zeichner = z;
+        m.traverse = function (cb) {
+            cb(this);
+            for (const c of this.children) if (c !== z) c.traverse(cb);
+        };
+        m.traverseVisible = function (cb) {
+            if (this.visible === false) return;
+            cb(this);
+            for (const c of this.children) if (c !== z) c.traverseVisible(cb);
+        };
+        return z;
+    }
+    // Der Zeichner einer Senke: Stoff, Wurf, Schichten, Hülle, Welt-Matrix und `userData` sind die der Senke (gelesen, nie
+    // kopiert); seine Geometrie ist eine Fassade über der Geometrie der Senke — dieselben Attribut-Objekte, dazu die Instanz-
+    // Farbe (`instanzFarbe`) und die Marke `aInstanzSenke`. Die Marke liest kein Shader (sie belegt keinen Vertex-Puffer); sie
+    // trennt im Geometrie-Schlüssel den Zeichner von einem Mesh mit gleichen Attributen und gleichem Stoff (dessen Programm
+    // instanziert nicht). Jeder Zugriff auf die Geometrie gleicht die Fassade mit der Quelle ab (ein Wachsen der Instanz-
+    // Fassade tauscht Attribut-Objekte; r184 folgt über `needsGeometryUpdate`).
+    static _instanzZeichnerKlasse() {
+        if (AnazhRealm.__instanzZeichnerK) return AnazhRealm.__instanzZeichnerK;
+        const T = THREE;
+        const MARKE = new T.BufferAttribute(new Float32Array(1), 1);
+        class InstanzZeichner extends T.Mesh {
+            constructor(senke) {
+                super(new T.InstancedBufferGeometry(), senke.material);
+                const fassade = this.geometry;
+                this.__fassade = fassade;
+                fassade.setAttribute("aInstanzSenke", MARKE);
+                this.__instanzQuelle = senke;
+                this.isInstanzZeichner = true;
+                this.name = "instanz-zeichner";
+                this._q = { geo: null, attr: null, index: null, farbe: undefined };
+                const durch = (k) => ({
+                    get: () => senke[k],
+                    set: (v) => {
+                        senke[k] = v;
+                    },
+                    configurable: true,
+                });
+                for (const k of [
+                    "material",
+                    "castShadow",
+                    "receiveShadow",
+                    "frustumCulled",
+                    "renderOrder",
+                    "userData",
+                    "layers",
+                ]) {
+                    delete this[k];
+                    Object.defineProperty(this, k, durch(k));
+                }
+                delete this.matrixWorld;
+                delete this.geometry;
+                Object.defineProperties(this, {
+                    matrixWorld: { get: () => senke.matrixWorld, set: () => {}, configurable: true },
+                    instanceColor: { get: () => senke.instanceColor, configurable: true },
+                    boundingSphere: {
+                        get: () => {
+                            if (senke.boundingSphere === null) senke.computeBoundingSphere();
+                            return senke.boundingSphere;
+                        },
+                        set: () => {},
+                        configurable: true,
+                    },
+                    geometry: { get: () => this._fassade(fassade), set: () => {}, configurable: true },
+                });
+                this.matrixAutoUpdate = false;
+                this.matrixWorldAutoUpdate = false;
+            }
+            _fassade(f) {
+                const s = this.__instanzQuelle;
+                const g = s.geometry;
+                const q = this._q;
+                const a = g.attributes;
+                let anders = q.geo !== g || q.index !== g.index || q.farbe !== s.instanceColor;
+                if (!anders) {
+                    let n = 0;
+                    for (const k in a) {
+                        n++;
+                        if (q.attr[k] !== a[k]) {
+                            anders = true;
+                            break;
+                        }
+                    }
+                    if (n !== q.n) anders = true;
+                }
+                if (anders) {
+                    for (const k of Object.keys(f.attributes))
+                        if (k !== "aInstanzSenke" && !(k in a)) delete f.attributes[k];
+                    let n = 0;
+                    for (const k in a) {
+                        f.attributes[k] = a[k];
+                        n++;
+                    }
+                    if (s.instanceColor) f.attributes.instanzFarbe = s.instanceColor;
+                    else delete f.attributes.instanzFarbe;
+                    f.index = g.index;
+                    f.groups = g.groups;
+                    f.boundingBox = g.boundingBox;
+                    f.boundingSphere = g.boundingSphere;
+                    q.geo = g;
+                    q.index = g.index;
+                    q.farbe = s.instanceColor;
+                    q.attr = Object.assign({}, a);
+                    q.n = n;
+                }
+                // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
+                // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
+                f.setDrawRange(g.drawRange.start, g.drawRange.count);
+                f.instanceCount = s.count;
+                return f;
+            }
+            computeBoundingSphere() {
+                this.__instanzQuelle.computeBoundingSphere();
+            }
+            raycast() {}
+            updateMatrixWorld() {}
+            updateWorldMatrix() {}
+        }
+        AnazhRealm.__instanzZeichnerK = InstanzZeichner;
+        return InstanzZeichner;
+    }
+    // DER EINE INSTANZ-KNOTEN DER SENKEN (1410-1): je Zeichen-Objekt die Matrix seiner Senke (Speicher-Puffer `instanzMatrix`,
+    // `array<mat4x4f>` laufzeit-dimensioniert) am Index der Instanz — r184s InstanceNode, nur dass der Puffer je Objekt gelesen
+    // wird statt im Graphen gebunden: der Knoten stellt seinen Wert je Objekt (Takt object, vor den Bindungen des Draws), und
+    // r184 merkt je Bindung ihr Attribut und baut die Bindegruppe beim Wechsel neu (`Bindings._update`). Lage und Normale wie
+    // r184 (`positionLocal` · `transformNormal`, die Zuweisung baut NACH der des positionNode, Lehre 22), die Instanz-Farbe als
+    // `vInstanceColor` (r184s Farb-Pfad liest sie), die Matrix am Builder für die Naht `_weltNaht` (Wind, Karte, Blende).
+    static _senkenKnoten() {
+        if (AnazhRealm.__senkenKnoten) return AnazhRealm.__senkenKnoten;
+        const T = THREE.TSL;
+        // die Klasse reicht die Bootstrap-Brücke nicht als THREE-Symbol: sie ist der Prototyp eines `storage`-Knotens
+        const SB =
+            THREE.StorageBufferNode ||
+            (T.storage
+                ? Object.getPrototypeOf(
+                      T.storage(new THREE.StorageInstancedBufferAttribute(new Float32Array(16), 16), "mat4", 0)
+                  ).constructor
+                : null);
+        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
+        if (typeof SB !== "function" || !N || !T.transformNormal || !T.varyingProperty || !T.instanceIndex) {
+            const text =
+                "DIE SENKE: r184 StorageBufferNode · Node · transformNormal · varyingProperty fehlen (Vendor-Drift)";
+            throw new Error(text);
+        }
+        const quelle = (o) => (o && o.__instanzQuelle ? o.__instanzQuelle.instanceMatrix : null);
+        class SenkenMatrizen extends SB {
+            constructor() {
+                super(new THREE.StorageInstancedBufferAttribute(new Float32Array(16), 16), "mat4", 0);
+                this.updateType = "object";
+                this.setName("instanzMatrix");
+            }
+            setup(builder) {
+                const im = quelle(builder.object);
+                if (im) this.value = im;
+                return super.setup(builder);
+            }
+            update(frame) {
+                const im = quelle(frame.object);
+                if (im) this.value = im;
+            }
+        }
+        const matrix = new SenkenMatrizen().toReadOnly().element(T.instanceIndex);
+        class SenkenInstanz extends N {
+            constructor() {
+                super("void");
+            }
+            setup(builder) {
+                T.positionLocal.assign(matrix.mul(T.positionLocal).xyz);
+                if (builder.hasGeometryAttribute("normal"))
+                    T.normalLocal.assign(T.transformNormal(T.normalLocal, matrix));
+                if (builder.geometry && builder.geometry.attributes && builder.geometry.attributes.instanzFarbe)
+                    T.varyingProperty("vec3", "vInstanceColor").assign(T.attribute("instanzFarbe", "vec3"));
+                builder.__anazhInstanzMatrix = matrix;
+                return null;
+            }
+        }
+        AnazhRealm.__senkenKnoten = { matrix, instanz: new SenkenInstanz() };
+        return AnazhRealm.__senkenKnoten;
     }
     // DER GPU-ABSCHIED — der EINE Weg, auf dem eine Geometrie-Kopie die GPU verlässt. r184 trägt jedes hochgeladene
     // Attribut STARK in sein Register (`renderer.info.memoryMap`) und gibt es nur auf zwei Wegen frei: `_attributes.delete`
@@ -1266,6 +1474,8 @@ class AnazhRealm_Z20c {
         // bleibt im Cache, wie bisher (r184s eigenes `dispose` gäbe mit dem letzten Render-Objekt einer Familie auch sie frei —
         // die nächste Senke derselben Familie kompilierte neu); geteilte Gruppen gehören allen.
         AnazhRealm._renderObjekteLoesen(mesh);
+        // gezeichnet hat ihr Zeichner (1410-1): seine Render-Objekte lösen sich ebenso
+        if (mesh.__zeichner) AnazhRealm._renderObjekteLoesen(mesh.__zeichner);
         mesh.dispose();
     }
     // DIE LÖSUNG DER RENDER-OBJEKTE eines Objekts, das den Graphen für immer verlässt (`_instanzAbschied`, `_disposeSoulGroup`)
@@ -1558,6 +1768,10 @@ class AnazhRealm_Z20c {
     static _instanzZahl(mesh, n) {
         mesh.count = n;
         mesh.visible = n > 0;
+        // der Zeichner zählt mit (1410-1): seine Fassade zeichnet so viele Instanzen, wie die Senke JETZT zählt — r184 liest die
+        // Zahl zur Zeichen-Zeit, und der verschachtelte Schatten-Render stellt sie mitten im Hauptbild um und zurück, ohne neu
+        // zu projizieren (die Zahl der Projektion war dann die der Kaskade: Instanzen fehlten oder standen doppelt im Bild)
+        if (mesh.__zeichner) mesh.__zeichner.__fassade.instanceCount = n;
     }
     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass

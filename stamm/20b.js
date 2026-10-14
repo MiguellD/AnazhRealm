@@ -1887,6 +1887,15 @@ class AnazhRealm_Z20b {
     // Feld-Pass marcht ALLE Felder aus Atlas+Liste in EINEM Draw — ein
     // Material je Ziegel wäre der Zwilling, den wir abgeschafft haben.
 
+    // DER STOFF-WERT (1310-18): ein Wert, der je Stoff variiert, reist als Verweis auf den Stoff des ZEICHNENDEN OBJEKTS
+    // (`material.<pfad>`, je Objekt in dessen Bindegruppe geschrieben), nie als Konstante im Graphen — Stoffe gleicher
+    // Signatur teilen so EIN Programm. Der Verweis geht über das Objekt, nicht über den zeichnenden Stoff: der r184-
+    // Schattenpass zeichnet mit seinem EIGENEN Stoff (die Knoten des Werfers hängen darin, Lehre 26), das Objekt trägt den
+    // Werfer-Stoff in jedem Pass. Der Wert steht beim Bau fest — die Observer-Diät sieht keine spätere Änderung.
+    _stoffWert(TSL, pfad, typ) {
+        return TSL.reference("material." + pfad, typ || "float");
+    }
+
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
@@ -1987,6 +1996,14 @@ class AnazhRealm_Z20b {
         // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
         // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
         if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
+        // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
+        // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
+        // eigenen Graphen und r184 baute je Stoff ein Programm.
+        const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
+        mat.userData.stoffWerte = {
+            leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
+            tonL: _tonA ? Math.max(1e-4, 0.2126 * _tonA[0] + 0.7152 * _tonA[1] + 0.0722 * _tonA[2]) : 1,
+        };
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
@@ -1994,7 +2011,8 @@ class AnazhRealm_Z20b {
         // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
         // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
         // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
-        if (mp && typeof mp.leucht === "number" && mp.leucht > 0) mat.emissiveNode = vcol.mul(mp.leucht);
+        if (mp && typeof mp.leucht === "number" && mp.leucht > 0)
+            mat.emissiveNode = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
         // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
         // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
@@ -2077,10 +2095,8 @@ class AnazhRealm_Z20b {
                         add = add ? add.add(t) : t;
                     };
                     if (strand) {
-                        const tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
-                        const tonL = tonA
-                            ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
-                            : null;
+                        // der Ton-Anker (seine Luminanz) ist ein Stoff-Wert: jeder Fell-/Haar-Ton zeichnet im Programm seiner Art
+                        const tonL = _tonA ? this._stoffWert(TSL, "userData.stoffWerte.tonL") : null;
                         const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
                         // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
                         // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
@@ -2090,28 +2106,30 @@ class AnazhRealm_Z20b {
                         // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
                         const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
                         if (schale) {
+                            // Die Zahlen des Rasters sind DATEN des Gesetzbuchs (tetrapoda FELL_SCHALE, K45) — das Labor
+                            // liest dieselben (worlds/tetrapoda, GLSL); fehlen sie, bricht der Stoff laut (_stoffBruch).
+                            const FS = tkC.FELL_SCHALE;
                             const t = aS.x;
                             const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
                             const zelle = TSL.floor(p);
-                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453));
-                            const h2 = TSL.fract(
-                                TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
-                            );
-                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
+                            const hA = FS.hashA,
+                                hB = FS.hashB;
+                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hA[0], hA[1], hA[2]))).mul(hA[3]));
+                            const h2 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hB[0], hB[1], hB[2]))).mul(hB[3]));
+                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(FS.hashC)))
                                 .sub(0.5)
-                                .mul(0.4);
+                                .mul(FS.mitte);
                             const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
                             const radius = aS.y
                                 .sqrt()
-                                .mul(0.62)
-                                .mul(TSL.float(1.0).sub(t.mul(0.75)));
-                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
-                            const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
+                                .mul(FS.radius)
+                                .mul(TSL.float(1.0).sub(t.mul(FS.zulauf)));
+                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
+                            const wolle = TSL.step(t, FS.wolle).mul(TSL.step(FS.wolleAb, aS.y));
                             // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
                             // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
                             // nicht wirft. Die Kopf-Schalen (K28) tragen dasselbe Raster: Leib und Kopf EIN Stoff.
                             mat.alphaTest = 0.5;
-                            const FS = AnazhRealm.FELL_SCHALE;
                             mat.colorNode = TSL.vec4(
                                 vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
                                 TSL.max(haar, wolle)
@@ -2285,6 +2303,52 @@ class AnazhRealm_Z20b {
             const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
             mat.positionNode = TSL.positionLocal.add(_sway);
         }
+        // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel
+        // endet in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff (1310-17: 43 Foundry-Stoffe,
+        // 43 Bauten). Die Signatur nennt jede Eingabe, an der der Bau oben verzweigt (Art · Rinde · Look-Klasse · Leucht · Gewebe
+        // · Ton-Anker der Strähne · Blende · Wiegen); der erste Stoff einer Signatur legt ihre Knoten ab, jeder weitere zeichnet
+        // mit DENSELBEN Knoten — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe,
+        // Deckkraft, Schwelle) liest r184 als Stoff-Referenz. Weichen die belegten Knoten-Plätze ab, fehlt der Signatur eine
+        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen.
+        const _plaetze = [
+            "colorNode",
+            "emissiveNode",
+            "opacityNode",
+            "outputNode",
+            "positionNode",
+            "maskNode",
+            "maskShadowNode",
+        ];
+        const _sig = [
+            kind,
+            isBark ? "rinde" : "",
+            klasseLook ? "look" : "",
+            mat.userData.stoffWerte.leucht > 0 ? "leucht" : "",
+            mp && mp.webe && !isBark && !klasseLook && kind !== "foliageTex" && kind !== "schatten"
+                ? "webe:" + mp.webe
+                : "",
+            _tonA && klasseLook ? "ton" : "",
+            xfade ? "xf" : "",
+            wiegen === true ? "wiegt" : "",
+        ].join("|");
+        if (!this._foundryGraphen) this._foundryGraphen = new Map();
+        const _graph = this._foundryGraphen.get(_sig);
+        if (!_graph) {
+            const g = {};
+            for (const p of _plaetze) g[p] = mat[p] || null;
+            this._foundryGraphen.set(_sig, g);
+        } else {
+            const ab = _plaetze.filter((p) => !mat[p] !== !_graph[p]);
+            if (ab.length)
+                throw this._stoffBruch(
+                    `der geteilte Graph „${_sig}"`,
+                    new Error(
+                        "die Signatur verfehlt eine Eingabe des Baus — abweichende Knoten-Plätze: " + ab.join(" · ")
+                    )
+                );
+            for (const p of _plaetze) mat[p] = _graph[p];
+        }
+        mat.userData.foundrySignatur = _sig;
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
         this._leuchtStoff(mat, mp);
         mat.userData = mat.userData || {};

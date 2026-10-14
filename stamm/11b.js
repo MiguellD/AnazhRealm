@@ -666,13 +666,17 @@ class AnazhRealm_Z11b {
 
     // DIE FRAGE NACH PLÄTZEN (Leser: der Tier-Leib): die Einträge des Bestands, deren Platz (Position ± Reichweite) das Quadrat
     // x/z ± `weite` berührt — aus den Platz-Zellen und der Riesen-Zelle —, dazu jeder Beweger, in der Ordnung des Bestands nach
-    // `out`. Ein Obermenge: die Probe je Eintrag stellt der Leser. Eine nicht endliche Frage erreicht jeden Eintrag.
-    _blockerUmPlatz(x, z, weite, out) {
+    // `out`. Ein Obermenge: die Probe je Eintrag stellt der Leser. Eine nicht endliche Frage erreicht jeden Eintrag. Mit `name`
+    // (K54) nur die Einträge, die ihn im VERZEICHNIS tragen — die Frage der Affordanz-Takte um den Spieler: der Takt kostet die
+    // Nähe, nie den Bestand der Welt.
+    _blockerUmPlatz(x, z, weite, out, name) {
         const N = this._blockerNetz();
+        const menge = name ? N.verzeichnis.get(name) : null;
+        if (name && !(menge && menge.size)) return out;
         const frage = ++N.frage;
         const n0 = out.length;
         if (!(Number.isFinite(weite) && Number.isFinite(x) && Number.isFinite(z))) {
-            for (const e of N.liste) if (e) out.push(e);
+            for (const e of N.liste) if (e && (!menge || menge.has(e))) out.push(e);
             return out;
         }
         const Z = AnazhRealm.BLOCKER_ZELLE;
@@ -687,13 +691,13 @@ class AnazhRealm_Z11b {
             if (!zelle) continue;
             for (let i = 0; i < zelle.length; i++) {
                 const e = zelle[i];
-                if (e._blockerFrage === frage) continue;
+                if (e._blockerFrage === frage || (menge && !menge.has(e))) continue;
                 e._blockerFrage = frage;
                 out.push(e);
             }
         }
         for (const e of N.beweger)
-            if (e._blockerFrage !== frage) {
+            if (e._blockerFrage !== frage && (!menge || menge.has(e))) {
                 e._blockerFrage = frage;
                 out.push(e);
             }

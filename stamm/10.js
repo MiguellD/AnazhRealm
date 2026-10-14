@@ -953,6 +953,9 @@ class AnazhRealm_Z10 {
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
     // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
+    // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
+    // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
+    // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
     _leuchtStoff(mat, mp, himmel) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
         const Te = THREE.TSL;
@@ -962,9 +965,20 @@ class AnazhRealm_Z10 {
             mat.userData.lichtPool = "quelle";
             return mat;
         }
-        let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
-        if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
-        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        const ohne = this._leuchtOhne || (this._leuchtOhne = {});
+        const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
+        const basis = mat.emissiveNode || ohne;
+        if (!jeBasis.has(basis)) jeBasis.set(basis, new WeakMap());
+        const jeHimmel = jeBasis.get(basis);
+        if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
+        const knoten = jeHimmel.get(himmel || ohne);
+        const plan = mp && mp.licht === "fenster" ? "fenster" : "offen";
+        if (!knoten[plan]) {
+            let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
+            if (plan === "fenster") em = em.add(atmo.fensterGlut);
+            knoten[plan] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        }
+        mat.emissiveNode = knoten[plan];
         mat.userData.lichtPool = true;
         return mat;
     }
@@ -1076,11 +1090,12 @@ class AnazhRealm_Z10 {
         tex.needsUpdate = true;
         const [A, B] = R.schraeg;
         const m = T.int(P - 1);
-        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, 0 · 127 · 254 → −1 · 0 · +1
-        const ecken = (i, j, c) =>
-            T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j))
-                .mul(255 / 127)
-                .sub(1.0);
+        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, roh geladen — die Ladung steht im Programm, das die
+        // Probe ruft (eine Bindung lebt nie in einer Layout-Funktion: r184 baut sie EINMAL je Builder-Klasse, jedes weitere
+        // Programm erbte den Namen der Textur aus dem ersten)
+        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
+        // 0 · 127 · 254 → −1 · 0 · +1
+        const dekod = (e) => e.mul(255 / 127).sub(1.0);
         const blende = (t) =>
             t
                 .mul(t)
@@ -1088,38 +1103,64 @@ class AnazhRealm_Z10 {
                 .mul(t.mul(t.mul(6.0).sub(15.0)).add(10.0));
         // bilinear über die vier Ecken (00 · 10 · 01 · 11) mit der Fünftgrad-Blende
         const zelle = (d, u) => T.mix(T.mix(d.x, d.y, u.x), T.mix(d.z, d.w, u.x), u.y);
+        // DIE MISCHUNG als EINE WGSL-Funktion je Form (K17-3 Runde 2): rein (die Lage in der Zelle und die geladenen Ecken
+        // als Parameter), dieselbe Rechnung wie ausgeschrieben — ausgeschrieben stand sie je Probe im Programm (der Boden
+        // trug 13 Proben, mit Schatten 103 369 Zeichen WGSL).
+        const ebeneMisch = T.Fn(([f, a, b]) => {
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const d = dekod(a)
+                .mul(T.vec4(f.x, fx1, f.x, fx1))
+                .add(dekod(b).mul(T.vec4(f.y, f.y, fy1, fy1)));
+            return zelle(d, blende(f)).mul(R.skala);
+        }).setLayout({
+            name: "rauschEbene",
+            type: "float",
+            inputs: [
+                { name: "f", type: "vec2" },
+                { name: "a", type: "vec4" },
+                { name: "b", type: "vec4" },
+            ],
+        });
+        const raumMisch = T.Fn(([f, a0, a1, a2, b0, b1, b2]) => {
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
+            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
+            const schicht = (e0, e1, e2, fz) => dekod(e0).mul(fx4).add(dekod(e1).mul(fy4)).add(dekod(e2).mul(fz));
+            const u = blende(f);
+            return zelle(T.mix(schicht(a0, a1, a2, f.z), schicht(b0, b1, b2, f.z.sub(1.0)), u.z), u).mul(R.skala);
+        }).setLayout({
+            name: "rauschRaum",
+            type: "float",
+            inputs: [
+                { name: "f", type: "vec3" },
+                ...["a0", "a1", "a2", "b0", "b1", "b2"].map((name) => ({ name, type: "vec4" })),
+            ],
+        });
         const ebene = (p, k, achse) => {
             const c = T.floor(p);
-            const f = p.sub(c);
             const ci = T.ivec2(c);
             const i0 = ci.x.add(A * k).bitAnd(m);
             const j0 = ci.y.add(B * k).bitAnd(m);
-            const fx1 = f.x.sub(1.0);
-            const fy1 = f.y.sub(1.0);
-            const d = ecken(i0, j0, 0)
-                .mul(T.vec4(f.x, fx1, f.x, fx1))
-                .add(ecken(i0, j0, achse === "z" ? 2 : 1).mul(T.vec4(f.y, f.y, fy1, fy1)));
-            return zelle(d, blende(f)).mul(R.skala);
+            return ebeneMisch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
         };
         const raum = (p) => {
             const c = T.floor(p);
-            const f = p.sub(c);
             const ci = T.ivec3(c);
             const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
             const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
             const i1 = i0.add(A).bitAnd(m);
             const j1 = j0.add(B).bitAnd(m);
-            const fx1 = f.x.sub(1.0);
-            const fy1 = f.y.sub(1.0);
-            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
-            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
-            const schicht = (i, j, fz) =>
-                ecken(i, j, 0)
-                    .mul(fx4)
-                    .add(ecken(i, j, 1).mul(fy4))
-                    .add(ecken(i, j, 2).mul(fz));
-            const u = blende(f);
-            return zelle(T.mix(schicht(i0, j0, f.z), schicht(i1, j1, f.z.sub(1.0)), u.z), u).mul(R.skala);
+            return raumMisch(
+                p.sub(c),
+                ecken(i0, j0, 0),
+                ecken(i0, j0, 1),
+                ecken(i0, j0, 2),
+                ecken(i1, j1, 0),
+                ecken(i1, j1, 1),
+                ecken(i1, j1, 2)
+            );
         };
         this._rauschAtlasCache = { tex, raum, ebene };
         return this._rauschAtlasCache;
@@ -1238,7 +1279,10 @@ class AnazhRealm_Z10 {
             const toneTint = _T.mix(_T.vec3(0.9, 0.97, 1.12), _T.vec3(1.12, 1.0, 0.86), toneMix);
             albedo = albedo.mul(_T.mix(_T.vec3(1, 1, 1), toneTint, f(metal > 0.5 ? 0.28 : 0.46)));
             // (3) VERWITTERUNG/SCHMUTZ — Mulden + untere Zonen sammeln Schmutz (dunkler, entsättigt).
+            // Der Schmutz der Kavität blendet mit ihr aus (`fineFade`, K53): was der Pixel nicht trägt, ist kein Mittel-Versatz —
+            // unaufgelöst zog er jeden fernen Boden um 0,3 × Kavitäts-Mittel zur Erde (gate:nah-fern Luft aus: Y −4,5 %, Grün −0,022).
             const grime = cavity
+                .mul(fineFade)
                 .mul(f(0.5))
                 .add(objLocal ? f(1.0).sub(yLow).mul(f(0.45)) : f(0.0))
                 .clamp(0, 1);
@@ -1344,8 +1388,28 @@ class AnazhRealm_Z10 {
             const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
-            const _f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
-            const _feinV = AnazhRealm._zweigTSL(_T)(_T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, wp.x, wp.z)), _gate);
+            // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
+            // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
+            // (`felsZufall`) — ausgeschrieben stand jede Ziehung 78-mal im Boden-Programm (96 050 → 149 521 Zeichen WGSL), und
+            // swiftshader übersetzte sie vor dem ersten Bild. Die Welle liest der Graph (EINE Probe im Rausch-Atlas, `felsWelle`)
+            // und reicht sie hinein; der Aufruf steht im Zweig (die Wiese zahlt ihn nicht).
+            const _welle = GK.felsWelle(_O, wp.x, wp.y, wp.z);
+            const _felsFn = _T
+                .Fn(([x, y, z, w]) => {
+                    const _f = GK.felsFein(_O, FS.basis, x, y, z, w);
+                    return _T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, x, z));
+                })
+                .setLayout({
+                    name: "felsFein",
+                    type: "vec3",
+                    inputs: [
+                        { name: "x", type: "float" },
+                        { name: "y", type: "float" },
+                        { name: "z", type: "float" },
+                        { name: "w", type: "float" },
+                    ],
+                });
+            const _feinV = AnazhRealm._zweigTSL(_T)(_felsFn(wp.x, wp.y, wp.z, _welle), _gate);
             const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
             const _rockCol = _felsGrund.mul(_fein);
@@ -1373,29 +1437,16 @@ class AnazhRealm_Z10 {
             const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
             // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
             // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
-            // Meadow-Grund: wo flach + grün tönt der Boden selbst zur Wiese → spärliche Halme lesen als dichte Wiese
-            // (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
-            const _meadowPatch = _ra
-                .ebene(_T.vec2(wp.x.mul(0.13), wp.z.mul(0.13)), 7, "y")
-                .mul(_T.float(0.5))
-                .add(_T.float(0.5));
-            // Die Deckung: die Halme verdecken den Grund (aus der Ferne 65–85 %, die karge Stelle zeigt mehr Erde).
-            const _meadowW = _green
-                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_meadowPatch.mul(_T.float(0.5)).add(_T.float(0.5)))
-                .clamp(0.0, 1.0);
-            // V18.346 — der Meadow-Grund liest dieselben Gras-Farben wie das Nah-Gras (Gesetz #0) → Boden + Gras
-            // verschmelzen by construction (Schöpfer „Synergie fehlt"): die Wurzel MEADOW_GREEN, die Spitze
-            // GRAS_SPITZE. Aus der Ferne trägt der Boden das MITTEL des Halms — das Integral der Halm-Farbe unten
-            // (h ∈ [0, 1]: mix(Wurzel, Spitze, h) · (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,18 wie das
-            // Studio-Gras der Nah-Wiese (Albedo-Linse 05.10.: 0,18–0,20) —, nicht die Erde darunter (bis 05.10. der
-            // Wiesen-Grund `mead`: aus 45 m eine oliv-gelbe Steppe).
+            // DER WIESEN-GRUND liegt im Gesetz (K53, `_bodenFarbeAt` · `attachFieldColors`, `WIESEN_GRUND`): der Vertex trägt das
+            // Mittel des Halms schon — Chunk, Fern-Ring, Feld-Pass und Panorama lesen EINE Zahl. Bis K53 mischte ihn nur dieses
+            // Fragment (Gewicht Grün × Flachheit × Fleck): Boden-Satz und Fern-Ring lagen +20 % über dem CPU-Gesetz, das der
+            // Feld-Pass zeichnet (gate:nah-fern, Luft aus). Hier lebt nur noch die Farbe des Halms für das Relief der Nähe.
             const _mg = AnazhRealm.MEADOW_GREEN;
             const _sp = AnazhRealm.GRAS_SPITZE;
+            const _wg = AnazhRealm.WIESEN_GRUND.farbe;
             const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
             const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
-            const _krone = _wurzel.mul(_T.float(0.383)).add(_spitze.mul(_T.float(0.442)));
-            _out = _T.mix(_out, _krone, _meadowW);
+            const _krone = _T.vec3(_wg[0], _wg[1], _wg[2]);
             // (Der Waldboden liegt unter den echten Kronen — `_wegeBodenFarbe` mischt die Laubstreu der Kronen-Karte;
             // der Fragment-Zwilling, der grüne feuchte Niederungen zum dunklen Wald-Kern-Ton zog, ist gefallen.)
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
@@ -1431,6 +1482,11 @@ class AnazhRealm_Z10 {
                         .mul(0.5)
                         .add(0.5)
                 );
+                // Die acht Schichten stehen ausgeschrieben im Programm (der Knoten-Graph sieht jede Ladung, RAUSCH-GESETZ (B)),
+                // ihre Mischung rechnet die EINE reine Funktion des Atlas (`rauschEbene`, K17-3 Runde 2) — je Schicht nur die
+                // Lage und zwei Ladungen. Eine Schleife hiesse ein Fn-Rumpf: als Layout-Funktion las er die Bindung des Atlas
+                // (r184 baut sie EINMAL je Builder-Klasse, jedes weitere Programm erbte den Namen der Textur — die Prüf-Welt sagte
+                // die Pipeline ab), ohne Layout blieb er dem Graph verborgen.
                 let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
                 let _trefH = _T.float(0.0); // Halm-Höhe des Treffers (0 = Wurzelgrund)
                 for (let _s = 0; _s < 8; _s++) {
@@ -1619,25 +1675,40 @@ class AnazhRealm_Z10 {
     // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
     // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
     // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
-    // gate:foundry-impostor C4).
+    // gate:foundry-impostor C4). Die Wurzel der Reihenfolge im Vendor (three.webgpu.min.js): `setupPosition` legt die
+    // Zuweisung des positionNode auf den Stapel; Instanz-, Batch- und Skin-Knoten hängen ihr `positionLocal.assign(M × …)`
+    // erst in ihrem setup an den aktiven Stapel, und `StackNode.build` baut nachgereichte Knoten NACH den ersten — das gilt
+    // für jede InstancedMesh, die Foundry-Senken eingeschlossen. EIN Satz Knoten (1310-18): r184 schlüsselt ein Programm
+    // nach der Identität seiner Knoten — die Naht entsteht EINMAL, `richtung` und `vorlage` merken sich ihren Knoten je
+    // Eingang, sonst trüge jeder Leser, der seinen Graphen teilt (der Wind je Art), doch frische Knoten.
     _weltNaht(T) {
+        if (this._weltNahtKnoten) return this._weltNahtKnoten;
         const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));
         const c0 = Mw.element(0).xyz;
         const c1 = Mw.element(1).xyz;
         const c2 = Mw.element(2).xyz;
-        return {
+        const jeRichtung = new WeakMap();
+        const jeVorlage = new WeakMap();
+        const merk = (karte, n, bau) => {
+            if (!karte.has(n)) karte.set(n, bau(n));
+            return karte.get(n);
+        };
+        this._weltNahtKnoten = {
             anker: Mw.element(3).xyz,
             lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
             skala: c0.length(),
             spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
-            richtung: (n) => T.normalize(Mw.mul(T.vec4(n, 0.0)).xyz),
+            richtung: (n) => merk(jeRichtung, n, (r) => T.normalize(Mw.mul(T.vec4(r, 0.0)).xyz)),
             vorlage: (w) =>
-                T.vec3(
-                    c0.dot(w).div(c0.dot(c0).max(1e-12)),
-                    c1.dot(w).div(c1.dot(c1).max(1e-12)),
-                    c2.dot(w).div(c2.dot(c2).max(1e-12))
+                merk(jeVorlage, w, (v) =>
+                    T.vec3(
+                        c0.dot(v).div(c0.dot(c0).max(1e-12)),
+                        c1.dot(v).div(c1.dot(c1).max(1e-12)),
+                        c2.dot(v).div(c2.dot(c2).max(1e-12))
+                    )
                 ),
         };
+        return this._weltNahtKnoten;
     }
 
     // DIE INSTANZ-MATRIX IM POSITIONS-KNOTEN (K20): die Matrix der gezeichneten Instanz (der Haken an
@@ -1660,7 +1731,8 @@ class AnazhRealm_Z10 {
             setup(builder) {
                 const m = builder.__anazhInstanzMatrix;
                 if (m) return m;
-                if (builder.object && builder.object.isInstancedMesh) {
+                // eine Senke zeichnet über ihren Zeichner (1410-1): auch er trägt Instanzen und bricht ohne Matrix laut
+                if (builder.object && (builder.object.isInstancedMesh || builder.object.isInstanzZeichner === true)) {
                     const text =
                         "INSTANZ-MATRIX: der Bau einer InstancedMesh fragt vor ihrer Instanz-Matrix (r184-Reihenfolge)";
                     realm.log(text, "ERROR");

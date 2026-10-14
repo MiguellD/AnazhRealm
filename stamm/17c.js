@@ -223,7 +223,8 @@ class AnazhRealm_Z17c {
         return u._werferHuelle;
     }
     _werferBoxDazu(box, o) {
-        if (!o || o.visible === false) return;
+        // der Zeichner einer Senke (1410-1) wirft mit ihr: ihre Hülle trägt jede Instanz, er ist kein eigener Werfer
+        if (!o || o.visible === false || o.isInstanzZeichner === true) return;
         const g = o.geometry;
         if (o.isMesh === true && o.castShadow === true && g && g.attributes && g.attributes.position) {
             const im = o.isInstancedMesh === true ? o.instanceMatrix : null;
@@ -1126,7 +1127,15 @@ class AnazhRealm_Z17c {
         });
         // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
         // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
-        st.wegeKarte = { stufen, siedlungen: [], kronen: new Map(), kronenZellen: new Map(), kronenRandMax: 0 };
+        // `raeumen`: die neuen Flächen, deren schon gewachsene Natur der Takt räumt (`_wegeRaeumen`, K52).
+        st.wegeKarte = {
+            stufen,
+            siedlungen: [],
+            raeumen: [],
+            kronen: new Map(),
+            kronenZellen: new Map(),
+            kronenRandMax: 0,
+        };
         return st.wegeKarte;
     }
 
@@ -1367,6 +1376,30 @@ class AnazhRealm_Z17c {
         return f.halb + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
     }
 
+    // Der EINE Abstand eines Punkts zu einer Form (m, innen negativ): der gedrehte Kasten um (ax, az) mit den Halbachsen ex/ez
+    // und der Drehung phi (yaw wie der alte Pool), das Segment als Kapsel um seine Mittellinie (`halb`). Leser: der Maler
+    // (`_wegeKarteMale`) und die Natur-Wand (`_aufWeg`) — der Boden zeigt den Weg, wo die Natur ihm weicht. Drehung und
+    // Länge merkt die Form beim ersten Ruf.
+    static _wegeFormAbstand(f, px, pz) {
+        if (f.typ === "kasten") {
+            if (f._co === undefined) {
+                f._co = Math.cos(f.phi || 0);
+                f._si = Math.sin(f.phi || 0);
+            }
+            const rx = px - f.ax;
+            const rz = pz - f.az;
+            const lx = Math.abs(f._co * rx - f._si * rz) - f.ex;
+            const lz = Math.abs(f._si * rx + f._co * rz) - f.ez;
+            return Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
+        }
+        const dx = f.bx - f.ax;
+        const dz = f.bz - f.az;
+        if (f._ll === undefined) f._ll = dx * dx + dz * dz;
+        let h = f._ll > 1e-6 ? ((px - f.ax) * dx + (pz - f.az) * dz) / f._ll : 0;
+        h = h < 0 ? 0 : h > 1 ? 1 : h;
+        return Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
+    }
+
     // Die Grenze der NAH-Stufe als Bruchteil ihres Fensters (relativ zur Mitte, je Achse): zwei Texel vor dem Rand,
     // damit die bilineare Probe nie den leeren Rand-Texel liest. CPU-Leser und Boden-Shader lesen dieselbe Zahl.
     static _wegeStufeNah(N) {
@@ -1379,6 +1412,7 @@ class AnazhRealm_Z17c {
     // ein schmaler Feldweg zerfiele dort sonst in Punkte), Kanal 0 = Erde, 1 = Acker; überlappende Formen nehmen
     // das Maximum.
     _wegeKarteMale(stufe, f) {
+        if (f.kanal < 0) return; // eine Fläche ohne Boden-Kanal (der Gras-Anger) bleibt Wiese
         const S = stufe.S;
         const N = stufe.N;
         const t = S.texelM;
@@ -1398,29 +1432,12 @@ class AnazhRealm_Z17c {
         // Der EINE Maler hält die Leer-Marke: jede gemalte Form (Siedlung, Trittfläche, Fenster-Umzug) macht die Stufe
         // nicht-leer, der nächste Umzug lädt sie leer hoch — kein Maler kann die Marke vergessen.
         stufe.wegeLeer = false;
-        const dx = f.bx - f.ax;
-        const dz = f.bz - f.az;
-        const ll = dx * dx + dz * dz;
-        const co = Math.cos(f.phi || 0);
-        const si = Math.sin(f.phi || 0);
         const daten = stufe.daten;
         for (let j = j0; j <= j1; j++) {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
                 const px = x0w + (i + 0.5) * t;
-                let d;
-                if (f.typ === "kasten") {
-                    // gedrehtes Rechteck um (ax, az), Halbachsen ex/ez, Drehung phi (yaw wie der alte Pool)
-                    const rx = px - f.ax;
-                    const rz = pz - f.az;
-                    const lx = Math.abs(co * rx - si * rz) - f.ex;
-                    const lz = Math.abs(si * rx + co * rz) - f.ez;
-                    d = Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
-                } else {
-                    let h = ll > 1e-6 ? ((px - f.ax) * dx + (pz - f.az) * dz) / ll : 0;
-                    h = h < 0 ? 0 : h > 1 ? 1 : h;
-                    d = Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
-                }
+                const d = AnazhRealm._wegeFormAbstand(f, px, pz);
                 let q = (rand - d) / (2 * rand);
                 if (q <= 0) continue;
                 q = q >= 1 ? 1 : q * q * (3 - 2 * q);
@@ -1632,7 +1649,8 @@ class AnazhRealm_Z17c {
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
             .mul(_begehbar)
-            .mul(imFenster);
+            .mul(imFenster)
+            .mul(_T.float(1).sub(this._fernKroneOhneWald(_T)));
         const l = P.lit;
         // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
@@ -1695,6 +1713,8 @@ class AnazhRealm_Z17c {
         const r = AnazhRealm._wegeFormRadius(form);
         const box = { x0: x - r, z0: z - r, x1: x + r, z1: z + r, formen: [form] };
         wk.siedlungen.push(box);
+        wk.raeumen.push(box); // was schon um die Ausstattung wuchs, räumt der Takt (`_wegeRaeumen`)
+        this._grundrissGitter = null; // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
         entry._trittBox = box; // transient (kein Snapshot): der Restore setzt sie beim ersten Platz neu
         for (const stufe of wk.stufen)
             if (stufe.zentriert) {
@@ -1714,6 +1734,7 @@ class AnazhRealm_Z17c {
         if (!box || !wk) return;
         const i = wk.siedlungen.indexOf(box);
         if (i >= 0) wk.siedlungen.splice(i, 1);
+        this._grundrissGitter = null; // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
         entry._trittBox = undefined;
         for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
@@ -1859,15 +1880,18 @@ class AnazhRealm_Z17c {
         };
         for (const rd of plan.roads || []) strasse(rd.pts, rd.w);
         for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w);
-        // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese.
+        // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal
+        // (`kanal` −1), und die Natur-Wand hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum
+        // tiefer als 1 m im Anger, `sperr` −1 statt des Stamm-Rands).
         const pz = plan.platz;
-        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && pz.typ !== "gras" && n < MAX) {
+        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
+            const anger = pz.typ === "gras";
             if (this._landAt(wx, wz, 0.2))
                 form({
                     typ: "kasten",
-                    kanal: 0,
+                    kanal: anger ? -1 : 0,
                     ax: wx,
                     az: wz,
                     bx: wx,
@@ -1876,6 +1900,7 @@ class AnazhRealm_Z17c {
                     ez: pz.ez,
                     phi: pz.phi || 0,
                     halb: 0,
+                    ...(anger ? { sperr: -1 } : {}),
                 });
         }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
@@ -1899,7 +1924,11 @@ class AnazhRealm_Z17c {
                 halb: 0,
             });
         }
-        if (box.formen.length) wk.siedlungen.push(box);
+        if (box.formen.length) {
+            wk.siedlungen.push(box);
+            wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
+            this._grundrissGitter = null; // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
+        }
         for (const stufe of wk.stufen) if (stufe.zentriert) stufe.tex.needsUpdate = true;
         // DIE ERSTE SIEDLUNG zentriert die Karte SOFORT: die Wiese über ihr wächst im selben Takt neu
         // (`_nahWieseNeuIn` → `_tickNahWiese` vor `_tickWegeKarte`) und läse vor dem Zentrieren 0 — Halme im Weg.
@@ -2774,9 +2803,6 @@ class AnazhRealm_Z17c {
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
-        // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung): was die Natur dort schon geworfen hat,
-        // weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Plattform, Spieler, KI und Probe gleich.
-        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
@@ -2784,6 +2810,10 @@ class AnazhRealm_Z17c {
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);
+        // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung, jeder Bau mit Boxen): was die Natur dort
+        // schon geworfen hat, weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Platz, Tore, Spieler, KI
+        // und Probe gleich. Nach den Boxen: sie sind der Grundriss eines Baus ohne Haus-Zeile (K52).
+        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);
         // Voxel-Chunks im Footprint dirty markieren → das Cell-Feld wird mit dem Architektur-Stempel neu
         // gebaut (Damm-Cells SOLID, Wasser-Cells im Stempel überschrieben). Eine Pflanze stempelt nicht
         // (`_stempelSpanne`): ihr Bau lässt die Zellen und den Automaten in Ruhe.

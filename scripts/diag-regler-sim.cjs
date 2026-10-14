@@ -111,7 +111,6 @@ const server = http.createServer((req, res) => {
             const levers = () => ({
                 loadScale: st.perfSense.loadScale,
                 density: st._foliageDensityScale,
-                renderScale: st._renderScale,
                 shadowIv: st._shadowMinInterval,
                 foliageR: st.foliageRadius,
                 godray: st._godrayScale,
@@ -128,9 +127,7 @@ const server = http.createServer((req, res) => {
                 const s1b = levers();
                 o.s1Throttled = s1a.density < 0.9 && s1a.loadScale < 0.5;
                 o.s1Converged =
-                    Math.abs(s1b.density - s1a.density) < 0.02 &&
-                    Math.abs(s1b.loadScale - s1a.loadScale) < 0.02 &&
-                    Math.abs(s1b.renderScale - s1a.renderScale) < 0.051;
+                    Math.abs(s1b.density - s1a.density) < 0.02 && Math.abs(s1b.loadScale - s1a.loadScale) < 0.02;
                 o.s1 = { a: s1a, b: s1b };
                 // Studio-Regime: trotz gefallener Dichte KEIN Dispose+Rebuild (die tote Schleife).
                 // AUSLÖSCHUNGS-WELLE (Beifang, V9.56-i nachgezogen): `_tickGrassThin` fiel in
@@ -157,7 +154,7 @@ const server = http.createServer((req, res) => {
                 // ── S3: STARKE GPU (7 ms) → alles wächst zurück ──
                 for (let i = 0; i < 2200; i++) feed(7, Object.assign({}, HONEST));
                 const s3 = levers();
-                o.s3Recovered = s3.loadScale > 0.95 && s3.density > 0.95 && s3.renderScale > 0.95;
+                o.s3Recovered = s3.loadScale > 0.95 && s3.density > 0.95;
                 o.s3 = s3;
                 // ── S4: SESSION-ZEIT-INVARIANZ im Totband (err=0 → Stellgrößen eingefroren;
                 // eine vergiftete/wachsende Metrik drückte sie über die Session weiter) ──
@@ -307,7 +304,7 @@ const server = http.createServer((req, res) => {
             pass: out.s2StreamSacred,
         },
         {
-            name: `S3 starke GPU: alles wächst zurück (loadScale ${f2(out.s3.loadScale)}, Dichte ${f2(out.s3.density)}, renderScale ${f2(out.s3.renderScale)})`,
+            name: `S3 starke GPU: alles wächst zurück (loadScale ${f2(out.s3.loadScale)}, Dichte ${f2(out.s3.density)})`,
             pass: out.s3Recovered,
         },
         {

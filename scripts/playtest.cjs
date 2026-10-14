@@ -19438,17 +19438,15 @@ async function checkBandVoxelTerrainCore(ctx) {
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
                 Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
             const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
-            // N3 (Naht §12): der LOD0-Ring ist 5×5 (maxRing 2) → die Cross-LOD-Grenze
-            // sitzt jetzt bei r=2→3 (~100 m), nicht mehr r=1→2 (~50 m).
+            // K51 (die Boden-Stufen): die Nah-Zone ist 3×3 (r≤1 → L0), dann verdoppelt sich der Schritt mit dem Abstand
+            // (r2 → L1, r3–9 → L2, ab r10 → L3)
             out.lodPyramidBands =
                 lf(0) === 0 &&
                 lf(1) === 0 &&
-                lf(2) === 0 &&
-                lf(3) === 1 &&
-                lf(8) === 1 &&
+                lf(2) === 1 &&
+                lf(3) === 2 &&
                 lf(9) === 2 &&
-                lf(10) === 2 &&
-                lf(11) === 3 &&
+                lf(10) === 3 &&
                 lf(12) === 3;
             let lod23Builds = true;
             try {
@@ -19466,32 +19464,27 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
             out.lod23Builds = lod23Builds;
 
-            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle,
-            // `_voxelChunkLodFor` liest sie (byte-identisch), die Tabelle ist frozen,
+            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+            // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
             // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
             out.detailBandFn = typeof r._detailBand === "function";
             if (out.detailBandFn) {
                 const b = (rr) => r._detailBand(rr);
-                out.bandLods =
-                    b(0).lod === 0 &&
-                    b(1).lod === 0 &&
-                    b(2).lod === 0 &&
-                    b(3).lod === 1 &&
-                    b(8).lod === 1 &&
-                    b(9).lod === 2 &&
-                    b(10).lod === 2 &&
-                    b(11).lod === 3 &&
-                    b(99).lod === 3;
+                // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
+                out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
+                const BS = r.constructor.BODEN_STUFEN;
+                const kette = (rr) => BS.find((x) => rr <= x.maxRing).lod;
                 out.lodReadsBand =
-                    r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
-                // LOD-Hysterese: ein Chunk hält seine feinere LOD im Deadband (r ≤ Band-Grenze +
-                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat LOD0(maxRing 2)↔LOD1: r=3/lod0 → 0
-                // (kein Pop), r=4/lod0 → 1, r=2/lod1 → 0, ohne currentLod → reine Band-LOD (lf(3)===1).
+                    Object.isFrozen(BS) &&
+                    [0, 1, 2, 3, 9, 10, 12].every((rr) => r._voxelChunkLodFor(rr, 0, 0, 0) === kette(rr));
+                // LOD-Hysterese: ein Chunk hält seine feinere Stufe im Deadband (r ≤ Stufen-Grenze +
+                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat L0(maxRing 1)↔L1: r=2/lod0 → 0
+                // (kein Pop), r=3/lod0 → 2, r=1/lod1 → 0, ohne currentLod → reine Stufe (lf(2)===1).
                 out.lodHysteresis =
-                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 0 &&
-                    r._voxelChunkLodFor(4, 0, 0, 0, 0) === 1 &&
-                    r._voxelChunkLodFor(2, 0, 0, 0, 1) === 0 &&
-                    r._voxelChunkLodFor(3, 0, 0, 0) === 1 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0, 0) === 0 &&
+                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 2 &&
+                    r._voxelChunkLodFor(1, 0, 0, 0, 1) === 0 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0) === 1 &&
                     typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
                 // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
@@ -19543,7 +19536,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.lodPyramidConfig
         );
         check(
-            "N3 (Naht §12): LOD0-Ring 5×5 (r≤2→0, r3-8→1, r9-10→2, r≥11→3) — die Cross-LOD-Grenze in den Fog",
+            "K51 Boden-Stufen: Nah-Zone 3×3 (r≤1→0, r2→1, r3-9→2, r≥10→3) — der Schritt verdoppelt sich mit dem Abstand",
             voxelP2bResults.lodPyramidBands
         );
         check(
@@ -19555,13 +19548,13 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.detailBandFn === true
         );
         if (voxelP2bResults.detailBandFn) {
-            check("N3 (Naht §12): Kaskaden-Bänder (r≤2→0, r3-8→1, r9-10→2, r≥11→3)", voxelP2bResults.bandLods === true);
+            check("K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)", voxelP2bResults.bandLods === true);
             check(
-                "V17.114 U1: _voxelChunkLodFor liest die Kaskade (kein Parallel-Pfad)",
+                "K51: _voxelChunkLodFor liest die EINE Kette des Bodens (BODEN_STUFEN, frozen, kein Parallel-Pfad)",
                 voxelP2bResults.lodReadsBand === true
             );
             check(
-                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Band-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
+                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Stufen-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
                 voxelP2bResults.lodHysteresis === true
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
@@ -21613,9 +21606,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         if (out.hasLodHelper) {
             out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
             out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
-            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 0 (N3: LOD0-Ring 5×5)
-            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 1 (N3: Grenze bei r=3)
-            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
+            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1 (K51: die Nah-Zone ist 3×3)
+            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 2
+            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 2
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
@@ -21683,9 +21676,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     if (res.hasLodHelper) {
         check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
         check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
-        check("N3 (Naht §12): r=2 (LOD0-Ring 5×5) → LOD 0", res.lodMidRing === 0);
-        check("N3 (Naht §12): r=3 (jenseits des LOD0-Rings) → LOD 1", res.lodFar === 1);
-        check("Welle Perf-3.b V9.88: r=4 (sehr ferner Chunk) → LOD 1", res.lodVeryFar === 1);
+        check("K51 Boden-Stufen: r=2 (jenseits der Nah-Zone 3×3) → LOD 1", res.lodMidRing === 1);
+        check("K51 Boden-Stufen: r=3 → LOD 2", res.lodFar === 2);
+        check("K51 Boden-Stufen: r=4 (sehr ferner Chunk) → LOD 2", res.lodVeryFar === 2);
     }
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
     check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
@@ -27988,7 +27981,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
-        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.lod));
+        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.aiDiv));
         const jobs = window.__codeOf(r._buildDeferrableJobs);
         out.loopTicktNahStreu = /_tickNahStreu\(/.test(jobs) && /_tickNahWiese\(/.test(jobs);
         const NS = r.constructor.NAH_STREU;
@@ -28000,7 +27993,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         check("Waldboden-Kaskade: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (LOD + KI-Takt)", res.kaskadeOhneDeko === true);
+    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (Ring + KI-Takt)", res.kaskadeOhneDeko === true);
     check("Waldboden: der scatterDeco-Job tickt Nah-Wiese UND Nah-Streu", res.loopTicktNahStreu === true);
     check(
         "Waldboden: die Nah-Streu ist schirm-gebunden (Armlänge < Radius ≤ 40 m, Kachel = n · Zelle)",
@@ -30890,6 +30883,81 @@ async function checkBandLambda3Wind(ctx) {
     check(
         "Λ.3 Wind: _applyVegetationResponse reicht den Werkstatt-Baum an den EINEN Wind-Term (_baumWindStoff)",
         res.windEinTerm === true
+    );
+}
+
+// 1310-18 — EIN GRAPH JE SIGNATUR (der Schlüssel geprüft): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten
+// (`customCacheKey` = Knoten-id). Stoffe gleicher Signatur und verschiedener Werte (Regler, Leucht-Maß, Wind der Art, Gestalt
+// und Realm-Fenster des Tors) tragen DENSELBEN Programm-Schlüssel und ihre Werte als Stoff-Wert; verschiedene Signaturen
+// verschiedene. Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel — ohne den geteilten Graphen
+// baute jeder Stoff sein eigenes Programm (1310-17: 43 Foundry-Stoffe, 43 Bauten; 5 Membranen, 5 Bauten).
+async function checkBandStoffSignatur(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const T = window.THREE;
+        const TSL = T.TSL;
+        const k = (m) => m.customProgramCacheKey();
+        const out = {};
+        const a = r._foundryTreeMaterial("unknown", { roughness: 0.41, metalness: 0.1 });
+        const b = r._foundryTreeMaterial("unknown", {
+            roughness: 0.77,
+            metalness: 0.3,
+            emissive: [0.2, 0.1, 0],
+            emissiveIntensity: 2,
+        });
+        const l1 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 2 });
+        const l2 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 3.5 });
+        const w1 = r._foundryTreeMaterial("bark", null, false, { ht: 9.5, delta: 0.021, an: 1 });
+        const w2 = r._foundryTreeMaterial("bark", null, false, { ht: 14.25, delta: 0.034, an: 1 });
+        out.regler = a !== b && k(a) === k(b);
+        out.leucht =
+            l1 !== l2 && k(l1) === k(l2) && l1.userData.stoffWerte.leucht === 2 && l2.userData.stoffWerte.leucht === 3.5;
+        out.wind =
+            w1 !== w2 &&
+            k(w1) === k(w2) &&
+            (!w1.positionNode || (w1.userData.windArt.x === 9.5 && w2.userData.windArt.x === 14.25));
+        out.trennt = k(a) !== k(l1) && k(a) !== k(w1);
+        const pc = globalThis.__portaCore;
+        const tor = (n) => {
+            const p = pc.gateParams(pc.PRESETS[n]);
+            return { gestalt: n, p, mu: pc.membranUniforms(p), gesetz: pc.MEMBRAN_GESETZ };
+        };
+        const ta = tor("drachentor");
+        const tb = tor("kathedrale");
+        const ma = r._membranMaterialFor(ta);
+        const mb = r._membranMaterialFor(tb);
+        const fa = ma.mat.userData.tor.w;
+        const fb = mb.mat.userData.tor.w;
+        out.fensterVerschieden = fa.x > 0.001 !== fb.x > 0.001 || fa.w > 0.001 !== fb.w > 0.001;
+        out.membran = k(ma.mat) === k(mb.mat);
+        out.nebel = k(r._nebelMaterialFor(ta, ma.u).mat) === k(r._nebelMaterialFor(tb, mb.u).mat);
+        out.atem = typeof ma.u.time.value === "number" && ma.u !== mb.u;
+        const bau = () => {
+            const m = new T.MeshStandardNodeMaterial();
+            m.colorNode = TSL.vec4(TSL.attribute("color", "vec3").mul(0.5), 1.0);
+            return m;
+        };
+        out.kontrolle = k(bau()) !== k(bau());
+        return out;
+    });
+    check(
+        "1310-18 Schlüssel: Foundry-Stoffe gleicher Signatur, verschiedener Regler tragen EINEN Programm-Schlüssel",
+        res.regler === true
+    );
+    check(
+        "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",
+        res.leucht === true
+    );
+    check("1310-18 Schlüssel: der Wind der Art ist ein Stoff-Wert (zwei Arten, EIN Programm-Schlüssel)", res.wind === true);
+    check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
+    check(
+        "1310-18 Schlüssel: zwei Tore mit verschiedenen Realm-Fenstern tragen EINE Membran und EINEN Nebel",
+        res.fensterVerschieden === true && res.membran === true && res.nebel === true && res.atem === true
+    );
+    check(
+        "1310-18 Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel (r184 schlüsselt nach Identität)",
+        res.kontrolle === true
     );
 }
 
@@ -37886,8 +37954,10 @@ async function checkBandWahrerAnblickGras(ctx) {
 // DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
-// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 78 Ladungen des Atlas — 7 Raum-
-// Werte × 6 + 18 Ebenen × 2; die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
+// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 76 Ladungen des Atlas im Graph — 7 Raum-
+// Werte × 6 + 17 Ebenen × 2 = 76 (K53: der Fleck des Wiesen-Grunds ging mit ihm ins Gesetz, `_bodenFarbeAt`, 78 → 76;
+// K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
+// der reinen Funktion `rauschEbene` — als Schleife in `wieseRelief` las eine Layout-Funktion die Bindung des Atlas); die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
 // gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
 // reist als Argument, der Graph sieht ihn); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
 // Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
@@ -37914,7 +37984,9 @@ async function checkBandRauschGesetz(ctx) {
             // das Rechenwerk des Fels-Gesetzes (gelaende-core): Fein-Term und Schutt-Korn laufen im Fragment — ein Rauschen
             // lesen sie nur über `o.rausch` (EINE Probe im Rausch-Atlas), nie ein Gitter-Rauschen aus Ziehungen (`wert3`)
             const GK = window.__gelaendeCore;
-            const feinSrc = GK && GK.felsFein ? window.__codeOf(GK.felsFein) : "";
+            // (die Welle rechnet `felsWelle`, K17-3: der Shader liest sie außerhalb der Fels-Funktion und reicht sie hinein)
+            const feinSrc =
+                GK && GK.felsFein && GK.felsWelle ? window.__codeOf(GK.felsFein) + window.__codeOf(GK.felsWelle) : "";
             const kornSrc = GK && GK.schuttKorn ? window.__codeOf(GK.schuttKorn) : "";
             if (!feinSrc || !/o\.rausch\(/.test(feinSrc)) out.absenz.push("felsFein ohne o.rausch");
             for (const [n, src] of [["felsFein", feinSrc], ["schuttKorn", kornSrc]])
@@ -37996,8 +38068,8 @@ async function checkBandRauschGesetz(ctx) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
-        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 76), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 76
     );
     check(
         `RAUSCH-GESETZ (C) die Atlas-Bytes sind die MaterialX-Gradienten (${res.falsch} falsch) und richtig gepackt (${res.packung} Brüche)`,
@@ -56458,6 +56530,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandLambda2HismSynthese, ctx);
             await timed(checkBandLambda3Wind, ctx);
             await timed(checkBandLambda4Streu, ctx);
+            await timed(checkBandStoffSignatur, ctx);
             await timed(checkBandLambda5MischwaldSynthese, ctx);
             await timed(checkBandLambda6Detail, ctx);
             await timed(checkBandV18177AAA, ctx);

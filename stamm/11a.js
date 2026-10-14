@@ -268,13 +268,9 @@ class AnazhRealm_Z11a {
             if (!this.state.pendingFoliageChunks) this.state.pendingFoliageChunks = new Set();
             this.state.pendingFoliageChunks.add(`${cx},${cz}`);
         }
-        // Cross-LOD-Geomorph: diesen Chunk an GROBE Nachbarn schmiegen + die 4 Achsen-Nachbarn neu morphen
-        // (ein FEINER Nachbar, der auf diesen wartete, schließt jetzt seine Naht). Main-only, render-only.
-        this._applyCrossLodGeomorph(cx, cz);
-        this._applyCrossLodGeomorph(cx + 1, cz);
-        this._applyCrossLodGeomorph(cx - 1, cz);
-        this._applyCrossLodGeomorph(cx, cz + 1);
-        this._applyCrossLodGeomorph(cx, cz - 1);
+        // Cross-LOD-Geomorph: diesen Chunk an GROBE Nachbarn schmiegen + die 8 Nachbarn des 3×3-Rings neu morphen
+        // (ein FEINER Nachbar, der auf diesen wartete, schließt jetzt seine Naht — auch an der Ecke). Main-only, render-only.
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) this._applyCrossLodGeomorph(cx + dx, cz + dz);
         return entry;
     }
 
@@ -297,25 +293,38 @@ class AnazhRealm_Z11a {
         const cfg = this._voxelChunkConfig(myLod);
         const span = cfg.span;
         const fineStep = cfg.step;
-        // die GROBEREN, gebauten Achsen-Nachbarn sammeln
+        // die GROBEREN, gebauten Nachbarn des 3×3-Rings sammeln — Achse UND Ecke (K51): ein Vertex, den zwei Chunks derselben
+        // Stufe teilen, schmiegt sich in beiden an dieselbe grobe Fläche. Nur mit den Achsen-Nachbarn rechnete jeder Chunk die
+        // Naht-Ecke eines gröberen Nachbarn gegen ein anderes Netz — die geteilten Vertices klafften (Loch-Probe der Fern-Ring-
+        // Naht, L1 ↔ L2: 6 Löcher je 1,8 m hinter der Kante)
         const coarseFaces = [];
-        for (const [dx, dz] of [
-            [1, 0],
-            [-1, 0],
-            [0, 1],
-            [0, -1],
-        ]) {
-            const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
-            if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
-            const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
-            if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
-            coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
-        }
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                if (dx === 0 && dz === 0) continue;
+                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
+                const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
+                if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
+                coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
+            }
+        // der XZ-Abstand eines Punkts zum Quadrat des Chunks (i, j) — für den Achsen-Nachbarn der Ebenen-Abstand, für die Ecke
+        // der Abstand zum Eck-Punkt; derselbe Wert in jedem Chunk, der den Punkt trägt
+        const quadratAbstand = (x, z, i, j) =>
+            Math.hypot(Math.max(i * span - x, 0, x - (i + 1) * span), Math.max(j * span - z, 0, z - (j + 1) * span));
         // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
         if (coarseFaces.length === 0 && !entry.hasMorph && !entry.lodStitchMesh) return;
         const n = pos.count;
         const tArr = tgtAttr.array;
         const wArr = wAttr.array;
+        // der Fingerabdruck des alten Morphs (die Karte zieht nur nach, wenn er sich ändert)
+        const abdruck = () => {
+            let s = 0;
+            for (let v = 0; v < n; v++)
+                if (wArr[v] > 0)
+                    s += wArr[v] * (tArr[v * 3] * 1.31 + tArr[v * 3 + 1] * 1.73 + tArr[v * 3 + 2] * 1.13 + v);
+            return s;
+        };
+        const abdruckAlt = abdruck();
         // Basis = Identität (un-morpht)
         for (let v = 0; v < n; v++) {
             tArr[v * 3] = pos.getX(v);
@@ -335,16 +344,9 @@ class AnazhRealm_Z11a {
             const nbIdx = nbGeom.index ? nbGeom.index.array : null;
             if (!nbPos || !nbIdx) continue;
             const coarseStep = this._voxelChunkConfig(face.nbLod).step;
-            const axis = face.dx !== 0 ? 0 : 2; // 0 = x-Ebene, 2 = z-Ebene
-            const plane =
-                face.dx === 1
-                    ? (cx + 1) * span
-                    : face.dx === -1
-                      ? cx * span
-                      : face.dz === 1
-                        ? (cz + 1) * span
-                        : cz * span;
-            // Grobe Boundary-DREIECKE (≥1 Vertex nahe der Ebene) als flaches Array: gemorpht wird Punkt→Dreieck
+            const ni = cx + face.dx,
+                nj = cz + face.dz;
+            // Grobe Boundary-DREIECKE (≥1 Vertex nahe diesem Chunk) als flaches Array: gemorpht wird Punkt→Dreieck
             // auf die grobe OBERFLÄCHE, nie auf den nächsten groben VERTEX (sparse; 3D-nearest greift die
             // falsche Höhlen-Branche und lässt ~11 m Spalt).
             const tris = [];
@@ -353,10 +355,12 @@ class AnazhRealm_Z11a {
                 const i0 = nbIdx[t],
                     i1 = nbIdx[t + 1],
                     i2 = nbIdx[t + 2];
-                const a0 = axis === 0 ? nbPos.getX(i0) : nbPos.getZ(i0);
-                const a1 = axis === 0 ? nbPos.getX(i1) : nbPos.getZ(i1);
-                const a2 = axis === 0 ? nbPos.getX(i2) : nbPos.getZ(i2);
-                if (Math.abs(a0 - plane) > bnd && Math.abs(a1 - plane) > bnd && Math.abs(a2 - plane) > bnd) continue;
+                if (
+                    quadratAbstand(nbPos.getX(i0), nbPos.getZ(i0), cx, cz) > bnd &&
+                    quadratAbstand(nbPos.getX(i1), nbPos.getZ(i1), cx, cz) > bnd &&
+                    quadratAbstand(nbPos.getX(i2), nbPos.getZ(i2), cx, cz) > bnd
+                )
+                    continue;
                 tris.push(
                     nbPos.getX(i0),
                     nbPos.getY(i0),
@@ -381,7 +385,7 @@ class AnazhRealm_Z11a {
                 const px = pos.getX(v),
                     py = pos.getY(v),
                     pz = pos.getZ(v);
-                const dPlane = Math.abs((axis === 0 ? px : pz) - plane);
+                const dPlane = quadratAbstand(px, pz, ni, nj);
                 if (dPlane > morphBand) continue;
                 let bd = Infinity,
                     bx = px,
@@ -403,8 +407,9 @@ class AnazhRealm_Z11a {
                 const d3 = Math.sqrt(bd);
                 // A1 — die Band-Sammlung VOR dem bestDist-Skip (idempotentes Set):
                 // ein KORNER-Vertex zwischen zwei groben Faces gehört in die Border-Row,
-                // auch wenn das nähere Target von der ANDEREN Face kam.
-                if (dPlane <= flat) bandVerts.add(v);
+                // auch wenn das nähere Target von der ANDEREN Face kam. Das Band hängt an den ACHSEN-Kanten — der
+                // Eck-Nachbar trägt nur den Morph (sein Band liegt an der Kante der beiden Achsen-Nachbarn).
+                if (dPlane <= flat && (face.dx === 0 || face.dz === 0)) bandVerts.add(v);
                 if (d3 >= bestDist[v]) continue; // ein näheres Face gewann diesen Vertex schon
                 bestDist[v] = d3;
                 tArr[v * 3] = bx;
@@ -419,13 +424,40 @@ class AnazhRealm_Z11a {
         }
         entry.hasMorph = touched;
         this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
+        // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): an einer Stufen-Naht zeichnet der Stoff die Grenz-Zeile
+        // auf der groben Fläche — die Karte des Chunks (Stand, Nah-Wiese, Nah-Streu) kommt aus derselben gemorphten Lage. Mit der
+        // Nah-Zone 3×3 liegt die Naht 43–65 m vor dem Auge, wo Tiere stehen (gate:koerper-stand K6: 346 von 772 Punkten mehr
+        // als 25 cm neben dem gezeichneten Boden, die Karte las die rohe Lage).
+        if (abdruck() !== abdruckAlt) {
+            const U = this.state.atmoUniforms;
+            const A = this.state.atmosphere;
+            const gm = U && U.geomorph ? U.geomorph.value : A && Number.isFinite(A.geomorph) ? A.geomorph : 1;
+            const P = pos.array;
+            const lage = new Float32Array(P.length);
+            for (let v = 0; v < n; v++) {
+                const f = wArr[v] * gm;
+                lage[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
+                lage[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
+                lage[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
+            }
+            const karte = this._bodenKarteAusMesh(
+                lage,
+                geom.index ? geom.index.array : null,
+                geom.attributes.color ? geom.attributes.color.array : null,
+                cx,
+                cz,
+                myLod
+            );
+            entry.surfMap = karte && karte.hoehe;
+            entry.gruenMap = karte && karte.gruen;
+        }
         this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`);
     }
 
     // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
     // Mesh-KANTE der Grenz-Zeile (beide Endpunkte in der Border-Row — echte Topologie inkl. Höhlen-
-    // Loops, kein Polyline-Sortieren) ein Quad von der feinen Kante (position) zur groben Fläche
-    // (aMorphTarget). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
+    // Loops, kein Polyline-Sortieren) der Skirt und, wo ein Ende gekappt ist (Gewicht < 1), ein Quad von der
+    // feinen Kante (position) zur groben Fläche (aMorphTarget). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
     // Toons (WebGPU-strikt): color vom Quell-Vertex, aMorphTarget = Identität/w=0 (kein Doppel-Morph).
     // Dasselbe Material wie der Boden → ein Bereich `stitch:<chunk>` IM Boden-Satz (derselbe Befehl); der
     // Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
@@ -440,11 +472,13 @@ class AnazhRealm_Z11a {
         const geom = entry.mesh.geometry;
         const pos = geom.attributes.position;
         const tgt = geom.attributes.aMorphTarget;
+        const wgt = geom.attributes.aMorphWeight;
         const nrm = geom.attributes.normal;
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
         const idx = geom.index ? geom.index.array : null;
         if (!pos || !tgt || !idx) return;
+        if (!wgt) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt kein Morph-Gewicht (aMorphWeight)`);
         if (!him) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keine Himmels-Sicht (aHimmel)`);
         // Kürzere Spannen überspringen (Sliver). Nicht höher: dünne Risse (0.12–0.3 m) zeigen am
         // Grazing-Winkel den Nachthimmel; der Z-Fight ist durch Skirt + DoubleSide entschärft.
@@ -488,15 +522,20 @@ class AnazhRealm_Z11a {
                 const spanA = Math.hypot(tax - ax, tay - ay, taz - az);
                 const spanB = Math.hypot(tbx - bx, tby - by, tbz - bz);
                 if (Math.max(spanA, spanB) < MIN_SPAN) continue;
-                const base = P.length / 3;
-                P.push(ax, ay, az, bx, by, bz, tbx, tby, tbz, tax, tay, taz);
-                for (const v of [a, b, b, a]) {
-                    N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
-                    C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
-                    HS.push(him.getX(v));
-                    SC.push(sch.getX(v));
+                // DIE BRÜCKE (rohe Kante → grobe Fläche) nur, wo der Morph die Naht NICHT schliesst (K51): trägt er beide
+                // Enden ganz (Gewicht 1), zeichnet die feine Kante schon auf der groben Fläche — die Brücke wäre eine Finne
+                // zur unsichtbaren rohen Lage (14.10., Mess-Wiese: zwei von drei Naht-Dreiecken, in jedem Pass gezeichnet).
+                if (!(wgt.getX(a) >= 1 && wgt.getX(b) >= 1)) {
+                    const base = P.length / 3;
+                    P.push(ax, ay, az, bx, by, bz, tbx, tby, tbz, tax, tay, taz);
+                    for (const v of [a, b, b, a]) {
+                        N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
+                        C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
+                        HS.push(him.getX(v));
+                        SC.push(sch.getX(v));
+                    }
+                    I.push(base, base + 1, base + 2, base, base + 2, base + 3);
                 }
-                I.push(base, base + 1, base + 2, base, base + 2, base + 3);
                 // Skirt-Quad (ta, tb, tb↓, ta↓) nach −SKIRT: Farbe vom groben Ziel-Vertex (Fels-Ton läuft weiter),
                 // Normale ~horizontal-auswärts; DoubleSide → kein Backface-Loch.
                 const sBase = P.length / 3;
