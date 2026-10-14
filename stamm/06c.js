@@ -972,7 +972,7 @@ class AnazhRealm_Z06c {
             // gestoßenes Tier glitt sonst aufs Dach. Der Boden ist der SCHRITT vom Grund des Schritt-Beginns (`_koerperSchritt`):
             // trug er den Leib in die Wand, steht er, wo der Schritt begann, und der Stoß stirbt in der Wand (unelastisch, wie
             // an jeder Hülle).
-            let gesetz = this._koerperSchritt(sx, sz, sg, c.position.x, c.position.z);
+            let gesetz = this._koerperSchritt(sx, sz, sg, c.position.x, c.position.z, leib.hoehe);
             if (gesetz === null) {
                 c.position.x = sx;
                 c.position.z = sz;

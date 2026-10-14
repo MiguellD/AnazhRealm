@@ -309,7 +309,9 @@ function urteil(b) {
     if (c.feinRuft !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
         v.push(
             "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
-                (c.feinRechenwerk ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten` : "fehlt")
+                (c.feinRechenwerk
+                    ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten`
+                    : "fehlt")
         );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
@@ -626,7 +628,11 @@ function selbsttest() {
         ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
         ["Shader-Zwilling", (b) => (b.code.feinRuft = false), /CODE: der Detail-Term .*\(ruft gelaende-core felsFein/],
         ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
-        ["Rechenwerk falsch", (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }), /RECHENWERK: .* 0\.31 an 400/],
+        [
+            "Rechenwerk falsch",
+            (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }),
+            /RECHENWERK: .* 0\.31 an 400/,
+        ],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -1506,7 +1512,11 @@ const server = http.createServer((req, res) => {
             aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
-                if (!GKc || typeof GKc.felsFein !== "function" || typeof r.constructor._felsRechenwerkTSL !== "function")
+                if (
+                    !GKc ||
+                    typeof GKc.felsFein !== "function" ||
+                    typeof r.constructor._felsRechenwerkTSL !== "function"
+                )
                     return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
                 // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
@@ -1550,7 +1560,10 @@ const server = http.createServer((req, res) => {
                     c,
                     toVar() {
                         const H = { c: c.map(V) };
-                        const glied = (q) => Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", { get: () => H.c[q] });
+                        const glied = (q) =>
+                            Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", {
+                                get: () => H.c[q],
+                            });
                         return {
                             x: glied(0),
                             y: glied(1),
@@ -1640,7 +1653,12 @@ const server = http.createServer((req, res) => {
                         b = GKc.felsFein(GKc.felsZahl, B, x, y, z);
                     const ka = GKc.schuttKorn(O, x, z),
                         kb = GKc.schuttKorn(GKc.felsZahl, x, z);
-                    maxDiff = Math.max(maxDiff, Math.abs(V(a.bank) - b.bank), Math.abs(V(a.kante) - b.kante), Math.abs(V(ka) - kb));
+                    maxDiff = Math.max(
+                        maxDiff,
+                        Math.abs(V(a.bank) - b.bank),
+                        Math.abs(V(a.kante) - b.kante),
+                        Math.abs(V(ka) - kb)
+                    );
                     n++;
                 }
                 return { maxDiff, n };

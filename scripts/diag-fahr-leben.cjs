@@ -928,6 +928,28 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
+    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht — der Ring der Chunks
+    // ändert sich 80 Frames lang nicht, kein Bau wartet (höchstens 3000 Frames). Die Orte der Stationen kommen aus der Welt und
+    // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
+    // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
+    const ankommen = async (x, zz) => {
+        st.playerMesh.position.set(x, hh(x, zz) + 2, zz);
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        let stabil = 0;
+        let zuletzt = -1;
+        for (let i = 0; i < 3000; i++) {
+            frame(i);
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            if (n === zuletzt) stabil++;
+            else {
+                stabil = 0;
+                zuletzt = n;
+            }
+            if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
+            if (i % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+        }
+    };
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
         st.playerMesh.position.set(x, hh(x, zz) + 1.2, zz);
@@ -1293,10 +1315,10 @@ async function probeLeben(expected) {
         }
         if (g1) weg(g1);
         // S2 KLIPPE: Anlauf 24 m trocken und eben (≤ 0,3 m je 2 m), dann fällt der Grund binnen 6 m um 3–14 m (der Befund fand
-        // 8,5 m) — an einer KANTE (binnen 3 m mehr als 1,5 m Fall). Das Kliff kommt aus der Welt (welt-orte `kante`, K55-2 — bis
+        // 8,5 m) — an einer KANTE (binnen 3 m mehr als 3 m Fall: an einer Kante von 2,15 m auf 3 m flog der Wagen in S4 nie). Das Kliff kommt aus der Welt (welt-orte `kante`, K55-2 — bis
         // dahin die schärfste Kante ± 160 m um die Mess-Wiese; die flache Aue trug keine): die nächste Stelle um die Mitte der
         // Welt, dort die schärfste der 8 Richtungen.
-        const kOrt = window.__weltOrt("kante", { schritt: 4, rMax: 1600 });
+        const kOrt = window.__weltOrt("kante", { kanteMin: 3, schritt: 4, rMax: 1600 });
         const kl = kOrt
             ? { x: kOrt.x, z: kOrt.z, fall: kOrt.fall, kante: kOrt.kante, fahrt: kOrt.gier, sx: kOrt.sx, sz: kOrt.sz }
             : null;
@@ -1933,8 +1955,7 @@ async function probeLeben(expected) {
         // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), nimmt den nächsten Glutbrunnen des Bestands und fährt ihn mit dem
         // Tempo und der Gier der Schau an (Start 5,6 m, Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
         const D = expected.dorf;
-        st.playerMesh.position.set(D.x, hh(D.x, D.z) + 2, D.z);
-        for (let i = 0; i < 240; i++) frame(i);
+        await ankommen(D.x, D.z);
         let G = null;
         for (const e of st.architectures)
             if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
@@ -2186,6 +2207,7 @@ async function probeLeben(expected) {
         // stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
         if (gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            await ankommen(gasse.x, gasse.z);
             const ux = Math.sin(gasse.fahrt);
             const uz = Math.cos(gasse.fahrt);
             const gt = async (x, zz, rotY) => {
@@ -2331,6 +2353,7 @@ async function probeLeben(expected) {
         // 60 fps und bei gemischten Frames — sie muss gleich sein (der Stoß des Leibs lebt im festen Schritt).
         if (start && gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            await ankommen(start.x, start.z);
             const A = Object.getPrototypeOf(r).constructor;
             const steuerRoh = A._steuerGesetz;
             const steht = Object.create(steuerRoh.call(A));

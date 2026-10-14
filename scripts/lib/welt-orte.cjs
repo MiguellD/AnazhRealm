@@ -169,7 +169,9 @@ function wieseMessen(r, x, z, blick, S, nurBoden) {
 // gelaende-core `GRUND` Basis und Meer. Er misst das Gesetz (Höhe, Land, Wald); was nur der Bau trägt (die Boden-Karte des
 // Grases, die Hydro-Kacheln eines gebauten Rings), misst nur die Welt.
 function wirtAmGesetz(root) {
-    const { AnazhRealm: A, ctx } = require("./stamm.cjs").ladeKlasse(root || require("path").join(__dirname, "..", ".."));
+    const { AnazhRealm: A, ctx } = require("./stamm.cjs").ladeKlasse(
+        root || require("path").join(__dirname, "..", "..")
+    );
     const G = ctx.__gelaendeCore.GRUND;
     const w = Object.create(A.prototype);
     w.state = { worldMeta: {}, terrainBaseHeight: G.basis, waterLevel: G.basis - G.meerUnterBasis };
@@ -183,16 +185,24 @@ function wieseUrteil(m, S, mitGras) {
     const f = [];
     if (!m || m.fehler) return [`Wiese: nicht gemessen (${(m && m.fehler) || "keine Messung"})`];
     const wo = `${m.x}/${m.z}`;
-    if (m.hang > S.hangMax) f.push(`Wiese ${wo}: Hang ${m.hang}° über ${S.hangMax}° (Ausgleichs-Ebene über ${S.ring} m)`);
+    if (m.hang > S.hangMax)
+        f.push(`Wiese ${wo}: Hang ${m.hang}° über ${S.hangMax}° (Ausgleichs-Ebene über ${S.ring} m)`);
     if (m.nass > 0) f.push(`Wiese ${wo}: ${Math.round(m.nass * 100)} % des Rings tragen Wasser`);
     if (m.krone != null && m.krone > S.kroneMax)
-        f.push(`Wiese ${wo}: Kronen-Deckung im Ring ${m.krone} über ${S.kroneMax} (${m.baeume} Bäume binnen ${S.ring} m)`);
+        f.push(
+            `Wiese ${wo}: Kronen-Deckung im Ring ${m.krone} über ${S.kroneMax} (${m.baeume} Bäume binnen ${S.ring} m)`
+        );
     if (m.kranz != null && m.kranz < S.randMin)
-        f.push(`Wiese ${wo}: kein Waldrand — Kronen-Deckung im Kranz ${S.rand.join("–")} m ${m.kranz} unter ${S.randMin}`);
+        f.push(
+            `Wiese ${wo}: kein Waldrand — Kronen-Deckung im Kranz ${S.rand.join("–")} m ${m.kranz} unter ${S.randMin}`
+        );
     if (m.imBlick > 0) f.push(`Wiese ${wo}: ${m.imBlick} Baum/Bäume im Blick binnen ${S.blickFrei} m`);
     if (m.horizont != null && m.horizont > S.horizontMax)
-        f.push(`Wiese ${wo}: kein Fernblick — das Gelände steigt ${m.horizont}° über das Auge (Grenze ${S.horizontMax}°)`);
-    if (m.gras != null && m.gras < S.grasMin) f.push(`Wiese ${wo}: Wiesen-Gewicht der Boden-Karte ${m.gras} unter ${S.grasMin}`);
+        f.push(
+            `Wiese ${wo}: kein Fernblick — das Gelände steigt ${m.horizont}° über das Auge (Grenze ${S.horizontMax}°)`
+        );
+    if (m.gras != null && m.gras < S.grasMin)
+        f.push(`Wiese ${wo}: Wiesen-Gewicht der Boden-Karte ${m.gras} unter ${S.grasMin}`);
     if (mitGras && m.gras == null) f.push(`Wiese ${wo}: das Gras ist ungemessen (die Boden-Karte steht im Ring nicht)`);
     return f;
 }
@@ -427,7 +437,9 @@ function weltOrte(art, opts) {
                 }
             if (g < S.grasMin) return null;
             const m = window.__wieseMessen(r, x, z, null, S);
-            return window.__wieseUrteil(m, S).length ? null : Object.assign(m, { grasGesetz: Math.round(g * 1000) / 1000 });
+            return window.__wieseUrteil(m, S).length
+                ? null
+                : Object.assign(m, { grasGesetz: Math.round(g * 1000) / 1000 });
         },
     }[art];
     if (!pruefe) throw new Error(`__weltOrte: unbekannte Art "${art}"`);
