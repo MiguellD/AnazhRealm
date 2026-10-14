@@ -27,3 +27,11 @@ Scratch `C:\Users\micha\AppData\Local\Temp\claude\boden-stufen\` (Werkzeug-Kopie
 - Haushalt boden (120k) mit der neuen Wahl nachmessen (werkbank band, Wiese/Dorf/Genesis) — headless Ring 4: L0 18k, L1 39k, L2 13k.
 - CI 38558095502 an 0b20d7d6: puls 1 rot (node --check auf werkzeug/*.js, umbenannt in *.eval.txt), voll 11 rot (W14 P1: stamm/24.js las aHimmel aus dem Satz, liest jetzt aNormalZiel.w); Nachzug-Push folgt, CI dort lesen. diag-hoehlen-sicht Quell-Proben auf `_bodenStufenKnoten` gezogen (lokal ungeprueft).
 - Haushalt boden third (headless, Ring 4): Dorf 102 159, Wiese 103 175 (Soll 120k; K51: Dorf 116 963) — nachher-band-*-third.json.
+
+## K51-3 (14.10. spaet, letzter Fertigsteller) — Ports 8960-8969
+- integ-probe c5e2fc8f gemergt (b2315b72).
+- CI 38558987426 an 8acbea22, 10/13: voll 2 = Pruefbuehne S0 Selbsttest BLIND bei 26 Grad (Basis-Fehler, integ c8196cd1 heilt
+  ihn: Kante 28 Grad, mit dem Merge drin); voll 4 = diag-hoehlen-sicht las `aHimmel` aus dem Satz (lebt seit K51-2 in
+  aNormalZiel.w) -> f3d818d7, lokal gruen; voll 9 = gate:stand-takt GEHEN: der 2-m-Stempel der Strom-Wache liess den Ring
+  beim Gehen in derselben Zelle gehen (82 Einheiten) -> `_stufenZelle` (09.js): Spieler-Zelle + Fach zwischen den
+  Stufen-Schwellen (Brueche t mod S, S - t mod S), Wache und Linse lesen dieselbe Zelle.

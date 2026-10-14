@@ -1315,9 +1315,9 @@ class AnazhRealm_Z11d {
             ? this.state._voxelStreamMaxPerFrame
             : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
-        // nicht — Ring, Prune und Wasser-Weckruf lesen die Spieler-Lage auf 2 m (die Stufe folgt dem Kasten-Abstand, K51-2:
-        // die Schwellen liegen in Metern, nicht an der Chunk-Grenze) und die Chunk-Menge. Nachwuchs läuft weiter.
-        if (this._standRuht("strom", 1, Math.floor(playerPos.x / 2) + "," + Math.floor(playerPos.z / 2), "boden")) {
+        // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
+        // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
+        if (this._standRuht("strom", 1, this._stufenZelle(playerPos.x, playerPos.z), "boden")) {
             this._tickFoliageGrowth();
             return 0;
         }

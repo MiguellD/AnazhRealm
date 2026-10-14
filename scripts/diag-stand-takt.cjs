@@ -776,8 +776,8 @@ const server = http.createServer((req, res) => {
                 // (G) GEHEN: W gehalten
                 {
                     const p0 = st.playerMesh.position.clone();
-                    const span = r._voxelChunkConfig(0).span;
-                    const zelle = (p) => Math.floor(p.x / span) + "," + Math.floor(p.z / span);
+                    // die Zelle, in der sich keine Stufe ändern kann (`_stufenZelle`, K51-3) — derselbe Stempel wie die Strom-Wache
+                    const zelle = (p) => r._stufenZelle(p.x, p.z);
                     const z0 = zelle(p0);
                     const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
                     st.keys = { w: true };

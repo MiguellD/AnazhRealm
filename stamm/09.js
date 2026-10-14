@@ -22,6 +22,31 @@ class AnazhRealm_Z09 {
         return halt && d < halt.bis + B.vorlauf + B.halt ? currentLod : lod;
     }
 
+    // DIE STUFEN-ZELLE (K51-3): wo sich die Wahl des Rings ändern KANN — die Spieler-Zelle und je Achse das Fach der Lage
+    // in ihr zwischen den kritischen Brüchen. Der Kasten-Abstand zu einem Chunk ist je Achse i·S − f (vorne) oder
+    // f + (|i| − 1)·S (hinten), er kreuzt eine Schwelle t (`bis + vorlauf`, `bis + vorlauf + halt`) nur bei f = S − t mod S
+    // oder f = t mod S; dazwischen trägt jeder Chunk dieselbe Stufe. Der Stempel der Strom-Wache (`_tickVoxelStreaming`) und
+    // die Gehen-Probe der Stand-Linse lesen sie: Gehen kostet die Änderung, nie die 2-m-Spur.
+    _stufenZelle(px, pz) {
+        const B = AnazhRealm.BODEN_STUFEN;
+        const S = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(px / S),
+            cz = Math.floor(pz / S);
+        const fach = (f) => {
+            let n = 0;
+            for (const s of B.stufen) {
+                if (!(s.bis < Infinity)) continue;
+                for (const t of [s.bis + B.vorlauf, s.bis + B.vorlauf + B.halt]) {
+                    const m = t % S;
+                    if (f >= m) n++;
+                    if (f >= S - m) n++;
+                }
+            }
+            return n;
+        };
+        return cx + "," + cz + ":" + fach(px - cx * S) + "," + fach(pz - cz * S);
+    }
+
     // DAS GEWICHT DER STUFE am Welt-Punkt (x, z): 0 im Inneren der Stufe `lod`, 1 an ihrer Grenze `bis` — smoothstep über das
     // Übergangs-Band `band` im Chebyshev-Abstand zum Auge der Stufen (`state.stufeAuge`, der Spieler des Streaming-Takts).
     // Der CPU-Spiegel des Boden-Stoffs (`_buildPbrNodeMaterial` geomorph); Leser: der Boden-Leser und die Sprung-Linse.
