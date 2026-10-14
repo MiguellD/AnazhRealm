@@ -1169,7 +1169,7 @@ class AnazhRealm_Z20a {
     // DIE BAU-WAND (Integration Welle L, Stufe kampf-maus): ein Haus landet nie IN einem bestehenden Bau, und vor seiner
     // Haustür bleibt der Zugang frei. Geprüft werden der Grundriss (haus-lokal Mitte {ox, oz}, halbe Maße {ex, ez}, Gier ry
     // um den Slot-Ort x/z) und der Vorplatz der Tür (1,2 m vor der Front −z, Türbreite) gegen die Hülle jedes Baus, der
-    // keine Natur ist (die Natur weicht dem Haus: _grundrissRaeumen) — die Boxen über dem Boden des Hauses (Oberkante über
+    // nicht weicht (Natur und Würfe des Felds weichen dem Haus: `_weichtDemBau`, `_grundrissRaeumen`) — die Boxen über dem Boden des Hauses (Oberkante über
     // bodenY + Stufe), gedreht im Rahmen ihrer obb; ein Haus ohne gestempelte Hülle mit seinem Grundriss. Berührung ist kein
     // Überlapp (die Reihenhäuser einer Siedlung teilen ihre Wand). Seit „vor dir" vorn liegt (_blickVorn), gründet der
     // Chat-Akt „dorf" sein Dorf vor dem Spieler — an der Start-Plattform stand ein Haus 3,6 m tief in ihr (die Treppe
@@ -1193,7 +1193,7 @@ class AnazhRealm_Z20a {
             if (!e || !e.position) continue;
             const r = R + (e._blockerReach || 0) + 8;
             if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
-            if (this._istNatur(e)) continue;
+            if (this._weichtDemBau(e)) continue; // Natur und die Würfe des Felds weichen dem Haus (`_naturRaeumen`)
             // Die Lichtung eines Baus (der Genesis-Platz: Scheibe und Ring der Tore, `_grundrissVon`) sperrt in jeder Höhe: ihr
             // Stein ist im Feld gestempelt, ein Haus fand dort „ebenen Boden" auf Höhe der Scheibe und stand auf ihr (der
             // Ersatz-Ort eines Slots an der Plattform: 6,0 m von ihrer Mitte, die Scheibe trägt 6,5 m); seit K52 steht kein Haus

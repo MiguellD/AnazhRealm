@@ -534,6 +534,103 @@ async function gtDorfweg(v2, anker, sek) {
     return res;
 }
 
+// DIE WÜRFE DES FELDS WEICHEN DEM ORT (K10-6): jede Art, die das Affinitäts-Feld wirft (Wald, Fels, Geode und die Feuerstelle
+// des Glut-Felds), weicht dem Ort wie die Natur — sie sperrt der Ort-Wahl keinen Grund (`_bauFrei`, die Wand der Wahl und der
+// Slot-Quelle), der Grundriss eines Hauses räumt sie (`_grundrissRaeumen`), der Weg des Dorfs auch (`_naturRaeumen`). Bis
+// K10-6 stand die Feuerstelle als Bau: lag eine im Grundriss des Orts 80 m weit, wählte das Spiel den Ort 96 m weit — die Wahl
+// hing am Lade-Stand der Würfe, und die Linse (ohne Glut-Feld) maß einen anderen Ort als das Spiel. Je Art ein Wurf an einem
+// freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
+// und auf dem Weg. `defekt` ist der Selbst-Schein: die Feuerstelle gilt wieder als Bau.
+// Läuft im Browser (page.evaluate) — selbstgenügsam.
+function feldWurfImOrt(anker, defekt) {
+    const res = { sperrt: [], grundriss: [], weg: [], fehl: [] };
+    const r = window.anazhRealm;
+    const A = r.constructor;
+    // die Arten des Felds (`_vegetationSampleSpawn`), wie die Linse sie kennt — die Welt trägt sie als EINE Liste
+    const LISTE = [
+        "baum_eiche",
+        "baum_kiefer",
+        "baum_birke",
+        "baum_erle",
+        "baum_buche",
+        "baum_tanne",
+        "baum_karst",
+        "stein_block",
+        "kristall_geode",
+        "glutbrunnen",
+    ];
+    res.arten = LISTE.length;
+    res.quelle = Array.isArray(A.FELD_WURF) && A.FELD_WURF.join() === LISTE.join();
+    if (defekt)
+        r._weichtDemBau = function (e) {
+            return this._istNatur(e);
+        };
+    const neu = [];
+    try {
+        const H = (x, z) => r.getTerrainHeightAt(x, z);
+        const haus = r.state.architectures.find(
+            (e) => e.fundament && e.position && Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 200
+        );
+        if (!haus) {
+            res.err = "kein Haus am Ort";
+            return res;
+        }
+        const ry = haus.rotationY || 0;
+        const f = haus.fundament;
+        const hx = haus.position.x + (f.ox || 0) * Math.cos(ry) + (f.oz || 0) * Math.sin(ry);
+        const hz = haus.position.z - (f.ox || 0) * Math.sin(ry) + (f.oz || 0) * Math.cos(ry);
+        const box = { ex: 2, ez: 2, ox: 0, oz: 0 };
+        const trocken = (x, z) => r._landAt(x, z, 0.2) && r._landAt(x + 2, z + 2, 0.2) && r._landAt(x - 2, z - 2, 0.2);
+        // ein Punkt des Wegs (keine Grundriss-Fläche binnen 3 m) und ein freier Ort (kein Grundriss, kein Bau binnen 4 m)
+        let weg = null;
+        let frei = null;
+        for (let i = 0; i < 6400 && !(weg && frei); i++) {
+            const x = anker.x + ((i % 80) - 40) * 2.5;
+            const z = anker.z + (Math.floor(i / 80) - 40) * 2.5;
+            if (!trocken(x, z)) continue;
+            const g = r._imGrundriss(x, z, 3, 0);
+            if (!weg && g === "weg" && r._imGrundriss(x, z, 0.8, 0) === "weg") weg = { x, z };
+            if (!frei && g === false && r._bauFrei(x, z, 0, { ex: 4, ez: 4, ox: 0, oz: 0 }, null, -Infinity))
+                frei = { x, z };
+        }
+        res.orte = { haus: [+hx.toFixed(1), +hz.toFixed(1)], weg, frei };
+        if (!weg || !frei) {
+            res.err = `kein ${weg ? "freier Ort" : "Punkt des Wegs"} um ${anker.x.toFixed(0)}/${anker.z.toFixed(0)}`;
+            return res;
+        }
+        const wirf = (t, x, z, wo) => {
+            const e = r.spawnArchitecture(t, { x, y: H(x, z) + 0.5, z }, { silent: true, seed: 4711 });
+            if (!e) res.fehl.push(t + "@" + wo);
+            else neu.push(e);
+            return e;
+        };
+        const steht = (e) => r.state.architectures.includes(e);
+        for (const t of LISTE) {
+            const e1 = wirf(t, frei.x, frei.z, "frei");
+            if (e1 && !r._bauFrei(frei.x, frei.z, 0, box, null, -Infinity)) res.sperrt.push(t);
+            if (e1) r.removeArchitecture(e1);
+            const e2 = wirf(t, hx, hz, "haus");
+            if (e2) {
+                r._grundrissRaeumen(haus);
+                if (steht(e2)) res.grundriss.push(t);
+            }
+            const e3 = wirf(t, weg.x, weg.z, "weg");
+            if (e3) {
+                r._naturRaeumen(weg.x, weg.z, 2, false, "dem Weg des Dorfs", null);
+                if (steht(e3)) res.weg.push(t);
+            }
+        }
+    } catch (err) {
+        res.err = (err && err.stack) || String(err);
+    } finally {
+        for (const e of neu) if (r.state.architectures.includes(e)) r.removeArchitecture(e);
+        if (defekt) delete r._weichtDemBau; // die Wand des Prototyps gilt wieder
+    }
+    const fiel = new Set([...res.sperrt, ...res.grundriss, ...res.weg, ...res.fehl.map((s) => s.split("@")[0])]);
+    res.weichen = res.arten - fiel.size;
+    return res;
+}
+
 // Die dp-Fixtures der Goldens (klein = schnell; ein Dorf + ein Weiler).
 const FIXTURES = [
     { seed: 7, nH: 12 },
@@ -1812,6 +1909,9 @@ const FIXTURES = [
     ).messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
+    // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
+    const FW = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, false) : { err: "kein Ort" };
+    const FWd = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, true) : { err: "kein Ort" };
 
     await browser.close();
     server.close();
@@ -1945,6 +2045,26 @@ const FIXTURES = [
     };
     pruefeOrt("Dorf 7/18 Gründerzeit am Hang", "Akt", O.outO, O.gtO);
     pruefeOrt(`das Auto-Dorf der Welt am Mess-Ort dorf, Zelle ${OA.outO.zelle || "?"}`, "Auto-Dorf", OA.outO, OA.gtO);
+    console.log("  FELD-WURF IM ORT " + JSON.stringify(FW));
+    check(
+        "O Auto-Dorf: jeder Wurf des Felds weicht dem Ort wie die Natur — keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF)",
+        !FW.err && FW.quelle === true && FW.weichen === FW.arten,
+        FW.err
+            ? FW.err.split("\n")[0]
+            : `${FW.weichen}/${FW.arten} Arten weichen` +
+                  (FW.quelle ? "" : " · die Liste ist nicht EINE Quelle") +
+                  (FW.sperrt.length ? " · sperrt: " + FW.sperrt.join(", ") : "") +
+                  (FW.grundriss.length ? " · im Grundriss: " + FW.grundriss.join(", ") : "") +
+                  (FW.weg.length ? " · auf dem Weg: " + FW.weg.join(", ") : "") +
+                  (FW.fehl.length ? " · kein Wurf: " + FW.fehl.join(", ") : "")
+    );
+    check(
+        "O Auto-Dorf: Selbst-Schein — gilt die Feuerstelle als Bau, sperrt sie den Grund und bleibt im Grundriss (die Linse sieht den Täter)",
+        !FWd.err && FWd.sperrt.includes("glutbrunnen") && FWd.grundriss.includes("glutbrunnen"),
+        FWd.err
+            ? FWd.err.split("\n")[0]
+            : `sperrt: ${FWd.sperrt.join(", ") || "—"} · im Grundriss: ${FWd.grundriss.join(", ") || "—"}`
+    );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(stammLib.text(root))) check(name, ok);
     const c = out.c || {};

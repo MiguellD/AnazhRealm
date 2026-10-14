@@ -1814,6 +1814,24 @@ AnazhRealm.SCATTER_VARIANT_POOL = Object.freeze({
     stein_block: Object.freeze({ prefix: "fels", n: 12 }),
     kristall_geode: Object.freeze({ prefix: "kristall", n: 8 }),
 });
+// DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
+// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, weicht dem Bau wie
+// die Natur (`_weichtDemBau`): es sperrt keinem Ort den Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines
+// Dorfs räumen es (`_naturRaeumen`). Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
+// bis K10-6 stand sie als Bau: eine im Grundriss des Dorfs der Zelle −4,−4 schob die Ort-Wahl von 80 auf 96 m, je nach
+// Lade-Stand der Würfe.
+AnazhRealm.FELD_WURF = Object.freeze([
+    "baum_eiche",
+    "baum_kiefer",
+    "baum_birke",
+    "baum_erle",
+    "baum_buche",
+    "baum_tanne",
+    "baum_karst",
+    "stein_block",
+    "kristall_geode",
+    "glutbrunnen",
+]);
 // DER BAUPLAN-UMZUG — gefallene Baupläne, deren Einträge in gespeicherten Welten stehen, und ihr Erbe: der Restore
 // (`_loadStateRestoreArchitectures`) liest ihn, bevor er spawnt. Die sechs Glut-Formationen (`glut_var0..5`, das
 // Glut-Genom bis 05.10.) leben als die EINE Feuerstelle weiter (`glutbrunnen`, Gestalt aus dem Gesetzbuch).
