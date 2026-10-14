@@ -163,7 +163,12 @@ async function kaltLauf() {
     // und der Lauf nennt seinen Adapter, damit keine Kalt-Zeile ein swiftshader-Ergebnis als Radeon ausgibt
     const { linsenWebGpuArgs, echteWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const profil = fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
+    // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
+    // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
+    const profilBenannt = OPT("--profil", null);
+    const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
+    const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
+    fs.mkdirSync(profil, { recursive: true });
     const browser = await puppeteer.launch({
         headless: !ECHT,
         userDataDir: profil,
@@ -244,9 +249,11 @@ async function kaltLauf() {
     }
     await browser.close();
     server.close();
-    try {
-        fs.rmSync(profil, { recursive: true, force: true });
-    } catch (_e) {}
+    if (!profilBenannt)
+        try {
+            fs.rmSync(profil, { recursive: true, force: true });
+        } catch (_e) {}
+    if (out && !out.__err) out.zweit = zweit;
     if (!out || out.__err) {
         console.log(`⛔ Kalt-Zeile fehlgeschlagen: ${out ? out.__err : "?"}`);
         process.exit(2);
@@ -267,7 +274,7 @@ async function kaltLauf() {
         }
     }
     console.log(
-        `\n=== DIE KALT-ZEILE (leeres Profil) — ${ECHT ? "echte GPU" : "swiftshader"} · ${out.adapter || "Adapter ?"} · ` +
+        `\n=== DIE ${out.zweit ? "ZWEIT-ZEILE (Profil mit Platte)" : "KALT-ZEILE (leeres Profil)"} — ${ECHT ? "echte GPU" : "swiftshader"} · ${out.adapter || "Adapter ?"} · ` +
             `Holz ${out.holz} · V${out.version} ===`
     );
     let letzte = null;
