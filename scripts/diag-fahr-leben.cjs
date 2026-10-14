@@ -2210,16 +2210,25 @@ async function probeLeben(expected) {
                 }
                 return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
-            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse gemessen
+            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse gemessen —
+            // im Rahmen der Box: ein Teil quer zu den Welt-Achsen trägt seine gedrehte Box (`obb` { cx, cz, c, s, hx, hz }, lokal
+            // = (Δx·c − Δz·s, Δx·s + Δz·c)), in der die Kapsel löst; die Welt-AABB ist nur ihr Vorfilter. An der Gasse von K55
+            // (diagonal) las die Welt-AABB den Spieler 1,97 m „im Wagen", wo er an der gedrehten Flanke abprallte.
             const kapselAbstand = (e) => {
                 const pmP = st.playerMesh.position;
                 let d = Infinity;
                 for (const b of e.blockerAABBs) {
-                    const ix = Math.max(b.minX - pmP.x, 0, pmP.x - b.maxX);
-                    const iz = Math.max(b.minZ - pmP.z, 0, pmP.z - b.maxZ);
+                    const ob = b.obb;
+                    const dx = pmP.x - (ob ? ob.cx : (b.minX + b.maxX) / 2);
+                    const dz = pmP.z - (ob ? ob.cz : (b.minZ + b.maxZ) / 2);
+                    const lx = ob ? dx * ob.c - dz * ob.s : dx;
+                    const lz = ob ? dx * ob.s + dz * ob.c : dz;
+                    const hx = ob ? ob.hx : (b.maxX - b.minX) / 2;
+                    const hz = ob ? ob.hz : (b.maxZ - b.minZ) / 2;
+                    const ix = Math.max(Math.abs(lx) - hx, 0);
+                    const iz = Math.max(Math.abs(lz) - hz, 0);
                     const aussen = Math.hypot(ix, iz);
-                    const innen =
-                        aussen > 0 ? 0 : Math.min(pmP.x - b.minX, b.maxX - pmP.x, pmP.z - b.minZ, b.maxZ - pmP.z);
+                    const innen = aussen > 0 ? 0 : Math.min(hx - Math.abs(lx), hz - Math.abs(lz));
                     d = Math.min(d, aussen > 0 ? aussen : -innen);
                 }
                 return d - 0.35;
