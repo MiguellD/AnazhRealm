@@ -424,7 +424,7 @@ jobs:
               run: npm run gate:weltgrenze
 
             - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 8
               # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
               # worldMeta, mehrere Welten + Wechsel, korrupter Platz + gueltiges .bak, nur IndexedDB, IndexedDB frischer, und ein
               # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
@@ -1079,7 +1079,7 @@ jobs:
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 10
               # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft den echten Chokepoint selbst (updateCreatures,
               # clearCreatures, _creatureNaturalBirth, _playerDeathRespawn, Snapshot, Peer-Tick), nichts gestubbt
               # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
