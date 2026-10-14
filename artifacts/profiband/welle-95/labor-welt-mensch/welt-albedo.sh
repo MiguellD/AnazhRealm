@@ -14,6 +14,7 @@ rm -f $D/wb-albedo.txt
 node scripts/werkbank.cjs start --echt --seite http://127.0.0.1:8913 --port 8914 > $D/wb-albedo.txt 2>&1 &
 n=0; until grep -q "WERKBANK bereit" $D/wb-albedo.txt || [ $n -gt 300 ]; do sleep 2; n=$((n+1)); done
 echo "bereit nach $((n*2)) s"
+node scripts/werkbank.cjs umstellen --ort wiese --sicht third --port 8914 > $D/umstellen-albedo.txt 2>&1; echo "umstellen EXIT=$?"
 node scripts/werkbank.cjs albedo --tafel --datei $O/albedo-welt.json --port 8914 > $D/albedo-welt.txt 2>&1; echo "albedo-welt EXIT=$?"
 node scripts/werkbank.cjs stop --port 8914 > /dev/null 2>&1
 kill $SS 2>/dev/null

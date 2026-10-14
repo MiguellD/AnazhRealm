@@ -22,9 +22,10 @@ Zahlen (Rohdateien hier):
 Bilder: tafel-mensch-labor-alt-neu-welt.png (Armlaenge alt/neu/Welt vorher/nachher), alt-/neu-armlaenge.png, alt-/neu-labor.png,
   neu-fern.png (L1), welt-vorher-/welt-nachher-armlaenge.png
 
-CI 38561062762 (Kopf 2a8fb81b, voll): 12 gruen (voll 11/11 = der volle Playtest gruen), rot nur voll 2/11 Pruefbuehne S0 —
-der Selbsttest „das Feuer bis K11b" ist BLIND (Farbton 26 statt < 25); lokal swiftshader am Basis-Kopf 51cc19af GENAUSO blind (25,7°,
-pb-basis.txt), in der Basis-CI 20,3° — die Linse steht an ihrem Rand (Schwankung ±5°), nicht vom Menschen; Job-Wiederholung angestossen.
+CI: 38561062762 (Kopf 2a8fb81b) 12/13, rot nur voll 2/11 Pruefbuehne S0 (Glut-Probe K11b blind, 26,3 Grad) — das stand schon am
+Basis-Kopf 51cc19af so (integ-probe CI 38551540510, lokal pb-basis.txt 25,7 Grad), nicht vom Menschen (Spieler-Leib ausgeblendet:
+26,1 statt 26,6, pb-neu2 — Versuch 0bef1ec4 zurueckgenommen in 9934467a); integ-probe heilt es in c8196cd1, gemergt in 87992733.
+CI 38565624653 (Kopf 87992733, voll): siehe unten / Rueckgabe.
 
 Offen:
 - Albedo-Tafel Nachzug Zeile haut: die Labor-Seite misst 0,0542 (Radeon), die Welt-Seite maß in werkbank albedo --tafel stumm
