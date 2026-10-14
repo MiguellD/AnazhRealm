@@ -3203,17 +3203,16 @@ function scanPortWand(dateien) {
 // nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
 // nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
-    "scripts/audit-strict.cjs", "scripts/diag-albedo-tafel.cjs", "scripts/diag-baecker-kanal.cjs",
-    "scripts/diag-boot-rettung.cjs", "scripts/diag-boot-stage.cjs", "scripts/diag-fahrzeug-fern.cjs",
-    "scripts/diag-fluss.cjs", "scripts/diag-foundry-parity.cjs", "scripts/diag-garage-labor.cjs",
-    "scripts/diag-gpu-fehler.cjs", "scripts/diag-haus-welt.cjs", "scripts/diag-kamera-laub.cjs",
-    "scripts/diag-klang-zensus.cjs", "scripts/diag-koerper-stand.cjs", "scripts/diag-look-golden.cjs",
-    "scripts/diag-parity.cjs", "scripts/diag-portal-konformanz.cjs", "scripts/diag-portal-membran.cjs",
-    "scripts/diag-pruefbuehne.cjs", "scripts/diag-render-tap.cjs", "scripts/diag-schatten-bias.cjs",
-    "scripts/diag-studio-begehen.cjs", "scripts/diag-studio-huelle.cjs", "scripts/diag-tier-gang.cjs",
-    "scripts/diag-turn-hang.cjs", "scripts/diag-wasser-leben.cjs", "scripts/diag-weltbild-frost.cjs",
-    "scripts/diag-weltgrenze.cjs", "scripts/diag-worker-dichte.cjs", "scripts/lib/asset-worker-harness.cjs",
-    "scripts/playtest.cjs", "scripts/werkbank.cjs",
+    "scripts/diag-albedo-tafel.cjs", "scripts/diag-baecker-kanal.cjs", "scripts/diag-boot-rettung.cjs",
+    "scripts/diag-boot-stage.cjs", "scripts/diag-fahrzeug-fern.cjs", "scripts/diag-fluss.cjs",
+    "scripts/diag-foundry-parity.cjs", "scripts/diag-garage-labor.cjs", "scripts/diag-gpu-fehler.cjs",
+    "scripts/diag-haus-welt.cjs", "scripts/diag-kamera-laub.cjs", "scripts/diag-klang-zensus.cjs",
+    "scripts/diag-koerper-stand.cjs", "scripts/diag-parity.cjs", "scripts/diag-portal-konformanz.cjs",
+    "scripts/diag-portal-membran.cjs", "scripts/diag-pruefbuehne.cjs", "scripts/diag-render-tap.cjs",
+    "scripts/diag-schatten-bias.cjs", "scripts/diag-studio-begehen.cjs", "scripts/diag-studio-huelle.cjs",
+    "scripts/diag-tier-gang.cjs", "scripts/diag-wasser-leben.cjs", "scripts/diag-weltbild-frost.cjs",
+    "scripts/diag-weltgrenze.cjs", "scripts/lib/asset-worker-harness.cjs", "scripts/playtest.cjs",
+    "scripts/werkbank.cjs",
 ];
 // Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
 function eigenBoots(dateien) {
