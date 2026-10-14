@@ -147,6 +147,76 @@ async function serverLauf(quelle, tod) {
     return out;
 }
 
+// (C) DER CACHE-KOPF AM ECHTEN SERVER (1310-16): der save-server (Quelltext `quelle`) in einem Sandbox-Ordner mit einer
+// gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die Frage mit
+// `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag (kein alter Code
+// unter derselben Version). Bis 1310-16 sandte der Server keinen Validator — jeder Zweit-Boot lud 8,84 MB neu.
+async function cacheProbe(quelle) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k16-cache-"));
+    fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
+    fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 1;\n", "utf8");
+    const proc = spawn(process.execPath, [path.join(dir, "save-server.js")], {
+        cwd: dir,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: Object.assign({}, process.env, { PORT: String(SERVER_PORT) }),
+    });
+    const hole = (weg, kopf) =>
+        new Promise((resolve) => {
+            const req = http.request(
+                { host: "127.0.0.1", port: SERVER_PORT, path: weg, method: "GET", headers: kopf || {} },
+                (res) => {
+                    let n = 0;
+                    res.on("data", (c) => (n += c.length));
+                    res.on("end", () =>
+                        resolve({
+                            status: res.statusCode,
+                            etag: res.headers.etag || null,
+                            cc: res.headers["cache-control"] || null,
+                            n,
+                        })
+                    );
+                }
+            );
+            req.on("error", () => resolve({ status: "abgerissen" }));
+            req.end();
+        });
+    try {
+        await new Promise((resolve, reject) => {
+            const t = setTimeout(() => reject(new Error("save-server-Kopie startete nicht in 8 s")), 8000);
+            proc.stdout.on("data", (c) => {
+                if (/Save-Server/i.test(String(c))) {
+                    clearTimeout(t);
+                    resolve();
+                }
+            });
+            proc.on("exit", () => reject(new Error("save-server-Kopie endete beim Start")));
+        });
+        const a = await hole("/probe.js?v=1");
+        const b = a.etag ? await hole("/probe.js?v=1", { "If-None-Match": a.etag }) : { status: null };
+        fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 2;\n", "utf8");
+        const c = await hole("/probe.js?v=1", a.etag ? { "If-None-Match": a.etag } : {});
+        return {
+            erst: a,
+            frisch: b,
+            geaendert: c,
+            ok:
+                a.status === 200 &&
+                !!a.etag &&
+                /no-cache/.test(a.cc || "") &&
+                !/immutable/.test(a.cc || "") &&
+                b.status === 304 &&
+                b.n === 0 &&
+                c.status === 200 &&
+                !!c.etag &&
+                c.etag !== a.etag,
+        };
+    } finally {
+        proc.kill("SIGKILL");
+        await sleep(300);
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+}
+
 // (S) Die Probe: der Tod an jedem Schreib-Punkt der Reihe nach, bis ein Lauf durchkommt (der volle Save; sein .bak hält
 // den Stand davor). Ganz heißt: das Ziel parst und trägt alt oder neu — nie ein Bruchstück.
 async function serverProbe(quelle) {
@@ -360,6 +430,27 @@ const server = http.createServer((req, res) => {
         const alt = quelle.replace(KOPF, `${KOPF}\n    return fs.promises.writeFile(ziel, text, "utf8");`);
         selbst = await serverProbe(alt);
     }
+    // (C) Der Cache-Kopf am echten Server — und im Selbsttest der Kopf ohne Validator (der Stand vor 1310-16), der rot werden MUSS.
+    let cache = null,
+        cacheSelbst = null;
+    try {
+        cache = await cacheProbe(quelle);
+        if (SELBSTTEST) {
+            const CK = "const kopf = statischerKopf(body, contentType);";
+            if (!quelle.includes(CK)) {
+                console.log(`⛔ SELBSTTEST: save-server.js trägt „${CK}" nicht — die Verfälschung greift nicht`);
+                process.exit(1);
+            }
+            cacheSelbst = await cacheProbe(
+                quelle.replace(CK, `const kopf = { "Content-Type": contentType, "Access-Control-Allow-Origin": "*" };`)
+            );
+        }
+    } catch (e) {
+        console.log(`⛔ (C) Cache-Probe fehlgeschlagen: ${(e && e.message) || e}`);
+        process.exit(2);
+    }
+    const cZeile = (p) =>
+        `erst ${p.erst.status} ETag ${p.erst.etag ? "ja" : "nein"} „${p.erst.cc || "—"}" · nachgefragt ${p.frisch.status} (${p.frisch.n || 0} B) · Inhalt geändert ${p.geaendert.status}${p.geaendert.etag && p.geaendert.etag !== p.erst.etag ? " neuer ETag" : ""}`;
 
     const checks = [
         { name: "World-Key == Active-Key (kein Key-Drift)", pass: out.idsMatch },
@@ -391,12 +482,22 @@ const server = http.createServer((req, res) => {
             name: `(S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (${s.ganz}/${s.kills.length})${s.killsOk ? "" : " — Täter: save-server.js schreibt direkt aufs Ziel (kein tmp + rename)"}`,
             pass: s.killsOk,
         },
+        {
+            name: `(C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (${cZeile(cache)})${cache.ok ? "" : " — Täter: save-server.js sendStaticFile (statischerKopf)"}`,
+            pass: cache.ok,
+        },
     ];
     if (SELBSTTEST)
-        checks.push({
-            name: `(S) SELBSTTEST: die alte Schreib-Art (fs.writeFile aufs Ziel) wird ROT (${sZeile(selbst)})`,
-            pass: !selbst.killsOk,
-        });
+        checks.push(
+            {
+                name: `(S) SELBSTTEST: die alte Schreib-Art (fs.writeFile aufs Ziel) wird ROT (${sZeile(selbst)})`,
+                pass: !selbst.killsOk,
+            },
+            {
+                name: `(C) SELBSTTEST: der Kopf ohne Validator wird ROT (${cZeile(cacheSelbst)})`,
+                pass: !cacheSelbst.ok,
+            }
+        );
     console.log("\n=== Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load) ===");
     let fails = 0;
     for (const c of checks) {
