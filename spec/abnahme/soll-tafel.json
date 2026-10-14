@@ -45,10 +45,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T22:37:03.548Z",
+                    "datum": "2026-10-14T22:45:12.845Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                        "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -70,46 +70,59 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 35328,
+                    "misch": 35680,
                     "klassen": {
                         "bodenSatz": {
                             "objekte": 1,
-                            "pixel": 64401,
-                            "deckung": 0.2795,
-                            "deckungUnten": 0.4806,
-                            "luma": 86.04,
-                            "kontrast": 0.4889,
-                            "detail": 0.1053,
-                            "nyquist": 0.1185,
-                            "ek": 115724.8,
-                            "eg": 861035.5,
-                            "silhouette": 95.6128
+                            "pixel": 64444,
+                            "deckung": 0.2797,
+                            "deckungUnten": 0.4789,
+                            "luma": 86.96,
+                            "kontrast": 0.4766,
+                            "detail": 0.104,
+                            "nyquist": 0.1175,
+                            "ek": 114798.1,
+                            "eg": 862002.2,
+                            "silhouette": 96.1757
                         },
                         "nahWiese:L1": {
                             "objekte": 2,
-                            "pixel": 36145,
+                            "pixel": 36140,
                             "deckung": 0.1569,
-                            "deckungUnten": 0.4612,
-                            "luma": 70.53,
-                            "kontrast": 0.3183,
-                            "detail": 0.135,
-                            "nyquist": 0.1707,
-                            "ek": 100294,
-                            "eg": 487328.1,
-                            "silhouette": 90.1596
+                            "deckungUnten": 0.4606,
+                            "luma": 72.3,
+                            "kontrast": 0.3166,
+                            "detail": 0.1338,
+                            "nyquist": 0.1723,
+                            "ek": 100475.8,
+                            "eg": 482784.6,
+                            "silhouette": 90.129
                         },
                         "nahWiese:L2": {
                             "objekte": 2,
-                            "pixel": 17676,
-                            "deckung": 0.0767,
-                            "deckungUnten": 0.0525,
-                            "luma": 70.72,
-                            "kontrast": 0.2988,
-                            "detail": 0.1533,
-                            "nyquist": 0.1748,
-                            "ek": 47616.6,
-                            "eg": 224742,
-                            "silhouette": 69.1833
+                            "pixel": 17649,
+                            "deckung": 0.0766,
+                            "deckungUnten": 0.053,
+                            "luma": 72.14,
+                            "kontrast": 0.2894,
+                            "detail": 0.1509,
+                            "nyquist": 0.1876,
+                            "ek": 51227.7,
+                            "eg": 221879.2,
+                            "silhouette": 69.733
+                        },
+                        "streuSatz": {
+                            "objekte": 3,
+                            "pixel": 110,
+                            "deckung": 0.0005,
+                            "deckungUnten": 0.0014,
+                            "luma": 35.03,
+                            "kontrast": 0.0744,
+                            "detail": 0.0299,
+                            "nyquist": 0.0836,
+                            "ek": 1,
+                            "eg": 10.7,
+                            "silhouette": 6.5789
                         }
                     },
                     "abstand": {
@@ -127,37 +140,46 @@
                         "augeUeberBoden": 1.71,
                         "cos": [
                             null,
-                            0.47,
+                            0.4699,
                             0.2622,
                             0.1556,
                             0.0884,
-                            0.0481,
+                            0.0483,
                             0.0452
                         ],
                         "klassen": {
                             "bodenSatz": [
                                 0,
-                                28052,
-                                15846,
-                                3254,
-                                12306,
-                                3689,
-                                165
+                                27972,
+                                15851,
+                                3274,
+                                12274,
+                                3656,
+                                163
                             ],
                             "nahWiese:L2": [
                                 0,
-                                35,
-                                9061,
-                                6334,
-                                2246,
+                                28,
+                                9027,
+                                6315,
+                                2279,
                                 0,
                                 0
                             ],
                             "nahWiese:L1": [
                                 0,
-                                29532,
-                                6610,
+                                29479,
+                                6658,
                                 3,
+                                0,
+                                0,
+                                0
+                            ],
+                            "streuSatz": [
+                                0,
+                                110,
+                                0,
+                                0,
                                 0,
                                 0,
                                 0
@@ -210,9 +232,9 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-14T22:44:40.600Z",
+                    "datum": "2026-10-14T22:45:08.333Z",
                     "stand": {
-                        "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                        "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
@@ -267,10 +289,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T22:37:49.738Z",
+                    "datum": "2026-10-14T22:45:14.451Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                        "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -292,59 +314,59 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 12664,
+                    "misch": 12543,
                     "klassen": {
                         "f:fichte:L1": {
                             "objekte": 9,
-                            "pixel": 28238,
-                            "deckung": 0.1226,
+                            "pixel": 28391,
+                            "deckung": 0.1232,
                             "deckungUnten": 0.0035,
-                            "luma": 51.75,
-                            "kontrast": 0.4015,
-                            "detail": 0.1338,
-                            "nyquist": 0.2063,
-                            "ek": 99680.8,
-                            "eg": 383513,
-                            "silhouette": 53.0702
+                            "luma": 52.59,
+                            "kontrast": 0.385,
+                            "detail": 0.1293,
+                            "nyquist": 0.212,
+                            "ek": 91449.6,
+                            "eg": 339819.3,
+                            "silhouette": 52.0249
                         },
                         "f:tanne:L0": {
                             "objekte": 4,
-                            "pixel": 7102,
-                            "deckung": 0.0308,
+                            "pixel": 7114,
+                            "deckung": 0.0309,
                             "deckungUnten": 0,
-                            "luma": 66.54,
-                            "kontrast": 0.5333,
-                            "detail": 0.1397,
-                            "nyquist": 0.1821,
-                            "ek": 50901.2,
-                            "eg": 228545.6,
-                            "silhouette": 21.4303
+                            "luma": 66.92,
+                            "kontrast": 0.5063,
+                            "detail": 0.1291,
+                            "nyquist": 0.2107,
+                            "ek": 51396.4,
+                            "eg": 192548.7,
+                            "silhouette": 21.5189
                         },
                         "f:tanne:L1": {
                             "objekte": 9,
-                            "pixel": 34807,
-                            "deckung": 0.1511,
+                            "pixel": 34767,
+                            "deckung": 0.1509,
                             "deckungUnten": 0.0058,
-                            "luma": 55.43,
-                            "kontrast": 0.3942,
-                            "detail": 0.1256,
-                            "nyquist": 0.2108,
-                            "ek": 195323.8,
-                            "eg": 731111.2,
-                            "silhouette": 35.0921
+                            "luma": 56.07,
+                            "kontrast": 0.357,
+                            "detail": 0.1189,
+                            "nyquist": 0.2078,
+                            "ek": 160819.4,
+                            "eg": 612909.2,
+                            "silhouette": 35.5413
                         },
                         "fimp:atlas:L2": {
                             "objekte": 1,
-                            "pixel": 49128,
-                            "deckung": 0.2132,
-                            "deckungUnten": 0.1113,
-                            "luma": 62.34,
-                            "kontrast": 0.5629,
-                            "detail": 0.153,
-                            "nyquist": 0.2013,
-                            "ek": 354183,
-                            "eg": 1405039.5,
-                            "silhouette": 41.841
+                            "pixel": 48867,
+                            "deckung": 0.2121,
+                            "deckungUnten": 0.1096,
+                            "luma": 63.5,
+                            "kontrast": 0.5611,
+                            "detail": 0.1496,
+                            "nyquist": 0.1986,
+                            "ek": 349246.1,
+                            "eg": 1409004.2,
+                            "silhouette": 42.0295
                         }
                     },
                     "abstand": null,
@@ -469,10 +491,10 @@
                 "messung": {
                     "nah": {
                         "werkzeug": "bild",
-                        "datum": "2026-10-14T22:39:07.319Z",
+                        "datum": "2026-10-14T22:45:21.541Z",
                         "stand": {
                             "version": "18.546.2",
-                            "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                            "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
                         },
                         "geraet": {
                             "backend": "WebGPU",
@@ -498,42 +520,42 @@
                         "klassen": {
                             "bau:welt_klang": {
                                 "objekte": 3,
-                                "pixel": 5478,
-                                "deckung": 0.0238,
+                                "pixel": 5471,
+                                "deckung": 0.0237,
                                 "deckungUnten": 0,
-                                "luma": 151.16,
-                                "kontrast": 0.1819,
-                                "detail": 0.0392,
-                                "nyquist": 0.0558,
-                                "ek": 5773.5,
-                                "eg": 97643.8,
-                                "silhouette": 14.4163
+                                "luma": 149.16,
+                                "kontrast": 0.1884,
+                                "detail": 0.0406,
+                                "nyquist": 0.0335,
+                                "ek": 3442.4,
+                                "eg": 99288,
+                                "silhouette": 14.5742
                             },
                             "bau:welt_koerperstudio": {
                                 "objekte": 5,
-                                "pixel": 15397,
-                                "deckung": 0.0668,
+                                "pixel": 15459,
+                                "deckung": 0.0671,
                                 "deckungUnten": 0,
-                                "luma": 122.71,
-                                "kontrast": 0.4552,
-                                "detail": 0.0702,
-                                "nyquist": 0.1314,
-                                "ek": 85828.7,
-                                "eg": 567450.3,
-                                "silhouette": 10.6782
+                                "luma": 122.77,
+                                "kontrast": 0.4554,
+                                "detail": 0.0704,
+                                "nyquist": 0.132,
+                                "ek": 87163.3,
+                                "eg": 573164.4,
+                                "silhouette": 10.1501
                             },
                             "bau:welt_tetrapoda": {
                                 "objekte": 2,
-                                "pixel": 35601,
+                                "pixel": 35597,
                                 "deckung": 0.1545,
                                 "deckungUnten": 0.1424,
-                                "luma": 137.2,
-                                "kontrast": 0.3008,
-                                "detail": 0.0281,
-                                "nyquist": 0.1247,
-                                "ek": 43369.1,
-                                "eg": 304305.6,
-                                "silhouette": 7.8333
+                                "luma": 136.58,
+                                "kontrast": 0.2997,
+                                "detail": 0.028,
+                                "nyquist": 0.1225,
+                                "ek": 41336,
+                                "eg": 296107.4,
+                                "silhouette": 7.9503
                             }
                         },
                         "abstand": null,
@@ -541,10 +563,10 @@
                     },
                     "fern": {
                         "werkzeug": "bild",
-                        "datum": "2026-10-14T22:39:09.006Z",
+                        "datum": "2026-10-14T22:45:24.335Z",
                         "stand": {
                             "version": "18.546.2",
-                            "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                            "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
                         },
                         "geraet": {
                             "backend": "WebGPU",
@@ -566,19 +588,19 @@
                             "pixel": 0,
                             "max": 0
                         },
-                        "misch": 240,
+                        "misch": 243,
                         "klassen": {
                             "bau:welt_klang": {
                                 "objekte": 3,
                                 "pixel": 167,
                                 "deckung": 0.0007,
                                 "deckungUnten": 0,
-                                "luma": 130.71,
-                                "kontrast": 0.2333,
-                                "detail": 0.0866,
-                                "nyquist": 0.1431,
-                                "ek": 607.1,
-                                "eg": 3634.5,
+                                "luma": 132.17,
+                                "kontrast": 0.231,
+                                "detail": 0.083,
+                                "nyquist": 0.1928,
+                                "ek": 679.6,
+                                "eg": 2845.7,
                                 "silhouette": 7.4287
                             },
                             "bau:welt_koerperstudio": {
@@ -586,39 +608,39 @@
                                 "pixel": 317,
                                 "deckung": 0.0014,
                                 "deckungUnten": 0,
-                                "luma": 139.57,
+                                "luma": 139.32,
                                 "kontrast": 0.3465,
-                                "detail": 0.1281,
-                                "nyquist": 0.1224,
-                                "ek": 3183.9,
-                                "eg": 22819.2,
+                                "detail": 0.1283,
+                                "nyquist": 0.127,
+                                "ek": 3279.2,
+                                "eg": 22545.8,
                                 "silhouette": 8.3687
                             },
                             "bau:welt_tetrapoda": {
                                 "objekte": 2,
-                                "pixel": 1134,
+                                "pixel": 1132,
                                 "deckung": 0.0049,
                                 "deckungUnten": 0,
-                                "luma": 130.45,
-                                "kontrast": 0.3025,
-                                "detail": 0.1191,
-                                "nyquist": 0.0615,
-                                "ek": 3630.3,
-                                "eg": 55409.5,
-                                "silhouette": 11.7298
+                                "luma": 130.2,
+                                "kontrast": 0.3015,
+                                "detail": 0.1169,
+                                "nyquist": 0.063,
+                                "ek": 3606.5,
+                                "eg": 53624.9,
+                                "silhouette": 11.7104
                             },
                             "portal-membran": {
                                 "objekte": 8,
-                                "pixel": 965,
-                                "deckung": 0.0042,
+                                "pixel": 789,
+                                "deckung": 0.0034,
                                 "deckungUnten": 0,
-                                "luma": 151.51,
-                                "kontrast": 0.2915,
-                                "detail": 0.1166,
-                                "nyquist": 0.0819,
-                                "ek": 5265.3,
-                                "eg": 59000.2,
-                                "silhouette": 12.6511
+                                "luma": 141.22,
+                                "kontrast": 0.3678,
+                                "detail": 0.1162,
+                                "nyquist": 0.148,
+                                "ek": 4766.9,
+                                "eg": 27440.4,
+                                "silhouette": 11.3211
                             }
                         },
                         "abstand": null,
