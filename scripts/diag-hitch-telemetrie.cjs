@@ -609,7 +609,7 @@ function erstWandInstall() {
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
