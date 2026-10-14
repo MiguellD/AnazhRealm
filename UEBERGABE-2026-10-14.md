@@ -26,7 +26,8 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 
 | Zweig | Zustand | nächster Schritt |
 |---|---|---|
-| integ-probe | ec86f5e2 = main c5e2fc8f + K51-3 Boden-Stufen weich (Geomorph) + Archiv-Wand + Welt-Boot (Eigen-Starts 153 → 17); CI an 533e2360 13/13, an ec86f5e2 neu | OMEN-Bericht `1410-boden-abab.md` lesen (Boden-Stufen, Wiese Ego/Third); „nicht langsamer“ + CI 13/13 → `git push origin integ-probe:main` |
+| integ-probe | ec86f5e2 = main c5e2fc8f + K51-3 Boden-Stufen weich + Archiv-Wand + Welt-Boot | **K51-3 SPERRT den FF:** OMEN 1410-boden-abab: stehend nicht langsamer (Boden −8k), beim GEHEN Frame p95 28,7 → 41,6 ms (reißt 33), CPU p95 14,5 → 16,0. Täter: die Folge-Neubauten des Stufenwechsels (`_loopVoxelStreaming` +1,25 ms, darin `_dispatchFrameJobs` +0,63; `_tickFernRing` +0,58; `_bodenKarteAusMesh` +0,14, `_bodenSichtAt` +0,11, `_fernRingKlassen` +0,11), der Geomorph selbst +0,16. Lehre 25: Stufenwechsel ohne Neubau-Lawine (Ziel vorgebacken, Neubau nah zuerst im Budget), dann ABAB gehend erneut |
+| main-naechst | main + Welt-Boot + Archiv-Wand ohne K51-3 (Seite byte-gleich zu main) | CI 13/13 → `git push origin main-naechst:main`; danach integ-probe auf main mergen |
 | mess-wiese | K55: Wiese -278/-1038 aus der Welt, Orts-Literale 30 → 0, Gelände-Proben aus `welt-orte.cjs`; trägt gtx-ratschen-1410 (6 GTX-Ratschen am neuen Ort) | Rote laut letztem Commit-Rumpf / Übergabe: Fahr-Leben S4/L6/L8, Höhlen-Sicht „hinaus“ (`_hoehlenAusgang`), streu-fern Bahnwechsel, werk-im-wasser; dann mergen (Ratschen gehören zum neuen Ort) |
 | mensch-kopf | K57: Kopf-Soll (Anthropometrie) als Kern-Daten + Maß, dann Proportion/Augen/Mund im koerperstudio | Übergabe im letzten Commit-Rumpf; Bild Armlänge Labor = Welt |
 | laub-aaaa | K58: Laub-Soll + Maß, größter Hebel (Nadel-Wedel / Blatt-Karten / Dither) | Übergabe im letzten Commit-Rumpf |
