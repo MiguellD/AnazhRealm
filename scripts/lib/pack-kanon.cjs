@@ -114,12 +114,14 @@ function methodSource(src, name, nextAnchors) {
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + shell_1 + …` (UTF-8; srcs.join("\n"); die
-// Shells seit V18.527). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-Format) — der Pack-Index trägt
-// den reinen Generator-Hash.
-function computeStamp(root) {
+// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n"); die
+// Foundry-Brücke seit K42, vorher die Labor-Shell). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
+// Format) — der Pack-Index trägt den reinen Generator-Hash. `lies(datei)` (DARF) ersetzt das Lesen einer Quelle — die
+// Stempel-Probe (gate:fluss S7f) färbt so eine Datei, ohne den Baum zu berühren.
+function computeStamp(root, lies) {
     const r = root || ROOT;
-    const manifestText = fs.readFileSync(path.join(r, "cores.manifest.json"), "utf8");
+    const lese = (rel) => (lies ? lies(rel) : null) ?? fs.readFileSync(path.join(r, rel), "utf8");
+    const manifestText = lese("cores.manifest.json");
     const manifest = JSON.parse(manifestText);
     const scripts = [];
     if (Array.isArray(manifest)) {
@@ -127,10 +129,11 @@ function computeStamp(root) {
             if (!core || !Array.isArray(core.scripts)) continue;
             for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
         }
-        for (const core of manifest) if (core && typeof core.shell === "string" && core.shell) scripts.push(core.shell);
+        for (const core of manifest)
+            if (core && typeof core.bruecke === "string" && core.bruecke) scripts.push(core.bruecke);
     }
     const srcs = [manifestText];
-    for (const s of scripts) srcs.push(fs.readFileSync(path.join(r, s), "utf8"));
+    for (const s of scripts) srcs.push(lese(s));
     return sha256Hex(Buffer.from(srcs.join("\n"), "utf8"));
 }
 

@@ -225,7 +225,7 @@ const FORBIDDEN = [
     {
         token: "dt * 42",
         fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ",
-        auch: ["worlds/terrain/phytogenesis.js"],
+        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
     // DIE UFER-BÄNDER sind stetig: Strand, Schlick, Pfad und Höhen-Feuchte lesen beide Bezüge (`_waterLevelAt` → see ·
     // fluss · ufer); das Strand-Fenster schnitt die Glocke bei 2,0 m, die Worker-Feuchte las eine Halbbreite, die kein
@@ -488,7 +488,7 @@ const FORBIDDEN = [
     {
         token: "__baumGrammatik",
         fiel: "05.10. — der Grammatik-Beipack hatte keinen Leser mehr",
-        auch: ["worlds/terrain/phytogenesis.js"], // die Brücke legte ihn in den Umschlag
+        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"], // die Brücke legte ihn in den Umschlag
     },
     { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
     { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
@@ -845,7 +845,7 @@ const FORBIDDEN = [
     {
         token: "__strauchZeile",
         fiel: "Welle 6 — die Holz-Zeile ist die Stufe selbst (stufenRezept, emitTree)",
-        auch: ["worlds/terrain/phytogenesis.js"],
+        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
     { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
     // DER SATZ FOLGT SEINEM INHALT (W7): der leere Satz war ein Sonderfall, der nur auf die Start-Kapazität zurückkehrte —
@@ -1071,7 +1071,7 @@ const FORBIDDEN = [
     {
         token: "__wurf",
         fiel: "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz",
-        auch: ["foundry-core.js", "worlds/terrain/phytogenesis.js"],
+        auch: ["foundry-core.js", "worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
     { token: "lf.wurf", fiel: "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)" },
     { token: "wurfe", fiel: "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)" },

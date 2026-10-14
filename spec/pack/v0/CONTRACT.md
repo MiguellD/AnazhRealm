@@ -87,15 +87,16 @@ Ein persistierter Bake IST eine Kopie → sein Stempel MUSS der Hash der GENERAT
 ihr den Manifest-Text und die Skript-URLs):
 
 ```text
-stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + shell_1 + … + shell_m ) + "|f" + FOUNDRY_PLATTE_FORMAT
+stamp = SHA-256( manifestText + "\n" + script_1 + … + script_n + "\n" + bruecke_1 + … + bruecke_m ) + "|f" + FOUNDRY_PLATTE_FORMAT
 ```
 
 - `manifestText` — der ROHE Text von `cores.manifest.json` (ein Manifest-Edit = neuer Kern-Satz = Bust).
 - `script_i` — der Text JEDES `scripts[]`-Eintrags ALLER Manifest-Kerne, in Manifest-Reihenfolge
   (heute: `phyto-core.js`, `foundry-core.js`, `vehicle-core.js`) — jeder Kern ist Generator-Quelle.
-- `shell_j` — der Text JEDER `shell` der Manifest-Kerne (heute `worlds/terrain/phytogenesis.js`; V18.527): die Shell
-  trägt `__extractAssetMesh` (backt matrixWorld in die Vertices) und `bakeImpostorAtlas` (die Karte) — ein Shell-Edit
-  leert die Platte.
+- `bruecke_j` — der Text JEDER `bruecke` der Manifest-Kerne (heute `foundry-bruecke.js`; K42, vorher seit V18.527 die
+  Labor-Shell `worlds/terrain/phytogenesis.js`): die Brücke trägt `__extractAssetMesh` (backt matrixWorld in die
+  Vertices) und `bakeImpostorAtlas` (die Karte) — ein Brücken-Edit leert die Platte, ein UI-Edit am Labor nie
+  (gate:fluss S7f).
 - Jeder Fetch trägt den `?v=<VERSION>`-Cache-Buster (Gesetz: jede separat geladene versionierte Datei).
 - `|f<n>` — das Transport-Format (heute 3: saisonfreie Schlüssel + Karten, V18.527; 2 = Konsum-Wand + Uint16-Index):
   eine geänderte Konsum-Wand, Verengung oder Schlüssel-Form leert den Cache von selbst.
