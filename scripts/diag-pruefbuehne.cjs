@@ -320,8 +320,14 @@ async function s0Probe(page, station, schein) {
                 r._applyDayNightToScene();
             };
             uhr(0);
-            const y0 = r.getTerrainHeightAt(st.x, st.z);
-            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+            // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
+            // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
+            const A0 = r.constructor.GENESIS_PLATZ;
+            const w0 = Math.PI / 10;
+            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
+            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+            const y0 = r.getTerrainHeightAt(sx, sz);
+            s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
             r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
             await takt(20);
@@ -897,8 +903,13 @@ async function lichtLauf() {
                         };
                         if (!gestalt) {
                             window.__buehne();
-                            const y0 = r.getTerrainHeightAt(st.x, st.z);
-                            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+                            // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
+                            const A0 = r.constructor.GENESIS_PLATZ;
+                            const w0 = Math.PI / 10;
+                            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
+                            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+                            const y0 = r.getTerrainHeightAt(sx, sz);
+                            s.playerMesh.position.set(sx, y0 + 1, sz);
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;
@@ -968,7 +979,7 @@ async function lichtLauf() {
                     };
                     const feuer = window.__s0Feuer;
                     const f = feuer.position;
-                    const g = r._voxelSurfaceY(f.x, f.z);
+                    const g = f.y - 0.5; // der Boden des Feuers: wo es steht (auf dem Grund oder auf der Genesis-Scheibe, K52)
                     const w = 640;
                     const h = 360;
                     const alt = r._leuchtTakt;

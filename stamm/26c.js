@@ -1102,8 +1102,10 @@ AnazhRealm._llmFuenferModell = function (model) {
 };
 // Der Grund der Natur-Wand im Satz des Spielers (Leser: `SETZ_GRUND` des Ergebnis-Satzes, `confirmBuild` und das Bau-HUD).
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
-    lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
+    lichtung: "die Lichtung des Genesis-Platzes bleibt frei, keine Krone steht über der Scheibe und dem Ring der Tore",
     haus: "im Grundriss eines Hauses wächst nichts",
+    bau: "im Grundriss eines Baus wächst nichts",
+    weg: "auf Weg, Platz und Acker eines Dorfs wächst nichts",
     wagen: "in einem Wagen wächst nichts",
     wasser: "im Wasser steht nichts, am Ufer schon",
 });

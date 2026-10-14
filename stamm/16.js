@@ -984,8 +984,9 @@ class AnazhRealm_Z16 {
             },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
-            // Der Genesis-Ort ist eine LICHTUNG (Befund V-D1): ihre Stein-Scheibe ist ein Grundriss der EINEN Natur-Wand
-            // (`_grundrissVon` → `_naturSetzen`), über dem keine Krone steht — der erste Blick jedes neuen Spielers.
+            // Der Genesis-Ort ist eine LICHTUNG (Befund V-D1): seine Stein-Scheibe und der Ring der Tore um sie (der Genesis-
+            // Platz, `GENESIS_PLATZ`, K52) sind ein Grundriss der EINEN Natur-Wand (`_grundrissVon` → `_naturSetzen`), über dem
+            // keine Krone steht — der erste Blick jedes neuen Spielers.
             start_plattform: {
                 name: "start_plattform",
                 label: "Genesis-Plattform",
