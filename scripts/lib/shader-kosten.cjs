@@ -55,7 +55,7 @@ const LEICHT =
 // DIE STOFFE mit Budget: der Zustands-Schlüssel des Materials (`state[zustand]`) und die Decke je Fragment. Boden (Welle G,
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
-// Ops-Decke —, die Ladungen des Rausch-Atlas (78) und die Ops-Schätzung unter der Decke.
+// Ops-Decke —, die Ladungen des Rausch-Atlas (76, seit K53 ohne den Fleck des Wiesen-Grunds) und die Ops-Schätzung unter der Decke.
 // DIE PROGRAMM-GRÖSSE (`zeichenMax`, K17-3): swiftshader (die CI) übersetzt jedes Programm beim ersten Zeichnen und löst jede
 // WGSL-Funktion in ihren Aufrufer auf — die Zeichen des erzeugten Fragments sind die Übersetzungs-Arbeit, die vor dem
 // ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel (K17) 96 050 Zeichen; mit dem Gesetz im Pixel, jede

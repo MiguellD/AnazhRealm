@@ -37961,8 +37961,9 @@ async function checkBandWahrerAnblickGras(ctx) {
 // DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
-// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 78 Ladungen des Atlas im Graph — 7 Raum-
-// Werte × 6 + 18 Ebenen × 2 = 78 (K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
+// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 76 Ladungen des Atlas im Graph — 7 Raum-
+// Werte × 6 + 17 Ebenen × 2 = 76 (K53: der Fleck des Wiesen-Grunds ging mit ihm ins Gesetz, `_bodenFarbeAt`, 78 → 76;
+// K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
 // der reinen Funktion `rauschEbene` — als Schleife in `wieseRelief` las eine Layout-Funktion die Bindung des Atlas); die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
 // gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
 // reist als Argument, der Graph sieht ihn); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
@@ -38074,8 +38075,8 @@ async function checkBandRauschGesetz(ctx) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
-        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 76), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 76
     );
     check(
         `RAUSCH-GESETZ (C) die Atlas-Bytes sind die MaterialX-Gradienten (${res.falsch} falsch) und richtig gepackt (${res.packung} Brüche)`,
