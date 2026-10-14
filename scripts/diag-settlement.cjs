@@ -548,40 +548,10 @@ const FIXTURES = [
     const iAlt = process.argv.indexOf("--altwelt");
     if (iAlt >= 0) {
         const dateien = process.argv.slice(iAlt + 1).filter((a) => !a.startsWith("--"));
-        const puppeteer = require("puppeteer");
         const PORT = Number(process.env.SETTLEMENT_PORT || 4436);
-        const server = require("http").createServer((req, res) => {
-            let p = req.url.split("?")[0];
-            if (p === "/") p = "/index.html";
-            const fp = path.join(root, p);
-            if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-            fs.readFile(fp, (err, data) => {
-                if (err) return ((res.statusCode = 404), res.end());
-                const ext = path.extname(fp);
-                res.setHeader(
-                    "Content-Type",
-                    ext === ".html"
-                        ? "text/html"
-                        : ext === ".js"
-                          ? "application/javascript"
-                          : ext === ".json"
-                            ? "application/json"
-                            : "application/octet-stream"
-                );
-                res.end(data);
-            });
-        });
+        const server = statikServer();
         await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-        const browser = await puppeteer.launch({
-            headless: true,
-            protocolTimeout: 240000,
-            args: [
-                "--use-angle=swiftshader",
-                "--enable-unsafe-swiftshader",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-            ],
-        });
+        const browser = await starteBrowser({ art: "webgl", frist: 240000 });
         for (const datei of dateien) {
             const save = JSON.parse(fs.readFileSync(datei, "utf8"));
             const page = await browser.newPage();
