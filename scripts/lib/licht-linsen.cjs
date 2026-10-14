@@ -319,12 +319,7 @@ function albedoSicht(opts) {
                 A.color.setRGB(1, 1, 1);
                 A.intensity = e;
                 if (maskeAlt != null) lu.uLodMaskOn.value = 0;
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                rend.setRenderTarget(rt);
-                rend.setClearColor(0x000000, 0);
-                rend.clear();
-                rend.render(sc, cam);
-                rend.setRenderTarget(null);
+                await window.__linseRuhe(rend, rt, sc, cam, "die Albedo-Sicht");
                 return lies();
             };
             await pass(Math.PI);
@@ -542,6 +537,24 @@ function albedoSicht(opts) {
     })();
 }
 
+// DIE RUHE DER LINSE (K63-n1, die EINE Stelle für jede Linse dieser Familie, die in ihr eigenes Ziel zeichnet): ihre Karten,
+// Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die Pipeline asynchron und zeichnet nichts,
+// und Renders am Stück lassen kein Versprechen reifen (gemessen 15.10., Radeon, frische Welt: die Licht-Bilanz las E 0 statt 9,51,
+// die Welt-Seite der Albedo-Tafel jede Zeile stumm und die Karte null). Die Linse schaltet ihren Frame, bis nichts mehr baut —
+// dieselbe Ruhe wie die Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs); ohne sie bricht sie laut.
+function linseRuhe(rend, rt, sc, cam, wer) {
+    if (typeof window.__erstRuhe !== "function") throw new Error(`${wer}: die Erst-Ruhe fehlt (AUSGABE_INSTALL)`);
+    const zeichne = () => {
+        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+        rend.setRenderTarget(rt);
+        rend.setClearColor(0x000000, 0);
+        rend.clear();
+        rend.render(sc, cam);
+        rend.setRenderTarget(null);
+    };
+    return window.__erstRuhe(zeichne, {}, wer);
+}
+
 function lichtBilanz() {
     return (async () => {
         const r = window.anazhRealm;
@@ -600,13 +613,18 @@ function lichtBilanz() {
             cam.position.copy(basis.clone().add(n.clone().multiplyScalar(1.5)));
             cam.lookAt(basis);
             cam.updateMatrixWorld(true);
-            const lauf = async () => {
+            const zeichne = () => {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
                 rend.setClearColor(0x000000, 0);
                 rend.clear();
                 rend.render(sc, cam);
                 rend.setRenderTarget(null);
+            };
+            // die Karte ist je Aufruf ein neuer Stoff, jede Licht-Variante ein neues Programm (`linseRuhe`)
+            await window.__linseRuhe(rend, rt, sc, cam, "die Licht-Bilanz");
+            const lauf = async () => {
+                zeichne();
                 const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
                 const zeile = W * 4;
                 const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
@@ -850,6 +868,7 @@ function nahFernSicht(opts) {
                 laeufe = 0;
             const spur = [];
             const frist = performance.now() + 20000;
+            await window.__linseRuhe(rend, rt, sc, cam, "die Nah-Fern-Sicht");
             for (let lauf = 0; ; lauf++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
@@ -1223,6 +1242,7 @@ function laubGegenlicht(opts) {
                 dl.castShadow = false; // der Stoff allein: kein Schatten, kein Himmel
             }
             let px = null;
+            await window.__linseRuhe(rend, rt, sc, cam, "das Laub im Gegenlicht");
             for (let k = 0; k < 3; k++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
@@ -1342,6 +1362,7 @@ function laubLichtUrteil(messung, band) {
 module.exports = {
     laubLichtUrteil,
     LINSEN_INSTALL:
+        `window.__linseRuhe = ${linseRuhe.toString()};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
         `window.__stoffPasst = ${stoffPasst.toString()};` +

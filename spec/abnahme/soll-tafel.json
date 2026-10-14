@@ -42,7 +42,130 @@
                     "grund": "^bodenSatz$",
                     "quelle": "G 0,5 = kugelige Blatt-Winkel (Campbell & Norman 1998, Kap. 15); gezählt im Ring der Nah-Wiese (`abstand.ring` = AnazhRealm.NAH_WIESE.radius der gemessenen Welt) — jenseits zeichnet der Boden-Satz das Gras"
                 },
-                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)"
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-14T22:37:03.548Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [
+                        640,
+                        360
+                    ],
+                    "kamera": [
+                        -278,
+                        29.28,
+                        -1038
+                    ],
+                    "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 35328,
+                    "klassen": {
+                        "bodenSatz": {
+                            "objekte": 1,
+                            "pixel": 64401,
+                            "deckung": 0.2795,
+                            "deckungUnten": 0.4806,
+                            "luma": 86.04,
+                            "kontrast": 0.4889,
+                            "detail": 0.1053,
+                            "nyquist": 0.1185,
+                            "ek": 115724.8,
+                            "eg": 861035.5,
+                            "silhouette": 95.6128
+                        },
+                        "nahWiese:L1": {
+                            "objekte": 2,
+                            "pixel": 36145,
+                            "deckung": 0.1569,
+                            "deckungUnten": 0.4612,
+                            "luma": 70.53,
+                            "kontrast": 0.3183,
+                            "detail": 0.135,
+                            "nyquist": 0.1707,
+                            "ek": 100294,
+                            "eg": 487328.1,
+                            "silhouette": 90.1596
+                        },
+                        "nahWiese:L2": {
+                            "objekte": 2,
+                            "pixel": 17676,
+                            "deckung": 0.0767,
+                            "deckungUnten": 0.0525,
+                            "luma": 70.72,
+                            "kontrast": 0.2988,
+                            "detail": 0.1533,
+                            "nyquist": 0.1748,
+                            "ek": 47616.6,
+                            "eg": 224742,
+                            "silhouette": 69.1833
+                        }
+                    },
+                    "abstand": {
+                        "baender": [
+                            0,
+                            2,
+                            5,
+                            10,
+                            14,
+                            30,
+                            80,
+                            200
+                        ],
+                        "ring": 14,
+                        "augeUeberBoden": 1.71,
+                        "cos": [
+                            null,
+                            0.47,
+                            0.2622,
+                            0.1556,
+                            0.0884,
+                            0.0481,
+                            0.0452
+                        ],
+                        "klassen": {
+                            "bodenSatz": [
+                                0,
+                                28052,
+                                15846,
+                                3254,
+                                12306,
+                                3689,
+                                165
+                            ],
+                            "nahWiese:L2": [
+                                0,
+                                35,
+                                9061,
+                                6334,
+                                2246,
+                                0,
+                                0
+                            ],
+                            "nahWiese:L1": [
+                                0,
+                                29532,
+                                6610,
+                                3,
+                                0,
+                                0,
+                                0
+                            ]
+                        }
+                    },
+                    "bild": "../../../artifacts/profiband/soll-tafel/n1/boden.png"
+                }
             }
         },
         {
@@ -84,7 +207,24 @@
             },
             "mass": {
                 "name": "lichtVerhaeltnis",
-                "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)"
+                "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
+                "messung": {
+                    "werkzeug": "licht",
+                    "datum": "2026-10-14T22:44:40.600Z",
+                    "stand": {
+                        "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                    },
+                    "geraet": {
+                        "adapter": "amd rdna-3"
+                    },
+                    "E_alle": 9.53,
+                    "E_umgebung": 2.26,
+                    "sonnenRichtung": [
+                        0,
+                        0.962,
+                        0.272
+                    ]
+                }
             }
         },
         {
@@ -124,7 +264,92 @@
             },
             "mass": {
                 "name": "nyquist",
-                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub"
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-14T22:37:49.738Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [
+                        640,
+                        360
+                    ],
+                    "kamera": [
+                        -284,
+                        29.34,
+                        -1042
+                    ],
+                    "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 12664,
+                    "klassen": {
+                        "f:fichte:L1": {
+                            "objekte": 9,
+                            "pixel": 28238,
+                            "deckung": 0.1226,
+                            "deckungUnten": 0.0035,
+                            "luma": 51.75,
+                            "kontrast": 0.4015,
+                            "detail": 0.1338,
+                            "nyquist": 0.2063,
+                            "ek": 99680.8,
+                            "eg": 383513,
+                            "silhouette": 53.0702
+                        },
+                        "f:tanne:L0": {
+                            "objekte": 4,
+                            "pixel": 7102,
+                            "deckung": 0.0308,
+                            "deckungUnten": 0,
+                            "luma": 66.54,
+                            "kontrast": 0.5333,
+                            "detail": 0.1397,
+                            "nyquist": 0.1821,
+                            "ek": 50901.2,
+                            "eg": 228545.6,
+                            "silhouette": 21.4303
+                        },
+                        "f:tanne:L1": {
+                            "objekte": 9,
+                            "pixel": 34807,
+                            "deckung": 0.1511,
+                            "deckungUnten": 0.0058,
+                            "luma": 55.43,
+                            "kontrast": 0.3942,
+                            "detail": 0.1256,
+                            "nyquist": 0.2108,
+                            "ek": 195323.8,
+                            "eg": 731111.2,
+                            "silhouette": 35.0921
+                        },
+                        "fimp:atlas:L2": {
+                            "objekte": 1,
+                            "pixel": 49128,
+                            "deckung": 0.2132,
+                            "deckungUnten": 0.1113,
+                            "luma": 62.34,
+                            "kontrast": 0.5629,
+                            "detail": 0.153,
+                            "nyquist": 0.2013,
+                            "ek": 354183,
+                            "eg": 1405039.5,
+                            "silhouette": 41.841
+                        }
+                    },
+                    "abstand": null,
+                    "bild": "../../../artifacts/profiband/soll-tafel/n1/laub.png"
+                }
             }
         },
         {
@@ -240,7 +465,166 @@
             },
             "mass": {
                 "name": "stufenTreue",
-                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 --klasse '^(bau:welt_[a-z_]+|portal-membran)$' --ist tor-fern:nah; dasselbe aus 29.4 93.7 4.5 --wahl 0 --ist tor-fern:fern"
+                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 --klasse '^(bau:welt_[a-z_]+|portal-membran)$' --ist tor-fern:nah; dasselbe aus 29.4 93.7 4.5 --wahl 0 --ist tor-fern:fern",
+                "messung": {
+                    "nah": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-14T22:39:07.319Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [
+                            640,
+                            360
+                        ],
+                        "kamera": [
+                            3.4,
+                            92.2,
+                            -2.5
+                        ],
+                        "ausdruck": "^(bau:welt_[a-z_]+|portal-membran)$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 0,
+                        "klassen": {
+                            "bau:welt_klang": {
+                                "objekte": 3,
+                                "pixel": 5478,
+                                "deckung": 0.0238,
+                                "deckungUnten": 0,
+                                "luma": 151.16,
+                                "kontrast": 0.1819,
+                                "detail": 0.0392,
+                                "nyquist": 0.0558,
+                                "ek": 5773.5,
+                                "eg": 97643.8,
+                                "silhouette": 14.4163
+                            },
+                            "bau:welt_koerperstudio": {
+                                "objekte": 5,
+                                "pixel": 15397,
+                                "deckung": 0.0668,
+                                "deckungUnten": 0,
+                                "luma": 122.71,
+                                "kontrast": 0.4552,
+                                "detail": 0.0702,
+                                "nyquist": 0.1314,
+                                "ek": 85828.7,
+                                "eg": 567450.3,
+                                "silhouette": 10.6782
+                            },
+                            "bau:welt_tetrapoda": {
+                                "objekte": 2,
+                                "pixel": 35601,
+                                "deckung": 0.1545,
+                                "deckungUnten": 0.1424,
+                                "luma": 137.2,
+                                "kontrast": 0.3008,
+                                "detail": 0.0281,
+                                "nyquist": 0.1247,
+                                "ek": 43369.1,
+                                "eg": 304305.6,
+                                "silhouette": 7.8333
+                            }
+                        },
+                        "abstand": null,
+                        "bild": "../../../artifacts/profiband/soll-tafel/n1/tor-nah.png"
+                    },
+                    "fern": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-14T22:39:09.006Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "15e1dbe7ad29523424691d1ed6f06c98f1167307+geaendert"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [
+                            640,
+                            360
+                        ],
+                        "kamera": [
+                            29.4,
+                            93.7,
+                            4.5
+                        ],
+                        "ausdruck": "^(bau:welt_[a-z_]+|portal-membran)$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 240,
+                        "klassen": {
+                            "bau:welt_klang": {
+                                "objekte": 3,
+                                "pixel": 167,
+                                "deckung": 0.0007,
+                                "deckungUnten": 0,
+                                "luma": 130.71,
+                                "kontrast": 0.2333,
+                                "detail": 0.0866,
+                                "nyquist": 0.1431,
+                                "ek": 607.1,
+                                "eg": 3634.5,
+                                "silhouette": 7.4287
+                            },
+                            "bau:welt_koerperstudio": {
+                                "objekte": 5,
+                                "pixel": 317,
+                                "deckung": 0.0014,
+                                "deckungUnten": 0,
+                                "luma": 139.57,
+                                "kontrast": 0.3465,
+                                "detail": 0.1281,
+                                "nyquist": 0.1224,
+                                "ek": 3183.9,
+                                "eg": 22819.2,
+                                "silhouette": 8.3687
+                            },
+                            "bau:welt_tetrapoda": {
+                                "objekte": 2,
+                                "pixel": 1134,
+                                "deckung": 0.0049,
+                                "deckungUnten": 0,
+                                "luma": 130.45,
+                                "kontrast": 0.3025,
+                                "detail": 0.1191,
+                                "nyquist": 0.0615,
+                                "ek": 3630.3,
+                                "eg": 55409.5,
+                                "silhouette": 11.7298
+                            },
+                            "portal-membran": {
+                                "objekte": 8,
+                                "pixel": 965,
+                                "deckung": 0.0042,
+                                "deckungUnten": 0,
+                                "luma": 151.51,
+                                "kontrast": 0.2915,
+                                "detail": 0.1166,
+                                "nyquist": 0.0819,
+                                "ek": 5265.3,
+                                "eg": 59000.2,
+                                "silhouette": 12.6511
+                            }
+                        },
+                        "abstand": null,
+                        "bild": "../../../artifacts/profiband/soll-tafel/n1/tor-fern.png"
+                    }
+                }
             }
         },
         {

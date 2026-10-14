@@ -688,12 +688,15 @@ function rauschBild(n, beta, saat) {
     }
     return u8;
 }
+const NYQUIST_NATUR = new Map();
 function nyquistNatur(beta) {
+    if (NYQUIST_NATUR.has(beta)) return NYQUIST_NATUR.get(beta);
     const n = 128,
         voll = new Uint8Array(n * n).fill(1);
     let s = 0;
     for (let saat = 1; saat <= 4; saat++) s += klassenMasse(rauschBild(n, beta, 7919 * saat), voll, n, n).nyquist;
-    return +(s / 4).toFixed(4);
+    NYQUIST_NATUR.set(beta, +(s / 4).toFixed(4));
+    return NYQUIST_NATUR.get(beta);
 }
 function sollRechnung(r) {
     if (!r || typeof r !== "object") return { fehler: "keine Rechnung" };
@@ -742,8 +745,9 @@ const MASS_RECHNER = {
     // DIE DECKUNG DER WIESE als wirksamer Blatt-Flächen-Index (Nilson 1971: Lücke P(θ) = exp(−G·LAI/cos θ)): je Abstands-Band
     // (`werkbank bild --abstand`: der Strahl des Pixels bis zum gezeichneten Boden, `_bodenSichtAt`) die Lücke P = Grund /
     // (Halm + Grund) und cos θ des Blicks, LAI = −ln P · cos θ / G; das Ist ist das Pixel-Mittel über die Bänder im Ring der
-    // Nah-Wiese (`abstand.ring`, ihr Radius in der gemessenen Welt), der Täter das Band mit dem kleinsten LAI und die Halm-Klasse, die dort zeichnet.
-    laiWirk(ma) {
+    // Nah-Wiese (`abstand.ring`, ihr Radius in der gemessenen Welt). Der Täter ist das Band, das am meisten freien Grund
+    // zeigt, den das Soll nicht zeigen dürfte (Pixel × (LAI-Soll − LAI)), und die Halm-Klasse, die dort zeichnet.
+    laiWirk(ma, q, band) {
         const me = ma.messung,
             rc = ma.rechnung || {};
         const f = bildMessungFehler(me);
@@ -782,7 +786,9 @@ const MASS_RECHNER = {
         }
         if (!sw) return { fehler: `kein Boden-Pixel im Ring ≤ ${ring} m` };
         const imRingB = baender.filter((b) => b.imRing && b.lai != null);
-        const arg = imRingB.reduce((a, b) => (b.lai < a.lai ? b : a));
+        const soll = band && band[0] != null ? band[0] : 0;
+        const fehlt = (b) => (b.halm + b.grund) * Math.max(0, soll - b.lai);
+        const arg = imRingB.reduce((a, b) => (fehlt(b) > fehlt(a) ? b : a));
         const zeichner = Object.entries(arg.wer).sort((a, b) => b[1] - a[1])[0];
         const r2 = (x) => +x.toFixed(2);
         const taeter =
@@ -867,7 +873,8 @@ const MASS_RECHNER = {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
         for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
-        if (!(me.E_umgebung > 0)) return { fehler: `E Himmel ${me.E_umgebung} — die Bilanz misst nichts` };
+        if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
+            return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
         return {
             ist: +(me.E_alle / me.E_umgebung).toFixed(3),
             taeter: `E Himmel ${me.E_umgebung} gegen E Sonne ${+(me.E_alle - me.E_umgebung).toFixed(2)}`,
@@ -1005,7 +1012,7 @@ function sollTafelUrteil(tafel, q) {
                 fehler.push(`${wo}: Verweis ${e.verweis.datei} (${e.groesse}) — kein Maß liest ihn`);
         const band = sb ? sb.band : null;
         const rechner = MASS_RECHNER[ma.name];
-        const r = !rechner ? { fehler: "kein Rechner" } : ma.messung == null && !ma.rohdatei ? { ungemessen: true } : rechner(ma, q);
+        const r = !rechner ? { fehler: "kein Rechner" } : ma.messung == null && !ma.rohdatei ? { ungemessen: true } : rechner(ma, q, sb ? sb.band : null);
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
         const ist = zahl(r.ist) ? r.ist : null;
         let urteil = "ROT",
@@ -1032,7 +1039,7 @@ function sollTafelUrteil(tafel, q) {
             else anteil = pixelSumme(wi.messung) / flaeche(wi.messung);
         }
         if (zahl(wi.anteil)) {
-            if (ma.messung || wi.messung)
+            if (zahl(r.anteil) || wi.messung)
                 fehler.push(`${wo}: der Bildanteil steht von Hand neben einer Messung — er kommt aus ihr`);
             else if (!wi.quelle) fehler.push(`${wo}: der Bildanteil von Hand ohne Quelle`);
             else anteil = wi.anteil;
@@ -1067,7 +1074,12 @@ function sollTafelZeile(z) {
     const bud = s
         ? `L0 ${s.L0.dreiecke}/${s.L0.befehle} · L1 ${s.L1.dreiecke}/${s.L1.befehle} · L2 ${s.L2.dreiecke}/${s.L2.befehle} · ${s.vramMB} MB`
         : "kein Budget";
-    const w = z.wirkung == null ? "" : ` · Wirkung ${z.wirkung} (Anteil ${z.anteil})`;
+    const w =
+        z.wirkung != null
+            ? ` · Wirkung ${z.wirkung} (Anteil ${z.anteil})`
+            : z.urteil === "ROT" && z.ist != null
+              ? " · Wirkung ungemessen (der Bildanteil fehlt)"
+              : "";
     return (
         `${z.rang}. ${z.urteil === "ROT" ? "ROT " : "GRÜN"} ${z.id}: ${z.mass} ${z.ist == null ? "—" : z.ist} Soll ${b} (${z.bandArt || "?"})${w}` +
         `${z.urteil === "ROT" ? ` — ${z.grund}${z.taeter ? ` · Täter ${z.taeter}` : ""}` : ""}` +

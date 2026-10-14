@@ -1536,6 +1536,8 @@ async function starte() {
                     if (b.ist) {
                         if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
                         const kl = o.klasse;
+                        if (!Object.keys(kl.klassen).length)
+                            throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
                         o.ist = sollIstSchreiben(b.ist, {
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
