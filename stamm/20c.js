@@ -770,24 +770,22 @@ class AnazhRealm_Z20c {
     // geladenen und den gesetzten, `_foundryGestaltFor`) und die Streu-Zelle (`_scatterFoundrySeed`): der Baum am Ort (x, z)
     // mit der eigenen Krone T (FOREST.crown × Größe, m) fragt das Wald-Gesetz (`_forestStehtFrei`), der Same wählt danach
     // seinen Eimer (`_foundryGestaltSame`). Gemerkt je Ort, Krone, Same und Art am Stand jeder Eingabe des Urteils: dem
-    // Stand des Wald-Gesetzes (`_forestDartStand`: Same, Buch, Hydrosphäre) und dem der Grundrisse (`_grundrissStand`, die
-    // Wand des Orts `_ortWand`). Vor dem Worldgen wartet die Gestalt (null, nie gemerkt) — für jeden Leser gleich.
+    // Stand des Wald-Gesetzes (`_forestDartStand`: Same, Buch, Hydrosphäre) und dem der Grundrisse am Ort — das Gedächtnis
+    // liegt in Eimern von `ORT_SAME_EIMER` m, ein Grundriss fällt nur in den Eimern seiner Reichweite (`_grundrissFaellt`).
+    // Vor dem Worldgen wartet die Gestalt (null, nie gemerkt) — für jeden Leser gleich.
     _ortGestaltSame(x, z, T, seed, preset) {
         const seedInt = this._forestSeedInt();
         const stand = this._forestDartStand(seedInt);
-        const grund = this._grundrissStand();
-        if (
-            this._ortSameStand !== stand ||
-            this._ortSameGrund !== grund ||
-            !this._ortSame ||
-            this._ortSame.size > 16384
-        ) {
+        if (this._ortSameStand !== stand || !this._ortSame || this._ortSameN > 16384) {
             this._ortSame = new Map();
+            this._ortSameN = 0;
             this._ortSameStand = stand;
-            this._ortSameGrund = grund;
         }
+        const B = AnazhRealm.ORT_SAME_EIMER;
+        const ek = Math.floor(x / B) + "," + Math.floor(z / B);
+        let eimer = this._ortSame.get(ek);
         const k = x + "," + z + "," + T + "," + seed + "," + preset;
-        const hat = this._ortSame.get(k);
+        const hat = eimer ? eimer.get(k) : undefined;
         if (hat !== undefined) return hat;
         let wartet = false;
         const same = this._foundryGestaltSame(seed, preset, () => {
@@ -799,7 +797,9 @@ class AnazhRealm_Z20c {
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
         });
         if (wartet) return null;
-        this._ortSame.set(k, same);
+        if (!eimer) this._ortSame.set(ek, (eimer = new Map()));
+        eimer.set(k, same);
+        this._ortSameN = (this._ortSameN | 0) + 1;
         return same;
     }
     // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt die Gestalt seines Orts (`_ortGestaltSame`),

@@ -21,7 +21,10 @@ function installHoehlenStrahl() {
         if (!s) return null;
         const P = s.geom.attributes.position.array;
         const Z = s.geom.attributes.aMorphTarget ? s.geom.attributes.aMorphTarget.array : null;
-        const W = s.geom.attributes.aMorphWeight ? s.geom.attributes.aMorphWeight.array : null;
+        // der Morph-Code (K51-2) reist in der vierten Komponente der Satz-Farbe
+        const C4 =
+            s.geom.attributes.color && s.geom.attributes.color.itemSize === 4 ? s.geom.attributes.color.array : null;
+        const W = C4 ? { length: C4.length / 4 } : null;
         const zellen = [];
         let nT = 0;
         for (const b of s.bloecke.values()) for (const z of b.zellen) nT += z.idx.length / 3;
@@ -33,7 +36,7 @@ function installHoehlenStrahl() {
             x1 = -Infinity,
             z1 = -Infinity;
         const lage = (v, o3) => {
-            const w = W ? W[v] : 0;
+            const w = W ? r._morphFaktor(C4[v * 4 + 3], P[v * 3], P[v * 3 + 2]) : 0; // K51-2: Naht + Stufe, samt geomorph
             for (let a = 0; a < 3; a++) {
                 const p = P[v * 3 + a];
                 V[o3 + a] = w > 0 && Z ? p + (Z[v * 3 + a] - p) * w : p;

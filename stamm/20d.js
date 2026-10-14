@@ -958,6 +958,31 @@ class AnazhRealm_Z20d {
         return gitter;
     }
 
+    // DER STAND DER GRUNDRISSE FÄLLT AM ORT (K51-5, Lehre 25): ein neuer oder gefallener Grundriss (Bau, Lichtung, Fläche eines
+    // Dorfs, Trittfläche) im Kasten x0…x1 · z0…z1 legt das Gitter neu an und nimmt der Gestalt des Orts (`_ortGestaltSame`)
+    // nur die Antworten, die er ändern kann: ein Baum fragt die Natur-Wand für jeden Nachbarn bis ±4 Wald-Zellen
+    // (`_forestStehtFrei`) samt dessen Krone — die Reichweite `ORT_SAME_REICH`. Bis K51-4 fiel jede Antwort der Welt mit
+    // (Mess-Wiese gehend, Null-Renderer, 15 s: 14 Fälle, 10 772 `_forestStehtFrei`, 288 311 Sichthöhen). Ohne Kasten fällt alles.
+    _grundrissFaellt(x0, z0, x1, z1) {
+        this._grundrissGitter = null;
+        const M = this._ortSame;
+        if (!M) return;
+        if (![x0, z0, x1, z1].every(Number.isFinite)) {
+            this._ortSame = null;
+            return;
+        }
+        const B = AnazhRealm.ORT_SAME_EIMER;
+        const R = AnazhRealm.ORT_SAME_REICH;
+        for (let bx = Math.floor((x0 - R) / B); bx <= Math.floor((x1 + R) / B); bx++)
+            for (let bz = Math.floor((z0 - R) / B); bz <= Math.floor((z1 + R) / B); bz++) {
+                const ek = bx + "," + bz;
+                const eimer = M.get(ek);
+                if (!eimer) continue;
+                this._ortSameN -= eimer.size;
+                M.delete(ek);
+            }
+    }
+
     // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
     // der Totholz-Stamm) — unabhängig davon, ob das Studio-Buch schon geladen ist; sonst trägt das Gesetzbuch des
     // Terrain-Studios seine Art (`terrain:PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …; der Kern ist Pflicht —
@@ -1188,9 +1213,9 @@ class AnazhRealm_Z20d {
         // die Welt regt sich, bevor geräumt wird: der Gang schreibt die Nah-Streu-Kacheln (`nahStreu.kacheln`, über
         // `_nahStreuKachelEntsorgen` ihren `zustand`) — die Stand-Wache weckt die Fege-Takte (gate:stand-takt, Schreiber-Wand)
         this._weltRegt();
-        this._grundrissGitter = null;
         const RM = AnazhRealm.SCATTER.regionM;
         const weit = mitKrone ? RM : 0; // eine Krone reicht nie über eine Streu-Region
+        this._grundrissFaellt(hx - r - weit, hz - r - weit, hx + r + weit, hz + r + weit);
         const weg = [];
         for (const e of this.state.architectures || []) {
             if (e === ausser || !e.position) continue;

@@ -309,7 +309,9 @@ function urteil(b) {
     if (c.feinRuft !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
         v.push(
             "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
-                (c.feinRechenwerk ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten` : "fehlt")
+                (c.feinRechenwerk
+                    ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten`
+                    : "fehlt")
         );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
@@ -626,7 +628,11 @@ function selbsttest() {
         ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
         ["Shader-Zwilling", (b) => (b.code.feinRuft = false), /CODE: der Detail-Term .*\(ruft gelaende-core felsFein/],
         ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
-        ["Rechenwerk falsch", (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }), /RECHENWERK: .* 0\.31 an 400/],
+        [
+            "Rechenwerk falsch",
+            (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }),
+            /RECHENWERK: .* 0\.31 an 400/,
+        ],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -1152,7 +1158,9 @@ const server = statikServer();
                 const bs = [...r.state.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
                 const geo = bs && bs.geom;
                 const PA = geo && geo.attributes.position;
-                const HA = geo && geo.attributes.aHimmel;
+                // die Himmels-Sicht reist im Satz in der vierten Komponente des Normal-Ziels (snorm8, K51-2 `_chunkSatzArt` boden)
+                const NZ = geo && geo.attributes.aNormalZiel;
+                const HA = NZ && NZ.itemSize === 4 ? { getX: (i) => NZ.getW(i) } : null;
                 const himmelV = new Set(),
                     hoehleV = new Set();
                 for (const b of bs ? bs.bloecke.values() : [])
@@ -1424,13 +1432,19 @@ const server = statikServer();
             // der Boden-Stoff trägt die Himmels-Sicht (`himmelsSicht`), der EINE Stoff-Bau liest sie als Verdeckung und als
             // Grenze der 2.5D-Lichtung (die wahre Normale in der Höhle)
             const pbr = code(r._buildPbrNodeMaterial);
+            // die Himmels-Sicht reist im Boden-Satz in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`)
+            const knoten = code(r._bodenStufenKnoten);
+            const himmelQuelle = /himmel:\s*nZ4\.w/.test(knoten) && /attribute\("aNormalZiel",\s*"vec4"\)/.test(knoten);
             aus.code.himmelLiest =
                 /himmelsSicht:\s*true/.test(code(r._getVoxelChunkMaterial)) &&
-                /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr);
-            aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
+                /\.aoNode\s*=\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr) &&
+                himmelQuelle;
+            aus.code.normaleHoehle =
+                /_flat\.mul\(_hS\)/.test(pbr) &&
+                /_hS\s*=\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr);
             const pool = code(r._lichtPoolTerm);
             aus.code.augenTerm =
-                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(
+                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(
                     pbr
                 ) && /lichtErsatz/.test(pool);
             // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Gesetzes (fachwerk `lichtAbfall`: der Saum
@@ -1467,7 +1481,11 @@ const server = statikServer();
             aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
-                if (!GKc || typeof GKc.felsFein !== "function" || typeof r.constructor._felsRechenwerkTSL !== "function")
+                if (
+                    !GKc ||
+                    typeof GKc.felsFein !== "function" ||
+                    typeof r.constructor._felsRechenwerkTSL !== "function"
+                )
                     return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
                 // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
@@ -1511,7 +1529,10 @@ const server = statikServer();
                     c,
                     toVar() {
                         const H = { c: c.map(V) };
-                        const glied = (q) => Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", { get: () => H.c[q] });
+                        const glied = (q) =>
+                            Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", {
+                                get: () => H.c[q],
+                            });
                         return {
                             x: glied(0),
                             y: glied(1),
@@ -1601,7 +1622,12 @@ const server = statikServer();
                         b = GKc.felsFein(GKc.felsZahl, B, x, y, z);
                     const ka = GKc.schuttKorn(O, x, z),
                         kb = GKc.schuttKorn(GKc.felsZahl, x, z);
-                    maxDiff = Math.max(maxDiff, Math.abs(V(a.bank) - b.bank), Math.abs(V(a.kante) - b.kante), Math.abs(V(ka) - kb));
+                    maxDiff = Math.max(
+                        maxDiff,
+                        Math.abs(V(a.bank) - b.bank),
+                        Math.abs(V(a.kante) - b.kante),
+                        Math.abs(V(ka) - kb)
+                    );
                     n++;
                 }
                 return { maxDiff, n };

@@ -19437,17 +19437,11 @@ async function checkBandVoxelTerrainCore(ctx) {
                 cL3.dim === 3 &&
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
                 Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
-            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
-            // K51 (die Boden-Stufen): die Nah-Zone ist 3×3 (r≤1 → L0), dann verdoppelt sich der Schritt mit dem Abstand
-            // (r2 → L1, r3–9 → L2, ab r10 → L3)
+            // K51-2 (die Boden-Stufen nach dem Kasten-Abstand): der Spieler in der Mitte des Chunks 0,0 — Chunk rr liegt
+            // rr · 43,2 − 21,6 m weit (r ≤ 1 → L0, r2 → L1, r3–9 → L2, ab r10 → L3)
+            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6);
             out.lodPyramidBands =
-                lf(0) === 0 &&
-                lf(1) === 0 &&
-                lf(2) === 1 &&
-                lf(3) === 2 &&
-                lf(9) === 2 &&
-                lf(10) === 3 &&
-                lf(12) === 3;
+                lf(0) === 0 && lf(1) === 0 && lf(2) === 1 && lf(3) === 2 && lf(9) === 2 && lf(10) === 3 && lf(12) === 3;
             let lod23Builds = true;
             try {
                 for (const lod of [2, 3]) {
@@ -19473,19 +19467,23 @@ async function checkBandVoxelTerrainCore(ctx) {
                 // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
                 out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
                 const BS = r.constructor.BODEN_STUFEN;
-                const kette = (rr) => BS.find((x) => rr <= x.maxRing).lod;
+                const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
                 out.lodReadsBand =
                     Object.isFrozen(BS) &&
-                    [0, 1, 2, 3, 9, 10, 12].every((rr) => r._voxelChunkLodFor(rr, 0, 0, 0) === kette(rr));
-                // LOD-Hysterese: ein Chunk hält seine feinere Stufe im Deadband (r ≤ Stufen-Grenze +
-                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat L0(maxRing 1)↔L1: r=2/lod0 → 0
-                // (kein Pop), r=3/lod0 → 2, r=1/lod1 → 0, ohne currentLod → reine Stufe (lf(2)===1).
+                    Object.isFrozen(BS.stufen) &&
+                    [0, 1, 2, 3, 9, 10, 12].every(
+                        (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
+                    );
+                // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+                // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
+                // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
                 out.lodHysteresis =
-                    r._voxelChunkLodFor(2, 0, 0, 0, 0) === 0 &&
-                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 2 &&
-                    r._voxelChunkLodFor(1, 0, 0, 0, 1) === 0 &&
-                    r._voxelChunkLodFor(2, 0, 0, 0) === 1 &&
-                    typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
+                    r._voxelChunkLodFor(1, 0, 2.2, 21.6, 0) === 0 &&
+                    r._voxelChunkLodFor(1, 0, 2.2, 21.6) === 1 &&
+                    r._voxelChunkLodFor(1, 0, -0.8, 21.6, 0) === 1 &&
+                    r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
+                    BS.halt > 0 &&
+                    BS.vorlauf > 0;
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
                 // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
                 // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
@@ -19548,13 +19546,16 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.detailBandFn === true
         );
         if (voxelP2bResults.detailBandFn) {
-            check("K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)", voxelP2bResults.bandLods === true);
+            check(
+                "K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)",
+                voxelP2bResults.bandLods === true
+            );
             check(
                 "K51: _voxelChunkLodFor liest die EINE Kette des Bodens (BODEN_STUFEN, frozen, kein Parallel-Pfad)",
                 voxelP2bResults.lodReadsBand === true
             );
             check(
-                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Stufen-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
+                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst jenseits bis + vorlauf + halt (K51-2, Meter) → kein Flip-Flop am Grat",
                 voxelP2bResults.lodHysteresis === true
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
@@ -21600,11 +21601,12 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
         out.hasLodHelper = typeof r._voxelChunkLodFor === "function";
         if (out.hasLodHelper) {
-            out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
-            out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
-            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1 (K51: die Nah-Zone ist 3×3)
-            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 2
-            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 2
+            // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
+            out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
+            out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
+            out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
+            out.lodFar = r._voxelChunkLodFor(3, 0, 21.6, 21.6); // r=3 (108 m) → LOD 2
+            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 21.6, 21.6); // r=4 → LOD 2
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
@@ -23883,18 +23885,8 @@ async function checkBandPhaseAFundament(ctx) {
             for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) {
                 if (!g.attributes[a]) bandAttrsOk = false;
             }
-            const w = entry.mesh.geometry.attributes.aMorphWeight;
-            const tgt = entry.mesh.geometry.attributes.aMorphTarget;
-            const pos = entry.mesh.geometry.attributes.position;
-            if (w && tgt && pos) {
-                for (let v = 0; v < pos.count; v++) {
-                    if (w.getX(v) !== 0) continue;
-                    const dx = tgt.getX(v) - pos.getX(v),
-                        dy = tgt.getY(v) - pos.getY(v),
-                        dz = tgt.getZ(v) - pos.getZ(v);
-                    if (dx * dx + dy * dy + dz * dz > 0.001) cappedTotal++;
-                }
-            }
+            // die gekappten Naht-Vertices zählt der Morph selbst (K51-2: ihr Ziel ist das ihrer Stufe, das Naht-Ziel trägt das Band)
+            cappedTotal += entry.nahtGekappt | 0;
         }
         out.bands = bands;
         out.bandAttrsOk = bandAttrsOk;
@@ -30908,7 +30900,10 @@ async function checkBandStoffSignatur(ctx) {
         const w2 = r._foundryTreeMaterial("bark", null, false, { ht: 14.25, delta: 0.034, an: 1 });
         out.regler = a !== b && k(a) === k(b);
         out.leucht =
-            l1 !== l2 && k(l1) === k(l2) && l1.userData.stoffWerte.leucht === 2 && l2.userData.stoffWerte.leucht === 3.5;
+            l1 !== l2 &&
+            k(l1) === k(l2) &&
+            l1.userData.stoffWerte.leucht === 2 &&
+            l2.userData.stoffWerte.leucht === 3.5;
         out.wind =
             w1 !== w2 &&
             k(w1) === k(w2) &&
@@ -30945,7 +30940,10 @@ async function checkBandStoffSignatur(ctx) {
         "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",
         res.leucht === true
     );
-    check("1310-18 Schlüssel: der Wind der Art ist ein Stoff-Wert (zwei Arten, EIN Programm-Schlüssel)", res.wind === true);
+    check(
+        "1310-18 Schlüssel: der Wind der Art ist ein Stoff-Wert (zwei Arten, EIN Programm-Schlüssel)",
+        res.wind === true
+    );
     check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
     check(
         "1310-18 Schlüssel: zwei Tore mit verschiedenen Realm-Fenstern tragen EINE Membran und EINEN Nebel",
@@ -34065,7 +34063,8 @@ async function checkBandV18201ManaKonsum(ctx) {
             // die lebende Op-Tafel (nie der Klassen-Text: nach dem Stamm-Schnitt trüge er nur den Kern): kein
             // "drain_mana" oder "consume_mana" als DSL-Op-Key
             const dslOps = r.dslEffects || {};
-            out.noDslDrainMana = Object.keys(dslOps).length > 0 && !("drain_mana" in dslOps) && !("consume_mana" in dslOps);
+            out.noDslDrainMana =
+                Object.keys(dslOps).length > 0 && !("drain_mana" in dslOps) && !("consume_mana" in dslOps);
 
             // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
             if (r.setGameMode) r.setGameMode("pfad");
@@ -37733,7 +37732,10 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (A1) _terrainGeologyAlbedo Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
-    check("Ω-OPSIS S1 (A4) Schutt-Gitter des Gesetzes trägt das Schicht-Band (0 < schuttGitter ≤ 7,2 m)", res.slopeOrderScree === true);
+    check(
+        "Ω-OPSIS S1 (A4) Schutt-Gitter des Gesetzes trägt das Schicht-Band (0 < schuttGitter ≤ 7,2 m)",
+        res.slopeOrderScree === true
+    );
     check("Ω-OPSIS S1 (A5) Schutt-Kandidat beginnt vor Fels (schuttKandidat < rockLo)", res.screeBeforeRock === true);
     check(
         "Ω-OPSIS S1 (A6) Fels-Stoff (Basis + Mittel) und mossTint sind RGB-Tripel, kein rockTint-Zwilling",
@@ -37982,7 +37984,10 @@ async function checkBandRauschGesetz(ctx) {
                 GK && GK.felsFein && GK.felsWelle ? window.__codeOf(GK.felsFein) + window.__codeOf(GK.felsWelle) : "";
             const kornSrc = GK && GK.schuttKorn ? window.__codeOf(GK.schuttKorn) : "";
             if (!feinSrc || !/o\.rausch\(/.test(feinSrc)) out.absenz.push("felsFein ohne o.rausch");
-            for (const [n, src] of [["felsFein", feinSrc], ["schuttKorn", kornSrc]])
+            for (const [n, src] of [
+                ["felsFein", feinSrc],
+                ["schuttKorn", kornSrc],
+            ])
                 if (/wert3|mx_noise/.test(src)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
@@ -46892,46 +46897,50 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     void errors;
     void finalState;
     // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
-    const v840Results = await safeEvaluate(page, (stammDateien) => {
-        const r = window.anazhRealm;
-        const out = {};
-        const ring = document.getElementById("slider-ring");
-        // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
-        // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
-        out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
-        // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
-        out.terrainJitterPerVertex =
-            !!r.state.terrainMaterial &&
-            /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
-            /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
-            !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
-        // V8.44 — Terrain-vNormal in Welt-Raum (kamera-unabhängiger
-        // Diffuse): mat3(modelMatrix), nicht normalMatrix.
-        out.terrainNormalWorldSpace =
-            !!r.state.terrainMaterial &&
-            /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
-            !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
-        // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
-        // nicht View-Space-Z. Regex prüft die echte Zuweisung
-        // (nicht den erklärenden Kommentar-Text).
-        out.terrainFogRadial =
-            !!r.state.terrainMaterial &&
-            /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
-            !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
+    const v840Results = await safeEvaluate(
+        page,
+        (stammDateien) => {
+            const r = window.anazhRealm;
+            const out = {};
+            const ring = document.getElementById("slider-ring");
+            // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
+            // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
+            out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
+            // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
+            out.terrainJitterPerVertex =
+                !!r.state.terrainMaterial &&
+                /vJitter/.test(r.state.terrainMaterial.vertexShader || "") &&
+                /noise\(uv/.test(r.state.terrainMaterial.vertexShader || "") &&
+                !/noise\(vUv/.test(r.state.terrainMaterial.fragmentShader || "");
+            // V8.44 — Terrain-vNormal in Welt-Raum (kamera-unabhängiger
+            // Diffuse): mat3(modelMatrix), nicht normalMatrix.
+            out.terrainNormalWorldSpace =
+                !!r.state.terrainMaterial &&
+                /mat3\(modelMatrix\) \* normal/.test(r.state.terrainMaterial.vertexShader || "") &&
+                !/normalMatrix \* normal/.test(r.state.terrainMaterial.vertexShader || "");
+            // V8.45 — Terrain-Fog = radiale Distanz (dreh-invariant),
+            // nicht View-Space-Z. Regex prüft die echte Zuweisung
+            // (nicht den erklärenden Kommentar-Text).
+            out.terrainFogRadial =
+                !!r.state.terrainMaterial &&
+                /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
+                !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
 
-        // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
-        // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
-        out.fogTripleRange = r.setFogDistance === undefined;
-        out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
-        out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
+            // V18.530: der Fog-Regler (0.9 .. 9.0) ist mit dem Nebel gefallen — die Luft ist Physik; die Absenz
+            // trägt den Beweis (Setter, persistiertes Datum, Slider-Verdrahtung).
+            out.fogTripleRange = r.setFogDistance === undefined;
+            out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
+            out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
 
-        // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
-        const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
-        const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
-        out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
+            // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
+            const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
+            const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
+            out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
 
-        return out;
-    }, stammLib.dateien(path.join(__dirname, "..")));
+            return out;
+        },
+        stammLib.dateien(path.join(__dirname, ".."))
+    );
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);

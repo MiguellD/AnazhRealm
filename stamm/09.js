@@ -1,26 +1,117 @@
 class AnazhRealm_Z09 {
     // ===== ATLAS §09 · KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten =====
-    // Terrain-Chunk-Stufe aus der Kette des Boden-Netzes (`BODEN_STUFEN`: r≤1→0, r2→1, r3-9→2, r≥10→3). Mit `currentLod`
-    // (Streaming-Tick) hält die Hysterese den Chunk im Deadband am Grat; ohne ist es die reine Stufe des Rings.
-    _voxelChunkLodFor(cx, cz, pcx, pcz, currentLod = null) {
-        const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        const band = AnazhRealm.BODEN_STUFEN;
-        let lod = band[band.length - 1].lod;
-        for (let i = 0; i < band.length; i++)
-            if (r <= band[i].maxRing) {
-                lod = band[i].lod;
+    // DIE STUFE EINES CHUNKS (K51-2, CDLOD): aus dem KASTEN-Abstand des Spielers (px, pz in Metern) zum Chunk-Quadrat
+    // (Chebyshev) — verfeinert, sobald er unter `bis + vorlauf` seiner Stufe fällt (`BODEN_STUFEN`), mit `currentLod`
+    // (Streaming-Takt) hält die Hysterese einen feineren Chunk, bis der Abstand `bis + vorlauf + halt` erreicht. Der
+    // Wechsel geschieht so nur, wo jeder Vertex des Chunks ganz auf der gröberen Fläche liegt (Gewicht 1, `_stufeGewicht`):
+    // der Ring der Stufe-0-Zone (r ≤ 1) war für die CDLOD-Bedingung zu grob — ein Chunk-Ring trägt 2 Spannen Abstand.
+    _voxelChunkLodFor(cx, cz, px, pz, currentLod = null) {
+        const B = AnazhRealm.BODEN_STUFEN;
+        const S = this._voxelChunkConfig(0).span;
+        const d = Math.max(Math.max(cx * S - px, 0, px - (cx + 1) * S), Math.max(cz * S - pz, 0, pz - (cz + 1) * S));
+        const st = B.stufen;
+        let lod = st[st.length - 1].lod;
+        for (let i = 0; i < st.length; i++)
+            if (d < st[i].bis + B.vorlauf) {
+                lod = st[i].lod;
                 break;
             }
-        // Hysterese nur beim VERGRÖBERN: ein Chunk wird gehalten, bis r die obere Grenze seiner Stufe um
-        // LOD_HYSTERESIS_RINGS überschreitet. Verfeinern greift sofort — Detail erscheint prompt, nur das
-        // Entfernen ist träge.
+        // Hysterese nur beim VERGRÖBERN; verfeinern greift sofort — Detail erscheint prompt, nur das Entfernen ist träge
         if (currentLod === null || !Number.isFinite(currentLod) || currentLod >= lod) return lod;
-        for (let i = 0; i < band.length; i++) {
-            if (band[i].lod === currentLod) {
-                return r <= band[i].maxRing + AnazhRealm.LOD_HYSTERESIS_RINGS ? currentLod : lod;
+        const halt = st.find((x) => x.lod === currentLod);
+        return halt && d < halt.bis + B.vorlauf + B.halt ? currentLod : lod;
+    }
+
+    // DIE STUFEN-ZELLE (K51-3): wo sich die Wahl des Rings ändern KANN — die Spieler-Zelle und je Achse das Fach der Lage
+    // in ihr zwischen den kritischen Brüchen. Der Kasten-Abstand zu einem Chunk ist je Achse i·S − f (vorne) oder
+    // f + (|i| − 1)·S (hinten), er kreuzt eine Schwelle t (`bis + vorlauf`, `bis + vorlauf + halt`) nur bei f = S − t mod S
+    // oder f = t mod S; dazwischen trägt jeder Chunk dieselbe Stufe. Der Stempel der Strom-Wache (`_tickVoxelStreaming`) und
+    // die Gehen-Probe der Stand-Linse lesen sie: Gehen kostet die Änderung, nie die 2-m-Spur.
+    _stufenZelle(px, pz) {
+        const B = AnazhRealm.BODEN_STUFEN;
+        const S = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(px / S),
+            cz = Math.floor(pz / S);
+        const fach = (f) => {
+            let n = 0;
+            for (const s of B.stufen) {
+                if (!(s.bis < Infinity)) continue;
+                for (const t of [s.bis + B.vorlauf, s.bis + B.vorlauf + B.halt]) {
+                    const m = t % S;
+                    if (f >= m) n++;
+                    if (f >= S - m) n++;
+                }
             }
-        }
-        return lod;
+            return n;
+        };
+        return cx + "," + cz + ":" + fach(px - cx * S) + "," + fach(pz - cz * S);
+    }
+
+    // DAS GEWICHT DER STUFE am Welt-Punkt (x, z): 0 im Inneren der Stufe `lod`, 1 an ihrer Grenze `bis` — smoothstep über das
+    // Übergangs-Band `band` im Chebyshev-Abstand zum Auge der Stufen (`state.stufeAuge`, der Spieler des Streaming-Takts).
+    // Der CPU-Spiegel des Boden-Stoffs (`_buildPbrNodeMaterial` geomorph); Leser: der Boden-Leser und die Sprung-Linse.
+    _stufeGewicht(lod, x, z) {
+        const st = AnazhRealm.BODEN_STUFEN.stufen[Math.min(2, Math.max(0, lod | 0))];
+        const a = this.state.stufeAuge;
+        if (!a || !(st.bis < Infinity)) return 0;
+        const d = Math.max(Math.abs(x - a.x), Math.abs(z - a.z));
+        const t = Math.max(0, Math.min(1, (d - (st.bis - st.band)) / st.band));
+        return t * t * (3 - 2 * t);
+    }
+
+    // DER MORPH-CODE DES BODENS (K51-2): EIN Float je Vertex (`aMorphWeight`) trägt die Stufe des Chunks und das Naht-Gewicht
+    // (0…1, `_applyCrossLodGeomorph`) — 2 · Stufe + Naht. Der Stoff liest beide: die Stufe wählt das Übergangs-Band, die Naht
+    // zieht die Grenz-Zeile an den gröberen Nachbarn; der Faktor ist Naht + Stufe − Naht · Stufe (`_morphFaktor`).
+    _morphCode(lod, naht) {
+        return 2 * (lod | 0) + Math.max(0, Math.min(1, naht || 0));
+    }
+    _morphNaht(code) {
+        return code - 2 * Math.floor(code * 0.5);
+    }
+    _morphFaktor(code, x, z) {
+        const s = this._morphNaht(code);
+        const w = this._stufeGewicht(Math.floor(code * 0.5), x, z);
+        const U = this.state.atmoUniforms;
+        const gm = U && U.geomorph ? U.geomorph.value : 1;
+        return (s + w - s * w) * gm;
+    }
+
+    // DAS AUGE DER STUFEN: der Spieler des Streaming-Takts — die Stufen-Wahl und der Boden-Stoff lesen denselben Punkt
+    _stufeAugeTakt(p) {
+        const a = this.state.stufeAuge || (this.state.stufeAuge = { x: 0, z: 0 });
+        a.x = p.x;
+        a.z = p.z;
+        const U = this.state.atmoUniforms;
+        if (U && U.stufeAuge) U.stufeAuge.value.set(p.x, p.z);
+    }
+
+    // DAS ZIEL DER GRÖBEREN STUFE im Sync-Bau (Spiegel von `stufeZielNetz` im voxel-worker): das Netz der Stufe `grobLod` um
+    // den Chunk-Ursprung mit einer Zelle Polster vor der Kante, die Ziele über das EINE Gesetz (gelaende-core `stufeZiel`)
+    _stufeZielNetz(fein, feinNormal, feinFarbe, cx, cz, grobLod) {
+        const g = this._voxelChunkConfig(grobLod);
+        const gs = g.step;
+        const ox = cx * g.span - 2 * gs;
+        const oz = cz * g.span - 2 * gs;
+        const oy = (this.state.terrainBaseHeight || 0) - g.floorDrop;
+        const gd = g.dim + 4;
+        const dichte = this._voxelEditedDensityGrid(`${cx},${cz},${grobLod},ziel`, ox, oy, oz, gd, g.dimY, gd, gs);
+        const hoehle = this._voxelHoehlenGraph(dichte, ox, oy, oz, gd, g.dimY, gd, gs);
+        const geo = this._voxelChunkGeometry(ox, oy, oz, gd, g.dimY, gd, gs, undefined, 1, dichte, 1, hoehle);
+        const G = globalThis.__gelaendeCore;
+        const leer = new Float32Array(0);
+        if (!geo)
+            return G.stufeZiel(fein, leer, new Uint32Array(0), gs, [
+                { fein: feinNormal, grob: leer, einheit: true },
+                { fein: feinFarbe, grob: leer },
+            ]);
+        this._attachVoxelFieldColors(geo);
+        const A = geo.attributes;
+        const ziel = G.stufeZiel(fein, A.position.array, geo.index.array, gs, [
+            { fein: feinNormal, grob: A.normal.array, einheit: true },
+            { fein: feinFarbe, grob: A.color.array },
+        ]);
+        geo.dispose();
+        return ziel;
     }
 
     // Inline-Kollision beim Stream (`buildBVH`)? Entscheidet die Chebyshev-Distanz r zum Spieler-Chunk.
