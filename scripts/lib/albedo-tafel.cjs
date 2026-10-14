@@ -303,8 +303,8 @@ function tafelTabelle(u) {
 }
 
 // ── DIE LABOR-LINSE (r128, im Studio): dieselbe Rechnung wie die Welt-Tafel (`__albedoSicht({zeilen})`) ──────────────────
-// Der Stoff eines Labor-Materials: seine Art (der Spiegel der Brücken-Zuordnung `__assetMaterialKind`, worlds/terrain/
-// phytogenesis.js — die geteilten Pflanzen-Stoffe sind Globale der Pflanzen-Shell; sonst die Look-Klasse des Bäckers
+// Der Stoff eines Labor-Materials: seine Art (der Spiegel der Brücken-Zuordnung `__assetMaterialKind`,
+// foundry-bruecke.js — die geteilten Pflanzen-Stoffe sind Globale der Brücke, das Labor liest sie; sonst die Look-Klasse des Bäckers
 // `userData.__klasse`), Rauheit, Metall, Klarlack und die Seh-Klasse des Gesetzbuchs (`userData.__seh`) — dieselben
 // Felder, die die Brücke über die Naht reicht und der Wirt in seinen Stoff-Schlüssel schreibt.
 function laborAlbedo(o) {

@@ -9,7 +9,6 @@ const fs = require("fs"),
     vm = require("vm"),
     path = require("path");
 const ROOT = path.resolve(__dirname, "..");
-const TERR = path.join(ROOT, "worlds", "terrain");
 const posts = [];
 function makeCtx2D(w, h) {
     const store = { fillStyle: "#000", strokeStyle: "#000", globalAlpha: 1, lineWidth: 1 };
@@ -62,25 +61,11 @@ sandbox.self = sandbox;
 sandbox.globalThis = sandbox;
 sandbox.__PHYTO_FOUNDRY_WORKER = true;
 vm.createContext(sandbox);
-const LIBS = [
-    "three-r128.min.js",
-    "OrbitControls.js",
-    "PointerLockControls.js",
-    "BufferGeometryUtils.js",
-    "CopyShader.js",
-    "LuminosityHighPassShader.js",
-    "FXAAShader.js",
-    "EffectComposer.js",
-    "RenderPass.js",
-    "MaskPass.js",
-    "ShaderPass.js",
-    "UnrealBloomPass.js",
-];
-for (const f of LIBS) vm.runInContext(fs.readFileSync(path.join(TERR, "lib", f), "utf8"), sandbox, { filename: f });
-vm.runInContext(fs.readFileSync(path.join(ROOT, "phyto-core.js"), "utf8"), sandbox, { filename: "phyto-core.js" });
-// P2: der Studio-Generator-Kern (foundry-core.js) VOR phytogenesis.js (die Shell liest seine Globals).
-vm.runInContext(fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"), sandbox, { filename: "foundry-core.js" });
-vm.runInContext(fs.readFileSync(path.join(TERR, "phytogenesis.js"), "utf8"), sandbox, { filename: "phytogenesis.js" });
+// K42: DIESELBE Kette wie der Foundry-Worker — die lib des Pflanzen-Kerns, seine Skripte, das Gelände-Gesetzbuch (der
+// Fels-Stoff), dann die Foundry-Brücke (sie verdrahtet self.onmessage). Keine Labor-Shell, keine Labor-Szene.
+const PHYTO = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8")).find((c) => c && c.id === "phyto");
+for (const rel of [...PHYTO.lib, "gelaende-core.js", ...PHYTO.scripts, PHYTO.bruecke])
+    vm.runInContext(fs.readFileSync(path.join(ROOT, rel), "utf8"), sandbox, { filename: rel });
 if (typeof sandbox.onmessage !== "function") {
     console.error("❌ Brücke hat self.onmessage nicht verdrahtet");
     process.exit(1);

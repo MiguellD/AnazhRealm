@@ -4,7 +4,8 @@
         "scripts": ["phyto-core.js", "foundry-core.js"],
         "vertrag": "foundry-core.js",
         "ns": null,
-        "shell": "worlds/terrain/phytogenesis.js"
+        "lib": ["worlds/terrain/lib/three-r128.min.js", "worlds/terrain/lib/BufferGeometryUtils.js"],
+        "bruecke": "foundry-bruecke.js"
     },
     {
         "id": "vehicle",

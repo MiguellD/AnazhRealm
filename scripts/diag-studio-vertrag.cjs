@@ -920,7 +920,7 @@ function validateManifest(m) {
     // Sync-Guss des Wirts-Ofens (Tier UND Mensch) verlässt das Studio an derselben Stelle (`_ofenBudget`), und der
     // Material-Cache des Wirts keyt mit DERSELBEN Stoff-Identität (budgetStoff), mit der das Gesetz zählt.
     const phytoNC = fs
-        .readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8")
+        .readFileSync(path.join(root, "foundry-bruecke.js"), "utf8") // die Brücke (K42) trägt __replyBuildAsset
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
     const leserUrteil = (realmSrc, phytoSrc) => {
@@ -1442,7 +1442,7 @@ function validateManifest(m) {
     // nicht (ihr einziger Leser wäre dieses Falten: Konsum 0), (c) die Baum-Zeile trägt ihre S3-Pflicht und der Fels ist
     // einstufig (validateManifest oben; hier der Selbsttest).
     {
-        const pg = fs.readFileSync(path.join(root, "worlds", "terrain", "phytogenesis.js"), "utf8");
+        const pg = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // __replyBuildAsset lebt in der Brücke (K42)
         const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
         const absenz = (pgS, pcS) => {
             const v = [];

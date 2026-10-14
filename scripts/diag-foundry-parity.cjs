@@ -2,8 +2,8 @@
 //
 // EINE Chromium-Seite fährt beide Produzenten NEBENEINANDER:
 //   (a) das bestehende Studio-iframe  (worlds/terrain/index.html?asset-foundry=1)
-//   (b) einen Web-WORKER, der dieselben Studio-Dateien lädt (three-r128 + libs + phyto-core +
-//       phytogenesis) — self.__PHYTO_FOUNDRY_WORKER=true schaltet denselben Foundry-Modus.
+//   (b) einen Web-WORKER, der die Manifest-Kette lädt (three-r128 + Geometrie-Helfer + Kerne +
+//       foundry-bruecke) — self.__PHYTO_FOUNDRY_WORKER=true schaltet denselben Foundry-Modus.
 // Beide bekommen IDENTISCHE build-asset-Anfragen in IDENTISCHER Reihenfolge (setSeasonColors ist
 // stateful — gleiche Sequenz ⇒ gleiche Zustands-Trajektorie) und werden BYTE-verglichen:
 // jede Attribut-Puffer-Byte, der Index, kind, die Material-Regler. Dazu recipes/world-params/
@@ -39,25 +39,9 @@ const mime = {
     ".woff2": "font/woff2",
 };
 
-// Die Studio-Script-Kette EXAKT wie worlds/terrain/index.html (Reihenfolge trägt: FoliagePass
-// extends THREE.Pass braucht EffectComposer davor; phytogenesis liest __phytoCore).
-const WORKER_SCRIPTS = [
-    "/worlds/terrain/lib/three-r128.min.js",
-    "/worlds/terrain/lib/OrbitControls.js",
-    "/worlds/terrain/lib/PointerLockControls.js",
-    "/worlds/terrain/lib/BufferGeometryUtils.js",
-    "/worlds/terrain/lib/CopyShader.js",
-    "/worlds/terrain/lib/LuminosityHighPassShader.js",
-    "/worlds/terrain/lib/FXAAShader.js",
-    "/worlds/terrain/lib/EffectComposer.js",
-    "/worlds/terrain/lib/RenderPass.js",
-    "/worlds/terrain/lib/MaskPass.js",
-    "/worlds/terrain/lib/ShaderPass.js",
-    "/worlds/terrain/lib/UnrealBloomPass.js",
-    "/phyto-core.js",
-    "/foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
-    "/worlds/terrain/phytogenesis.js",
-];
+// Die Worker-Kette aus dem Manifest — DIESELBE Liste wie die Produktion und das Asset-Harness (lib der Kerne →
+// Kerne → die Foundry-Brücke, K42; die Labor-Shell lädt nur das iframe).
+const { WORKER_SCRIPTS } = require("./lib/asset-worker-harness.cjs");
 
 const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</title><body>
 <script>
@@ -93,7 +77,7 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</t
     const boot =
         "self.__PHYTO_FOUNDRY_WORKER=true;" +
         "importScripts(" + ${JSON.stringify(WORKER_SCRIPTS)}.map((p) => JSON.stringify(location.origin + p)).join(",") + ");" +
-        "init();"; // init() nimmt den Foundry-Zweig (Worker-Flag) und kehrt vor jedem Renderer zurück
+        ""; // die Brücke startet sich selbst im Foundry-Modus (Worker-Flag) und kehrt vor jedem Renderer zurück
     const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
     const workerPending = new Map();
     let workerReadyAt = 0;

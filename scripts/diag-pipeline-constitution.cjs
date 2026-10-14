@@ -155,10 +155,12 @@ law(
     "die v36-Rahmenformel lebt wieder als Kopie im Monolithen"
 );
 const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
+// Die Foundry-Brücke (K42): der Bau-Teil der Pflanzen-Shell — der Studio-Bäcker und die Asset-Kanäle leben dort.
+const brueckeNC = stripComments(read("foundry-bruecke.js"));
 law(
-    "das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)",
+    "das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas, foundry-bruecke)",
     true,
-    /__phytoCore\.impostorFrame\(/.test(phytogenNC)
+    /__phytoCore\.impostorFrame\(/.test(brueckeNC)
 );
 law(
     "der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)",
@@ -319,7 +321,7 @@ law(
     law(
         "N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)",
         false,
-        /self\.__vehicleCore/.test(phytogenNC),
+        /self\.__vehicleCore/.test(brueckeNC + phytogenNC),
         "ein Kern-spezifischer ns-Zugriff ist zurueck in der Bruecke"
     );
 }

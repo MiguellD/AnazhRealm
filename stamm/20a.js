@@ -386,12 +386,12 @@ class AnazhRealm_Z20a {
     }
 
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================
-    // Die Vorlage (worlds/terrain/phytogenesis.js) läuft als reiner Asset-Motor (?asset-foundry=1) und
-    // liefert ihre echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm
-    // baut daraus Meshes — kein Nachbau. Ein Edit an der Vorlage ändert die Bäume hier.
+    // Der Studio-Generator (die Kerne + die Foundry-Brücke foundry-bruecke.js, K42) läuft als Worker und liefert
+    // seine echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm baut daraus
+    // Meshes — kein Nachbau. Ein Edit am Kern oder an der Brücke ändert die Bäume hier, ein Edit am Labor nie.
     _foundryEnabled() {
-        // Studio-Asset AUSLESEN + PLATZIEREN, nie nachbauen. Der Geometrie-Motor läuft als WORKER (init()
-        // kehrt VOR dem Renderer zurück → kein zweiter GPU-Kontext), auch headless — die EINE aktive Quelle.
+        // Studio-Asset AUSLESEN + PLATZIEREN, nie nachbauen. Der Geometrie-Motor läuft als WORKER (die Brücke
+        // startet ohne Renderer → kein zweiter GPU-Kontext), auch headless — die EINE aktive Quelle.
         // Kein Grammatik-Render-Fallback: ein noch nicht gebackenes Asset heißt kurz KEIN Mesh. Richter
         // (`_growTreeBlueprintRich`) + Understory-Grammatik (`_growTreeBlueprintForSpawn`) bleiben.
         // Nur ohne Worker (exotische Einbettung) → Alt-Pfad.
@@ -434,11 +434,12 @@ class AnazhRealm_Z20a {
         f.buchDa = new Promise((r) => (f.buchKam = r));
         this._foundry = f;
         try {
-            // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; init() kehrt vor jedem Renderer
-            // zurück). importScripts braucht ABSOLUTE URLs (Blob-URL ohne Basis → new URL(..., location.href)).
-            // Kerne aus cores.manifest.json (EINE Quelle), ?v= Pflicht. Reihenfolge: Studio-lib-Kette
-            // (FoliagePass braucht EffectComposer) → Kerne in Manifest-Folge (phyto- VOR foundry-core) → Shells
-            // ZULETZT. Async: f.ready bleibt false bis zum ready-Handshake; jeder Fetch-/Parse-Fehler lässt es so.
+            // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; die Brücke startet ohne Renderer).
+            // importScripts braucht ABSOLUTE URLs (Blob-URL ohne Basis → new URL(..., location.href)). ALLES aus
+            // cores.manifest.json (EINE Quelle), ?v= Pflicht. Reihenfolge: die lib der Kerne (three r128 + die
+            // Geometrie-Helfer — keine Labor-Szene) → Kerne in Manifest-Folge (phyto- VOR foundry-core) → die Brücke
+            // ZULETZT (K42: keine Labor-Shell im Worker). Async: f.ready bleibt false bis zum ready-Handshake; jeder
+            // Fetch-/Parse-Fehler lässt es so.
             const v = "?v=" + (AnazhRealm.VERSION || "");
             fetch("cores.manifest.json" + v)
                 .then((res) => res.text())
@@ -447,35 +448,27 @@ class AnazhRealm_Z20a {
                     // kein Kern-Satz, kein Faden: der Boot bricht laut (der catch unten reicht den Bruch unverändert weiter)
                     if (!Array.isArray(manifest) || !manifest.length)
                         throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
-                    const rel = [
-                        "worlds/terrain/lib/three-r128.min.js",
-                        "worlds/terrain/lib/OrbitControls.js",
-                        "worlds/terrain/lib/PointerLockControls.js",
-                        "worlds/terrain/lib/BufferGeometryUtils.js",
-                        "worlds/terrain/lib/CopyShader.js",
-                        "worlds/terrain/lib/LuminosityHighPassShader.js",
-                        "worlds/terrain/lib/FXAAShader.js",
-                        "worlds/terrain/lib/EffectComposer.js",
-                        "worlds/terrain/lib/RenderPass.js",
-                        "worlds/terrain/lib/MaskPass.js",
-                        "worlds/terrain/lib/ShaderPass.js",
-                        "worlds/terrain/lib/UnrealBloomPass.js",
-                    ];
+                    const rel = [];
+                    for (const core of manifest) {
+                        if (!core || !Array.isArray(core.lib)) continue;
+                        for (const s of core.lib) if (typeof s === "string" && s) rel.push(s);
+                    }
                     for (const core of manifest) {
                         if (!core || !Array.isArray(core.scripts)) continue;
                         for (const s of core.scripts) if (typeof s === "string" && s) rel.push(s);
                     }
                     for (const core of manifest) {
-                        if (core && typeof core.shell === "string" && core.shell) rel.push(core.shell);
+                        if (core && typeof core.bruecke === "string" && core.bruecke) rel.push(core.bruecke);
                     }
                     const base = typeof window !== "undefined" && window.location ? window.location.href : "";
                     const abs = rel.map((p) => new URL(p + v, base).href);
                     // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
                     // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
                     // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
-                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Shells (V18.527) — die Shell
-                    // phytogenesis.js trägt `__extractAssetMesh` (backt matrixWorld in die Vertices) und
-                    // `bakeImpostorAtlas` (die Karte); ein Shell-Edit ohne Stempel lieferte stale Körper und Karten.
+                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Brücke (K42) — sie trägt
+                    // `__extractAssetMesh` (backt matrixWorld in die Vertices) und `bakeImpostorAtlas` (die Karte); ein
+                    // Brücken-Edit ohne Stempel lieferte stale Körper und Karten. Die Labor-Shell hasht er nie: ein UI-Edit
+                    // am Pflanzen-Labor leert keinen Asset-Cache.
                     const stempelUrls = [];
                     for (const core of manifest) {
                         if (!core || !Array.isArray(core.scripts)) continue;
@@ -483,8 +476,8 @@ class AnazhRealm_Z20a {
                             if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
                     }
                     for (const core of manifest) {
-                        if (core && typeof core.shell === "string" && core.shell)
-                            stempelUrls.push(new URL(core.shell + v, base).href);
+                        if (core && typeof core.bruecke === "string" && core.bruecke)
+                            stempelUrls.push(new URL(core.bruecke + v, base).href);
                     }
                     // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
                     const rend = this.state.renderer;
@@ -510,7 +503,7 @@ class AnazhRealm_Z20a {
                         JSON.stringify(manifest) +
                         ";importScripts(" +
                         abs.map((u) => JSON.stringify(u)).join(",") +
-                        ");init();";
+                        ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
                     f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
                     const worker = new Worker(f.bootUrl);
                     f.worker = worker;
@@ -850,7 +843,7 @@ class AnazhRealm_Z20a {
     // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
     // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
     // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
-    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + Shells, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
+    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + die Brücke, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
     //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
