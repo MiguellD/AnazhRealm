@@ -1,0 +1,42 @@
+✅ SELBST-TEST: unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot
+✅ SELBST-TEST: fscatter:geroell:3:0 bei 200 m → rot, bei 40 m nicht
+✅ SELBST-TEST: Boden haupt 8 Befehle über Ratsche 5 (+2) → rot, 7 nicht, 5 nicht
+✅ SELBST-TEST: Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht
+✅ SELBST-TEST: neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)
+✅ SELBST-TEST: Namens-Wand: namenlos rot, ohne Ziel rot, benannt grün, Neu-Zuweisung grün, fremder .name rot
+✅ SELBST-TEST: tex:? → rot, karte-albedo nicht; die EINE Faltung: r184-ausgabe und kaskade0 ganz, bindingBuffer1381_ → bindingBuffer
+✅ SELBST-TEST: Schlüssel-Formen des Stamms → 11 Klassen
+✅ SELBST-TEST: Textur-Erzeuger: Name · <ziel>:tiefe · r184-ausgabe · namenlos → null, im Urteil rot
+✅ SELBST-TEST: Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), Schema hält nur eingeschwungen
+✅ SELBST-TEST: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb; ein Wald über dem Band → BAND ROT bei sauberer Linse
+✅ SELBST-TEST: zensusMax: tier:wolf haupt 12 · k0 6 · dMax 40, himmel aus der zweiten Probe
+✅ SELBST-TEST: Täter-Klasse: tier:wolf · fscatter:eiche:L1 · UNBENANNT unter der Region · spieler · voxelChunk · p2p-spieler · leer:fscatter:blume:L0 (Gruppe ohne lebende Instanz)
+✅ SELBST-TEST: freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot
+✅ SELBST-TEST: bandHuelle: f:griechisch:L2 42 aus Lauf 1, bodenSatz 6 aus Lauf 2, VRAM 230 MB, beide Erzeuger
+✅ SELBST-TEST: H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt
+✅ SELBST-TEST: buf:verwaist und buf:ruhend → LINSE rot `leck` mit Täter; buf:szene und buf:bild nicht; die Halter falten, die größten Täter reisen mit
+✅ SELBST-TEST: tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber
+✅ SELBST-TEST: Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben
+✅ SELBST-TEST: buf:szene:tier:* → freier Erzeuger buf:tier (10 MB über seiner Ratsche 1 nie rot), gebunden 30 MB, der Nachzug lässt ihn
+✅ SELBST-TEST: Messorte: Blick auf dem Spieler, doppelte id, ein Ort nennt eine Ratschen-Datei, dorfZug fehlt, Soll ohne Quelle → rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht
+✅ SELBST-TEST: bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis −π/2
+✅ SELBST-TEST: Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht
+✅ SELBST-TEST: H6: _genesisRingAlt im Ort-Takt und _genesisMitteAlt als Anker → je rot, ein Anker ohne Methoden-Namen bricht das Schema; der echte Ort-Takt und Anker leben
+✅ SELBST-TEST: Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, ohne Sicht, ohne Aufzeichnung → je rot
+✅ SELBST-TEST: Projektion: die Ist-Wiese V18.536 (420742 Dreiecke) ist rot, das Soll je Instanz (146500) grün, eine Zeile ohne Golden-Dreiecke beim Namen
+✅ SELBST-TEST: Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760", die Tabelle den Inhalt
+✅ SELBST-TEST: Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), das Hauptbild ohne ihn nicht, ein falscher Draw-Umfang als REST
+✅ SELBST-TEST: Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im Haus-Wurf; stufe + stufen bzw. keins bricht das Schema; ohne k1 keine k1-Zeile
+✅ SELBST-TEST: Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht
+✅ SELBST-TEST: Einschwingen: ein Satz über seinem Ziel (ueberSeit ≥ 0) hält offen, ein ruhender nicht
+✅ SELBST-TEST: Projektion nahWiese: die Mess-Wiese (54994 Dreiecke) liegt unter der Ratsche 57046, das Maximum über die Samen (63002) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen
+✅ SELBST-TEST: Bündel-Reihe: der Stamm stellt @global · Regionen · @wahl; ohne den Aufruf, mit @wahl vorn und ohne die Reihe rot
+✅ SELBST-TEST: Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot
+✅ SELBST-TEST: Reihe nach Abstand: vorn zuerst in der Stufe, neu nur beim Anker-Wechsel; ohne Abstand, je Frame und ohne Ruf im Takt rot
+✅ SELBST-TEST: H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile 4 095 487 über 1 295 324, baum haupt 385 630 gegen 60 976 zu weit; die Hülle von w2B an V18.542 grün, an V18.541 alt, mit fremdem Gerät, ungemessen und fehlend rot; eine Messung ohne geforderte Ratsche rot
+✅ SELBST-TEST: Re-Mint: boden haupt 7 → 10 Befehle (der Nachzug hält 7), 70 000 → 7 000 Dreiecke; 70 000 gegen 7 000 ist weit, die Linse bleibt sauber; ohne Ratsche „ungemessen" beim Datei-Namen; jede Rot-Zeile trägt ihren Schlüssel
+✅ SELBST-TEST: Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; geraet (EIN Gerät) und eine Kamera „drohne" brechen den Haushalt
+✅ SELBST-TEST: die Band-Wand feuert (38/38)
+P Projektion wiese/baum: 122624 Dreiecke (Haushalt 150000; haupt 105676 · k0 14724 · k1 2224)
+P Projektion wiese/nahWiese: 54994 Dreiecke (Ratsche 57046, Haushalt 80000; L1 29520 · L2 25474)
+✅ DIE BAND-WAND steht — H1 Haushalt 208/208 Befehle · 680000/680000 Dreiecke in 12 Klassen (keine Sammelzeile) · H2 Ratsche 12 Klassen × 3 Pässe je Ort × Gerät × Sicht · H2b 12 Ratschen frisch an V18.546.0 · H3 21 Textur-Erzeuger benannt · H4 Täter-Klasse des Stamms: 11 Schlüssel-Formen · H5 29 Haushalt-Namen mit Erzeuger im Stamm · Messorte wiese × radeon × ego (V18.545.0, gemessen 66 von 72) · wiese × radeon × third (V18.545.0, gemessen 66 von 72) · wiese × gtx × ego (V18.545.0, gemessen 66 von 72) · wiese × gtx × third (V18.545.0, gemessen 66 von 72) · genesis × radeon × ego (V18.545.0, gemessen 66 von 72) · genesis × radeon × third (V18.545.0, gemessen 66 von 72) · genesis × gtx × ego (V18.545.0, gemessen 66 von 72) · genesis × gtx × third (V18.545.0, gemessen 66 von 72) · dorf × radeon × ego (V18.545.0, gemessen 66 von 72) · dorf × radeon × third (V18.545.0, gemessen 66 von 72) · dorf × gtx × ego (V18.545.0, gemessen 66 von 72) · dorf × gtx × third (V18.545.0, gemessen 66 von 72) · H6 3 Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).
