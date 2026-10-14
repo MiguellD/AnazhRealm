@@ -25,4 +25,5 @@ Scratch `C:\Users\micha\AppData\Local\Temp\claude\boden-stufen\` (Werkzeug-Kopie
   der Rest-Sprung am Ring-Umzug (Bild nachher-ego-diff-3-4). Weg: die aeusserste Stufe morpht im Band vor der Bau-Kante auf
   den Fern-Ring (Gesetz + Fern-Farbe), Band an `_activeRingRadius` gebunden, gleitend.
 - Haushalt boden (120k) mit der neuen Wahl nachmessen (werkbank band, Wiese/Dorf/Genesis) — headless Ring 4: L0 18k, L1 39k, L2 13k.
-- CI [ci voll] nach Push lesen; voller Playtest.
+- CI 38558095502 an 0b20d7d6: puls 1 rot (node --check auf werkzeug/*.js, umbenannt in *.eval.txt), voll 11 rot (W14 P1: stamm/24.js las aHimmel aus dem Satz, liest jetzt aNormalZiel.w); Nachzug-Push folgt, CI dort lesen. diag-hoehlen-sicht Quell-Proben auf `_bodenStufenKnoten` gezogen (lokal ungeprueft).
+- Haushalt boden third (headless, Ring 4): Dorf 102 159, Wiese 103 175 (Soll 120k; K51: Dorf 116 963) — nachher-band-*-third.json.
