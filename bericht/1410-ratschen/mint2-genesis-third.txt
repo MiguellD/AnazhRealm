@@ -1,0 +1,58 @@
+BAND UNGEMESSEN: Befehle 191/208 (0.92×) · Dreiecke 589k/680k (0.87×) · VRAM MB 104.3/118 (0.88×) · GPU ms/Frame ungemessen
+ORT genesis
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1           69k/120k  fern-ring 4 · bodenSatz 3 · farWater 1
+streu                         7/9          7/0/0             3k/40k  fscatter:blume:L2 4 · streuSatz 2 · fscatter:geroell:L0 1
+nahWiese                      1/4          1/0/0            118/80k  nahWiese:L2 1
+karten                        1/1          1/0/0             904/1k  fimp:atlas:L2 1
+baum                        26/40         15/8/3           43k/150k  f:tanne:L1 9 · f:fichte:L1 8 · fscatter:tanne:L1 4 · fscatter:fichte:L1 4
+busch                         0/8          0/0/0              0/40k  
+tier*                        0/30          0/0/0              0/60k  
+bau                        111/40        77/33/1           360k/60k !f:gt:L0 19 · f:drachentor:L0 9 · f:verkalkt:L0 9 · f:maurentor:L0 9
+    bauSatz haupt: f:alemannisch:L1 4 Zellen = 19 062 · f:feuerstelle:L1 14 Zellen = 4 165
+    bauWurf k0: f:feuerstelle:L3 7 Zellen = 168 · f:alemannisch:L3 1 Zellen = 60
+    bauWurf k1: f:feuerstelle:L3 6 Zellen = 144
+formationen                  5/20          2/2/1            23k/30k  formationenSatz 5
+    formationenSatz k0: f:zacken:L0 19 Zellen = 6 080 · f:kristalle:L0 8 Zellen = 3 520
+    formationenSatz k1: f:zacken:L0 13 Zellen = 4 160 · Lücke 320
+    formationenSatz haupt: f:zacken:L0 21 Zellen = 6 720 · f:kristalle:L0 5 Zellen = 2 200
+einzelstuecke               32/25         23/7/2            90k/15k !spieler 13 · portal-membran 5 · portal-nebel 5 · dsl-insel 4
+reserve                      0/19          0/0/0               0/4k  
+SUMME                     191/208       132/51/8          589k/680k  Abstand 0.92× Befehle · 0.87× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+SOLL Tor-Hülle f:drachentor:L0: 100590 Dreiecke je Exemplar (1 im Bild) / 60000 (1.68×) ROT
+SOLL Tor-Hülle f:verkalkt:L0: 42308 Dreiecke je Exemplar (1 im Bild) / 60000 (0.71×)
+SOLL Tor-Hülle f:maurentor:L0: 37850 Dreiecke je Exemplar (1 im Bild) / 60000 (0.63×)
+SOLL Tor-Hülle f:maschine:L0: 27520 Dreiecke je Exemplar (1 im Bild) / 60000 (0.46×)
+SOLL Tor-Hülle f:kathedrale:L0: 18702 Dreiecke je Exemplar (1 im Bild) / 60000 (0.31×)
+SOLL Tor-Hülle f:ruine:L0: 14640 Dreiecke je Exemplar (1 im Bild) / 60000 (0.24×)
+SOLL Tor-Hülle f:geisttor:L0: 7086 Dreiecke je Exemplar (1 im Bild) / 60000 (0.12×)
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 104.3 MB / Band 118 MB (0.88×) — je Erzeuger:
+  Render-Ziele 58.6 MB / Haushalt 60 MB (tex:TRAANode.history · tex:TRAANode.resolve · tex:kaskade0 · tex:kaskade1 · tex:output · tex:depth · tex:szene)
+     22.8 MB  1079  buf:szene
+     15.8 MB  1     tex:TRAANode.history
+     15.8 MB  1     tex:TRAANode.resolve
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.0 MB  2     tex:karte-albedo
+      4.4 MB  1     tex:output
+      4.4 MB  1     tex:depth
+      4.0 MB  2     tex:wege-karte
+      3.5 MB  2     tex:karte-normal
+      2.2 MB  2     tex:szene
+      2.0 MB  2     tex:fluss-karte
+      1.9 MB  1     tex:feld-pass-panorama
+      1.3 MB  1     tex:laub-cluster-atlas
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+      0.5 MB  1     tex:welt-march-liste
+      0.5 MB  2     tex:kronen-streu
+
+BAND UNGEMESSEN: Befehle 191/208 (0.92×) · Dreiecke 589k/680k (0.87×) · VRAM MB 104.3/118 (0.88×) · GPU ms/Frame ungemessen
+LINSE SAUBER — jeder Täter benannt und im Haushalt, keine Klasse über ihrer Ratsche.
+
+Ratsche ratsche-genesis-gtx-third.json (Ort genesis × gtx × third, V18.546.0) NEU GEMINTET (99): boden.haupt.befehle: – → 6 · boden.haupt.dreiecke: – → 50583 · boden.k0.befehle: – → 1 · boden.k0.dreiecke: – → 12321 · boden.k1.befehle: – → 1 · boden.k1.dreiecke: – → 6445 · streu.haupt.befehle: – → 7 · streu.haupt.dreiecke: – → 3222 · streu.k0.befehle: – → 0 · streu.k0.dreiecke: – → 0 · streu.k1.befehle: – → 0 · streu.k1.dreiecke: – → 0 · nahWiese.haupt.befehle: – → 1 · nahWiese.haupt.dreiecke: – → 118 · nahWiese.k0.befehle: – → 0 · nahWiese.k0.dreiecke: – → 0 · nahWiese.k1.befehle: – → 0 · nahWiese.k1.dreiecke: – → 0 · karten.haupt.befehle: – → 1 · karten.haupt.dreiecke: – → 904 · karten.k0.befehle: – → 0 · karten.k0.dreiecke: – → 0 · karten.k1.befehle: – → 0 · karten.k1.dreiecke: – → 0 · baum.haupt.befehle: – → 15 · baum.haupt.dreiecke: – → 30200 · baum.k0.befehle: – → 8 · baum.k0.dreiecke: – → 11374 · baum.k1.befehle: – → 3 · baum.k1.dreiecke: – → 1528 · busch.haupt.befehle: – → 0 · busch.haupt.dreiecke: – → 0 · busch.k0.befehle: – → 0 · busch.k0.dreiecke: – → 0 · busch.k1.befehle: – → 0 · busch.k1.dreiecke: – → 0 · bau.haupt.befehle: – → 77 · bau.haupt.dreiecke: – → 300991 · bau.k0.befehle: – → 33 · bau.k0.dreiecke: – → 58656 · bau.k1.befehle: – → 1 · bau.k1.dreiecke: – → 144 · formationen.haupt.befehle: – → 2 · formationen.haupt.dreiecke: – → 8920 · formationen.k0.befehle: – → 2 · formationen.k0.dreiecke: – → 9600 · formationen.k1.befehle: – → 1 · formationen.k1.dreiecke: – → 4480 · einzelstuecke.haupt.befehle: – → 23 · einzelstuecke.haupt.dreiecke: – → 63094 · einzelstuecke.k0.befehle: – → 7 · einzelstuecke.k0.dreiecke: – → 20042 · einzelstuecke.k1.befehle: – → 2 · einzelstuecke.k1.dreiecke: – → 6528 · leerHuellen.haupt.befehle: – → 0 · leerHuellen.haupt.dreiecke: – → 0 · leerHuellen.k0.befehle: – → 0 · leerHuellen.k0.dreiecke: – → 0 · leerHuellen.k1.befehle: – → 0 · leerHuellen.k1.dreiecke: – → 0 · reserve.haupt.befehle: – → 0 · reserve.haupt.dreiecke: – → 0 · reserve.k0.befehle: – → 0 · reserve.k0.dreiecke: – → 0 · reserve.k1.befehle: – → 0 · reserve.k1.dreiecke: – → 0 · gesamt.befehle: – → 191 · gesamt.dreiecke: – → 589150 · gesamt.vramMB: – → 104.3 · vramMB.buf:szene: – → 22.8 · vramMB.tex:TRAANode.history: – → 15.8 · vramMB.tex:TRAANode.resolve: – → 15.8 · vramMB.tex:kaskade0: – → 8 · vramMB.tex:kaskade1: – → 8 · vramMB.tex:karte-albedo: – → 7 · vramMB.tex:output: – → 4.4 · vramMB.tex:depth: – → 4.4 · vramMB.tex:wege-karte: – → 4 · vramMB.tex:karte-normal: – → 3.5 · vramMB.tex:szene: – → 2.2 · vramMB.tex:fluss-karte: – → 2 · vramMB.tex:feld-pass-panorama: – → 1.9 · vramMB.tex:laub-cluster-atlas: – → 1.3 · vramMB.tex:PMREM.cubeUv: – → 1 · vramMB.tex:rausch-atlas: – → 0.8 · vramMB.tex:welt-march-liste: – → 0.5 · vramMB.tex:kronen-streu: – → 0.5 · vramMB.tex:welt-march-kapseln: – → 0.3 · vramMB.buf:bindingBuffer: – → 0.1 · vramMB.tex:himmel-umgebung: – → 0 · vramMB.buf:buffer_timestamp_resolve_render: – → 0 · vramMB.buf:buffer_timestamp_result_render: – → 0 · vramMB.tex:fern-krone-nah: – → 0 · vramMB.buf:bindingBufferundefined_UniformBuffer_: – → 0 · vramMB.tex:portal-membran: – → 0 · vramMB.tex:fern-ring-maske: – → 0 · vramMB.tex:DFG_LUT: – → 0 · vramMB.buf:bild: – → 0 · vramMB.buf:?: – → 0
+Der Re-Mint hebt 0 Zeilen: keine

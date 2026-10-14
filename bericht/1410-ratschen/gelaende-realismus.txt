@@ -1,0 +1,78 @@
+
+========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) =========
+
+  anazh-realm-seed: Spalte 23.2 noise2D (Ebene 24.6; warm 7.29 µs, Ebene 7.52 µs, noise2D 0.317 µs, Gedächtnis 12.8 ms/km² = 0.041 µs je 1,8-m-Spalte; kalt 18.72 µs am 30-m-Raster) · Land 16.16 km² · Senken>1m 0.12/km² (2, benannt 1; Minima 0.87/km²; Fläche>1m 0.0 %) · θ 0.445 R² 0.872 (17 Klassen aus 568 Zellen; je Zelle θ 0.47 R² 0.532) · Hammond sanft 93/169 · Dorfplätze 67 · Hang p50 5.8 % p90 28.8 %
+    Schicht-Ort (-7833, -6968): Kliff≥60° 5.6 % · Schutt 30–40° 21.1 % (Ruhewinkel 33–37° 13.6 %) · Pediment 0,5–7° 46.4 %
+    Mäander: 26 Flachland-Glieder · Sinuosität 1.49 · λ 11.64 Breiten · Rc 2.23 Breiten (Soll ≥ 1,3 · 10–14 · 2–3)
+    Selbsttest-Störung: Senken>1m 12.87/km² · die Gerade (Glieder ohne Bahn): Mäander rot
+    Selbsttest-Last (+40 noise2D je Spalte): 71.8 noise2D (Ebene 69.2)
+
+  w-sweepalpha0001-aaaaaa: Spalte 23 noise2D (Ebene 23.9; warm 7.42 µs, Ebene 7.57 µs, noise2D 0.33 µs, Gedächtnis 12.7 ms/km² = 0.041 µs je 1,8-m-Spalte; kalt 18.74 µs am 30-m-Raster) · Land 16.16 km² · Senken>1m 0.56/km² (9, benannt 0; Minima 1.61/km²; Fläche>1m 0.4 %) · θ 0.35 R² 0.823 (19 Klassen aus 951 Zellen; je Zelle θ 0.48 R² 0.352) · Hammond sanft 116/169 · Dorfplätze 46 · Hang p50 6.3 % p90 33.1 %
+    Schicht-Ort (-2803, 518): Kliff≥60° 2.3 % · Schutt 30–40° 12.7 % (Ruhewinkel 33–37° 7.5 %) · Pediment 0,5–7° 51.7 %
+    Mäander: 82 Flachland-Glieder · Sinuosität 1.49 · λ 11.38 Breiten · Rc 2.21 Breiten (Soll ≥ 1,3 · 10–14 · 2–3)
+    Selbsttest-Störung: Senken>1m 18.01/km² · die Gerade (Glieder ohne Bahn): Mäander rot
+    Selbsttest-Last (+40 noise2D je Spalte): 68.1 noise2D (Ebene 69)
+
+  w-sweepbeta00002-bbbbbb: Spalte 24.7 noise2D (Ebene 24.2; warm 7.8 µs, Ebene 7.8 µs, noise2D 0.342 µs, Gedächtnis 10.9 ms/km² = 0.035 µs je 1,8-m-Spalte; kalt 17.58 µs am 30-m-Raster) · Land 16.16 km² · Senken>1m 0.19/km² (3, benannt 0; Minima 0.99/km²; Fläche>1m 0.0 %) · θ 0.489 R² 0.968 (19 Klassen aus 801 Zellen; je Zelle θ 0.505 R² 0.538) · Hammond sanft 74/169 · Dorfplätze 46 · Hang p50 8.1 % p90 39.3 %
+    Schicht-Ort (-6509, 6607): Kliff≥60° 4.7 % · Schutt 30–40° 15.5 % (Ruhewinkel 33–37° 9.4 %) · Pediment 0,5–7° 40.7 %
+    Mäander: 28 Flachland-Glieder · Sinuosität 1.49 · λ 10.74 Breiten · Rc 2.06 Breiten (Soll ≥ 1,3 · 10–14 · 2–3)
+    Selbsttest-Störung: Senken>1m 15.04/km² · die Gerade (Glieder ohne Bahn): Mäander rot
+    Selbsttest-Last (+40 noise2D je Spalte): 68.4 noise2D (Ebene 69.6)
+
+✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot
+
+
+========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) =========
+
+  anazh-realm-seed: Spalte 23 noise2D (Ebene 22.2; warm 7.54 µs, Ebene 7.25 µs, noise2D 0.329 µs, Gedächtnis 13.3 ms/km² = 0.043 µs je 1,8-m-Spalte; kalt 19.43 µs am 30-m-Raster) · Land 16.16 km² · Senken>1m 0.12/km² (2, benannt 1; Minima 0.87/km²; Fläche>1m 0.0 %) · θ 0.445 R² 0.872 (17 Klassen aus 568 Zellen; je Zelle θ 0.47 R² 0.532) · Hammond sanft 93/169 · Dorfplätze 67 · Hang p50 5.8 % p90 28.8 %
+    Schicht-Ort (-7833, -6968): Kliff≥60° 5.6 % · Schutt 30–40° 21.1 % (Ruhewinkel 33–37° 13.6 %) · Pediment 0,5–7° 46.4 %
+    Mäander: 26 Flachland-Glieder · Sinuosität 1.49 · λ 11.64 Breiten · Rc 2.23 Breiten (Soll ≥ 1,3 · 10–14 · 2–3)
+
+  w-sweepalpha0001-aaaaaa: Spalte 24.2 noise2D (Ebene 24.3; warm 7.8 µs, Ebene 7.41 µs, noise2D 0.328 µs, Gedächtnis 12.4 ms/km² = 0.04 µs je 1,8-m-Spalte; kalt 18.88 µs am 30-m-Raster) · Land 16.16 km² · Senken>1m 0.56/km² (9, benannt 0; Minima 1.61/km²; Fläche>1m 0.4 %) · θ 0.35 R² 0.823 (19 Klassen aus 951 Zellen; je Zelle θ 0.48 R² 0.352) · Hammond sanft 116/169 · Dorfplätze 46 · Hang p50 6.3 % p90 33.1 %
+    Schicht-Ort (-2803, 518): Kliff≥60° 2.3 % · Schutt 30–40° 12.7 % (Ruhewinkel 33–37° 7.5 %) · Pediment 0,5–7° 51.7 %
+    Mäander: 82 Flachland-Glieder · Sinuosität 1.49 · λ 11.38 Breiten · Rc 2.21 Breiten (Soll ≥ 1,3 · 10–14 · 2–3)
+
+  w-sweepbeta00002-bbbbbb: Spalte 23.6 noise2D (Ebene 23.6; warm 7.25 µs, Ebene 7.26 µs, noise2D 0.304 µs, Gedächtnis 13.6 ms/km² = 0.044 µs je 1,8-m-Spalte; kalt 19.37 µs am 30-m-Raster) · Land 16.16 km² · Senken>1m 0.19/km² (3, benannt 0; Minima 0.99/km²; Fläche>1m 0.0 %) · θ 0.489 R² 0.968 (19 Klassen aus 801 Zellen; je Zelle θ 0.505 R² 0.538) · Hammond sanft 74/169 · Dorfplätze 46 · Hang p50 8.1 % p90 39.3 %
+    Schicht-Ort (-6509, 6607): Kliff≥60° 4.7 % · Schutt 30–40° 15.5 % (Ruhewinkel 33–37° 9.4 %) · Pediment 0,5–7° 40.7 %
+    Mäander: 28 Flachland-Glieder · Sinuosität 1.49 · λ 10.74 Breiten · Rc 2.06 Breiten (Soll ≥ 1,3 · 10–14 · 2–3)
+
+  DIE PRESETS an den drei Saaten (je Preset EIN Plan, dieselbe Statistik, dasselbe Urteil):
+    anazh-realm-seed         mittelgebirge  senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.06/km² · θ 0.602 R² 0.901 · Hammond 88 · Plätze 83)
+    anazh-realm-seed         alpental       senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.06/km² · θ 0.473 R² 0.928 · Hammond 101 · Plätze 63)
+    anazh-realm-seed         tafelland      senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht ✓ (Senken 0.5/km² · θ 0.652 R² 0.861 · Hammond 77 · Plätze 72)
+    anazh-realm-seed         kueste         senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.19/km² · θ 0.403 R² 0.923 · Hammond 107 · Plätze 84)
+    w-sweepalpha0001-aaaaaa  mittelgebirge  senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.25/km² · θ 0.393 R² 0.957 · Hammond 137 · Plätze 89)
+    w-sweepalpha0001-aaaaaa  alpental       senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.43/km² · θ 0.428 R² 0.851 · Hammond 88 · Plätze 49)
+    w-sweepalpha0001-aaaaaa  tafelland      senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht ✓ (Senken 0.25/km² · θ 0.349 R² 0.898 · Hammond 102 · Plätze 60)
+    w-sweepalpha0001-aaaaaa  kueste         senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.99/km² · θ 0.305 R² 0.792 · Hammond 118 · Plätze 63)
+    w-sweepbeta00002-bbbbbb  mittelgebirge  senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.25/km² · θ 0.472 R² 0.907 · Hammond 67 · Plätze 67)
+    w-sweepbeta00002-bbbbbb  alpental       senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.43/km² · θ 0.549 R² 0.925 · Hammond 93 · Plätze 60)
+    w-sweepbeta00002-bbbbbb  tafelland      senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht ✓ (Senken 0.74/km² · θ 0.467 R² 0.668 · Hammond 62 · Plätze 52)
+    w-sweepbeta00002-bbbbbb  kueste         senken ✓ · flint ✓ · hammond ✓ · dorfplaetze ✓ · schicht – (Senken 0.68/km² · θ 0.304 R² 0.677 · Hammond 82 · Plätze 64)
+
+✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten, jedes Preset an jeder Saat
+
+
+========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat anazh-realm-seed, 2 × 2 km, 30 m, 21 Flüsse) =========
+  voll: Senken>1m 0/km² · Dorfplätze 7 · Minima 6.05/km² · θ 0.351 R² 0.499
+  ohneKanal: Senken>1m 0/km² · Dorfplätze 7 · Minima 0/km² · θ 0.511 R² 0.726
+  makro: Senken>1m 0/km² · Dorfplätze 7 · Minima 0/km² · θ 0.511 R² 0.726
+  Mäander im Wasser: 0 flache 400-m-Fenster · Sinuosität null (Soll ≥ 1,25)
+
+========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat w-sweepalpha0001-aaaaaa, 2 × 2 km, 30 m, 31 Flüsse) =========
+  voll: Senken>1m 0.53/km² · Dorfplätze 14 · Minima 9.2/km² · θ 0.317 R² 0.436
+  ohneKanal: Senken>1m 0/km² · Dorfplätze 14 · Minima 1.31/km² · θ 0.285 R² 0.362
+  makro: Senken>1m 0/km² · Dorfplätze 14 · Minima 1.31/km² · θ 0.285 R² 0.362
+  Mäander im Wasser: 10 flache 400-m-Fenster · Sinuosität 1.478 (Soll ≥ 1,25)
+
+========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat w-sweepbeta00002-bbbbbb, 2 × 2 km, 30 m, 57 Flüsse) =========
+  voll: Senken>1m 0/km² · Dorfplätze 5 · Minima 9.47/km² · θ 0.185 R² 0.244
+  ohneKanal: Senken>1m 0/km² · Dorfplätze 5 · Minima 0.79/km² · θ 0.449 R² 0.649
+  makro: Senken>1m 0.26/km² · Dorfplätze 5 · Minima 0.53/km² · θ 0.391 R² 0.486
+  Mäander im Wasser: 0 flache 400-m-Fenster · Sinuosität null (Soll ≥ 1,25)
+  Selbsttest-Gerade (jedes Glied seine Sehne): w-sweepalpha0001-aaaaaa 5 Fenster, Sinuosität 1 → ✅ rot erkannt
+
+  Selbsttest-Störung (Bett-Tiefe des alten Gesetzes, Saat anazh-realm-seed): Senken>1m 9.2/km² · Dorfplätze 4 → ✅ SELBSTTEST GRÜN: die Störung färbt den Boden rot
+
+✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor, 3 Saaten
+

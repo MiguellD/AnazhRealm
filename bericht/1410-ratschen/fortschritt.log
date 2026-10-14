@@ -1,0 +1,28 @@
+13:48:57 SERIE START Seite=51cc19af Instrument=51cc19af+lokal Sichten=ego third Orte=wiese genesis dorf
+13:51:49 wiese-ego-1-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 101.3 fps · Frame p50/p95/max 8.4/16.7/41.7 ms · CPU p50/p95 4.4/6.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.94 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+13:55:06 wiese-ego-1-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 99.8 fps · Frame p50/p95/max 8.4/16.7/58.3 ms · CPU p50/p95 4.5/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.11 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+13:58:21 wiese-ego-2-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 98.8 fps · Frame p50/p95/max 8.4/16.7/66.8 ms · CPU p50/p95 4.8/6.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.2 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+14:01:38 wiese-ego-2-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 99.5 fps · Frame p50/p95/max 8.4/16.7/58.3 ms · CPU p50/p95 4.6/6.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.09 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+14:03:33 genesis-ego-1-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 97.3 fps · Frame p50/p95/max 8.4/16.8/33.3 ms · CPU p50/p95 5.6/7.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.32 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:05:29 genesis-ego-1-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 99.2 fps · Frame p50/p95/max 8.4/16.7/25.1 ms · CPU p50/p95 5.4/7.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.05 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:07:24 genesis-ego-2-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 94.5 fps · Frame p50/p95/max 8.4/16.7/33.3 ms · CPU p50/p95 5.9/8.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.2 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:09:22 genesis-ego-2-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 97.9 fps · Frame p50/p95/max 8.4/16.7/33.3 ms · CPU p50/p95 5.2/7 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.12 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:11:24 dorf-ego-1-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:13:10 dorf-ego-1-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:15:08 dorf-ego-2-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:16:55 dorf-ego-2-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:17:15 ego ENDE
+14:21:11 wiese-third-1-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 92.5 fps · Frame p50/p95/max 8.4/16.7/100 ms · CPU p50/p95 5.1/7.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.45 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+14:25:29 wiese-third-1-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 100.6 fps · Frame p50/p95/max 8.4/16.7/50 ms · CPU p50/p95 4.6/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.38 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+14:29:40 wiese-third-2-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 97.1 fps · Frame p50/p95/max 8.4/16.7/41.7 ms · CPU p50/p95 4.6/6.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.45 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+14:33:57 wiese-third-2-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 100.4 fps · Frame p50/p95/max 8.4/16.7/50.1 ms · CPU p50/p95 4.6/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.6 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+14:35:50 genesis-third-1-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 79.7 fps · Frame p50/p95/max 9.1/16.8/33.4 ms · CPU p50/p95 6.1/8.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.94 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:37:46 genesis-third-1-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 79.9 fps · Frame p50/p95/max 8.8/16.8/33.5 ms · CPU p50/p95 6/8 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.91 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:39:42 genesis-third-2-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 79.4 fps · Frame p50/p95/max 8.6/16.8/49.9 ms · CPU p50/p95 6.7/9.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 6.07 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:41:37 genesis-third-2-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band …  laufVoll: 80 fps · Frame p50/p95/max 8.6/16.8/33.4 ms · CPU p50/p95 6/7.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.92 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+14:43:40 dorf-third-1-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:45:28 dorf-third-1-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:47:30 dorf-third-2-erst fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:49:18 dorf-third-2-zweit fp=fa9ba603b787674f 62 48 exit=1 [folge] band … 
+14:49:38 third ENDE
+14:49:42 SERIE ENDE
