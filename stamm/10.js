@@ -1731,7 +1731,8 @@ class AnazhRealm_Z10 {
             setup(builder) {
                 const m = builder.__anazhInstanzMatrix;
                 if (m) return m;
-                if (builder.object && builder.object.isInstancedMesh) {
+                // eine Senke zeichnet über ihren Zeichner (1410-1): auch er trägt Instanzen und bricht ohne Matrix laut
+                if (builder.object && (builder.object.isInstancedMesh || builder.object.isInstanzZeichner === true)) {
                     const text =
                         "INSTANZ-MATRIX: der Bau einer InstancedMesh fragt vor ihrer Instanz-Matrix (r184-Reihenfolge)";
                     realm.log(text, "ERROR");

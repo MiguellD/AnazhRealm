@@ -180,7 +180,8 @@ class AnazhRealm_Z17c {
         return u._werferHuelle;
     }
     _werferBoxDazu(box, o) {
-        if (!o || o.visible === false) return;
+        // der Zeichner einer Senke (1410-1) wirft mit ihr: ihre Hülle trägt jede Instanz, er ist kein eigener Werfer
+        if (!o || o.visible === false || o.isInstanzZeichner === true) return;
         const g = o.geometry;
         if (o.isMesh === true && o.castShadow === true && g && g.attributes && g.attributes.position) {
             const im = o.isInstancedMesh === true ? o.instanceMatrix : null;

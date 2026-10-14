@@ -877,6 +877,22 @@ class AnazhRealm_Z07 {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner`): r184 instanziert in `setupPosition` nur eine
+        // InstancedMesh (InstanceNode, der die Puffer des Objekts in den Graphen bindet — und den Schlüssel trägt die uuid).
+        // Zeichnet ein Zeichner, steht der EINE Instanz-Knoten (`_senkenKnoten`) dort, wo r184 seinen InstanceNode auf den Stapel
+        // legt: sein setup legt die Matrix am Builder ab (die Naht `_weltNaht` des positionNode liest sie), seine Zuweisung von Lage,
+        // Normale und Farbe baut NACH der des positionNode (Lehre 22) — im Hauptbild wie in jeder Kaskade (der Schatten-Stoff ist
+        // ein Knoten-Stoff).
+        if (NM && NM.prototype && typeof NM.prototype.setupPosition === "function" && !NM.__anazhSenke) {
+            const posRoh = NM.prototype.setupPosition;
+            NM.prototype.setupPosition = function (builder) {
+                if (builder.object && builder.object.isInstanzZeichner === true)
+                    AnazhRealm._senkenKnoten().instanz.toStack();
+                return posRoh.call(this, builder);
+            };
+            NM.__anazhSenke = true;
+        } else if (!NM || !NM.prototype || typeof NM.prototype.setupPosition !== "function")
+            this.log("DIE SENKE: r184-NodeMaterial.setupPosition nicht gefunden (Vendor-Drift)", "ERROR");
         // DER EINE KNOTEN JE QUELLE (r184 gelesen, vendor/three.webgpu.min.js + vendor/CSMShadowNode.js): eine geteilte
         // Uniform-Gruppe (renderGroup: Kamera · Lichter · Welt-Sätze) teilt r184 über Programme hinweg nur bei GLEICHEN
         // Knoten — `_getBindGroup` schlüsselt sie nach den sortierten Knoten-ids, je Render-Kontext EIN Puffer. Zwei

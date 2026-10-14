@@ -1652,11 +1652,13 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
     // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
-    // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas).
+    // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas). Eine Senke zeichnet über ihren Zeichner (1410-1):
+    // ihre Instanz-Puffer sind die der Senke.
+    const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
     let d = null;
-    if (obj && obj.isInstancedMesh === true) {
-        const im = obj.instanceMatrix,
-            ic = obj.instanceColor;
+    if (senke && senke.isInstancedMesh === true) {
+        const im = senke.instanceMatrix,
+            ic = senke.instanceColor;
         const iId = im ? im.id : -1,
             iV = im ? im.version : -1,
             cId = ic ? ic.id : -1,
