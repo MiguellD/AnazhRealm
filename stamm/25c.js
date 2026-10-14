@@ -130,6 +130,7 @@ class AnazhRealm_Z25c {
         if (typeof Quad !== "function" || typeof THREE.TRAANode !== "function")
             throw new Error("ZEIT-AUFLÖSUNG: Quad der Post-Kette oder TRAANode fehlt (Vendor-Drift)");
         const { Fn, If, float, vec2, vec3, vec4, uv, texture, uniform, max, exp, floor, mix, luminance } = T;
+        const realm = this;
         const klemme = (h, lo, hi) => {
             const p = hi.add(lo).mul(0.5);
             const e = hi.sub(lo).mul(0.5).add(1e-7);
@@ -172,9 +173,10 @@ class AnazhRealm_Z25c {
                 this._cameraWorldMatrix.value.copy(this.camera.matrixWorld);
                 this._cameraWorldMatrixInverse.value.copy(this.camera.matrixWorldInverse);
                 this._cameraProjectionMatrixInverse.value.copy(this.camera.projectionMatrixInverse);
-                const aus = r.getDrawingBufferSize(new THREE.Vector2());
+                const sch = realm._schirm();
+                const aus = { x: sch.breite, y: sch.hoehe };
                 if (this._needsPostProcessingSync === true) {
-                    this.setViewOffset(aus.x, aus.y);
+                    this.setViewOffset(); // der Versatz in Eingangs-Pixeln (`eingang`)
                     this._needsPostProcessingSync = false;
                 }
                 const g = this._historyRenderTarget;
@@ -207,8 +209,7 @@ class AnazhRealm_Z25c {
                 if (rp) {
                     this._needsPostProcessingSync = true;
                     rp.context.onBeforeRenderPipeline = () => {
-                        const g = builder.renderer.getDrawingBufferSize(new THREE.Vector2());
-                        this.setViewOffset(g.x, g.y);
+                        this.setViewOffset();
                     };
                     rp.context.onAfterRenderPipeline = () => this.clearViewOffset();
                 }
