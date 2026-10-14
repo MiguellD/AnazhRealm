@@ -60,7 +60,7 @@
 //    KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -1307,11 +1307,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-gpu", "--autoplay-policy=no-user-gesture-required"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 600000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     let exit = 1;
     const ergebnis = {};
     try {
