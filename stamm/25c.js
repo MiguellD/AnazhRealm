@@ -2039,10 +2039,14 @@ class AnazhRealm_Z25c {
     // EINE Leser ist `ShadowNode.updateBefore` mit `shadow.needsUpdate || shadow.autoUpdate` je Licht, und
     // `LightShadow.autoUpdate` (true) reist in jede CSM-Kaskade. Der alte Cache (V18.264) schrieb ins Leere: beide
     // Kaskaden renderten JEDEN Frame (Profil: updateShadow ~9,5 ms CPU je Frame). Hier fährt der Takt die echten
-    // Leser: die NAHE Kaskade folgt dem Regler-Intervall (gedeckelt auf `nahMax` — laufende Tiere werfen nah),
-    // die FERNE rendert im `fernFaktor`-fachen Takt; ein Sonnen-Sprung erzwingt alle. Ohne CSM trägt das Haupt-
-    // Licht die EINE Map im Nah-Takt. Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft
-    // nur in `renderShadow` (Vendor-Anker), die Matrix gehört zur Map.
+    // Leser: die NAHE Kaskade rendert jeden `nahMax`-ten Frame (laufende Tiere werfen nah), die FERNE im
+    // `fernFaktor`-fachen Takt des Regler-Intervalls (höchstens so dicht wie die nahe); ein Sonnen-Sprung erzwingt
+    // alle. JE FRAME HÖCHSTENS EINE KASKADE (1410-3): unter Regler voll renderte die nahe JEDEN Frame und jeder dritte
+    // trug beide — der CPU-Takt eines Frames mit zwei Schatten-Renders bildete den p95 (Genesis Third, eine Sitzung,
+    // abwechselnd: p50 5,5 → 5,0 ms). Eine fällige Kaskade wartet hinter der Vor-Kaskade dieses Frames auf den
+    // nächsten; die nahe Phase und die ferne wechseln. Ohne CSM trägt das Haupt-Licht die EINE Map im Nah-Takt.
+    // Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft nur in `renderShadow`
+    // (Vendor-Anker), die Matrix gehört zur Map.
     _loopShadowUpdate() {
         const r = this.state.renderer;
         if (!r || !r.shadowMap) return;
@@ -2065,14 +2069,17 @@ class AnazhRealm_Z25c {
         const minInterval = Math.max(1, Math.round(this.state._shadowMinInterval || 1));
         const csm = this.state.csmNode;
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
+        let gerendert = false;
         for (let i = 0; i < lichter.length; i++) {
             const sh = lichter[i].shadow;
             if (!sh) continue;
             sh.autoUpdate = false;
-            const takt = i === 0 ? Math.min(T.nahMax, minInterval) : minInterval * T.fernFaktor;
-            if (sunMoved || !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt)) {
+            const takt = i === 0 ? T.nahMax : Math.max(T.nahMax, minInterval) * T.fernFaktor;
+            const faellig = !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt);
+            if (sunMoved || (faellig && !gerendert)) {
                 sh.needsUpdate = true;
                 L.k[i] = frame;
+                gerendert = true;
             }
         }
     }
