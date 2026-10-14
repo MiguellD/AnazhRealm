@@ -2063,28 +2063,30 @@ class AnazhRealm_Z20b {
                         // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
                         const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
                         if (schale) {
+                            // Die Zahlen des Rasters sind DATEN des Gesetzbuchs (tetrapoda FELL_SCHALE, K45) — das Labor
+                            // liest dieselben (worlds/tetrapoda, GLSL); fehlen sie, bricht der Stoff laut (_stoffBruch).
+                            const FS = tkC.FELL_SCHALE;
                             const t = aS.x;
                             const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
                             const zelle = TSL.floor(p);
-                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(12.9898, 78.233, 37.719))).mul(43758.5453));
-                            const h2 = TSL.fract(
-                                TSL.sin(zelle.dot(TSL.vec3(39.3468, 11.1351, 83.1559))).mul(24634.6345)
-                            );
-                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(7.123)))
+                            const hA = FS.hashA,
+                                hB = FS.hashB;
+                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hA[0], hA[1], hA[2]))).mul(hA[3]));
+                            const h2 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hB[0], hB[1], hB[2]))).mul(hB[3]));
+                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(FS.hashC)))
                                 .sub(0.5)
-                                .mul(0.4);
+                                .mul(FS.mitte);
                             const dist = TSL.fract(p).sub(0.5).sub(mitte).length();
                             const radius = aS.y
                                 .sqrt()
-                                .mul(0.62)
-                                .mul(TSL.float(1.0).sub(t.mul(0.75)));
-                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
-                            const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
+                                .mul(FS.radius)
+                                .mul(TSL.float(1.0).sub(t.mul(FS.zulauf)));
+                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
+                            const wolle = TSL.step(t, FS.wolle).mul(TSL.step(FS.wolleAb, aS.y));
                             // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
                             // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
                             // nicht wirft. Die Kopf-Schalen (K28) tragen dasselbe Raster: Leib und Kopf EIN Stoff.
                             mat.alphaTest = 0.5;
-                            const FS = AnazhRealm.FELL_SCHALE;
                             mat.colorNode = TSL.vec4(
                                 vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
                                 TSL.max(haar, wolle)

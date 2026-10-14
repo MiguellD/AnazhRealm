@@ -1273,11 +1273,6 @@ AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus:
 // 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
 // Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
 AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });
-// Die Ton-Rampe der Fell-Schalen (V18.497): der Lab-wurzelAnker 0.12 gilt Strähnen, deren Wurzeln unter
-// anderen Strähnen verschwinden — Schalen zeigen die Unterwolle (t ≈ 0.17–0.34). Gemessen (Fell-Linse 4 m,
-// nur Wolf-Pixel, Haut darunter ≈ 28): 0.12 → 1.0 las 23,5 (−16 %, ein Sprung an der Schwelle des Fell-
-// Bildschirm-Gesetzes) · 0.55 → 1.1 las 28,1 (Parität) · 0.7 → 1.3 las 31,2 (+11 %).
-AnazhRealm.FELL_SCHALE = Object.freeze({ wurzel: 0.55, spitze: 1.1 });
 // Mesh-Zone: höchstens so viele Bau-VERSUCHE je Culling-Takt (ein Versuch ohne bereites Studio-Asset ist ein
 // billiger Cache-Blick; das Bau-Budget zählt nur gelungene Bauten).
 AnazhRealm.ARCH_NAH_VERSUCHE = 24;

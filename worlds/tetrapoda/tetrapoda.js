@@ -1,14 +1,13 @@
 var presets=__tetrapodaCore.GATTUNGEN;   // GESTALT-DIALS — leben seit W-A6 im Kern ../../tetrapoda-core.js (EINE Quelle, sha256-Beleg im Wellen-Bericht)
 var emoMode='idle';
 var scene,camera,renderer,composer,fxaa,cinePass,controls,clock;
-var wolf,furInstanced,matFur,matStrand,matStrandDk,matStrandLt;
+var wolf;
 var ribcage,belly,mane,throat,larynx,larynxUp,waist,flank,lowerAbd;
 var gluteL,gluteR,quadL,quadR,hamL,hamR,tricepL,tricepR,deltL,deltR,gastroL,gastroR;
 var headGroup,jawGroup,earL,earR,lidTL,lidTR,tailSegs=[],spineSegs=[],neckSegs=[];
 var legFL,legFR,legHL,legHR,shoulderL,shoulderR,tailRoot;
 var flU,flL,flP,frU,frL,frP,hlT,hlC,hlP,hrT,hrC,hrP;
 var H,sY,hY,sZ,hZ,lv,by,tv,bt,P={};
-var _geomCache={},furStrands=[];
 var legNames=[['legFL','flU','flL','flP'],['legFR','frU','frL','frP'],['legHL','hlT','hlC','hlP'],['legHR','hrT','hrC','hrP']];
 var groundMesh,contactShadow;
 var _fp=new THREE.Vector3();
@@ -103,68 +102,112 @@ var emo={
     return m;
   }
 };
-function sphGeo(r,segs){segs=segs||48;var k=Math.round(r*1000);if(!_geomCache[k])_geomCache[k]=new THREE.SphereGeometry(r,segs,segs);return _geomCache[k];}
-function s(r,m,sc){var me=new THREE.Mesh(sphGeo(r),m);if(sc)me.scale.set(sc[0],sc[1],sc[2]);me.castShadow=true;me.receiveShadow=true;return me;}
-function boneSph(r,len,m){return s(r,m,[0.92,len/(2*r),0.92]);}
-function cH(rt,rb,h,m){var me=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,10),m);me.castShadow=true;return me;}
-function getStrandGeo(len,thick){var k=Math.round(len*1000)+'_'+Math.round(thick*10000);if(!_geomCache[k]){var w=thick*1.8,wt=Math.max(0.001,thick*0.65),l=len;var p=[-w,0,0,w,0,0,wt,-l,0,-wt,-l,0,0,0,-w,0,0,w,0,-l,wt,0,-l,-wt];var i=[0,1,2,0,2,3,4,5,6,4,6,7];var sy=[0,0,1,1,0,0,1,1];var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('aStrandY',new THREE.Float32BufferAttribute(sy,1));g.setIndex(i);g.computeVertexNormals();_geomCache[k]=g;}return _geomCache[k];}
-function addStrand(pos,dir,len,thick,mat){var qlen=Math.round((len+Math.random()*0.015)/0.004)*0.004;var geo=getStrandGeo(qlen,thick);var quat=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,-1,0),dir.clone().normalize());furStrands.push({pos:pos.clone(),quat:quat,mat:mat,geoId:geo.uuid,geo:geo});}
-function fuzz(c,r,sc,d,density,len,thick,mat){for(var i=0;i<density;i++){var phi=Math.random()*Math.PI,theta=Math.random()*Math.PI*2;if(Math.cos(phi)<-0.05)continue;var pos=new THREE.Vector3(r*sc[0]*Math.sin(phi)*Math.cos(theta),r*sc[1]*Math.cos(phi),r*sc[2]*Math.sin(phi)*Math.sin(theta)).add(c);var dd=d.clone();dd.x+=(Math.random()-0.5)*0.4;dd.y+=(Math.random()-0.5)*0.3;dd.z+=(Math.random()-0.5)*0.4;var dn=dd.clone().normalize();pos.add(dn.clone().multiplyScalar(-0.012));addStrand(pos,dd,len,thick,mat);} }
-function accentFur(c,r,sc,d,density,len,thick,mat,skip){skip=skip||-0.25;for(var i=0;i<density;i++){var phi=Math.random()*Math.PI,theta=Math.random()*Math.PI*2;if(Math.cos(phi)<skip)continue;var pos=new THREE.Vector3(r*sc[0]*Math.sin(phi)*Math.cos(theta),r*sc[1]*Math.cos(phi),r*sc[2]*Math.sin(phi)*Math.sin(theta)).add(c);var dd=d.clone();dd.x+=(Math.random()-0.5)*0.25;dd.y+=(Math.random()-0.5)*0.15;dd.z+=(Math.random()-0.5)*0.25;var dn=dd.clone().normalize();pos.add(dn.clone().multiplyScalar(-0.012));addStrand(pos,dd,len+Math.random()*0.03,thick,mat);} }
-function buildInstancedFur(){var groups={};for(var i=0;i<furStrands.length;i++){var st=furStrands[i];var key=st.mat.uuid+'_'+st.geoId;if(!groups[key])groups[key]={mat:st.mat,strands:[],geo:st.geo};groups[key].strands.push(st);}var result=new THREE.Group();for(var key in groups){var g=groups[key];var count=g.strands.length;if(count===0)continue;var inst=new THREE.InstancedMesh(g.geo,g.mat,count);inst.castShadow=true;var dummy=new THREE.Object3D();for(var i=0;i<count;i++){dummy.position.copy(g.strands[i].pos);dummy.quaternion.copy(g.strands[i].quat);dummy.updateMatrix();inst.setMatrixAt(i,dummy.matrix);}inst.instanceMatrix.needsUpdate=true;result.add(inst);}return result;}
-function addFurLocal(group,localC,r,sc,d,density,len,thick,mat){if(!group.userData.fg)group.userData.fg={};var key=mat.uuid;if(!group.userData.fg[key])group.userData.fg[key]={mat:mat,strands:[]};for(var i=0;i<density;i++){var phi=Math.random()*Math.PI,theta=Math.random()*Math.PI*2;if(Math.cos(phi)<-0.05)continue;var lp=new THREE.Vector3(r*sc[0]*Math.sin(phi)*Math.cos(theta),r*sc[1]*Math.cos(phi),r*sc[2]*Math.sin(phi)*Math.sin(theta)).add(localC);var dd=d.clone();dd.x+=(Math.random()-0.5)*0.4;dd.y+=(Math.random()-0.5)*0.3;dd.z+=(Math.random()-0.5)*0.4;var dn=dd.clone().normalize();lp.add(dn.clone().multiplyScalar(-0.012));var qlen=Math.round((len+Math.random()*0.015)/0.004)*0.004;var geo=getStrandGeo(qlen,thick);var quat=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,-1,0),dd.clone().normalize());group.userData.fg[key].strands.push({pos:lp,quat:quat,geo:geo});} }
-function addFurTube(group,vecFull,rTop,rBot,sc,d,totalDensity,len,thick,mat,offset){offset=offset||new THREE.Vector3(0,0,0);var n=Math.max(6,Math.ceil(totalDensity/60));var perSlice=Math.ceil(totalDensity/n);for(var i=0;i<n;i++){var frac=(i+0.5)/n;var r=rTop*(1-frac)+rBot*frac;var center=vecFull.clone().multiplyScalar(frac).add(offset);addFurLocal(group,center,r,sc,d,perSlice,len,thick,mat);} }
-function buildGroupFur(group){if(!group.userData.fg)return;for(var mk in group.userData.fg){var fg=group.userData.fg[mk];var gg={};for(var i=0;i<fg.strands.length;i++){var gk=fg.strands[i].geo.uuid;if(!gg[gk])gg[gk]={mat:fg.mat,ss:[],geo:fg.strands[i].geo};gg[gk].ss.push(fg.strands[i]);}for(var gk in gg){var g2=gg[gk];var inst=new THREE.InstancedMesh(g2.geo,g2.mat,g2.ss.length);inst.castShadow=true;var d=new THREE.Object3D();for(var i=0;i<g2.ss.length;i++){d.position.copy(g2.ss[i].pos);d.quaternion.copy(g2.ss[i].quat);d.updateMatrix();inst.setMatrixAt(i,d.matrix);}inst.instanceMatrix.needsUpdate=true;group.add(inst);}}}
-function createFurTex(baseColor){var aC=document.createElement('canvas');aC.width=aC.height=1024;var a=aC.getContext('2d');a.fillStyle=baseColor;a.fillRect(0,0,1024,1024);for(var i=0;i<80;i++){var v=Math.random();a.fillStyle='rgba('+(58+v*55)+','+(42+v*45)+','+(28+v*30)+',0.05)';a.beginPath();a.arc(Math.random()*1024,Math.random()*1024,50+Math.random()*100,0,Math.PI*2);a.fill();}for(var i=0;i<1500;i++){var x=Math.random()*1024,y=Math.random()*1024;a.strokeStyle='rgba('+(50+Math.random()*50)+','+(35+Math.random()*40)+','+(22+Math.random()*25)+',0.07)';a.lineWidth=0.4+Math.random()*0.8;a.beginPath();a.moveTo(x,y);a.lineTo(x+(Math.random()-0.5)*2,y+12+Math.random()*28);a.stroke();}for(var i=0;i<300;i++){var x=Math.random()*1024,y=Math.random()*1024;a.strokeStyle='rgba('+(120+Math.random()*60)+','+(85+Math.random()*50)+','+(35+Math.random()*30)+',0.04)';a.lineWidth=0.3+Math.random()*0.5;a.beginPath();a.moveTo(x,y);a.lineTo(x+(Math.random()-0.5)*1.5,y+10+Math.random()*25);a.stroke();}var albedo=new THREE.CanvasTexture(aC);albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;var nC=document.createElement('canvas');nC.width=nC.height=1024;var n=nC.getContext('2d');n.fillStyle='#8080ff';n.fillRect(0,0,1024,1024);var nI=n.getImageData(0,0,1024,1024);var hM=new Float32Array(1024*1024);for(var i=0;i<hM.length;i++)hM[i]=Math.random();for(var pass=0;pass<4;pass++){var hN=new Float32Array(1024*1024);for(var y=0;y<1024;y++)for(var x=0;x<1024;x++){var sum=0;for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){var nx=Math.max(0,Math.min(1023,x+dx)),ny=Math.max(0,Math.min(1023,y+dy));sum+=hM[ny*1024+nx];}hN[y*1024+x]=sum/9;}hM=hN;}for(var y=0;y<1024;y++)for(var x=0;x<1024;x++){var idx=y*1024+x;var dx=(hM[y*1024+Math.min(1023,x+1)]-hM[y*1024+Math.max(0,x-1)])*18;var dy=(hM[Math.min(1023,y+1)*1024+x]-hM[Math.max(0,y-1)*1024+x])*18;var l=Math.sqrt(dx*dx+dy*dy+1);var p=idx*4;nI.data[p]=((dx/l)*0.5+0.5)*255;nI.data[p+1]=((dy/l)*0.5+0.5)*255;nI.data[p+2]=((1/l)*0.5+0.5)*255;nI.data[p+3]=255;}n.putImageData(nI,0,0);var normal=new THREE.CanvasTexture(nC);normal.wrapS=normal.wrapT=THREE.RepeatWrapping;albedo.repeat.set(10,10);normal.repeat.set(10,10);return{albedo:albedo,normal:normal};}
-function createDeepFurMat(hex,rough){var mat=new THREE.MeshStandardMaterial({color:hex,roughness:rough||0.92,metalness:0,side:THREE.DoubleSide});mat.onBeforeCompile=function(sh){sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nattribute float aStrandY;\nvarying float vStrandY;');sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvStrandY=aStrandY;');sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying float vStrandY;');sh.fragmentShader=sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb=mix(vec3(0.015,0.01,0.005),diffuseColor.rgb,vStrandY);');sh.fragmentShader=sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );','gl_FragColor=vec4(outgoingLight,diffuseColor.a);\nfloat NdotV=dot(vNormal,normalize(-vViewPosition));\nfloat tipRim=pow(1.0-abs(NdotV),3.0)*vStrandY;\ngl_FragColor.rgb+=vec3(0.55,0.28,0.07)*tipRim;\nfloat goldSpec=pow(max(NdotV,0.0),8.0)*vStrandY*0.4;\ngl_FragColor.rgb+=vec3(0.5,0.25,0.06)*goldSpec;');};mat.customProgramCacheKey=function(){return'deep_gold_fur_v3';};return mat;}
-function createBodyGuideMesh(){var allPos=[],allIdx=[],vOff=0;wolf.updateMatrixWorld(true);wolf.traverse(function(obj){if(!obj.isMesh||obj.material!==matFur||!obj.geometry.attributes.position||!obj.geometry.index)return;var maxScale=Math.max(obj.scale.x,obj.scale.y,obj.scale.z);var r=obj.geometry.parameters?obj.geometry.parameters.radius:0.01;if(r*maxScale<0.03)return;var skip=false;var p=obj.parent;while(p){if(p===tailRoot||p===legFL||p===legFR||p===legHL||p===legHR||p===headGroup){skip=true;break;}p=p.parent;}if(skip)return;var pos=obj.geometry.attributes.position.array;var idx=obj.geometry.index.array;var m=obj.matrixWorld;var v=new THREE.Vector3();for(var j=0;j<pos.length;j+=3){v.set(pos[j],pos[j+1],pos[j+2]).applyMatrix4(m);allPos.push(v.x,v.y,v.z);}for(var j=0;j<idx.length;j++)allIdx.push(idx[j]+vOff);vOff+=pos.length/3;});var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(allPos,3));g.setIndex(allIdx);g.computeVertexNormals();return g;}
-function placeFurOnMesh(geo,density,len,thick,mat,dirBase){var pos=geo.attributes.position.array;var nor=geo.attributes.normal.array;var idx=geo.index.array;var tc=idx.length/3;var areas=new Float32Array(tc),cum=new Float32Array(tc),total=0;var v0=new THREE.Vector3(),v1=new THREE.Vector3(),v2=new THREE.Vector3();var e1=new THREE.Vector3(),e2=new THREE.Vector3(),cr=new THREE.Vector3();for(var i=0;i<tc;i++){var a=idx[i*3],b=idx[i*3+1],c=idx[i*3+2];v0.set(pos[a*3],pos[a*3+1],pos[a*3+2]);v1.set(pos[b*3],pos[b*3+1],pos[b*3+2]);v2.set(pos[c*3],pos[c*3+1],pos[c*3+2]);e1.subVectors(v1,v0);e2.subVectors(v2,v0);cr.crossVectors(e1,e2);areas[i]=cr.length()*0.5;total+=areas[i];cum[i]=total;}var n0=new THREE.Vector3(),n1=new THREE.Vector3(),n2=new THREE.Vector3();var pt=new THREE.Vector3(),nm=new THREE.Vector3(),dir=new THREE.Vector3(),flow=new THREE.Vector3();for(var i=0;i<density;i++){var r=Math.random()*total;var lo=0,hi=tc-1;while(lo<hi){var mid=(lo+hi)>>1;if(cum[mid]<r)lo=mid+1;else hi=mid;}var t2=lo;var a=idx[t2*3],b=idx[t2*3+1],c=idx[t2*3+2];v0.set(pos[a*3],pos[a*3+1],pos[a*3+2]);v1.set(pos[b*3],pos[b*3+1],pos[b*3+2]);v2.set(pos[c*3],pos[c*3+1],pos[c*3+2]);n0.set(nor[a*3],nor[a*3+1],nor[a*3+2]);n1.set(nor[b*3],nor[b*3+1],nor[b*3+2]);n2.set(nor[c*3],nor[c*3+1],nor[c*3+2]);var r1=Math.random(),r2=Math.random();if(r1+r2>1){r1=1-r1;r2=1-r2;}var r3=1-r1-r2;pt.copy(v0).multiplyScalar(r3).addScaledVector(v1,r1).addScaledVector(v2,r2);nm.copy(n0).multiplyScalar(r3).addScaledVector(n1,r1).addScaledVector(n2,r2).normalize();if(nm.y<-0.85)continue;var dot=nm.dot(dirBase);flow.copy(dirBase).addScaledVector(nm,-dot);if(flow.lengthSq()<0.001)flow.copy(dirBase);flow.normalize();dir.copy(flow).multiplyScalar(0.7);dir.addScaledVector(nm,0.3);dir.x+=(Math.random()-0.5)*0.3;dir.y+=(Math.random()-0.5)*0.2;dir.z+=(Math.random()-0.5)*0.3;dir.normalize();pt.addScaledVector(nm,-0.012);addStrand(pt,dir,len,thick,mat);} }
-function topY(z){var t=(sZ-z)/(sZ-hZ);t=Math.max(0,Math.min(1,t));return sY-t*(sY-hY);}
-function disposeAnimal(){if(!wolf)return;scene.remove(wolf);furStrands=[];_geomCache={};tailSegs=[];spineSegs=[];neckSegs=[];}
+/* LABOR = WELT (K45, Synthese §4 W5d „das Labor zeigt den Ofen-Körper"): die Gestalt des Labors IST der Guss der Welt —
+   DERSELBE Bäcker wie Foundry-Worker und Wirts-Ofen (foundry-core BAKERS_BY_KIND.kreatur, Saat 0 wie der Kalt-Guss
+   `_ofenKreaturTemplate`), aus denselben Dials, mit derselben LOD-Kette: L0 nah, L1 jenseits `ab` (± `hyst`) der Budget-
+   Zeile, an die Knochen der feinen gebunden, und die Grobstufe wirft als Zwilling (die Welt-Regel `_gelenkGestalt` /
+   `_gelenkStufe`, Maßstab 1 = Lab-Einheit). Gefallen: die Labor-Streu (Kugel-Perlen + 1,3 M Strähnen-Instanzen aus
+   Math.random — ein ANDERES Tier als die Welt, ×21 über ihrer Zeile), ihr Guide-Mantel, ihre Fell-Textur und ihre zwei
+   Shader. Die Stoffe webt `laborStoff` aus dem Bäcker-Stoff und den Gesetz-Daten FELL_LOOK · FELL_SCHALE — dieselben
+   Zahlen liest der Welt-Stoff (stamm `fellSchale`, TSL). */
+var BZ=__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur,STUFEN=__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.kindStages.kreatur;
+var FL=__tetrapodaCore.FELL_LOOK,FS=__tetrapodaCore.FELL_SCHALE;
+var uZeit={value:0},stufeWahl='auto',gestalt=null,kostenStufen=null;
+function gf(x){var s=(+x).toString();return s.indexOf('.')<0&&s.indexOf('e')<0?s+'.0':s;}
+function gv(a){return 'vec3('+gf(a[0])+','+gf(a[1])+','+gf(a[2])+')';}
+var GLSL_RAUSCHEN='vec3 mod289_s(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}\nvec4 mod289_s(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}\nvec4 permute_s(vec4 x){return mod289_s(((x*34.0)+1.0)*x);}\nvec4 taylorInvSqrt_s(vec4 r){return 1.79284291400159-0.85373472095314*r;}\nfloat snoise(vec3 v){const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289_s(i);vec4 p=permute_s(permute_s(permute_s(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);vec4 norm=taylorInvSqrt_s(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));}\n';
+// DER LABOR-STOFF: der Bäcker-Stoff (Farbe linear, Rauheit, Seite, Glut — dieselben Zahlen, die als mp reisen) + die
+// Vertex-Farbe als Farbe (die Welt liest nur sie) + die Look-Gesetze der Klasse als r128-GLSL: Fell (Rim · Sheen ·
+// microFur · Wrap · Atem), Strähne/Schale (Spitzen-Rim · Spec über die Strähnen-Achse) und das Haar-Raster der Schale.
+function laborStoff(m0,geo,skin,cache){
+  var k=(m0.userData&&m0.userData.__klasse)||'dunkel',vc=!!geo.attributes.color,key=k+(skin?'|s':'')+(vc?'|c':'');
+  if(cache[key])return cache[key];
+  var m=m0.clone();m.skinning=skin;if(vc){m.vertexColors=true;m.color.setRGB(1,1,1);}
+  var schale=k==='fellSchale',koerper=k==='fell',strand=schale||k.indexOf('straehne')===0;
+  if(koerper||strand){
+    var L=koerper?FL.koerper:FL.straehne,ton=m0.color,tonL=Math.max(1e-4,0.2126*ton.r+0.7152*ton.g+0.0722*ton.b);
+    if(schale)m.alphaTest=0.5;
+    m.onBeforeCompile=function(sh){
+      sh.uniforms.uZeit=uZeit;
+      var vk='uniform float uZeit;\nvarying vec3 vGeo;\n'+(schale?'attribute vec3 aSchale;\nattribute vec3 aWurzel;\nvarying vec3 vSchale;\nvarying vec3 vWurzel;\n':'')+(koerper?GLSL_RAUSCHEN:'');
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\n'+vk).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+(schale?'\nvSchale=aSchale;\nvWurzel=aWurzel;':''));
+      if(koerper)sh.vertexShader=sh.vertexShader.replace('#include <skinning_vertex>','#include <skinning_vertex>\ntransformed+=objectNormal*snoise(transformed*'+gf(L.atem.freq)+'+uZeit*'+gf(L.atem.t)+')*'+gf(L.atem.amp)+';');
+      var fk='varying vec3 vGeo;\n'+(schale?'varying vec3 vSchale;\nvarying vec3 vWurzel;\n':'');
+      var raster=schale?'\nfloat tS=vSchale.x;vec3 pS=vWurzel*vSchale.z;vec3 zS=floor(pS);'+
+        'float h1=fract(sin(dot(zS,vec3('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+','+gf(FS.hashA[2])+')))*'+gf(FS.hashA[3])+');'+
+        'float h2=fract(sin(dot(zS,vec3('+gf(FS.hashB[0])+','+gf(FS.hashB[1])+','+gf(FS.hashB[2])+')))*'+gf(FS.hashB[3])+');'+
+        'vec3 mS=(vec3(h1,h2,fract((h1+h2)*'+gf(FS.hashC)+'))-0.5)*'+gf(FS.mitte)+';float dS=length(fract(pS)-0.5-mS);'+
+        'float rS=sqrt(vSchale.y)*'+gf(FS.radius)+'*(1.0-tS*'+gf(FS.zulauf)+');'+
+        'float haarS=step(dS,rS)*step(tS,h1*'+gf(FS.endeSpanne)+'+'+gf(FS.ende)+');float wolleS=step(tS,'+gf(FS.wolle)+')*step('+gf(FS.wolleAb)+',vSchale.y);'+
+        'diffuseColor.rgb*=mix('+gf(FS.wurzel)+','+gf(FS.spitze)+',tS);diffuseColor.a=max(haarS,wolleS);':'';
+      var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
+      if(koerper){var mf=L.microFur;look+='totalEmissiveRadiance+='+gv(L.rimFarbe)+'*pow(rimL,'+gf(L.rimPow)+')*'+gf(L.rimAmt)+'+'+gv(L.sheenFarbe)+'*pow(max(ndvL,0.0),'+gf(L.sheenPow)+')*'+gf(L.sheenAmt)+
+        '+'+gv(mf.farbe)+'*pow(rimL,3.0)*step('+gf(mf.schwelle)+',fract(sin(dot(floor(vGeo.xz*'+gf(mf.dichte)+'),vec2('+gf(FS.hashA[0])+','+gf(FS.hashA[1])+')))*'+gf(FS.hashA[3])+'))*'+gf(mf.amt)+';';}
+      else{/* ohne Vertex-Farbe ist der Ton der Anker selbst (die Welt füllt color mit mp.color): die Achse steht bei 1 */var sT=schale?'vSchale.x':!vc?'1.0':'clamp((dot(vColor,vec3(0.2126,0.7152,0.0722))/'+gf(tonL)+'-'+gf(L.wurzelAnker)+')/'+gf(Math.max(1e-3,1-L.wurzelAnker))+',0.0,1.0)';
+        look+='float sTL='+sT+';totalEmissiveRadiance+='+gv(L.tipRimFarbe)+'*pow(rimL,'+gf(L.tipRimPow)+')*sTL+'+gv(L.specFarbe)+'*pow(max(ndvL,0.0),'+gf(L.specPow)+')*sTL*'+gf(L.specAmt)+';';}
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+raster).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look);
+      if(koerper)sh.fragmentShader=sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );','outgoingLight*=max(ndvL,0.0)*'+gf(L.wrap)+'+'+gf(1-L.wrap)+';\ngl_FragColor = vec4( outgoingLight, diffuseColor.a );');
+    };
+    m.customProgramCacheKey=function(){return 'labor-welt-'+key;};
+  }
+  cache[key]=m;return m;
+}
+// DER GELENK-BAUM des Beipacks (die Welt: `_ofenAssembleAsset`): je Gelenk ein Knochen (die Haut bindet an ihn), benannt,
+// in der Ruhe-Pose des Gusses.
+function gelenkBaum(sk){var teile={},bones=Array.isArray(sk.skinJoints)&&sk.skinJoints.length>0,root=new THREE.Group();
+  sk.joints.forEach(function(j){var b=bones?new THREE.Bone():new THREE.Group();b.name=j.name;teile[j.name]=b;});
+  sk.joints.forEach(function(j){var b=teile[j.name];if(j.parent&&teile[j.parent])teile[j.parent].add(b);else if(j.name===sk.root)root.add(b);else(teile[sk.root]||root).add(b);b.position.fromArray(j.pos);b.quaternion.fromArray(j.quat);b.scale.fromArray(j.scale);});
+  return {root:root,teile:teile};}
+// EINE STUFE an den Baum: jedes Teil an sein Gelenk, jede Haut an die Knochen der FEINEN Stufe (die Grobstufe trägt dieselben
+// Knochen — fehlt einer, bricht der Bau laut wie in der Welt).
+function stufeAnlegen(lod,dials,baum,cache){
+  var g=BAKERS_BY_KIND.kreatur(__tetrapodaCore,gattungAktiv,0,lod,dials),sk=g.userData.__skelett;
+  if(!sk||!Array.isArray(sk.joints)||!sk.joints.length)throw new Error('Labor: der Ofen-Guss L'+lod+' trägt kein Skelett (fail-closed)');
+  if(!baum)baum=gelenkBaum(sk);
+  var liste=[];
+  g.children.slice().forEach(function(m0){var geo=m0.geometry,skin=!!geo.attributes.skinIndex,mat=laborStoff(m0.material,geo,skin,cache);
+    var n=skin?new THREE.SkinnedMesh(geo,mat):new THREE.Mesh(geo,mat),j=baum.teile[m0.userData.__assetJoint];
+    if(!j)throw new Error('Labor: das Gelenk '+m0.userData.__assetJoint+' fehlt dem Baum (fail-closed)');
+    n.userData.__seh=m0.material.userData.__seh;n.userData.__klasse=m0.material.userData.__klasse;n.receiveShadow=true;j.add(n);liste.push(n);});
+  baum.root.updateMatrixWorld(true);
+  var namen=Array.isArray(sk.skinJoints)?sk.skinJoints:[],bones=namen.map(function(nm){if(!baum.teile[nm])throw new Error('Labor: der Knochen '+nm+' der Stufe '+lod+' fehlt der feinen (fail-closed)');return baum.teile[nm];});
+  liste.forEach(function(n){if(n.isSkinnedMesh)n.bind(new THREE.Skeleton(bones),n.matrixWorld.clone());});
+  return {baum:baum,sk:sk,liste:liste};
+}
+function disposeAnimal(){if(!gestalt)return;scene.remove(gestalt.root);gestalt.root.traverse(function(o){if(o.isMesh){o.geometry.dispose();o.material.dispose();}});gestalt=null;wolf=null;tailSegs=[];spineSegs=[];neckSegs=[];}
+// DER STUFEN-SCHALTER (die Welt-Regel `_gelenkStufe`): jenseits ab × (1 ± hyst) trägt L1 das Bild, diesseits L0 — und L1 wirft
+// immer als Zwilling. r128 prüft den Wurf gegen die Ebenen der HAUPT-Kamera (WebGLShadowMap), eine Schatten-Ebene wie in der
+// Welt (r184) wirft hier nicht: der Zwilling zeichnet nah ohne Farbe und Tiefe, sein Tiefen-Stoff wirft. Wählbar: auto · L0 · L1.
+var _sp=new THREE.Vector3();
+function stufeSchalten(){if(!gestalt)return;var fern;
+  if(stufeWahl==='auto'){wolf.getWorldPosition(_sp);var d=camera.position.distanceTo(_sp),h=gestalt.hyst;fern=!(d<gestalt.ab*(gestalt.istFern?1-h:1+h));}
+  else fern=stufeWahl==='1';
+  if(fern===gestalt.istFern)return;gestalt.istFern=fern;
+  gestalt.l0.forEach(function(m){m.visible=!fern;});gestalt.m1.forEach(function(mt){mt.colorWrite=fern;mt.depthWrite=fern;});
+  var el=document.getElementById('stufeIst');if(el)el.textContent='zeigt L'+(fern?1:0);}
+function laborStufe(){return gestalt?(gestalt.istFern?1:0):null;}
 /* DIE HÜLLE (K41): die fünf allometrischen Dials leben in T (geschrieben vom EINEN Generator aus PARAMS_BY_KIND.kreatur), nie im DOM. */
 var T={},regler=null,sitz=null,kosten=null,gattungAktiv='wolf';
 function deriveParams(){/* ULTRAGUSS U4: die Allometrie wohnt im Gesetzbuch (__tetrapodaCore.deriveTierParams) — die Shell reicht die Dials, ruft das EINE Gesetz. */return __tetrapodaCore.deriveTierParams({size:T.size,neckLen:T.neck,legLen:T.leg,diet:T.diet,build:T.build});}
 function buildAnimal(){
   disposeAnimal();P=deriveParams();
-  var __TK=__tetrapodaCore.TIER_MATERIAL_KLASSEN,__AU=__tetrapodaCore.tierAuge(P);   /* KONVERGENZ III: die tier-farben wohnen im gesetzbuch; die Iris und ihre Glut traegt die Art (tierAuge) */
-  var matNose=new THREE.MeshPhysicalMaterial({color:__TK.nase.c,roughness:0.10,clearcoat:1.0,clearcoatRoughness:0.03}),matEye=new THREE.MeshPhysicalMaterial({color:__AU.farbe,roughness:__TK.tierauge.r,clearcoat:1.0,emissive:__AU.glut,emissiveIntensity:__TK.tierauge.ei}),matPupil=new THREE.MeshBasicMaterial({color:__TK.pupille.c}),matCornea=new THREE.MeshPhysicalMaterial({color:0xffffff,roughness:0,transparent:true,opacity:0.05,clearcoat:1.0}),matClaw=new THREE.MeshStandardMaterial({color:__TK.klaue.c,roughness:0.20}),matPad=new THREE.MeshPhysicalMaterial({color:__TK.ballen.c,roughness:0.45,clearcoat:0.4}),matTooth=new THREE.MeshStandardMaterial({color:__TK.zahn.c,roughness:0.18}),matGum=new THREE.MeshPhysicalMaterial({color:__TK.zahnfleisch.c,roughness:0.5}),matDark=new THREE.MeshBasicMaterial({color:__TK.dunkel.c});
-  var furTex=createFurTex(P.base);
-  if(!matFur){matFur=new THREE.MeshStandardMaterial({roughness:0.93,metalness:0,normalScale:new THREE.Vector2(0.45,0.45)});matFur.userData.uTime={value:0};matFur.onBeforeCompile=function(sh){sh.uniforms.uTime=matFur.userData.uTime;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float uTime;\nvec3 mod289_s(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}\nvec4 mod289_s(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}\nvec4 permute_s(vec4 x){return mod289_s(((x*34.0)+1.0)*x);}\nvec4 taylorInvSqrt_s(vec4 r){return 1.79284291400159-0.85373472095314*r;}\nfloat snoise(vec3 v){const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;i=mod289_s(i);vec4 p=permute_s(permute_s(permute_s(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);vec4 norm=taylorInvSqrt_s(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));}');sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nfloat noise=snoise(position*1.4+uTime*0.14);\ntransformed+=normal*noise*0.007;');sh.fragmentShader=sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );','gl_FragColor=vec4(outgoingLight,diffuseColor.a);\nfloat NdotV=dot(vNormal,normalize(-vViewPosition));\nfloat rim=1.0-abs(NdotV);\nfloat sss=pow(rim,4.0);\ngl_FragColor.rgb+=vec3(0.55,0.25,0.07)*sss*0.5;\nfloat microFur=fract(sin(dot(floor(vUv*500.0),vec2(12.9898,78.233)))*43758.5453);\nmicroFur=step(0.55,microFur);\nfloat furRim=pow(rim,3.0)*microFur;\ngl_FragColor.rgb+=vec3(0.7,0.35,0.1)*furRim*0.3;\nfloat goldSheen=pow(max(NdotV,0.0),5.0)*0.15;\ngl_FragColor.rgb+=vec3(0.45,0.25,0.08)*goldSheen;\ngl_FragColor.rgb*=(0.5+0.5*max(NdotV,0.0));');};matFur.customProgramCacheKey=function(){return'wolf_aureus_v22';};}
-  matFur.map=furTex.albedo;matFur.normalMap=furTex.normal;matFur.needsUpdate=true;matStrand=createDeepFurMat(P.cB);matStrandDk=createDeepFurMat(P.cD);matStrandLt=createDeepFurMat(P.cL,0.88);
-  /* KONVERGENZ III: der teile-baum wohnt im gesetzbuch (__tetrapodaCore.bauTier) -- die shell reicht THREE-fabriken + streut ihr fell auf die rueckgaben. */
-  var __M={fell:matFur,straehne:matStrand,straehneD:matStrandDk,straehneL:matStrandLt,nase:matNose,tierauge:matEye,pupille:matPupil,hornhaut:matCornea,klaue:matClaw,ballen:matPad,zahn:matTooth,zahnfleisch:matGum,dunkel:matDark};
-  var __F={gruppe:function(){return new THREE.Group();},kugel:function(r,k,sc){return s(r,__M[k],sc);},zylinder:function(rt,rb,h,k){return cH(rt,rb,h,__M[k]);},kugelFein:function(r,k,segs){var me=new THREE.Mesh(new THREE.SphereGeometry(r,segs,segs),__M[k]);me.castShadow=true;return me;},v3:function(x,y,z){return new THREE.Vector3(x,y,z);},richte:function(node,dir){node.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());},
-  fellSchweif:function(segG,segR,i){/* Welle 5: die Segment-Mitte ist die Lage des Segment-Leibs, die Haar-Laenge die der Art (H/2.4 x schwanz.fell) */var ks=(P.size/2.4)*__tetrapodaCore.artGestalt(P).schwanz.fell,segZ=segG.children[0].position.z;var fBk=new THREE.Vector3(0,-0.12,-0.92);for(var j=0;j<(28-i*2)*9;j++){var phi=Math.random()*Math.PI,theta=Math.random()*Math.PI*2;if(Math.cos(phi)<-0.28)continue;var pos2=new THREE.Vector3(segR*0.95*Math.sin(phi)*Math.cos(theta),segR*1.18*Math.cos(phi),segR*1.18*Math.sin(phi)*Math.sin(theta)+segZ);var d=fBk.clone();d.x+=(Math.random()-0.5)*0.25;d.y+=(Math.random()-0.5)*0.15;d.z+=(Math.random()-0.5)*0.25;var qlen=Math.round(((0.032-i*0.003+Math.random()*0.03)*ks)/0.004)*0.004;var geo2=getStrandGeo(qlen,0.012);var quat2=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,-1,0),d.clone().normalize());var mesh2=new THREE.Mesh(geo2,matStrand);mesh2.position.copy(pos2);mesh2.quaternion.copy(quat2);segG.add(mesh2);}}};
-  var __B=__tetrapodaCore.bauTier(__F,P);
-  wolf=__B.teile.wolf;headGroup=__B.teile.headGroup;jawGroup=__B.teile.jawGroup;earL=__B.teile.earL;earR=__B.teile.earR;lidTL=__B.teile.lidTL;lidTR=__B.teile.lidTR;tailRoot=__B.teile.tailRoot;legFL=__B.teile.legFL;legFR=__B.teile.legFR;legHL=__B.teile.legHL;legHR=__B.teile.legHR;shoulderL=__B.teile.shoulderL;shoulderR=__B.teile.shoulderR;ribcage=__B.teile.ribcage;waist=__B.teile.waist;flank=__B.teile.flank;belly=__B.teile.belly;lowerAbd=__B.teile.lowerAbd;mane=__B.teile.mane;throat=__B.teile.throat;larynx=__B.teile.larynx;larynxUp=__B.teile.larynxUp;deltL=__B.teile.deltL;deltR=__B.teile.deltR;tricepL=__B.teile.tricepL;tricepR=__B.teile.tricepR;quadL=__B.teile.quadL;quadR=__B.teile.quadR;hamL=__B.teile.hamL;hamR=__B.teile.hamR;gastroL=__B.teile.gastroL;gastroR=__B.teile.gastroR;gluteL=__B.teile.gluteL;gluteR=__B.teile.gluteR;flU=__B.teile.flU;flL=__B.teile.flL;flP=__B.teile.flP;frU=__B.teile.frU;frL=__B.teile.frL;frP=__B.teile.frP;hlT=__B.teile.hlT;hlC=__B.teile.hlC;hlP=__B.teile.hlP;hrT=__B.teile.hrT;hrC=__B.teile.hrC;hrP=__B.teile.hrP;
-  tailSegs=__B.tailSegs;spineSegs=__B.spineSegs;neckSegs=__B.neckSegs;
-  pawOffsets[0]=__B.pawOffsets[0];pawOffsets[1]=__B.pawOffsets[1];pawOffsets[2]=__B.pawOffsets[2];pawOffsets[3]=__B.pawOffsets[3];
-  H=__B.masse.H;sY=__B.masse.sY;hY=__B.masse.hY;sZ=__B.masse.sZ;hZ=__B.masse.hZ;lv=__B.masse.lv;by=__B.masse.by;tv=__B.masse.tv;bt=__B.masse.bt;
-  var bX=__B.masse.bX;
-
-  /* V18.460 DIE FELL-STREU IST GESETZ: die komplette Koerper-Streu wohnt als
-     Zeilen-Tabelle im Gesetzbuch (__tetrapodaCore.fellStreu) -- dieselben Zeilen
-     liest der Welt-Baecker. Die Shell streut sie mit IHREN Materialien/Buildern
-     (addFurLocal + Instancing); die Inline-Streu, der Guide-Mesh-Mantel und die
-     fuzz/accent-Bloecke sind GEFALLEN (eine Quelle, zwei Leser). */
-  (function(){
-    var wirte={wolf:wolf,headGroup:headGroup,legFL:legFL,legFR:legFR,legHL:legHL,legHR:legHR,flU:flU,frU:frU,flL:flL,frL:frL,flP:flP,frP:frP,hlT:hlT,hrT:hrT,hlC:hlC,hrC:hrC,hlP:hlP,hrP:hrP};
-    var toene={B:matStrand,D:matStrandDk,L:matStrandLt};
-    var rows=__tetrapodaCore.fellStreu(P,__B.masse,__B.fellOrt); /* Integration W5-Koerper: die Zeilen sitzen auf dem Fell-Ort des Baus */
-    for(var i2=0;i2<rows.length;i2++){var row=rows[i2];
-      if(row.art==="deck"){
-        /* der Guide-Mesh-Mantel des Labs, gespeist aus der GESETZ-Zeile */
-        var fBack=new THREE.Vector3(row.d[0],row.d[1],row.d[2]);var bodyMesh=createBodyGuideMesh();
-        placeFurOnMesh(bodyMesh,row.uDens,row.underL,0.008,matStrandDk,fBack);
-        placeFurOnMesh(bodyMesh,row.gDens,row.guardL,0.006,matStrand,fBack);
-        placeFurOnMesh(bodyMesh,row.gDens*row.dunkelQuote,0.07,0.008,matStrandDk,fBack);
-        placeFurOnMesh(bodyMesh,row.gDens*row.hellQuote,0.06,0.008,matStrandLt,fBack);
-        continue;}
-      var wirt=wirte[row.teil];if(!wirt)continue;
-      addFurLocal(wirt,new THREE.Vector3(row.c[0],row.c[1],row.c[2]),row.r,row.sc,new THREE.Vector3(row.d[0],row.d[1],row.d[2]),row.n,row.l,row.t,toene[row.ton]||matStrand);}
-  })();
-  buildGroupFur(legFL);buildGroupFur(legFR);buildGroupFur(legHL);buildGroupFur(legHR);buildGroupFur(flU);buildGroupFur(frU);buildGroupFur(flL);buildGroupFur(frL);buildGroupFur(flP);buildGroupFur(frP);buildGroupFur(hlT);buildGroupFur(hrT);buildGroupFur(hlC);buildGroupFur(hrC);buildGroupFur(hlP);buildGroupFur(hrP);buildGroupFur(wolf);buildGroupFur(headGroup);
-  furInstanced=buildInstancedFur();wolf.add(furInstanced);scene.add(wolf);if(kosten)kosten.messen(wolf,0);
+  var dials={size:T.size,neck:T.neck,leg:T.leg,diet:T.diet,build:T.build},cache={};
+  var s0=stufeAnlegen(STUFEN[0],dials,null,cache),s1=stufeAnlegen(STUFEN[1],dials,s0.baum,{}),teile=s0.baum.teile,m=s0.sk.masse||{};
+  wolf=teile[s0.sk.root];headGroup=teile.headGroup;jawGroup=teile.jawGroup||null;earL=teile.earL||null;earR=teile.earR||null;lidTL=teile.lidTL||null;lidTR=teile.lidTR||null;tailRoot=teile.tailRoot||null;
+  legFL=teile.legFL;legFR=teile.legFR;legHL=teile.legHL;legHR=teile.legHR;flU=teile.flU;flL=teile.flL;flP=teile.flP;frU=teile.frU;frL=teile.frL;frP=teile.frP;hlT=teile.hlT;hlC=teile.hlC;hlP=teile.hlP;hrT=teile.hrT;hrC=teile.hrC;hrP=teile.hrP;
+  shoulderL=shoulderR=ribcage=null;
+  tailSegs=(s0.sk.tailSegs||[]).map(function(nm){return teile[nm];}).filter(Boolean);spineSegs=[];neckSegs=[];
+  H=m.H;sY=m.sY;hY=m.hY;sZ=m.sZ;hZ=m.hZ;lv=m.lv;by=m.by;tv=m.tv;bt=m.bt;
+  // DIE SOHLE (die Welt: `_ofenAssembleAsset`): der Stand liest die Haut, nie die Fell-Schalen darunter.
+  var sohle=new THREE.Box3();s0.liste.forEach(function(n){if(!n.geometry.attributes.aSchale)sohle.expandByObject(n);});
+  [flP,frP,hlP,hrP].forEach(function(p,i){p.getWorldPosition(_fp);pawOffsets[i]=_fp.y-sohle.min.y;});
+  // der Wurf: L0 wirft nach `schatten` der Zeile (1 = die Grobstufe ist ihr Zwilling), L1 mit ihrem Teil `wurf.seh`
+  var z1=BZ[STUFEN[1]],seh=z1.wurf&&Array.isArray(z1.wurf.seh)?z1.wurf.seh:null;
+  s0.liste.forEach(function(n){n.castShadow=BZ[STUFEN[0]].schatten===STUFEN[0];});
+  s1.liste.forEach(function(n){n.castShadow=z1.schatten===STUFEN[1]&&(!seh||seh.indexOf(n.userData.__seh)>=0);});
+  gestalt={root:s0.baum.root,l0:s0.liste,l1:s1.liste,m1:s1.liste.map(function(n){return n.material;}).filter(function(mt,i,a){return a.indexOf(mt)===i;}),ab:z1.ab,hyst:BZ.hyst,istFern:null};
+  if(kosten){kosten.messen({traverse:function(f){s0.liste.forEach(f);}},STUFEN[0]);kosten.messen({traverse:function(f){s1.liste.forEach(f);}},STUFEN[1]);}
+  scene.add(gestalt.root);stufeSchalten();
   if(contactShadow){contactShadow.scale.setScalar(H*0.55);contactShadow.position.y=0.002;}
   controls.target.set(0,sY*0.38,0);controls.update();phys.init();emo.set(emoMode);document.getElementById('loading').style.display='none';
 }
@@ -176,8 +219,8 @@ function init(){
     basis:function(){return presets[gattungAktiv]||null;},
     format:function(z,v){return z.id==="diet"?(v>0.7?"Carn":v>0.3?"Omni":"Herb"):z.id==="size"?(+v).toFixed(1):(+v).toFixed(2);},
     bei:function(){gattungMarke(null);},nachRuhe:function(){buildAnimal();}});
-  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur,stufen:[0],
-    quelle:"gemessen an der Labor-Gestalt (Leib + Fell); den Welt-Guss bäckt der Host-Ofen aus denselben Dials (L1 = seine Grobstufe)"});
+  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:BZ,stufen:STUFEN,
+    quelle:"gemessen an der gezeigten Gestalt = dem Welt-Guss (foundry-core BAKERS_BY_KIND.kreatur, dieselben Dials, Saat 0): L0 nah, L1 jenseits "+BZ[STUFEN[1]].ab+" (± "+Math.round(BZ.hyst*100)+" %) und als Wurf"});
   scene=new THREE.Scene();scene.background=new THREE.Color(0x080604);camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.1,200);camera.position.set(6,2,7);
   renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(devicePixelRatio);if(THREE.sRGBEncoding!==undefined)renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
   try{var c=document.createElement('canvas');c.width=256;c.height=256;var x=c.getContext('2d');var g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#ccaa88');g.addColorStop(0.5,'#443322');g.addColorStop(1,'#0a0805');x.fillStyle=g;x.fillRect(0,0,256,256);var t=new THREE.CanvasTexture(c);var p=new THREE.PMREMGenerator(renderer);scene.environment=p.fromEquirectangular(t).texture;t.dispose();}catch(e){}
@@ -186,14 +229,15 @@ function init(){
   var csGeo=new THREE.CircleGeometry(1,48);var csMat=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:0.35,depthWrite:false});contactShadow=new THREE.Mesh(csGeo,csMat);contactShadow.rotation.x=-Math.PI/2;contactShadow.position.y=0.001;scene.add(contactShadow);
   composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.35,0.4,0.85));fxaa=new THREE.ShaderPass(THREE.FXAAShader);fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);composer.addPass(fxaa);
   var cine={uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:['varying vec2 vUv;','void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}'].join('\n'),fragmentShader:['uniform sampler2D tDiffuse;','uniform float time;','varying vec2 vUv;','float random(vec2 st){return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);}','float getLum(vec2 uv){return dot(texture2D(tDiffuse,uv).rgb,vec3(0.299,0.587,0.114));}','void main(){vec2 uv=vUv;vec2 dir=uv-0.5;float dist=length(dir);vec2 offset=dir*dist*0.008;float r=texture2D(tDiffuse,uv+offset).r;float g=texture2D(tDiffuse,uv).g;float b=texture2D(tDiffuse,uv-offset).b;vec3 color=vec3(r,g,b);float lum=getLum(uv);float lL=getLum(uv-vec2(0.001,0.0));float lR=getLum(uv+vec2(0.001,0.0));float lU=getLum(uv-vec2(0.0,0.001));float lD=getLum(uv+vec2(0.0,0.001));float edge=abs(lL-lum)+abs(lR-lum)+abs(lU-lum)+abs(lD-lum);color*=(1.0+edge*2.0);color*=smoothstep(1.2,0.1,dist*1.3);color+=random(uv+time)*0.03-0.015;gl_FragColor=vec4(color,1.0);}'].join('\n')};cinePass=new THREE.ShaderPass(cine);cinePass.renderToScreen=true;composer.addPass(cinePass);
-  controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=3;controls.maxDistance=30;controls.autoRotateSpeed=0.8;clock=new THREE.Clock();buildAnimal();
+  controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=3;controls.maxDistance=80;controls.autoRotateSpeed=0.8;clock=new THREE.Clock();buildAnimal();
   document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){sitz.schritt(function(){gattungMarke(b.dataset.p);var p=presets[b.dataset.p];regler.setzen({size:p.size,neck:p.neck,leg:p.leg,diet:p.diet,build:p.build},true);buildAnimal();});});});
+  document.querySelectorAll('#stufen button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#stufen button').forEach(function(b2){b2.classList.toggle('active',b2===b);});stufeWahl=b.dataset.s;stufeSchalten();});});
   document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
   animate();
 }
 function gattungMarke(g){gattungAktiv=g||gattungAktiv;document.querySelectorAll('#presets button').forEach(function(b){b.classList.toggle('active',!!g&&b.dataset.p===g);});}
 function animate(){
-  requestAnimationFrame(animate);if(!wolf)return;var t=clock.getElapsedTime(),dt=1/60;if(matFur)matFur.userData.uTime.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;cpgFreq=(bm.freqOv!==null?bm.freqOv:e.freq);updateCPG(dt);var st=e.stride;updateBodyPhysics(dt);bodyPhys.vy+=bm.impulseY;bodyPhys.vx+=bm.impulseX;var breathing=(st<0.01)?Math.sin(t*0.6)*0.003*H:0;wolf.position.y=bodyPhys.y+bm.pounceY+breathing;
+  requestAnimationFrame(animate);if(!wolf)return;var t=clock.getElapsedTime(),dt=1/60;uZeit.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;cpgFreq=(bm.freqOv!==null?bm.freqOv:e.freq);updateCPG(dt);var st=e.stride;updateBodyPhysics(dt);bodyPhys.vy+=bm.impulseY;bodyPhys.vx+=bm.impulseX;var breathing=(st<0.01)?Math.sin(t*0.6)*0.003*H:0;wolf.position.y=bodyPhys.y+bm.pounceY+breathing;
   // Body roll computed early for weight shift
   var bodyRollNow=Math.sin(cpgPhase[0]*2)*e.sway+e.bodyZ+bm.bodyRotZ;
   wolf.rotation.z=bodyRollNow;wolf.rotation.x=bodyPhys.pitch*0.15+e.bodyX+bm.bodyX;wolf.rotation.y=bm.bodyRotY;
@@ -240,8 +284,10 @@ function animate(){
   var sb=bm.spineBoost;for(var i=0;i<phys.spineZ.length;i++){if(i===0){phys.spineZ[i].target=Math.sin(cpgPhase[0]*2)*e.sway*(3.0+sb*3);phys.spineX[i].target=Math.sin(cpgPhase[0]*2+1)*e.bob*(2.0+sb*2)+Math.sin(t*0.5+i*0.3)*0.01*(st<0.01?1:0);phys.spineY[i].target=Math.sin(cpgPhase[0]+i*0.4)*e.sway*(2.5+sb*2)+bm.bodyRotY*(i/phys.spineZ.length)*0.3;}else{phys.spineZ[i].target=phys.spineZ[i-1].current*0.7;phys.spineX[i].target=phys.spineX[i-1].current*0.7;phys.spineY[i].target=phys.spineY[i-1].current*0.7;}phys.spineZ[i].update(dt);phys.spineX[i].update(dt);phys.spineY[i].update(dt);spineSegs[i].rotation.z=phys.spineZ[i].current;spineSegs[i].rotation.x=phys.spineX[i].current+Math.sin(t*1.2+i*0.2)*0.008*(st<0.01?1:0);spineSegs[i].rotation.y=phys.spineY[i].current;}
   for(var i=0;i<phys.neckZ.length;i++){if(i===0){phys.neckZ[i].target=phys.spineZ[phys.spineZ.length-1].current*0.5+Math.sin(t*0.4+i*0.2)*0.014*(st<0.01?1:0);phys.neckX[i].target=phys.spineX[phys.spineX.length-1].current*0.5+Math.sin(t*0.5+i*0.1)*0.012*(st<0.01?1:0);phys.neckYR[i].target=phys.spineY[phys.spineY.length-1].current*0.4+Math.sin(t*0.3+i*0.15)*0.025*(st<0.01?1:0)+bm.headY*0.3;}else{phys.neckZ[i].target=phys.neckZ[i-1].current*0.7;phys.neckX[i].target=phys.neckX[i-1].current*0.7;phys.neckYR[i].target=phys.neckYR[i-1].current*0.7;}phys.neckY[i].target=Math.sin(t*0.3+i*0.15)*0.02*(st<0.01?1:0);phys.neckZ[i].update(dt);phys.neckX[i].update(dt);phys.neckY[i].update(dt);phys.neckYR[i].update(dt);neckSegs[i].rotation.z=phys.neckZ[i].current;neckSegs[i].rotation.x=phys.neckX[i].current;neckSegs[i].rotation.y=phys.neckYR[i].current+phys.neckY[i].current;}
   // Head: lifts and sways naturally, not just nods
-  phys.headY.target=phys.neckYR[phys.neckYR.length-1].current*0.5+bm.headY+e.headY;
-  phys.headX.target=phys.neckX[phys.neckX.length-1].current*0.5+bm.headX+e.headX;
+  /* die Gelenk-Kette der Welt trägt keine Hals-Segmente (der Hals lebt in der Haut) — der Kopf folgt dann allein */
+  var nYR=phys.neckYR.length?phys.neckYR[phys.neckYR.length-1].current:0,nX=phys.neckX.length?phys.neckX[phys.neckX.length-1].current:0;
+  phys.headY.target=nYR*0.5+bm.headY+e.headY;
+  phys.headX.target=nX*0.5+bm.headX+e.headX;
   phys.headZ.target=bm.headZ||Math.sin(t*0.3)*0.008*(st<0.01?1:0);
   // Idle head sway: slow side-to-side + gentle lift
   if(st<0.01){
@@ -255,7 +301,7 @@ function animate(){
   var earDir=Math.sin(t*0.07);var earRate=emoMode==='alert'?1.5:emoMode==='hunt'?0.5:emoMode==='flee'?0.3:0.8;phys.earL.target=e.ear+earDir*0.03+Math.sin(t*earRate)*0.025+Math.sin(t*4)*0.015+bm.earBoost;phys.earR.target=-e.ear+earDir*0.03+Math.sin(t*earRate+1.2)*0.025+Math.sin(t*4+0.5)*0.015+bm.earBoost;phys.earL.update(dt);phys.earR.update(dt);if(earL)earL.rotation.z=phys.earL.current;if(earR)earR.rotation.z=phys.earR.current;
   var tailMood=(Math.sin(t*0.03)+1)*0.5;for(var i=0;i<phys.tailPDs.length;i++){if(i===0)phys.tailPDs[i].y.target=Math.sin(t*e.tailRate)*e.tailAmp*bm.tailBoost*(0.7+tailMood*0.6)+bm.tailDir;else phys.tailPDs[i].y.target=phys.tailPDs[i-1].y.current*0.8;phys.tailPDs[i].x.target=Math.sin(t*0.8+i*0.2)*0.03+bm.tailZ;phys.tailPDs[i].z.target=Math.sin(t*e.tailRate*0.7+i*0.2)*0.02;phys.tailPDs[i].y.update(dt);phys.tailPDs[i].x.update(dt);phys.tailPDs[i].z.update(dt);tailSegs[i].rotation.y=phys.tailPDs[i].y.current;tailSegs[i].rotation.x=phys.tailPDs[i].x.current;tailSegs[i].rotation.z=phys.tailPDs[i].z.current;}
   var bt2=t%4.0,blink=1.0;if(bt2<0.12)blink=1.0-(bt2/0.12)*0.7;else if(bt2<0.24)blink=0.3+((bt2-0.12)/0.12)*0.7;if(lidTL)lidTL.scale.y=0.32*blink;if(lidTR)lidTR.scale.y=0.32*blink;
-  fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();composer.render();
+  fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);controls.update();stufeSchalten();composer.render();
 }
 addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
 init();

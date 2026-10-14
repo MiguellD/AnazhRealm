@@ -1688,6 +1688,27 @@
             wurzelAnker: 0.12,
         }),
     });
+    // DIE FELL-SCHALE (K45, rein additiv): das Haar-Raster der Fell-Schalen des Ofens (foundry-core __tierFellSchalen:
+    // aSchale = t · lokale Dichte · Haar-Zellen je Einheit, aWurzel = der Bind-Punkt der Haar-Wurzel) als DATEN — EINE
+    // Quelle, zwei Leser: der Welt-Stoff (stamm `fellSchale`, TSL) und das Labor (worlds/tetrapoda, GLSL). Je Zelle eine
+    // Locke mit gewürfeltem Zentrum (hash = zwei sin-Hashes, mitte × die Zelle), Radius √Dichte × radius, zur Spitze
+    // um zulauf schmaler; sie endet bei ende + endeSpanne × Hash der Länge; die Schalen unter wolle decken, wo die Dichte
+    // über wolleAb liegt. Ton Wurzel → Spitze = Ton × (wurzel → spitze) — gemessen V18.497 (Fell-Linse 4 m, 0,55 → 1,1
+    // las 28,1 = Parität zur Haut). Bis K45 standen die Zahlen als Literale im Stamm (AnazhRealm.FELL_SCHALE + TSL).
+    var FELL_SCHALE = Object.freeze({
+        wurzel: 0.55,
+        spitze: 1.1,
+        hashA: Object.freeze([12.9898, 78.233, 37.719, 43758.5453]),
+        hashB: Object.freeze([39.3468, 11.1351, 83.1559, 24634.6345]),
+        hashC: 7.123,
+        mitte: 0.4,
+        radius: 0.62,
+        zulauf: 0.75,
+        ende: 0.55,
+        endeSpanne: 0.45,
+        wolle: 0.34,
+        wolleAb: 0.05,
+    });
 
     // ════════════════════════════════════════════════════════════════════
     // DER MASSSTAB (Welle 5, die EINE Welt-Größe): eine Lab-Einheit ist ein Drittel Meter — der Wolf (Größe 2,4)
@@ -3014,6 +3035,7 @@
         temperamentDerGattung: temperamentDerGattung,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
+        FELL_SCHALE: FELL_SCHALE,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,

@@ -9,6 +9,10 @@
 //                     Programms) außerhalb der Hülle — die EINE Brücke ist AnazhHuelle.bruecke
 //   H3 Umstieg        jede umgestiegene Welt lädt ../huelle/huelle.js und ruft die Brücke; jedes Studio dazu Regler,
 //                     Sitzung und Kosten-Leiste; die Werkstatt ruft DENSELBEN Generator (kein Zwilling)
+//   H4 Labor = Welt   ein Ofen-Studio (MESHFREI-Kern, die Welt bäckt seine Gestalt über BAKERS_BY_KIND) zeigt den Ofen-
+//                     Körper: es lädt foundry-core, baut über BAKERS_BY_KIND.<kind> und nie einen eigenen Leib (bauTier ·
+//                     bauMensch · fellStreu in der Shell — K45: das tetrapoda-Labor zeigte 1 299 852 △ gegen die Welt-Zeile
+//                     62 000). Im Bild (--bild) ist L0 der Kosten-Leiste über der Budget-Zeile ROT.
 // Ausgenommen, benannt: terrain + gelaende (worlds/terrain/*, phytogenesis.js und das Gelände-Studio steigen in Welle 2 um,
 // die terrain-Familie, Karte K42) und die zwei
 // sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein Skript, ihr Protokoll richtet
@@ -38,6 +42,11 @@ const AUSGENOMMEN = {
     begegnung: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
     schwarm: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
 };
+// H4 — die Ofen-Studios: kind = der BAKERS_BY_KIND-Schlüssel, eigenbau = der eigene Leib in der Shell (ein Ruf des Bau-Gesetzes).
+const OFEN_STUDIOS = { tetrapoda: { kind: "kreatur", eigenbau: /\b(?:bauTier|bauMensch|fellStreu)\s*\(/g } };
+// Offen, benannt (kein Grün): das Körper-Labor baut noch seinen eigenen Menschen (bauMensch + Kleid-Gewichte im Labor,
+// Synthese §3.6 Nr. 4) — 332 645 △ gegen die Welt-Zeile 40 000; die Wand nennt es in jedem Lauf.
+const OFEN_OFFEN = { koerperstudio: "die Kleid-Gewichts-Vererbung lebt im Labor (koerperstudio.js), der Ofen trägt sie noch nicht — Labor L0 332 645 △ gegen die Welt-Zeile 40 000 (der Ofen-Leib seit welle-m-e-leib)" };
 const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
@@ -107,6 +116,19 @@ function pruefe(karte) {
         ])
             if (!new RegExp(`AnazhHuelle\\.${fn}\\(`).test(js)) rot.push(`H3 ${id}: ohne ${was} (AnazhHuelle.${fn})`);
     }
+    // H4 — Labor = Welt
+    for (const [id, o] of Object.entries(OFEN_STUDIOS)) {
+        const html = karte[`worlds/${id}/index.html`] || "";
+        const js = Object.entries(karte)
+            .filter(([r]) => r.startsWith(`worlds/${id}/`) && r.endsWith(".js"))
+            .map(([, t]) => t)
+            .join("\n");
+        if (!/<script src="\.\.\/\.\.\/foundry-core\.js\?v=[0-9.]+"><\/script>/.test(html)) rot.push(`H4 ${id}: lädt foundry-core nicht (der EINE Bäcker der Welt)`);
+        if (!new RegExp(`BAKERS_BY_KIND\\.${o.kind}\\(`).test(js)) rot.push(`H4 ${id}: baut nicht über BAKERS_BY_KIND.${o.kind} (das Labor zeigt den Ofen-Körper)`);
+        const eigen = js.match(o.eigenbau) || [];
+        if (eigen.length) rot.push(`H4 ${id}: baut einen eigenen Leib (${[...new Set(eigen.map((x) => x.replace(/\s+/g, "")))].join(" · ")}) — ein Zwilling des Ofen-Körpers`);
+    }
+    zahl.ofenOffen = Object.entries(OFEN_OFFEN).map(([id, g]) => `${id}: ${g}`);
     const werkstatt = Object.entries(karte)
         .filter(([r]) => /^stamm\/23/.test(r))
         .map(([, t]) => t)
@@ -121,6 +143,7 @@ function pruefe(karte) {
 function bericht(zahl) {
     console.log(`  Hand-Regler außerhalb der terrain-Familie: ${zahl.handRegler} · terrain + gelaende (Welle 2): ${zahl.handReglerTerrain}`);
     console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
+    console.log(`  Labor = Welt (H4): ${Object.keys(OFEN_STUDIOS).join(", ")} zeigen den Ofen-Körper · OFFEN benannt: ${(zahl.ofenOffen || []).join(" | ") || "—"}`);
 }
 
 // ── SELBSTTEST: die Täter in die Karte gespielt (Fundstelle fehlt → rot, die Linse wandert mit dem Code) ──
@@ -161,6 +184,20 @@ function selbsttest() {
             vor: "AnazhHuelle.kosten(",
             nach: "AnazhHuelle.__kostenFort(",
             soll: /^H3 fachwerk: ohne Kosten-Leiste/,
+        },
+        {
+            name: "H4 das tetrapoda-Labor baut seinen eigenen Leib (bauTier + Fell-Streu)",
+            rel: "worlds/tetrapoda/tetrapoda.js",
+            vor: "BAKERS_BY_KIND.kreatur(",
+            nach: "__tetrapodaCore.fellStreu(P, B.masse, B.fellOrt);__tetrapodaCore.bauTier(F, dials);BAKERS_BY_KIND.kreatur(",
+            soll: /^H4 tetrapoda: baut einen eigenen Leib \((?:fellStreu\( · bauTier\(|bauTier\( · fellStreu\()\)/,
+        },
+        {
+            name: "H4 das tetrapoda-Labor ohne den Bäcker der Welt (foundry-core)",
+            rel: "worlds/tetrapoda/index.html",
+            vor: "<script src=\"../../foundry-core.js?v=",
+            nach: "<script src=\"../../foundry-zwilling.js?v=",
+            soll: /^H4 tetrapoda: lädt foundry-core nicht/,
         },
     ];
     let ok = true;
@@ -247,6 +284,20 @@ async function bild(ordner, name) {
             z.fehler = fehler;
             z.ladeS = +((Date.now() - t0) / 1000).toFixed(1);
             zeilen.push({ id, ...z });
+            // H4 im Bild: die gezeigte L0 eines Ofen-Studios liegt auf der Welt-Zeile (Kosten-Leiste „N / Deckel △")
+            const l0 = /([\d.]+) \/ ([\d.]+) △/.exec((z.kosten || []).find((k) => /△/.test(k)) || "");
+            if (OFEN_STUDIOS[id] || OFEN_OFFEN[id]) {
+                const n = l0 ? +l0[1].replace(/\./g, "") : NaN,
+                    deckel = l0 ? +l0[2].replace(/\./g, "") : NaN;
+                z.laborWelt = { l0: n, zeile: deckel };
+                if (!(n <= deckel)) {
+                    if (OFEN_OFFEN[id]) console.log(`  OFFEN benannt H4 ${id}: Labor L0 ${n} △ über der Welt-Zeile ${deckel}`);
+                    else {
+                        console.log(`❌ H4 ${id}: Labor L0 ${n} △ über der Welt-Zeile ${deckel} — das Labor zeigt nicht den Ofen-Körper`);
+                        process.exitCode = 1;
+                    }
+                }
+            }
             console.log(`  ${id.padEnd(14)} Schieber ${z.schieber} (Hülle ${z.huelle}) · Sitzung ${z.sitzung ? "ja" : "nein"} · Undo ${z.undo ? (z.undo.wirkt ? "wirkt" : "STUMM") : "—"} · Kosten ${z.kosten ? z.kosten[0] : "—"} · Fehler ${fehler.length} · ${z.gl || "?"}`);
             await page.close();
         }
