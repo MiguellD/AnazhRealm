@@ -133,8 +133,10 @@ class AnazhRealm_Z08 {
     // Deterministischer (alle Peers gleich) offener, flacher, trockener Spawn-Punkt: Ring-Spirale um
     // (0,0), der ERSTE Punkt, der (a) kein Kavernenboden ist (surf ≥ macro − 6; `getTerrainHeightAt` ist
     // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_nassAt`, Marge 1,5 m: See,
-    // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) flach ist (±6-m-Proben, Δ ≤ 3.5 m). Die Lichtung um
-    // die Plattform hält die EINE Natur-Wand frei (ihr Bauplan trägt sie, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
+    // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) die Scheibe der Genesis-Plattform trägt: der Grund unter ihr
+    // (`_genesisGrund`) streut höchstens ihre Dicke — sie liegt auf und keine Kante steckt im Hang (K52; bis dahin ±6-m-Proben
+    // mit Δ ≤ 3,5 m, die Scheibe schwebte darum 5 m darüber). Die Lichtung um die Plattform hält die EINE Natur-Wand frei
+    // (ihr Bauplan trägt sie, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
     _findOpenSpawnSpot() {
         const candidates = [[0, 0]];
         for (let r = 12; r <= 240; r += 12) {
@@ -143,53 +145,64 @@ class AnazhRealm_Z08 {
                 candidates.push([Math.round(Math.cos(ang) * r), Math.round(Math.sin(ang) * r)]);
             }
         }
+        const S = this._genesisScheibe();
         for (const [x, z] of candidates) {
             const surf = this.getTerrainHeightAt(x, z);
             if (!Number.isFinite(surf)) continue;
             const macro = this._terrainMacroSurfaceY(x, z);
             if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
             if (!this._landAt(x, z, 1.5)) continue; // nass (jedes Wasser)
-            let flat = true;
-            for (const [dx, dz] of [
-                [6, 0],
-                [-6, 0],
-                [0, 6],
-                [0, -6],
-            ]) {
-                const h = this.getTerrainHeightAt(x + dx, z + dz);
-                if (!Number.isFinite(h) || Math.abs(h - surf) > 3.5) {
-                    flat = false;
-                    break;
-                }
-            }
-            if (!flat) continue;
+            const g = this._genesisGrund(x, z, S.r);
+            if (!(g.max - g.min <= S.dick)) continue;
             return { x, z, y: surf };
         }
         const h0 = this.getTerrainHeightAt(0, 0);
         return { x: 0, z: 0, y: Number.isFinite(h0) ? h0 : 0 };
     }
 
+    // Die Scheibe der Genesis-Plattform aus ihrem Bauplan (die erste Scheibe: cylinder, size.x = Durchmesser, size.y = Dicke) —
+    // dieselbe Zeile, aus der `_grundrissVon` ihre Lichtung misst. Der Bauplan ist eingebaut; fehlt er, bricht es laut.
+    _genesisScheibe() {
+        const bp = this.state.blueprints && this.state.blueprints.start_plattform;
+        const p0 = bp && Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
+        if (!p0 || !(p0.x > 0) || !(p0.y > 0)) throw new Error("start_plattform: der Bauplan trägt keine Scheibe");
+        return { r: p0.x / 2, dick: p0.y };
+    }
+
+    // Der Grund unter einer Scheibe mit Radius r um (x, z): der tiefste und der höchste Punkt des EINEN Boden-Gesetzes
+    // (`getTerrainHeightAt` → `_voxelSurfaceY`) in der Mitte und auf zwei Ringen (r/2, r; je 12 Proben). { min, max }.
+    _genesisGrund(x, z, r) {
+        let min = this.getTerrainHeightAt(x, z);
+        let max = min;
+        for (const f of [0.5, 1])
+            for (let k = 0; k < 12; k++) {
+                const a = (k / 12) * Math.PI * 2;
+                const h = this.getTerrainHeightAt(x + Math.cos(a) * r * f, z + Math.sin(a) * r * f);
+                if (!(h >= min)) min = h;
+                if (!(h <= max)) max = h;
+            }
+        return { min, max };
+    }
+
     // Genesis-Plattform, idempotent (nur wenn keine start_plattform existiert, z. B. nach Reload — die EINE Quelle
     // `_genesisPlattform` sagt es); der Spieler steht oben drauf. Der Punkt kommt aus `_findOpenSpawnSpot`.
+    // DIE SOHLE LIEGT AUF DEM GRUND (K52): die Scheibe steht mit ihrer Sohle auf dem tiefsten Punkt des Bodens unter ihr
+    // (`_genesisGrund`) — sie schwebt an keiner Stelle, die höhere Kante sinkt höchstens ihre Dicke ein (die Wahl des Orts).
+    // Bis K52 stand sie 5 m über dem Grund („erhöhte Warte", V8.29): seit der Ring der Tore um sie auf dem Boden steht
+    // (V18.486), schwebte eine graue Scheibe über den Toren (Genesis 0/0: Sohle 95,31 m über Grund 90,01–90,57 m).
     _ensureGenesisPlatform() {
         if (!this.state.architectures) return;
         if (this._genesisPlattform()) return;
         const spot = this._findOpenSpawnSpot();
-        const h0 = spot.y;
-        // Plattform 5 m über dem Terrain (genug Überblick, nicht
-        // so hoch dass der Abstieg unangenehm wird).
-        const platCenterY = h0 + 5;
-        // spawnArchitecture zieht intern 0.5 ab (at_player-Kalibrierung).
-        const plat = this.spawnArchitecture(
-            "start_plattform",
-            { x: spot.x, y: platCenterY + 0.5, z: spot.z },
-            { silent: true }
-        );
+        const S = this._genesisScheibe();
+        const g = this._genesisGrund(spot.x, spot.z, S.r);
+        const sohle = Number.isFinite(g.min) ? g.min : spot.y;
+        // spawnArchitecture setzt den Bau 0.5 unter den gereichten Ort (at_player-Kalibrierung): sein Ursprung ist die Sohle.
+        this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 0.5, z: spot.z }, { silent: true });
         // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus —
         // geräumt an der Wurzel (`spawnArchitecture`)
-        // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
-        // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
-        const spawnY = platCenterY + 2.2;
+        // Spieler oben auf die Plattform setzen: die Oberseite liegt bei Sohle + Dicke, +1,2 Puffer.
+        const spawnY = sohle + S.dick + 1.2;
         if (this.state.playerMesh) {
             this.state.playerMesh.position.set(spot.x, spawnY, spot.z);
             // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
@@ -197,7 +210,7 @@ class AnazhRealm_Z08 {
             this.state._fieldVy = 0;
         }
         this.log(
-            `Genesis-Plattform erstellt bei (${spot.x}, ${spot.z}), y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`
+            `Genesis-Plattform erstellt bei (${spot.x}, ${spot.z}), Sohle y=${sohle.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`
         );
     }
 

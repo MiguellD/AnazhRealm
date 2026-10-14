@@ -2821,6 +2821,11 @@ AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
 // Das Gitter der Grundrisse (`_grundrissStand`): 32-m-Zellen, Zahlen-Schlüssel (die Streu fragt je Zelle).
 AnazhRealm.GRUNDRISS_ZELLE = 32;
 AnazhRealm._grundrissSchluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
+// DER GENESIS-PLATZ (K52): die Lichtung der Start-Plattform trägt den Ring der Kern-Portale — `ringR` ist der Kreis der Tore
+// (`_genesisPortalRing`), `rand` die Tiefe eines Tors über ihn hinaus; über dem Platz steht keine Krone, auf ihm kein Busch und
+// kein Fels (`_grundrissVon` → `_imGrundriss`). Bis K52 trug die Lichtung nur die Scheibe (6,5 m), der Ring stand 11 m weit
+// außerhalb: ein Kristall stand 1,2 m vor dem Tor des Terrain-Studios, der Wald wuchs bis an die Tore.
+AnazhRealm.GENESIS_PLATZ = Object.freeze({ ringR: 11, rand: 4 });
 // DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
 // `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
 AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });

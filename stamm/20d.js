@@ -823,7 +823,9 @@ class AnazhRealm_Z20d {
                     " "
                 );
             const ort =
-                a.gruende.lichtung || a.gruende.haus || a.gruende.wasser ? " — geh ein paar Schritte weiter" : "";
+                a.gruende.lichtung || a.gruende.haus || a.gruende.bau || a.gruende.weg || a.gruende.wasser
+                    ? " — geh ein paar Schritte weiter"
+                    : "";
             const praes = PRAESENS[a.verb] || "steht";
             return liste.length > 1 ? `${a.art}: hier ${praes} nichts — ${g}.` : `Hier ${praes} nichts: ${g}${ort}.`;
         });
@@ -869,46 +871,69 @@ class AnazhRealm_Z20d {
         return k > 0 ? k * (o && Number.isFinite(o.scale) && o.scale > 0 ? o.scale : 1) : 0;
     }
 
-    // Liegt (x, z) in einem Grundriss (`_grundrissVon`)? Zwei Arten tragen einen: die Häuser einer Siedlung (die gedrehte
-    // Box um ihre Mitte plus `rand` — der Stamm, die Traufe; eine Krone darf über das Dach) und die Lichtung eines Baus,
-    // dessen Bauplan sie trägt (die Genesis-Plattform: ihre Scheibe plus die Reichweite des Wurfs, `max(rand, krone)` —
-    // über ihr steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) hält die Häuser, die
-    // Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei jedem Spawn/Abriss eines Baus
-    // mit Grundriss. Rückgabe: "lichtung" | "haus" | false.
+    // Liegt (x, z) in einem Grundriss (`_grundrissVon`) oder auf der Fläche eines Dorfs (`_aufWeg`)? Drei Arten tragen einen
+    // Grundriss: die Häuser einer Siedlung (die gedrehte Box um ihre Mitte plus `rand` — der Stamm, die Traufe; eine Krone
+    // darf über das Dach), jeder andere Bau (die Hülle seiner Blocker-Boxen, K52: Tor, Esse, Brunnen, der Würfel des Spielers)
+    // und die Lichtung eines Baus, dessen Bauplan sie trägt (der Genesis-Platz: Scheibe und Ring der Tore plus die Reichweite
+    // des Wurfs, `max(rand, krone)` — über ihm steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je
+    // Zelle) hält die Bauten, die Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei
+    // jedem Spawn/Abriss eines Baus mit Grundriss. Rückgabe: "lichtung" | "haus" | "bau" | "weg" | false.
     _imGrundriss(x, z, rand = 0.8, krone = 0) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const schluessel = AnazhRealm._grundrissSchluessel;
         const gitter = this._grundrissStand();
         const reich = Math.max(rand, krone);
         for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
-        if (gitter.zellen.size === 0) return false;
-        const l = gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G)));
+        const l = gitter.zellen.size ? gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G))) : null;
+        if (l)
+            for (const e of l) {
+                const fp = this._grundrissVon(e);
+                if (!fp) continue;
+                // die Hülle eines Baus liegt achsparallel in der Welt (`welt`), das Haus gedreht um seine Gier
+                const ry = fp.welt ? 0 : Number.isFinite(e.rotationY) ? e.rotationY : 0;
+                const c = Math.cos(ry);
+                const sn = Math.sin(ry);
+                const dx = x - e.position.x;
+                const dz = z - e.position.z;
+                if (
+                    Math.abs(dx * c - dz * sn - fp.ox) <= fp.ex + rand &&
+                    Math.abs(dx * sn + dz * c - fp.oz) <= fp.ez + rand
+                )
+                    return fp.welt ? "bau" : "haus";
+            }
+        return this._aufWeg(x, z, rand) ? "weg" : false;
+    }
+
+    // Liegt (x, z) auf einer Fläche, die ein Dorf dem Boden gibt (K52) — Straße, Feldweg, Platz, Anger, Acker, die
+    // Trittfläche einer Ausstattung: die Formen der EINEN Wege-Karte (`wegeKarte.siedlungen`, je Siedlung ihre Hülle als
+    // Vorfilter), dieselben Abstände, mit denen `_wegeKarteMale` den Boden malt, plus `rand` (der Stamm; eine Krone darf
+    // über den Weg; der Gras-Anger trägt seine eigene Grenze `sperr`). Das Gesetzbuch des Dorfs pflanzt seine Bäume nach
+    // derselben Regel neben Weg, Platz und Acker (fachwerk-core). Vorher urteilte nur die Wiese über den Weg: im Dorf der
+    // Zelle −4,−4 standen 3 Tannen und 1 Birke auf seinen Wegen. Die Flächen stehen im Gitter der Grundrisse (`wege`, jede
+    // Fläche mit 1 m Rand — der Stamm-Rand ist 0,8 m): die Frage kostet die Flächen ihrer Zelle, nie alle besuchten Dörfer.
+    _aufWeg(x, z, rand) {
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const l = this._grundrissStand().wege.get(
+            AnazhRealm._grundrissSchluessel(Math.floor(x / G), Math.floor(z / G))
+        );
         if (!l) return false;
-        for (const e of l) {
-            const fp = this._grundrissVon(e);
-            if (!fp) continue;
-            const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            const c = Math.cos(ry);
-            const sn = Math.sin(ry);
-            const dx = x - e.position.x;
-            const dz = z - e.position.z;
-            if (
-                Math.abs(dx * c - dz * sn - fp.ox) <= fp.ex + rand &&
-                Math.abs(dx * sn + dz * c - fp.oz) <= fp.ez + rand
-            )
-                return "haus";
+        for (const b of l) {
+            if (x < b.x0 - rand || x > b.x1 + rand || z < b.z0 - rand || z > b.z1 + rand) continue;
+            for (const f of b.formen)
+                if (AnazhRealm._wegeFormAbstand(f, x, z) < (f.sperr !== undefined ? f.sperr : rand)) return true;
         }
         return false;
     }
 
-    // DER STAND DER GRUNDRISSE (K20): das Gitter der Häuser und Lichtungen, faul aus den Einträgen gebaut; es fällt bei jedem
-    // Spawn/Abriss eines Baus mit Grundriss, sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die
+    // DER STAND DER GRUNDRISSE (K20): das Gitter der Häuser, Bauten, Lichtungen und Dorf-Flächen, faul aus den Einträgen und
+    // der Wege-Karte gebaut; es fällt bei jedem Spawn/Abriss eines Baus mit Grundriss und mit jeder Fläche, die die Wege-Karte
+    // gewinnt oder verliert (K52), sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die
     // durch die Natur-Wand geht (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein
     // neues Haus über einem Nachbarn macht den Baum daneben frei).
     _grundrissStand() {
         if (this._grundrissGitter) return this._grundrissGitter;
         const G = AnazhRealm.GRUNDRISS_ZELLE;
-        const gitter = (this._grundrissGitter = { zellen: new Map(), lichtungen: [] });
+        const gitter = (this._grundrissGitter = { zellen: new Map(), lichtungen: [], wege: new Map() });
         for (const e of this.state.architectures || []) {
             const fp = this._grundrissVon(e);
             if (!fp) continue;
@@ -925,6 +950,17 @@ class AnazhRealm_Z20d {
                     l.push(e);
                 }
         }
+        // die Flächen der Dörfer (`_aufWeg`): jede Hülle der Wege-Karte in die Zellen, die sie mit 1 m Rand berührt
+        const wk = this.state.wegeKarte;
+        if (wk)
+            for (const b of wk.siedlungen)
+                for (let gx = Math.floor((b.x0 - 1) / G); gx <= Math.floor((b.x1 + 1) / G); gx++)
+                    for (let gz = Math.floor((b.z0 - 1) / G); gz <= Math.floor((b.z1 + 1) / G); gz++) {
+                        const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                        let l = gitter.wege.get(k);
+                        if (!l) gitter.wege.set(k, (l = []));
+                        l.push(b);
+                    }
         return gitter;
     }
 
@@ -943,9 +979,11 @@ class AnazhRealm_Z20d {
     }
 
     // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
-    // dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1): die erste Scheibe des Bauplans (cylinder,
-    // size.x = Durchmesser) × die Größe des Eintrags, `lichtung` = ihr Radius (die Wand fragt dort die Krone). Null für
-    // alles andere.
+    // dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1): der GENESIS-PLATZ, die Scheibe des Bauplans
+    // (cylinder, size.x = Durchmesser × die Größe des Eintrags) und der Ring der Tore um sie (`GENESIS_PLATZ`: Kreis plus
+    // Tiefe eines Tors), `lichtung` = sein Radius (die Wand fragt dort die Krone) — oder, für jeden anderen Bau, die Hülle
+    // seiner Blocker-Boxen (`welt`: achsparallel in der Welt, K52). Null für Natur, für was fährt (der Wagen urteilt über
+    // `_imWagen`, er räumt nichts) und für einen Bau ohne Boxen.
     _grundrissVon(e) {
         if (!e || !e.position) return null;
         const f = e.fundament;
@@ -989,10 +1027,40 @@ class AnazhRealm_Z20d {
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
             const g = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-            const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;
-            if (r > 0) return { ex: r, ez: r, ox: 0, oz: 0, lichtung: r };
+            const P = AnazhRealm.GENESIS_PLATZ;
+            const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);
+            return { ex: r, ez: r, ox: 0, oz: 0, lichtung: r };
         }
-        return null;
+        // DER GRUNDRISS JEDES BAUS (K52): ein Tor, eine Esse, ein Brunnen, ein Marktstand, der Würfel des Spielers trugen
+        // keinen — die Natur warf in sie (am Genesis-Ring ein Kristall 1,2 m vor dem Tor des Terrain-Studios). Die Hülle seiner
+        // Blocker-Boxen (die Welt-AABB jeder Box) ist sein Grundriss, gemerkt je Box-Satz; die billigen Filter zuerst.
+        const boxen = e.blockerAABBs;
+        if (!boxen || !boxen.length) return null;
+        const m = e._grundrissBoxen;
+        if (m && m.satz === boxen) return m.fp;
+        let fp = null;
+        if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {
+            let x0 = Infinity,
+                x1 = -Infinity,
+                z0 = Infinity,
+                z1 = -Infinity;
+            for (const b of boxen) {
+                if (b.minX < x0) x0 = b.minX;
+                if (b.maxX > x1) x1 = b.maxX;
+                if (b.minZ < z0) z0 = b.minZ;
+                if (b.maxZ > z1) z1 = b.maxZ;
+            }
+            if (x1 > x0 && z1 > z0)
+                fp = {
+                    ex: (x1 - x0) / 2,
+                    ez: (z1 - z0) / 2,
+                    ox: (x0 + x1) / 2 - e.position.x,
+                    oz: (z0 + z1) / 2 - e.position.z,
+                    welt: true,
+                };
+        }
+        e._grundrissBoxen = { satz: boxen, fp };
+        return fp;
     }
 
     // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein
@@ -1094,21 +1162,38 @@ class AnazhRealm_Z20d {
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
+        const nenne = (e) => {
+            const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
+            return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
+        };
+        return this._naturRaeumen(
+            haus.position.x,
+            haus.position.z,
+            fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3,
+            !!fp.lichtung,
+            fp.lichtung ? "dem Genesis-Platz" : `dem Grundriss von ${nenne(haus)}`,
+            haus
+        );
+    }
+
+    // DIE RÄUMUNG EINER FLÄCHE (K52): jede Natur im Quadrat ±r um (hx, hz), die die Natur-Wand dort nicht mehr setzte
+    // (`_imGrundriss` — Grundriss, Lichtung samt Krone, Weg des Dorfs), fällt: Einträge, lebende Streu-Zellen, und die
+    // Nah-Streu-Kacheln wachsen durch die Wand neu. Leser: `_grundrissRaeumen` (ein Bau) und `_wegeRaeumen` (die Fläche eines
+    // Dorfs, im Takt der Wege-Karte). `mitKrone`: eine Lichtung fragt die Krone, die Suche reicht eine Streu-Region weiter.
+    // `wem` nennt die Fläche im Spieler-Satz, `ausser` ist der Bau selbst. Gibt die Zahl der geräumten Natur-Stücke.
+    _naturRaeumen(hx, hz, r, mitKrone, wem, ausser) {
         // die Welt regt sich, bevor geräumt wird: der Gang schreibt die Nah-Streu-Kacheln (`nahStreu.kacheln`, über
         // `_nahStreuKachelEntsorgen` ihren `zustand`) — die Stand-Wache weckt die Fege-Takte (gate:stand-takt, Schreiber-Wand)
         this._weltRegt();
         this._grundrissGitter = null;
-        const hx = haus.position.x;
-        const hz = haus.position.z;
-        const r = fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3;
         const RM = AnazhRealm.SCATTER.regionM;
-        const weit = fp.lichtung ? RM : 0; // eine Krone reicht nie über eine Streu-Region
+        const weit = mitKrone ? RM : 0; // eine Krone reicht nie über eine Streu-Region
         const weg = [];
         for (const e of this.state.architectures || []) {
-            if (e === haus || !e.position) continue;
+            if (e === ausser || !e.position) continue;
             if (Math.abs(e.position.x - hx) > r + weit || Math.abs(e.position.z - hz) > r + weit) continue;
             if (!this._istNatur(e)) continue;
-            const k = fp.lichtung ? this._naturKrone(e.type, e) : 0;
+            const k = mitKrone ? this._naturKrone(e.type, e) : 0;
             if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k)) continue;
             weg.push(e);
         }
@@ -1122,7 +1207,6 @@ class AnazhRealm_Z20d {
                 const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
                 return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
             };
-            const wem = fp.lichtung ? "der Lichtung der Genesis-Plattform" : `dem Grundriss von ${nenne(haus)}`;
             this._spielerSagt(`${eigene.map(nenne).join(", ")} wich${eigene.length > 1 ? "en" : ""} ${wem}.`);
         }
         let n = weg.length;
@@ -1135,7 +1219,7 @@ class AnazhRealm_Z20d {
                     for (const cell of region.cells) {
                         if (!cell.slots && !cell.feld) continue;
                         if (Math.abs(cell.x - hx) > r + weit || Math.abs(cell.z - hz) > r + weit) continue;
-                        const k = fp.lichtung ? this._naturKrone(cell.species, cell) : 0;
+                        const k = mitKrone ? this._naturKrone(cell.species, cell) : 0;
                         if (!this._imGrundriss(cell.x, cell.z, 0.8, k)) continue;
                         this._streuZelleRaeumen(cell);
                         n++;
@@ -1153,6 +1237,26 @@ class AnazhRealm_Z20d {
                     ns.kacheln.delete(k.key);
                 }
         }
+        return n;
+    }
+
+    // DIE FLÄCHEN EINES DORFS RÄUMEN (K52): jede neue Fläche der Wege-Karte (Weg, Platz, Anger, Acker einer Siedlung —
+    // `_stlWegeBuild`; die Trittfläche einer Ausstattung — `_trittFlaecheSetzen`) wartet in `wegeKarte.raeumen`, bis der
+    // Takt der Wege-Karte sie räumt (`_naturRaeumen` über ihre Hülle): die Trittfläche entsteht im Instanz-Pfad, mitten im
+    // Gang über die Bauten. Die Wand (`_aufWeg`) gilt der Fläche sofort; geräumt wird, was schon vor ihr stand.
+    _wegeRaeumen() {
+        const wk = this.state.wegeKarte;
+        if (!wk || !wk.raeumen.length) return 0;
+        let n = 0;
+        for (const b of wk.raeumen.splice(0))
+            n += this._naturRaeumen(
+                (b.x0 + b.x1) / 2,
+                (b.z0 + b.z1) / 2,
+                Math.max(b.x1 - b.x0, b.z1 - b.z0) / 2 + 1,
+                false,
+                "dem Weg des Dorfs",
+                null
+            );
         return n;
     }
 
