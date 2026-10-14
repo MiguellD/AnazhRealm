@@ -190,8 +190,26 @@ class AnazhRealm_Z09 {
         return [dek(((hex >> 16) & 255) / 255), dek(((hex >> 8) & 255) / 255), dek((hex & 255) / 255)];
     }
 
-    // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
-    // Boden-Tint (`_terrainGeologyAlbedo`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
+    // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache `gruenSchwelle`: g − (r+b)/2), deckt ihn
+    // das Gras — aus der Ferne das MITTEL des Halms, das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
+    // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese; die karge Stelle (Fleck
+    // λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn (`_bodenFarbeAt`, der Worker
+    // `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der Boden-Stoff (V18.346), der
+    // Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
+    static get WIESEN_GRUND() {
+        if (AnazhRealm._wiesenGrundMemo) return AnazhRealm._wiesenGrundMemo;
+        const mg = AnazhRealm.MEADOW_GREEN;
+        const sp = AnazhRealm.GRAS_SPITZE;
+        AnazhRealm._wiesenGrundMemo = Object.freeze({
+            farbe: Object.freeze([0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i])),
+            schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
+            rauschM: 1 / 0.13,
+        });
+        return AnazhRealm._wiesenGrundMemo;
+    }
+
+    // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Wiesen-
+    // Grund (`WIESEN_GRUND`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
     // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant. Es IST der Wiesen-Grund
     // der Boden-Palette (`mead`), dieselbe Farbe wie der Vertex der Wiese.
     static get MEADOW_GREEN() {

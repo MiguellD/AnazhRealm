@@ -733,12 +733,17 @@ function nahFernSicht(opts) {
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
             return aus.slice(0, opts.jeKlasse || 4);
         };
-        const WALD = opts.wald == null ? 0.9 : opts.wald,
-            WIESE = opts.wiese == null ? 0.7 : opts.wiese;
-        const orte = waehle(kand.filter((k) => k.deckung >= WALD).sort((a, b) => b.deckung - a.deckung))
+        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
+        // offensten — je Klasse 30 m auseinander, keine Stelle in beiden. Bis K53 lasen sie 0,9 und 0,7: die Zahlen der Geburt
+        // (`forestGeburt`), die das Dach bis K16 als Deckung las; seit K16 ist die Deckung der gepflanzte Bestand (phyto-core
+        // `forestKronenDeckung`, Matérn-II gesättigt bei 0,18) — die Linse fand keinen Wald-Ort mehr. Gemessen 14.10. in 2 km um die
+        // Mess-Wiese: Deckung p50 0,176 · max 0,178 an V18.545 (main 9fb869a5), 0,175 · 0,178 am Kopf — der Wald ging nicht verloren.
+        const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
+        const wald = waehle(dichte);
+        const orte = wald
             .map((k) => Object.assign(k, { klasse: "wald" }))
             .concat(
-                waehle(kand.filter((k) => k.deckung <= WIESE).sort((a, b) => a.deckung - b.deckung)).map((k) =>
+                waehle(dichte.filter((k) => !wald.includes(k)).reverse()).map((k) =>
                     Object.assign(k, { klasse: "wiese" })
                 )
             );
@@ -775,6 +780,13 @@ function nahFernSicht(opts) {
             fogAlt = sc.fog;
         sc.environment = null;
         sc.fog = null;
+        // DIE LUFT AUS (K53): die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
+        // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
+        // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
+        const luftU = st.luft && st.luft.U && st.luft.U.beta ? st.luft.U.beta : null;
+        if (sc.fogNode && !luftU) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
+        const betaAlt = luftU ? luftU.value : null;
+        if (luftU) luftU.value = 0;
         // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
         // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
         const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 1, H + 1000);
@@ -951,6 +963,7 @@ function nahFernSicht(opts) {
             sc.remove(A);
             sc.environment = envAlt;
             sc.fog = fogAlt;
+            if (luftU) luftU.value = betaAlt;
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             rt.dispose();
             sc.traverse((o) => {
@@ -968,6 +981,7 @@ function nahFernSicht(opts) {
             kandidaten: {
                 n: kand.length,
                 deckungMax: kand.length ? +Math.max(...kand.map((k) => k.deckung)).toFixed(2) : null,
+                deckungMin: kand.length ? +Math.min(...kand.map((k) => k.deckung)).toFixed(2) : null,
             },
             nahKarte: nk ? (nk.U.bereit.value === 1 && !nk.job ? 1 : 0) : null,
         };

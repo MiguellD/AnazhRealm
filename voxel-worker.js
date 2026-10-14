@@ -238,6 +238,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
+    // Der Wiesen-Grund des Mains (K53, `WIESEN_GRUND`: Farbe, Wache, Fleck) — dieselben Zahlen.
+    if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
@@ -2114,6 +2116,9 @@ function attachFieldColors(positions) {
     // `AnazhRealm.BODEN_FARBE`) — ohne sie färbt der Worker nicht (laut, kein stiller Ersatz).
     const P = state.bodenPalette;
     if (!P) throw new Error("attachFieldColors: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    const WG = state.wiesenGrund;
+    if (!WG || !state.noise)
+        throw new Error("attachFieldColors: der Wiesen-Grund (wiesenGrund) oder das Rauschen fehlt im Worker-Zustand");
     const stone = P.rock;
     const earth = P.mead;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
@@ -2198,6 +2203,12 @@ function attachFieldColors(positions) {
         // identisch): die Fluss-Bänke als getrampelte, gepackte Erde.
         const pathF = pathFieldAt(x, z, y);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
+        // DER WIESEN-GRUND (K53, Spiegel von `_bodenFarbeAt`, dieselben Zahlen aus dem Schnappschuss `wiesenGrund`)
+        const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
+        if (gruen > 0) {
+            const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
+            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+        }
         colors[i * 3] = c[0];
         colors[i * 3 + 1] = c[1];
         colors[i * 3 + 2] = c[2];

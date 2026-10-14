@@ -1279,7 +1279,10 @@ class AnazhRealm_Z10 {
             const toneTint = _T.mix(_T.vec3(0.9, 0.97, 1.12), _T.vec3(1.12, 1.0, 0.86), toneMix);
             albedo = albedo.mul(_T.mix(_T.vec3(1, 1, 1), toneTint, f(metal > 0.5 ? 0.28 : 0.46)));
             // (3) VERWITTERUNG/SCHMUTZ — Mulden + untere Zonen sammeln Schmutz (dunkler, entsättigt).
+            // Der Schmutz der Kavität blendet mit ihr aus (`fineFade`, K53): was der Pixel nicht trägt, ist kein Mittel-Versatz —
+            // unaufgelöst zog er jeden fernen Boden um 0,3 × Kavitäts-Mittel zur Erde (gate:nah-fern Luft aus: Y −4,5 %, Grün −0,022).
             const grime = cavity
+                .mul(fineFade)
                 .mul(f(0.5))
                 .add(objLocal ? f(1.0).sub(yLow).mul(f(0.45)) : f(0.0))
                 .clamp(0, 1);
@@ -1434,29 +1437,16 @@ class AnazhRealm_Z10 {
             const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
             // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
             // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
-            // Meadow-Grund: wo flach + grün tönt der Boden selbst zur Wiese → spärliche Halme lesen als dichte Wiese
-            // (≈0 Perf, nur Albedo). Patch-Noise (`wp·0.13`) lässt karge Stellen emergieren.
-            const _meadowPatch = _ra
-                .ebene(_T.vec2(wp.x.mul(0.13), wp.z.mul(0.13)), 7, "y")
-                .mul(_T.float(0.5))
-                .add(_T.float(0.5));
-            // Die Deckung: die Halme verdecken den Grund (aus der Ferne 65–85 %, die karge Stelle zeigt mehr Erde).
-            const _meadowW = _green
-                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
-                .mul(_meadowPatch.mul(_T.float(0.5)).add(_T.float(0.5)))
-                .clamp(0.0, 1.0);
-            // V18.346 — der Meadow-Grund liest dieselben Gras-Farben wie das Nah-Gras (Gesetz #0) → Boden + Gras
-            // verschmelzen by construction (Schöpfer „Synergie fehlt"): die Wurzel MEADOW_GREEN, die Spitze
-            // GRAS_SPITZE. Aus der Ferne trägt der Boden das MITTEL des Halms — das Integral der Halm-Farbe unten
-            // (h ∈ [0, 1]: mix(Wurzel, Spitze, h) · (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,18 wie das
-            // Studio-Gras der Nah-Wiese (Albedo-Linse 05.10.: 0,18–0,20) —, nicht die Erde darunter (bis 05.10. der
-            // Wiesen-Grund `mead`: aus 45 m eine oliv-gelbe Steppe).
+            // DER WIESEN-GRUND liegt im Gesetz (K53, `_bodenFarbeAt` · `attachFieldColors`, `WIESEN_GRUND`): der Vertex trägt das
+            // Mittel des Halms schon — Chunk, Fern-Ring, Feld-Pass und Panorama lesen EINE Zahl. Bis K53 mischte ihn nur dieses
+            // Fragment (Gewicht Grün × Flachheit × Fleck): Boden-Satz und Fern-Ring lagen +20 % über dem CPU-Gesetz, das der
+            // Feld-Pass zeichnet (gate:nah-fern, Luft aus). Hier lebt nur noch die Farbe des Halms für das Relief der Nähe.
             const _mg = AnazhRealm.MEADOW_GREEN;
             const _sp = AnazhRealm.GRAS_SPITZE;
+            const _wg = AnazhRealm.WIESEN_GRUND.farbe;
             const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
             const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
-            const _krone = _wurzel.mul(_T.float(0.383)).add(_spitze.mul(_T.float(0.442)));
-            _out = _T.mix(_out, _krone, _meadowW);
+            const _krone = _T.vec3(_wg[0], _wg[1], _wg[2]);
             // (Der Waldboden liegt unter den echten Kronen — `_wegeBodenFarbe` mischt die Laubstreu der Kronen-Karte;
             // der Fragment-Zwilling, der grüne feuchte Niederungen zum dunklen Wald-Kern-Ton zog, ist gefallen.)
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-

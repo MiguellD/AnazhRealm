@@ -1396,6 +1396,23 @@ async function starte() {
                         };
                         let q = quadrat(),
                             takte = 0;
+                        // DIE KARTE GEHÖRT DIESEM ORT (K53): ihr Anker ist die Chunk-Mitte des Spielers in der Größe des Rings
+                        // (`_fernKroneNahTakt`) — bereit 1 ohne Job hiess nach dem Umstellen zweimal von acht: die Karte des alten
+                        // Orts (Welt stand nach 2 Takten), dann füllte sie neu und der Boden mischte im Schuss nichts (ROT „Karte“).
+                        const karteHier = (k) => {
+                            const a = k && k.anker;
+                            const span = r._voxelChunkConfig().span;
+                            const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+                            const p = st.playerMesh.position;
+                            return (
+                                !!a &&
+                                k.U.bereit.value === 1 &&
+                                !k.job &&
+                                a.x === (Math.floor(p.x / span) + 0.5) * span &&
+                                a.z === (Math.floor(p.z / span) + 0.5) * span &&
+                                a.groesse === span * (2 * ring + 1 + r.constructor.FERN_KRONE_NAH.rand)
+                            );
+                        };
                         const zustand = (gestanden) => {
                             const k = st.fernKroneNah;
                             return {
@@ -1407,7 +1424,7 @@ async function starte() {
                                 gebaut: r._builtRingRadius(),
                                 ring: st.chunkRingRadius,
                                 imBau: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
-                                karte: k ? (k.U.bereit.value === 1 && !k.job ? 1 : 0) : null,
+                                karte: k ? (karteHier(k) ? 1 : 0) : null,
                             };
                         };
                         while (performance.now() < frist) {
@@ -1416,8 +1433,7 @@ async function starte() {
                             const k = st.fernKroneNah;
                             const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
                             q = quadrat();
-                            if (q.fehlt.length === 0 && !baut && (!k || (k.U.bereit.value === 1 && !k.job)))
-                                return zustand(true);
+                            if (q.fehlt.length === 0 && !baut && (!k || karteHier(k))) return zustand(true);
                             try {
                                 if (window.__buehne) window.__buehne();
                                 if (window.__ortSchritt) window.__ortSchritt();

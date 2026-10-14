@@ -1589,7 +1589,8 @@ class AnazhRealm_Z17c {
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
             .mul(_begehbar)
-            .mul(imFenster);
+            .mul(imFenster)
+            .mul(_T.float(1).sub(this._fernKroneOhneWald(_T)));
         const l = P.lit;
         // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen

@@ -2158,6 +2158,15 @@ class AnazhRealm_Z08 {
         // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
         const pathF = this._pathFieldAt(x, z, y, fussM);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
+        // DER WIESEN-GRUND (K53, `WIESEN_GRUND`): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund, der Fleck
+        // (λ 7,7 m) lässt karge Stellen; die Fläche, die ihn nicht auflöst (`fussM`), trägt sein Mittel.
+        const WG = AnazhRealm.WIESEN_GRUND;
+        const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
+        if (gruen > 0) {
+            let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
+            if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
+            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+        }
         out[0] = c[0];
         out[1] = c[1];
         out[2] = c[2];
