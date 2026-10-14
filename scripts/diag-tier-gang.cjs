@@ -19,13 +19,8 @@
 //   über die Schwelle, die Linse feuert; die Zeile ohne die Schwere der Welt → die Schwere-Wand feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
 const SELBST = process.argv.includes("--selftest");
 // TIER_GANG_TEIL=studio: nur das Labor (der Entwicklungs-Lauf; das Gate fährt beide)
@@ -39,26 +34,7 @@ const TON_TOLERANZ = 0.15; // Töne = 2·v·t/Λ ± 15 %
 // Gehens als Ratsche 0,15 → 0,08 (K07, das Abrollen des Fußes): mit flachem Fuß sank das Becken um 0,137 L, das Knie
 // knickte tief ein (Bild k07n2-mensch-folge).
 const BECKEN = { gehen: { hub: 0.07, tief: 0.08 }, laufen: { hub: 0.12, tief: 0.25 } };
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Im Seiten-Kontext: eine Gattung läuft, je Takt die Aufsetz-Punkte.
 const LAUF = (k) => {
@@ -517,11 +493,7 @@ const STUDIO = (k) => {
 
 (async () => {
     await new Promise((res) => server.listen(PORT, res));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
@@ -619,8 +591,7 @@ const STUDIO = (k) => {
             }
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
-        const sb = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: linsenWebGpuArgs() });
-        await adapterZeile(sb);
+        const sb = await starteBrowser({ art: "linse", frist: 300000 });
         try {
             const sp = await sb.newPage();
             sp.setDefaultTimeout(280000);

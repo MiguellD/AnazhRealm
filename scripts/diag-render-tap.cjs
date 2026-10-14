@@ -15,9 +15,7 @@
 // `.calls` nackt (drawCalls-first), der Flugschreiber trägt das version-Feld
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -25,26 +23,7 @@ const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── Der STATISCHE Teil: kein Konsument liest den Lebenszeit-Zähler nackt ──
 // (die drei Render-Linsen wanderten V18.427 mit — hier bleibt das so; die
@@ -94,12 +73,7 @@ function nakedLifetimeReads(src) {
     // GPU-freie Fake-Vertrag oben bleibt der CI-Pfad).
     const REAL = process.env.REAL_RENDERER === "1";
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: REAL ? linsenWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
-    });
-    if (REAL) await adapterZeile(browser);
+    const browser = await starteBrowser({ art: REAL ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((real) => {
         if (!real) window.__anazhHeadlessNullRenderer = true;

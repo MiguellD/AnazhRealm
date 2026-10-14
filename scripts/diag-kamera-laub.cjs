@@ -21,13 +21,12 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (anazhRealm.js) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const stammLib = require("./lib/stamm.cjs");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const argv = process.argv.slice(2);
@@ -1230,8 +1229,7 @@ async function probe(arg) {
 
     const t0 = Date.now();
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {
@@ -1368,17 +1366,10 @@ async function probe(arg) {
 // ── DIE BILD-PAARE am echten Renderer (Fenster, Hardware-Adapter) — das Ufer mit dem Hain (A 41–47) und der Hang (B 28–31,
 // C 05–12), je Sicht die schlimmste Stellung des Vorher ──
 async function bildPaare() {
-    const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     if (!SEITE) throw new Error("--bilder braucht --seite http://localhost:<port> (der save-server des Arbeitsbaums)");
     fs.mkdirSync(BILDER, { recursive: true });
     const profil = path.join(require("os").tmpdir(), `kamera-laub-profil-${Date.now()}`);
-    const browser = await puppeteer.launch({
-        headless: false,
-        userDataDir: profil,
-        protocolTimeout: 3600000,
-        defaultViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-        args: [...echteWebGpuArgs(), "--window-size=1300,860"],
-    });
+    const browser = await starteBrowser({ art: "echt", headless: false, profil: profil, frist: 3600000, viewport: { width: 1280, height: 720, deviceScaleFactor: 1 }, zusatz: ["--window-size=1300,860"] });
     try {
         const page = await browser.newPage();
         const fehler = [];
@@ -1427,18 +1418,11 @@ async function bildPaare() {
 // pose-14 des Körper-Studios (sein Bild-Schirm). Vorher und Nachher sind zwei Läufe: KAMERA_LAUB_STAMM / KAMERA_LAUB_STUDIO
 // tragen den Vor-Stand, `--phase vorher|nachher` den Datei-Namen. ──
 async function leibBilder(ordner) {
-    const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const phase = opt("--phase", "nachher");
     fs.mkdirSync(ordner, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
     const profil = path.join(require("os").tmpdir(), `kamera-leib-profil-${Date.now()}`);
-    const browser = await puppeteer.launch({
-        headless: false,
-        userDataDir: profil,
-        protocolTimeout: 3600000,
-        defaultViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-        args: [...echteWebGpuArgs(), "--window-size=1300,860"],
-    });
+    const browser = await starteBrowser({ art: "echt", headless: false, profil: profil, frist: 3600000, viewport: { width: 1280, height: 720, deviceScaleFactor: 1 }, zusatz: ["--window-size=1300,860"] });
     const bericht = { phase, posen: {} };
     try {
         const page = await browser.newPage();
