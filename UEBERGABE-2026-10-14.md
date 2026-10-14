@@ -99,3 +99,12 @@ playtest.cjs (56k Zeilen) zerlegen; S0-Frist (170 s, drei swiftshader-Szenen) un
 - **Soll als Kern-Daten + Linse** (K57 `KOPF_SOLL`, gate:mensch-anatomie) ist die Vorlage für jede AAAA-Klasse (Schritt 0 Soll-Tafel).
 - **Feature-Zweige fahren nur den Puls:** für die volle Batterie `[ci voll]` in die Kopf-Message.
 - **Fehler-Sammler findet Verstecktes:** der Welt-Boot machte stumme Seitenfehler sichtbar (verdeckungs-abfrage) — die 17 Rest-Boots können weitere tragen.
+
+## Wand-Zeit: wo die Stunden hingehen (gemessen 14.10. abends)
+
+Die Arbeiter verbringen die meiste Zeit mit Warten, nicht mit Rechnen (Tokens fließen kaum): volle CI ~25 min (+ Wiederlauf bei
+Flackern), lokale Linsen auf swiftshader (Pipeline-Bau 42–292 s, gate:haus-welt 12,5 min), OMEN-ABAB 25–75 min. Hebel nach Wirkung:
+1. **Linsen auf den Hardware-Adapter** (Zweig linsen-gpu, K39, WIP lokal): Linsen ohne Zeit-Urteil lokal auf der Radeon statt swiftshader — Pipeline-Bau Minuten → Sekunden. Die CI bleibt swiftshader.
+2. **Flacker-Linsen** (Zweig flackern, B1): S0-Frist und Gelände-Kosten — kein Wiederlauf je Runde.
+3. **Teure Gates schneiden:** gate:haus-welt 12,5 min lokal (seit K52), die S0-Bühne (drei swiftshader-Szenen).
+4. **Mehr Karten parallel:** Warten kostet keine Tokens — die Zahl gleichzeitiger Fertigsteller ist durch das Wochenbudget begrenzt, nicht durch die Wand-Zeit.
