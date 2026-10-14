@@ -605,12 +605,11 @@ class AnazhRealm_Z20a {
     // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
     // Boot-Blob (dieselbe Schale, dieselbe Platte, dasselbe Studio — der Bäcker-Weg, `_foundryBaecker`); die EINE Schlange
     // speist sie (`_foundryPumpe`). Ihre Zahl folgt der Maschine: ein Werk-Faden je vier Kerne, höchstens
-    // FOUNDRY_WERK_FAEDEN (das Werk zählt mit). Unter dem Null-Renderer baut das Werk allein (die Gates bleiben byte-alt).
+    // FOUNDRY_WERK_FAEDEN (das Werk zählt mit). Die Kerne allein entscheiden, nie der Renderer: bis zur Prüfung K60-1 baute
+    // unter dem Null-Renderer das Werk allein — kein Tor fuhr die Mehrbahn-Pumpe (gate:fluss W6 gibt der Seite 16 Kerne).
     _foundryHelfer(f) {
         if (f.helfer || !f.bootUrl) return;
         f.helfer = [];
-        const rend = this.state.renderer;
-        if (rend && rend._isHeadlessNull) return;
         const kerne =
             typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
                 ? navigator.hardwareConcurrency

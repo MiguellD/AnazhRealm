@@ -30,7 +30,10 @@
 //   Stempel stehen, ein Brücken-Edit bewegt ihn
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
 //   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot baut ≤ 5 MB neu · W4/W5 (K42) der
-//   Studio-Faden lädt und stempelt keine Labor-Datei (Absenz über den Boot-Quelltext des echten Spiels)
+//   Studio-Faden lädt und stempelt keine Labor-Datei (Absenz über den Boot-Quelltext des echten Spiels) · W6 (K60) DIE
+//   WERK-FÄDEN: die Sonde gibt der Seite 16 Kerne (der CI-Läufer hat 4 — ein Faden, kein Helfer); jeder Werk-Faden
+//   (`_foundryHelfer`) wird bereit und baut, jeder Auftrag reist in der Bahn, die seine Nummer nennt (`w<k>_`,
+//   `_foundryBahn`), und kommt beantwortet zurück
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
@@ -708,6 +711,8 @@ async function verhalten(schaleSrc) {
 // W2 SAISON: ein Wechsel auf Herbst baut nichts (0 Aufträge, 0 entfernte Instanzen), die Uniform uSeasonMul dreht.
 const WELT_HAKEN = () => {
     window.__anazhHeadlessNullRenderer = true;
+    // W6 (K60): eine Maschine mit 16 Kernen — die Werk-Fäden folgen den Kernen (`_foundryHelfer`), der CI-Läufer hat 4
+    Object.defineProperty(Navigator.prototype, "hardwareConcurrency", { configurable: true, get: () => 16 });
     // Die Platte AN unter dem Null-Renderer (nur in dieser Sonde): der Boot-Blob der Transport-Schale trägt
     // cfg.platte=false (gate-deterministisch); hier wird er true — der Host schickt seine Schlüssel ohnehin immer, die
     // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
@@ -723,7 +728,7 @@ const WELT_HAKEN = () => {
     B1.prototype = B0.prototype;
     window.Blob = B1;
     const W0 = window.Worker;
-    const fl = (window.__fl = { posts: [], antworten: [] });
+    const fl = (window.__fl = { posts: [], antworten: [], faeden: 0 });
     const bytes = (m) => {
         let b = 0;
         const seen = new Set();
@@ -748,10 +753,13 @@ const WELT_HAKEN = () => {
     window.Worker = class extends W0 {
         constructor(u, o) {
             super(u, o);
+            this.__flNr = fl.faeden++;
             this.addEventListener("message", (e) => {
                 const m = e.data;
                 if (m && (m.type === "asset" || m.type === "impostor"))
                     fl.antworten.push({
+                        w: this.__flNr,
+                        id: m.reqId,
                         t: m.type,
                         platte: m.platte === true,
                         vorrat: m.vorrat === true,
@@ -764,7 +772,7 @@ const WELT_HAKEN = () => {
         }
         postMessage(m, t) {
             if (m && (m.type === "build-asset" || m.type === "bake-impostor"))
-                fl.posts.push({ t: m.type, p: m.presetId, s: m.seed, l: m.lod, ov: !!m.ov });
+                fl.posts.push({ t: m.type, p: m.presetId, s: m.seed, l: m.lod, ov: !!m.ov, w: this.__flNr, id: m.reqId });
             return t ? super.postMessage(m, t) : super.postMessage(m);
         }
     };
@@ -838,6 +846,25 @@ const WELT_MESSEN = async () => {
             .slice(0, 12)
             .map((x) => `${x.p}|${x.s}|${x.l}`),
     };
+    // W6 — DIE WERK-FÄDEN (K60): je Bahn (das Werk k = 0, jeder Helfer k) ihre Aufträge, Antworten und jede Nummer, die eine
+    // fremde Bahn nennt (die Pumpe schrieb `w<k>_` falsch) oder die `_foundryBahn` falsch liest
+    const nrVon = (w) => (w && Number.isInteger(w.__flNr) ? w.__flNr : -1);
+    const bahnen = [{ k: 0, nr: nrVon(f.worker), bereit: true }].concat(
+        (f.helfer || []).map((h) => ({ k: h.k, nr: nrVon(h.w), bereit: h.bereit === true }))
+    );
+    for (const b of bahnen) {
+        const ps = fl.posts.filter((x) => x.t === "build-asset" && x.w === b.nr);
+        b.posts = ps.length;
+        b.antworten = fl.antworten.filter((x) => x.t === "asset" && x.w === b.nr).length;
+        b.fremd = ps
+            .filter((x) => {
+                const m = /w(\d+)_\d+$/.exec(String(x.id));
+                return (m ? Number(m[1]) : 0) !== b.k || r._foundryBahn(String(x.id)) !== (b.k ? "werk" + b.k : "werk");
+            })
+            .map((x) => String(x.id))
+            .slice(0, 4);
+    }
+    boot.werk = { kerne: navigator.hardwareConcurrency, bahnen };
     if (window.__flussNurBoot) return { boot, bootMB: MB(fl.antworten) };
     const instanziert = () => (r.state.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
@@ -949,6 +976,22 @@ function urteilWelt(d) {
     // K42 — DER STUDIO-FADEN LÄDT KEIN LABOR (die Absenz über den Boot-Quelltext des echten Spiels): seine importScripts-
     // Liste (W4) und die Stempel-Liste der Schale (W5) tragen die Foundry-Brücke und keine Labor-Datei — keine Shell
     // unter worlds/<welt>/ (außer lib/), keine Labor-Szene (Orbit-/PointerLock-Steuerung, Composer, Bloom, FXAA).
+    const wk = d.boot && d.boot.werk;
+    const bahnen = (wk && wk.bahnen) || [];
+    pruef(
+        "W6 die Werk-Fäden: auf 16 Kernen bauen mehrere Fäden, jeder wird bereit und baut, jeder Auftrag reist in seiner Bahn und kommt zurück",
+        bahnen.length >= 2 &&
+            bahnen.every((b) => b.bereit && b.posts > 0 && b.antworten >= b.posts && !(b.fremd && b.fremd.length)),
+        `${wk ? wk.kerne : "?"} Kerne · ${bahnen.length} Fäden: ` +
+            bahnen
+                .map(
+                    (b) =>
+                        `werk${b.k || ""} ${b.bereit ? "" : "nicht bereit, "}${b.posts} Aufträge/${b.antworten} Antworten` +
+                        (b.fremd && b.fremd.length ? ` fremde Nummern ${b.fremd.join(" ")}` : "")
+                )
+                .join(" · ") +
+            (bahnen.length < 2 ? " — Täter _foundryHelfer: kein Helfer neben dem Werk" : "")
+    );
     const { liste, stempel } = bootListen(d.bootQuelle);
     const labor = (u) => LABOR_DATEI.test(u);
     const bruecke = (u) => /\/foundry-bruecke\.js(\?|$)/.test(u);
@@ -1113,7 +1156,23 @@ const VERHALTEN = [
             bootQuelle:
                 '(function _foundrySchale(cfg){})({"stempelUrls":["http://h/phyto-core.js?v=1","http://h/foundry-bruecke.js?v=1"]});' +
                 'importScripts("http://h/worlds/terrain/lib/three-r128.min.js?v=1","http://h/phyto-core.js?v=1","http://h/foundry-bruecke.js?v=1");',
-            boot: { posts: 200, antworten: 200, kartenArtL2: 0, lru: 0, cache: 230, gebautMB: 70, gebautN: 190 },
+            boot: {
+                posts: 200,
+                antworten: 200,
+                kartenArtL2: 0,
+                lru: 0,
+                cache: 230,
+                gebautMB: 70,
+                gebautN: 190,
+                werk: {
+                    kerne: 16,
+                    bahnen: [
+                        { k: 0, bereit: true, posts: 60, antworten: 60, fremd: [] },
+                        { k: 1, bereit: true, posts: 50, antworten: 50, fremd: [] },
+                        { k: 2, bereit: true, posts: 45, antworten: 45, fremd: [] },
+                    ],
+                },
+            },
             zweit: {
                 boot: { gebautMB: 0.4, gebautN: 3, platteMB: 69, platteN: 187, gebautListe: ["wolf|0|0"] },
             },
@@ -1130,6 +1189,41 @@ const VERHALTEN = [
             },
         };
         const rot = (d, w) => urteilWelt(d).find((g) => g[0].startsWith(w))[1] === false;
+        const mitWerk = (bahnen) => Object.assign({}, gut, { boot: Object.assign({}, gut.boot, { werk: { kerne: 16, bahnen } }) });
+        check(
+            "Selbst-Test 10w: das Werk baut allein (kein Helfer, der Null-Renderer schloss sie aus) → W6 rot",
+            rot(mitWerk([{ k: 0, bereit: true, posts: 200, antworten: 200, fremd: [] }]), "W6")
+        );
+        check(
+            "Selbst-Test 10x: ein Helfer wird nie bereit und baut nichts → W6 rot",
+            rot(
+                mitWerk([
+                    { k: 0, bereit: true, posts: 200, antworten: 200, fremd: [] },
+                    { k: 1, bereit: false, posts: 0, antworten: 0, fremd: [] },
+                ]),
+                "W6"
+            )
+        );
+        check(
+            "Selbst-Test 10y: ein Auftrag reist mit der Nummer einer fremden Bahn (w2_ im Faden 1) → W6 rot",
+            rot(
+                mitWerk([
+                    { k: 0, bereit: true, posts: 100, antworten: 100, fremd: [] },
+                    { k: 1, bereit: true, posts: 100, antworten: 100, fremd: ["gw2_17"] },
+                ]),
+                "W6"
+            )
+        );
+        check(
+            "Selbst-Test 10z: ein Helfer bleibt Antworten schuldig → W6 rot",
+            rot(
+                mitWerk([
+                    { k: 0, bereit: true, posts: 100, antworten: 100, fremd: [] },
+                    { k: 1, bereit: true, posts: 100, antworten: 90, fremd: [] },
+                ]),
+                "W6"
+            )
+        );
         check(
             "Selbst-Test 10a: das Welt-Urteil ist auf gesunden Daten grün",
             urteilWelt(gut).every((g) => g[1])
