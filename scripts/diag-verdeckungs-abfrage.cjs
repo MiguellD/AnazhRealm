@@ -624,7 +624,7 @@ async function verdeckungPhase(opts) {
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 1200000 });
+    const browser = await starteBrowser({ art: "linse", frist: 1200000, erwartet: /Invalid value used in weak set/ });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     await page.evaluateOnNewDocument(sammlerInstall);
