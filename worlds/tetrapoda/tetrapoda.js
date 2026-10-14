@@ -121,7 +121,9 @@ function createBodyGuideMesh(){var allPos=[],allIdx=[],vOff=0;wolf.updateMatrixW
 function placeFurOnMesh(geo,density,len,thick,mat,dirBase){var pos=geo.attributes.position.array;var nor=geo.attributes.normal.array;var idx=geo.index.array;var tc=idx.length/3;var areas=new Float32Array(tc),cum=new Float32Array(tc),total=0;var v0=new THREE.Vector3(),v1=new THREE.Vector3(),v2=new THREE.Vector3();var e1=new THREE.Vector3(),e2=new THREE.Vector3(),cr=new THREE.Vector3();for(var i=0;i<tc;i++){var a=idx[i*3],b=idx[i*3+1],c=idx[i*3+2];v0.set(pos[a*3],pos[a*3+1],pos[a*3+2]);v1.set(pos[b*3],pos[b*3+1],pos[b*3+2]);v2.set(pos[c*3],pos[c*3+1],pos[c*3+2]);e1.subVectors(v1,v0);e2.subVectors(v2,v0);cr.crossVectors(e1,e2);areas[i]=cr.length()*0.5;total+=areas[i];cum[i]=total;}var n0=new THREE.Vector3(),n1=new THREE.Vector3(),n2=new THREE.Vector3();var pt=new THREE.Vector3(),nm=new THREE.Vector3(),dir=new THREE.Vector3(),flow=new THREE.Vector3();for(var i=0;i<density;i++){var r=Math.random()*total;var lo=0,hi=tc-1;while(lo<hi){var mid=(lo+hi)>>1;if(cum[mid]<r)lo=mid+1;else hi=mid;}var t2=lo;var a=idx[t2*3],b=idx[t2*3+1],c=idx[t2*3+2];v0.set(pos[a*3],pos[a*3+1],pos[a*3+2]);v1.set(pos[b*3],pos[b*3+1],pos[b*3+2]);v2.set(pos[c*3],pos[c*3+1],pos[c*3+2]);n0.set(nor[a*3],nor[a*3+1],nor[a*3+2]);n1.set(nor[b*3],nor[b*3+1],nor[b*3+2]);n2.set(nor[c*3],nor[c*3+1],nor[c*3+2]);var r1=Math.random(),r2=Math.random();if(r1+r2>1){r1=1-r1;r2=1-r2;}var r3=1-r1-r2;pt.copy(v0).multiplyScalar(r3).addScaledVector(v1,r1).addScaledVector(v2,r2);nm.copy(n0).multiplyScalar(r3).addScaledVector(n1,r1).addScaledVector(n2,r2).normalize();if(nm.y<-0.85)continue;var dot=nm.dot(dirBase);flow.copy(dirBase).addScaledVector(nm,-dot);if(flow.lengthSq()<0.001)flow.copy(dirBase);flow.normalize();dir.copy(flow).multiplyScalar(0.7);dir.addScaledVector(nm,0.3);dir.x+=(Math.random()-0.5)*0.3;dir.y+=(Math.random()-0.5)*0.2;dir.z+=(Math.random()-0.5)*0.3;dir.normalize();pt.addScaledVector(nm,-0.012);addStrand(pt,dir,len,thick,mat);} }
 function topY(z){var t=(sZ-z)/(sZ-hZ);t=Math.max(0,Math.min(1,t));return sY-t*(sY-hY);}
 function disposeAnimal(){if(!wolf)return;scene.remove(wolf);furStrands=[];_geomCache={};tailSegs=[];spineSegs=[];neckSegs=[];}
-function deriveParams(){/* ULTRAGUSS U4: die Allometrie wohnt im Gesetzbuch (__tetrapodaCore.deriveTierParams) — die Shell liest Slider, ruft das EINE Gesetz, pflegt Labels. */var size=parseFloat(document.getElementById('sSize').value),neckLen=parseFloat(document.getElementById('sNeck').value),legLen=parseFloat(document.getElementById('sLeg').value),diet=parseFloat(document.getElementById('sDiet').value),build=parseFloat(document.getElementById('sBuild').value);var P=__tetrapodaCore.deriveTierParams({size:size,neckLen:neckLen,legLen:legLen,diet:diet,build:build});document.getElementById('vSize').textContent=size.toFixed(1);document.getElementById('vNeck').textContent=neckLen.toFixed(2);document.getElementById('vLeg').textContent=legLen.toFixed(2);document.getElementById('vDiet').textContent=diet>0.7?'Carn':diet>0.3?'Omni':'Herb';document.getElementById('vBuild').textContent=build.toFixed(2);return P;}
+/* DIE HÜLLE (K41): die fünf allometrischen Dials leben in T (geschrieben vom EINEN Generator aus PARAMS_BY_KIND.kreatur), nie im DOM. */
+var T={},regler=null,sitz=null,kosten=null,gattungAktiv='wolf';
+function deriveParams(){/* ULTRAGUSS U4: die Allometrie wohnt im Gesetzbuch (__tetrapodaCore.deriveTierParams) — die Shell reicht die Dials, ruft das EINE Gesetz. */return __tetrapodaCore.deriveTierParams({size:T.size,neckLen:T.neck,legLen:T.leg,diet:T.diet,build:T.build});}
 function buildAnimal(){
   disposeAnimal();P=deriveParams();
   var __TK=__tetrapodaCore.TIER_MATERIAL_KLASSEN,__AU=__tetrapodaCore.tierAuge(P);   /* KONVERGENZ III: die tier-farben wohnen im gesetzbuch; die Iris und ihre Glut traegt die Art (tierAuge) */
@@ -162,11 +164,20 @@ function buildAnimal(){
       addFurLocal(wirt,new THREE.Vector3(row.c[0],row.c[1],row.c[2]),row.r,row.sc,new THREE.Vector3(row.d[0],row.d[1],row.d[2]),row.n,row.l,row.t,toene[row.ton]||matStrand);}
   })();
   buildGroupFur(legFL);buildGroupFur(legFR);buildGroupFur(legHL);buildGroupFur(legHR);buildGroupFur(flU);buildGroupFur(frU);buildGroupFur(flL);buildGroupFur(frL);buildGroupFur(flP);buildGroupFur(frP);buildGroupFur(hlT);buildGroupFur(hrT);buildGroupFur(hlC);buildGroupFur(hrC);buildGroupFur(hlP);buildGroupFur(hrP);buildGroupFur(wolf);buildGroupFur(headGroup);
-  furInstanced=buildInstancedFur();wolf.add(furInstanced);scene.add(wolf);
+  furInstanced=buildInstancedFur();wolf.add(furInstanced);scene.add(wolf);if(kosten)kosten.messen(wolf,0);
   if(contactShadow){contactShadow.scale.setScalar(H*0.55);contactShadow.position.y=0.002;}
   controls.target.set(0,sY*0.38,0);controls.update();phys.init();emo.set(emoMode);document.getElementById('loading').style.display='none';
 }
 function init(){
+  // DIE HÜLLE (K41): Sitzung (Undo/Redo über T samt Gattung) + der EINE Generator + die Kosten-Leiste der Labor-Gestalt.
+  sitz=AnazhHuelle.sitzung({werte:T,zustand:function(){return {gattung:gattungAktiv};},zustandSetzen:function(z){gattungMarke(z.gattung);},anwenden:function(){buildAnimal();}});
+  sitz.leiste(document.getElementById("sitzung"),{seed:false});
+  regler=AnazhHuelle.regler(document.getElementById("sliders"),__tetrapodaCore.PARAMS_BY_KIND.kreatur,{werte:T,sitzung:sitz,gruppen:false,ruheMs:200,
+    basis:function(){return presets[gattungAktiv]||null;},
+    format:function(z,v){return z.id==="diet"?(v>0.7?"Carn":v>0.3?"Omni":"Herb"):z.id==="size"?(+v).toFixed(1):(+v).toFixed(2);},
+    bei:function(){gattungMarke(null);},nachRuhe:function(){buildAnimal();}});
+  kosten=AnazhHuelle.kosten(document.getElementById("kosten"),{budget:__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur,stufen:[0],
+    quelle:"gemessen an der Labor-Gestalt (Leib + Fell); den Welt-Guss bäckt der Host-Ofen aus denselben Dials (L1 = seine Grobstufe)"});
   scene=new THREE.Scene();scene.background=new THREE.Color(0x080604);camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.1,200);camera.position.set(6,2,7);
   renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(devicePixelRatio);if(THREE.sRGBEncoding!==undefined)renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
   try{var c=document.createElement('canvas');c.width=256;c.height=256;var x=c.getContext('2d');var g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#ccaa88');g.addColorStop(0.5,'#443322');g.addColorStop(1,'#0a0805');x.fillStyle=g;x.fillRect(0,0,256,256);var t=new THREE.CanvasTexture(c);var p=new THREE.PMREMGenerator(renderer);scene.environment=p.fromEquirectangular(t).texture;t.dispose();}catch(e){}
@@ -176,10 +187,11 @@ function init(){
   composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.35,0.4,0.85));fxaa=new THREE.ShaderPass(THREE.FXAAShader);fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);composer.addPass(fxaa);
   var cine={uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:['varying vec2 vUv;','void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}'].join('\n'),fragmentShader:['uniform sampler2D tDiffuse;','uniform float time;','varying vec2 vUv;','float random(vec2 st){return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);}','float getLum(vec2 uv){return dot(texture2D(tDiffuse,uv).rgb,vec3(0.299,0.587,0.114));}','void main(){vec2 uv=vUv;vec2 dir=uv-0.5;float dist=length(dir);vec2 offset=dir*dist*0.008;float r=texture2D(tDiffuse,uv+offset).r;float g=texture2D(tDiffuse,uv).g;float b=texture2D(tDiffuse,uv-offset).b;vec3 color=vec3(r,g,b);float lum=getLum(uv);float lL=getLum(uv-vec2(0.001,0.0));float lR=getLum(uv+vec2(0.001,0.0));float lU=getLum(uv-vec2(0.0,0.001));float lD=getLum(uv+vec2(0.0,0.001));float edge=abs(lL-lum)+abs(lR-lum)+abs(lU-lum)+abs(lD-lum);color*=(1.0+edge*2.0);color*=smoothstep(1.2,0.1,dist*1.3);color+=random(uv+time)*0.03-0.015;gl_FragColor=vec4(color,1.0);}'].join('\n')};cinePass=new THREE.ShaderPass(cine);cinePass.renderToScreen=true;composer.addPass(cinePass);
   controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=3;controls.maxDistance=30;controls.autoRotateSpeed=0.8;clock=new THREE.Clock();buildAnimal();
-  document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#presets button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');var p=presets[b.dataset.p];document.getElementById('sSize').value=p.size;document.getElementById('sNeck').value=p.neck;document.getElementById('sLeg').value=p.leg;document.getElementById('sDiet').value=p.diet;document.getElementById('sBuild').value=p.build;buildAnimal();});});
+  document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){sitz.schritt(function(){gattungMarke(b.dataset.p);var p=presets[b.dataset.p];regler.setzen({size:p.size,neck:p.neck,leg:p.leg,diet:p.diet,build:p.build},true);buildAnimal();});});});
   document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
-  var rebuildTimer=null;['sSize','sNeck','sLeg','sDiet','sBuild'].forEach(function(id){document.getElementById(id).addEventListener('input',function(){document.querySelectorAll('#presets button').forEach(function(b){b.classList.remove('active');});clearTimeout(rebuildTimer);rebuildTimer=setTimeout(buildAnimal,200);});});animate();
+  animate();
 }
+function gattungMarke(g){gattungAktiv=g||gattungAktiv;document.querySelectorAll('#presets button').forEach(function(b){b.classList.toggle('active',!!g&&b.dataset.p===g);});}
 function animate(){
   requestAnimationFrame(animate);if(!wolf)return;var t=clock.getElapsedTime(),dt=1/60;if(matFur)matFur.userData.uTime.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;cpgFreq=(bm.freqOv!==null?bm.freqOv:e.freq);updateCPG(dt);var st=e.stride;updateBodyPhysics(dt);bodyPhys.vy+=bm.impulseY;bodyPhys.vx+=bm.impulseX;var breathing=(st<0.01)?Math.sin(t*0.6)*0.003*H:0;wolf.position.y=bodyPhys.y+bm.pounceY+breathing;
   // Body roll computed early for weight shift
@@ -248,20 +260,12 @@ function animate(){
 addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
 init();
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-/* Das fachwerk.js-/schmiede.js-Muster: enter/ready-Handshake, die DSL spricht die
-   ECHTEN UI-Pfade — die vier Gattungen leben als #presets-Buttons (data-p, click()
-   = exakt der Nutzer-Pfad, Slider + buildAnimal laufen), die sechs Bewegungs-
-   profile als #emotions-Buttons (data-e, click() → emo.set). Die DSL-Wörter sind
-   deutsch (Registry == Brücke wortgleich, Umlaute ASCII-gefaltet: baer), die
-   Tabellen mappen auf die Lab-Werte. Esc meldet die Heimkehr. */
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die vier Gattungen leben als #presets-Buttons
+   (data-p, click() = exakt der Nutzer-Pfad, Regler + buildAnimal laufen), die sechs Bewegungsprofile als #emotions-
+   Buttons (data-e, click() → emo.set). Die DSL-Wörter sind deutsch (Registry == Brücke wortgleich, Umlaute ASCII-
+   gefaltet: baer), die Tabellen mappen auf die Lab-Werte. Esc meldet die Heimkehr. */
 (function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
     var GATTUNG = { wolf: "wolf", fuchs: "fox", baer: "bear", hirsch: "deer" };
     var EMOTION = {
         entspannt: "idle",
@@ -271,70 +275,35 @@ init();
         wachsam: "alert",
         showcase: "showcase",
     };
-    var DSL = Object.keys(GATTUNG).concat(Object.keys(EMOTION));
-    var LABEL = "Tetrapoda — Evolution Lab";
     function clickBtn(sel) {
         var b = document.querySelector(sel);
         if (b) b.click();
         return !!b;
     }
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "tetrapoda", label: LABEL, dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = String((op && op[0]) || op || "")
-                    .toLowerCase()
-                    .trim();
-                if (GATTUNG[word]) clickBtn('#presets button[data-p="' + GATTUNG[word] + '"]');
-                else if (EMOTION[word]) clickBtn('#emotions button[data-e="' + EMOTION[word] + '"]');
-            }
-        }
+    var B = AnazhHuelle.bruecke({
+        welt: "tetrapoda",
+        label: "Tetrapoda — Evolution Lab",
+        dsl: Object.keys(GATTUNG).concat(Object.keys(EMOTION)),
+        wort: function (w) {
+            if (GATTUNG[w]) clickBtn('#presets button[data-p="' + GATTUNG[w] + '"]');
+            else if (EMOTION[w]) clickBtn('#emotions button[data-e="' + EMOTION[w] + '"]');
+        },
     });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") post({ type: "exit", world: "tetrapoda" });
+    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE Schöpfer-Bearbeitung über DIESELBE
+       Brücke: gattung = die zuletzt gewählte Gattung (Regler-Feintuning löscht die active-Klasse, die Wahl bleibt
+       gemerkt), s = die fünf allometrischen Dials aus T (dieselbe Quelle wie deriveParams). Der Knopf ist standalone
+       hidden (nur das Portal enthüllt ihn). */
+    var b = document.getElementById("btnUebergabe");
+    if (!b || !window.parent || window.parent === window) return;
+    b.hidden = false;
+    b.addEventListener("click", function () {
+        var gattung = gattungAktiv;
+        B.post({
+            type: "uebergabe",
+            world: "tetrapoda",
+            kind: "kreatur",
+            gattung: gattung,
+            s: { size: T.size, neck: T.neck, leg: T.leg, diet: T.diet, build: T.build },
+        });
     });
-    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE
-       Schöpfer-Bearbeitung additiv über DIESELBE Brücke (das settlement/event-
-       Zusatz-Kanal-Muster): gattung = das zuletzt gewählte Preset (data-p —
-       Slider-Feintuning löscht die active-Klasse, die Wahl bleibt gemerkt),
-       s = die fünf allometrischen Dials von den ECHTEN Slidern (dieselbe
-       Quelle wie deriveParams). Der Knopf ist standalone hidden (nur das
-       Portal enthüllt ihn) — bestehendes Verhalten byte-unberührt. */
-    (function () {
-        var b = document.getElementById("btnUebergabe");
-        if (!b) return;
-        b.hidden = false;
-        var aktiv = document.querySelector("#presets button.active");
-        var gattung = aktiv && aktiv.dataset ? aktiv.dataset.p : "wolf";
-        document.querySelectorAll("#presets button").forEach(function (pb) {
-            pb.addEventListener("click", function () {
-                gattung = pb.dataset.p;
-            });
-        });
-        var dial = function (id) {
-            var el = document.getElementById(id);
-            return el ? parseFloat(el.value) : NaN;
-        };
-        b.addEventListener("click", function () {
-            post({
-                type: "uebergabe",
-                world: "tetrapoda",
-                kind: "kreatur",
-                gattung: gattung,
-                s: {
-                    size: dial("sSize"),
-                    neck: dial("sNeck"),
-                    leg: dial("sLeg"),
-                    diet: dial("sDiet"),
-                    build: dial("sBuild"),
-                },
-            });
-        });
-    })();
-    post({ type: "ready", world: "tetrapoda", label: LABEL, dsl: DSL });
 })();

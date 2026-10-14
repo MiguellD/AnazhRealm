@@ -3920,13 +3920,8 @@ const playBtn = document.getElementById('playBtn');
 const recBtn  = document.getElementById('recBtn');
 const liveBox = document.getElementById('liveBox');
 
-function toast(msg){
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2400);
-}
+// Der Toast ist der der Hülle (EINE Meldungs-Zeile, ../huelle/huelle.js).
+function toast(msg){ AnazhHuelle.toast(msg); }
 
 function updateLiveBox(){
   const f = state.form, c = state.chord;
@@ -3939,66 +3934,39 @@ function updateLiveBox(){
 
 /* ── Mixer-UI: Fader (−24…+6 dB) + Mute pro Kanal, Echo-Regler ── */
 const STRIP_LABELS = { drums:'Drums', bass:'Bass', harmony:'Akkorde', lead:'Melodie', sim:'Simulator' };
+const mixDb = {};
 function buildMixerUI(){
   const c = document.getElementById('mixer');
-  Object.keys(mixState).forEach(k => {
-    const row = document.createElement('div');
-    row.className = 'mixRow';
-    row.innerHTML =
-      '<span class="mixLbl">' + STRIP_LABELS[k] + '</span>' +
-      '<input type="range" min="-24" max="6" step="0.5" value="0">' +
-      '<span class="val">0.0 dB</span>' +
-      '<button class="muteBtn">M</button>';
-    c.appendChild(row);
-    const sl = row.querySelector('input'), val = row.querySelector('.val');
-    sl.addEventListener('input', () => {
-      const db = parseFloat(sl.value);
-      setStripDb(k, db);
-      val.textContent = (db > 0 ? '+' : '') + db.toFixed(1) + ' dB';
-    });
-    row.querySelector('.muteBtn').onclick = function(){
-      setStripMute(k, !mixState[k].mute);
-      this.classList.toggle('active', mixState[k].mute);
-    };
-  });
-  const er = document.createElement('div');
-  er.className = 'sliderRow';
-  er.innerHTML = '<label>Echo</label><input type="range" min="0" max="1" step="0.01" value="0.6"><span class="val">60 %</span>';
-  c.appendChild(er);
-  const es = er.querySelector('input'), ev = er.querySelector('.val');
-  es.addEventListener('input', () => {
-    fx.echo = parseFloat(es.value);
-    ev.textContent = Math.round(fx.echo * 100) + ' %';
-    if (AC && dlyRet) dlyRet.gain.setTargetAtTime(fx.echo * 0.85, AC.currentTime, 0.05);
-  });
+  const fader = Object.keys(mixState).map(k => ({ id: k, lab: STRIP_LABELS[k], min: -24, max: 6, step: 0.5, def: 0 }));
+  fader.push({ id: 'echo', lab: 'Echo', min: 0, max: 1, step: 0.01, def: 0.6 });
+  mixDb.echo = fx.echo != null ? fx.echo : 0.6;
+  AnazhHuelle.regler(c, fader, { werte: mixDb, gruppen: false, zuruecksetzen: false, ruheMs: 0,
+    format: (z, v) => z.id === 'echo' ? Math.round(v * 100) + ' %' : (v > 0 ? '+' : '') + (+v).toFixed(1) + ' dB',
+    bei: (k, v) => {
+      if (k === 'echo') { fx.echo = v; if (AC && dlyRet) dlyRet.gain.setTargetAtTime(fx.echo * 0.85, AC.currentTime, 0.05); }
+      else setStripDb(k, v);
+    },
+    // der Stumm-Knopf je Kanal steht an seiner Zeile
+    zusatz: (z, zeile, kopf) => {
+      if (z.id === 'echo') return;
+      const m = document.createElement('button');
+      m.className = 'muteBtn'; m.textContent = 'M'; m.title = 'Stumm';
+      m.onclick = function(){ setStripMute(z.id, !mixState[z.id].mute); this.classList.toggle('active', mixState[z.id].mute); };
+      kopf.appendChild(m);
+    } });
 }
 
 /* ── Session-UI: Seed, Teilen-Link, MIDI-Export ── */
 function buildSessionUI(){
   const c = document.getElementById('session');
-  c.innerHTML =
-    '<div class="sessRow"><label>Seed</label>' +
-    '<input id="seedInput" type="number" min="0" step="1">' +
-    '<button class="miniBtn" id="diceBtn" title="Neuer Zufalls-Seed">🎲</button>' +
+  sitz.leiste(c, { wuerfel: () => [] });   // der Würfel der Hülle: ein neuer Same, keine Achse
+  c.insertAdjacentHTML('beforeend',
+    '<div class="sessRow">' +
     '<button class="miniBtn" id="linkBtn" title="Teilbaren Link kopieren">🔗</button>' +
     '<button class="miniBtn" id="midiBtn" title="Komposition als Standard-MIDI-File exportieren">MIDI</button>' +
     '<button class="miniBtn" id="labBtn" title="Blinder A/B-Hörtest zweier Seeds">⚖</button>' +
     '<button class="miniBtn" id="povBtn" title="Perspektive wechseln: Überblick ↔ Im Fluss">👁</button></div>' +
-    '<p class="hint">Gleicher Seed + gleiches Preset = identische Komposition. Der Link enthält Seed, Preset und Tempo.</p>';
-  const inp = document.getElementById('seedInput');
-  inp.value = seed;
-  inp.addEventListener('change', () => {
-    seed = (parseInt(inp.value) || 0) >>> 0;
-    inp.value = seed;
-    updateLiveBox();
-    toast(state.playing ? 'Seed gilt ab dem nächsten Start.' : 'Seed gesetzt · ' + seed);
-  });
-  document.getElementById('diceBtn').onclick = () => {
-    seed = (Date.now() ^ ((rng() * 1e9) | 0)) >>> 0;
-    inp.value = seed;
-    updateLiveBox();
-    toast('Neuer Seed · ' + seed + (state.playing ? ' — gilt ab dem nächsten Start.' : ''));
-  };
+    '<p class="hint">Gleicher Seed + gleiches Preset = identische Komposition. Der Link enthält Seed, Preset und Tempo. Strg+Z nimmt jede Tat zurück.</p>');
   document.getElementById('linkBtn').onclick = () => {
     const base = (window.location && window.location.href ? window.location.href.split('#')[0] : '');
     const url = base + '#s=' + seed + '&p=' + encodeURIComponent(lastPreset) + '&b=' + state.bpm;
@@ -4049,8 +4017,7 @@ function labStart(){
 function labPhase(p){
   lab.phase = p;
   seed = p === 'A' ? lab.seedA : lab.seedB;
-  const inp = document.getElementById('seedInput');
-  if (inp) inp.value = seed;
+  sitz.seedSetzen(seed, true);
   startTransport();
   lab.watch = setInterval(() => {
     if (!state.playing){ clearInterval(lab.watch); return; }
@@ -4097,8 +4064,7 @@ function applyHashSession(){
     const q = new URLSearchParams(h);
     if (q.has('s')){
       seed = (parseInt(q.get('s')) || 0) >>> 0;
-      const i = document.getElementById('seedInput');
-      if (i) i.value = seed;
+      sitz.seedSetzen(seed, true);
     }
     const p = q.get('p');
     if (p && PRESETS[p]){
@@ -4119,11 +4085,11 @@ function buildPresets(){
     const btn = document.createElement('button');
     btn.className = 'presetBtn';
     btn.textContent = name;
-    btn.onclick = () => {
+    btn.onclick = () => sitz.schritt(() => {
       document.querySelectorAll('.presetBtn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       applyPreset(name);
-    };
+    });
     p.appendChild(btn);
   });
 }
@@ -4177,7 +4143,7 @@ function buildLawUI(){
       b.className = 'lawBtn';
       b.textContent = law.options[opt].desc;
       b.dataset.law = lawKey; b.dataset.opt = opt;
-      b.onclick = () => { laws[lawKey] = opt; syncLawUI(); };
+      b.onclick = () => sitz.schritt(() => { laws[lawKey] = opt; syncLawUI(); });
       btnC.appendChild(b);
     });
   });
@@ -4196,11 +4162,11 @@ function buildLawUI(){
       b.className = 'lawBtn';
       b.textContent = track.options[opt].desc;
       b.dataset.track = trackKey; b.dataset.opt = opt;
-      b.onclick = () => {
+      b.onclick = () => sitz.schritt(() => {
         instruments[trackKey] = opt;
         if (trackKey === 'drums') setLofi(opt === 'LoFi');
         syncLawUI();
-      };
+      });
       btnC.appendChild(b);
     });
   });
@@ -4209,7 +4175,7 @@ function buildLawUI(){
   NOTE_NAMES.forEach((n, i) => {
     const b = document.createElement('button');
     b.className = 'lawBtn'; b.textContent = n; b.dataset.root = i;
-    b.onclick = () => { tuning.root = i; state.root = 48 + i; syncLawUI(); updateLiveBox(); };
+    b.onclick = () => sitz.schritt(() => { tuning.root = i; state.root = 48 + i; syncLawUI(); updateLiveBox(); });
     rC.appendChild(b);
   });
 
@@ -4217,7 +4183,7 @@ function buildLawUI(){
   [{n:'440 Hz', v:440}, {n:'432 Hz', v:432}, {n:'415 Hz', v:415}].forEach(tu => {
     const b = document.createElement('button');
     b.className = 'lawBtn'; b.textContent = tu.n; b.dataset.tune = tu.v;
-    b.onclick = () => { tuning.baseFreq = tu.v; syncLawUI(); updateLiveBox(); };
+    b.onclick = () => sitz.schritt(() => { tuning.baseFreq = tu.v; syncLawUI(); updateLiveBox(); });
     tC.appendChild(b);
   });
 
@@ -4235,22 +4201,23 @@ function buildLawUI(){
   });
 }
 
+let dnaRegler = null, tempoRegler = null;
 function buildDnaUI(){
-  const c = document.getElementById('dna');
-  DNA.forEach(d => {
-    const row = document.createElement('div');
-    row.className = 'sliderRow';
-    row.innerHTML = '<label>' + d.label + '</label>' +
-      '<input type="range" min="0" max="1" step="0.01" data-dna="' + d.k + '">' +
-      '<span class="val" data-dnaval="' + d.k + '"></span>';
-    c.appendChild(row);
-    row.querySelector('input').addEventListener('input', e => {
-      mods[d.k] = parseFloat(e.target.value);
-      if (d.k === 'space' && reverbReturn && AC)
-        reverbReturn.gain.setTargetAtTime(mods.space * 0.5, AC.currentTime, 0.1);
-      syncDnaUI();
-    });
-  });
+  const dnaZeilen = KC.PARAMS_BY_KIND.klang.filter(z => z.grp === 'DNA');
+  dnaRegler = AnazhHuelle.regler(document.getElementById('dna'), dnaZeilen, { werte: mods, sitzung: sitz, gruppen: false,
+    basis: () => PRESETS[lastPreset] || null,
+    format: (z, v) => Math.round(v * 100) + ' %',
+    bei: (k) => { if (k === 'space' && reverbReturn && AC) reverbReturn.gain.setTargetAtTime(mods.space * 0.5, AC.currentTime, 0.1); } });
+  // Tempo: die Puls-Zeile des Kerns (bpm) — mods.bpm IST state.bpm (Accessor), der Generator schreibt sie wie jede Achse
+  tempoRegler = AnazhHuelle.regler(document.getElementById('tempoRegler'), KC.PARAMS_BY_KIND.klang.filter(z => z.id === 'bpm'),
+    { werte: mods, sitzung: sitz, gruppen: false, gesetze: false, zuruecksetzen: false, domId: () => 'sBpm',
+      format: (z, v) => v + ' BPM',
+      bei: () => { setDelayFromBpm(); if (state.playing) tempoLog.push({ b: curBeat, bpm: state.bpm }); updateLiveBox(); } });
+  // Master: eine Bedienungs-Zeile (keine Gestalt-Achse, kein Rückgängig-Schritt); id sVol trägt den Hörer der Welt-Tafel
+  AnazhHuelle.regler(document.getElementById('volRegler'), [{ id: 'volume', lab: 'Master', min: 0, max: 1, step: 0.01, def: 0.85 }],
+    { werte: mods, gruppen: false, zuruecksetzen: false, ruheMs: 0, domId: () => 'sVol',
+      format: (z, v) => Math.round(v * 100) + ' %',
+      bei: () => { if (master) master.gain.setTargetAtTime(Math.pow(mods.volume, 1.6), AC.currentTime, 0.03); } });
 }
 
 const keyEls = {};
@@ -4391,16 +4358,10 @@ function syncLawUI(){
     .forEach(b => b.classList.toggle('active', parseInt(b.dataset.tune) === tuning.baseFreq));
   document.querySelectorAll('#simInstSelect .lawBtn')
     .forEach(b => b.classList.toggle('active', b.dataset.sim === simInstrument));
-  document.getElementById('sBpm').value = state.bpm;
-  document.getElementById('bpmVal').textContent = state.bpm + ' BPM';
+  if (tempoRegler) tempoRegler.sync();
 }
 function syncDnaUI(){
-  DNA.forEach(d => {
-    const inp = document.querySelector('input[data-dna="' + d.k + '"]');
-    const val = document.querySelector('[data-dnaval="' + d.k + '"]');
-    if (inp) inp.value = mods[d.k];
-    if (val) val.textContent = Math.round(mods[d.k] * 100) + ' %';
-  });
+  if (dnaRegler) dnaRegler.sync();
 }
 
 /* Mutation: Gesetz · DNA-Parameter · L-System-Regel */
@@ -4439,25 +4400,13 @@ function setMode(gen){
 }
 playBtn.onclick = togglePlay;
 recBtn.onclick = toggleRecord;
-document.getElementById('evolveBtn').onclick = mutate;
+document.getElementById('evolveBtn').onclick = () => sitz.schritt(mutate);
 document.getElementById('finBtn').onclick = requestFinale;
 document.getElementById('collapseBtn').onclick = function(){
   const ui = document.getElementById('ui');
   ui.classList.toggle('min');
   this.textContent = ui.classList.contains('min') ? '+' : '–';
 };
-document.getElementById('sVol').addEventListener('input', e => {
-  mods.volume = parseFloat(e.target.value);
-  document.getElementById('volVal').textContent = Math.round(mods.volume * 100) + ' %';
-  if (master) master.gain.setTargetAtTime(Math.pow(mods.volume, 1.6), AC.currentTime, 0.03);
-});
-document.getElementById('sBpm').addEventListener('input', e => {
-  state.bpm = parseInt(e.target.value);
-  document.getElementById('bpmVal').textContent = state.bpm + ' BPM';
-  setDelayFromBpm();
-  if (state.playing) tempoLog.push({ b: curBeat, bpm: state.bpm });
-  updateLiveBox();
-});
 
 const KEYMAP = { a:60, w:61, s:62, e:63, d:64, f:65, t:66, g:67, z:68, h:69, u:70, j:71, k:72 };
 window.addEventListener('keydown', e => {
@@ -4478,12 +4427,29 @@ window.addEventListener('keydown', e => {
 });
 
 /* ── Start ── */
+Object.defineProperty(mods, 'bpm', { enumerable: true, get: () => state.bpm, set: v => { state.bpm = Math.round(v); } });
+const sitz = AnazhHuelle.sitzung({ werte: mods, seed,
+  zustand: () => ({ preset: lastPreset, laws: Object.assign({}, laws), instruments: Object.assign({}, instruments), tuning: Object.assign({}, tuning) }),
+  zustandSetzen: z => {
+    if (z.preset !== lastPreset && PRESETS[z.preset]) applyPreset(z.preset);
+    Object.assign(laws, z.laws); Object.assign(instruments, z.instruments); Object.assign(tuning, z.tuning);
+    state.root = 48 + tuning.root; setLofi(instruments.drums === 'LoFi');
+    document.querySelectorAll('.presetBtn').forEach(b => b.classList.toggle('active', b.textContent === z.preset));
+  },
+  anwenden: () => {
+    setDelayFromBpm();
+    if (reverbReturn && AC) reverbReturn.gain.setTargetAtTime(mods.space * 0.5, AC.currentTime, 0.08);
+    syncLawUI(); updateLiveBox();
+  },
+  beiSeed: s => { seed = s >>> 0; updateLiveBox(); toast('Seed · ' + seed + (state.playing ? ' — gilt ab dem nächsten Start.' : '')); } });
 buildPresets();
 buildLawUI();
 buildDnaUI();
 buildKeyboard();
 buildMixerUI();
 buildSessionUI();
+// Die Kosten-Leiste der Hülle: klang trägt keine Gestalt (MESHFREI, Studio-Vertrag §8) — sie steht und sagt es.
+AnazhHuelle.kosten(document.getElementById('kosten'), { meshfrei: 'klang ist meshfrei (Studio-Vertrag §8): keine Gestalt, kein Dreieck im Profi-Band — die Musik kostet Stimmen und Takt' });
 syncLawUI();
 syncDnaUI();
 document.querySelector('.presetBtn').classList.add('active');   // Blues als Default markieren
@@ -4545,15 +4511,14 @@ applyHashSession();                                              // #s=…&p=…
       ? z.map(v => (v.an ? '▶ <b>' : '· ') + v.name + (v.an ? '</b>' : '') + ' ' + (isFinite(v.db) ? v.db.toFixed(1) : '−∞') + ' dB').join('<br>')
       : 'Stille — keine Stimme über der Hörschwelle (' + U.hoerschwelleDb + ' dB).';
   }
+  const lageW = {};
+  let lageRegler = null;
   function zeigeRegler() {
     for (const r of REGLER) {
-      const el = document.getElementById('weltR_' + r.k.replace('.', '_'));
-      if (!el) continue;
       const v = lies(r.k);
-      const w = r.aus != null && v == null ? r.aus : v;
-      el.value = String(w);
-      document.getElementById('weltV_' + r.k.replace('.', '_')).textContent = r.fmt(Number(w));
+      lageW[r.k] = Number(r.aus != null && v == null ? r.aus : v);
     }
+    if (lageRegler) lageRegler.sync();
   }
   function ort(name) {
     sichern();
@@ -4586,36 +4551,19 @@ applyHashSession();                                              // #s=…&p=…
   still.textContent = 'Stille';
   still.onclick = stille;
   orteEl.appendChild(still);
-  // Lage-Regler
-  const lageEl = document.getElementById('weltLage');
-  for (const r of REGLER) {
-    const id = r.k.replace('.', '_');
-    const row = document.createElement('div');
-    row.className = 'sliderRow';
-    row.innerHTML = '<label>' + r.lab + '</label><input type="range" id="weltR_' + id + '" min="' + r.min + '" max="' + r.max + '" step="' + r.step + '"><span class="val" id="weltV_' + id + '"></span>';
-    lageEl.appendChild(row);
-    row.querySelector('input').addEventListener('input', e => {
-      const v = parseFloat(e.target.value);
-      schreibe(r.k, v);
-      document.getElementById('weltV_' + id).textContent = r.fmt(v);
-      if (aktivOrt) anwenden();
-    });
-  }
+  // Lage-Regler (Werte in lageW, flach; schreibe() trägt sie in die Lage)
+  lageRegler = AnazhHuelle.regler(document.getElementById('weltLage'), REGLER.map(r => ({ id: r.k, lab: r.lab, min: r.min, max: r.max, step: r.step, def: r.min, fmt: r.fmt })),
+    { werte: lageW, gruppen: false, zuruecksetzen: false, ruheMs: 0, format: (z, v) => z.fmt(Number(v)),
+      bei: (k, v) => { schreibe(k, v); if (aktivOrt) anwenden(); } });
   zeigeRegler();
   // Tier-Ruf: Körperlänge × Stimmung → tierRuf (derselbe Ruf wie im Spiel)
   const tierEl = document.getElementById('weltTier');
-  const tRow = document.createElement('div');
-  tRow.className = 'sliderRow';
-  tRow.innerHTML = '<label>Länge</label><input type="range" id="weltTierL" min="0.3" max="3" step="0.05" value="1.2"><span class="val" id="weltTierV"></span>';
-  tierEl.appendChild(tRow);
-  const tierL = tRow.querySelector('input');
-  const tierV = document.getElementById('weltTierV');
-  const zeigeTier = () => {
-    const L = parseFloat(tierL.value);
-    tierV.textContent = L.toFixed(2) + ' m · ' + Math.round(U.tier.fRef * Math.pow(L / U.tier.lRef, -U.tier.exponent)) + ' Hz';
-  };
-  tierL.addEventListener('input', zeigeTier);
-  zeigeTier();
+  const tierW = { laenge: 1.2 };
+  const tierBox = document.createElement('div');
+  tierEl.appendChild(tierBox);
+  AnazhHuelle.regler(tierBox, [{ id: 'laenge', lab: 'Länge', min: 0.3, max: 3, step: 0.05, def: 1.2 }],
+    { werte: tierW, gruppen: false, zuruecksetzen: false, ruheMs: 0,
+      format: (z, L) => (+L).toFixed(2) + ' m · ' + Math.round(U.tier.fRef * Math.pow(L / U.tier.lRef, -U.tier.exponent)) + ' Hz' });
   const tBtns = document.createElement('div');
   tBtns.className = 'lawButtons';
   tBtns.style.setProperty('--cols', '4');
@@ -4626,7 +4574,7 @@ applyHashSession();                                              // #s=…&p=…
     b.textContent = s;
     b.onclick = () => {
       sichern();
-      K.tierRuf(AC, bus, { laengeM: parseFloat(tierL.value), stimmung: s, d: U.tier.dRef, pan: 0, saat: (Date.now() >>> 0) });
+      K.tierRuf(AC, bus, { laengeM: tierW.laenge, stimmung: s, d: U.tier.dRef, pan: 0, saat: (Date.now() >>> 0) });
     };
     tBtns.appendChild(b);
   }
@@ -4647,53 +4595,19 @@ applyHashSession();                                              // #s=…&p=…
   window.__klangWelt = { zensus: () => (graph ? graph.zensus() : []), lage: () => lage, ort, stille };
 })();
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-/* Das fachwerk.js-Muster: enter/ready-Handshake, die DSL spricht die ECHTEN
-   UI-Pfade — die 22 Genesis-Genres leben als .presetBtn-Buttons in #presets
-   (textContent = Lab-Genre-Name, click() → applyPreset; die Buttons entstehen
-   dynamisch aus DERSELBEN Kern-Quelle __klangCore.GENRES). DSL-Wörter =
-   lowercase-Genre-Namen (Registry == Brücke wortgleich; hier die LAB-Namen,
-   NICHT die Buch-ids — die Label-Kollisions-Ausnahmen modern-klang/barock-klang
-   gelten dem first-wins-Buch, das Lab-UI spricht "Modern"/"Barock").
-   Kein Begeh-Modus — Esc meldet immer die Heimkehr. */
-(function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
-    var KC2 = window.__klangCore || {};
-    var NAMES = Object.keys(KC2.GENRES || {});
-    var DSL = NAMES.map(function (n) {
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die 22 Genesis-Genres leben als
+   .presetBtn-Buttons in #presets (textContent = Lab-Genre-Name, click() → applyPreset; die Buttons entstehen aus
+   DERSELBEN Kern-Quelle __klangCore.GENRES). DSL-Wörter = lowercase-Genre-Namen (Registry == Brücke wortgleich; hier
+   die LAB-Namen, NICHT die Buch-ids — die Label-Kollisions-Ausnahmen modern-klang/barock-klang gelten dem first-wins-
+   Buch, das Lab-UI spricht "Modern"/"Barock"). Kein Begeh-Modus — Esc meldet immer die Heimkehr. */
+AnazhHuelle.bruecke({
+    welt: "klang",
+    label: "Genesis — Generatives Musiksystem",
+    dsl: Object.keys(KC.GENRES || {}).map(function (n) {
         return n.toLowerCase();
-    });
-    var LABEL = "Genesis — Generatives Musiksystem";
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "klang", label: LABEL, dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = String((op && op[0]) || op || "")
-                    .toLowerCase()
-                    .trim();
-                if (DSL.indexOf(word) < 0) continue;
-                var btns = document.querySelectorAll("#presets .presetBtn");
-                for (var k = 0; k < btns.length; k++) {
-                    if (btns[k].textContent.toLowerCase() === word) {
-                        btns[k].click();
-                        break;
-                    }
-                }
-            }
-        }
-    });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") post({ type: "exit", world: "klang" });
-    });
-    post({ type: "ready", world: "klang", label: LABEL, dsl: DSL });
-})();
+    }),
+    wort: function (w) {
+        AnazhHuelle.knopfMitText(document.getElementById("presets"), w, ".presetBtn");
+    },
+});

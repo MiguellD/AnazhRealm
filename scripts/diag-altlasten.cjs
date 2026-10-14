@@ -923,6 +923,26 @@ const FORBIDDEN = [
         fiel: "Studio-Welle S1 — gate:portal-konformanz (die echte Heimat, die echte Form)",
         auch: ["package.json"],
     },
+    // DIE STUDIO-HÜLLE (K41, Studio-Welle 1): EIN UI-Modul (worlds/huelle/huelle.js) trägt Regler, Sitzung, Kosten-Leiste und
+    // die Portal-Brücke der Studios, der Nebenwelten und der Werkstatt; die Kopien fielen ganz (gate:studio-huelle nennt
+    // jede neue Kopie beim Namen, hier stehen die Namen der gefallenen Spiegel).
+    { token: "_wsOvDebounce", fiel: "Studio-Hülle K41 — die Werkstatt entprellt im EINEN Generator (AnazhHuelle.regler, ruheMs)" },
+    {
+        token: "function announceReady",
+        fiel: "Studio-Hülle K41 — die ready meldet die EINE Brücke (AnazhHuelle.bruecke mit manifest)",
+        auch: ["worlds/skeleton/skeleton.js", "worlds/fluid/fluid.js"],
+    },
+    {
+        token: "sliderEls",
+        fiel: "Studio-Hülle K41 — die Schieber hält der Generator (regler.eingabe / regler.sync)",
+        auch: ["worlds/garage/garage.js", "worlds/schmiede/schmiede.js"],
+    },
+    {
+        token: "slMap",
+        fiel: "Studio-Hülle K41 — params schreibt der Generator, kein Id-Spiegel",
+        auch: ["worlds/koerperstudio/koerperstudio.js"],
+    },
+    { token: "seedInput", fiel: "Studio-Hülle K41 — der Same lebt in der Sitzung (sitz.seedSetzen)", auch: ["worlds/klang/klang.js"] },
     // DIE LAGE STEHT (Welle C): die Nah-Wiese trug eine eigene Kamera-Signatur, jeder andere Leser rechnete je Pass neu. EIN
     // Gesetz der Lage (`_passLageGen`, `L.gen`) gilt allen Lesern der Sicht-Kette.
     { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },

@@ -908,34 +908,34 @@ class AnazhRealm_Z23b {
             "Rezept (Studio-Regler · " + (kind === "tree" ? "Baum" : kind === "rock" ? "Fels" : "Kristall") + ")";
         panel.appendChild(head);
         const spec = this._workshopRecipeSpec(bp, kind);
-        for (const d of spec.dials) {
-            const row = document.createElement("div");
-            row.className = "workshop-recipe-row";
-            const lab = document.createElement("label");
-            lab.textContent = d.label;
-            lab.title = d.hint;
-            const inp = document.createElement("input");
-            inp.type = "range";
-            inp.min = String(d.min);
-            inp.max = String(d.max);
-            inp.step = String(d.step);
-            inp.value = String(spec.cur[d.key] != null ? spec.cur[d.key] : d.min);
-            const val = document.createElement("span");
-            val.className = "workshop-recipe-val";
-            const fmt = (v) => (d.step >= 1 ? String(Math.round(v)) : (+v).toFixed(2));
-            val.textContent = fmt(+inp.value);
-            inp.addEventListener("input", () => {
-                val.textContent = fmt(+inp.value);
-                const nd = Object.assign({}, spec.cur);
-                nd[d.key] = +inp.value;
-                spec.cur = nd; // weitere Regler bauen auf dem aktualisierten Satz auf
-                spec.apply(nd);
-            });
-            row.appendChild(lab);
-            row.appendChild(inp);
-            row.appendChild(val);
-            panel.appendChild(row);
-        }
+        // DIE HÜLLE (K41, worlds/huelle/huelle.js): DERSELBE Regler-Generator wie in den Studio-Shells — die Dials des
+        // Rezept-Kerns in der PARAMS-Form (key → id, hint → law als Titel), jeder Zug wirkt sofort auf den Satz.
+        const dialWerte = Object.assign({}, spec.cur);
+        AnazhHuelle.regler(
+            panel,
+            spec.dials.map((d) => ({
+                id: d.key,
+                lab: d.label,
+                min: d.min,
+                max: d.max,
+                step: d.step,
+                def: d.min,
+                law: d.hint,
+            })),
+            {
+                werte: dialWerte,
+                leeren: false,
+                gruppen: false,
+                gesetze: false,
+                zuruecksetzen: false,
+                klassen: { zeile: "workshop-recipe-row", wert: "workshop-recipe-val" },
+                format: (z, v) => (z.step >= 1 ? String(Math.round(v)) : (+v).toFixed(2)),
+                bei: () => {
+                    spec.cur = Object.assign({}, spec.cur, dialWerte); // weitere Regler bauen auf dem aktualisierten Satz auf
+                    spec.apply(spec.cur);
+                },
+            }
+        );
         // LOD-Wahl (wie im Studio „gröbere Regeneration"): L0 fein · L1 mittel · L2 grob. Regeneriert
         // den Bauplan durch die Pipeline auf der gewählten Stufe → beweist, dass die LOD-Stufen durch
         // DIESELBE Quelle fliessen (Baum: Blätter → Karten → Impostor · Fels: Detail-Stufe).
@@ -1023,63 +1023,31 @@ class AnazhRealm_Z23b {
         head.className = "workshop-recipe-head";
         head.textContent = "Studio-Regler · " + (rec.lab || preset);
         panel.appendChild(head);
-        const ov = ws.studioOv[preset] || {};
-        const applyOv = (dialId, value) => {
-            if (!ws.studioOv[preset]) ws.studioOv[preset] = {};
-            ws.studioOv[preset][dialId] = value;
-            // Debounce (~180 ms): erst wenn die Hand ruht, baut die Vorschau mit ov neu.
-            if (this._wsOvDebounce) clearTimeout(this._wsOvDebounce);
-            this._wsOvDebounce = setTimeout(() => {
-                this._wsOvDebounce = null;
-                if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
-            }, 180);
-        };
-        let lastGrp = null;
-        for (const d of hasParams ? params : []) {
-            if (!d || typeof d.id !== "string") continue;
-            if (typeof d.grp === "string" && d.grp && d.grp !== lastGrp) {
-                lastGrp = d.grp;
-                const sub = document.createElement("div");
-                sub.className = "workshop-recipe-sub";
-                sub.textContent = d.grp;
-                panel.appendChild(sub);
-            }
-            const min = typeof d.min === "number" ? d.min : 0;
-            const max = typeof d.max === "number" ? d.max : 1;
-            const step = typeof d.step === "number" ? d.step : 0.01;
-            // Startwert-Kette (fail-soft): ov-Override → Rezept-Dial (rec.s) → def → min.
-            const cur =
-                ov[d.id] != null
-                    ? ov[d.id]
-                    : rec.s && typeof rec.s[d.id] === "number"
-                      ? rec.s[d.id]
-                      : typeof d.def === "number"
-                        ? d.def
-                        : min;
-            const row = document.createElement("div");
-            row.className = "workshop-recipe-row workshop-studio-param-row";
-            const lab = document.createElement("label");
-            lab.textContent = d.lab || d.id;
-            if (typeof d.law === "string" && d.law) lab.title = d.law;
-            const inp = document.createElement("input");
-            inp.type = "range";
-            inp.min = String(min);
-            inp.max = String(max);
-            inp.step = String(step);
-            inp.value = String(cur);
-            const val = document.createElement("span");
-            val.className = "workshop-recipe-val";
-            const fmt = (v) => (step >= 1 ? String(Math.round(v)) : (+v).toFixed(2));
-            val.textContent = fmt(+inp.value);
-            inp.addEventListener("input", () => {
-                val.textContent = fmt(+inp.value);
-                applyOv(d.id, +inp.value);
+        // DIE HÜLLE (K41, worlds/huelle/huelle.js): DERSELBE Regler-Generator wie in den Studio-Shells (kein Zwilling).
+        // Startwert-Kette: ov-Override → Rezept-Dial (rec.s) → def → min; jeder Zug schreibt seine Achse sofort in
+        // ws.studioOv[preset], die Vorschau baut, wenn die Hand ruht (Entprellung 180 ms der Hülle).
+        if (hasParams)
+            AnazhHuelle.regler(panel, params, {
+                werte: Object.assign({}, ws.studioOv[preset] || {}),
+                start: (d) => (rec.s && typeof rec.s[d.id] === "number" ? rec.s[d.id] : null),
+                leeren: false,
+                gesetze: false,
+                zuruecksetzen: false,
+                ruheMs: 180,
+                klassen: {
+                    zeile: "workshop-recipe-row workshop-studio-param-row",
+                    wert: "workshop-recipe-val",
+                    gruppe: "workshop-recipe-sub",
+                },
+                format: (z, v) => (z.step >= 1 ? String(Math.round(v)) : (+v).toFixed(2)),
+                bei: (id, v) => {
+                    if (!ws.studioOv[preset]) ws.studioOv[preset] = {};
+                    ws.studioOv[preset][id] = v;
+                },
+                nachRuhe: () => {
+                    if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+                },
             });
-            row.appendChild(lab);
-            row.appendChild(inp);
-            row.appendChild(val);
-            panel.appendChild(row);
-        }
         const btnRow = document.createElement("div");
         btnRow.className = "workshop-recipe-btns";
         // ERFINDER-WELLE — die generische LOD-Wahl AUS den kindStages-Daten (haus 0/1/2 …):

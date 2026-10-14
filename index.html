@@ -6142,6 +6142,22 @@
                 accent-color: var(--brass-3, #b08648);
                 cursor: pointer;
             }
+            /* die Zeile der Hülle (worlds/huelle): der Kopf ist Inhalt, die Spalten wie zuvor (Name · Schieber · Wert) */
+            .workshop-recipe-row .h-kopf {
+                display: contents;
+            }
+            .workshop-recipe-row .h-lab {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            .workshop-recipe-row input[type="range"] {
+                grid-column: 2;
+                grid-row: 1;
+            }
+            .workshop-recipe-row .h-wert {
+                grid-column: 3;
+                grid-row: 1;
+            }
             .workshop-recipe-val {
                 font-family: "JetBrains Mono", monospace;
                 font-size: 10px;
@@ -9764,6 +9780,8 @@
              Daten+Mathe) lädt VOR dem Stamm — der bladeProfile-Bau (Werkstatt/DSL)
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
         <script src="schmiede-core.js?v=18.546.0" defer></script>
+        <!-- DIE STUDIO-HÜLLE (K41): der EINE Regler-Generator der Studios — die Werkstatt ruft ihn (stamm §23) -->
+        <script src="worlds/huelle/huelle.js?v=18.546.0" defer></script>
         <script src="stamm/01.js?v=18.546.0" defer></script>
         <script src="stamm/02a.js?v=18.546.0" defer></script>
         <script src="stamm/02b.js?v=18.546.0" defer></script>
