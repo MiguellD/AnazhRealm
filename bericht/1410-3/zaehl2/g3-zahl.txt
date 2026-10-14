@@ -1,0 +1,13 @@
+{
+ "ergebnis": {
+  "aufrufe": 94458,
+  "vor": 210932,
+  "eigenVor": 0,
+  "knoten": 1085416,
+  "knotenGelaufen": 45005,
+  "eigen": 0,
+  "gruppen": 94458,
+  "typen": {}
+ },
+ "ms": 1
+}
