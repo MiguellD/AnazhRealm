@@ -12,6 +12,12 @@
 //       Sammelzeile (`rest`), jedes Muster verankert
 //   H2  die Ratsche trägt jede Haushalt-Klasse × Pass (null = ungemessen), ihre Toleranz und — wenn gemessen — eine
 //       eingeschwungene Messung
+//   H2b DIE FRISCHE (K26): jede Ratsche, die der Haushalt fordert (Band-Ort × Gerät × Sicht: Radeon und GTX, Ego und
+//       Third-Person), steht gemessen, an höchstens einer Version vor dem Kopf (package.json), an ihrem Ort, Gerät und in ihrer
+//       Sicht; ihre Gesamt-Zeile ist höchstens die Summe der Klassen (darüber feuert sie nie); `--messung <boot.json …>`
+//       (Boots der Messfolge oder Band-Dateien) richtet jede Ratsche gegen die Messung ihres Orts × Geräts × Sicht: eine
+//       Zeile über Messung × (1 + Toleranz) ist zu weit. Bis 13.10. galt EINE Ratsche je Ort, gemessen 05.–11.10. auf der
+//       Radeon, gerichtet auf der GTX, nie nachgezogen — der Re-Mint (`werkbank ratsche --neu`) heilt H2b
 //   H3  die Namens-Wand: jede Textur, die der Stamm erzeugt, trägt `.name` = Erzeuger (sonst zählt der VRAM-Abgriff
 //       `tex:?`) — auch eine Neu-Zuweisung (`map = new T.DataArrayTexture(…)`), der Name mit Wortgrenze
 //   H4  die Täter-Klasse des Stamms: die drei Methoden stehen im Quelltext und klassifizieren die Schlüssel-Formen,
@@ -48,13 +54,14 @@
 // Draw-Umfang als REST; die Ratschen-Zeile „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760") · der Wurf je Exemplar
 // (Soll-Zeile mit `stufen`, Messort dorf) · das Einschwingen wartet auf den Dorf-Zug (Export, wachsende Siedlung).
 //
-//   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
+//   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 
@@ -139,7 +146,54 @@ function buendelReiheWand(src) {
     const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · ");
     const soll = ["voxelChunk:0,0", "@global", "3,4", "himmel", "s:1,2", "@wahl"].join(" · ");
     if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft @wahl · 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
-    return { errs, n: 4 };
+    // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
+    // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
+    const kinder = rumpf(code, /\n {4}static _buendelKinderReihe\(bundle(?:, auge)?\)\s*\{/);
+    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\(name, leafIdx, leaf, regionKey\)\s*\{/);
+    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\(g\)\s*\{/);
+    if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
+    if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe))
+        errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
+    if (!gruppe || !/mesh\.userData\.buendelStufe\s*=/.test(gruppe))
+        errs.push("_archInstanceGroupFor gibt der Gruppe keinen Rang (mesh.userData.buendelStufe)");
+    if (!wachsen || !/AnazhRealm\._buendelKinderReihe\(parent(?:, this\._buendelAuge)?\)/.test(wachsen))
+        errs.push("_archInstanceGroupGrow stellt die Reihe im Bündel nach dem Tausch nicht neu");
+    const K = (stufe, key) => ({ userData: { buendelStufe: stufe, archInstanceKey: key } });
+    const bundle = { children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")] };
+    new Function("bundle", "auge", kinder)(bundle);
+    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · ");
+    const sollK = ["f:a|1|0:2", "f:b|1|0:0", "f:a|1|1:0", "f:a|1|1:0#S", "atlas"].join(" · ");
+    if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
+    // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
+    // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
+    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\(pos\)\s*\{/);
+    // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
+    const takt = rumpf(code, /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/);
+    if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
+    if (!takt || !/this\._buendelAnkerPruefen\(pm\)/.test(takt))
+        errs.push("_tickArchitectureLOD prüft den Anker der Reihe nicht (this._buendelAnkerPruefen(pm) fehlt)");
+    const I = (stufe, key, ...orte) => {
+        const a = new Float32Array(16 * Math.max(1, orte.length));
+        orte.forEach((o, i) => ((a[i * 16 + 12] = o[0]), (a[i * 16 + 14] = o[1])));
+        return { userData: { buendelStufe: stufe, archInstanceKey: key }, instanceMatrix: { array: a }, count: orte.length };
+    };
+    const fernVorn = { children: [I(0, "f:a|1|0:0", [40, 0]), I(1, "f:z|1|1:0", [1, 0]), I(0, "f:b|1|0:0", [50, 0], [3, 0])] };
+    new Function("bundle", "auge", kinder)(fernVorn, { x: 0, z: 0 });
+    const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · ");
+    const sollA = ["f:b|1|0:0", "f:a|1|0:0", "f:z|1|1:0"].join(" · ");
+    if (istA !== sollA) errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
+    const ARA = { BUENDEL_ANKER_M: 16, _buendelKinderReihe: new Function("bundle", "auge", kinder) };
+    const B1 = { isBundleGroup: true, userData: { regionKey: "@wahl" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
+    const welt = { state: { scene: { children: [B1] } } };
+    const pruefe = new Function("AnazhRealm", "pos", anker);
+    const erst = pruefe.call(welt, ARA, { x: 0, z: 0 });
+    B1.needsUpdate = false;
+    const nah = pruefe.call(welt, ARA, { x: 10, z: 0 });
+    const nahNeu = B1.needsUpdate;
+    const weit = pruefe.call(welt, ARA, { x: 20, z: 0 });
+    if (!(erst === true && nah === false && nahNeu === false && weit === true && B1.needsUpdate === true))
+        errs.push(`der Anker der Reihe: erster Ruf ${erst}, 10 m ${nah} (Neuaufnahme ${nahNeu}), 20 m ${weit} — Soll true · false (keine) · true (Neuaufnahme)`);
+    return { errs, n: 11 };
 }
 
 // H3 — jede Textur-/Bildziel-Erzeugung trägt ihren Erzeuger-Namen in ihrem Statement-Fenster (700 Zeichen): eine
@@ -336,8 +390,8 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 }
 
 function selbsttest() {
-    const { haushalt, ratsche } = BAND.ladeSpec();
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
+    const stamm = stammLib.text(root);
     const S = stammKlasse(stamm);
     const tests = [];
     const t = (name, ok) => tests.push({ name, ok: !!ok });
@@ -346,7 +400,8 @@ function selbsttest() {
     const rt = JSON.parse(JSON.stringify(ratsche));
     rt.toleranzPct = 10;
     rt.toleranzAbs = { befehle: 2, dreiecke: 1000, vramMB: 1 };
-    rt.gemessen = null;
+    // gemessen (sonst nennte jedes Urteil die Ratsche „ungemessen", K26), jedes Feld ungemessen (null)
+    rt.gemessen = { datum: "selbsttest-basis", eingeschwungen: true };
     rt.gesamt = { befehle: null, dreiecke: null, vramMB: null };
     delete rt.vramMB;
     for (const id of Object.keys(rt.klassen))
@@ -546,7 +601,7 @@ function selbsttest() {
         { klasse: "himmel", stufe: null, art: null, je: { haupt: 1 }, jeTris: {} },
         { klasse: "TRAA", stufe: null, art: null, je: { ortho: 1 }, jeTris: {} },
     ];
-    const u8 = urteil(sauber, null, { mb: 100, liste: [{ k: "tex:output rgba16float 1920x1080x1", mb: 100, n: 1 }] }, {
+    const u8 = urteil(sauber, null, { mb: 100, liste: [{ k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 }, { k: "buf:szene:bodenSatz", mb: 95.6, n: 6 }] }, {
         gpuJeFrameMs: 12,
     });
     const zeile = (id) => u8.klassen.find((z) => z.id === id);
@@ -746,6 +801,46 @@ function selbsttest() {
     const r18 = JSON.parse(JSON.stringify(rt));
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
     const n18 = BAND.ratscheNachziehen(r18, u17, { datum: "selbsttest", eingeschwungen: true });
+    // S-K50 — DIE RENDER-ZIEL-KLASSE gegen ihren Haushalt: der Kopf 45f1eeae (Genesis third, 1080p, die Ziele der zeitlichen
+    // Auflösung in voller Größe, das Szenen-Ziel in der Ausgabe) ist ROT mit jedem Erzeuger beim Namen; die Hochskalierung
+    // (Szene 0,75, die Vortiefe im Kanal a der Geschichte) hält den Haushalt; ein Haushalt ohne die Klasse fällt im Schema.
+    const rzVorher = v17([
+        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
+        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1", mb: 4.0, n: 1 },
+        { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:output rg11b10ufloat 1920x1080x1", mb: 7.9, n: 1 },
+        { k: "tex:depth depth24plus 1920x1080x1", mb: 7.9, n: 1 },
+        { k: "tex:szene:tiefenabbild r32float 960x1080x1", mb: 4.0, n: 1 },
+        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+    ]);
+    const rzNachher = v17([
+        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
+        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 },
+        { k: "tex:depth depth24plus 1440x810x1", mb: 4.4, n: 1 },
+        { k: "tex:szene:tiefenabbild r32float 720x810x1", mb: 2.2, n: 1 },
+        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+    ]);
+    const rzOhne = JSON.parse(JSON.stringify(haushalt));
+    delete rzOhne.renderZiele;
+    const rzRot = rzVorher.rot.find((x) => x.art === "renderziele");
+    t(
+        "Render-Ziele: der Kopf 45f1eeae (71.4 MB) ROT über dem Haushalt 60 MB, jeder Erzeuger beim Namen, Karten und Puffer nicht; die Hochskalierung (58.6 MB) hält; ohne Haushalt fällt das Schema",
+        rzRot &&
+            /Render-Ziele 71\.4 MB über ihrem Haushalt 60 MB/.test(rzRot.text) &&
+            ["tex:TRAANode.history 19.8", "tex:TRAANode.resolve 15.8", "tex:output 7.9", "tex:depth 7.9", "tex:szene 4", "tex:kaskade0 8", "tex:kaskade1 8"].every((n) => rzRot.text.includes(n)) &&
+            !/karte-albedo|buf:szene/.test(rzRot.text) &&
+            rzVorher.urteil === "ROT" &&
+            !rzNachher.rot.some((x) => x.art === "renderziele") &&
+            rzNachher.vram.renderZiele.mb === 58.6 &&
+            BAND.haushaltPruefen(rzOhne).fehler.some((f) => /renderZiele braucht/.test(f))
+    );
     // … und `nur: "vram"` (ein Schnitt, der nur den Speicher bewegt) lässt die Klassen-Zeilen und ihre Serie stehen.
     const r18b = JSON.parse(JSON.stringify(r18));
     r18b.klassen.boden.haupt.befehle = 10;
@@ -810,13 +905,12 @@ function selbsttest() {
         unbekannt = true;
     }
     t(
-        "Messorte: Blick auf dem Spieler, doppelte id, fremde Ratsche, dorfZug fehlt, geteilte Ratsche, Soll ohne Quelle " +
+        "Messorte: Blick auf dem Spieler, doppelte id, ein Ort nennt eine Ratschen-Datei, dorfZug fehlt, Soll ohne Quelle " +
             "→ rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht",
         h20((o) => (o[1].blick = o[1].spieler.slice())).some((x) => /keine Richtung/.test(x)) &&
             h20((o) => (o[1].id = o[0].id)).some((x) => /doppelter id/.test(x)) &&
-            h20((o) => (o[1].ratsche = "../haushalt.json")).some((x) => /keine Datei ratsche/.test(x)) &&
+            h20((o) => (o[1].ratsche = "ratsche-genesis.json")).some((x) => /kein Ort nennt eine Datei/.test(x)) &&
             h20((o) => delete o[1].dorfZug).some((x) => /dorfZug/.test(x)) &&
-            h20((o) => (o[1].ratsche = o[0].ratsche)).some((x) => /schon ein anderer Ort/.test(x)) &&
             h20((o) => delete o[1].soll[0].quelle).some((x) => /Soll-Zeile/.test(x)) &&
             !BAND.messortePruefen(haushalt).length &&
             BAND.ortOf(haushalt).id === "wiese" &&
@@ -824,7 +918,7 @@ function selbsttest() {
     );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
     // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis −x = −π/2).
-    const gen = BAND.ladeSpec("genesis");
+    const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
     const r21 = JSON.parse(JSON.stringify(rt));
     r21.klassen.bau.haupt.befehle = 20;
     const bauGenesis = [{ klasse: "f:kathedrale:L0", stufe: 0, art: "gate", je: { haupt: 30 }, jeTris: { haupt: 9000 } }];
@@ -878,21 +972,26 @@ function selbsttest() {
     );
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
-    // Dorf-Zug, Ort-Takt, Gier). Der gestellte Zustand ist sauber; laufender Dorf-Zug, eine Aufstellung ohne `--ort`, ein
-    // anderer Blick, ein fehlender Ort-Takt und ein Lauf ohne Aufzeichnung werden je einzeln beim Namen genannt.
+    // Dorf-Zug, Ort-Takt, Gier, Sicht). Der gestellte Zustand ist sauber; laufender Dorf-Zug, eine Aufstellung ohne `--ort`, ein
+    // anderer Blick, ein fehlender Ort-Takt, eine andere oder keine Sicht (K26) und ein Lauf ohne Aufzeichnung werden je einzeln
+    // beim Namen genannt.
     const wiese = BAND.ortOf(haushalt, "wiese");
-    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0 };
+    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0, sicht: "ego" };
     const g24 = (o, z) => BAND.ortGestellt(o, Object.assign({}, gestellt, z));
     t(
-        "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, ohne Aufzeichnung → je rot",
-        !BAND.ortGestellt(wiese, gestellt).length &&
-            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2 }).length &&
+        "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, " +
+            "ohne Sicht, ohne Aufzeichnung → je rot",
+        !BAND.ortGestellt(wiese, gestellt, "ego").length &&
+            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2, sicht: "third" }, "third").length &&
+            g24(wiese, { sicht: "third" }).length === 0 &&
+            /Sicht third, verlangt ego/.test(BAND.ortGestellt(wiese, Object.assign({}, gestellt, { sicht: "third" }), "ego")[0]) &&
+            /keine Sicht aufgezeichnet/.test(g24(wiese, { sicht: undefined })[0]) &&
             g24(wiese, { dorfZug: true }).length === 1 &&
             /Dorf-Zug/.test(g24(wiese, { dorfZug: true })[0]) &&
             g24(wiese, { ort: null }).length === 1 &&
             g24(wiese, { gier: -0.88 }).length === 1 &&
             /Gier/.test(g24(wiese, { gier: -0.88 })[0]) &&
-            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2 }).length === 1 &&
+            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2, sicht: "ego" }).length === 1 &&
             BAND.ortGestellt(wiese, undefined).length === 1
     );
 
@@ -1048,19 +1147,21 @@ function selbsttest() {
                 Object.keys(BAND.einschwingOffen(satzWelt(-1))).length === 0
         );
     }
-    // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; dieselben Büschel mit dem Maximum
-    // über die Samen (jede Gestalt trüge die schwerste) liegen darüber und werden rot; eine Gestalt ohne Golden und eine
+    // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; die doppelte Wiese (jede Zeile mit
+    // doppelt so vielen Büscheln) liegt darüber und wird rot — unabhängig von den Golden-Dreiecken (seit K56 trägt kein
+    // Same mehr die Last, die das alte Maximum über die Samen über die Ratsche hob); eine Gestalt ohne Golden und eine
     // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
     const nwB = zs.nahWiese;
     const nwT = gestaltDreiecke(nwB.art, nwB.zeilen);
-    const rtW = BAND.ladeSpec(zs.ort).ratsche;
+    const rtW = BAND.ladeSpec(zs.ort, { geraet: zs.geraet, sicht: zs.sicht }).ratsche;
     const nwEcht = gestaltWand(haushalt, rtW, nwB, zs.ort, nwT);
-    const maxT = {};
-    for (const z of nwB.zeilen) {
-        const k = z.gestalt + "|" + z.stufe;
-        for (const y of nwB.zeilen) if (y.stufe === z.stufe) maxT[k] = Math.max(maxT[k] || 0, nwT[y.gestalt + "|" + y.stufe]);
-    }
-    const nwMax = gestaltWand(haushalt, rtW, nwB, zs.ort, maxT);
+    const nwMax = gestaltWand(
+        haushalt,
+        rtW,
+        Object.assign({}, nwB, { zeilen: nwB.zeilen.map((z) => Object.assign({}, z, { inst: z.inst * 2 })) }),
+        zs.ort,
+        nwT
+    );
     const nwFremd = gestaltWand(
         haushalt,
         rtW,
@@ -1072,7 +1173,7 @@ function selbsttest() {
     rtLeer.klassen[nwB.klasse].haupt.dreiecke = null;
     const nwOhne = gestaltWand(haushalt, rtLeer, nwB, zs.ort, nwT);
     t(
-        `Projektion nahWiese: die Mess-Wiese (${nwEcht.summe} Dreiecke) liegt unter der Ratsche ${nwEcht.soll}, das Maximum über die Samen (${nwMax.summe}) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen`,
+        `Projektion nahWiese: die Mess-Wiese (${nwEcht.summe} Dreiecke) liegt unter der Ratsche ${nwEcht.soll}, die doppelte Wiese (${nwMax.summe}) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen`,
         nwEcht.errs.length === 0 &&
             nwMax.errs.some((x) => /> Ratsche/.test(x)) &&
             nwFremd.errs.some((x) => /Gestalt 99 L1 ohne Golden-Dreiecke/.test(x)) &&
@@ -1082,7 +1183,7 @@ function selbsttest() {
     // S30 — DIE REIHE DER BÜNDEL (H7): der Stamm hält sie; ohne den Aufruf nach einem neuen Bündel, mit @wahl im ersten Rang
     // und ohne die Reihe im Stamm wird die Wand rot (jede Verfälschung trifft die Quelle).
     {
-        const st = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const st = stammLib.text(root);
         const ohneRuf = st.replace("this._buendelReihe(scene);", "");
         const wahlVorn = st.replace(
             'return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;',
@@ -1098,6 +1199,127 @@ function selbsttest() {
                 buendelReiheWand(wahlVorn).errs.some((x) => /Reihe der Bündel nach der Ankunft/.test(x)) &&
                 buendelReiheWand(ohneReihe).errs.some((x) => /hängt an der Ankunft/.test(x))
         );
+        // DIE REIHE IM BÜNDEL (1310-8): ohne den Aufruf nach der Aufnahme, verkehrt herum und ohne die Reihe rot
+        const ohneKinderRuf = st.replace(
+            "bundle.add(mesh);\n            AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);",
+            "bundle.add(mesh);"
+        );
+        const verkehrt = st.replace("rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
+        const ohneKinder = st.replace("static _buendelKinderReihe(bundle, auge) {", "static _buendelKinderReiheAlt(bundle, auge) {");
+        t(
+            "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
+            ohneKinderRuf !== st &&
+                verkehrt !== st &&
+                ohneKinder !== st &&
+                buendelReiheWand(ohneKinderRuf).errs.some((x) => /nach der Aufnahme nicht neu/.test(x)) &&
+                buendelReiheWand(verkehrt).errs.some((x) => /Reihe im Bündel nach der Ankunft/.test(x)) &&
+                buendelReiheWand(ohneKinder).errs.some((x) => /in der Ankunft/.test(x))
+        );
+        // DIE REIHE NACH ABSTAND (1310-9): ohne den Abstand, mit einem Anker, der jeden Frame stellt, und ohne den Ruf im Takt rot
+        const ohneAbstand = st.replace("(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||");
+        const jedenFrame = st.replace("if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "");
+        const ohneTaktRuf = st.replace("this._buendelAnkerPruefen(pm);", "");
+        t(
+            "Reihe nach Abstand: vorn zuerst in der Stufe, neu nur beim Anker-Wechsel; ohne Abstand, je Frame und ohne Ruf im Takt rot",
+            ohneAbstand !== st &&
+                jedenFrame !== st &&
+                ohneTaktRuf !== st &&
+                buendelReiheWand(st).errs.length === 0 &&
+                buendelReiheWand(ohneAbstand).errs.some((x) => /Reihe nach Abstand/.test(x)) &&
+                buendelReiheWand(jedenFrame).errs.some((x) => /Anker der Reihe/.test(x)) &&
+                buendelReiheWand(ohneTaktRuf).errs.some((x) => /prüft den Anker/.test(x))
+        );
+    }
+
+    // S31 — H2b DIE FRISCHE (K26) an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
+    // wie sie w2B auf der GTX richtete (gemessen 05.10. auf der Radeon, ohne Version), ist ROT — ohne Version, mit fremder
+    // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
+    {
+        const probe = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "probe-1110-12.json"), "utf8"));
+        const w2B = probe.boots.w2B.schritte.find((x) => x.name === "band").ergebnis.messung;
+        const slot = (r, z) => Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
+        const alt31 = BAND.ratscheFrische({
+            haushalt,
+            version: "18.543.0",
+            ratschen: [slot(probe.ratscheWiese)],
+            messungen: [{ quelle: "w2B", ort: "wiese", geraet: "gtx", sicht: "ego", u: w2B }],
+        });
+        // eine frische Ratsche: die Hülle von w2B selbst, an V18.542 (eine Version vor dem Kopf), am eigenen Platz
+        const frisch = BAND.ratscheNachziehen(BAND.ratscheNeu(probe.ratscheWiese), w2B, {
+            datum: "selbsttest",
+            version: "18.542.0",
+            ort: "wiese",
+            geraet: "gtx",
+            sicht: "ego",
+            eingeschwungen: true,
+        }).ratsche;
+        const fr = (r, v, m) =>
+            BAND.ratscheFrische({ haushalt, version: v || "18.543.0", ratschen: [slot(r)], messungen: m || [] });
+        const alt2 = JSON.parse(JSON.stringify(frisch));
+        alt2.gemessen.version = "18.541.0";
+        const fremd = JSON.parse(JSON.stringify(frisch));
+        fremd.gemessen.geraet = "radeon";
+        const ungemessen = JSON.parse(JSON.stringify(frisch));
+        ungemessen.gemessen = null;
+        t(
+            "H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile " +
+                "4 095 487 über 1 295 324, baum haupt 385 630 gegen 60 976 zu weit; die Hülle von w2B an V18.542 grün, an V18.541 " +
+                "alt, mit fremdem Gerät, ungemessen und fehlend rot; eine Messung ohne geforderte Ratsche rot",
+            alt31.some((x) => /ohne Version — älter als jede Version/.test(x)) &&
+                alt31.some((x) => /trägt die Messung \? × Radeon 890M/.test(x)) &&
+                alt31.some((x) => /Gesamt-Zeile dreiecke 4095487 liegt über der Summe der Klassen 1295324 — sie feuert nie/.test(x)) &&
+                alt31.some((x) => /baum haupt dreiecke: Ratsche 385630 über der Messung 60976 — zu weit \(w2B\)/.test(x)) &&
+                fr(frisch, "18.543.0", [{ quelle: "w2B", ort: "wiese", geraet: "gtx", sicht: "ego", u: w2B }]).length === 0 &&
+                fr(alt2).some((x) => /gemessen an V18\.541\.0, der Kopf ist V18\.543\.0 — älter als eine Version/.test(x)) &&
+                fr(fremd).some((x) => /trägt die Messung wiese × radeon × ego/.test(x)) &&
+                fr(ungemessen).some((x) => /ungemessen/.test(x)) &&
+                fr(null).some((x) => /fehlt — ungemessen/.test(x)) &&
+                fr(frisch, "18.543.0", [{ quelle: "x", ort: "wiese", geraet: "gtx", sicht: "third", u: w2B }]).some((x) =>
+                    /keine geforderte Ratsche richtet wiese × gtx × third/.test(x)
+                )
+        );
+        // Der Re-Mint hebt, der Nachzug nie; das Band-Urteil ohne gemessene Ratsche nennt sie `ungemessen`, eine zu weite
+        // Ratsche `weit` — beide sperren den Nachzug nicht (die Linse bleibt sauber), der Leser der Messfolge liest sie.
+        const r31 = JSON.parse(JSON.stringify(rt));
+        r31.gemessen = { datum: "selbsttest", eingeschwungen: true };
+        r31.klassen.boden.haupt = { befehle: 7, dreiecke: 70000 };
+        const boden9 = [{ klasse: "bodenSatz", stufe: 0, art: null, je: { haupt: 10 }, jeTris: { haupt: 7000 } }];
+        const u31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: r31 });
+        const nach31 = BAND.ratscheNachziehen(r31, u31, { datum: "x" }).ratsche;
+        const neu31 = BAND.ratscheNachziehen(BAND.ratscheNeu(r31), u31, { datum: "x" }).ratsche;
+        const ohne31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: null, ratscheDatei: "ratsche-wiese-gtx-third.json" });
+        t(
+            "Re-Mint: boden haupt 7 → 10 Befehle (der Nachzug hält 7), 70 000 → 7 000 Dreiecke; 70 000 gegen 7 000 ist weit, die " +
+                "Linse bleibt sauber; ohne Ratsche „ungemessen\" beim Datei-Namen; jede Rot-Zeile trägt ihren Schlüssel",
+            nach31.klassen.boden.haupt.befehle === 7 &&
+                neu31.klassen.boden.haupt.befehle === 10 &&
+                neu31.klassen.boden.haupt.dreiecke === 7000 &&
+                neu31.klassen.baum.haupt.befehle === 0 &&
+                u31.rot.some((x) => x.art === "weit" && x.schluessel === "weit:boden:haupt:dreiecke") &&
+                u31.rot.some((x) => x.art === "ratsche" && x.schluessel === "ratsche:boden:haupt:befehle" && x.ist === 10) &&
+                u31.linse === "ROT" &&
+                ohne31.rot.some((x) => x.art === "ungemessen" && /ratsche-wiese-gtx-third\.json/.test(x.text)) &&
+                ohne31.linse === "SAUBER" &&
+                u31.rot.every((x) => typeof x.schluessel === "string")
+        );
+        // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
+        // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
+        const hAlt = JSON.parse(JSON.stringify(haushalt));
+        hAlt.geraet = "Radeon 890M";
+        const hKam = JSON.parse(JSON.stringify(haushalt));
+        hKam.sichten.third.kamera = "drohne";
+        t(
+            "Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; " +
+                "geraet (EIN Gerät) und eine Kamera „drohne\" brechen den Haushalt",
+            BAND.geraetSchluessel(haushalt, "amd rdna-3 AMD Radeon 890M Graphics") === "radeon" &&
+                BAND.geraetSchluessel(haushalt, "nvidia pascal") === "gtx" &&
+                BAND.geraetSchluessel(haushalt, "google swiftshader") === null &&
+                BAND.sichtSchluessel(haushalt, "first") === "ego" &&
+                BAND.sichtSchluessel(haushalt, "third") === "third" &&
+                BAND.haushaltPruefen(hAlt).fehler.some((x) => /geraet \(EIN Gerät für jede Ratsche\) ist abgelöst/.test(x)) &&
+                BAND.haushaltPruefen(hKam).fehler.some((x) => /sichten\.third: titel und kamera/.test(x)) &&
+                BAND.ratschenAlle(haushalt).length === 12
+        );
     }
 
     const rot = tests.filter((x) => !x.ok);
@@ -1111,15 +1333,30 @@ function selbsttest() {
 
 function main() {
     if (process.argv.includes("--selftest")) return selbsttest();
-    const { haushalt, ratsche } = BAND.ladeSpec();
+    const { haushalt } = BAND.ladeSpec();
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
-    // H2 je Ort: jede Ratsche trägt das Schema (die Mess-Wiese und jeder weitere Ort).
-    // (ein Toggle-Ort mit `bank` trägt keine Ratsche — H1 prüft sein Schema)
-    const orte = (haushalt.messorte || []).filter((o) => o.ratsche).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
-    for (const { o, r } of orte) for (const f of BAND.ratschePruefen(r, haushalt)) errs.push(`H2 [${o.id}] ${f}`);
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    // H2 je Ort × Gerät × Sicht: jede Ratsche trägt das Schema (ein Toggle-Ort mit `bank` trägt keine — H1 prüft sein Schema).
+    const ratschen = BAND.ratschenAlle(haushalt);
+    for (const e of ratschen.filter((x) => x.ratsche))
+        for (const f of BAND.ratschePruefen(e.ratsche, haushalt)) errs.push(`H2 [${e.datei}] ${f}`);
+    // H2b DIE FRISCHE (K26): gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
+    // gegen jede gegebene Messung (`--messung`) keine Zeile zu weit.
+    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+    const messungen = [];
+    const mi = process.argv.indexOf("--messung");
+    for (const d of mi >= 0 ? process.argv.slice(mi + 1).filter((x) => /\.json$/i.test(x)) : []) {
+        const j = JSON.parse(fs.readFileSync(path.resolve(d), "utf8"));
+        const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
+        const u = e ? (e.ergebnis && e.ergebnis.messung) || null : j;
+        const geraet = u && u.geraet ? u.geraet.schluessel : null;
+        if (!u || !u.ort || !geraet || !u.sicht)
+            errs.push(`H2b ${path.basename(d)}: keine Band-Messung mit Ort, Gerät und Sicht — sie richtet keine Ratsche`);
+        else messungen.push({ quelle: path.basename(d), ort: u.ort, geraet, sicht: u.sicht, u });
+    }
+    for (const f of BAND.ratscheFrische({ haushalt, version, ratschen, messungen })) errs.push("H2b " + f);
+    const stamm = stammLib.text(root);
     const nw = namensWand(stamm);
     for (const f of nw.errs) errs.push("H3 " + f);
     const tw = taeterWand(stamm);
@@ -1148,7 +1385,13 @@ function main() {
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
         errs.push(`P: der Zensus ${zs.ort} trägt keine Zeile nahWiese (je Gestalt × Stufe die gelegten Büschel)`);
     else {
-        const nw = gestaltWand(haushalt, BAND.ladeSpec(zs.ort).ratsche, nwB, zs.ort, gestaltDreiecke(nwB.art, nwB.zeilen));
+        const nw = gestaltWand(
+            haushalt,
+            BAND.ladeSpec(zs.ort, { geraet: zs.geraet, sicht: zs.sicht }).ratsche,
+            nwB,
+            `${zs.ort} × ${zs.geraet} × ${zs.sicht}`,
+            gestaltDreiecke(nwB.art, nwB.zeilen)
+        );
         for (const f of nw.errs) errs.push(f);
         console.log(
             `P Projektion ${zs.ort}/${nwB.klasse}: ${nw.summe} Dreiecke (Ratsche ${nw.soll}, Haushalt ${nw.haushalt}; ` +
@@ -1161,6 +1404,12 @@ function main() {
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);
+        // H2b heilt nur eine Serie der echten GPU je Ort × Gerät × Sicht (vier Boots, Erst- und Zweit-Boot) und ihr Re-Mint
+        if (errs.some((e) => /^H2b /.test(e)))
+            console.log(
+                "   → der Re-Mint je Ort × Gerät × Sicht: 4 × `node scripts/omen-messfolge.cjs --ort <ort> --sicht <sicht> --serie <s> " +
+                    "--datei <boot>.json` (Erst- und Zweit-Boot), dann `node scripts/werkbank.cjs ratsche <boot>.json … --neu`"
+            );
         process.exit(1);
     }
     const paesse = haushalt.paesse;
@@ -1175,21 +1424,20 @@ function main() {
                 }
         return { g, f };
     };
-    const { g: gemessen, f: felder } = gemessenAn(ratsche);
-    const ortZeile = orte
-        .map(({ o, r }) => {
-            const x = gemessenAn(r);
-            return `${o.id} (${o.ratsche}, gemessen ${x.g} von ${x.f})`;
+    const ortZeile = ratschen
+        .map((e) => {
+            const x = gemessenAn(e.ratsche);
+            return `${e.ort} × ${e.geraet} × ${e.sicht} (V${e.ratsche.gemessen.version}, gemessen ${x.g} von ${x.f})`;
         })
         .join(" · ");
     console.log(
         `✅ DIE BAND-WAND steht — H1 Haushalt ${h.summe.befehle}/${haushalt.band.befehle} Befehle · ` +
             `${h.summe.dreiecke}/${haushalt.band.dreiecke} Dreiecke in ${haushalt.klassen.length} Klassen (keine Sammelzeile) · ` +
-            `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe (gemessen ${gemessen} von ${felder}` +
-            `${ratsche.gemessen ? ", " + ratsche.gemessen.datum.slice(0, 10) : ""}, Toleranz ${ratsche.toleranzPct} % / ` +
-            `+${ratsche.toleranzAbs.befehle} Befehle) · H3 ${nw.n} Textur-Erzeuger benannt · ` +
+            `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe je Ort × Gerät × Sicht · ` +
+            `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
+            `H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl).`
+            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
     );
 }
 

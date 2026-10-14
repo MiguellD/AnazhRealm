@@ -72,188 +72,132 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.544.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.546.2 + das Bündel vom 14.10. + weiche Boden-Stufen — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
 
-**DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
-· in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
-benutzen/teilen — bei p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp
-bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Bauplan, EIN Stempel `_studioStampFor`,
-geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
-LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
+**ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
+(Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
+p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist nicht mein rechner"). Feature-Stopp bis dahin.
 
-**V18.544 — DER SPEICHER OHNE DECKEL, EINE BAUM-ABLEITUNG, DIE WAND IN EREIGNISSEN, DIE REIHE DER BÜNDEL, DIE LEBENSWERTE SIND ZUSTAND:** die
-Edit-Karte je Chunk trägt jeden Edit (EINE Engstelle `_voxelEditKarte`, geschrieben nur über `_addVoxelEdit`, der Worker ihr Spiegel; worker-dichte
-256/300 → 300/300, SHA 6/12 → 12/12), der save-server schreibt ganz (tmp + Rename + .bak), das Chat-Graben reist über dslRun; der gefühlte Baum wächst
-aus `treeParams` der Art (P-Zwilling 120/120 → 0/120, `SPECIES_GRAMMAR` 19 → 0, `_skelettPflicht` bricht laut); die Erst-Zeichnungs-Wand urteilt in
-Bau-Ereignissen statt 60/120 s Wanduhr; die Tore werfen aus ihrer NUR-WURF-Stufe, die Reihe der Region-Bündel ist ein Gesetz (`_buendelReihe`; GTX 1060
-Genesis 47,4 → 50,1 fps, Befehle 212 → 172, Dreiecke 924k → 695k), das Band schwingt erst nach dem Satz-Schrumpfen ein (Dorf-VRAM 124,6 → 118,3 MB);
-`recomputePlayerStats` klemmt die Lebenswerte, voll nur Wandlung und Rückkehr (Wege zur Voll-Heilung 4 → 0); Pflicht-OFFEN B trägt die Ankunft.
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** B Ankunft ≤ 5 s kalt (am Kopf Weltbild kalt 27,9–29,8 s) · C Ort auf dem Gelände
+(das Dorf als EIN Plan aus dem Fachwerk-Studio, mit Höhe, Wegen und Licht) · E Profi-Band (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third):
+an der GTX hält das Bündel Frame p95 16,7–16,8 ms · ≤ 191 Befehle · ≤ 587k Dreiecke · ≤ 104 MB VRAM und reißt den CPU-Takt p95 (6,0–7,8 > 5,8 ms);
+das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `koordination` 1ae7ef17) und `bericht/1410-1-instanz.md`.
 
-**V18.496–543 — AAA NAH, KOSTEN-MECHANIK, NACHBARSCHAFT, STUDIO-ZEILE, TOD, PRÜF-WELT, GELÄNDE-KERN, DAS EINE LICHT, DER PFAD OHNE BRUCH:** Studio-Mesh
-mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft; die GPU-Kette
-(gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (`_erstWartet`, Diät, host-vram) und L (Wasser, Backend-Gesetz); V18.536–537 EIN
-Impuls-Gesetz, `_setzUrteil`, das Blocker-Netz, EIN Leib-Löser; V18.538 Baum- und Gras-Zeile im Studio, `_schattenBias`; V18.539 der Tod an EINER Stelle
-(`_kreaturFaellt`, `_leibSicht`), `_nexusPerfActuate` (CPU p95 10,8 → 5,6 ms), die CI in zwei Stufen; V18.540 die Prüf-Welt (`_weltBetreten`), das Haus
-fern NUR-WURF, EINE Wasser-Wahrheit (`_werkBoden`); V18.541 EIN Gelände-Kern (`gelaende-core.js`, 44/44 Dichte-Gitter maxDiff 0), die Prüfbühne als GPU-Messort;
-V18.542 die Kamera als Kugel (25/50 → 0/50), der Hieb im Schwung-Kegel (0/48 → 48/48), EIN Leuchtquellen-Gesetz, EIN Detail-Gesetz der Tore (Genesis 2 276k → 977k
-Dreiecke); V18.543 der Pfad ohne Bruch, der Fuß rollt (Kadenz 0,34 → 1,79 Schritte/s), `_bodenSichtAt`, `TAKT_DECKEL_S`, die Lichtfarbe aus `kelvin`, die Blende je Instanz (gpu-bank 13,20 → 11,99 ms). Werkbank: `albedo` · `licht` · `zaehlen` · `band`.
+**Das Bündel gegen V18.545** (das letzte ABAB, GTX, Regler voll): an allen vier Orten × Sichten schneller — fps Genesis Ego 52 → 100, Wiese Ego
+79 → 99, VRAM −18 bis −28 MB, Dreiecke −0,10 bis −0,37 M; die Zahl jeder Welle steht in ihrer Merge-Message (`git log --first-parent 9fb869a5..`).
 
-**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE; die Höhe = EIN Gelände-Kern `gelaende-core.js` für Stamm, Worker und Playtest, die Terme des Erbguts, Wildnis = EIN Term, die Prüfbühne `spec/pruefbuehne`) · WELT-MARCH: EIN Pass, je Satz ein
-Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
-Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m), EINE Ableitung aus `treeParams` der Art, EIN Wind-Term, die LOD-Blende misst je Instanz und bricht laut · BODEN-STOFF = das Rausch-Gesetz, das Licht des Auges ein Term unter Fels, fern Krone × Deckung aus EINER Karte · WALD-ORT = die Kronen-Karte
-· GRAS = nah Nah-Wiese, fern Boden-Funktion · BODEN-LESER = EINER (`_bodenSichtAt`) für Stand, Nah-Wiese und Streu · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
-Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, der Bias je Kaskade aus der Texel-Kante, EIN Werfer je Gestalt, der Boden empfängt ihn nach Zuwendung, in der
-Ego-Sicht der ganze Leib, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz (`_passTrifft`), jede Wahl hält nach `_wahlHaelt`, die Bündel in EINER Reihe (`_buendelReihe`)
-· SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6
-Golden-Sätze + Ofen in der CI, der Bau folgt seiner Budget-Zeile, Haus und Tor fern ihrer NUR-WURF-Stufe · MESSORTE = Wiese,
-Genesis-Ring, Dorf und die Prüfbühne als GPU-Toggle (2σ ≤ 0,064 ms) · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz · LEIB = EIN Leib-Löser, der Gang EIN Gesetz (der Fuß rollt über den Ballen) · KAMERA = EINE Kugel · TOD =
-EIN Übergang · LICHT = EIN Leuchtquellen-Gesetz, der Pool in jedem Stoff, die Farbe aus `kelvin` · WASSER = EINE Wahrheit, jedes Werk (der Wagen nach EINEM Platz-Gesetz) fragt das Land samt Sockel, der Fern-Ring kein zweites Wasser · TAKT = an der Wurzel gedeckelt (`TAKT_DECKEL_S`) · SPEICHER = EINE Edit-Karte je Chunk ohne Deckel, der save-server schreibt ganz · LEBENSWERTE = Zustand (`recomputePlayerStats` klemmt) · UHR + WETTER = das Wort des Spielers · CI = der Puls je Push, die volle Batterie (der volle Playtest ist Gruppe 11) auf integ-probe, main und nachts.
-OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
-
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes (5,79 px je Strähne an
-Armlänge, A1 11.10.) · B Ankunft ≤ 5 s kalt (neu 13.10., vorher ≈ 28 s) · C Ort auf dem Gelände (das Licht = brennende
-Quellen des Plans) · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis, Ego + Third-Person).
+**WAS STEHT — je Domäne die EINE Quelle:**
+- TERRAIN = Funktion: Höhe, Landform und Flussnetz = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Studio · Playtest), Chunks = Iso-CACHE
+  mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel morpht deckungsgleich nach CDLOD, K51), Wildnis = EIN Term · WELT-MARCH EIN Pass · WASSER EINE Wahrheit
+  (`_werkBoden`), die Ruhe ist der Fixpunkt des Automaten (`_ensureWaterCALevel`), sein Blick EIN Baustein (`_wasserBlick`) · Edits = EINE Karte je
+  Chunk (`_voxelEditKarte`) · ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur
+- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · jede Senke
+  zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade, Matrizen im Storage-Puffer) · Baum = Studio-Karte
+  bis 384 m, EINE Ableitung aus `treeParams`, der gefühlte Baum ihr Skelett (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je
+  Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF, das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`)
+- BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`) · LICHT EIN
+  Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN Werfer je Gestalt · Sätze
+  EIN Pool je Stoff, EIN Programm je Signatur · Bündel in EINER Reihe (`_buendelReihe`), ihre Kinder nach Stufe und Abstand (`_buendelKinderReihe`)
+- KOSTEN die EINE Skala (TAAU: `SZENE_SKALA` 0,75, Spieler-Wahl `state.szeneSkala`, `_zeitAufloesung` auf volle Ausgabe) · `_passTrifft` + `_wahlHaelt`
+  · `_schirm` · `TAKT_DECKEL_S` · Takt-Nähe `_blockerUmPlatz` · Boden-Satz `_satzPacke` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` ·
+  `_foundrySchale` · BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = EIN Schreiber des ersten Weltbilds (`_weltbildSteht`)
+- STUDIOS auf der EINEN Hülle `worlds/huelle` (Regler · Sitzung · Kosten-Leiste · Portal-Brücke), Labor = Welt · LEBEN EIN Leib-Löser, Gang EIN Gesetz ·
+  Kamera EINE Kugel · Tod `_kreaturFaellt` · Lebenswerte = Zustand (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort ·
+  SPEICHER atomar (tmp + Rename + .bak)
+- PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −900/−850 (seit K16 ein Nadelwald-Hang; K55 `mess-wiese` setzt sie
+  nach −278/−1038, ungemergt — das letzte ABAB maß dort per Patch), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
+  Ort × Gerät × Sicht · Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
+  (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie (Playtest = Gruppe 11) auf integ-probe, main und nachts
 
 ## Architektur (die Karte)
 
-- **Stamm** `anazhRealm.js` (~104k, EINE Klasse, `npm run atlas` = 26 Zonen): Boden (Chunks/Wasser/
-  Genese/Ökologie) · Speicher (Snapshot/Taille) · Spieler (Seelen/Bewegung/Werkstatt/Ökonomie) ·
-  Anschluss (P2P/Portale) + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
-- **Kerne** (10, cores.manifest.json): reine Daten+Mathe; Vertrag v1.2 = `PARAMS_BY_KIND` + must-ignore
-  + fail-closed (`docs/studio-vertrag.md`). Der Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi).
-- **Worker:** Foundry (= terrain-Brücke; Kanäle `get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
-  `export-settlement`; IDB disk-first, SHA-Stempel der Quellen) · voxel-worker (bit-identischer
-  Spiegel).
-- **Server:** save-server (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC;
-  Kanäle pos·input-Lockstep·dsl·soul·vibe).
+- **Stamm** `stamm/` (~110k Zeilen in 48 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp): der Kern `stamm/01.js` (Konstruktor + §01),
+  die Zonen-Klassen `stamm/NN[x].js`, die Naht in `stamm/26a.js` trägt sie beim Laden auf `AnazhRealm` (VERSION allein dort); die Liste =
+  die Stamm-Tags in index.html; `npm run atlas` die Karte live (+ `--find`), `diag-atlas --check` die Ratsche. Boden · Speicher · Spieler ·
+  Anschluss + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
+- **Kerne** (10 Dateien, cores.manifest.json): Daten+Mathe, Vertrag v1.2 `PARAMS_BY_KIND` + must-ignore + fail-closed (`docs/studio-vertrag.md`); der
+  Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi). **Studios** `worlds/`: die Gesetzbücher und Nebenwelten auf der EINEN Hülle `worlds/huelle`.
+  **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` · `export-settlement`; IDB
+  disk-first, SHA-Stempel der Quellen) · voxel-worker. **Server:** save-server (state/.bak · perf-trace · llm-proxy · vendor) · signaling
+  (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).
 
-## Die tragenden Lehren
+## Die tragenden Lehren (die Nummern sind Anker — der Code zitiert sie)
 
-1. **Gesetz #0:** EINE kanonische Größe je Domäne, alle LESEN sie; nach jeder Fehler-Klasse die
-   LINSE bauen (Gate/Verdikt), nie auf Wachsamkeit bauen.
+1. **Gesetz #0:** EINE kanonische Größe je Domäne, alle LESEN sie; nach jeder Fehler-Klasse die LINSE (Gebot 10) in einer bestehenden Familie.
 2. **EINE Quelle, kein Parallelpfad;** Invarianten in den CHOKEPOINT, nicht an Aufrufer.
-3. **Ganz oder gar nicht:** Abschied = Def+Maschine+Spiegel+Tests+Doku in EINER Welle, physisch.
-   must-ignore gilt FREMDEN Artefakten (Taille), nie dem eigenen System. `gate:altlasten` wächst mit.
-4. **Ich entscheide, geliefert wird Gebautes** — der Schöpfer wertet Ergebnisse, nie Optionslisten;
-   Bericht = drei Sätze, kein Theater. Ein benannter Fehler → die ganze KLASSE in derselben Welle.
-5. **Miss zuerst, die Zahl führt;** verifiziere KONSUM, nicht Existenz; SPIELEN/sehen vor behaupten
-   (headless beweist Mechanik, nie das Erlebnis; schauen schlägt greppen). Beweisbilder kommen aus
-   dem AUSGABE-Pfad (`scripts/lib/ausgabe-aufnahme.cjs`) — ein eigenes Render-Target ist linear und
-   ungetont (r184), so logen aaa8–aaa11 „dunkle Schattenseiten".
-6. **Tests wandern mit dem Code;** Absenz-Greps über `window.__codeOf` (Kommentare zitieren).
-7. **Worker-Spiegel bit-identisch** (Main ↔ voxel-worker; jede Sheet-/Density-Änderung in BEIDE +
-   `diag-worker-watersheet` maxDiff 0; das Chunk-Gitter `gate:worker-dichte`, Edits auch über dem Band). Welt-Substanz
-   zieht aus Γ5-Seed-Streams, nie Math.random. Gesetz statt Spiegel, wo es geht: die 2D-Höhe spiegelt niemand mehr —
-   Stamm und Worker rufen EIN Gesetzbuch (`gelaende-core.js`, die Lage = Worker-`state` bzw. Stamm-`_gelaende()`).
-   Ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes Skript, nie ein Variablen-Name (`wx * 0.00014 + 7.2`
-   ließ `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-Pfaden durch).
-8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; die Tiere sind bewusst tag-identisch —
-   Differenzierung über die Größen-/Gattungs-Achse, nie über Tags).
-9. **`gate | tail` maskiert Exit-Codes** — Exits IMMER explizit (`echo EXIT=$?`).
-10. **Jede versionierte Datei braucht den `?v=`-Cache-Buster** (Worker/Bootstrap/importScripts).
-11. **Studio-Code nur unter BYTE-BEWEIS anfassen** — die Benchmark bewegt sich nie; Goldens sind
-    eingefroren, ein Re-Mint ist ein begründeter Vertrags-Akt. Kerne leben AUSSERHALB des
-    format:check-Scopes — nie `prettier --write` auf Gesetzbücher (verbatim-Blöcke!), neue
-    Abschnitte rein additiv. `__`-Schlüssel in ov sind STEUER-Passagiere (nie in Bau-Parameter).
-12. **Monolith-Chirurgie:** `cut-method` (AST-sicher) · sofort `node --check` + eslint ·
-    seriell committen, nie Batch; worktree-Agenten zweigen von main ab.
-13. **Der Loop/Regler:** Streaming ist heilig (prio 0), Bewegung hängt nie am Render-Signal;
-    EIN PID, Totband 59–77 fps; NaN-Wände vor jedem EWMA-Gedächtnis; Existenz vor Framerate —
-    der Ring wächst bis `RING_EXIST_FLOOR` OHNE fps-Gate, der PID atmet nur darüber.
-14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron
-    auf dem Interaktions-Pfad.
-15. **git ist das Archiv:** kein Doppel-Archiv im Baum — Chronik = Commit-Messages, vollendete
-    Pläne fallen (git trägt sie), dauerhafte Lehren = EINE Zeile hier, Offenes = PFLICHT-OFFEN.
-    Vor jedem Datei-Schnitt: KONSUM prüfen (Gates/CI/Docs, transitiv), nicht Existenz raten.
-16. **Der Null-Renderer ist für den GANZEN Analog-Pfad blind** (Feld-Fit, Slots, March kehren
-    headless früh zurück) — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`,
-    `diag-beweis-e`). Ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein temporär gebautes
-    Async-Mesh („leer" → ausgebrannt → für immer unsichtbar); Takt-Budgets gehen NAH zuerst.
-17. **Sonden mit echtem Renderer:** je Schuss ruht der Spiel-Loop (sonst wandern Kamera, Tageszeit,
-    Cull-Zustand), die Bühne (`__buehne`) hält Mittag · Sonne · Sommer fest (Wetter-Zug 120 s,
-    Saison-Drift 2400 s — Regen drückte die Wiese 90 → 40), die Schatten-Map wird neu markiert,
-    die Blick-Wahl sucht freie Sicht. Und: `Number(null) === 0` — ein fehlender Wert ist nie 0;
-    Default-Helfer prüfen `v == null` zuerst.
-18. **Erst das Soll-Bild, dann die Welle:** vor jedem Paradigmen-Wechsel je Klasse ein Soll-Bild
-    (Referenz) + Budget (Tris/dc je LOD-Stufe) festlegen und EINEN Spike mit echtem Renderer an
-    der Mess-Wiese zeigen, nah UND fern. Die Analog-Welle (21.07.–30.09.) lief zwei Monate gegen
-    ein nie festgelegtes Nah-Bild und kehrte nah zum Studio-Mesh zurück; nur fern blieb sie.
-19. **Kosten gehören ins Asset, nicht in den Host:** ein LOD, das nicht reduziert (Fachwerk L1 75k
-    ≈ L0 88k → V18.500 Flächen-Stufe 20k; Konifere L0 ~170k Vertices), heilt am Studio, nie über
-    Host-Umwege (`lodServe` ist gefallen). Und: was die Lab-Karte trägt, muss kartenlos der Vertex
-    tragen — die Welt liest nur Vertex-Farben.
-    Und nach jedem Push die CI lesen; Läufe mit ZEITFRISTEN (Einschwingen, Stufen-Takte) nie
-    parallel (CPU-Konkurrenz fälscht sie). Ein Warter matcht nie die eigene Befehlszeile
-    (`pgrep -f "[x]yz"`, und kein zweites `xyz` im selben Befehl) — heute 5× selbst getroffen.
-    Der VOLLE Playtest (2–5 min) läuft je Merge, die volle Batterie einmal je Version: zwei gesunde Eltern brechen im
-    Zusammenspiel (V18.536: das Setzen zog ein neues Phantom, ein Proben-Stub `{ position }` riss 22 Invarianten).
-20. **Eine Frage, kein Neustart:** Look-Fragen gehen an die Werkbank (`scripts/werkbank.cjs`: EINE
-    Welt bleibt offen, Methode aus dem Arbeitsbaum live tauschen, Bild ~45 s statt Neustart ~5 min);
-    die Beweis-Sonden bleiben der Richter je Commit. Vergleiche nur bei eingefrorener Welt (Tiere
-    wandern ins Bild).
-21. **Die Licht-Kette ist EINE Eichung, Farbe eine sRGB-Absicht:** ein Paletten-Hex ist sRGB, die
-    Albedo sein linearer Wert (das FARB-GESETZ: foundry-core Kreatur-Bäcker + Vegetation, seit V18.531
-    auch fachwerk · porta · vehicle · schmiede; r128 las roh, Laub lag 3–5× über der Natur). Die Welt fügt nur hinzu, was das Labor nicht hat (den
-    echten Himmel als EINE Umgebung), nie doppelt — Fill · Rim · Back leben nur im Labor; die
-    Belichtung kommt aus dem Licht (Karte Mittelgrau +1 EV, Nacht-Deckel 1,0). Albedo misst `werkbank
-    albedo` / `diag-albedo-zensus` (Karte 0,180), Licht-Verhältnisse `werkbank licht` — nie das Auge.
-22. **Der sichtbare Boden ist das Mesh, nicht das Gesetz:** Surface-Nets auf 1,8 m trägt die Feinform der
-    Funktion nicht (±0,2 m, Spawn-Chunk Median 46 cm). Was AUF dem Boden steht (Gras, Streu, Deko), liest die
-    Boden-Karte (`_bodenSichtAt`, aus dem gebauten Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn); Körper stehen auf dem Gesetz (Lockstep). Und im
-    positionNode ist `positionLocal` schon instanziert (r184) — Höhen-Gewichte lesen `positionGeometry`.
-23. **WebGPU zieht jeden Draw einzeln:** ein BatchedMesh ist dort je INSTANZ ein `drawIndexed`, ein Puffer ohne
-    Namen heißt im WGSL `NodeBuffer_<id>` (jede Geometrie ihr eigenes Programm), und der Bundle-Replay buchte nichts
-    ins Info — Kosten zählt `werkbank zaehlen` (GPU-Befehle je Pass und Klasse, Programme, Pipelines). Ein Bundle
-    trägt nur, was sein Replay refresht: r184 hält `_currentRenderBundle` ohne Stapel (der Schatten-Render mitten in
-    der Aufnahme nullt ihn) und refresht Replay-Bürger außerhalb von renderObject (unter einem Override-Stoff gegen
-    dessen geteilten Zustand) — `_renderScene` stapelt den Zeiger und nimmt unter overrideMaterial nie auf, die Diät
-    geht jeden Knoten und jede geteilte Gruppe EINMAL je Render-Abschnitt: der Stempel ist das Paar (Render-Id,
-    `info.calls`) und wechselt beim Betreten UND Verlassen jedes Renders (ein Stempel nur aus der Render-Id überlebte
-    einen verschachtelten Schatten-Render: das Bild 0,11 statt 1,0) — `gate:kamera-treue` (VERSCHACHTELT, Stand-Wand),
-    Bühne am echten WebGPU mit Schatten.
-24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
-    je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
-    was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.
-25. **Der Takt kostet, was ihn betrifft, nie die Weltgröße:** billige Filter zuerst, teure Rechnung nur für Betroffene
-    (das Brennglas rechnete je Takt die Tags ALLER Bauten: Ø 20 ms) — `werkbank takt` zerlegt den Spiel-Takt je
-    Subsystem; geteilte Takt-Budgets gehen NAH zuerst über ALLE Verbraucher (`_weltBakeErlaubt(d2)`), nie „wer zuerst fragt",
-    und nie verhungert (die Nah-Schwelle gilt die erste Fenster-Hälfte; eine Zähl-Hülle reicht die Argumente durch). Der
-    Foundry-Worker ist so ein Budget: der Host hält seine Schlange (`_foundryAuftrag`, 12 im Flug, nah zuerst), nie FIFO.
-26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass rendert mit der Kaskaden-Kamera (`cameraPosition`
-    = Licht-Kamera, 145 m weit) und liest nur colorNode.a · map.a · maskShadowNode, nie opacityNode — jede LOD-Maske misst
-    vom Auge (`uLodAuge`), jeder Ausschnitt lebt in colorNode.a (`gate:foundry-crossfade` Schatten-Wahrheit). Schatten-
-    Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; lokal läuft der Puls der berührten Methoden + playtest:fast,
-    der Integrator fährt den vollen Playtest je Merge, die CI richtet die Batterie — gemergt wird nur bei grüner Zweig-CI;
-    Echt-Renderer-Linsen auf CPU-Raster fahren das Software-Holz (`?holz=kienspan`) — auf „voll" kostet ein Compile 50–70 s;
-    swiftshader kompiliert synchron (kein KHR_parallel_shader_compile, `compileAsync` blockiert), `_gameLoopTick` rendert
-    selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`). Und ein
-    normalNode liest nie r184s `normalWorld` (EINE Variable je Programm: baut die NORMAL-Stufe sie zuerst, lesen Schatten-
-    Lookup, Halbkugel- und Umgebungslicht die Geometrie-Normale mit Flächen-Vorzeichen — der Boden zeigt oben die
-    Rückseite und lag im eigenen Schatten); die Geometrie-Normale heißt `normalWorldGeometry` × `faceDirection`.
-27. **Die GPU hält, was das Bild zeichnet:** r184 hält jedes hochgeladene Attribut stark (`info.memoryMap`) bis
-    `_attributes.delete` — `InstancedMesh.dispose()` gibt nichts frei, `geometry.dispose()` nur die Attribute des ersten
-    Render-Objekts, und r184s Geometrie-Hörer (`_geometryDisposeListeners`) hielt dieses erste Render-Objekt samt Senke und
-    Uniform-Puffern für immer (der Hörer fällt, `_renderObjektRegister`), jede Textur die Bindegruppen ihrer Leser
-    (`bindGroups`). Eine Senke fällt über `_instanzAbschied`,
-    was kein Objekt des Graphen zeichnet, nimmt der Kehraus (`_gpuKehraus`); ein Attribut, das ein Render-Objekt unter der
-    Observer-Diät zeichnet, fällt nie (ohne Versions-Sprung lädt sie nichts neu hoch). `werkbank puffer` nennt jeden Puffer
-    beim Halter, `buf:ruhend` und `buf:verwaist` sind Lecks (`gate:profiband`, `gate:freie-slots` A).
+3. **Ganz oder gar nicht:** Abschied = Def+Maschine+Spiegel+Tests+Doku in EINER Welle, physisch; must-ignore gilt FREMDEN Artefakten (Taille),
+   nie dem eigenen System; `gate:altlasten` wächst mit.
+4. **Ich entscheide, geliefert wird Gebautes;** der Schöpfer wertet Ergebnisse, nie Optionslisten oder Fragen; ein benannter Fehler → die ganze
+   KLASSE; fast Gebautes wird zu Ende gebaut und gemergt, bevor Neues beginnt (Maß: gemergter, sichtbarer Fortschritt je Token).
+5. **Miss zuerst, KONSUM statt Existenz, SPIELE vor behaupten** (headless beweist Mechanik, nie das Erlebnis; schauen schlägt greppen);
+   Beweisbilder aus dem AUSGABE-Pfad (`scripts/lib/ausgabe-aufnahme.cjs`) — ein eigenes Render-Target ist linear und ungetont (r184).
+6. **Tests wandern mit dem Code;** Absenz-Greps über `window.__codeOf` (Kommentare dürfen Gefallene zitieren); eine Linse, die Code am Rumpf-TEXT
+   einordnet, fällt mit dem Schnitt, den sie bewacht — Zugehörigkeit gehört an eine Liste oder Laufzeit-Marke; eine Sonde ohne Messung ist ROT.
+   Eine Linse, die abstürzt und Exit 0 meldet, ist still grün (`gate:nah-fern` seit K16, b0df2d93): jedes Werkbank-Tor bricht bei Linsen-Fehler ROT.
+7. **Gesetz statt Spiegel:** die Höhe ruft EIN Gesetzbuch (`gelaende-core.js`, Lage = Worker-`state` bzw. `_gelaende()`); ein Worker-Spiegel ist
+   bit-identisch (Sheet/Density in BEIDE, `diag-worker-watersheet` maxDiff 0, `gate:worker-dichte` auch über dem Band); Substanz aus
+   Γ5-Seed-Streams, nie `Math.random`; ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes Skript, nie ein Variablen-Name.
+8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; Tiere bewusst tag-identisch, Differenzierung über Größe/Gattung, nie über Tags).
+9. **Exit-Codes IMMER explizit** (`echo EXIT=$?`) — `gate | tail` maskiert sie; Backslash-Ersetzungen (Regex, WGSL) nur per Edit-Werkzeug.
+10. **Jede versionierte Datei trägt den `?v=`-Cache-Buster** (Worker/Bootstrap/importScripts).
+11. **Studio-Code nur unter BYTE-BEWEIS:** die Benchmark bewegt sich nie, Goldens eingefroren (Re-Mint = Vertrags-Akt); Kerne außerhalb von
+    format:check, nie `prettier --write` auf Gesetzbücher (verbatim-Blöcke), neue Abschnitte additiv; `__`-Schlüssel in ov sind Steuer-Passagiere.
+12. **Stamm-Chirurgie:** Werkzeug liest den Stamm NUR über `scripts/lib/stamm.cjs` (`text()` = der virtuelle Stamm, `ort()`, `dateiVon()`;
+    die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); über der Decke `node scripts/stamm-umzug.cjs --teile §NN
+    <methode>`, ein Zweig von vor dem Schnitt zieht per `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
+    `npm run stamm:lint` · seriell committen, nie Batch; Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig
+    (gestapelte Zweige erben jede Röte).
+13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor Framerate
+    (der Ring wächst bis `RING_EXIST_FLOOR` ohne fps-Gate, der PID atmet nur darüber).
+14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron auf dem Interaktions-Pfad (der Chunk-Stoff
+    entsteht im Worker, nie im Haupt-Thread).
+15. **git ist das Archiv:** kein Doppel-Archiv im Baum; Chronik = Commit-Message (Rumpf ≤ 600 Zeichen), vollendete Pläne fallen, Lehre = EINE
+    Zeile hier, Offenes = PFLICHT-OFFEN; vor jedem Schnitt KONSUM prüfen (transitiv).
+    Siegel-Wörter meiden auch Auftrags-, Zweig- und Bericht-Namen: der Name wandert in die Merge-Message, und die liest `gate:betriebsgesetz` am HEAD.
+16. **Der Null-Renderer ist blind** für Feld-Fit, Slots, March — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`, `diag-beweis-e`); ein Fit
+    liest eine FERTIGE Quelle (Foundry-Flat), nie ein Async-Mesh (leer → ausgebrannt → für immer unsichtbar); Budgets: Lehre 25.
+17. **Sonden mit echtem Renderer:** je Schuss ruht der Loop, `__buehne` hält Mittag · Sonne · Sommer (Wetter-Zug 120 s, Saison-Drift 2400 s),
+    die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht; `Number(null) === 0` — Default-Helfer prüfen `v == null` zuerst;
+    swiftshader (CI) verbirgt Präzisionsfehler echter GPUs (Fern-Ring 3,5 m auf 8 km nur auf der Radeon) — Bild-Urteile auf echter Hardware.
+18. **Erst das Soll-Bild, dann die Welle:** Referenz + Budget (Tris/dc je LOD) + EIN Spike mit echtem Renderer an der Mess-Wiese, nah UND fern.
+19. **Kosten gehören ins Asset:** ein LOD, das nicht reduziert, heilt am Studio, nie im Host; was die Lab-Karte trägt, trägt kartenlos der Vertex
+    (die Welt liest nur Vertex-Farben); Labor = Welt: das Labor zeigt den Körper, den der Ofen der Welt baut (K45: Labor-Wolf L0 1 299 852 → 54 894,
+    d7559531). Nach Push die CI lesen; Zeitfrist-Läufe nie parallel; kein Warter trifft sich (`pgrep -f "[x]yz"`).
+20. **Eine Frage, kein Neustart:** Look-Fragen an die Werkbank (`scripts/werkbank.cjs`: EINE Welt offen, Methode live tauschen, Bild ~45 s), nur
+    bei eingefrorener Welt; Richter je Commit bleiben die Beweis-Sonden.
+21. **Die Licht-Kette ist EINE Eichung:** Paletten-Hex = sRGB, Albedo linear (FARB-GESETZ: foundry-core, fachwerk · porta · vehicle · schmiede); die
+    Welt fügt nur den echten Himmel als EINE Umgebung hinzu, Fill · Rim · Back leben im Labor; Belichtung aus dem Licht (Karte Mittelgrau +1 EV,
+    Nacht-Deckel 1,0); Albedo `werkbank albedo` / `diag-albedo-zensus` (Karte 0,180), Verhältnisse `werkbank licht` — nie das Auge.
+22. **Der sichtbare Boden ist das Mesh:** Surface-Nets auf 1,8 m trägt die Feinform nicht (±0,2 m); was AUF dem Boden steht, liest `_bodenSichtAt`
+    (gebautes Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn), Körper stehen auf dem Gesetz; r184 rechnet den positionNode VOR der
+    Instanz-Matrix (am Vendor entschieden, integ-547 08b57ed8; `gate:foundry-impostor` C4): dort sind `positionLocal`, `normalLocal` und `positionWorld` Vorlage — wer die Welt
+    braucht (Wind, Blick der Karte, Blende), liest die EINE Naht `_weltNaht`; Höhen-Gewichte lesen `positionGeometry`.
+23. **WebGPU zieht jeden Draw einzeln:** BatchedMesh = `drawIndexed` je Instanz, ein Puffer ohne Namen heißt `NodeBuffer_<id>` (je Geometrie ein
+    Programm), der Bundle-Replay bucht nichts ins Info (`werkbank zaehlen`). Ein Bundle trägt nur, was sein Replay refresht: `_renderScene` stapelt
+    `_currentRenderBundle`, nimmt unter overrideMaterial nie auf; die Diät geht jeden Knoten EINMAL je Render-Abschnitt, Stempel = (Render-Id,
+    `info.calls`), gewechselt beim Betreten UND Verlassen jedes Renders (`gate:kamera-treue`); BundleGroups zeichnen in Szenen-Reihenfolge vor losen
+    Objekten — ihre Reihe ist ein Gesetz (`_buendelReihe`), nie die Ankunft beim Boot. Die GPU-Zeit trägt die Pixel-Arbeit, nicht die Befehls-Zahl:
+    die Szene rendert in der EINEN Skala (TAAU, `SZENE_SKALA` 0,75, kein zweiter Auflösungs-Regler; gpu-bank Genesis 33,9 → 18,3 ms, 8a00348e).
+24. **Der Haupt-Thread trägt keine Bytes:** Worker-Antworten per Transfer (ein Klon kostet den Empfänger je MB), die Platte im Worker (ein IDB-Put
+    serialisiert synchron im Aufrufer), über den Kanal nur `FOUNDRY_LESEN` (`_foundrySchale`, `werkbank fluss`).
+25. **Der Takt kostet, was ihn betrifft:** billige Filter zuerst, teure Rechnung nur für Betroffene; geteilte Budgets NAH zuerst über ALLE
+    (`_weltBakeErlaubt(d2)`), nie verhungert (Nah-Schwelle die erste Fenster-Hälfte, eine Zähl-Hülle reicht die Argumente durch); die Foundry-
+    Schlange `_foundryAuftrag` (12 im Flug, nah zuerst, nie FIFO) — `werkbank takt` zerlegt.
+26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass (Kaskaden-Kamera) liest nur colorNode.a · map.a · maskShadowNode, nie
+    opacityNode — LOD-Masken vom Auge (`uLodAuge`), Ausschnitte in colorNode.a (`gate:foundry-crossfade`); Bundles nach jedem castShadow-Wechsel
+    neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` × `faceDirection`. CPU-Raster-Linsen
+    fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick` rendert selbst, darum trägt jeder benannte
+    Linsen-Aufruf höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`); Wände urteilen in Bau-Ereignissen, nie in Wanduhr-Sekunden.
+27. **Die GPU hält, was das Bild zeichnet:** r184 hält jedes Attribut (`info.memoryMap`) bis `_attributes.delete` — `InstancedMesh.dispose()` gibt
+    nichts frei, `geometry.dispose()` nur das erste Render-Objekt, dessen Geometrie-Hörer fällt (`_renderObjektRegister`), jede Textur hält die
+    Bindegruppen ihrer Leser; Senken fallen über `_instanzAbschied`, Ungezeichnetes nimmt `_gpuKehraus`, ein Attribut unter der Observer-Diät nie
+    (ohne Versions-Sprung lädt sie nichts neu); `werkbank puffer` nennt jeden Halter, `buf:ruhend` / `buf:verwaist` sind Lecks (`gate:profiband`).
 
-## Workflows
+## Workflows und Karte
 
-Dev-Loop: `npm run playtest:fast` (~20 s) · Merge-Gate: `npm run playtest` (Verdikt
-„Alle Invarianten OK" zählt, nie der Zähler) · Statik: `npm run check` (inkl. source-probes ·
-constitution · studio-vertrag · altlasten · apparat · betriebsgesetz) · `npm run lint` /
-`format:check` · Navigation: `npm run atlas` (+ `--find <regex>`). Gates je Domäne: `gate:*` in
-package.json. Commits klein + thematisch, emoji-frei, deutsch — **die Message ist der
-Chronik-Eintrag**; Push auf den Feature-Branch; PR nur auf Wunsch.
-
-## Doc-Map (die EINE Karte: docs/README.md)
-
-`docs/PFLICHT-OFFEN.md` = die Frozen-Liste (die EINE Offen-Wahrheit, max 5) ·
-`docs/roadmap.md` = der Kompass (§0 spiegelt die Frozen-Liste + Narben · Teilsysteme · Samen) ·
-`docs/studio-vertrag.md` = die Naht (normativ) · `docs/taille-spec.md` = die Taille (normativ) ·
-`docs/neues-kleid-verfassung.md` = die Pipeline-Verfassung (normativ) ·
-`docs/das-lebendige-feld.md` = der wahre Norden (vor Feld/Emotion/Nexus/DSL zuerst) ·
-`docs/state-of-realm.md` = Vision · `docs/abnahme-drehbuch.md` = die EINE Schöpfer-Runde ·
-Chronik + alles Gefallene: `git log`.
+`playtest:fast` (~20 s) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
+constitution · studio-vertrag · altlasten · apparat · betriebsgesetz) · `lint` / `format:check` · `npm run atlas` (+ `--find`). Lokal der Puls der
+berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je Version; gemergt bei grüner
+Zweig-CI. GPU-Zeit nur `gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots je Seite;
+Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main. Commits klein, deutsch, emoji-frei, die Message ist der
+Chronik-Eintrag; PR nur auf Wunsch. Docs: `docs/README.md` ist die EINE Karte (Norm · Vision · Tisch · die Offen-Wahrheit `docs/PFLICHT-OFFEN.md`).

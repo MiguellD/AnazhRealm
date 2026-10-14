@@ -7,13 +7,14 @@
      Schöpfers (Rahmen · Gelenke · Lehren · Baukörper · Haut + Probefahrt).
      Eigenes Document, eigene strikte CSP: Skript nur same-origin (garage.js +
      ../terrain/lib/ — Three.js r128 vendored, kein CDN). Die iframe-Sandbox
-     trägt die Isolation; die W12-Brücke am Ende von garage.js spricht die
-     Heimat (enter/ready/dsl/exit). -->
+     trägt die Isolation; die Hülle (../huelle/huelle.js) trägt Regler, Sitzung,
+     Kosten-Leiste und die Brücke zur Heimat (enter/ready/dsl/exit). -->
 <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 />
 <title>ANATOMIE · FAHRZEUG — Rahmen · Gelenke · Lehren</title>
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.2">
 <style>
 :root{
   --bg:#070b10; --panel:rgba(9,14,20,.82); --ink:#cdd8e2; --mut:#6d7d8c; --hair:rgba(90,140,170,.16);
@@ -64,14 +65,8 @@ canvas{display:block}
   border:1px solid var(--hair);border-radius:7px;padding:7px 4px;cursor:pointer;transition:.13s;text-align:center}
 .btn:hover{background:rgba(80,130,160,.20)}
 .btn.on{background:rgba(111,208,232,.16);border-color:rgba(111,208,232,.42);color:var(--steel-bright)}
-.sl{margin:7px 2px}
-.sl-h{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
-.sl-h .v{font-family:var(--mono);color:var(--steel-bright)}
-input[type=range]{width:100%;height:3px;-webkit-appearance:none;background:rgba(120,150,175,.22);border-radius:2px;outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
-  background:var(--steel-bright);cursor:pointer;box-shadow:0 0 0 3px rgba(111,208,232,.16)}
-input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-radius:50%;background:var(--steel-bright);cursor:pointer}
-.law{font-family:var(--mono);font-size:9px;color:var(--mut);line-height:1.35;margin:3px 2px 0;opacity:.82}
+/* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette */
+:root{--h-akzent:var(--steel-bright);--h-tinte:var(--ink);--h-matt:var(--mut);--h-feld:var(--panel);--h-mono:var(--mono)}
 .btn.start{flex:1 1 100%;font-size:12px;font-weight:600;letter-spacing:.02em;color:#cdeefa;padding:10px 4px;
   background:linear-gradient(180deg,rgba(111,208,232,.20),rgba(111,208,232,.09));border-color:rgba(111,208,232,.46)}
 .btn.start:hover{background:linear-gradient(180deg,rgba(111,208,232,.30),rgba(111,208,232,.14));border-color:rgba(111,208,232,.7)}
@@ -103,6 +98,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-ra
 </div>
 
 <div id="ctl">
+  <div id="sitzung"></div>
   <div class="sec-t">GATTUNGS-PRESETS</div>
   <div class="row" id="presets"></div>
   <div class="sec-t">FAHREN</div>
@@ -113,6 +109,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-ra
   <div class="row"><button class="btn" id="kin">Türen</button><button class="btn" id="clay">Clay / Lack</button><button class="btn" id="ergebnis">Ergebnis</button></div>
   <div class="row" id="paintrow" style="flex-wrap:wrap;gap:5px;margin:1px 0 3px;align-items:center"><span style="font-size:9.5px;color:var(--mut);letter-spacing:.08em;width:100%">LACK</span></div>
   <div id="sliders"></div>
+  <div id="kosten"></div>
 </div>
 
 <div id="leg">
@@ -134,7 +131,8 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-ra
      Shell, dann das Schöpfer-Werk selbst. -->
 <script src="../terrain/lib/three-r128.min.js"></script>
 <script src="../terrain/lib/OrbitControls.js"></script>
-<script src="../../vehicle-core.js?v=18.544.0"></script>
-<script src="garage.js?v=18.544.0"></script>
+<script src="../../vehicle-core.js?v=18.546.2"></script>
+<script src="../huelle/huelle.js?v=18.546.2"></script>
+<script src="garage.js?v=18.546.2"></script>
 </body>
 </html>

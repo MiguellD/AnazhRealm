@@ -1,39 +1,10 @@
 // Diagnose-Script für V10.0-g — fängt alle Page-Errors mit vollem Stack
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
 // Port über PAGE_ERROR_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4313.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.PAGE_ERROR_PORT || 4313);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const filePath = path.join(root, p);
-    if (!filePath.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(filePath)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // V18.359 — der Page-Error-Wächter ist jetzt ein GATE: er sammelt jeden
 // Runtime-Throw + Console-Error und EXITET NON-ZERO, wenn die Wurzel rot ist.
@@ -45,10 +16,7 @@ const consoleErrors = [];
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

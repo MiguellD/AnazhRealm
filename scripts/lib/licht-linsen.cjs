@@ -652,6 +652,11 @@ function lichtBilanz() {
                 }
             }
         } finally {
+            if (freiAlt) {
+                freiIx.array.set(freiAlt);
+                freiIx.needsUpdate = true;
+                if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
+            }
             for (const m of meshes) m.visible = visAlt.get(m);
             bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
@@ -728,12 +733,17 @@ function nahFernSicht(opts) {
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
             return aus.slice(0, opts.jeKlasse || 4);
         };
-        const WALD = opts.wald == null ? 0.9 : opts.wald,
-            WIESE = opts.wiese == null ? 0.7 : opts.wiese;
-        const orte = waehle(kand.filter((k) => k.deckung >= WALD).sort((a, b) => b.deckung - a.deckung))
+        // DIE KLASSEN AUS DER WELT (K53, kein Orts-Literal): Wald sind die Orte der dichtesten Krone im Quadrat, Wiese die der
+        // offensten — je Klasse 30 m auseinander, keine Stelle in beiden. Bis K53 lasen sie 0,9 und 0,7: die Zahlen der Geburt
+        // (`forestGeburt`), die das Dach bis K16 als Deckung las; seit K16 ist die Deckung der gepflanzte Bestand (phyto-core
+        // `forestKronenDeckung`, Matérn-II gesättigt bei 0,18) — die Linse fand keinen Wald-Ort mehr. Gemessen 14.10. in 2 km um die
+        // Mess-Wiese: Deckung p50 0,176 · max 0,178 an V18.545 (main 9fb869a5), 0,175 · 0,178 am Kopf — der Wald ging nicht verloren.
+        const dichte = kand.slice().sort((a, b) => b.deckung - a.deckung || a.x - b.x || a.z - b.z);
+        const wald = waehle(dichte);
+        const orte = wald
             .map((k) => Object.assign(k, { klasse: "wald" }))
             .concat(
-                waehle(kand.filter((k) => k.deckung <= WIESE).sort((a, b) => a.deckung - b.deckung)).map((k) =>
+                waehle(dichte.filter((k) => !wald.includes(k)).reverse()).map((k) =>
                     Object.assign(k, { klasse: "wiese" })
                 )
             );
@@ -770,6 +780,13 @@ function nahFernSicht(opts) {
             fogAlt = sc.fog;
         sc.environment = null;
         sc.fog = null;
+        // DIE LUFT AUS (K53): die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
+        // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
+        // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
+        const luftU = st.luft && st.luft.U && st.luft.U.beta ? st.luft.U.beta : null;
+        if (sc.fogNode && !luftU) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
+        const betaAlt = luftU ? luftU.value : null;
+        if (luftU) luftU.value = 0;
         // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
         // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
         const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 1, H + 1000);
@@ -801,6 +818,20 @@ function nahFernSicht(opts) {
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const istNah = (m) => m.name === "bodenSatz";
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
+        // DER RING WEICHT DEM GEBAUTEN (K16): unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
+        // Klasse 2) — der Fern-Schuss im Quadrat der Chunks war seither leer (0 px). Für die Schüsse der Linse zeichnet der
+        // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge), der Naht-Teil ruht; danach
+        // steht die Teilung wieder, wie sie war.
+        const fr = st.fernRing;
+        const freiIx = fr && fr.teilung && fr.teilung.frei && fr.teilung.frei.index;
+        const freiAlt = freiIx ? freiIx.array.slice() : null;
+        const nahtMesh = fr && fr.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
+        const nahtSicht = nahtMesh ? visAlt.get(nahtMesh) : null;
+        if (freiIx && fr.geos[0].index.array.length === freiIx.array.length) {
+            freiIx.array.set(fr.geos[0].index.array);
+            freiIx.needsUpdate = true;
+            if (nahtMesh) visAlt.set(nahtMesh, false);
+        }
         const schuss = async (sicht, e) => {
             for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
             sc.traverse((o) => {
@@ -932,6 +963,7 @@ function nahFernSicht(opts) {
             sc.remove(A);
             sc.environment = envAlt;
             sc.fog = fogAlt;
+            if (luftU) luftU.value = betaAlt;
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             rt.dispose();
             sc.traverse((o) => {
@@ -941,7 +973,18 @@ function nahFernSicht(opts) {
         // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
         const nk = st.fernKroneNah;
-        return { hoehe: H, halb, orte: aus, nahKarte: nk ? (nk.U.bereit.value === 1 && !nk.job ? 1 : 0) : null };
+        return {
+            hoehe: H,
+            halb,
+            orte: aus,
+            // die Kandidaten des Quadrats: wie viele und die stärkste Deckung (ein Urteil ohne Wald-Orte nennt sie)
+            kandidaten: {
+                n: kand.length,
+                deckungMax: kand.length ? +Math.max(...kand.map((k) => k.deckung)).toFixed(2) : null,
+                deckungMin: kand.length ? +Math.min(...kand.map((k) => k.deckung)).toFixed(2) : null,
+            },
+            nahKarte: nk ? (nk.U.bereit.value === 1 && !nk.job ? 1 : 0) : null,
+        };
     })();
 }
 
@@ -988,7 +1031,12 @@ function nahFernUrteil(messung, band) {
     for (const k of ["wald", "wiese"]) {
         const n = ((messung && messung.orte) || []).filter((o) => o.klasse === k).length;
         if (n < band.jeKlasse)
-            befunde.push(`NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}`);
+            befunde.push(
+                `NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}` +
+                    (messung && messung.kandidaten
+                        ? ` (${messung.kandidaten.n} Kandidaten im Quadrat, stärkste Deckung ${messung.kandidaten.deckungMax})`
+                        : "")
+            );
     }
     const gr = (c) => c[1] / Math.max(1e-6, c[0] + c[1] + c[2]);
     const pz = (v) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)} %`;

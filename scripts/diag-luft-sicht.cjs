@@ -17,34 +17,11 @@
 // --selftest: eine injizierte 80-m-Wand (die alte Wald-Kante) und ein injizierter THREE.Fog müssen die
 // Linse beim Namen rot machen.
 //   node scripts/diag-luft-sicht.cjs [--selftest]
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.LUFT_PORT || 4594);
 const SELFTEST = process.argv.includes("--selftest");
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Die Probe im Seiten-Kontext: misst und urteilt; `stoerung` injiziert den Täter des Selbsttests.
 function probe(stoerung) {
@@ -84,12 +61,29 @@ function probe(stoerung) {
     out.tKante = +Math.exp((-K * kante) / out.sichtSonne).toFixed(3);
     out.tFern = +Math.exp((-K * fernKante) / out.sichtSonne).toFixed(4);
     // Unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera (Welle L, W-L-d; bis V18.531 die Augen des
-    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des größten Sees der Heimat-Region.
-    const h = st.hydrosphere;
-    const see =
-        h && h.lakes
-            ? h.lakes.filter((l) => l.cells && l.cells.length).sort((a, b) => b.cells.length - a.cells.length)[0]
-            : null;
+    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des Sees, wo das Gelände-Gesetz ihn setzt — die
+    // Heimat-Kachel trägt seit K16 keinen (die Seen sind die Senken des Flussnetzes): die nächste benannte Senke (gelaende-core
+    // `benannteSeen`), deren Kachel einen gerenderten See trägt (Spiegel > Meer + 2 m, ≥ 16 Zellen), über den EINEN
+    // Kachel-Eingang (`_ensureHydroTilesAround`).
+    let h = null;
+    let see = null;
+    {
+        const n = 375;
+        const kand = window.__gelaendeCore
+            .benannteSeen(r._gelaende(), -12000, -12000, 64, n)
+            .map((k) => ({ x: -12000 + (k % n) * 64, z: -12000 + ((k / n) | 0) * 64 }))
+            .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+        for (const k of kand) {
+            r._ensureHydroTilesAround(k.x, k.z, 0);
+            const hk = r._hydroFor(k.x, k.z);
+            const l = hk && hk.lakes.find((s) => s.level > st.waterLevel + 2 && s.cells && s.cells.length >= 16);
+            if (l) {
+                h = hk;
+                see = l;
+                break;
+            }
+        }
+    }
     const cam = st.camera;
     if (see && cam) {
         const c = see.cells[0];
@@ -147,11 +141,7 @@ function urteil(S) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 120000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

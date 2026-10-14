@@ -35,33 +35,14 @@
 //     Werkstatt-Vorschau; _liveRefs-Rueckgabe) · foundry-off (lokaler Hook,
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── H-F (W5 Gegenstände, 05.10.) — DAS FAUST-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Die gehaltene
 // Studio-Klinge in der Hand des Studio-Menschen, gemessen in WELT-Metern:
@@ -195,7 +176,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const scSrc = fs.readFileSync(path.join(root, "schmiede-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
@@ -238,11 +219,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
@@ -575,8 +552,8 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     );
     check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", out.b.ksWeapon === "[0]", String(out.b.ksWeapon));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: vehicle-kindStages UNANGETASTET ([0])", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
-    check("B: gate-kindStages UNANGETASTET ([0,3] — die NUR-WURF-Stufe 3, 1110-9)", out.b.ksGate === "[0,3]", String(out.b.ksGate));
+    check("B: vehicle-kindStages UNANGETASTET ([0,1] — die Stufe 1 seit K43-2)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
+    check("B: gate-kindStages UNANGETASTET ([0,1,3] — die Stufe 1 seit K43, die NUR-WURF-Stufe 3, 1110-9)", out.b.ksGate === "[0,1,3]", String(out.b.ksGate));
     check(
         "D: Auto-Blueprint klinge_langschwert registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 2,

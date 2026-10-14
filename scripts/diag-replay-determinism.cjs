@@ -11,7 +11,7 @@
 //       reagiert wirklich auf den Input, prüft nicht bloß einen Fixpunkt).
 //   (D) WIEDERHOLBAR: ein dritter Lauf == der erste (kein Carry-over/Zustands-Leck).
 
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { spawn } = require("child_process");
 const ROOT = path.resolve(__dirname, "..");
@@ -41,11 +41,7 @@ function buildFrames(seq) {
 (async () => {
     const server = spawn("node", ["save-server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) } });
     await new Promise((r) => setTimeout(r, 1500));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -93,6 +89,7 @@ function buildFrames(seq) {
             const sy = r.getTerrainHeightAt(0, 0);
             const startY = (Number.isFinite(sy) ? sy : 5) + 2;
             const mkStart = () => {
+                // BÜHNE: die Ankunft der Welt (_worldgenInitPlayerPosition: jeder Erst-Spawn auf 0/0), die Höhe aus dem Gesetz
                 pm.position.set(0, startY, 0);
                 s.playerVel.setValue(0, 0, 0);
                 s._fieldVy = 0;

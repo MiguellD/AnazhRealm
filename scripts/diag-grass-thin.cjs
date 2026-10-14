@@ -21,34 +21,14 @@
 // Die Boden-Wiese selbst (Parallax-Halme) beweist das Bild (PFLICHT-OFFEN D); der volle
 // Playtest prüft ihren Konsum (Boden-Grün → Halm-Gewicht). GPU-frei.
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über GRASS_THIN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4331.
 const PORT = Number(process.env.GRASS_THIN_PORT || 4331);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Kommentar-Strip (die V18.267-Falle: ein erklärender Kommentar zitiert das geschnittene
 // Symbol → ein naiver Absenz-Grep stolpert). Dieselbe Disziplin wie gate:constitution.
@@ -58,7 +38,7 @@ function stripComments(src) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+    const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
@@ -140,7 +120,7 @@ function stripComments(src) {
     }
 
     // Statische Doppel-Wand (Node-seitig, ohne Browser-Umweg): das Symbol lebt nirgends im Stamm.
-    const anazhNC = stripComments(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const anazhNC = stripComments(stammLib.text(root));
     const staticTuftGone = !/_grassBladeTuftGeometry/.test(anazhNC) && !/GRASS_TUFT_BLADES/.test(anazhNC);
     const staticThinGone = !/_tickGrassThin/.test(anazhNC) && !/voxelChunkGrassDensity/.test(anazhNC);
 

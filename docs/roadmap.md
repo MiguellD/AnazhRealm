@@ -31,13 +31,9 @@ Schritte oder den FPS-Boden trägt.
 
 ### §0.frozen · Die Frozen-Liste
 
-Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (A–E, gesetzt 21.07. mit dem Schöpfer-Wort
-„analog!", seit 30.09. in der AAA-Lesart „am Ende AAA-Niveau, nicht Kapseln"). Neu gefasst 11.10.
-(Entscheidung 1110 §5.1, Vollmacht des Schöpfers): B Bäume und C Architektur fielen mit dem Beweis-Satz
-A1 (echte GPU, Ausgabe-Pfad, `docs/abnahme-analog.md` § A1: Mesh-Zone 0 ungebaut in jedem Schuss); B der
-Pfad ohne Bruch fiel V18.543 (jede der sieben Zahlen an ihrem Ziel, je Zahl ihr Gate); offen stehen A (die
-Kopf-Zeile des Fell-Gesetzes, 5,79 px je Strähne an Armlänge), C der Ort auf dem Gelände und E das Profi-Band auf jedem Standardgerät mit seinem Kriterium (Radeon 890M und
-GTX 1060, Wiese und Genesis, Regler voll; Schöpfer-Wort 02.10.: „richter ist nicht mein rechner").
+Die EINE Offen-Wahrheit ist `docs/PFLICHT-OFFEN.md` (Einträge setzt nur der Schöpfer, je Eintrag sein Status und sein Kriterium;
+der Spiegel steht im Stand von `CLAUDE.md`). Es stehen **B** die Ankunft (≤ 5 s kalt), **C** der Ort auf dem Gelände und **E** das
+Profi-Band auf jedem Standardgerät — B ist Schritt 1 der Ziellinie, C der Grund, auf dem gebaut wird, E ihr FPS-Boden.
 
 ### §0.reste · Benannte Reste mit Wartebedingung (nichts erfinden)
 
@@ -61,11 +57,11 @@ GTX 1060, Wiese und Genesis, Regler voll; Schöpfer-Wort 02.10.: „richter ist 
 
 ## §1 · Das Fischer-Prinzip (über allem — „Regel #0" GESTRICHEN V18.356)
 
-Ich MESSE (Gate · Diag · hardware-unabhängiger Proxy), ich SEHE (settled swiftshader-Schüsse sind
-farbtreu; Methodik: settled · Augenhöhe · nah · A/B), ich URTEILE, ich VOLLENDE — das Neue wird
-DER Pfad (default-an), kein Hedge. Der Schöpfer wertet das ERGEBNIS und bleibt das Merge-Gate für
-den LOOK — er ist NIE die Ausrede, etwas halb/AUS zu lassen. MECHANIK braucht eine ZAHL, LOOK
-braucht ein BILD (eine headless-Zahl als Look-Beweis kann lügen).
+Ich MESSE (Gate · Diag · hardware-unabhängiger Proxy · `gpu-bank` auf echter GPU), ich SEHE (Beweisbilder aus dem Ausgabe-Pfad;
+Bild-Urteile auf echter Hardware, swiftshader verbirgt Präzisionsfehler — CLAUDE.md Lehre 17), ich URTEILE, ich LIEFERE — das Neue
+wird DER Pfad (default-an), kein Hedge. Der Schöpfer wertet das ERGEBNIS und setzt Scope und Ship; er ist kein Merge-Tor für Pixel
+(BETRIEBSGESETZ 4) und NIE die Ausrede, etwas halb/AUS zu lassen. MECHANIK braucht eine ZAHL, LOOK braucht ein BILD (eine
+headless-Zahl als Look-Beweis kann lügen).
 
 ## §2 · Die Narben — probiert & VERWORFEN (nicht wiederholen)
 

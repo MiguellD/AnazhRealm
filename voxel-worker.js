@@ -3,7 +3,7 @@
 //
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): mirror der Density-Pipeline
 // aus `anazhRealm.js` für den Web-Worker-Kontext. Der Worker bekommt einen
-// State-Snapshot per `init`-Message (Seed, Atlas, Erosion, Tarns, voxelEdits,
+// State-Snapshot per `init`-Message (Seed, Atlas, voxelEdits,
 // baseHeight, waterLevel), Delta-Updates bei Welt-Mutationen, und beantwortet
 // `density-grid`-Requests mit einem Float32Array via Transferable (zero-copy).
 //
@@ -51,8 +51,8 @@ const __phytoV = (function () {
 importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 
 // K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
-// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel ·
-// terrainSteepness · erosion · erosionTiles · tarns · macroAnker · erbgut · regionSize). Fehlt der Kern, wirft der
+// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel · erbgut ·
+// regionSize). Fehlt der Kern, wirft der
 // Worker beim Laden (fail-closed, nie still eine eigene Höhe).
 importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 const G = self.__gelaendeCore;
@@ -66,10 +66,7 @@ const state = {
     waterLevel: 0,
     hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
     hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
-    erosionTiles: null, // A3 (V18.132) — {key: {originX, originZ, cell, dim, delta}}
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
-    erosion: null, // { originX, originZ, cell, dim, delta }
-    tarns: null, // Array of { x, z, d, reach2, twoSig2 }
     voxelEdits: [], // Array of { x, y, z, r, strength, mode } — die EINE Liste, ohne Deckel; gelesen über die Edit-Karte
     hydroComputing: false,
     spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
@@ -83,15 +80,14 @@ const state = {
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
     genVersion: 1,
-    // Γ4-Vollendung V18.193 — der vom Main persistierte Erbgut-Anker.
-    // Worker liest IHN statt selbst zu bauen → konsistent über
-    // Konstanten-Wechsel + Welt-Bündel-Import.
-    macroAnker: null,
     // die Kachel-Kante der Hydro-Regionen (Main `HYDROSPHERE.regionSize`) — der Kachel-Schlüssel des Gesetzbuchs liest sie
     regionSize: null,
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
     // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
     erbgut: null,
+    // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
+    // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
+    felsStoff: null,
 };
 
 self.onmessage = function (e) {
@@ -126,9 +122,17 @@ self.onmessage = function (e) {
                         empty: false,
                         lod: lod | 0,
                         positions: mesh.positions.buffer,
+                        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
+                        stufeZiel: mesh.stufeZiel ? mesh.stufeZiel.buffer : null,
+                        normalZiel: mesh.normalZiel ? mesh.normalZiel.buffer : null,
+                        farbeZiel: mesh.farbeZiel ? mesh.farbeZiel.buffer : null,
                         normals: mesh.normals.buffer,
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
+                        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+                        himmel: mesh.himmel.buffer,
+                        schutt: mesh.schutt.buffer,
+                        felsFeuchte: mesh.felsFeuchte,
                         waterCells: mesh.waterCells.buffer,
                         // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
                         hTri: mesh.hTri.buffer,
@@ -146,6 +150,8 @@ self.onmessage = function (e) {
                         mesh.normals.buffer,
                         mesh.indices.buffer,
                         mesh.colors.buffer,
+                        mesh.himmel.buffer,
+                        mesh.schutt.buffer,
                         mesh.waterCells.buffer,
                         mesh.hTri.buffer,
                         mesh.hKnoten.buffer,
@@ -153,7 +159,9 @@ self.onmessage = function (e) {
                         mesh.hSeiten.buffer,
                         mesh.hKanten.buffer,
                         mesh.hRand.buffer,
-                    ]
+                    ].concat(
+                        mesh.stufeZiel ? [mesh.stufeZiel.buffer, mesh.normalZiel.buffer, mesh.farbeZiel.buffer] : []
+                    )
                 );
             }
         } else if (msg.type === "water-sheet") {
@@ -216,17 +224,13 @@ function applyStateSnapshot(snap) {
     if (!snap) return;
     if (snap.seed && snap.seed !== state.seed) {
         state.seed = snap.seed;
-        state.noise = new SimplexNoise(state.seed + ":voxel");
+        state.noise = G.lageRausch(state.seed, SimplexNoise);
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
-    if (typeof snap.terrainSteepness === "number") state.terrainSteepness = snap.terrainSteepness; // V14.7: ridgeAmp-Skala
     if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
-    if (snap.erosion !== undefined) state.erosion = snap.erosion;
     if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
-    if (snap.erosionTiles !== undefined) state.erosionTiles = snap.erosionTiles; // A3 (V18.132)
-    if (snap.tarns !== undefined) state.tarns = snap.tarns;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
     if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;
@@ -240,12 +244,11 @@ function applyStateSnapshot(snap) {
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
-    // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
-    // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
-    // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
-    if (snap.macroAnker !== undefined) state.macroAnker = snap.macroAnker;
+    // Der Wiesen-Grund des Mains (K53, `WIESEN_GRUND`: Farbe, Wache, Fleck) — dieselben Zahlen.
+    if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
+    if (snap.felsStoff) state.felsStoff = snap.felsStoff;
 }
 
 function applyStateDelta(delta) {
@@ -414,22 +417,20 @@ function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
 // =============================================================================
 
 // V18.321 (mirror von `_terrainColumnContext`) — DER SPALTEN-KONTEXT: die rein-2D-Arbeit
-// (Makro-Oberfläche [61 %] + Roughness-Region + Canyon-Maske + Hydro-Carve/See) hängt NUR von
+// (Makro-Oberfläche [61 %] + Roughness-Region + Höhlen-Mündung + Hydro-Carve/See) hängt NUR von
 // (x,z) ab; einmal pro Spalte berechnet, vom per-Voxel `terrainBaseDensityCol` über das ganze
 // y-Band gelesen = byte-identisch, ~3× weniger Arbeit. MUSS bit-identisch zur Main.
+const SPALTEN_HANG = { hang: 0 };
 function terrainColumnContext(x, z) {
-    const surf = G.hoehe(state, x, z, true);
+    const surf = G.hoehe(state, x, z, true, SPALTEN_HANG);
     const base = state.baseHeight || 0;
     // DAS WILDNIS-GEWICHT der Spalte (Mirror): Rauheit und Höhlen-Hülle wiegen mit ihm; 0 → kein noise3D.
     const wild = state.erbgut.wildnis;
-    let roughScale = 0;
     let ceilOffset = -24;
     if (wild > 0) {
-        const mtnR = G.rauheit(state, x, z);
-        roughScale = (0.16 + 0.84 * mtnR) * wild;
-        const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
+        // Die Decke bleibt unter dem Boden (Mirror), die Mündung ist Gesetz (gelaende-core `hoehlenMund`, K16).
         const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
-        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(SPALTEN_HANG.hang);
     }
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
@@ -439,7 +440,7 @@ function terrainColumnContext(x, z) {
         hydroCarve = hydrosphereCarveAt(x, z);
         lake = hydrosphereLakeAt(x, z);
     }
-    return { surf, wild, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
+    return { surf, wild, base, ceilOffset, hydroActive, hydroCarve, lake };
 }
 
 // Die per-VOXEL-Hälfte (y-abhängig, OHNE Edits) — mirror von `_terrainBaseDensityAtCol`.
@@ -448,8 +449,6 @@ function terrainBaseDensityCol(x, y, z, ctx) {
     let d = surf - y;
     // Rauheit und Höhlen sind Wildnis (Mirror): ohne ihr Gewicht kein noise3D.
     if (ctx.wild > 0) {
-        d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-        d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
         const base = ctx.base;
         const caveFloor = clamp01((y - (base - 28)) / 8);
         const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
@@ -832,6 +831,7 @@ function hydroDistAt(x, z) {
     const bj0 = Math.floor((z - h.originZ) / bs);
     let best = Infinity;
     let bestHw = 0;
+    let bestRand = Infinity;
     for (let dj = -1; dj <= 1; dj++) {
         for (let di = -1; di <= 1; di++) {
             const bi = bi0 + di;
@@ -848,11 +848,15 @@ function hydroDistAt(x, z) {
                 if (t < 0) t = 0;
                 else if (t > 1) t = 1;
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                if (dist < best) {
+                // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
+                // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
+                const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                // der nächste RAND, nie die nächste Mittellinie — bit-identisch zum Main (K16, U1)
+                const rand = dist - Math.max(1, hw);
+                if (rand < bestRand) {
+                    bestRand = rand;
                     best = dist;
-                    // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
-                    // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
-                    bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    bestHw = hw;
                 }
             }
         }
@@ -1104,6 +1108,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                 }
                 continue;
             }
+            // die geleerte Spalte ist trocken (Mirror K37; Doku im Main)
+            if (dach && live < 0) continue;
             const faceY = oy + (sc.floodTopJ + 1) * step;
             const wx = ox + (ci + 0.5) * step;
             const wz = oz + (ck + 0.5) * step;
@@ -1118,8 +1124,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             let ruht = L > -Infinity && top === L;
             if (dach) {
                 const floodRel = (sc.floodTopJ + 1) * step;
-                const liveRel = live < 0 ? 0 : live * step;
-                let d = liveRel - floodRel;
+                let d = live * step - floodRel; // live ≥ 0 (Doku im Main)
                 if (d > -0.05 && d < 0.05) d = 0;
                 if (d !== 0) ruht = false;
                 top += Math.max(-14, Math.min(4, d));
@@ -2117,6 +2122,9 @@ function attachFieldColors(positions) {
     // `AnazhRealm.BODEN_FARBE`) — ohne sie färbt der Worker nicht (laut, kein stiller Ersatz).
     const P = state.bodenPalette;
     if (!P) throw new Error("attachFieldColors: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    const WG = state.wiesenGrund;
+    if (!WG || !state.noise)
+        throw new Error("attachFieldColors: der Wiesen-Grund (wiesenGrund) oder das Rauschen fehlt im Worker-Zustand");
     const stone = P.rock;
     const earth = P.mead;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
@@ -2141,10 +2149,6 @@ function attachFieldColors(positions) {
     const sand = P.sand;
     const packedDirt = P.dirt; // V18.230 (Ω-O6) getrampelte Pfad-Erde
     const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
-    const base = state.baseHeight || 0;
-    // V17.105 — Schnee-Prominenz-Schwelle (Mirror von _attachVoxelFieldColors).
-    const SNOW_PROM_START = 50;
-    const SNOW_PROM_FULL = 115;
     for (let i = 0; i < n; i++) {
         const x = positions[i * 3];
         const y = positions[i * 3 + 1];
@@ -2177,11 +2181,8 @@ function attachFieldColors(positions) {
         // Der Magie-Akzent in Flecken (Main-Spiegel `_bodenFarbeAt`).
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y: cont0 = die λ7100-m-kontinentale Basis aus
-        // dem Gelände-Gesetzbuch (`kontinentBasis`, dieselbe Funktion wie Main `_bodenFarbeAt`); Schnee-Caps nur auf
-        // genuine Erhebungen statt über ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
-        const _cont0 = G.kontinentBasis(state, x, z);
-        mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
+        // Die Schneegrenze ist Gesetz (gelaende-core `schnee`, dieselbe Funktion wie Main `_bodenFarbeAt`).
+        mix(snow, G.schnee(state, y, x, z));
         // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
         // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.
         const uf = { see: 0, fluss: null, ufer: 0 };
@@ -2208,6 +2209,12 @@ function attachFieldColors(positions) {
         // identisch): die Fluss-Bänke als getrampelte, gepackte Erde.
         const pathF = pathFieldAt(x, z, y);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
+        // DER WIESEN-GRUND (K53, Spiegel von `_bodenFarbeAt`, dieselben Zahlen aus dem Schnappschuss `wiesenGrund`)
+        const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
+        if (gruen > 0) {
+            const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
+            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+        }
         colors[i * 3] = c[0];
         colors[i * 3 + 1] = c[1];
         colors[i * 3 + 2] = c[2];
@@ -2654,6 +2661,43 @@ function chunkHasAnyWater(cx, cz, lod) {
 // Voller Chunk-Build (Iso-Mesh + Cells + Colors)
 // =============================================================================
 
+// Das grobe Netz der Stufe `grobLod` um den Chunk-Ursprung (ox, oz) mit einer Zelle Polster vor der Kante — derselbe Bau wie der
+// Chunk jener Stufe samt Normale und Stoff (Feld-Farbe, Himmels-Sicht, Fels) — und je feinem Vertex sein Ziel darauf: Lage,
+// Normale, Farbe (Spiegel von `_stufeZielNetz` im Stamm, dasselbe Gesetz `stufeZiel` aus gelaende-core).
+function stufeZielNetz(fein, feinNormal, feinFarbe, ox, oy, oz, grobLod) {
+    const g = voxelChunkConfig(grobLod);
+    const gs = g.step;
+    const gox = ox - 2 * gs;
+    const goz = oz - 2 * gs;
+    const gd = g.dim + 4;
+    const leer = () =>
+        G.stufeZiel(fein, new Float32Array(0), new Uint32Array(0), gs, [
+            { fein: feinNormal, grob: new Float32Array(0), einheit: true },
+            { fein: feinFarbe, grob: new Float32Array(0) },
+        ]);
+    const dichte = computeDensityGrid(gox, oy, goz, gd, g.dimY, gd, gs);
+    const sv = extractSurfaceVertices(dichte, gox, oy, goz, gd, g.dimY, gd, gs);
+    if (sv.positions.length === 0) return leer();
+    const hoehle = hoehlenGraph(dichte, gox, oy, goz, gd, g.dimY, gd, gs);
+    const triZelle = [];
+    const idx = emitQuadIndices(dichte, sv.cellVert, gd, g.dimY, gd, hoehle.lab, triZelle);
+    laplacianSmoothPositions(sv.positions, idx, 1, sv.sharp);
+    cropPad(sv.positions, idx, sv.vertCells, gd, gd, 1, triZelle);
+    if (sv.positions.length === 0) return leer();
+    const normalen = gradientNormals(sv.positions, dichte, gox, oy, goz, gs, gd + 1, g.dimY + 1, gd + 1);
+    const lage = new Float32Array(sv.positions);
+    const farben = attachFieldColors(lage);
+    const iU = new Uint32Array(idx);
+    const nV = lage.length / 3;
+    const himmel = G.himmelsSicht(iU, Int32Array.from(triZelle), nV, gs);
+    const FS = state.felsStoff;
+    G.felsStoff(state, FS.basis, FS.netz, lage, normalen, iU, himmel, farben, nV, feuchteAt);
+    return G.stufeZiel(fein, lage, iU, gs, [
+        { fein: feinNormal, grob: normalen, einheit: true },
+        { fein: feinFarbe, grob: farben },
+    ]);
+}
+
 function buildChunkMesh(cx, cz, lod) {
     const cfg = voxelChunkConfig(lod);
     const { dim, step, span, dimY, floorDrop } = cfg;
@@ -2705,6 +2749,33 @@ function buildChunkMesh(cx, cz, lod) {
     // identische Eingangs-Werte für die Color-Mix-Pipeline.
     const positionsF32 = new Float32Array(positions);
     const colors = attachFieldColors(positionsF32);
+    // DER STOFF ENTSTEHT, WO DAS NETZ ENTSTEHT (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt aus dem EINEN
+    // Gelände-Kern — derselbe Code wie im Sync-Bau des Mains (`_felsStoff`), der Main setzt nur die Attribute. Bis K17-2 rechnete
+    // der Main ihn je Chunk nach (Mess-Wiese Σ 59,4 ms je Ring).
+    const FS = state.felsStoff;
+    if (!FS) throw new Error("buildChunkMesh: der Fels-Stoff fehlt im Worker-Zustand (felsStoff)");
+    const indicesU32 = new Uint32Array(indices);
+    const hTri = Int32Array.from(triZelle);
+    const nV = positionsF32.length / 3;
+    const himmel = G.himmelsSicht(indicesU32, hTri, nV, step);
+    const fels = G.felsStoff(
+        state,
+        FS.basis,
+        FS.netz,
+        positionsF32,
+        normals,
+        indicesU32,
+        himmel,
+        colors,
+        nV,
+        feuchteAt
+    );
+    // DAS ZIEL DER GRÖBEREN STUFE (K51-2, Geomorph nach CDLOD): das Netz der Stufe lod+1 desselben Orts, eine grobe Zelle
+    // weiter nach unten gepolstert (das Gitter beginnt zwei grobe Schritte vor dem Chunk, der Crop behält die Zelle vor der
+    // Kante — sie ist die Saum-Zelle des unteren Nachbarn, so trifft jeder geteilte Vertex in beiden Chunks dieselbe Fläche),
+    // sonst derselbe Bau wie der Chunk der Stufe lod+1; je Vertex sein Ziel samt Normale und Stoff-Farbe (gelaende-core
+    // `stufeZiel`). Stufe 3 ist die gröbste.
+    const stufe = lod < 3 ? stufeZielNetz(positionsF32, normals, colors, ox, oy, oz, lod + 1) : null;
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
     // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für
@@ -2740,11 +2811,17 @@ function buildChunkMesh(cx, cz, lod) {
     return {
         empty: false,
         positions: positionsF32,
-        indices: new Uint32Array(indices),
+        stufeZiel: stufe ? stufe.ziel : null,
+        normalZiel: stufe ? stufe.felder[0] : null,
+        farbeZiel: stufe ? stufe.felder[1] : null,
+        indices: indicesU32,
         normals,
         colors,
+        himmel,
+        schutt: fels.schutt,
+        felsFeuchte: fels.feuchte,
         waterCells,
-        hTri: Int32Array.from(triZelle),
+        hTri,
         hN: hoehle.n,
         hKnoten: hoehle.knoten,
         hMuend: hoehle.muend,

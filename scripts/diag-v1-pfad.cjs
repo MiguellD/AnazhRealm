@@ -63,23 +63,13 @@
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 const errs = [];
 function check(name, ok, detail) {
@@ -350,10 +340,11 @@ function sucheVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
-    const buehne = fnBody(nc, /\n {4}_buehneRender\(renderer, scene, camera\) \{/) || "";
-    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne.
+    const buehne = fnBody(nc, /\n {4}_buehneRender\(renderer, scene, camera, wer\) \{/) || "";
+    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
+    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
     const direkt = (nc.match(/\b[ps]\.renderer\.render\(/g) || []).length;
-    const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera\)/g) || []).length;
+    const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera, "[^"]+"\)/g) || []).length;
     const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
     const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
     const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
@@ -406,17 +397,7 @@ function wand(src) {
     ];
 }
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(arg) {
@@ -606,8 +587,14 @@ async function probe(arg) {
             return true;
         };
         let ort = null;
+        // K16 (das Flussnetz-Gelände): die Plattform selbst ist trocken (das nächste Wasser 292 m) — der Ort liegt außerhalb
+        // ihrer Lichtung (`_grundrissVon`, + 30 m für die Kronen des Satzes), sonst pflanzt der Absender nichts.
+        const platz = st.architectures.find((a) => a && a.type === "start_plattform");
+        const licht = platz && r._grundrissVon(platz);
+        const frei = (x, z) =>
+            !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
-            if (r._landAt(x, z, 1) && trockenUm(x, z)) {
+            if (frei(x, z) && r._landAt(x, z, 1) && trockenUm(x, z)) {
                 ort = { x, z };
                 break;
             }
@@ -830,7 +817,8 @@ async function probe(arg) {
             if (s === null || !Number.isFinite(s)) return !(r._atlasWaterLevelAt(x, z, -1e9) > -Infinity);
             return !(s < r._koerperWasser(x, z, s) + mg) && !(s < r._atlasWaterLevelAt(x, z, s) + mg);
         };
-        const w0 = r._findNearestWaterPoint(P.x, P.z, 200);
+        // das nächste Wasser des Gesetzes (K16: 292 m von der Plattform, die 200-m-Suche fand keins — die Stichprobe war trocken)
+        const w0 = r._findNearestWaterPoint(P.x, P.z, 800);
         const zentren = [ort, P].concat(w0 ? [w0] : []);
         let seed = 12345;
         const rnd = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
@@ -1196,7 +1184,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die V1-Pfad-Linse nennt jeden Täter des Befunds ===");
         const gesund = { gestartet: true, renders: 1, vertices: 1200, anteil: 1, maskeImRender: 0, maskeWelt: 1, maskeDanach: 1 };
@@ -1296,7 +1284,7 @@ async function probe(arg) {
         const gruen = wand(quelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
-            .replace("const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);", "const renderResult = p.renderer.render(p.scene, p.camera);")
+            .replace('this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);")
             .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
             // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             .replace("            throw fehler;\n", "            return null;\n")
@@ -1415,7 +1403,7 @@ async function probe(arg) {
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {

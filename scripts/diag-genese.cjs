@@ -8,9 +8,9 @@
 //   E  Math.random-ZENSUS in worldgen-erreichbaren Pfaden (Γ5-Verbot)
 //   node scripts/diag-genese.cjs
 
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const path = require("path");
-const puppeteer = require("puppeteer");
 
 const SERVER_JS = path.resolve("save-server.js");
 
@@ -32,17 +32,7 @@ function startSaveServer() {
 
 (async () => {
     const server = await startSaveServer();
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     page.on("pageerror", (e) => console.error("PAGE-ERROR:", e.message.split("\n")[0]));
     let fails = 0;
@@ -72,7 +62,11 @@ function startSaveServer() {
         });
         console.log("A — GENESE-VERSION");
         // die aktuelle Genese-Version (der Stempel wandert mit der Genese — das Literal 2 war stale)
-        check(a.gen >= 2 && a.meta === a.gen, `frische Welt trägt die aktuelle genVersion`, `_genVersion()=${a.gen}, worldMeta=${a.meta}`);
+        check(
+            a.gen >= 2 && a.meta === a.gen,
+            `frische Welt trägt die aktuelle genVersion`,
+            `_genVersion()=${a.gen}, worldMeta=${a.meta}`
+        );
 
         // ---- C: FEUCHTE-Feld -------------------------------------------------
         const c = await page.evaluate(() => {
@@ -263,7 +257,9 @@ function startSaveServer() {
             check(
                 st.gemessen > 0 && st.n === 0,
                 `schilf bleibt der Trocknis fern (gemessen, nie leer grün)`,
-                d.schilfTrocken ? `n=${st.n} (${st.gemessen}/${st.kacheln} Kacheln gemessen)` : "kein gebauter trockener Chunk"
+                d.schilfTrocken
+                    ? `n=${st.n} (${st.gemessen}/${st.kacheln} Kacheln gemessen)`
+                    : "kein gebauter trockener Chunk"
             );
         }
 
@@ -281,7 +277,6 @@ function startSaveServer() {
                 "_clumpAt",
                 "_terrainBaseDensityAt",
                 "_computeHydrosphere",
-                "_computeErosion",
                 "spawnAffinityForBlueprint",
                 "_affinitaet",
             ];

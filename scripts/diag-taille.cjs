@@ -20,10 +20,10 @@
 //
 //   node scripts/diag-taille.cjs
 
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const puppeteer = require("puppeteer");
 
 const SERVER_JS = path.resolve("save-server.js");
 // Der Port des eigenen save-servers (TAILLE_PORT, sonst 4312): parallele Worktrees fahren je einen eigenen — auf einem
@@ -68,17 +68,7 @@ function startSaveServer() {
 (async () => {
     const minting = !fs.existsSync(GOLDEN_DIR);
     const server = await startSaveServer();
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     let fail = false;
     try {

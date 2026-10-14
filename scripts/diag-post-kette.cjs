@@ -42,6 +42,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -184,8 +185,18 @@ function urteil(z) {
         v.push(
             `RAHMEN-ZIEL: ${rahmenErrors.length - erwartet} ERROR-Zeile(n) von \`_rahmenZielAbschied\` außerhalb der Drift-Probe: ${rahmenErrors[0]}`
         );
-    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x))) v.push(`KONSOLE: ${t}`);
+    // (a) DER ERZWUNGENE BRUCH (K22): der Render-Fehler, den die Wand selbst in die Kette wirft, bricht LAUT beim Namen
+    // (`_loopRender` → `_stoffBruch`, ERROR „STOFF: die Post-Kette …" mit der Ursache) — GENAU EINMAL; still (0) ist rot,
+    // ein zweiter ist rot. Bis zur Nachbesserung 2 zählte die Konsolen-Wand ihn als fremd (die CI voll 6/11 rot).
+    const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
     const fang = schritte.find((s) => s.name === "Render-Fehler");
+    const erzwungen = (z.konsolenFehler || []).filter((x) => ERZWUNGEN.test(x));
+    if (fang && erzwungen.length !== 1)
+        v.push(
+            `WEICHE: der erzwungene Render-Fehler der Kette meldet ${erzwungen.length}× „STOFF: die Post-Kette …" (Soll genau 1 — ${erzwungen.length ? "doppelt" : "er bricht STILL"})`
+        );
+    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x) && !ERZWUNGEN.test(x)))
+        v.push(`KONSOLE: ${t}`);
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
     if (z.seitenFehler && z.seitenFehler.length)
         v.push(`SEITE: ${z.seitenFehler.length} Seiten-Fehler: ${z.seitenFehler[0]}`);
@@ -237,6 +248,7 @@ function selbsttest() {
             fehler: ["RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt"],
         },
         konsolenFehler: [
+            "[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — gate:post-kette — erzwungener Render-Fehler der Kette",
             "[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
         ],
         seitenFehler: [],
@@ -318,6 +330,21 @@ function selbsttest() {
             muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
         },
         {
+            name: "der erzwungene Render-Fehler bricht still",
+            z: mit((z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x)))),
+            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/,
+        },
+        {
+            name: "der erzwungene Render-Fehler bricht doppelt",
+            z: mit((z) => z.konsolenFehler.push(z.konsolenFehler[0])),
+            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/,
+        },
+        {
+            name: "ein fremder Stoff-Bruch der Seite",
+            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt")),
+            muss: /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/,
+        },
+        {
             name: "eine fremde ERROR-Zeile der Seite",
             z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt")),
             muss: /KONSOLE: .*Post-Processing fehlt/,
@@ -395,35 +422,11 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const http = require("http");
 const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.POST_KETTE_PORT) || 4583;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // (f) DER SAUM AUF UNGERADER LEINWAND (Seiten-Kontext, nach `buehne`; die Seite steht auf einer ungeraden Größe): das Wasser
 // über dem hellen Grund, darin ein schwarzer, schräg stehender Pfahl in der rechten Bildhälfte (seine Kante wechselt von
@@ -486,7 +489,7 @@ function saumProbe() {
                 r._loopRender(1000);
             }
             setzeKamera();
-            const { u8 } = await window.__ausgabeAufnahme(W, H);
+            const { u8 } = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
             return u8;
         };
         r._loopRender = function () {
@@ -663,7 +666,7 @@ function buehne(nFrames) {
             // Die Bild-Mitte aus dem Ausgabe-Pfad (was der Spieler sieht): 32×24, das Mittel der vier Mitten-Zellen.
             try {
                 setzeKamera();
-                const { u8 } = await window.__ausgabeAufnahme(32, 24);
+                const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 const px = (x, y) => [0, 1, 2].map((c) => u8[(y * 32 + x) * 4 + c]);
                 const m = [px(15, 11), px(16, 11), px(15, 12), px(16, 12)];
                 s.mitte = [0, 1, 2].map((c) => Math.round(m.reduce((a, p) => a + p[c], 0) / 4));
@@ -759,7 +762,7 @@ function buehne(nFrames) {
                     frame();
                 }
                 setzeKamera();
-                const { u8 } = await window.__ausgabeAufnahme(32, 24);
+                const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 const s = [0, 0, 0];
                 let n = 0;
                 for (let y = 17; y < 24; y++)
@@ -813,7 +816,7 @@ function buehne(nFrames) {
                 st._godrayScale = skala;
                 blickSonne();
                 blickSonne();
-                const { u8 } = await window.__ausgabeAufnahme(64, 48);
+                const { u8 } = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
                 return u8;
             };
             // der Anteil der Pixel, die sich in einem Kanal um mindestens 4/255 ändern
@@ -858,7 +861,7 @@ function buehne(nFrames) {
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
     );
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     const seitenFehler = [];

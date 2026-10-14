@@ -48,23 +48,13 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 const errs = [];
 function check(name, ok, detail) {
@@ -141,6 +131,56 @@ function ladeschirmVerdict(m) {
         else if (th.omnibox) out.push("hinter dem Ladeschirm öffnet Strg+K die Omnibox");
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
+    // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): während der Vorrat läuft (`_foundryPrefetchLibrary`), wartet das
+    // erste Weltbild auf nichts, was er bestellt — weder das Tor (`_weltbildFehlt`) noch eine neue Streu-Region (sie wartet
+    // nur auf IHR Asset), und er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst).
+    const v = m.vorrat;
+    // ohne Phase im Stamm nennt die Linse das zuerst (am Vor-Stand sagte der Merker nur „an" — die Probe sieht ihn nicht anlaufen)
+    if (v && !v.PH)
+        out.push("der Vorrat nennt keine Phase (`VORRAT_PHASE` fehlt im Stamm) — die Kalt-Zeile liest „läuft\", wo er wartet");
+    if (!v) out.push("der Vorrat: keine Probe (Vorbedingung)");
+    else if (v.fehler) out.push(`der Vorrat: ${v.fehler} (Vorbedingung)`);
+    else {
+        const liste = (v.ohneLeser || []).join(", ") || "keine";
+        if (v.fehltNeu && v.fehltNeu.length)
+            out.push(
+                `während der Vorrat läuft, wartet das erste Weltbild („${v.fehltNeu.join(" · ")}") auf Aufträge ohne Leser des ` +
+                    `ersten Frames: ${liste}`
+            );
+        if (v.karten > 0)
+            out.push(
+                `der Vorrat bestellt ${v.karten} Karten nach der Buchgröße (${(v.kartenBsp || []).join(", ")}), das erste Weltbild ` +
+                    "wartet auf jede (die Karten-Schlange) — die Karte bestellt ihr Leser"
+            );
+        if (v.vorBild && v.vorBild.length)
+            out.push(
+                `vor dem ersten Weltbild bestellt der Vorrat ${v.vorBild.length} Aufträge ohne Leser des ersten Frames ` +
+                    `(${v.vorBild.slice(0, 4).join(", ")}${v.vorBild.length > 4 ? ", …" : ""}) — die Leser warten in seiner Schlange`
+            );
+        // DER MERKER NENNT DIE PHASE (K30-N1): solange der Vorrat auf das erste Bild wartet, sagt `f._vorrat` „wartet auf das
+        // erste Bild", jede Bestellung trägt „bestellt" — die Kalt-Zeile druckt ihn wörtlich (bis K30-N1: `_prefetching` true ab
+        // dem Worker-Start, „Vorrat läuft" an der Radeon 8–44 s, die erste Bestellung bei 45 s).
+        const PH = v.PH;
+        if (PH) {
+            if (v.phaseStart !== PH.wartet || v.phaseVorBild !== PH.wartet)
+                out.push(
+                    `solange der Vorrat auf das erste Bild wartet, sagt sein Merker \`f._vorrat\` ${JSON.stringify(v.phaseVorBild)} ` +
+                        `(beim Start ${JSON.stringify(v.phaseStart)}) statt „${PH.wartet}" — die Kalt-Zeile liest ihn`
+                );
+            const falsch = (v.phaseBestellung || []).filter((z) => !z.endsWith(JSON.stringify(PH.bestellt)));
+            if (falsch.length)
+                out.push(`der Vorrat bestellt, ohne dass sein Merker „${PH.bestellt}" sagt: ${falsch.slice(0, 3).join(", ")}`);
+        }
+        if (v.ende !== true) out.push("der Vorrat endet nicht (`f._vorrat` bleibt an)");
+        else if (!(v.nachBild > 0) && !(v.vorBild && v.vorBild.length))
+            out.push("der Vorrat bestellt nie — die Wagen und die Siedlung bleiben kalt");
+        if (!v.streu) out.push("die Streu-Region unter dem Vorrat: keine Probe (Vorbedingung)");
+        else if (v.streu.aufgeschoben)
+            out.push(
+                `während der Vorrat läuft, wartet eine neue Streu-Region auf ihn (leer aufgeschoben, ${v.streu.zellen} Zellen) statt ` +
+                    `auf ihr Asset — das erste Weltbild wartet mit ihr auf: ${liste}`
+            );
+    }
     return out;
 }
 function kreuzVerdict(m) {
@@ -358,17 +398,7 @@ function wand(src, html) {
     ];
 }
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── DIE PROBEN IN DER SEITE (r = die Welt). ──
 async function probe(arg) {
@@ -523,8 +553,100 @@ async function probe(arg) {
                     : null;
                 m.weichtGanz = { hidden: ls.hidden, display: cs.display, animationen: laufen };
             }
+            // (10) DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30, Grok R11: kalt 25–30 s, das Tor wartete auf
+            // `f._prefetching`): der Vorrat läuft noch einmal (die echte Methode), jede seiner Bestellungen beim Namen und mit
+            // der Phase, die sein Merker `f._vorrat` dabei nennt (die Kalt-Zeile druckt sie: bis K30-N1 las sie „Vorrat läuft",
+            // solange er auf das Bild wartete); während er läuft, fragt die Probe das Tor und baut eine neue Streu-Region mit
+            // echtem Renderer-Zweig (Scheibe 0 — nur die Weiche, kein Bau).
+            {
+                const v = { ohneLeser: [], karten: 0, kartenBsp: [], phaseBestellung: [] };
+                m.vorrat = v;
+                const f = r._foundry;
+                if (!f || !f.ready || typeof r._foundryPrefetchLibrary !== "function") v.fehler = "keine lebende Foundry";
+                else {
+                    const P = Object.getPrototypeOf(r);
+                    const alt = {};
+                    const wickle = (name, fn) => {
+                        alt[name] = r[name];
+                        r[name] = function (...a) {
+                            fn(a);
+                            return P[name].apply(this, a);
+                        };
+                    };
+                    v.PH = r.constructor.VORRAT_PHASE || null;
+                    const phase = (wer) => v.phaseBestellung.push(`${wer}: ${JSON.stringify(f._vorrat)}`);
+                    wickle("_foundryVorrat", (a) => {
+                        v.ohneLeser.push(`Wagen ${a[0]}|${a[1]}|lod${a[2]}`);
+                        phase(`Wagen ${a[0]}|${a[1]}`);
+                    });
+                    wickle("_foundryRequestSettlement", () => {
+                        v.ohneLeser.push("Siedlungs-Probe");
+                        phase("Siedlungs-Probe");
+                    });
+                    wickle("_foundryEnsureImpostorRecord", (a) => {
+                        v.karten++;
+                        if (v.kartenBsp.length < 4) v.kartenBsp.push(`${a[0]}|${a[1]}`);
+                    });
+                    const vor = r._weltbildFehlt();
+                    f._vorrat = false;
+                    let lauf = null;
+                    // der Vorrat startet in der Ankunft: das erste Weltbild steht noch nicht
+                    const merkDa = st._weltbildDa;
+                    st._weltbildDa = 0;
+                    try {
+                        lauf = r._foundryPrefetchLibrary();
+                        v.laeuft = !!f._vorrat;
+                        v.phaseStart = f._vorrat;
+                        v.fehltNeu = r._weltbildFehlt().filter((z) => !vor.includes(z));
+                        // die Streu-Weiche: eine neue Region fern jeder bestehenden, Scheibe mit abgelaufener Frist
+                        const SC = r.constructor.SCATTER;
+                        const p = st.playerMesh.position;
+                        const rx = Math.floor(p.x / SC.regionM) + 40;
+                        const rz = Math.floor(p.z / SC.regionM) + 40;
+                        const key = `${rx},${rz}`;
+                        const map = st.scatterRegions || r._ensureScatterRegionMap();
+                        const merkH = st.renderer._isHeadlessNull;
+                        if (!map.has(key)) {
+                            st.renderer._isHeadlessNull = false;
+                            try {
+                                const reg = r._scatterRegion(rx, rz, p, 0);
+                                v.streu = {
+                                    aufgeschoben: !!(reg && reg._deferredFoundry && !reg._cont),
+                                    zellen: reg && reg.cells ? reg.cells.length : -1,
+                                };
+                            } finally {
+                                st.renderer._isHeadlessNull = merkH;
+                                if (map.has(key)) r._disposeScatterRegion(key);
+                                map.delete(key);
+                            }
+                        }
+                        // was er bestellt, solange das erste Weltbild fehlt (die Boden-Arten liegen schon im Speicher, Wagen
+                        // und Siedlung folgen ihnen im nächsten Mikro-Takt) — dann steht das Bild, er wärmt zu Ende
+                        await sleep(600);
+                        const nVor = v.ohneLeser.length;
+                        v.phaseVorBild = f._vorrat;
+                        v.vorBild = v.ohneLeser.concat(v.karten ? [`${v.karten} Karten`] : []);
+                        // das Bild steht über den EINEN Schreiber (sein Ereignis weckt den Vorrat), dann die Zeit der Ankunft zurück
+                        r._weltbildSteht();
+                        if (merkDa) st._weltbildDa = merkDa;
+                        if (lauf) await Promise.race([lauf, sleep(60000)]);
+                        v.nachBild = v.ohneLeser.length - nVor;
+                    } finally {
+                        if (!st._weltbildDa) {
+                            r._weltbildSteht();
+                            if (merkDa) st._weltbildDa = merkDa;
+                        }
+                        for (const k of Object.keys(alt)) {
+                            if (alt[k] === P[k]) delete r[k];
+                            else r[k] = alt[k];
+                        }
+                    }
+                    v.ende = f._vorrat === false;
+                    if (!v.laeuft) v.fehler = "der Vorrat lief nicht an (`f._vorrat` blieb aus)";
+                }
+            }
             await sleep(800);
-            if (!st._weltbildDa) st._weltbildDa = performance.now();
+            if (!st._weltbildDa) r._weltbildSteht();
             ls.classList.add("weg");
         } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
         m.gestartet = true;
@@ -684,9 +806,11 @@ async function probe(arg) {
             m.baum = baum.type;
             m.weltSkala = +r._foundryWorldScaleMatrix(r._foundryPresetForEntry(baum)).elements[0].toFixed(3);
             // die Skala des Stamm-Blockers gegen die Vorlage: die Breiten-Summe der Blocker-Boxen gegen dieselben festen Teile
-            // im Vorlagen-Maß (`_blockerComputePartAABB` ohne Welt-Skala)
+            // im Vorlagen-Maß (`_blockerComputePartAABB` ohne Welt-Skala). Dieselben Teile wie der Blocker (K20): der gefühlte
+            // Baum ist das Skelett seiner Gestalt (`_baumGestaltTeile`), der Bauplan nur, wo das Studio keinen Baum zeichnet —
+            // gegen den Bauplan gemessen, las die Ankunft am Kiefer-Individuum der Kern-Landform × 3,589 statt × 3,977.
             const bp = st.blueprints[baum.type];
-            const vorlage = (bp.parts || [])
+            const vorlage = (r._baumGestaltTeile(baum) || bp.parts || [])
                 .filter((p) => r._isPartSolid(p))
                 .map((p) => r._blockerComputePartAABB(baum, p))
                 .filter(Boolean);
@@ -1270,11 +1394,12 @@ async function probe(arg) {
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
             st.yaw = best.yaw;
         }
-        // DER ERSATZ-ORT: ein Slot am Rand der Genesis-Plattform (sein Grundriss reicht 2 m in ihre Scheibe; die Rückseite
-        // des Hauses, lokal +z, zeigt von ihr weg) — sein Ort fällt, ein Ersatz-Ort draußen trägt ihn.
+        // DER ERSATZ-ORT: ein Slot am Rand des Genesis-Platzes (sein Grundriss reicht 2 m in die Lichtung; die Rückseite
+        // des Hauses, lokal +z, zeigt von ihr weg) — sein Ort fällt, ein Ersatz-Ort draußen trägt ihn. Die Lichtung ist seit
+        // K52 der Platz der Scheibe UND des Rings der Tore (`_grundrissVon` der Plattform), nicht mehr die Scheibe allein.
         const f = r._foundry;
         const kultur = Object.keys(f.recipes).find((id) => f.recipes[id] && f.recipes[id].kind === "haus" && st.blueprints["haus_" + id]);
-        const R = (st.blueprints.start_plattform.parts[0].size.x / 2) * (pl.scale || 1);
+        const R = r._grundrissVon(pl).lichtung;
         const HALB = 3;
         const rand = R + HALB - 2;
         const slot = { kultur, x: fx * rand, z: fz * rand, phi: best.yaw, seed: 7, obb: { cx: fx * rand, cz: fz * rand, ex: HALB, ez: HALB } };
@@ -1316,7 +1441,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
@@ -1343,8 +1468,39 @@ async function probe(arg) {
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
+                    vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
+                    [
+                        "der Vorrat stellt sich in der Ankunft vor die Leser (K30)",
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
+                        "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)",
+                    ],
+                    ["der Vorrat stirbt (er wartet ewig)", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt nie"],
+                    ["der Vorrat endet nicht", { vorrat: { ohneLeser: [], karten: 0, fehltNeu: [], vorBild: [], nachBild: 0, ende: false, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat endet nicht"],
+                    [
+                        "das Tor wartet auf den Vorrat (K30, Grok R11: kalt 25–30 s)",
+                        { vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Wagen gt|7|lod0", "Siedlungs-Probe"], karten: 0, fehltNeu: ["die Werkstatt backt vor"], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
+                        "während der Vorrat läuft, wartet das erste Weltbild („die Werkstatt backt vor\") auf Aufträge ohne Leser des ersten Frames: Wagen gt|1|lod0",
+                    ],
+                    [
+                        "die Streu wartet auf den Vorrat statt auf ihr Asset (K30, Radeon: 4 Wald-Stücke 15 s nach dem Vorrat)",
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], streu: { aufgeschoben: true, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } },
+                        "während der Vorrat läuft, wartet eine neue Streu-Region auf ihn",
+                    ],
+                    ["der Vorrat bestellt Karten nach der Buchgröße (K30)", { vorrat: { ohneLeser: [], karten: 14, kartenBsp: ["eiche|1"], fehltNeu: [], streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" } }, "der Vorrat bestellt 14 Karten"],
+                    [
+                        "der Merker sagt „an“, während der Vorrat auf das Bild wartet (K30-N1, Radeon: „Vorrat läuft“ 8–44 s, die erste Bestellung bei 45 s)",
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: true, phaseVorBild: true, phaseBestellung: ["Siedlungs-Probe: true"] } },
+                        "solange der Vorrat auf das erste Bild wartet, sagt sein Merker `f._vorrat` true",
+                    ],
+                    [
+                        "der Vorrat bestellt in der Warte-Phase (K30-N1)",
+                        { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Siedlungs-Probe: "wartet auf das erste Bild"'] } },
+                        "der Vorrat bestellt, ohne dass sein Merker „bestellt\" sagt: Siedlungs-Probe",
+                    ],
+                    ["der Vorrat ohne Phase (K30-N1)", { vorrat: { ohneLeser: ["Siedlungs-Probe"], karten: 0, fehltNeu: [], vorBild: [], nachBild: 1, ende: true, streu: { aufgeschoben: false, zellen: 0 } } }, "der Vorrat nennt keine Phase"],
+                    ["der Vorrat ohne Probe", { vorrat: undefined }, "der Vorrat: keine Probe"],
                     [
                         "die Streu-Region fehlt nach dem Boot (Befund 09.10., CI 37942425121)",
                         {
@@ -1591,7 +1747,7 @@ async function probe(arg) {
     for (const [name, ok, detail] of wand(quelle, html)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {

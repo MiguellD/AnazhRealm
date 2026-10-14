@@ -11,10 +11,10 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
-const puppeteer = require("puppeteer");
 
 // Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
 // je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
@@ -150,18 +150,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
     const saveServer = await startProc("save-server.js", /läuft/);
     const signaling = await startProc("signaling-server.js", /lauscht/);
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--autoplay-policy=no-user-gesture-required",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
 
     try {
         const pageA = await browser.newPage();
@@ -271,6 +260,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             // das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste (`_bauPhantomNeu`) und entsorgt
             // das alte über `_disposeSoulGroup` (Integration V18.536)
             const phantom = new window.THREE.Group();
+            // BÜHNE: ein Phantom-Objekt ohne Boden (Entsorgungs-Mechanik)
             phantom.position.set(44, 6, -44);
             r.state.buildMode = {
                 active: true,
@@ -581,7 +571,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         check("W17 B-Relay: beide Sub-Welt-iframes haben einen Shim-WebSocket geöffnet", true);
         // A treibt ein ws-send (harness-getrieben — robust gegen die Tab-
         // Drosselung des Hintergrund-iframes; den Shim-Sende-Pfad selbst
-        // beweist smoke-shim.cjs). _portalNetReceive macht daraus einen
+        // beweist die Sonde smoke-shim, git-Archiv). _portalNetReceive macht daraus einen
         // subworld-net-Broadcast übers Mesh.
         await pageA.evaluate(() => {
             window.anazhRealm._portalNetReceive({

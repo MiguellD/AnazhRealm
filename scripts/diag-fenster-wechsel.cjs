@@ -24,35 +24,14 @@
 //       beim Namen zeigen. Dass ein Größenwechsel keinen anderen Retter hat, hält K in der Quelle.
 //
 //   node scripts/diag-fenster-wechsel.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.FENSTER_PORT || 4574);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 let ok = true;
 const check = (name, cond, detail) => {
@@ -207,7 +186,7 @@ async function fensterSchritt(o) {
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     console.log("=== K — kein Zwilling im resize-Handler (Quelle) ===");
-    const koerper = resizeKoerper(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const koerper = resizeKoerper(stammLib.text(root));
     check(
         "K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)",
         koerper !== null &&
@@ -218,7 +197,9 @@ async function fensterSchritt(o) {
     );
     console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    // Erwartet: der Selbsttest ES schaltet den Wächter ab und MUSS „Destroyed texture … szene:tiefenabbild" ernten — diese
+    // Meldung richtet die Linse selbst (TOT, unten, je Phase gezählt); jede andere Meldung bleibt ROT.
+    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: /Destroyed texture \[Texture "szene:tiefenabbild"\]/ });
     const seitenFehler = [];
     const seiteAmUfer = async (b) => {
         const p = await b.newPage();

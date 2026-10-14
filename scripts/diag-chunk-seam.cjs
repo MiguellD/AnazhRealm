@@ -25,53 +25,19 @@
 // Sign-off (§4 T0): der Schöpfer entscheidet aus A/B/C, welche Naht schwerer wiegt → priorisiert
 // T1 (zeitlich) vs T2 (räumlich). Dies ist eine MESSUNG (informativ), kein Pass/Fail-Gate:
 // Exit 0 bei erfolgreicher Messung, Exit 1 nur bei Harness-Versagen (keine Chunks gestreamt).
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
+    // der Stoff-Zeuge (K22): ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
+    const stoffBrueche = [];
+    page.on("console", (m) => {
+        if (/\[ERROR\] STOFF:/.test(m.text())) stoffBrueche.push(m.text());
+    });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
@@ -495,13 +461,15 @@ const server = http.createServer((req, res) => {
             if (!hasCoarse || !tris.length || !A.tgt || !A.w) continue;
             let anyMorph = false;
             for (let v = 0; v < A.pos.count; v++) {
-                const w = A.w.getX(v);
-                if (w <= 0.01) continue; // nur gemorphte Boundary-Vertices
+                // nur Boundary-Vertices mit Naht-Morph (K51-2: `aMorphWeight` trägt den Morph-Code 2 · Stufe + Naht); gezeichnet
+                // wird mit dem ganzen Faktor (Naht + Stufe − Naht · Stufe, `_morphFaktor`)
+                if (r._morphNaht(A.w.getX(v)) <= 0.01) continue;
                 morphedVerts++;
                 anyMorph = true;
                 const px = A.pos.getX(v),
                     py = A.pos.getY(v),
                     pz = A.pos.getZ(v);
+                const w = r._morphFaktor(A.w.getX(v), px, pz);
                 const tx = A.tgt.getX(v),
                     ty = A.tgt.getY(v),
                     tz = A.tgt.getZ(v);
@@ -540,7 +508,6 @@ const server = http.createServer((req, res) => {
             hiW,
             hiWonSurfPct: hiW ? +((100 * hiWonSurf) / hiW).toFixed(1) : 0,
             hiWmeanGap: hiW ? +(hiWsumGap / hiW).toFixed(3) : 0,
-            morphError: window.__terrainMorphError || null,
         };
     });
 
@@ -604,8 +571,8 @@ const server = http.createServer((req, res) => {
                 const span3 = Math.hypot(tx - px, ty - py, tz - pz);
                 if (span3 < 0.001) continue; // kein Target (kein grober Nachbar griff)
                 borderVerts++;
-                const wv = w.getX(v);
-                if (wv === 0) capped++;
+                const wv = r._morphFaktor(w.getX(v), px, pz);
+                if (r._morphNaht(w.getX(v)) === 0) capped++;
                 // RENDERED Position (Shader: pos + (tgt-pos)·geomorph·w, geomorph=1)
                 const rx = px + (tx - px) * wv,
                     ry = py + (ty - py) * wv,
@@ -797,7 +764,8 @@ const server = http.createServer((req, res) => {
     }
 
     console.log("── D · T2-GEOMORPH — schliesst der Morph die Cross-LOD-Naht? ──");
-    if (morph.morphError) console.log(`   ⚠ Morph-Material-Fehler: ${morph.morphError}`);
+    for (const b of stoffBrueche.filter((t) => /Geomorph/.test(t)))
+        console.log(`   ⚠ Morph-Material-Fehler: ${b.slice(0, 200)}`);
     if (morph.crossPairs === 0) {
         console.log("   (keine Cross-LOD-Grenze gestreamt)\n");
     } else if (morph.morphedVerts === 0) {
@@ -898,7 +866,8 @@ const server = http.createServer((req, res) => {
     // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.
-        const sharedPct = spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
+        const sharedPct =
+            spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
         const crossPairs = spatial.cross ? spatial.cross.pairs : 0;
         const SAME_BASELINE = 45; // V18.371-Baseline ~50% (G1 hebt das auf ~100%)
         let bad = false;

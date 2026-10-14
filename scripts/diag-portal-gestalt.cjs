@@ -30,33 +30,13 @@
 //     Spawn baut den klassischen Part-Group-Mesh: entry.mesh non-null, instFoundry false;
 //     blockerAABBs relativ IDENTISCH zum Studio-Spawn = die Substanz ist regime-frei).
 //   node scripts/diag-portal-gestalt.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PORTAL_GESTALT_PORT || 4437);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -110,7 +90,7 @@ function deriveGestalt(srcNC) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const anazhNC = stripComments(anazhSrc);
     const GESTALT = deriveGestalt(anazhNC);
 
@@ -156,11 +136,7 @@ function deriveGestalt(srcNC) {
 
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 300000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -282,6 +258,8 @@ function deriveGestalt(srcNC) {
         // nur in die Kaskaden und zählt nicht gegen die Draws der Stufe 0 (das Muster diag-sippen-wirt: ohne shadowTwin)
         res.c.zwillingSlots = (entry.instSlots || []).filter((s) => /#S$/.test(String(s.key))).length;
         res.c.slotCount = Array.isArray(entry.instSlots) ? entry.instSlots.length - res.c.zwillingSlots : 0;
+        // die Züge: je Gruppe einer — der Hinterflügel zeichnet als Instanz in der Gruppe des Vorderflügels (1310-4)
+        res.c.zuege = new Set((entry.instSlots || []).filter((s) => !/#S$/.test(String(s.key))).map((s) => s.key)).size;
         // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
         // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
         const _rc = r.constructor._studioRenderConfig;
@@ -361,9 +339,9 @@ function deriveGestalt(srcNC) {
     // Merge der Zweit-Kerne) — vorher 124–315 Leaves je Tor, jedes Flügel-Teil eines; jetzt je Flügel × Stoff ein
     // Leaf, der Flügel-Takt (`_tickTorFluegel`) setzt höchstens 8 Matrizen statt bis zu 244.
     check(
-        `C: Tor-Geometrie angekommen auf der Budget-Zeile (instSlots ${outCD.c.slotCount}, 1..${outCD.c.drawBudget} = gate[0].draws)`,
-        outCD.c.slotCount >= 1 && Number.isInteger(outCD.c.drawBudget) && outCD.c.slotCount <= outCD.c.drawBudget,
-        `slots=${outCD.c.slotCount} (+ Wurf-Zwilling ${outCD.c.zwillingSlots}) budget=${outCD.c.drawBudget}`
+        `C: Tor-Geometrie angekommen auf der Budget-Zeile (${outCD.c.zuege} Züge aus ${outCD.c.slotCount} Slots, 1..${outCD.c.drawBudget} = gate[0].draws)`,
+        outCD.c.zuege >= 1 && Number.isInteger(outCD.c.drawBudget) && outCD.c.zuege <= outCD.c.drawBudget,
+        `zuege=${outCD.c.zuege} slots=${outCD.c.slotCount} (+ Wurf-Zwilling ${outCD.c.zwillingSlots}) budget=${outCD.c.drawBudget}`
     );
     check(
         `C: der Flügel-Takt dreht je Flügel × Stoff (${outCD.c.fluegelSlots} Flügel-Slots, 1..8)`,

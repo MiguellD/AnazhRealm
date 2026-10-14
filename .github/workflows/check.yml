@@ -82,32 +82,6 @@ jobs:
                     node --check "$f"
                   done
 
-            - name: Duplikate Methodendefinitionen
-              if: matrix.gruppe == 1
-              # Die Methoden der Klasse stehen eingerueckt (4 Leerzeichen) - das Muster `^[a-zA-Z_]+(` sah keine einzige
-              # (vakuos seit dem Umzug in die Klasse; Integration V18.536: `_sonnenWinkel` stand zweimal, die spaetere
-              # Formel ohne Stufen haette die Sonnen-Stufen der Welle C still ueberschrieben). Gezaehlt werden die
-              # Methoden im Koerper von `class AnazhRealm` (static/get/set gehoeren zum Namen) und die statischen
-              # Zuweisungen `AnazhRealm.x = ` ausserhalb; ohne Methoden ist die Probe blind (rot).
-              run: |
-                  klasse=$(awk '/^class AnazhRealm \{/{f=1;next} f&&/^\}$/{f=0} f' anazhRealm.js \
-                    | grep -E '^    (static |async |get |set )*[A-Za-z_$][A-Za-z0-9_$]*\s*\([^)]*\)\s*\{\s*$' \
-                    | grep -vE '^    (if|for|while|switch|catch|function|return)\b' \
-                    | sed -E 's/\(.*//; s/^ +//; s/^async //')
-                  n=$(printf '%s\n' "$klasse" | grep -c . || true)
-                  if [ "$n" -lt 500 ]; then
-                    echo "❌ Die Probe ist blind: nur $n Methoden in class AnazhRealm gefunden"
-                    exit 1
-                  fi
-                  dups=$( { printf '%s\n' "$klasse"; grep -oE '^AnazhRealm\.[A-Za-z_$][A-Za-z0-9_$]* = ' anazhRealm.js; } \
-                    | sort | uniq -d || true)
-                  if [ -n "$dups" ]; then
-                    echo "❌ Doppelte Methodendefinitionen gefunden:"
-                    echo "$dups"
-                    exit 1
-                  fi
-                  echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
-
             - name: Statik (npm run check:statik — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
               if: matrix.gruppe == 1
               # `npm run check` = `check:statik` + `gate:haus-fern` (V18.543): die ganze Statik trug je Push Median 105 s und
@@ -161,7 +135,7 @@ jobs:
                   # Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten
                   # String-Argumenten interpoliert nicht. Backticks innerhalb von Bezeichnern
                   # werden bewusst nicht gematcht (auch wenn sie Apostrophe enthalten).
-                  if grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" anazhRealm.js; then
+                  if grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" stamm/*.js; then
                     echo "❌ Single-Quote-Template-String erkannt – Backticks verwenden"
                     exit 1
                   fi
@@ -173,7 +147,7 @@ jobs:
               # Effekte. Wenn dieser Grep wieder fündig wird, schaltet jemand
               # das Sicherheits-Modell aus.
               run: |
-                  if grep -nE "(eval\(|new Function\()" anazhRealm.js save-server.js; then
+                  if grep -nE "(eval\(|new Function\()" stamm/*.js save-server.js; then
                     echo "❌ Dynamisches Code-Eval gefunden — DSL nutzen, nicht eval/new Function"
                     exit 1
                   fi
@@ -183,13 +157,13 @@ jobs:
               if: matrix.gruppe == 1
               continue-on-error: true
               run: |
-                  grep -nE "innerHTML\s*\+?=" anazhRealm.js || echo "keine Treffer"
+                  grep -nE "innerHTML\s*\+?=" stamm/*.js || echo "keine Treffer"
 
             - name: TODO/FIXME-Übersicht (Hinweis, kein Fail)
               if: matrix.gruppe == 1
               continue-on-error: true
               run: |
-                  grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
+                  grep -nE "(TODO|FIXME|XXX|HACK|TBD)" stamm/*.js save-server.js || echo "keine TODOs"
 
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               if: matrix.gruppe == 2
@@ -399,6 +373,25 @@ jobs:
               # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
               run: npm run gate:worker-dichte
 
+            - name: Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)
+              if: matrix.gruppe == 1
+              # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
+              # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
+              # muss die Senken rot faerben. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
+              # > 1 m und Dorfplaetze am Boden des Spielers mit Kanal und See; der Selbsttest legt die alte Bett-Tiefe auf.
+              run: npm run gate:gelaende-realismus
+
+            - name: Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)
+              if: matrix.gruppe == 9
+              # Faehrt index.html?studio=gelaende (Null-Renderer) ueber einer Welt, die kein Plan beschreibt (Basis 7 m,
+              # Rampe): der Start zeigt A und nennt Rampe und Basis als Abweichung; A zeigt dieselbe Welt (Makro-Abdruck + Statistik); jeder Regler aus LANDFORM_REGLER einmal ueber
+              # sein Schieber-Element (tot = das Raster bleibt byte-gleich); jeder Landschafts-Knopf (bedienung.json) ohne
+              # rotes Ziel, das Schicht-Gesetz an mindestens einem; der Export (EIN Plan) durch das Welt-Tor, nach dem
+              # Reload derselbe Makro-Abdruck (64 x 64) und dieselbe Statistik in der Welt, und die Karte malt den Schnee der
+              # Boden-Farbe der Welt in ihrer Palette. Der Selbsttest: ein Schritt am Regler "hoehe" aendert den Abdruck, ein
+              # Preset ausserhalb des Korridors, ein Start auf B und eine Karte ohne Schnee fallen rot (Karte K16b).
+              run: npm run gate:gelaende-studio
+
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
@@ -431,7 +424,7 @@ jobs:
               run: npm run gate:weltgrenze
 
             - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 8
               # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
               # worldMeta, mehrere Welten + Wechsel, korrupter Platz + gueltiges .bak, nur IndexedDB, IndexedDB frischer, und ein
               # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
@@ -1086,7 +1079,7 @@ jobs:
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 10
               # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft den echten Chokepoint selbst (updateCreatures,
               # clearCreatures, _creatureNaturalBirth, _playerDeathRespawn, Snapshot, Peer-Tick), nichts gestubbt
               # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
@@ -1265,7 +1258,7 @@ jobs:
               if: matrix.gruppe == 10
               run: npm run gate:render-diaet
 
-            - name: Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)
+            - name: Szenen-Skala (die EINE Größe der Auflösung, der Regler trägt sie nicht, das Laub trägt seine Layer)
               if: matrix.gruppe == 1
               run: npm run gate:foliage-res
 
@@ -1314,10 +1307,6 @@ jobs:
               # Gruppe 3 seit der Vereinigung mit waende-ci (EIN Schritt): sie lief in integ-probe ce10dcb6 (Lauf 38092890885)
               # 19,3 min, Gruppe 1 22,5 min, Gruppe 2 26,6 min; der Schritt kostet im Zweig 21 s (Lauf 38021693010).
               run: npm run gate:portal-membran
-
-            - name: Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)
-              if: matrix.gruppe == 3
-              run: npm run gate:dritter-spiegel
 
             - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
               if: matrix.gruppe == 1

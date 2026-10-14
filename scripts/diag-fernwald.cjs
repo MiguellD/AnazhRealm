@@ -24,39 +24,19 @@
 //               (kein Abbau, kein Neubau, kein Takt ohne Gestalt), draußen die Karte allein — kein Pop am Radius.
 //   D2 RIESE    eine Eiche mit Sichthöhe 110 m (Band 134–270 m, jenseits jedes Radius): im Band trägt sie ihren Partner
 //               (nicht voll gestempelt), jenseits die Karte allein, zurück wieder das Band — kein Takt ohne Gestalt.
+//   E STAND     die Gestalt des Orts (Solitär/Bestand) merkt sich erst nach der Wasser-Wahrheit ihrer Kachel (K20).
+//   F GRUNDRISS ein Haus über dem einzigen stehenden Nachbarn einer Eiche macht sie zum Solitär, gemerkt wie frisch (K20).
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) der alte Weg (`_archKartenPreset` → null: jenseits der Mesh-Zone
 //               geräumt) macht A und D rot; (2) ein injizierter Feld-Satz an einem Baum macht B rot mit Namen;
-//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot.
+//               (3) kein Band jenseits des Radius (die Zonen-Klemme bis 05.10.) — D2 rot; (4) ein Gedächtnis mit
+//               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -66,11 +46,7 @@ function check(name, ok, detail) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -104,6 +80,182 @@ function check(name, ok, detail) {
         }
         res.buch = !!(f && f.ready);
         if (!res.buch) return res;
+        // E DER STAND DES WALD-GESETZES (K20): die Gestalt des Orts (Solitär oder Bestand) ist eine Antwort des Walds, und der
+        // Wald wächst aus der Wasser-Wahrheit seines Orts (Erosion, Flüsse, Seen der Hydro-Kachel). Ein Raster gesetzter Eichen
+        // in einer Kachel, die noch nicht steht (der Zweit-Boot fragt den gespeicherten Baum vor dem Spieler-Takt), fragt
+        // seine Gestalt; dann kommt der Spieler (die Kachel steht), und jede gemerkte Gestalt muss die aus dem Nichts
+        // gefragte sein (alle Gedächtnisse des Walds geleert). Vor dem Worldgen (keine Hydrosphäre) wartet die Gestalt (null)
+        // und wird nicht gemerkt.
+        // DER ORT KOMMT AUS DER WELT (Integration K20 auf K16): die Probe geht die Mitten der Hydro-Kacheln in Ringen um den
+        // Ursprung (Kanten-Länge aus HYDROSPHERE.regionSize), nimmt nur Kacheln ohne Wahrheit und prüft jede ganz (vor der
+        // Wahrheit gefragt, dann die Wahrheit, gemerkt gegen frisch — jeder Täter jeder geprüften Kachel zählt); sie bleibt an
+        // der ersten Kachel stehen, die freie UND gebundene Eichen trägt und eine Eiche im Bestand mit genau EINEM stehenden
+        // Nachbarn (die Probe von F). Die Tabelle der alten Welt (vier Kachel-Mitten) fand in der Landform des Kerns nur
+        // geschlossenen Wald: 0 von 64 frei, F ohne Probe.
+        {
+            const kachelVon = (x, z) => globalThis.__gelaendeCore.kachelSchluessel(r._gelaende(), x, z);
+            const size = AR.HYDROSPHERE.regionSize;
+            const orte = [];
+            for (let k = 1; k <= 3; k++)
+                for (let rx = -k; rx <= k; rx++)
+                    for (let rz = -k; rz <= k; rz++)
+                        if (Math.max(Math.abs(rx), Math.abs(rz)) === k) orte.push([rx * size, rz * size]);
+            const V = r._foundryGestalten("eiche");
+            const FS = globalThis.__phytoCore.FREISTAND;
+            const CELL = AR.FOREST.cell;
+            const kr = AR.FOREST.crown.baum_eiche;
+            const frischAlle = (proben) => {
+                r._forestDartMemo = null; // alle Gedächtnisse des Walds fort: die Antwort aus dem Nichts
+                r._ortSame = null; // das EINE Gedächtnis der Gestalt des Orts (`_ortGestaltSame`)
+                return proben.map((e) => r._foundryGestaltFor(e, "eiche"));
+            };
+            // der Eintrag einer Eiche am Ort (x, z) mit Same s im Gedächtnis — es liegt in Eimern (`ORT_SAME_EIMER`, K51-5)
+            const ortEintrag = (x, z, s) => {
+                const M = r._ortSame;
+                const eimer = M && M.get(Math.floor(x / AR.ORT_SAME_EIMER) + "," + Math.floor(z / AR.ORT_SAME_EIMER));
+                if (!eimer) return null;
+                for (const k of eimer.keys())
+                    if (k.startsWith(x + "," + z + ",") && k.endsWith("," + s + ",eiche")) return { eimer, k };
+                return null;
+            };
+            // die Probe von F an einer Kachel: eine Eiche im Bestand mit genau EINEM stehenden Nachbarn (Abstand > 4 m)
+            const wahlF = (proben) => {
+                frischAlle(proben);
+                const seedInt = r._forestSeedInt();
+                const darts = (gx, gz) => r._forestCellDarts(gx, gz, seedInt);
+                for (const e of proben) {
+                    if (r._foundryGestaltFor(e, "eiche") === V) continue;
+                    const gx = Math.floor(e.position.x / CELL);
+                    const gz = Math.floor(e.position.z / CELL);
+                    const nah = [];
+                    for (let ax = -4; ax <= 4; ax++)
+                        for (let az = -4; az <= 4; az++)
+                            for (const o of darts(gx + ax, gz + az)) {
+                                const d = Math.hypot(o.x - e.position.x, o.z - e.position.z);
+                                if (d < 1e-3 || d >= FS.abstand * (kr + o.T)) continue;
+                                if (r._forestDartSteht(o, gx + ax, gz + az, darts)) nah.push({ o, d });
+                            }
+                    if (nah.length === 1 && nah[0].d > 4) return { e, o: nah[0].o };
+                }
+                return null;
+            };
+            const taeter = [];
+            let geprueft = 0;
+            let wahl = null;
+            let gewaehlt = null;
+            const t0 = performance.now();
+            for (const [KX, KZ] of orte) {
+                if (st.hydroTiles && st.hydroTiles.has(kachelVon(KX, KZ))) continue;
+                geprueft++;
+                const proben = [];
+                for (let i = 0; i < 64; i++) {
+                    const x = KX + ((i % 8) - 3.5) * 30;
+                    const z = KZ + (Math.floor(i / 8) - 3.5) * 30;
+                    proben.push({
+                        type: "baum_eiche",
+                        position: { x, y: 0, z },
+                        seed: Math.imul(i + 1, 0x9e3779b1) >>> 0,
+                        scale: 1,
+                    });
+                }
+                for (const e of proben) r._foundryGestaltFor(e, "eiche");
+                r._ensureHydroTilesAround(KX, KZ, 400); // der Spieler kommt: die Kachel steht
+                const alt = proben.map((e) => r._foundryGestaltFor(e, "eiche"));
+                const frisch = frischAlle(proben);
+                proben.forEach((e, i) => {
+                    if (alt[i] !== frisch[i])
+                        taeter.push(`Eiche (${e.position.x}, ${e.position.z}): Gestalt ${alt[i]} statt ${frisch[i]}`);
+                });
+                const frei = frisch.filter((g) => g === V).length;
+                if (!(frei >= 1 && frei < proben.length)) continue;
+                wahl = wahlF(proben);
+                if (!wahl) continue;
+                gewaehlt = { KX, KZ, proben, frei };
+                break;
+            }
+            res.E = { kachel: gewaehlt ? kachelVon(gewaehlt.KX, gewaehlt.KZ) : null, geprueft, taeter };
+            if (gewaehlt) {
+                const { KX, KZ, proben } = gewaehlt;
+                // vor dem Worldgen: die Gestalt wartet und wird nicht gemerkt
+                const e0 = { type: "baum_eiche", position: { x: KX, y: 0, z: KZ }, seed: 7, scale: 1 };
+                const h = st.hydrosphere;
+                let vorWelt;
+                st.hydrosphere = null;
+                try {
+                    vorWelt = {
+                        gestalt: r._foundryGestaltFor(e0, "eiche"),
+                        gemerkt: !!ortEintrag(KX, KZ, 7),
+                    };
+                } catch (err) {
+                    vorWelt = { fehler: String((err && err.message) || err).split("\n")[0] };
+                } finally {
+                    st.hydrosphere = h;
+                }
+                // Selbsttest: ein Gedächtnis am gültigen Stand mit gekippter Gestalt muss beim Namen feuern
+                const p0 = proben[0];
+                const g0 = r._foundryGestaltFor(p0, "eiche");
+                const k0 = ortEintrag(p0.position.x, p0.position.z, p0.seed);
+                if (k0)
+                    k0.eimer.set(
+                        k0.k,
+                        r._foundryGestaltSame(p0.seed, "eiche", () => g0 !== V)
+                    );
+                const sAlt = r._foundryGestaltFor(p0, "eiche");
+                const sFrisch = frischAlle(proben)[0];
+                Object.assign(res.E, {
+                    n: proben.length,
+                    frei: gewaehlt.frei,
+                    vorWelt,
+                    selbst: sAlt !== sFrisch,
+                    ms: Math.round(performance.now() - t0),
+                });
+            }
+            // F DER GRUNDRISS-STAND (K20, Übergabe 12.10.): ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
+            // Grundriss eines Hauses), steht nie — die Eiche neben ihm steht frei. Eine Eiche im Bestand mit genau EINEM
+            // stehenden Nachbarn bekommt über diesem Nachbarn ein Haus; danach muss ihre Gestalt der Solitär sein, gemerkt
+            // (die Antwort vor dem Haus) wie frisch gefragt.
+            res.E.F = { probe: !!wahl };
+            if (wahl && gewaehlt) {
+                const { proben } = gewaehlt;
+                const { e, o } = wahl;
+                frischAlle(proben);
+                const vorher = r._foundryGestaltFor(e, "eiche");
+                let grund = null;
+                const haus = r.spawnArchitecture(
+                    "haus_alemannisch",
+                    { x: o.x, y: o.surfaceY, z: o.z },
+                    { fundament: { ex: 1.5, ez: 1.5 }, silent: true, absage: (g) => (grund = g) }
+                );
+                const gemerkt = r._foundryGestaltFor(e, "eiche");
+                const frischF = frischAlle(proben)[proben.indexOf(e)];
+                if (haus) r.removeArchitecture(haus);
+                // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
+                // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
+                // die Probe nimmt ihm Fundament, Hülle und Boxen, und der Stand der Grundrisse fällt
+                const ohne = r.spawnArchitecture(
+                    "haus_alemannisch",
+                    { x: o.x, y: o.surfaceY, z: o.z },
+                    { silent: true }
+                );
+                if (ohne) {
+                    ohne.fundament = undefined;
+                    ohne._hausHuelle = undefined;
+                    ohne.blockerAABBs = null;
+                    r._grundrissFaellt();
+                }
+                res.E.F.selbst = !!ohne && r._foundryGestaltFor(e, "eiche") !== V;
+                if (ohne) r.removeArchitecture(ohne);
+                Object.assign(res.E.F, {
+                    ort: `Eiche (${e.position.x}, ${e.position.z}), Nachbar ${o.sp} (${o.x.toFixed(1)}, ${o.z.toFixed(1)})`,
+                    haus: !!haus,
+                    grund,
+                    vorher,
+                    gemerkt,
+                    frisch: frischF,
+                    V,
+                });
+            }
+        }
         let taktFehler = null;
         const tick = async (n) => {
             for (let i = 0; i < n; i++) {
@@ -160,7 +312,8 @@ function check(name, ok, detail) {
                 const karte = jenseitsBand(e, d);
                 if (!karte) riesen++; // sein Band liegt jenseits des Radius: er folgt seiner Kette (D2)
                 let grund = null;
-                if (!r._archIsRendered(e)) grund = r._foundryPlatzBereit(e, p) ? "kalt (Karte bereit)" : "kalt (Karte lädt)";
+                if (!r._archIsRendered(e))
+                    grund = r._foundryPlatzBereit(e, p) ? "kalt (Karte bereit)" : "kalt (Karte lädt)";
                 else if (karte && e._lodLevel !== 2) grund = "Stufe L" + e._lodLevel;
                 else if (karte && partner(e) !== null) grund = "Band-Partner L" + partner(e) + " jenseits des Bands";
                 else if (e._ziegelSlot) grund = "Feld-Satz";
@@ -293,16 +446,22 @@ function check(name, ok, detail) {
             da: r._archIsRendered(e),
         });
         const riese = async () => {
-            const vorbild = karten().find((e) => kartenPreset(e) === "eiche" && r._foundrySichtHoehe("eiche", e, 1) > 0);
+            const vorbild = karten().find(
+                (e) => kartenPreset(e) === "eiche" && r._foundrySichtHoehe("eiche", e, 1) > 0
+            );
             if (!vorbild) return { fehlt: "keine Eiche mit bekannter Höhe" };
             const h0 = r._foundrySichtHoehe("eiche", vorbild, 1);
             const x = pm.x + dBand,
                 z = pm.z;
-            const e = r.spawnArchitecture("baum_eiche", { x, y: r._voxelSurfaceY(x, z), z }, {
-                rotationY: 0,
-                scale: ZIEL_H / h0,
-                seed: vorbild.seed,
-            });
+            const e = r.spawnArchitecture(
+                "baum_eiche",
+                { x, y: r._voxelSurfaceY(x, z), z },
+                {
+                    rotationY: 0,
+                    scale: ZIEL_H / h0,
+                    seed: vorbild.seed,
+                }
+            );
             if (!e) return { fehlt: "Spawn verweigert" };
             riesenEintrag = e;
             const start = { x: pm.x, z: pm.z };
@@ -432,7 +591,8 @@ function check(name, ok, detail) {
     );
     const C = out.C;
     // Die Ränder liegen im Saum und streuen über ihn (mindestens die halbe Breite): der Wald dünnt aus, kein Ring.
-    const saumOk = C.randMin >= out.horizont - C.saum && C.randMax <= out.horizont && C.randMax - C.randMin >= C.saum / 2;
+    const saumOk =
+        C.randMin >= out.horizont - C.saum && C.randMax <= out.horizont && C.randMax - C.randMin >= C.saum / 2;
     check(
         "C HORIZONT",
         C.jenseitsN > 0 && C.jenseits.length === 0 && C.zone.n > 0 && C.zone.ok === C.zone.n && saumOk,
@@ -464,7 +624,8 @@ function check(name, ok, detail) {
     const R2 = out.D2 || { fehlt: "nicht gelaufen" };
     const mitBand = (z) => z && z.da && !z.voll && z.partner !== null && z.partner !== z.stufe;
     const kartAllein = (z) => z && z.da && z.stufe === 2 && z.partner === null;
-    const zs = (z) => (z ? `${z.d} m L${z.stufe}${z.partner !== null ? "+L" + z.partner : ""}${z.voll ? " voll" : ""}` : "—");
+    const zs = (z) =>
+        z ? `${z.d} m L${z.stufe}${z.partner !== null ? "+L" + z.partner : ""}${z.voll ? " voll" : ""}` : "—";
     check(
         "D2 RIESE",
         !R2.fehlt && mitBand(R2.imBand) && kartAllein(R2.jenseitsBand) && mitBand(R2.zurueck) && R2.luecke === 0,
@@ -499,6 +660,40 @@ function check(name, ok, detail) {
         "SELBSTTEST 2 (ein injizierter Satz macht B rot)",
         Array.isArray(out.S2) && out.S2.length === 1,
         out.S2 ? out.S2.join(" | ") : "kein Opfer"
+    );
+    const E = out.E || {};
+    const vw = E.vorWelt || {};
+    check(
+        "E GESTALT-STAND (die Wahrheit vor der Antwort)",
+        !!E.kachel &&
+            E.frei >= 1 &&
+            E.frei < E.n &&
+            E.taeter.length === 0 &&
+            vw.gestalt === null &&
+            vw.gemerkt === false,
+        !E.kachel
+            ? `keine Kachel ohne Wahrheit mit freien und gebundenen Eichen und einer F-Probe (${E.geprueft || 0} geprüft, gemerkt ≠ frisch: ${(E.taeter || []).length}) — keine Probe`
+            : `Kachel ${E.kachel} (die ${E.geprueft}. geprüfte): ${E.n} gesetzte Eichen vor ihrer Wasser-Wahrheit gefragt (${E.frei} frei, ${E.ms} ms), gemerkt ≠ frisch in allen geprüften: ${E.taeter.length}` +
+                  (E.taeter.length ? ` (${E.taeter.slice(0, 4).join(" | ")})` : "") +
+                  ` · vor dem Worldgen: ${vw.fehler ? "Fehler " + vw.fehler : "Gestalt " + vw.gestalt + (vw.gemerkt ? ", gemerkt" : ", nicht gemerkt")}`
+    );
+    const F = E.F || {};
+    check(
+        "F GRUNDRISS-STAND (ein Wurf im Haus steht nie)",
+        F.probe === true && F.haus === true && F.vorher !== F.V && F.gemerkt === F.V && F.frisch === F.V,
+        !F.probe
+            ? "keine Eiche mit genau einem stehenden Nachbarn (keine Probe)"
+            : !F.haus
+              ? `das Haus fiel (${F.grund}) — keine Probe`
+              : `${F.ort}: vor dem Haus Gestalt ${F.vorher}, mit Haus gemerkt ${F.gemerkt} · frisch ${F.frisch} (Solitär ${F.V})` +
+                (F.frisch !== F.V ? " — _forestStehtFrei zählt den Wurf im Grundriss" : "") +
+                (F.gemerkt !== F.frisch ? " — _foundryGestaltFor merkt vor dem Grundriss" : "")
+    );
+    check("SELBSTTEST 5 (ein Haus ohne Grundriss macht F rot)", F.selbst === true, F.probe ? "" : "keine Probe");
+    check(
+        "SELBSTTEST 4 (ein Gedächtnis mit gekippter Gestalt macht E rot)",
+        E.selbst === true,
+        E.kachel ? "" : "keine Probe"
     );
     check("T keine Ausnahme im Spiel-Takt", !out.taktFehler, out.taktFehler || "");
     check("P keine Seiten-Fehler", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));

@@ -41,6 +41,11 @@
 //       (jeder Bereich treu, jeder Abschnitt neu gelegt). Befund (echte GPU, Mess-Wiese): der Wasser-Satz hielt in Ruhe
 //       3,25 MB für 0,33 MB Inhalt, nach drei Wander-Schleifen à 1,2 km der Boden-Satz 24,9 statt 16,4 MB, die Bau-Sätze 12,0
 //       statt 1,3 MB. Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
+//   (n) DER EINE SATZ-STOFF (K43-2) — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
+//       Zeitplan · Klarlack, je Satz-Name und Wurf) EIN Bau-Satz; die Regler (Rauheit · Metall · Deckkraft · Emissiv × Glut-
+//       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs. Befund
+//       (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
+//       im Hauptbild für sieben Bauten. Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
 //       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.
@@ -52,6 +57,10 @@
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+
+// (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
+const STUFEN_SPRUNG_M = 0.1;
 
 // Das Urteil über einen Zensus: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(z) {
@@ -71,12 +80,18 @@ function urteil(z) {
     if (selbst.length)
         v.push(
             `STREU: ${selbst.reduce((a, [, n]) => a + n, 0)} Nah-Streu-Objekte zeichnen selbst (Soll 0, der Streu-Satz ihres ` +
-                `Stoffs) — ${selbst.map(([k, n]) => k + (n > 1 ? "×" + n : "")).slice(0, 4).join(", ")}`
+                `Stoffs) — ${selbst
+                    .map(([k, n]) => k + (n > 1 ? "×" + n : ""))
+                    .slice(0, 4)
+                    .join(", ")}`
         );
     const ss = z.streuSatz || { ohneBereich: [], doppelt: [] };
     if (ss.ohneBereich.length)
-        v.push(`STREU-SATZ: ${ss.ohneBereich.length} Blöcke ohne treuen Bereich — ${ss.ohneBereich.slice(0, 4).join(", ")}`);
-    if (ss.doppelt.length) v.push(`STREU-SATZ: ${ss.doppelt.length} Stoffe in mehr als einem Satz — ${ss.doppelt.join(", ")}`);
+        v.push(
+            `STREU-SATZ: ${ss.ohneBereich.length} Blöcke ohne treuen Bereich — ${ss.ohneBereich.slice(0, 4).join(", ")}`
+        );
+    if (ss.doppelt.length)
+        v.push(`STREU-SATZ: ${ss.doppelt.length} Stoffe in mehr als einem Satz — ${ss.doppelt.join(", ")}`);
     if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
     const fernSumme = Object.values(z.fern).reduce((a, b) => a + b, 0);
     if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
@@ -96,6 +111,63 @@ function urteil(z) {
         v.push(
             `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
         );
+    // (n) DER EINE SATZ-STOFF (K43-2): je Klasse eines Stoffs EIN Bau-Satz, die Regler je Ecke
+    const sst = z.satzStoff;
+    if (sst) {
+        if (sst.zwillinge.length)
+            v.push(
+                `SATZ-STOFF: ${sst.zwillinge.length} Stoff-Klassen zeichnen in mehr als einem Bau-Satz, getrennt nur durch ihre ` +
+                    `Regler (Rauheit · Metall · Deckkraft · Glut) — ${sst.zwillinge.slice(0, 4).join(", ")}`
+            );
+        if (sst.ohneRegler.length)
+            v.push(
+                `SATZ-STOFF: ${sst.ohneRegler.length} Bau-Sätze ohne Regler je Ecke (aRegler · aGlut) — ${sst.ohneRegler.slice(0, 4).join(", ")}`
+            );
+        if (sst.untreu.length)
+            v.push(
+                `SATZ-STOFF: ${sst.untreu.length} Gruppen tragen nicht die Regler ihres Stoffs — ${sst.untreu.slice(0, 4).join(", ")}`
+            );
+    }
+    // (m) DIE VERTEX-FORM (K44): der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
+    // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, gemessen 14.10. Radeon: 14,6 MB des Boden-Satzes)
+    const SOLL = { normal: "nint8x4", color: "float16x4" };
+    for (const f of z.vertexForm || [])
+        if (SOLL[f.attr] && f.form !== SOLL[f.attr])
+            v.push(`VERTEX-FORM: ${f.satz} ${f.attr} ${f.form} (Soll ${SOLL[f.attr]}) — ${f.mb} MB`);
+    if (z.vertexForm && z.vertexForm.length) {
+        const proVertex = z.vertexForm.reduce((a, f) => a + f.bytes, 0);
+        if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
+    }
+    // (n) DIE BODEN-STUFEN (K51, K51-2 nach dem Kasten-Abstand): ein Chunk der Stufe L lebt höchstens bis zum Abstand
+    // bis + vorlauf + halt seiner Stufe (`BODEN_STUFEN`, die Tabelle liest die Wand aus der Welt) — jenseits ist er zu fein
+    // (Haushalt boden 120k samt Fern-Ring; gemessen 14.10.: L0 bis Ring 2, 25 Chunks à ~5 300 Dreiecke, trug den Boden-Satz
+    // der Wiese auf 130k); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
+    if (z.stufen) {
+        const T = z.stufen.tabelle;
+        const grenze = (lod) => {
+            const st = T.stufen.find((x) => x.lod === lod);
+            return st ? st.bis + T.vorlauf + T.halt : Infinity;
+        };
+        const fein = z.stufen.chunks.filter((c) => c.d >= grenze(c.lod));
+        if (fein.length)
+            v.push(
+                `BODEN-STUFEN: ${fein.length} Chunks jenseits der Nah-Zone zu fein (${fein.reduce((a, c) => a + c.dreiecke, 0)} ` +
+                    `Dreiecke) — ` +
+                    fein
+                        .slice(0, 4)
+                        .map((c) => `${c.key} ${c.d.toFixed(1)} m L${c.lod} (Soll ≥ L${c.lod + 1}) ${c.dreiecke}`)
+                        .join(", ")
+            );
+        const ohne = z.stufen.ohneNot;
+        if (ohne.length)
+            v.push(
+                `BODEN-STUFEN: ${ohne.reduce((a, o) => a + o.n, 0)} Naht-Brücken ohne Not (der Morph trägt beide Enden) — ` +
+                    ohne
+                        .slice(0, 4)
+                        .map((o) => `${o.key} ${o.n}`)
+                        .join(", ")
+            );
+    }
     return v;
 }
 
@@ -131,6 +203,35 @@ function selbsttest() {
         pGruppen: [],
         pBundles: [],
         bauSatz: { gruppen: 3, imSatz: 3, selbst: [], ohneBereich: [] },
+        satzStoff: { saetze: 4, zwillinge: [], ohneRegler: [], untreu: [] },
+        vertexForm: [
+            { satz: "bodenSatz", attr: "position", form: "float32x3", bytes: 12, mb: 2.6 },
+            { satz: "bodenSatz", attr: "normal", form: "nint8x4", bytes: 4, mb: 0.9 },
+            { satz: "bodenSatz", attr: "color", form: "float16x4", bytes: 8, mb: 1.8 },
+            { satz: "bodenSatz", attr: "aMorphTarget", form: "float32x3", bytes: 12, mb: 2.6 },
+        ],
+        stufen: {
+            tabelle: {
+                vorlauf: 3,
+                halt: 4,
+                stufen: [
+                    { lod: 0, bis: 36, band: 12 },
+                    { lod: 1, bis: 100, band: 12 },
+                    { lod: 2, bis: 388.8, band: 40 },
+                    { lod: 3, bis: Infinity, band: 0 },
+                ],
+            },
+            chunks: [
+                { key: "0,0", ring: 0, d: 0, lod: 0, dreiecke: 5300 },
+                { key: "1,0", ring: 1, d: 21.6, lod: 0, dreiecke: 5100 },
+                { key: "2,0", ring: 2, d: 64.8, lod: 1, dreiecke: 1300 },
+                { key: "3,0", ring: 3, d: 108, lod: 2, dreiecke: 280 },
+            ],
+            jeStufe: { L0: 10400, L1: 1300, L2: 280 },
+            naht: 900,
+            bruecken: 40,
+            ohneNot: [],
+        },
     };
     const fehler = [];
     if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
@@ -173,6 +274,23 @@ function selbsttest() {
             muss: [/STREU: 3 Deck-Streu-InstancedMeshes/],
         },
         {
+            name: "zwei Tor-Stoffe derselben Klasse, getrennt durch ihre Glut-Stärke",
+            z: {
+                ...gruen,
+                satzStoff: {
+                    saetze: 5,
+                    zwillinge: ["bauSatz|unknown|0.62|0.00|0|1.00|v:metall|- ×2"],
+                    ohneRegler: ["bauSatz|probe|-"],
+                    untreu: ["f:maurentor:L1 (Rauheit 0,28 statt 0,59)"],
+                },
+            },
+            muss: [
+                /SATZ-STOFF: 1 Stoff-Klassen zeichnen in mehr als einem Bau-Satz.*v:metall/,
+                /SATZ-STOFF: 1 Bau-Sätze ohne Regler je Ecke.*bauSatz|probe/,
+                /SATZ-STOFF: 1 Gruppen tragen nicht die Regler ihres Stoffs.*maurentor/,
+            ],
+        },
+        {
             name: "eine Felszacken-Gestalt zeichnet als eigene Gruppe",
             z: {
                 ...gruen,
@@ -192,6 +310,48 @@ function selbsttest() {
                 },
             },
             muss: [/BAU-SATZ: 1 Satz-Gruppen ohne treuen Bereich.*f:griechisch:L2/],
+        },
+        {
+            name: "der Boden-Satz trägt Normale und Farbe in Float32 (die Form vor K44)",
+            z: {
+                ...gruen,
+                vertexForm: [
+                    { satz: "bodenSatz", attr: "position", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "normal", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "color", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "aMorphTarget", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "aHimmel", form: "float32x1", bytes: 4, mb: 0.9 },
+                    { satz: "bodenSatz", attr: "aSchutt", form: "float32x1", bytes: 4, mb: 0.9 },
+                    { satz: "bodenSatz", attr: "aMorphWeight", form: "float32x1", bytes: 4, mb: 0.9 },
+                ],
+            },
+            muss: [
+                /VERTEX-FORM: bodenSatz normal float32x3 \(Soll nint8x4\)/,
+                /VERTEX-FORM: bodenSatz color float32x3 \(Soll float16x4\)/,
+                /VERTEX-FORM: der Boden-Satz trägt 60 B je Vertex/,
+            ],
+        },
+        {
+            name: "L0 bis Ring 2 und L1 in Ring 3 (die Kette vor K51), jenseits der Halte-Grenze",
+            z: {
+                ...gruen,
+                stufen: {
+                    ...gruen.stufen,
+                    chunks: [
+                        { key: "0,0", ring: 0, d: 0, lod: 0, dreiecke: 5300 },
+                        { key: "-21,-18", ring: 2, d: 64.8, lod: 0, dreiecke: 5312 },
+                        { key: "-17,-20", ring: 3, d: 108, lod: 1, dreiecke: 1404 },
+                    ],
+                },
+            },
+            muss: [
+                /BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 64\.8 m L0 \(Soll ≥ L1\)/,
+            ],
+        },
+        {
+            name: "das Naht-Band brückt, wo der Morph beide Enden trägt",
+            z: { ...gruen, stufen: { ...gruen.stufen, ohneNot: [{ key: "stitch:-19,-18", n: 712 }] } },
+            muss: [/BODEN-STUFEN: 712 Naht-Brücken ohne Not.*stitch:-19,-18 712/],
         },
     ];
     for (const f of faelle) {
@@ -236,33 +396,8 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.CHUNK_SATZ_PORT) || 4483;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -273,11 +408,7 @@ function check(name, ok, detail) {
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     const pageErrors = [];
@@ -374,7 +505,10 @@ function check(name, ok, detail) {
                         z.wasser.tris += tris(o);
                     }
                     // (c) ein Nah-Streu-Objekt, das selbst zeichnet (die Senke zeichnet nie — ihr Stoff-Satz zeichnet)
-                    if (u.inventar === "streu-klein" || (typeof o.name === "string" && o.name.startsWith("streuNah:"))) {
+                    if (
+                        u.inventar === "streu-klein" ||
+                        (typeof o.name === "string" && o.name.startsWith("streuNah:"))
+                    ) {
                         const a = artVon(o);
                         z.streuNah[a] = (z.streuNah[a] || 0) + 1;
                     }
@@ -403,6 +537,33 @@ function check(name, ok, detail) {
                     }
                 if (s._regionBundles)
                     for (const k of s._regionBundles.keys()) if (String(k).startsWith("p:")) z.pBundles.push(k);
+                // (n) DER EINE SATZ-STOFF: die Klasse jedes Bau-Satzes = sein Stoff ohne die Regler, die je Ecke reisen
+                z.satzStoff = { saetze: 0, zwillinge: [], ohneRegler: [], untreu: [] };
+                {
+                    const klassen = new Map();
+                    if (s.chunkSaetze)
+                        for (const [art, satz] of s.chunkSaetze) {
+                            if (!(satz.spec.userData && satz.spec.userData.bauSatz) || satz.spec.nurWurf) continue;
+                            const u = satz.spec.mat.userData || {};
+                            const mp = Object.assign({}, u.foundryMp || {});
+                            const durch = typeof mp.opacity === "number" && mp.opacity < 1;
+                            for (const k of ["roughness", "metalness", "emissive", "emissiveIntensity", "opacity"])
+                                delete mp[k];
+                            const kl =
+                                satz.spec.name +
+                                "|" +
+                                window.__phytoCore.budgetStoff(u.foundryKind, mp) +
+                                (durch ? "|durch" : "") +
+                                (satz.spec.schatten ? "|w" : "|-");
+                            z.satzStoff.saetze++;
+                            if (!klassen.has(kl)) klassen.set(kl, []);
+                            klassen.get(kl).push(art);
+                            if (!satz.geom.attributes.aRegler || !satz.geom.attributes.aGlut)
+                                z.satzStoff.ohneRegler.push(art.slice(0, 60));
+                        }
+                    for (const [kl, arts] of klassen)
+                        if (arts.length > 1) z.satzStoff.zwillinge.push(kl + " ×" + arts.length);
+                }
                 // (h) DER BAU-SATZ: jede lebende Gruppe einer Satz-Art (Rezept-kind in BAU_SATZ, gesetzt, kein
                 // Tür-Flügel) zeichnet nie selbst und trägt ihren Bereich treu im Satz ihres Stoffs.
                 z.bauSatz = { gruppen: 0, imSatz: 0, selbst: [], ohneBereich: [] };
@@ -442,6 +603,20 @@ function check(name, ok, detail) {
                         }
                         if (treu) z.bauSatz.imSatz++;
                         else z.bauSatz.ohneBereich.push(name);
+                        // (n) die erste Ecke trägt die Regler des Studio-Stoffs der Gruppe (snorm8: 1/127)
+                        const ar = treu && !g.shadowTwin ? satz.geom.attributes.aRegler : null;
+                        if (ar) {
+                            const u = g.mesh.material.userData || {};
+                            const R = window.__phytoCore.budgetRegler(u.foundryKind, u.foundryMp || null);
+                            const a = ar.array,
+                                o = b.vStart * 4;
+                            const ist = [a[o] / 127, a[o + 1] / 127, a[o + 2] / 127];
+                            const soll = [R.r, R.mt, R.op];
+                            if (ist.some((x, c) => Math.abs(x - soll[c]) > 0.005))
+                                z.satzStoff.untreu.push(
+                                    `${name}: ${ist.map((x) => x.toFixed(2)).join("/")} statt ${soll.map((x) => x.toFixed(2)).join("/")}`
+                                );
+                        }
                     }
                 // (c) DER STREU-SATZ: jeder Block mit Pflanzen lebt als Bereich im Satz seines Stoffs — n × Vertices der
                 // Gestalt, die erste Pflanze, erster Vertex: Geometrie × Matrix, in Welt-Lage im Pool; je Stoff EIN Satz.
@@ -480,6 +655,70 @@ function check(name, ok, detail) {
                         }
                 z.boden.tris = Math.round(z.boden.tris);
                 z.wasser.tris = Math.round(z.wasser.tris);
+                // (m) DIE VERTEX-FORM des Boden-Satzes: je Attribut die Form, die die GPU bekommt (Typ × Breite, normiert)
+                // und seine Bytes im Satz — die Wand liest das Array, nie die Deklaration
+                z.vertexForm = [];
+                const bs = s.chunkSaetze ? s.chunkSaetze.get("boden") : null;
+                if (bs)
+                    for (const [name, a] of Object.entries(bs.geom.attributes)) {
+                        const typ = a.array.constructor.name.replace("Array", "").toLowerCase();
+                        z.vertexForm.push({
+                            satz: bs.spec.name,
+                            attr: name,
+                            form: (a.normalized ? "n" : "") + typ + "x" + a.itemSize,
+                            bytes: a.array.BYTES_PER_ELEMENT * a.itemSize,
+                            mb: +(a.array.byteLength / 1048576).toFixed(2),
+                        });
+                    }
+                // (n) DIE BODEN-STUFEN (K51): je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
+                // Dreiecke; je Naht-Band die Brücken (rohe Kante → grobe Fläche), deren beide Enden der Morph ganz trägt
+                // (Gewicht 1) — die Wand liest die Netze, nie die Tabelle
+                const BS = r.constructor.BODEN_STUFEN;
+                z.stufen = {
+                    tabelle: { vorlauf: BS.vorlauf, halt: BS.halt, stufen: BS.stufen.map((x) => ({ ...x })) },
+                    chunks: [],
+                    jeStufe: {},
+                    naht: 0,
+                    bruecken: 0,
+                    ohneNot: [],
+                };
+                const lpc = s.lastPlayerVoxelChunk;
+                const auge = s.stufeAuge;
+                const S0 = r._voxelChunkConfig(0).span;
+                if (lpc && auge)
+                    for (const [key, e] of s.voxelChunks) {
+                        if (!e || e.empty || !e.mesh) continue;
+                        const [cx, cz] = key.split(",").map(Number);
+                        const ring = Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz));
+                        const lod = Number.isFinite(e.lod) ? e.lod : 0;
+                        const g = e.mesh.geometry;
+                        const n = g.index ? g.index.count / 3 : 0;
+                        const d = Math.max(
+                            Math.max(cx * S0 - auge.x, 0, auge.x - (cx + 1) * S0),
+                            Math.max(cz * S0 - auge.z, 0, auge.z - (cz + 1) * S0)
+                        );
+                        z.stufen.chunks.push({ key, ring, d, lod, dreiecke: n });
+                        z.stufen.jeStufe["L" + lod] = (z.stufen.jeStufe["L" + lod] || 0) + n;
+                        const st = e.lodStitchMesh ? e.lodStitchMesh.geometry : null;
+                        if (!st) continue;
+                        z.stufen.naht += st.index.count / 3;
+                        // die rohe Lage jedes Chunk-Vertex → sein Morph-Gewicht
+                        const P = g.attributes.position.array,
+                            W = g.attributes.aMorphWeight.array;
+                        const gewicht = new Map();
+                        for (let v = 0; v < W.length; v++)
+                            gewicht.set(P[v * 3] + "," + P[v * 3 + 1] + "," + P[v * 3 + 2], r._morphNaht(W[v]));
+                        const Q = st.attributes.position.array;
+                        let ohneNot = 0;
+                        for (let q = 0; q + 11 < Q.length; q += 12) {
+                            const wa = gewicht.get(Q[q] + "," + Q[q + 1] + "," + Q[q + 2]);
+                            const wb = gewicht.get(Q[q + 3] + "," + Q[q + 4] + "," + Q[q + 5]);
+                            if (wa === undefined || wb === undefined) continue; // ein Skirt (er hängt am Ziel)
+                            z.stufen.bruecken++;
+                            if (wa >= 1 && wb >= 1) ohneNot++;
+                        }
+                        if (ohneNot) z.stufen.ohneNot.push({ key: "stitch:" + key, n: ohneNot });
+                    }
                 return z;
             };
             // der Haken des Renders (Hauptbild): der Satz legt seinen Abschnitt — der Zensus zählt, was das Hauptbild zeichnet
@@ -623,10 +862,28 @@ function check(name, ok, detail) {
                 const geo = satz.mesh.geometry;
                 if (satz.bloecke.get(b.key) !== b) return false;
                 const g = b.geom;
-                for (const a of satz.attrNamen) {
+                // ein Satz ohne Formen-Liste (vor K44) trägt jedes Attribut als View
+                for (const fa of satz.attr || satz.attrNamen.map((name) => ({ name, form: null }))) {
+                    const a = fa.name;
                     const src = g.attributes[a].array;
                     const dst = geo.attributes[a].array;
                     const is = geo.attributes[a].itemSize;
+                    if (fa.form) {
+                        // gepackt (K44): der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
+                        if (src.length !== b.vAnzahl * fa.is || src.buffer === dst.buffer || is !== 4) return false;
+                        const soll = new dst.constructor(b.vAnzahl * 4);
+                        r.constructor._satzPacke(
+                            fa.form,
+                            src,
+                            fa.is,
+                            soll,
+                            0,
+                            b.vAnzahl,
+                            fa.w ? g.attributes[fa.w].array : undefined
+                        );
+                        for (let i = 0; i < soll.length; i += 97) if (soll[i] !== dst[b.vStart * 4 + i]) return false;
+                        continue;
+                    }
                     if (src.length !== b.vAnzahl * is || src.buffer !== dst.buffer) return false;
                     for (let i = 0; i < src.length; i += 97) if (src[i] !== dst[b.vStart * is + i]) return false;
                 }
@@ -706,9 +963,15 @@ function check(name, ok, detail) {
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
             // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
-            // am Wasser-Satz: doppelte Kapazität, derselbe Inhalt, derselbe Mesh.
+            // am kleinsten Satz des Rings (der Tausch ist EIN Weg für jeden Satz; am Mess-Ort der K16-Landform steht kein
+            // Wasser im Ring — die Probe hing an einem 12-Vertex-Wasserfleck der alten Welt): doppelte Kapazität, derselbe
+            // Inhalt, derselbe Mesh.
             res.wachsen = null;
-            const ws = s.chunkSaetze ? s.chunkSaetze.get("wasser") : null;
+            let ws = null;
+            let wsName = null;
+            for (const [name, sa] of s.chunkSaetze ? s.chunkSaetze : [])
+                if (sa && sa.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
+                    ((ws = sa), (wsName = String(name).split("|")[0]));
             if (ws) {
                 const altMesh = ws.mesh,
                     altGeom = ws.geom,
@@ -718,6 +981,7 @@ function check(name, ok, detail) {
                 r._tickChunkSatz();
                 const ab = abschnitteVon(ws);
                 res.wachsen = {
+                    satz: wsName,
                     derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene,
                     getauscht: ws.geom !== altGeom && ws.mesh.geometry === ws.geom,
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
@@ -794,6 +1058,11 @@ function check(name, ok, detail) {
                 const st = ++satz.hoehle.stempel;
                 for (const b of satz.bloecke.values()) if (b.hoehle) for (const kn of b.hoehle.knoten) kn.sicht = st;
             };
+            // die Kapazität ERZWUNGEN klein (K51): der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
+            // Ring-Kaskaden brauchen mehr, gleich wie gross der Ring gerade ist (der Druck hing am Inhalt: mit den Boden-Stufen
+            // reichte der Start-Index für beide Ring-Kaskaden, 0× gewachsen)
+            const bodenS = s.chunkSaetze.get("boden");
+            if (bodenS) r._chunkSatzGeometrie(bodenS, bodenS.vKap, bodenS.iEnde);
             let w0 = wachseSumme();
             try {
                 res.neu.messung.druck = phase([ring, ring], 5);
@@ -867,6 +1136,10 @@ function check(name, ok, detail) {
                 cam.updateMatrixWorld(true);
                 return o;
             };
+            // EINE Vor-Drehung ohne Wertung (K51): die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
+            // Umlegen), das die alte Regel danach geschenkt bekam — beide Regeln messen aus demselben gewachsenen Stand
+            // (14.10.: die Formationen buchten im ersten Lauf 1,5 MB Umlegen, im zweiten 0)
+            drehen(36);
             res.neu.dreh = drehen(36);
             const P = Object.getPrototypeOf(r);
             r._chunkSatzTausch = function (satz, a, liste, n, wer) {
@@ -1031,6 +1304,154 @@ function check(name, ok, detail) {
             res.wurfAlt = wurfProbe(false);
             return res;
         });
+        // (o) DER STUFEN-SPRUNG (K51-2): das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
+        // gezeichnete Fläche (Lage + (Ziel − Lage) · `_morphFaktor`, die Boden-Karte des Stoffs) vor dem Wechsel gegen die des
+        // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
+        // (die Ring-Kette K51 morphte nur die Naht) springt.
+        out.sprung = await page.evaluate(async () => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const S = r._voxelChunkConfig(0).span;
+            const sleep = (ms) => new Promise((o) => setTimeout(o, ms));
+            const karte = (e, key) => {
+                const g = e.mesh.geometry;
+                const P = g.attributes.position.array,
+                    Z = g.attributes.aMorphTarget.array,
+                    W = g.attributes.aMorphWeight.array;
+                const L = new Float32Array(P.length);
+                for (let v = 0; v < W.length; v++) {
+                    const f = r._morphFaktor(W[v], P[v * 3], P[v * 3 + 2]);
+                    for (let k = 0; k < 3; k++) L[v * 3 + k] = P[v * 3 + k] + (Z[v * 3 + k] - P[v * 3 + k]) * f;
+                }
+                const [cx, cz] = key.split(",").map(Number);
+                const k = r._bodenKarteAusMesh(L, g.index ? g.index.array : null, null, cx, cz, e.lod || 0);
+                return { lod: e.lod || 0, surfMap: k && k.hoehe, cx, cz };
+            };
+            const proben = (K) => {
+                const o = [];
+                for (let z = 1; z < S; z += 2)
+                    for (let x = 1; x < S; x += 2) {
+                        const v = K.surfMap ? r._bodenKarteBilinear(K, K.cx, K.cz, K.cx * S + x, K.cz * S + z) : null;
+                        o.push(v ? v.y : NaN);
+                    }
+                return o;
+            };
+            const gang = async (dx, n, ohne) => {
+                const sprung = [];
+                const alle = [];
+                let offen = 0;
+                if (ohne) r._stufeGewicht = () => 0;
+                // (p) DIE FOLGE DES WECHSELS (K51-4): je Neubau die Morphs seiner Nachbarn — ein Nachbar, der den Chunk nicht liest
+                // (weder seine neue noch seine alte Stufe ist gröber als die des Nachbarn), ist ein LEER-Morph. Der Selbsttest
+                // (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau morpht alle acht.
+                const folge = { neubau: 0, morphs: 0, leer: 0 };
+                const F0 = r._finalizeVoxelChunkBuild,
+                    G0 = r._applyCrossLodGeomorph;
+                const lodVon = new Map();
+                for (const [key, e] of s.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
+                let ctx = null;
+                r._finalizeVoxelChunkBuild = function (cx, cz, lod, ...rest) {
+                    const key = cx + "," + cz;
+                    ctx = { cx, cz, lod, alt: lodVon.has(key) ? lodVon.get(key) : null };
+                    folge.neubau++;
+                    try {
+                        const e = F0.call(this, cx, cz, lod, ...rest);
+                        if (ohne)
+                            for (let dx = -1; dx <= 1; dx++)
+                                for (let dz = -1; dz <= 1; dz++)
+                                    if (dx || dz) this._applyCrossLodGeomorph(cx + dx, cz + dz);
+                        return e;
+                    } finally {
+                        ctx = null;
+                        lodVon.set(key, lod);
+                    }
+                };
+                r._applyCrossLodGeomorph = function (x, z) {
+                    if (ctx && (x !== ctx.cx || z !== ctx.cz)) {
+                        const nb = s.voxelChunks.get(x + "," + z);
+                        if (nb && !nb.empty && nb.mesh) {
+                            folge.morphs++;
+                            const nl = nb.lod || 0;
+                            if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
+                        }
+                    }
+                    return G0.call(this, x, z);
+                };
+                try {
+                    const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
+                    for (let i = 0; i < n; i++) {
+                        p.x += dx;
+                        r._stufeAugeTakt(p);
+                        const vor = new Map();
+                        for (const [key, e] of s.voxelChunks) {
+                            if (!e || e.empty || !e.mesh) continue;
+                            const [cx, cz] = key.split(",").map(Number);
+                            const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
+                            if (soll !== (e.lod || 0)) vor.set(key, { soll, K: karte(e, key) });
+                        }
+                        const t0 = performance.now();
+                        while (performance.now() - t0 < 20000) {
+                            r._tickVoxelChunkStreaming(p);
+                            await sleep(15);
+                            let fertig = true;
+                            for (const [key, v] of vor) {
+                                const e = s.voxelChunks.get(key);
+                                if (!e || (e.lod || 0) !== v.soll) fertig = false;
+                            }
+                            if (fertig) break;
+                        }
+                        for (const [key, v] of vor) {
+                            const e = s.voxelChunks.get(key);
+                            if (!e || !e.mesh || (e.lod || 0) !== v.soll) {
+                                offen++;
+                                continue;
+                            }
+                            const a = proben(v.K),
+                                b = proben(karte(e, key));
+                            const ds = [];
+                            for (let q = 0; q < a.length; q++)
+                                if (a[q] === a[q] && b[q] === b[q]) ds.push(Math.abs(a[q] - b[q]));
+                            ds.sort((x, y) => x - y);
+                            if (!ds.length) continue;
+                            for (const d of ds) alle.push(d);
+                            sprung.push({
+                                key,
+                                von: v.K.lod,
+                                zu: v.soll,
+                                schritt: i,
+                                max: +ds[ds.length - 1].toFixed(3),
+                                p95: +ds[Math.floor(0.95 * ds.length)].toFixed(3),
+                                n: ds.length,
+                            });
+                        }
+                    }
+                } finally {
+                    delete r._stufeGewicht;
+                    delete r._finalizeVoxelChunkBuild;
+                    delete r._applyCrossLodGeomorph;
+                }
+                sprung.sort((a, b) => b.max - a.max);
+                const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
+                alle.sort((a, b) => a - b);
+                const q = (p) =>
+                    alle.length ? +alle[Math.min(alle.length - 1, Math.floor(p * alle.length))].toFixed(3) : 0;
+                return {
+                    wechsel: sprung.length,
+                    offen,
+                    proben: alle.length,
+                    p50: q(0.5),
+                    p90: q(0.9),
+                    p95: q(0.95),
+                    max: sprung.length ? sprung[0].max : 0,
+                    chunkP95: p95[0] || 0,
+                    top: sprung.slice(0, 3),
+                    folge,
+                };
+            };
+            const mit = await gang(2, 30, false);
+            const ohne = await gang(-2, 30, true);
+            return { mit, ohne };
+        });
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -1057,11 +1478,58 @@ function check(name, ok, detail) {
                 `Hauptbild-Abschnitt ${x.haupt} · Abschnitte bis ${x.iEnde}/${x.iKap} · ${x.wachse}× gewachsen`
         );
     console.log("");
-    const v = urteil(z);
+    const alle = urteil(z);
+    const vn = alle.filter((x) => x.startsWith("BODEN-STUFEN"));
+    const v = alle.filter((x) => !x.startsWith("BODEN-STUFEN"));
     check(
         "(a–d) die Draw-Einheit ist Material × Geometrie (Boden · Wasser · Streu · Bau)",
         v.length === 0,
         v.join(" · ") || "sauber"
+    );
+    const zs = z.stufen;
+    const jenseits = zs.chunks.filter((c) => c.ring >= 2).length;
+    check(
+        "(n) BODEN-STUFEN — kein Chunk jenseits der Halte-Grenze seiner Stufe (Kasten-Abstand ≥ bis + vorlauf + halt, K51-2); " +
+            "das Naht-Band brückt nur, wo der Morph nicht trägt",
+        jenseits > 0 && zs.naht > 0 && vn.length === 0,
+        `${zs.chunks.length} Chunks (${jenseits} jenseits) · je Stufe ${JSON.stringify(zs.jeStufe)} · Naht ${zs.naht} ` +
+            `Dreiecke (${zs.bruecken} Brücken)` +
+            (vn.length ? " — " + vn.join(" · ") : "")
+    );
+    // (o) DER STUFEN-SPRUNG (K51-2): der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der Fläche vor und
+    // nach dem Wechsel (Befund 14.10. mit der Ring-Kette: ein Wechsel L1 → L0 sprang an der Mess-Wiese sichtbar, p99,9 der
+    // Luma-Änderung 17 gegen 5 im Rauschen); der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
+    const SP = out.sprung || {};
+    const fmt = (g) =>
+        g
+            ? `${g.wechsel} Wechsel (${g.offen} offen, ${g.proben} Proben) · p50 ${g.p50} · p90 ${g.p90} · p95 ${g.p95} · max ${g.max} m · ` +
+              JSON.stringify(g.top)
+            : "keine Messung";
+    check(
+        `(o) STUFEN-SPRUNG — der Wechsel deckungsgleich (p90 der Proben ≤ ${STUFEN_SPRUNG_M} m zwischen alter und neuer Fläche)`,
+        !!SP.mit && SP.mit.wechsel >= 3 && SP.mit.offen === 0 && SP.mit.p90 <= STUFEN_SPRUNG_M,
+        fmt(SP.mit)
+    );
+    check(
+        "(o) Selbsttest: derselbe Gang ohne das Stufen-Gewicht (nur der Naht-Morph, die Kette K51) springt — die Wand nennt ihn",
+        !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.p90 > STUFEN_SPRUNG_M,
+        fmt(SP.ohne)
+    );
+    // (p) DIE FOLGE DES WECHSELS (K51-4): ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
+    // Neubau morphte alle acht, OMEN 1410-boden gehend: Frame p95 28,7 → 41,6 ms) fällt rot beim Namen
+    const fo = (g) =>
+        g && g.folge
+            ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Nachbar-Morphs · ${g.folge.leer} leer`
+            : "keine Messung";
+    check(
+        "(p) FOLGE DES WECHSELS — kein Leer-Morph: ein Neubau morpht nur Nachbarn, die seine neue oder alte Stufe lesen",
+        !!SP.mit && !!SP.mit.folge && SP.mit.folge.neubau >= 3 && SP.mit.folge.leer === 0,
+        fo(SP.mit)
+    );
+    check(
+        "(p) Selbsttest: die Lawine (jeder Neubau morpht alle acht Nachbarn) — die Wand nennt die Leer-Morphs",
+        !!SP.ohne && !!SP.ohne.folge && SP.ohne.folge.leer > 0,
+        fo(SP.ohne)
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
     check(

@@ -21,6 +21,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
 const CONTRACT = path.join(PK.ROOT, "spec", "pack", "v0", "CONTRACT.md");
@@ -124,7 +125,7 @@ async function main() {
         for (const marker of [
             "<preset>|<gestalt>|<lod>",
             "karte|<preset>|<gestalt>",
-            "shell_1",
+            "bruecke_1",
             "SHA-256",
             "__anazhLiveBake",
             "LEGACY_LICHT",
@@ -136,7 +137,7 @@ async function main() {
     // (b) + (c) Source-Proben am kommentar-gestrippten Code (V18.267: der Kommentar darf das
     // Wort tragen, der CODE muss es tragen — hier PRÄSENZ-Proben, also gestrippt gegen die
     // Möglichkeit, dass NUR ein Kommentar das Muster trägt).
-    const anazh = fs.readFileSync(path.join(PK.ROOT, "anazhRealm.js"), "utf8");
+    const anazh = stammLib.text(PK.ROOT);
     // V18.511: die Platte lebt in der Transport-Schale IM Worker — der Boot reicht ihr den Manifest-TEXT und die
     // core.scripts-URLs, die Schale hasht sie (SHA-256) und hängt das Transport-Format an (`|f<n>`).
     const boot = PK.methodSource(anazh, "_ensureAssetFoundry", ["_foundryIngestBook("]);
@@ -154,8 +155,8 @@ async function main() {
             "Stempel: ALLE Manifest-Skripte (core.scripts) reisen mit"
         );
         check(
-            /stempelUrls\.push\(new URL\(core\.shell \+ v, base\)\.href\)/.test(b),
-            "Stempel: die Shells (core.shell — Mesh-Extraktion + Karten-Bäcker) reisen mit (V18.527)"
+            /stempelUrls\.push\(new URL\(core\.bruecke \+ v, base\)\.href\)/.test(b) && !/core\.shell/.test(b),
+            "Stempel: die Foundry-Brücke (core.bruecke — Mesh-Extraktion + Karten-Bäcker) reist mit, keine Labor-Shell (K42)"
         );
         check(/SHA-256/.test(sc), "Stempel: SHA-256-Digest in der Schale");
         check(

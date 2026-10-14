@@ -6,7 +6,7 @@
 //
 // Anzeige nach dem offiziellen three-fluid-fx-Beispiel: die densityTexture
 // trägt das Dichtefeld im .b-Kanal. Ein Auto-Strom hält die Welt in
-// Bewegung; die DSL-Brücke (applyDsl) regelt die Lebhaftigkeit und wirft
+// Bewegung; das DSL-Wort (wort, über die Brücke der Hülle) regelt die Lebhaftigkeit und wirft
 // Splat-Ausbrüche ein, damit Befehle SICHTBAR treffen.
 import * as THREE from "./lib/three.module.min.js";
 import {
@@ -147,12 +147,11 @@ function setEnergy(e) {
     energy = Math.max(0, Math.min(1, e));
 }
 
-// W12 Phase 3 — der Rückkanal: ein Welt-Ereignis an die Heimat-Welt melden.
+// W12 Phase 3 — der Rückkanal: ein Welt-Ereignis an die Heimat-Welt melden (die Brücke der Hülle, unten).
 // Die Heimat schreibt es als Erinnerung ins Journal (sie führt es nicht aus).
+let bruecke = null;
 function sendEvent(text) {
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "event", text: String(text) }, "*");
-    }
+    if (bruecke) bruecke.ereignis(text);
 }
 
 function applyBackdrop(arg) {
@@ -169,14 +168,10 @@ function applyBackdrop(arg) {
 
 // Kern-Ops (weather, skybox_color) + welt-eigene Wörter (sturm, ruhe,
 // set_turbulence) — das per-Welt-Vokabular, das der Manifest deklariert.
-// Jedes Wort regelt energy UND wirft einen sichtbaren Ausbruch ein.
-function applyDsl(program) {
-    if (!Array.isArray(program) || typeof program[0] !== "string") return;
-    const op = program[0];
-    if (op === "chain") {
-        for (let i = 1; i < program.length; i++) applyDsl(program[i]);
-        return;
-    }
+// Jedes Wort regelt energy UND wirft einen sichtbaren Ausbruch ein. Das
+// Programm (chain, Einzelwort) zerlegt die Brücke der Hülle; hier das Wort.
+function wort(op, args) {
+    const program = [op].concat(args);
     if (op === "skybox_color") {
         applyBackdrop(program[1]);
         sendEvent("Der Hintergrund der Strom-Welt nahm einen neuen Ton an.");
@@ -209,44 +204,17 @@ function applyDsl(program) {
     }
 }
 
-// --- postMessage-Handshake mit der Heimat-Welt ---
-window.addEventListener("message", (event) => {
-    if (event.source !== window.parent) return;
-    const msg = event.data;
-    if (!msg || typeof msg !== "object") return;
-    if (msg.type === "enter") {
-        const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
+// --- Die Brücke zur Heimat: die der Hülle (../huelle/huelle.js, K41) ---
+// Die native Manifest-Stufe: die Hülle liest ./manifest.json und meldet dsl + label im ready — die Heimat lernt das
+// Vokabular (inkl. „flut", das NICHT im Registry-Literal steht) von der Welt selbst. Esc bringt heim.
+bruecke = window.AnazhHuelle.bruecke({
+    welt: "fluid",
+    manifest: true,
+    wort,
+    enter: (avatar) => {
         const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
         const el = document.getElementById("avatar-name");
         // W13 V2 — der Vibe-Pass trägt die Identität des Reisenden mit.
         if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
-    } else if (msg.type === "dsl") {
-        // Die Heimat-Welt hat ein DSL-Programm hereingereicht.
-        applyDsl(msg.program);
-    }
+    },
 });
-
-// Esc bei Fokus im iframe → der Heimat-Welt die Heimkehr melden.
-window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "exit", world: "fluid" }, "*");
-    }
-});
-
-// W12 Phase 3 — die native Manifest-Stufe: die Strom-Welt liest ihr eigenes
-// manifest.json und meldet dsl + label im ready-Handshake. Die Heimat lernt
-// das Vokabular (inkl. „flut", das NICHT im Registry-Literal steht) von der
-// Welt selbst. Fetch-Fehler → ready ohne dsl, die Heimat fällt zurück.
-function announceReady(extra) {
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage(Object.assign({ type: "ready", world: "fluid" }, extra || {}), "*");
-    }
-}
-fetch("./manifest.json")
-    .then((res) => (res.ok ? res.json() : null))
-    .then((m) => {
-        const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
-        const label = m && typeof m.label === "string" ? m.label : null;
-        announceReady(dsl ? { dsl, label } : {});
-    })
-    .catch(() => announceReady({}));

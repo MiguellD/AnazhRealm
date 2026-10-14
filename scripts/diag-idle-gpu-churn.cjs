@@ -10,26 +10,11 @@
 // bevor irgendwer den Freeze spürt. Die Struktur trägt die Disziplin, nicht das Gedächtnis.
 //
 // Lauf: node scripts/diag-idle-gpu-churn.cjs   (CI: npm run gpu-lens)
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 // Port über IDLE_GPU_CHURN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4395.
 const PORT = Number(process.env.IDLE_GPU_CHURN_PORT || 4395);
-const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".woff2": "font/woff2", ".css": "text/css", ".png": "image/png" };
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) { res.statusCode = 403; return res.end(); }
-    fs.readFile(fp, (e, d) => {
-        if (e) { res.statusCode = 404; return res.end(); }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(d);
-    });
-});
+const server = statikServer();
 // generöse Schwelle: ein Recompile-CASCADE ist Dutzende+ (Sky-Env-Bug war ~270/Regen); ein paar
 // Erst-Compile-Nachzügler im Idle-Fenster (eine neue Animations-/LOD-Variante) sind kein Churn.
 // Gezählt werden WIEDERHOLUNGS-Compiles (derselbe Fingerabdruck ein zweites Mal); Erst-Compiles neuer Objekte
@@ -41,7 +26,7 @@ const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
 let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Frist-Riss nennt ihn
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--no-sandbox", "--disable-setuid-sandbox"] });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
     let pageErr = null;
@@ -171,7 +156,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 Error.stackTraceLimit = 40;
                 const z = (new Error().stack || "").split("\n").slice(3).map((x) => x.trim().replace(/^at /, "").replace(/ \(.*/, ""));
                 Error.stackTraceLimit = lim;
-                const stamm = z.filter((x) => /AnazhRealm\.|anazhRealm\.js/.test(x)).slice(0, 4);
+                const stamm = z.filter((x) => /AnazhRealm\.|anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(x)).slice(0, 4);
                 // und das OBJEKT, dessen Zeichnung kompiliert (der Haken an renderObject unten): Art · Stoff · Pfad
                 const ob = window.__ccObjekt;
                 let lichter = 0;
@@ -230,7 +215,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             const zeilen = String(new Error().stack || "").split("\n");
             const namen = [];
             for (const l of zeilen) {
-                if (!/anazhRealm\.js/.test(l)) continue;
+                if (!/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(l)) continue;
                 const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
                 namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
             }

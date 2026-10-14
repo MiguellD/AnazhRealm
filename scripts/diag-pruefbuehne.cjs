@@ -25,7 +25,7 @@
 //       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
 //   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
-//       der Farbton des Bodens 1–3 m um das Feuer (25–45°, die Farbtemperatur des Gesetzes); `--bild` legt die Bilder aus
+//       der Farbton des Bodens 1–3 m um das Feuer (28–45°, die Farbtemperatur des Gesetzes); `--bild` legt die Bilder aus
 //       2 m, aus 6 m und der Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12).
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
@@ -35,8 +35,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -49,7 +48,6 @@ const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
-const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
 const STATIONEN = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
@@ -58,35 +56,7 @@ const S4 = STATIONEN.find((st) => st.id === "s4-hindernisse");
 const S0 = STATIONEN.find((st) => st.id === "s0-atrium");
 const S4_SCHEIN = { bauplan: "pruef_mauer", dx: 0.5 }; // der Selbsttest: die Mauer rückt 0,5 m
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-};
-const server = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split("?")[0]);
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.setHeader("Cache-Control", "no-store");
-        res.end(data);
-    });
-});
+const server = statikServer({ keinCache: true });
 
 // Die Würfe: jede Ort-Op der Welt-Akte in ihrer kanonischen Form (die Orte, die der Nexus selbst wählt).
 const WUERFE = [
@@ -320,8 +290,14 @@ async function s0Probe(page, station, schein) {
                 r._applyDayNightToScene();
             };
             uhr(0);
-            const y0 = r.getTerrainHeightAt(st.x, st.z);
-            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+            // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
+            // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
+            const A0 = r.constructor.GENESIS_PLATZ;
+            const w0 = Math.PI / 10;
+            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
+            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+            const y0 = r.getTerrainHeightAt(sx, sz);
+            s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
             r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
             await takt(20);
@@ -642,7 +618,8 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     inseln: (s.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
                     pflanzSchlange: (s.pendingVegSpawns || []).length,
-                    fluesse: h && Array.isArray(h.rivers) ? h.rivers.length : null,
+                    // jeder Fluss, den kein Term der Bühne trägt (der Bach der Klamm S6 ist ihr Gesetz, kein Wurf)
+                    fluesse: h && Array.isArray(h.rivers) ? h.rivers.filter((rv) => !rv.term).length : null,
                 };
             }
             out.basis = basis;
@@ -675,7 +652,15 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) nur die Nähe des Feuers — jedes Objekt der Welt-Szene,
 // dessen Hülle (Kugel in Welt-Lage, Instanz- und Batch-Hülle eingeschlossen) die Kugel um das Feuer schneidet. Die Sätze
 // (`bodenSatz`, `bauSatz`: Boden und Bauten je Stoff in EINEM Mesh) tragen die Überall-Hülle (1e9) und zeichnen; eine
-// Hülle ≥ 1 km ist die Ferne (Panorama, Fern-Ring) und fällt. Fremde Szenen (Post, PMREM) und die Lichter bleiben. Gemessen 12.10. (24 Kerne):
+// Hülle ≥ 1 km ist die Ferne (das Panorama) und fällt, der Fern-Ring fällt an seinem Stempel (`userData.inventar`
+// "fern-ring", wie `licht-linsen` ihn liest): seit K16 trägt seine Schale 0 die Hülle 803 m (vorher 1 413 m) in zwei Teilen
+// (frei und Naht), die Kilometer-Regel nahm beide in die Nähe — der Schuss übersetzte 13 statt 11 Programme (lokal Schuss
+// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Der Portal-Nebel (`userData.inventar` "portal-nebel") fällt
+// an seinem Stempel: ein durchsichtiger Schleier vor dem Tor (kein Boden, kein Werfer, kein Empfänger), dessen Hülle (r 4,7–5,7 m
+// in 7,9–13,4 m) die Kugel streift — er trug das größte Programm des Schusses (139 967 Zeichen Fragment-WGSL von 354 645; auf dem
+// Runner Schuss 84 s neben 7–8 s je Schein ohne Übersetzen, die Frist riss im Schein farbe bei 145–171 s); ohne ihn Luma 0,7105 →
+// 0,7104, Farbton 37,6° gleich (gemessen 14.10.). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
+// Gemessen 12.10. (24 Kerne):
 // die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
 // mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
 const S0_NAH_INSTALL = () => {
@@ -700,6 +685,7 @@ const S0_NAH_INSTALL = () => {
                 k = o.geometry.boundingSphere;
             }
             if (wurzel !== welt || !k) u = true;
+            else if (o.userData && (o.userData.inventar === "fern-ring" || o.userData.inventar === "portal-nebel")) u = false;
             else {
                 kugel.copy(k).applyMatrix4(o.matrixWorld);
                 u =
@@ -726,16 +712,39 @@ const S0_NAH_INSTALL = () => {
 const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
 // DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
-// ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 25–45°. Die Sättigung (HSV, Soll
+// ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 28–45°. Die Sättigung (HSV, Soll
 // der Karte ≤ 0,75) steht im Bericht und ist OFFEN, keine Wand: der Fuß der ACES-Kurve hält bei der Nacht-Belichtung 1,0
 // den Blau-Kanal eines feuerbeschienenen Bodens auf 0 (Soll erst ab dem ≈ 2,6-Fachen der Feuer-Stärke, dann brennt der
 // Steinring weiß aus — K11b, echte GPU). Der Selbsttest (`farbe`) gibt dem Platz des Feuers das Datum bis K11b: die
-// Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen.
-const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
+// Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen. Die untere Kante ist das Licht
+// selbst: 1 800 K liegt in sRGB bei 29,6°, die Glut-Palette bei 20,5°; jeder Boden zieht den Ton zu seinem eigenen (Gras
+// hinauf). Seit der Wiesen-Grund im Gesetz steht (K53) und die Probe neben dem Genesis-Platz (K52), hob das Gras die Glut auf
+// 26° — die alte Kante 25° ließ sie durch (Selbsttest BLIND, CI 38551540510), das Gesetz-Feuer misst 37,6°. OFFEN: ein
+// relatives Maß (Ton gegen denselben Boden unter neutralem Licht) trennte unabhängig vom Boden.
+const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
 const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
+// DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss übersetzt das Boden-Programm
+// (`voxelChunkMaterial`) — seine Zeichen stehen unter der Decke des Bodens (`STOFFE.boden.budget.zeichenMax`). Seit K17 trug
+// es das Fels-Gesetz ausgeschrieben im Pixel (78 Ziehungen, 96 050 → 149 521 Zeichen; lokal 4 Kerne Schuss 12 → 20 s), die
+// Frist riss auf dem Runner (171 s). Der Selbsttest hält das gemessene Programm gegen eine Decke ein Zeichen darunter.
+// Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion `wieseRelief` las den
+// Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die Pipeline ab.
+const S0_STOFF = (() => {
+    const SK = require("./lib/shader-kosten.cjs");
+    const decke = SK.STOFFE.boden.budget.zeichenMax;
+    return {
+        decke,
+        urteil: (wgsl, d) => {
+            const k = SK.wgslKosten(wgsl);
+            return {
+                zeichen: k.zeichen,
+                rot: SK.kostenUrteil(k, { zeichenMax: d == null ? decke : d, bindungInFunktionMax: 0 }, "S0 Boden-Programm"),
+            };
+        },
+    };
+})();
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
@@ -761,12 +770,15 @@ async function lichtLauf() {
         }
     };
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        protocolTimeout: (S0_FRIST_S + 60) * 1000,
-        defaultViewport: ECHT ? null : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : softwareWebGpuArgs(),
+        frist: (S0_FRIST_S + 60) * 1000,
+        viewport: ECHT ? null : { width: 640, height: 360 },
+        zusatz: ECHT ? ["--window-size=1280,800"] : [],
     });
+    const { adapterZeile } = require("./lib/software-gpu.cjs");
+    const adapter = await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
@@ -800,9 +812,11 @@ async function lichtLauf() {
     await page.evaluateOnNewDocument(() => {
         window.__s0Still = true;
         const warte = setInterval(() => {
+            // die Klasse steht ab stamm/01.js, ihre Glieder trägt erst die Naht (stamm/26a.js) auf: gewartet wird auf das
+            // Glied selbst — ein vorher gesetztes `_loopRender` wäre ein Zwilling, an dem die Naht laut bricht
             // eslint-disable-next-line no-undef
             const K = typeof AnazhRealm === "function" ? AnazhRealm : null;
-            if (!K) return;
+            if (!K || typeof K.prototype._loopRender !== "function") return;
             clearInterval(warte);
             const zeichne = K.prototype._loopRender;
             K.prototype._loopRender = function (t) {
@@ -868,8 +882,13 @@ async function lichtLauf() {
                         };
                         if (!gestalt) {
                             window.__buehne();
-                            const y0 = r.getTerrainHeightAt(st.x, st.z);
-                            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+                            // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
+                            const A0 = r.constructor.GENESIS_PLATZ;
+                            const w0 = Math.PI / 10;
+                            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
+                            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+                            const y0 = r.getTerrainHeightAt(sx, sz);
+                            s.playerMesh.position.set(sx, y0 + 1, sz);
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;
@@ -939,7 +958,7 @@ async function lichtLauf() {
                     };
                     const feuer = window.__s0Feuer;
                     const f = feuer.position;
-                    const g = r._voxelSurfaceY(f.x, f.z);
+                    const g = f.y - 0.5; // der Boden des Feuers: wo es steht (auf dem Grund oder auf der Genesis-Scheibe, K52)
                     const w = 640;
                     const h = 360;
                     const alt = r._leuchtTakt;
@@ -973,6 +992,19 @@ async function lichtLauf() {
                     // die Nah-Bühne (oben): auf swiftshader zeichnet der Schuss die Nähe des Feuers
                     const nahLos = nahM ? window.__s0Nah(new T.Vector3(f.x, g, f.z), nahM) : null;
                     let nahZahl = null;
+                    // DIE PROGRAMM-GRÖSSE DES BODENS (K17-3, oben S0_STOFF): je Render-Objekt des Boden-Stoffs das erzeugte Fragment,
+                    // das der Schuss übersetzt (der Zustand des Render-Objekts, wie `__shaderKosten`)
+                    const bodenWgsl = new Map();
+                    const objs = rend._objects;
+                    const roh = objs.get;
+                    objs.get = function (...a) {
+                        const ro = roh.apply(this, a);
+                        if (ro && ro.material === s.voxelChunkMaterial) {
+                            const st = ro.getNodeBuilderState();
+                            if (st && st.fragmentShader) bodenWgsl.set(st.fragmentShader, (bodenWgsl.get(st.fragmentShader) || 0) + 1);
+                        }
+                        return ro;
+                    };
                     try {
                         window.__buehne();
                         uhr(0);
@@ -981,13 +1013,18 @@ async function lichtLauf() {
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
                         await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
-                        for (let i = 0; i < 2; i++) {
+                        // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
+                        // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
+                        // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
+                        // der Schein übersetzt nichts (dieselben Programme, nur Uniform-Werte): EINE Aufnahme mit ihren 32 Warm-Frames
+                        for (let i = 0; i < (schein ? 1 : 2); i++) {
                             r._schattenAlleNeu();
-                            auf = await window.__ausgabeAufnahme(w, h, 1);
+                            auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
                     } finally {
                         r._leuchtTakt = alt;
                         FC.lichtFlackern = flAlt;
+                        objs.get = roh;
                         if (nahLos) nahZahl = nahLos();
                     }
                     const u8 = auf.u8;
@@ -1071,6 +1108,7 @@ async function lichtLauf() {
                         dc: auf.info && auf.info.drawCalls,
                         nah: nahZahl,
                         zaehl,
+                        boden: [...bodenWgsl.keys()],
                         png: cv.toDataURL("image/png"),
                     };
                 }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
@@ -1175,6 +1213,20 @@ async function lichtLauf() {
                     ? "ist die Glut-Palette des Datums (fachwerk LICHT_GESETZ.feuer `farbe`), keine Farbtemperatur (`kelvin` fehlt)"
                     : `aus ${sauber.kelvin} K (fachwerk LICHT_GESETZ.feuer \`kelvin\` über \`lichtFarbe\`) mit ihrem Abfall (\`lichtAbfall\`)`)
         );
+    if (sauber && !sauber.fehler) {
+        const progs = sauber.boden || [];
+        if (!progs.length)
+            befunde.push(
+                "S0 Boden-Programm: der Schuss zeichnet kein Programm des Boden-Stoffs (`voxelChunkMaterial`) — die Linse ist blind"
+            );
+        progs.forEach((wgsl, i) => {
+            const u = S0_STOFF.urteil(wgsl);
+            console.log(`  S0 BODEN-PROGRAMM ${i + 1}/${progs.length}: ${u.zeichen} Zeichen WGSL (Decke ${S0_STOFF.decke})`);
+            befunde.push(...u.rot);
+            const aus = opt("--wgsl", null);
+            if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
+        });
+    }
     if (sauber && !sauber.fehler && sauber.ton && !(sauber.ton.sat <= S0_TON.satMax))
         console.log(
             `    OFFEN S0 Bild: Sättigung ${sauber.ton.sat} (Soll der Karte ≤ ${S0_TON.satMax}) — der Fuß der ACES-Kurve bei der Nacht-Belichtung ${sauber.belichtung}`
@@ -1192,10 +1244,16 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — der Boden 1–3 m fällt auf Farbton ${fb.ton && fb.ton.hue}° bei Sättigung ${fb.ton && fb.ton.sat}: die Farbtemperatur trägt ihn` : "BLIND"}`
         );
-        pass = pass && getroffen && farbGetroffen;
+        const prog = sauber && !sauber.fehler && sauber.boden && sauber.boden[0];
+        const gross = prog ? S0_STOFF.urteil(prog, prog.length - 1) : null;
+        const grossGetroffen = !!gross && gross.rot.length === 1;
+        console.log(
+            `  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): ${grossGetroffen ? `getroffen — ${gross.rot[0].split(" — ")[0]}` : "BLIND"}`
+        );
+        pass = pass && getroffen && farbGetroffen && grossGetroffen;
     }
     console.log(
-        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : "swiftshader"} · Holz ${HOLZ})\n`
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
     );
     process.exit(pass ? 0 : 1);
 }
@@ -1221,11 +1279,7 @@ function zeige(rep) {
 (async () => {
     if (argv.includes("--licht")) return lichtLauf();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
     let pageErr = null;
     page.on("pageerror", (err) => {

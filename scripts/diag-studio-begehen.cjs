@@ -25,21 +25,13 @@
 //   2/2 Platte · B5 75/112 Wasser · B6 3/3 `wm is not defined`.
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".png": "image/png",
-};
 
 // DIE BASIS-ZEILEN je Defekt: [Datei, geheilte Form, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const LAB = "/worlds/fachwerk/fachwerk.js";
@@ -78,27 +70,20 @@ const BASIS = {
 let patch = null; // die aktive Basis-Liste
 let patchFehler = [];
 
-const server = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split("?")[0]);
-    if (p === "/") p = "/worlds/fachwerk/index.html";
-    const fp = path.join(ROOT, p);
-    if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        if (patch) {
-            let txt = null;
-            for (const [datei, geheilt, basis] of patch) {
-                if (datei !== p) continue;
-                if (txt === null) txt = data.toString("utf8");
-                if (!txt.includes(geheilt))
-                    patchFehler.push(`${datei}: geheilte Zeile fehlt („${geheilt.slice(0, 60)}…")`);
-                else txt = txt.replace(geheilt, basis);
-            }
-            if (txt !== null) data = Buffer.from(txt, "utf8");
+const server = statikServer({
+    root: ROOT,
+    start: "/worlds/fachwerk/index.html",
+    wandle: (p, data) => {
+        if (!data || !patch) return data;
+        let txt = null;
+        for (const [datei, geheilt, basis] of patch) {
+            if (datei !== p) continue;
+            if (txt === null) txt = data.toString("utf8");
+            if (!txt.includes(geheilt)) patchFehler.push(`${datei}: geheilte Zeile fehlt („${geheilt.slice(0, 60)}…")`);
+            else txt = txt.replace(geheilt, basis);
         }
-        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+        return txt === null ? data : Buffer.from(txt, "utf8");
+    },
 });
 
 // Die Proben laufen IN der Lab-Seite (die Top-Level-Bindungen des Labors sind globale lexikalische Namen).
@@ -419,7 +404,7 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     let rot = 0;
     try {
         const lauf = async (inj) => {

@@ -15,6 +15,7 @@
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 />
 <title>Porta — Ordnungen & fraktale Tiefe</title>
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.2">
 <style>
 body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #ui{position:absolute;top:8px;left:8px;z-index:300;background:rgba(10,10,14,0.92);padding:9px 11px;border:1px solid #2a2a3a;border-radius:6px;font-family:monospace;font-size:11px;color:#9aa;width:262px;max-height:94vh;overflow:auto}
@@ -22,18 +23,14 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #presets{display:flex;gap:4px;margin:6px 0;flex-wrap:wrap}
 #presets button,#rnd{background:#191926;color:#bcd;border:1px solid #34344a;padding:3px 7px;font-family:monospace;font-size:10px;cursor:pointer;border-radius:3px}
 #presets button:hover,#rnd:hover{background:#23233a}#presets button.active{background:#34344a;color:#fff}
-.sl{display:flex;align-items:center;gap:6px;margin:2px 0}
-.sl label{width:60px;font-size:9px;color:#778}.sl.voc label{color:#cda}.sl.dep label{color:#9cd}
-.sl input[type=range]{flex:1;height:3px;-webkit-appearance:none;background:#202030;border-radius:2px;outline:none}
-.sl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;background:#9ab;border-radius:50%;cursor:pointer}
-.sl.voc input[type=range]::-webkit-slider-thumb{background:#dca}.sl.dep input[type=range]::-webkit-slider-thumb{background:#9cd}
-.sl .v{width:26px;text-align:right;font-size:9px;color:#9ab}
+/* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette */
+:root{--h-akzent:#cdc8ff;--h-tinte:#bcd;--h-matt:#667;--h-haar:#2a2a3a;--h-feld:rgba(10,10,14,0.92);--h-knopf:#191926;--h-mono:monospace}
 #law{font-size:9px;color:#667;line-height:1.4;margin-top:5px;white-space:pre-line;border-top:1px solid #222;padding-top:5px}
 #doorPrompt{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(10,10,14,0.85);color:#cdc8ff;border:1px solid #34344a;border-radius:20px;padding:7px 18px;font-family:monospace;font-size:13px;letter-spacing:1px;pointer-events:none}
 </style>
 </head>
 <body>
-<div id="ui"><b>PORTA · ORDNUNGEN + FRAKTAL</b><div id="presets"></div><div id="sliders"></div><button id="rnd">Zufallspunkt</button><div id="law"></div></div>
+<div id="ui"><b>PORTA · ORDNUNGEN + FRAKTAL</b><div id="sitzung"></div><div id="presets"></div><div id="sliders"></div><button id="rnd">Zufallspunkt</button><div id="law"></div><div id="kosten"></div></div>
 <div id="doorPrompt">[E] Vordertür öffnen · [R] Hintertür öffnen</div>
 <!-- Klassische Global-Skripte aus dem geteilten Vendor-Regal des Terrain-
      Portals (EINE Kopie): r128 + OrbitControls + der Post-FX-Verbund
@@ -51,7 +48,8 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <script src="../terrain/lib/MaskPass.js"></script>
 <script src="../terrain/lib/ShaderPass.js"></script>
 <script src="../terrain/lib/UnrealBloomPass.js"></script>
-<script src="../../porta-core.js?v=18.544.0"></script>
-<script src="porta.js?v=18.544.0"></script>
+<script src="../../porta-core.js?v=18.546.2"></script>
+<script src="../huelle/huelle.js?v=18.546.2"></script>
+<script src="porta.js?v=18.546.2"></script>
 </body>
 </html>

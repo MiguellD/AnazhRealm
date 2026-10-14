@@ -40,6 +40,8 @@
 //                   Küste zeichnete das Sheet den Küsten-Aquifer über dem Boden, der Körper stand dort trocken. K6 BAUMLOS:
 //                   ein Wesen ohne Gestalt-Baum stand mit der Wasserlinie 0 AUF dem Spiegel.
 //   U3              der Schilf-Bezug der Nah-Streu sprang an der Krone auf den See-/Meeres-Spiegel.
+//   B6 (K40)        der Wasser-Hash rechnete mit sin: auf dem Radeon B2 1,434 (swiftshader 1,027) — die Quelle trägt kein sin
+//                   (Wand im Selbsttest); die Probe hält Mittag und das Gefühl der Welt (uEmotion 0), beide Adapter urteilen gleich.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -49,6 +51,8 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -59,16 +63,40 @@ const SCHWELLE = {
     kantenVerhaeltnis: 1.3, // Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s gegen 60 s
     kantenRuhig: 5, // Kanten-Dichte des ruhigen Flusses bei 3600 s (mittlere Luma-Stufe je Pixel)
     hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
+    schaumSchnelle: 0.5, // Schaum-Deckung der Stromschnelle im selben Mass (das Wildwasser schäumt: sonst ist B1 blind)
     sturm: 1.3, // Kanten-Dichte des ruhigen Flusses im Sturm gegen die bei Sonne (das Gesetz: Amplitude × (w0 + w1·Wind))
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
     bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
 };
 
+// B6 HASH (K40): das Rauschen des Wasser-Stoffs (`_ensureHydroSurfaceMaterial`) rechnet ohne sin — WGSL lässt sin außerhalb
+// ±π beliebig ungenau, der alte Hash fract(sin(dot(p, ·)) · 43758) zerfiel auf dem Radeon mit Welt-Ort und Wasser-Uhr zum Zebra
+// (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Wand liest die Quelle (Kommentare fallen) und nennt die Zeile.
+function hashSin(quelle) {
+    const a = quelle.indexOf("\n    _ensureHydroSurfaceMaterial() {");
+    if (a < 0) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
+    const rest = quelle.slice(a + 1);
+    const ende = rest.search(/\n {4}[_A-Za-z$][\w$]*\([^)]*\) \{\n/);
+    const zeilen = (ende > 0 ? rest.slice(0, ende) : rest).split("\n");
+    for (const z of zeilen) {
+        const code = z.replace(/\/\/.*$/, "");
+        if (/\bsin\s*\(/.test(code)) return z.trim();
+    }
+    return null;
+}
+
+// Der Täter des Selbsttests: der Hash vor K40, im Gewand des Stoffs.
+const HASH_ALT =
+    "\n    _ensureHydroSurfaceMaterial() {\n        const hash2 = Fn(([p]) => {\n" +
+    "            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));\n        });\n    }\n" +
+    "    _naechster() {\n";
+
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
 function urteil(b) {
     const v = [];
     const S = SCHWELLE;
+    if (b.hashSin) v.push(`B6 HASH: das Wasser-Rauschen rechnet mit sin (${b.hashSin}) — auf echter GPU ungenau`);
     // F9 — die Pflanzen im gezeichneten Wasser (Nah-Streu ohne Ufer-Band, Nah-Wiese): je Gebiet ihre Zahl und das Wasser
     // über dem Fuß; LEER, wenn das Gebiet weniger Pflanzen trägt, als dort stehen (die Probe prüfte nichts)
     const florUrteil = (wo, fl, minStreu, minWiese) => {
@@ -136,6 +164,11 @@ function urteil(b) {
                 );
             if (q.trocken > 0)
                 v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
+            if (!(q.buckel <= 0))
+                v.push(
+                    `F5 BUCKEL: ${q.buckel} von ${q.imKanal} Quellen im Kanal eines breiteren Flusses heben dessen Spiegel ` +
+                        `(bis ${q.buckelMax} m) — der Zufluss nahm den Spiegel seiner ungefrästen Ufer`
+                );
             if (!(q.unsichtbarBreite <= 0))
                 v.push(
                     `F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf ${q.unsichtbarBreite} m Breite (Summe je Punkt, in ` +
@@ -221,7 +254,7 @@ function urteil(b) {
             else if (p.abweichend > 0)
                 v.push(
                     `U2 ZWEI FARBEN: ${p.abweichend} von ${p.vertices} Ufer-Vertices färbt der Worker anders als der Main ` +
-                        `(max ${p.maxDiff})`
+                        `(max ${p.maxDiff}; ${p.fels || 0} tragen den Fels-Stoff)`
                 );
         }
     }
@@ -456,6 +489,13 @@ function urteil(b) {
                     v.push(
                         `B1 SCHAUM: ${(a.ruhig.hellAnteil * 100).toFixed(1)} % des ruhigen Flusses schaumbedeckt ohne Gesetz-Grund`
                     );
+                // B1 zählt nur, was der SCHAUM hebt (das Bild ohne Schaum daneben, `wasserBild`): nimmt dieses Bild der
+                // Stromschnelle ihren Schaum nicht (das Wildwasser schäumt nach dem Gesetz), sähe B1 keinen Schaum mehr
+                if (!(a.schnelle.hellAnteil >= S.schaumSchnelle))
+                    v.push(
+                        `B1 LEER: das Bild ohne Schaum nimmt der Stromschnelle den Schaum nicht ` +
+                            `(${(a.schnelle.hellAnteil * 100).toFixed(1)} % vom Schaum gehoben) — B1 sähe keinen`
+                    );
             }
         }
     }
@@ -483,6 +523,9 @@ function selbsttest() {
         quelle: {
             quellen: 64,
             gespeist: 19,
+            imKanal: 5,
+            buckel: 0,
+            buckelMax: 0,
             huelle0: [2.83, 0.35],
             spruenge: 0,
             trocken: 0,
@@ -593,7 +636,7 @@ function selbsttest() {
         bild: {
             uhr60: {
                 ruhig: { kantenDichte: 1, hellAnteil: 0, pixel: 20000 },
-                schnelle: { kantenDichte: 20, pixel: 20000 },
+                schnelle: { kantenDichte: 20, hellAnteil: 0.98, pixel: 20000 },
             },
             uhr3600: { ruhig: { kantenDichte: 1 }, schnelle: { kantenDichte: 21 } },
             kantenVerhaeltnis: 1.05,
@@ -611,6 +654,8 @@ function selbsttest() {
         ["FP LEER", (b) => (b.kanal.zellen = 0)],
         ["F5 SPRUNG", (b) => Object.assign(b.quelle, { spruenge: 43, breiteMax: 12.75, tiefeMax: 1.73 })],
         ["F5 TROCKEN", (b) => (b.quelle.trocken = 1)],
+        // K16: 4 von 5 Quellen im Kanal eines breiteren Flusses hoben dessen Spiegel (−312/1688 um 1,0 m, 664/9032 um 1,36 m)
+        ["F5 BUCKEL", (b) => Object.assign(b.quelle, { buckel: 4, buckelMax: 1.36 })],
         ["F5 UNSICHTBAR", (b) => Object.assign(b.quelle, { unsichtbar: 487, unsichtbarBreite: 1200.5 })],
         ["F5 PHANTOM", (b) => Object.assign(b.quelle, { phantom: 2, phantomBreite: 0.5 })],
         ["F5 LEER", (b) => (b.quelle.quellen = 16)],
@@ -680,12 +725,22 @@ function selbsttest() {
         ["B5 SENKRECHT", (b) => (b.regen.neigung = 0.02)],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
+        ["B1 LEER", (b) => (b.bild.uhr60.schnelle.hellAnteil = 0.02)],
         ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
         ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],
+        ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
     ];
     let rot = 0;
+    // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
+    const quelleSin = hashSin(
+        stammLib.text(require("path").join(__dirname, ".."))
+    );
+    console.log(
+        `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
+    );
+    if (quelleSin) rot++;
     const g = urteil(gut);
     if (g.length) {
         console.log("  ❌ der grüne Befund fällt rot:", g);
@@ -709,42 +764,16 @@ if (process.argv.includes("--selftest")) selbsttest();
 else lauf();
 
 async function lauf() {
-    const puppeteer = require("puppeteer");
-    const http = require("http");
     const fs = require("fs");
     const path = require("path");
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const root = path.resolve(__dirname, "..");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-        ".woff2": "font/woff2",
-    };
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: ECHT ? false : "new",
-        protocolTimeout: 900000,
-        args: BILD ? (ECHT ? echteWebGpuArgs() : softwareWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: BILD ? (ECHT ? "echt" : "linse") : "null", headless: !ECHT, frist: 900000 });
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
     const seitenFehler = [];
@@ -753,20 +782,24 @@ async function lauf() {
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
         });
-    let befund = { seitenFehler };
+    let befund = { seitenFehler, hashSin: hashSin(stammLib.text(root)) };
     let exit = 1;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {
             waitUntil: "domcontentloaded",
             timeout: 120000,
         });
+        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch): auf dem Hardware-Adapter steht die
+        // Hydrosphäre vor dem Backend, und `__wasserBild` riss „render() called before the backend is initialized".
         await page.waitForFunction(
-            () =>
+            (bild) =>
                 window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready,
-            { timeout: 600000, polling: 250 }
+                window.anazhRealm.state.hydrosphere.ready &&
+                (!bild || window.anazhRealm.state.rendererReady),
+            { timeout: 600000, polling: 250 },
+            BILD
         );
         await page.evaluate(WASSER_INSTALL);
         if (BILD) {
@@ -787,9 +820,16 @@ async function lauf() {
                 delete befund.bild[k];
             }
         } else {
-            // Die Welt an das Ostufer des Sees der Mess-Wiese streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
+            // DIE ORTE AUS DER WELT (K16, `__wasserOrte`): See, Ostufer, Fluss, Bach und Küste nächst der Mess-Wiese —
+            // die Literale der alten Welt (der See −944/−640, der Bach −856/−1160) lagen nach der Landform im Trockenen.
+            const ORTE = await page.evaluate(() => window.__wasserOrte({}));
+            befund.orte = ORTE;
+            console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
+            if (!ORTE.see || !ORTE.fluss || !ORTE.bach || !ORTE.kueste)
+                throw new Error("die Welt trägt keinen See, Fluss, Bach oder keine Küste nächst der Mess-Wiese");
+            // Die Welt an das Ostufer des Sees streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
             // die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit von gestern.
-            await page.evaluate(async () => {
+            await page.evaluate(async (ufer) => {
                 const r = window.anazhRealm;
                 const st = r.state;
                 if (st.renderer) {
@@ -798,7 +838,7 @@ async function lauf() {
                         st.renderer.renderAsync = () => Promise.resolve();
                 }
                 st.postProcessingFailed = true;
-                st.playerMesh.position.set(-890, r._voxelSurfaceY(-890, -650) + 0.6, -650);
+                st.playerMesh.position.set(ufer[0], r._voxelSurfaceY(ufer[0], ufer[1]) + 0.6, ufer[1]);
                 const worker = st.voxelWorker;
                 st.voxelWorker = null;
                 const start = performance.now();
@@ -817,37 +857,60 @@ async function lauf() {
                     await new Promise((res) => setTimeout(res, 0));
                 }
                 st.voxelWorker = worker;
-            });
+            }, ORTE.see.ufer);
             // `--nur a,b`: nur diese Proben (Werkbank-Fragen; das Gate fährt alle)
             const nurI = process.argv.indexOf("--nur");
             const NUR = nurI >= 0 ? new Set(process.argv[nurI + 1].split(",")) : null;
             const soll = (n) => !NUR || NUR.has(n);
             if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
             if (soll("kanal")) befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
-            if (soll("koerper")) befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
+            if (soll("koerper"))
+                befund.koerper = await page.evaluate(
+                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte }),
+                    ORTE
+                );
             // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
             if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
-            if (soll("wagen")) befund.wagen = await page.evaluate(() => window.__wasserWagen({}));
-            if (soll("ufer")) befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
+            if (soll("wagen"))
+                befund.wagen = await page.evaluate(
+                    (o) => window.__wasserWagen({ see: o.see.mitte, mitte: o.see.mitte, ufer: o.see.ufer }),
+                    ORTE
+                );
+            if (soll("ufer"))
+                befund.ufer = await page.evaluate((o) => window.__wasserUfer({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             if (soll("uferFarbe")) befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
             // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
             if (soll("bank")) befund.bank = await page.evaluate(() => window.__wasserBank({}));
             // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
-            if (soll("leser")) befund.leser = await page.evaluate(() => window.__wasserLeser({}));
+            if (soll("leser"))
+                befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
-            if (soll("quelle")) befund.quelle = await page.evaluate(() => window.__wasserQuelle({ alle: true }));
-            if (soll("bach")) befund.bach = await page.evaluate(() => window.__wasserBach({}));
-            if (soll("see")) befund.see = await page.evaluate(() => window.__wasserSee({}));
+            if (soll("quelle"))
+                befund.quelle = await page.evaluate((o) => window.__wasserQuelle({ alle: true, bach: o.bach }), ORTE);
+            if (soll("bach"))
+                befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
+            if (soll("see"))
+                befund.see = await page.evaluate((o) => window.__wasserSee({ fenster: o.see.fenster }), ORTE);
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));
         if (v.length) {
             console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);
+            // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
+            // und lokal grün, der Täter stand nur im Log
+            if (process.env.GITHUB_ACTIONS)
+                for (const x of v) console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
         } else console.log("\nWASSER-LEBEN GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
         console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
+        if (process.env.GITHUB_ACTIONS)
+            console.log(
+                `::error title=wasser-leben${BILD ? ":bild" : ""}::ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`
+            );
+        if (process.env.GITHUB_ACTIONS && seitenFehler.length)
+            console.log(`::error title=wasser-leben::SEITE ${seitenFehler[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});

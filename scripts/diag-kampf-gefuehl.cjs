@@ -74,8 +74,7 @@
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -560,26 +559,7 @@ function bissReichVerdict(R, reh) {
     }
     return v;
 }
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
 // die Probe das Verhalten trotzdem — so ist die Linse auf dem Vorher-Stand rot und benennt den Defekt) ──
@@ -3261,21 +3241,33 @@ async function WELLE_L() {
                             Math.abs(r._standSicht(x, z, gy, false) - gy) < 0.15
                         );
                     };
-                    const ortR = [
-                        [-14, 14],
-                        [14, -14],
-                        [-14, -14],
-                        [14, 14],
-                        [-40, 40],
-                        [40, -40],
-                        [-40, -40],
-                        [70, 0],
-                        [0, 70],
-                        [-70, 0],
-                    ].find(
+                    const eben = (x, z) => {
+                        const h = [
+                            [x, z + 1.6],
+                            [x, z],
+                            [x, z + 0.3],
+                            [x - 0.8, z + 1.6],
+                            [x + 0.8, z + 1.6],
+                            [x - 0.8, z],
+                            [x + 0.8, z],
+                        ].map(([a, b]) => r.getTerrainHeightAt(a, b));
+                        return Math.max(...h) - Math.min(...h) <= 0.12;
+                    };
+                    // der Ort aus der Welt (K16, Orts-Wand): Ringe je 8 Richtungen um den Start, 20 … 180 m — der erste, der die Prüfung
+                    // unten trägt (eben, trocken, frei); kein Versatz der alten Welt als Liste
+                    const ortR = ((radien) =>
+                        radien.flatMap((rr) =>
+                            [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
+                                Math.round(Math.cos((k * Math.PI) / 4) * rr),
+                                Math.round(Math.sin((k * Math.PI) / 4) * rr),
+                            ])
+                        ))([20, 57, 70, 100, 140, 180]).find(
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
+                            // EBEN (K16): Reh, beide Absprung-Orte und die Flanken liegen in 0,12 m — am Hang (−14|14 im neuen
+                            // Gelände) stand der Wolf 0,76 m über dem Gesetz, der Kopf zielte an die Klemme
+                            eben(P.x + ox, P.z + oz) &&
                             trocken(r2, P.x + ox, P.z + oz + 1.6) &&
                             trocken(j2, P.x + ox, P.z + oz) &&
                             trocken(j2, P.x + ox, P.z + oz + 0.3)
@@ -3296,7 +3288,13 @@ async function WELLE_L() {
                         reh.boden = {
                             ort: ortR,
                             reh: +(r2.position.y - r.getTerrainHeightAt(R0.x, R0.z)).toFixed(2),
-                            wolf: +(j2.position.y - r.getTerrainHeightAt(j2.position.x, j2.position.z)).toFixed(2),
+                            // der Grund des Wolfs ohne seinen Hüpfer (im Takt kann ein Ansprung laufen: Bericht 0,76 m = Hüpfer 0,75)
+                            wolf: +(
+                                j2.position.y -
+                                (j2.userData._hopH || 0) -
+                                r.getTerrainHeightAt(j2.position.x, j2.position.z)
+                            ).toFixed(2),
+                            hop: +(j2.userData._hopH || 0).toFixed(2),
                         };
                         const KN = A._bissGesetz().kopfNeigung;
                         const dcT = r.damageCreature;
@@ -3360,34 +3358,49 @@ async function WELLE_L() {
                     // Gier −1,55…−1,01, 2 × 1,0 bei Gier 0,05 (rot). Breitseits (π/2) stünde die Probe auf der Kante zwischen
                     // Hinterschenkel und Vorderlauf; π/2 − 0,4 liegt mitten im Band des Hinterschenkels (0,45 / 0,40 rad Rand).
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
+                        // EINE HÖHE (K16): beide Leiber stehen auf dem Grund des Wolfs — die Probe misst das Zielen, nie den Hang.
+                        // Vorher stand das Reh auf dem Gesetz unter sich: am Hang der alten Welt 0,2 m über dem Wolf (der
+                        // Hinterschenkel auf Kopfhöhe, Rest 0,5871), im ebenen Gelände des Kerns 0,28 m unter dem Kopf (Rest
+                        // 0,9921 an der Klemme). Die Gier des Rehs kommt aus einer festen Reihe ab π/2 − 0,4: die erste, deren
+                        // erster Rest im Band der Klemme liegt (Rand 0,05 rad = REH_SOLL.kopfRest), trägt die Probe; ihr Glied steht im Bericht.
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
-                        r2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z), R0.z);
-                        r2.rotation.set(0, Math.PI / 2 - 0.4, 0);
-                        j2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z - 1.3), R0.z - 1.3);
-                        j2.rotation.set(0, 0, 0);
-                        r._tierBaumNeutralStance(j2);
-                        r._tierBaumNeutralStance(r2);
-                        const gang = j2.userData._tierBaum._gang || (j2.userData._tierBaum._gang = {});
-                        gang.bissKopf = 0;
-                        gang.bissRumpf = 0;
-                        j2.updateMatrixWorld(true);
-                        r2.updateMatrixWorld(true);
-                        const VA = { biss: { ziel: r2 }, kopfZiel: 0, rumpfZiel: 0 };
-                        const m = r._kreaturMaul(j2, {});
-                        const reihe = [];
-                        if (m)
-                            for (let k = 0; k < 10; k++) {
-                                r._kreaturBissKopf(j2, VA, m, r2);
-                                reihe.push(+VA.kopfZiel.toFixed(4));
-                            }
-                        if (reihe.length)
+                        const gW = r.getTerrainHeightAt(R0.x, R0.z - 1.3);
+                        const KL = A._bissGesetz().kopfNeigung;
+                        const reiheGier = [0, 0.2, -0.2, 0.4, -0.4, 0.6, -0.6, 0.8, -0.8, 1.0, -1.0, 1.2, -1.2].map(
+                            (d) => Math.PI / 2 - 0.4 + d
+                        );
+                        for (const gier of reiheGier) {
+                            r2.position.set(R0.x, gW, R0.z);
+                            r2.rotation.set(0, gier, 0);
+                            j2.position.set(R0.x, gW, R0.z - 1.3);
+                            j2.rotation.set(0, 0, 0);
+                            Object.assign(j2.userData, { _hopH: 0, _hopV: 0 });
+                            r._tierBaumNeutralStance(j2);
+                            r._tierBaumNeutralStance(r2);
+                            const gang = j2.userData._tierBaum._gang || (j2.userData._tierBaum._gang = {});
+                            gang.bissKopf = 0;
+                            gang.bissRumpf = 0;
+                            j2.updateMatrixWorld(true);
+                            r2.updateMatrixWorld(true);
+                            const VA = { biss: { ziel: r2 }, kopfZiel: 0, rumpfZiel: 0 };
+                            const m = r._kreaturMaul(j2, {});
+                            const reihe = [];
+                            if (m)
+                                for (let k = 0; k < 10; k++) {
+                                    r._kreaturBissKopf(j2, VA, m, r2);
+                                    reihe.push(+VA.kopfZiel.toFixed(4));
+                                }
+                            if (!reihe.length) break;
                             reh.kopfSumme = {
                                 takte: reihe.length,
                                 rest: reihe[0],
                                 drift: +(Math.max(...reihe) - Math.min(...reihe)).toFixed(6),
                                 reihe: reihe.slice(0, 4),
-                                klemme: A._bissGesetz().kopfNeigung.slice(),
+                                klemme: KL.slice(),
+                                gier: +gier.toFixed(2),
                             };
+                            if (reihe[0] >= KL[0] + 0.05 && reihe[0] <= KL[1] - 0.05) break; // der Rand: REH_SOLL.kopfRest
+                        }
                     }
                     if (j2) r.removeCreature(j2);
                     if (r2) r.removeCreature(r2);
@@ -3521,14 +3534,13 @@ async function WELLE_L() {
                             return r._kreaturSchwimmt(wolfS, r._creatureGroundY(wolfS)) === null;
                         };
                         const ort = wolfS
-                            ? [
-                                  [40, 40],
-                                  [-40, 40],
-                                  [40, -40],
-                                  [-40, -40],
-                                  [70, 0],
-                                  [0, 70],
-                              ].find(
+                            ? ((radien) =>
+                                  radien.flatMap((rr) =>
+                                      [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
+                                          Math.round(Math.cos((k * Math.PI) / 4) * rr),
+                                          Math.round(Math.sin((k * Math.PI) / 4) * rr),
+                                      ])
+                                  ))([57, 70]).find(
                                   ([ox, oz]) => trocken(P0.x + ox, P0.z + oz) && trocken(P0.x + ox + 0.4, P0.z + oz + 6)
                               )
                             : null;
@@ -3628,11 +3640,7 @@ async function WELLE_L() {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     let pageErr = null;

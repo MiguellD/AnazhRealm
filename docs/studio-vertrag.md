@@ -274,63 +274,64 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   die Laub-L0 trug 35–72 Quad-Lagen je Kronen-Pixel (jede Lage alpha-getestet und schattiert, 65 % ihrer Fragmente
   verworfen), die L1 24–47 und war die ausgedünnte L0 (Quote 0,46–0,71), der Nadel-Ast eine Röhre unter radialen
   Nadel-Sprays (Koniferen-L0 78–80 % Rinde), der Wurf ein Index-Vorsatz zweier Teile. Die Baum-Zeilen tragen:
-  - `lagen` (tree[0] 16 · tree[1] 13): Quad-Lagen je Kronen-Pixel (kronen-linse `bildLagen`) — der BAU-REGLER der
-    Karten-Wahl (`__lagenWahl`: phyto-core `kronenLagen` schätzt die volle Krone, die Stufe trägt 0,82·lagen davon
-    im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L). Das Soll der L1 (12)
-    steigt offen auf 13: mit 12 deckte die Laub-L1 von unten (60°) im Mittel 0,90–0,94 ihres Bilds von V18.536, die
-    Weiden-L1 0,86 (Gegenprüfung R1, Bild-Tafel);
-  - `quote` (tree[1] 0,4): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,29, Koniferen ≤ 0,39 (Mammut: 14 Furchen am
-    Stamm); das Soll 0,35 hält der Mammut nicht, die Zeile steht offen bei 0,4. Ein Baum ohne Krone (Totholz) ist in der
-    L1 nie Gerüst + Karte — die Quote gilt ihm nicht (unten: sein Gerüst);
-  - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
-    feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
-    hat keine Karte, die ihn trüge: seine L1 trägt jeden Strang ab einem Bild-Pixel an der Nahkante (STUFEN_BILD_PX) —
-    mit dem Gerüst ab 0,25·trunkR verlor das Totholz-L1 bis 16 % seiner Ansicht;
-  - `wedel` ({ab, teile, breite, nadel, rand, winkel, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 10°, 0,15} · tree[1]
-    {0, 2, 2,03, 0,05 m, 0,3, 5°, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
-    und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2811),
-    mindestens `teile` und so viele Stücke, dass die Nadel in der Welt `nadel` misst — trägt die ganze Bahn: je Stück so
-    breit wie die Hülle seiner Nadel-Wolke (Abstand zur Bahn + `rand` × Nadel-Größe, unter 45° um ihre Stelle) ×
-    `breite`, vom Röhren-Ende bis zur Spitze in Kette (mindestens der Saum `rand` × Nadel-Größe: kein Stück schwebt).
-    Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (waagrecht
-    und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 % weniger als V18.536); der
-    Leittrieb trägt seinen Wedel, wo er benadelt ist (die Spitze stand sonst kahl). `holz` ist der Anteil des Holzes
-    (das Mittel der Rinden-Farben des Baums) an der Farbe des Wedels — die Nadel deckt in der Zelle ihr Holz zu 99,9 %,
-    die Karte war ohne Holz um ΔE 2,4–5,2 heller und grüner; geeicht an der Kronenfarbe der Karten von V18.536. Was am
-    Ast wächst, fällt mit ihm; die Nadel-Karte (`nadelKarte`) und der Blatt-Stride der Laub-L0 (`dichte.laub`) sind
-    gefallen;
-  - `straehne.holz` (tree[0] 0 · tree[1] 0,06): der Holz-Anteil an der Farbe der Trauer-Strähne — die L1 trägt die
-    Peitsche samt ihrem Ast unter 0,25·trunkR (die Weiden-Karte war ohne ihn um ΔE 2,2–2,5 grüner);
-  - `blattKarte` (tree[0] 4,0 · tree[1] 2,2) und `straehne.breite` der L1 (0,95) sind an der Bild-Tafel geeicht (die
-    Laub-L1 deckte mit 1,8 im Mittel 0,84–0,92 ihres Bilds von V18.536, die Weiden-L1 mit 0,52 0,81–0,87);
-  - `wurf` (tree[1] {durchmesserM 0,17, teil "schatten", lagen 12, tris 1 200}) — DAS EINE WURF-GESETZ (E1): die Stufe,
-    auf die `schatten` zeigt, liefert ihren Wurf als EIGENES Teil `teil: "schatten"` mit dem Attribut `aDeckt` (Rinde 1,
-    Karte 0): das Gerüst ab `durchmesserM` Welt-Durchmesser (der Kaskaden-Texel k0) als Dreikant mit der mittleren
-    Breite des Rundstrangs (Umkreis 2π/(3√3)·r) und die Karten bzw. Strähnen der Krone auf höchstens `lagen` Lagen.
-    Der Wirt zeichnet das Teil mit EINEM Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode, beidseitig)
-    nur auf SHADOW_TWIN_LAYER, jedes andere Teil der Stufe wirft nicht; fehlt das Teil, KERN-PFLICHT. Der drawRange-
-    Vorsatz (`__wurf`, `lf.wurf`) ist gefallen. Mit 6 Lagen deckte der Wurf von oben 61 % des L1-Bilds (Eiche), mit 12
-    81–94 % — die Zeile trägt 12. Haus (Stufe 3, aDeckt 1) liest dasselbe Gesetz; die Gelenk-Gestalt liest dieselbe
-    Zeile in ihrer Seh-Form (`wurf.seh`, oben bei den DARF-Feldern: ihre Grobstufe wirft auf SHADOW_TWIN_LAYER).
-  - Die Zeilen: `tree[0].tris` 18 000 → 12 000 (Soll 9 000 — die Birke trägt 10 954–11 924: das Lentizellen-Gitter mit
-    seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 886–7 526,
-    Koniferen 5 188–6 412, Weide 6 474–8 842), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 690–2 782, der
-    Mammut 2 308–2 448; jede andere Art ≤ 2 034), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
-  - DAS BILD VON V18.536 (Wand D, Gegenprüfung R1): `spec/asset-contract/v1/bild-v18536.json` trägt je Baum-Art × Same
-    L0 und L1 je Blick-Hebung (0°/30°/60° von unten, je acht Azimute; das Bild über dem Boden der Vorlage — die Wurzeln
-    im Boden sieht kein Spieler) und die Studio-Karte (Deckung, Kronenfarbe). Je Art hält das Mittel der Gestalten je
-    Stufe und Hebung und die Deckung der Karten 0,92–1,08, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im
-    Mittel ΔE76 ≤ 2, je Gestalt ≤ 4 (V18.536 zeigte zwischen dünnen Sprays je Gestalt verschieden viel Holz). Das
-    Mittel der 24 Ansichten (D0) sah die Seitenansicht mit einem Drittel: die Koniferen-L1 verlor 30–32 % ihrer
-    Seitenansicht, die Karte 22–25 %, ohne dass eine Wand anschlug.
-  - Die Pixel-Gesetze der L1 (ihre Nahkante: 704 px je Baumhöhe; die L0 beginnt auf Armlänge, dort trägt jedes Merkmal):
-    die Radial-Teilung folgt dem Umriss (Sehnen-Abstand ≤ ½ px) und trägt mindestens zwei Seiten je Furche; die
-    Birken-Zeile ist ein Band nur ab 2 px, ihre Naht ab 1 px; die L1-Wurzel liegt in der Radial-Teilung der L2.
-  - **FINAL GESTRICHEN (S3):** die Fels-L1 — `formationen` an der Mess-Wiese 3/20 Befehle, 10 240/30 000 Dreiecke,
-    Genesis 3 / 14 720, Fels-L0 320–1 280 je Stein: eine L1 spart < 3k, `kindStages.rock` bleibt [0] (der Validator
-    hält es) · `budgetErzwingen` für Pflanzen — die Zeile IST der Bau-Regler, `gate:asset-contract` die Wand, ein
-    Ausgangs-Falten wäre ein Zwilling (`gate:studio-vertrag`: der Ruf lebt nur im Zweit-Kern-Zweig der Brücke) · die
-    Seh-Klasse `laub` — ihr einziger Leser wäre dieses Falten (Konsum 0); `BUDGET_GESETZ.seh` trägt sie nicht.
+    - `lagen` (tree[0] 16 · tree[1] 13): Quad-Lagen je Kronen-Pixel (kronen-linse `bildLagen`) — der BAU-REGLER der
+      Karten-Wahl (`__lagenWahl`: phyto-core `kronenLagen` schätzt die volle Krone, die Stufe trägt 0,82·lagen davon
+      im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L). Das Soll der L1 (12)
+      steigt offen auf 13: mit 12 deckte die Laub-L1 von unten (60°) im Mittel 0,90–0,94 ihres Bilds von V18.536, die
+      Weiden-L1 0,86 (Gegenprüfung R1, Bild-Tafel);
+    - `quote` (tree[1] 0,35, K20): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,26, Koniferen ≤ 0,35; im Kronenraum (ab
+      dem tiefsten Ast-Ansatz) trägt der L1-Stamm nur seine Bahn (Mammut 0,371 → 0,346). Ein Baum ohne Krone (Totholz) ist in der
+      L1 nie Gerüst + Karte — die Quote gilt ihm nicht (unten: sein Gerüst);
+    - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
+      feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
+      hat keine Karte, die ihn trüge: seine L1 trägt jeden Strang ab einem Bild-Pixel an der Nahkante (STUFEN_BILD_PX) —
+      mit dem Gerüst ab 0,25·trunkR verlor das Totholz-L1 bis 16 % seiner Ansicht;
+    - `wedel` ({ab, teile, breite, nadel, rand, winkel, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 10°, 0,15} · tree[1]
+      {0, 2, 2,03, 0,05 m, 0,3, 5°, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
+      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2811),
+      mindestens `teile` und so viele Stücke, dass die Nadel in der Welt `nadel` misst — trägt die ganze Bahn: je Stück so
+      breit wie die Hülle seiner Nadel-Wolke (Abstand zur Bahn + `rand` × Nadel-Größe, unter 45° um ihre Stelle) ×
+      `breite`, vom Röhren-Ende bis zur Spitze in Kette (mindestens der Saum `rand` × Nadel-Größe: kein Stück schwebt).
+      Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (waagrecht
+      und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 % weniger als V18.536); der
+      Leittrieb trägt seinen Wedel, wo er benadelt ist (die Spitze stand sonst kahl). `holz` ist der Anteil des Holzes
+      (das Mittel der Rinden-Farben des Baums) an der Farbe des Wedels — die Nadel deckt in der Zelle ihr Holz zu 99,9 %,
+      die Karte war ohne Holz um ΔE 2,4–5,2 heller und grüner; geeicht an der Kronenfarbe der Karten von V18.536. Was am
+      Ast wächst, fällt mit ihm; die Nadel-Karte (`nadelKarte`) und der Blatt-Stride der Laub-L0 (`dichte.laub`) sind
+      gefallen;
+    - `straehne.holz` (tree[0] 0 · tree[1] 0,06): der Holz-Anteil an der Farbe der Trauer-Strähne — die L1 trägt die
+      Peitsche samt ihrem Ast unter 0,25·trunkR (die Weiden-Karte war ohne ihn um ΔE 2,2–2,5 grüner);
+    - `blattKarte` (tree[0] 4,0 · tree[1] 2,2) und `straehne.breite` der L1 (0,95) sind an der Bild-Tafel geeicht (die
+      Laub-L1 deckte mit 1,8 im Mittel 0,84–0,92 ihres Bilds von V18.536, die Weiden-L1 mit 0,52 0,81–0,87);
+    - `wurf` (tree[1] {durchmesserM 0,17, teil "schatten", lagen 12, tris 1 200}) — DAS EINE WURF-GESETZ (E1): die Stufe,
+      auf die `schatten` zeigt, liefert ihren Wurf als EIGENES Teil `teil: "schatten"` mit dem Attribut `aDeckt` (Rinde 1,
+      Karte 0): das Gerüst ab `durchmesserM` Welt-Durchmesser (der Kaskaden-Texel k0) als Dreikant mit der mittleren
+      Breite des Rundstrangs (Umkreis 2π/(3√3)·r) und die Karten bzw. Strähnen der Krone auf höchstens `lagen` Lagen.
+      Der Wirt zeichnet das Teil mit EINEM Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode, beidseitig)
+      nur auf SHADOW_TWIN_LAYER, jedes andere Teil der Stufe wirft nicht; fehlt das Teil, KERN-PFLICHT. Der drawRange-
+      Vorsatz (`__wurf`, `lf.wurf`) ist gefallen. Mit 6 Lagen deckte der Wurf von oben 61 % des L1-Bilds (Eiche), mit 12
+      81–94 % — die Zeile trägt 12. Haus (Stufe 3, aDeckt 1) liest dasselbe Gesetz; die Gelenk-Gestalt liest dieselbe
+      Zeile in ihrer Seh-Form (`wurf.seh`, oben bei den DARF-Feldern: ihre Grobstufe wirft auf SHADOW_TWIN_LAYER).
+    - Die Zeilen: `tree[0].tris` 18 000 → 12 000 (Soll 9 000 — die Birke trägt 10 954–11 924: das Lentizellen-Gitter mit
+      seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 886–7 526,
+      Koniferen 5 188–6 412, Weide 6 474–8 842), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 690–2 782, der
+      Mammut 2 308–2 448; jede andere Art ≤ 2 034), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
+    - DIE BILD-TAFEL (Wand D, Gegenprüfung R1; gemünzt V18.536, neu im Vertrags-Akt K20 — die Bäume tragen ihr Welt-Maß):
+      `spec/asset-contract/v1/bild-tafel.json` trägt je Baum-Art × Same
+      L0 und L1 je Blick-Hebung (0°/30°/60° von unten, je acht Azimute; das Bild über dem Boden der Vorlage — die Wurzeln
+      im Boden sieht kein Spieler) und die Studio-Karte (Deckung, Kronenfarbe). Je Art hält das Mittel der Gestalten je
+      Stufe und Hebung und die Deckung der Karten 0,92–1,08, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im
+      Mittel ΔE76 ≤ 2, je Gestalt ≤ 4 (V18.536 zeigte zwischen dünnen Sprays je Gestalt verschieden viel Holz). Das
+      Mittel der 24 Ansichten (D0) sah die Seitenansicht mit einem Drittel: die Koniferen-L1 verlor 30–32 % ihrer
+      Seitenansicht, die Karte 22–25 %, ohne dass eine Wand anschlug.
+    - Die Pixel-Gesetze der L1 (ihre Nahkante: 704 px je Baumhöhe; die L0 beginnt auf Armlänge, dort trägt jedes Merkmal):
+      die Radial-Teilung folgt dem Umriss (Sehnen-Abstand ≤ ½ px) und trägt mindestens zwei Seiten je Furche; die
+      Birken-Zeile ist ein Band nur ab 2 px, ihre Naht ab 1 px; die L1-Wurzel liegt in der Radial-Teilung der L2.
+    - **FINAL GESTRICHEN (S3):** die Fels-L1 — `formationen` an der Mess-Wiese 3/20 Befehle, 10 240/30 000 Dreiecke,
+      Genesis 3 / 14 720, Fels-L0 320–1 280 je Stein: eine L1 spart < 3k, `kindStages.rock` bleibt [0] (der Validator
+      hält es) · `budgetErzwingen` für Pflanzen — die Zeile IST der Bau-Regler, `gate:asset-contract` die Wand, ein
+      Ausgangs-Falten wäre ein Zwilling (`gate:studio-vertrag`: der Ruf lebt nur im Zweit-Kern-Zweig der Brücke) · die
+      Seh-Klasse `laub` — ihr einziger Leser wäre dieses Falten (Konsum 0); `BUDGET_GESETZ.seh` trägt sie nicht.
 - **Der EINE Blatt-Atlas als Textur** (`bakeLeafAtlasBild`, phyto-core): die gemalte Leinwand blutet (nicht
   deckende Texel tragen das Zell-Mittel statt Schwarz), alle Zellen tragen dasselbe lineare Mittel `wert`,
   die Mip-Kette ist die des Karten-Gesetzes (`impostorMips`, die vier Zellen als Ansichten nebeneinander: je Stufe
@@ -365,6 +366,10 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
   (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
   `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
+- **Das Maß des Baums (K20):** jeder gewachsene Bau (Rezept-Art Baum oder Strauch) trägt den Beipack `__mass`
+  (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
+  `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
+  ihn, fail-closed (KERN-PFLICHT).
 - Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:tor-fern` (das Tor: Fernbild ≤ 24 sicht-Teile ohne
   wurf-Teil durch den EINEN Leser, Wurf-Deckung, innen — über die Regler-Hülle), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
   (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).
@@ -915,11 +920,36 @@ Wirt, der Kern hält keinen Welt-Zustand außer Strömen, die er aus der Saat ab
 (beide Seiten der Erklärung, die Absenz der Blöcke, die Funktions-Fläche; Selbsttest), die Zwillings-Wand in
 `gate:altlasten` hält die Formeln im Gesetzbuch.
 
-**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)` (der
-Term-Auswerter des Erbguts samt seiner Normalform `erbgutNormal`, der Wildnis-Term samt kontinentaler Basis
-`kontinentBasis`, der Makro-Anker `ankerAusSaat`/`ankerBeitrag`/`massivMaske`/`grat`, Erosions- und Tarn-Delta samt
-Mulden-Form `tarnMulde`, die Rauheits-Maske `rauheit`, der Kachel-Schlüssel); geladen vom Stamm (vor `anazhRealm.js`),
-vom voxel-worker (`importScripts` mit `?v=`) und vom Foundry-Worker; `feld-wgsl.js` bleibt der Seh-Spiegel und liest
-seine Eingaben aus ihm. Kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `kontinentBasis`, die Fels-
-Exposition `massivMaske`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder Wurzel-Datei und jedem
-Skript.
+Was ein Gesetz-Kern über das Gesetz hinaus trägt, ist das, was Studio UND Welt lesen müssen, damit kein Zwilling entsteht:
+die LINSE, die sein Gesetz misst (dieselbe Rechnung für die Wand und die Zahl-Leiste des Studios), und die PLAN-TÜR, durch
+die ein Plan des Studios zur Welt wird (Studio = Welt byte-gleich, M5). Die BEDIENUNG eines Studios — die Namen seiner
+Regler, ihre Gruppen, seine benannten Landschaften — ist weder Gesetz noch Linse: sie gehört dem Studio (beim Gelände
+`worlds/gelaende/bedienung.json`), eine benannte Landschaft ist ein Rezept und steht nie im Kern. Jeder Schlüssel des
+Namensraums steht in der Erklärung unten; `gate:studio-vertrag` liest sie und nennt jeden Schlüssel, der fehlt, und jedes
+Rezept unter jedem Namen (ein Schlüssel aus `PRESET`/`REZEPT`/`RECIPE`, eine Liste von Einträgen mit `regler`, `kind` oder
+Dials `s`) beim Namen.
+
+**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — DAS GESETZ: die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)`
+(der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal`, der Wildnis-Term `wildnisY` = die LANDFORM,
+K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
+je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
+den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
+Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
+Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER FELS-STOFF (K17): das Aussehen
+des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
+`felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
+Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
+in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
+`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, das Ziel der gröberen Stufe
+`STUFE_ZIEL`/`stufeZiel` (K51-2, der Geomorph der Boden-Stufen: je Vertex Lage, Normale und Stoff-Farbe auf dem Netz der nächst
+gröberen Stufe — Worker und Sync-Bau rufen dieselbe Funktion) und DAS RAUSCH-GESETZ `RAUSCH` mit
+`rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).
+DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mit den Bändern `HANG_BAENDER`, die Bahnen
+der Flachland-Glieder `maeanderZahl`, die Messung `MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit
+`abdruckFeld`, `messStatistik`, `schichtSchritte`/`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`.
+DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`,
+die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
+Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
+vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
+Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
+Wurzel-Datei und jedem Skript.

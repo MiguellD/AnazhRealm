@@ -15,35 +15,15 @@
 // `.calls` nackt (drawCalls-first), der Flugschreiber trägt das version-Feld
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
 const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── Der STATISCHE Teil: kein Konsument liest den Lebenszeit-Zähler nackt ──
 // (die drei Render-Linsen wanderten V18.427 mit — hier bleibt das so; die
@@ -78,7 +58,7 @@ function nakedLifetimeReads(src) {
         // Der Flugschreiber trennt vergiftete Alt-Traces: der Perf-Payload trägt `version:`
         // (≥ V18.427 = geheilte Traces) + sein drawCalls-Feld liest die (bounded) sense-Zahl,
         // nie ein rohes info-Objekt. Anker = das eindeutige drawCalls-Feld, version davor.
-        const nc = stripComments(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+        const nc = stripComments(stammLib.text(root));
         const dcIdx = nc.search(/drawCalls:\s*Math\.round\(s\.renderCalls/);
         const before = dcIdx >= 0 ? nc.slice(Math.max(0, dcIdx - 2500), dcIdx) : "";
         staticChecks.push({
@@ -93,11 +73,7 @@ function nakedLifetimeReads(src) {
     // GPU-freie Fake-Vertrag oben bleibt der CI-Pfad).
     const REAL = process.env.REAL_RENDERER === "1";
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: REAL ? softwareWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: REAL ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((real) => {
         if (!real) window.__anazhHeadlessNullRenderer = true;

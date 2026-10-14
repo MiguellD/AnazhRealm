@@ -43,33 +43,10 @@
 //
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.STREU_FERN_PORT || 4586);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -79,11 +56,7 @@ function check(name, ok, detail) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 600000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 600000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -462,11 +435,21 @@ function check(name, ok, detail) {
                 fits = 0;
             const cursor0 = wm.kapselCursor;
             const segs0 = wm.freiKapselSeg;
+            const plaetze0 = new Map();
             try {
                 const reg0 = map.get(flipKey);
                 const rx = reg0.regX,
                     rz = reg0.regZ;
                 r._disposeScatterRegion(flipKey); // ihre Plätze fallen frei (Segmente in die alte Freiliste)
+                // ERSCHÖPFT ist die Liste erst, wenn keine der drei Quellen mehr trägt: der Bump-Cursor, die freien Segmente
+                // UND die freien Plätze der stehenden Gesetz-Blöcke — ein Spawn füllt zuerst den Block seiner Kachel
+                // (`_streuGesetzSpawn`); teilt die Region ihre Kacheln mit Nachbarn, fanden 13 von 150 Zellen dort Platz
+                // (K16-Gelände, lokal und CI 38242768343), der Allokator war nie gefragt.
+                for (const bloecke of wm.gesetzKacheln.values())
+                    for (const b of bloecke) {
+                        plaetze0.set(b, b.freiPlaetze);
+                        b.freiPlaetze = [];
+                    }
                 wm.freiKapselSeg = new Map();
                 wm.kapselCursor = AR.WELT_MARCH.kapseln;
                 wm.kapselVoll = false;
@@ -511,6 +494,8 @@ function check(name, ok, detail) {
                     segs0.set(n, alt.concat(l));
                 }
                 wm.freiKapselSeg = segs0;
+                // die freien Plätze der Blöcke zurück (ein Block, der in der Erschöpfung fiel, kehrt nicht zurück)
+                for (const [b, frei] of plaetze0) b.freiPlaetze = frei.concat(b.freiPlaetze);
                 wm.kapselCursor = cursor0;
                 wm.kapselVoll = false;
                 r._weltKapselnVollWarn = false;

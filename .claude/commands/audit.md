@@ -10,9 +10,9 @@ Führe eine umfassende Prüfung des Projekts durch. Arbeite die folgenden Schrit
 - Ungestagte Änderungen vorhanden?
 
 ## 2. Syntax & Statik
-- `node --check anazhRealm.js`
+- `node scripts/diag-atlas.cjs --check` — der Stamm (`stamm/NN[x].js`, die Liste = die Tags in index.html): Syntax je Datei, Marker, Ratsche
 - `node --check save-server.js`
-- Zeilenzählung (`wc -l *.js`) – Wachstum nennenswert seit letztem Audit?
+- Zeilenzählung (`wc -l *.js stamm/*.js`) – Wachstum nennenswert seit letztem Audit?
 
 ## 2.5 Strict-Audit-Suite (V8.23+)
 Falls noch nicht im pre-push-Workflow:
@@ -27,27 +27,27 @@ Falls noch nicht im pre-push-Workflow:
 Suche nach Pattern, die schon einmal Bugs verursacht haben:
 
 ```
-# Duplikate Methodendefinitionen (B1-Pattern)
-grep -nE "^[a-zA-Z_]+\s*\([^)]*\)\s*\{" anazhRealm.js | awk '{print $2}' | sort | uniq -d
+# Duplikate Methodendefinitionen (B1-Pattern): die AST-Zwillinge über alle Stamm-Dateien
+node scripts/diag-atlas.cjs --check
 
 # Single-Quote-Template-Strings in Funktionsaufrufen (B2-Pattern)
-grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" anazhRealm.js
+grep -nE "\(\s*'[^']*\\\$\{[^}]+\}[^']*'\s*[,)]" stamm/*.js
 
 # Code-Injection-Stellen
-grep -nE "(eval\(|new Function\()" anazhRealm.js
+grep -nE "(eval\(|new Function\()" stamm/*.js
 
 # XSS-Vektoren
-grep -nE "innerHTML\s*\+?=" anazhRealm.js
+grep -nE "innerHTML\s*\+?=" stamm/*.js
 
 # Ammo-Memory-Leak-Indikator: btVector3 vs destroy-Verhältnis
-echo "btVector3-Allokationen: $(grep -c 'new Ammo.btVector3' anazhRealm.js)"
-echo "Ammo.destroy-Aufrufe: $(grep -c 'Ammo.destroy' anazhRealm.js)"
+echo "btVector3-Allokationen: $(cat stamm/*.js | grep -c 'new Ammo.btVector3')"
+echo "Ammo.destroy-Aufrufe: $(cat stamm/*.js | grep -c 'Ammo.destroy')"
 
 # TODO/FIXME/XXX/HACK
-grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js
+grep -nE "(TODO|FIXME|XXX|HACK|TBD)" stamm/*.js save-server.js
 
 # Mixed Indentation (B25): Mische 4er- und 8er-Einrückung
-awk '/^        [a-zA-Z]/ {eight++} /^    [a-zA-Z]/ {four++} END {print "4-Space-Methoden:", four, "/ 8-Space-Methoden:", eight}' anazhRealm.js
+awk '/^        [a-zA-Z]/ {eight++} /^    [a-zA-Z]/ {four++} END {print "4-Space-Methoden:", four, "/ 8-Space-Methoden:", eight}' stamm/*.js
 ```
 
 ## 4. State-Datei (`anazhRealmState.json`)

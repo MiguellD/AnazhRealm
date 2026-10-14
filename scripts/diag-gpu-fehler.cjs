@@ -6,9 +6,7 @@
 //   node scripts/diag-gpu-fehler.cjs --selftest          Port: GPU_FEHLER_PORT (Standard 4423)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const http = require("http");
-const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
@@ -74,12 +72,9 @@ async function probe() {
         process.exit(0);
     }
     console.log("=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===");
-    const server = http.createServer((req, res) => {
-        res.setHeader("Content-Type", "text/html");
-        res.end("<!doctype html><title>gpu-fehler</title>");
-    });
+    const server = statikServer({ seiten: { "/": "<!doctype html><title>gpu-fehler</title>" } });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, args: softwareWebGpuArgs() });
+    const browser = await starteBrowser({ art: "linse" });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "domcontentloaded" });

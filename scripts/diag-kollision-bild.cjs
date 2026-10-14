@@ -226,33 +226,11 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Die Zählung im Seiten-Kontext: je Studio-Werk im Umkreis das Bild gegen die Kollision.
 async function probe(K) {
@@ -267,7 +245,7 @@ async function probe(K) {
     const f = r._ensureAssetFoundry();
     const dl = performance.now() + 90000;
     while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.zacken)) await pause(100);
-    const MW = { x: -913.7, z: -890 };
+    const MW = K.mess; // die Mess-Wiese aus EINER Quelle (spec/profiband/haushalt.json), nie ihre Abschrift
     st.playerMesh.position.set(MW.x, r._voxelSurfaceY(MW.x, MW.z) + 1.8, MW.z);
     let stabil = 0,
         last = -1;
@@ -395,7 +373,10 @@ async function probe(K) {
         let g = null;
         const sl = (e.instSlots || []).find((s) => typeof s.key === "string" && /^f:/.test(s.key));
         if (sl) g = Number(sl.key.split("|")[1]);
-        if (!Number.isFinite(g)) g = r._foundryVariantFor(e.seed, pr);
+        // ohne Körper-Slot (die Karte der L2 trägt „fimp:atlas") die Gestalt, die der Wirt zeichnet: der EINE Leser
+        // `_foundryGestaltFor` (die Gestalt des Orts, K20) — der rohe Same wählte ohne Ort, und jede dritte Tanne der Karten-
+        // Stufe wurde gegen den Solitär gemessen (40 Fehlbefunde, die Spitze der Bestand-Hülle 0,8–2,2 m über ihm)
+        if (!Number.isFinite(g)) g = r._foundryGestaltFor(e, pr);
         if (!Number.isFinite(g)) return null;
         const pts = await bild(pr, g);
         if (!pts || !pts.length) return null;
@@ -614,11 +595,7 @@ async function probe(K) {
 (async () => {
     console.log("=== KOLLISION = BILD (Leben-Schau 2) — Null-Renderer, Foundry an, Mess-Wiese 150 m + Exemplare ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 900000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
     const pageErrors = [];
@@ -637,6 +614,7 @@ async function probe(K) {
             timeout: 180000,
         });
         befund = await page.evaluate(probe, {
+            mess: messort("wiese"),
             R: 150,
             SEITE_M,
             OBEN_ANTEIL,

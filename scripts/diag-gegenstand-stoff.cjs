@@ -15,11 +15,12 @@
 //   durchsicht   eine Scheibe ohne Durchsicht
 //   toenung      Vertex-Farben UND eine nicht-weiße Material-Farbe (das Labor tönt, die Welt nicht)
 //   lack-gestalt die Gestalten tragen nicht die acht Lacke des LACK_GESETZ (linear)
-//   transport    der Extraktor (phytogenesis) reicht Klarlack/Durchsicht nicht, der Wirt baut sie nicht
+//   transport    der Extraktor (foundry-bruecke) reicht Klarlack/Durchsicht nicht, der Wirt baut sie nicht
 //   node scripts/diag-gegenstand-stoff.cjs [--selftest]
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -150,9 +151,9 @@ function alles() {
     out.push(...lackGestalten());
     out.push(
         ...transport(
-            fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8"),
+            fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"), // der Extraktor lebt in der Brücke (K42)
             fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"),
-            fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")
+            stammLib.text(root)
         )
     );
     return [...new Set(out)];

@@ -11,37 +11,17 @@
 //   5 MOND     am Tag blass (Deckung < 0,5), nachts fast deckend (> 0,85)
 //   6 ZEICHNEN das Sternfeld zeichnet genau dann, wenn ein Punkt sichtbar ist, und in EINEM Durchgang (Welle 6: mittags
 //              zog es zwei GPU-Befehle für ein schwarzes Bild — DoubleSide-durchscheinend sind in r184 zwei Durchgänge)
-// --selftest: eine injizierte Himmelskugel, eine zu tiefe Mittags-Grenzgröße und ein Sternfeld in zwei Durchgängen
-// müssen beim Namen rot werden.
+//   7 UNENDLICH Kuppel (500 m), Sterne (480 m), Sonne und Mond (380 m) tragen den EINEN Unendlich-Knoten (Clip-z = w):
+//              sie zeichnen nur, wo die Welt nichts zeichnet (K16, echte GPU 11.10.: die Kuppel überschrieb den Fern-Ring
+//              jenseits 500 m — aus 300 m Höhe lag die Welt unter einem „Meer“ aus Horizont-Blau)
+// --selftest: eine injizierte Himmelskugel, eine zu tiefe Mittags-Grenzgröße, ein Sternfeld in zwei Durchgängen und
+// eine Sonne ohne Unendlich-Knoten müssen beim Namen rot werden.
 //   node scripts/diag-himmel-tag.cjs [--selftest]
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.HIMMEL_PORT || 4595);
 const SELFTEST = process.argv.includes("--selftest");
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 function probe(stoerung) {
     const r = window.anazhRealm;
@@ -56,6 +36,8 @@ function probe(stoerung) {
     }
     if (stoerung === "grenze") r._himmelGrenzgroesse = () => -3;
     if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
+    const sonneVN = st.sunMesh.material.vertexNode;
+    if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
     const zeit = (t) => {
         st.timeOfDay = t;
         if (st.world) st.world.timeOfDay = t;
@@ -96,6 +78,29 @@ function probe(stoerung) {
     out.nacht.zeichnet = !!(sf && sf.visible);
     out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
     out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
+    // 7 UNENDLICH: jeder Himmelskörper folgt der Kamera in endlichem Abstand — sein Clip-z muss der EINE Unendlich-Knoten
+    // sein (z = w, Tiefe 1,0), sonst überschreibt er die Ferne dahinter (Fern-Ring bis 8 km, Feld-Pass bis 40 km).
+    const unendlich = r.constructor._unendlichKnoten;
+    const abstand = (o) => {
+        if (o === st.skybox) return o.geometry.parameters.radius;
+        if (o.isInstancedMesh) {
+            const a = o.instanceMatrix.array;
+            return Math.hypot(a[12], a[13], a[14]);
+        }
+        return o.userData.skyOffset ? o.userData.skyOffset.length() : o.position.distanceTo(st.camera.position);
+    };
+    out.vorn = [];
+    for (const [name, o] of [
+        ["himmel", st.skybox],
+        ["himmel-sterne", sf],
+        ["himmel-sonne", st.sunMesh],
+        ["himmel-mond", st.moonMesh],
+    ]) {
+        if (!o) out.vorn.push(`${name} fehlt`);
+        else if (!(unendlich && o.material.vertexNode === unendlich && o.material.depthTest !== false))
+            out.vorn.push(`${name} bei ${Math.round(abstand(o))} m`);
+    }
+    if (stoerung === "vorne") st.sunMesh.material.vertexNode = sonneVN;
     if (kugel) st.scene.remove(kugel);
     if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
     r._himmelGrenzgroesse = sauber.grenze;
@@ -122,16 +127,14 @@ function urteil(S) {
     if (S.nacht.n > 0 && !S.nacht.zeichnet)
         rot.push(`6 ZEICHNEN: nachts zeichnet das Sternfeld nicht (${S.nacht.n} Punkte)`);
     if (!S.einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen (forceSinglePass fehlt)");
+    if (S.vorn.length)
+        rot.push(`7 UNENDLICH: ${S.vorn.join(" · ")} — verdeckt die Welt dahinter (Clip-z ist nicht der Unendlich-Knoten)`);
     return rot;
 }
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 120000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -156,15 +159,18 @@ function urteil(S) {
         const kugel = urteil(await page.evaluate(probe, "kugel"));
         const grenze = urteil(await page.evaluate(probe, "grenze"));
         const doppel = urteil(await page.evaluate(probe, "doppel"));
+        const vorne = urteil(await page.evaluate(probe, "vorne"));
         const heil = urteil(await page.evaluate(probe, null));
         selbst = {
             kugelRot: kugel.some((e) => e.startsWith("1 KÖRPER")),
             grenzeRot: grenze.some((e) => e.startsWith("2 MITTAG")),
             doppelRot: doppel.some((e) => e.startsWith("6 ZEICHNEN")),
+            vorneRot: vorne.some((e) => e.startsWith("7 UNENDLICH") && e.includes("himmel-sonne")),
             heilGruen: heil.length === 0,
             kugel: kugel[0] || "-",
             grenze: grenze[0] || "-",
             doppel: doppel[0] || "-",
+            vorne: vorne.find((e) => e.startsWith("7 UNENDLICH")) || "-",
         };
     }
     await browser.close();
@@ -190,6 +196,8 @@ function urteil(S) {
         if (!selbst.grenzeRot) rot.push("SELBSTTEST: die zu tiefe Mittags-Grenze blieb grün");
         console.log(`  Selbsttest: zwei Durchgänge → ${selbst.doppel}`);
         if (!selbst.doppelRot) rot.push("SELBSTTEST: das Sternfeld in zwei Durchgängen blieb grün");
+        console.log(`  Selbsttest: Sonne ohne Unendlich-Knoten → ${selbst.vorne}`);
+        if (!selbst.vorneRot) rot.push("SELBSTTEST: die Sonne vor der Welt blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
     if (rot.length) {

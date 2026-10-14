@@ -14,22 +14,13 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
+const { statikServer, starteBrowser } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
 const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-    ".wasm": "application/wasm",
-};
 
 function sha256Hex(buf) {
     return crypto.createHash("sha256").update(buf).digest("hex");
@@ -114,12 +105,14 @@ function methodSource(src, name, nextAnchors) {
 
 // ---------------------------------------------------------------------------
 // Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + shell_1 + …` (UTF-8; srcs.join("\n"); die
-// Shells seit V18.527). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-Format) — der Pack-Index trägt
-// den reinen Generator-Hash.
-function computeStamp(root) {
+// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n"); die
+// Foundry-Brücke seit K42, vorher die Labor-Shell). Die Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
+// Format) — der Pack-Index trägt den reinen Generator-Hash. `lies(datei)` (DARF) ersetzt das Lesen einer Quelle — die
+// Stempel-Probe (gate:fluss S7f) färbt so eine Datei, ohne den Baum zu berühren.
+function computeStamp(root, lies) {
     const r = root || ROOT;
-    const manifestText = fs.readFileSync(path.join(r, "cores.manifest.json"), "utf8");
+    const lese = (rel) => (lies ? lies(rel) : null) ?? fs.readFileSync(path.join(r, rel), "utf8");
+    const manifestText = lese("cores.manifest.json");
     const manifest = JSON.parse(manifestText);
     const scripts = [];
     if (Array.isArray(manifest)) {
@@ -127,10 +120,11 @@ function computeStamp(root) {
             if (!core || !Array.isArray(core.scripts)) continue;
             for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
         }
-        for (const core of manifest) if (core && typeof core.shell === "string" && core.shell) scripts.push(core.shell);
+        for (const core of manifest)
+            if (core && typeof core.bruecke === "string" && core.bruecke) scripts.push(core.bruecke);
     }
     const srcs = [manifestText];
-    for (const s of scripts) srcs.push(fs.readFileSync(path.join(r, s), "utf8"));
+    for (const s of scripts) srcs.push(lese(s));
     return sha256Hex(Buffer.from(srcs.join("\n"), "utf8"));
 }
 
@@ -243,24 +237,9 @@ function readPack(file) {
 // headless bewusst AUS → jeder `_foundryRequest` ist ein ECHTER Worker-Reply, genau die
 // Wahrheit, die das Pack einfrieren soll).
 async function bootRealm(port) {
-    const puppeteer = require("puppeteer");
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -311,7 +290,7 @@ async function waitFoundryReady(page, timeoutMs) {
     }, timeoutMs || 90000);
 }
 
-// Auf die WARME Bibliothek warten (der Prefetch-Fächer ist durch): _prefetching false +
+// Auf die WARME Bibliothek warten (der Prefetch-Fächer ist durch): _vorrat false +
 // Cache gefüllt. Liefert die Cache-Schlüssel (das Inventar der Gestalt-Reise).
 async function waitLibraryWarm(page, timeoutMs) {
     return page.evaluate(async (tmo) => {
@@ -319,11 +298,11 @@ async function waitLibraryWarm(page, timeoutMs) {
         const f = r._foundry;
         const dl = performance.now() + tmo;
         while (performance.now() < dl) {
-            if (f && f.cache && f.cache.size > 0 && f._prefetching === false) break;
+            if (f && f.cache && f.cache.size > 0 && f._vorrat === false) break;
             await new Promise((res) => setTimeout(res, 200));
         }
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
-        return { warm: !!(f && f.cache && f.cache.size > 0 && f._prefetching === false), keys };
+        return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
     }, timeoutMs || 180000);
 }
 

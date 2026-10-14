@@ -64,6 +64,14 @@ function standZeilen(claudeText) {
     return inhalt.length;
 }
 
+function archivBefund(dateien) {
+    if (!dateien.length) return [];
+    const ordner = [...new Set(dateien.map((d) => d.split("/").slice(0, 3).join("/")))].slice(0, 6);
+    return [
+        `${dateien.length} verfolgte Dateien, die .gitignore ausschließt (${ordner.join(", ")}) — Rohdaten gehören nicht in den Baum (Lehre 15), \`git rm -r --cached\``,
+    ];
+}
+
 function main() {
     const errs = [];
 
@@ -114,7 +122,21 @@ function main() {
     if (!champ.includes("Pflicht-OFFEN Rest"))
         errs.push("champion.md trägt das Pflicht-Output-Format (Pflicht-OFFEN Rest) nicht mehr");
 
+    // 5) ARCHIV-WAND (Lehre 15: git ist das Archiv, kein Doppel-Archiv im Baum): keine verfolgte Datei, die .gitignore
+    // ausschließt — am 14.10. lagen 201 Mess-Rohdateien (217 MB) unter artifacts/ im Baum, per `git add -f` aus Übergaben.
+    let ignoriertVerfolgt = null;
+    try {
+        ignoriertVerfolgt = execSync("git ls-files -ci --exclude-standard", { cwd: root, encoding: "utf8" })
+            .split("\n")
+            .filter(Boolean);
+    } catch {
+        errs.push("git ls-files nicht lesbar — die Archiv-Wand braucht den Index");
+    }
+    if (ignoriertVerfolgt) errs.push(...archivBefund(ignoriertVerfolgt));
+
     // SELBSTTEST: die Wand muss feuern, sonst ist sie Theater.
+    if (!archivBefund(["artifacts/profiband/x/bild.png"]).length || archivBefund([]).length)
+        errs.push("Selbsttest der Archiv-Wand versagt");
     const t1 = siegelBefund("welle vollendet, alles RUND", 2); // muss feuern
     const t2 = siegelBefund("betriebsgesetz: siegel-wort-wand steht", 2); // darf nicht feuern
     const t3 = siegelBefund("welle vollendet", 0); // leere Liste: Siegel legal
@@ -133,7 +155,7 @@ function main() {
     }
     console.log(
         `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
-            `Siegel-Wand + Logbuch-Wand + Absenz-Wand stehen · Selbsttest feuert`
+            `Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand stehen · Selbsttest feuert`
     );
 }
 

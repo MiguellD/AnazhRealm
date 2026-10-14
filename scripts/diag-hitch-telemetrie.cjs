@@ -25,39 +25,15 @@
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
-const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
 const PORT = Number(process.env.HITCH_PORT || 4463);
 // Laufzeit nach dem Welt-Settle: ~15 s echte Loop-Zeit, damit Sekunden-Grenzen,
 // EWMA und Ringe wirklich GEFÜLLT sind (nicht nur initialisiert).
 const LAUFZEIT_MS = 15000;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // DIE EINE PRÜF-FUNKTION für die Trace-Struktur — der echte Trace UND der
 // Fake-Trace des Selbst-Tests laufen durch DENSELBEN Code (kein Parallelpfad).
@@ -238,7 +214,13 @@ function erstWandInstall() {
         const t0 = performance.now();
         await bisEreignis(() => (!ESt || ESt.offen.size === 0) && (!U || U.imFlug.size === 0), 50);
         ruheOffen = ESt ? ESt.offen.size : 0;
-        return Math.round(performance.now() - t0);
+        const ms = Math.round(performance.now() - t0);
+        window.__erstWandRuhe = {
+            ms,
+            offen: ruheOffen,
+            namen: ESt ? [...ESt.offen.keys()].map((p) => ESt.namen.get(p) || "ohne Namen") : [],
+        };
+        return ms;
     };
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
@@ -534,7 +516,7 @@ function erstWandInstall() {
         let wurf = null;
         ESt.offen.set(attrappe, new Set());
         try {
-            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
         } catch (e) {
             wurf = String((e && e.message) || e);
         } finally {
@@ -542,7 +524,7 @@ function erstWandInstall() {
         }
         let bild = null;
         try {
-            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             bild = { pixel: auf.u8.length, erst: auf.info.erst };
         } catch (e) {
             bild = { wurf: String((e && e.message) || e) };
@@ -588,7 +570,7 @@ function erstWandInstall() {
             for (let i = 0; i < 3; i++) bild();
             offenDanach = ESt.offen.size;
             try {
-                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000, satz: "messung" });
             } catch (e) {
                 wurf = String((e && e.message) || e);
             }
@@ -627,11 +609,7 @@ function erstWandInstall() {
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 600000,
-        args: softwareWebGpuArgs(),
-    });
+    const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];
@@ -784,10 +762,16 @@ function erstWandInstall() {
         // Protokoll-Frist (600 s) — dann nennt der Wurf die Probe beim Namen
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
+            await page.evaluate(() => (window.__erstWandRuhe = null));
             const v = await page.evaluate(fn, arg).catch((e) => {
                 throw new Error(`[Erst-Zeichnung] ${name} nach ${Math.round((Date.now() - t0) / 1000)} s: ${(e && e.message) || e}`);
             });
             console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
+            const ru = await page.evaluate(() => window.__erstWandRuhe);
+            if (ru && ru.offen)
+                console.log(
+                    `  [Erst-Zeichnung] ${name}: die Ruhe endete nach ${ru.ms} ms mit ${ru.offen} offenen Pipelines der Welt — ${ru.namen.join(" · ")}`
+                );
             return v;
         };
         await page.evaluate(`(${erstWandInstall.toString()})()`);

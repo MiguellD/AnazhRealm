@@ -25,6 +25,11 @@
 //       Ordnung (bis 0710-11 baute sie sich nur alle 1 000 s neu: Sekunden gegen `> 1000`);
 //   (A) ARBEIT: der Brennglas-Takt fasst je Takt höchstens die Betroffenen an — die warmen Einträge und, wenn die Sonne durch ein
 //       Glas scheint, die Plätze in Reichweite der Gläser (vorher: jeden Eintrag des Bestands);
+//   (N) DIE NÄHE (K54, OMEN 1410-2: der CPU-Takt p95 +1,0–1,6 ms an allen vier Orten, je Takt jeder Strahler gegen jeden
+//       Mast des Bestands): Strahlen, Balancieren, Heben und die nächste Affordanz (der Portal-Takt) urteilen wie die Schleife
+//       über ihr Verzeichnis (das Orakel von main 9fb869a5, 49 Plätze, nah und mit der fernen Menge) und kosten die Nähe — eine
+//       ferne Menge derselben Namen (300–3 000 je Name) lässt ihre Zeit je Ruf stehen (WELTGRÖSSE rot ab 2× + 3 µs), die Gegenprobe
+//       (das Orakel mit der Menge) muss wachsen (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht im Spawn
 //       oder stempelt, die Hitze schreibt nur der Brennglas-Takt (oder ein Stempel);
 //   (P) kein Page-Error.
@@ -33,9 +38,9 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const http = require("http");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
 const root = path.resolve(__dirname, "..");
@@ -342,7 +347,7 @@ function quellWand(quelle) {
 if (process.argv.includes("--selftest")) {
     console.log("=== BRENNGLAS-TAKT — Selbsttest der Quell-Wand (ohne Browser) ===");
     const v = [];
-    const stamm = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const stamm = quellWand(stammLib.text(root));
     for (const b of stamm) v.push("STAMM: " + b);
     // eine Klasse mit allen Takten (leer, bis auf den geprüften) und der benannten Ausnahme
     const AUSNAHME = "_chunkSatzMesh(mesh, spec) { Object.assign(mesh.userData, spec.userData); }";
@@ -450,27 +455,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 async function probe() {
     const r = window.anazhRealm;
@@ -1067,9 +1052,247 @@ async function probe() {
         });
         st.playerMesh.position.set(echt.x, echt.y, echt.z);
     }
+    // (N) DIE NÄHE (K54): die Takte, die nur den Spieler treffen — Strahlen (mit dem Relais der Masten), Balancieren, Heben und die
+    // nächste Affordanz (der Portal-Takt je Frame) — urteilen wie die Schleife über ihr Verzeichnis (das ORAKEL, der Takt von main
+    // 9fb869a5 im Wortlaut) und kosten die NÄHE: eine ferne Menge derselben Namen (Strahler, Masten, …) ändert ihre Zeit nicht.
+    aus.naehe = window.__naeheProbe(r, st, AR, P, setze, stelle, ox - 700, oz);
     aus.bestand = st.architectures.length;
     return aus;
 }
+
+// (N) DIE NÄHE — läuft in der Seite (Teil von `probe`, über toString mitgereicht).
+function naeheProbe(r, st, AR, P, setze, stelle, cx, cz) {
+    const aus = { proben: 0, abw: 0, fehler: [], wirkung: {}, zeit: {}, menge: 0 };
+    // DAS ORAKEL: die vier Takte von main 9fb869a5 (stamm/15a.js) im Wortlaut — je Takt jeder Eintrag des Verzeichnisses
+    const O = {
+        _tickRadiatingAffordances(dt) {
+            const radiating = this._blockerMit("radiating");
+            if (radiating.length === 0) return;
+            const pm = this.state.playerMesh && this.state.playerMesh.position;
+            if (!pm) return;
+            const emo = this.state.player && this.state.player.emotions;
+            if (!emo) return;
+            const baseRange2 = AR.RADIATING_RANGE_M * AR.RADIATING_RANGE_M;
+            const baseStep = AR.RADIATING_EMOTION_RATE_PER_SEC * dt;
+            const broadcasting = this._blockerMit("broadcasting").filter((e) => e.position);
+            const relayRange2 = AR.BROADCAST_RELAY_RANGE_M * AR.BROADCAST_RELAY_RANGE_M;
+            const maxMult = AR.BROADCAST_RANGE_MULT;
+            const strengthOf = (e, key) => {
+                const s = e.affordanceStrength && e.affordanceStrength[key];
+                return typeof s === "number" ? s : 1;
+            };
+            for (const ra of radiating) {
+                if (!ra.position) continue;
+                let bestMastStrength = 0;
+                for (const bc of broadcasting) {
+                    const bdx = bc.position.x - ra.position.x;
+                    const bdz = bc.position.z - ra.position.z;
+                    if (bdx * bdx + bdz * bdz <= relayRange2) {
+                        const ms = strengthOf(bc, "broadcasting");
+                        if (ms > bestMastStrength) bestMastStrength = ms;
+                    }
+                }
+                const mult = 1 + bestMastStrength * (maxMult - 1);
+                const range2 = baseRange2 * mult * mult;
+                const dx = ra.position.x - pm.x;
+                const dz = ra.position.z - pm.z;
+                if (dx * dx + dz * dz > range2) continue;
+                const step = baseStep * strengthOf(ra, "radiating");
+                emo.awe = Math.max(0, Math.min(1, (emo.awe || 0) + step));
+                emo.peace = Math.max(0, Math.min(1, (emo.peace || 0) + step));
+                this.journalAppendOnce(`radiating:${ra.id}`, "growth", "strahlt", { architecture: ra.type });
+            }
+        },
+        _tickBalancingAffordances(dt) {
+            const balancing = this._blockerMit("balancing");
+            if (balancing.length === 0) return;
+            const pm = this.state.playerMesh && this.state.playerMesh.position;
+            if (!pm) return;
+            const emo = this.state.player && this.state.player.emotions;
+            if (!emo) return;
+            const range2 = AR.BALANCING_RANGE_M * AR.BALANCING_RANGE_M;
+            const baseStep = AR.BALANCING_CHAOS_DRAIN_PER_SEC * dt;
+            for (const ba of balancing) {
+                if (!ba.position) continue;
+                const dx = ba.position.x - pm.x;
+                const dz = ba.position.z - pm.z;
+                if (dx * dx + dz * dz > range2) continue;
+                const s = ba.affordanceStrength && ba.affordanceStrength.balancing;
+                const strength = typeof s === "number" ? s : 1;
+                emo.chaos = Math.max(0, Math.min(1, (emo.chaos || 0) - baseStep * strength));
+                this.journalAppendOnce(`balancing:${ba.id}`, "growth", "gruendet", { architecture: ba.type });
+            }
+        },
+        _tickLiftingAffordances() {
+            const pl = this.state.player;
+            if (!pl) return;
+            const lifting = this._blockerMit("lifting");
+            const pm = this.state.playerMesh && this.state.playerMesh.position;
+            if (!pm || lifting.length === 0) {
+                pl.liftingField = { active: false, strength: 0 };
+                return;
+            }
+            const range2 = AR.LIFTING_RANGE_M * AR.LIFTING_RANGE_M;
+            let best = 0;
+            for (const li of lifting) {
+                if (!li.position) continue;
+                const dx = li.position.x - pm.x;
+                const dz = li.position.z - pm.z;
+                if (dx * dx + dz * dz > range2) continue;
+                const s = li.affordanceStrength && li.affordanceStrength.lifting;
+                const strength = typeof s === "number" ? s : 1;
+                if (strength > best) best = strength;
+            }
+            pl.liftingField = { active: best > 0, strength: best };
+        },
+        _findNearestAffordanceEntry(affordanceKey, radiusM) {
+            const pm = this.state.playerMesh && this.state.playerMesh.position;
+            if (!pm) return null;
+            const r2 = radiusM * radiusM;
+            let best = null;
+            let bestD2 = r2;
+            for (const entry of this._blockerMit(affordanceKey)) {
+                const dx = entry.position.x - pm.x;
+                const dy = entry.position.y - pm.y;
+                const dz = entry.position.z - pm.z;
+                const d2 = dx * dx + dy * dy + dz * dz;
+                if (d2 <= bestD2) {
+                    bestD2 = d2;
+                    best = entry;
+                }
+            }
+            return best;
+        },
+    };
+    const art = st.blueprints.stein_block ? "stein_block" : Object.keys(st.blueprints)[0];
+    const markiere = (x, z, a, s) => {
+        const e = setze(art, x, z);
+        if (!e) return null;
+        e.affordances = Object.assign({}, e.affordances, a);
+        e.affordanceStrength = Object.assign({}, e.affordanceStrength, s);
+        r._blockerNetzSetzen(e); // ein Schreiber der Affordanzen stempelt (Q)
+        return e;
+    };
+    // DIE NÄHE: Strahler A im Grund-Umkreis, Strahler B jenseits davon (22 m) mit einem Mast in Relais-Reichweite (er reicht
+    // nur durch den Mast), Strahler C (24 m) ohne Mast, ein Mast beim Spieler ohne Strahler, Balancieren, Heben, zwei Portale
+    markiere(cx + 5, cz, { radiating: true }, { radiating: 0.7 });
+    markiere(cx + 22, cz, { radiating: true }, { radiating: 0.5 });
+    markiere(cx + 30, cz + 2, { broadcasting: true }, { broadcasting: 0.9 });
+    markiere(cx, cz + 24, { radiating: true }, { radiating: 0.9 });
+    markiere(cx - 3, cz - 3, { broadcasting: true }, { broadcasting: 0.4 });
+    markiere(cx - 6, cz + 3, { balancing: true }, { balancing: 0.8 });
+    markiere(cx + 2, cz - 4, { lifting: true }, { lifting: 0.6 });
+    markiere(cx + 1, cz + 1, { isPortal: true }, {});
+    markiere(cx + 2.5, cz + 0.5, { isPortal: true }, {});
+    const lauf = (T, x, z) => {
+        stelle(x, z);
+        const emo = st.player.emotions;
+        emo.awe = 0.3;
+        emo.peace = 0.3;
+        emo.chaos = 0.6;
+        const seen = [];
+        r.journalAppendOnce = (k) => seen.push(k);
+        try {
+            T._tickRadiatingAffordances.call(r, 0.5);
+            T._tickBalancingAffordances.call(r, 0.5);
+            T._tickLiftingAffordances.call(r);
+            const tor = T._findNearestAffordanceEntry.call(r, "isPortal", AR.PORTAL_REACH_M);
+            const lf = st.player.liftingField || {};
+            return JSON.stringify([emo.awe, emo.peace, emo.chaos, lf.active, lf.strength, tor ? tor.id : null, seen]);
+        } finally {
+            delete r.journalAppendOnce;
+        }
+    };
+    const vergleiche = (wo) => {
+        for (let i = 0; i < 49; i++) {
+            const x = cx - 36 + (i % 7) * 12,
+                z = cz - 36 + Math.floor(i / 7) * 12;
+            const alt = lauf(O, x, z),
+                neu = lauf(P, x, z);
+            aus.proben++;
+            if (alt !== neu) {
+                aus.abw++;
+                if (aus.fehler.length < 3) aus.fehler.push(`${wo} ${x - cx}/${z - cz}: alt ${alt} · neu ${neu}`);
+            }
+        }
+    };
+    vergleiche("nah");
+    // die Wirkung am Platz (nicht vakuös): A und B (nur durch den Mast) strahlen, C nicht; Balancieren, Heben, das Portal
+    const w = JSON.parse(lauf(P, cx, cz));
+    aus.wirkung = {
+        awe: w[0],
+        chaos: w[2],
+        heben: w[4],
+        tor: w[5] != null,
+        strahler: w[6].filter((k) => /^radiating/.test(k)).length,
+    };
+    // die Zeit je Takt am Platz: je Glied 5 Bündel à 60 Rufe, der Median (die Uhr der Seite ist grob — gebündelt gemessen)
+    const zeit = (T) => {
+        stelle(cx, cz);
+        const glieder = {
+            strahlen: () => T._tickRadiatingAffordances.call(r, 1 / 60),
+            balancieren: () => T._tickBalancingAffordances.call(r, 1 / 60),
+            heben: () => T._tickLiftingAffordances.call(r),
+            portal: () => T._findNearestAffordanceEntry.call(r, "isPortal", AR.PORTAL_REACH_M),
+        };
+        const out = {};
+        r.journalAppendOnce = () => {};
+        try {
+            for (const [name, f] of Object.entries(glieder)) {
+                for (let i = 0; i < 10; i++) f();
+                const b = [];
+                for (let k = 0; k < 5; k++) {
+                    const t = performance.now();
+                    for (let i = 0; i < 300; i++) f();
+                    b.push((performance.now() - t) / 300);
+                }
+                b.sort((a, c) => a - c);
+                out[name] = b[2];
+            }
+        } finally {
+            delete r.journalAppendOnce;
+        }
+        return out;
+    };
+    aus.zeit.ohne = zeit(P);
+    aus.zeit.orakelOhne = zeit(O);
+    // DIE FERNE MENGE, 300–900 m vom Platz (jenseits jeder Reichweite): je 300 Strahler und Masten (das Paar wächst im Produkt),
+    // 1 500 Balancierer, je 3 000 Heber und Portale (ihre Schleifen wachsen linear — erst so viele heben sie über die Uhr)
+    for (let i = 0; i < 3000; i++) {
+        const x = cx - 300 - (i % 60) * 10,
+            z = cz - 250 + Math.floor(i / 60) * 10;
+        const neu = [
+            markiere(x - 4, z + 3, { lifting: true }, { lifting: 0.5 }),
+            markiere(x + 5, z - 2, { isPortal: true }, {}),
+        ];
+        if (i < 1500) neu.push(markiere(x + 3, z - 4, { balancing: true }, { balancing: 0.5 }));
+        if (i < 300)
+            neu.push(
+                markiere(x, z, { radiating: true }, { radiating: 0.5 }),
+                markiere(x + 7, z + 7, { broadcasting: true }, { broadcasting: 0.8 })
+            );
+        aus.menge += neu.filter(Boolean).length;
+    }
+    vergleiche("mit der fernen Menge");
+    aus.zeit.mit = zeit(P);
+    aus.zeit.orakelMit = zeit(O); // die Gegenprobe: der alte Takt mit der fernen Menge muss wachsen (sonst ist die Linse blind)
+    aus.verzeichnis = {
+        radiating: r._blockerMit("radiating").length,
+        broadcasting: r._blockerMit("broadcasting").length,
+    };
+    return aus;
+}
+
+// (N) die Zeit eines Nähe-Takts wächst, wenn er mit der fernen Menge mehr als das Doppelte plus diesen Boden kostet (die Uhr
+// der Seite ist auf 100 µs vergröbert; in Bündeln zu 300 Rufen gemessen trägt sie 0,3 µs je Ruf)
+const NAEHE_BODEN_MS = 0.003;
+const NAEHE_RUFER = {
+    strahlen: "_tickRadiatingAffordances",
+    balancieren: "_tickBalancingAffordances",
+    heben: "_tickLiftingAffordances",
+    portal: "_findNearestAffordanceEntry (der Portal-Takt)",
+};
+const ms = (x) => (Number.isFinite(x) ? x.toFixed(4) : String(x));
 
 function urteil(S, stamm, pageErrors) {
     const rot = [];
@@ -1133,19 +1356,42 @@ function urteil(S, stamm, pageErrors) {
             rot.push(`(H) die Nähe-Liste der Türen ist nicht der Filter über den Bestand (${H.liste} ≠ ${H.soll})`);
     }
     if (!(S.rauch.quellen > 0)) rot.push(`(D) DORF-RAUCH: kein Kamin in der Welt (vakuös)`);
+    const Nn = S.naehe || { fehler: [], zeit: {}, wirkung: {} };
+    if (Nn.abw)
+        rot.push(
+            `(N) DIE NÄHE: ${Nn.abw} von ${Nn.proben} Proben urteilen anders als die Schleife über das Verzeichnis — ` +
+                Nn.fehler.join(" · ")
+        );
+    const Wk = Nn.wirkung || {};
+    if (!(Wk.strahler === 2 && Wk.awe > 0.3 && Wk.chaos < 0.6 && Wk.heben > 0 && Wk.tor))
+        rot.push(
+            `(N) DIE NÄHE ist vakuös (zwei Strahler am Platz, einer nur durch den Mast; Balancieren, Heben, ein Portal): ` +
+                JSON.stringify(Wk)
+        );
+    const Z = Nn.zeit || {};
+    const waechst = (mit, ohne) => !(mit <= 2 * ohne + NAEHE_BODEN_MS);
+    for (const g of Object.keys(Z.ohne || {})) {
+        if (waechst(Z.mit[g], Z.ohne[g]))
+            rot.push(
+                `(N) WELTGRÖSSE: der Takt „${g}" wächst mit der fernen Menge (${Nn.menge} Einträge jenseits jeder Reichweite): ` +
+                    `${ms(Z.ohne[g])} → ${ms(Z.mit[g])} ms je Ruf — Rufer ${NAEHE_RUFER[g]}`
+            );
+        if (!waechst(Z.orakelMit[g], Z.orakelOhne[g]))
+            rot.push(
+                `(N) BLIND: die Gegenprobe (der Takt von main mit der fernen Menge) wächst für „${g}" nicht ` +
+                    `(${ms(Z.orakelOhne[g])} → ${ms(Z.orakelMit[g])} ms) — die Linse sähe den Täter nicht`
+            );
+    }
+    if (!Object.keys(Z.ohne || {}).length) rot.push(`(N) DIE NÄHE lief nicht (keine Zeit gemessen)`);
     for (const b of stamm) rot.push(`(Q) QUELLE: ${b}`);
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
 }
 
 (async () => {
-    const stamm = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const stamm = quellWand(stammLib.text(root));
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 300000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -1164,6 +1410,7 @@ function urteil(S, stamm, pageErrors) {
         )
             await new Promise((r) => setTimeout(r, 100));
     });
+    await page.evaluate(`window.__naeheProbe = ${naeheProbe.toString()};`);
     const S = await page.evaluate(probe);
     await browser.close();
     server.close();
@@ -1210,6 +1457,17 @@ function urteil(S, stamm, pageErrors) {
         `  Fernziel: ${F.art} ×${F.skala}, ${F.abstand} m vom Glas, Platz ±${F.reichweite} m · volle Frage ${F.voll}, ` +
             `halbe ${F.halb} · erwärmt ${F.heiz}× · Beweger: nur über die Beweger ${B.mitBewegern && !B.ohneBeweger} · erwärmt ${B.heiz}×`
     );
+    const Nz = (S.naehe && S.naehe.zeit) || {};
+    console.log(
+        `  Nähe: ${S.naehe ? S.naehe.proben : 0} Proben gegen das Orakel, Abweichungen ${S.naehe ? S.naehe.abw : "?"} · ` +
+            `Wirkung ${JSON.stringify(S.naehe && S.naehe.wirkung)} · ferne Menge ${S.naehe ? S.naehe.menge : 0} ` +
+            `(Verzeichnis ${JSON.stringify(S.naehe && S.naehe.verzeichnis)})`
+    );
+    for (const g of Object.keys(Nz.ohne || {}))
+        console.log(
+            `    ${g.padEnd(11)} ms je Ruf: ohne ${ms(Nz.ohne[g])} · mit der fernen Menge ${ms(Nz.mit[g])} · ` +
+                `main ohne sie ${ms(Nz.orakelOhne[g])}, mit ihr ${ms(Nz.orakelMit[g])}`
+        );
     const rot = urteil(S, stamm, pageErrors);
     if (rot.length) {
         console.error("\nROT:");
