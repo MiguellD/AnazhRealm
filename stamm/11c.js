@@ -2222,7 +2222,9 @@ class AnazhRealm_Z11c {
             );
         }
         // Schnapp-Punkte sind ganzzahlig, |x|, |z| < 2^21 m; die Maschen-Breite (Viertel-Oktaven) steht über 2^44 — eindeutig.
-        const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
+        // Ohne `fuss` steht der Punkt für sich (wie in `_fernFarbeTeile`): die Masche unter 1 m — die Nah-Fern-Linse ruft so
+        // das Gesetz an der Stelle und brach seit dem Fußabdruck (K16) an `fuss.ht`.
+        const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss ? fuss.ht : 0))) * 17592186044416;
         const m = this._fernFarbeMemo || (this._fernFarbeMemo = { neu: new Map(), alt: new Map() });
         let f = m.neu.get(key);
         if (f) return f;
