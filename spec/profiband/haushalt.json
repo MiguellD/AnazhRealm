@@ -84,14 +84,14 @@
         },
         {
             "id": "dorf",
-            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`, der Wunsch-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot), die Ort-Wahl (`_ortWahl`, K10-6) legt ihn 80 m weiter auf −812,7/−819,0 — am Wunsch lief der Fluss 18 m neben dem Anker, vier Häuser fielen ins Bett —, die Mitte −802,8/−821,0 liegt 55 m nordöstlich (Achse 0,690/0,723; bis K10-6 Ostsüdost 0,953/−0,304, bis K10 Nordost 45°), die 16 Häuser zwischen 25 und 95 m. Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`, der Wunsch-Anker −768,2/−885,5 für denselben Spieler-Ort, in jedem Boot), die Ort-Wahl (`_ortWahl`, K10-6) legt ihn 96 m weiter auf −791,8/−792,5 — am Wunsch lief der Fluss 18 m neben dem Anker, vier Häuser fielen ins Bett; der Ort 80 m weit (−812,7/−819,0, dort misst ihn gate:settlement ohne Glut-Feld) trägt im Spiel eine Feuerstelle des Glut-Felds im Grundriss eines Hauses —, die Mitte −781,9/−794,5 liegt 89 m nordöstlich (Achse 0,664/0,747; bis K10-6 Ostsüdost 0,953/−0,304, bis K10 Nordost 45°). Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
             "spieler": [
                 -841,
                 -861
             ],
             "blick": [
-                -834.1,
-                -853.8
+                -834.4,
+                -853.5
             ],
             "dorfZug": true,
             "ortTakt": [],
