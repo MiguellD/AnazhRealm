@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.545.0 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik jeder Version ist `git log`)
+## Stand (V18.546.0 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik jeder Version ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
@@ -81,20 +81,23 @@ p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** B Ankunft ≤ 5 s kalt (vorher ≈ 28–49 s) ·
 C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis, Ego + Third-Person).
 
-**V18.545 trägt:** EIN Auge der Stufen (`_lodAuge`, Geister 4 → 0 an der Wiesen-Ankunft) · das Ufer ohne Band (Luma 0,667 → 0,071) · Haus-Fenster
-in jeder Stufe Glas (schwarze L2-Pixel 23 500 → 203) · EIN Bruch-Melder im Stoff-Bau (`_stoffBruch`) · die echte GPU urteilt wie die CI (fern-ring
-3,51 → 0,002 m) · das Beweisbild urteilt selbst (`abnahme-urteil.cjs`) · das erste Weltbild als Ereignis (`_weltbildSteht`, `VORRAT_PHASE`) ·
-die Tor-Diät (Membran 45 Segmente, Hinterflügel = Instanz: Genesis 705k → 650k Dreiecke, Befehle 168,7 → 148,7).
+**V18.546 trägt:** den Stamm in 48 Zonen-Dateien (`stamm/`, anazhRealm.js gefallen) · die Landform und das Flussnetz je Saat im Gelände-Kern,
+die Naht des Wassers liest die Fluss-Karte (Wasser-Naht 6,41× → 1,25×) · das Gelände-Studio auf der Welt-Engine (Studio = Welt byte-gleich) · EIN
+Fels-Gesetz für Boden, Studio und Fels-Gestalten (Geröll-Albedo 0,449 → 0,211) · den Wald mit Mass (Buche 30,2–44,6 m, sichtbare Wurzel am Hang
+Tanne 9,5 → 0,4 m; der gefühlte Baum = das Skelett seiner Gestalt) · die Bündel-Kinder nach Stufe und Abstand (Wiese gpu-bank 14,0 → 11,8 ms) · den
+Kopf im Fell wie der Rumpf (Feinstruktur 1,337 → 3,800; Pflicht-OFFEN A fiel).
 
 **WAS STEHT — je Domäne die EINE Quelle:**
-- TERRAIN = Funktion: Höhe = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Playtest), Chunks = Iso-CACHE, Wildnis = EIN Term, Prüfbühne
-  `spec/pruefbuehne` (`_weltBetreten`) · WELT-MARCH EIN Pass · WASSER EINE Wahrheit (`_werkBoden`), die Ruhe ist der Fixpunkt des Automaten
-  (`_ensureWaterCALevel`) · Edits = EINE Karte je Chunk (`_voxelEditKarte`)
+- TERRAIN = Funktion: Höhe, Landform und Flussnetz = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Studio · Playtest), Chunks = Iso-CACHE,
+  Wildnis = EIN Term, Prüfbühne `spec/pruefbuehne` (`_weltBetreten`) · WELT-MARCH EIN Pass · WASSER EINE Wahrheit (`_werkBoden`), die Ruhe ist der
+  Fixpunkt des Automaten (`_ensureWaterCALevel`), der Blick des Wassers EIN Baustein (`_wasserBlick`) · Edits = EINE Karte je Chunk (`_voxelEditKarte`)
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · Baum =
-  Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` der Art, EIN Wind-Term, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern
-  NUR-WURF, das Fenster Glas in jeder Stufe · der Tor-Hinterflügel eine Instanz des vorderen (`_foundryFluegelInstanz`)
-- BODEN Rausch-Gesetz, EIN Leser `_bodenSichtAt` · LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · TRAA ·
-  Schatten 2 Kaskaden (`_schattenBias`), EIN Werfer je Gestalt · Sätze EIN Pool je Stoff · Bündel in EINER Reihe (`_buendelReihe`)
+  Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` der Art, der gefühlte Baum ihr Skelett (`skelettDerGestalt`), EIN Wind-Term, Blende je
+  Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF, das Fenster Glas in jeder Stufe · der Tor-Hinterflügel eine Instanz des vorderen
+  (`_foundryFluegelInstanz`)
+- BODEN Rausch-Gesetz, EIN Leser `_bodenSichtAt`, Fels = EIN Gesetz (`_felsStoff`, im Worker) · LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) ·
+  EIN Himmel · EINE Koschmieder-Luft · TRAA · Schatten 2 Kaskaden (`_schattenBias`), EIN Werfer je Gestalt · Sätze EIN Pool je Stoff · Bündel in EINER
+  Reihe (`_buendelReihe`), ihre Kinder nach Stufe und Abstand (`_buendelKinderReihe`)
 - KOSTEN `_passTrifft` + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` ·
   BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = das erste Weltbild hat EINEN Schreiber (`_weltbildSteht`)
 - LEBEN EIN Leib-Löser, Gang EIN Gesetz · Kamera EINE Kugel · Tod `_kreaturFaellt` · Lebenswerte = Zustand (`recomputePlayerStats` klemmt) ·
