@@ -713,6 +713,45 @@ class AnazhRealm_Z20b {
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
+    // DIE STUFEN-GRENZEN DES GESETZBUCHS (K43, B2c `ab` + `hyst`): trägt die Art einer gesetzten Studio-Architektur an ihren
+    // gezeigten Stufen `ab` (Meter × Welt-Skala des Eintrags), wählt der LOD-Takt nach IHNEN statt nach den Wirts-Distanzen
+    // (LOD_DISTANCES) — das Tor beginnt seine Stufe 1 dort, wo sein Kern es sagt. → { erste, grenzen: [{ stufe, ab }], h } oder
+    // null (die Art nennt keine Grenze). Am Eintrag gemerkt (die Art eines Eintrags wechselt nie).
+    _archStufenGrenzen(entry) {
+        if (entry._stufenGrenzen !== undefined) return entry._stufenGrenzen;
+        const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
+        const f = this._foundry;
+        const rec = preset && f && f.recipes ? f.recipes[preset] : null;
+        if (!rec) return null; // das Buch lädt: noch kein Urteil, der nächste Takt fragt neu
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const art = L && L.budget ? L.budget[rec.kind] : null;
+        const st = this._foundryKindStages(preset) || [];
+        const grenzen = [];
+        for (const s of st)
+            if (art && art[s] && Number.isFinite(art[s].ab) && art[s].nurWurf !== true)
+                grenzen.push({ stufe: s, ab: art[s].ab });
+        entry._stufenGrenzen = grenzen.length
+            ? {
+                  erste: st[0],
+                  grenzen,
+                  h: Number.isFinite(art.hyst)
+                      ? art.hyst
+                      : AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + ".hyst"),
+              }
+            : null;
+        return entry._stufenGrenzen;
+    }
+    // Die Stufe nach den Grenzen des Gesetzbuchs: wer eine Stufe trägt, hält sie bis (1 − h)·ab, wer davor steht, kommt ab
+    // (1 + h)·ab hinein; ohne Zustand (Spawn) die Grenze selbst. `s` = die Welt-Skala des Eintrags.
+    static _stufeNachGrenzen(d, cur, G, s) {
+        let st = G.erste;
+        for (const g of G.grenzen) {
+            const ab = g.ab * s;
+            const schwelle = !Number.isFinite(cur) ? ab : cur >= g.stufe ? ab * (1 - G.h) : ab * (1 + G.h);
+            if (d > schwelle) st = g.stufe;
+        }
+        return st;
+    }
     // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1)? Dann wirft sie über die
     // Zwillings-Leaves (`_foundryFlattenFor`: EIN Werfer je Gestalt), nie über ihre Teile.
     _foundryWurfQuelle(preset, lod) {

@@ -2421,7 +2421,15 @@ class AnazhRealm_Z14 {
             // Tür-Flügel öffnen sich dem Reisenden: g.tuer-Meshes drehen um die Hinge-Achse, Ziel = Nähe ×
             // _tuerOffenRad() (EINE Quelle TUER_GESETZ.offen, wie das Lab-DOOR_OPEN), weich geglättet.
             // Nur Registry-Portale (≤ Handvoll); ferne Tore stehen zu.
-            this._tickTorFluegel(rec, entry, act);
+            // DIE TÜR LEBT IN DER STUFE 0 (K43): nennt das Gesetzbuch die Grenze seiner Stufe 1 (B2c `ab`, `hyst`), stehen die
+            // Flügel jenseits zu (die Stufe 1 trägt sie fest im Körper) — sie öffnen von der Grenze, an der die Stufe 0 sicher
+            // steht ((1 − h)·ab), bis zur Reichweite; nie weiter offen als der Atem des Tors (act).
+            const tg = this._archStufenGrenzen(entry);
+            const tNah = tg ? tg.grenzen[0].ab * (1 - tg.h) * scale : null;
+            const tuerAct = tg
+                ? Math.min(act, Math.max(0, Math.min(1, (tNah - d) / Math.max(0.5, tNah - reach))))
+                : act;
+            this._tickTorFluegel(rec, entry, tuerAct);
             if (
                 rec.armed !== false &&
                 inApertur &&

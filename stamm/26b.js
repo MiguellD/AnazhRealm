@@ -109,6 +109,9 @@ AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, st
 AnazhRealm.BAU_SATZ = Object.freeze({
     haus: "bauSatz",
     ausstattung: "bauSatz",
+    // K43: das Tor zeichnet im Bau-Satz seines Stoffs (die Flügel der Stufe 0 wandern und bleiben draußen, `leaf.tuer`); sein
+    // Wurf-Zwilling (die NUR-WURF-Stufe 3) liegt im Wurf-Satz — EIN Befehl je Kaskade für alle Werfer.
+    gate: "bauSatz",
     rock: "formationenSatz",
     boulder: "formationenSatz",
     scree: "formationenSatz",
@@ -199,7 +202,9 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // Tor-Domäne (porta-core, kind:"gate"): Platzierung als Rezept-Daten (fx.place mode "site" +
     // siteTag "tor") → placeExtra null. role: "portal" — ein platziertes tor_<rezept> IST ab Geburt ein
     // Welt-Tor (isPortal-Affordance, E-Betreten, Default-Ziel Skelett-Welt; `richte portal …` zielt um).
-    // impostor: true — Fernstufe = 8-Winkel-Billboard (porta-core B2 weist L1/L2 dem Wirt zu).
+    // KEINE Karte (K43): das Tor trägt seine Stufen-Kette im Gesetzbuch (porta-core L0 → L1, die Grenzen `ab` im Kern) und
+    // jenseits der Nah-Grenze seine Fernform "huelle" — vorher galt es über `impostor: true` als baumartig (Wahrnehmungs-
+    // Distanz, Dither-Masken des Baums, die Karte ab 26 m) und zeigte die L0 bis 26 m.
     gate: Object.freeze({
         prefix: "tor_",
         donor: "tor_basis",
@@ -207,7 +212,6 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         builtIn: false,
         placeExtra: null,
         role: "portal",
-        impostor: true,
     }),
     // Waffen-/Werkzeug-Domäne (schmiede-core, kind:"weapon", 21 Gattungen): fx.place mode "hand" →
     // placeExtra null; Donor = Substanz-Datenblock (Tags · Ω-PHYSIS · wield), die Gestalt aus dem

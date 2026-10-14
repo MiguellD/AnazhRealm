@@ -61,7 +61,7 @@
     var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { gate: [0, 3] },
+            kindStages: { gate: [0, 1, 3] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
                 // 1110-9 (das Detail-Gesetz der Röhren und Ringe): tris ist die Hülle der Rezepte UND des Rands jedes Reglers
@@ -71,7 +71,18 @@
                 // 1110-9 (der Wurf aus der gröberen Stufe, Nordstern M4): die Stufe 0 wirft nicht mehr selbst — ihr Wurf ist
                 // die NUR-WURF-Stufe 3, die Hüllen-Liste des Tors (huelle, N5) als EIN Gitter; dieselbe Liste ist die Fernform.
                 // tris der Stufe 3 = die Regler-Hülle (Rezepte × Regler × Rand, gate:regler-wirkt fährt auch die Stufe 3).
-                gate: { 0: { tris: 76000, band: 60000, draws: 9, schatten: 3 }, 3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+                // K43 (DIE STUFE 1, Kosten ins Asset): derselbe Bau unter TOR_DETAIL_1, die Flügel fest im Körper; die Grenze
+                // im Kern — ab 9,5 m × Welt-Skala trägt die Stufe 1 das Bild (hyst 0,1: hinein ab 10,45 m, zurück unter 8,55 m;
+                // der Genesis-Ring steht 11 m um seine Mitte). tris = die Regler-Hülle der Stufe 1 (gemessen 33 890 an ruine
+                // wBraid=1; die Rezepte 4 608–23 276), draws 6 = das Minimum über die Rezepte (maschine: vier Metalle
+                // verschiedener Glut, Leucht-Linien, die Licht-Scheibe — die Faltung kreuzt keine Glut-Grenze).
+                gate: {
+                    0: { tris: 76000, band: 60000, draws: 9, schatten: 3 },
+                    1: { tris: 34000, draws: 6, schatten: 3, ab: 9.5 },
+                    3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
+                    hyst: 0.1,
+                },
                 gestalten: {},
             },
         },
@@ -214,15 +225,33 @@
     // verteilt nach der Krümmung — gerade Läufe tragen wenige, enge Bögen viele), um den Umfang so viele, wie der Radius
     // braucht (π / acos(1 − ε / r)); die Zahl des Aufrufers ist die Höchst-Teilung. Gemessen 12.10. (OMEN, die sieben Tore
     // in Node): bei ε = 1 cm trägt das schwerste Tor 51 096 statt 150 200 Dreiecke (drachentor), alle ≤ 60 000 (Band-Zeile).
-    var TOR_DETAIL = { sehneM: 0.01, laengsM: 1, umfangMin: 3, ringMin: 8, proben: 256 };
+    var TOR_DETAIL = { sehneM: 0.01, laengsM: 1, umfangMin: 3, ringMin: 8, proben: 256, zylinder: 10 };
+    // DIE STUFE 1 DES TORS (K43, Kosten ins Asset): dieselbe Gestalt aus demselben Bau (buildGate), ihr Detail-Gesetz auf
+    // ihrer Distanz — jenseits `lod.budget.gate[1].ab` (8 m, Hysterese `hyst`) liegt ein Pixel bei ≥ 0,97 cm (1920 × 1080,
+    // 75°): der Sehnen-Fehler 2 cm trägt ≤ 2 px am nächsten Punkt der Stufe, 1,3 px am Genesis-Ring (11 m). Jede Röhre, jeder
+    // Ring und jedes Scharnier behält die mittlere Breite der Stufe 0 (`breiteTreu`: weniger Seiten, der Radius wächst um das
+    // Verhältnis der mittleren Kaliber-Breiten n · sin(π / n)) — die Silhouette bleibt, die Seiten fallen. Die Flügel stehen
+    // zu und sind Teil des Körpers (`tuerFest`: kein Scharnier-Datum, der Wirt dreht nur die Flügel der Stufe 0 — die Tür
+    // lebt in der Nähe, `TUER_GESETZ`).
+    var TOR_DETAIL_1 = { sehneM: 0.025, laengsM: 2, umfangMin: 3, ringMin: 6, proben: 256, zylinder: 6, tuerFest: true };
+    var _detail = TOR_DETAIL; // das Gesetz des laufenden Baus (buildInstance setzt es je Stufe, synchron)
+    function umfangMit(D, r, hoechst) {
+        var n = Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - D.sehneM / r)));
+        return Math.max(D.umfangMin, Math.min(hoechst, n));
+    }
     function umfangTeilung(r, hoechst) {
-        var n = Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - TOR_DETAIL.sehneM / r)));
-        return Math.max(TOR_DETAIL.umfangMin, Math.min(hoechst, n));
+        return umfangMit(_detail, r, hoechst);
+    }
+    // Der Radius einer Röhre mit n Seiten, deren mittlere Breite die der Stufe 0 trägt (n0 Seiten): die mittlere Kaliber-Breite
+    // eines regelmäßigen n-Ecks mit Umkreis r ist 2 n r sin(π / n) / π. In der Stufe 0 ist der Radius der gerufene, unverändert.
+    function breiteTreu(r, n0, n) {
+        if (_detail === TOR_DETAIL || n0 === n) return r;
+        return (r * n0 * Math.sin(Math.PI / n0)) / (n * Math.sin(Math.PI / n));
     }
     // Die Kurve, umparametrisiert nach der Krümmungs-Dichte: TubeGeometry tastet gleichmäßig in u (getPointAt,
     // getTangentAt) und trifft so im Raum dort dicht, wo die Kurve sich biegt.
     function sehnenKurve(kurve, hoechst) {
-        var N = TOR_DETAIL.proben, L = kurve.getLength(), ds = L / N, eps = TOR_DETAIL.sehneM;
+        var N = _detail.proben, L = kurve.getLength(), ds = L / N, eps = _detail.sehneM;
         var dichte = [0], summe = 0, t0 = kurve.getTangentAt(0), kreuz = new THREE.Vector3(), i;
         for (i = 1; i <= N; i++) {
             var t1 = kurve.getTangentAt(i / N);
@@ -232,7 +261,7 @@
             var k = (w < 1e-9 ? 0 : w) / ds;
             // höchstens `laengsM` je Segment auch im geraden Lauf: die Pfosten tragen Ringe (die gemintete Tor-Hülle misst die
             // Ecken — ohne sie sah sie einen Pfosten 37 cm schmaler als gezeichnet, maschine)
-            summe += Math.max(Math.sqrt(k / (8 * eps)), 1 / TOR_DETAIL.laengsM) * ds;
+            summe += Math.max(Math.sqrt(k / (8 * eps)), 1 / _detail.laengsM) * ds;
             dichte.push(summe);
             t0 = t1;
         }
@@ -256,8 +285,8 @@
     }
     // Ein Ring: der Kreis R trägt die Krümmung 1 / R (∫ = 2π √(R / 8ε)), mindestens `ringMin` Seiten (die Rosette bleibt rund).
     function ringGeometrie(R, r, umfangHoechst, laengsHoechst) {
-        var laengs = Math.ceil(2 * Math.PI * Math.sqrt(R / (8 * TOR_DETAIL.sehneM)));
-        return new THREE.TorusGeometry(R, r, umfangTeilung(r, umfangHoechst), Math.max(TOR_DETAIL.ringMin, Math.min(laengsHoechst, laengs)));
+        var laengs = Math.ceil(2 * Math.PI * Math.sqrt(R / (8 * _detail.sehneM))), n = umfangTeilung(r, umfangHoechst);
+        return new THREE.TorusGeometry(R, breiteTreu(r, umfangMit(TOR_DETAIL, r, umfangHoechst), n), n, Math.max(_detail.ringMin, Math.min(laengsHoechst, laengs)));
     }
     // ═══ DIE HÜLLE DES TORS (1110-9, N5 — docs/studio-vertrag.md: EINE Liste für Wurf und Fernform) ═══
     // buildGate sammelt im SELBEN Lauf, der die Meshes baut, je WERFENDEM Bauteil seine Primitive (`box` · `kapsel`) — nur, was in
@@ -542,7 +571,7 @@
     }
     // ═══ Geometrie-Hilfen (byte-treu, Z.46–51; Röhren und Ringe teilen nach dem Detail-Gesetz) ═══
     // prettier-ignore
-    function tubeMesh(pts,r,m,seg,rad){var sk=sehnenKurve(new THREE.CatmullRomCurve3(pts,false,'centripetal'),seg||140);return new THREE.Mesh(new THREE.TubeGeometry(sk.kurve,sk.n,r,umfangTeilung(r,rad||8),false),m);}
+    function tubeMesh(pts,r,m,seg,rad){var sk=sehnenKurve(new THREE.CatmullRomCurve3(pts,false,'centripetal'),seg||140),n=umfangTeilung(r,rad||8);return new THREE.Mesh(new THREE.TubeGeometry(sk.kurve,sk.n,breiteTreu(r,umfangMit(TOR_DETAIL,r,rad||8),n),n,false),m);}
     // prettier-ignore
     function torusMesh(R,r,m,x,y,z){var me=new THREE.Mesh(ringGeometrie(R,r,8,20),m);me.position.set(x,y,z);return me;}
     // prettier-ignore
@@ -688,13 +717,13 @@
           var oRos=Math.min(0.15,Math.abs(apexX-hingeX)*0.16);                     // Halb-Rose am Scheitel (zwei Flügel → volle Rose) — Math.abs: auch rechter Flügel
           if(oRos>0.05){var oy=apY-oRos*1.7;grp.add(torusMesh(oRos,0.016,laceMat,apexX,oy,0));var nf=5;for(var fi=0;fi<nf;fi++){var fa=fi/nf*6.2831;grp.add(torusMesh(oRos*0.33,0.011,laceMat,apexX+Math.cos(fa)*oRos*0.62,oy+Math.sin(fa)*oRos*0.62,0));}}
           // (kein mittiger Griff — E/R öffnet; nichts soll vor dem Sheet stehen)
-          grp.children.forEach(function(c){c.position.x-=hingeX;});grp.position.set(hingeX,0,zf);grp.userData.side=side;return grp;
+          grp.children.forEach(function(c){c.position.x-=hingeX;});grp.position.set(hingeX,0,zf);if(!_detail.tuerFest)grp.userData.side=side;return grp;
         };
         leafL=makeLeaf(-1,zFace);leafR=makeLeaf(1,zFace);leafLB=makeLeaf(-1,-zFace);leafRB=makeLeaf(1,-zFace);
         leafL.rotation.y=-doorAngle;leafR.rotation.y=doorAngle;leafLB.rotation.y=doorAngleB;leafRB.rotation.y=-doorAngleB;  // vorne→+z, hinten→-z
         gate.add(leafL);gate.add(leafR);gate.add(leafLB);gate.add(leafRB);
         var hxA=[lxg,rxg];                                                          // Scharniere an beiden Maueröffnungen → am Stein, Bügel zur Tür
-        for(var zfi=0;zfi<2;zfi++){var zf=zfi===0?zFace:-zFace;for(var hsI=0;hsI<2;hsI++){var hx=hxA[hsI],hsg=hsI===0?-1:1;for(var hk=0;hk<5;hk++){var hy=baseY+0.2+hk*((springY-baseY-0.35)/4);var cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.26,10),amat);cyl.position.set(hx,hy,zf);cyl.castShadow=true;gate.add(cyl);var br=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.06),amat);br.position.set(hx-hsg*0.08,hy,zf);gate.add(br);hKapsel(HU,new THREE.Vector3(hx,hy-0.13,zf),new THREE.Vector3(hx,hy+0.13,zf),0.055,amat);}}}
+        for(var zfi=0;zfi<2;zfi++){var zf=zfi===0?zFace:-zFace;for(var hsI=0;hsI<2;hsI++){var hx=hxA[hsI],hsg=hsI===0?-1:1;for(var hk=0;hk<5;hk++){var hy=baseY+0.2+hk*((springY-baseY-0.35)/4);var zr=breiteTreu(0.055,TOR_DETAIL.zylinder,_detail.zylinder),cyl=new THREE.Mesh(new THREE.CylinderGeometry(zr,zr,0.26,_detail.zylinder),amat);cyl.position.set(hx,hy,zf);cyl.castShadow=true;gate.add(cyl);var br=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.06),amat);br.position.set(hx-hsg*0.08,hy,zf);gate.add(br);hKapsel(HU,new THREE.Vector3(hx,hy-0.13,zf),new THREE.Vector3(hx,hy+0.13,zf),0.055,amat);}}}
       }
       // --- FUNDAMENT: parametrisches Vokabular (abgeleitet aus Strategie × Masse × Ruine) ---
       var fullW=2*(M+jambW*orders),baseDepth=frameDepth+0.6+depthStep*2*orders,baseZ=0;
@@ -748,6 +777,14 @@
                         arr = A[name].array;
                     for (var k = 0; k < arr.length; k++) arr[k] = rasterZahl(arr[k], s);
                 }
+                // JEDES GITTER TRÄGT SEINEN INDEX (K43): der Bau-Satz legt Gruppen nur indiziert in seinen Pool (`_satzBlock`,
+                // fail-closed) — Stein (ExtrudeGeometry) und Schlussstein-Juwel (Octahedron) kamen ohne; sie tragen den
+                // Index der Ecken in ihrer Reihenfolge (dieselben Ecken, dieselben Dreiecke).
+                if (!o.geometry.index && A.position) {
+                    var nE = A.position.count, idx = nE > 65535 ? new Uint32Array(nE) : new Uint16Array(nE);
+                    for (var e = 0; e < nE; e++) idx[e] = e;
+                    o.geometry.setIndex(new THREE.BufferAttribute(idx, 1));
+                }
             }
             if (Array.isArray(o.material)) for (var j = 0; j < o.material.length; j++) rasterStoff(o.material[j]);
             else rasterStoff(o.material);
@@ -767,6 +804,16 @@
         var S = PORTAL_RENDER_CONFIG.lod.kindStages.gate, st = S[0], L = lod | 0;
         for (var i = 0; i < S.length; i++) if (S[i] <= L) st = S[i];
         return st;
+    }
+    // Der Bau einer GEZEIGTEN Stufe: die Stufe 0 unter ihrem Detail-Gesetz (TOR_DETAIL), die Stufe 1 unter TOR_DETAIL_1 —
+    // derselbe Bau, nur das Gesetz wechselt (synchron gesetzt und zurückgesetzt).
+    function baueStufe(p, st) {
+        _detail = st === 1 ? TOR_DETAIL_1 : TOR_DETAIL;
+        try {
+            return buildGate(p, null);
+        } finally {
+            _detail = TOR_DETAIL;
+        }
     }
     // Die EINE Quelle der Hülle (N5): buildGate sammelt sie im selben Lauf, der die Meshes baut.
     function huelle(rezeptId, seed, ov) {
@@ -788,10 +835,11 @@
             return g3;
         }
         var p = gateParams(pre, ov || null);
-        var R = buildGate(p, null);
+        var st = torStufe(lod);
+        var R = baueStufe(p, st);
         var g = R.gate;
         ausRaster(g);
-        g.userData = { kind: "gate", rezeptId: rezeptId, seed: seed, lod: 0 };
+        g.userData = { kind: "gate", rezeptId: rezeptId, seed: seed, lod: st };
         g.updateMatrixWorld(true);
         return g;
     }

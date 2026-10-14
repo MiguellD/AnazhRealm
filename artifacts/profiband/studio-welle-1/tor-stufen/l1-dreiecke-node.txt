@@ -1,0 +1,8 @@
+drachentor 51096 -> 23276 (0.46)
+kathedrale 18702 -> 14286 (0.76)
+maschine 27520 -> 16688 (0.61)
+geisttor 7126 -> 4608 (0.65)
+verkalkt 42308 -> 23082 (0.55)
+ruine 14640 -> 10462 (0.71)
+maurentor 37850 -> 22612 (0.60)
+SUMME 199242 -> 115014 Genesis-Ring 7 + Drachentor: 250338 -> 138290
