@@ -779,12 +779,30 @@ const server = http.createServer((req, res) => {
                 // zu Recht — die Linse prüfte nicht, was sie meint; verlässt er sie doch, ist die Phase LEER)
                 {
                     const p0 = st.playerMesh.position.clone();
+                    // die Zelle, in der sich keine Stufe ändern kann (`_stufenZelle`, K51-3) — derselbe Stempel wie die Strom-Wache;
+                    // der Gang zielt auf die Mitte seines Fachs (die Fach-Grenzen aus BODEN_STUFEN wie `_stufenZelle`)
+                    const zelle = (p) => r._stufenZelle(p.x, p.z);
                     const span = r._voxelChunkConfig(0).span;
-                    const zelle = (p) => Math.floor(p.x / span) + "," + Math.floor(p.z / span);
-                    st.yaw = Math.atan2(
-                        (Math.floor(p0.x / span) + 0.5) * span - p0.x,
-                        (Math.floor(p0.z / span) + 0.5) * span - p0.z
-                    );
+                    const B = r.constructor.BODEN_STUFEN;
+                    const grenzen = [];
+                    for (const s of B.stufen) {
+                        if (!(s.bis < Infinity)) continue;
+                        for (const t of [s.bis + B.vorlauf, s.bis + B.vorlauf + B.halt]) {
+                            grenzen.push(t % span, span - (t % span));
+                        }
+                    }
+                    grenzen.sort((u, v) => u - v);
+                    const mitte = (w) => {
+                        const c = Math.floor(w / span) * span;
+                        let lo = 0,
+                            hi = span;
+                        for (const g of grenzen) {
+                            if (g <= w - c) lo = g;
+                            else if (g < hi) hi = g;
+                        }
+                        return c + (lo + hi) / 2;
+                    };
+                    st.yaw = Math.atan2(mitte(p0.x) - p0.x, mitte(p0.z) - p0.z);
                     const z0 = zelle(p0);
                     const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
                     st.keys = { w: true };

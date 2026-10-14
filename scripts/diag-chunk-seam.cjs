@@ -500,13 +500,15 @@ const server = http.createServer((req, res) => {
             if (!hasCoarse || !tris.length || !A.tgt || !A.w) continue;
             let anyMorph = false;
             for (let v = 0; v < A.pos.count; v++) {
-                const w = A.w.getX(v);
-                if (w <= 0.01) continue; // nur gemorphte Boundary-Vertices
+                // nur Boundary-Vertices mit Naht-Morph (K51-2: `aMorphWeight` trägt den Morph-Code 2 · Stufe + Naht); gezeichnet
+                // wird mit dem ganzen Faktor (Naht + Stufe − Naht · Stufe, `_morphFaktor`)
+                if (r._morphNaht(A.w.getX(v)) <= 0.01) continue;
                 morphedVerts++;
                 anyMorph = true;
                 const px = A.pos.getX(v),
                     py = A.pos.getY(v),
                     pz = A.pos.getZ(v);
+                const w = r._morphFaktor(A.w.getX(v), px, pz);
                 const tx = A.tgt.getX(v),
                     ty = A.tgt.getY(v),
                     tz = A.tgt.getZ(v);
@@ -608,8 +610,8 @@ const server = http.createServer((req, res) => {
                 const span3 = Math.hypot(tx - px, ty - py, tz - pz);
                 if (span3 < 0.001) continue; // kein Target (kein grober Nachbar griff)
                 borderVerts++;
-                const wv = w.getX(v);
-                if (wv === 0) capped++;
+                const wv = r._morphFaktor(w.getX(v), px, pz);
+                if (r._morphNaht(w.getX(v)) === 0) capped++;
                 // RENDERED Position (Shader: pos + (tgt-pos)·geomorph·w, geomorph=1)
                 const rx = px + (tx - px) * wv,
                     ry = py + (ty - py) * wv,

@@ -122,6 +122,10 @@ self.onmessage = function (e) {
                         empty: false,
                         lod: lod | 0,
                         positions: mesh.positions.buffer,
+                        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
+                        stufeZiel: mesh.stufeZiel ? mesh.stufeZiel.buffer : null,
+                        normalZiel: mesh.normalZiel ? mesh.normalZiel.buffer : null,
+                        farbeZiel: mesh.farbeZiel ? mesh.farbeZiel.buffer : null,
                         normals: mesh.normals.buffer,
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
@@ -155,7 +159,9 @@ self.onmessage = function (e) {
                         mesh.hSeiten.buffer,
                         mesh.hKanten.buffer,
                         mesh.hRand.buffer,
-                    ]
+                    ].concat(
+                        mesh.stufeZiel ? [mesh.stufeZiel.buffer, mesh.normalZiel.buffer, mesh.farbeZiel.buffer] : []
+                    )
                 );
             }
         } else if (msg.type === "water-sheet") {
@@ -2655,6 +2661,43 @@ function chunkHasAnyWater(cx, cz, lod) {
 // Voller Chunk-Build (Iso-Mesh + Cells + Colors)
 // =============================================================================
 
+// Das grobe Netz der Stufe `grobLod` um den Chunk-Ursprung (ox, oz) mit einer Zelle Polster vor der Kante — derselbe Bau wie der
+// Chunk jener Stufe samt Normale und Stoff (Feld-Farbe, Himmels-Sicht, Fels) — und je feinem Vertex sein Ziel darauf: Lage,
+// Normale, Farbe (Spiegel von `_stufeZielNetz` im Stamm, dasselbe Gesetz `stufeZiel` aus gelaende-core).
+function stufeZielNetz(fein, feinNormal, feinFarbe, ox, oy, oz, grobLod) {
+    const g = voxelChunkConfig(grobLod);
+    const gs = g.step;
+    const gox = ox - 2 * gs;
+    const goz = oz - 2 * gs;
+    const gd = g.dim + 4;
+    const leer = () =>
+        G.stufeZiel(fein, new Float32Array(0), new Uint32Array(0), gs, [
+            { fein: feinNormal, grob: new Float32Array(0), einheit: true },
+            { fein: feinFarbe, grob: new Float32Array(0) },
+        ]);
+    const dichte = computeDensityGrid(gox, oy, goz, gd, g.dimY, gd, gs);
+    const sv = extractSurfaceVertices(dichte, gox, oy, goz, gd, g.dimY, gd, gs);
+    if (sv.positions.length === 0) return leer();
+    const hoehle = hoehlenGraph(dichte, gox, oy, goz, gd, g.dimY, gd, gs);
+    const triZelle = [];
+    const idx = emitQuadIndices(dichte, sv.cellVert, gd, g.dimY, gd, hoehle.lab, triZelle);
+    laplacianSmoothPositions(sv.positions, idx, 1, sv.sharp);
+    cropPad(sv.positions, idx, sv.vertCells, gd, gd, 1, triZelle);
+    if (sv.positions.length === 0) return leer();
+    const normalen = gradientNormals(sv.positions, dichte, gox, oy, goz, gs, gd + 1, g.dimY + 1, gd + 1);
+    const lage = new Float32Array(sv.positions);
+    const farben = attachFieldColors(lage);
+    const iU = new Uint32Array(idx);
+    const nV = lage.length / 3;
+    const himmel = G.himmelsSicht(iU, Int32Array.from(triZelle), nV, gs);
+    const FS = state.felsStoff;
+    G.felsStoff(state, FS.basis, FS.netz, lage, normalen, iU, himmel, farben, nV, feuchteAt);
+    return G.stufeZiel(fein, lage, iU, gs, [
+        { fein: feinNormal, grob: normalen, einheit: true },
+        { fein: feinFarbe, grob: farben },
+    ]);
+}
+
 function buildChunkMesh(cx, cz, lod) {
     const cfg = voxelChunkConfig(lod);
     const { dim, step, span, dimY, floorDrop } = cfg;
@@ -2727,6 +2770,12 @@ function buildChunkMesh(cx, cz, lod) {
         nV,
         feuchteAt
     );
+    // DAS ZIEL DER GRÖBEREN STUFE (K51-2, Geomorph nach CDLOD): das Netz der Stufe lod+1 desselben Orts, eine grobe Zelle
+    // weiter nach unten gepolstert (das Gitter beginnt zwei grobe Schritte vor dem Chunk, der Crop behält die Zelle vor der
+    // Kante — sie ist die Saum-Zelle des unteren Nachbarn, so trifft jeder geteilte Vertex in beiden Chunks dieselbe Fläche),
+    // sonst derselbe Bau wie der Chunk der Stufe lod+1; je Vertex sein Ziel samt Normale und Stoff-Farbe (gelaende-core
+    // `stufeZiel`). Stufe 3 ist die gröbste.
+    const stufe = lod < 3 ? stufeZielNetz(positionsF32, normals, colors, ox, oy, oz, lod + 1) : null;
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
     // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für
@@ -2762,6 +2811,9 @@ function buildChunkMesh(cx, cz, lod) {
     return {
         empty: false,
         positions: positionsF32,
+        stufeZiel: stufe ? stufe.ziel : null,
+        normalZiel: stufe ? stufe.felder[0] : null,
+        farbeZiel: stufe ? stufe.felder[1] : null,
         indices: indicesU32,
         normals,
         colors,

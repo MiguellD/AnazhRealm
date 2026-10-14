@@ -1197,7 +1197,9 @@ const server = http.createServer((req, res) => {
                 const bs = [...r.state.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
                 const geo = bs && bs.geom;
                 const PA = geo && geo.attributes.position;
-                const HA = geo && geo.attributes.aHimmel;
+                // die Himmels-Sicht reist im Satz in der vierten Komponente des Normal-Ziels (snorm8, K51-2 `_chunkSatzArt` boden)
+                const NZ = geo && geo.attributes.aNormalZiel;
+                const HA = NZ && NZ.itemSize === 4 ? { getX: (i) => NZ.getW(i) } : null;
                 const himmelV = new Set(),
                     hoehleV = new Set();
                 for (const b of bs ? bs.bloecke.values() : [])
@@ -1469,13 +1471,19 @@ const server = http.createServer((req, res) => {
             // der Boden-Stoff trägt die Himmels-Sicht (`himmelsSicht`), der EINE Stoff-Bau liest sie als Verdeckung und als
             // Grenze der 2.5D-Lichtung (die wahre Normale in der Höhle)
             const pbr = code(r._buildPbrNodeMaterial);
+            // die Himmels-Sicht reist im Boden-Satz in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`)
+            const knoten = code(r._bodenStufenKnoten);
+            const himmelQuelle = /himmel:\s*nZ4\.w/.test(knoten) && /attribute\("aNormalZiel",\s*"vec4"\)/.test(knoten);
             aus.code.himmelLiest =
                 /himmelsSicht:\s*true/.test(code(r._getVoxelChunkMaterial)) &&
-                /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr);
-            aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
+                /\.aoNode\s*=\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr) &&
+                himmelQuelle;
+            aus.code.normaleHoehle =
+                /_flat\.mul\(_hS\)/.test(pbr) &&
+                /_hS\s*=\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr);
             const pool = code(r._lichtPoolTerm);
             aus.code.augenTerm =
-                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(
+                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(
                     pbr
                 ) && /lichtErsatz/.test(pool);
             // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Gesetzes (fachwerk `lichtAbfall`: der Saum

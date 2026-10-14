@@ -2475,6 +2475,220 @@
         return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0]);
     }
 
+    // DAS ZIEL DER GRÖBEREN STUFE (K51-2, der Geomorph der Boden-Stufen nach dem CDLOD-Prinzip): je Vertex des feinen Netzes
+    // sein Punkt auf dem Netz der nächst gröberen Stufe desselben Orts — senkrecht über oder unter ihm (die Fläche, deren Höhe
+    // der eigenen am nächsten liegt; die Gitter der Stufen schachteln sich, das Ziel ist die Höhe der groben Fläche an derselben
+    // Stelle wie die Höhenkarte im CDLOD), wo keine Fläche innerhalb eines groben Schritts senkrecht trägt (eine Wand, ein
+    // Überhang) der nächste Punkt der groben Fläche im Raum, wo auch der weiter als zwei Schritte liegt, der Vertex selbst.
+    // Im Übergangs-Band wandert der Vertex stetig auf dieses Ziel — am Stufen-Wechsel liegt das feine Netz auf dem groben.
+    // `fein` die Positionen (3n), `grob` + `grobIdx` das grobe Netz (3m, 3t), `schritt` sein Gitter-Schritt; `felder` (optional)
+    // die Vertex-Felder, die mitwandern ({ fein, grob, einheit }: je 3 Komponenten — Normale, Stoff-Farbe): ihr Ziel ist der Wert der
+    // groben Fläche am Ziel-Punkt (baryzentrisch; `einheit` normiert), ohne Ziel der eigene. Rückgabe { ziel, felder }. Rein; Leser:
+    // der voxel-worker (`buildChunkMesh`) und der Sync-Bau des Stamms (`_buildVoxelChunkData`) — EIN Gesetz für beide.
+    const STUFE_ZIEL = Object.freeze({ senkrecht: 1, raum: 2 }); // in groben Schritten
+    function stufeZiel(fein, grob, grobIdx, schritt, felder) {
+        const out = new Float32Array(fein.length);
+        out.set(fein);
+        const F = (felder || []).map((fd) => {
+            const z = new Float32Array(fein.length);
+            z.set(fd.fein);
+            return z;
+        });
+        // den Ziel-Wert jedes Felds am Punkt des Dreiecks (a, b, c) mit den Gewichten (la, lb, lc) setzen
+        const feldZiel = (v, a, b, c, la, lb, lc) => {
+            for (let q = 0; q < F.length; q++) {
+                const G = felder[q].grob;
+                let x = G[a] * la + G[b] * lb + G[c] * lc,
+                    y = G[a + 1] * la + G[b + 1] * lb + G[c + 1] * lc,
+                    z = G[a + 2] * la + G[b + 2] * lb + G[c + 2] * lc;
+                if (felder[q].einheit) {
+                    const l = Math.hypot(x, y, z) || 1;
+                    x /= l;
+                    y /= l;
+                    z /= l;
+                }
+                F[q][v] = x;
+                F[q][v + 1] = y;
+                F[q][v + 2] = z;
+            }
+        };
+        const nT = (grobIdx.length / 3) | 0;
+        if (nT === 0 || !(schritt > 0)) return { ziel: out, felder: F };
+        let x0 = Infinity,
+            z0 = Infinity,
+            x1 = -Infinity,
+            z1 = -Infinity;
+        for (let i = 0; i < grob.length; i += 3) {
+            if (grob[i] < x0) x0 = grob[i];
+            if (grob[i] > x1) x1 = grob[i];
+            if (grob[i + 2] < z0) z0 = grob[i + 2];
+            if (grob[i + 2] > z1) z1 = grob[i + 2];
+        }
+        // die Eimer: je Raster-Zelle (Kante = schritt) die groben Dreiecke, deren XZ-Hülle sie berührt (CSR)
+        const nx = Math.floor((x1 - x0) / schritt) + 1,
+            nz = Math.floor((z1 - z0) / schritt) + 1;
+        const zelle = (v, o, n) => Math.min(n - 1, Math.max(0, Math.floor((v - o) / schritt)));
+        const kopf = new Int32Array(nx * nz + 1);
+        const huelle = (t, f) => {
+            const a = grobIdx[t * 3] * 3,
+                b = grobIdx[t * 3 + 1] * 3,
+                c = grobIdx[t * 3 + 2] * 3;
+            const i0 = zelle(Math.min(grob[a], grob[b], grob[c]), x0, nx),
+                i1 = zelle(Math.max(grob[a], grob[b], grob[c]), x0, nx);
+            const j0 = zelle(Math.min(grob[a + 2], grob[b + 2], grob[c + 2]), z0, nz),
+                j1 = zelle(Math.max(grob[a + 2], grob[b + 2], grob[c + 2]), z0, nz);
+            for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) f(i + j * nx);
+        };
+        for (let t = 0; t < nT; t++) huelle(t, (k) => kopf[k + 1]++);
+        for (let k = 0; k < nx * nz; k++) kopf[k + 1] += kopf[k];
+        const eimer = new Int32Array(kopf[nx * nz]);
+        const fuell = kopf.slice(0, nx * nz);
+        for (let t = 0; t < nT; t++) huelle(t, (k) => (eimer[fuell[k]++] = t));
+        const nah = [0, 0, 0],
+            nahL = [0, 0]; // die Gewichte (u, v) des nächsten Punkts: a + u · ab + v · ac
+        // der nächste Punkt des Dreiecks (a, b, c) zu p (Ericson, Real-Time Collision Detection 5.1.5) → nah, Abstand²
+        const naechster = (px, py, pz, a, b, c) => {
+            const ax = grob[a],
+                ay = grob[a + 1],
+                az = grob[a + 2];
+            const abx = grob[b] - ax,
+                aby = grob[b + 1] - ay,
+                abz = grob[b + 2] - az;
+            const acx = grob[c] - ax,
+                acy = grob[c + 1] - ay,
+                acz = grob[c + 2] - az;
+            const apx = px - ax,
+                apy = py - ay,
+                apz = pz - az;
+            const d1 = abx * apx + aby * apy + abz * apz,
+                d2 = acx * apx + acy * apy + acz * apz;
+            let u = 0,
+                v = 0;
+            if (d1 <= 0 && d2 <= 0) {
+                u = 0;
+                v = 0;
+            } else {
+                const bpx = px - grob[b],
+                    bpy = py - grob[b + 1],
+                    bpz = pz - grob[b + 2];
+                const d3 = abx * bpx + aby * bpy + abz * bpz,
+                    d4 = acx * bpx + acy * bpy + acz * bpz;
+                const cpx = px - grob[c],
+                    cpy = py - grob[c + 1],
+                    cpz = pz - grob[c + 2];
+                const d5 = abx * cpx + aby * cpy + abz * cpz,
+                    d6 = acx * cpx + acy * cpy + acz * cpz;
+                const vc = d1 * d4 - d3 * d2,
+                    vb = d5 * d2 - d1 * d6,
+                    va = d3 * d6 - d5 * d4;
+                if (d3 >= 0 && d4 <= d3) {
+                    u = 1;
+                } else if (d6 >= 0 && d5 <= d6) {
+                    v = 1;
+                } else if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+                    u = d1 / (d1 - d3);
+                } else if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+                    v = d2 / (d2 - d6);
+                } else if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+                    const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+                    u = 1 - w;
+                    v = w;
+                } else {
+                    const s = 1 / (va + vb + vc);
+                    u = vb * s;
+                    v = vc * s;
+                }
+            }
+            nah[0] = ax + abx * u + acx * v;
+            nah[1] = ay + aby * u + acy * v;
+            nah[2] = az + abz * u + acz * v;
+            nahL[0] = u;
+            nahL[1] = v;
+            return (nah[0] - px) ** 2 + (nah[1] - py) ** 2 + (nah[2] - pz) ** 2;
+        };
+        const senk = STUFE_ZIEL.senkrecht * schritt,
+            raum2 = (STUFE_ZIEL.raum * schritt) ** 2;
+        for (let v = 0; v < fein.length; v += 3) {
+            const px = fein[v],
+                py = fein[v + 1],
+                pz = fein[v + 2];
+            const ci = zelle(px, x0, nx),
+                cj = zelle(pz, z0, nz);
+            const k = ci + cj * nx;
+            let best = Infinity,
+                by = py,
+                bt = -1,
+                b1 = 0,
+                b2 = 0;
+            for (let q = kopf[k]; q < kopf[k + 1]; q++) {
+                const t = eimer[q];
+                const a = grobIdx[t * 3] * 3,
+                    b = grobIdx[t * 3 + 1] * 3,
+                    c = grobIdx[t * 3 + 2] * 3;
+                const ax = grob[a],
+                    az = grob[a + 2],
+                    bx = grob[b],
+                    bz = grob[b + 2],
+                    cx = grob[c],
+                    cz = grob[c + 2];
+                const den = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz);
+                if (Math.abs(den) < 1e-9) continue; // senkrecht stehend: trägt keine Höhe
+                const l1 = ((bz - cz) * (px - cx) + (cx - bx) * (pz - cz)) / den;
+                const l2 = ((cz - az) * (px - cx) + (ax - cx) * (pz - cz)) / den;
+                const l3 = 1 - l1 - l2;
+                if (l1 < -1e-6 || l2 < -1e-6 || l3 < -1e-6) continue;
+                const y = l1 * grob[a + 1] + l2 * grob[b + 1] + l3 * grob[c + 1];
+                const d = Math.abs(y - py);
+                if (d < best) {
+                    best = d;
+                    by = y;
+                    bt = t;
+                    b1 = l1;
+                    b2 = l2;
+                }
+            }
+            if (best <= senk) {
+                out[v + 1] = by;
+                if (F.length)
+                    feldZiel(v, grobIdx[bt * 3] * 3, grobIdx[bt * 3 + 1] * 3, grobIdx[bt * 3 + 2] * 3, b1, b2, 1 - b1 - b2);
+                continue;
+            }
+            // keine Fläche senkrecht nah: der nächste Punkt im Raum (die 3×3 Eimer um den Vertex)
+            let bd = Infinity,
+                bx = px,
+                bz = pz,
+                bu = 0,
+                bv = 0;
+            by = py;
+            bt = -1;
+            for (let j = Math.max(0, cj - 1); j <= Math.min(nz - 1, cj + 1); j++)
+                for (let i = Math.max(0, ci - 1); i <= Math.min(nx - 1, ci + 1); i++) {
+                    const kk = i + j * nx;
+                    for (let q = kopf[kk]; q < kopf[kk + 1]; q++) {
+                        const t = eimer[q];
+                        const d2 = naechster(px, py, pz, grobIdx[t * 3] * 3, grobIdx[t * 3 + 1] * 3, grobIdx[t * 3 + 2] * 3);
+                        if (d2 < bd) {
+                            bd = d2;
+                            bx = nah[0];
+                            by = nah[1];
+                            bz = nah[2];
+                            bt = t;
+                            bu = nahL[0];
+                            bv = nahL[1];
+                        }
+                    }
+                }
+            if (bd <= raum2) {
+                out[v] = bx;
+                out[v + 1] = by;
+                out[v + 2] = bz;
+                if (F.length)
+                    feldZiel(v, grobIdx[bt * 3] * 3, grobIdx[bt * 3 + 1] * 3, grobIdx[bt * 3 + 2] * 3, 1 - bu - bv, bu, bv);
+            }
+        }
+        return { ziel: out, felder: F };
+    }
+
     // DIE HIMMELS-SICHT EINES BODEN-NETZES (K02a, Auge 11 bei 762/−138; K17-2 aus dem Stamm in den Kern — der voxel-worker
     // baut sie, wo er das Netz baut): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht (der Boden-Stoff liest ihn als
     // Verdeckung). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft, −1 = Himmels-Luft): jede Fläche
@@ -2833,6 +3047,8 @@
         FELS: FELS,
         HIMMELS_SICHT: HIMMELS_SICHT,
         himmelsSicht: himmelsSicht,
+        STUFE_ZIEL: STUFE_ZIEL,
+        stufeZiel: stufeZiel,
         felsStoff: felsStoff,
         felsBasis: felsBasis,
         felsFarbe: felsFarbe,

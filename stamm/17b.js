@@ -445,16 +445,17 @@ class AnazhRealm_Z17b {
         if (art === "boden")
             return {
                 name: "bodenSatz",
-                // DIE VERTEX-FORM (K44): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`) — der Boden-Stoff
-                // liest beide als vec3, der Chunk behält seine Float32-Arrays für jeden CPU-Leser
+                // DIE VERTEX-FORM (K44): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`), der Chunk behält seine
+                // Float32-Arrays für jeden CPU-Leser. DER GEOMORPH DER STUFE (K51-2) bringt Normale und Stoff-Farbe des Ziels
+                // (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks
+                // (Morph-Code in der Farbe, Himmels-Sicht im Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex wie zuvor
                 attr: [
                     ["position", 3],
                     ["normal", 3, "snorm8"],
-                    ["color", 3, "half"],
+                    ["color", 3, "half", "aMorphWeight"],
                     ["aMorphTarget", 3],
-                    ["aMorphWeight", 1],
-                    ["aHimmel", 1],
-                    ["aSchutt", 1],
+                    ["aNormalZiel", 3, "snorm8", "aHimmel"],
+                    ["aFarbeZiel", 3, "half", "aSchutt"],
                 ],
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
@@ -519,9 +520,10 @@ class AnazhRealm_Z17b {
             spec,
             attrNamen: spec.attr.map((a) => a[0]),
             // je Attribut die Vertex-Form auf der GPU (`_satzForm`): `gis` = die Breite im Satz-Array (gepackt 4)
-            attr: spec.attr.map(([name, is, form]) => {
-                const f = this._satzForm(form);
-                return { name, is, form: f, gis: f ? 4 : is };
+            // `w`: der Name eines Skalars des Chunks, den die vierte Komponente trägt (ohne Float16Array: Float32 × 4, `voll4`)
+            attr: spec.attr.map(([name, is, form, w]) => {
+                const f = this._satzForm(form) || (w ? "voll4" : null);
+                return { name, is, form: f, gis: f ? 4 : is, w: w || null };
             }),
             geom: null,
             mesh: null,
@@ -725,7 +727,8 @@ class AnazhRealm_Z17b {
 
     // Packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Vertex-Form `form` nach `dst` ab Vertex `ab` (Breite 4).
     // EINE Quelle für Satz und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
-    static _satzPacke(form, src, is, dst, ab, n) {
+    // `w` (optional): ein Skalar je Vertex für die vierte Komponente (snorm8: −1…1, sonst roh; ohne: Normale 0, Farbe 1).
+    static _satzPacke(form, src, is, dst, ab, n, w) {
         const o0 = ab * 4;
         if (form === "snorm8")
             for (let v = 0; v < n; v++) {
@@ -735,7 +738,8 @@ class AnazhRealm_Z17b {
                     const x = src[q + k];
                     dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
                 }
-                dst[o + 3] = 0;
+                const x = w ? w[v] : 0;
+                dst[o + 3] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
             }
         else
             for (let v = 0; v < n; v++) {
@@ -744,7 +748,7 @@ class AnazhRealm_Z17b {
                 dst[o] = src[q];
                 dst[o + 1] = src[q + 1];
                 dst[o + 2] = src[q + 2];
-                dst[o + 3] = 1;
+                dst[o + 3] = w ? w[v] : 1;
             }
     }
 
@@ -809,19 +813,34 @@ class AnazhRealm_Z17b {
         const s = this._chunkSatz(art);
         if (s.bloecke.has(key)) this._chunkSatzAus(art, key);
         const n = geom && geom.attributes && geom.attributes.position ? geom.attributes.position.count : 0;
-        for (const [name, is] of s.spec.attr) {
-            const a = geom && geom.attributes ? geom.attributes[name] : null;
-            if (!a || a.itemSize !== is || a.count !== n)
-                throw new Error(
-                    `_chunkSatzEin(${art}, ${key}): Attribut ${name} fehlt oder passt nicht (${n} Vertices)`
-                );
-        }
+        for (const [name, is, , w] of s.spec.attr)
+            for (const [nm, b] of w
+                ? [
+                      [name, is],
+                      [w, 1],
+                  ]
+                : [[name, is]]) {
+                const a = geom && geom.attributes ? geom.attributes[nm] : null;
+                if (!a || a.itemSize !== b || a.count !== n)
+                    throw new Error(
+                        `_chunkSatzEin(${art}, ${key}): Attribut ${nm} fehlt oder passt nicht (${n} Vertices)`
+                    );
+            }
         if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
         const vStart = this._chunkSatzVAlloc(s, n);
         const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
-        for (const { name, is, form, gis } of s.attr) {
+        for (const { name, is, form, gis, w } of s.attr) {
             const ga = g.attributes[name];
-            if (form) AnazhRealm._satzPacke(form, geom.attributes[name].array, is, ga.array, vStart, n);
+            if (form)
+                AnazhRealm._satzPacke(
+                    form,
+                    geom.attributes[name].array,
+                    is,
+                    ga.array,
+                    vStart,
+                    n,
+                    w && geom.attributes[w].array
+                );
             else ga.array.set(geom.attributes[name].array, vStart * is);
             ga.addUpdateRange(vStart * gis, n * gis);
             ga.needsUpdate = true;
@@ -959,8 +978,7 @@ class AnazhRealm_Z17b {
         h.makeEmpty();
         const A = b.geom.attributes;
         const P = A.position.array,
-            Z = A.aMorphTarget ? A.aMorphTarget.array : null,
-            W = A.aMorphWeight ? A.aMorphWeight.array : null;
+            Z = A.aMorphTarget ? A.aMorphTarget.array : null;
         const vs = b.vStart;
         const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
         const hub = s.spec.hub || 0;
@@ -986,7 +1004,9 @@ class AnazhRealm_Z17b {
             for (let i = 0; i < I.length; i++) {
                 const v = I[i] - vs;
                 dazu(P, v * 3);
-                if (Z && W && W[v] > 0) dazu(Z, v * 3);
+                // das Morph-Ziel trägt Lage, sobald der Geomorph greift — Naht wie Stufe (K51-2: das Stufen-Gewicht folgt dem
+                // Auge, jedes Ziel kann ganz gezeichnet werden)
+                if (Z) dazu(Z, v * 3);
             }
             const zh = zelle.huelle;
             zh.makeEmpty();
@@ -1025,12 +1045,21 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
-        for (const name of namen) {
-            const ga = s.geom.attributes[name];
-            const fa = s.attr.find((x) => x.name === name);
+        // je geschriebenem Namen das Satz-Attribut, das ihn trägt — selbst oder in seiner vierten Komponente (`w`)
+        for (const fa of s.attr) {
+            if (!namen.includes(fa.name) && !(fa.w && namen.includes(fa.w))) continue;
+            const ga = s.geom.attributes[fa.name];
             // ein gepacktes Attribut liest der Schreiber im Chunk (Float32) — der Satz packt es neu
-            if (fa && fa.form)
-                AnazhRealm._satzPacke(fa.form, b.geom.attributes[name].array, fa.is, ga.array, b.vStart, b.vAnzahl);
+            if (fa.form)
+                AnazhRealm._satzPacke(
+                    fa.form,
+                    b.geom.attributes[fa.name].array,
+                    fa.is,
+                    ga.array,
+                    b.vStart,
+                    b.vAnzahl,
+                    fa.w && b.geom.attributes[fa.w].array
+                );
             ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
             ga.needsUpdate = true;
         }
@@ -1568,12 +1597,10 @@ class AnazhRealm_Z17b {
         const morph = new Float32Array(n * n);
         const A = s.geom.attributes;
         const P = A.position.array,
-            Z = A.aMorphTarget.array,
-            W = A.aMorphWeight.array;
+            Z = A.aMorphTarget.array;
+        // der Abstieg zum Ziel ganz (K51-2): das Stufen-Gewicht folgt dem Auge, jedes Ziel kann ganz gezeichnet werden
         for (let v = b.vStart; v < b.vStart + b.vAnzahl; v++) {
-            const w = W[v];
-            if (!(w > 0)) continue;
-            const ab = (P[v * 3 + 1] - Z[v * 3 + 1]) * w;
+            const ab = P[v * 3 + 1] - Z[v * 3 + 1];
             if (!(ab > 0)) continue;
             const I = Math.floor((P[v * 3] - b.cx * span) / R),
                 K = Math.floor((P[v * 3 + 2] - b.cz * span) / R);
