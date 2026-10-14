@@ -197,7 +197,9 @@ async function fensterSchritt(o) {
     );
     console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
+    // Erwartet: der Selbsttest ES schaltet den Wächter ab und MUSS „Destroyed texture … szene:tiefenabbild" ernten — diese
+    // Meldung richtet die Linse selbst (TOT, unten, je Phase gezählt); jede andere Meldung bleibt ROT.
+    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: /Destroyed texture \[Texture "szene:tiefenabbild"\]/ });
     const seitenFehler = [];
     const seiteAmUfer = async (b) => {
         const p = await b.newPage();

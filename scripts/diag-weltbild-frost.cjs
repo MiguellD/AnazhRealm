@@ -45,9 +45,7 @@
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer } = require("./lib/welt-boot.cjs");
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -235,13 +233,13 @@ function pruefRaum(echt) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        protocolTimeout: 1800000,
-        defaultViewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1300,820"] : linsenWebGpuArgs(),
+        frist: 1800000,
+        viewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
+        zusatz: ECHT ? ["--window-size=1300,820"] : [],
     });
-    await adapterZeile(browser);
     const page = await browser.newPage();
     const t0 = Date.now();
     const zeit = () => `+${Math.round((Date.now() - t0) / 1000)} s`;

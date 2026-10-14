@@ -15,9 +15,7 @@
 // `.calls` nackt (drawCalls-first), der Flugschreiber trägt das version-Feld
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer } = require("./lib/welt-boot.cjs");
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -75,12 +73,7 @@ function nakedLifetimeReads(src) {
     // GPU-freie Fake-Vertrag oben bleibt der CI-Pfad).
     const REAL = process.env.REAL_RENDERER === "1";
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: REAL ? linsenWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
-    });
-    if (REAL) await adapterZeile(browser);
+    const browser = await starteBrowser({ art: REAL ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((real) => {
         if (!real) window.__anazhHeadlessNullRenderer = true;

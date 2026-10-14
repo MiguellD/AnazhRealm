@@ -15,14 +15,9 @@
 // Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
-const { starteBrowser } = require("./lib/welt-boot.cjs");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
-const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".json": "application/json", ".css": "text/css" };
 
 const errs = [];
 function check(name, ok, detail) {
@@ -51,17 +46,7 @@ function laborVerdict(m) {
     return out;
 }
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/worlds/garage/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer({ start: "/worlds/garage/index.html" });
 
 (async () => {
     if (process.argv.includes("--selftest")) {

@@ -32,7 +32,7 @@
 //   ohne Urteil: tiefe Sonne 11° für die Werfer, Nacht, die Nah-Wiese als Empfänger, Hang 20°/35°, Übergang k0→k1)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -274,8 +274,6 @@ if (!ECHT) {
     process.exit(2);
 }
 
-const puppeteer = require("puppeteer");
-const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const W = 960,
     H = 540;
@@ -1476,11 +1474,12 @@ async function probe(cfg) {
     const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: "echt",
         headless: false,
-        protocolTimeout: 3600000,
-        defaultViewport: { width: W, height: H },
-        args: echteWebGpuArgs().concat([`--window-size=${W},${H + 80}`]),
+        frist: 3600000,
+        viewport: { width: W, height: H },
+        zusatz: [`--window-size=${W},${H + 80}`],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });

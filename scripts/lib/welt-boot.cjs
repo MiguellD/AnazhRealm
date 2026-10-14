@@ -143,7 +143,8 @@ async function starteBrowser(opts = {}) {
             // ein Ziel, das vor dem Anheften stirbt, meldet sich über disconnected/close
         }
     });
-    if (opts.art === "linse") await adapterZeile(browser);
+    // jede WebGPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4)
+    if (opts.art === "linse" || opts.art === "echt") await adapterZeile(browser);
     return browser;
 }
 

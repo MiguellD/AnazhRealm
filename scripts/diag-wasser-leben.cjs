@@ -51,7 +51,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const SCHWELLE = {
@@ -764,23 +764,16 @@ if (process.argv.includes("--selftest")) selbsttest();
 else lauf();
 
 async function lauf() {
-    const puppeteer = require("puppeteer");
     const fs = require("fs");
     const path = require("path");
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const root = path.resolve(__dirname, "..");
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: ECHT ? false : "new",
-        protocolTimeout: 900000,
-        args: BILD ? (ECHT ? echteWebGpuArgs() : linsenWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
-    });
-    if (BILD) await adapterZeile(browser);
+    const browser = await starteBrowser({ art: BILD ? (ECHT ? "echt" : "linse") : "null", headless: !ECHT, frist: 900000 });
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
     const seitenFehler = [];
