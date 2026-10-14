@@ -1026,6 +1026,12 @@ async function lichtLauf() {
                         }
                         return ro;
                     };
+                    // der Schuss misst den BODEN um das Feuer, nie den Leib des Spielers (er steht 3 m neben dem Feuer, mitten im
+                    // Ring 1–3 m): K45-2 — das Hemd des Menschen sass eng statt als Ballon, und der Farbton des „Bodens" der Glut-
+                    // Probe stieg in der CI 20,3 → 26,3°, weil mehr Haut statt Stoff in den Proben lag. Wie die Bild-Bühne der Werkbank
+                    // blendet der Schuss den Spieler-Leib aus.
+                    const pmSicht = s.playerMesh ? s.playerMesh.visible : null;
+                    if (s.playerMesh) s.playerMesh.visible = false;
                     try {
                         window.__buehne();
                         uhr(0);
@@ -1042,6 +1048,7 @@ async function lichtLauf() {
                             auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
                     } finally {
+                        if (s.playerMesh) s.playerMesh.visible = pmSicht;
                         r._leuchtTakt = alt;
                         FC.lichtFlackern = flAlt;
                         objs.get = roh;
