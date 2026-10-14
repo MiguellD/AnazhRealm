@@ -558,19 +558,16 @@ class AnazhRealm_Z08 {
         // der Boden, den der Erdbau des Plans baut (gelaende-core `erdbauY` über dem Gesetz samt dem Erdbau früherer Orte)
         const G = globalThis.__gelaendeCore;
         const E = G.erdbauNormal(k.erdbau);
-        // und die Gestalt des Gewässers darüber (`_gewaesserForm` in der Dichte): wo der Fluss-Kanal (`_hydrosphereCarveAt`
-        // P samt Rundung k) unter die Platte reicht oder ein See-Becken (`_hydrosphereLakeAt`) sie hält, schneidet die Welt
-        // den Grund ins Bett — das Haus stünde im Fluss-Bett; der Damm L füllt tieferes Gelände zur Krone
+        // und die Gestalt des Gewässers darüber — DIESELBE Formel wie die Dichte (`_gewaesserForm`: der Damm füllt tieferes
+        // Gelände zur Krone, der Fluss-Kanal schneidet höheres zur Böschung, das See-Becken blendet zu seinem Bett; eine Dichte
+        // ist Höhe − y, in y = 0 also die Höhe selbst): die Platte im Kanal liegt so tief, wie die Welt sie baut
         const nass = (x, z) => {
             const h0 = this._terrainMacroSurfaceY(x, z, true);
-            let h = E ? G.erdbauY(E, x, z, h0) : h0;
-            const C = this._hydrosphereCarveAt(x, z);
-            if (C) {
-                if (C.P < h + (C.k || 0)) return true;
-                h = Math.max(h, C.L);
-            }
-            const S = this._hydrosphereLakeAt(x, z);
-            if (S && S.w > 0) return true;
+            const he = E ? G.erdbauY(E, x, z, h0) : h0;
+            const h = AnazhRealm._gewaesserForm(he, 0, this._hydrosphereCarveAt(x, z), this._hydrosphereLakeAt(x, z));
+            // die Welt baut den Boden des Plans, wie er geplant ist: ein Kanal unter der Platte (oder ein Damm über ihr) legt
+            // das Haus auf einen Sockel bzw. in den Boden — am Kanal-Ort 72 m westlich des Auto-Dorfs 10,2 m Sockel, 15/16 Türen
+            if (Math.abs(h - he) > AnazhRealm.ORT_WAHL.bodenTolM) return true;
             return h < this._atlasWaterLevelAt(x, z, h) + M;
         };
         for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;

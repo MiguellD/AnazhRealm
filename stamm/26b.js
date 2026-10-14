@@ -56,7 +56,8 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 AnazhRealm.WERK_LAND_M = 0.2;
 // DIE ORT-WAHL eines Plans (K10, `_ortPlanSetzen`): Ringe um den Wunsch-Anker (`ringe` × `schrittM`, je Ring `richtungen`
 // Orte), der nächste Ort, an dem der Plan jedes Haus trocken trägt (`_ortTraegt`), gewinnt.
-AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 12, ringe: 6, richtungen: 8 });
+// `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans unter einem Haus verschieben.
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 12, ringe: 6, richtungen: 8, bodenTolM: 0.05 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
