@@ -1,0 +1,29 @@
+21:27:30 s1 A start [P8, 139 MHz, 66]
+A ende
+21:29:56 s1 A ende
+21:30:56 s1 B start [P8, 139 MHz, 69]
+B ende
+21:33:16 s1 B ende
+21:34:16 s2 B start [P8, 139 MHz, 70]
+B ende
+21:36:40 s2 B ende
+21:37:40 s2 A start [P8, 139 MHz, 70]
+A ende
+21:40:01 s2 A ende
+21:41:01 SERIE FERTIG
+21:41:42 Sitzung 3+4 nachgelegt
+s1 schon da
+s2 schon da
+21:41:45 s3 A start [P8, 139 MHz, 68]
+A ende
+21:44:05 s3 A ende
+21:45:05 s3 B start [P8, 139 MHz, 71]
+B ende
+21:47:25 s3 B ende
+21:48:25 s4 B start [P8, 139 MHz, 70]
+B ende
+21:50:45 s4 B ende
+21:51:45 s4 A start [P8, 139 MHz, 70]
+A ende
+21:54:03 s4 A ende
+21:55:03 SERIE FERTIG
