@@ -32,6 +32,11 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 | mess-wiese | K55: Wiese -278/-1038 aus der Welt, Orts-Literale 30 → 0, Gelände-Proben aus `welt-orte.cjs`; trägt gtx-ratschen-1410 (6 GTX-Ratschen am neuen Ort) | Rote laut letztem Commit-Rumpf / Übergabe: Fahr-Leben S4/L6/L8, Höhlen-Sicht „hinaus“ (`_hoehlenAusgang`), streu-fern Bahnwechsel, werk-im-wasser; dann mergen (Ratschen gehören zum neuen Ort) |
 | mensch-kopf | K57: Kopf-Soll (Anthropometrie) als Kern-Daten + Maß, dann Proportion/Augen/Mund im koerperstudio | Übergabe im letzten Commit-Rumpf; Bild Armlänge Labor = Welt |
 | laub-aaaa | K58: Laub-Soll + Maß, größter Hebel (Nadel-Wedel / Blatt-Karten / Dither) | Übergabe im letzten Commit-Rumpf |
+| flackern | B1: S0-Frist (drei swiftshader-Szenen) und Gelände-Kosten-Zeitverhältnis an der Wurzel | Übergabe im letzten Commit-Rumpf / C:\Users\micha\AppData\Local\Temp\claude\flackern\UEBERGABE.md |
+| welt-boot-rest | B2: die 17 übrigen Eigen-Starts in welt-boot.cjs, pruef-vakuum (Z2a) hineinführen | dito, Temp\claude\welt-boot-rest |
+| boden-stufen (K51-5) | Stufenwechsel ohne Form-Änderung setzt Wald/Sichthöhen nicht neu (OMEN-Profil: +4,3 ms beim Einströmen) | dito, Temp\claude\boden-folge; danach OMEN-ABAB gehend |
+| linsen-radeon | K39-2: Linsen ohne Zeit-Urteil lokal auf der Radeon (Wand-Zeit-Hebel 1) | dito, Temp\claude\linsen-radeon |
+| takt-wurzel (OMEN) | 1410-3: je Frame höchstens EINE Schatten-Kaskade, CPU p95 6,0→5,8 · 6,7→6,4 · 6,8→6,3 · 8,4→7,5; in Bewegung zittert der nahe Spieler-Schatten (5–8 px) → Bewegungs-Regel (b): bewegt = nah jeden Frame | ABAB STEHEND und GEHEND nebeneinander, dann FF; koordination bericht/1410-3-takt.md |
 | ort-gelaende 92972ef6 | K10, Frozen C (Dorf auf dem Gelände-Kern) | Neubau gegen den K16-Grund prüfen, Damm/Slots/Nachtlicht |
 | haus-fenster a5341ed3 | K38-N1, gate:fenster-wechsel rot | Täter lesen |
 | pruef-vakuum 73becf82 | Z2a Meta-Wand gegen leere Prüfungen (WIP) | mit dem Welt-Boot-Fehlersammler zusammenführen |
