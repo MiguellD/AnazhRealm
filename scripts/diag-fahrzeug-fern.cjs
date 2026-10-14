@@ -26,10 +26,10 @@
 //       gegen die Fernstufe (1 Quad = 2 Tris, das Einheits-Quad des Karten-Atlas `_impostorQuad`).
 //
 //   node scripts/diag-fahrzeug-fern.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const puppeteer = require("puppeteer");
 const stammLib = require("./lib/stamm.cjs");
 const { WORKER_BOOT } = require("./lib/asset-worker-harness.cjs");
 
@@ -426,11 +426,7 @@ function pageHtml() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     let vId = null;
     let bake = null;
     let nah = null;

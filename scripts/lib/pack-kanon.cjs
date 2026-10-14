@@ -14,22 +14,13 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
 const crypto = require("crypto");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-    ".wasm": "application/wasm",
-};
 
 function sha256Hex(buf) {
     return crypto.createHash("sha256").update(buf).digest("hex");
@@ -246,24 +237,9 @@ function readPack(file) {
 // headless bewusst AUS → jeder `_foundryRequest` ist ein ECHTER Worker-Reply, genau die
 // Wahrheit, die das Pack einfrieren soll).
 async function bootRealm(port) {
-    const puppeteer = require("puppeteer");
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

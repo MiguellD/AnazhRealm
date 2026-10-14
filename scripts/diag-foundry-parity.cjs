@@ -19,7 +19,7 @@
 //   node scripts/diag-foundry-parity.cjs
 //   PARITY_SEEDS="1,7" PARITY_LODS="0,2" PARITY_SEASONS="summer" node scripts/diag-foundry-parity.cjs
 
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -199,11 +199,7 @@ const server = http.createServer((req, res) => {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push(String((e && e.message) || e)));

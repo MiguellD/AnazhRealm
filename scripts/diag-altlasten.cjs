@@ -3196,6 +3196,86 @@ function scanPortWand(dateien) {
             errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
     return errs;
 }
+// DIE BOOT-WAND (Z2b-1, 14.10.): Server und Browser jeder Linse startet scripts/lib/welt-boot.cjs (statikServer ·
+// starteBrowser · oeffneWelt) — mit dem EINEN Fehler-Sammler, der jeden Seitenfehler, jeden Absturz und jedes console.error
+// ROT mit Namen macht. Befund: 153 Dateien starteten selbst, 122 Kopien desselben Statik-Servers, und gate:nah-fern stürzte
+// seit K16 ab und meldete Exit 0. Ein eigener Start (`puppeteer.launch(` · `http.createServer(`, Kommentare und Texte zählen
+// nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
+// nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
+const BOOT_REST = [
+    "scripts/audit-strict.cjs", "scripts/diag-albedo-tafel.cjs", "scripts/diag-analog-nah.cjs",
+    "scripts/diag-ankunft.cjs", "scripts/diag-arch-feld.cjs", "scripts/diag-baecker-kanal.cjs",
+    "scripts/diag-beweis-e.cjs", "scripts/diag-blick.cjs", "scripts/diag-boot-rettung.cjs",
+    "scripts/diag-boot-stage.cjs", "scripts/diag-carve-adaptive.cjs", "scripts/diag-chunk-satz.cjs",
+    "scripts/diag-ego-schatten.cjs", "scripts/diag-erstarren.cjs", "scripts/diag-existenz-boden.cjs",
+    "scripts/diag-fahr-leben.cjs", "scripts/diag-fahrzeug-fern.cjs", "scripts/diag-fall-waechter.cjs",
+    "scripts/diag-feld-stellvertreter.cjs", "scripts/diag-fenster-wechsel.cjs", "scripts/diag-fern-ring.cjs",
+    "scripts/diag-fern-wasser.cjs", "scripts/diag-fluss.cjs", "scripts/diag-foliage-res.cjs",
+    "scripts/diag-foundry-parity.cjs", "scripts/diag-freie-slots.cjs", "scripts/diag-garage-labor.cjs",
+    "scripts/diag-godray.cjs", "scripts/diag-gpu-fehler.cjs", "scripts/diag-gpu-zeit.cjs",
+    "scripts/diag-grass-thin.cjs", "scripts/diag-haus-welt.cjs", "scripts/diag-hitch-telemetrie.cjs",
+    "scripts/diag-hoehlen-sicht.cjs", "scripts/diag-kamera-laub.cjs", "scripts/diag-kamera-treue.cjs",
+    "scripts/diag-kampf-gefuehl.cjs", "scripts/diag-klang-zensus.cjs", "scripts/diag-koerper-bewegung.cjs",
+    "scripts/diag-koerper-stand.cjs", "scripts/diag-kollision-bild.cjs", "scripts/diag-kopplung.cjs",
+    "scripts/diag-kreatur-kosten.cjs", "scripts/diag-kreatur-takt.cjs", "scripts/diag-leistungs-vertrag.cjs",
+    "scripts/diag-look-golden.cjs", "scripts/diag-look-physics.cjs", "scripts/diag-move-under-load.cjs",
+    "scripts/diag-page-error.cjs", "scripts/diag-parity.cjs", "scripts/diag-perf-panel.cjs",
+    "scripts/diag-persistence.cjs", "scripts/diag-portal-konformanz.cjs", "scripts/diag-portal-membran.cjs",
+    "scripts/diag-post-kette.cjs", "scripts/diag-pruefbuehne.cjs", "scripts/diag-regler-sim.cjs",
+    "scripts/diag-regler-wirkt.cjs", "scripts/diag-render-tap.cjs", "scripts/diag-scatter-ab.cjs",
+    "scripts/diag-scatter-slice.cjs", "scripts/diag-schatten-bias.cjs", "scripts/diag-schatten-takt.cjs",
+    "scripts/diag-schatten-werfer.cjs", "scripts/diag-schirm-monotonie.cjs", "scripts/diag-schritt-klang.cjs",
+    "scripts/diag-sicht-arbeit.cjs", "scripts/diag-stand-takt.cjs", "scripts/diag-studio-begehen.cjs",
+    "scripts/diag-studio-huelle.cjs", "scripts/diag-takt-atem.cjs", "scripts/diag-tier-fern.cjs",
+    "scripts/diag-tier-gang.cjs", "scripts/diag-tier-separation.cjs", "scripts/diag-tod-zensus.cjs",
+    "scripts/diag-trias.cjs", "scripts/diag-turn-hang.cjs", "scripts/diag-v1-pfad.cjs",
+    "scripts/diag-verdeckungs-abfrage.cjs", "scripts/diag-wasser-leben.cjs", "scripts/diag-wasser-wahrheit.cjs",
+    "scripts/diag-weltbild-frost.cjs", "scripts/diag-weltgrenze.cjs", "scripts/diag-werk-im-wasser.cjs",
+    "scripts/diag-werkstatt-weg.cjs", "scripts/diag-wiese.cjs", "scripts/diag-worker-dichte.cjs",
+    "scripts/diag-ziel-zensus.cjs", "scripts/lib/asset-worker-harness.cjs", "scripts/playtest.cjs",
+    "scripts/werkbank.cjs",
+];
+// Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
+function eigenBoots(dateien) {
+    const acorn = require("acorn");
+    const startet = (src) => {
+        if (!/\b(?:launch|createServer)\b/.test(src)) return false;
+        let ast;
+        try {
+            ast = acorn.parse(src.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
+        } catch (_e) {
+            return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
+        }
+        let ja = false;
+        const geh = (n) => {
+            if (ja || !n || typeof n.type !== "string") return;
+            if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed) {
+                const o = n.callee.object.name;
+                const p = n.callee.property.name;
+                if ((o === "puppeteer" && p === "launch") || (o === "http" && p === "createServer")) return (ja = true);
+            }
+            for (const k in n) {
+                const v = n[k];
+                if (Array.isArray(v)) v.forEach(geh);
+                else if (v && typeof v.type === "string") geh(v);
+            }
+        };
+        geh(ast);
+        return ja;
+    };
+    return dateien.filter(([name, src]) => name !== "scripts/lib/welt-boot.cjs" && startet(src)).map(([name]) => name);
+}
+function scanBootWand(dateien, rest = BOOT_REST) {
+    const eigen = eigenBoots(dateien);
+    const errs = [];
+    for (const n of eigen)
+        if (!rest.includes(n))
+            errs.push(`Boot-Wand: ${n} startet Server/Browser selbst — nimm scripts/lib/welt-boot.cjs (statikServer · starteBrowser)`);
+    for (const n of rest)
+        if (!eigen.includes(n))
+            errs.push(`Boot-Wand: ${n} steht auf der Rest-Liste, startet aber nicht mehr selbst — Zeile streichen (sie schrumpft nur)`);
+    return errs;
+}
 // DIE HÜLLEN-FORM-WAND (S3 haus, K08): der Wirt liest die Hülle eines Baus in der EINEN Form (N5: `{ stufe, teile }`,
 // der Leser `_huelleVon`, fail-closed) — die Zahlen-Zeile `{ stufe, boxen }` fiel mit ee37daf7 als Wirts-Form (sie lebt nur
 // im Gesetzbuch, fachwerk-core `huelleAusBoxen`). Die Probe `sockel` kam mit V18.538 und gab dem Wirt noch die alte Zeile —
@@ -3635,6 +3715,22 @@ function main() {
             process.exit(1);
         }
         console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
+        // Die Boot-Wand muss feuern: ein neuer Eigen-Start (Browser oder Server) ist rot, ein Kommentar und ein Text still,
+        // eine Rest-Zeile ohne eigenen Start ist rot (die Liste schrumpft nur), der Baum heute grün.
+        const start = "puppeteer" + ".launch({ args: [] })"; // zusammengesetzt: diese Datei trägt selbst keinen Start
+        const bootFeuert =
+            scanBootWand(gates).length === 0 &&
+            scanBootWand([["scripts/diag-neu.cjs", `const b = await ${start};\n`]], []).length === 1 &&
+            scanBootWand([["scripts/diag-srv.cjs", "const s = http" + ".createServer((q, r) => r.end());\n"]], []).length === 1 &&
+            scanBootWand([["scripts/diag-k.cjs", `// früher: ${start}\nconst t = "${start}";\n`]], []).length === 0 &&
+            scanBootWand([["scripts/diag-alt.cjs", "const x = 1;\n"]], ["scripts/diag-alt.cjs"]).length === 1;
+        if (!bootFeuert) {
+            console.log("❌ SELBST-TEST: die Boot-Wand feuert nicht (oder steht heute rot)", scanBootWand(gates));
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Boot-Wand feuert (Eigen-Start und Eigen-Server rot, Kommentar/Text still, tote Rest-Zeile rot; Rest ${BOOT_REST.length})`
+        );
         // Die Hüllen-Form-Wand muss feuern: die alte Zeile als Schlüssel und als Kurzform, über eine Variable gereicht —
         // ein Kommentar und ein Text (die Kern-Ersetzung) dürfen sie tragen, die Form mit teile ist still.
         const wirt = wirtsDateien(root, files);
@@ -4089,6 +4185,7 @@ function main() {
         .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanBootWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
         .concat(scanStammLeser(root))

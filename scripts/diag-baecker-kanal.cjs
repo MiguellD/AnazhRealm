@@ -19,10 +19,10 @@
 // die Linse ist nicht vakuös.
 //
 //   node scripts/diag-baecker-kanal.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const puppeteer = require("puppeteer");
 const { WORKER_BOOT } = require("./lib/asset-worker-harness.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -202,11 +202,7 @@ function pageHtml() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     let stats = null;
     let gateId = null;
     let gateStats = null;

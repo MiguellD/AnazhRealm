@@ -8,7 +8,7 @@
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann. Die WORKER_SCRIPTS
 // sind identisch zu diag-foundry-parity.cjs (dort 720/720 byte-bewiesen).
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -366,11 +366,7 @@ async function runWithWorker(port, cb) {
         });
     });
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     try {
         const page = await browser.newPage();
         const pageErrors = [];
