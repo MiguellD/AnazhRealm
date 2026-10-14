@@ -1315,10 +1315,11 @@ async function probeLeben(expected) {
         }
         if (g1) weg(g1);
         // S2 KLIPPE: Anlauf 24 m trocken und eben (≤ 0,3 m je 2 m), dann fällt der Grund binnen 6 m um 3–14 m (der Befund fand
-        // 8,5 m) — an einer KANTE (binnen 3 m mehr als 3 m Fall: an einer Kante von 2,15 m auf 3 m flog der Wagen in S4 nie). Das Kliff kommt aus der Welt (welt-orte `kante`, K55-2 — bis
+        // 8,5 m) — an einer KANTE: binnen 3 m mehr als 3 m, binnen 6 m 6–14 m Fall (an einer Kante von 2,15 m auf 3 m flog der
+        // Wagen in S4 nie, an 3,13 m mit 3–4 m Fall zwei Takte 0,05 m hoch). Das Kliff kommt aus der Welt (welt-orte `kante`, K55-2 — bis
         // dahin die schärfste Kante ± 160 m um die Mess-Wiese; die flache Aue trug keine): die nächste Stelle um die Mitte der
         // Welt, dort die schärfste der 8 Richtungen.
-        const kOrt = window.__weltOrt("kante", { kanteMin: 3, schritt: 4, rMax: 1600 });
+        const kOrt = window.__weltOrt("kante", { kanteMin: 3, fall: [6, 14], schritt: 4, rMax: 1600 });
         const kl = kOrt
             ? { x: kOrt.x, z: kOrt.z, fall: kOrt.fall, kante: kOrt.kante, fahrt: kOrt.gier, sx: kOrt.sx, sz: kOrt.sz }
             : null;
