@@ -36,6 +36,9 @@ class AnazhRealm_Z25c {
             // darf nie fallen.
             const ros = o.__renderObjekte;
             if (ros) for (const ro of ros) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
+            // eine Senke zeichnet über ihren Zeichner (1410-1): dessen Render-Objekte zeichnen ihre Attribute
+            const zro = o.__zeichner && o.__zeichner.__renderObjekte;
+            if (zro) for (const ro of zro) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
         });
         const gezeichnet = rend._geometries.attributeCall;
         const weg = [];
@@ -1297,7 +1300,9 @@ class AnazhRealm_Z25c {
         for (let i = 0; i < kinder.length; i++) {
             const c = kinder[i];
             if (c.visible === false) continue;
-            if (c.isMesh === true && c.castShadow === true && c.children.length === 0) {
+            // eine Senke ist ein Blatt: ihr einziges Kind ist ihr Zeichner (1410-1), er fällt mit ihr
+            const blatt = c.children.length === 0 || (c.__zeichner !== undefined && c.children.length === 1);
+            if (c.isMesh === true && c.castShadow === true && blatt) {
                 const b = c.userData._werferKind;
                 if (!b || b.isEmpty() || !this._passTrifftBox(L, b, 0)) {
                     c.visible = false;
