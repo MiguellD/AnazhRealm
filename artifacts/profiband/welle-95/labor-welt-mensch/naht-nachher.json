@@ -1,155 +1,155 @@
 {
- "kopf": "51cc19af",
+ "kopf": "43a5c5cc",
  "start": [
   {
    "lod": 0,
-   "tris": 39995,
-   "sha": "7a5beb50cc828a5c",
+   "tris": 39994,
+   "sha": "d82690ee9b0d9725",
    "posen": {
     "bind": {
      "driftMax": 0,
      "driftP95": 0,
-     "durchstoss": 182
+     "durchstoss": 5
     },
     "ruhe": {
-     "driftMax": 0.008,
-     "driftP95": 0.0006,
-     "durchstoss": 181
+     "driftMax": 0.0076,
+     "driftP95": 0.005,
+     "durchstoss": 5
     },
     "guard": {
-     "driftMax": 0.094,
-     "driftP95": 0.0139,
-     "durchstoss": 182
+     "driftMax": 0.3244,
+     "driftP95": 0.1754,
+     "durchstoss": 3
     },
     "punch": {
-     "driftMax": 0.1998,
-     "driftP95": 0.0188,
-     "durchstoss": 166
+     "driftMax": 0.694,
+     "driftP95": 0.3787,
+     "durchstoss": 2
     },
     "jubel": {
-     "driftMax": 0.3202,
-     "driftP95": 0.0236,
-     "durchstoss": 31
+     "driftMax": 1.1392,
+     "driftP95": 0.5542,
+     "durchstoss": 1
     },
     "hocke": {
-     "driftMax": 0.2605,
-     "driftP95": 0.0788,
-     "durchstoss": 276
+     "driftMax": 0.0107,
+     "driftP95": 0.0068,
+     "durchstoss": 5
     },
     "kick": {
-     "driftMax": 0.5678,
-     "driftP95": 0.0717,
-     "durchstoss": 195
+     "driftMax": 0.2294,
+     "driftP95": 0.0655,
+     "durchstoss": 5
     }
    },
-   "hautEcken": 4761,
+   "hautEcken": 1085,
    "bedeckt": [
-    "tshirt:2567",
-    "pants:1900"
+    "tshirt:124",
+    "pants:0"
    ],
-   "driftMax": 0.5678,
-   "driftP95": 0.0213,
-   "durchstoss": 1213
+   "driftMax": 1.1392,
+   "driftP95": 0.1615,
+   "durchstoss": 26
   },
   {
    "lod": 1,
-   "tris": 13994,
-   "sha": "8009e5d954a55c93",
+   "tris": 13997,
+   "sha": "ca8e9db95db7a575",
    "posen": {
     "bind": {
      "driftMax": 0,
      "driftP95": 0,
-     "durchstoss": 88
+     "durchstoss": 0
     },
     "ruhe": {
-     "driftMax": 0.0069,
-     "driftP95": 0.0011,
-     "durchstoss": 89
+     "driftMax": 0.007,
+     "driftP95": 0.0051,
+     "durchstoss": 0
     },
     "guard": {
-     "driftMax": 0.2109,
-     "driftP95": 0.0244,
-     "durchstoss": 91
+     "driftMax": 0.3421,
+     "driftP95": 0.1947,
+     "durchstoss": 1
     },
     "punch": {
-     "driftMax": 0.4495,
-     "driftP95": 0.0376,
-     "durchstoss": 76
+     "driftMax": 0.7346,
+     "driftP95": 0.4033,
+     "durchstoss": 1
     },
     "jubel": {
-     "driftMax": 0.5519,
-     "driftP95": 0.0474,
-     "durchstoss": 15
+     "driftMax": 1.2184,
+     "driftP95": 0.6194,
+     "durchstoss": 0
     },
     "hocke": {
-     "driftMax": 0.2667,
-     "driftP95": 0.0595,
-     "durchstoss": 130
+     "driftMax": 0.0099,
+     "driftP95": 0.0064,
+     "durchstoss": 0
     },
     "kick": {
-     "driftMax": 0.3722,
-     "driftP95": 0.0494,
-     "durchstoss": 118
+     "driftMax": 0.2282,
+     "driftP95": 0.0675,
+     "durchstoss": 0
     }
    },
-   "hautEcken": 1925,
+   "hautEcken": 551,
    "bedeckt": [
-    "tshirt:1008",
-    "pants:811"
+    "tshirt:84",
+    "pants:0"
    ],
-   "driftMax": 0.5519,
-   "driftP95": 0.0305,
-   "durchstoss": 607
+   "driftMax": 1.2184,
+   "driftP95": 0.1924,
+   "durchstoss": 2
   },
   {
    "lod": 0,
-   "tris": 39993,
-   "sha": "3c08b9432a8b22b8",
+   "tris": 39995,
+   "sha": "3da04ed0d605284b",
    "posen": {
     "bind": {
      "driftMax": 0,
      "driftP95": 0,
-     "durchstoss": 186
+     "durchstoss": 5
     },
     "ruhe": {
-     "driftMax": 0.008,
-     "driftP95": 0.0008,
-     "durchstoss": 185
+     "driftMax": 0.0494,
+     "driftP95": 0.0292,
+     "durchstoss": 6
     },
     "guard": {
-     "driftMax": 0.094,
-     "driftP95": 0.015,
-     "durchstoss": 184
+     "driftMax": 0.4589,
+     "driftP95": 0.2874,
+     "durchstoss": 8
     },
     "punch": {
-     "driftMax": 0.1998,
-     "driftP95": 0.0219,
-     "durchstoss": 171
+     "driftMax": 0.694,
+     "driftP95": 0.2338,
+     "durchstoss": 2
     },
     "jubel": {
-     "driftMax": 0.3202,
-     "driftP95": 0.0271,
-     "durchstoss": 33
+     "driftMax": 1.1392,
+     "driftP95": 0.3113,
+     "durchstoss": 4
     },
     "hocke": {
-     "driftMax": 0.2703,
-     "driftP95": 0.0762,
-     "durchstoss": 200
+     "driftMax": 0.1215,
+     "driftP95": 0.0538,
+     "durchstoss": 14
     },
     "kick": {
-     "driftMax": 0.633,
-     "driftP95": 0.0687,
-     "durchstoss": 194
+     "driftMax": 0.414,
+     "driftP95": 0.1324,
+     "durchstoss": 8
     }
    },
-   "hautEcken": 4844,
+   "hautEcken": 2104,
    "bedeckt": [
-    "pullover:2692",
-    "shorts:1178"
+    "pullover:163",
+    "shorts:62"
    ],
-   "driftMax": 0.633,
-   "driftP95": 0.0215,
-   "durchstoss": 1153,
+   "driftMax": 1.1392,
+   "driftP95": 0.1541,
+   "durchstoss": 47,
    "dials": {
     "top": "pullover",
     "bottom": "shorts"
@@ -157,53 +157,53 @@
   },
   {
    "lod": 0,
-   "tris": 39993,
-   "sha": "76002fd69ccf607d",
+   "tris": 39994,
+   "sha": "4b3fbb950c46fa6e",
    "posen": {
     "bind": {
      "driftMax": 0,
      "driftP95": 0,
-     "durchstoss": 128
+     "durchstoss": 42
     },
     "ruhe": {
-     "driftMax": 0.0009,
-     "driftP95": 0.0002,
-     "durchstoss": 128
+     "driftMax": 0.0047,
+     "driftP95": 0.003,
+     "durchstoss": 42
     },
     "guard": {
-     "driftMax": 0.052,
-     "driftP95": 0.0114,
-     "durchstoss": 118
+     "driftMax": 0.2328,
+     "driftP95": 0.161,
+     "durchstoss": 41
     },
     "punch": {
-     "driftMax": 0.1075,
-     "driftP95": 0.0237,
-     "durchstoss": 102
+     "driftMax": 0.4961,
+     "driftP95": 0.3429,
+     "durchstoss": 41
     },
     "jubel": {
-     "driftMax": 0.1493,
-     "driftP95": 0.0294,
-     "durchstoss": 3
+     "driftMax": 0.7968,
+     "driftP95": 0.5168,
+     "durchstoss": 21
     },
     "hocke": {
-     "driftMax": 0.2853,
-     "driftP95": 0.0831,
-     "durchstoss": 226
+     "driftMax": 0.0047,
+     "driftP95": 0.003,
+     "durchstoss": 42
     },
     "kick": {
-     "driftMax": 0.6491,
-     "driftP95": 0.0892,
-     "durchstoss": 137
+     "driftMax": 0.1588,
+     "driftP95": 0.0907,
+     "durchstoss": 42
     }
    },
-   "hautEcken": 4668,
+   "hautEcken": 1898,
    "bedeckt": [
-    "tank:1826",
-    "pants:2004"
+    "tank:163",
+    "pants:0"
    ],
-   "driftMax": 0.6491,
-   "driftP95": 0.0248,
-   "durchstoss": 842,
+   "driftMax": 0.7968,
+   "driftP95": 0.2087,
+   "durchstoss": 271,
    "dials": {
     "top": "tank",
     "bottom": "pants",
@@ -211,5 +211,5 @@
    }
   }
  ],
- "ms": 5926
+ "ms": 7016
 }

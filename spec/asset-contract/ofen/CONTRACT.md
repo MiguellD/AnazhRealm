@@ -37,7 +37,7 @@ Golden)` — rot, bis der Akt sie prägt.
 | `<art>-L<lod>\|beipack` | der übrige Beipack: `root · art · base · skinJoints · tailSegs · masse · handMitte` |
 
 Stand der Prägung: 136 Stoff-Klassen × Gelenk Tier + 53 Mensch = 189 (= der Handbeweis), 284 Gelenke,
-10 Beipacks.
+10 Beipacks. Seit K45-2 (14.10.): Mensch 31 — 461 Klassen.
 
 Vertrags-Akt S3 kreatur (08.10.2026, Lehre 19 — die Grobstufe ist gelenkig): Stufe 1 bindet ihre Haut an die
 Gelenke wie Stufe 0 (Gewichte aus derselben Vorauswahl, das Fell-Muster über die Bone-Gewichte), jedes starre Teil
@@ -53,15 +53,20 @@ zurück (`__aufsNiveau`, Tier und Mensch). Neu geprägt NUR die 8 Hüllen-Schlü
 `mensch-L1|haut|mensch` · `mensch-L1|stoff_*|mensch` (3); Ecken, Dreiecke und Meshes je Klasse unverändert, alle übrigen
 475 Klassen byte-gleich (L0 297/297).
 
-Vertrags-Akt K45-2 (14.10.2026, Labor = Welt beim Menschen — die Kleid-Gewichte ziehen in den Ofen): jede Stoff-Hülle,
-deren Kleid-Zone erbt (`koerper-core kleidZonen` `erbt: 1`, Oberteil und Hose; der Schuh nie), übernimmt die Gelenk-Gewichte
-der 4 nächsten Haut-Ecken in der Spreiz-Pose und glättet sie zweimal über ihr Netz (`__stoffErbtHaut`, das Lab-Gesetz
-`_inheritWeights` + `_smoothInfl`) — Haut und Stoff sind EIN Verformungsfeld. Neu geprägt NUR die 4 Stoff-Schlüssel
-`mensch-L0|stoff_233047|mensch` · `mensch-L0|stoff_2a2c30|mensch` · `mensch-L1|stoff_233047|mensch` ·
-`mensch-L1|stoff_2a2c30|mensch`; Ecken, Dreiecke und Meshes je Klasse unverändert (L0 2 434/4 860 und 2 165/4 350, L1
-1 075/2 146 und 863/1 722), alle übrigen 460 Klassen byte-gleich (Haut, Schuh, Kopf, Hände, Gelenke, Beipacks). Zahl
-(`artifacts/profiband/welle-95/labor-welt-mensch/naht-{vorher,nachher}.json`, sieben ROM-Posen des Labors): die Naht-Drift
-Stoff gegen Haut-Feld p95 0,131 → 0,021 Lab-Einheiten, Haut-Ecken, die aus ihrem Stoff treten, 1 749 → 1 213 (L0).
+Vertrags-Akt K45-2 (14.10.2026, Labor = Welt beim Menschen — die Kleid-Gewichte und der Kleid-Schnitt ziehen in den Ofen):
+(1) DER STOFF AUS DER HAUT (das Lab-Gesetz `_garmentFromSkin`, `__stoffAusHaut`): eine Kleid-Zone mit `dicke` (koerper-core
+`kleidZonen`: Oberteil 0,032 außer dem Poncho, Hose 0,024, ohne Hose die Unterhose 0,012) ist die Haut-Region ihrer Teile, um die
+Dicke entlang der Haut-Normale gehoben, mit IDENTISCHEN Gewichten, gespannt über die Mulden der Haut (24 Schritte Laplace, nie
+näher als die Dicke), der Saum liegt auf der Haut; die Haut darunter fällt. (2) DER LEIB unter dem Stoff: die gemalten Shorts
+und die Gelenk-Kugeln sind Volumen der Haut (`leibV` 5,10 → 5,76, das Becken war kein Leib). (3) Der Poncho (weit, Lab-Drapé)
+bleibt eine Hülle und ERBT die Gewichte der Haut (`__stoffErbtHaut`, das Lab-Gesetz `_inheritWeights` + `_smoothInfl`).
+Neu geprägt NUR die 16 Mensch-Schlüssel: `mensch-L0|haut|{mensch,head,hand1,hand-1}` · `mensch-L0|stoff_{233047,2a2c30,e8e6e0}|mensch`
+· `mensch-L1|haut|mensch` · `mensch-L1|stoff_{233047,2a2c30,e8e6e0}|mensch` · beide Beipacks (`leibV`); es fallen
+`mensch-L0|joint|arm1` · `mensch-L0|joint|arm-1` · `mensch-L1|joint|mensch` (die Kugeln liegen in der Haut). Die Stufen tragen
+ihre Zeile (L0 39 995 → 39 994, L1 13 994 → 13 997); was unter dem Stoff fiel, trägt jetzt Kopf und Hände (Kopf-Haut 4 214 →
+4 926, Hände 3 264/3 222 → 3 816/3 768 Dreiecke). Alle übrigen 448 Klassen byte-gleich (jedes Tier, jedes Gelenk). Zahl
+(`artifacts/profiband/welle-95/labor-welt-mensch/naht-{vorher,nachher}.json`, sieben ROM-Posen des Labors, L0): Haut-Ecken, die
+aus ihrem Stoff treten, 1 749 → 26.
 
 ## Invarianten des Gates
 

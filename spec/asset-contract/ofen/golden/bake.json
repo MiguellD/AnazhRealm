@@ -1556,29 +1556,17 @@
   "deer-L1|beipack": {
    "sha256": "1be2f636f006c36286b27b35d7905fcc41d36ea2eac5641b54f039fb4e012372"
   },
-  "mensch-L0|joint|arm-1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "9d1071cadc99dcb8d7ab04bdad3ffe639d6254756f4e9c82c38a3e3bd6931dd6"
-  },
   "mensch-L0|haut|hand-1": {
    "meshes": 1,
-   "verts": 1631,
-   "tris": 3264,
-   "sha256": "7b9826b71d4d0813279c75055b1166737213846a28c587c85d64b8e8e125ddf2"
-  },
-  "mensch-L0|joint|arm1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "455223770babfe6ef55891bcc461b58ffe3043dbe2f290d1358934a1cad093d5"
+   "verts": 1907,
+   "tris": 3816,
+   "sha256": "fab18860c63e1ec204b1917bc2e0f881789b6a4a963f10aedbb2e8ce6979a595"
   },
   "mensch-L0|haut|hand1": {
    "meshes": 1,
-   "verts": 1612,
-   "tris": 3222,
-   "sha256": "4692a16d0f032dfc1d4ea0f4f5ef2719d09b3aa2b4ab9539f0bf512301f1a366"
+   "verts": 1885,
+   "tris": 3768,
+   "sha256": "806e0e21c8c55d55a646b0b3b46ab2a9c72b8e867da8043721be60158c6319d9"
   },
   "mensch-L0|socket|head": {
    "meshes": 1,
@@ -1654,33 +1642,33 @@
   },
   "mensch-L0|haut|head": {
    "meshes": 1,
-   "verts": 2109,
-   "tris": 4214,
-   "sha256": "d4c12a963e293562eb88b0fe793393c6f0c762a0fc27fa7f5a8a1b69537f7f6c"
+   "verts": 2465,
+   "tris": 4926,
+   "sha256": "5dd25baf7fbea5c75d75e341ba2067bdb0f52d140466457fc729b706b7df20cb"
   },
   "mensch-L0|haut|mensch": {
    "meshes": 1,
-   "verts": 4761,
-   "tris": 6095,
-   "sha256": "b1331075ff99ee8a1b855b274ea421b9ec53f24ecf50fb5389917a9d914cadca"
+   "verts": 1085,
+   "tris": 1958,
+   "sha256": "03184ae971957f6a19af9897226177e714a0c954a009bef7e3674937980d6567"
   },
   "mensch-L0|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 2434,
-   "tris": 4860,
-   "sha256": "6e4d56fc821ab9c7f43e26694abfa47326a9a16a7bbd7efe66468e88efaf6f0e"
+   "verts": 3457,
+   "tris": 6590,
+   "sha256": "f7ba7239de3c936ac3ec349e8714331158a56e3bfc15e35e5a98c5bdcfc4bf3b"
   },
   "mensch-L0|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 2165,
-   "tris": 4350,
-   "sha256": "e1233c63beedd138b09ffb984122cf30d14f85cf12ea0930e4a5fc6e91919c75"
+   "verts": 2968,
+   "tris": 5810,
+   "sha256": "6e6629653dfc531591b07d826f0c51f07db231dc8888b954fc0a50084f3f6ee6"
   },
   "mensch-L0|stoff_e8e6e0|mensch": {
    "meshes": 1,
-   "verts": 525,
-   "tris": 1042,
-   "sha256": "da0953f829002d7d1279a4e967815c2b714c0e684700e216511bb16465b61050"
+   "verts": 613,
+   "tris": 1218,
+   "sha256": "881a28d68b770a389c4fa688e186eb968199f543411aadeff5cc2b8fe1fc11ea"
   },
   "mensch-L0|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1752,19 +1740,13 @@
    "sha256": "f268454160e8cccdc67d4f18c619c40835a8ae17a70f0cef983dfd5a6772bccd"
   },
   "mensch-L0|beipack": {
-   "sha256": "37baf1f80826a583cdc6635470a4bf8807135596c92615351e7c07fdc9dae929"
+   "sha256": "598e578e398e60056e285dd98e14facd0c20e47d3c4ab5540e78b662527fa4df"
   },
   "mensch-L1|skin|mensch": {
    "meshes": 1,
    "verts": 5209,
    "tris": 5784,
    "sha256": "1587657cc7d8ce683c6dfea9733055f37f28b40bfd875664e63b942ebabd67ac"
-  },
-  "mensch-L1|joint|mensch": {
-   "meshes": 1,
-   "verts": 63,
-   "tris": 80,
-   "sha256": "3298181f278ce01c177d310201fc04c26dcb3dbecd52f22af643efb6dc38b453"
   },
   "mensch-L1|socket|mensch": {
    "meshes": 1,
@@ -1810,27 +1792,27 @@
   },
   "mensch-L1|haut|mensch": {
    "meshes": 1,
-   "verts": 1925,
-   "tris": 2394,
-   "sha256": "44447e067ca3c14063074c1a56f85036284f812febb99a55d1cb37d9a4032146"
+   "verts": 551,
+   "tris": 966,
+   "sha256": "a1fb807dff38052fda5f53fa2e0bdc7d12f0706165bdc83920c0050d71db089e"
   },
   "mensch-L1|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 1075,
-   "tris": 2146,
-   "sha256": "df589f86567836fd24bcaab69ab704e0356d6743a01d8e541eec0baaf2674a1b"
+   "verts": 1493,
+   "tris": 2795,
+   "sha256": "50eab37cef3806503fa5972422ec305af41b77b97e027088f341d7065ff208b1"
   },
   "mensch-L1|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 863,
-   "tris": 1722,
-   "sha256": "a739a22a101c7cc56ed7b499c4f09806c92c20aa8221bab5cc4a13330ec98156"
+   "verts": 1267,
+   "tris": 2472,
+   "sha256": "12ffa38ff3ffea73a9fe38082eda2353851a2dde3d7ba3156a494cbda003b49a"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
-   "verts": 274,
-   "tris": 540,
-   "sha256": "67ef0e9bc48fae271cea4fdc0d2e3e2942481799305394142ec98640ceb2a9eb"
+   "verts": 330,
+   "tris": 652,
+   "sha256": "016521867fe6117aee5a949d6d97766d885286b93148b198092dc92d82e66e2f"
   },
   "mensch-L1|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1902,7 +1884,7 @@
    "sha256": "f268454160e8cccdc67d4f18c619c40835a8ae17a70f0cef983dfd5a6772bccd"
   },
   "mensch-L1|beipack": {
-   "sha256": "2b3dcc65dd0ad90f5879db8f70084a3298bb44126d8fd357ec161f10c708809b"
+   "sha256": "6c8e71330cf1468f5adf37f00a4a6b8efc759a3e6cf1f33d8b1f3687eed14a52"
   }
  }
 }
