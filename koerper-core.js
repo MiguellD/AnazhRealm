@@ -195,11 +195,11 @@
                     "deltoid1", "deltoid-1", "bicep1", "bicep-1",
                     "tricep1", "tricep-1", "uarm1", "uarm-1",
                 ]);
-            // K45-2 (rein additiv): der Pullover trägt den LANGEN Ärmel des Labors (buildTop: Unterarm und Ellbogen dazu); der
-            // Stoff aus der Haut deckt auch die unbenannten Füll-Teile des Rumpfs (am Gelenk torso — der Bauch zwischen den
-            // Muskeln; der Poncho hüllt Teile, dort hiesse torso die ganze Gruppe)
+            // K45-2 (rein additiv): der Pullover trägt den LANGEN Ärmel des Labors (buildTop: Unterarm und Ellbogen dazu)
             if (top === "pullover") topTeile = topTeile.concat(["forearm1", "forearm-1", "elbow1", "elbow-1"]);
-            if (top !== "poncho") topTeile = topTeile.concat(["torso"]);
+            // ... und der Kragen des Stoffs aus der Haut sitzt UNTER der Hals-Wurzel (Lab buildTop: neckBase ist ausgenommen —
+            // die Haut-Region der Hals-Wurzel liegt als Ring um den Hals: ein Halsband statt eines Kragens; der Poncho hüllt)
+            if (top !== "poncho") topTeile = topTeile.filter(function (t) { return t !== "neckBase"; });
             // STOFF-CHARAKTER (V18.464): die Lab-Material-Zeile je Schnitt
             // (getCloth-Aufrufe verbatim) — rough + Webungs-Art reisen mit,
             // damit Strick ≠ Baumwolle ≠ Denim ≠ Leder auch in der WELT liest.

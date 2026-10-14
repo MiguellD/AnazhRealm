@@ -63,7 +63,7 @@ bleibt eine Hülle und ERBT die Gewichte der Haut (`__stoffErbtHaut`, das Lab-Ge
 Neu geprägt NUR die 16 Mensch-Schlüssel: `mensch-L0|haut|{mensch,head,hand1,hand-1}` · `mensch-L0|stoff_{233047,2a2c30,e8e6e0}|mensch`
 · `mensch-L1|haut|mensch` · `mensch-L1|stoff_{233047,2a2c30,e8e6e0}|mensch` · beide Beipacks (`leibV`); es fallen
 `mensch-L0|joint|arm1` · `mensch-L0|joint|arm-1` · `mensch-L1|joint|mensch` (die Kugeln liegen in der Haut). Die Stufen tragen
-ihre Zeile (L0 39 995 → 39 994, L1 13 994 → 13 997); was unter dem Stoff fiel, trägt jetzt Kopf und Hände (Kopf-Haut 4 214 →
+ihre Zeile (L0 39 995 → 39 996, L1 13 994 → 13 997); was unter dem Stoff fiel, trägt jetzt Kopf und Hände (Kopf-Haut 4 214 →
 4 926, Hände 3 264/3 222 → 3 816/3 768 Dreiecke). Alle übrigen 448 Klassen byte-gleich (jedes Tier, jedes Gelenk). Zahl
 (`artifacts/profiband/welle-95/labor-welt-mensch/naht-{vorher,nachher}.json`, sieben ROM-Posen des Labors, L0): Haut-Ecken, die
 aus ihrem Stoff treten, 1 749 → 26.

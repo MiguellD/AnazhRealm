@@ -6989,13 +6989,28 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1") return;
                 const n0 = zen.length;
                 punkteVon(node, pts, zen, j);
-                if (zen.length > n0) {
-                    let c = node;
-                    while (c && !teilVon.has(c)) c = c.parent;
-                    hautTeile.push({ c: zen[n0].c, t: c ? teilVon.get(c) : null });
-                }
+                if (zen.length > n0) hautTeile.push({ c: zen[n0].c, t: teilVon.has(node) ? teilVon.get(node) : null });
                 quellen.push(node);
             });
+            // ein unbenanntes Füll-Teil (die Bauch-Kugeln, Kehlkopf, Nacken) trägt den Namen des nächsten benannten Teils —
+            // nicht den seiner Gruppe (am Gelenk torso hiesse das: Bauch und Hals zugleich)
+            const benannt = hautTeile.filter((f) => f.t !== null);
+            for (const e of hautTeile) {
+                if (e.t !== null) continue;
+                let bd = Infinity,
+                    name = null;
+                for (const f of benannt) {
+                    const dx = f.c[0] - e.c[0],
+                        dy = f.c[1] - e.c[1],
+                        dz = f.c[2] - e.c[2],
+                        d = dx * dx + dy * dy + dz * dz;
+                    if (d < bd) {
+                        bd = d;
+                        name = f.t;
+                    }
+                }
+                e.t = name;
+            }
             hautHuelle = backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
             if (hautHuelle) lebtInHuelle(quellen);
         }
