@@ -913,8 +913,8 @@ const FORBIDDEN = [
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
     { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },
     // die Ratsche des Profi-Bands führt keinen VRAM-Erzeuger, den es nicht mehr gibt
-    { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel", auch: ["spec/profiband/ratsche.json"] },
-    { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel", auch: ["spec/profiband/ratsche.json"] },
+    { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel", auch: ["spec/profiband/ratsche-wiese-radeon-ego.json"] },
+    { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel", auch: ["spec/profiband/ratsche-wiese-radeon-ego.json"] },
     // DIE BRÜCKE HAT EINEN RICHTER (Studio-Welle S1): smoke-labs trieb die Studio-DSL mit der Form [[w]], die die Heimat
     // nie sendet, und meldete grün, während das Einzelwort der Heimat in 7 Studios stumm blieb. Die Konformitäts-Probe
     // der Brücke betritt jede Welt über die echte Heimat (gate:portal-konformanz, samt Probefahrt der Garage).
