@@ -133,7 +133,9 @@ function drawZensus(opts) {
                 const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                 const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
                 tris = dr / 3;
-                if (object.isInstancedMesh) tris *= object.count;
+                // eine Senke zeichnet über ihren Zeichner (1410-1): die Instanzen zählt die Senke
+                const senke = object.isInstanzZeichner === true ? object.__instanzQuelle : object;
+                if (senke.isInstancedMesh) tris *= senke.count;
             }
             const e = zaehl[k] || (zaehl[k] = { cmd: 0, obj: 0, tris: 0 });
             e.obj++;
@@ -144,7 +146,8 @@ function drawZensus(opts) {
                 // Die EXEMPLARE einer Klasse: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je Stoff einen Zug,
                 // `inst` zählt jede Instanz jedes Zugs, die Türflügel tragen eigene Orte — der Eintrag zählt das Tor einmal),
                 // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
-                const w = nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
+                const w =
+                    nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
                 const mw = object.matrixWorld.elements;
                 const miss = (x, y, z) => {
                     const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
@@ -185,7 +188,9 @@ function drawZensus(opts) {
                     material: (material && (material.name || material.type)) || null,
                     geometrie: g ? g.name || g.type : null,
                     vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
-                    instanzen: object.isInstancedMesh ? object.count : null,
+                    instanzen: (object.isInstanzZeichner === true ? object.__instanzQuelle : object).isInstancedMesh
+                        ? (object.isInstanzZeichner === true ? object.__instanzQuelle : object).count
+                        : null,
                     userData: Object.keys(object.userData || {}).slice(0, 8),
                 });
             }

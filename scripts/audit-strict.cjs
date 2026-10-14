@@ -623,7 +623,6 @@ async function auditStateAndMethods() {
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
-                "_foliageResScale", // Subsystem 5 — Laub-Auflösungs-Faktor, `state.X != null ? : MIN`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)

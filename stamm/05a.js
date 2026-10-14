@@ -717,10 +717,8 @@ class AnazhRealm_Z05a {
             if (s) {
                 const dc = Math.round(s.renderCalls || 0);
                 const trisK = Math.round((s.renderTris || 0) / 1000);
-                const folResPct = Math.round(
-                    (this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100
-                );
-                extra = ` · ${dc}dc · ${trisK}k▲ · Laub ${folResPct}%`;
+                const szenePct = Math.round(this._szeneSkalaWirk() * 100);
+                extra = ` · ${dc}dc · ${trisK}k▲ · Szene ${szenePct}%`;
             }
             r.fps.textContent = String(this.state.fps || 0) + extra;
         }

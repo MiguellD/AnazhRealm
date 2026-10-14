@@ -609,7 +609,8 @@
 
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
-    //      enter(avatar, msg) · esc(ev) → false behält Esc in der Welt
+    //      enter(avatar, msg) · esc(ev) → false behält Esc in der Welt · sonst(msg) jede andere Nachricht der Heimat (das
+    //      terrain-Labor reicht so die Asset-Kanäle an die Foundry-Brücke, foundryKanal)
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
@@ -644,6 +645,7 @@
             if (m.type === "enter") {
                 if (opt.enter) opt.enter(m.avatar && typeof m.avatar === "object" ? m.avatar : {}, m);
             } else if (m.type === "dsl") wirke(m.program);
+            else if (opt.sonst) opt.sonst(m);
         });
         wurzel.addEventListener("keydown", function (ev) {
             if (ev.key !== "Escape") return;

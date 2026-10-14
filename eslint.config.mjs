@@ -135,6 +135,8 @@ export default [
             ecmaVersion: 2022,
             sourceType: "script",
             globals: {
+                AnazhHuelle: "readonly", // die Studio-Hülle (K47): die Heimat lädt worlds/huelle/huelle.js vor dem Studio
+                THREE: "readonly", // die three-Instanz der Heimat (window.THREE): der Sicht-Kegel der Kosten-Leiste
                 window: "readonly",
                 self: "readonly",
                 document: "readonly",

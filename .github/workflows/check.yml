@@ -1258,7 +1258,7 @@ jobs:
               if: matrix.gruppe == 10
               run: npm run gate:render-diaet
 
-            - name: Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)
+            - name: Szenen-Skala (die EINE Größe der Auflösung, der Regler trägt sie nicht, das Laub trägt seine Layer)
               if: matrix.gruppe == 1
               run: npm run gate:foliage-res
 

@@ -94,10 +94,10 @@ class AnazhRealm_Z12 {
                     : { koerper: null, kreatur: {} };
             })(),
             // Die vier Perf-Regler reisen im Snapshot (sonst setzt jeder Reload sie still zurück):
-            // perfTargetMs · lodRef (Quelle von Subsystem A) · foliageResCeiling · chunkRingRadius.
+            // perfTargetMs · lodRef (Quelle von Subsystem A) · szeneSkala · chunkRingRadius.
             perfTargetMs: Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : 17,
             lodRef: Number.isFinite(this.state.lodRef) ? this.state.lodRef : 14,
-            foliageResCeiling: Number.isFinite(this.state.foliageResCeiling) ? this.state.foliageResCeiling : 1,
+            szeneSkala: Number.isFinite(this.state.szeneSkala) ? this.state.szeneSkala : null,
             chunkRingRadius: Number.isFinite(this.state.chunkRingRadius) ? this.state.chunkRingRadius : 4,
             // V18.389 (P5) — die Sichtbarkeit des sauberen Perf-Panels (default an).
             perfPanel: this.state.perfPanel !== false,

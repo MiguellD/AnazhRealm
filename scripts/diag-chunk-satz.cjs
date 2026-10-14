@@ -106,6 +106,31 @@ function urteil(z) {
         const proVertex = z.vertexForm.reduce((a, f) => a + f.bytes, 0);
         if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
     }
+    // (n) DIE BODEN-STUFEN (K51): die Nah-Zone ist Ring ≤ 1 — jenseits trägt ein Chunk mindestens Stufe 1, ab Ring 3
+    // mindestens Stufe 2 (Haushalt boden 120k samt Fern-Ring; gemessen 14.10.: L0 bis Ring 2, 25 Chunks à ~5 300 Dreiecke,
+    // trug den Boden-Satz der Wiese auf 130k); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
+    const SOLL_STUFE = (ring) => (ring >= 3 ? 2 : ring >= 2 ? 1 : 0);
+    if (z.stufen) {
+        const fein = z.stufen.chunks.filter((c) => c.lod < SOLL_STUFE(c.ring));
+        if (fein.length)
+            v.push(
+                `BODEN-STUFEN: ${fein.length} Chunks jenseits der Nah-Zone zu fein (${fein.reduce((a, c) => a + c.dreiecke, 0)} ` +
+                    `Dreiecke) — ` +
+                    fein
+                        .slice(0, 4)
+                        .map((c) => `${c.key} Ring ${c.ring} L${c.lod} (Soll ≥ L${SOLL_STUFE(c.ring)}) ${c.dreiecke}`)
+                        .join(", ")
+            );
+        const ohne = z.stufen.ohneNot;
+        if (ohne.length)
+            v.push(
+                `BODEN-STUFEN: ${ohne.reduce((a, o) => a + o.n, 0)} Naht-Brücken ohne Not (der Morph trägt beide Enden) — ` +
+                    ohne
+                        .slice(0, 4)
+                        .map((o) => `${o.key} ${o.n}`)
+                        .join(", ")
+            );
+    }
     return v;
 }
 
@@ -147,6 +172,18 @@ function selbsttest() {
             { satz: "bodenSatz", attr: "color", form: "float16x4", bytes: 8, mb: 1.8 },
             { satz: "bodenSatz", attr: "aMorphTarget", form: "float32x3", bytes: 12, mb: 2.6 },
         ],
+        stufen: {
+            chunks: [
+                { key: "0,0", ring: 0, lod: 0, dreiecke: 5300 },
+                { key: "1,0", ring: 1, lod: 0, dreiecke: 5100 },
+                { key: "2,0", ring: 2, lod: 1, dreiecke: 1300 },
+                { key: "3,0", ring: 3, lod: 2, dreiecke: 280 },
+            ],
+            jeStufe: { L0: 10400, L1: 1300, L2: 280 },
+            naht: 900,
+            bruecken: 40,
+            ohneNot: [],
+        },
     };
     const fehler = [];
     if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
@@ -228,6 +265,26 @@ function selbsttest() {
                 /VERTEX-FORM: bodenSatz color float32x3 \(Soll float16x4\)/,
                 /VERTEX-FORM: der Boden-Satz trägt 60 B je Vertex/,
             ],
+        },
+        {
+            name: "L0 bis Ring 2 und L1 in Ring 3 (die Kette vor K51)",
+            z: {
+                ...gruen,
+                stufen: {
+                    ...gruen.stufen,
+                    chunks: [
+                        { key: "0,0", ring: 0, lod: 0, dreiecke: 5300 },
+                        { key: "-21,-18", ring: 2, lod: 0, dreiecke: 5312 },
+                        { key: "-17,-20", ring: 3, lod: 1, dreiecke: 1404 },
+                    ],
+                },
+            },
+            muss: [/BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 Ring 2 L0 \(Soll ≥ L1\)/],
+        },
+        {
+            name: "das Naht-Band brückt, wo der Morph beide Enden trägt",
+            z: { ...gruen, stufen: { ...gruen.stufen, ohneNot: [{ key: "stitch:-19,-18", n: 712 }] } },
+            muss: [/BODEN-STUFEN: 712 Naht-Brücken ohne Not.*stitch:-19,-18 712/],
         },
     ];
     for (const f of faelle) {
@@ -530,6 +587,41 @@ function check(name, ok, detail) {
                             bytes: a.array.BYTES_PER_ELEMENT * a.itemSize,
                             mb: +(a.array.byteLength / 1048576).toFixed(2),
                         });
+                    }
+                // (n) DIE BODEN-STUFEN (K51): je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
+                // Dreiecke; je Naht-Band die Brücken (rohe Kante → grobe Fläche), deren beide Enden der Morph ganz trägt
+                // (Gewicht 1) — die Wand liest die Netze, nie die Tabelle
+                z.stufen = { chunks: [], jeStufe: {}, naht: 0, bruecken: 0, ohneNot: [] };
+                const lpc = s.lastPlayerVoxelChunk;
+                if (lpc)
+                    for (const [key, e] of s.voxelChunks) {
+                        if (!e || e.empty || !e.mesh) continue;
+                        const [cx, cz] = key.split(",").map(Number);
+                        const ring = Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz));
+                        const lod = Number.isFinite(e.lod) ? e.lod : 0;
+                        const g = e.mesh.geometry;
+                        const n = g.index ? g.index.count / 3 : 0;
+                        z.stufen.chunks.push({ key, ring, lod, dreiecke: n });
+                        z.stufen.jeStufe["L" + lod] = (z.stufen.jeStufe["L" + lod] || 0) + n;
+                        const st = e.lodStitchMesh ? e.lodStitchMesh.geometry : null;
+                        if (!st) continue;
+                        z.stufen.naht += st.index.count / 3;
+                        // die rohe Lage jedes Chunk-Vertex → sein Morph-Gewicht
+                        const P = g.attributes.position.array,
+                            W = g.attributes.aMorphWeight.array;
+                        const gewicht = new Map();
+                        for (let v = 0; v < W.length; v++)
+                            gewicht.set(P[v * 3] + "," + P[v * 3 + 1] + "," + P[v * 3 + 2], W[v]);
+                        const Q = st.attributes.position.array;
+                        let ohneNot = 0;
+                        for (let q = 0; q + 11 < Q.length; q += 12) {
+                            const wa = gewicht.get(Q[q] + "," + Q[q + 1] + "," + Q[q + 2]);
+                            const wb = gewicht.get(Q[q + 3] + "," + Q[q + 4] + "," + Q[q + 5]);
+                            if (wa === undefined || wb === undefined) continue; // ein Skirt (er hängt am Ziel)
+                            z.stufen.bruecken++;
+                            if (wa >= 1 && wb >= 1) ohneNot++;
+                        }
+                        if (ohneNot) z.stufen.ohneNot.push({ key: "stitch:" + key, n: ohneNot });
                     }
                 return z;
             };
@@ -862,6 +954,11 @@ function check(name, ok, detail) {
                 const st = ++satz.hoehle.stempel;
                 for (const b of satz.bloecke.values()) if (b.hoehle) for (const kn of b.hoehle.knoten) kn.sicht = st;
             };
+            // die Kapazität ERZWUNGEN klein (K51): der Index des Boden-Satzes trägt genau die liegenden Abschnitte — zwei
+            // Ring-Kaskaden brauchen mehr, gleich wie gross der Ring gerade ist (der Druck hing am Inhalt: mit den Boden-Stufen
+            // reichte der Start-Index für beide Ring-Kaskaden, 0× gewachsen)
+            const bodenS = s.chunkSaetze.get("boden");
+            if (bodenS) r._chunkSatzGeometrie(bodenS, bodenS.vKap, bodenS.iEnde);
             let w0 = wachseSumme();
             try {
                 res.neu.messung.druck = phase([ring, ring], 5);
@@ -935,6 +1032,10 @@ function check(name, ok, detail) {
                 cam.updateMatrixWorld(true);
                 return o;
             };
+            // EINE Vor-Drehung ohne Wertung (K51): die erste Drehung trägt das Wachsen der Abschnitte (ihr Hochwasser, das
+            // Umlegen), das die alte Regel danach geschenkt bekam — beide Regeln messen aus demselben gewachsenen Stand
+            // (14.10.: die Formationen buchten im ersten Lauf 1,5 MB Umlegen, im zweiten 0)
+            drehen(36);
             res.neu.dreh = drehen(36);
             const P = Object.getPrototypeOf(r);
             r._chunkSatzTausch = function (satz, a, liste, n, wer) {
@@ -1125,11 +1226,23 @@ function check(name, ok, detail) {
                 `Hauptbild-Abschnitt ${x.haupt} · Abschnitte bis ${x.iEnde}/${x.iKap} · ${x.wachse}× gewachsen`
         );
     console.log("");
-    const v = urteil(z);
+    const alle = urteil(z);
+    const vn = alle.filter((x) => x.startsWith("BODEN-STUFEN"));
+    const v = alle.filter((x) => !x.startsWith("BODEN-STUFEN"));
     check(
         "(a–d) die Draw-Einheit ist Material × Geometrie (Boden · Wasser · Streu · Bau)",
         v.length === 0,
         v.join(" · ") || "sauber"
+    );
+    const zs = z.stufen;
+    const jenseits = zs.chunks.filter((c) => c.ring >= 2).length;
+    check(
+        "(n) BODEN-STUFEN — jenseits der Nah-Zone (Ring ≥ 2) kein Chunk in L0, ab Ring 3 keiner feiner als L2; das Naht-Band " +
+            "brückt nur, wo der Morph nicht trägt",
+        jenseits > 0 && zs.naht > 0 && vn.length === 0,
+        `${zs.chunks.length} Chunks (${jenseits} jenseits) · je Stufe ${JSON.stringify(zs.jeStufe)} · Naht ${zs.naht} ` +
+            `Dreiecke (${zs.bruecken} Brücken)` +
+            (vn.length ? " — " + vn.join(" · ") : "")
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
     check(

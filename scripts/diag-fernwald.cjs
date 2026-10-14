@@ -258,8 +258,15 @@ function check(name, ok, detail) {
                 const frischF = frischAlle(proben)[proben.indexOf(e)];
                 if (haus) r.removeArchitecture(haus);
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
-                // unterscheidet: frei macht nur der Grundriss)
+                // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
+                // die Probe nimmt ihm Fundament, Hülle und Boxen, und der Stand der Grundrisse fällt
                 const ohne = r.spawnArchitecture("haus_alemannisch", { x: o.x, y: o.surfaceY, z: o.z }, { silent: true });
+                if (ohne) {
+                    ohne.fundament = undefined;
+                    ohne._hausHuelle = undefined;
+                    ohne.blockerAABBs = null;
+                    r._grundrissGitter = null;
+                }
                 res.E.F.selbst = !!ohne && r._foundryGestaltFor(e, "eiche") !== V;
                 if (ohne) r.removeArchitecture(ohne);
                 Object.assign(res.E.F, {

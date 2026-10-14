@@ -1415,11 +1415,12 @@ async function probe(arg) {
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
             st.yaw = best.yaw;
         }
-        // DER ERSATZ-ORT: ein Slot am Rand der Genesis-Plattform (sein Grundriss reicht 2 m in ihre Scheibe; die Rückseite
-        // des Hauses, lokal +z, zeigt von ihr weg) — sein Ort fällt, ein Ersatz-Ort draußen trägt ihn.
+        // DER ERSATZ-ORT: ein Slot am Rand des Genesis-Platzes (sein Grundriss reicht 2 m in die Lichtung; die Rückseite
+        // des Hauses, lokal +z, zeigt von ihr weg) — sein Ort fällt, ein Ersatz-Ort draußen trägt ihn. Die Lichtung ist seit
+        // K52 der Platz der Scheibe UND des Rings der Tore (`_grundrissVon` der Plattform), nicht mehr die Scheibe allein.
         const f = r._foundry;
         const kultur = Object.keys(f.recipes).find((id) => f.recipes[id] && f.recipes[id].kind === "haus" && st.blueprints["haus_" + id]);
-        const R = (st.blueprints.start_plattform.parts[0].size.x / 2) * (pl.scale || 1);
+        const R = r._grundrissVon(pl).lichtung;
         const HALB = 3;
         const rand = R + HALB - 2;
         const slot = { kultur, x: fx * rand, z: fz * rand, phi: best.yaw, seed: 7, obb: { cx: fx * rand, cz: fz * rand, ex: HALB, ez: HALB } };

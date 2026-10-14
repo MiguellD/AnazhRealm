@@ -9,7 +9,8 @@
 //   W2  DIELE: drinnen steht der Fuß auf der Diele des Gesetzbuchs (± 3 cm; das Gesetzbuch rechnet die Probe selbst)
 //   W3  TREPPE: der Lauf EG→OG (die Flights des Gesetzbuchs) trägt den Körper ins Obergeschoss
 //   W4  GRUNDRISS: keine Natur (Baum, Strauch, Fels, Totholz — die Arten des Terrain-Studios) steht im Grundriss eines
-//       Hauses des Drehbuch-Dorfs
+//       Hauses des Drehbuch-Dorfs — und WEG (K52): keine Natur (Eintrag, Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg,
+//       Platz, Anger oder Acker des Dorfs (die Formen der Wege-Karte). Selbsttest „weg": die Wand kennt den Weg nicht.
 //   W4b DAS FERNE DORF: ein Dorf entsteht 300 m vom Spieler (das Auto-Dorf ab 260 m) — keine lebende Streu-Zelle (Fern-
 //       Baum, Unterholz, Fels) steht in seinen Häusern, auch nicht, wenn die Region unter ihm neu baut; der Spieler läuft
 //       hin (Promotions-Ring 64 m, der Wald des neuen Rings, die Nah-Streu um die Kamera) — kein Natur-Eintrag, keine
@@ -34,8 +35,12 @@
 //       KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er wächst), jede Absage steht im
 //       Programm-Log (das Ergebnis des Setz-Ops, `ergebnis`) und der Satz „pflanz mir eine eiche" auf der Plattform nennt die Lichtung, nie
 //       „gewachsen". Selbsttests: die Wand ohne die Lichtung, der Wald und der Hain der KI an der Wand vorbei, die Wand still.
+//       DER GENESIS-PLATZ (K52): die Sohle der Scheibe liegt ≤ 0,3 m über dem Boden unter ihr; die Lichtung ist der Platz des
+//       Rings (der gemessene Kreis der Tore + 4 m); ein Damm am Ort der Gegenprobe räumt den Hain aus seinen Boxen, und der
+//       Hain wächst nicht in ihn. Selbsttests: die Scheibe schwebt (schwebe), der Platz ist nur die Scheibe (platz), ein
+//       Bau ohne Haus-Zeile trägt keinen Grundriss (baugrund).
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js — GENAU die Probe dieses Defekts wird rot;
-//   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · w4 · w4b · w6), der Hauptlauf alle.
+//   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
 const puppeteer = require("puppeteer");
@@ -107,6 +112,26 @@ const BASIS = {
     // DIE LICHTUNG (W8): die Wand kennt die Genesis-Plattform nicht (ihr Bauplan trägt keine Lichtung) — jede Quelle außer
     // dem Wald stand so über der Scheibe; der Wald hatte seinen eigenen Filter im Pflanz-Gang (der fiel mit D3)
     lichtung: [["                lichtung: true,\n", ""]],
+    // DIE SCHEIBE SCHWEBT (K52): die Plattform steht wie bis K52 5 m über dem Grund („erhöhte Warte", V8.29)
+    schwebe: [
+        [
+            'this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 0.5, z: spot.z }, { silent: true });',
+            'this.spawnArchitecture("start_plattform", { x: spot.x, y: sohle + 5.5, z: spot.z }, { silent: true });',
+        ],
+    ],
+    // DER PLATZ IST NUR DIE SCHEIBE (K52): die Lichtung trägt den Ring der Tore nicht (6,5 m statt Kreis + Tor-Tiefe)
+    platz: [
+        [
+            "const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);",
+            "const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;",
+        ],
+    ],
+    // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
+    baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
+    // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
+    weg: [['return this._aufWeg(x, z, rand) ? "weg" : false;', "return false;"]],
+    // DAS WERK IM STEIN (K52): der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
+    dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;", "? sy + 0.5 : pos.y;"]],
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [
         [
@@ -189,9 +214,9 @@ async function proben(phasen) {
     const s = r.state;
     const A = r.constructor;
     const FC = window.__fachwerkCore;
-    // DIE PHASEN: haus (W1 W2 W3 W4c W5 je Haus), lichtung (W8), w4, w4b, w6 — der Hauptlauf fährt alle, ein Selbsttest nur
-    // die seines Täters
-    const P = new Set(phasen || ["haus", "lichtung", "w4", "w4b", "w6"]);
+    // DIE PHASEN: haus (W1 W2 W3 W4c W5 je Haus), sohle, lichtung, bau (W8), w4, w4b, w6 — der Hauptlauf fährt alle, ein
+    // Selbsttest nur die seines Täters
+    const P = new Set(phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6"]);
     const o = { haeuser: [], phasen: [...P] };
     if (!FC || typeof FC.HAUS !== "function") return { fehler: "__fachwerkCore fehlt" };
     const pm = s.playerMesh;
@@ -575,6 +600,71 @@ async function proben(phasen) {
     // (`spawn_tree` 4 Bäume, `spawn_studio` eine Eiche genau am Ort) mitten auf der Plattform UND mitten im Grundriss eines
     // Hauses des Dorfs — nichts wächst in Lichtung oder Grundriss; derselbe Hain 150 m weiter wächst (sonst ist die Probe
     // blind).
+    // DER GENESIS-PLATZ (K52, Augen-Befund 14.10.): nach der ersten Ruhe baut der Ort-Takt den Ring der Kern-Portale
+    // (`_genesisPortalRing`), und die Lichtung ist der PLATZ: der gemessene Kreis der Tore + 4 m (die Tiefe eines Tors) —
+    // darauf keine Krone, keine Streu, kein Natur-Eintrag, keine Kachel-Pflanze (vorher ein Kristall 1,2 m vor dem Tor des
+    // Terrain-Studios, Bäume ab 17,8 m).
+    // der Hain der KI: je Ort `spawn_tree` (4 Bäume im 2,5-m-Kreis) und `spawn_studio` (eine Eiche genau am Ort); `bleibt`
+    // lässt ihn stehen (sonst fällt er nach der Zählung)
+    const hain = (x, z, bleibt) => {
+        const y = (r.getTerrainHeightAt(x, z) || 0) + 0.5;
+        const vor = new Set(s.architectures);
+        const fehler = [];
+        const weicht = { haus: 0, lichtung: 0, bau: 0 };
+        for (const prog of [
+            ["spawn_tree", ["at", x, y, z], 4],
+            ["spawn_studio", "eiche", ["at", x, y, z], 1],
+        ]) {
+            try {
+                const res = r.dslRun(prog, { source: "test" });
+                for (const e of res.log || [])
+                    if (e.event === "ergebnis")
+                        for (const k of ["haus", "lichtung", "bau"]) weicht[k] += (e.gruende && e.gruende[k]) || 0;
+            } catch (e) {
+                fehler.push(String(e).slice(0, 80));
+            }
+        }
+        const neu = s.architectures.filter((e) => !vor.has(e) && istNatur(e));
+        if (!bleibt) for (const e of neu) r.removeArchitecture(e);
+        return { neu, fehler, weicht };
+    };
+    // W8 SOHLE (K52): die Scheibe LIEGT auf dem Grund — ihre Sohle (die tiefste Blocker-Box der Plattform) höchstens 0,3 m
+    // über dem Boden des Gesetzes an jeder von 49 Proben unter ihr (Mitte, zwei Ringe r/2 und r zu je 24; vorher 5,0–5,3 m:
+    // eine graue Scheibe über den Toren)
+    if (P.has("sohle")) {
+        const plat = s.architectures.find((a) => a && a.type === "start_plattform");
+        const pbp = s.blueprints && s.blueprints.start_plattform;
+        const p0 = pbp && Array.isArray(pbp.parts) && pbp.parts[0] && pbp.parts[0].size;
+        const platR = p0 && Number.isFinite(p0.x) ? p0.x / 2 : NaN;
+        const boxen = (plat && plat.blockerAABBs) || [];
+        if (!plat || !(platR > 0) || !boxen.length) o.sohle = { fehler: "keine Genesis-Plattform mit Boxen" };
+        else {
+            const sohle = Math.min(...boxen.map((b) => b.botY));
+            let luft = -Infinity;
+            for (const f of [0, 0.5, 1])
+                for (let k = 0; k < (f ? 24 : 1); k++) {
+                    const a = (k / 24) * Math.PI * 2;
+                    const g = r._voxelSurfaceY(
+                        plat.position.x + Math.cos(a) * platR * f,
+                        plat.position.z + Math.sin(a) * platR * f
+                    );
+                    luft = Math.max(luft, sohle - g);
+                }
+            o.sohle = { luft: Number.isFinite(luft) ? Math.round(luft * 100) / 100 : null };
+            // DAS WERK AUF DER SCHEIBE: der Satz des Menschen setzt eine Feuerstelle 2 m neben der Mitte — sie steht AUF der
+            // Scheibe (ihre Basis an der Oberkante), nie in ihrem Stein (`_bauDachUnter`; vorher 1 m tief: der Feuerkreis dunkel)
+            const wx = plat.position.x + 2;
+            const wz = plat.position.z;
+            const dach = Math.max(
+                ...boxen.filter((q) => wx >= q.minX && wx <= q.maxX && wz >= q.minZ && wz <= q.maxZ).map((q) => q.topY)
+            );
+            const vor = new Set(s.architectures);
+            r.dslRun(["spawn_studio", "feuerstelle", ["at", wx, dach + 0.5, wz], 1], { source: "test" });
+            const werk = s.architectures.find((e) => !vor.has(e) && e.position);
+            o.sohle.werkTief = werk ? Math.round((dach - (werk.position.y - 0.5)) * 100) / 100 : null;
+            if (werk) r.removeArchitecture(werk);
+        }
+    }
     if (P.has("lichtung")) {
         const w8 = {};
         o.w8 = w8;
@@ -610,6 +700,31 @@ async function proben(phasen) {
                 ruhig = steht ? ruhig + 1 : 0;
             }
             w8.ruhe = ruhig >= 20;
+            // DER RING (K52): der Ort-Takt baut ihn am Genesis-Ort (headless ruht der Takt, die Probe ruft die Stamm-Methode);
+            // die Lichtung der Probe ist ab hier der Platz — der gemessene Kreis der Tore + 4 m
+            r._genesisPortalRing(pm.position);
+            // die Tore räumen, die Nah-Streu wächst durch die Wand nach: ruhen lassen wie zuvor
+            for (let k = 0, ruhe2 = 0; k < 1500 && ruhe2 < 20; k++) {
+                await pumpe(4);
+                const ns = s.nahStreu;
+                ruhe2 =
+                    k > 20 &&
+                    !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                    ns &&
+                    ns.kacheln.size > 0 &&
+                    ns.offen === 0
+                        ? ruhe2 + 1
+                        : 0;
+            }
+            const tore = s.architectures.filter(
+                (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - L.x, a.position.z - L.z) < 30
+            );
+            w8.tore = tore.length;
+            if (tore.length) {
+                const ringR = tore.reduce((q, a) => q + Math.hypot(a.position.x - L.x, a.position.z - L.z), 0) / tore.length;
+                L.r = Math.max(platR, ringR + 4);
+            }
+            w8.plattform[2] = Math.round(L.r * 10) / 10;
             // die Kachel-Pflanzen um die Kamera auf der Plattform (die Nah-Streu reicht 24 m)
             w8.pflanzen = 0;
             w8.aufScheibe = 0;
@@ -704,29 +819,6 @@ async function proben(phasen) {
                     if (w8.taeter.length < 6) w8.taeter.push(`${e.type} ${d.toFixed(1)} m (Krone ${k.toFixed(1)} m)`);
                 }
             }
-            // der Hain der KI: je Ort `spawn_tree` (4 Bäume im 2,5-m-Kreis) und `spawn_studio` (eine Eiche genau am Ort)
-            const hain = (x, z) => {
-                const y = (r.getTerrainHeightAt(x, z) || 0) + 0.5;
-                const vor = new Set(s.architectures);
-                const fehler = [];
-                const weicht = { haus: 0, lichtung: 0 };
-                for (const prog of [
-                    ["spawn_tree", ["at", x, y, z], 4],
-                    ["spawn_studio", "eiche", ["at", x, y, z], 1],
-                ]) {
-                    try {
-                        const res = r.dslRun(prog, { source: "test" });
-                        for (const e of res.log || [])
-                            if (e.event === "ergebnis")
-                                for (const k of ["haus", "lichtung"]) weicht[k] += (e.gruende && e.gruende[k]) || 0;
-                    } catch (e) {
-                        fehler.push(String(e).slice(0, 80));
-                    }
-                }
-                const neu = s.architectures.filter((e) => !vor.has(e) && istNatur(e));
-                for (const e of neu) r.removeArchitecture(e);
-                return { neu, fehler, weicht };
-            };
             const kiP = hain(L.x, L.z);
             w8.kiPlattform = kiP.neu.filter(
                 (e) => abstand(e.position.x, e.position.z) < L.r + krone(e._lodSpecies || e.type, e.scale)
@@ -773,10 +865,95 @@ async function proben(phasen) {
             }
         }
     }
+    // W8 BAU — DER GRUNDRISS JEDES BAUS (K52): an einem trockenen Ort 150 m von der Plattform (60 m von jedem Haus) wächst der
+    // Hain und bleibt, dann entsteht dort ein Damm (ein Bau ohne Haus-Zeile — seine Hülle sind Blocker-Boxen): kein Baum
+    // bleibt in seinen Boxen (die Räumung der Wurzel), der zweite Hain mitten im Damm wächst nicht in sie und nennt den Bau
+    if (P.has("bau")) {
+        const wb = {};
+        o.bau = wb;
+        const plat = s.architectures.find((a) => a && a.type === "start_plattform");
+        const M0 = plat ? plat.position : start;
+        let ort = null;
+        for (let a = 0; a < 16 && !ort; a++) {
+            const gx = M0.x + Math.cos((a / 16) * Math.PI * 2) * 150;
+            const gz = M0.z + Math.sin((a / 16) * Math.PI * 2) * 150;
+            if (!r._landAt(gx, gz, 0.5)) continue;
+            if (s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60))
+                continue;
+            ort = [gx, gz];
+        }
+        const inBau = (bau, x, z) =>
+            (bau.blockerAABBs || []).some((b) => {
+                const ob = b.obb;
+                if (!ob) return x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ;
+                const dx = x - ob.cx;
+                const dz = z - ob.cz;
+                return Math.abs(dx * ob.c - dz * ob.s) <= ob.hx && Math.abs(dx * ob.s + dz * ob.c) <= ob.hz;
+            });
+        if (!ort) wb.fehler = "kein trockener Ort 150 m von der Plattform";
+        else {
+            const [gx, gz] = ort;
+            const vorher = hain(gx, gz, true).neu;
+            const damm = r.spawnArchitecture(
+                "damm",
+                { x: gx, y: (r.getTerrainHeightAt(gx, gz) || 0) + 0.5, z: gz },
+                { silent: true, precise: true }
+            );
+            if (!damm || !damm.blockerAABBs) wb.fehler = "der Damm entstand nicht";
+            else {
+                wb.vorher = vorher.filter((e) => inBau(damm, e.position.x, e.position.z)).length;
+                wb.rest = vorher.filter((e) => s.architectures.includes(e) && inBau(damm, e.position.x, e.position.z)).length;
+                const kiB = hain(gx, gz);
+                wb.ki = kiB.neu.filter((e) => inBau(damm, e.position.x, e.position.z)).length;
+                wb.kiWeicht = kiB.weicht.bau;
+                r.removeArchitecture(damm);
+            }
+            for (const e of vorher) if (s.architectures.includes(e)) r.removeArchitecture(e);
+        }
+    }
     if (P.has("w4")) {
         stell(dorfMitte.x, (r.getTerrainHeightAt(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
         o.w4 = naturImHaus(H);
+        // W4 WEG (K52): keine Natur (Eintrag, lebende Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker
+        // des Drehbuch-Dorfs — die Formen der Wege-Karte, ihr Abstand hier eigens gerechnet (Kapsel um das Segment, gedrehter
+        // Kasten); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im Anger)
+        {
+            const formen = [];
+            for (const b of (s.wegeKarte && s.wegeKarte.siedlungen) || []) for (const f of b.formen) formen.push(f);
+            const abstand = (f, px, pz) => {
+                if (f.typ === "kasten") {
+                    const co = Math.cos(f.phi || 0);
+                    const si = Math.sin(f.phi || 0);
+                    const lx = Math.abs(co * (px - f.ax) - si * (pz - f.az)) - f.ex;
+                    const lz = Math.abs(si * (px - f.ax) + co * (pz - f.az)) - f.ez;
+                    return Math.hypot(Math.max(lx, 0), Math.max(lz, 0)) + Math.min(Math.max(lx, lz), 0);
+                }
+                const dx = f.bx - f.ax;
+                const dz = f.bz - f.az;
+                const ll = dx * dx + dz * dz;
+                const h = ll > 1e-6 ? Math.min(1, Math.max(0, ((px - f.ax) * dx + (pz - f.az) * dz) / ll)) : 0;
+                return Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
+            };
+            const w = { formen: formen.length, natur: 0, aufWeg: 0, taeter: [] };
+            const pruef = (art, x, z, quelle) => {
+                w.natur++;
+                for (const f of formen)
+                    if (abstand(f, x, z) < (f.sperr !== undefined ? f.sperr : 0)) {
+                        w.aufWeg++;
+                        if (w.taeter.length < 6)
+                            w.taeter.push(`${art} (${quelle}) auf ${f.typ === "segment" ? "Weg" : f.kanal === 1 ? "Acker" : "Platz"}`);
+                        return;
+                    }
+            };
+            for (const e of s.architectures) if (e.position && istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
+            for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
+                for (const c of region.cells || [])
+                    if ((c.slots && c.slots.length) || c.feld) pruef(c.species || c.layer, c.x, c.z, "Streu");
+            for (const kk of (s.nahStreu && s.nahStreu.kacheln.values()) || [])
+                for (const it of kk.items || []) pruef("Kachel-Pflanze", it.x, it.z, "Nah-Streu");
+            o.w4weg = w;
+        }
     }
     // das ferne Dorf (W4b) steht 300 m vom Start — W6 meidet seinen Ort auch, wenn W4b nicht läuft. Die Richtung kommt aus der
     // Regel der Welt: jede Streu-Region unter ihm (±40 m) liegt in der Reichweite des Spielers am Start
@@ -1190,7 +1367,7 @@ async function proben(phasen) {
 function urteil(o) {
     const f = [];
     if (o.fehler) return [o.fehler];
-    const P = new Set(o.phasen || ["haus", "lichtung", "w4", "w4b", "w6"]);
+    const P = new Set(o.phasen || ["haus", "sohle", "lichtung", "bau", "w4", "w4b", "w6"]);
     if (P.has("haus")) {
         const hs = o.haeuser.filter((h) => !h.fehler);
         if (!(hs.length >= 6)) f.push(`Aufbau: ${hs.length} Häuser geprüft (Soll ≥ 6)`);
@@ -1292,6 +1469,7 @@ function urteil(o) {
                     `W8 Aufbau: ${w.zellenNeu} lebende Streu-Zellen in den neu gebauten Regionen um die Plattform (im 40-m-Kreis ${w.zellen})${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`
                 );
             if (!(w.pflanzen >= 20)) f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im 30-m-Kreis (Soll ≥ 20)`);
+            if (!(w.tore >= 1)) f.push(`W8 Aufbau: ${w.tore} Tore im Ring um die Plattform (der Ort-Takt baute keinen Ring)`);
             if (!(w.gegenprobe >= 1))
                 f.push(
                     `W8 Aufbau: der Hain der KI wuchs 150 m weiter nicht (${w.gegenprobe}; ${(w.kiFehler || []).join(" ")}) — die Probe ist blind`
@@ -1299,10 +1477,10 @@ function urteil(o) {
             const ueber = [];
             if (w.naturUeber) ueber.push(`${w.naturUeber} Natur-Einträge (${w.taeter.join(" · ")})`);
             if (w.zellenUeber) ueber.push(`${w.zellenUeber} Streu-Zellen ${JSON.stringify(w.je)}`);
-            if (w.aufScheibe) ueber.push(`${w.aufScheibe} Kachel-Pflanzen auf der Scheibe`);
+            if (w.aufScheibe) ueber.push(`${w.aufScheibe} Kachel-Pflanzen auf dem Platz`);
             if (w.kiPlattform) ueber.push(`${w.kiPlattform} Bäume der KI`);
             if (ueber.length)
-                f.push(`W8 Lichtung: über der Genesis-Scheibe (r ${w.plattform[2]} m) ${ueber.join(", ")}`);
+                f.push(`W8 Lichtung: über dem Genesis-Platz (r ${w.plattform[2]} m) ${ueber.join(", ")}`);
             if (w.kiHaus) f.push(`W8 Hain im Haus: ${w.kiHaus} Bäume der KI im Grundriss von ${w.kiHausTyp}`);
             const stumm = [];
             if (!w.kiHaus && !(w.kiWeichtHaus >= 1))
@@ -1318,8 +1496,42 @@ function urteil(o) {
             if (stumm.length) f.push(`W8 Absage: ${stumm.join(" · ")}`);
         }
     }
+    if (P.has("sohle")) {
+        const so = o.sohle;
+        if (!so || so.fehler) f.push(`W8 Aufbau: ${so ? so.fehler : "Sohlen-Probe fehlt"}`);
+        else {
+            if (!(so.luft <= 0.3))
+                f.push(`W8 Sohle: die Scheibe schwebt ${so.luft} m über dem Boden unter ihr (Soll ≤ 0,3 m)`);
+            if (!(Math.abs(so.werkTief) <= 0.05))
+                f.push(
+                    `W8 Sohle: die Feuerstelle des Satzes steht ${so.werkTief} m unter der Oberkante der Scheibe (Soll auf ihr, ± 5 cm)`
+                );
+        }
+    }
+    if (P.has("bau")) {
+        const wb = o.bau;
+        if (!wb || wb.fehler || !(wb.vorher >= 1))
+            f.push(
+                `W8 Aufbau: ${wb ? wb.fehler || `${wb.vorher} Bäume des Hains standen in den Boxen des Damms` : "Bau-Probe fehlt"} (Soll ≥ 1 — sonst sieht die Probe keinen Bau)`
+            );
+        else {
+            const bau = [];
+            if (wb.rest) bau.push(`${wb.rest} von ${wb.vorher} Bäumen blieben in den Boxen des Damms`);
+            if (wb.ki) bau.push(`${wb.ki} Bäume der KI wuchsen in den Damm`);
+            else if (!(wb.kiWeicht >= 1)) bau.push(`der Hain im Damm fiel ohne Eintrag (ergebnis bau ${wb.kiWeicht})`);
+            if (bau.length) f.push(`W8 Bau: ${bau.join(" · ")}`);
+        }
+    }
     if (P.has("w4") && o.w4 && o.w4.imHaus)
         f.push(`W4 Grundriss: ${o.w4.imHaus} Natur-Einträge im Grundriss eines Hauses (${o.w4.taeter.join(" ")})`);
+    if (P.has("w4")) {
+        const w = o.w4weg;
+        if (!w || !(w.formen >= 10) || !(w.natur >= 50))
+            f.push(
+                `W4 Aufbau: ${w ? w.formen : "?"} Formen der Wege-Karte, ${w ? w.natur : "?"} Natur-Stücke (Soll ≥ 10 und ≥ 50 — sonst sieht die Probe keinen Weg)`
+            );
+        else if (w.aufWeg) f.push(`W4 Weg: ${w.aufWeg} Natur-Stücke auf Weg, Platz und Acker des Dorfs (${w.taeter.join(" · ")})`);
+    }
     if (P.has("w4b")) {
         if (!o.w4b || !(o.w4b.haeuser >= 8))
             f.push(`W4b Aufbau: ${o.w4b ? o.w4b.haeuser : "?"} Häuser im fernen Dorf (Soll ≥ 8)`);
@@ -1382,10 +1594,10 @@ function zeile(o) {
             .filter((h) => Number.isFinite(h.treppeSollM))
             .map((h) => h.treppeSteigM + "/" + h.treppeSollM)
             .join(" ")} m` +
-        ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
+        ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4 Weg ${o.w4weg ? o.w4weg.aufWeg + "/" + o.w4weg.natur + " auf " + o.w4weg.formen + " Formen" : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
-        ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
+        ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
         ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
     );
@@ -1458,6 +1670,11 @@ function zeile(o) {
                 promotion: ["W4b Promotion"],
                 nahstreu: ["W4b Nah-Streu"],
                 lichtung: ["W8 Lichtung"],
+                schwebe: ["W8 Sohle"],
+                platz: ["W8 Lichtung"],
+                baugrund: ["W8 Bau"],
+                weg: ["W4 Weg"],
+                dach: ["W8 Sohle"],
                 lichtungwald: ["W8 Lichtung"],
                 kihain: ["W8 Lichtung", "W8 Hain im Haus"],
                 stumm: ["W8 Absage"],
@@ -1476,6 +1693,11 @@ function zeile(o) {
                 promotion: ["w4b"],
                 nahstreu: ["w4b"],
                 lichtung: ["lichtung"],
+                schwebe: ["sohle"],
+                platz: ["lichtung"],
+                baugrund: ["bau"],
+                weg: ["w4"],
+                dach: ["sohle"],
                 lichtungwald: ["lichtung"],
                 kihain: ["lichtung"],
                 stumm: ["lichtung"],

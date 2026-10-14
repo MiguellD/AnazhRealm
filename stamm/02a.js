@@ -1929,6 +1929,24 @@ class AnazhRealm_Z02a {
     // `_istNatur`) setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Hain der KI wächst in einem Haus. Ein Werk mit
     // Grundriss-Gesetz (Haus, Ausstattung) sucht den Ort, an dem sein ganzes Fundament auf dem Land steht (`_werkOrtSuchen`,
     // nach der Spieler-Klemme der Wurzel); jedes andere Werk fragt das Land an seinem Ort.
+    // DER TRAGENDE BAU (K52): liegt (x, z) auf einem Bau, der auf dem Grund steht (die Genesis-Scheibe, ein Sockel — seine
+    // Box reicht bis auf den Boden `boden`, höchstens eine Stufe darüber), trägt seine Oberkante, was der Satz dort setzt;
+    // sonst der Boden. Natur und was fährt tragen nichts. Seit die Scheibe auf dem Grund liegt, stand die Feuerstelle des
+    // Menschen auf ihr IM Stein (der Feuerkreis aus 2 m: Luma 0,656 → 0,015).
+    _bauDachUnter(x, z, boden) {
+        const STEP = AnazhRealm.PLAYER_STEP_UP;
+        const nahe = this._blockerNahe(x, z, 0, -Infinity, (this._bauDachNahe = this._bauDachNahe || []));
+        let y = boden;
+        for (const e of nahe) {
+            if ((e.affordances && e.affordances.moveable) || this._istNatur(e)) continue;
+            for (const b of e.blockerAABBs || [])
+                if (b.botY <= boden + STEP && b.topY > y && x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ)
+                    y = b.topY;
+        }
+        nahe.length = 0;
+        return y;
+    }
+
     _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
         const stamp = this._studioStampFor(name);
         const istBaum = name.startsWith("baum_");
@@ -1976,7 +1994,7 @@ class AnazhRealm_Z02a {
             }
             ctx.budget.spawnsLeft--;
             const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
-            const y = Number.isFinite(sy) ? sy + 0.5 : pos.y;
+            const y = Number.isFinite(sy) ? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;
             if (!opts) {
                 opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
                 if (istBaum) opts.scale = 0.8 + wurf() * 0.45;

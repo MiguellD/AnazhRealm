@@ -134,19 +134,19 @@ class AnazhRealm_Z25a {
                 if (fpsSv) fpsSv.textContent = `${fps} fps`;
             });
         }
-        // (2) Laub-Auflösung (Vorlage `_folRes`): die OBERGRENZE `foliageResCeiling` (0.25..1);
-        // der Perf-Regler skaliert `_foliageResScale` NUR darunter (KEIN direkter Uniform-Write).
-        const folS = document.getElementById("slider-foliageres");
-        const folSv = document.getElementById("slider-foliageres-val");
-        if (folS) {
-            const fc0 = Number.isFinite(this.state.foliageResCeiling) ? this.state.foliageResCeiling : 1;
-            const pct0 = Math.max(25, Math.min(100, Math.round(fc0 * 100)));
-            folS.value = String(pct0);
-            if (folSv) folSv.textContent = `${pct0} %`;
-            folS.addEventListener("input", () => {
-                const pct = Math.max(25, Math.min(100, parseInt(folS.value, 10) || 100));
-                this.state.foliageResCeiling = pct / 100;
-                if (folSv) folSv.textContent = `${pct} %`;
+        // (2) DIE SZENEN-SKALA (K50): die interne Auflösung der Szene (50..100 %), die zeitliche Auflösung löst auf die
+        // Ausgabe auf; der neue Wert legt die Ziele im nächsten Frame neu an (`_loopRender`).
+        const skS = document.getElementById("slider-szeneskala");
+        const skSv = document.getElementById("slider-szeneskala-val");
+        if (skS) {
+            const sk0 = this.state.szeneSkala == null ? AnazhRealm.SZENE_SKALA : this.state.szeneSkala;
+            const pct0 = Math.round(sk0 * 100);
+            skS.value = String(pct0);
+            if (skSv) skSv.textContent = `${pct0} %`;
+            skS.addEventListener("input", () => {
+                const pct = Math.max(50, Math.min(100, parseInt(skS.value, 10) || 75));
+                this.state.szeneSkala = pct / 100;
+                if (skSv) skSv.textContent = `${pct} %`;
             });
         }
         // (3) LOD-Referenz (Vorlage `_lodU.uLodRef`): die Screen-Space-Error-Bezugshöhe

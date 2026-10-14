@@ -102,7 +102,18 @@ const ANKER = [
     // die Matrix-Puffer des Objekts in den Graphen): die instanzierten Foundry-Teile bauen je Objekt, auch mit EINEM Graphen —
     // fällt dieser Term, teilen sie ihr Programm ohne Umbau.
     { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph · _nebelGraph: Programm-Schlüssel = Knoten-Identität)" },
-    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (benannt: je InstancedMesh ein Programm — der Erst-Bau der Foundry-Instanzen)" },
+    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (je InstancedMesh ein Programm — darum zeichnet die Senke über ihren Zeichner, `_instanzZeichner`)" },
+    // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner` · `_senkenKnoten` · der setupPosition-Haken in
+    // `_configureRenderer`): ein LOD ohne Takt zeichnet nicht, seine Kinder schon; die Zahl eines Draws ist instanceCount der
+    // InstancedBufferGeometry (die Senke projiziert als LOD ohne Takt, ihr Zeichner erbt die Reihe der Eltern); der Instanz-Knoten steht in setupPosition, wo r184s InstanceNode steht (sein setup legt die
+    // Matrix am Builder ab, seine Zuweisung baut NACH der des positionNode), r184 liest die Instanz-Farbe als vInstanceColor; je Bindung trägt der Speicher-Knoten sein Attribut, ein Wechsel baut die Bindegruppe neu.
+    { file: "vendor/three.webgpu.min.js", sub: "else if(e.isLOD)!0===e.autoUpdate&&e.update(t);", organ: "DIE SENKE (projiziert als LOD ohne Takt: sie zeichnet nicht, ihr Zeichner erbt die Reihe ihrer Eltern)" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(e.layers.test(t.layers))if(e.isGroup)r=e.renderOrder", organ: "DIE SENKE (eine GRUPPE setzte die Reihe ihrer Kinder auf ihre renderOrder — darum projiziert die Senke als LOD)" },
+    { file: "vendor/three.webgpu.min.js", sub: "!0===r.isInstancedBufferGeometry?u=r.instanceCount", organ: "DIE SENKE (die Instanz-Zahl des Zeichners ist instanceCount seiner Fassade)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.isInstancedMesh&&t.instanceMatrix&&!0===t.instanceMatrix.isInstancedBufferAttribute&&Sp(t).toStack(),null!==this.positionNode", organ: "DIE SENKE (setupPosition: der Haken stellt den EINEN Instanz-Knoten an die Stelle des InstanceNode)" },
+    { file: "vendor/three.webgpu.min.js", sub: 't.instanceColor){s=kn("vec3","vInstanceColor").mul(s)}', organ: "DIE SENKE (die Instanz-Farbe liest r184 als vInstanceColor — der Instanz-Knoten schreibt sie aus `instanzFarbe`)" },
+    { file: "vendor/three.webgpu.min.js", sub: "n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (je Bindung das Attribut des Speicher-Knotens, ein Wechsel baut die Bindegruppe neu — die Matrix je Zeichen-Objekt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "get attribute(){return this.nodeUniform.value}", organ: "DIE SENKE (die Speicher-Bindung liest das Attribut aus dem Wert ihres Knotens — `_senkenKnoten` stellt ihn je Objekt)" },
     // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX (K20-N1, Integration V18.547): `setupPosition` legt die Zuweisung des
     // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
     // und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und
@@ -207,30 +218,24 @@ const ANKER = [
     // Der stabile Puffer-Name: InstanceNode baut die Matrix-Puffer, der WGSL-Builder nennt sie ohne Namen nach der id
     { file: "vendor/three.webgpu.min.js", sub: "_createInstanceMatrixNode(e,t){let r;const{instanceMatrix:s}=this", organ: "Instanz-Puffer-Name (InstanceNode._createInstanceMatrixNode → setName)" },
     { file: "vendor/three.webgpu.min.js", sub: '"NodeBuffer_"+', organ: "Instanz-Puffer-Name (der id-Name, den setName ersetzt)" },
-    // Die zeitliche Auflösung (TRAANode r184 verbatim): der Stamm reicht die Kamera-Bewegung als `load(texel)` (NDC,
-    // y oben), setzt die Reprojektion VOR dem Post-Render (der Halton-Versatz lebt nur zwischen den Pipeline-Haken),
-    // die Tiefen-Kopie braucht gleiche Formate (Szenen-Tiefe und Geschichte beide depth24plus), die Aufnahme rendert
-    // eine Halton-Runde (31 Versätze) und schaltet den Node-Frame (TRAA rechnet je FRAME)
-    { file: "vendor/TRAANode.js", sub: "const offsetUV = this.velocityNode.load( closestPositionTexel ).xy.mul( vec2( 0.5, - 0.5 ) );", organ: "_traaKameraBewegung (velocityNode.load → NDC-Bewegung)" },
-    { file: "vendor/TRAANode.js", sub: "renderPipeline.context.onBeforeRenderPipeline = () => {", organ: "_traaReprojektion (der Versatz lebt nur im Post-Render)" },
+    // Die zeitliche Hochskalierung (`_zeitAufloesung`, K50) erbt von r184s TRAANode (verbatim): Bau der Ziele (die
+    // Geschichte verliert ihre Tiefe vor dem ersten Anlegen), `setViewOffset` legt den Halton-Versatz in der Größe an, die der
+    // Knoten ihm reicht (die Eingangs-Größe), `setSize` stellt `_invSize` (die Ausgabe), `clearViewOffset` schaltet die
+    // Folge; das Quad nimmt die Klasse des Quads der Post-Kette; die Reprojektion steht VOR dem Post-Render (der Versatz lebt
+    // nur zwischen den Pipeline-Haken); die Aufnahme rendert eine Halton-Runde (31 Versätze) und schaltet den Node-Frame
+    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "_zeitAufloesung (die Geschichte ohne Tiefe — die Vortiefe lebt in ihrem Kanal a)" },
+    { file: "vendor/TRAANode.js", sub: "viewOffset.offsetX + jitterOffset[ 0 ] - 0.5, viewOffset.offsetY + jitterOffset[ 1 ] - 0.5,", organ: "_zeitAufloesung (der Versatz in Pixeln der gereichten Größe, gelesen aus camera.view)" },
+    { file: "vendor/TRAANode.js", sub: "this._invSize.value.set( 1 / width, 1 / height );", organ: "_zeitAufloesung (setSize stellt die Ausgabe-Größe des Resolve)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'this._quadMesh=new gx(r),this._quadMesh.name="Render Pipeline"', organ: "_zeitAufloesung (das Quad der Post-Kette — seine Klasse zeichnet den Resolve)" },
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
-    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "_traaVortiefe (die Vortiefe der Geschichte — ihr Typ wird 16 bit, bevor die GPU sie anlegt)" },
-    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "_traaVortiefe (der EINE Kopier-Ruf des Knotens — am Renderer gehakt, gezeichnet in 16 bit; Name TRAANode.history:tiefe)" },
-    { file: "vendor/TRAANode.js", sub: "let depth = this._previousDepthNode.sample( uv ).r;", organ: "TRAA-Tiefen-Kopie (der Leser: die Vortiefe der Disokklusion — die Kopie bleibt)" },
-    // Die Platzhalter-Tiefe (1×1, namenlos, ohne Ziel): der Stamm nennt sie über den Knoten (Band-Linse, Textur-Zensus)
-    { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
     // DAS AUSGABE-ZIEL IN 32 BIT (0910-1 B, `_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
     // fragt der Stamm `device.features`); RGBFormat × UnsignedInt101111Type ist rg11b10ufloat; PassNode.setup schreibt den
-    // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach); der Neustart der Geschichte kopiert das
-    // Szenen-Bild in die rgba16float-Geschichte (verschiedene Formate: `_traaNeustartZug` zeichnet statt zu kopieren);
-    // TRAA reicht Kanal a nur durch (ein rg11b10-Abtaster liefert 1).
+    // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach).
     { file: "vendor/three.webgpu.min.js", sub: 'RG11B10UFloat:"rg11b10ufloat-renderable"', organ: "_ausgabeFormat (das Feature, das r184 anfordert)" },
     { file: "vendor/three.webgpu.min.js", sub: 'case Xe:switch(s){case Je:u=OA;break;case et:u=kA;break;default:o("WebGPURenderer: Unsupported texture type with RGBFormat."', organ: "_ausgabeFormat (RGBFormat × UnsignedInt101111Type → rg11b10ufloat)" },
     { file: "vendor/three.webgpu.min.js", sub: "setup({renderer:e}){return this.renderTarget.samples=void 0===this.options.samples?e.samples:this.options.samples,this.renderTarget.texture.type=e.getOutputBufferType()", organ: "_ausgabeFormat (PassNode.setup stellt den Typ je Bau zurück — der Pass stellt ihn danach)" },
-    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( beautyRenderTarget.texture, this._historyRenderTarget.texture );", organ: "_traaNeustartZug (der Neustart der Geschichte — am Renderer gehakt, gezeichnet bei verschiedenem Format)" },
-    { file: "vendor/TRAANode.js", sub: "const vClip = historyColor.sub( vec4( pClip, currentColor.a ) );", organ: "_ausgabeFormat (TRAA reicht Kanal a nur durch)" },
     // DIE KASKADEN-BOX (W7: _kaskadenGeburt · _kaskadenPassen · _kaskadenZiele · _passSicht): der Host ersetzt je Instanz
     // die Licht-Stellung des Addons (updateBefore stumm, sein Zweit-Schreiber _updateShadowBounds stumm), ruft dessen
     // _init vom Prototyp, liest seine Kaskaden-Uniform und den Fade-Saum des Shaders, hüllt den Ziel-Bau jedes

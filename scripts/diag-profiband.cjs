@@ -619,7 +619,7 @@ function selbsttest() {
         { klasse: "himmel", stufe: null, art: null, je: { haupt: 1 }, jeTris: {} },
         { klasse: "TRAA", stufe: null, art: null, je: { ortho: 1 }, jeTris: {} },
     ];
-    const u8 = urteil(sauber, null, { mb: 100, liste: [{ k: "tex:output rgba16float 1920x1080x1", mb: 100, n: 1 }] }, {
+    const u8 = urteil(sauber, null, { mb: 100, liste: [{ k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 }, { k: "buf:szene:bodenSatz", mb: 95.6, n: 6 }] }, {
         gpuJeFrameMs: 12,
     });
     const zeile = (id) => u8.klassen.find((z) => z.id === id);
@@ -819,6 +819,46 @@ function selbsttest() {
     const r18 = JSON.parse(JSON.stringify(rt));
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
     const n18 = BAND.ratscheNachziehen(r18, u17, { datum: "selbsttest", eingeschwungen: true });
+    // S-K50 — DIE RENDER-ZIEL-KLASSE gegen ihren Haushalt: der Kopf 45f1eeae (Genesis third, 1080p, die Ziele der zeitlichen
+    // Auflösung in voller Größe, das Szenen-Ziel in der Ausgabe) ist ROT mit jedem Erzeuger beim Namen; die Hochskalierung
+    // (Szene 0,75, die Vortiefe im Kanal a der Geschichte) hält den Haushalt; ein Haushalt ohne die Klasse fällt im Schema.
+    const rzVorher = v17([
+        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
+        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1", mb: 4.0, n: 1 },
+        { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:output rg11b10ufloat 1920x1080x1", mb: 7.9, n: 1 },
+        { k: "tex:depth depth24plus 1920x1080x1", mb: 7.9, n: 1 },
+        { k: "tex:szene:tiefenabbild r32float 960x1080x1", mb: 4.0, n: 1 },
+        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+    ]);
+    const rzNachher = v17([
+        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
+        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 },
+        { k: "tex:depth depth24plus 1440x810x1", mb: 4.4, n: 1 },
+        { k: "tex:szene:tiefenabbild r32float 720x810x1", mb: 2.2, n: 1 },
+        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+    ]);
+    const rzOhne = JSON.parse(JSON.stringify(haushalt));
+    delete rzOhne.renderZiele;
+    const rzRot = rzVorher.rot.find((x) => x.art === "renderziele");
+    t(
+        "Render-Ziele: der Kopf 45f1eeae (71.4 MB) ROT über dem Haushalt 60 MB, jeder Erzeuger beim Namen, Karten und Puffer nicht; die Hochskalierung (58.6 MB) hält; ohne Haushalt fällt das Schema",
+        rzRot &&
+            /Render-Ziele 71\.4 MB über ihrem Haushalt 60 MB/.test(rzRot.text) &&
+            ["tex:TRAANode.history 19.8", "tex:TRAANode.resolve 15.8", "tex:output 7.9", "tex:depth 7.9", "tex:szene 4", "tex:kaskade0 8", "tex:kaskade1 8"].every((n) => rzRot.text.includes(n)) &&
+            !/karte-albedo|buf:szene/.test(rzRot.text) &&
+            rzVorher.urteil === "ROT" &&
+            !rzNachher.rot.some((x) => x.art === "renderziele") &&
+            rzNachher.vram.renderZiele.mb === 58.6 &&
+            BAND.haushaltPruefen(rzOhne).fehler.some((f) => /renderZiele braucht/.test(f))
+    );
     // … und `nur: "vram"` (ein Schnitt, der nur den Speicher bewegt) lässt die Klassen-Zeilen und ihre Serie stehen.
     const r18b = JSON.parse(JSON.stringify(r18));
     r18b.klassen.boden.haupt.befehle = 10;

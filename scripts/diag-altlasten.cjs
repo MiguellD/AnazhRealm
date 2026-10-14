@@ -295,6 +295,17 @@ const FORBIDDEN = [
     // TRAANode.js) als erste Stufe, die Dither-Blende rotiert hinter dem Knoten (state.traaNode), nie hinter einem Flag.
     { token: "_fxaa", fiel: "04.10. — TRAA trägt die Kantenglättung (_ensurePostProcessing)" },
     { token: "taaLite", fiel: "04.10. — das nie gesetzte TAA-Flag; uDitherT rotiert, wo state.traaNode steht" },
+    // DIE EINE SZENEN-SKALA (K50) — der Regler rechnete einen Laub-Auflösungs-Faktor, den kein Pass las; die adaptive
+    // Render-Skala stand seit V18.390 auf 1; die Vortiefe der zeitlichen Auflösung lebt im Kanal a ihrer Geschichte.
+    { token: "_foliageResScale", fiel: "K50 — die Szenen-Skala ist EINE Größe (_szeneSkalaWirk), kein Stellglied des Reglers" },
+    { token: "foliageResCeiling", fiel: "K50 — state.szeneSkala (der Regler „Szene-Auflösung“)" },
+    { token: "_camMotion01", fiel: "K50 — die Wahrnehmung las nur der gefallene Laub-Faktor" },
+    { token: "PERF_SCENE_RES_", fiel: "K50" },
+    { token: "PERF_FOLIAGE_RES_", fiel: "K50 — SZENE_SKALA_MIN" },
+    { token: "PERF_RENDER_SCALE_", fiel: "K50 — die Pixel-Kappe trägt _applyRenderScale ohne Skala" },
+    { token: "RES_SCALE_DWELL_MS", fiel: "K50" },
+    { token: "_traaVortiefe", fiel: "K50 — die Vortiefe im Kanal a der Geschichte (_zeitAufloesung)" },
+    { token: "_traaNeustartZug", fiel: "K50 — der Neustart ist ein Frame ohne Geschichte" },
     // DIE INTEGRATION der Bild-Wahrheit (04.10.): der Gruppen-Schlüssel mit Saison war ein Zwilling des saisonfreien
     // Körper-Schlüssels (V18.527) und traf im Cache nie; die Höhe eines Baum-Körpers lebt im Höhen-Buch.
     {

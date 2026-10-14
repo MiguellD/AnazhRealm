@@ -3470,8 +3470,10 @@ async function probeBahn(B) {
     phase("F1");
     // ════ F3 — DIE NATUR-WAND KENNT DEN WAGEN: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT ════
     const wandProbe = () => {
-        const sx = M.x + 14;
-        const sz = M.z + 14;
+        // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (K52: die Lichtung trägt den Ring der Tore,
+        // 15 m — bei M + 14/14 urteilte die Wand „lichtung", bevor sie den Wagen fragte)
+        const sx = M.x + 30;
+        const sz = M.z + 30;
         const e = r.spawnArchitecture(
             "fahrzeug_gt",
             { x: sx, y: boden(sx, sz) + 0.5, z: sz },

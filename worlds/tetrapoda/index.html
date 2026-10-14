@@ -25,10 +25,11 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #presets button.active{background:#443311;color:#ffcc88}
 /* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette (Aureus) */
 :root{--h-akzent:#ccaa66;--h-tinte:#ddc89a;--h-matt:#886633;--h-haar:#221100;--h-feld:rgba(14,10,4,.9);--h-knopf:rgba(204,170,102,.12)}
-#emotions{margin-top:8px;display:flex;gap:3px;flex-wrap:wrap}
-#emotions button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 8px;font-family:monospace;font-size:10px;cursor:pointer;border-radius:3px}
-#emotions button:hover{background:#332200}
-#emotions button.active{background:#443311;color:#ffcc88}
+#emotions,#stufen{margin-top:8px;display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+#stufeIst{margin-left:6px;color:#886633}
+#emotions button,#stufen button{background:#221100;color:#ccaa66;border:1px solid #553311;padding:4px 8px;font-family:monospace;font-size:10px;cursor:pointer;border-radius:3px}
+#emotions button:hover,#stufen button:hover{background:#332200}
+#emotions button.active,#stufen button.active{background:#443311;color:#ffcc88}
 </style>
 <script src="../terrain/lib/three-r128.min.js"></script>
 <script src="../terrain/lib/OrbitControls.js"></script>
@@ -47,6 +48,7 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <div id="sitzung"></div>
 <div id="presets"><button data-p="wolf" class="active">Wolf</button><button data-p="fox">Fuchs</button><button data-p="bear">Baer</button><button data-p="deer">Hirsch</button></div>
 <div id="sliders"></div>
+<div id="stufen"><button data-s="auto" class="active">Stufe auto</button><button data-s="0">L0</button><button data-s="1">L1</button><span id="stufeIst"></span></div>
 <div id="emotions">
 <button data-e="idle" class="active">Entspannt</button>
 <button data-e="joy">Freude</button>
@@ -60,6 +62,9 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <div id="kosten"></div>
 </div>
 <script src="../../tetrapoda-core.js?v=18.546.0"></script>
+<!-- LABOR = WELT (K45): DERSELBE Bäcker wie Foundry-Worker und Wirts-Ofen (BAKERS_BY_KIND.kreatur) — die gezeigte Gestalt IST der Welt-Guss -->
+<script src="../../koerper-core.js?v=18.546.0"></script>
+<script src="../../foundry-core.js?v=18.546.0"></script>
 <script src="../huelle/huelle.js?v=18.546.0"></script>
 <script src="tetrapoda.js?v=18.546.0"></script>
 

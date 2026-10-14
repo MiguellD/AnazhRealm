@@ -1,16 +1,14 @@
-// Diag — SUBSYSTEM 5: DER LAUB-AUFLÖSUNGS-REGLER + DIE LAUB-LAYER-TRENNUNG (Portal-Vorlage
-// FoliagePass / _folRes). Das Laub (dichte Karten-Wolke) ist 90 % der Fill-Last (V18.303); es in
-// einen eigenen, reduziert aufgelösten Pass zu rendern ist der grosse Fill-Hebel. Dieser Bogen baut
-// das FUNDAMENT: (a) der Auflösungs-Faktor `_foliageResScale` lebt im EINEN Perf-Regler (effArch,
-// KEIN zweiter Regler), (b) das Laub bekommt die FOLIAGE_LAYER ZUSÄTZLICH (Layer 0 bleibt → Render
-// + Schatten byte-identisch, aber der künftige Laub-Pass kann es isoliert wählen).
+// Diag — DIE EINE SZENEN-SKALA (K50) + DIE LAUB-LAYER-TRENNUNG. Bis K50 rechnete der Regler einen Laub-Auflösungs-
+// Faktor (`_foliageResScale`), den kein Pass las (das Szenen-Ziel blieb auf Skala 1, realloc-tod 20.07.) — er fiel. Die
+// Auflösung der Szene ist jetzt EINE Größe: `state.szeneSkala` (der Regler „Szene-Auflösung“ im Menü, im Snapshot), sonst
+// `SZENE_SKALA`; der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf (`_zeitAufloesung`).
 //
-// HARDWARE-UNABHÄNGIG (reine Regler-/Layer-Logik, kein GPU-Render):
-//   (1) headless (Null-Renderer) → `_foliageResScale === 1` (volle Auflösung, gate-treu);
+// HARDWARE-UNABHÄNGIG (Logik, kein GPU-Render):
+//   (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert
+//       SZENE_SKALA; ohne zeitliche Auflösung (Holz kienspan) 1;
 //   (2) `_markFoliageLayer`: Foliage-Key → FOLIAGE_LAYER + Layer 0; placed (`p:`) → nur Layer 0;
-//   (3) REGLER: heavy im Stand (effArch→0) → Faktor zum Last-Boden (PERF_SCENE_RES_LOAD_FLOOR) · heavy + schnelle
-//       Kamera → Bewegungs-Boden (PERF_SCENE_RES_MOTION_FLOOR) · light (effArch→1) → Faktor zu 1; nie unter MIN;
-//   (4) der Flugschreiber-Snapshot trägt `foliageRes` (die etablierte Stellgrößen-Surface).
+//   (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT: schwere und leichte Last lassen die Skala stehen, kein Laub-Faktor lebt;
+//   (4) der Flugschreiber-Snapshot trägt `szeneSkala`.
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
@@ -89,10 +87,24 @@ const server = http.createServer((req, res) => {
         const THREE = window.THREE;
         const K = r.constructor;
         const LAYER = K.FOLIAGE_LAYER;
-        const out = { MIN: K.PERF_FOLIAGE_RES_MIN, LAYER };
+        const out = { MIN: K.SZENE_SKALA_MIN, SKALA: K.SZENE_SKALA, LAYER };
 
-        // (1) headless → _foliageResScale === 1 (der Aktuator lief im Warmup mit dem Null-Renderer).
-        out.headlessRes = st._foliageResScale;
+        // (1) die EINE Szenen-Skala: Wert des Spielers, geklemmt, ohne Wert die Konstante; ohne zeitliche Auflösung 1
+        const traaWar = st._traa,
+            skWar = st.szeneSkala;
+        st._traa = true;
+        st.szeneSkala = null;
+        out.skalaStandard = r._szeneSkalaWirk();
+        st.szeneSkala = 0.3;
+        out.skalaUnten = r._szeneSkalaWirk();
+        st.szeneSkala = 1.4;
+        out.skalaOben = r._szeneSkalaWirk();
+        st.szeneSkala = 0.85;
+        out.skalaWert = r._szeneSkalaWirk();
+        st._traa = false;
+        out.skalaOhneTraa = r._szeneSkalaWirk();
+        st._traa = traaWar;
+        st.szeneSkala = skWar;
 
         // (2) _markFoliageLayer: Foliage-Key vs placed (Welle B: global, kein Regions-Schlüssel) vs global.
         const mk = (regionKey, regional) => {
@@ -137,8 +149,7 @@ const server = http.createServer((req, res) => {
         out.grpPlaced = grpPlaced;
         out.grpGrass = grpGrass;
 
-        // (3) REGLER — den headless-Kurzschluss kontrolliert umgehen, heavy vs light Sense (das
-        // Vorlage-`_folRes`-Verhalten: unter Last runter, mit Kopfraum hoch).
+        // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
         const wasNull = st.renderer && st.renderer._isHeadlessNull;
         if (st.renderer) st.renderer._isHeadlessNull = false;
         const mkSense = (ls, calls, frameMs) => ({
@@ -147,47 +158,34 @@ const server = http.createServer((req, res) => {
             renderCalls: calls,
             frameMs,
         });
-        // Seit 20.07. (1db0a23b, Wahrnehmung als dritter Kostenterm) ist der Faktor das MINIMUM zweier
-        // Erlaubnisse: die PID-Last senkt im STAND nur bis PERF_SCENE_RES_LOAD_FLOOR (das Auge sieht scharf),
-        // die schnelle Kamera bis PERF_SCENE_RES_MOTION_FLOOR; PERF_FOLIAGE_RES_MIN ist der absolute Boden.
-        // Die Linse hält alle drei Fälle (bis 09.10. erwartete sie „heavy → MIN" und stand rot).
-        out.LOAD = K.PERF_SCENE_RES_LOAD_FLOOR;
-        out.MOTION = K.PERF_SCENE_RES_MOTION_FLOOR;
-        const motionWar = st._camMotion01;
-        // heavy im Stand: Last voll (ls 0), Render dominant → effArch ~0 → Faktor sinkt zum Last-Boden.
-        st._camMotion01 = 0;
-        st._foliageResScale = 1;
+        const applyWar = r._applyRenderScale;
+        r._applyRenderScale = () => {};
+        st.szeneSkala = 0.8;
         for (let i = 0; i < 60; i++) r._nexusPerfActuate(mkSense(0.0, 2000, 60));
-        out.heavyRes = st._foliageResScale;
-        // heavy + schnelle Kamera: die Wahrnehmung senkt weiter, bis zum Bewegungs-Boden.
-        st._camMotion01 = 1;
-        for (let i = 0; i < 60; i++) r._nexusPerfActuate(mkSense(0.0, 2000, 60));
-        out.heavyMotionRes = st._foliageResScale;
-        // light im Stand: keine Last (ls 1) → effArch ~1 → Faktor steigt zu 1.
-        st._camMotion01 = 0;
+        out.skalaNachLast = st.szeneSkala;
         for (let i = 0; i < 80; i++) r._nexusPerfActuate(mkSense(1.0, 0, 8));
-        out.lightRes = st._foliageResScale;
-        st._camMotion01 = motionWar;
+        out.skalaNachRuhe = st.szeneSkala;
+        out.laubFaktorLebt = "_foliageResScale" in st;
+        r._applyRenderScale = applyWar;
+        st.szeneSkala = skWar;
         if (st.renderer) st.renderer._isHeadlessNull = wasNull;
 
-        // (4) Flugschreiber-Snapshot trägt foliageRes (die etablierte Stellgrößen-Surface).
+        // (4) Flugschreiber-Snapshot trägt die Szenen-Skala
         try {
             const snap = typeof r._flightRecorderSnapshot === "function" ? r._flightRecorderSnapshot(16.0, {}) : null;
-            out.snapshotHasFoliageRes =
-                snap && snap.ctx && Object.prototype.hasOwnProperty.call(snap.ctx, "foliageRes");
-            out.snapshotFoliageRes = snap && snap.ctx ? snap.ctx.foliageRes : undefined;
+            out.snapshotSkala = snap && snap.ctx ? snap.ctx.szeneSkala : undefined;
         } catch (_e) {
-            out.snapshotHasFoliageRes = "err:" + (_e && _e.message);
+            out.snapshotSkala = "err:" + (_e && _e.message);
         }
         return out;
     });
 
-    console.log("\n===== SUBSYSTEM 5 — LAUB-AUFLÖSUNGS-REGLER + LAYER-TRENNUNG =====\n");
+    console.log("\n===== DIE EINE SZENEN-SKALA + LAYER-TRENNUNG =====\n");
     if (pageErr) console.log("PAGE-ERROR:", pageErr);
     const o = report;
-    console.log(`  FOLIAGE_LAYER ${o.LAYER} · PERF_FOLIAGE_RES_MIN ${o.MIN}`);
+    console.log(`  FOLIAGE_LAYER ${o.LAYER} · SZENE_SKALA ${o.SKALA} · SZENE_SKALA_MIN ${o.MIN}`);
     console.log(
-        `  (1) headless _foliageResScale: ${o.headlessRes} (erw 1) · Warmup: Loop ${warmup.loop}, ${warmup.wuerfe} von 20 Takten warfen${warmup.grund ? " — " + warmup.grund : ""}`
+        `  (1) Szenen-Skala: Standard ${o.skalaStandard} (erw ${o.SKALA}) · 0,3 → ${o.skalaUnten} · 1,4 → ${o.skalaOben} · 0,85 → ${o.skalaWert} · ohne TRAA ${o.skalaOhneTraa} · Warmup: Loop ${warmup.loop}, ${warmup.wuerfe} von 20 Takten warfen${warmup.grund ? " — " + warmup.grund : ""}`
     );
     console.log(
         `  (2) _markFoliageLayer: foliage {L0 ${o.foliageMark.l0}, L${o.LAYER} ${o.foliageMark.l1}} · placed {L0 ${o.placedMark.l0}, L${o.LAYER} ${o.placedMark.l1}} · global {L0 ${o.globalMark.l0}, L${o.LAYER} ${o.globalMark.l1}}`
@@ -196,18 +194,19 @@ const server = http.createServer((req, res) => {
     console.log(
         `  (2b) echte Gruppen: foliage-InstGroup ${fmt(o.grpFoliage)} · placed ${fmt(o.grpPlaced)} · Gras ${fmt(o.grpGrass)}${o.groupErr ? " ERR:" + o.groupErr : ""}`
     );
-    const f3 = (x) => (x != null ? x.toFixed(3) : "?");
     console.log(
-        `  (3) REGLER heavy im Stand (effArch→0): Faktor ${f3(o.heavyRes)} → Last-Boden ${o.LOAD} · heavy + schnelle Kamera: ${f3(o.heavyMotionRes)} → ${Math.min(o.LOAD, o.MOTION)} · light (effArch→1): ${f3(o.lightRes)} → 1 · absoluter Boden ${o.MIN}`
+        `  (3) Regler unter Last und in Ruhe: Skala 0,8 → ${o.skalaNachLast} → ${o.skalaNachRuhe} · Laub-Faktor lebt: ${o.laubFaktorLebt}`
     );
-    console.log(
-        `  (4) Flugschreiber-Snapshot foliageRes: vorhanden ${o.snapshotHasFoliageRes} (${o.snapshotFoliageRes})`
-    );
+    console.log(`  (4) Flugschreiber-Snapshot szeneSkala: ${o.snapshotSkala}`);
 
     const ok =
         !pageErr &&
         warmup.wuerfe === 0 &&
-        o.headlessRes === 1 &&
+        o.skalaStandard === o.SKALA &&
+        o.skalaUnten === o.MIN &&
+        o.skalaOben === 1 &&
+        o.skalaWert === 0.85 &&
+        o.skalaOhneTraa === 1 &&
         o.foliageMark.l0 === true &&
         o.foliageMark.l1 === true &&
         o.placedMark.l0 === true &&
@@ -222,17 +221,12 @@ const server = http.createServer((req, res) => {
         o.grpGrass &&
         o.grpGrass.l0 === true &&
         o.grpGrass.l1 === true && // Gras: FOLIAGE_LAYER + Layer 0
-        o.heavyRes != null &&
-        Math.abs(o.heavyRes - o.LOAD) <= 0.01 && // heavy im Stand → Last-Boden
-        o.heavyRes >= o.MIN &&
-        o.heavyMotionRes != null &&
-        Math.abs(o.heavyMotionRes - Math.max(o.MIN, Math.min(o.LOAD, o.MOTION))) <= 0.01 && // + Kamera → Bewegungs-Boden
-        o.lightRes != null &&
-        o.lightRes >= 0.99 && // light → volle Auflösung
-        o.heavyRes < o.lightRes - 0.2 && // klar getrennt (Regler wirkt)
-        o.snapshotHasFoliageRes === true;
+        o.skalaNachLast === 0.8 &&
+        o.skalaNachRuhe === 0.8 &&
+        o.laubFaktorLebt === false &&
+        typeof o.snapshotSkala === "number";
     console.log(
-        `\n  ${ok ? "✅ Der Laub-Auflösungs-Faktor folgt dem EINEN Regler (heavy im Stand→Last-Boden, heavy + Kamera→Bewegungs-Boden, light→1, headless→1); das Laub trägt die FOLIAGE_LAYER ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unberührt)." : "⚠️ Mechanismus weicht ab — prüfen."}\n`
+        `\n  ${ok ? "✅ Die Szenen-Skala ist EINE Größe (Wert des Spielers geklemmt, ohne Wert die Konstante, ohne TRAA 1), der Regler trägt sie nicht, der Flugschreiber nennt sie; das Laub trägt die FOLIAGE_LAYER ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unberührt)." : "⚠️ Mechanismus weicht ab — prüfen."}\n`
     );
     await browser.close();
     server.close();
