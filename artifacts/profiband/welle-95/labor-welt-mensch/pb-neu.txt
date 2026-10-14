@@ -1,0 +1,19 @@
+[linse-gpu] google/swiftshader
+    · die Bühne importiert nach 2 s
+    · die Bühne gebootet nach 5 s
+    · der Satz steht nach 7 s
+    · die Gestalt steht nach 9 s
+    · das Feuer aufgenommen nach 56 s
+    · der Schein (pool) aufgenommen nach 59 s
+    · der Schein (farbe) aufgenommen nach 61 s
+  S0 BILD       : Feuerkreis aus 2 m Luma 0.7133 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Farbton 37.6° Sättigung 0.853 sRGB [181,124,27] (Soll 25–45°, ≤ 0.75) · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1 · Feuer ["glutbrunnen",14.4,10.21,4.95] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":9.73,"d":5.7},{"q":"esse","I":357.86,"d":33.8}] · Befehle 9 · Nah-Bühne {"nah":41,"fern":42} · Programme/Pipelines [10,10,10]
+  S0 BILD SCHEIN (der Pool leer): Feuerkreis aus 2 m Luma 0.0045 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Farbton 84.5° Sättigung 0.872 sRGB [1,2,0] (Soll 25–45°, ≤ 0.75) · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1 · Feuer ["glutbrunnen",14.4,10.21,4.95] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":9.73,"d":5.7},{"q":"esse","I":357.86,"d":33.8}] · Befehle 9 · Nah-Bühne {"nah":41,"fern":42} · Programme/Pipelines [10,10,10]
+  S0 BILD SCHEIN (das Feuer bis K11b): Feuerkreis aus 2 m Luma 0.3484 (67 Punkte, Soll ≥ 0.15) · Boden 1–3 m Farbton 26.6° Sättigung 0.985 sRGB [102,46,2] (Soll 25–45°, ≤ 0.75) · Lichtfarbe linear [1,0.256,0.008] · kelvin 2000 · Belichtung 1 · Feuer ["glutbrunnen",14.4,10.21,4.95] · Pool [{"q":"glutbrunnen","I":141.37,"d":0},{"q":"tor","I":9.73,"d":5.7},{"q":"esse","I":357.86,"d":33.8}] · Befehle 9 · Nah-Bühne {"nah":41,"fern":42} · Programme/Pipelines [10,10,10]
+  S0 BODEN-PROGRAMM 1/1: 82317 Zeichen WGSL (Decke 100000)
+    OFFEN S0 Bild: Sättigung 0.853 (Soll der Karte ≤ 0.75) — der Fuß der ACES-Kurve bei der Nacht-Belichtung 1
+  SELBSTTEST S0 BILD (der Pool leer): getroffen — der Kreis fällt 0.7133 → 0.0045 (unter 0.15): der Licht-Pool trägt ihn
+  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): BLIND
+  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): getroffen — S0 Boden-Programm: 82317 Zeichen WGSL im Programm (Budget ≤ 82316)
+
+⛔ S0 BILD ROT (62 s, swiftshader · Holz kienspan)
+

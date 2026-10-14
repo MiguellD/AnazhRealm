@@ -1,0 +1,7 @@
+Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg (Studios: garage, schmiede, portale, klang, fachwerk, koerperstudio, tetrapoda, terrain; Nebenwelten: skeleton, fluid, translated)
+  Hand-Regler: 0 (die terrain-Familie ohne Ausnahme)
+  eigene ready-Meldungen: 2 (begegnung (sandgesichert), schwarm (sandgesichert)) + die EINE der Hülle
+  Labor = Welt (H4): tetrapoda, koerperstudio zeigen den Ofen-Körper (keine Ausnahme)
+❌ H4 koerperstudio: lädt foundry-core nicht (der EINE Bäcker der Welt)
+❌ H4 koerperstudio: baut nicht über BAKERS_BY_KIND.koerper (das Labor zeigt den Ofen-Körper)
+❌ H4 koerperstudio: baut einen eigenen Leib (bauMensch( · surfaceNets( · morphAuf() — ein Zwilling des Ofen-Körpers

@@ -195,6 +195,11 @@
                     "deltoid1", "deltoid-1", "bicep1", "bicep-1",
                     "tricep1", "tricep-1", "uarm1", "uarm-1",
                 ]);
+            // K45-2 (rein additiv): der Pullover trägt den LANGEN Ärmel des Labors (buildTop: Unterarm und Ellbogen dazu)
+            if (top === "pullover") topTeile = topTeile.concat(["forearm1", "forearm-1", "elbow1", "elbow-1"]);
+            // ... und der Kragen des Stoffs aus der Haut sitzt UNTER der Hals-Wurzel (Lab buildTop: neckBase ist ausgenommen —
+            // die Haut-Region der Hals-Wurzel liegt als Ring um den Hals: ein Halsband statt eines Kragens; der Poncho hüllt)
+            if (top !== "poncho") topTeile = topTeile.filter(function (t) { return t !== "neckBase"; });
             // STOFF-CHARAKTER (V18.464): die Lab-Material-Zeile je Schnitt
             // (getCloth-Aufrufe verbatim) — rough + Webungs-Art reisen mit,
             // damit Strick ≠ Baumwolle ≠ Denim ≠ Leder auch in der WELT liest.
@@ -206,6 +211,12 @@
                 abstand: 0.12, // der Hüllen-Abstand aus der Haut (Körper-Einheiten, ~3,5 cm — der Bäcker liest ihn je Zone)
                 rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
                 webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
+                // K45-2 (rein additiv): DER STOFF AUS DER HAUT (das Lab-Gesetz `_garmentFromSkin`, buildTop 0.032): die Haut-Region der
+                // Teile, um die Dicke gehoben, mit den Gewichten der Haut — Säume statt Ballon, kein Durchstoß. Der Poncho
+                // fällt weit (das Lab drapiert ihn): er bleibt eine Hülle über seinen Teilen und ERBT die Gewichte der Haut
+                // darunter (das Lab-Gesetz „weight transfer").
+                dicke: top === "poncho" ? 0 : 0.032,
+                erbt: 1,
             });
         }
         var bottom = d.bottom || "pants";
@@ -224,6 +235,18 @@
                 abstand: 0.12,
                 rough: bottom === "pants" ? 0.82 : 0.85,
                 webe: bottom === "pants" ? "denim" : "cotton",
+                dicke: 0.024, // K45-2: der Stoff aus der Haut (Lab buildBottom 0.024 — unter dem Oberteil, das 0.032 trägt)
+            });
+        } else {
+            // K45-2 (rein additiv): ohne Hose trägt der Leib die Unterhose — die Haut-Region von Becken und Gesäß im Ton der
+            // gemalten Shorts (MATERIAL_KLASSEN.shorts), dünn aus der Haut gehoben (vorher standen die Shorts-Kugeln frei)
+            zonen.push({
+                schnitt: "unterhose",
+                teile: ["pelvis", "glute1", "glute-1"],
+                hex: MATERIAL_KLASSEN.shorts.c,
+                rough: MATERIAL_KLASSEN.shorts.r,
+                webe: "cotton",
+                dicke: 0.012,
             });
         }
         var shoes = d.shoes || "sneaker";
