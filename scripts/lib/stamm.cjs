@@ -365,7 +365,10 @@ function ladeKlasse(root, opt = {}) {
     const g = { console: { log: stumm, warn: stumm, error: stumm, info: stumm, debug: stumm } };
     Object.assign(g, { setTimeout: stumm, clearTimeout: stumm, setInterval: stumm, clearInterval: stumm });
     Object.assign(g, { requestAnimationFrame: stumm, performance: { now: () => 0 }, TextEncoder, TextDecoder, URL });
-    g.window = g;
+    // Der Boot (`_bootAnazhRealm`) wartet auf `window.THREE` — im vm trägt das UMD-Bündel THREE als globales Symbol, und der
+    // Boot rief den Konstruktor samt init() (das DOM fehlt: die Ablehnung beendete jeden Lader-Prozess mit Exit 1, K55). Das
+    // Fenster des vm ist darum das Global ohne THREE: der Boot pollt stumm, die Kerne und der Stamm lesen THREE frei.
+    g.window = new Proxy(g, { get: (t, k) => (k === "THREE" ? undefined : t[k]), has: (t, k) => k !== "THREE" && k in t });
     g.self = g;
     g.globalThis = g;
     const ctx = vm.createContext(g);
