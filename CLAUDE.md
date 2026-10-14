@@ -108,7 +108,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 - PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −900/−850 (seit K16 ein Nadelwald-Hang; K55 `mess-wiese` setzt sie
   nach −278/−1038, ungemergt — das letzte ABAB maß dort per Patch), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
   Ort × Gerät × Sicht · Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
-  (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie (Playtest = Gruppe 11) auf integ-probe, main und nachts
+  (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie in 18 Gruppen (1–8 CPU, 9–18 GPU; Playtest = Gruppe 1, Wand-Zeit ≤ 8 min) auf integ-probe, main und nachts
 
 ## Architektur (die Karte)
 

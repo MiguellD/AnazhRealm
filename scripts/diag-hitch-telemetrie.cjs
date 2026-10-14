@@ -21,7 +21,13 @@
 // baut und kompiliert, Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader
 // erzeugt LongTasks).
 //
-//   node scripts/diag-hitch-telemetrie.cjs
+//   node scripts/diag-hitch-telemetrie.cjs [--teil=1|2]
+//   DIE ZWEI TEILE (K61 CI-Diät): die Proben fuhren in EINER Welt hintereinander, Median 372 s (237–491) am Läufer — der
+//   längste GPU-Schritt der vollen Batterie. Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
+//   Probe mit ihrem Gegen-Lauf, den Neubau und den Bundle-Neubau; Teil 2 in einer eigenen Welt den Bundle-Gegen-Lauf ohne
+//   Anmeldung, den hängenden Fehler-Scope (er bleibt der letzte Bürger-Test: sein Stummel lässt jedes popErrorScope offen),
+//   die Beweis-Aufnahme, die Absage und die WebGL2-Weiche. Jedes Band urteilt in GENAU einem Teil (KEIN PAGE-ERROR je Welt);
+//   ohne --teil fahren beide Teile in einer Welt wie bisher. Die CI fährt die Teile als zwei Schritte in zwei Gruppen.
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
@@ -33,6 +39,10 @@ const PORT = Number(process.env.HITCH_PORT || 4463);
 // Laufzeit nach dem Welt-Settle: ~15 s echte Loop-Zeit, damit Sekunden-Grenzen,
 // EWMA und Ringe wirklich GEFÜLLT sind (nicht nur initialisiert).
 const LAUFZEIT_MS = 15000;
+const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
+if (![0, 1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
+// trägt dieser Lauf den Teil t? (ohne --teil beide)
+const IN = (t) => !TEIL || TEIL === t;
 const server = statikServer();
 
 // DIE EINE PRÜF-FUNKTION für die Trace-Struktur — der echte Trace UND der
@@ -755,7 +765,7 @@ function erstWandInstall() {
               }
             : null;
         return res;
-    }, LAUFZEIT_MS);
+    }, IN(1) ? LAUFZEIT_MS : 0);
     // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
         // eine Probe ohne Sekunden-Frist: hängt der GPU-Prozess selbst (ein Bau, der sich nie erfüllt), bricht erst die
@@ -776,19 +786,23 @@ function erstWandInstall() {
         };
         await page.evaluate(`(${erstWandInstall.toString()})()`);
         out.erst = await ruf("Stand", () => window.__erstWand.stand());
-        out.erst.probe = await ruf("Probe", (v) => window.__erstWand.probe(v), false);
-        out.erst.gegen = await ruf("Gegen-Lauf", (v) => window.__erstWand.probe(v), true);
-        out.erst.zurueck = await ruf("zurück", () => window.__erstWand.zurueck());
-        out.erst.neubau = await ruf("Neubau", (v) => window.__erstWand.neubau(v), false);
-        out.erst.neubauGegen = await ruf("Neubau ohne Gedächtnis", (v) => window.__erstWand.neubau(v), true);
-        out.erst.bundleNeubau = await ruf("Bundle-Neubau bei offener Pipeline", (v) => window.__erstWand.bundleNeubau(v), false);
-        out.erst.bundleNeubauGegen = await ruf("Bundle-Neubau ohne Anmeldung", (v) => window.__erstWand.bundleNeubau(v), true);
-        // der hängende Fehler-Scope zuletzt: sein Stummel lässt jedes popErrorScope der Probe für immer offen
-        out.erst.fehlerScope = await ruf("Hängender Fehler-Scope", (v) => window.__erstWand.fehlerScope(v), false);
-        out.erst.fehlerScopeGegen = await ruf("Hängender Fehler-Scope ohne Anmeldung", (v) => window.__erstWand.fehlerScope(v), true);
-        await page.evaluate(AUSGABE_INSTALL);
-        out.erst.aufnahme = await ruf("Beweis-Aufnahme mit offener Pipeline", () => window.__erstWand.aufnahme());
-        out.erst.absage = await ruf("Absage einer Pipeline", () => window.__erstWand.absage());
+        if (IN(1)) {
+            out.erst.probe = await ruf("Probe", (v) => window.__erstWand.probe(v), false);
+            out.erst.gegen = await ruf("Gegen-Lauf", (v) => window.__erstWand.probe(v), true);
+            out.erst.zurueck = await ruf("zurück", () => window.__erstWand.zurueck());
+            out.erst.neubau = await ruf("Neubau", (v) => window.__erstWand.neubau(v), false);
+            out.erst.neubauGegen = await ruf("Neubau ohne Gedächtnis", (v) => window.__erstWand.neubau(v), true);
+            out.erst.bundleNeubau = await ruf("Bundle-Neubau bei offener Pipeline", (v) => window.__erstWand.bundleNeubau(v), false);
+        }
+        if (IN(2)) {
+            out.erst.bundleNeubauGegen = await ruf("Bundle-Neubau ohne Anmeldung", (v) => window.__erstWand.bundleNeubau(v), true);
+            // der hängende Fehler-Scope zuletzt: sein Stummel lässt jedes popErrorScope der Probe für immer offen
+            out.erst.fehlerScope = await ruf("Hängender Fehler-Scope", (v) => window.__erstWand.fehlerScope(v), false);
+            out.erst.fehlerScopeGegen = await ruf("Hängender Fehler-Scope ohne Anmeldung", (v) => window.__erstWand.fehlerScope(v), true);
+            await page.evaluate(AUSGABE_INSTALL);
+            out.erst.aufnahme = await ruf("Beweis-Aufnahme mit offener Pipeline", () => window.__erstWand.aufnahme());
+            out.erst.absage = await ruf("Absage einer Pipeline", () => window.__erstWand.absage());
+        }
         out.erst.bauUhrEnde = await page.evaluate(() => {
             const U = window.__bauUhr;
             return U
@@ -811,6 +825,8 @@ function erstWandInstall() {
     );
 
     let rot = 0;
+    // je Teil urteilen nur seine Bänder (ohne --teil alle)
+    const bandIn = (t) => (IN(t) ? band : () => {});
     const band = (ok, name, detail) => {
         console.log(`${ok ? "✅" : "❌"} ${name} — ${detail}`);
         if (!ok) rot++;
@@ -820,13 +836,13 @@ function erstWandInstall() {
     const lt = out.lt;
     const ltNumerisch = lt.typN === "number" && lt.typMs === "number" && Number.isFinite(lt.ltMaxMs);
     if (lt.ltN > 0) {
-        band(
+        bandIn(1)(
             ltNumerisch,
             "LONGTASKS (Konsum)",
             `ltN=${lt.ltN} · ltMs=${Math.round(lt.ltMs)} ms · ltMaxMs=${Math.round(lt.ltMaxMs)} ms · Observer=${lt.obsDa}`
         );
     } else {
-        band(
+        bandIn(1)(
             ltNumerisch && lt.accDa,
             "LONGTASKS (nur Existenz+Typ — Boot ohne LongTask, ungewöhnlich)",
             `ltN=0 · Felder numerisch=${ltNumerisch} · Akku installiert=${lt.accDa}`
@@ -836,7 +852,7 @@ function erstWandInstall() {
     // Band 2 — Heap/GC: Ring existiert + _heapLast gesetzt (wo performance.memory da ist).
     const gc = out.gc;
     const gcOk = gc.ringDa && gc.ringLen === 180 && (!gc.memoryApi || Number.isFinite(gc.heapLast));
-    band(
+    bandIn(1)(
         gcOk,
         "HEAP/GC-RING",
         `gcRing[${gc.ringLen}] da=${gc.ringDa} · Sekunden=${gc.secRingN} · nonZero-Slots=${gc.nonZero} · heapLast=${
@@ -846,7 +862,7 @@ function erstWandInstall() {
 
     // Band 3 — Pipelines: der Boot-Warm-Compile erzeugt Pipelines ⇒ pipesN > 0 ist der Konsum-Beweis.
     const pp = out.pipes;
-    band(
+    bandIn(1)(
         typeof pp.pipesN === "number" && pp.pipesN > 0,
         "PIPELINE-COMPILES (Konsum)",
         `pipesN=${pp.pipesN} · caches.size=${pp.cachesSize} · sense.total=${pp.total} · neuProS=${
@@ -857,7 +873,7 @@ function erstWandInstall() {
     // Band 4 — Upload-Bytes: Tap sitzt + kumuliert > 1 MB (Chunks/Assets wurden hochgeladen).
     const up = out.up;
     const upMB = (up.upBytes || 0) / 1048576;
-    band(
+    bandIn(1)(
         up.tapDa && upMB > 1,
         "UPLOAD-BYTES (Konsum)",
         `Tap=${up.tapDa} · kumuliert=${upMB.toFixed(1)} MB · EwmaProFrame=${
@@ -867,7 +883,7 @@ function erstWandInstall() {
 
     // Band 5 — der Trace trägt alle vier Zähler (dieselbe Prüf-Funktion wie der Selbst-Test).
     const traceMaengel = pruefeTraceFelder(out.trace);
-    band(
+    bandIn(1)(
         traceMaengel.length === 0,
         "TRACE-FELDER (_flightRecorderBuildTrace)",
         traceMaengel.length === 0
@@ -886,7 +902,7 @@ function erstWandInstall() {
     // jede Probe sofort still. Wie viele beim Einbau der Wand schon gebaut waren, ist das Tempo des Runners und urteilt nie.
     const bu = ez.bauUhr || {},
         bue = ez.bauUhrEnde || {};
-    band(
+    bandIn(1)(
         ez.daStamm === true && eb.bauN > 0 && eb.pipeAsync > 0 && bu.angelegt > 0 && bue.gebaut > 0,
         "ERST-ZEICHNUNG (Konsum im Boot)",
         `am Renderer=${ez.daStamm} · Knoten-Bauten im Pass ${eb.bauN} (Σ ${eb.bauMs} ms) · verschoben ${eb.verschoben} · Pipelines asynchron ${eb.pipeAsync} · ` +
@@ -894,14 +910,14 @@ function erstWandInstall() {
             `${bue.gebaut} gebaut, ${bue.abgesagt} abgesagt, ${bue.imFlug} im Flug, längster Bau ${bue.maxMs} ms (Σ ${bue.summeMs} ms)`
     );
     const pr = ez.probe || {};
-    band(
+    bandIn(1)(
         pr.gezeichnet === 3 && pr.sync === 0 && pr.async >= 3 && pr.ueberBudget === 0 && pr.ruheOffen === 0,
         "ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget)",
         `Ruhe davor ${pr.ruheMs} ms (offen danach ${pr.ruheOffen}) · gezeichnet ${pr.gezeichnet}/3 nach ${pr.frames} Frames (${pr.ms} ms) · synchron ${pr.sync} · asynchron ${pr.async} · ` +
             `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Budget (${ez.budgetMs} ms) ${pr.ueberBudget}`
     );
     const gg = ez.gegen || {};
-    band(
+    bandIn(1)(
         gg.gezeichnet === 3 && gg.sync >= 1 && gg.maxBau >= 2 && ez.zurueck === true,
         "ERST-ZEICHNUNG Gegen-Lauf (der Vendor-Weg MUSS rot sein: synchrone Pipeline, alle Bauten in einem Aufruf)",
         `synchron ${gg.sync} · asynchron ${gg.async} · max ${gg.maxBau} Bauten je Aufruf · über dem Budget ${gg.ueberBudget} · ` +
@@ -910,7 +926,7 @@ function erstWandInstall() {
 
     const nb = ez.neubau || {},
         nbg = ez.neubauGegen || {};
-    band(
+    bandIn(1)(
         nb.sofort === true && nb.neubauN >= 1 && nbg.sofort === false,
         "ERST-ZEICHNUNG Neubau (ein gezeichnetes Objekt wechselt die Variante: im nächsten Bild gezeichnet; vergessen MUSS es blinken)",
         `gezeichnet im nächsten Bild ${nb.sofort} · Neubauten ${nb.neubauN} · Gegen-Lauf ohne Gedächtnis gezeichnet ${nbg.sofort}`
@@ -924,23 +940,27 @@ function erstWandInstall() {
     const bnWeg = (x) =>
         `${x.sichtbar ? "sichtbar" : "UNSICHTBAR"} ${x.framesNachBereit} Frames nach der fertigen Pipeline (bereit nach ${x.bereitMs} ms, ` +
         `${x.frames} Frames, ${x.ms} ms)`;
-    band(
-        bn.stand === true &&
-            bn.offeneTreffer === true &&
-            bn.sichtbar === true &&
-            bn.framesNachBereit >= 0 &&
-            bn.framesNachBereit <= BUNDLE_FRAMES &&
-            bn.ruheOffen === 0 &&
-            bng.offeneTreffer === true &&
-            bng.sichtbar === false &&
-            bng.bereitMs >= 0,
-        `ERST-ZEICHNUNG Bundle-Neubau bei offener Pipeline (der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline wieder in der Aufnahme; ohne Anmeldung MUSS er fehlen)`,
-        `B im Bundle ${bn.stand} (${bn.standMs} ms) · Neubau traf die offene Pipeline der Erst-Zeichnung ${bn.offeneTreffer} · ` +
-            `${bnWeg(bn)} · Ruhe offen ${bn.ruheOffen} · Gegen-Lauf: Treffer ${bng.offeneTreffer}, ${bnWeg(bng)}`
-    );
+    if (IN(1))
+        band(
+            bn.stand === true &&
+                bn.offeneTreffer === true &&
+                bn.sichtbar === true &&
+                bn.framesNachBereit >= 0 &&
+                bn.framesNachBereit <= BUNDLE_FRAMES &&
+                bn.ruheOffen === 0,
+            `ERST-ZEICHNUNG Bundle-Neubau bei offener Pipeline (der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline wieder in der Aufnahme)`,
+            `B im Bundle ${bn.stand} (${bn.standMs} ms) · Neubau traf die offene Pipeline der Erst-Zeichnung ${bn.offeneTreffer} · ` +
+                `${bnWeg(bn)} · Ruhe offen ${bn.ruheOffen}`
+        );
+    if (IN(2))
+        band(
+            bng.offeneTreffer === true && bng.sichtbar === false && bng.bereitMs >= 0,
+            "ERST-ZEICHNUNG Bundle-Neubau ohne Anmeldung (der Gegen-Lauf: ohne Anmeldung MUSS der Bürger fehlen)",
+            `Treffer ${bng.offeneTreffer}, ${bnWeg(bng)}`
+        );
     const fs_ = ez.fehlerScope || {},
         fsg = ez.fehlerScopeGegen || {};
-    band(
+    bandIn(2)(
         fs_.haengt >= 1 &&
             fs_.sichtbar === true &&
             fs_.framesNachBereit >= 0 &&
@@ -954,7 +974,7 @@ function erstWandInstall() {
     );
     const au = ez.aufnahme || {},
         aub = au.bild || {};
-    band(
+    bandIn(2)(
         typeof au.wurf === "string" &&
             /ERST-ZEICHNUNG OFFEN/.test(au.wurf) &&
             /wand-attrappe \[nie-bereit\]/.test(au.wurf) &&
@@ -966,7 +986,7 @@ function erstWandInstall() {
     );
     const ab = ez.absage || {};
     const abZeile = (ab.zeilen || [])[0] || "";
-    band(
+    bandIn(2)(
         /PIPELINE-ABSAGE renderPipeline_wand-absage-stoff_\d+: der Stummel der Wand sagt ab/.test(abZeile) &&
             ab.absagen >= 1 &&
             ab.gpuWache === ab.absagen &&
@@ -981,7 +1001,7 @@ function erstWandInstall() {
             `offen danach ${ab.offenDanach} · Aufnahme: ${ab.wurf ? ab.wurf.replace(/^.*offene Pipelines: /, "") : "KEIN Wurf (still)"}`
     );
     const wg = ab.webgl || {};
-    band(
+    bandIn(2)(
         wg.offenZuwachs === 0 && wg.wartetZuwachs === 1,
         "ERST-ZEICHNUNG WebGL2-Weiche (kein Bundle, kein Setter: die Anmeldung trägt sich nicht ein, der wartende Draw zählt)",
         `Schlange +${wg.offenZuwachs} · wartende Draws +${wg.wartetZuwachs}`
@@ -994,7 +1014,7 @@ function erstWandInstall() {
     // Funktion: sie MUSS rot melden (sonst wäre die Linse ein Existenz-Theater).
     const fake = { session: { seconds: 1 }, memory: { heapMB: 100 }, steadyState: { frameMsEwma: 16 } };
     const fakeMaengel = pruefeTraceFelder(fake);
-    band(
+    bandIn(1)(
         fakeMaengel.length >= 3,
         "SELBST-TEST (Fake-Trace ohne neue Felder MUSS rot)",
         `gemeldete Mängel=${fakeMaengel.length} (erwartet ≥3): ${fakeMaengel.join(" · ")}`
