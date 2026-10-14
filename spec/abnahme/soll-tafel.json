@@ -1,19 +1,12 @@
 {
-    "version": 1,
-    "zweck": "DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle“): je sichtbarer Klasse (a) das Soll als messbare Eigenschaften einer benannten AAA-Referenz — eigene Eigenschaften mit Band und Quelle, oder der VERWEIS auf ein Soll, das schon im Kern oder in einer Tafel steht (KOPF_SOLL, BLATT_ATLAS_WEDEL, die Albedo-Tafel: referenziert, nie kopiert); (b) das Budget je LOD-Stufe aus dem Haushalt des Profi-Bands (`budget.haushalt` = die Klassen-Zeile von spec/profiband/haushalt.json als L0, L1 ≤ 35 %, L2 ≤ 10 %, Nordstern M4; der VRAM-Anteil der Welt nach dem Dreiecks-Anteil — gerechnet von scripts/lib/abnahme-urteil.cjs `sollTafelUrteil`, nie abgeschrieben); (c) EIN Maß, das das heutige Bild aus dem Ausgabe-Pfad misst (`werkbank bild --klasse`: Klassen-Maske aus vier Schüssen derselben Pose, `klassenMasse`; `werkbank licht`; `werkbank albedo`), mit Ist, Täter und Rohdatei. Das Urteil ROT/GRÜN rechnet die Linse aus Ist und Band; die Reihenfolge ist die sichtbare Wirkung (Bildanteil am Messort × Abstand zum Band) = die Reihenfolge der folgenden AAAA-Karten. Wand: diag-kamera-laub --selftest (K5, npm run check).",
-    "gemessen": {
-        "datum": "2026-10-14",
-        "kopf": "d2e06032 (V18.546.2, integ-probe = main)",
-        "geraet": "Radeon 890M (amd rdna-3), Werkbank headless am Hardware-Adapter (das GPU-Schloss hielten K60-1 und K64; Bild-Urteile, keine Zeiten), Leinwand 640×360, Bühne Mittag · Sonne · Sommer",
-        "rohdaten": "artifacts/profiband/soll-tafel/ im Arbeits-Klon (je Klasse <id>.png · <id>.maske.png · <id>.abnahme.json mit `klasse.masse`)"
-    },
+    "version": 2,
+    "zweck": "DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle“): je sichtbarer Klasse (a) das Soll als messbare Eigenschaft einer benannten AAA-Referenz — ein eigenes Band mit Quelle, ein GERECHNETES (`rechnung`: die Linse rechnet es, die Tafel trägt nie das Ergebnis) oder ein GELESENES (`verweis`: KOPF_SOLL im Kern, die Toleranz der Albedo-Tafel — die Linse liest es, nie eine Kopie); (b) das Budget je LOD-Stufe aus dem Haushalt des Profi-Bands (`budget.haushalt` = die Klassen-Zeile von spec/profiband/haushalt.json als L0, L1 ≤ 35 %, L2 ≤ 10 %, Nordstern M4; der VRAM-Anteil der Welt nach dem Dreiecks-Anteil); (c) EIN Maß, dessen Ist die Linse aus seiner Rohdatei rechnet: der Messung, die das Werkzeug selbst in diese Tafel schreibt (`mass.messung`: `werkbank bild --klasse … --ist <id>` — die Teilung des Ausgabe-Bilds unter EINER Uhr, ihr Rauschen, die Maße je Teil-Klasse, die Boden-Abstände; `werkbank licht --ist <id>`), oder der Zeile der Albedo-Tafel (`mass.rohdatei`). Von Hand steht hier keine Zahl eines Ists, Täters oder Bildanteils (außer dem Licht: jedes Pixel). Urteil, Täter und die Reihenfolge nach sichtbarer Wirkung (Bildanteil × Abstand zum Band = die Reihenfolge der folgenden AAAA-Karten) rechnet scripts/lib/abnahme-urteil.cjs `sollTafelUrteil`; die Wand: diag-kamera-laub --selftest (K5, npm run check).",
     "klassen": [
         {
             "id": "boden-nah",
-            "titel": "Gras und Boden nah (Nah-Wiese über dem Boden-Satz)",
+            "titel": "Gras und Boden nah (die Nah-Wiese über dem Boden-Satz)",
             "wirkung": {
-                "rang": 1,
-                "grund": "Bildanteil an der Wiese 0,65 (Boden 0,367 + Gras 0,286 des Bilds) × Abstand |ln(0,44/0,9)| 0,72 = 0,47 — der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“"
+                "grund": "der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“"
             },
             "referenz": [
                 {
@@ -28,16 +21,13 @@
             "soll": {
                 "eigenschaften": [
                     {
-                        "groesse": "bodenDeckung",
-                        "band": [0.9, 1],
-                        "einheit": "Anteil des sichtbaren Bodens, den Halme decken (Augenhöhe 1,7 m, Blick 10–15 m voraus)",
-                        "quelle": "Lückenanteil P(θ) = exp(−G·LAI/cos θ) (Nilson 1971, Agric. Meteorol. 8:25; Campbell & Norman 1998, Kap. 15) mit G 0,5, Grasland-LAI ≥ 1,7 (Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191) und θ ≈ 80° aus Augenhöhe: P ≤ 0,01 — die Wiese deckt ihren Boden [gerechnet]"
-                    },
-                    {
-                        "groesse": "nyquist",
-                        "band": [0.11, 0.16],
-                        "einheit": "Schachbrett-Anteil der Gradient-Energie (klassenMasse)",
-                        "quelle": "natürliche Bild-Statistik, Leistungsspektrum 1/f^β mit β 1,6–2,4 (Field 1987, JOSA A 4:2379; van der Schaaf & van Hateren 1996, Vision Res. 36:2759): klassenMasse auf synthetischen 1/f^β-Bildern 0,11–0,16 [gerechnet]"
+                        "groesse": "laiWirk",
+                        "band": [
+                            1.7,
+                            null
+                        ],
+                        "einheit": "wirksamer Blatt-Flächen-Index der Wiese, aus ihrer Lücke im Bild (Nilson 1971: P(θ) = exp(−G·LAI/cos θ))",
+                        "quelle": "Grasland-LAI im Mittel 1,71 (Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191, Tab. 2): eine Wiese aus Augenhöhe zeigt ihren Grund erst unter dem Fuß"
                     }
                 ]
             },
@@ -45,27 +35,23 @@
                 "haushalt": "nahWiese"
             },
             "mass": {
-                "name": "bodenDeckung",
-                "band": [0.9, null],
-                "quelle": "soll.eigenschaften bodenDeckung",
-                "ist": 0.4385,
-                "teile": {
-                    "grasPixel": 65973,
-                    "bodenPixel": 84462,
-                    "grasDeckungUnten": 0.614
+                "name": "laiWirk",
+                "rechnung": {
+                    "G": 0.5,
+                    "halm": "^(nahWiese:.*|streuSatz)$",
+                    "grund": "^bodenSatz$",
+                    "quelle": "G 0,5 = kugelige Blatt-Winkel (Campbell & Norman 1998, Kap. 15); gezählt im Ring der Nah-Wiese (`abstand.ring` = AnazhRealm.NAH_WIESE.radius der gemessenen Welt) — jenseits zeichnet der Boden-Satz das Gras"
                 },
-                "taeter": "nahWiese:L1/L2 — das Gras endet am Nah-Ring (≈ 15 m), dahinter glatter Boden-Satz (bodenSatz 0,367 des Bilds sichtbar)",
-                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz)$' bzw. '^bodenSatz$' (dieselbe Pose, Mess-Wiese K55)",
-                "rohdatei": "artifacts/profiband/soll-tafel/boden-gras.abnahme.json + boden-grund.abnahme.json",
-                "bild": "artifacts/profiband/soll-tafel/boden-gras.png"
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)"
             }
         },
         {
             "id": "himmel-licht",
             "titel": "Himmel und Licht (Sonne gegen Himmel am Mittag)",
             "wirkung": {
-                "rang": 2,
-                "grund": "Bildanteil 1,0 (jedes Pixel im Tageslicht) × Abstand |ln(4,18/5)| 0,18 = 0,18 — die Schatten sind zu hell, das Bild flach"
+                "anteil": 1,
+                "quelle": "jedes Pixel im Tageslicht",
+                "grund": "zu helle Schatten machen das ganze Bild flach"
             },
             "referenz": [
                 {
@@ -81,9 +67,15 @@
                 "eigenschaften": [
                     {
                         "groesse": "lichtVerhaeltnis",
-                        "band": [5, 12],
+                        "rechnung": {
+                            "art": "einsDurch",
+                            "von": [
+                                0.08,
+                                0.2
+                            ]
+                        },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
-                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1); Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx): 6–11"
+                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
                     }
                 ]
             },
@@ -92,27 +84,14 @@
             },
             "mass": {
                 "name": "lichtVerhaeltnis",
-                "band": [5, 12],
-                "quelle": "soll.eigenschaften lichtVerhaeltnis",
-                "ist": 4.18,
-                "teile": {
-                    "E_alle_oben": 9.44,
-                    "E_umgebung_oben": 2.26,
-                    "E_sonne_oben": 7.18,
-                    "sonneHoehe": "y 0,962"
-                },
-                "taeter": "die Umgebung (Himmels-Env) gegen DirectionalLight 7,43: E Himmel 2,26 zu Sonne 7,18 — der Himmel füllt die Schatten zu hell",
-                "werkzeug": "werkbank licht (die Licht-Bilanz, Mess-Wiese K55 −278/−1038; der zweite Ruf — der erste misst 0, siehe offen)",
-                "rohdatei": "artifacts/profiband/soll-tafel/himmel-licht.licht.json",
-                "bild": "artifacts/profiband/soll-tafel/boden-gras.png"
+                "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)"
             }
         },
         {
             "id": "laub",
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
-                "rang": 3,
-                "grund": "Bildanteil am Waldrand 0,42 × Abstand |ln(0,199/0,16)| 0,22 = 0,09 — Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster"
+                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster"
             },
             "referenz": [
                 {
@@ -125,18 +104,18 @@
                 }
             ],
             "soll": {
-                "verweis": [
-                    {
-                        "datei": "phyto-core.js",
-                        "symbol": "BLATT_ATLAS_WEDEL"
-                    }
-                ],
                 "eigenschaften": [
                     {
                         "groesse": "nyquist",
-                        "band": [0.11, 0.16],
-                        "einheit": "Schachbrett-Anteil der Gradient-Energie in der Krone (klassenMasse)",
-                        "quelle": "natürliche Bild-Statistik 1/f^β, β 1,6–2,4 (Field 1987; van der Schaaf & van Hateren 1996): 0,11–0,16 [gerechnet]; am Boden-Satz desselben Lichts gemessen 0,124"
+                        "rechnung": {
+                            "art": "nyquist1f",
+                            "beta": [
+                                1.6,
+                                2.4
+                            ]
+                        },
+                        "einheit": "Schachbrett-Anteil der Gradient-Energie in der Krone (klassenMasse); ein Dither- oder Hash-Muster hebt ihn",
+                        "quelle": "natürliche Bild-Statistik, Leistungsspektrum 1/f^β mit β 1,6–2,4 (Field 1987, JOSA A 4:2379; van der Schaaf & van Hateren 1996, Vision Res. 36:2759): klassenMasse auf 1/f^β-Bildern ohne Unschärfe [gerechnet]"
                     }
                 ]
             },
@@ -145,28 +124,14 @@
             },
             "mass": {
                 "name": "nyquist",
-                "band": [null, 0.16],
-                "quelle": "soll.eigenschaften nyquist",
-                "ist": 0.1994,
-                "teile": {
-                    "deckung": 0.4158,
-                    "detail": 0.1226,
-                    "silhouette": 36.68,
-                    "boden": 0.1238,
-                    "gras": 0.1767
-                },
-                "taeter": "f:tanne:L0/L1 · f:fichte:L1 · f:eiche:L1 (Kronen-Karten mit der Dither-Blende je Instanz)",
-                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:[a-z_]+:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$'",
-                "rohdatei": "artifacts/profiband/soll-tafel/laub-tanne.abnahme.json",
-                "bild": "artifacts/profiband/soll-tafel/laub-tanne.png"
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub"
             }
         },
         {
             "id": "haus",
             "titel": "Haus (Fachwerk, die Bau-Stoffe Putz · Holz · Dach)",
             "wirkung": {
-                "rang": 4,
-                "grund": "Bildanteil im Dorf ≈ 0,1 × Abstand |ln(0,505/0,9)| 0,58 ≈ 0,06 — das Labor zeigt das Haus halb so hell wie die Welt (M0)"
+                "grund": "Nordstern M0: das Labor zeigt die Bau-Stoffe anders als die Welt"
             },
             "referenz": [
                 {
@@ -179,18 +144,16 @@
                 }
             ],
             "soll": {
-                "verweis": [
-                    {
-                        "datei": "spec/farbe/albedo-tafel.json",
-                        "zeile": "haus"
-                    }
-                ],
                 "eigenschaften": [
                     {
-                        "groesse": "albedo",
-                        "band": [0.9, 1.1],
+                        "groesse": "albedoVerhaeltnis",
+                        "verweis": {
+                            "datei": "spec/farbe/albedo-tafel.json",
+                            "feld": "toleranz",
+                            "art": "toleranz"
+                        },
                         "einheit": "Albedo Labor / Welt der Bau-Stoffe (dieselbe Rechnung `albedoAuswerten`)",
-                        "quelle": "Nordstern M0 Substrat-Treue und die Toleranz der Albedo-Tafel 0,1 (spec/farbe/albedo-tafel.json)"
+                        "quelle": "Nordstern M0 Substrat-Treue: Albedo Labor = Welt im Rand der Albedo-Tafel"
                     }
                 ]
             },
@@ -198,27 +161,19 @@
                 "haushalt": "bau"
             },
             "mass": {
-                "name": "albedo",
-                "band": [0.9, 1.1],
-                "quelle": "soll.eigenschaften albedo",
-                "ist": 0.505,
-                "teile": {
-                    "labor": 0.0841,
-                    "welt": 0.1665,
-                    "gemessen": "07.10. (Albedo-Tafel, Radeon)"
+                "name": "albedoVerhaeltnis",
+                "rohdatei": {
+                    "datei": "spec/farbe/albedo-tafel.json",
+                    "zeile": "haus"
                 },
-                "taeter": "fachwerk Labor r128 (die Kultur alemannisch auf Saat 3) gegen die Welt (bauSatz, f:alemannisch:L0/L1): das Labor zeigt die Bau-Stoffe 0,0841 statt 0,1665",
-                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor (die Albedo-Tafel)",
-                "rohdatei": "spec/farbe/albedo-tafel.json (Zeile haus, ist)",
-                "bild": "artifacts/profiband/soll-tafel/tor-nah.png"
+                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: werkbank bild am Messort dorf --klasse '^(bauSatz|f:alemannisch:L[01])$' --ist haus:wirkung"
             }
         },
         {
             "id": "wasser",
             "titel": "Wasser (Wasser-Satz, Fern-Wasser)",
             "wirkung": {
-                "rang": 5,
-                "grund": "ungemessen: an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern) — die Wirkung ist offen, darum hinter den gemessenen ROTEN"
+                "grund": "an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern)"
             },
             "referenz": [
                 {
@@ -234,9 +189,12 @@
                 "eigenschaften": [
                     {
                         "groesse": "detail",
-                        "band": [0.05, null],
+                        "band": [
+                            0.05,
+                            null
+                        ],
                         "einheit": "Gradient / Mittel im Wasser (ein Spiegel trägt das Detail des Gespiegelten)",
-                        "quelle": "Fresnel ≈ 2 % senkrecht, streifend → 100 % (n 1,333): aus Augenhöhe spiegelt der See Ufer und Wolke (Nordstern §4.1 Wasser-Optik); heute Spiegel 128×64-Verlauf"
+                        "quelle": "Fresnel ≈ 2 % senkrecht, streifend → 100 % (n 1,333): aus Augenhöhe spiegelt der See Ufer und Wolke (Nordstern §4.1 Wasser-Optik)"
                     }
                 ]
             },
@@ -245,20 +203,14 @@
             },
             "mass": {
                 "name": "detail",
-                "band": [0.05, null],
-                "quelle": "soll.eigenschaften detail",
-                "ist": null,
-                "taeter": null,
-                "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' — ein Messort mit Wasser fehlt im Haushalt",
-                "rohdatei": null
+                "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser — ein Messort mit Wasser fehlt im Haushalt"
             }
         },
         {
             "id": "tor-fern",
             "titel": "Tore (der Genesis-Ring: Rahmen bau:welt_* und Membran)",
             "wirkung": {
-                "rang": 6,
-                "grund": "GRÜN im Maß: die Ring-Tore lesen aus 30 m wie aus 8 m (1,06); das Tor-Studio-Tor fern (Augen-Befund 14.10., Stufe 1/3) trägt der Ring nicht — K64 misst es"
+                "grund": "die Tore der Ankunft aus 8 m und aus 30 m; das Tor-Studio-Tor fern (Augen-Befund 14.10.) misst K64"
             },
             "referenz": [
                 {
@@ -271,17 +223,14 @@
                 }
             ],
             "soll": {
-                "verweis": [
-                    {
-                        "datei": "spec/farbe/albedo-tafel.json",
-                        "zeile": "tor"
-                    }
-                ],
                 "eigenschaften": [
                     {
                         "groesse": "stufenTreue",
-                        "band": [0.8, 1.25],
-                        "einheit": "Luma der Klasse aus 30 m / aus 8 m (Ausgabe-Pfad, gleiche Bühne)",
+                        "band": [
+                            0.8,
+                            1.25
+                        ],
+                        "einheit": "Luma desselben Exemplars aus 30 m / aus 8 m (Ausgabe-Pfad, gleiche Bühne)",
                         "quelle": "± ⅓ Blende: der kleinste Belichtungs-Schritt, den das Auge an einer Fläche als Sprung liest; HLOD/Impostor aus derselben Albedo"
                     }
                 ]
@@ -291,27 +240,14 @@
             },
             "mass": {
                 "name": "stufenTreue",
-                "band": [0.8, 1.25],
-                "quelle": "soll.eigenschaften stufenTreue",
-                "ist": 1.06,
-                "teile": {
-                    "lumaNah": 134.37,
-                    "lumaFern": 142.51,
-                    "membranEmission": 0.487,
-                    "rahmenAlbedo": "0,12–0,19"
-                },
-                "taeter": null,
-                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 und 3.4 93 19.5 3.4 92.5 -10.5 --ziel tor (Blick-Wahl: Pose 29,38/4,5) --klasse '^(bau:welt_[a-z_]+|portal-membran)$'; werkbank albedo --nur",
-                "rohdatei": "artifacts/profiband/soll-tafel/tor-nah.abnahme.json + tor-fern.abnahme.json + albedo-genesis.json",
-                "bild": "artifacts/profiband/soll-tafel/tor-fern.png"
+                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 --klasse '^(bau:welt_[a-z_]+|portal-membran)$' --ist tor-fern:nah; dasselbe aus 29.4 93.7 4.5 --wahl 0 --ist tor-fern:fern"
             }
         },
         {
             "id": "fels",
             "titel": "Fels (Formationen-Satz)",
             "wirkung": {
-                "rang": 7,
-                "grund": "GRÜN im Maß (Albedo 0,237 ≤ 0,30)"
+                "grund": "Fels im Blick der Messorte"
             },
             "referenz": [
                 {
@@ -320,18 +256,15 @@
                 }
             ],
             "soll": {
-                "verweis": [
-                    {
-                        "datei": "spec/farbe/albedo-tafel.json",
-                        "zeile": "fels"
-                    }
-                ],
                 "eigenschaften": [
                     {
                         "groesse": "albedo",
-                        "band": [0.1, 0.3],
-                        "einheit": "Albedo (linear, Rec.-709-Luma) des Fels-Stoffs",
-                        "quelle": "Fels ≤ 0,30 (PSU EARTH 103, Albedo-Tabelle; Nordstern §4.1)"
+                        "band": [
+                            0.1,
+                            0.3
+                        ],
+                        "einheit": "Albedo (linear, Rec.-709-Luma) des Fels-Stoffs in der Welt",
+                        "quelle": "Fels ≤ 0,30 (PSU EARTH 103, Albedo-Tabelle; Nordstern §4.1); photogrammetrischer Fels 0,1–0,3"
                     }
                 ]
             },
@@ -340,25 +273,18 @@
             },
             "mass": {
                 "name": "albedo",
-                "band": [0.1, 0.3],
-                "quelle": "soll.eigenschaften albedo",
-                "ist": 0.2366,
-                "teile": {
-                    "heute": 0.2173,
-                    "heutePixel": 4,
-                    "gemessen": "07.10. Albedo-Tafel (heute nur 4 Pixel im Blick)"
+                "rohdatei": {
+                    "datei": "spec/farbe/albedo-tafel.json",
+                    "zeile": "fels"
                 },
-                "taeter": null,
-                "werkzeug": "werkbank albedo --tafel (Zeile fels) bzw. werkbank albedo --nur '^formationenSatz$'",
-                "rohdatei": "spec/farbe/albedo-tafel.json (Zeile fels, ist) + artifacts/profiband/soll-tafel/albedo-genesis.json"
+                "werkzeug": "werkbank albedo --tafel (Zeile fels) + --nachziehen"
             }
         },
         {
             "id": "mensch-kopf",
             "titel": "Mensch-Kopf (der gebackene Kopf L0: Haut, Augen, Haar)",
             "wirkung": {
-                "rang": 8,
-                "grund": "GRÜN im Maß: jede Größe von MENSCH_SOLL (11) und KOPF_SOLL (16) im Band (K57, gate:mensch-anatomie)"
+                "grund": "der Spieler im Third-Blick; die Gestalt des Kopfs hält gate:mensch-anatomie gegen KOPF_SOLL und MENSCH_SOLL"
             },
             "referenz": [
                 {
@@ -367,14 +293,16 @@
                 }
             ],
             "soll": {
-                "verweis": [
+                "eigenschaften": [
                     {
-                        "datei": "koerper-core.js",
-                        "symbol": "KOPF_SOLL"
-                    },
-                    {
-                        "datei": "koerper-core.js",
-                        "symbol": "MENSCH_SOLL"
+                        "groesse": "hautAlbedo",
+                        "verweis": {
+                            "datei": "koerper-core.js",
+                            "symbol": "KOPF_SOLL",
+                            "feld": "hautAlbedo"
+                        },
+                        "einheit": "lineare Luma der Haut des Spielers in der Welt",
+                        "quelle": "K57 KOPF_SOLL hautAlbedo: die Hautreflexion bei 550 nm, dunkel bis hell"
                     }
                 ]
             },
@@ -382,21 +310,13 @@
                 "haushalt": "einzelstuecke"
             },
             "mass": {
-                "name": "kopfSoll",
-                "band": [0, 0],
-                "quelle": "gate:mensch-anatomie (Zahl der Größen außerhalb ihres Bands)",
-                "ist": 0,
-                "teile": {
-                    "kopfDreiecke": 11880,
-                    "augenLinie": 0.5123,
-                    "augenSpalt": 1.0601,
-                    "lippeL": -9.02,
-                    "haarDeckung": 0.9866
+                "name": "albedo",
+                "soll": "hautAlbedo",
+                "rohdatei": {
+                    "datei": "spec/farbe/albedo-tafel.json",
+                    "zeile": "haut"
                 },
-                "taeter": null,
-                "werkzeug": "node scripts/diag-mensch-anatomie.cjs; Bild werkbank bild -278 29.22 -1037.55 -278 29.2 -1038 --spieler --klasse '^spieler$' (Third)",
-                "rohdatei": "artifacts/profiband/soll-tafel/mensch-kopf.anatomie.txt",
-                "bild": "artifacts/profiband/soll-tafel/mensch-kopf.png"
+                "werkzeug": "werkbank albedo --tafel (Zeile haut: der Spieler) + --nachziehen; der Bildanteil: werkbank bild -278 29.22 -1037.55 -278 29.2 -1038 --wahl 0 --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung"
             }
         }
     ]

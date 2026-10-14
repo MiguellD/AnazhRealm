@@ -15,11 +15,15 @@
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
-//                                      [--klasse <regex>] [--spieler]   DIE KLASSE IM BILD (K63, die Soll-Tafel spec/abnahme/
-//                                                           soll-tafel.json): in voller Puffer-Größe, drei Schüsse mehr an
-//                                                           derselben Pose → die Maske der Täter-Klasse (`<datei>.maske.png`)
-//                                                           und ihre Maße (abnahme-urteil `klassenMasse`) im Begleit-JSON;
-//                                                           `--spieler` lässt den Spieler-Leib im Bild
+//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:nah|:fern|:wirkung]]
+//                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
+//                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
+//                                                           und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds
+//                                                           (`<datei>.maske.png`, je Klasse ein Ton), ihr Rauschen und die
+//                                                           Maße je Klasse (abnahme-urteil `klassenMasse`) im Begleit-JSON;
+//                                                           `--abstand` zählt je Klasse den Boden-Abstand in Bändern,
+//                                                           `--ist` schreibt die Messung in die Tafel, `--spieler` lässt
+//                                                           den Spieler-Leib im Bild
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -33,7 +37,8 @@
 //                                                           Züge ihrer Klasse und ihres Stoffs, Basis-Albedo; Eichung 0,180.
 //                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
 //                                                           diag-albedo-tafel.cjs --nachziehen
-//   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
+//                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
@@ -212,7 +217,17 @@ const gitStand = () => {
     try {
         const { execFileSync } = require("child_process");
         const sha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"]).toString().trim();
-        const neu = execFileSync("git", ["-C", root, "status", "--porcelain", "--untracked-files=no"])
+        // die Soll-Tafel zählt nicht: in sie schreibt die Werkbank selbst ihre Messungen (`--ist`)
+        const neu = execFileSync("git", [
+            "-C",
+            root,
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+            "--",
+            ".",
+            ":(exclude)spec/abnahme/soll-tafel.json",
+        ])
             .toString()
             .trim();
         return sha + (neu ? "+geaendert" : "");
@@ -220,6 +235,22 @@ const gitStand = () => {
         return null;
     }
 };
+// DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:nah|:fern|:wirkung]`, `licht --ist <id>`): das Werkzeug
+// schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
+// und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
+const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
+function sollIstSchreiben(ziel, messung) {
+    const [id, teil] = String(ziel).split(":");
+    const t = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8"));
+    const k = t.klassen.find((x) => x.id === id);
+    if (!k) throw new Error(`--ist ${ziel}: die Soll-Tafel trägt keine Klasse „${id}"`);
+    if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = messung;
+    else if (teil === "nah" || teil === "fern") (k.mass.messung = k.mass.messung || {})[teil] = messung;
+    else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (nah, fern, wirkung)`);
+    else k.mass.messung = messung;
+    fs.writeFileSync(SOLL_TAFEL, JSON.stringify(t, null, 4) + "\n");
+    return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
+}
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
     const i = argv.indexOf(k);
@@ -1076,13 +1107,15 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
+            // DIE EINE UHR der Klassen-Messung (K63-n1): das Bild und jeder Schuss der Teilung rendern zu derselben Zeit
+            const fest = k.klasse ? performance.now() : null;
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
                 } catch (_e) {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
+                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0, fest: i === 1 ? fest : null });
                 if (i === 0) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
@@ -1095,29 +1128,34 @@ async function starte() {
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
-            // DIE KLASSE IM BILD (K63, scripts/lib/abnahme-urteil.cjs `klassenMaske` · `klassenMasse`): drei Schüsse mehr an
-            // derselben Pose (die Blick-Wahl ist gefallen) — O ohne die Klasse, C nur die Klasse und der Himmel, S nur der
-            // Himmel; Klasse = die Täter-Klasse (`_taeterKlasse`) gegen den Ausdruck `k.klasse`. Die Nah-Wiese ruht, solange
+            // DIE KLASSEN IM BILD (K63-n1, scripts/lib/abnahme-urteil.cjs `klassenTeilung` · `bildRauschen` · `klassenMasse`): an
+            // derselben Pose unter der EINEN Uhr des Bilds (`fest`) G — die Szene, jede gemessene Klasse ohne Schattenwurf —, G2
+            // derselbe Schuss (das Rauschen der Messung) und je Teil-Klasse (`_taeterKlasse`, jeder Name unter dem Ausdruck
+            // `k.klasse` für sich) O ohne sie. Die Teilung gibt jedes Pixel höchstens EINER Klasse; die Maße liest das Bild selbst
+            // (mit Schatten). `k.abstand`: je 2×2-Block der Teilung der Strahl der Block-Mitte bis zum gezeichneten Boden
+            // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Die Nah-Wiese ruht, solange
             // Objekte verborgen sind (ihr Takt setzt je Kachel `visible`), jedes Bündel nimmt neu auf; danach steht alles wie vorher.
             let klasse = null;
             if (k.klasse) {
                 const re = new RegExp(k.klasse);
-                const himmel = /^(himmel|himmel-[a-z]+)$/;
                 const zeichnet = (o) =>
                     o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
-                const eigen = [],
-                    fremd = [],
-                    namen = {};
+                const teile = new Map();
                 r.state.scene.traverse((o) => {
                     if (!zeichnet(o)) return;
                     const kl = r._taeterKlasse(o);
-                    if (re.test(kl)) {
-                        eigen.push(o);
-                        namen[kl] = (namen[kl] || 0) + 1;
-                    } else if (!himmel.test(kl)) fremd.push(o);
+                    if (!re.test(kl)) return;
+                    if (!teile.has(kl)) teile.set(kl, []);
+                    teile.get(kl).push(o);
                 });
-                if (!eigen.length)
-                    throw new Error(`Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`);
+                if (!teile.size)
+                    throw new Error(
+                        `Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`
+                    );
+                const namen = [...teile.keys()].sort();
+                if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
+                const alle = [].concat(...teile.values());
+                const wurf = new Map(alle.map((o) => [o, o.castShadow]));
                 const bundlesNeu = () =>
                     r.state.scene.traverse((o) => {
                         if (o.isBundleGroup) o.needsUpdate = true;
@@ -1130,24 +1168,127 @@ async function starte() {
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
-                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", fest })).u8;
                     } finally {
                         for (const o of aus) o.visible = true;
                         bundlesNeu();
                     }
                 };
                 try {
-                    const O = await schuss(eigen);
-                    const C = await schuss(fremd);
-                    const S = await schuss(eigen.concat(fremd));
-                    const m = window.__klassenMaske(u8, O, C, S, W, H, 18);
+                    for (const o of alle) o.castShadow = false;
+                    const G = await schuss([]);
+                    const G2 = await schuss([]);
+                    const Os = [];
+                    for (const n of namen) Os.push(await schuss(teile.get(n)));
+                    const schwelle = 18;
+                    const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
+                    const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
+                    const klassen = {};
+                    namen.forEach((n, j) => {
+                        const m = new Uint8Array(W * H);
+                        for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
+                        const ms = window.__klassenMasse(u8, m, W, H);
+                        if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
+                    });
+                    let abstand = null;
+                    if (k.abstand) {
+                        const T = window.THREE;
+                        // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
+                        const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
+                        const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
+                            (a, b2) => a - b2
+                        );
+                        const zahl = {},
+                            cosS = baender.slice(1).map(() => 0),
+                            cosN = baender.slice(1).map(() => 0);
+                        const pos = cam.position.clone();
+                        const v = new T.Vector3();
+                        const band = (d) => {
+                            for (let b = 0; b < baender.length - 1; b++) if (d < baender[b + 1]) return b;
+                            return -1;
+                        };
+                        for (let y0 = 0; y0 < H; y0 += 2)
+                            for (let x0 = 0; x0 < W; x0 += 2) {
+                                let jemand = false;
+                                for (let q = 0; q < 4; q++) {
+                                    const x = x0 + (q & 1),
+                                        y = y0 + (q >> 1);
+                                    if (x < W && y < H && teil[y * W + x]) jemand = true;
+                                }
+                                if (!jemand) continue;
+                                v.set(((x0 + 1) / W) * 2 - 1, -(((y0 + 1) / H) * 2 - 1), 0.5)
+                                    .unproject(cam)
+                                    .sub(pos)
+                                    .normalize();
+                                if (v.y >= -1e-4) continue;
+                                // der Strahl bis zum gezeichneten Boden: Schritte wachsen mit dem Abstand, dann halbiert
+                                let t0 = 0,
+                                    t = 0.2,
+                                    hit = -1;
+                                while (t < baender[baender.length - 1]) {
+                                    const gy = r._bodenSichtAt(pos.x + v.x * t, pos.z + v.z * t);
+                                    if (gy != null && pos.y + v.y * t <= gy) {
+                                        let a = t0,
+                                            b = t;
+                                        for (let it = 0; it < 8; it++) {
+                                            const m2 = (a + b) / 2;
+                                            const g2 = r._bodenSichtAt(pos.x + v.x * m2, pos.z + v.z * m2);
+                                            if (g2 != null && pos.y + v.y * m2 <= g2) b = m2;
+                                            else a = m2;
+                                        }
+                                        hit = b;
+                                        break;
+                                    }
+                                    t0 = t;
+                                    t += Math.max(0.05, 0.04 * t);
+                                }
+                                if (hit < 0) continue;
+                                const d = Math.hypot(v.x * hit, v.z * hit);
+                                const bi = band(d);
+                                if (bi < 0) continue;
+                                for (let q = 0; q < 4; q++) {
+                                    const x = x0 + (q & 1),
+                                        y = y0 + (q >> 1);
+                                    const c = x < W && y < H ? teil[y * W + x] : 0;
+                                    if (!c) continue;
+                                    const n = namen[c - 1];
+                                    (zahl[n] || (zahl[n] = baender.slice(1).map(() => 0)))[bi]++;
+                                    cosS[bi] += -v.y;
+                                    cosN[bi]++;
+                                }
+                            }
+                        abstand = {
+                            baender,
+                            ring,
+                            augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
+                            cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
+                            klassen: zahl,
+                        };
+                    }
+                    // die Maske: jede Klasse in ihrem Ton über dem Bild, der Rest blau-grau
+                    const ton = [
+                        [255, 80, 80],
+                        [80, 255, 80],
+                        [80, 120, 255],
+                        [255, 220, 60],
+                        [255, 80, 255],
+                        [60, 230, 230],
+                        [255, 150, 40],
+                        [180, 120, 255],
+                    ];
                     const mu8 = new Uint8Array(W * H * 4);
                     for (let p = 0; p < W * H; p++) {
                         const i = p * 4;
-                        const g = 0.25 * (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]);
-                        mu8[i] = m[p] ? u8[i] : g;
-                        mu8[i + 1] = m[p] ? u8[i + 1] : g;
-                        mu8[i + 2] = m[p] ? u8[i + 2] : g + 40;
+                        const c = teil[p];
+                        if (c) {
+                            const f = ton[(c - 1) % ton.length];
+                            for (let ch = 0; ch < 3; ch++) mu8[i + ch] = Math.round(0.6 * u8[i + ch] + 0.4 * f[ch]);
+                        } else {
+                            const g = 0.25 * (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]);
+                            mu8[i] = g;
+                            mu8[i + 1] = g;
+                            mu8[i + 2] = g + 40;
+                        }
                         mu8[i + 3] = 255;
                     }
                     const cv2 = document.createElement("canvas");
@@ -1159,12 +1300,18 @@ async function starte() {
                     ctx2.putImageData(img2, 0, 0);
                     klasse = {
                         ausdruck: k.klasse,
-                        objekte: eigen.length,
-                        namen,
-                        masse: window.__klassenMasse(u8, m, W, H),
+                        schwelle,
+                        rauschen,
+                        misch,
+                        toene: namen.map((n, j) => `${n}=${ton[j % ton.length].join("/")}`),
+                        klassen,
+                        abstand,
                         maske: cv2.toDataURL("image/png"),
                     };
                 } finally {
+                    for (const [o, c] of wurf) o.castShadow = c;
+                    bundlesNeu();
+                    r._schattenAlleNeu();
                     if (wieseEigen) r._tickNahWiese = wieseAlt;
                     else delete r._tickNahWiese;
                 }
@@ -1376,7 +1523,7 @@ async function starte() {
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
-                    // DIE KLASSE (K63): die Maske neben dem Bild, die Maße im Begleit-JSON (die Rohdatei der Soll-Tafel)
+                    // DIE KLASSE (K63): die Maske neben dem Bild, die Maße im Begleit-JSON
                     if (o.klasse) {
                         const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
                         fs.writeFileSync(mdatei, Buffer.from(o.klasse.maske.split(",")[1], "base64"));
@@ -1385,6 +1532,26 @@ async function starte() {
                     }
                     // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:nah|:fern|:wirkung]`)
+                    if (b.ist) {
+                        if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
+                        const kl = o.klasse;
+                        o.ist = sollIstSchreiben(b.ist, {
+                            werkzeug: "bild",
+                            datum: new Date().toISOString(),
+                            stand: { version: o.abnahme.stand.version, sha: o.abnahme.stand.sha },
+                            geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
+                            leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
+                            kamera: o.kamera,
+                            ausdruck: kl.ausdruck,
+                            schwelle: kl.schwelle,
+                            rauschen: kl.rauschen,
+                            misch: kl.misch,
+                            klassen: kl.klassen,
+                            abstand: kl.abstand,
+                            bild: path.relative(root, datei).split(path.sep).join("/"),
+                        });
+                    }
                     fs.writeFileSync(
                         datei.replace(/\.png$/i, "") + ".abnahme.json",
                         JSON.stringify(o.abnahme, null, 1)
@@ -2413,10 +2580,22 @@ async function starte() {
                         ms: Date.now() - t0,
                     });
                 }
-                if (req.url === "/licht")
-                    return send(
-                        Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 })
-                    );
+                if (req.url === "/licht") {
+                    const o = await page.evaluate(() => window.__lichtBilanz());
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `licht --ist <id>`): E an der waagrechten Karte, alle Lichter und
+                    // nur die Umgebung (der Himmel)
+                    if (b.ist)
+                        o.ist = sollIstSchreiben(b.ist, {
+                            werkzeug: "licht",
+                            datum: new Date().toISOString(),
+                            stand: { sha: gitStand() },
+                            geraet: { adapter: await page.evaluate(() => window.__abnahmeMessen({}).geraet.adapter) },
+                            E_alle: o.alle && o.alle.oben ? o.alle.oben.E : null,
+                            E_umgebung: o.umgebung && o.umgebung.oben ? o.umgebung.oben.E : null,
+                            sonnenRichtung: o.sonnenRichtung,
+                        });
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
                 if (req.url === "/fernwald")
                     return send(
                         Object.assign(
@@ -2491,6 +2670,8 @@ async function starte() {
             wahl: opt("--wahl"),
             klasse: opt("--klasse"),
             spieler: argv.includes("--spieler"),
+            abstand: argv.includes("--abstand"),
+            ist: opt("--ist"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
@@ -2761,7 +2942,7 @@ async function starte() {
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         console.log(`LAUB-LICHT ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
-    } else if (cmd === "licht") o = await rufe("/licht");
+    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist") });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });

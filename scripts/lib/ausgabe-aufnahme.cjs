@@ -622,9 +622,14 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
+            // DIE EINE UHR der Mess-Schüsse (`opt.fest`, eine Zeit in ms; K63-n1, die Klassen-Teilung der Soll-Tafel): jeder Frame
+            // rendert zu DIESER Zeit (Wind, Wasser, Glut stehen), und vor den Warm-Frames beginnen TRAA-Folge, ihre Geschichte und
+            // die Dither-Phase von vorn — zwei Schüsse derselben Szene sind dann dasselbe Bild, ein Schuss ohne eine Klasse
+            // unterscheidet sich nur, wo sie sichtbar ist (gemessen je Aufruf: `bildRauschen` zweier gleicher Schüsse).
+            const zeit = () => (opt && opt.fest != null ? opt.fest : performance.now());
             const frame = () => {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(performance.now());
+                r._loopRender(zeit());
             };
             // Die NAH-WIESE folgt der Kamera (Kachel-Ring, `_tickNahWiese` im scatterDeco-Takt). Bei ruhendem
             // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
@@ -643,6 +648,18 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
+            if (opt && opt.fest != null) {
+                const tn = r.state.traaNode;
+                if (tn) {
+                    tn._jitterIndex = 0;
+                    // die Geschichte neu: ein Größen-Wechsel lässt den Vendor sie aus dem ersten Bild kopieren (TRAANode
+                    // `needsRestart`)
+                    if (tn._historyRenderTarget) tn._historyRenderTarget.setSize(1, 1);
+                }
+                if (r.state._traaR) r.state._traaR.neu = true;
+                const lu = r.state.lodUniforms;
+                if (lu && lu.uDitherT) lu.uDitherT.value = 0;
+            }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();
