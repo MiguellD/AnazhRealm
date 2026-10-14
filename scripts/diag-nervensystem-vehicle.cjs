@@ -160,8 +160,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         /zweit\.kern\.buildInstance\(msg\.presetId/.test(phytoNC),
     ]);
     out.push([
-        "A8: vehicle-core deklariert kindStages.vehicle == [0] (B2-Vertrags-Daten)",
-        /kindStages:\s*\{\s*vehicle:\s*\[0\]\s*\}/.test(vcSrc),
+        "A8: vehicle-core deklariert kindStages.vehicle == [0, 1] (B2-Vertrags-Daten; die Stufe 1 seit K43-2)",
+        /kindStages:\s*\{\s*vehicle:\s*\[0,\s*1\]\s*\}/.test(vcSrc),
     ]);
     // A9 (N1-migriert, V9.56-i): der kind:vehicle-ZWEIG ist der KIND_POLICY-Zeile gewichen —
     // die Probe prueft jetzt die Tabellen-Realitaet: die vehicle-Policy-Zeile traegt Praefix+Donor,
@@ -395,7 +395,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     );
     check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", out.b.gtRadstand === 2.9, String(out.b.gtRadstand));
     check("B: alle 5 Fahrzeug-Gattungen im Buch", out.b.vehicleCount === 5, String(out.b.vehicleCount));
-    check("B: kindStages.vehicle == [0] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
+    check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
     check("B: foundry-core-kinds UNANGETASTET (grass [1,2])", out.b.ksGrass === "[1,2]", String(out.b.ksGrass));
     check(

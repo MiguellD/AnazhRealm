@@ -59,7 +59,8 @@ class AnazhRealm_Z17c {
         const durch = typeof mp.opacity === "number" && mp.opacity < 1;
         for (const k of ["roughness", "metalness", "emissive", "emissiveIntensity", "opacity"]) delete mp[k];
         if (durch) mp.opacity = 0.5; // die Marke der Durchsicht — die Deckkraft liest der Stoff aus `aRegler.z`
-        return this._foundryTreeMaterial(u.foundryKind, mp, false, null, true);
+        mp.satzRegler = true; // die Marke des Satz-Stoffs (kein Regler, kein Teil der Stoff-Identität `budgetStoff`)
+        return this._foundryTreeMaterial(u.foundryKind, mp, false, null);
     }
 
     // Die Regler eines Bereichs je Ecke (K43-2): Rauheit · Metall · Deckkraft und Emissiv × Glut-Stärke aus dem Studio-Stoff
