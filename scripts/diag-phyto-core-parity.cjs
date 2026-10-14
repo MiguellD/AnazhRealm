@@ -172,10 +172,10 @@ const pPaare = vm.runInContext(
             const pre = PRESETS[id];
             for (const seed of a.samen)
                 for (const lod of a.stufen) {
-                    __dials = pre.s; SEED = seed; __lod = lod;
+                    __dials = pre.s; SEED = seed; __lod = lod; CURRENT = id;
                     const gesehen = deriveParamsPlant(pre);
                     __dials = null;
-                    const gesetz = self.__phytoCore.treeParams(pre.s, seed, lod, pre);
+                    const gesetz = self.__phytoCore.treeParams(pre.s, seed, lod, pre, __weltSkalaArt(id));
                     out.push({ fall: id + "/s" + seed + "/L" + lod, gesehen: JSON.stringify(gesehen), gesetz: JSON.stringify(gesetz) });
                 }
         }

@@ -16,6 +16,8 @@ class AnazhRealm_Z20b {
     _foundryRequest(presetId, seed, lod, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
+        // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
+        ov = this._foundryGestaltOv(presetId, seed, ov);
         // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
         // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
@@ -282,6 +284,7 @@ class AnazhRealm_Z20b {
     _foundryBakeImpostorRequest(presetId, seed, ov, fmt, bedarfD2) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker || !fmt) return Promise.resolve(null);
+        ov = this._foundryGestaltOv(presetId, seed, ov); // die Gestalt des Orts (K20) samt der Prägung des Bestellers
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
         // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
         // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
@@ -860,7 +863,7 @@ class AnazhRealm_Z20b {
     // Rahmen der Zelle reisen je Instanz. Gecacht auf der Zelle. null solange der Rahmen lädt, false bei Fehler oder —
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
     _foundryBuildImpostorFlat(entry, preset) {
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
         // Ein geprägtes Entry zieht seine ov-Zelle; ist sie noch nicht da (null), fällt der Pfad auf GEOMETRIE (nie
         // kalt, nie die ungeprägte Karte). Ungeprägt: ovE null.
@@ -1257,7 +1260,7 @@ class AnazhRealm_Z20b {
     _archFoundryZiegel(entry, preset, ovH) {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
         const huelle = this._foundryFernForm(preset) === "huelle";
         const stufe = huelle ? this._foundryFernStufe(preset) : 1;

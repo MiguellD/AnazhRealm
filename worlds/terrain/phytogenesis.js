@@ -1935,7 +1935,7 @@ function bakeImpostorAtlas() {
         try {
             /* M2 (Bäcker-Vereinigung): trägt der Spec ein explizites ov (Welt-Anfrage über den
                bake-impostor-Kanal), bäckt GENAU dieses — Karte==Welt-Baum (ov-frei = Preset-
-               Defaults). Der Studio-Wald-Pfad (specs mit crownBase/trunkMul) bleibt byte-identisch.
+               Defaults). Der Studio-Wald-Pfad (specs mit crownBase) bleibt byte-identisch.
                ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt): trägt der Spec einen eigenen Bauer (`bau` —
                das buildInstance eines Manifest-Kerns, __replyBakeImpostor setzt ihn), baut DER das
                Bake-Subjekt mit seinen kompletten Materialien; ohne `bau` läuft der Pflanzen-Pfad
@@ -1944,7 +1944,7 @@ function bakeImpostorAtlas() {
                 s.sp,
                 s.seed,
                 1,
-                s.ov !== undefined ? s.ov : { crownBase: s.crownBase, trunkMul: s.trunkMul }
+                s.ov !== undefined ? s.ov : { crownBase: s.crownBase }
             );
             if (!tree) continue; // fail-soft: ein Kern-Bauer darf null liefern (unbekanntes Rezept) — Zelle bleibt leer statt Wurf mit halb-gebundenem Renderer-State
         } catch (e) {
@@ -2375,7 +2375,8 @@ function buildForest() {
       tanne: Number.isFinite(_WG.crownBase.tanne) ? _WG.crownBase.tanne : _CB_FB.tanne,
       mammut: Number.isFinite(_WG.crownBase.mammut) ? _WG.crownBase.mammut : _CB_FB.mammut
     } : _CB_FB; // Stamm freistellen (Selbstastung im Wald)
-    const TMUL = (_WG && Number.isFinite(_WG.trunkMul)) ? _WG.trunkMul : 0.5; // Stamm schlanker (Wald-Realismus; Studio unberuehrt)
+    // Der Stamm des Studio-Walds ist der Stamm der Welt: seine Schlankheit traegt das Welt-Mass des Kerns (K20, ph.hd) —
+    // der Wald-Faktor trunkMul 0,5, der die Vorlagen-Formel (H/D 13–18) schlanker zog, ist gefallen.
     const poolL = [{}, {}];
     /* L2-Mesh-Pool gestrichen: Fernstufe IST das Billboard (tote Fracht seit der Impostor-Aera) */ const mp = (
         sp,
@@ -2385,7 +2386,7 @@ function buildForest() {
         for (let i = 0; i < n; i++) seeds.push(Math.floor(RNG() * 1e6));
         for (let L = 0; L < 2; L++)
             poolL[L][sp] = seeds.map((sd) => {
-                const g = buildInstance(sp, sd, L, { crownBase: CB[sp], trunkMul: TMUL });
+                const g = buildInstance(sp, sd, L, { crownBase: CB[sp] });
                 g.userData.seed = sd;
                 return g;
             });
@@ -2400,7 +2401,7 @@ function buildForest() {
     for (const sp of Object.keys(poolL[0])) {
         poolL[0][sp].forEach((tmpl, v) => {
             _impCellOf[sp + "|" + v] = _impSpecs.length;
-            _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp], trunkMul: TMUL });
+            _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp] });
         });
     }
     // LOD-WURZEL (08.07.) — DIE STUFEN-WAHRHEIT JE ART AUS DEN VERTRAGS-DATEN
@@ -5527,8 +5528,8 @@ init();
             // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
             // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
             // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
-            // kein Teil. Andere Gestalten tragen die Felder nie.
-            for (const __bp of ["__huelle", "__fern"])
+            // kein Teil. Andere Gestalten tragen die Felder nie. Der Baum trägt sein Maß (`__mass`, K20: der Hub des Schafts).
+            for (const __bp of ["__huelle", "__fern", "__mass"])
                 if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
                     meshes.push({ kind: __bp, huelle: g.userData[__bp] });
         } catch (e) {

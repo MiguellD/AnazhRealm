@@ -205,7 +205,13 @@ class AnazhRealm_Z11b {
             }
         }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
+        // DER GEFÜHLTE BAUM IST DER GEZEICHNETE (K20): zeichnet das Studio einen Baum oder Strauch, trägt das Skelett seiner
+        // Gestalt die Kollision (`_baumGestaltTeile`), nie der Bauplan der Art (ein zweites Individuum: 40 Nadelbäume
+        // ragten 0,55–2,14 m über ihr Bild, der Solitär trug keinen FREISTAND, sein Stamm stand 2,2× dünner als gezeichnet).
+        const baumTeile = this._baumGestaltTeile(entry);
+        if (baumTeile === null) return; // die Gestalt wartet — die Hülle folgt ihr (`_foundryGestaltFor`)
+        const teile = baumTeile || (bp && bp.parts);
+        if (!Array.isArray(teile) || teile.length === 0) return;
         const solidAABBs = [];
         // DIE STAMM-HÜLLE IM WELTMASS (Leben-Schau 07.10., L-Kamera / V-D1): der Studio-Baum steht in der Welt × seiner
         // Welt-Skala (`_foundryWorldScaleMatrix`, 3,4–4,0), sein Stamm-Blocker stand im Vorlagen-Maß — 0,19 m halbe Breite
@@ -217,7 +223,7 @@ class AnazhRealm_Z11b {
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
         const pflanze = this._istNatur(entry);
-        for (const part of bp.parts) {
+        for (const part of teile) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
@@ -916,6 +922,46 @@ class AnazhRealm_Z11b {
                 size: { x: x1 - x0, y: y1, z: z1 - z0 },
             },
         ];
+    }
+
+    // DER GEFÜHLTE BAUM DER GESTALT (K20): zeichnet das Studio einen Baum oder Strauch (Rezept-Art tree/shrub), wächst sein
+    // gefühlter Leib aus DERSELBEN Gestalt wie das Bild — die Gestalt des Eintrags (`_foundryGestaltFor`, V synchron aus dem
+    // Kern wie beim Fels), die Prägung des Orts samt Besteller (`_foundryGestaltOv`: der Solitär trägt FREISTAND), das
+    // Skelett, wie der Worker es baut (`_growTreeBlueprintRich` mit `gestalt`, L0). Gemerkt je Art, Gestalt und Prägung (je
+    // Art höchstens V+1 Gestalten). Rückgabe: die Teile · false = kein Studio-Baum (der Bauplan ist das Bild) · null = die
+    // Gestalt wartet auf ihren Ort (`entry._huelleWartet`; `_foundryGestaltFor` setzt die Hülle, sobald sie steht).
+    _baumGestaltTeile(entry) {
+        if (!entry || typeof entry.type !== "string" || !this._foundryEnabled()) return false;
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const tab = tc && tc.PHYTO_PRESETS;
+        if (!tab) return false;
+        const preset = this._foundryPresetForEntry(entry);
+        const rec = preset ? tab[preset] : null;
+        if (!rec || (rec.kind !== "tree" && rec.kind !== "shrub")) return false;
+        entry._huelleWartet = false; // die eigene Frage löst die Hülle nicht erneut aus
+        entry._huelleG = null;
+        const g = this._foundryGestaltFor(entry, preset, AnazhRealm._studioGestaltenKern(preset));
+        if (!Number.isInteger(g)) {
+            entry._huelleWartet = true;
+            return null;
+        }
+        entry._huelleG = g;
+        const ov = this._foundryGestaltOv(preset, g, entry.studioOv);
+        const k = preset + "|" + g + "|" + (ov ? JSON.stringify(ov) : "");
+        if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
+        let teile = this._baumGestaltMerk.get(k);
+        if (teile === undefined) {
+            // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
+            const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
+                (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
+            );
+            teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
+            this._lastTreeSkeleton = null;
+            if (!Array.isArray(teile) || !teile.length)
+                return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt(" + k + ")");
+            this._baumGestaltMerk.set(k, teile);
+        }
+        return teile;
     }
 
     // Tor-Kollisions-Hülle aus dem Gesetz: Pfosten (beidseitig, jambW·Ordnungen) + Bogen-Schultern

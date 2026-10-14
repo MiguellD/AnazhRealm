@@ -196,7 +196,6 @@ var INSEL_VIS = { lab: "coast-74", host: "none" };
 // prettier-ignore
 var WALD_GESETZ = {
     flod: 0,
-    trunkMul: 0.5,
     glade: 22,
     crownBase: { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 }
 };
@@ -308,7 +307,7 @@ const PORTAL_RENDER_CONFIG = {
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
         // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an gebauten L0/L1-Paaren — 24
         // gerasterte Ansichten, kronen-linse —; dazu haelt jede Stufe und ihre Karte je Blick-Hebung das Bild von V18.536,
-        // Wand D gegen spec/asset-contract/v1/bild-v18536.json),
+        // Wand D gegen spec/asset-contract/v1/bild-tafel.json),
         // ringToleranz (tree[1], W6 05.10.: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so
         // viele Baumhoehen von der Strecke seiner Nachbarn abweichen; 0,001 = 0,7 px an der L1-Nahkante, __ringBahn),
         // wurf (tree[1], W6 05.10.: der Wurf-Teil — Rinden-Straenge ab durchmesserM Welt-Durchmesser werfen, feinere,
@@ -340,7 +339,7 @@ const PORTAL_RENDER_CONFIG = {
                     draws: 2,
                     schatten: 1,
                     lagen: 13,
-                    quote: 0.4,
+                    quote: 0.35,
                     blattKarte: 2.2,
                     geruest: 0.25,
                     wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.05, rand: 0.3, winkel: 5, holz: 0.15 },
@@ -502,7 +501,7 @@ const PORTAL_RENDER_CONFIG = {
             basalt: 0.42,
             sediment: 0.4,
             kristalle: 0.15,
-            birke: 4.13,
+            birke: 4.03,
             eiche: 4.16,
             weide: 2.75,
             tanne: 4.26,
@@ -1323,6 +1322,11 @@ function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega
 }
 
 function growTreeNodes(P) {
+    return __wuchsDerStufe(P, typeof __lod === "undefined" ? 0 : __lod, rnd);
+}
+// Der Wuchs eines Rezepts `stufe` aus dem Strom `zufall` (K20: rein, ohne Studio-Globale — der Bau liest ihn über
+// growTreeNodes, der gefühlte Baum über skelettDerGestalt).
+function __wuchsDerStufe(P, stufe, zufall) {
     // DER GETEILTE SAMEN: die Baum-Wuchs-Mathematik (da Vinci Δ · McMahon · Apikaldominanz ·
     // Gravitropismus · Phyllotaxis · Whorls) lebt in phyto-core.js (growSkeleton) — DIESELBE
     // Quelle, die AnazhRealm (Main + Voxel-Worker) liest. Ein Edit am Wuchs-Gesetz fliesst hier
@@ -1337,17 +1341,18 @@ function growTreeNodes(P) {
     if (__core && typeof __core.growSkeleton === "function") {
         // Baum-L1 traegt das Blatt-Budget der L0 (20000 statt 9000): die L1-Krone ist eine Teilmenge der L0-Blaetter
         // (Stride _lf), so haengt ihre Deckung nie davon ab, ob eine Art die Kappe erreicht (Fichte/Tanne taten es).
-        const __gsLBl = typeof __lod === "undefined" ? 0 : __lod;
+        const __gsLBl = stufe;
         // Der Strauch hat kein Rezept 0 (`stufenRezept`): seine Zeile nennt nur die Rezepte 1 und 2 — fehlt das Budget
         // des Rezepts, bricht der Bau laut (kein stiller Rueckfall auf das Kern-Budget 20 000).
         const __gsLB =
             (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__gsLBl]) ||
             (P.kind === "shrub" ? { 1: 1500, 2: 1400 } : [20000, 20000, 7000])[__gsLBl];
         if (!(__gsLB > 0)) throw new Error("[phyto] Blatt-Budget fehlt: " + P.kind + " Rezept " + __gsLBl);
-        const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), rnd);
+        const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), zufall);
         if (__gsR && __gsR.segs && __gsR.segs.length) {
             P._trunkR = __gsR.trunkR;
             P._D = 2 * __gsR.trunkR;
+            P._schaftHub = __gsR.schaftHub; // der Hub des Schafts (K20), der Beipack `__mass` trägt ihn zum Wirt
             return __gsR;
         }
     }
@@ -1391,6 +1396,14 @@ function pushJointSphere(arr, pos, r, col, sway) {
     arr.push(g);
 }
 
+// DER WURZEL-ANLAUF (K20, 13.10.): an der Oberfläche läuft die Primär-Wurzel nur im Anlauf des Stamms (`stammRadien`
+// Stamm-Radien um die Achse) — dort flacht sie ab und folgt dem Boden; jenseits taucht sie ab (`abtauchen`, die Neigung je
+// Schritt wie über dem Boden, verdoppelt). Befund (Werkbank, Radeon, Strahl auf den Strich): die dünnen dunklen Striche am
+// Boden neben den Stammfüßen waren die Tannen-Wurzel `f:tanne|1|1` — 4,6 m vom Fuß 0,58 m unter der Vorlagen-Ebene, der
+// Hang zum Wasser 2,1 m tiefer, also 1,5 m über dem Ufer. Die Reichweite misst an der Baum-Höhe (0,3 H · spread), der
+// Querschnitt am Stamm: mit dem Welt-Maß (H/D 70–89) lief die Wurzel 0,37 H flach (Tanne 9,5 m, Mammut 17 m) und trat auf
+// jedem Hang über 9–15 % aus dem Boden.
+const WURZEL_ANLAUF = { stammRadien: 3, abtauchen: 1.2 };
 function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
     rt = rt || { dive: 0.6, wob: 0.4, nb: 2 };
     if (depth > 4 || radius < P._trunkR * 0.05 || len < 0.1) return;
@@ -1399,14 +1412,16 @@ function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
         d = vnorm(dir.slice());
     const rings = [{ c: p.slice(), r: radius, sway: 0, depth: 1 }];
     let seekT = rnd() * 6.28;
+    const anlaufR = P._trunkR * WURZEL_ANLAUF.stammRadien;
     for (let i = 0; i < STEPS; i++) {
         const f = i / STEPS;
+        const imAnlauf = p[0] * p[0] + p[2] * p[2] < anlaufR * anlaufR;
         let vb;
         if (depth === 0) {
-            vb = p[1] > P._trunkR * 0.16 ? 0.55 : lerp(0.1, rt.dive, f);
+            vb = p[1] > P._trunkR * 0.16 ? 0.55 : imAnlauf ? lerp(0.1, rt.dive, f) : WURZEL_ANLAUF.abtauchen;
         } else vb = 0.3 + depth * 0.12; // arttypische Abtauchtiefe (Flach- vs Tiefwurzler)
         d = vnorm(vadd(d, [0, -vb * 0.5, 0]));
-        if (depth === 0 && p[1] < P._trunkR * 0.16) {
+        if (depth === 0 && imAnlauf && p[1] < P._trunkR * 0.16) {
             d[1] *= 0.45;
             d = vnorm(d);
         } // an der Oberflaeche abflachen -> folgt dem Boden
@@ -1469,14 +1484,17 @@ function emitRoots(P) {
             (__lod === 1 || L0Baum) && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
         // Die Baum-L0 (S7): ohne ihre Verzweigungen endete der Primaerstrang stumpf ueber dem Boden (eine
         // Schnittflaeche von halbem Wurzel-Radius) — er laeuft in seiner Richtung weiter und taucht ab: zwei Ringe je eine
-        // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden.
+        // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden. Nie steigt sie dabei (K20,
+        // WURZEL_ANLAUF): das Ende der abgetauchten Wurzel liegt tief, ihre Ringe stiegen von dort zurueck auf ein Drittel
+        // der Tiefe und traten am Hang aus (Fichte-L0 auf 20 % Hang sichtbar bis 6,4 m) — unter dem Boden bleibt die
+        // Fortsetzung in der Tiefe ihres Endes; ueber dem Boden ist sie die alte.
         if (L0Baum && R.length > 1) {
             const a = R[R.length - 2],
                 b = R[R.length - 1],
                 d = vsub(b.c, a.c);
             ringe = ringe.concat([
-                { c: [b.c[0] + d[0], b.c[1] * 0.35, b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
-                { c: [b.c[0] + 2 * d[0], -1.2 * b.r, b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
+                { c: [b.c[0] + d[0], Math.min(b.c[1] * 0.35, b.c[1]), b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
+                { c: [b.c[0] + 2 * d[0], Math.min(-1.2 * b.r, b.c[1] - 1.2 * b.r), b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
             ]);
         }
         // Die Baum-L1 (S3): die Primaer-Wurzel in der Radial-Teilung der L2 — ab 12 m liegt ihr Bild im Boden und in der
@@ -1529,12 +1547,15 @@ function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick
 // lodRef Hoehe betritt die L1 bei Distanz = Hoehe, 1080 Zeilen bei 75 Grad Sichtfeld = 704 px je Baumhoehe). Befund
 // (Mess-Wiese, werkbank band 05.10.): die Nadel-Aeste der Tanne trugen 42 x 100 Dreiecke auf geraden Bahnen — 59 % der
 // L1. Kein rnd()-Zug: der Wuchs und jeder Strom bleiben die von L0 (FIX v35).
-function __ringBahn(R, tol) {
+// `festUnter` (K20, Höhe in Vorlagen-Einheiten): Ringe darunter bleiben alle — der Stamm unter dem Kronenraum trägt sein
+// Rinden-Bild, im Kronenraum nur seine Bahn.
+function __ringBahn(R, tol, festUnter) {
     const n = R.length;
     if (!(tol > 0) || n <= 2) return R;
     const keep = new Uint8Array(n);
     keep[0] = keep[n - 1] = 1;
-    for (let i = 0; i < n; i++) if (R[i].fuss || R[i].zeile !== undefined) keep[i] = 1;
+    for (let i = 0; i < n; i++)
+        if (R[i].fuss || R[i].zeile !== undefined || (festUnter !== undefined && R[i].c[1] < festUnter)) keep[i] = 1;
     const stapel = [0, n - 1];
     while (stapel.length) {
         const b = stapel.pop(),
@@ -1705,7 +1726,7 @@ function emitTree(P) {
 }
 function emitTreeRezept(P, stufe) {
     const nodes = growTreeNodes(P);
-    if (P.tot) __totholzSchnitt(nodes, P); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
+    if (P.tot) __totholzSchnitt(nodes, P, SEED); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
     /* FIX v35: LOD = ABLEITUNG AUS L0. Ein Same -> EIN Individuum: das Skelett waechst bei JEDER Stufe identisch
      (gleicher RNG-Strom), niedrigere Stufen entstehen deterministisch daraus — Zweige unter der Radius-Schwelle
      fallen aus der Geometrie (das ist Pipe-Modell-treu: duenn = jung = fern unsichtbar), Blaetter werden per
@@ -1791,10 +1812,7 @@ function emitTreeRezept(P, stufe) {
         )
     )
         throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})");
-    const _skWedel = (() => {
-        const sc = PORTAL_RENDER_CONFIG.placement.scale[CURRENT];
-        return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
-    })(); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
+    const _skWedel = __weltSkalaArt(CURRENT); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
     const _aeste = new Map(), // Kopf-Lauf des Nadel-Asts → { kette: [Läufe der Haupt-Bahn], blaetter: [], pfad: [Punkte] }
         _astVon = new Map(); // jeder Lauf eines Nadel-Asts → sein Kopf
     if (_wedel) {
@@ -2030,9 +2048,7 @@ function emitTreeRezept(P, stufe) {
         !(_wurf1 && _wurf1.durchmesserM > 0 && _wurf1.teil === "schatten" && _wurf1.lagen > 0)
     )
         throw new Error("[phyto] lod.budget.tree[1].wurf fehlt ({durchmesserM, teil: \"schatten\", lagen})");
-    const _plz = PORTAL_RENDER_CONFIG.placement,
-        _skB = _wurf1 ? _plz.scale[CURRENT] : 0,
-        _skW = _skB === 1 ? 1 : _skB < 1 ? _skB : _skB * _plz.treeScaleMul; // die Welt-Skala der Art (wie der Wald pflanzt)
+    const _skW = _wurf1 ? __weltSkalaArt(CURRENT) : 0; // die Welt-Skala der Art (wie der Wald pflanzt)
     if (_wurf1 && !(_skW > 0)) throw new Error("[phyto] placement.scale." + CURRENT + " fehlt (Schatten-Teil der L1)");
     const _wurfR = _wurf1 ? _wurf1.durchmesserM / (2 * _skW) : 0; // der Radius-Schnitt in Vorlagen-Einheiten
     const _wurfRinge = []; // die Bahnen der werfenden Straenge (Ringe nach Bahn-Toleranz)
@@ -2109,6 +2125,22 @@ function emitTreeRezept(P, stufe) {
     const _ringTol1 = __lod === 1 && P.kind === "tree" ? _b1.ringToleranz : 0;
     if (__lod === 1 && P.kind === "tree" && !(_ringTol1 > 0 && _ringTol1 < 0.01))
         throw new Error("[phyto] lod.budget.tree[1].ringToleranz fehlt (0 < ringToleranz < 0,01 Baumhoehen)");
+    // DER KRONENRAUM DER L1 (K20, 13.10.): ab dem tiefsten Ast-Ansatz steht der Stamm in der Krone — dort trägt er nur seine
+    // Bahn (dieselbe Toleranz), darunter sein ganzes Rinden-Bild. Befund: der Mammut-Stamm trug 21 Ringe zu 28 Seiten,
+    // 46 % der L1 (L1/L0 0,371 über der Quote 0,35).
+    // Der Ast-Ansatz ist der erste Ring eines Seiten-Laufs oder, bei der Konifere, der erste Punkt der Bahn eines Nadel-Asts
+    // (`_aeste`; seine Läufe reisen als Wedel und fehlen den Röhren).
+    let _kronenRaumY;
+    const _ansatz = (y0) => {
+        if (_kronenRaumY === undefined || y0 < _kronenRaumY) _kronenRaumY = y0;
+    };
+    if (_ringTol1 > 0) {
+        for (const rid of runs.keys()) {
+            const mm = meta[rid];
+            if (mm && !mm.isLead && mm.parentRun >= 0) _ansatz(runs.get(rid)[0].p0[1]);
+        }
+        for (const [k, A] of _aeste) if (k >= 0 && A.pfad && A.pfad.length) _ansatz(A.pfad[0][1]);
+    }
     for (const rid of runs.keys()) {
         const mm = meta[rid];
         if (mm && mm.isLead) continue;
@@ -2120,6 +2152,8 @@ function emitTreeRezept(P, stufe) {
         let rings = strandRings(rid);
         if (_ringTol1 > 0 && rings[0].r - nodes.trunkR * 0.12 <= nodes.trunkR * 0.88 * 0.6)
             rings = __ringBahn(rings, _ringTol1 * nodes.height);
+        else if (_ringTol1 > 0 && _kronenRaumY !== undefined)
+            rings = __ringBahn(rings, _ringTol1 * nodes.height, _kronenRaumY);
         if (_wedel && _aeste.has(rid)) rings = __bahnBis(rings, _wedel.ab);
         if (rings.length < 2) continue;
         const baseRing = rings[0];
@@ -2166,6 +2200,9 @@ function emitTreeRezept(P, stufe) {
             let n = Math.sin(p[0] * 12.9 + p[1] * 78.2 + p[2] * 37.7) * 43758.5;
             return n - Math.floor(n);
         };
+        // Die Stummel-Maße sind am Stamm der FORM bemessen (phyto-core trunkForm): der schlanke Stamm des Welt-Maßes (K20)
+        // zieht sie mit (ein Stummel von 3,5 cm Vorlage stand dicker als der Stamm).
+        const stummel = nodes.trunkForm > 0 ? nodes.trunkR / nodes.trunkForm : 1;
         let stubN = 0;
         for (const sg of nodes.segs) {
             const h = sg.p0[1];
@@ -2176,7 +2213,7 @@ function emitTreeRezept(P, stufe) {
             const ang = dh([sg.p1[0] + 0.3, sg.p0[1], sg.p1[2] - 0.2]) * 6.2831,
                 down = -0.2 - 0.55 * dh(sg.p1);
             const odir = vnorm([Math.cos(ang), down, Math.sin(ang)]);
-            const baseR = Math.max(0.035, sg.r0 * (0.16 + 0.1 * dh(sg.p0))),
+            const baseR = Math.max(0.035 * stummel, sg.r0 * (0.16 + 0.1 * dh(sg.p0))),
                 L = baseR * (6 + 8 * dh(sg.p1));
             const start = vadd(sg.p0, vscl(odir, sg.r0 * 0.6));
             const NST = 4,
@@ -2187,7 +2224,7 @@ function emitTreeRezept(P, stufe) {
                 c[1] -= L * f * f * 0.4; // tot -> haengt ab
                 stubRings.push({
                     c,
-                    r: i === NST ? Math.max(0.01, baseR * 0.05) : baseR * (1 - f * 0.72),
+                    r: i === NST ? Math.max(0.01 * stummel, baseR * 0.05) : baseR * (1 - f * 0.72),
                     sway: sg.sway0 * (1 - f),
                     depth: 1,
                 });
@@ -3497,11 +3534,11 @@ const WALDBODEN_EMIT = { fern: emitFern, reed: emitSchilf, brush: emitGestruepp,
 // Das Totholz eines stehenden Baums (P.tot): die Krone ist gebrochen (der Stamm endet in der Bruch-Höhe in einem
 // Splitterkranz), das Feinreisig ist abgefallen, kein Laub. Läuft NACH dem Wuchs — das Skelett und der rnd()-Strom
 // sind die eines lebenden Baums derselben Art (FIX v35), die Stufen schneiden dasselbe Individuum.
-function __totholzSchnitt(nodes, P) {
+function __totholzSchnitt(nodes, P, seed) {
     const hB = nodes.height * P.totBruch,
         rMin = (nodes.trunkR || 0.1) * 0.16,
         hsh = (k, n) => {
-            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(SEED);
+            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(seed);
             h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
             return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
         };
@@ -4037,31 +4074,37 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
+        ph: { hoeheM: 15.55, hd: 60 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m)
     },
     fichte: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7 },
+        ph: { hoeheM: 26.2, hd: 70 }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
     },
     birke: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42 },
+        ph: { hoeheM: 13, hd: 80 }, // Welt-Maß (K20): Birke, der schlanke Pionier (Altbestand 15–25 m)
     },
     weide: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.55, trop: 0.9, leaf: 0.8 },
+        ph: { hoeheM: 7, hd: 25 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär, gedrungen
     },
     mammut: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.95, delta: 2.35, slim: 0.18, trop: 0.05, leaf: 0.88 },
+        ph: { hoeheM: 39.9, hd: 18 }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
     },
     tanne: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78 },
+        ph: { hoeheM: 26.9, hd: 65 }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
     },
     strauch: {
         kind: "shrub",
@@ -4331,6 +4374,8 @@ const PRESETS = {
             leafShape: { m: 4.1, n1: 0.91, n2: 0.865, n3: 0.865, a: 1, b: 1, wsc: 0.36 }, // das ganzrandig-wellige Ovalblatt (Eichen-Gesetz bei Lappung 0,3)
             roots: 6,
             flare: 0.24,
+            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m)
+            hd: 70,
         },
     },
     // Der Karst-Baum: knorrig, gedrungen, mit mächtigem Wurzelanlauf an der Klippe.
@@ -4339,7 +4384,7 @@ const PRESETS = {
         panel: "plant",
         s: { api: 0.28, delta: 2.4, slim: 0.14, trop: -0.4, leaf: 0.36 },
         fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
-        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444 },
+        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, hd: 15 }, // Welt-Maß (K20): Klippen-Solitär, gedrungen
     },
     // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
     totholz: {
@@ -4350,6 +4395,39 @@ const PRESETS = {
         ph: { tot: 1, barkA: 0x46423a, barkB: 0x6e685c },
     },
 };
+
+// DAS BYTE-RASTER AM AUSGANG (K20, der Re-Mint des Kerns; das Muster porta-core/fachwerk-core ausRaster): jede Zahl, die
+// buildInstance liefert, liegt auf einem Gitter, das kein letztes Bit erreicht — Attribute 2^-12, Normalen 2^-14, Lage
+// und Maß 2^-16, Drehung 2^-20; −0 → 0. Befund (spec/asset-contract/plattform-ratsche.json, Satz v1): sin/cos/hypot ±1
+// ULP kippten 18–29 der 43 Probe-Fälle, jede Zahl des Baums hängt an ihnen. Die Stoffe teilt der Kern über alle Bauten
+// — sie bleiben unberührt (ihre Farben tragen die Paletten-Bytes, die Bäume die Vertex-Farben).
+function __rasterZahl(x, q) {
+    return Math.round(x * q) / q + 0;
+}
+function __ausRaster(g) {
+    g.traverse(function (o) {
+        o.position.set(__rasterZahl(o.position.x, 65536), __rasterZahl(o.position.y, 65536), __rasterZahl(o.position.z, 65536));
+        o.scale.set(__rasterZahl(o.scale.x, 65536), __rasterZahl(o.scale.y, 65536), __rasterZahl(o.scale.z, 65536));
+        const q = o.quaternion;
+        q.set(__rasterZahl(q.x, 1048576), __rasterZahl(q.y, 1048576), __rasterZahl(q.z, 1048576), __rasterZahl(q.w, 1048576));
+        if (o.geometry && o.geometry.attributes) {
+            const A = o.geometry.attributes;
+            for (const name in A) {
+                const s = name === "normal" ? 16384 : 4096,
+                    arr = A[name].array;
+                for (let k = 0; k < arr.length; k++) arr[k] = __rasterZahl(arr[k], s);
+            }
+        }
+    });
+}
+
+// DIE WELT-SKALA EINER ART (wie der Wald pflanzt, placement): Meter je Vorlagen-Einheit — Skala 1 baut in Welt-Metern,
+// unter 1 bleibt sie (Gras, Fels), darüber trägt der Baum den Wald-Faktor treeScaleMul. Die EINE Formel für jeden Leser
+// im Kern (Wedel-Nadel, Schatten-Teil, das Welt-Maß des Wuchses).
+function __weltSkalaArt(id) {
+    const sc = PORTAL_RENDER_CONFIG.placement.scale[id];
+    return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
+}
 
 function deriveParamsPlant(pre) {
     const _D = __dials;
@@ -4395,12 +4473,12 @@ function deriveParamsPlant(pre) {
     }
     if (WALDBODEN_EMIT[pre.kind]) return deriveParamsWaldboden(pre, { api, delta, slim, trop, leaf }, IR, J, O);
     // tree / shrub — DIE EINE ABLEITUNG (K24): der Baum-Zweig ist das Gesetz `treeParams` (phyto-core) — Regler, Saat,
-    // Bau-Stufe und die Phänotyp-Zeile der Art (`pre.ph`). Hier lebt keine eigene Ableitung mehr (der Zwilling setzte
+    // Bau-Stufe, die Phänotyp-Zeile der Art (`pre.ph`) und die Welt-Skala, mit der der Wald sie pflanzt (das Welt-Maß, K20). Hier lebt keine eigene Ableitung mehr (der Zwilling setzte
     // keinen Quirl-Abstand und trug eine eigene Stufen-Tafel). Fail-closed: ohne Gesetzbuch kein Baum.
     const core = typeof self !== "undefined" && self.__phytoCore;
     if (!core || typeof core.treeParams !== "function")
         throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
@@ -4667,11 +4745,15 @@ function buildInstance(presetId, seed, lod, ov) {
             emitRock(P);
         } else {
             const P = deriveParamsPlant(pre);
-            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase/trunkMul)
+            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") emitFlower(P);
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
             else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
+            // DAS MASS DES BAUMS (K20, Beipack `__mass`, must-ignore): der Hub, um den der Schaft die Krone trägt (phyto-core
+            // schaftHub, Vorlagen-Einheiten auf dem Byte-Raster). Der Wirt misst die Sichthöhe der SSE-Stufenwahl ohne ihn: das
+            // Detail, das eine Stufe vereinfacht, ist die Krone, und sie wuchs in der Form-Höhe (der Hub kostete 7 Befehle).
+            if (Number.isFinite(P._schaftHub)) g.userData.__mass = { schaftHub: __rasterZahl(P._schaftHub, 65536) };
         }
     } catch (e) {
         console.warn("Instanz", presetId, e);
@@ -4679,6 +4761,8 @@ function buildInstance(presetId, seed, lod, ov) {
     g.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(g);
     if (isFinite(box.min.y) && box.min.y > 0.002) g.position.y -= box.min.y;
+    __ausRaster(g);
+    g.updateMatrixWorld(true);
     subject = sS;
     SEED = sSeed;
     CURRENT = sCur;
@@ -4688,6 +4772,32 @@ function buildInstance(presetId, seed, lod, ov) {
     __dials = sDials;
     return g;
 }
+
+// DAS SKELETT DER GESTALT (K20, rein additiv): der Wuchs eines Baums oder Strauchs, wie buildInstance ihn für
+// (presetId, seed, lod, ov) wächst — dieselben kanonischen Regler, derselbe Same und Strom (RNG = mulberry32(seed)),
+// dieselbe Ableitung samt Prägung, dasselbe Stufen-Rezept und Blatt-Budget, der Totholz-Schnitt —, ohne Geometrie.
+// Der Stamm liest es für den gefühlten Baum (Kollision): er IST der gezeichnete, nie ein zweites Individuum.
+// Rückgabe { P, nodes } (nodes = growTreeNodes: segs · leaves · trunkR · runMeta · schaftHub), null für jede andere Art.
+function skelettDerGestalt(presetId, seed, lod, ov) {
+    const pre = PRESETS[presetId];
+    if (!pre || (pre.kind !== "tree" && pre.kind !== "shrub")) return null;
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.treeParams !== "function" || typeof core.stufenRezept !== "function")
+        throw new Error("phyto-core fehlt — das Skelett der Gestalt wohnt im Gesetzbuch (Ladereihenfolge)");
+    const d = pre.s;
+    const P = core.treeParams(
+        { api: d.api, delta: d.delta, slim: d.slim, trop: d.trop, leaf: d.leaf },
+        seed,
+        lod,
+        pre,
+        __weltSkalaArt(presetId)
+    );
+    if (ov) Object.assign(P, ov);
+    const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
+    if (P.tot) __totholzSchnitt(nodes, P, seed);
+    return { P, nodes };
+}
+__terrainCore.skelettDerGestalt = skelettDerGestalt;
 
 // ════════════════════════════════════════════════════════════════════════════
 // DIE EINE PIPE (V18.458) — DER GATTUNGS-BÄCKER-TISCH.

@@ -396,7 +396,10 @@ async function probe(K) {
         let g = null;
         const sl = (e.instSlots || []).find((s) => typeof s.key === "string" && /^f:/.test(s.key));
         if (sl) g = Number(sl.key.split("|")[1]);
-        if (!Number.isFinite(g)) g = r._foundryVariantFor(e.seed, pr);
+        // ohne Körper-Slot (die Karte der L2 trägt „fimp:atlas") die Gestalt, die der Wirt zeichnet: der EINE Leser
+        // `_foundryGestaltFor` (die Gestalt des Orts, K20) — der rohe Same wählte ohne Ort, und jede dritte Tanne der Karten-
+        // Stufe wurde gegen den Solitär gemessen (40 Fehlbefunde, die Spitze der Bestand-Hülle 0,8–2,2 m über ihm)
+        if (!Number.isFinite(g)) g = r._foundryGestaltFor(e, pr);
         if (!Number.isFinite(g)) return null;
         const pts = await bild(pr, g);
         if (!pts || !pts.length) return null;

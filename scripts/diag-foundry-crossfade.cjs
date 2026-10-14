@@ -461,8 +461,17 @@ function massDerBlende(srcNC) {
     else if (/weite|_instanzWeite|pflanzeRandM|ak\[i \* 4 \+ 1\]/.test(fen)) v.push("das Fenster der Instanz-Wahl misst die Weite der Gestalt");
     if (!/if \(assignBuffer && builder\) builder\.__anazhInstanzMatrix = n;/.test(srcNC))
         v.push("der Haken legt die Matrix der Instanz nicht am Builder ab");
+    // die Kette des Ursprungs (K20-N1): `_instanzMitteNode` → der Anker der EINEN Naht `_weltNaht` (Objekt × Instanz-Matrix,
+    // Spalte 3) → `_instanzMatrixNode` liest die Matrix, die der Haken am Builder ablegt
     const mitte = fnBody(srcNC, /_instanzMitteNode\(T\)\s*/) || "";
-    if (!/builder\.__anazhInstanzMatrix/.test(mitte) || !/m\.element\(3\)/.test(mitte) || !/modelWorldMatrix/.test(mitte))
+    const naht = fnBody(srcNC, /^ {4}_weltNaht\(T\)\s*/m) || "";
+    const matrix = fnBody(srcNC, /^ {4}_instanzMatrixNode\(T\)\s*/m) || "";
+    if (
+        !/this\._weltNaht\(T\)\.anker/.test(mitte) ||
+        !/modelWorldMatrix\.mul\(this\._instanzMatrixNode\(T\)\)/.test(naht) ||
+        !/anker: Mw\.element\(3\)/.test(naht) ||
+        !/builder\.__anazhInstanzMatrix/.test(matrix)
+    )
         v.push("der Ursprung der Instanz liest nicht die Instanz-Matrix (Spalte 3) in der Welt");
     return v;
 }
@@ -1610,6 +1619,11 @@ async function main() {
                 ],
                 ["Karte zum Quad", nc.replace("distNode: _dA,", "distNode: _Ta.sqrt(_hl2),")],
                 ["Haken ohne Matrix", nc.replace("if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;", "")],
+                // die Naht ohne Instanz-Matrix: der Ursprung jeder Instanz wäre der Ursprung ihres Objekts (K20-N1)
+                [
+                    "Naht ohne Instanz",
+                    nc.replace("const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));", "const Mw = T.modelWorldMatrix;"),
+                ],
             ]) {
                 const v = massDerBlende(src);
                 check(`Selbst-Test Maß: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));

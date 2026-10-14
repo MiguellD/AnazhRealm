@@ -281,13 +281,22 @@ class AnazhRealm_Z21 {
     tickBuildMode() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
+        const target = this._resolvePhantomTarget();
+        // DAS PHANTOM ZEIGT DIE GESTALT SEINES ORTS (K20): wählt der Ort unter ihm eine andere Gestalt als die gezeigte (ein
+        // Baum tritt aus dem Bestand ins Freie — der Solitär), heilt es zu ihr wie der Donor-Ghost, sofort versucht.
+        const ud = bm.phantomMesh.userData;
+        const bpJetzt = this.state.blueprints && this.state.blueprints[bm.blueprintName];
+        if (ud.studioGhost && bpJetzt && ud.studioGestalt !== this._phantomGestalt(bpJetzt, target)) {
+            if (bm.phantomStudioPending !== bm.blueprintName) bm._studioGhostRetryAt = 0;
+            bm.phantomStudioPending = bm.blueprintName;
+        }
         // B1 — der Donor-Ghost HEILT zur Studio-Gestalt, sobald das Asset dockt (fail-soft-
         // Rückweg der Geist-Vorschau; ratenbegrenzt — kein Per-Frame-Flatten-Versuch).
         if (bm.phantomStudioPending === bm.blueprintName && this.state.blueprints) {
             const nowMs = performance.now();
             if (!bm._studioGhostRetryAt || nowMs >= bm._studioGhostRetryAt) {
                 bm._studioGhostRetryAt = nowMs + 500;
-                const studio = this._buildStudioPlacementGhost(this.state.blueprints[bm.blueprintName]);
+                const studio = this._buildStudioPlacementGhost(this.state.blueprints[bm.blueprintName], target);
                 if (studio) {
                     if (this.state.scene) this.state.scene.remove(bm.phantomMesh);
                     this._disposeSoulGroup(bm.phantomMesh);
@@ -297,7 +306,6 @@ class AnazhRealm_Z21 {
                 }
             }
         }
-        const target = this._resolvePhantomTarget();
         bm.phantomMesh.position.set(target.x, target.y, target.z);
         bm.phantomMesh.rotation.y = -this.state.yaw;
         bm.phantomOnGround = target.isStable;

@@ -153,7 +153,9 @@ class AnazhRealm_Z20c {
     // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
     // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
     // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
-    // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
+    // positionNode VOR der Instanzierung: die Phase liest die Welt-Lage aus der EINEN Naht (`_weltNaht`), der Ausschlag
+    // (Welt-Meter in Windrichtung, das Flattern entlang der Welt-Normale) geht über sie in die Vorlage zurück — bis K20-N1
+    // wehte der Wind jedes Baums in der Drehung seiner Instanz und wuchs mit ihrer Skala (gate:foundry-impostor C4).
     // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
     // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
     // trägt er nicht: sein Hub (WIND_GESETZ.blatt.hub 0,035 m im Sturm) liegt unter dem Kaskaden-Texel (wurf 0,17 m).
@@ -169,7 +171,8 @@ class AnazhRealm_Z20c {
         const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
         const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
-        const pW = T.positionWorld;
+        const naht = this._weltNaht(T);
+        const pW = naht.lage;
         const ht = uB.x.max(1e-3);
         const H = T.attribute("aH0", "float").max(0.5);
         const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
@@ -191,8 +194,8 @@ class AnazhRealm_Z20c {
         const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
         const quer = w.quer.mul(uB.z);
         let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
-        if (laub) off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
-        mat.positionNode = T.positionLocal.add(off);
+        if (laub) off = off.add(naht.richtung(T.normalLocal).mul(w.flattern.mul(uB.z)));
+        mat.positionNode = T.positionLocal.add(naht.vorlage(off));
         mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
@@ -278,8 +281,20 @@ class AnazhRealm_Z20c {
         return mesh;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
-    // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl.
+    // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl. DIE SICHTHÖHE EINES BAUMS (K20): ohne den Hub seines Schafts (Beipack
+    // `__mass`, phyto-core schaftHub) — die Stufen vereinfachen die Krone, und die wuchs in der Form-Höhe; die ganze Höhe
+    // samt Schaft hielt jede Stufe weiter (Mess-Wiese 82 → 89 Befehle, die Tannen-L1 bis 67 statt 36 m). Ein Baum ohne
+    // sein Maß ist ein KERN-PFLICHT-Bruch, nie die Höhe samt Schaft.
     _foundryGruppenHoehe(group, preset) {
+        // gewachsen ist, was das Skelett-Gesetz baut (Rezept-Art Baum oder Strauch) — nicht jede Karten-Art (Wagen, Tor)
+        const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
+        let hub = 0;
+        if (rec && (rec.kind === "tree" || rec.kind === "shrub")) {
+            const m = group._mass;
+            if (!m || !Number.isFinite(m.schaftHub))
+                return AnazhRealm._kernPflichtBruch("phyto:__mass (" + preset + ")");
+            hub = m.schaftHub;
+        }
         let minY = Infinity,
             maxY = -Infinity;
         for (const ch of group.children) {
@@ -292,7 +307,7 @@ class AnazhRealm_Z20c {
         }
         const wsM = preset ? this._foundryWorldScaleMatrix(preset) : null;
         const ws = wsM && wsM.elements ? wsM.elements[0] || 1 : 1;
-        return maxY > minY ? Math.max(0.1, (maxY - minY) * ws) : 0.1;
+        return maxY > minY ? Math.max(0.1, (maxY - minY - hub) * ws) : 0.1;
     }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
@@ -590,7 +605,7 @@ class AnazhRealm_Z20c {
     _foundryStufeBereit(entry, preset, lod) {
         const f = this._foundry;
         if (!f || !preset) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return false;
         if (!Number.isFinite(lod) || lod < 0) lod = 0;
         if (lod > 2) lod = 2;
@@ -714,13 +729,91 @@ class AnazhRealm_Z20c {
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
     }
-    // Die Gestalten-Zahl einer Art (die Budget-Zeile, sonst '*'); 0 = Buch kalt. Der Vorrat wärmt 1..V.
+    // DIE GESTALT DES ORTS (K20, nordstern §4.5: „die Gestalt folgt dem Ort, nicht der Art allein"): eine Baum-Art mit V ≥ 2
+    // Bestand-Gestalten (budget.gestalten) trägt DAZU ihren Solitär als Gestalt T = V+1 (phyto-core `solitaerGestalt`,
+    // gebaut mit FREISTAND_OV — growSkeleton: kein Schaft-Hub, der gedrungene Stamm); der Bestand behält 1..V (kein Klon).
+    // Der EINE Leser je Worker-Naht (`_foundryRequest`, `_foundryBakeImpostorRequest`): jeder Körper und jede Karte der
+    // Gestalt T ist der Solitär — auch unter der Prägung eines Bestellers (`ov`, die Regler der Werkstatt, die Wald-
+    // Overrides): die Prägung des Orts tritt DAZU, sie ersetzt sie nie (ein geprägter Solitär wuchs sonst als Bestand).
+    // Rückgabe: die vereinte Prägung, null ohne jede (ein leeres ov ist keine).
+    _foundryGestaltOv(preset, gestalt, ov) {
+        const hat = ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
+        const T = this._foundryGestalten(preset);
+        if (!(T >= 2 && gestalt === T && AnazhRealm._solitaerVon(preset, T - 1) === T)) return hat;
+        return hat ? Object.assign({}, hat, AnazhRealm.FREISTAND_OV) : AnazhRealm.FREISTAND_OV;
+    }
+    // Der Same, dessen Gestalt der Ort wählt (K20): `_foundryVariantFor` liest h = Same × 2654435761 in T Eimern; der Ort
+    // legt den Eimer fest (frei: der Solitär T, Bestand: 1..T−1 = die V Bestand-Gestalten nach dem eigenen Wurf), die Lage
+    // im Eimer bleibt die des Samens, und das Inverse des Knuth-Faktors gibt den Samen zurück. Synchron am Spawn aus dem
+    // Kern (der Bestand pflanzt vor dem Buch). Eine Art ohne Solitär behält ihren Samen; `stehtFrei` fragt den Ort nur dann.
+    _foundryGestaltSame(seed, preset, stehtFrei) {
+        const T = AnazhRealm._studioGestaltenKern(preset);
+        if (!(T >= 2) || AnazhRealm._solitaerVon(preset, T - 1) !== T) return seed >>> 0;
+        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0;
+        const lage = h / 4294967296;
+        const eimer = stehtFrei() ? T - 1 : Math.floor(lage * (T - 1));
+        const h2 = Math.ceil((eimer * 4294967296) / T) + Math.floor(lage * (Math.floor(4294967296 / T) - 1));
+        return Math.imul(h2 >>> 0, AnazhRealm.KNUTH_INVERS) >>> 0;
+    }
+    // DIE GESTALT DES ORTS (K20), das EINE Gesetz und das EINE Gedächtnis für jeden Baum mit Lage — den Eintrag (auch den
+    // geladenen und den gesetzten, `_foundryGestaltFor`) und die Streu-Zelle (`_scatterFoundrySeed`): der Baum am Ort (x, z)
+    // mit der eigenen Krone T (FOREST.crown × Größe, m) fragt das Wald-Gesetz (`_forestStehtFrei`), der Same wählt danach
+    // seinen Eimer (`_foundryGestaltSame`). Gemerkt je Ort, Krone, Same und Art am Stand jeder Eingabe des Urteils: dem
+    // Stand des Wald-Gesetzes (`_forestDartStand`: Same, Buch, Hydrosphäre) und dem der Grundrisse (`_grundrissStand`, die
+    // Wand des Orts `_ortWand`). Vor dem Worldgen wartet die Gestalt (null, nie gemerkt) — für jeden Leser gleich.
+    _ortGestaltSame(x, z, T, seed, preset) {
+        const seedInt = this._forestSeedInt();
+        const stand = this._forestDartStand(seedInt);
+        const grund = this._grundrissStand();
+        if (
+            this._ortSameStand !== stand ||
+            this._ortSameGrund !== grund ||
+            !this._ortSame ||
+            this._ortSame.size > 16384
+        ) {
+            this._ortSame = new Map();
+            this._ortSameStand = stand;
+            this._ortSameGrund = grund;
+        }
+        const k = x + "," + z + "," + T + "," + seed + "," + preset;
+        const hat = this._ortSame.get(k);
+        if (hat !== undefined) return hat;
+        let wartet = false;
+        const same = this._foundryGestaltSame(seed, preset, () => {
+            if (!(T > 0)) return false;
+            if (!this._forestGesetzWahr()) {
+                wartet = true;
+                return false;
+            }
+            return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
+        });
+        if (wartet) return null;
+        this._ortSame.set(k, same);
+        return same;
+    }
+    // DIE GESTALT EINES EINTRAGS (K20), der EINE Leser: ein Baum mit Lage fragt die Gestalt seines Orts (`_ortGestaltSame`),
+    // sein Same bleibt; null = sie wartet (wie auf ein kaltes Buch). Ein Datensatz ohne Lage trägt den Samen seines Orts schon.
+    // `Vk` (optional) reicht die Gestalten-Zahl des Kerns durch (der gefühlte Baum fragt synchron, `_baumGestaltTeile`). Die
+    // Hülle folgt der Gestalt: wartete sie oder wechselte die Gestalt des Orts, fühlt der Baum neu (`_populateBlockerAABBs`).
+    _foundryGestaltFor(entry, preset, Vk) {
+        const p = entry && entry.position;
+        if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);
+        const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
+        const same = this._ortGestaltSame(p.x, p.z, krone > 0 ? krone * (entry.scale || 1) : 0, entry.seed, preset);
+        const g = same === null ? null : this._foundryVariantFor(same, preset, Vk);
+        if (Number.isInteger(g) && (entry._huelleWartet || (entry._huelleG != null && entry._huelleG !== g)))
+            this._populateBlockerAABBs(entry);
+        return g;
+    }
+    // Die Gestalten-Zahl einer Art, wie der Wirt sie bedient: die Bestand-Gestalten der Budget-Zeile (sonst '*'), dazu der
+    // Solitär einer Baum-Art (`_solitaerVon`: Gestalt V+1); 0 = Buch kalt. Der Vorrat wärmt 1..T, je Gestalt EINE Karte.
     _foundryGestalten(preset) {
         const cfg = AnazhRealm._studioRenderConfig;
         const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
         if (!G) return 0;
         const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
-        return Number.isInteger(V) && V >= 1 ? V : 0;
+        if (!(Number.isInteger(V) && V >= 1)) return 0;
+        return AnazhRealm._solitaerVon(preset, V) || V;
     }
     // Foundry-Cache = LRU: ein Treffer wandert nach hinten, beim Überlauf fällt die älteste Gestalt. Eine
     // Räumung zerstört nie einen sichtbaren Baum (Dispose nur ohne lebende Instanz-Gruppe, s.
@@ -877,7 +970,7 @@ class AnazhRealm_Z20c {
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return null; // Buch kalt: wie ein ladendes Asset (der Tick baut nach)
         // DIE EINE LOD-AUTORITÄT: die Distanz-LOD (`_tickArchitectureLOD` → `entry._lodLevel`) FÜHRT, die
         // Foundry serviert genau diese Stufe; `lodOverride` reicht sie herein (sonst Distanz-Schätzung).

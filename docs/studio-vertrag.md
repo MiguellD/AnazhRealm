@@ -279,8 +279,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L). Das Soll der L1 (12)
       steigt offen auf 13: mit 12 deckte die Laub-L1 von unten (60°) im Mittel 0,90–0,94 ihres Bilds von V18.536, die
       Weiden-L1 0,86 (Gegenprüfung R1, Bild-Tafel);
-    - `quote` (tree[1] 0,4): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,29, Koniferen ≤ 0,39 (Mammut: 14 Furchen am
-      Stamm); das Soll 0,35 hält der Mammut nicht, die Zeile steht offen bei 0,4. Ein Baum ohne Krone (Totholz) ist in der
+    - `quote` (tree[1] 0,35, K20): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,26, Koniferen ≤ 0,35; im Kronenraum (ab
+      dem tiefsten Ast-Ansatz) trägt der L1-Stamm nur seine Bahn (Mammut 0,371 → 0,346). Ein Baum ohne Krone (Totholz) ist in der
       L1 nie Gerüst + Karte — die Quote gilt ihm nicht (unten: sein Gerüst);
     - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
       feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
@@ -316,7 +316,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 886–7 526,
       Koniferen 5 188–6 412, Weide 6 474–8 842), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 690–2 782, der
       Mammut 2 308–2 448; jede andere Art ≤ 2 034), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
-    - DAS BILD VON V18.536 (Wand D, Gegenprüfung R1): `spec/asset-contract/v1/bild-v18536.json` trägt je Baum-Art × Same
+    - DIE BILD-TAFEL (Wand D, Gegenprüfung R1; gemünzt V18.536, neu im Vertrags-Akt K20 — die Bäume tragen ihr Welt-Maß):
+      `spec/asset-contract/v1/bild-tafel.json` trägt je Baum-Art × Same
       L0 und L1 je Blick-Hebung (0°/30°/60° von unten, je acht Azimute; das Bild über dem Boden der Vorlage — die Wurzeln
       im Boden sieht kein Spieler) und die Studio-Karte (Deckung, Kronenfarbe). Je Art hält das Mittel der Gestalten je
       Stufe und Hebung und die Deckung der Karten 0,92–1,08, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im
@@ -365,6 +366,10 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
   (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
   `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
+- **Das Maß des Baums (K20):** jeder gewachsene Bau (Rezept-Art Baum oder Strauch) trägt den Beipack `__mass`
+  (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
+  `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
+  ihn, fail-closed (KERN-PFLICHT).
 - Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:tor-fern` (das Tor: Fernbild ≤ 24 sicht-Teile ohne
   wurf-Teil durch den EINEN Leser, Wurf-Deckung, innen — über die Regler-Hülle), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
   (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).

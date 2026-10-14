@@ -461,6 +461,8 @@ async function proben(mitWiese) {
             const ux = kx / lg;
             const uz = kz / lg;
             let yAlt = null;
+            let xAlt = null;
+            let zAlt = null;
             let maxUeber = 0;
             let traeger = null;
             // der Täter beim Namen: die Box-Oberkante eines Werks, auf der die Lage nach dem größten Sprung steht (sonst Boden)
@@ -483,7 +485,10 @@ async function proben(mitWiese) {
                 const sz = hang.z + uz * (-8 + k * 0.12);
                 const yJetzt = c.position.y;
                 if (yAlt !== null && k > 4) {
-                    const erwartet = Math.abs(Math.tan((hang.neig * Math.PI) / 180) * 0.12);
+                    // die Neigung über den GEGANGENEN Weg (die Lage des Vortakts zur Lage jetzt): ein Werk am Weg schiebt
+                    // den Leib (K20: die Hülle der Tanne ist ihr gezeichneter Stamm — der Stoß am Stamm ist kein Sprung)
+                    const weg = Math.hypot(c.position.x - xAlt, c.position.z - zAlt);
+                    const erwartet = Math.abs(Math.tan((hang.neig * Math.PI) / 180) * weg);
                     const ueber = Math.abs(yJetzt - yAlt) - erwartet;
                     if (ueber > maxUeber) {
                         maxUeber = ueber;
@@ -491,6 +496,8 @@ async function proben(mitWiese) {
                     }
                 }
                 yAlt = yJetzt;
+                xAlt = c.position.x;
+                zAlt = c.position.z;
                 c.position.x = sx;
                 c.position.z = sz;
             });

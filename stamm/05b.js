@@ -2652,7 +2652,9 @@ class AnazhRealm_Z05b {
     _windSwayOffset(TSL, opts = {}) {
         const wu = this._windUniformsEnsure();
         this._ensureWindCoupling(TSL);
-        const { vec3, float, sin, cos, max, positionWorld } = TSL;
+        const { vec3, float, sin, cos, max } = TSL;
+        const naht = this._weltNaht(TSL);
+        const positionWorld = naht.lage;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
         const wd = wu.uWindDir || null;
         const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
@@ -2661,12 +2663,12 @@ class AnazhRealm_Z05b {
             .add(
                 dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
-        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung (gelesen im WGSL der
-        // Nah-Wiesen-Senke, W7 06.10.: erst `positionLocal += Versatz`, dann `positionLocal = instanzMatrix ×
-        // positionLocal`): in einer InstancedMesh lesen `positionLocal` und `positionWorld` hier den VORLAGEN-Raum — Phase
-        // und Biegung sehen die Vorlage, der Versatz dreht und skaliert mit der Instanz. Ein Satz (Welt-Lage, keine
-        // Instanz — die Nah-Streu) liest die Welt. Die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt die
-        // Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
+        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung: Phase, Böe und Biegung
+        // lesen die Welt-Lage des Vertex aus der EINEN Naht (`_weltNaht`), der Versatz (Welt-Meter, Welt-Richtung) geht
+        // über sie in die Vorlage zurück (K20-N1; bis dahin sah jeder Halm die Vorlage — die Wiese wiegte im Gleichtakt,
+        // jede Instanz in ihrer eigenen Drehung, die Biegung des Spielers maß gegen die Vorlage). Ein Satz (Welt-Lage,
+        // keine Instanz — die Nah-Streu) liest dieselbe Naht (die Einheit). Die Geometrie-Position (`positionGeometry`,
+        // Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
         const B = AnazhRealm.WIND_BOE;
@@ -2711,7 +2713,7 @@ class AnazhRealm_Z05b {
             offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
             offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
         }
-        return vec3(offX, float(0.0), offZ);
+        return naht.vorlage(vec3(offX, float(0.0), offZ));
     }
 
     // CPU-Seite der EINEN Wind-Richtung: θ(t) = θ0(seed) + 0.5·sin(t·0.009 + φ1) + 0.22·sin(t·0.0257

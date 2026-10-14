@@ -1785,6 +1785,10 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // Die Ziegel-Schlange ordnet nach Bedarf: ein Bau, dessen Mesh in der Mesh-Zone schon steht, reiht sich um diese
 // Distanz² HINTER jeden Bedürftigen (nahe Bauten ohne Mesh · ferne Bauten) — sein Feld-Satz wird nur vorgebacken.
 AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
+// DIE OKTAVE DER LAUB-FARBE (K20): der EINE Leser des Blatt-Atlas (`_blattAtlasProbe`) liest die Farbe so viele Mip-Stufen
+// über der Stufe der Deckung — 2 = kein Farb-Detail unter vier Pixeln (Eiche 25 m, nur L1: Δ-Luma 3,41 → 2,62).
+AnazhRealm.BLATT_FARBE_OKTAVE = 2;
+
 AnazhRealm.LOD_DISTANCES = {
     thresh01: 12, // Studio LOD_D0 — dist > 12 m → LOD1 (Default == Post-Ingest, headless == live)
     thresh12: 26, // Studio LOD_D1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
@@ -2782,5 +2786,26 @@ AnazhRealm._studioGestaltenKern = function (preset) {
     if (!G) return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.lod.budget.gestalten");
     const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
     if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
-    return V;
+    return AnazhRealm._solitaerVon(preset, V) || V;
 };
+// Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (K20, phyto-core `solitaerGestalt`: V+1 für eine Baum-Art mit
+// V ≥ FREISTAND.ab), 0 = die Art trägt keinen. Leser: `_foundryGestalten`, `_studioGestaltenKern`, `_foundryGestaltOv`,
+// `_foundryGestaltSame`.
+AnazhRealm._solitaerVon = function (preset, V) {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const rec = tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
+    if (!rec || rec.kind !== "tree") return 0;
+    const PC = globalThis.__phytoCore;
+    if (!PC || typeof PC.solitaerGestalt !== "function") return AnazhRealm._kernPflichtBruch("phyto:solitaerGestalt");
+    return PC.solitaerGestalt(rec.kind, V);
+};
+// Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht ~0,25 MB, das Wachsen kopiert nur beim
+// Einzug einer Art (BC1-Albedo 170 KB + RGTC2-Normale 85 KB je Schicht, 512 px samt Mips; Mess-Wiese 18 Karten in 18 Schichten).
+AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+// Das Gitter der Grundrisse (`_grundrissStand`): 32-m-Zellen, Zahlen-Schlüssel (die Streu fragt je Zelle).
+AnazhRealm.GRUNDRISS_ZELLE = 32;
+AnazhRealm._grundrissSchluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
+// DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
+// `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
+AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });
+AnazhRealm.KNUTH_INVERS = 244002641;

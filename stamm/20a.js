@@ -287,20 +287,58 @@ class AnazhRealm_Z20a {
         return () => 0;
     }
 
+    // DIE WAHRHEIT DES WALDS (K20): die Darts lesen Boden, Wasser und Feuchte (`_voxelSurfaceY`, `_atlasWaterLevelAt`,
+    // `_feuchteAt` — Erosion, Flüsse und Seen der Hydro-Kachel ihres Orts). Vor dem Worldgen (keine Heimat-Hydrosphäre)
+    // gibt es sie nicht: jede Antwort des Walds ist dann vorläufig und wird nie gemerkt (`_forestCellDarts`), die Gestalt
+    // des Orts wartet (`_foundryGestaltFor` → null, wie auf ein kaltes Buch).
+    _forestGesetzWahr() {
+        const h = this.state.hydrosphere;
+        return !!(h && h.ready);
+    }
+
+    // DER STAND DES WALD-GESETZES (K20): die Darts sind eine Funktion von Welt-Same, Arten-Satz (die Arten des Buchs,
+    // `_forestExtraSpecies`) und Hydrosphäre. Ein neuer Same, ein neues Buch, eine neue Hydrosphäre (der Welt-Regen) oder neue
+    // Arten (`_foundryAutoRegisterSpecies` leert das Gedächtnis) legen ein neues Dart-Gedächtnis an — seine Nummer IST der
+    // Stand. Wer eine Antwort des Walds merkt (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt
+    // `_scatterFoundrySeed`), merkt sie an diesem Stand, nie an der Reihenfolge: der Zweit-Boot fragte den gesetzten Baum,
+    // bevor die Wasser-Wahrheit seines Orts stand, und seine Gestalt blieb die eines anderen Walds (A1-Eiche bei −740/−1190:
+    // Gestalt 1 statt 2; gate:fernwald E).
+    _forestDartStand(seedInt) {
+        const buch = this._foundry ? this._foundry.recipes || null : null;
+        const hydro = this.state.hydrosphere || null;
+        if (
+            !this._forestDartMemo ||
+            this._forestDartMemoSeed !== seedInt ||
+            this._forestDartMemoBuch !== buch ||
+            this._forestDartMemoHydro !== hydro
+        ) {
+            this._forestDartMemo = new Map();
+            this._forestDartMemoSeed = seedInt;
+            this._forestDartMemoBuch = buch;
+            this._forestDartMemoHydro = hydro;
+            this._forestDartGen = (this._forestDartGen || 0) + 1;
+        }
+        return this._forestDartGen;
+    }
+
     // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
     _forestCellDarts(cx, cz, seedInt) {
         // Zell-Memo über Aufrufe: jeder Chunk liest ±2 Rand-Zellen (~4× Redundanz), und die Dart-Generierung
         // (`_voxelSurfaceY`-Scan + Slope + Feuchte) dominiert die Plant-Zeit. Seed-gebunden (Welt-Wechsel
-        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot.
-        let memo = this._forestDartMemo;
-        if (!memo || this._forestDartMemoSeed !== seedInt) {
-            memo = this._forestDartMemo = new Map();
-            this._forestDartMemoSeed = seedInt;
-        }
+        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie
+        // der Chunk-Bau (`_acquireVoxelChunkBuild`) steht die Hydro-Kachel der Zelle vor der Frage; vor dem Worldgen ist die
+        // Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis.
         const memoKey = cx + "," + cz;
-        const hit = memo.get(memoKey);
-        if (hit) return hit;
+        let memo = null;
+        if (this._forestGesetzWahr()) {
+            this._forestDartStand(seedInt);
+            memo = this._forestDartMemo;
+            const hit = memo.get(memoKey);
+            if (hit) return hit;
+            const C = AnazhRealm.FOREST.cell;
+            this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C);
+        }
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
@@ -338,6 +376,10 @@ class AnazhRealm_Z20a {
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                   })
                 : [];
+        if (!memo) {
+            out.vorlaeufig = true;
+            return out;
+        }
         if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
         memo.set(memoKey, out);
         return out;
@@ -1029,7 +1071,7 @@ class AnazhRealm_Z20a {
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
-            // (`__phytoCore.blattAtlasFracht`, 05.10.: BC1 ab Stufe 0 für den Wirt mit BC, rgba ab Stufe 1 ohne) und reicht
+            // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
             // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
             if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);

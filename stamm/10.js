@@ -483,13 +483,18 @@ class AnazhRealm_Z10 {
                                     const _rahmen = _karte.yz;
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
                                     const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
-                                    // ── Instanz-Dekodierung (der Normal-Probe) ──
+                                    // ── Instanz-Dekodierung (die Instanz-Matrix, `_instanzMatrixNode`) ──
+                                    // r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte gelesen, K20 13.10.): dort
+                                    // lasen positionLocal und der Normal-Probe den VORLAGEN-Raum (Skala 1, Drehung 0), die Matrix
+                                    // drehte das Quad danach mit der Instanz — jede Karte stand als feste Tafel in der Drehung ihres
+                                    // Baums, von der Seite ein Strich. Spalte 0 = s·(cos r, 0, −sin r), Spalte 3 = der Anker.
                                     // Jede gezeichnete Instanz lebt: die Gruppe ist dicht, count = lebende Instanzen (`_archGroupFree`
-                                    // verdichtet) — die Null-3×3 eines freien Slots, die den Probe singulär machte (das welt-spannende
-                                    // Quad an der Kamera), erreicht den Shader nie.
-                                    const _probe = _Ta.normalLocal;
-                                    const _sInst = _Ta.float(1.0).div(_Ta.sqrt(_probe.dot(_probe)));
-                                    const _aRot = _Ta.atan(_probe.z.negate(), _probe.x);
+                                    // verdichtet) — die Null-3×3 eines freien Slots erreicht den Shader nie.
+                                    const _naht = this._weltNaht(_Ta);
+                                    const _m0 = _naht.spalte(0);
+                                    const _sV = _naht.skala; // die Instanz-Skala im Vertex-Takt
+                                    const _sInst = _Ta.varying(_sV, "vKarteSkala");
+                                    const _aRot = _Ta.varying(_Ta.atan(_m0.z.negate(), _m0.x), "vKarteDreh");
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -527,7 +532,72 @@ class AnazhRealm_Z10 {
                                     const _gX = _uvStetig.dFdx();
                                     const _gY = _uvStetig.dFdy();
                                     const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
-                                    const _samp = _Ta.mix(_probeA(_at.mapNode, _uvA), _probeA(_at.mapNode, _uvB), _fb);
+                                    // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
+                                    // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
+                                    // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
+                                    // jede Krone in Texel-Treppen — Blöcke von 3–10 px mit rechteckigen Löchern zwischen 30 und 60 m
+                                    // (Werkbank, Radeon: Texel bis 3,3 px). Die geglättete Deckung trägt die Kante zwischen den
+                                    // Texeln; unter einem Pixel je Texel bleibt die deckungstreue Mip-Wahl allein (Gewicht `_kubW`).
+                                    const _kubX = _Ta.float(_at.cw),
+                                        _kubY = _Ta.float(_at.ch);
+                                    const _gpX = _Ta.vec2(_gX.x.mul(_kubX), _gX.y.mul(_V).mul(_kubY)).length();
+                                    const _gpY = _Ta.vec2(_gY.x.mul(_kubX), _gY.y.mul(_V).mul(_kubY)).length();
+                                    const _kubW = _Ta
+                                        .float(1.0)
+                                        .div(_gpX.max(_gpY).max(_Ta.float(1e-4)))
+                                        .sub(_Ta.float(1.0))
+                                        .clamp(0.0, 1.0);
+                                    const _kubisch = (tex, vAns) => {
+                                        const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
+                                        const cy = _vIn.mul(_kubY).sub(_Ta.float(0.5));
+                                        const ix = _Ta.floor(cx),
+                                            iy = _Ta.floor(cy);
+                                        const fx = cx.sub(ix),
+                                            fy = cy.sub(iy);
+                                        const gew = (f) => {
+                                            const e = _Ta.float(1.0).sub(f);
+                                            const w0 = e.mul(e).mul(e).div(6.0);
+                                            const w1 = _Ta
+                                                .float(2.0 / 3.0)
+                                                .sub(f.mul(f).mul(_Ta.float(2.0).sub(f)).mul(0.5));
+                                            const w2 = _Ta
+                                                .float(2.0 / 3.0)
+                                                .sub(e.mul(e).mul(_Ta.float(2.0).sub(e)).mul(0.5));
+                                            const w3 = f.mul(f).mul(f).div(6.0);
+                                            return {
+                                                g0: w0.add(w1),
+                                                g1: w2.add(w3),
+                                                h0: w1.div(w0.add(w1)).sub(0.5),
+                                                h1: w3.div(w2.add(w3)).add(1.5),
+                                            };
+                                        };
+                                        const wx = gew(fx),
+                                            wy = gew(fy);
+                                        // in der eigenen Ansicht: die Abgriffe bleiben einen Texel vor ihrer Kante
+                                        const ziel = (hx, hy) => {
+                                            const y = iy.add(hy).clamp(_Ta.float(1.0), _kubY.sub(1.0));
+                                            return _Ta.vec2(ix.add(hx).div(_kubX), y.div(_kubY).add(vAns).div(_V));
+                                        };
+                                        const lies = (hx, hy) =>
+                                            tex.sample(ziel(hx, hy)).depth(_schicht).level(_Ta.float(0.0));
+                                        return lies(wx.h0, wy.h0)
+                                            .mul(wx.g0)
+                                            .add(lies(wx.h1, wy.h0).mul(wx.g1))
+                                            .mul(wy.g0)
+                                            .add(
+                                                lies(wx.h0, wy.h1)
+                                                    .mul(wx.g0)
+                                                    .add(lies(wx.h1, wy.h1).mul(wx.g1))
+                                                    .mul(wy.g1)
+                                            );
+                                    };
+                                    const _liesA = (tex, uv, vAns) =>
+                                        _Ta.mix(_probeA(tex, uv), _kubisch(tex, vAns), _kubW);
+                                    const _samp = _Ta.mix(
+                                        _liesA(_at.mapNode, _uvA, _v0),
+                                        _liesA(_at.mapNode, _uvB, _v1),
+                                        _fb
+                                    );
                                     _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
@@ -594,30 +664,37 @@ class AnazhRealm_Z10 {
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
                                     // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
                                     mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
-                                    // ── CAMERA-FACING (Vertex): Anker = instanz-transformierte Achsen-Position. Das Einheits-
-                                    //    Quad steht von y=0 bis y=1 (Instanz: Anker + s·y·oben); die Rahmen-Höhe streckt die
-                                    //    Achse auf s·y·H (positionLocal ist im positionNode schon instanziert, r184) ──
+                                    // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
+                                    //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
+                                    //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
+                                    //    (Spalte 3), zurückgedreht mit der transponierten 3×3 (Mᵀ·d = s·Rᵀ·d, die Richtung genügt).
+                                    //    Das Einheits-Quad steht von y=0 bis y=1; Halbbreite und Höhe sind Vorlagen-Maß, die Skala
+                                    //    trägt die Matrix. ──
                                     const _axis = _Ta.positionLocal;
                                     const _axisY = _axis.y.add(
-                                        _Ta.positionGeometry.y.mul(_sInst).mul(_rahmen.y.sub(_Ta.float(1.0)))
+                                        _Ta.positionGeometry.y.mul(_rahmen.y.sub(_Ta.float(1.0)))
                                     );
-                                    const _lkX = _Ta.cameraPosition.x.sub(_axis.x);
-                                    const _lkZ = _Ta.cameraPosition.z.sub(_axis.z);
+                                    const _dAuge = _naht.vorlage(_Ta.cameraPosition.sub(_naht.anker));
+                                    const _lkX = _dAuge.x;
+                                    const _lkZ = _dAuge.z;
                                     const _ll = _Ta.sqrt(_lkX.mul(_lkX).add(_lkZ.mul(_lkZ))).max(_Ta.float(1e-4));
                                     const _lx = _lkX.div(_ll);
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
-                                    const _off = _ecke.mul(_rahmen.x).mul(_sInst);
+                                    const _off = _ecke.mul(_rahmen.x);
                                     // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
                                     // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
                                     // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
-                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter.
+                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter. Die Phase liest
+                                    // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht über die EINE Naht
+                                    // (`_weltNaht.vorlage`) in die Vorlage zurück — sonst drehte und skalierte ihn die Matrix mit dem Baum.
                                     if (!this.state.windUniforms) this._grassInstanceMat();
                                     const _wu = this._ensureWindCoupling(_Ta);
                                     const _WB = AnazhRealm.WIND_BOE;
-                                    const _Hk = _rahmen.y.mul(_sInst).max(0.5);
-                                    const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
+                                    const _Hk = _rahmen.y.mul(_sV).max(0.5);
+                                    const _ankerW = _naht.anker;
+                                    const _ortK = _ankerW.x.mul(_wu.uWindDir.x).add(_ankerW.z.mul(_wu.uWindDir.y));
                                     const _wK = globalThis.__phytoCore.windAusschlag(
                                         AnazhRealm._windTsl(_Ta),
                                         {
@@ -638,12 +715,16 @@ class AnazhRealm_Z10 {
                                         },
                                         false
                                     );
-                                    const _swayX = _wu.uWindDir.x.mul(_wK.quer);
-                                    const _swayZ = _wu.uWindDir.y.mul(_wK.quer);
+                                    const _swayW = _Ta.vec3(
+                                        _wu.uWindDir.x.mul(_wK.quer),
+                                        _Ta.float(0.0),
+                                        _wu.uWindDir.y.mul(_wK.quer)
+                                    );
+                                    const _swayT = _naht.vorlage(_swayW);
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).add(_swayX),
-                                        _axisY,
-                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayZ)
+                                        _axis.x.add(_lz.mul(_off)).add(_swayT.x),
+                                        _axisY.add(_swayT.y),
+                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayT.z)
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
@@ -1513,33 +1594,83 @@ class AnazhRealm_Z10 {
     }
 
     // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
-    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus ihrer Instanz-
-    // Matrix (der Haken an `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen der Ursprung des
-    // Objekts. Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
+    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus der EINEN Naht
+    // (`_weltNaht`: Objekt × Instanz-Matrix; ohne Instanzen der Ursprung des Objekts, eine InstancedMesh ohne Matrix bricht
+    // laut). Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
     // gemessen löste sich die ferne Krone eines nahen Baums auf, und die Stufen-Wahl musste dafür die zweite Stufe
     // zeichnen (1110-11: die Birke in 5 m stand doppelt, 0,6–2,7 ms GPU an der Mess-Wiese).
     _instanzMitteNode(T) {
         if (this._instanzMitteKnoten) return this._instanzMitteKnoten;
-        // die Knoten-Basis exportiert window.THREE nicht — sie ist die Oberklasse des InstanceNode (r184 `class … extends Node`)
-        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
-        if (!N || N.type !== "Node" || !T.varying || !T.modelWorldMatrix || !T.vec4) {
-            const text =
-                "URSPRUNG DER INSTANZ: r184 Node (über InstanceNode) · varying · modelWorldMatrix fehlen (Vendor-Drift)";
+        if (!T.varying) {
+            const text = "URSPRUNG DER INSTANZ: r184 varying fehlt (Vendor-Drift)";
             this.log(text, "ERROR");
             throw new Error(text);
         }
-        class InstanzMitte extends N {
+        this._instanzMitteKnoten = T.varying(this._weltNaht(T).anker.xz, "vInstanzMitte");
+        return this._instanzMitteKnoten;
+    }
+
+    // DIE WELT IM POSITIONS-KNOTEN (K20-N1) — die EINE Naht zwischen Vorlage und Welt für jeden Stoff, der im positionNode
+    // die Welt braucht (der Wind von Gras, Streu, Rinde, Laub und Karte, die Karte, die das Auge ansieht, die Blende): r184
+    // rechnet den positionNode VOR der Instanz-Matrix (WGSL der Karte und der Nah-Wiesen-Senke gelesen: erst
+    // `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`), dort lesen positionLocal,
+    // normalLocal und positionWorld den VORLAGEN-Raum. Jede InstancedMesh entsteht in `_instanzMesh`, also gilt das für
+    // jeden Stoff einer Instanz. Die Naht trägt Mw = Objekt × Instanz-Matrix: `lage` die Welt-Lage des Vertex, `anker` die
+    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
+    // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
+    // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
+    // gate:foundry-impostor C4).
+    _weltNaht(T) {
+        const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));
+        const c0 = Mw.element(0).xyz;
+        const c1 = Mw.element(1).xyz;
+        const c2 = Mw.element(2).xyz;
+        return {
+            anker: Mw.element(3).xyz,
+            lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
+            skala: c0.length(),
+            spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
+            richtung: (n) => T.normalize(Mw.mul(T.vec4(n, 0.0)).xyz),
+            vorlage: (w) =>
+                T.vec3(
+                    c0.dot(w).div(c0.dot(c0).max(1e-12)),
+                    c1.dot(w).div(c1.dot(c1).max(1e-12)),
+                    c2.dot(w).div(c2.dot(c2).max(1e-12))
+                ),
+        };
+    }
+
+    // DIE INSTANZ-MATRIX IM POSITIONS-KNOTEN (K20): die Matrix der gezeichneten Instanz (der Haken an
+    // `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen die Einheit — der EINE Leser des Hakens,
+    // gelesen über die Naht `_weltNaht`. Fehlt sie an einer InstancedMesh, bricht der Bau LAUT — nie ein Stoff, der still
+    // in der Drehung seiner Instanz steht.
+    _instanzMatrixNode(T) {
+        if (this._instanzMatrixKnoten) return this._instanzMatrixKnoten;
+        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
+        if (!N || N.type !== "Node" || !T.mat4) {
+            const text = "INSTANZ-MATRIX: r184 Node (über InstanceNode) · mat4 fehlen (Vendor-Drift)";
+            this.log(text, "ERROR");
+            throw new Error(text);
+        }
+        const realm = this;
+        class InstanzMatrix extends N {
             constructor() {
-                super("vec2");
+                super("mat4");
             }
             setup(builder) {
                 const m = builder.__anazhInstanzMatrix;
-                const lokal = m ? T.vec4(m.element(3).xyz, 1.0) : T.vec4(0.0, 0.0, 0.0, 1.0);
-                return T.modelWorldMatrix.mul(lokal).xz;
+                if (m) return m;
+                if (builder.object && builder.object.isInstancedMesh) {
+                    const text =
+                        "INSTANZ-MATRIX: der Bau einer InstancedMesh fragt vor ihrer Instanz-Matrix (r184-Reihenfolge)";
+                    realm.log(text, "ERROR");
+                    throw new Error(text);
+                }
+                return T.mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
             }
         }
-        this._instanzMitteKnoten = T.varying(new InstanzMitte(), "vInstanzMitte");
-        return this._instanzMitteKnoten;
+        this._instanzMatrixKnoten = new InstanzMatrix();
+        return this._instanzMatrixKnoten;
     }
 
     // DER BRUCH DER BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied (ein Uniform des LOD-Satzes, ein TSL-Knoten, die
