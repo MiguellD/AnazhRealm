@@ -1,0 +1,36 @@
+{
+ "seite": "http://localhost:4312",
+ "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\k14-boot-SQXlqi",
+ "ladungen": [
+  {
+   "art": "kalt",
+   "kontrolle": 32739,
+   "fehler": [],
+   "dcl": 1634,
+   "load": 1673,
+   "skripte": 21,
+   "skriptBytes": 9265224,
+   "skriptEnde": 758,
+   "stamm": 1,
+   "stammBytes": 5946989,
+   "stammKoerper": 5946689,
+   "stammEnde": 758,
+   "version": "18.545.0"
+  },
+  {
+   "art": "zweit",
+   "kontrolle": 27379,
+   "fehler": [],
+   "dcl": 1415,
+   "load": 1777,
+   "skripte": 21,
+   "skriptBytes": 9265224,
+   "skriptEnde": 779,
+   "stamm": 1,
+   "stammBytes": 5946989,
+   "stammKoerper": 5946689,
+   "stammEnde": 376,
+   "version": "18.545.0"
+  }
+ ]
+}

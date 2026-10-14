@@ -1,0 +1,36 @@
+{
+ "seite": "http://localhost:4312",
+ "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\k14-boot-N9BrzU",
+ "ladungen": [
+  {
+   "art": "kalt",
+   "kontrolle": 32852,
+   "fehler": [],
+   "dcl": 1767,
+   "load": 2364,
+   "skripte": 68,
+   "skriptBytes": 9282219,
+   "skriptEnde": 743,
+   "stamm": 48,
+   "stammBytes": 5963984,
+   "stammKoerper": 5949584,
+   "stammEnde": 743,
+   "version": "18.545.0"
+  },
+  {
+   "art": "zweit",
+   "kontrolle": 40531,
+   "fehler": [],
+   "dcl": 2127,
+   "load": 2386,
+   "skripte": 21,
+   "skriptBytes": 9265224,
+   "skriptEnde": 1410,
+   "stamm": 1,
+   "stammBytes": 5946989,
+   "stammKoerper": 5946689,
+   "stammEnde": 1410,
+   "version": "18.545.0"
+  }
+ ]
+}

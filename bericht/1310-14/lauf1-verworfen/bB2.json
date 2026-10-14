@@ -1,0 +1,36 @@
+{
+ "seite": "http://localhost:4312",
+ "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\k14-boot-BL3SHn",
+ "ladungen": [
+  {
+   "art": "kalt",
+   "kontrolle": 35158,
+   "fehler": [],
+   "dcl": 1747,
+   "load": 1764,
+   "skripte": 68,
+   "skriptBytes": 9282219,
+   "skriptEnde": 835,
+   "stamm": 48,
+   "stammBytes": 5963984,
+   "stammKoerper": 5949584,
+   "stammEnde": 835,
+   "version": "18.545.0"
+  },
+  {
+   "art": "zweit",
+   "kontrolle": 43138,
+   "fehler": [],
+   "dcl": 1540,
+   "load": 1932,
+   "skripte": 21,
+   "skriptBytes": 9265224,
+   "skriptEnde": 333,
+   "stamm": 1,
+   "stammBytes": 5946989,
+   "stammKoerper": 5946689,
+   "stammEnde": 333,
+   "version": "18.545.0"
+  }
+ ]
+}

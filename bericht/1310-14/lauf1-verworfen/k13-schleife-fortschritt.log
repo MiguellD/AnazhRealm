@@ -1,0 +1,11 @@
+02:52:19 SERIE START Seite=6898706f (c7038ca7c33b01c6) Instrument=d935ccbb Sicht=ego Orte=wiese genesis
+02:52:47 wiese-1-erst anazhRealm=c7038ca7c33b01c6 exit=127 
+02:5x ABGEBROCHEN fuer 1310-14 (Vorrang)
+02:55:47 wiese-1-zweit anazhRealm=c7038ca7c33b01c6 exit=1 [folge] band …  laufVoll: 68.3 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 4.5/6.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.52 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4) 
+02:56:34 wiese-2-erst anazhRealm=c7038ca7c33b01c6 exit=127 
+02:58:04 wiese-2-zweit anazhRealm=c7038ca7c33b01c6 exit=127 
+02:59:47 genesis-1-erst anazhRealm=c7038ca7c33b01c6 exit=127 
+03:01:20 genesis-1-zweit anazhRealm=c7038ca7c33b01c6 exit=127 
+03:03:08 genesis-2-erst anazhRealm=c7038ca7c33b01c6 exit=127 
+03:03:55 genesis-2-zweit anazhRealm=c7038ca7c33b01c6 exit=127 
+03:04:24 SERIE ENDE

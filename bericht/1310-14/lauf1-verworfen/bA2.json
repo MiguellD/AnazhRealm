@@ -1,0 +1,36 @@
+{
+ "seite": "http://localhost:4312",
+ "profil": "C:\\Users\\micha\\AppData\\Local\\Temp\\k14-boot-AiQQnT",
+ "ladungen": [
+  {
+   "art": "kalt",
+   "kontrolle": 33280,
+   "fehler": [],
+   "dcl": 1728,
+   "load": 1822,
+   "skripte": 21,
+   "skriptBytes": 9265224,
+   "skriptEnde": 757,
+   "stamm": 1,
+   "stammBytes": 5946989,
+   "stammKoerper": 5946689,
+   "stammEnde": 534,
+   "version": "18.545.0"
+  },
+  {
+   "art": "zweit",
+   "kontrolle": 30049,
+   "fehler": [],
+   "dcl": 1516,
+   "load": 1822,
+   "skripte": 21,
+   "skriptBytes": 9265224,
+   "skriptEnde": 388,
+   "stamm": 1,
+   "stammBytes": 5946989,
+   "stammKoerper": 5946689,
+   "stammEnde": 388,
+   "version": "18.545.0"
+  }
+ ]
+}
