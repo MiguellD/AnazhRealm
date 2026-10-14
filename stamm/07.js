@@ -1055,40 +1055,11 @@ class AnazhRealm_Z07 {
                     ) {
                         d.currentPass.executeBundles(d.renderBundles);
                         d.renderBundles = [];
-                        d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+                        AnazhRealm._passNachBuendeln(this.backend, d.currentSets, d.currentPass);
                     }
                     return aus;
                 };
                 renderer.__anazhBundleReihenfolge = true;
-            }
-            // DAS PASS-BÜNDEL (K62 — ein Befehl ohne Änderung zahlt keine Per-Objekt-Arbeit; r184 gelesen): jeder Bürger der
-            // opaken Liste zeichnete je Frame direkt — `_objects.get` (Ketten- und Cache-Schlüssel), `needsRefresh`, die
-            // Pipeline-Prüfung (`needsRenderUpdate`, 30 Vergleiche) und `backend.draw` (Pipeline · Bindegruppen · Puffer neu
-            // kodiert). Gemessen an Genesis Third (Radeon 890M, EINE Welt, Sonde je Station): 61 direkte Befehle im Hauptbild,
-            // je Befehl ~20 µs ohne Refresh. Die opake Liste der Welt-Szene zeichnet jetzt aus EINEM Bündel je Kamera und
-            // Render-Kontext (`_passBuendelZeichnen`): aufgenommen über r184s eigenen Weg, wiedergegeben, solange die Wache
-            // hält (`_passBuendelBruch`); der Replay refresht jeden Bürger wie r184 (needsRefresh → Uniforms · Bindungen).
-            // Der Schatten (Override-Stoff) und jede Aufnahme eines Region-Bündels zeichnen wie bisher. `_bundles` und
-            // `_renderLists` legt erst init() an (dieser Eingriff läuft davor): sie werden je Aufruf gelesen.
-            if (typeof renderer._renderObjects !== "function")
-                this.log("PASS-BÜNDEL: r184-Renderer._renderObjects nicht gefunden (Vendor-Drift)", "ERROR");
-            else if (!renderer.__anazhPassBuendel) {
-                const welt = this;
-                const objekteRoh = renderer._renderObjects;
-                renderer._renderObjects = function (liste, camera, scene, lightsNode, passId = null) {
-                    if (
-                        passId === null &&
-                        this._currentRenderBundle === null &&
-                        scene === welt.state.scene &&
-                        !scene.overrideMaterial &&
-                        camera.isArrayCamera !== true &&
-                        liste.length > 0 &&
-                        liste === this._renderLists.get(scene, camera).opaque
-                    )
-                        return welt._passBuendelZeichnen(this, liste, camera, scene, lightsNode, objekteRoh);
-                    return objekteRoh.call(this, liste, camera, scene, lightsNode, passId);
-                };
-                renderer.__anazhPassBuendel = true;
             }
             // EIN SCHREIBEN JE PUFFER: r184 lädt eine Uniform-Gruppe Bereich für Bereich hoch — je geänderter Uniform ein
             // eigenes writeBuffer (bindingUtils.updateBinding). Kamera-Matrizen, Licht-Richtung und Zeit ändern sich
@@ -1115,6 +1086,31 @@ class AnazhRealm_Z07 {
                     return bindungRoh.call(this, b);
                 };
                 be.__anazhEinSchreiben = true;
+            }
+            // DAS BEFEHLS-BÜNDEL (K62 — ein Draw, dessen Befehl sich nicht ändert, kodiert nichts neu; r184 gelesen): r184
+            // kodiert jeden direkten Draw in jedem Frame neu (`backend.draw` → `_draw`: setPipeline · setBindGroup je Gruppe ·
+            // setIndexBuffer · setVertexBuffer je Puffer · drawIndexed), auch wenn sich nichts davon änderte. Gemessen an Genesis
+            // Third (Radeon 890M, EINE Welt, Sonde je Station): 84 direkte Draws je Frame (61 Hauptbild, 22 Schatten), die
+            // Kodier-Rufe ~0,9 ms je Frame. Jetzt trägt jedes Render-Objekt sein EIGENES Bündel: `_befehlZeichnen` stempelt
+            // genau, was `_draw` kodieren würde (`_befehlStempel`); hielt der Stempel seit dem letzten Draw, zeichnet das
+            // Bündel an derselben Stelle des Passes (`executeBundles` — die Reihenfolge des Passes bleibt, auch Verdeckungs-
+            // Abfragen und Pass-Brüche um ihn), sonst kodiert der Draw roh. Ein Befehl, der sich je Frame ändert, nimmt nie auf;
+            // einer, der einen Frame hielt, nimmt einmal auf. Der Eingriff lebt am WebGPU-Backend: der GL-Rückfall tauscht in
+            // init() das Backend und kennt ihn nie.
+            if (
+                typeof be._draw !== "function" ||
+                !be.pipelineUtils ||
+                typeof be.pipelineUtils.createBundleEncoder !== "function" ||
+                !(be.pipelineUtils._activePipelines instanceof WeakMap)
+            )
+                this.log("BEFEHLS-BÜNDEL: r184-Backend._draw/pipelineUtils nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!be.__anazhBefehl) {
+                const welt = this;
+                const kodiere = be._draw;
+                be._draw = function (ro, info, kd, pipe, bindungen, puffer, dp, enc, sets) {
+                    return welt._befehlZeichnen(this, kodiere, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets);
+                };
+                be.__anazhBefehl = true;
             }
             // DIE VERDECKUNGS-ABFRAGE SCHLIESST NUR, WAS SIE BEGANN (0910-3 A, Leben-Schau 2: am Bach beim Aussteigen „No
             // occlusion queries are active" in renderContext_4/_6, danach ungültige Command-Buffer und „Invalid value used in
@@ -1385,286 +1381,115 @@ class AnazhRealm_Z07 {
         return this._erstZeichnung;
     }
 
-    // DAS PASS-BÜNDEL (der Eingriff in `_configureRenderer`): die opake Liste des Hauptbilds der Welt zeichnet aus EINEM r184-
-    // Bündel je Kamera und Render-Kontext. Bürger ist jeder Eintrag, den der Replay treu zeichnet; direkt (nach dem Bündel) zeichnet,
-    // wer eine Verdeckungs-Abfrage trägt (im Bündel verboten), einen eigenen Render-Haken (der Replay ruft ihn nie), einen Vorher-
-    // Knoten, der eine Textur zieht (er legt sie im Replay neu an — `_diaetVorTextur` (6)), oder eben eine Aufnahme brach
-    // (`PASS_BUENDEL_RUHE`). Die Gruppe des Bündels hängt unsichtbar in der Szene: r184 projiziert sie nie, jeder Linsen-Gang
-    // `traverse(n => n.isBundleGroup && (n.needsUpdate = true))` nimmt auch dieses Bündel neu auf.
-    _passBuendelZeichnen(rend, liste, camera, scene, lightsNode, roh) {
-        const P = this._passBuendelStand();
-        const takt = rend.info.calls;
-        const vor = THREE.Object3D.prototype.onBeforeRender,
-            nach = THREE.Object3D.prototype.onAfterRender;
-        const buerger = [],
-            direkt = [];
-        let ungeprueft = null;
-        for (let i = 0; i < liste.length; i++) {
-            const it = liste[i];
-            const o = it.object;
-            const u = P.unruhe.get(o);
-            const stoff = P.stoff.get(it.material);
-            if (stoff === undefined) (ungeprueft || (ungeprueft = [])).push(it);
-            if (
-                stoff !== true ||
-                o.occlusionTest === true ||
-                o.onBeforeRender !== vor ||
-                o.onAfterRender !== nach ||
-                (u !== undefined && takt - u < AnazhRealm.PASS_BUENDEL_RUHE)
-            )
-                direkt.push(it);
-            else buerger.push(it);
+    // DAS BEFEHLS-BÜNDEL (der Eingriff an r184s `backend._draw`, `_configureRenderer`): die Argumente sind die von `_draw`
+    // (`kodiere`; vendor/three.webgpu.min.js, gepinnt in gate:vendor-anker). Roh kodiert, was kein Bündel tragen kann: ein
+    // Draw in die Aufnahme eines Region-Bündels (der Kodierer ist selbst ein Bündel), eine Verdeckungs-Abfrage (sie gehört dem
+    // Pass), eine Array-Kamera (Ansicht und Kamera-Gruppe je Teil), ein Stencil-Bezug (`setStencilReference` gibt es im Bündel
+    // nicht), ein Multi- oder indirekter Draw — und jeder, dessen Stempel seit dem letzten Draw brach. Gerufen wird je Draw
+    // der Prototyp (Linsen hängen sich dort ein); gate:kamera-treue (BEFEHL) liest die Zähler `_befehl`.
+    _befehlZeichnen(be, kodiere, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets) {
+        const B = this._befehl || this._befehlStand();
+        const o = ro.object;
+        if (
+            enc !== kd.currentPass ||
+            enc.executeBundles === undefined ||
+            o.occlusionTest === true ||
+            o.isBatchedMesh === true ||
+            ro.camera.isArrayCamera === true ||
+            (ro.context.stencil === true && ro.material.stencilWrite === true) ||
+            ro.getIndirect() !== null
+        ) {
+            B.fremd++;
+            return kodiere.call(be, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets);
         }
-        if (buerger.length > 0) {
-            let bg = P.gruppe.get(scene);
-            if (!bg) {
-                bg = new THREE.BundleGroup();
-                bg.name = "passBuendel";
-                bg.visible = false;
-                scene.add(bg);
-                P.gruppe.set(scene, bg);
-            }
-            const rb = rend._bundles.get(bg, camera, rend._currentRenderContext);
-            const d = rend.backend.get(rb);
-            const w = d._passWache;
-            const bruch =
-                d.bundleGPU === undefined || d.version !== bg.version || !w
-                    ? "neu"
-                    : AnazhRealm._passBuendelBruch(rend, w, buerger, scene, lightsNode, P, takt);
-            if (bruch !== null) d.version = -1; // r184 nimmt auf (`_renderBundle`: die Version bricht)
-            const leer = P.leer;
-            rend._renderBundles(
-                [
-                    {
-                        bundleGroup: bg,
-                        camera,
-                        renderList: { opaque: buerger, transparent: leer, transparentDoublePass: leer },
-                    },
-                ],
-                scene,
-                lightsNode
-            );
-            if (bruch !== null) {
-                d._passWache = AnazhRealm._passBuendelStempel(rend, buerger, d.renderObjects, scene, lightsNode, P);
-                P.aufnahmen++;
-                P.grund[bruch] = (P.grund[bruch] || 0) + 1;
-            } else {
-                P.wiedergaben++;
-                // das Netz: brach der Refresh des Replays eine Bindegruppe (ein Fall, den die Wache nicht kennt), zeichnete
-                // dieser Frame die alte — der nächste nimmt neu auf, der Bürger zeichnet direkt; laut gezählt (`nachBruch`)
-                const ros = w.ro;
-                for (let i = 0; i < ros.length; i++) {
-                    const gs = ros[i].getBindings();
-                    const s = w.gruppen[i];
-                    for (let j = 0; j < gs.length; j++)
-                        if (rend.backend.get(gs[j]).group !== s[j]) {
-                            d.version = -1;
-                            P.unruhe.set(ros[i].object, takt);
-                            P.nachBruch++;
-                            break;
-                        }
-                }
-            }
+        const d = be.get(ro);
+        if (AnazhRealm._befehlStempel(be, ro, d, pipe, bindungen, puffer, dp) !== true) {
+            d._befehl = undefined;
+            B.roh++;
+            return kodiere.call(be, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets);
         }
-        if (direkt.length > 0) roh.call(rend, direkt, camera, scene, lightsNode, null);
-        // DAS URTEIL JE STOFF (nach seiner ersten direkten Zeichnung, wenn sein Programm steht): ein Vorher-Knoten, der eine
-        // Textur zieht (Tiefen- und Farb-Abbild der Szene, ein Render in eine Textur), beendet den Pass mitten im Bild
-        // (`copyFramebufferToTexture`) — im Bündel-Kodierer gibt es keinen Pass. Ein solcher Stoff zeichnet immer direkt.
-        if (ungeprueft !== null)
-            for (const it of ungeprueft) {
-                const ro = rend._objects.get(
-                    it.object,
-                    it.material,
-                    scene,
-                    camera,
-                    lightsNode,
-                    rend._currentRenderContext,
-                    it.clippingContext,
-                    null
-                );
-                const nbs = ro._nodeBuilderState;
-                if (nbs) P.stoff.set(it.material, !nbs.updateBeforeNodes.some((v) => v.isTextureNode === true));
-            }
+        let b = d._befehl;
+        if (b === undefined) {
+            // r184s eigener Kodierer eines Bündels für diesen Render-Kontext (Farb- und Tiefen-Format, Proben), frisch gesetzt
+            const auf = be.pipelineUtils.createBundleEncoder(ro.context, "befehl");
+            kodiere.call(be, ro, info, kd, pipe, bindungen, puffer, dp, auf, {
+                attributes: {},
+                bindingGroups: [],
+                pipeline: null,
+                index: null,
+            });
+            b = d._befehl = auf.finish();
+            B.auf++;
+        } else {
+            info.update(o, dp.vertexCount, dp.instanceCount); // die Buchung, die `kodiere` je Draw macht
+            B.wieder++;
+        }
+        B.einer[0] = b;
+        enc.executeBundles(B.einer);
+        AnazhRealm._passNachBuendeln(be, sets, enc);
     }
 
-    _passBuendelStand() {
-        if (!this._passBuendel)
-            this._passBuendel = {
-                gruppe: new WeakMap(), // Szene → die unsichtbare Gruppe ihres Bündels
-                unruhe: new WeakMap(), // Objekt → der Render-Aufruf, in dem es zuletzt eine Aufnahme brach
-                stoff: new WeakMap(), // Stoff → bündelfähig (sein Programm zieht keine Textur im Vorher-Knoten)
-                leer: [],
-                aufnahmen: 0,
-                wiedergaben: 0,
-                nachBruch: 0,
-                grund: {},
-            };
-        return this._passBuendel;
+    _befehlStand() {
+        if (!this._befehl) this._befehl = { auf: 0, wieder: 0, roh: 0, fremd: 0, einer: [null] };
+        return this._befehl;
     }
 
-    // DER STEMPEL EINER AUFNAHME: was das Bündel kodiert hat — die Liste (Objekt · Stoff · Gruppe) und je aufgenommenem Render-
-    // Objekt die GPU-Identitäten (Pipeline · Bindegruppen · Puffer) und die Zeichen-Größen (Bereich · Anzahl · Versionen).
-    static _passBuendelStempel(rend, buerger, ros, scene, lightsNode, P) {
-        const be = rend.backend;
-        const n = buerger.length;
-        const w = {
-            o: new Array(n),
-            m: new Array(n),
-            g: new Array(n),
-            umwelt: rend._nodes.getCacheKey(scene, lightsNode),
-            kontext: rend.contextNode.id + ":" + rend.contextNode.version,
-            ro: ros ? ros.slice() : [],
-            marke: [],
-            gruppen: [],
-            speicher: [], // je Render-Objekt die Attribute seiner Speicher-Puffer (ein Tausch schreibt eine neue Bindegruppe)
-        };
-        for (let i = 0; i < n; i++) {
-            w.o[i] = buerger[i].object;
-            w.m[i] = buerger[i].material;
-            w.g[i] = buerger[i].group;
+    // DER STEMPEL EINES BEFEHLS: genau, was r184s `_draw` kodiert — die GPU-Pipeline, Index-Puffer und Format, Bereich, Anzahl
+    // und Anfang des Draws, jede Bindegruppe (`backend.get(g).group`, ein Textur- oder Puffer-Tausch schreibt eine neue) und
+    // jeder Vertex-Puffer (`backend.get(a).buffer`). Der Inhalt eines Puffers zählt nicht: das Bündel liest ihn beim Zeichnen.
+    // Schreibt die Reihe am Backend-Datensatz des Render-Objekts neu; true: sie hielt seit seinem letzten Draw.
+    static _befehlStempel(be, ro, d, pipe, bindungen, puffer, dp) {
+        let s = d._befehlS;
+        let halt = s !== undefined;
+        if (!halt) s = d._befehlS = [];
+        const nb = bindungen.length,
+            nv = puffer.length,
+            n = 7 + nb + nv;
+        if (s.length !== n) {
+            s.length = n;
+            halt = false;
         }
-        for (const ro of w.ro) {
-            const nbs = ro.getNodeBuilderState();
-            if (nbs.updateBeforeNodes.some((v) => v.isTextureNode === true)) P.stoff.set(ro.material, false);
-            w.marke.push(AnazhRealm._passBuendelMarke(ro));
-            w.gruppen.push(ro.getBindings().map((gr) => be.get(gr).group));
-            const sp = [];
-            for (const gr of ro.getBindings())
-                for (const b of gr.bindings) if (b.isStorageBuffer === true) sp.push(b.attribute);
-            w.speicher.push(sp);
-        }
-        return w;
-    }
-
-    // Die Zeichen-Größen eines Render-Objekts als flache Zahlen-/Identitäten-Reihe (gleich gebaut beim Stempel und bei der Wache).
-    static _passBuendelMarke(ro) {
-        const o = ro.object,
-            geo = ro.geometry,
-            m = ro.material;
-        const ix = geo.index;
-        const dr = geo.drawRange;
-        const gr = ro.group;
-        const a = [
-            m.version,
-            o.geometry,
-            o.receiveShadow,
-            ix,
-            ix ? ix.version : -1,
-            ix ? ix.count : -1,
-            dr.start,
-            dr.count,
-            gr ? gr.start : -1,
-            gr ? gr.count : -1,
-            o.count,
-            geo.instanceCount,
-            ro.attributes,
+        const ix = ro.getIndex();
+        const reihe = [
+            pipe,
+            ix !== null ? be.get(ix).buffer : null,
+            ix !== null && ix.array instanceof Uint16Array,
+            dp.vertexCount,
+            dp.instanceCount,
+            dp.firstVertex,
+            nb,
         ];
-        const at = ro.attributes;
-        if (at)
-            for (let i = 0; i < at.length; i++) {
-                const x = at[i];
-                a.push(x.isInterleavedBufferAttribute ? x.data.version : x.version);
+        for (let i = 0; i < 7; i++)
+            if (s[i] !== reihe[i]) {
+                s[i] = reihe[i];
+                halt = false;
             }
-        return a;
+        for (let i = 0; i < nb; i++) {
+            const g = be.get(bindungen[i]).group;
+            if (s[7 + i] !== g) {
+                s[7 + i] = g;
+                halt = false;
+            }
+        }
+        for (let i = 0; i < nv; i++) {
+            const p = be.get(puffer[i]).buffer;
+            if (s[7 + nb + i] !== p) {
+                s[7 + nb + i] = p;
+                halt = false;
+            }
+        }
+        return halt;
     }
 
-    // DIE WACHE: hält die Aufnahme? Rückgabe null (der Replay zeichnet, was der direkte Pfad zeichnete) oder der Grund des Bruchs.
-    // (1) die Liste ist dieselbe Menge (Sicht, Culling, Stoff-Tausch — die Reihenfolge ändert das Bild nicht); (2) die Umwelt
-    // des Render-Objekts (Lichter · Nebel · Kontext-Knoten — r184 tauscht dann das Render-Objekt); (3) je Bürger die Zeichen-
-    // Größen (`_passBuendelMarke`: Stoff-Version, Geometrie, Index, Bereich, Anzahl, jede Attribut-Version — der Replay lädt
-    // keine Geometrie hoch), die Pipeline samt jeder Stoff-Größe, die r184s `needsRenderUpdate` liest, und jede Bindung, deren
-    // Refresh eine neue Bindegruppe schriebe (Textur-Tausch oder -Version, Speicher-Puffer-Tausch). Wer (3) bricht, zeichnet
-    // `PASS_BUENDEL_RUHE` Aufrufe lang direkt.
-    static _passBuendelBruch(rend, w, buerger, scene, lightsNode, P, takt) {
-        const n = buerger.length;
-        if (n !== w.o.length) return "liste";
-        let reihe = true;
-        for (let i = 0; i < n; i++) {
-            const it = buerger[i];
-            if (it.object !== w.o[i] || it.material !== w.m[i] || it.group !== w.g[i]) {
-                reihe = false;
-                break;
-            }
-        }
-        if (!reihe) {
-            const offen = new Map();
-            for (let i = 0; i < n; i++) {
-                const k = offen.get(w.o[i]);
-                if (k) k.push(i);
-                else offen.set(w.o[i], [i]);
-            }
-            for (let i = 0; i < n; i++) {
-                const it = buerger[i];
-                const k = offen.get(it.object);
-                const j = k ? k.findIndex((x) => w.m[x] === it.material && w.g[x] === it.group) : -1;
-                if (j < 0) return "liste";
-                k.splice(j, 1);
-            }
-        }
-        if (rend._nodes.getCacheKey(scene, lightsNode) !== w.umwelt) return "umwelt";
-        if (rend.contextNode.id + ":" + rend.contextNode.version !== w.kontext) return "umwelt";
-        const be = rend.backend;
-        const F = AnazhRealm.PASS_BUENDEL_PIPELINE;
-        for (let i = 0; i < w.ro.length; i++) {
-            const ro = w.ro[i];
-            let grund = null;
-            const alt = w.marke[i];
-            const neu = AnazhRealm._passBuendelMarke(ro);
-            if (ro.object.geometry !== ro.geometry || ro.needsGeometryUpdate === true || neu.length !== alt.length)
-                grund = "geometrie";
-            else
-                for (let k = 0; k < neu.length; k++)
-                    if (neu[k] !== alt[k]) {
-                        grund = "geometrie";
-                        break;
-                    }
-            if (grund === null) {
-                const p = rend._pipelines.get(ro).pipeline;
-                const t = be.get(ro);
-                const s = ro.material;
-                if (p === undefined || t.material !== s || t.materialVersion !== s.version) grund = "pipeline";
-                else
-                    for (let k = 0; k < F.length; k++)
-                        if (t[F[k]] !== s[F[k]]) {
-                            grund = "pipeline";
-                            break;
-                        }
-            }
-            let sp = 0;
-            if (grund === null)
-                for (const gr of ro.getBindings()) {
-                    for (const b of gr.bindings) {
-                        if (b.isSampledTexture === true) {
-                            // r184 (`Textures.updateTexture`): eine neue Version lädt in die GPU-Textur hinein; eine neue legt
-                            // es nur für Ziel-, Tiefen-, Abbild-, Speicher- und externe Texturen an und beim ersten echten
-                            // Bild — dann schreibt der Refresh eine neue Bindegruppe
-                            const tx = b.textureNode ? b.textureNode.value : b.texture;
-                            if (tx !== b.texture) grund = "bindung";
-                            else if (tx) {
-                                const td = rend._textures.get(tx);
-                                if (td.generation !== b.generation) grund = "bindung";
-                                else if (
-                                    b.version !== tx.version &&
-                                    (tx.isRenderTargetTexture === true ||
-                                        tx.isDepthTexture === true ||
-                                        tx.isFramebufferTexture === true ||
-                                        tx.isStorageTexture === true ||
-                                        tx.isExternalTexture === true ||
-                                        td.isDefaultTexture !== false)
-                                )
-                                    grund = "bindung";
-                            }
-                        } else if (b.isStorageBuffer === true && b.attribute !== w.speicher[i][sp++]) grund = "bindung";
-                        if (grund !== null) break;
-                    }
-                    if (grund !== null) break;
-                }
-            if (grund !== null) {
-                P.unruhe.set(ro.object, takt);
-                return grund;
-            }
-        }
-        return null;
+    // DER PASS NACH executeBundles: WebGPU leert dabei Pipeline, Bindegruppen, Index- und Vertex-Puffer des Passes. r184s
+    // Gedächtnis davon fällt mit — `currentSets` und die aktive Pipeline je Kodierer (`pipelineUtils._activePipelines`) —, sonst
+    // überspränge der nächste rohe Draw ein Setzen, das der Pass vergaß. Der EINE Ort für jedes executeBundles mitten im Pass.
+    static _passNachBuendeln(be, sets, pass) {
+        sets.attributes = {};
+        sets.bindingGroups.length = 0;
+        sets.pipeline = null;
+        sets.index = null;
+        be.pipelineUtils._activePipelines.delete(pass);
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,

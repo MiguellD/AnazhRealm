@@ -1386,36 +1386,6 @@ AnazhRealm.WUCHS_DROSSEL_MS = 250;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
 // solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
 AnazhRealm.ERST_BAU_MS = 4;
-// DAS PASS-BÜNDEL (`_passBuendelZeichnen`): ein Bürger, dessen Zeichen-Zustand eine Aufnahme brach, zeichnet so viele
-// Render-Aufrufe (r184 `info.calls`, ~4 je Frame) direkt, bevor er wieder ins Bündel darf — was sich je Frame ändert, nimmt das
-// Bündel nie je Frame neu auf.
-AnazhRealm.PASS_BUENDEL_RUHE = 240;
-// die Stoff-Größen, die r184 `needsRenderUpdate` (WebGPU-Backend) ohne Versions-Sprung liest — die Wache des Pass-Bündels vergleicht
-// sie mit r184s eigenem Stand des Render-Objekts, ohne ihn zu schreiben
-AnazhRealm.PASS_BUENDEL_PIPELINE = Object.freeze([
-    "transparent",
-    "blending",
-    "premultipliedAlpha",
-    "blendSrc",
-    "blendDst",
-    "blendEquation",
-    "blendSrcAlpha",
-    "blendDstAlpha",
-    "blendEquationAlpha",
-    "colorWrite",
-    "depthWrite",
-    "depthTest",
-    "depthFunc",
-    "stencilWrite",
-    "stencilFunc",
-    "stencilFail",
-    "stencilZFail",
-    "stencilZPass",
-    "stencilFuncMask",
-    "stencilWriteMask",
-    "side",
-    "alphaToCoverage",
-]);
 // DIE PHASEN DES VORRATS (`_foundryPrefetchLibrary`, Merker `f._vorrat`): er wartet auf das erste Weltbild, dann bestellt er;
 // durch ist er false. Jeder Leser (Kalt-Zeile, Warm-Anker, gate:ankunft) nennt die Phase, nie nur „an".
 AnazhRealm.VORRAT_PHASE = Object.freeze({ wartet: "wartet auf das erste Bild", bestellt: "bestellt" });

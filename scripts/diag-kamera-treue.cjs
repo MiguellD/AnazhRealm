@@ -44,6 +44,10 @@
 //   Bühne (nicht im Spiel-Graph) ihre Geometrie-Puffer, ein Replay danach zeichnete das Bild davor (0,3064 = X gegen Y,
 //   die roten Läufe auf integ-probe unter Last; nachgestellt mit einem Spiel-Takt zwischen Aufnahme und Replay, ohne
 //   Kehraus 1,0).
+// DER BEFEHL (K62): ein Draw, dessen Befehl sich nicht ändert, kodiert nichts neu (`_befehlZeichnen` am r184-`backend._draw`).
+//   (i) BEFEHL — im Stand je Frame keine Aufnahme, kein roher Draw, Wiedergaben > 0; nach einer Änderung JEDER kodierten
+//       Größe (Textur-Tausch · Geometrie-Tausch · drawRange · Instanz-Anzahl · Seite) zeichnet das Bündel wie der rohe
+//       Weg (≥ 0,999); Lauf-Kontrollen: ein Stempel, der nie bricht, weicht ab, und die Änderung erreicht das Bild (je < 0,98).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
 // Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (npm run gate:kamera-treue)
@@ -91,6 +95,24 @@ function urteil(z) {
         v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
     if (!(sk.blind < BLIND_GRENZE))
         v.push(`SENKE: ohne die Senke zeichnet die Bühne ${sk.blind} gleich (Soll < ${BLIND_GRENZE}) — die Bild-Probe sieht die Senke nicht`);
+    // DER BEFEHL (K62): ein Draw ohne Änderung kodiert nichts neu; eine Änderung jeder kodierten Größe erreicht das Bild.
+    const bf = z.befehl || {};
+    const bs = bf.stand || {};
+    if (!(bs.wieder > 0))
+        v.push(
+            `BEFEHL: ${bs.wieder || 0} Wiedergaben je Frame im Stand — jeder unveränderte Draw kodiert je Frame neu (Täter: r184 \`backend._draw\`, das Befehls-Bündel \`_befehlZeichnen\` fehlt)`
+        );
+    else if (bs.auf !== 0 || bs.roh !== 0)
+        v.push(`BEFEHL: im Stand je Frame ${bs.auf} Aufnahmen und ${bs.roh} rohe Draws (Soll 0) — ein Befehl ohne Änderung zahlt seine Kodierung`);
+    const bb = bf.bild || {};
+    if (!(bb.befehl >= BILD_SOLL))
+        v.push(
+            `BEFEHL: nach Textur-Tausch, Geometrie-Tausch, Bereich, Instanz-Anzahl und Seite zeichnet das Befehls-Bündel ${bb.befehl} gleich mit dem rohen Weg (Soll ≥ ${BILD_SOLL}) — der Stempel übersah eine kodierte Größe`
+        );
+    if (!(bb.taeter < BLIND_GRENZE))
+        v.push(`BEFEHL: ein Stempel, der nie bricht, zeichnet ${bb.taeter} gleich mit dem rohen Weg (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+    if (!(bb.aenderung < BLIND_GRENZE))
+        v.push(`BEFEHL: die beiden Änderungs-Bilder sind ${bb.aenderung} gleich (Soll < ${BLIND_GRENZE}) — die Änderung erreicht das Bild nicht`);
     // DIE STAND-WAND (Welle K): im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
     // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
@@ -136,6 +158,7 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
+        befehl: { stand: { auf: 0, roh: 0, wieder: 31 }, bild: { befehl: 1, taeter: 0.86, aenderung: 0.83 } },
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -174,6 +197,11 @@ function selbsttest() {
         { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
         { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
+        { name: "Befehl kodiert je Frame neu", z: mit("befehl.stand", { wieder: 0 }), muss: /BEFEHL: 0 Wiedergaben je Frame im Stand .*backend\._draw/ },
+        { name: "Befehl nimmt im Stand auf", z: mit("befehl.stand", { auf: 2 }), muss: /BEFEHL: im Stand je Frame 2 Aufnahmen/ },
+        { name: "Stempel übersieht eine Größe", z: mit("befehl.bild", { befehl: 0.93 }), muss: /zeichnet das Befehls-Bündel 0\.93 gleich/ },
+        { name: "Befehls-Probe blind", z: mit("befehl.bild", { taeter: 1 }), muss: /ein Stempel, der nie bricht, zeichnet 1 gleich/ },
+        { name: "Befehls-Änderung unsichtbar", z: mit("befehl.bild", { aenderung: 0.995 }), muss: /die Änderung erreicht das Bild nicht/ },
         {
             name: "Stempel überlebt den verschachtelten Render",
             z: mit("stand.verschachtelt.replay", { diaet: 0.1099 }),
@@ -714,7 +742,70 @@ function buehne() {
                 senke.blind = gleich(bildOhne, bildRef);
                 gruppe.remove(refA, refB);
             }
+            // (i) DER BEFEHL (K62): ein Draw, dessen Befehl sich nicht ändert, kodiert nichts neu — er zeichnet aus seinem
+            // Befehls-Bündel (`_befehlZeichnen`, der Eingriff an r184s `backend._draw`), im Hauptbild wie im Schatten. Im Stand
+            // je Frame keine Aufnahme und kein roher Draw; nach einer Änderung JEDER Größe, die `_draw` kodiert (Bindegruppe:
+            // Textur-Tausch · Puffer: Geometrie-Tausch · Bereich: drawRange · Anzahl: Instanzen · Pipeline: Seite) zeichnet
+            // das Bündel wie der rohe Weg (der Stempel bricht immer); Lauf-Kontrolle: ein Stempel, der nie bricht, weicht ab.
+            const befehl = {};
+            {
+                gruppe.isBundleGroup = false;
+                gruppe.needsUpdate = true;
+                const zahl = () => Object.assign({ auf: 0, wieder: 0, roh: 0 }, r._befehl || {});
+                const pix = (a) => {
+                    const t = new T.DataTexture(new Uint8Array(a), 2, 2);
+                    t.needsUpdate = true;
+                    return t;
+                };
+                const texA = pix([230, 40, 40, 255, 40, 230, 40, 255, 40, 40, 230, 255, 230, 230, 40, 255]);
+                const texB = pix([20, 20, 20, 255, 250, 250, 250, 255, 250, 250, 250, 255, 20, 20, 20, 255]);
+                const texKnoten = TSL.texture(texA);
+                const tafel = new T.Mesh(new T.BoxGeometry(3, 3, 3), diaet(new T.MeshStandardNodeMaterial({ colorNode: texKnoten })));
+                tafel.position.set(-3, 1.5, 4);
+                tafel.receiveShadow = true;
+                tafel.frustumCulled = false;
+                gruppe.add(tafel);
+                const geoAlt = kisten[2].geometry;
+                const geoNeu = new T.BoxGeometry(3, 0.6, 3);
+                const aendereBefehl = (k) => {
+                    texKnoten.value = k % 2 ? texB : texA;
+                    kisten[1].geometry.setDrawRange(0, k % 2 ? 18 : Infinity);
+                    kisten[2].geometry = k % 2 ? geoNeu : geoAlt;
+                    laub.count = k % 2 ? 3 : 6;
+                    kisten[0].material.side = k % 2 ? T.BackSide : T.FrontSide;
+                };
+                const mitStempel = async (fn) => {
+                    const alt = A._befehlStempel;
+                    if (fn) A._befehlStempel = fn;
+                    try {
+                        return await schuss();
+                    } finally {
+                        A._befehlStempel = alt;
+                    }
+                };
+                blick(1);
+                await schuss();
+                await schuss();
+                const z0 = zahl();
+                for (let i = 0; i < 4; i++) await schuss();
+                const z1 = zahl();
+                befehl.stand = { auf: (z1.auf - z0.auf) / 4, roh: (z1.roh - z0.roh) / 4, wieder: (z1.wieder - z0.wieder) / 4 };
+                aendereBefehl(1);
+                await schuss(); // der Stempel bricht: roh
+                await schuss(); // er hielt einen Frame: aufgenommen
+                const befehlBild = await mitStempel(null); // die Wiedergabe des neuen Bündels
+                const wahr = await mitStempel(() => false); // der rohe Weg
+                await schuss(); // die Bündel des Zustands stehen wieder (der Stempel hielt: aufgenommen)
+                await schuss();
+                aendereBefehl(2);
+                const taeterBild = await mitStempel(() => true);
+                const wahr2 = await mitStempel(() => false);
+                befehl.bild = { befehl: gleich(befehlBild, wahr), taeter: gleich(taeterBild, wahr2), aenderung: gleich(wahr, wahr2) };
+                aendereBefehl(0);
+                gruppe.remove(tafel);
+            }
             return {
+                befehl,
                 senke,
                 stand,
                 aufnahme,
@@ -789,6 +880,7 @@ function buehne() {
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
         );
         log(`Stand: ${JSON.stringify(out.stand)}`);
+        log(`Befehl: ${JSON.stringify(out.befehl)}`);
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -811,6 +903,7 @@ function buehne() {
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
+            `BEFEHL: im Stand je Frame ${out.befehl.stand.wieder} Wiedergaben, ${out.befehl.stand.auf} Aufnahmen, ${out.befehl.stand.roh} rohe Draws; nach der Änderung jeder kodierten Größe zeichnet das Bündel ${out.befehl.bild.befehl} wie der rohe Weg (Stempel ohne Bruch ${out.befehl.bild.taeter}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
