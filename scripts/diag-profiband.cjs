@@ -161,7 +161,8 @@ function buendelReiheWand(src) {
     // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
     // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
     const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\(pos\)\s*\{/);
-    const takt = rumpf(code, /\n {4}_tickArchitectureLOD\(maxSwitchesPerFrame = 5\)\s*\{/);
+    // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
+    const takt = rumpf(code, /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/);
     if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
     if (!takt || !/this\._buendelAnkerPruefen\(pm\)/.test(takt))
         errs.push("_tickArchitectureLOD prüft den Anker der Reihe nicht (this._buendelAnkerPruefen(pm) fehlt)");
