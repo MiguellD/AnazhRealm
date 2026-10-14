@@ -1305,7 +1305,7 @@ class AnazhRealm_Z07 {
                     if (pass !== undefined) {
                         const bef = pass.get(k);
                         if (
-                            bef != null &&
+                            bef !== undefined &&
                             welt._befehlHaelt(this, bef, zeichne, object, material, camera, lightsNode, group, clip) ===
                                 true
                         )
@@ -1338,7 +1338,9 @@ class AnazhRealm_Z07 {
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
-                    pass.set(k, zeichne(this, ro, aufnahme, false) ? welt._befehlSatz(this, ro) : null);
+                    zeichne(this, ro, aufnahme, false);
+                    // auch ein Draw, dessen Pipeline noch nicht steht, geht ab jetzt über seinen Befehl (dort wartet er)
+                    pass.set(k, welt._befehlSatz(this, ro));
                     return;
                 }
                 let bau = -1;
@@ -1467,10 +1469,11 @@ class AnazhRealm_Z07 {
     // dann nur reine Prüfungen: Stoff-Version, Geometrie, dynamischer Schlüssel — bricht eine, geht der Draw den Vendor-Weg),
     // die EINE Änderungs-Prüfung (needsRefresh, die Diät) urteilt, die Pipeline fragt r184s eigene Prüfung; steht alles, spielt
     // `_befehlWieder` das Befehls-Bündel ab. Ändert sich etwas, zeichnet der Rest des Vendor-Wegs (`zeichne`) mit dem schon
-    // gefällten Urteil. Ein Schnitt (clippingContext), eine Bündel-Aufnahme, eine fremde Szene gehen immer den Vendor-Weg.
+    // gefällten Urteil. Ein Schnitt-Wechsel (r184 `clippingNeedsUpdate`, hier ohne seinen Nebeneffekt geprüft), eine
+    // Bündel-Aufnahme, eine fremde Szene gehen immer den Vendor-Weg.
     // gate:vendor-anker pinnt jede gespiegelte r184-Stelle, gate:kamera-treue (BEFEHL) liest `_befehl.haelt`.
     _befehlHaelt(rend, bef, zeichne, object, material, camera, lightsNode, group, clip) {
-        if (bef.tot === true || clip !== null || rend._currentRenderBundle !== null) return false;
+        if (bef.tot === true || rend._currentRenderBundle !== null) return false;
         const ro = bef.ro;
         if (ro.material !== material || ro.lightsNode !== lightsNode || ro.context !== rend._currentRenderContext)
             return false;
@@ -1479,7 +1482,8 @@ class AnazhRealm_Z07 {
         if (
             ro.version !== material.version ||
             ro.needsGeometryUpdate === true ||
-            ro.initialNodesCacheKey !== ro.getDynamicCacheKey()
+            ro.initialNodesCacheKey !== ro.getDynamicCacheKey() ||
+            (clip !== null && clip.cacheKey !== ro.clippingContextCacheKey)
         )
             return false;
         ro.drawRange = object.geometry.drawRange;
@@ -1493,7 +1497,8 @@ class AnazhRealm_Z07 {
                 return true;
             }
         }
-        if (zeichne(rend, ro, null, false, refresh)) this._befehlSatz(rend, ro);
+        zeichne(rend, ro, null, false, refresh);
+        this._befehlSatz(rend, ro);
         return true;
     }
 

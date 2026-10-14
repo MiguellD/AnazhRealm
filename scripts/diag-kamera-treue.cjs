@@ -45,7 +45,8 @@
 //   die roten Läufe auf integ-probe unter Last; nachgestellt mit einem Spiel-Takt zwischen Aufnahme und Replay, ohne
 //   Kehraus 1,0).
 // DER BEFEHL (K62): ein Draw, dessen Befehl sich nicht ändert, kodiert nichts neu (`_befehlZeichnen` am r184-`backend._draw`).
-//   (i) BEFEHL — im Stand je Frame keine Aufnahme, kein roher Draw, Wiedergaben > 0; nach einer Änderung JEDER kodierten
+//   (i) BEFEHL — im Stand je Frame keine Aufnahme, kein roher Draw, Wiedergaben > 0, keine Ketten-Suche (`_objects.get`)
+//       und keine Draw-Vorarbeit (`backend.draw`) der Welt-Szene (der haltende Befehl `_befehlHaelt`); nach einer Änderung JEDER kodierten
 //       Größe (Textur-Tausch · Geometrie-Tausch · drawRange · Instanz-Anzahl · Seite) zeichnet das Bündel wie der rohe
 //       Weg (≥ 0,999); Lauf-Kontrollen: ein Stempel, der nie bricht, weicht ab, und die Änderung erreicht das Bild (je < 0,98).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
@@ -104,6 +105,10 @@ function urteil(z) {
         );
     else if (bs.auf !== 0 || bs.roh !== 0)
         v.push(`BEFEHL: im Stand je Frame ${bs.auf} Aufnahmen und ${bs.roh} rohe Draws (Soll 0) — ein Befehl ohne Änderung zahlt seine Kodierung`);
+    if (!(bs.kette === 0 && bs.vorarbeit === 0))
+        v.push(
+            `BEFEHL: im Stand je Frame ${bs.kette} Ketten-Suchen und ${bs.vorarbeit} Draw-Vorarbeiten der Welt-Szene (Soll 0) — ein unveränderter Befehl zahlt den Render-Objekt-Pfad (Täter: r184 \`_objects.get\` · \`backend.draw\`, der haltende Befehl \`_befehlHaelt\` fehlt)`
+        );
     const bb = bf.bild || {};
     if (!(bb.befehl >= BILD_SOLL))
         v.push(
@@ -158,7 +163,7 @@ function selbsttest() {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
-        befehl: { stand: { auf: 0, roh: 0, wieder: 31 }, bild: { befehl: 1, taeter: 0.86, aenderung: 0.83 } },
+        befehl: { stand: { auf: 0, roh: 0, wieder: 31, kette: 0, vorarbeit: 0 }, bild: { befehl: 1, taeter: 0.86, aenderung: 0.83 } },
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -199,6 +204,11 @@ function selbsttest() {
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
         { name: "Befehl kodiert je Frame neu", z: mit("befehl.stand", { wieder: 0 }), muss: /BEFEHL: 0 Wiedergaben je Frame im Stand .*backend\._draw/ },
         { name: "Befehl nimmt im Stand auf", z: mit("befehl.stand", { auf: 2 }), muss: /BEFEHL: im Stand je Frame 2 Aufnahmen/ },
+        {
+            name: "Befehl zahlt den Render-Objekt-Pfad",
+            z: mit("befehl.stand", { kette: 26, vorarbeit: 26 }),
+            muss: /BEFEHL: im Stand je Frame 26 Ketten-Suchen und 26 Draw-Vorarbeiten .*_befehlHaelt/,
+        },
         { name: "Stempel übersieht eine Größe", z: mit("befehl.bild", { befehl: 0.93 }), muss: /zeichnet das Befehls-Bündel 0\.93 gleich/ },
         { name: "Befehls-Probe blind", z: mit("befehl.bild", { taeter: 1 }), muss: /ein Stempel, der nie bricht, zeichnet 1 gleich/ },
         { name: "Befehls-Änderung unsichtbar", z: mit("befehl.bild", { aenderung: 0.995 }), muss: /die Änderung erreicht das Bild nicht/ },
@@ -383,7 +393,7 @@ function buehne() {
         const kehrausVor = st._gpuKehrausN || 0;
         const zaehlUm = (bahn) =>
             function (sc, c, f) {
-                if (sc && sc === st.scene && !sc.overrideMaterial) spielBilder++;
+                if (sc && sc === st.scene && sc !== szene && !sc.overrideMaterial) spielBilder++;
                 if (sc && sc.overrideMaterial) {
                     if (sc.overrideMaterial.isShadowPassMaterial) stoffe.add(sc.overrideMaterial);
                     if (aufnahmeKontext) z.schattenRenders++;
@@ -748,7 +758,9 @@ function buehne() {
             // Textur-Tausch · Puffer: Geometrie-Tausch · Bereich: drawRange · Anzahl: Instanzen · Pipeline: Seite) zeichnet
             // das Bündel wie der rohe Weg (der Stempel bricht immer); Lauf-Kontrolle: ein Stempel, der nie bricht, weicht ab.
             const befehl = {};
-            {
+            // die Bühne ist für diese Station die Welt-Szene: der haltende Befehl gilt den Draws der Welt (`_befehlHaelt`)
+            const weltSzene = st.scene;
+            try {
                 gruppe.isBundleGroup = false;
                 gruppe.needsUpdate = true;
                 const zahl = () => Object.assign({ auf: 0, wieder: 0, roh: 0 }, r._befehl || {});
@@ -765,6 +777,8 @@ function buehne() {
                 tafel.receiveShadow = true;
                 tafel.frustumCulled = false;
                 gruppe.add(tafel);
+                await schuss(); // der neue Stoff baut seine Pipeline auf dem Vendor-Weg, erst dann gilt die Bühne als Welt
+                st.scene = szene;
                 const geoAlt = kisten[2].geometry;
                 const geoNeu = new T.BoxGeometry(3, 0.6, 3);
                 const aendereBefehl = (k) => {
@@ -789,10 +803,34 @@ function buehne() {
                 };
                 blick(1);
                 await reifen();
+                // der Render-Objekt-Pfad je Draw der Welt-Szene: die Ketten-Suche (r184 `_objects.get`) und die Vorarbeit von
+                // `backend.draw` — ein haltender Befehl (`_befehlHaelt`) zahlt keine von beiden
+                const pfad = { kette: 0, vorarbeit: 0 };
+                const kettenRoh = rend._objects.get,
+                    drawRoh = rend.backend.draw;
+                rend._objects.get = function (o, m, sz) {
+                    if (sz === st.scene) pfad.kette++;
+                    return kettenRoh.apply(this, arguments);
+                };
+                rend.backend.draw = function (ro) {
+                    if (ro.scene === st.scene) pfad.vorarbeit++;
+                    return drawRoh.apply(this, arguments);
+                };
                 const z0 = zahl();
-                for (let i = 0; i < 4; i++) await schuss();
+                try {
+                    for (let i = 0; i < 4; i++) await schuss();
+                } finally {
+                    rend._objects.get = kettenRoh;
+                    rend.backend.draw = drawRoh;
+                }
                 const z1 = zahl();
-                befehl.stand = { auf: (z1.auf - z0.auf) / 4, roh: (z1.roh - z0.roh) / 4, wieder: (z1.wieder - z0.wieder) / 4 };
+                befehl.stand = {
+                    auf: (z1.auf - z0.auf) / 4,
+                    roh: (z1.roh - z0.roh) / 4,
+                    wieder: (z1.wieder - z0.wieder) / 4,
+                    kette: pfad.kette / 4,
+                    vorarbeit: pfad.vorarbeit / 4,
+                };
                 aendereBefehl(1);
                 await reifen(); // der Stempel bricht (roh), hält, nimmt auf
                 const befehlBild = await mitStempel(null); // die Wiedergabe des neuen Bündels
@@ -804,6 +842,8 @@ function buehne() {
                 befehl.bild = { befehl: gleich(befehlBild, wahr), taeter: gleich(taeterBild, wahr2), aenderung: gleich(wahr, wahr2) };
                 aendereBefehl(0);
                 gruppe.remove(tafel);
+            } finally {
+                st.scene = weltSzene;
             }
             return {
                 befehl,
@@ -904,7 +944,7 @@ function buehne() {
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
-            `BEFEHL: im Stand je Frame ${out.befehl.stand.wieder} Wiedergaben, ${out.befehl.stand.auf} Aufnahmen, ${out.befehl.stand.roh} rohe Draws; nach der Änderung jeder kodierten Größe zeichnet das Bündel ${out.befehl.bild.befehl} wie der rohe Weg (Stempel ohne Bruch ${out.befehl.bild.taeter}). ` +
+            `BEFEHL: im Stand je Frame ${out.befehl.stand.wieder} Wiedergaben, ${out.befehl.stand.auf} Aufnahmen, ${out.befehl.stand.roh} rohe Draws, ${out.befehl.stand.kette} Ketten-Suchen, ${out.befehl.stand.vorarbeit} Draw-Vorarbeiten; nach der Änderung jeder kodierten Größe zeichnet das Bündel ${out.befehl.bild.befehl} wie der rohe Weg (Stempel ohne Bruch ${out.befehl.bild.taeter}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
