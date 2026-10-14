@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <!-- koerperstudio-Portal (Nachlese-Welle, W-A4c-Muster) — eigenes Document, eigene strikte CSP:
-     Skript nur same-origin (koerperstudio.js + ../../koerper-core.js + ../terrain/lib/ — Three.js r128
+     Skript nur same-origin (koerperstudio.js + ../../koerper-core.js + ../../foundry-core.js + ../terrain/lib/ — Three.js r128
      vendored vom geteilten Regal, kein CDN mehr; die Shell wanderte dafür byte-treu
      aus dem Inline-Skript nach koerperstudio.js, das schmiede.js/fachwerk.js-Muster). Die
      iframe-Sandbox trägt die Isolation; die W12-Brücke am Ende von koerperstudio.js
@@ -103,6 +103,7 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <button data-e="showcase">Showcase</button>
 </div>
 </div>
+<div class="section"><h4>Stufe</h4><div class="pickgrid" id="stufen"><button data-s="auto" class="active">auto</button><button data-s="0">L0</button><button data-s="1">L1</button></div><div class="mini" id="stufeIst"></div></div>
 <div class="btns"><button id="btnRandom">🎲 Zufall</button><button id="btnReset">↺ Reset</button></div>
 <div class="section"><h4>Kosten</h4><div id="kosten"></div></div>
 <div class="btns"><button id="btnPlay" style="width:100%;background:linear-gradient(90deg,#3a6ea5,#5a8fc5);font-weight:600">🎮 Spielen — Ninja-Park</button></div>
@@ -112,6 +113,8 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 </div>
 <script src="../../koerper-core.js?v=18.546.0"></script>
 <script src="../../tetrapoda-core.js?v=18.546.0"></script>
+<!-- LABOR = WELT (K45-2): DERSELBE Bäcker wie Foundry-Worker und Wirts-Ofen (BAKERS_BY_KIND.koerper) — die gezeigte Gestalt IST der Welt-Guss -->
+<script src="../../foundry-core.js?v=18.546.0"></script>
 <script src="../huelle/huelle.js?v=18.546.0"></script>
 <script src="koerperstudio.js?v=18.546.0"></script>
 

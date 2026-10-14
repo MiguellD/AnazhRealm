@@ -1,0 +1,6 @@
+tor-fern EXIT=0 76s
+chunk-satz EXIT=0 34s
+asset-contract EXIT=1 279s
+regler-wirkt EXIT=0 160s
+pipeline-constitution EXIT=0 5s
+playtest:fast EXIT=0

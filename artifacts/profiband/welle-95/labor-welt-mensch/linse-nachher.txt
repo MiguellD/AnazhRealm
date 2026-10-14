@@ -1,0 +1,5 @@
+Studio-Hülle: H1 Hand-Regler · H2 Brücken-Kopie · H3 Umstieg (Studios: garage, schmiede, portale, klang, fachwerk, koerperstudio, tetrapoda, terrain; Nebenwelten: skeleton, fluid, translated)
+  Hand-Regler: 0 (die terrain-Familie ohne Ausnahme)
+  eigene ready-Meldungen: 2 (begegnung (sandgesichert), schwarm (sandgesichert)) + die EINE der Hülle
+  Labor = Welt (H4): tetrapoda, koerperstudio zeigen den Ofen-Körper (keine Ausnahme)
+✅ gate:studio-huelle: 8 Studios + 3 Nebenwelten auf der EINEN Hülle, kein Hand-Regler, keine Brücken-Kopie

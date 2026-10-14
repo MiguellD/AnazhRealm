@@ -128,13 +128,13 @@ function drawZensus(opts) {
             }
             // je Draw EIN Befehl: seit V18.510 ist jedes Leaf eine InstancedMesh (der Batch-Zweig fiel mit dem Batch)
             const cmd = 1;
+            // eine Senke zeichnet über ihren Zeichner (1410-1): Instanzen, Matrizen und Einträge trägt die Senke
+            const senke = object.isInstanzZeichner === true ? object.__instanzQuelle : object;
             let tris = 0;
             if (g) {
                 const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                 const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
                 tris = dr / 3;
-                // eine Senke zeichnet über ihren Zeichner (1410-1): die Instanzen zählt die Senke
-                const senke = object.isInstanzZeichner === true ? object.__instanzQuelle : object;
                 if (senke.isInstancedMesh) tris *= senke.count;
             }
             const e = zaehl[k] || (zaehl[k] = { cmd: 0, obj: 0, tris: 0 });
@@ -148,7 +148,7 @@ function drawZensus(opts) {
                 // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
                 const w =
                     nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
-                const mw = object.matrixWorld.elements;
+                const mw = senke.matrixWorld.elements;
                 const miss = (x, y, z) => {
                     const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
                     const wy = mw[1] * x + mw[5] * y + mw[9] * z + mw[13];
@@ -159,10 +159,10 @@ function drawZensus(opts) {
                     if (d < w.dMin) w.dMin = d;
                     if (d > w.dMax) w.dMax = d;
                 };
-                if (object.isInstancedMesh && object.instanceMatrix) {
-                    const a = object.instanceMatrix.array;
-                    const ein = slotEintrag.get(object.userData && object.userData.archInstanceKey);
-                    for (let i = 0; i < object.count; i++) {
+                if (senke.isInstancedMesh && senke.instanceMatrix) {
+                    const a = senke.instanceMatrix.array;
+                    const ein = slotEintrag.get(senke.userData && senke.userData.archInstanceKey);
+                    for (let i = 0; i < senke.count; i++) {
                         const b = i * 16;
                         miss(a[b + 12], a[b + 13], a[b + 14]);
                         const id = ein ? ein.get(i) : undefined;
@@ -188,9 +188,7 @@ function drawZensus(opts) {
                     material: (material && (material.name || material.type)) || null,
                     geometrie: g ? g.name || g.type : null,
                     vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
-                    instanzen: (object.isInstanzZeichner === true ? object.__instanzQuelle : object).isInstancedMesh
-                        ? (object.isInstanzZeichner === true ? object.__instanzQuelle : object).count
-                        : null,
+                    instanzen: senke.isInstancedMesh ? senke.count : null,
                     userData: Object.keys(object.userData || {}).slice(0, 8),
                 });
             }

@@ -713,6 +713,45 @@ class AnazhRealm_Z20b {
             return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + "[" + stufe + "].schatten");
         return z;
     }
+    // DIE STUFEN-GRENZEN DES GESETZBUCHS (K43, B2c `ab` + `hyst`): trägt die Art einer gesetzten Studio-Architektur an ihren
+    // gezeigten Stufen `ab` (Meter × Welt-Skala des Eintrags), wählt der LOD-Takt nach IHNEN statt nach den Wirts-Distanzen
+    // (LOD_DISTANCES) — das Tor beginnt seine Stufe 1 dort, wo sein Kern es sagt. → { erste, grenzen: [{ stufe, ab }], h } oder
+    // null (die Art nennt keine Grenze). Am Eintrag gemerkt (die Art eines Eintrags wechselt nie).
+    _archStufenGrenzen(entry) {
+        if (entry._stufenGrenzen !== undefined) return entry._stufenGrenzen;
+        const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
+        const f = this._foundry;
+        const rec = preset && f && f.recipes ? f.recipes[preset] : null;
+        if (!rec) return null; // das Buch lädt: noch kein Urteil, der nächste Takt fragt neu
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const art = L && L.budget ? L.budget[rec.kind] : null;
+        const st = this._foundryKindStages(preset) || [];
+        const grenzen = [];
+        for (const s of st)
+            if (art && art[s] && Number.isFinite(art[s].ab) && art[s].nurWurf !== true)
+                grenzen.push({ stufe: s, ab: art[s].ab });
+        entry._stufenGrenzen = grenzen.length
+            ? {
+                  erste: st[0],
+                  grenzen,
+                  h: Number.isFinite(art.hyst)
+                      ? art.hyst
+                      : AnazhRealm._kernPflichtBruch("phyto:lod.budget." + rec.kind + ".hyst"),
+              }
+            : null;
+        return entry._stufenGrenzen;
+    }
+    // Die Stufe nach den Grenzen des Gesetzbuchs: wer eine Stufe trägt, hält sie bis (1 − h)·ab, wer davor steht, kommt ab
+    // (1 + h)·ab hinein; ohne Zustand (Spawn) die Grenze selbst. `s` = die Welt-Skala des Eintrags.
+    static _stufeNachGrenzen(d, cur, G, s) {
+        let st = G.erste;
+        for (const g of G.grenzen) {
+            const ab = g.ab * s;
+            const schwelle = !Number.isFinite(cur) ? ab : cur >= g.stufe ? ab * (1 - G.h) : ab * (1 + G.h);
+            if (d > schwelle) st = g.stufe;
+        }
+        return st;
+    }
     // Ist die Stufe der Zwilling einer anderen Stufe ihrer Art (B2c `schatten`: Baum L0 → L1)? Dann wirft sie über die
     // Zwillings-Leaves (`_foundryFlattenFor`: EIN Werfer je Gestalt), nie über ihre Teile.
     _foundryWurfQuelle(preset, lod) {
@@ -1859,7 +1898,10 @@ class AnazhRealm_Z20b {
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
+    // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
+    // je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler dann nicht.
     _foundryTreeMaterial(kind, mp, wiegen, baum) {
+        const satz = !!(mp && mp.satzRegler === true);
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -1891,7 +1933,8 @@ class AnazhRealm_Z20b {
             globalThis.__phytoCore.budgetStoff(kind, mp) +
             (xfade ? "|xf" : "") +
             (wiegen === true ? "|wiegt" : "") +
-            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "");
+            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
+            (satz === true ? "|satz" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -2179,6 +2222,23 @@ class AnazhRealm_Z20b {
             // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
             mat.colorNode = TSL.vec4(laubFarbe, 1.0);
         }
+        // DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff): Rauheit · Metall · Deckkraft aus `aRegler`, das Emissiv × Glut-Stärke
+        // aus `aGlut` — vor der Blende (sie multipliziert die Deckung) und vor dem Leucht-Gesetz (es addiert den Licht-Pool
+        // auf das Emissiv; ein Stoff des Leucht-Gesetzes `leucht` behält sein Emissiv aus der Farbe).
+        if (satz === true) {
+            const rg = TSL.attribute("aRegler", "vec3");
+            mat.roughnessNode = rg.x;
+            mat.metalnessNode = rg.y;
+            // die Deckkraft lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: nie opacityNode), die Marke 0,5 trägt nichts bei
+            if (R.op < 1) {
+                mat.opacity = 1;
+                mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(rg.z));
+            }
+            if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
+                mat.emissiveNode = TSL.attribute("aGlut", "vec3");
+            mat.userData = mat.userData || {};
+            mat.userData.satzSchluessel = key;
+        }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
         // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
         // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
@@ -2206,7 +2266,8 @@ class AnazhRealm_Z20b {
                 // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
                 // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
                 // der Nacht (`_leuchtStoff`) blieb unsichtbar
-                if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5 * R.op;
+                // (der Satz-Stoff liest die Deckkraft je Ecke: seine Schwelle liegt unter jeder Deckkraft eines Stoffs, 1/255)
+                if (!(mat.alphaTest > 0)) mat.alphaTest = satz === true && R.op < 1 ? 1 / 255 : 0.5 * R.op;
                 mat.userData = mat.userData || {};
                 mat.userData.foundryCrossfade = true;
                 mat.userData.foundryCrossfadeKanal = kanal;
@@ -2248,7 +2309,8 @@ class AnazhRealm_Z20b {
         // · Ton-Anker der Strähne · Blende · Wiegen); der erste Stoff einer Signatur legt ihre Knoten ab, jeder weitere zeichnet
         // mit DENSELBEN Knoten — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe,
         // Deckkraft, Schwelle) liest r184 als Stoff-Referenz. Weichen die belegten Knoten-Plätze ab, fehlt der Signatur eine
-        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen.
+        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest
+        // Rauheit und Metall je Ecke (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
         const _plaetze = [
             "colorNode",
             "emissiveNode",
@@ -2257,6 +2319,8 @@ class AnazhRealm_Z20b {
             "positionNode",
             "maskNode",
             "maskShadowNode",
+            "roughnessNode",
+            "metalnessNode",
         ];
         const _sig = [
             kind,
@@ -2269,6 +2333,7 @@ class AnazhRealm_Z20b {
             _tonA && klasseLook ? "ton" : "",
             xfade ? "xf" : "",
             wiegen === true ? "wiegt" : "",
+            satz === true ? (R.op < 1 ? "satz:durch" : "satz") : "",
         ].join("|");
         if (!this._foundryGraphen) this._foundryGraphen = new Map();
         const _graph = this._foundryGraphen.get(_sig);

@@ -1267,7 +1267,7 @@ AnazhRealm.ANALOG_NAH_M = 64;
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
-// in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse `diag-fell-blick`, 720p, fov 75°): die Strähnen ändern
+// in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse diag-fell-blick, git-Archiv, 720p, fov 75°): die Strähnen ändern
 // 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
 // Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
 AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });
@@ -1515,6 +1515,13 @@ AnazhRealm._tuerOffenRad = function () {
     const o = AnazhRealm.Gesetz("porta:TUER_GESETZ.offen", null);
     if (Number.isFinite(o) && o > 0) return o;
     return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.offen");
+};
+// Die Fern-Pose der Tor-Flügel (K43-2): der Anteil von `offen`, in dem die Flügel jenseits der Tür-Nähe stehen — die Stufe 1
+// trägt ihn im Körper (porta-core `baueStufe`), die Stufe 0 öffnet von ihm (`_tickTorFluegel`). Fail-closed.
+AnazhRealm._tuerFernAnteil = function () {
+    const f = AnazhRealm.Gesetz("porta:TUER_GESETZ.fern", null);
+    if (Number.isFinite(f) && f >= 0 && f <= 1) return f;
+    return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.fern");
 };
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
 // Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.

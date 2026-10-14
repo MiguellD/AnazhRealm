@@ -109,21 +109,40 @@ AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, st
 AnazhRealm.BAU_SATZ = Object.freeze({
     haus: "bauSatz",
     ausstattung: "bauSatz",
+    // K43: das Tor zeichnet im Bau-Satz seines Stoffs (die Flügel der Stufe 0 wandern und bleiben draußen, `leaf.tuer`); sein
+    // Wurf-Zwilling (die NUR-WURF-Stufe 3) liegt im Wurf-Satz — EIN Befehl je Kaskade für alle Werfer.
+    gate: "bauSatz",
     rock: "formationenSatz",
     boulder: "formationenSatz",
     scree: "formationenSatz",
     crystal: "formationenSatz",
     columns: "formationenSatz",
 });
-// Die Attribute eines Bau-Satz-Bereichs: was der Studio-Stoff liest (Vertex-Farbe, die Stufen-Stempel der Dither-
-// Blende) — `_bauSatzBlock` rechnet Position und Normale in Welt-Lage, die Instanz-Stempel je Vertex.
-AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
+// Die Attribute eines festen Streu-Satz-Bereichs (`_streuSatzArt`, der Stein der Nah-Streu): was der Studio-Stoff liest
+// (Vertex-Farbe, die Stufen-Stempel der Dither-Blende) — `_satzBlock` rechnet Position und Normale in Welt-Lage.
+AnazhRealm.STREU_FEST_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3]),
     Object.freeze(["color", 3]),
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
+]);
+// Die Attribute eines Bau-Satz-Bereichs: dazu DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff `_satzStoff`) — `aRegler` =
+// Rauheit · Metall · Deckkraft (snorm8x4), `aGlut` = Emissiv × Glut-Stärke (float16x4), beide je Bereich aus dem Stoff seiner
+// Gruppe (`budgetRegler`). Befund (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in diesen
+// Zahlen (die Glut-Stärke je Rezept, Rauheit und Metall nach `metal`) — 24 Satz-Befehle im Hauptbild für sieben Bauten.
+// DIE VERTEX-FORM (K44, wie der Boden-Satz): die Normale snorm8x4, die Farbe float16x4 — die Regler kosten so keinen Byte
+// (60 → 48 B je Vertex; gemessen Genesis Radeon: Bau-Sätze 12,3 MB Inhalt bei 60 B).
+AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
+    Object.freeze(["position", 3]),
+    Object.freeze(["normal", 3, "snorm8"]),
+    Object.freeze(["color", 3, "half"]),
+    Object.freeze(["aLodLevel", 1]),
+    Object.freeze(["aH0", 1]),
+    Object.freeze(["aH0L", 1]),
+    Object.freeze(["aRegler", 3, "snorm8"]),
+    Object.freeze(["aGlut", 3, "half"]),
 ]);
 // Die Attribute eines Wurf-Satz-Bereichs (`bauWurf`, S3): was der EINE Schatten-Stoff liest — Welt-Lage, die Atlas-Lage
 // (uv; die Stufe 3 trägt 0), die Deckung (aDeckt 1) und die Stufen-Stempel der Dither-Blende (Haus 0 = ungemaskt).
@@ -199,7 +218,9 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // Tor-Domäne (porta-core, kind:"gate"): Platzierung als Rezept-Daten (fx.place mode "site" +
     // siteTag "tor") → placeExtra null. role: "portal" — ein platziertes tor_<rezept> IST ab Geburt ein
     // Welt-Tor (isPortal-Affordance, E-Betreten, Default-Ziel Skelett-Welt; `richte portal …` zielt um).
-    // impostor: true — Fernstufe = 8-Winkel-Billboard (porta-core B2 weist L1/L2 dem Wirt zu).
+    // KEINE Karte (K43): das Tor trägt seine Stufen-Kette im Gesetzbuch (porta-core L0 → L1, die Grenzen `ab` im Kern) und
+    // jenseits der Nah-Grenze seine Fernform "huelle" — vorher galt es über `impostor: true` als baumartig (Wahrnehmungs-
+    // Distanz, Dither-Masken des Baums, die Karte ab 26 m) und zeigte die L0 bis 26 m.
     gate: Object.freeze({
         prefix: "tor_",
         donor: "tor_basis",
@@ -207,7 +228,6 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         builtIn: false,
         placeExtra: null,
         role: "portal",
-        impostor: true,
     }),
     // Waffen-/Werkzeug-Domäne (schmiede-core, kind:"weapon", 21 Gattungen): fx.place mode "hand" →
     // placeExtra null; Donor = Substanz-Datenblock (Tags · Ω-PHYSIS · wield), die Gestalt aus dem

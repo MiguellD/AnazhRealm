@@ -325,9 +325,9 @@
             "titel": "Mensch, die Haut im Ton Mahagoni 0x5f3826 (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
             "labor": {
                 "studio": "koerperstudio",
-                "nur": [
-                    "matSkin"
-                ],
+                "stoff": {
+                    "kind": "^(haut|skin)$"
+                },
                 "aktion": {
                     "klick": "#skinTones .sw",
                     "index": 6

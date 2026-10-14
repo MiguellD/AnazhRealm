@@ -1,0 +1,60 @@
+{
+ "datum": "2026-10-14T11:43:36.627Z",
+ "echt": true,
+ "geraet": "amd rdna-3",
+ "ort": null,
+ "spieler": [
+  0,
+  0
+ ],
+ "eichung": null,
+ "welt": {
+  "rinde": {
+   "Y": null,
+   "fehler": "kein Zug der Klasse mit passendem Stoff am Exemplar"
+  },
+  "laub": {
+   "Y": null,
+   "fehler": "kein Zug der Klasse mit passendem Stoff am Exemplar"
+  },
+  "fels": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "boden": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "haus": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "lack": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "tor": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "haut": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "fell": {
+   "Y": null,
+   "fehler": "kein Pixel"
+  },
+  "klinge": {
+   "Y": 0.3493,
+   "rgb": "0.388/0.3419/0.3081",
+   "pixel": 6474,
+   "zuege": 2,
+   "stoffe": [
+    "unknown|0.17|1.00|0|2.60|cc:0.35@0.18|v:metall|xf",
+    "unknown|0.32|1.00|0|2.00|v:metall|xf"
+   ],
+   "gesetzt": true
+  }
+ }
+}

@@ -41,6 +41,11 @@
 //       (jeder Bereich treu, jeder Abschnitt neu gelegt). Befund (echte GPU, Mess-Wiese): der Wasser-Satz hielt in Ruhe
 //       3,25 MB für 0,33 MB Inhalt, nach drei Wander-Schleifen à 1,2 km der Boden-Satz 24,9 statt 16,4 MB, die Bau-Sätze 12,0
 //       statt 1,3 MB. Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
+//   (n) DER EINE SATZ-STOFF (K43-2) — je Klasse eines Stoffs (Art · Seh-Klasse · Seite · Durchsicht · Gewebe · Leucht-Gesetz ·
+//       Zeitplan · Klarlack, je Satz-Name und Wurf) EIN Bau-Satz; die Regler (Rauheit · Metall · Deckkraft · Emissiv × Glut-
+//       Stärke) reisen je Ecke (`aRegler`, `aGlut`), die erste Ecke jeder Gruppe trägt die Regler ihres Studio-Stoffs. Befund
+//       (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in ihren Reglern — 24 Bau-Satz-Befehle
+//       im Hauptbild für sieben Bauten. Selbsttest: zwei Sätze einer Klasse, ein Satz ohne `aRegler`, eine untreue Ecke.
 //   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
 //       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
 //       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.
@@ -105,6 +110,23 @@ function urteil(z) {
         v.push(
             `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
         );
+    // (n) DER EINE SATZ-STOFF (K43-2): je Klasse eines Stoffs EIN Bau-Satz, die Regler je Ecke
+    const sst = z.satzStoff;
+    if (sst) {
+        if (sst.zwillinge.length)
+            v.push(
+                `SATZ-STOFF: ${sst.zwillinge.length} Stoff-Klassen zeichnen in mehr als einem Bau-Satz, getrennt nur durch ihre ` +
+                    `Regler (Rauheit · Metall · Deckkraft · Glut) — ${sst.zwillinge.slice(0, 4).join(", ")}`
+            );
+        if (sst.ohneRegler.length)
+            v.push(
+                `SATZ-STOFF: ${sst.ohneRegler.length} Bau-Sätze ohne Regler je Ecke (aRegler · aGlut) — ${sst.ohneRegler.slice(0, 4).join(", ")}`
+            );
+        if (sst.untreu.length)
+            v.push(
+                `SATZ-STOFF: ${sst.untreu.length} Gruppen tragen nicht die Regler ihres Stoffs — ${sst.untreu.slice(0, 4).join(", ")}`
+            );
+    }
     // (m) DIE VERTEX-FORM (K44): der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
     // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, gemessen 14.10. Radeon: 14,6 MB des Boden-Satzes)
     const SOLL = { normal: "nint8x4", color: "float16x4" };
@@ -180,6 +202,7 @@ function selbsttest() {
         pGruppen: [],
         pBundles: [],
         bauSatz: { gruppen: 3, imSatz: 3, selbst: [], ohneBereich: [] },
+        satzStoff: { saetze: 4, zwillinge: [], ohneRegler: [], untreu: [] },
         vertexForm: [
             { satz: "bodenSatz", attr: "position", form: "float32x3", bytes: 12, mb: 2.6 },
             { satz: "bodenSatz", attr: "normal", form: "nint8x4", bytes: 4, mb: 0.9 },
@@ -248,6 +271,23 @@ function selbsttest() {
             name: "Deck-Zwilling lebt",
             z: { ...gruen, deck: 3 },
             muss: [/STREU: 3 Deck-Streu-InstancedMeshes/],
+        },
+        {
+            name: "zwei Tor-Stoffe derselben Klasse, getrennt durch ihre Glut-Stärke",
+            z: {
+                ...gruen,
+                satzStoff: {
+                    saetze: 5,
+                    zwillinge: ["bauSatz|unknown|0.62|0.00|0|1.00|v:metall|- ×2"],
+                    ohneRegler: ["bauSatz|probe|-"],
+                    untreu: ["f:maurentor:L1 (Rauheit 0,28 statt 0,59)"],
+                },
+            },
+            muss: [
+                /SATZ-STOFF: 1 Stoff-Klassen zeichnen in mehr als einem Bau-Satz.*v:metall/,
+                /SATZ-STOFF: 1 Bau-Sätze ohne Regler je Ecke.*bauSatz|probe/,
+                /SATZ-STOFF: 1 Gruppen tragen nicht die Regler ihres Stoffs.*maurentor/,
+            ],
         },
         {
             name: "eine Felszacken-Gestalt zeichnet als eigene Gruppe",
@@ -525,6 +565,33 @@ function check(name, ok, detail) {
                     }
                 if (s._regionBundles)
                     for (const k of s._regionBundles.keys()) if (String(k).startsWith("p:")) z.pBundles.push(k);
+                // (n) DER EINE SATZ-STOFF: die Klasse jedes Bau-Satzes = sein Stoff ohne die Regler, die je Ecke reisen
+                z.satzStoff = { saetze: 0, zwillinge: [], ohneRegler: [], untreu: [] };
+                {
+                    const klassen = new Map();
+                    if (s.chunkSaetze)
+                        for (const [art, satz] of s.chunkSaetze) {
+                            if (!(satz.spec.userData && satz.spec.userData.bauSatz) || satz.spec.nurWurf) continue;
+                            const u = satz.spec.mat.userData || {};
+                            const mp = Object.assign({}, u.foundryMp || {});
+                            const durch = typeof mp.opacity === "number" && mp.opacity < 1;
+                            for (const k of ["roughness", "metalness", "emissive", "emissiveIntensity", "opacity"])
+                                delete mp[k];
+                            const kl =
+                                satz.spec.name +
+                                "|" +
+                                window.__phytoCore.budgetStoff(u.foundryKind, mp) +
+                                (durch ? "|durch" : "") +
+                                (satz.spec.schatten ? "|w" : "|-");
+                            z.satzStoff.saetze++;
+                            if (!klassen.has(kl)) klassen.set(kl, []);
+                            klassen.get(kl).push(art);
+                            if (!satz.geom.attributes.aRegler || !satz.geom.attributes.aGlut)
+                                z.satzStoff.ohneRegler.push(art.slice(0, 60));
+                        }
+                    for (const [kl, arts] of klassen)
+                        if (arts.length > 1) z.satzStoff.zwillinge.push(kl + " ×" + arts.length);
+                }
                 // (h) DER BAU-SATZ: jede lebende Gruppe einer Satz-Art (Rezept-kind in BAU_SATZ, gesetzt, kein
                 // Tür-Flügel) zeichnet nie selbst und trägt ihren Bereich treu im Satz ihres Stoffs.
                 z.bauSatz = { gruppen: 0, imSatz: 0, selbst: [], ohneBereich: [] };
@@ -564,6 +631,20 @@ function check(name, ok, detail) {
                         }
                         if (treu) z.bauSatz.imSatz++;
                         else z.bauSatz.ohneBereich.push(name);
+                        // (n) die erste Ecke trägt die Regler des Studio-Stoffs der Gruppe (snorm8: 1/127)
+                        const ar = treu && !g.shadowTwin ? satz.geom.attributes.aRegler : null;
+                        if (ar) {
+                            const u = g.mesh.material.userData || {};
+                            const R = window.__phytoCore.budgetRegler(u.foundryKind, u.foundryMp || null);
+                            const a = ar.array,
+                                o = b.vStart * 4;
+                            const ist = [a[o] / 127, a[o + 1] / 127, a[o + 2] / 127];
+                            const soll = [R.r, R.mt, R.op];
+                            if (ist.some((x, c) => Math.abs(x - soll[c]) > 0.005))
+                                z.satzStoff.untreu.push(
+                                    `${name}: ${ist.map((x) => x.toFixed(2)).join("/")} statt ${soll.map((x) => x.toFixed(2)).join("/")}`
+                                );
+                        }
                     }
                 // (c) DER STREU-SATZ: jeder Block mit Pflanzen lebt als Bereich im Satz seines Stoffs — n × Vertices der
                 // Gestalt, die erste Pflanze, erster Vertex: Geometrie × Matrix, in Welt-Lage im Pool; je Stoff EIN Satz.

@@ -25,7 +25,7 @@
 //       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
 //   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
-//       der Farbton des Bodens 1–3 m um das Feuer (25–45°, die Farbtemperatur des Gesetzes); `--bild` legt die Bilder aus
+//       der Farbton des Bodens 1–3 m um das Feuer (28–45°, die Farbtemperatur des Gesetzes); `--bild` legt die Bilder aus
 //       2 m, aus 6 m und der Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12).
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
@@ -738,12 +738,16 @@ const S0_NAH_INSTALL = () => {
 const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
 // DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
-// ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 25–45°. Die Sättigung (HSV, Soll
+// ≈ 1 800–2 000 K) — der Boden 1–3 m um die Feuerstelle trägt in der Ausgabe den Farbton 28–45°. Die Sättigung (HSV, Soll
 // der Karte ≤ 0,75) steht im Bericht und ist OFFEN, keine Wand: der Fuß der ACES-Kurve hält bei der Nacht-Belichtung 1,0
 // den Blau-Kanal eines feuerbeschienenen Bodens auf 0 (Soll erst ab dem ≈ 2,6-Fachen der Feuer-Stärke, dann brennt der
 // Steinring weiß aus — K11b, echte GPU). Der Selbsttest (`farbe`) gibt dem Platz des Feuers das Datum bis K11b: die
-// Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen.
-const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
+// Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen. Die untere Kante ist das Licht
+// selbst: 1 800 K liegt in sRGB bei 29,6°, die Glut-Palette bei 20,5°; jeder Boden zieht den Ton zu seinem eigenen (Gras
+// hinauf). Seit der Wiesen-Grund im Gesetz steht (K53) und die Probe neben dem Genesis-Platz (K52), hob das Gras die Glut auf
+// 26° — die alte Kante 25° ließ sie durch (Selbsttest BLIND, CI 38551540510), das Gesetz-Feuer misst 37,6°. OFFEN: ein
+// relatives Maß (Ton gegen denselben Boden unter neutralem Licht) trennte unabhängig vom Boden.
+const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
 const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 // DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss übersetzt das Boden-Programm
 // (`voxelChunkMaterial`) — seine Zeichen stehen unter der Decke des Bodens (`STOFFE.boden.budget.zeichenMax`). Seit K17 trug
