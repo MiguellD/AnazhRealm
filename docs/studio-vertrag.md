@@ -928,14 +928,20 @@ Dials `s`) beim Namen.
 (der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal`, der Wildnis-Term `wildnisY` = die LANDFORM,
 K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
 je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
-den benannten Seen `benannteSeen`, das Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die
-Schneegrenze `SCHNEE`/`schnee`, die Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`.
-DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mit den Bändern `HANG_BAENDER`, die Messung
-`MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit `abdruckFeld`, `messStatistik`, `schichtSchritte`/
-`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`. DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`,
-`planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`, die Lage `lageAus`/`lageAbbild` mit ihrem
-Rausch-Strom `lageRausch`. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`. Geladen vom Stamm (vor `anazhRealm.js`),
-vom voxel-worker (`importScripts` mit `?v=`), vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel:
-kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
+den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
+Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
+Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER FELS-STOFF (K17): das Aussehen
+des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
+`felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
+Detail-Term des Shaders), `felsZahl` (das Rechenwerk des Gesetzes), `felsBankung` (die Messung der Bänke), der Schutt
+`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht` und DAS RAUSCH-GESETZ `RAUSCH` mit
+`rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).
+DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mit den Bändern `HANG_BAENDER`, die Bahnen
+der Flachland-Glieder `maeanderZahl`, die Messung `MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit
+`abdruckFeld`, `messStatistik`, `schichtSchritte`/`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`.
+DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`,
+die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
+Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
+vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
 Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
 Wurzel-Datei und jedem Skript.
