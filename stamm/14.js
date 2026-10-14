@@ -1852,44 +1852,137 @@ class AnazhRealm_Z14 {
     }
 
     // TSL-Port des Shell-Shaders (Formel-Referenz: worlds/portale/porta.js buildMembrane); Konstanten aus
-    // MEMBRAN_GESETZ/membranUniforms, per-Gestalt-Dials ins Node-Netz gefaltet. Liefert { mat, u } mit
-    // vier Uniforms: time · camL (Kamera in TOR-LOKALEN Koordinaten — der Marsch läuft im Lab-Rahmen,
-    // die Welt-Transform trägt das Mesh) · activate · waveDepth.
+    // MEMBRAN_GESETZ/membranUniforms. Liefert { mat, u } mit fünf Atem-Werten je Tor: time · camL (Kamera in TOR-LOKALEN
+    // Koordinaten — der Marsch läuft im Lab-Rahmen, die Welt-Transform trägt das Mesh) · act · pulse · waveDepth (`u.x.value`,
+    // der Membran-Tick schreibt sie). DIE GESTALT IST EIN STOFF-WERT (1310-18): die Maße, Fenster und Farben des Tors stehen in
+    // `userData.tor` seines Stoffs und reisen als Uniform je Objekt (`_stoffWert`); der Graph entsteht EINMAL je Gesetz
+    // (`_membranGraph`) — jedes Tor zeichnet mit DEMSELBEN Programm. Bis dahin faltete der Bau sie als Konstanten ein: je Tor
+    // ein Programm, 59–504 ms Knoten-Bau auf dem Haupt-Faden (1310-17: 5 Membranen, 1,01 s).
     _membranMaterialFor(tor) {
         const T = THREE;
-        const TSL = T.TSL;
         const MG = tor.gesetz;
         const MU = tor.mu;
         const MM = MG.march;
-        const ML = MG.look;
         const u = {
-            time: TSL.uniform(0),
-            camL: TSL.uniform(new T.Vector3(0, MU.centerY, 8)),
-            act: TSL.uniform(0),
-            pulse: TSL.uniform(1),
-            waveDepth: TSL.uniform(MU.waveDepth),
+            time: { value: 0 },
+            camL: { value: new T.Vector3(0, MU.centerY, 8) },
+            act: { value: 0 },
+            pulse: { value: 1 },
+            waveDepth: { value: MU.waveDepth },
         };
-        // Bogen-Oberkante als DataTexture (dieselbe 64er-Gesetz-Tabelle wie die Shell).
-        const W = MG.profilW;
-        const data = new Uint8Array(W * 4);
-        for (let i = 0; i < W; i++) {
-            const b = Math.round(MU.profil[i] * 255);
-            data[i * 4] = b;
-            data[i * 4 + 1] = b;
-            data[i * 4 + 2] = b;
-            data[i * 4 + 3] = 255;
+        // Realm-Fenster (statisch je Gestalt, Shell-Normierung) — die Gewichte reisen, der Marsch zweigt an ihnen
+        const wRaw = MM.winC.map((c) => Math.max(0, 1 - Math.abs(MU.realm - c) / MM.win));
+        const ws = wRaw[0] + wRaw[1] + wRaw[2] + wRaw[3] + 1e-4;
+        const P = MU.pal;
+        const mat = new T.MeshBasicNodeMaterial({ side: T.DoubleSide });
+        mat.userData.tor = {
+            u,
+            a: new T.Vector4(MU.centerY, MU.rimAx, MU.rimAy, MU.swirl),
+            b: new T.Vector4(MU.wave, MU.left, MU.spanW, MU.baseY),
+            c: new T.Vector4(MU.height, MU.step, MU.fractal, MU.twist),
+            d: new T.Vector4(
+                MM.frqK[0] + MU.fractal * MM.frqK[1],
+                MM.spK[0] + MU.energy * MM.spK[1],
+                MU.open,
+                MU.reflect
+            ),
+            w: new T.Vector4(wRaw[0] / ws, wRaw[1] / ws, wRaw[2] / ws, wRaw[3] / ws),
+            zeile: this._torProfilZeile(MG.profilW, MU.profil),
+            pa: new T.Vector3(P.PA[0], P.PA[1], P.PA[2]),
+            pb: new T.Vector3(P.PB[0], P.PB[1], P.PB[2]),
+            pc: new T.Vector3(P.PC[0], P.PC[1], P.PC[2]),
+            pd: new T.Vector3(P.PD[0], P.PD[1], P.PD[2]),
+        };
+        const G = this._membranGraph(MG);
+        mat.positionNode = G.positionNode;
+        mat.colorNode = G.colorNode;
+        mat.opacityNode = G.opacityNode;
+        mat.alphaTest = 0.5;
+        mat.transparent = false;
+        mat.userData.portalMembran = true; // Linsen-Marker
+        return { mat, u };
+    }
+
+    // DER BOGEN-ATLAS DER TORE (1310-18): jede Bogen-Oberkante (die 64er-Gesetz-Tabelle `mu.profil` der Gestalt, dieselbe wie die
+    // Shell) ist EINE Zeile EINER Textur — jede Membran liest ihre Zeile (Stoff-Wert `zeile`) mit demselben Knoten, statt eine
+    // eigene Textur in ihr Programm zu binden. Gleiche Tabelle, gleiche Zeile. Gelesen wird exakt auf der Texel-Mitte der Zeile:
+    // die lineare Filterung mischt nur waagrecht, wie zuvor die Textur je Tor. Ist der Atlas voll, wächst er auf das Doppelte
+    // (die geteilten Knoten lesen die neue Textur, die Höhe ist eine geteilte Uniform).
+    _torProfilZeile(W, profil) {
+        const TSL = THREE.TSL;
+        const A =
+            this._torProfile ||
+            (this._torProfile = {
+                zeilen: new Map(),
+                n: 0,
+                hoch: 0,
+                breit: W,
+                tex: null,
+                knoten: [],
+                uHoch: TSL.uniform(1),
+            });
+        if (W !== A.breit)
+            throw this._stoffBruch("der Bogen-Atlas der Tore", new Error(`Tabellen-Breite ${W} ≠ ${A.breit}`));
+        const bytes = profil.map((x) => Math.round(x * 255));
+        const k = bytes.join(",");
+        const da = A.zeilen.get(k);
+        if (da !== undefined) return da;
+        if (A.n >= A.hoch) {
+            const hoch = Math.max(16, A.hoch * 2);
+            const data = new Uint8Array(W * hoch * 4);
+            if (A.tex) data.set(A.tex.image.data);
+            const tex = new THREE.DataTexture(data, W, hoch, THREE.RGBAFormat);
+            tex.name = "portal-membran";
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.needsUpdate = true;
+            const alt = A.tex;
+            A.tex = tex;
+            A.hoch = hoch;
+            A.uHoch.value = hoch;
+            for (const kn of A.knoten) kn.value = tex;
+            if (alt) alt.dispose();
         }
-        const topTex = new T.DataTexture(data, W, 1, T.RGBAFormat);
-        topTex.name = "portal-membran";
-        topTex.minFilter = T.LinearFilter;
-        topTex.magFilter = T.LinearFilter;
-        topTex.needsUpdate = true;
+        const d = A.tex.image.data;
+        for (let i = 0; i < W; i++) {
+            const o = (A.n * W + i) * 4;
+            d[o] = d[o + 1] = d[o + 2] = bytes[i];
+            d[o + 3] = 255;
+        }
+        A.tex.needsUpdate = true;
+        A.zeilen.set(k, A.n);
+        return A.n++;
+    }
+
+    // DER EINE MEMBRAN-GRAPH JE GESETZ (1310-18): die Formeln der Shell über den Stoff-Werten des zeichnenden Tors
+    // (`userData.tor`, `_membranMaterialFor`). Die vier Innenwelt-Modi zweigen an ihrem Fenster-Gewicht (Uniform-Zweig: alle
+    // Fragmente eines Tors nehmen denselben Weg, ein Tor rechnet nur seine Modi); was die Zweige und der Rest des Schritts
+    // teilen, steht vor den Zweigen als Variable (`toVar` legt die Zuweisung an ihrer Stelle im Stapel ab — im Zweig
+    // zugewiesen, läse der Rest sie ungesetzt).
+    _membranGraph(MG) {
+        if (!this._membranGraphen) this._membranGraphen = new WeakMap();
+        const da = this._membranGraphen.get(MG);
+        if (da) return da;
+        const TSL = THREE.TSL;
+        const MM = MG.march;
+        const ML = MG.look;
+        const W = (p, typ) => this._stoffWert(TSL, "userData.tor." + p, typ);
+        const time = W("u.time.value");
+        const camL = W("u.camL.value", "vec3");
+        const act = W("u.act.value");
+        const pulse = W("u.pulse.value");
+        const waveDepth = W("u.waveDepth.value");
+        const ga = W("a", "vec4"); // centerY · rimAx · rimAy · swirl
+        const gb = W("b", "vec4"); // wave · left · spanW · baseY
+        const gc = W("c", "vec4"); // height · step · fractal · twist
+        const gd = W("d", "vec4"); // frq · spF · open · reflect
+        const win = W("w", "vec4");
+        const zeile = W("zeile");
+        const vPA = W("pa", "vec3");
+        const vPB = W("pb", "vec3");
+        const vPC = W("pc", "vec3");
+        const vPD = W("pd", "vec3");
         const F = (x) => TSL.float(x);
-        const PAL = MU.pal;
-        const vPA = TSL.vec3(PAL.PA[0], PAL.PA[1], PAL.PA[2]);
-        const vPB = TSL.vec3(PAL.PB[0], PAL.PB[1], PAL.PB[2]);
-        const vPC = TSL.vec3(PAL.PC[0], PAL.PC[1], PAL.PC[2]);
-        const vPD = TSL.vec3(PAL.PD[0], PAL.PD[1], PAL.PD[2]);
         const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
         // hash/vn/fbm — die Shell-Formeln als Fn (das W9-Himmel-Muster).
         const hash2 = TSL.Fn(([q]) => {
@@ -1919,21 +2012,21 @@ class AnazhRealm_Z14 {
             return s;
         };
         // ── Hfull(q): die stehende Welle (Vertex-Verformung, Shell-verbatim) ──
-        const centerXY = TSL.vec2(0.0, MU.centerY);
+        const centerXY = TSL.vec2(0.0, ga.x);
         const Hfull = (q) => {
             const c = q.sub(centerXY);
             const r = TSL.length(c);
             const a = TSL.atan(c.y, c.x);
-            const t = u.time;
+            const t = time;
             const Rb = F(1.0).div(
                 TSL.sqrt(
-                    TSL.pow(TSL.cos(a).div(F(MU.rimAx)), F(2.0))
-                        .add(TSL.pow(TSL.sin(a).div(F(MU.rimAy)), F(2.0)))
+                    TSL.pow(TSL.cos(a).div(ga.y), F(2.0))
+                        .add(TSL.pow(TSL.sin(a).div(ga.z), F(2.0)))
                         .add(F(1e-4))
                 )
             );
             const rr = TSL.clamp(r.div(Rb), F(0.0), F(1.4));
-            const twist = a.mul(F(MG.twistK)).add(F(MU.swirl).div(r.add(F(MG.swirlR0))));
+            const twist = a.mul(F(MG.twistK)).add(ga.w.div(r.add(F(MG.swirlR0))));
             const om = t.mul(F(MG.om));
             const outw = TSL.sin(rr.mul(F(MG.kk)).sub(om).add(twist));
             const refl = TSL.sin(F(2.0).sub(rr).mul(F(MG.kk)).sub(om).add(twist));
@@ -1946,19 +2039,17 @@ class AnazhRealm_Z14 {
                 3
             ).mul(F(MG.micro[2]));
             const h = TSL.clamp(wave.mul(F(MG.hGain[0])).add(pierce).add(micro).mul(F(MG.hGain[1])), F(-1.0), F(1.0));
-            return h.mul(u.waveDepth).mul(F(MG.waveDepthK[0] + MG.waveDepthK[1] * MU.wave));
+            return h.mul(waveDepth).mul(F(MG.waveDepthK[0]).add(gb.x.mul(F(MG.waveDepthK[1]))));
         };
         const xy = TSL.positionGeometry.xy;
         const d0 = Hfull(xy);
-        const mat = new T.MeshBasicNodeMaterial({ side: T.DoubleSide });
-        // V18.464-Review (f): die per-Material geminte Profil-Textur folgt dem
-        // Material-dispose (material.dispose() disposed in three KEINE Texturen —
-        // der GC-Sweep hätte sonst GPU-Kopien nur der Browser-GC überlassen).
-        mat.addEventListener("dispose", () => topTex.dispose());
-        mat.positionNode = TSL.vec3(xy.x, xy.y, d0);
-        // ── Fragment: Beschnitt (Alpha-Fold) + Raymarch (12 Schritte entfaltet) ──
-        const uu = TSL.clamp(xy.x.sub(F(MU.left)).div(F(MU.spanW)), F(0.0), F(1.0));
-        const topY = F(MU.baseY).add(TSL.texture(topTex, TSL.vec2(uu, 0.5)).r.mul(F(MU.height)));
+        const positionNode = TSL.vec3(xy.x, xy.y, d0);
+        // ── Fragment: Beschnitt (Alpha-Fold) aus der Zeile des Bogen-Atlas + Raymarch (12 Schritte entfaltet) ──
+        const uu = TSL.clamp(xy.x.sub(gb.y).div(gb.z), F(0.0), F(1.0));
+        const A = this._torProfile;
+        const profil = TSL.texture(A.tex, TSL.vec2(uu, zeile.add(0.5).div(A.uHoch)));
+        A.knoten.push(profil);
+        const topY = gb.w.add(profil.r.mul(gc.x));
         const keep = TSL.step(xy.y, topY.add(F(0.002)));
         // Normale aus der Wellen-Ableitung (Fragment-Rekonstruktion — exakt die
         // Shell-Differenzen, nur pro Fragment statt pro Vertex interpoliert).
@@ -1967,101 +2058,101 @@ class AnazhRealm_Z14 {
         const dyy = Hfull(xy.add(TSL.vec2(0.0, e)));
         const nrm = TSL.normalize(TSL.cross(TSL.vec3(e, 0.0, dxx.sub(d0)), TSL.vec3(0.0, e, dyy.sub(d0))));
         const vLocal = TSL.vec3(xy.x, xy.y, d0);
-        const Vd = TSL.normalize(u.camL.sub(vLocal));
+        const Vd = TSL.normalize(camL.sub(vLocal));
         const rd = Vd.negate();
-        // Realm-Fenster (statisch je Gestalt → JS-gefaltet, Shell-Normierung).
-        const wRaw = MM.winC.map((c) => Math.max(0, 1 - Math.abs(MU.realm - c) / MM.win));
-        const ws = wRaw[0] + wRaw[1] + wRaw[2] + wRaw[3] + 1e-4;
-        const win = wRaw.map((v) => v / ws);
-        const frq = MM.frqK[0] + MU.fractal * MM.frqK[1];
-        const spF = MM.spK[0] + MU.energy * MM.spK[1];
-        const center3 = TSL.vec3(0.0, MU.centerY, 0.0);
-        let inter = TSL.vec3(0.0, 0.0, 0.0);
-        for (let i = 0; i < MM.steps; i++) {
-            const q = vLocal.add(rd.mul(F(i * MU.step + MM.t0)));
-            const rel = q.sub(center3);
-            const r = TSL.max(TSL.length(rel.xy), F(0.003));
-            const ang = TSL.atan(rel.y, rel.x);
-            const dep = r.mul(F(MM.depK[1])).add(F(i * MU.step * MM.depK[0]));
-            const sp = u.time.mul(F(spF));
-            const lp = TSL.log(r).mul(F(MM.lpK)).sub(sp);
-            const swirl = ang.add(F(MU.swirl).div(r));
-            let v = F(0.0);
-            let tc = F(0.0);
-            if (win[0] > 0.001) {
-                const K = MM.wurm;
-                const s0 = TSL.sin(
-                    lp
-                        .mul(F(K[0] * frq))
-                        .add(swirl.mul(F(K[1])))
-                        .add(dep.mul(F(MU.twist * K[2])))
-                )
-                    .mul(0.5)
-                    .add(0.5);
-                v = v.add(s0.mul(s0).mul(F(win[0])));
-                tc = tc.add(TSL.fract(lp.mul(F(K[3])).add(swirl.mul(F(K[4] / 6.28318)))).mul(F(win[0])));
-            }
-            if (win[1] > 0.001) {
-                const K = MM.facet;
-                const KK = K[0] + MU.fractal * K[1];
-                const fa = TSL.abs(TSL.mod(swirl, F(6.28318 / KK)).sub(F(3.14159 / KK)));
-                const cc = TSL.cos(fa.mul(F(KK)))
-                    .mul(0.5)
-                    .add(0.5);
-                const s1 = TSL.sin(lp.mul(F(K[2] * frq)))
-                    .mul(0.5)
-                    .add(0.5);
-                v = v.add(cc.mul(cc).mul(cc).mul(s1).mul(F(win[1])));
-                tc = tc.add(TSL.fract(fa.mul(F(K[3])).add(lp.mul(F(K[4])))).mul(F(win[1])));
-            }
-            if (win[2] > 0.001) {
-                const K = MM.plasma;
-                const warp = fbmN(TSL.vec2(lp.mul(F(K[0] * frq)), dep.mul(F(K[1])).add(sp.mul(F(K[2])))), 4);
-                const pf0 = fbmN(
-                    TSL.vec2(ang.mul(F(K[3])).add(warp.mul(F(K[4]))), dep.mul(F(K[5] * frq)).sub(sp.mul(F(K[6])))),
-                    4
+        const frq = gd.x;
+        const center3 = TSL.vec3(0.0, ga.x, 0.0);
+        const marsch = TSL.Fn(() => {
+            const inter = TSL.vec3(0.0, 0.0, 0.0).toVar();
+            for (let i = 0; i < MM.steps; i++) {
+                const q = vLocal.add(rd.mul(gc.y.mul(i).add(F(MM.t0))));
+                const rel = q.sub(center3);
+                const r = TSL.max(TSL.length(rel.xy), F(0.003)).toVar();
+                const ang = TSL.atan(rel.y, rel.x).toVar();
+                const dep = r
+                    .mul(F(MM.depK[1]))
+                    .add(gc.y.mul(i * MM.depK[0]))
+                    .toVar();
+                const sp = time.mul(gd.y).toVar();
+                const lp = TSL.log(r).mul(F(MM.lpK)).sub(sp).toVar();
+                const swirl = ang.add(ga.w.div(r)).toVar();
+                const v = F(0.0).toVar();
+                const tc = F(0.0).toVar();
+                TSL.If(win.x.greaterThan(0.001), () => {
+                    const K = MM.wurm;
+                    const s0 = TSL.sin(
+                        lp
+                            .mul(frq.mul(K[0]))
+                            .add(swirl.mul(F(K[1])))
+                            .add(dep.mul(gc.w.mul(K[2])))
+                    )
+                        .mul(0.5)
+                        .add(0.5);
+                    v.addAssign(s0.mul(s0).mul(win.x));
+                    tc.addAssign(TSL.fract(lp.mul(F(K[3])).add(swirl.mul(F(K[4] / 6.28318)))).mul(win.x));
+                });
+                TSL.If(win.y.greaterThan(0.001), () => {
+                    const K = MM.facet;
+                    const KK = F(K[0]).add(gc.z.mul(K[1]));
+                    const fa = TSL.abs(TSL.mod(swirl, F(6.28318).div(KK)).sub(F(3.14159).div(KK)));
+                    const cc = TSL.cos(fa.mul(KK)).mul(0.5).add(0.5);
+                    const s1 = TSL.sin(lp.mul(frq.mul(K[2])))
+                        .mul(0.5)
+                        .add(0.5);
+                    v.addAssign(cc.mul(cc).mul(cc).mul(s1).mul(win.y));
+                    tc.addAssign(TSL.fract(fa.mul(F(K[3])).add(lp.mul(F(K[4])))).mul(win.y));
+                });
+                TSL.If(win.z.greaterThan(0.001), () => {
+                    const K = MM.plasma;
+                    const warp = fbmN(TSL.vec2(lp.mul(frq.mul(K[0])), dep.mul(F(K[1])).add(sp.mul(F(K[2])))), 4);
+                    const pf0 = fbmN(
+                        TSL.vec2(ang.mul(F(K[3])).add(warp.mul(F(K[4]))), dep.mul(frq.mul(K[5])).sub(sp.mul(F(K[6])))),
+                        4
+                    );
+                    const pf = F(1.0).sub(TSL.abs(pf0.mul(2.0).sub(1.0)));
+                    const plasma = TSL.pow(TSL.clamp(pf, F(0.0), F(1.0)), F(K[7]));
+                    v.addAssign(plasma.mul(win.z.mul(K[8])));
+                    tc.addAssign(
+                        TSL.fract(
+                            pf
+                                .mul(F(K[9]))
+                                .add(lp.mul(F(K[10])))
+                                .add(dep.mul(F(K[11])))
+                        ).mul(win.z)
+                    );
+                });
+                TSL.If(win.w.greaterThan(0.001), () => {
+                    const K = MM.nebel;
+                    const n1 = fbmN(
+                        TSL.vec2(
+                            ang.mul(frq.mul(K[0])).add(TSL.sin(lp).mul(F(K[1]))),
+                            dep.mul(F(K[2])).add(sp.mul(F(K[3])))
+                        ),
+                        4
+                    );
+                    const n2 = fbmN(
+                        TSL.vec2(ang.mul(frq.mul(K[4])).sub(n1.mul(F(K[5]))), dep.mul(F(K[6])).add(sp.mul(F(K[7])))),
+                        4
+                    );
+                    const neb = TSL.pow(TSL.clamp(n1.mul(n2).mul(F(K[8])), F(0.0), F(1.0)), F(K[9]));
+                    v.addAssign(neb.mul(win.w.mul(K[10])));
+                    tc.addAssign(TSL.fract(n1.mul(F(K[11])).add(dep.mul(F(K[12])))).mul(win.w));
+                });
+                const vc = TSL.max(F(0.0), v.sub(F(MM.vCut[0]))).mul(F(MM.vCut[1]));
+                const g = vc.div(
+                    F(1.0)
+                        .add(r.mul(r).mul(F(MM.gDen[0])))
+                        .add(dep.mul(F(MM.gDen[1])))
                 );
-                const pf = F(1.0).sub(TSL.abs(pf0.mul(2.0).sub(1.0)));
-                const plasma = TSL.pow(TSL.clamp(pf, F(0.0), F(1.0)), F(K[7]));
-                v = v.add(plasma.mul(F(K[8] * win[2])));
-                tc = tc.add(
-                    TSL.fract(
-                        pf
-                            .mul(F(K[9]))
-                            .add(lp.mul(F(K[10])))
-                            .add(dep.mul(F(K[11])))
-                    ).mul(F(win[2]))
+                inter.addAssign(
+                    pal(tc)
+                        .mul(g)
+                        .mul(F(Math.pow(MM.att, i)))
                 );
             }
-            if (win[3] > 0.001) {
-                const K = MM.nebel;
-                const n1 = fbmN(
-                    TSL.vec2(
-                        ang.mul(F(K[0] * frq)).add(TSL.sin(lp).mul(F(K[1]))),
-                        dep.mul(F(K[2])).add(sp.mul(F(K[3])))
-                    ),
-                    4
-                );
-                const n2 = fbmN(
-                    TSL.vec2(ang.mul(F(K[4] * frq)).sub(n1.mul(F(K[5]))), dep.mul(F(K[6])).add(sp.mul(F(K[7])))),
-                    4
-                );
-                const neb = TSL.pow(TSL.clamp(n1.mul(n2).mul(F(K[8])), F(0.0), F(1.0)), F(K[9]));
-                v = v.add(neb.mul(F(K[10] * win[3])));
-                tc = tc.add(TSL.fract(n1.mul(F(K[11])).add(dep.mul(F(K[12])))).mul(F(win[3])));
-            }
-            v = TSL.max(F(0.0), v.sub(F(MM.vCut[0]))).mul(F(MM.vCut[1]));
-            const g = v.div(
-                F(1.0)
-                    .add(r.mul(r).mul(F(MM.gDen[0])))
-                    .add(dep.mul(F(MM.gDen[1])))
-            );
-            inter = inter.add(
-                pal(tc)
-                    .mul(g)
-                    .mul(F(Math.pow(MM.att, i)))
-            );
-        }
+            return inter;
+        });
+        const inter = marsch();
         const N = nrm;
         const Rf = TSL.reflect(Vd.negate(), N);
         const st = TSL.step(
@@ -2078,59 +2169,86 @@ class AnazhRealm_Z14 {
         );
         const dc = TSL.length(vLocal.sub(center3).xy);
         const core = TSL.exp(dc.mul(dc).negate().mul(F(ML.core[0])))
-            .mul(F(ML.core[1] + MU.open * ML.core[2]))
+            .mul(F(ML.core[1]).add(gd.z.mul(ML.core[2])))
             .mul(
-                TSL.sin(u.time.mul(F(ML.core[5])))
+                TSL.sin(time.mul(F(ML.core[5])))
                     .mul(F(ML.core[4]))
                     .add(F(ML.core[3]))
             );
         let col = inter
             .mul(F(ML.mixK[0]))
-            .add(sky.mul(fres).mul(F(MU.reflect * ML.mixK[1])))
-            .add(
-                TSL.vec3(ML.specCol[0], ML.specCol[1], ML.specCol[2])
-                    .mul(spec)
-                    .mul(F(ML.specK * MU.reflect))
-            )
+            .add(sky.mul(fres).mul(gd.w.mul(ML.mixK[1])))
+            .add(TSL.vec3(ML.specCol[0], ML.specCol[1], ML.specCol[2]).mul(spec).mul(gd.w.mul(ML.specK)))
             .add(pal(F(ML.corePal)).mul(core).mul(F(ML.mixK[3])));
         col = col.mul(
-            u.act
+            act
                 .mul(F(ML.finalK[2]))
                 .add(F(ML.finalK[1]))
                 .mul(F(ML.finalK[0]))
-                .mul(u.pulse.mul(F(ML.finalK[4])).add(F(ML.finalK[3])))
+                .mul(pulse.mul(F(ML.finalK[4])).add(F(ML.finalK[3])))
         );
         // ACES (Shell-verbatim) — die Welt-Ausgabe-Transform bleibt Leser-Sache.
         const aces = (x) =>
             TSL.clamp(x.mul(x.mul(2.51).add(0.03)).div(x.mul(x.mul(2.43).add(0.59)).add(0.14)), F(0.0), F(1.0));
-        mat.colorNode = TSL.vec4(aces(col), 1.0);
-        mat.opacityNode = keep;
-        mat.alphaTest = 0.5;
-        mat.transparent = false;
-        mat.userData.portalMembran = true; // Linsen-Marker
-        return { mat, u };
+        const G = { positionNode, colorNode: TSL.vec4(aces(col), 1.0), opacityNode: keep };
+        this._membranGraphen.set(MG, G);
+        return G;
     }
 
     // ═══ PORTA-NEBEL: mu.fog erreicht die Welt ═══
     // TSL-Port des Lab-Nebels (Formel-Referenz: worlds/portale/porta.js buildFog): Volumen-Raymarch in
     // einer BackSide-Box um den Tor-Fuß; Dichte = Ellipsen-Profil (dieselben rimAx/rimAy/om/kk wie die
     // Membran) × floorCut × Wellenfeld × fbm3 × nebelAct × Puls, Palette aus MU.pal. 16 Schritte, kein
-    // Depth-Pre-Pass (depthTest verdeckt). Teilt u der Membran (+ u.nebelAct). NEBEL_VIS.host=tsl-box
+    // Depth-Pre-Pass (depthTest verdeckt). Teilt u der Membran (+ u.nebelAct). NEBEL_VIS.host=tsl-box. Die Gestalt (Box-Maße,
+    // Bogen, Palette) ist ein Stoff-Wert (`userData.tor`), der Graph EINER je Gesetz (`_nebelGraph`, 1310-18).
     _nebelMaterialFor(tor, u) {
         const T = THREE;
-        const TSL = T.TSL;
-        const MG = tor.gesetz;
         const MU = tor.mu;
-        const F = (x) => TSL.float(x);
-        u.nebelAct = TSL.uniform(0);
-        const PAL = MU.pal;
-        const vPA = TSL.vec3(PAL.PA[0], PAL.PA[1], PAL.PA[2]);
-        const vPB = TSL.vec3(PAL.PB[0], PAL.PB[1], PAL.PB[2]);
-        const vPC = TSL.vec3(PAL.PC[0], PAL.PC[1], PAL.PC[2]);
-        const vPD = TSL.vec3(PAL.PD[0], PAL.PD[1], PAL.PD[2]);
-        const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
-        // Box-Maße (Lab-Formeln buildFog, statisch je Gestalt → JS-gefaltet).
+        u.nebelAct = { value: 0 };
+        // Box-Maße (Lab-Formeln buildFog, statisch je Gestalt).
         const m = this._nebelMasseFor(tor);
+        const P = MU.pal;
+        const mat = new T.MeshBasicNodeMaterial({
+            side: T.BackSide,
+            transparent: true,
+            depthWrite: false,
+        });
+        mat.userData.tor = {
+            u,
+            a: new T.Vector4(m.hx, m.hz, m.mnY, m.mxY),
+            b: new T.Vector4(m.coneAdd, MU.centerY, MU.rimAx, MU.rimAy),
+            c: new T.Vector4(Math.max(MU.zFace, 0.2), MU.swirl, MU.baseY, 0),
+            pa: new T.Vector3(P.PA[0], P.PA[1], P.PA[2]),
+            pb: new T.Vector3(P.PB[0], P.PB[1], P.PB[2]),
+            pc: new T.Vector3(P.PC[0], P.PC[1], P.PC[2]),
+            pd: new T.Vector3(P.PD[0], P.PD[1], P.PD[2]),
+        };
+        const G = this._nebelGraph(tor.gesetz);
+        mat.colorNode = G.colorNode;
+        mat.opacityNode = G.opacityNode;
+        mat.userData.portalNebel = true; // Linsen-Marker
+        return { mat };
+    }
+
+    // DER EINE NEBEL-GRAPH JE GESETZ (1310-18): die Formeln des Lab-Nebels über den Stoff-Werten des zeichnenden Tors.
+    _nebelGraph(MG) {
+        if (!this._nebelGraphen) this._nebelGraphen = new WeakMap();
+        const da = this._nebelGraphen.get(MG);
+        if (da) return da;
+        const TSL = THREE.TSL;
+        const F = (x) => TSL.float(x);
+        const W = (p, typ) => this._stoffWert(TSL, "userData.tor." + p, typ);
+        const time = W("u.time.value");
+        const pulse = W("u.pulse.value");
+        const nebelAct = W("u.nebelAct.value");
+        const na = W("a", "vec4"); // hx · hz · mnY · mxY
+        const nb = W("b", "vec4"); // coneAdd · centerY · rimAx · rimAy
+        const nc = W("c", "vec4"); // max(zFace, 0.2) · swirl · baseY
+        const vPA = W("pa", "vec3");
+        const vPB = W("pb", "vec3");
+        const vPC = W("pc", "vec3");
+        const vPD = W("pd", "vec3");
+        const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
         const h3 = TSL.Fn(([q]) => {
             const p = TSL.fract(q.mul(F(0.3183099)).add(F(0.1))).mul(F(17.0));
             return TSL.fract(p.x.mul(p.y).mul(p.z).mul(p.x.add(p.y).add(p.z)));
@@ -2152,11 +2270,11 @@ class AnazhRealm_Z14 {
                 .mul(F(0.5))
                 .add(vn3(p.mul(F(2.02)).add(F(1.3))).mul(F(0.25)))
                 .mul(F(1.2));
-        const ro = u.camL;
+        const ro = W("u.camL.value", "vec3");
         const vLocal = TSL.positionGeometry; // die Box-Geometrie ist tor-lokal gebaut
         const rd = TSL.normalize(vLocal.sub(ro));
-        const bmin = TSL.vec3(-m.hx, m.mnY, -m.hz);
-        const bmax = TSL.vec3(m.hx, m.mxY, m.hz);
+        const bmin = TSL.vec3(na.x.negate(), na.z, na.y.negate());
+        const bmax = TSL.vec3(na.x, na.w, na.y);
         const t0 = bmin.sub(ro).div(rd);
         const t1 = bmax.sub(ro).div(rd);
         const tmn = TSL.min(t0, t1);
@@ -2165,10 +2283,10 @@ class AnazhRealm_Z14 {
         const tf = TSL.min(TSL.min(tmx.x, tmx.y), tmx.z);
         const SCHRITTE = 16;
         const dt = TSL.max(tf.sub(tn), F(0.0)).div(F(SCHRITTE));
-        const om = u.time.mul(F(MG.om));
+        const om = time.mul(F(MG.om));
         const kk = F(MG.kk);
-        const jit = h3(vLocal.mul(F(37.7)).add(TSL.fract(u.time)));
-        const cy = MU.centerY;
+        const jit = h3(vLocal.mul(F(37.7)).add(TSL.fract(time)));
+        const cy = nb.y;
         let trans = F(1.0);
         let acc = TSL.vec3(0.0, 0.0, 0.0);
         for (let i = 0; i < SCHRITTE; i++) {
@@ -2179,15 +2297,15 @@ class AnazhRealm_Z14 {
             const a = TSL.atan(c.y, c.x);
             const Rb = F(1.0).div(
                 TSL.sqrt(
-                    TSL.pow(TSL.cos(a).div(F(MU.rimAx)), F(2.0))
-                        .add(TSL.pow(TSL.sin(a).div(F(MU.rimAy)), F(2.0)))
+                    TSL.pow(TSL.cos(a).div(nb.z), F(2.0))
+                        .add(TSL.pow(TSL.sin(a).div(nb.w), F(2.0)))
                         .add(F(1e-4))
                 )
             );
             const rr = r.div(Rb);
-            const az = TSL.clamp(TSL.abs(p.z).div(F(Math.max(MU.zFace, 0.2))), F(0.0), F(1.0));
-            const coneR = az.mul(F(m.coneAdd)).add(F(1.0));
-            const twist = a.mul(F(2.0)).add(F(MU.swirl).div(r.add(F(0.25))));
+            const az = TSL.clamp(TSL.abs(p.z).div(nc.x), F(0.0), F(1.0));
+            const coneR = az.mul(nb.x).add(F(1.0));
+            const twist = a.mul(F(2.0)).add(nc.y.div(r.add(F(0.25))));
             const waveR = TSL.sin(rr.mul(kk).sub(om).add(twist))
                 .add(TSL.sin(F(2.0).sub(rr).mul(kk).sub(om).add(twist)).mul(F(0.72)))
                 .mul(TSL.exp(rr.negate().mul(F(0.7))));
@@ -2208,15 +2326,15 @@ class AnazhRealm_Z14 {
             );
             const fillIn = TSL.smoothstep(coneR.mul(F(0.44)), coneR.mul(F(0.86)), rr);
             const wallOut = TSL.smoothstep(coneR.add(F(0.06)), coneR.sub(F(0.2)), rr);
-            const n = fbm3(p.mul(F(1.15)).add(TSL.vec3(F(0.0), F(0.0), u.time.mul(F(0.12)))));
-            const floorCut = TSL.smoothstep(F(MU.baseY - 0.12), F(MU.baseY + 0.1), p.y);
+            const n = fbm3(p.mul(F(1.15)).add(TSL.vec3(F(0.0), F(0.0), time.mul(F(0.12)))));
+            const floorCut = TSL.smoothstep(nc.z.sub(F(0.12)), nc.z.add(F(0.1)), p.y);
             const dens = fillIn
                 .mul(wallOut)
                 .mul(floorCut)
                 .mul(TSL.smoothstep(F(0.15), F(0.85), w01).mul(F(0.88)).add(F(0.12)))
                 .mul(n.mul(F(0.5)).add(F(0.5)))
-                .mul(u.nebelAct)
-                .mul(u.pulse.mul(F(0.34)).add(F(0.82)));
+                .mul(nebelAct)
+                .mul(pulse.mul(F(0.34)).add(F(0.82)));
             const portalCol = TSL.max(
                 pal(
                     rr
@@ -2229,20 +2347,14 @@ class AnazhRealm_Z14 {
             const glow = w01.mul(F(0.95)).add(F(0.42));
             const lum = TSL.mix(TSL.vec3(0.56, 0.7, 0.93), portalCol.mul(F(1.85)), F(0.78))
                 .mul(glow)
-                .mul(u.pulse.mul(F(0.55)).add(F(0.6)));
+                .mul(pulse.mul(F(0.55)).add(F(0.6)));
             const a2 = F(1.0).sub(TSL.exp(dens.mul(dt).mul(F(6.5)).negate()));
             acc = acc.add(lum.mul(a2).mul(trans));
             trans = trans.mul(F(1.0).sub(a2));
         }
-        const mat = new T.MeshBasicNodeMaterial({
-            side: T.BackSide,
-            transparent: true,
-            depthWrite: false,
-        });
-        mat.colorNode = TSL.vec4(acc, 1.0);
-        mat.opacityNode = F(1.0).sub(trans);
-        mat.userData.portalNebel = true; // Linsen-Marker
-        return { mat };
+        const G = { colorNode: TSL.vec4(acc, 1.0), opacityNode: F(1.0).sub(trans) };
+        this._nebelGraphen.set(MG, G);
+        return G;
     }
 
     // Die Nebel-Box-Maße (Lab buildFog, statisch je Gestalt): cy/rimAy/coneAdd/
