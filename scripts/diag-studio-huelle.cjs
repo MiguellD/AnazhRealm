@@ -263,6 +263,11 @@ async function bild(ordner, name) {
             const t0 = Date.now();
             await page.goto(`http://127.0.0.1:${PORT}${url}`, { waitUntil: "load", timeout: 180000 });
             if (wurzel) await page.waitForSelector(wurzel, { timeout: 180000 }).catch(() => fehler.push(`${wurzel} erschien nicht in 180 s`));
+            // über der Welt-Engine: der Ladeschirm hält jede Taste (stamm _ladeschirmSteht) — die Probe wartet, bis die Welt steht
+            if (wurzel)
+                await page
+                    .waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._ladeschirmSteht === "function" && !window.anazhRealm._ladeschirmSteht(), { timeout: 240000, polling: 500 })
+                    .catch(() => fehler.push("der Ladeschirm stand nach 240 s noch"));
             await new Promise((r) => setTimeout(r, ms));
             const z = await page.evaluate(async (wurzel) => {
                 const W = (wurzel && document.querySelector(wurzel)) || document;

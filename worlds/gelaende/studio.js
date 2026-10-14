@@ -48,15 +48,24 @@
             muster: new RegExp(k.regeln.map((g) => "(?:" + g.muster + ")").join("|")),
         };
     }
-    // Die Boden-Klasse der gebauten Welt: jedes Mesh, dessen Täter-Klasse (`_taeterKlasse`, dieselbe Zuordnung wie die
-    // Band-Linse) die Regel der Klasse trägt — gezählt im Szenengraph (ohne Sicht-Kegel), zwei Mal je Sekunde reicht.
+    // Die Boden-Klasse der gebauten Welt: jedes Mesh im Sicht-Kegel der Kamera (das Hauptbild; die Kaskaden zählt der
+    // Haushalt dazu), dessen Täter-Klasse (`_taeterKlasse`, dieselbe Zuordnung wie die Band-Linse) die Regel der Klasse
+    // trägt — in Augenhöhe misst die Leiste wie die Band-Linse am Spieler; zwei Messungen je Sekunde reichen.
+    const kegel = { F: null, M: null };
     function kostenMessen() {
         const r = st.realm;
         const sc = r && r.state && r.state.scene;
-        if (!st.kosten || !sc) return;
+        const cam = r && r.state && r.state.camera;
+        if (!st.kosten || !sc || !cam) return;
+        if (!kegel.F) {
+            kegel.F = new THREE.Frustum();
+            kegel.M = new THREE.Matrix4();
+        }
+        kegel.F.setFromProjectionMatrix(kegel.M.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
         const treffer = [];
         sc.traverse((o) => {
-            if (o.isMesh && o.geometry && st.haushalt.muster.test(r._taeterKlasse(o))) treffer.push(o);
+            if (!o.isMesh || !o.geometry || !st.haushalt.muster.test(r._taeterKlasse(o))) return;
+            if (o.frustumCulled === false || kegel.F.intersectsObject(o)) treffer.push(o);
         });
         st.kosten.messen({ traverse: (fn) => treffer.forEach(fn) }, 0);
     }
@@ -570,7 +579,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                 budget: { 0: st.haushalt.budget },
                 stufen: [0],
                 titel: "KOSTEN · BODEN",
-                quelle: "gemessen an der gebauten Welt (A) gegen die Boden-Klasse des Profi-Band-Haushalts (spec/profiband/haushalt.json)",
+                quelle: "gemessen an der gebauten Welt (A) im Sicht-Kegel der Kamera (Hauptbild; Augenhöhe = der Ort der Band-Linse) gegen die Boden-Klasse des Profi-Band-Haushalts (spec/profiband/haushalt.json)",
             });
         const kam = $(".reihe.kamera");
         kam.appendChild(knopf("Makro-Flug", "hoch über dem Land", () => kamera("makro"), { kamera: "makro" }));
