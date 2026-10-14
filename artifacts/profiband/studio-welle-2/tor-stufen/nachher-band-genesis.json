@@ -5,27 +5,27 @@
  "groessen": [
   {
    "name": "Befehle",
-   "ist": 113,
+   "ist": 109,
    "soll": 208,
-   "faktor": 0.54
+   "faktor": 0.52
   },
   {
    "name": "Dreiecke",
-   "ist": 432689,
+   "ist": 422569,
    "soll": 680000,
-   "faktor": 0.64
+   "faktor": 0.62
   },
   {
    "name": "VRAM MB",
-   "ist": 124.7,
+   "ist": 122.7,
    "soll": 118,
-   "faktor": 1.06
+   "faktor": 1.04
   },
   {
    "name": "GPU ms/Frame",
-   "ist": 59.49,
+   "ist": 26.8,
    "soll": 16.7,
-   "faktor": 3.56
+   "faktor": 1.6
   }
  ],
  "rot": [
@@ -54,23 +54,23 @@
   "fps": 60
  },
  "summe": {
-  "befehle": 113,
-  "dreiecke": 432689,
+  "befehle": 109,
+  "dreiecke": 422569,
   "je": {
-   "haupt": 64,
-   "k0": 44,
+   "haupt": 62,
+   "k0": 42,
    "k1": 5
   },
   "gebunden": {
-   "befehle": 113,
-   "dreiecke": 432689
+   "befehle": 109,
+   "dreiecke": 422569
   }
  },
  "abstand": {
-  "befehle": 0.54,
-  "dreiecke": 0.64,
-  "vram": 1.06,
-  "gpu": 3.56
+  "befehle": 0.52,
+  "dreiecke": 0.62,
+  "vram": 1.04,
+  "gpu": 1.6
  },
  "ausserhalb": {
   "OrthographicCamera": 2
@@ -538,16 +538,16 @@
     "dreiecke": 60000
    },
    "ist": {
-    "befehle": 49,
+    "befehle": 45,
     "dreiecke": 160215
    },
    "je": {
     "haupt": {
-     "befehle": 22,
+     "befehle": 20,
      "dreiecke": 120003
     },
     "k0": {
-     "befehle": 26,
+     "befehle": 24,
      "dreiecke": 40092
     },
     "k1": {
@@ -556,22 +556,6 @@
     }
    },
    "taeter": [
-    {
-     "klasse": "f:gt:L1",
-     "befehle": 14,
-     "dreiecke": 18192,
-     "je": {
-      "haupt": {
-       "befehle": 7,
-       "dreiecke": 9096
-      },
-      "k0": {
-       "befehle": 7,
-       "dreiecke": 9096
-      }
-     },
-     "dMax": 20
-    },
     {
      "klasse": "bauSatz",
      "befehle": 12,
@@ -596,7 +580,7 @@
         "zellen": 2,
         "tris": 5838,
         "eintraege": [
-         8
+         6
         ]
        },
        {
@@ -606,7 +590,7 @@
         "zellen": 2,
         "tris": 1398,
         "eintraege": [
-         4
+         2
         ]
        }
       ],
@@ -628,7 +612,7 @@
         "zellen": 5,
         "tris": 22612,
         "eintraege": [
-         9
+         7
         ]
        },
        {
@@ -648,7 +632,7 @@
         "zellen": 6,
         "tris": 16688,
         "eintraege": [
-         7
+         5
         ]
        },
        {
@@ -658,7 +642,7 @@
         "zellen": 3,
         "tris": 14286,
         "eintraege": [
-         8
+         6
         ]
        },
        {
@@ -668,7 +652,7 @@
         "zellen": 3,
         "tris": 10462,
         "eintraege": [
-         10
+         8
         ]
        },
        {
@@ -678,17 +662,33 @@
         "zellen": 14,
         "tris": 4165,
         "eintraege": [
-         37,
-         527,
-         529,
-         487,
-         489,
-         524,
-         528
+         27,
+         506,
+         508,
+         466,
+         468,
+         503,
+         507
         ]
        }
       ]
      }
+    },
+    {
+     "klasse": "f:gt:L1",
+     "befehle": 10,
+     "dreiecke": 18192,
+     "je": {
+      "haupt": {
+       "befehle": 5,
+       "dreiecke": 9096
+      },
+      "k0": {
+       "befehle": 5,
+       "dreiecke": 9096
+      }
+     },
+     "dMax": 20
     },
     {
      "klasse": "bau:esse",
@@ -770,7 +770,7 @@
         "zellen": 1,
         "tris": 7632,
         "eintraege": [
-         6
+         4
         ]
        },
        {
@@ -780,7 +780,7 @@
         "zellen": 1,
         "tris": 5768,
         "eintraege": [
-         9
+         7
         ]
        },
        {
@@ -791,7 +791,7 @@
         "tris": 3536,
         "eintraege": [
          "portal-preview-portale",
-         5
+         3
         ]
        },
        {
@@ -801,7 +801,7 @@
         "zellen": 1,
         "tris": 2944,
         "eintraege": [
-         10
+         8
         ]
        },
        {
@@ -811,7 +811,7 @@
         "zellen": 1,
         "tris": 2312,
         "eintraege": [
-         7
+         5
         ]
        },
        {
@@ -821,13 +821,13 @@
         "zellen": 7,
         "tris": 168,
         "eintraege": [
-         37,
-         527,
-         529,
-         487,
-         489,
-         524,
-         528
+         27,
+         506,
+         508,
+         466,
+         468,
+         503,
+         507
         ]
        },
        {
@@ -849,11 +849,11 @@
         "zellen": 5,
         "tris": 120,
         "eintraege": [
-         527,
-         529,
-         487,
-         524,
-         528
+         506,
+         508,
+         466,
+         503,
+         507
         ]
        }
       ]
@@ -897,16 +897,16 @@
    },
    "ist": {
     "befehle": 5,
-    "dreiecke": 26360
+    "dreiecke": 16240
    },
    "je": {
     "haupt": {
      "befehle": 2,
-     "dreiecke": 10040
+     "dreiecke": 6520
     },
     "k0": {
      "befehle": 2,
-     "dreiecke": 12800
+     "dreiecke": 6200
     },
     "k1": {
      "befehle": 1,
@@ -917,11 +917,11 @@
     {
      "klasse": "formationenSatz",
      "befehle": 5,
-     "dreiecke": 26360,
+     "dreiecke": 16240,
      "je": {
       "k0": {
        "befehle": 2,
-       "dreiecke": 12800
+       "dreiecke": 6200
       },
       "k1": {
        "befehle": 1,
@@ -929,37 +929,12 @@
       },
       "haupt": {
        "befehle": 2,
-       "dreiecke": 10040
+       "dreiecke": 6520
       }
      },
      "dMax": 92,
      "inhalt": {
       "k0": [
-       {
-        "klasse": "f:kristalle:L0",
-        "stufe": 0,
-        "art": "rock",
-        "zellen": 16,
-        "tris": 7040,
-        "eintraege": [
-         2,
-         71,
-         233,
-         21,
-         73,
-         43,
-         16,
-         72,
-         20,
-         42,
-         75,
-         74,
-         40,
-         68,
-         3,
-         41
-        ]
-       },
        {
         "klasse": "f:zacken:L0",
         "stufe": 0,
@@ -967,24 +942,34 @@
         "zellen": 18,
         "tris": 5760,
         "eintraege": [
-         39,
-         543,
-         70,
-         130,
+         54,
+         109,
+         29,
+         522,
+         108,
+         53,
+         505,
+         28,
+         52,
+         465,
          129,
-         69,
-         526,
-         67,
-         38,
-         486,
-         150,
-         403,
-         525,
-         232,
-         404,
-         488,
-         151,
-         231
+         382,
+         504,
+         211,
+         383,
+         467,
+         130,
+         210
+        ]
+       },
+       {
+        "klasse": "f:kristalle:L0",
+        "stufe": 0,
+        "art": "rock",
+        "zellen": 1,
+        "tris": 440,
+        "eintraege": [
+         212
         ]
        }
       ],
@@ -996,17 +981,17 @@
         "zellen": 11,
         "tris": 3520,
         "eintraege": [
-         543,
-         843,
-         896,
-         526,
-         842,
-         403,
-         525,
-         401,
-         404,
-         895,
-         402
+         522,
+         822,
+         875,
+         505,
+         821,
+         382,
+         504,
+         380,
+         383,
+         874,
+         381
         ]
        }
       ],
@@ -1018,43 +1003,35 @@
         "zellen": 19,
         "tris": 6080,
         "eintraege": [
-         39,
-         543,
-         70,
-         843,
-         896,
-         69,
-         526,
-         67,
-         38,
-         842,
-         486,
-         403,
-         525,
-         401,
-         404,
-         488,
-         231,
-         895,
-         402
+         54,
+         29,
+         522,
+         822,
+         875,
+         53,
+         505,
+         28,
+         52,
+         821,
+         465,
+         382,
+         504,
+         380,
+         383,
+         467,
+         210,
+         874,
+         381
         ]
        },
        {
         "klasse": "f:kristalle:L0",
         "stufe": 0,
         "art": "rock",
-        "zellen": 9,
-        "tris": 3960,
+        "zellen": 1,
+        "tris": 440,
         "eintraege": [
-         71,
-         233,
-         73,
-         43,
-         72,
-         42,
-         40,
-         68,
-         41
+         212
         ]
        }
       ]
@@ -1302,18 +1279,18 @@
   }
  ],
  "vram": {
-  "mb": 124.7,
-  "gebunden": 124.7,
+  "mb": 122.7,
+  "gebunden": 122.7,
   "band": 118,
   "erzeuger": [
    {
     "erzeuger": "buf:szene",
-    "mb": 36,
-    "n": 542,
+    "mb": 34,
+    "n": 520,
     "form": [
      "buf:szene:bauSatz",
      "buf:szene:bodenSatz",
-     "buf:szene:formationenSatz"
+     "buf:szene:streuSatz"
     ]
    },
    {
@@ -1477,7 +1454,7 @@
    {
     "erzeuger": "buf:bindingBuffer",
     "mb": 0,
-    "n": 160,
+    "n": 154,
     "form": [
      "buf:bindingBuffer#_object_(vertex,fragment,compute)",
      "buf:bindingBuffer#_render_(vertex,fragment,compute)"
@@ -1510,7 +1487,7 @@
    {
     "erzeuger": "buf:bindingBufferundefined_UniformBuffer_",
     "mb": 0,
-    "n": 19,
+    "n": 17,
     "form": [
      "buf:bindingBufferundefined_UniformBuffer_#_(vertex)",
      "buf:bindingBufferundefined_UniformBuffer_#_(fragment)"
@@ -1525,19 +1502,19 @@
     ]
    },
    {
-    "erzeuger": "tex:portal-membran",
-    "mb": 0,
-    "n": 7,
-    "form": [
-     "tex:portal-membran rgba8unorm 64x1x1"
-    ]
-   },
-   {
     "erzeuger": "tex:DFG_LUT",
     "mb": 0,
     "n": 1,
     "form": [
      "tex:DFG_LUT rg16float 16x16x1"
+    ]
+   },
+   {
+    "erzeuger": "tex:portal-membran",
+    "mb": 0,
+    "n": 4,
+    "form": [
+     "tex:portal-membran rgba8unorm 64x1x1"
     ]
    },
    {
@@ -1567,7 +1544,7 @@
   ]
  },
  "texturen": {
-  "n": 38,
+  "n": 35,
   "mb": 66.47,
   "erzeuger": [
    {
@@ -1661,14 +1638,14 @@
     "n": 1
    },
    {
-    "erzeuger": "portal-membran",
-    "mb": 0,
-    "n": 7
-   },
-   {
     "erzeuger": "DFG_LUT",
     "mb": 0,
     "n": 1
+   },
+   {
+    "erzeuger": "portal-membran",
+    "mb": 0,
+    "n": 4
    },
    {
     "erzeuger": "TRAANode.vortiefe",
@@ -1722,30 +1699,30 @@
  "messung": {
   "proben": 6,
   "eingeschwungen": true,
-  "takte": 801,
-  "ms": 84662,
+  "takte": 774,
+  "ms": 54273,
   "stand": {
    "chunks": 81,
-   "instanzen": 1681,
+   "instanzen": 1659,
    "ungebaut": 0,
    "loadScale": 1
   },
   "offen": null
  },
  "fluss": {
-  "n": 180,
-  "platte": 0,
-  "mb": 38.5,
-  "platteMb": 0,
-  "neuMb": 38.5
+  "n": 188,
+  "platte": 4,
+  "mb": 48.3,
+  "platteMb": 0.1,
+  "neuMb": 48.2
  },
  "gpu": {
   "n": 12,
   "runden": 3,
-  "gpuJeFrameMs": 59.49,
-  "cpuJeFrameMs": 8.88,
+  "gpuJeFrameMs": 26.8,
+  "cpuJeFrameMs": 3.04,
   "gpuGebunden": true,
-  "nachlaufMs": 618.5
+  "nachlaufMs": 285.1
  },
  "stempel": {
   "einschwingen": 0,
@@ -1762,15 +1739,15 @@
   "urteil": "GRUEN"
  },
  "puffer": {
-  "mb": 35.97,
+  "mb": 34.04,
   "halter": {
-   "szene": 35.97,
+   "szene": 34.04,
    "bild": 0
   },
   "klassen": [
    {
     "klasse": "szene:bauSatz",
-    "mb": 13.81,
+    "mb": 12.91,
     "n": 89
    },
    {
@@ -1779,13 +1756,8 @@
     "n": 8
    },
    {
-    "klasse": "szene:formationenSatz",
-    "mb": 1.97,
-    "n": 16
-   },
-   {
     "klasse": "szene:streuSatz",
-    "mb": 1.75,
+    "mb": 1.73,
     "n": 16
    },
    {
@@ -1799,19 +1771,19 @@
     "n": 7
    },
    {
+    "klasse": "szene:formationenSatz",
+    "mb": 1.1,
+    "n": 16
+   },
+   {
     "klasse": "szene:fern-ring",
     "mb": 0.93,
     "n": 19
    },
    {
-    "klasse": "szene:portal-membran",
-    "mb": 0.43,
-    "n": 18
-   },
-   {
     "klasse": "szene:f:gt:L1",
     "mb": 0.42,
-    "n": 56
+    "n": 40
    },
    {
     "klasse": "szene:f:tanne:L1",
@@ -1827,6 +1799,11 @@
     "klasse": "szene:f:fichte:L1",
     "mb": 0.3,
     "n": 54
+   },
+   {
+    "klasse": "szene:portal-membran",
+    "mb": 0.29,
+    "n": 12
    },
    {
     "klasse": "szene:himmel-sterne",
@@ -1917,18 +1894,18 @@
  },
  "unbenannt": [],
  "frameMs": [
-  76,
-  76,
-  74,
-  143,
-  76,
-  61
+  33,
+  37,
+  31,
+  31,
+  35,
+  33
  ],
  "programme": {
-  "vertex": 52,
-  "fragment": 60,
-  "familien": 45,
-  "pipelines": 64
+  "vertex": 51,
+  "fragment": 59,
+  "familien": 46,
+  "pipelines": 63
  },
  "proben": [
   {
@@ -1937,12 +1914,12 @@
     "tris": 2
    },
    "haupt": {
-    "cmd": 64,
-    "tris": 266803
+    "cmd": 62,
+    "tris": 263283
    },
    "k0": {
-    "cmd": 44,
-    "tris": 141670
+    "cmd": 42,
+    "tris": 135070
    },
    "k1": {
     "cmd": 5,
@@ -1955,12 +1932,12 @@
     "tris": 2
    },
    "haupt": {
-    "cmd": 64,
-    "tris": 266803
+    "cmd": 62,
+    "tris": 263283
    },
    "k0": {
-    "cmd": 44,
-    "tris": 141670
+    "cmd": 42,
+    "tris": 135070
    },
    "k1": {
     "cmd": 5,
@@ -1973,12 +1950,12 @@
     "tris": 2
    },
    "haupt": {
-    "cmd": 64,
-    "tris": 266803
+    "cmd": 62,
+    "tris": 263295
    },
    "k0": {
-    "cmd": 44,
-    "tris": 141670
+    "cmd": 42,
+    "tris": 135070
    },
    "k1": {
     "cmd": 5,
@@ -1991,12 +1968,12 @@
     "tris": 2
    },
    "haupt": {
-    "cmd": 64,
-    "tris": 266815
+    "cmd": 62,
+    "tris": 263259
    },
    "k0": {
-    "cmd": 44,
-    "tris": 141670
+    "cmd": 42,
+    "tris": 135070
    },
    "k1": {
     "cmd": 5,
@@ -2009,12 +1986,12 @@
     "tris": 2
    },
    "haupt": {
-    "cmd": 64,
-    "tris": 266815
+    "cmd": 62,
+    "tris": 263247
    },
    "k0": {
-    "cmd": 44,
-    "tris": 141670
+    "cmd": 42,
+    "tris": 135070
    },
    "k1": {
     "cmd": 5,
@@ -2027,12 +2004,12 @@
     "tris": 2
    },
    "haupt": {
-    "cmd": 64,
-    "tris": 266815
+    "cmd": 62,
+    "tris": 263283
    },
    "k0": {
-    "cmd": 44,
-    "tris": 141670
+    "cmd": 42,
+    "tris": 135070
    },
    "k1": {
     "cmd": 5,
@@ -2043,25 +2020,6 @@
  "echt": true,
  "roh": {
   "zensus": [
-   {
-    "klasse": "f:gt:L1",
-    "stufe": 1,
-    "art": "vehicle",
-    "cmd": 14,
-    "tris": 18192,
-    "je": {
-     "haupt": 7,
-     "k0": 7
-    },
-    "jeTris": {
-     "haupt": 9096,
-     "k0": 9096
-    },
-    "inst": 16,
-    "exemplare": 1,
-    "dMin": 18,
-    "dMax": 20
-   },
    {
     "klasse": "bauSatz",
     "stufe": null,
@@ -2089,7 +2047,7 @@
        "zellen": 2,
        "tris": 5838,
        "eintraege": [
-        8
+        6
        ]
       },
       {
@@ -2099,7 +2057,7 @@
        "zellen": 2,
        "tris": 1398,
        "eintraege": [
-        4
+        2
        ]
       }
      ],
@@ -2121,7 +2079,7 @@
        "zellen": 5,
        "tris": 22612,
        "eintraege": [
-        9
+        7
        ]
       },
       {
@@ -2141,7 +2099,7 @@
        "zellen": 6,
        "tris": 16688,
        "eintraege": [
-        7
+        5
        ]
       },
       {
@@ -2151,7 +2109,7 @@
        "zellen": 3,
        "tris": 14286,
        "eintraege": [
-        8
+        6
        ]
       },
       {
@@ -2161,7 +2119,7 @@
        "zellen": 3,
        "tris": 10462,
        "eintraege": [
-        10
+        8
        ]
       },
       {
@@ -2171,17 +2129,36 @@
        "zellen": 14,
        "tris": 4165,
        "eintraege": [
-        37,
-        527,
-        529,
-        487,
-        489,
-        524,
-        528
+        27,
+        506,
+        508,
+        466,
+        468,
+        503,
+        507
        ]
       }
      ]
     }
+   },
+   {
+    "klasse": "f:gt:L1",
+    "stufe": 1,
+    "art": "vehicle",
+    "cmd": 10,
+    "tris": 18192,
+    "je": {
+     "haupt": 5,
+     "k0": 5
+    },
+    "jeTris": {
+     "haupt": 9096,
+     "k0": 9096
+    },
+    "inst": 14,
+    "exemplare": 1,
+    "dMin": 18,
+    "dMax": 20
    },
    {
     "klasse": "f:tanne:L1",
@@ -2279,16 +2256,16 @@
     "stufe": null,
     "art": null,
     "cmd": 5,
-    "tris": 26360,
+    "tris": 16240,
     "je": {
      "k0": 2,
      "k1": 1,
      "haupt": 2
     },
     "jeTris": {
-     "k0": 12800,
+     "k0": 6200,
      "k1": 3520,
-     "haupt": 10040
+     "haupt": 6520
     },
     "inst": 2,
     "exemplare": 1,
@@ -2297,55 +2274,40 @@
     "inhalt": {
      "k0": [
       {
-       "klasse": "f:kristalle:L0",
-       "stufe": 0,
-       "art": "rock",
-       "zellen": 16,
-       "tris": 7040,
-       "eintraege": [
-        2,
-        71,
-        233,
-        21,
-        73,
-        43,
-        16,
-        72,
-        20,
-        42,
-        75,
-        74,
-        40,
-        68,
-        3,
-        41
-       ]
-      },
-      {
        "klasse": "f:zacken:L0",
        "stufe": 0,
        "art": "rock",
        "zellen": 18,
        "tris": 5760,
        "eintraege": [
-        39,
-        543,
-        70,
-        130,
+        54,
+        109,
+        29,
+        522,
+        108,
+        53,
+        505,
+        28,
+        52,
+        465,
         129,
-        69,
-        526,
-        67,
-        38,
-        486,
-        150,
-        403,
-        525,
-        232,
-        404,
-        488,
-        151,
-        231
+        382,
+        504,
+        211,
+        383,
+        467,
+        130,
+        210
+       ]
+      },
+      {
+       "klasse": "f:kristalle:L0",
+       "stufe": 0,
+       "art": "rock",
+       "zellen": 1,
+       "tris": 440,
+       "eintraege": [
+        212
        ]
       }
      ],
@@ -2357,17 +2319,17 @@
        "zellen": 11,
        "tris": 3520,
        "eintraege": [
-        543,
-        843,
-        896,
-        526,
-        842,
-        403,
-        525,
-        401,
-        404,
-        895,
-        402
+        522,
+        822,
+        875,
+        505,
+        821,
+        382,
+        504,
+        380,
+        383,
+        874,
+        381
        ]
       }
      ],
@@ -2379,43 +2341,35 @@
        "zellen": 19,
        "tris": 6080,
        "eintraege": [
-        39,
-        543,
-        70,
-        843,
-        896,
-        69,
-        526,
-        67,
-        38,
-        842,
-        486,
-        403,
-        525,
-        401,
-        404,
-        488,
-        231,
-        895,
-        402
+        54,
+        29,
+        522,
+        822,
+        875,
+        53,
+        505,
+        28,
+        52,
+        821,
+        465,
+        382,
+        504,
+        380,
+        383,
+        467,
+        210,
+        874,
+        381
        ]
       },
       {
        "klasse": "f:kristalle:L0",
        "stufe": 0,
        "art": "rock",
-       "zellen": 9,
-       "tris": 3960,
+       "zellen": 1,
+       "tris": 440,
        "eintraege": [
-        71,
-        233,
-        73,
-        43,
-        72,
-        42,
-        40,
-        68,
-        41
+        212
        ]
       }
      ]
@@ -2668,7 +2622,7 @@
        "zellen": 1,
        "tris": 7632,
        "eintraege": [
-        6
+        4
        ]
       },
       {
@@ -2678,7 +2632,7 @@
        "zellen": 1,
        "tris": 5768,
        "eintraege": [
-        9
+        7
        ]
       },
       {
@@ -2689,7 +2643,7 @@
        "tris": 3536,
        "eintraege": [
         "portal-preview-portale",
-        5
+        3
        ]
       },
       {
@@ -2699,7 +2653,7 @@
        "zellen": 1,
        "tris": 2944,
        "eintraege": [
-        10
+        8
        ]
       },
       {
@@ -2709,7 +2663,7 @@
        "zellen": 1,
        "tris": 2312,
        "eintraege": [
-        7
+        5
        ]
       },
       {
@@ -2719,13 +2673,13 @@
        "zellen": 7,
        "tris": 168,
        "eintraege": [
-        37,
-        527,
-        529,
-        487,
-        489,
-        524,
-        528
+        27,
+        506,
+        508,
+        466,
+        468,
+        503,
+        507
        ]
       },
       {
@@ -2747,11 +2701,11 @@
        "zellen": 5,
        "tris": 120,
        "eintraege": [
-        527,
-        529,
-        487,
-        524,
-        528
+        506,
+        508,
+        466,
+        503,
+        507
        ]
       }
      ]
@@ -2895,10 +2849,10 @@
    }
   ],
   "vram": {
-   "mb": 124.7,
-   "puffer": 36,
+   "mb": 122.7,
+   "puffer": 34.1,
    "texturen": 88.6,
-   "spitze": 131,
+   "spitze": 132.7,
    "gc": 0,
    "liste": [
     {
@@ -2913,7 +2867,7 @@
     },
     {
      "k": "buf:szene:bauSatz",
-     "mb": 13.813,
+     "mb": 12.91,
      "n": 89
     },
     {
@@ -2967,18 +2921,13 @@
      "n": 1
     },
     {
-     "k": "buf:szene:formationenSatz",
-     "mb": 1.965,
-     "n": 16
-    },
-    {
      "k": "tex:feld-pass-panorama rgba32float 768x160x1",
      "mb": 1.875,
      "n": 1
     },
     {
      "k": "buf:szene:streuSatz",
-     "mb": 1.749,
+     "mb": 1.726,
      "n": 16
     },
     {
@@ -3000,6 +2949,11 @@
      "k": "tex:laub-cluster-atlas bc3-rgba-unorm-srgb 2048x512x1",
      "mb": 1.333,
      "n": 1
+    },
+    {
+     "k": "buf:szene:formationenSatz",
+     "mb": 1.103,
+     "n": 16
     },
     {
      "k": "tex:fluss-karte:fern r8unorm 1024x1024x1",
@@ -3032,14 +2986,9 @@
      "n": 1
     },
     {
-     "k": "buf:szene:portal-membran",
-     "mb": 0.43,
-     "n": 18
-    },
-    {
      "k": "buf:szene:f:gt:L1",
-     "mb": 0.424,
-     "n": 56
+     "mb": 0.422,
+     "n": 40
     },
     {
      "k": "buf:szene:f:tanne:L1",
@@ -3060,6 +3009,11 @@
      "k": "buf:szene:f:fichte:L1",
      "mb": 0.296,
      "n": 54
+    },
+    {
+     "k": "buf:szene:portal-membran",
+     "mb": 0.286,
+     "n": 12
     },
     {
      "k": "tex:kronen-streu:fern r8unorm 512x512x1",
@@ -3118,8 +3072,8 @@
     },
     {
      "k": "buf:bindingBuffer#_object_(vertex,fragment,compute)",
-     "mb": 0.021,
-     "n": 131
+     "mb": 0.02,
+     "n": 125
     },
     {
      "k": "buf:szene:farWater",
@@ -3147,14 +3101,14 @@
      "n": 29
     },
     {
-     "k": "buf:bindingBufferundefined_UniformBuffer_#_(vertex)",
-     "mb": 0.01,
-     "n": 7
-    },
-    {
      "k": "buf:szene:himmel-sonne",
      "mb": 0.009,
      "n": 3
+    },
+    {
+     "k": "buf:bindingBufferundefined_UniformBuffer_#_(vertex)",
+     "mb": 0.007,
+     "n": 5
     },
     {
      "k": "buf:szene:bau:welt_koerperstudio",
@@ -3192,14 +3146,14 @@
      "n": 5
     },
     {
-     "k": "tex:portal-membran rgba8unorm 64x1x1",
-     "mb": 0.002,
-     "n": 7
-    },
-    {
      "k": "tex:DFG_LUT rg16float 16x16x1",
      "mb": 0.001,
      "n": 1
+    },
+    {
+     "k": "tex:portal-membran rgba8unorm 64x1x1",
+     "mb": 0.001,
+     "n": 4
     },
     {
      "k": "buf:bindingBufferundefined_UniformBuffer_#_(fragment)",
@@ -3234,7 +3188,7 @@
    ]
   },
   "texturen": {
-   "n": 38,
+   "n": 35,
    "mb": 66.47,
    "erzeuger": [
     {
@@ -3328,14 +3282,14 @@
      "n": 1
     },
     {
-     "erzeuger": "portal-membran",
-     "mb": 0,
-     "n": 7
-    },
-    {
      "erzeuger": "DFG_LUT",
      "mb": 0,
      "n": 1
+    },
+    {
+     "erzeuger": "portal-membran",
+     "mb": 0,
+     "n": 4
     },
     {
      "erzeuger": "TRAANode.vortiefe",
