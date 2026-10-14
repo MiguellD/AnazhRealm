@@ -1184,12 +1184,10 @@ class AnazhRealm_Z11d {
     // durch alle Schalen), Refresh-Scheibe.
     _tickFernRing(playerPos) {
         const st = this.state;
-        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
-        if (hook === false) {
+        if (!this._fernRingGilt()) {
             if (st.fernRing) this._fernRingDispose();
             return;
         }
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
         if (!playerPos || !st.scene || typeof THREE === "undefined") return;
         const F = AnazhRealm.FERN_RING;
         let fr = st.fernRing;
@@ -1245,6 +1243,16 @@ class AnazhRealm_Z11d {
             st.camera.far = aussen + 500;
             st.camera.updateProjectionMatrix();
         }
+    }
+
+    // Gehört der Horizont zu dieser Welt? Die EINE Frage für seinen Takt (`_tickFernRing`) und das erste Weltbild
+    // (`_weltbildLuecken`, Term „horizont"): der Linsen-Hook `__anazhFernRing` (false: aus, true: auch headless), sonst
+    // jede Welt mit Renderer — headless ruht der Ring.
+    _fernRingGilt() {
+        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
+        if (hook === false) return false;
+        const r = this.state.renderer;
+        return hook === true || !(r && r._isHeadlessNull);
     }
 
     // Welt-Wechsel/Restore/Hook-aus: Schalen + das eigene Material entsorgen

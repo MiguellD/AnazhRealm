@@ -102,11 +102,32 @@ function ladeschirmVerdict(m) {
         ["streuWartet", "mit einer Streu-Region, die auf ihr Asset wartet", /Wald-Stück/],
         ["streuNie", "ohne eine gestreamte Streu-Region (der Streamer lief noch nie)", /Wald-Stück/],
         ["karteOffen", "mit der offenen Karte eines fernen Baums", /ferne Bäume/],
+        ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
+        ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
+        ["pflanzung", "mit einem gepflanzten Baum der Mesh-Zone, der noch nicht steht", /gepflanzt/],
+        ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
     ]) {
         const z = f[k];
         if (!z) out.push(`${name}: ${ohne(k)}`);
         else if (z.weg) out.push(`${name} weicht der Ladeschirm (das halbe Weltbild)`);
         else if (!wort.test(z.stand || "")) out.push(`${name} nennt die Stand-Zeile die Lücke nicht („${z.stand}")`);
+    }
+    // DIE TERM-DECKUNG (K60): jeder Term der Liste `WELTBILD_TERME` (`_weltbildLuecken`) hat einen Fall, in dem er den
+    // Ladeschirm hält — ein Term ohne Fall ist ROT beim Namen (die Pflanz-Schlange kam ohne Fall: ihr Streichen blieb grün),
+    // ein Fall, der einen Term außerhalb der Liste nennt, ebenso.
+    const terme = m.terme;
+    if (!Array.isArray(terme) || !terme.length)
+        out.push("die Terme des ersten Weltbilds fehlen (`WELTBILD_TERME`) — die Linse sieht nicht, was das Bild hält");
+    else {
+        const gedeckt = new Set();
+        for (const [k, z] of Object.entries(f)) {
+            for (const t of (z && z.terme) || []) {
+                if (!terme.includes(t)) out.push(`der Fall ${k} nennt den Term „${t}“, den WELTBILD_TERME nicht trägt`);
+                else if (!z.weg) gedeckt.add(t);
+            }
+        }
+        for (const t of terme)
+            if (!gedeckt.has(t)) out.push(`der Term „${t}“ des ersten Weltbilds hat keinen Fall, der den Ladeschirm hält (L2a)`);
     }
     if (!f.allesSteht || !f.allesSteht.weg) out.push(`steht alles, bleibt der Ladeschirm („${(f.allesSteht && f.allesSteht.stand) || ""}"${m.fehltNachBoot && m.fehltNachBoot.length ? `, nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")}` : ""})`);
     if (!f.lueckeRuht) out.push(`eine ruhende Lücke: ${ohne("lueckeRuht")}`);
@@ -423,6 +444,7 @@ async function probe(arg) {
     try {
         const m = { gestartet: false, faelle: {}, ohneFall: {} };
         out.lade = m;
+        m.terme = r.constructor.WELTBILD_TERME ? Array.from(r.constructor.WELTBILD_TERME) : null;
         const ls = document.getElementById("ladeschirm");
         m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
         if (ls && typeof r._ankunftsBild === "function") {
@@ -445,9 +467,10 @@ async function probe(arg) {
                 const w0 = warnt();
                 schaffe();
                 if (vorbereiten) vorbereiten();
+                const terme = typeof r._weltbildLuecken === "function" ? r._weltbildLuecken().map((l) => l.term) : null;
                 r._ankunftsBild();
                 const weg = ls.classList.contains("weg");
-                m.faelle[name] = { weg, stand: stand(), warn: Math.max(0, warnt() - w0) };
+                m.faelle[name] = { weg, stand: stand(), warn: Math.max(0, warnt() - w0), terme };
                 heile();
             };
             const nichts = () => {};
@@ -498,6 +521,37 @@ async function probe(arg) {
                 "karteOffen",
                 () => (r._impostorBakeQueue = (r._impostorBakeQueue || []).concat(["linse:karte"])),
                 () => (r._impostorBakeQueue = (r._impostorBakeQueue || []).filter((k) => k !== "linse:karte"))
+            );
+            // (4b) die Welt fehlt (noch kein Spieler)
+            const merkPm = st.playerMesh;
+            fall("weltFehlt", () => (st.playerMesh = null), () => (st.playerMesh = merkPm));
+            // (4c) das Buch der Studios ist zu
+            const fo = r._foundry;
+            const merkBuch = fo ? fo.ready : undefined;
+            if (fo) fall("buchZu", () => (fo.ready = false), () => (fo.ready = merkBuch));
+            else m.ohneFall.buchZu = "die Foundry fehlt nach dem Boot";
+            // (4d) ein gepflanzter Baum der Mesh-Zone steht noch in der Pflanz-Schlange (`pendingVegSpawns`, K60)
+            const pflanze = { name: "linse:pflanzung", position: { x: pm.x, y: pm.y, z: pm.z }, opts: {} };
+            fall(
+                "pflanzung",
+                () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).concat([pflanze])),
+                () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).filter((t) => t !== pflanze))
+            );
+            // (4e) der Horizont steht nicht ganz (K60): der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
+            // ist noch nicht voll gezeichnet (`fr.ready`)
+            const merkHook = window.__anazhFernRing;
+            const merkRing = st.fernRing;
+            fall(
+                "horizont",
+                () => {
+                    window.__anazhFernRing = true;
+                    st.fernRing = { ready: false, cursor: 0, totalVerts: 1 };
+                },
+                () => {
+                    st.fernRing = merkRing;
+                    if (merkHook === undefined) delete window.__anazhFernRing;
+                    else window.__anazhFernRing = merkHook;
+                }
             );
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
@@ -1445,12 +1499,17 @@ async function probe(arg) {
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
+        const l2aTerme = ["welt", "boden", "horizont", "buch", "bauten", "pflanzung", "streu", "karten"];
         const l2aFaelle = {
-            ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0 },
-            baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0 },
-            streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0 },
-            streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0 },
-            karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0 },
+            ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
+            baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
+            streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
+            streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
+            karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] },
+            weltFehlt: { weg: false, stand: "die Welt entsteht", warn: 0, terme: ["welt"] },
+            buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
+            pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
+            horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
             allesSteht: { weg: true, stand: "", warn: 0 },
             lueckeRuht: { weg: true, stand: "", warn: 1 },
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
@@ -1468,6 +1527,7 @@ async function probe(arg) {
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
+                    terme: l2aTerme,
                     vorrat: { ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], karten: 0, kartenBsp: [], fehltNeu: [], vorBild: [], nachBild: 2, ende: true, streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild", phaseBestellung: ['Wagen gt|1: "bestellt"', 'Siedlungs-Probe: "bestellt"'] },
                 },
                 [
@@ -1509,6 +1569,17 @@ async function probe(arg) {
                         },
                         "mit einer Streu-Region, die auf ihr Asset wartet: die Streu-Region des Spielers (0,0) steht nach dem Boot nicht",
                     ],
+                    [
+                        "ein Term ohne Fall (K60: die Pflanz-Schlange kam ohne Fall)",
+                        { terme: l2aTerme.concat(["zauber"]) },
+                        "der Term „zauber“ des ersten Weltbilds hat keinen Fall",
+                    ],
+                    [
+                        "ein Fall nennt einen Term außerhalb der Liste",
+                        { faelle: Object.assign({}, l2aFaelle, { pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["saat"] } }) },
+                        "der Fall pflanzung nennt den Term „saat“",
+                    ],
+                    ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
                     ["ohne Streamer weicht der Ladeschirm (Befund 09.10.)", { faelle: Object.assign({}, l2aFaelle, { streuNie: { weg: true, stand: "", warn: 0 } }) }, "ohne eine gestreamte Streu-Region (der Streamer lief noch nie) weicht der Ladeschirm"],
                     ["ein Fall ohne Grund", { faelle: Object.assign({}, l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines fernen Baums: die Probe stellte den Fall nicht her und nennt keinen Grund"],
                     ["kein Ladeschirm (Befund)", { imHtml: false }, "kein Ladeschirm im HTML"],

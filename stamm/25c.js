@@ -2420,18 +2420,45 @@ class AnazhRealm_Z25c {
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
     // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
     _weltbildFehlt() {
+        return this._weltbildLuecken().map((l) => l.satz);
+    }
+
+    // DIE TERME DES ERSTEN WELTBILDS (K60): je Leser des ersten Frames EIN Term mit Namen aus der Liste `WELTBILD_TERME` und
+    // seinem Satz. Die Ankunfts-Linse (gate:ankunft L2a) liest die Liste und stellt je Term einen Fall her — ein Term ohne
+    // Fall ist ROT beim Namen (die Pflanz-Schlange kam in K60 ohne Fall dazu: ihr Streichen wäre grün geblieben).
+    _weltbildLuecken() {
         const st = this.state;
-        const pm = st.playerMesh;
-        if (!pm) return ["die Welt entsteht"];
         const out = [];
+        const luecke = (term, satz) => out.push({ term, satz });
+        const pm = st.playerMesh;
+        if (!pm) {
+            luecke("welt", "die Welt entsteht");
+            return out;
+        }
         const ring = this._builtRingRadius();
         const ringSoll = AnazhRealm.RING_EXIST_FLOOR;
         if (!(ring != null && ring >= ringSoll))
-            out.push(`der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`);
+            luecke("boden", `der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`);
+        // DER HORIZONT (K60): der Fern-Ring zeigt seine Schalen erst ganz (`fr.ready`), das Feld-Panorama die Ferne erst
+        // gemalt (`panoLaeufe`). Seit K60 zeichnet unter dem Ladeschirm die Scheibe den Ring allein (`_tickFernRing`) —
+        // ohne diesen Term stand das Bild ohne Horizont (Prüfung K60-1: in 1 von 4 Kalt-Läufen am Kopf).
+        if (this._fernRingGilt()) {
+            const fr = st.fernRing;
+            const fp = st.feldPass;
+            if (!fr || !fr.ready)
+                luecke(
+                    "horizont",
+                    `der Horizont wächst (${fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0} %)`
+                );
+            // das Panorama malt nur, wer die Ferne auf der GPU zeichnet (`_weltMarchGezeichnet`; der Linsen-Hook trägt den Pass
+            // auch headless, dort malt nie ein Panorama)
+            else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
+                luecke("horizont", "der Horizont wird gemalt");
+        }
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
-            out.push("das Buch der Studios öffnet sich");
+            luecke("buch", "das Buch der Studios öffnet sich");
             return out;
         }
         const p = pm.position;
@@ -2443,20 +2470,20 @@ class AnazhRealm_Z25c {
             const dz = e.position.z - p.z;
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
-        if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
+        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`);
         // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
-        // noch kein Eintrag — ohne diese Zeile stand das Bild vor ihm, und er wuchs im Bild nach.
+        // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
         let gesetzt = 0;
         for (const t of st.pendingVegSpawns || []) {
             const q = t && t.position;
             if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
         }
-        if (gesetzt) out.push(`${gesetzt} Bäume werden gepflanzt`);
+        if (gesetzt) luecke("pflanzung", `${gesetzt} Bäume werden gepflanzt`);
         const warten = this._streuWartet(p);
-        if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
+        if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
             (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
-        if (karten) out.push(`${karten} ferne Bäume werden gemalt`);
+        if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
     }
 
