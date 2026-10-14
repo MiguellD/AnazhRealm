@@ -170,7 +170,7 @@ function buildAnimal(){
 }
 function init(){
   // DIE HÜLLE (K41): Sitzung (Undo/Redo über T samt Gattung) + der EINE Generator + die Kosten-Leiste der Labor-Gestalt.
-  sitz=AnazhHuelle.sitzung({werte:T,zustand:function(){return {gattung:gattungAktiv};},zustandSetzen:function(z){gattungMarke(z.gattung);},anwenden:function(){buildAnimal();}});
+  sitz=AnazhHuelle.sitzung({werte:T,zustand:function(){return {gattung:gattungAktiv,markiert:!!document.querySelector("#presets button.active")};},zustandSetzen:function(z){gattungAktiv=z.gattung;gattungMarke(z.markiert?z.gattung:null);},anwenden:function(){buildAnimal();}});
   sitz.leiste(document.getElementById("sitzung"),{seed:false});
   regler=AnazhHuelle.regler(document.getElementById("sliders"),__tetrapodaCore.PARAMS_BY_KIND.kreatur,{werte:T,sitzung:sitz,gruppen:false,ruheMs:200,
     basis:function(){return presets[gattungAktiv]||null;},

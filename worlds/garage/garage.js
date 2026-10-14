@@ -179,9 +179,10 @@ function renderTafel(res){
 let presetId='gt',kulturId=null;
 // Die Sitzung der Hülle: jede Tat (Regler-Zug, Gattung, Kultur, Zurücksetzen) ist EIN Rückgängig-Schritt über P samt
 // Gattung und Kultur (Strg+Z · Strg+Umschalt+Z); der Rückweg baut wie der Hinweg.
-const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId}),
+// (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
+const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId,markiert:[...pdiv.children].some(c=>c.classList.contains('on'))}),
   zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(PRESETS);
-    [...pdiv.children].forEach((c,i)=>c.classList.toggle('on',ids[i]===presetId));
+    [...pdiv.children].forEach((c,i)=>c.classList.toggle('on',z.markiert&&ids[i]===presetId));
     const cids=Object.keys(CULTURES);[...cdiv.querySelectorAll('button')].forEach((c,i)=>c.classList.toggle('on',cids[i]===kulturId));},
   anwenden:()=>rebuild()});
 sitz.leiste(document.getElementById('sitzung'),{seed:false});

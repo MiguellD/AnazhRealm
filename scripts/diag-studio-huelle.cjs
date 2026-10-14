@@ -237,7 +237,7 @@ async function bild(ordner, name) {
                     const mitte = inp.value;
                     window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true, bubbles: true }));
                     await new Promise((res) => setTimeout(res, 900));
-                    r.undo = { vor, mitte, nach: inp.value, wirkt: inp.value === vor && mitte !== vor };
+                    r.undo = { vor, mitte, nach: inp.value, wirkt: inp.value === vor && mitte !== vor, marke: [...document.querySelectorAll("#presets .on, #presets .active")].map((b) => b.textContent).join("|") };
                 }
                 return r;
             });

@@ -364,9 +364,10 @@ function renderBogenTafel(P){
 // schreibt P in place, ein Aufbau je Bild.
 const tradName=T=>Object.keys(TRADITIONEN).find(k=>TRADITIONEN[k]===T)||'Frank';
 let basisP=null;   // P nach dem letzten Gattungs-/Traditions-Zug — das Ziel von „Zurücksetzen“
-const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({gattung:currentGattung,trad:tradName(currentTrad)}),
+// (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
+const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({gattung:currentGattung,trad:tradName(currentTrad),markiert:!!pdiv.querySelector('button.on')}),
   zustandSetzen:z=>{currentGattung=z.gattung;currentTrad=TRADITIONEN[z.trad]||currentTrad;SC.setTradition(currentTrad);
-    [...pdiv.querySelectorAll('button')].forEach(c=>c.classList.toggle('on',c.textContent===currentGattung));
+    [...pdiv.querySelectorAll('button')].forEach(c=>c.classList.toggle('on',z.markiert&&c.textContent===currentGattung));
     [...tdiv.children].forEach(c=>c.classList.toggle('on',c.textContent===z.trad));},
   anwenden:()=>{buildSliders();rebuild();}});
 sitz.leiste(document.getElementById('sitzung'),{seed:false});
