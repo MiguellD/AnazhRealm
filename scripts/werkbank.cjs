@@ -239,11 +239,16 @@ const gitStand = () => {
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
+const { stammVersion, pruefsumme } = require("./lib/abnahme-urteil.cjs").standLeser(root);
 function sollIstSchreiben(ziel, messung) {
     const [id, teil] = String(ziel).split(":");
     const t = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8"));
     const k = t.klassen.find((x) => x.id === id);
     if (!k) throw new Error(`--ist ${ziel}: die Soll-Tafel trägt keine Klasse „${id}"`);
+    // DER STAND (K63-n2, abnahme-urteil `messStand`): die Version des Stamms und die Prüfsumme jeder Quelle der Klasse, wie sie
+    // beim Messen auf der Platte standen — ändert sich eine, ist das Ist veraltet
+    messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
+    messung.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, pruefsumme(d)]));
     if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = messung;
     else if (teil === "nah" || teil === "fern") (k.mass.messung = k.mass.messung || {})[teil] = messung;
     else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (nah, fern, wirkung)`);
@@ -1078,12 +1083,29 @@ async function starte() {
             const rend = r.state.renderer;
             const boden = (x, z, v) =>
                 typeof v === "string" && v[0] === "+" ? r._voxelSurfaceY(x, z) + Number(v.slice(1)) : Number(v);
-            const px = Number(k.px),
-                pz = Number(k.pz),
-                lx = Number(k.lx),
-                lz = Number(k.lz);
-            const py = boden(px, pz, k.py),
-                ly = boden(lx, lz, k.ly);
+            // DAS GESICHT (K63-n2, `--gesicht <m>`): die Kamera steht <m> vor dem Kopf des Spielers (sein Kopf-Gelenk, 8 cm darüber
+            // die Augenhöhe, seine Blick-Richtung) und blickt ihn an — die Pose kommt aus dem Leib, nie von Hand
+            let gpos = null;
+            if (k.gesicht != null) {
+                const T = window.THREE;
+                const pm = r.state.playerMesh;
+                let kopf = null;
+                pm.updateMatrixWorld(true);
+                pm.traverse((o) => {
+                    if (!kopf && o.name === "head") kopf = o;
+                });
+                if (!kopf) throw new Error("--gesicht: der Spieler trägt kein Kopf-Gelenk „head“");
+                const h = kopf.getWorldPosition(new T.Vector3()).add(new T.Vector3(0, 0.08, 0));
+                const fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion()));
+                const c = h.clone().addScaledVector(fw, Number(k.gesicht));
+                gpos = [c.x, c.y, c.z, h.x, h.y, h.z];
+            }
+            const px = gpos ? gpos[0] : Number(k.px),
+                pz = gpos ? gpos[2] : Number(k.pz),
+                lx = gpos ? gpos[3] : Number(k.lx),
+                lz = gpos ? gpos[5] : Number(k.lz);
+            const py = gpos ? gpos[1] : boden(px, pz, k.py),
+                ly = gpos ? gpos[4] : boden(lx, lz, k.ly);
             rend.setAnimationLoop(null);
             // DIE KLASSE (K63, die Soll-Tafel): das Bild in voller Puffer-Größe — Dither und Kanten leben im Pixel des Schirms
             if (k.klasse) {
@@ -1115,7 +1137,11 @@ async function starte() {
                 } catch (_e) {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0, fest: i === 1 ? fest : null });
+                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, {
+                    ziel,
+                    wahl: i === 0 ? wahl : 0,
+                    fest: i === 1 ? fest : null,
+                });
                 if (i === 0) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
@@ -1140,10 +1166,36 @@ async function starte() {
                 const re = new RegExp(k.klasse);
                 const zeichnet = (o) =>
                     o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
+                // DER KOPF IN STOFFEN (K63-n2, `--gesicht`): ein Teil des Spielers, dessen Gewichte am Kopf hängen (head, Augen,
+                // Lider) oder der am Kopf-Gelenk sitzt, heißt `spieler:kopf/<Stoff>` (Stoff = `__klasse`, sonst `auge`), der Rest
+                // `spieler:leib/…` — die Teilung zeigt dann jeden Stoff des Kopfs für sich
+                const KOPF_GELENK = /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/;
+                const kopfGewicht = (o) => {
+                    for (let p = o; p; p = p.parent) if (p.name === "head") return 1;
+                    const a = o.geometry.attributes.skinIndex,
+                        w = o.geometry.attributes.skinWeight;
+                    if (!a || !o.skeleton) return 0;
+                    let kz = 0,
+                        n = 0;
+                    for (let i = 0; i < a.count; i++)
+                        for (let c = 0; c < 4; c++) {
+                            const wt = w.getComponent(i, c);
+                            n += wt;
+                            if (KOPF_GELENK.test(o.skeleton.bones[a.getComponent(i, c)].name)) kz += wt;
+                        }
+                    return n ? kz / n : 0;
+                };
+                const teilName = (o) => {
+                    const kl = r._taeterKlasse(o);
+                    if (k.gesicht == null || kl !== "spieler") return kl;
+                    const auge =
+                        o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => /^iris[LR]$/.test(b.name));
+                    return `spieler:${kopfGewicht(o) >= 0.3 ? "kopf" : "leib"}/${o.userData.__klasse || (auge ? "auge" : "stoff")}`;
+                };
                 const teile = new Map();
                 r.state.scene.traverse((o) => {
                     if (!zeichnet(o)) return;
-                    const kl = r._taeterKlasse(o);
+                    const kl = teilName(o);
                     if (!re.test(kl)) return;
                     if (!teile.has(kl)) teile.set(kl, []);
                     teile.get(kl).push(o);
@@ -1153,7 +1205,8 @@ async function starte() {
                         `Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`
                     );
                 const namen = [...teile.keys()].sort();
-                if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
+                if (namen.length > 250)
+                    throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
                 const alle = [].concat(...teile.values());
                 const wurf = new Map(alle.map((o) => [o, o.castShadow]));
                 const bundlesNeu = () =>
@@ -1190,6 +1243,153 @@ async function starte() {
                         const ms = window.__klassenMasse(u8, m, W, H);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
+                    // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug — die Iris an ihrem Gelenk
+                    // (irisL/R), auf der Kopf-Haut (Gewicht am Gelenk head) der Ton, den der Ofen ihm gab (koerper `kopfToene`:
+                    // Lippe, Höhle; der Haar-Ton der Kappe; die Haut) —, projiziert auf den Schirm; `__gesichtMasse` liest das BILD dort,
+                    // wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne kommen aus dem Leib selbst (der häufigste
+                    // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand.
+                    let gesicht = null;
+                    if (k.gesicht != null) {
+                        const T = window.THREE;
+                        const K = window.__koerperCore;
+                        if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
+                            throw new Error("--gesicht: koerper-core ohne kopfToene/KOPF_SOLL in der Seite");
+                        const lin = (hx) =>
+                            [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map((c) =>
+                                c / 255 <= 0.04045 ? c / 255 / 12.92 : Math.pow((c / 255 + 0.055) / 1.055, 2.4)
+                            );
+                        const hexAus = (c) =>
+                            c.reduce((h, x0) => {
+                                const x = x0 <= 0.0031308 ? 12.92 * x0 : 1.055 * Math.pow(x0, 1 / 2.4) - 0.055;
+                                return h * 256 + Math.max(0, Math.min(255, Math.round(x * 255)));
+                            }, 0);
+                        const knochen = (o, i) => {
+                            const si = o.geometry.attributes.skinIndex,
+                                sw = o.geometry.attributes.skinWeight;
+                            if (!si || !o.skeleton) return o.parent && o.parent.name === "head" ? "head" : null;
+                            let best = null,
+                                bw = 0;
+                            for (let c = 0; c < 4; c++) {
+                                const wt = sw.getComponent(i, c);
+                                if (wt > bw) {
+                                    bw = wt;
+                                    best = o.skeleton.bones[si.getComponent(i, c)].name;
+                                }
+                            }
+                            return best;
+                        };
+                        const modus = (liste) => {
+                            const z = new Map();
+                            for (const c of liste) {
+                                const key = c.map((x) => x.toFixed(3)).join(",");
+                                z.set(key, (z.get(key) || 0) + 1);
+                            }
+                            const best = [...z.entries()].sort((a, b) => b[1] - a[1])[0];
+                            return best ? best[0].split(",").map(Number) : null;
+                        };
+                        const farbe = (o, i) => {
+                            const ca = o.geometry.attributes.color;
+                            return ca
+                                ? [ca.getX(i), ca.getY(i), ca.getZ(i)]
+                                : [o.material.color.r, o.material.color.g, o.material.color.b];
+                        };
+                        const hautVs = [],
+                            haarVs = [];
+                        for (const [n, os] of teile) {
+                            if (!/^spieler:kopf\//.test(n)) continue;
+                            for (const o of os) {
+                                const pa = o.geometry.attributes.position;
+                                for (let i = 0; i < pa.count; i++) {
+                                    if (/\/hair$/.test(n)) haarVs.push(farbe(o, i));
+                                    else if (/\/(haut|skin)$/.test(n) && knochen(o, i) === "head")
+                                        hautVs.push(farbe(o, i));
+                                }
+                            }
+                        }
+                        const hautLin = modus(hautVs),
+                            haarLin = modus(haarVs);
+                        if (!hautLin) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
+                        const KT = K.kopfToene(hexAus(hautLin));
+                        const toene = { haut: hautLin, lippe: lin(KT.lips), hoehle: lin(KT.socket) };
+                        if (haarLin) toene.kappe = haarLin;
+                        const v = new T.Vector3();
+                        const roh = [];
+                        let minY = Infinity,
+                            maxY = -Infinity,
+                            nm = 0;
+                        const mitte = new T.Vector3();
+                        for (const [n, os] of teile) {
+                            if (!/^spieler:kopf\/(auge|haut|skin)$/.test(n)) continue;
+                            const kix = namen.indexOf(n) + 1;
+                            for (const o of os) {
+                                const pa = o.geometry.attributes.position;
+                                for (let i = 0; i < pa.count; i++) {
+                                    const kn = knochen(o, i);
+                                    let z = null,
+                                        seite = null;
+                                    if (/\/auge$/.test(n) && /^iris[LR]$/.test(kn)) {
+                                        z = "iris";
+                                        seite = kn;
+                                    } else if (kn === "head" && /\/(haut|skin)$/.test(n)) {
+                                        const c = farbe(o, i);
+                                        let bd = 1e-4;
+                                        for (const [t, tc] of Object.entries(toene)) {
+                                            const d = (c[0] - tc[0]) ** 2 + (c[1] - tc[1]) ** 2 + (c[2] - tc[2]) ** 2;
+                                            if (d < bd) {
+                                                bd = d;
+                                                z = t;
+                                            }
+                                        }
+                                    }
+                                    if (!z) continue;
+                                    o.getVertexPosition(i, v);
+                                    v.applyMatrix4(o.matrixWorld);
+                                    if (z !== "iris") {
+                                        minY = Math.min(minY, v.y);
+                                        maxY = Math.max(maxY, v.y);
+                                        mitte.add(v);
+                                        nm++;
+                                    }
+                                    const ndc = v.clone().project(cam);
+                                    roh.push({
+                                        z,
+                                        seite,
+                                        k: kix,
+                                        w: v.clone(),
+                                        d: v.distanceTo(cam.position),
+                                        x: Math.floor(((ndc.x + 1) / 2) * W),
+                                        y: Math.floor(((1 - ndc.y) / 2) * H),
+                                    });
+                                }
+                            }
+                        }
+                        mitte.divideScalar(Math.max(1, nm));
+                        const zurCam = cam.position.clone().sub(mitte);
+                        const yHaar = minY + K.KOPF_SOLL.haarLinie * (maxY - minY);
+                        const median = {};
+                        for (const sd of ["irisL", "irisR"]) {
+                            const ds = roh
+                                .filter((p) => p.seite === sd)
+                                .map((p) => p.d)
+                                .sort((a, b) => a - b);
+                            median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
+                        }
+                        const proben = roh
+                            .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
+                            .map((p) => ({
+                                z: p.z,
+                                x: p.x,
+                                y: p.y,
+                                k: p.k,
+                                vorn: p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0,
+                                kalotte: p.z !== "iris" && p.w.y > yHaar,
+                            }));
+                        const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
+                        gesicht = window.__gesichtMasse(u8, teil, W, H, proben, haarK);
+                        gesicht.toene = Object.fromEntries(
+                            Object.entries(toene).map(([t, c]) => [t, hexAus(c).toString(16).padStart(6, "0")])
+                        );
+                    }
                     let abstand = null;
                     if (k.abstand) {
                         const T = window.THREE;
@@ -1306,6 +1506,7 @@ async function starte() {
                         toene: namen.map((n, j) => `${n}=${ton[j % ton.length].join("/")}`),
                         klassen,
                         abstand,
+                        gesicht,
                         maske: cv2.toDataURL("image/png"),
                     };
                 } finally {
@@ -1537,7 +1738,9 @@ async function starte() {
                         if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
                         const kl = o.klasse;
                         if (!Object.keys(kl.klassen).length)
-                            throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
+                            throw new Error(
+                                `--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`
+                            );
                         o.ist = sollIstSchreiben(b.ist, {
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
@@ -1551,6 +1754,7 @@ async function starte() {
                             misch: kl.misch,
                             klassen: kl.klassen,
                             abstand: kl.abstand,
+                            gesicht: kl.gesicht || null,
                             bild: path.relative(root, datei).split(path.sep).join("/"),
                         });
                     }
@@ -2656,7 +2860,13 @@ async function starte() {
     let o;
     if (cmd === "status") o = await rufe("/status");
     else if (cmd === "umstellen")
-        o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
+        o = await rufe("/umstellen", {
+            x: a[0],
+            z: a[1],
+            ort: opt("--ort"),
+            pose: opt("--pose"),
+            sicht: opt("--sicht"),
+        });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -2673,6 +2883,7 @@ async function starte() {
             klasse: opt("--klasse"),
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
+            gesicht: opt("--gesicht"),
             ist: opt("--ist"),
         });
     else if (cmd === "methode")
@@ -3031,13 +3242,26 @@ async function starte() {
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
         const eins = (name, werte) => {
             const w = [...new Set(werte)];
-            if (w.length !== 1 || w[0] == null) fehler.push(`${name} ${w.join(" / ") || "?"} — die Serie steht an EINEM ${name}`);
+            if (w.length !== 1 || w[0] == null)
+                fehler.push(`${name} ${w.join(" / ") || "?"} — die Serie steht an EINEM ${name}`);
             return w[0];
         };
-        const ortId = eins("Ort", laeufe.map((u) => (u ? u.ort : null)));
-        const geraet = eins("Gerät", laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null)));
-        const sicht = eins("Sicht", laeufe.map((u) => (u ? u.sicht : null)));
-        const version = eins("Version", laeufe.map((u) => (u ? u.version : null)));
+        const ortId = eins(
+            "Ort",
+            laeufe.map((u) => (u ? u.ort : null))
+        );
+        const geraet = eins(
+            "Gerät",
+            laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null))
+        );
+        const sicht = eins(
+            "Sicht",
+            laeufe.map((u) => (u ? u.sicht : null))
+        );
+        const version = eins(
+            "Version",
+            laeufe.map((u) => (u ? u.version : null))
+        );
         if (opt("--ort") && opt("--ort") !== ortId) fehler.push(`--ort ${opt("--ort")}, die Serie steht an ${ortId}`);
         if (fehler.length) {
             console.log("Ratsche NICHT nachgezogen:\n  " + fehler.join("\n  "));
@@ -3047,7 +3271,9 @@ async function starte() {
         const { haushalt, ort } = ratscheSpec;
         const alt = BAND.ratscheVon(ratscheSpec);
         if (!alt) {
-            console.log(`Ratsche NICHT nachgezogen: ${ratscheSpec.ratscheDatei} fehlt — jeder Ort × Gerät × Sicht trägt seine Datei`);
+            console.log(
+                `Ratsche NICHT nachgezogen: ${ratscheSpec.ratscheDatei} fehlt — jeder Ort × Gerät × Sicht trägt seine Datei`
+            );
             process.exit(1);
         }
         const ratsche = neu ? BAND.ratscheNeu(alt) : alt;
@@ -3068,7 +3294,9 @@ async function starte() {
             process.exit(1);
         }
         const h = BAND.bandHuelle(laeufe.map((u) => u.roh));
-        const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche: alt, ort, ratscheDatei: ratscheSpec.ratscheDatei }, h));
+        const u = BAND.bandUrteil(
+            Object.assign({ haushalt, ratsche: alt, ort, ratscheDatei: ratscheSpec.ratscheDatei }, h)
+        );
         Object.assign(u, { messung: null, boot: null });
         console.log(BAND.bandTabelle(u));
         // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE; der Re-Mint lässt die
@@ -3076,7 +3304,10 @@ async function starte() {
         const linse = (u.rot || []).filter((r) => ["unbenannt", "haushalt", "ratsche", "leck"].includes(r.art));
         const sperrt = nurVram ? BAND.vramBefunde(u) : neu ? linse.filter((r) => r.art !== "ratsche") : linse;
         if (sperrt.length) {
-            console.log("\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen:\n  " + sperrt.map((r) => r.text).join("\n  "));
+            console.log(
+                "\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen:\n  " +
+                    sperrt.map((r) => r.text).join("\n  ")
+            );
             process.exit(1);
         }
         const r = BAND.ratscheNachziehen(

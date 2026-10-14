@@ -43,7 +43,11 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_LAUB_STUDIO) : null;
 // die Teile des Laufs (Standard alle): laub (die Nah-Deckung, K1) · leib (Mess-Wiese + Prüfbühnen-Hang, K2) · ninja (NP-03, K3) —
 // die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
-const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,ninja").split(",");
+const TEILE = (
+    process.argv.includes("--teile")
+        ? process.argv[process.argv.indexOf("--teile") + 1]
+        : process.env.KAMERA_LAUB_TEILE || "laub,leib,ninja"
+).split(",");
 const root = path.resolve(__dirname, "..");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
@@ -96,9 +100,14 @@ function urteil(m) {
                 const t = Object.entries((z.schlimmste && z.schlimmste.taeter) || {})
                     .map(([k, v]) => `${k} ${pct(v)}`)
                     .join(", ");
-                out.push(`${ort.id} ${modus}: Deckung im Freiraum bis ${pct(z.max)} (Mittel ${pct(z.mittel)}; ${t || "ohne Namen"})`);
+                out.push(
+                    `${ort.id} ${modus}: Deckung im Freiraum bis ${pct(z.max)} (Mittel ${pct(z.mittel)}; ${t || "ohne Namen"})`
+                );
             }
-            if (z.fremd) out.push(`${ort.id} ${modus}: ein Pflanzen-Stoff trägt eine fremde Maske (nicht der Knoten seiner Art)`);
+            if (z.fremd)
+                out.push(
+                    `${ort.id} ${modus}: ein Pflanzen-Stoff trägt eine fremde Maske (nicht der Knoten seiner Art)`
+                );
         }
     }
     const s = m.schmuggel;
@@ -106,10 +115,16 @@ function urteil(m) {
     else {
         if (!(s.laub && s.laub.max > NAH_DECKUNG_MAX && Object.keys(s.laub.taeter || {}).some((k) => /^Laub /.test(k))))
             out.push(`Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt (${JSON.stringify(s.laub || null)})`);
-        if (!(s.fels && s.fels.max > NAH_DECKUNG_MAX && Object.keys(s.fels.taeter || {}).some((k) => /Formation/.test(k))))
+        if (!(
+            s.fels &&
+            s.fels.max > NAH_DECKUNG_MAX &&
+            Object.keys(s.fels.taeter || {}).some((k) => /Formation/.test(k))
+        ))
             out.push(`Schmuggel: ein Fels vor der Linse bleibt ungenannt (${JSON.stringify(s.fels || null)})`);
         if (s.krone && !(s.krone.max <= NAH_DECKUNG_MAX))
-            out.push(`Krone: die Durchsicht öffnet das Laub in der Krone nicht (${pct(s.krone.max)} bei +${s.krone.hub} m; ${JSON.stringify(s.krone.taeter || {})})`);
+            out.push(
+                `Krone: die Durchsicht öffnet das Laub in der Krone nicht (${pct(s.krone.max)} bei +${s.krone.hub} m; ${JSON.stringify(s.krone.taeter || {})})`
+            );
     }
     return out;
 }
@@ -155,7 +170,10 @@ function wand(quelle, studio) {
         ],
         [
             "W3 das Körper-Studio prüft die Strecke Blickziel → Kamera gegen die Park-Boxen (`_kamSeg`, `fx.bewegung.kamera`), camG ist gefallen",
-            /_kamSeg\(LX,LY,LZ/.test(lab) && /_kamFrei\(/.test(lab) && /bewegung\.kamera/.test(lab) && !/camG/.test(lab),
+            /_kamSeg\(LX,LY,LZ/.test(lab) &&
+                /_kamFrei\(/.test(lab) &&
+                /bewegung\.kamera/.test(lab) &&
+                !/camG/.test(lab),
         ],
     ];
 }
@@ -207,9 +225,9 @@ const WIESE = (() => {
     const w = h.messorte.find((o) => o.id === "wiese");
     return { x: w.spieler[0], z: w.spieler[1] };
 })();
-const HANG = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")).stationen.find(
-    (o) => o.id === "s2-hang30"
-);
+const HANG = JSON.parse(
+    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
+).stationen.find((o) => o.id === "s2-hang30");
 
 function urteilLeib(L) {
     if (!L) return ["Leib: nicht gemessen (Vorbedingung)"];
@@ -221,7 +239,8 @@ function urteilLeib(L) {
     for (const modus of ["fuss", "ritt"]) {
         const posen = [];
         for (const ort of ["wiese", "hang"]) posen.push(...((L[ort] && L[ort][modus] && L[ort][modus].posen) || []));
-        if (posen.length < LEIB_N) out.push(`Leib ${modus}: ${posen.length} von ${LEIB_N} Posen gemessen (Vorbedingung)`);
+        if (posen.length < LEIB_N)
+            out.push(`Leib ${modus}: ${posen.length} von ${LEIB_N} Posen gemessen (Vorbedingung)`);
         const fehl = posen.filter((p) => p.taeter && p.taeter.length);
         if (fehl.length)
             out.push(
@@ -234,12 +253,18 @@ function urteilLeib(L) {
     }
     const pr = L.proben;
     if (!Array.isArray(pr) || pr.length < LEIB_N)
-        out.push(`Leib: ${Array.isArray(pr) ? pr.length : 0} Bilder gezählt (Vorbedingung der Feld-Proben je 3rd-Bild)`);
+        out.push(
+            `Leib: ${Array.isArray(pr) ? pr.length : 0} Bilder gezählt (Vorbedingung der Feld-Proben je 3rd-Bild)`
+        );
     else {
         const mittel = +(pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1);
         const med = quantil(pr, 0.5);
         const hoechstens = Math.max(...pr);
-        if (mittel > PROBEN_VORSTAND.mittel || med > PROBEN_VORSTAND.median + PROBEN_RING || hoechstens > 2 * PROBEN_VORSTAND.hoechstens)
+        if (
+            mittel > PROBEN_VORSTAND.mittel ||
+            med > PROBEN_VORSTAND.median + PROBEN_RING ||
+            hoechstens > 2 * PROBEN_VORSTAND.hoechstens
+        )
             out.push(
                 `Leib: Feld-Proben je 3rd-Bild Mittel ${mittel} · Median ${med} · höchstens ${hoechstens} über dem Vor-Stand V18.541 (Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} + ${PROBEN_RING} Ring · höchstens 2 × ${PROBEN_VORSTAND.hoechstens}) — der Wurf der Kugel (_fieldRaycast in _loopCamera)`
             );
@@ -253,7 +278,8 @@ function urteilNinja(N) {
     if (N.err) return [`NP-03: Ausnahme (${String(N.err).split("\n")[0]})`];
     const out = [];
     const posen = N.posen || [];
-    if (posen.length < NINJA_WP.length * 4) out.push(`NP-03: ${posen.length} von ${NINJA_WP.length * 4} Posen gemessen (Vorbedingung)`);
+    if (posen.length < NINJA_WP.length * 4)
+        out.push(`NP-03: ${posen.length} von ${NINJA_WP.length * 4} Posen gemessen (Vorbedingung)`);
     const fehl = posen.filter((p) => p.taeter.length);
     if (fehl.length)
         out.push(
@@ -398,7 +424,11 @@ function leibInstall(cfg) {
     };
     L.gtHolen = async (x, z) => {
         if (L.gt && st.architectures.includes(L.gt)) return L.gt;
-        const gt = r.spawnArchitecture("fahrzeug_gt", { x, y: r.getTerrainHeightAt(x, z) + 0.5, z }, { silent: true, precise: true });
+        const gt = r.spawnArchitecture(
+            "fahrzeug_gt",
+            { x, y: r.getTerrainHeightAt(x, z) + 0.5, z },
+            { silent: true, precise: true }
+        );
         const dl = performance.now() + 45000;
         while (gt && !gt.instanced && !gt.mesh && performance.now() < dl) {
             r._rebuildArchitectureMesh(gt);
@@ -487,7 +517,11 @@ async function leibWiese(arg) {
         ]) {
             const x = arg.x + dx;
             const z = arg.z + dz;
-            const e = r.spawnArchitecture(typ, { x, y: r.getTerrainHeightAt(x, z), z }, { silent: true, precise: true, absage: (g) => out.haeuser.push("abgesagt: " + g) });
+            const e = r.spawnArchitecture(
+                typ,
+                { x, y: r.getTerrainHeightAt(x, z), z },
+                { silent: true, precise: true, absage: (g) => out.haeuser.push("abgesagt: " + g) }
+            );
             if (e) out.haeuser.push(e.type);
         }
         await L.steht(30000);
@@ -499,14 +533,30 @@ async function leibWiese(arg) {
             if (!a || !a.position) continue;
             const d = Math.hypot(a.position.x - arg.x, a.position.z - arg.z);
             if (d > 45) continue;
-            const boxen = Array.isArray(a.blockerAABBs) ? a.blockerAABBs.filter((b) => b && Number.isFinite(b.minX)) : [];
+            const boxen = Array.isArray(a.blockerAABBs)
+                ? a.blockerAABBs.filter((b) => b && Number.isFinite(b.minX))
+                : [];
             typen[a.type] = (typen[a.type] || 0) + 1;
             if (!boxen.length) continue;
-            const art = boxen.every((b) => b.pflanze === true) ? "baum" : typeof r._istNatur === "function" && r._istNatur(a) ? "fels" : "haus";
+            const art = boxen.every((b) => b.pflanze === true)
+                ? "baum"
+                : typeof r._istNatur === "function" && r._istNatur(a)
+                  ? "fels"
+                  : "haus";
             let b = null;
-            if (art === "haus") b = boxen.slice().sort((u, v) => (v.maxX - v.minX) * (v.maxZ - v.minZ) - (u.maxX - u.minX) * (u.maxZ - u.minZ))[0];
+            if (art === "haus")
+                b = boxen
+                    .slice()
+                    .sort((u, v) => (v.maxX - v.minX) * (v.maxZ - v.minZ) - (u.maxX - u.minX) * (u.maxZ - u.minZ))[0];
             else {
-                b = { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity, botY: Infinity, topY: -Infinity };
+                b = {
+                    minX: Infinity,
+                    maxX: -Infinity,
+                    minZ: Infinity,
+                    maxZ: -Infinity,
+                    botY: Infinity,
+                    topY: -Infinity,
+                };
                 for (const q of boxen) {
                     b.minX = Math.min(b.minX, q.minX);
                     b.maxX = Math.max(b.maxX, q.maxX);
@@ -543,7 +593,15 @@ async function leibWiese(arg) {
             L.fuss(v.x, v.z, v.gier, p.pitch);
             out.fuss.posen.push(
                 Object.assign(
-                    { id: p.id, anker: p.anker, seite: p.seite, pitch: p.pitch, x: +v.x.toFixed(2), z: +v.z.toFixed(2), gier: +v.gier.toFixed(3) },
+                    {
+                        id: p.id,
+                        anker: p.anker,
+                        seite: p.seite,
+                        pitch: p.pitch,
+                        x: +v.x.toFixed(2),
+                        z: +v.z.toFixed(2),
+                        gier: +v.gier.toFixed(3),
+                    },
                     L.messen(null)
                 )
             );
@@ -560,7 +618,11 @@ async function leibWiese(arg) {
                 const img = ctx.createImageData(W, H);
                 img.data.set(auf.u8.subarray(0, W * H * 4));
                 ctx.putImageData(img, 0, 0);
-                out.bilder[p.id] = { png: cv.toDataURL("image/png"), dc: auf.info.drawCalls, dreiecke: auf.info.triangles };
+                out.bilder[p.id] = {
+                    png: cv.toDataURL("image/png"),
+                    dc: auf.info.drawCalls,
+                    dreiecke: auf.info.triangles,
+                };
                 if (Object.keys(out.bilder).length >= arg.bilder.ids.length) return out;
             }
         }
@@ -602,7 +664,12 @@ async function leibWiese(arg) {
             for (const p of posen) {
                 const v = L.vor(p.b, p.seite, 3.2);
                 L.ritt(gt, v.x, v.z, v.gier);
-                out.ritt.posen.push(Object.assign({ id: p.id, anker: p.anker, seite: p.seite, x: +v.x.toFixed(2), z: +v.z.toFixed(2) }, L.messen(gt)));
+                out.ritt.posen.push(
+                    Object.assign(
+                        { id: p.id, anker: p.anker, seite: p.seite, x: +v.x.toFixed(2), z: +v.z.toFixed(2) },
+                        L.messen(gt)
+                    )
+                );
             }
             r.dismountArchitecture();
         } else out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT";
@@ -627,11 +694,23 @@ async function leibHang(arg) {
         const posen = [];
         for (let i = 0; i < arg.n; i++) {
             const z = S.fusZ + 4 + ((S.kroneZ - S.fusZ - 8) * i) / Math.max(1, arg.n - 1);
-            posen.push({ id: `hang-${String(i).padStart(2, "0")}`, anker: "s2-hang30", x: S.x + (i % 2 ? 5 : -5), z, gier: Math.PI, pitch: i % 2 ? 0 : 0.4 });
+            posen.push({
+                id: `hang-${String(i).padStart(2, "0")}`,
+                anker: "s2-hang30",
+                x: S.x + (i % 2 ? 5 : -5),
+                z,
+                gier: Math.PI,
+                pitch: i % 2 ? 0 : 0.4,
+            });
         }
         for (const p of posen) {
             L.fuss(p.x, p.z, p.gier, p.pitch);
-            out.fuss.posen.push(Object.assign({ id: p.id, anker: p.anker, pitch: p.pitch, x: +p.x.toFixed(2), z: +p.z.toFixed(2) }, L.messen(null)));
+            out.fuss.posen.push(
+                Object.assign(
+                    { id: p.id, anker: p.anker, pitch: p.pitch, x: +p.x.toFixed(2), z: +p.z.toFixed(2) },
+                    L.messen(null)
+                )
+            );
         }
         const gt = await L.gtHolen(S.x + 12, S.fusZ - 10);
         const mr = gt ? r.mountArchitecture(gt) : null;
@@ -639,7 +718,9 @@ async function leibHang(arg) {
             r.setCameraMode("third");
             for (const p of posen) {
                 L.ritt(gt, p.x, p.z, p.gier);
-                out.ritt.posen.push(Object.assign({ id: p.id, anker: p.anker, x: +p.x.toFixed(2), z: +p.z.toFixed(2) }, L.messen(gt)));
+                out.ritt.posen.push(
+                    Object.assign({ id: p.id, anker: p.anker, x: +p.x.toFixed(2), z: +p.z.toFixed(2) }, L.messen(gt))
+                );
             }
             r.dismountArchitecture();
         } else out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT";
@@ -667,7 +748,8 @@ function ninja(arg) {
         for (let i = 0; i < arg.wp.length; i++)
             for (const yw of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
                 // `arg.nur`: nur diese Pose (das Bild), keine Tunnel-Probe
-                if (arg.nur != null && i * 4 + [0, Math.PI / 2, Math.PI, -Math.PI / 2].indexOf(yw) !== arg.nur) continue;
+                if (arg.nur != null && i * 4 + [0, Math.PI / 2, Math.PI, -Math.PI / 2].indexOf(yw) !== arg.nur)
+                    continue;
                 const [x, z, y] = arg.wp[i];
                 for (const k in keys) keys[k] = false;
                 character.position.x = x;
@@ -688,7 +770,14 @@ function ninja(arg) {
                     const hi = [b.cx + b.sx / 2, b.cy + b.sy / 2, b.cz + b.sz / 2];
                     const m = arg.rand;
                     const name = bi === 0 ? "Boden" : `Box ${bi}`;
-                    if (c.x > lo[0] - m && c.x < hi[0] + m && c.y > lo[1] - m && c.y < hi[1] + m && c.z > lo[2] - m && c.z < hi[2] + m) {
+                    if (
+                        c.x > lo[0] - m &&
+                        c.x < hi[0] + m &&
+                        c.y > lo[1] - m &&
+                        c.y < hi[1] + m &&
+                        c.z > lo[2] - m &&
+                        c.z < hi[2] + m
+                    ) {
                         taeter.push(`Kamera in ${name}`);
                         continue;
                     }
@@ -755,7 +844,8 @@ const server = statikServer({
 async function probe(arg) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const dl0 = performance.now() + 90000;
-    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0) await sleep(100);
+    while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
+        await sleep(100);
     const r = window.anazhRealm;
     const st = r.state;
     const nahDeckung = window.__nahDeckung;
@@ -836,7 +926,8 @@ async function probe(arg) {
     const imBlocker = (x, z) => {
         for (const a of st.architectures || [])
             if (a && a.blockerAABBs && a.position && Math.abs(a.position.x - x) < 20 && Math.abs(a.position.z - z) < 20)
-                for (const b of a.blockerAABBs) if (x > b.minX - 0.3 && x < b.maxX + 0.3 && z > b.minZ - 0.3 && z < b.maxZ + 0.3) return true;
+                for (const b of a.blockerAABBs)
+                    if (x > b.minX - 0.3 && x < b.maxX + 0.3 && z > b.minZ - 0.3 && z < b.maxZ + 0.3) return true;
         return false;
     };
     // ── DER EINGESCHMUGGELTE TÄTER (am ersten Ort mit Laub in der Nah-Kugel, an der Stellung mit den meisten Täter-Flächen):
@@ -869,7 +960,14 @@ async function probe(arg) {
             for (const mt of laub.keys()) mt.maskNode = null;
             for (hub = 0; hub <= arg.hubMax; hub += 1) {
                 stelle();
-                s.laub = nahDeckung({ radien: sl.radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null, neu: hub > 0 });
+                s.laub = nahDeckung({
+                    radien: sl.radien,
+                    gw: arg.gw,
+                    gh: arg.gh,
+                    ort: speicherOrt,
+                    dyn: gt ? gt.id : null,
+                    neu: hub > 0,
+                });
                 if (nimmLaub(s.laub)) break;
             }
             s.laub.max = s.laub.deckung;
@@ -878,7 +976,13 @@ async function probe(arg) {
             // (1b) dieselbe Kronen-Stellung MIT Durchsicht
             if (nimmLaub(s.laub)) {
                 stelle();
-                s.krone = nahDeckung({ radien: sl.radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null });
+                s.krone = nahDeckung({
+                    radien: sl.radien,
+                    gw: arg.gw,
+                    gh: arg.gh,
+                    ort: speicherOrt,
+                    dyn: gt ? gt.id : null,
+                });
                 s.krone.max = s.krone.deckung;
                 s.krone.hub = hub;
             }
@@ -892,7 +996,14 @@ async function probe(arg) {
             fels.position.set(c.x + f.x, c.y + f.y, c.z + f.z);
             st.scene.add(fels);
             fels.updateMatrixWorld(true);
-            s.fels = nahDeckung({ radien: sl.radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null, neu: true });
+            s.fels = nahDeckung({
+                radien: sl.radien,
+                gw: arg.gw,
+                gh: arg.gh,
+                ort: speicherOrt,
+                dyn: gt ? gt.id : null,
+                neu: true,
+            });
             s.fels.max = s.fels.deckung;
             st.scene.remove(fels);
             fels.geometry.dispose();
@@ -928,7 +1039,13 @@ async function probe(arg) {
             ruhig();
             window.__buehne();
             if (phase === "vorher" && lu && lu.uKamNah) lu.uKamNah.value.set(-arg.saum, -arg.saum, -arg.saum);
-            const d = nahDeckung({ radien: radienFuer(modus), gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null });
+            const d = nahDeckung({
+                radien: radienFuer(modus),
+                gw: arg.gw,
+                gh: arg.gh,
+                ort: speicherOrt,
+                dyn: gt ? gt.id : null,
+            });
             const W = arg.bilder.w;
             const H = arg.bilder.h;
             const auf = await window.__ausgabeAufnahme(W, H, 1);
@@ -939,7 +1056,13 @@ async function probe(arg) {
             const img = ctx.createImageData(W, H);
             img.data.set(auf.u8.subarray(0, W * H * 4));
             ctx.putImageData(img, 0, 0);
-            res[phase] = { deckung: d.deckung, taeter: d.taeter, dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: cv.toDataURL("image/png") };
+            res[phase] = {
+                deckung: d.deckung,
+                taeter: d.taeter,
+                dc: auf.info.drawCalls,
+                dreiecke: auf.info.triangles,
+                png: cv.toDataURL("image/png"),
+            };
         }
         return res;
     };
@@ -950,7 +1073,10 @@ async function probe(arg) {
             if (ort.art) {
                 // der Ort aus der Welt (s. ORTE): findet die Suche keinen, bricht der Ort laut — nie ein Ersatz
                 const see = ort.art === "ufer" ? window.__wasserOrte({}).see : null;
-                const O = ort.art === "ufer" ? see && see.ufer && { x: see.ufer[0], z: see.ufer[1] } : window.__weltOrt(ort.art, ort.such);
+                const O =
+                    ort.art === "ufer"
+                        ? see && see.ufer && { x: see.ufer[0], z: see.ufer[1] }
+                        : window.__weltOrt(ort.art, ort.such);
                 if (!O) throw new Error(`kein Ort der Art ${ort.art} aus der Welt`);
                 z.ortAusWelt = [O.x, O.z];
                 st.playerMesh.position.set(O.x, r._voxelSurfaceY(O.x, O.z) + 1.8, O.z);
@@ -999,7 +1125,8 @@ async function probe(arg) {
             const grenzeStreu = anker.length + Math.max(arg.jeStreu, arg.jeOrt - anker.length);
             for (const s of streuLaub()
                 .filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 25)
-                .sort(nach)) nimm(s, grenzeStreu);
+                .sort(nach))
+                nimm(s, grenzeStreu);
             z.anker = anker.map((a) => `${a.werk}@${a.x.toFixed(0)}/${a.z.toFixed(0)}`);
             const messe = (modus, stelle, abstand, gieren, nicken) => {
                 const m = { n: 0, max: 0, summe: 0, jeKlasse: {}, taeter: {}, schlimmste: null, dichteste: null };
@@ -1009,7 +1136,8 @@ async function probe(arg) {
                         const g = (k / 8) * Math.PI * 2;
                         // aus dem Stamm hinaus (der Leib steht nie in seinem Blocker): je 0,25 m, bis der Fuß frei steht
                         let ab = abstand;
-                        while (ab < abstand + 3 && imBlocker(a.x + Math.sin(g) * ab, a.z + Math.cos(g) * ab)) ab += 0.25;
+                        while (ab < abstand + 3 && imBlocker(a.x + Math.sin(g) * ab, a.z + Math.cos(g) * ab))
+                            ab += 0.25;
                         const x = a.x + Math.sin(g) * ab;
                         const zz = a.z + Math.cos(g) * ab;
                         const y = hh(x, zz);
@@ -1020,16 +1148,34 @@ async function probe(arg) {
                                 st.pitch = pitch;
                                 ruhig();
                                 // das Vorher in derselben Welt (Bild-Paare): die Nah-Kugel aus, die Formel des Vor-Stands
-                                if (arg.nahAus && st.lodUniforms && st.lodUniforms.uKamNah) st.lodUniforms.uKamNah.value.set(-arg.saum, -arg.saum, -arg.saum);
+                                if (arg.nahAus && st.lodUniforms && st.lodUniforms.uKamNah)
+                                    st.lodUniforms.uKamNah.value.set(-arg.saum, -arg.saum, -arg.saum);
                                 const radien = radienFuer(modus);
                                 if (!(Math.max(...Object.values(radien)) > 0)) continue;
-                                const d = nahDeckung({ radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null });
+                                const d = nahDeckung({
+                                    radien,
+                                    gw: arg.gw,
+                                    gh: arg.gh,
+                                    ort: speicherOrt,
+                                    dyn: gt ? gt.id : null,
+                                });
                                 m.n++;
                                 m.summe += d.deckung;
-                                for (const [kk, vv] of Object.entries(d.jeKlasse)) m.jeKlasse[kk] = +((m.jeKlasse[kk] || 0) + vv).toFixed(4);
-                                for (const [kk, vv] of Object.entries(d.taeter)) m.taeter[kk] = +((m.taeter[kk] || 0) + vv).toFixed(4);
+                                for (const [kk, vv] of Object.entries(d.jeKlasse))
+                                    m.jeKlasse[kk] = +((m.jeKlasse[kk] || 0) + vv).toFixed(4);
+                                for (const [kk, vv] of Object.entries(d.taeter))
+                                    m.taeter[kk] = +((m.taeter[kk] || 0) + vv).toFixed(4);
                                 if (d.fremd) m.fremd = true;
-                                const stellung = { anker: a.werk, x: +x.toFixed(3), z: +zz.toFixed(3), gier: +(g + dg).toFixed(4), pitch, auge: d.auge, radien, taeter: d.taeter };
+                                const stellung = {
+                                    anker: a.werk,
+                                    x: +x.toFixed(3),
+                                    z: +zz.toFixed(3),
+                                    gier: +(g + dg).toFixed(4),
+                                    pitch,
+                                    auge: d.auge,
+                                    radien,
+                                    taeter: d.taeter,
+                                };
                                 if (d.deckung > m.max) {
                                     m.max = d.deckung;
                                     m.schlimmste = stellung;
@@ -1055,7 +1201,8 @@ async function probe(arg) {
             r.setCameraMode("third");
             z.modi.third = messe("third", fuss, 1.5, [0, Math.PI / 2], [0, -0.35]);
             if (arg.bilder) (z.bilder = z.bilder || {}).third = await schuss("third", fuss, z.modi.third.schlimmste);
-            if (!arg.bilder && !out.schmuggel && z.modi.third.dichteste && z.modi.third.dichteste.dreiecke > 0) out.schmuggel = schmuggle(z.modi.third.dichteste);
+            if (!arg.bilder && !out.schmuggel && z.modi.third.dichteste && z.modi.third.dichteste.dreiecke > 0)
+                out.schmuggel = schmuggle(z.modi.third.dichteste);
             // DAS ICH-AUGE: der Spieler 0,9 m vor dem Stamm, der Blick zu ihm und von ihm weg, geradeaus und gehoben
             r.setCameraMode("first");
             z.modi.first = messe("first", fuss, 0.9, [0, Math.PI], [0, 0.3]);
@@ -1063,7 +1210,11 @@ async function probe(arg) {
             r.setCameraMode("third");
             // DER RITT: ein GT, aufgesessen, 3 m vor dem Stamm (die Verfolger-Kamera des Kerns hinter ihm)
             if (!gt) {
-                gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
+                gt = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z },
+                    { silent: true, precise: true }
+                );
                 const dlG = performance.now() + 45000;
                 while (gt && !gt.instanced && !gt.mesh && performance.now() < dlG) {
                     r._rebuildArchitectureMesh(gt);
@@ -1074,24 +1225,25 @@ async function probe(arg) {
             const mr = gt ? r.mountArchitecture(gt) : null;
             if (mr && mr.ok) {
                 const rittStelle = (x, y, zz, gier) => {
-                        gt.position.x = x;
-                        gt.position.y = y + 0.5;
-                        gt.position.z = zz;
-                        gt.rotationY = gier - Math.PI / 2;
-                        gt._rideYaw = gier;
-                        gt._kamYaw = gier;
-                        st.yaw = gier;
-                        st.playerMesh.position.set(x, y + 1.0, zz);
-                        // der Wagen steht im Bild, wo er steht (Instanz-Matrizen bzw. Mesh)
-                        if (gt.instanced && typeof r._archInstanceUpdate === "function") r._archInstanceUpdate(gt);
-                        if (gt.mesh) {
-                            gt.mesh.position.set(x, y + 0.5, zz);
-                            gt.mesh.rotation.y = gt.rotationY;
-                            gt.mesh.updateMatrixWorld(true);
-                        }
-                    };
+                    gt.position.x = x;
+                    gt.position.y = y + 0.5;
+                    gt.position.z = zz;
+                    gt.rotationY = gier - Math.PI / 2;
+                    gt._rideYaw = gier;
+                    gt._kamYaw = gier;
+                    st.yaw = gier;
+                    st.playerMesh.position.set(x, y + 1.0, zz);
+                    // der Wagen steht im Bild, wo er steht (Instanz-Matrizen bzw. Mesh)
+                    if (gt.instanced && typeof r._archInstanceUpdate === "function") r._archInstanceUpdate(gt);
+                    if (gt.mesh) {
+                        gt.mesh.position.set(x, y + 0.5, zz);
+                        gt.mesh.rotation.y = gt.rotationY;
+                        gt.mesh.updateMatrixWorld(true);
+                    }
+                };
                 z.modi.ritt = messe("ritt", rittStelle, 3.0, [0, Math.PI / 2], [0]);
-                if (arg.bilder) (z.bilder = z.bilder || {}).ritt = await schuss("ritt", rittStelle, z.modi.ritt.schlimmste);
+                if (arg.bilder)
+                    (z.bilder = z.bilder || {}).ritt = await schuss("ritt", rittStelle, z.modi.ritt.schlimmste);
                 r.dismountArchitecture();
             } else z.modi.ritt = { n: 0, grund: gt ? "Aufsitzen scheiterte" : "kein GT" };
         } catch (e) {
@@ -1105,7 +1257,10 @@ async function probe(arg) {
 
 (async () => {
     const quelle = STAMM_TEXT || stammLib.text(root);
-    const studioQuelle = fs.readFileSync(STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"), "utf8");
+    const studioQuelle = fs.readFileSync(
+        STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"),
+        "utf8"
+    );
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
         const ort = (max, taeter) => ({
@@ -1113,62 +1268,190 @@ async function probe(arg) {
         });
         // DER LEIB (K2) und NP-03 (K3): gesund und je ein Bruch beim Namen
         const pose = (id, taeter) => ({ id, anker: "haus_basis", x: 0, z: 0, c: [0, 0, 0], arm: 4, taeter });
-        const posenN = (n, kaputt) => Array.from({ length: n }, (_, i) => pose(`pose-${i}`, i === 0 && kaputt ? kaputt : []));
+        const posenN = (n, kaputt) =>
+            Array.from({ length: n }, (_, i) => pose(`pose-${i}`, i === 0 && kaputt ? kaputt : []));
         const leibGesund = (kaputtFuss, kaputtRitt) => ({
-            wiese: { fuss: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtFuss) }, ritt: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtRitt) } },
+            wiese: {
+                fuss: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtFuss) },
+                ritt: { posen: posenN(LEIB_N - LEIB_HANG_N, kaputtRitt) },
+            },
             hang: { fuss: { posen: posenN(LEIB_HANG_N) }, ritt: { posen: posenN(LEIB_HANG_N) } },
             proben: Array.from({ length: LEIB_N + 241 }, (_, i) => 30 + (i % 9)),
             spruenge: 0,
         });
-        check("Selbst-Test K2: gesund == 0 Täter", urteilLeib(leibGesund()).length === 0, urteilLeib(leibGesund()).join(" · "));
+        check(
+            "Selbst-Test K2: gesund == 0 Täter",
+            urteilLeib(leibGesund()).length === 0,
+            urteilLeib(leibGesund()).join(" · ")
+        );
         const leibBrueche = [
-            ["Kamera unter dem sichtbaren Boden (R-CAM unterBoden)", leibGesund(["unter dem sichtbaren Boden (-12 cm über ihm)"]), "Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): unter dem sichtbaren Boden"],
-            ["Verfolger im Haus (FZ-07)", leibGesund(null, ["in haus_basis"]), "Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis"],
+            [
+                "Kamera unter dem sichtbaren Boden (R-CAM unterBoden)",
+                leibGesund(["unter dem sichtbaren Boden (-12 cm über ihm)"]),
+                "Leib fuss: 1 von 50 Posen — pose-0 (haus_basis): unter dem sichtbaren Boden",
+            ],
+            [
+                "Verfolger im Haus (FZ-07)",
+                leibGesund(null, ["in haus_basis"]),
+                "Leib ritt: 1 von 50 Posen — pose-0 (haus_basis): in haus_basis",
+            ],
             ["Fels zwischen Ziel und Linse", leibGesund(["Gelände zwischen Ziel und Linse"]), "Leib fuss: 1 von 50"],
             ["der Hang fehlt", Object.assign(leibGesund(), { hang: null }), "Leib hang: nicht gemessen"],
             ["kein Zähler der Feld-Proben", Object.assign(leibGesund(), { proben: null }), "Leib: 0 Bilder gezählt"],
-            ["die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)", Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }), "Leib: Feld-Proben je 3rd-Bild Mittel 156"],
-            ["ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)", Object.assign(leibGesund(), { proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)) }), "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101"],
-            ["mehr Sprünge als vorher", Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }), "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge"],
+            [
+                "die Eckstrahlen marschieren ohne Treffer (Prüfung 1: 35 → 156)",
+                Object.assign(leibGesund(), { proben: Array(LEIB_N + 241).fill(156) }),
+                "Leib: Feld-Proben je 3rd-Bild Mittel 156",
+            ],
+            [
+                "ein Bild sucht ohne Ende (höchstens über 2 × Vor-Stand)",
+                Object.assign(leibGesund(), {
+                    proben: Array.from({ length: LEIB_N + 241 }, (_, i) => (i === 7 ? 101 : 30)),
+                }),
+                "Leib: Feld-Proben je 3rd-Bild Mittel 30.2 · Median 30 · höchstens 101",
+            ],
+            [
+                "mehr Sprünge als vorher",
+                Object.assign(leibGesund(), { spruenge: SPRUENGE_MAX + 1 }),
+                "Leib: " + (SPRUENGE_MAX + 1) + " Kamera-Sprünge",
+            ],
         ];
         for (const [name, bruch, soll] of leibBrueche) {
             const v = urteilLeib(bruch);
-            check(`Selbst-Test K2: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+            check(
+                `Selbst-Test K2: ‚${name}' → die Linse nennt „${soll}"`,
+                v.some((t) => t.startsWith(soll)),
+                v.join(" · ")
+            );
         }
         const ninjaGesund = (kaputt, tunnel) => ({
-            posen: Array.from({ length: NINJA_WP.length * 4 }, (_, i) => ({ id: `pose-${i}`, cam: [0, 0, 0], taeter: i === 14 && kaputt ? kaputt : [] })),
+            posen: Array.from({ length: NINJA_WP.length * 4 }, (_, i) => ({
+                id: `pose-${i}`,
+                cam: [0, 0, 0],
+                taeter: i === 14 && kaputt ? kaputt : [],
+            })),
             tunnel: tunnel || { ende: [3.6, 0, 24.15], weg: 3.15, umgangen: false, gueltig: true },
         });
-        check("Selbst-Test K3: gesund == 0 Täter", urteilNinja(ninjaGesund()).length === 0, urteilNinja(ninjaGesund()).join(" · "));
+        check(
+            "Selbst-Test K3: gesund == 0 Täter",
+            urteilNinja(ninjaGesund()).length === 0,
+            urteilNinja(ninjaGesund()).join(" · ")
+        );
         for (const [name, bruch, soll] of [
-            ["Box 7 zwischen Ziel und Kamera (NP-03 pose-14)", ninjaGesund(["Box 7 zwischen Ziel und Kamera"]), "NP-03: 1 von 48 Posen — pose-14: Box 7"],
-            ["der Tunnel wird umgangen (NP-02)", ninjaGesund(null, { ende: [3.6, 0, 30], weg: 9, umgangen: true, gueltig: true }), "NP-02: der Tunnel wird bei x > 3 umgangen"],
-            ["die Figur steht (NP-02 ohne Urteil)", ninjaGesund(null, { ende: [3.6, 0, 21], weg: 0, umgangen: false, gueltig: false }), "NP-02: die Figur bewegt sich keine 3 m"],
+            [
+                "Box 7 zwischen Ziel und Kamera (NP-03 pose-14)",
+                ninjaGesund(["Box 7 zwischen Ziel und Kamera"]),
+                "NP-03: 1 von 48 Posen — pose-14: Box 7",
+            ],
+            [
+                "der Tunnel wird umgangen (NP-02)",
+                ninjaGesund(null, { ende: [3.6, 0, 30], weg: 9, umgangen: true, gueltig: true }),
+                "NP-02: der Tunnel wird bei x > 3 umgangen",
+            ],
+            [
+                "die Figur steht (NP-02 ohne Urteil)",
+                ninjaGesund(null, { ende: [3.6, 0, 21], weg: 0, umgangen: false, gueltig: false }),
+                "NP-02: die Figur bewegt sich keine 3 m",
+            ],
         ]) {
             const v = urteilNinja(bruch);
-            check(`Selbst-Test K3: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+            check(
+                `Selbst-Test K3: ‚${name}' → die Linse nennt „${soll}"`,
+                v.some((t) => t.startsWith(soll)),
+                v.join(" · ")
+            );
         }
         const gesund = {
             orte: { ankunft: ort(0, {}), ufer: ort(0.004, {}), lichtung: ort(0, {}), hang: ort(0, {}) },
-            schmuggel: { laub: { max: 0.4, taeter: { "Laub baum_eiche": 0.4 } }, fels: { max: 0.3, taeter: { "Fels Formation": 0.3 } } },
+            schmuggel: {
+                laub: { max: 0.4, taeter: { "Laub baum_eiche": 0.4 } },
+                fels: { max: 0.3, taeter: { "Fels Formation": 0.3 } },
+            },
         };
         check("Selbst-Test: gesund == 0 Täter", urteil(gesund).length === 0, urteil(gesund).join(" · "));
         const brueche = [
-            ["Eichenkrone vor der Linse (Befund A 44)", { orte: Object.assign({}, gesund.orte, { ufer: ort(0.437, { "Laub baum_eiche": 0.43 }) }) }, "ufer third: Deckung im Freiraum bis 43.7 %"],
-            ["Strauch vor dem Ich-Auge (Befund C 12)", { orte: Object.assign({}, gesund.orte, { hang: ort(0.99, { "Laub Streu": 0.99 }) }) }, "hang third: Deckung im Freiraum bis 99.0 %"],
-            ["kein GT", { orte: Object.assign({}, gesund.orte, { ankunft: { modi: { third: { n: 4, max: 0 }, first: { n: 4, max: 0 }, ritt: { n: 0, grund: "kein GT" } } } }) }, "ankunft ritt: keine Stellung"],
-            ["fremde Maske", { orte: Object.assign({}, gesund.orte, { hang: { modi: { third: { n: 4, max: 0, fremd: true }, first: { n: 4, max: 0 }, ritt: { n: 4, max: 0 } } } }) }, "hang third: ein Pflanzen-Stoff trägt eine fremde Maske"],
-            ["Linse blind für Laub", { schmuggel: { laub: { max: 0, taeter: {} }, fels: gesund.schmuggel.fels } }, "Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt"],
-            ["Linse blind für Fels", { schmuggel: { laub: gesund.schmuggel.laub, fels: { max: 0, taeter: {} } } }, "Schmuggel: ein Fels vor der Linse bleibt ungenannt"],
-            ["Krone ohne Durchsicht (die Kronen-Stellung, K20)", { schmuggel: Object.assign({}, gesund.schmuggel, { krone: { max: 0.31, hub: 14, taeter: { "Laub baum_tanne": 0.31 } } }) }, "Krone: die Durchsicht öffnet das Laub in der Krone nicht"],
-            ["ein Ort fehlt", { orte: { ankunft: gesund.orte.ankunft, ufer: gesund.orte.ufer } }, "hang: nicht gemessen"],
+            [
+                "Eichenkrone vor der Linse (Befund A 44)",
+                { orte: Object.assign({}, gesund.orte, { ufer: ort(0.437, { "Laub baum_eiche": 0.43 }) }) },
+                "ufer third: Deckung im Freiraum bis 43.7 %",
+            ],
+            [
+                "Strauch vor dem Ich-Auge (Befund C 12)",
+                { orte: Object.assign({}, gesund.orte, { hang: ort(0.99, { "Laub Streu": 0.99 }) }) },
+                "hang third: Deckung im Freiraum bis 99.0 %",
+            ],
+            [
+                "kein GT",
+                {
+                    orte: Object.assign({}, gesund.orte, {
+                        ankunft: {
+                            modi: {
+                                third: { n: 4, max: 0 },
+                                first: { n: 4, max: 0 },
+                                ritt: { n: 0, grund: "kein GT" },
+                            },
+                        },
+                    }),
+                },
+                "ankunft ritt: keine Stellung",
+            ],
+            [
+                "fremde Maske",
+                {
+                    orte: Object.assign({}, gesund.orte, {
+                        hang: {
+                            modi: {
+                                third: { n: 4, max: 0, fremd: true },
+                                first: { n: 4, max: 0 },
+                                ritt: { n: 4, max: 0 },
+                            },
+                        },
+                    }),
+                },
+                "hang third: ein Pflanzen-Stoff trägt eine fremde Maske",
+            ],
+            [
+                "Linse blind für Laub",
+                { schmuggel: { laub: { max: 0, taeter: {} }, fels: gesund.schmuggel.fels } },
+                "Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt",
+            ],
+            [
+                "Linse blind für Fels",
+                { schmuggel: { laub: gesund.schmuggel.laub, fels: { max: 0, taeter: {} } } },
+                "Schmuggel: ein Fels vor der Linse bleibt ungenannt",
+            ],
+            [
+                "Krone ohne Durchsicht (die Kronen-Stellung, K20)",
+                {
+                    schmuggel: Object.assign({}, gesund.schmuggel, {
+                        krone: { max: 0.31, hub: 14, taeter: { "Laub baum_tanne": 0.31 } },
+                    }),
+                },
+                "Krone: die Durchsicht öffnet das Laub in der Krone nicht",
+            ],
+            [
+                "ein Ort fehlt",
+                { orte: { ankunft: gesund.orte.ankunft, ufer: gesund.orte.ufer } },
+                "hang: nicht gemessen",
+            ],
         ];
         for (const [name, bruch, soll] of brueche) {
             const v = urteil(Object.assign({}, gesund, bruch));
-            check(`Selbst-Test: ‚${name}' → die Linse nennt „${soll}"`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+            check(
+                `Selbst-Test: ‚${name}' → die Linse nennt „${soll}"`,
+                v.some((t) => t.startsWith(soll)),
+                v.join(" · ")
+            );
         }
         const gruen = wand(quelle, studioQuelle);
-        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
+        check(
+            "Selbst-Test W: der Arbeitsbaum ist grün",
+            gruen.every((w) => w[1]),
+            gruen
+                .filter((w) => !w[1])
+                .map((w) => w[0])
+                .join(" | ")
+        );
         // der Vor-Stand: die Picks ohne Durchsicht, der Wurf ohne Radius mit dem 0,85-Rückzug, das Studio mit camG
         const vorStand = quelle
             .replace(/this\._durchsichtSteht\([^)]*\)/g, "true")
@@ -1176,7 +1459,11 @@ async function probe(arg) {
             .replace("const t = wurf.t;", "const t = 0.85 * wurf.t;");
         const vorStudio = studioQuelle.replace(/_kamSeg\(LX,LY,LZ/g, "camG(LX,LY,LZ");
         const rot = wand(vorStand, vorStudio);
-        check("Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));
+        check(
+            "Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern",
+            rot.every((w) => !w[1]),
+            rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
+        );
         // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
         // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
         // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
@@ -1184,7 +1471,11 @@ async function probe(arg) {
         const AU = require("./lib/abnahme-urteil.cjs");
         const fdir = path.join(root, "spec", "abnahme");
         const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
-        check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
+        check(
+            "K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen",
+            abnahmeBrueche.length === 0,
+            abnahmeBrueche.join(" · ")
+        );
         for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
             console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
         // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse das Soll (eigen,
@@ -1195,7 +1486,10 @@ async function probe(arg) {
         // eingeschmuggelte Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
         const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
         const kerne = {};
+        const stand = AU.standLeser(root);
         const sollQ = {
+            version: stand.stammVersion(),
+            pruefsumme: stand.pruefsumme,
             haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),
             lesen: (d) => (fs.existsSync(path.join(root, d)) ? fs.readFileSync(path.join(root, d), "utf8") : null),
             // ein Symbol eines Kerns, GELESEN: der Kern läuft in einer eigenen vm (wie diag-mensch-anatomie), sein Namensraum trägt
@@ -1213,12 +1507,17 @@ async function probe(arg) {
                     kerne[d] = sb;
                 }
                 for (const v of Object.values(kerne[d]))
-                    if (v && typeof v === "object" && v !== kerne[d] && Object.prototype.hasOwnProperty.call(v, sym)) return v[sym];
+                    if (v && typeof v === "object" && v !== kerne[d] && Object.prototype.hasOwnProperty.call(v, sym))
+                        return v[sym];
                 return undefined;
             },
         };
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
-        check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
+        check(
+            "K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen",
+            sollBrueche.length === 0,
+            sollBrueche.join(" · ")
+        );
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
@@ -1228,8 +1527,16 @@ async function probe(arg) {
             /return \{ u8, info, ms, abnahme: abnahme\(u8, W, H\) \}/.test(q) &&
             /return \{ u8: voll, info, ms, abnahme: abnahme\(voll, W, H\) \}/.test(q);
         const aufQuelle = fs.readFileSync(path.join(root, "scripts", "lib", "ausgabe-aufnahme.cjs"), "utf8");
-        check("K4 W: die EINE Aufnahme misst, urteilt und wirft beim Namen (jeder Rückweg trägt die Abnahme)", aufWand(aufQuelle), "");
-        check("K4 W: der Vor-Stand (die Aufnahme ohne Wurf) → die Wand feuert", !aufWand(aufQuelle.replace("throw fehler;", "")), "");
+        check(
+            "K4 W: die EINE Aufnahme misst, urteilt und wirft beim Namen (jeder Rückweg trägt die Abnahme)",
+            aufWand(aufQuelle),
+            ""
+        );
+        check(
+            "K4 W: der Vor-Stand (die Aufnahme ohne Wurf) → die Wand feuert",
+            !aufWand(aufQuelle.replace("throw fehler;", "")),
+            ""
+        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1257,7 +1564,9 @@ async function probe(arg) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     const bereit = () =>
-        page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", { timeout: 90000 });
+        page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
+            timeout: 90000,
+        });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const zeiten = {};
     let m = null;
@@ -1265,7 +1574,19 @@ async function probe(arg) {
         const tL = Date.now();
         await page.evaluate(KAMERA_NAH_INSTALL);
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
-        m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
+        m = await page.evaluate(probe, {
+            orte: process.env.KAMERA_LAUB_NUR
+                ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id))
+                : ORTE,
+            radius: RADIUS,
+            saum: SAUM,
+            nahMax: NAH_DECKUNG_MAX,
+            hubMax: SCHMUGGEL_HUB_M,
+            jeOrt: 5,
+            jeStreu: 2,
+            gw: 48,
+            gh: 27,
+        });
         zeiten.laub = Date.now() - tL;
     }
     let leib = null;
@@ -1298,10 +1619,17 @@ async function probe(arg) {
     let nin = null;
     if (TEILE.includes("ninja")) {
         const tN = Date.now();
-        await page.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
         await page.waitForFunction(
             // eslint-disable-next-line no-undef
-            () => typeof enterPlay === "function" && typeof playPhysics === "function" && typeof parkBoxes !== "undefined" && parkBoxes.length > 0,
+            () =>
+                typeof enterPlay === "function" &&
+                typeof playPhysics === "function" &&
+                typeof parkBoxes !== "undefined" &&
+                parkBoxes.length > 0,
             { timeout: 90000 }
         );
         nin = await page.evaluate(ninja, { wp: NINJA_WP, rand: NINJA_RAND });
@@ -1309,30 +1637,55 @@ async function probe(arg) {
     }
     await browser.close();
     server.close();
-    if (process.env.KAMERA_LAUB_JSON) fs.writeFileSync(process.env.KAMERA_LAUB_JSON, JSON.stringify({ laub: m, leib, ninja: nin, zeiten }, null, 1));
+    if (process.env.KAMERA_LAUB_JSON)
+        fs.writeFileSync(process.env.KAMERA_LAUB_JSON, JSON.stringify({ laub: m, leib, ninja: nin, zeiten }, null, 1));
 
     if (m) {
-        console.log(`=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`);
+        console.log(
+            `=== K1 DIE DECKUNG IM FREIRAUM DER KAMERA JE ORT UND SICHT (3rd/Ritt: Laub und Rinde bis vor die Ebene des Ziels, Streu · Fels · Wagen bis ${RADIUS.third}/${RADIUS.ritt} m; Ich: Laub und Streu bis ${RADIUS.first} m) ===`
+        );
         for (const ort of ORTE) {
             const o = m.orte[ort.id] || {};
-            console.log(`  ${ort.id} (${ort.bild}) bei ${(o.P || []).join("/")} · Anker ${(o.anker || []).join(", ")}${o.satz ? ` · Satz: ${o.satz.length} Werke` : ""}`);
+            console.log(
+                `  ${ort.id} (${ort.bild}) bei ${(o.P || []).join("/")} · Anker ${(o.anker || []).join(", ")}${o.satz ? ` · Satz: ${o.satz.length} Werke` : ""}`
+            );
             for (const modus of MODI) {
                 const z = (o.modi || {})[modus] || {};
                 const kl = Object.entries(z.jeKlasse || {})
                     .map(([k, v]) => `${k} ${pct(v / Math.max(1, z.n))}`)
                     .join(", ");
-                console.log(`    ${modus.padEnd(5)} ${String(z.n || 0).padStart(3)} Stellungen · Mittel ${pct(z.mittel)} · max ${pct(z.max)}${kl ? ` · je Klasse (Mittel) ${kl}` : ""}${z.schlimmste && z.max > 0 ? ` · schlimmste ${z.schlimmste.anker} (${z.schlimmste.x}/${z.schlimmste.z}): ${Object.entries(z.schlimmste.taeter || {}).map(([k, v]) => `${k} ${pct(v)}`).join(", ")}` : ""}`);
+                console.log(
+                    `    ${modus.padEnd(5)} ${String(z.n || 0).padStart(3)} Stellungen · Mittel ${pct(z.mittel)} · max ${pct(z.max)}${kl ? ` · je Klasse (Mittel) ${kl}` : ""}${
+                        z.schlimmste && z.max > 0
+                            ? ` · schlimmste ${z.schlimmste.anker} (${z.schlimmste.x}/${z.schlimmste.z}): ${Object.entries(
+                                  z.schlimmste.taeter || {}
+                              )
+                                  .map(([k, v]) => `${k} ${pct(v)}`)
+                                  .join(", ")}`
+                            : ""
+                    }`
+                );
             }
         }
         const s = m.schmuggel || {};
-        console.log(`  Schmuggel: Laub ohne Durchsicht → ${pct(s.laub && s.laub.max)} (${Object.keys((s.laub && s.laub.taeter) || {}).join(", ")}) · Fels vor der Linse → ${pct(s.fels && s.fels.max)} (${Object.keys((s.fels && s.fels.taeter) || {}).join(", ")})`);
-        console.log(`  Kronen-Stellung: +${s.laub && s.laub.hub != null ? s.laub.hub : "—"} m am Stamm · mit Durchsicht → ${pct(s.krone && s.krone.max)} (${Object.keys((s.krone && s.krone.taeter) || {}).join(", ")})`);
+        console.log(
+            `  Schmuggel: Laub ohne Durchsicht → ${pct(s.laub && s.laub.max)} (${Object.keys((s.laub && s.laub.taeter) || {}).join(", ")}) · Fels vor der Linse → ${pct(s.fels && s.fels.max)} (${Object.keys((s.fels && s.fels.taeter) || {}).join(", ")})`
+        );
+        console.log(
+            `  Kronen-Stellung: +${s.laub && s.laub.hub != null ? s.laub.hub : "—"} m am Stamm · mit Durchsicht → ${pct(s.krone && s.krone.max)} (${Object.keys((s.krone && s.krone.taeter) || {}).join(", ")})`
+        );
         console.log(`  Zeiten (ms): ${JSON.stringify(m.zeiten)}`);
         const v = urteil(m);
-        check("K1 keine Stellung mit Laub, Strauch, Ast oder Fels vor der Linse (Deckung im Freiraum ≤ 2 %), die Linse nennt den eingeschmuggelten Täter", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check(
+            "K1 keine Stellung mit Laub, Strauch, Ast oder Fels vor der Linse (Deckung im Freiraum ≤ 2 %), die Linse nennt den eingeschmuggelten Täter",
+            v.length === 0,
+            v.length ? "Täter: " + v.join(" · ") : ""
+        );
     }
     if (TEILE.includes("leib")) {
-        console.log(`=== K2 DER LEIB DER KAMERA (Kugel der Linse ${LEIB_R} m): Mess-Wiese ${WIESE.x}/${WIESE.z} und Prüfbühne ${HANG.id} ===`);
+        console.log(
+            `=== K2 DER LEIB DER KAMERA (Kugel der Linse ${LEIB_R} m): Mess-Wiese ${WIESE.x}/${WIESE.z} und Prüfbühne ${HANG.id} ===`
+        );
         for (const ort of ["wiese", "hang"]) {
             const o = (leib && leib[ort]) || {};
             if (o.err) console.log(`  ${ort}: Ausnahme ${String(o.err).split("\n")[0]}`);
@@ -1350,22 +1703,42 @@ async function probe(arg) {
                         const k = t.replace(/ \(.*\)$/, "");
                         hist[k] = (hist[k] || 0) + 1;
                     }
-                console.log(`    ${ort} ${modus.padEnd(4)} ${fehl.length}/${posen.length} Posen mit Täter${z.grund ? ` (${z.grund})` : ""} · ${JSON.stringify(hist)}`);
-                for (const q of fehl.slice(0, 3)) console.log(`      ${q.id} ${q.anker} @${q.x}/${q.z}: ${q.taeter.join(", ")} · Kamera ${q.c.join("/")} · Arm ${q.arm} m`);
+                console.log(
+                    `    ${ort} ${modus.padEnd(4)} ${fehl.length}/${posen.length} Posen mit Täter${z.grund ? ` (${z.grund})` : ""} · ${JSON.stringify(hist)}`
+                );
+                for (const q of fehl.slice(0, 3))
+                    console.log(
+                        `      ${q.id} ${q.anker} @${q.x}/${q.z}: ${q.taeter.join(", ")} · Kamera ${q.c.join("/")} · Arm ${q.arm} m`
+                    );
             }
         }
         const pr = (leib && leib.proben) || [];
-        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
+        console.log(
+            `  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`
+        );
         const v = urteilLeib(leib);
-        check(`K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check(
+            `K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand`,
+            v.length === 0,
+            v.length ? "Täter: " + v.join(" · ") : ""
+        );
     }
     if (TEILE.includes("ninja")) {
         const posen = (nin && nin.posen) || [];
         console.log(`=== K3 NP-03 DIE KAMERA DES KÖRPER-STUDIOS (Rand ${NINJA_RAND} Lab-Maß) · NP-02 der Tunnel ===`);
-        console.log(`  ${posen.filter((q) => q.taeter.length).length}/${posen.length} Posen mit Täter · Tunnel ${JSON.stringify(nin && nin.tunnel)}`);
-        for (const q of posen.filter((q2) => q2.taeter.length).slice(0, 4)) console.log(`      ${q.id}: ${q.taeter.join(", ")} · Kamera ${q.cam.join("/")} · Ziel ${q.ziel.join("/")} · Figur ${q.figur.join("/")}`);
+        console.log(
+            `  ${posen.filter((q) => q.taeter.length).length}/${posen.length} Posen mit Täter · Tunnel ${JSON.stringify(nin && nin.tunnel)}`
+        );
+        for (const q of posen.filter((q2) => q2.taeter.length).slice(0, 4))
+            console.log(
+                `      ${q.id}: ${q.taeter.join(", ")} · Kamera ${q.cam.join("/")} · Ziel ${q.ziel.join("/")} · Figur ${q.figur.join("/")}`
+            );
         const v = urteilNinja(nin);
-        check(`K3 NP-03 0 von ${NINJA_WP.length * 4} Posen mit Park-Geometrie zwischen Blickziel und Kamera oder um die Kamera, NP-02 der Tunnel bleibt zu`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+        check(
+            `K3 NP-03 0 von ${NINJA_WP.length * 4} Posen mit Park-Geometrie zwischen Blickziel und Kamera oder um die Kamera, NP-02 der Tunnel bleibt zu`,
+            v.length === 0,
+            v.length ? "Täter: " + v.join(" · ") : ""
+        );
     }
     console.log(`  Zeiten (ms): ${JSON.stringify(zeiten)} · Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
@@ -1386,20 +1759,40 @@ async function bildPaare() {
     if (!SEITE) throw new Error("--bilder braucht --seite http://localhost:<port> (der save-server des Arbeitsbaums)");
     fs.mkdirSync(BILDER, { recursive: true });
     const profil = path.join(require("os").tmpdir(), `kamera-laub-profil-${Date.now()}`);
-    const browser = await starteBrowser({ art: "echt", headless: false, profil: profil, frist: 3600000, viewport: { width: 1280, height: 720, deviceScaleFactor: 1 }, zusatz: ["--window-size=1300,860"] });
+    const browser = await starteBrowser({
+        art: "echt",
+        headless: false,
+        profil: profil,
+        frist: 3600000,
+        viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+        zusatz: ["--window-size=1300,860"],
+    });
     try {
         const page = await browser.newPage();
         const fehler = [];
         page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
         page.on("console", (m) => {
-            if (m.type() === "error" && /WebGPU|GPUValidation|Invalid/.test(m.text())) fehler.push("[konsole] " + m.text().slice(0, 200));
+            if (m.type() === "error" && /WebGPU|GPUValidation|Invalid/.test(m.text()))
+                fehler.push("[konsole] " + m.text().slice(0, 200));
         });
         await page.goto(`${SEITE.replace(/\/$/, "")}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(KAMERA_NAH_INSTALL);
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         const nur = (process.env.KAMERA_LAUB_NUR || "ufer,hang").split(",");
-        const m = await page.evaluate(probe, { orte: ORTE.filter((o) => nur.includes(o.id)), radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27, nahAus: true, bilder: { w: 1280, h: 720 } });
+        const m = await page.evaluate(probe, {
+            orte: ORTE.filter((o) => nur.includes(o.id)),
+            radius: RADIUS,
+            saum: SAUM,
+            nahMax: NAH_DECKUNG_MAX,
+            hubMax: SCHMUGGEL_HUB_M,
+            jeOrt: 5,
+            jeStreu: 2,
+            gw: 48,
+            gh: 27,
+            nahAus: true,
+            bilder: { w: 1280, h: 720 },
+        });
         console.log(`=== DIE BILD-PAARE (echte GPU, Ausgabe-Pfad) → ${BILDER} ===`);
         for (const [id, o] of Object.entries(m.orte)) {
             if (o.err) console.log(`  ${id}: Ausnahme ${String(o.err).split("\n")[0]}`);
@@ -1414,7 +1807,11 @@ async function bildPaare() {
                 const sl = b.stellung || {};
                 console.log(
                     `  ${id} ${modus.padEnd(5)} (${sl.x}/${sl.z}, Gier ${sl.gier}, Neigung ${sl.pitch}, Freiraum ${sl.radien ? (sl.radien.Rinde || sl.radien.Laub || 0).toFixed(1) : "?"} m): ` +
-                        `vorher ${pct(b.vorher && b.vorher.deckung)} (${Object.entries((b.vorher && b.vorher.taeter) || {}).map(([k, v]) => `${k} ${pct(v)}`).join(", ")}) → ` +
+                        `vorher ${pct(b.vorher && b.vorher.deckung)} (${Object.entries(
+                            (b.vorher && b.vorher.taeter) || {}
+                        )
+                            .map(([k, v]) => `${k} ${pct(v)}`)
+                            .join(", ")}) → ` +
                         `nachher ${pct(b.nachher && b.nachher.deckung)} · Befehle ${b.vorher && b.vorher.dc}/${b.nachher && b.nachher.dc}`
                 );
             }
@@ -1439,7 +1836,14 @@ async function leibBilder(ordner) {
     fs.mkdirSync(ordner, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
     const profil = path.join(require("os").tmpdir(), `kamera-leib-profil-${Date.now()}`);
-    const browser = await starteBrowser({ art: "echt", headless: false, profil: profil, frist: 3600000, viewport: { width: 1280, height: 720, deviceScaleFactor: 1 }, zusatz: ["--window-size=1300,860"] });
+    const browser = await starteBrowser({
+        art: "echt",
+        headless: false,
+        profil: profil,
+        frist: 3600000,
+        viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+        zusatz: ["--window-size=1300,860"],
+    });
     const bericht = { phase, posen: {} };
     try {
         const page = await browser.newPage();
@@ -1448,22 +1852,45 @@ async function leibBilder(ordner) {
             window.__anazhAutoSettlement = false;
         });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", { timeout: 120000 });
+        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
+            timeout: 120000,
+        });
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(leibInstall, { R: LEIB_R });
-        const w = await page.evaluate(leibWiese, { x: WIESE.x, z: WIESE.z, quote: LEIB_WIESE, bilder: { ids: ["pose-00", "pose-01"], w: 1280, h: 720 } });
+        const w = await page.evaluate(leibWiese, {
+            x: WIESE.x,
+            z: WIESE.z,
+            quote: LEIB_WIESE,
+            bilder: { ids: ["pose-00", "pose-01"], w: 1280, h: 720 },
+        });
         if (w.err) console.log(`  Wiese: Ausnahme ${String(w.err).split("\n")[0]}`);
         for (const [id, b] of Object.entries(w.bilder || {})) {
             fs.writeFileSync(path.join(ordner, `${id}-${phase}.png`), Buffer.from(b.png.split(",")[1], "base64"));
             const p = w.fuss.posen.find((q) => q.id === id) || {};
-            bericht.posen[id] = { anker: p.anker, kamera: p.c, arm: p.arm, taeter: p.taeter, dc: b.dc, dreiecke: b.dreiecke };
-            console.log(`  ${id}-${phase}.png  ${p.anker} · Kamera ${(p.c || []).join("/")} · Arm ${p.arm} m · Täter ${(p.taeter || []).join(", ") || "keiner"}`);
+            bericht.posen[id] = {
+                anker: p.anker,
+                kamera: p.c,
+                arm: p.arm,
+                taeter: p.taeter,
+                dc: b.dc,
+                dreiecke: b.dreiecke,
+            };
+            console.log(
+                `  ${id}-${phase}.png  ${p.anker} · Kamera ${(p.c || []).join("/")} · Arm ${p.arm} m · Täter ${(p.taeter || []).join(", ") || "keiner"}`
+            );
         }
         // NP-03 pose-14 (P3, 180°): die Pose stellen, 90 Schritte, dann zeichnet das Studio sein Bild; der Regler-Panel weicht
-        await page.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.goto(`http://127.0.0.1:${PORT}/worlds/koerperstudio/index.html`, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
         await page.waitForFunction(
             // eslint-disable-next-line no-undef
-            () => typeof enterPlay === "function" && typeof playPhysics === "function" && typeof parkBoxes !== "undefined" && parkBoxes.length > 0,
+            () =>
+                typeof enterPlay === "function" &&
+                typeof playPhysics === "function" &&
+                typeof parkBoxes !== "undefined" &&
+                parkBoxes.length > 0,
             { timeout: 120000 }
         );
         const n = await page.evaluate(ninja, { wp: NINJA_WP, rand: NINJA_RAND, nur: 14 });
@@ -1473,7 +1900,9 @@ async function leibBilder(ordner) {
         await page.screenshot({ path: path.join(ordner, `np03-pose-14-${phase}.png`) });
         const q = (n.posen || [])[0] || {};
         bericht.posen["np03-pose-14"] = q;
-        console.log(`  np03-pose-14-${phase}.png  ${q.id} · Kamera ${(q.cam || []).join("/")} · Täter ${(q.taeter || []).join(", ") || "keiner"}`);
+        console.log(
+            `  np03-pose-14-${phase}.png  ${q.id} · Kamera ${(q.cam || []).join("/")} · Täter ${(q.taeter || []).join(", ") || "keiner"}`
+        );
         fs.writeFileSync(path.join(ordner, `bericht-${phase}.json`), JSON.stringify(bericht, null, 1));
     } finally {
         await browser.close();

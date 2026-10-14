@@ -596,9 +596,49 @@ function klassenMasse(F, m, W, H) {
                 eg += gx * gx + gy * gy;
             }
         }
+    // ZWEITON (K63-n2, das Dither-Raster): je Fenster 8×8 (Schritt 4), in dem die Klasse ≥ ¼ der Pixel trägt, das BILD (nicht
+    // die Maske — ein Raster über dem Himmel zeigt die Klasse nur auf jedem zweiten Pixel): Kontrast p90 − p10 ≥ 40, höchstens
+    // 20 % Zwischentöne (|L − Mitte| < ¼ Kontrast) und Wechsel über die Mitte in BEIDEN Achsen an ≥ 30 % der Nachbar-Paare →
+    // die Klassen-Pixel des Fensters sind Raster. Eine Kante wechselt einmal je Zeile, ein Halm nur quer, eine aufgelöste
+    // Alpha-Kante trägt Zwischentöne; ein Muster aus zwei Tönen im Pixel-Takt ist das sichtbare Dither (Prüfer K63 R2).
+    const zmark = new Uint8Array(W * H);
+    const zw = new Float32Array(64);
+    for (let y0 = 0; y0 + 8 <= H; y0 += 4)
+        for (let x0 = 0; x0 + 8 <= W; x0 += 4) {
+            let c = 0;
+            for (let j = 0; j < 8; j++)
+                for (let i = 0; i < 8; i++) {
+                    const p = (y0 + j) * W + x0 + i;
+                    if (m[p] === 1) c++;
+                    zw[j * 8 + i] = L[p];
+                }
+            if (c < 16) continue;
+            const so = zw.slice().sort();
+            const lo = so[6],
+                hi = so[57],
+                kz = hi - lo;
+            if (kz < 40) continue;
+            const mid = (lo + hi) / 2;
+            let zz = 0,
+                tx = 0,
+                ty = 0;
+            for (let j = 0; j < 8; j++)
+                for (let i = 0; i < 8; i++) {
+                    const w0 = zw[j * 8 + i];
+                    if (Math.abs(w0 - mid) < 0.25 * kz) zz++;
+                    if (i < 7 && w0 > mid !== zw[j * 8 + i + 1] > mid) tx++;
+                    if (j < 7 && w0 > mid !== zw[(j + 1) * 8 + i] > mid) ty++;
+                }
+            if (tx / 56 >= 0.3 && ty / 56 >= 0.3 && zz / 64 <= 0.2)
+                for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) zmark[(y0 + j) * W + x0 + i] = 1;
+        }
+    let zt = 0;
+    for (let p = 0; p < W * H; p++) if (m[p] === 1 && zmark[p]) zt++;
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
+        zweiton: n ? r4(zt / n) : null,
+        zt,
         pixel: n,
         deckung: r4(n / (W * H)),
         deckungUnten: r4(unten / (W * (H - y3))),
@@ -609,6 +649,98 @@ function klassenMasse(F, m, W, H) {
         ek: +ek.toFixed(1),
         eg: +eg.toFixed(1),
         silhouette: n ? r4(rand / Math.sqrt(n)) : null,
+    };
+}
+
+// DAS GESICHT IM BILD (rein, in der Seite als `__gesichtMasse`; K63-n2, `werkbank bild --gesicht`): die Züge, die KOPF_SOLL
+// nennt, wie die AUSGABE sie zeigt (Prüfer K63 R2: Augen, Mund und Haar-Fleck maß nichts). `proben` sind die Vertices des Kopfs,
+// projiziert: { z: iris|lippe|hoehle|haut|kappe, x, y, k (Teil der Teilung + 1), vorn, kalotte }; eine Probe ist SICHTBAR, wenn
+// die Teilung an ihrem Pixel ihren eigenen Teil zeigt. Farben in CIELAB (D65) aus dem Mittel der linearisierten sRGB-Pixel (je
+// Pixel einmal):
+//   augeFrei     sichtbare vordere Iris-Proben / vordere Iris-Proben (Lider und Haut davor verdecken)
+//   lippeL/A     ΔL*, Δa* der sichtbaren Lippe gegen die Wange (sichtbare Haut-Proben zwischen Augen- und Mund-Zeile, ohne
+//                ihre Ränder) · hoehleL/A dasselbe für die Augenhöhle
+//   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
+//                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
+function gesichtMasse(F, teil, W, H, proben, haarK) {
+    const lin = (v) => (v / 255 <= 0.04045 ? v / 255 / 12.92 : Math.pow((v / 255 + 0.055) / 1.055, 2.4));
+    const lab = (c) => {
+        const X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047,
+            Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
+            Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
+        const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+        return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+    };
+    const px = (x, y) => y * W + x;
+    const sicht = (p) => teil[px(p.x, p.y)] === p.k;
+    const farbMittel = (liste) => {
+        const seen = new Set(),
+            c = [0, 0, 0];
+        for (const p of liste) {
+            const i = px(p.x, p.y);
+            if (seen.has(i)) continue;
+            seen.add(i);
+            for (let ch = 0; ch < 3; ch++) c[ch] += lin(F[i * 4 + ch]);
+        }
+        return seen.size ? { lab: lab(c.map((v) => v / seen.size)), n: seen.size } : null;
+    };
+    const von = (z, f) => proben.filter((p) => p.z === z && (!f || f(p)));
+    const r = (x, d) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(d));
+    const irisV = von("iris", (p) => p.vorn);
+    const irisS = irisV.filter(sicht);
+    const mittelY = (l) => (l.length ? l.reduce((a, p) => a + p.y, 0) / l.length : null);
+    const yAuge = mittelY(irisV),
+        lippeS = von("lippe", sicht),
+        yMund = mittelY(von("lippe", (p) => p.vorn));
+    let wange = null;
+    if (yAuge != null && yMund != null && yMund > yAuge) {
+        const a = yAuge + 0.15 * (yMund - yAuge),
+            b = yMund - 0.15 * (yMund - yAuge);
+        wange = farbMittel(von("haut", (p) => p.vorn && sicht(p) && p.y >= a && p.y <= b));
+    }
+    const lippe = farbMittel(lippeS),
+        hoehle = farbMittel(von("hoehle", sicht));
+    const hk = new Set(haarK || []);
+    const haarPx = [];
+    for (let i = 0; i < W * H; i++) if (hk.has(teil[i])) haarPx.push({ x: i % W, y: Math.floor(i / W) });
+    const haar = farbMittel(haarPx.length ? haarPx : von("kappe", sicht));
+    let haarDeckung = null,
+        kal = 0;
+    if (wange && haar) {
+        let h = 0;
+        const d2 = (u, v) => (u[0] - v[0]) ** 2 + (u[1] - v[1]) ** 2 + (u[2] - v[2]) ** 2;
+        for (const p of proben) {
+            if (!p.kalotte || !p.vorn) continue;
+            const t = teil[px(p.x, p.y)];
+            if (hk.has(t)) {
+                kal++;
+                h++;
+            } else if (t === p.k) {
+                kal++;
+                const i = px(p.x, p.y);
+                const c = lab([lin(F[i * 4]), lin(F[i * 4 + 1]), lin(F[i * 4 + 2])]);
+                if (d2(c, haar.lab) < d2(c, wange.lab)) h++;
+            }
+        }
+        haarDeckung = kal ? h / kal : null;
+    }
+    const d = (a, b, ch) => (a && b ? r(a.lab[ch] - b.lab[ch], 2) : null);
+    return {
+        augeFrei: irisV.length ? r(irisS.length / irisV.length, 3) : null,
+        lippeL: d(lippe, wange, 0),
+        lippeA: d(lippe, wange, 1),
+        hoehleL: d(hoehle, wange, 0),
+        hoehleA: d(hoehle, wange, 1),
+        haarDeckung: r(haarDeckung, 3),
+        proben: {
+            iris: irisV.length,
+            irisSicht: irisS.length,
+            lippe: lippeS.length,
+            wange: wange ? wange.n : 0,
+            kalotte: kal,
+            haarPixel: haarPx.length,
+        },
+        zeilen: { auge: r(yAuge, 1), mund: r(yMund, 1) },
     };
 }
 
@@ -711,7 +843,28 @@ function sollRechnung(r) {
             b = nyquistNatur(r.beta[1]);
         return { band: [Math.min(a, b), Math.max(a, b)] };
     }
-    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, nyquist1f)` };
+    // zweiton1f { beta: [b0, b1] } (b0 ≥ 0, weißes Rauschen eingeschlossen): die obere Grenze [−∞, max] des Zweiton-Anteils in
+    // Bildern ohne Muster, je β in Schritten von 0,4. Unschärfe der Kamera fügt nur Zwischentöne hinzu, Rauschen reicht bis β 0
+    // — das Band gilt darum für JEDE Kamera (Prüfer K63 R2: das nyquist-Band aus Bildern ohne Unschärfe ließ das Raster grün).
+    if (r.art === "zweiton1f") {
+        const b = r.beta;
+        if (!(Array.isArray(b) && b.length === 2 && b[0] >= 0 && b[1] >= b[0]))
+            return { fehler: "zweiton1f ohne beta [b0 ≥ 0, b1 ≥ b0]" };
+        let max = 0;
+        for (let x = b[0]; x <= b[1] + 1e-9; x += 0.4) max = Math.max(max, zweitonNatur(+x.toFixed(2)));
+        return { band: [null, max] };
+    }
+    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, nyquist1f, zweiton1f)` };
+}
+const ZWEITON_NATUR = new Map();
+function zweitonNatur(beta) {
+    if (ZWEITON_NATUR.has(beta)) return ZWEITON_NATUR.get(beta);
+    const n = 128,
+        voll = new Uint8Array(n * n).fill(1);
+    let s = 0;
+    for (let saat = 1; saat <= 4; saat++) s += klassenMasse(rauschBild(n, beta, 7919 * saat), voll, n, n).zweiton;
+    ZWEITON_NATUR.set(beta, +(s / 4).toFixed(4));
+    return ZWEITON_NATUR.get(beta);
 }
 
 // DIE MASSE der Tafel (rein): je Maß-Name die Rechnung, die das Ist aus seiner Rohdatei LIEST — der Messung, die das Werkzeug in
@@ -721,12 +874,27 @@ function sollRechnung(r) {
 const SOLL_MASSE = Object.freeze([
     "laiWirk",
     "nyquist",
+    "zweiton",
     "detail",
     "stufenTreue",
     "lichtVerhaeltnis",
     "albedoVerhaeltnis",
     "albedo",
+    "gesicht",
 ]);
+// DIE AUFLÖSUNG je Maß (K63-n2): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
+// endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
+const MASS_AUFLOESUNG = Object.freeze({
+    laiWirk: 0.05,
+    nyquist: 0.005,
+    zweiton: 0.01,
+    detail: 0.005,
+    stufenTreue: 0.01,
+    lichtVerhaeltnis: 0.05,
+    albedoVerhaeltnis: 0.01,
+    albedo: 0.005,
+    gesicht: 0.05,
+});
 // Die Messung eines Bilds: vom Werkzeug geschrieben, Stand · Gerät · Leinwand, ihr Rauschen unter der Wand.
 function bildMessungFehler(me) {
     if (!me || typeof me !== "object") return "keine Messung";
@@ -778,7 +946,17 @@ const MASS_RECHNER = {
             const P = nb ? Math.max(g, 0.5) / nb : null;
             const lai = nb && c > 0 ? (-Math.log(P) * c) / rc.G : null;
             const imRing = ab.baender[b + 1] <= ring;
-            baender.push({ von: ab.baender[b], bis: ab.baender[b + 1], halm: h, grund: g, P, cos: c, lai, imRing, wer });
+            baender.push({
+                von: ab.baender[b],
+                bis: ab.baender[b + 1],
+                halm: h,
+                grund: g,
+                P,
+                cos: c,
+                lai,
+                imRing,
+                wer,
+            });
             if (imRing && lai != null) {
                 sw += nb;
                 sl += lai * nb;
@@ -793,12 +971,16 @@ const MASS_RECHNER = {
         const r2 = (x) => +x.toFixed(2);
         const taeter =
             `${arg.von}–${arg.bis} m vor dem Auge: Lücke ${r2(arg.P)} (${arg.grund} von ${arg.halm + arg.grund} Pixeln Grund) → LAI ${r2(arg.lai)}` +
-            (zeichner && zeichner[1] ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)` : ", dort zeichnet kein Halm");
+            (zeichner && zeichner[1]
+                ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)`
+                : ", dort zeichnet kein Halm");
         return {
             ist: +(sl / sw).toFixed(3),
             taeter,
             anteil: +(pixelSumme(me, halm) + pixelSumme(me, grund)) / flaeche(me),
-            teile: baender.map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`).join(" · "),
+            teile: baender
+                .map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`)
+                .join(" · "),
         };
     },
     // DER SCHACHBRETT-ANTEIL der Klasse (`klassenMasse` nyquist über die Summen aller ihrer Teil-Klassen); der Täter die
@@ -838,41 +1020,137 @@ const MASS_RECHNER = {
             if (!arg || z.detail < arg[1]) arg = [k, z.detail];
         }
         if (!n) return { fehler: "kein Inneres in der Klasse" };
-        return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
+        return {
+            ist: +(s / n).toFixed(4),
+            taeter: `${arg[0]} (detail ${arg[1]})`,
+            anteil: pixelSumme(me) / flaeche(me),
+        };
     },
-    // DIE STUFEN-TREUE: Luma desselben Exemplars aus der Ferne / aus der Nähe — gezählt nur die Teil-Klassen, die BEIDE Schüsse
-    // zeigen (je ≥ 200 Pixel; bis K63-n1 verglich das Maß drei Tore nah mit einem Pavillon fern); der Täter die Teil-Klasse mit
-    // dem größten Sprung.
+    // DER ZWEITON-ANTEIL der Klasse (`klassenMasse` zweiton über die Summen ihrer Teil-Klassen): der Anteil ihrer Pixel im
+    // sichtbaren Dither-Raster; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit dem höchsten Anteil.
+    zweiton(ma) {
+        const me = ma.messung;
+        const f = bildMessungFehler(me);
+        if (f) return { fehler: f };
+        let zt = 0,
+            arg = null;
+        const px = pixelSumme(me);
+        for (const [n, k] of Object.entries(me.klassen)) {
+            if (k.zt == null) return { fehler: `die Messung ohne Zweiton (${n}) — vor K63-n2 gemessen` };
+            zt += k.zt;
+            if (k.pixel >= 0.05 * px && (!arg || k.zweiton > arg[1])) arg = [n, k.zweiton];
+        }
+        if (!px) return { fehler: "die Klasse zeigt kein Pixel" };
+        return {
+            ist: +(zt / px).toFixed(4),
+            taeter: arg ? `${arg[0]} (${Math.round(arg[1] * 1000) / 10} % ihrer Pixel im Raster)` : null,
+            anteil: px / flaeche(me),
+        };
+    },
+    // DIE STUFEN-TREUE: Luma desselben Exemplars aus der Ferne / aus der Nähe ÜBER EINEN STUFEN-WECHSEL. Das Exemplar ist der
+    // Name ohne Stufe (`f:tor_x:L0` und `fimp:tor_x:L2` sind dasselbe Tor, je Schuss die Stufe mit den meisten Pixeln); gezählt
+    // nur Exemplare, die beide Schüsse zeigen (nah ≥ 200, fern ≥ 50 Pixel) und fern eine HÖHERE Stufe zeichnen als nah. Ein
+    // Name ohne Stufe oder ein Paar ohne Wechsel ist ein Bruch: die Treue misst dann keine Stufe (Prüfer K63 R2: drei
+    // Bau-Gruppen ohne LOD-Takt, fern = nah blieb 1,0 GRÜN). Der Bildanteil ist der des FERN-Schusses (dort zeigt sich die Stufe).
     stufenTreue(ma) {
         const me = ma.messung || {};
         const fn = bildMessungFehler(me.nah),
             ff = bildMessungFehler(me.fern);
         if (fn || ff) return { fehler: `nah: ${fn || "ok"} · fern: ${ff || "ok"}` };
-        const gemein = Object.keys(me.nah.klassen).filter(
-            (n) => (me.nah.klassen[n].pixel || 0) >= 200 && me.fern.klassen[n] && (me.fern.klassen[n].pixel || 0) >= 200
-        );
-        if (!gemein.length) return { fehler: "nah und fern zeigen kein gemeinsames Exemplar (je ≥ 200 Pixel)" };
-        const summe = (s) =>
-            gemein.reduce((a, n) => [a[0] + s.klassen[n].luma * s.klassen[n].pixel, a[1] + s.klassen[n].pixel], [0, 0]);
-        const [ln, pn] = summe(me.nah),
-            [lf, pf] = summe(me.fern);
-        let arg = null;
-        for (const n of gemein) {
-            const q = me.fern.klassen[n].luma / Math.max(1e-6, me.nah.klassen[n].luma);
-            if (!arg || Math.abs(Math.log(q)) > Math.abs(Math.log(arg[1]))) arg = [n, q];
+        const stufe = (n) => {
+            const m = /^(?:f|fimp):(.+):L(\d)$/.exec(n);
+            return m ? { ex: m[1], s: +m[2] } : null;
+        };
+        const ohne = [...Object.keys(me.nah.klassen), ...Object.keys(me.fern.klassen)].filter((n) => !stufe(n));
+        if (ohne.length)
+            return {
+                fehler: `ohne LOD-Stufe im Namen: ${[...new Set(ohne)].join(", ")} — die Treue misst nur Exemplare mit Stufe`,
+            };
+        const sammle = (s) => {
+            const o = {};
+            for (const [n, k] of Object.entries(s.klassen)) {
+                const e = stufe(n);
+                const z = o[e.ex] || (o[e.ex] = { pixel: 0, ls: 0, je: {} });
+                z.pixel += k.pixel;
+                z.ls += k.luma * k.pixel;
+                z.je[e.s] = (z.je[e.s] || 0) + k.pixel;
+            }
+            for (const z of Object.values(o)) {
+                z.luma = z.ls / Math.max(1, z.pixel);
+                z.s = +Object.entries(z.je).sort((a, b) => b[1] - a[1])[0][0];
+            }
+            return o;
+        };
+        const N = sammle(me.nah),
+            F = sammle(me.fern);
+        const beide = Object.keys(N).filter((e) => N[e].pixel >= 200 && F[e] && F[e].pixel >= 50);
+        if (!beide.length)
+            return { fehler: "nah und fern zeigen kein gemeinsames Exemplar (nah ≥ 200, fern ≥ 50 Pixel)" };
+        const gemein = beide.filter((e) => F[e].s > N[e].s);
+        if (!gemein.length)
+            return {
+                fehler: `kein Exemplar wechselt die Stufe zwischen nah und fern (${beide.map((e) => `${e} L${N[e].s}→L${F[e].s}`).join(", ")}) — die Treue misst keine Stufe`,
+            };
+        let ln = 0,
+            pn = 0,
+            lf = 0,
+            pf = 0,
+            arg = null;
+        for (const e of gemein) {
+            ln += N[e].ls;
+            pn += N[e].pixel;
+            lf += F[e].ls;
+            pf += F[e].pixel;
+            const q = F[e].luma / Math.max(1e-6, N[e].luma);
+            if (!arg || Math.abs(Math.log(q)) > Math.abs(Math.log(arg[1]))) arg = [e, q];
         }
         return {
             ist: +(lf / pf / Math.max(1e-6, ln / pn)).toFixed(3),
-            taeter: `${arg[0]} (fern/nah ${arg[1].toFixed(2)})`,
-            anteil: pn / flaeche(me.nah),
-            teile: `gemeinsam ${gemein.join(", ")}`,
+            taeter: `${arg[0]} L${N[arg[0]].s}→L${F[arg[0]].s} (fern/nah ${arg[1].toFixed(2)})`,
+            anteil: pf / flaeche(me.fern),
+            teile: gemein
+                .map((e) => `${e} L${N[e].s}→L${F[e].s} ${(F[e].luma / Math.max(1e-6, N[e].luma)).toFixed(2)}`)
+                .join(" · "),
         };
+    },
+    // DAS GESICHT IM BILD (K63-n2, `werkbank bild --gesicht`): die Züge des Kopfs, wie die Ausgabe sie zeigt (`gesichtMasse`:
+    // Iris frei, Lippe und Höhle gegen die Wange in CIELAB, das Haar über der Haarlinie), je Zug gegen sein Band in KOPF_SOLL —
+    // GELESEN (`verweis.felder`), nie kopiert. Das Ist = Anteil der Züge im Band; der Täter der Zug am weitesten draußen (in
+    // Band-Breiten). Der Bildanteil kommt aus dem Bild der Wirkung (der Spieler im Third-Blick), nie aus der Nahaufnahme.
+    gesicht(ma, q, band, sb) {
+        const me = ma.messung;
+        const f = bildMessungFehler(me);
+        if (f) return { fehler: f };
+        const g = me.gesicht;
+        if (!g || typeof g !== "object") return { fehler: "die Messung ohne Gesicht (werkbank bild --gesicht)" };
+        const felder = sb && sb.felder;
+        if (!felder) return { fehler: "gesicht ohne die Bänder der Züge (verweis felder)" };
+        let drin = 0,
+            n = 0,
+            arg = null;
+        const teile = [];
+        for (const [z, b] of Object.entries(felder)) {
+            const x = g[z];
+            n++;
+            if (typeof x !== "number" || !Number.isFinite(x)) {
+                teile.push(`${z} —`);
+                if (!arg || arg[1] < 1e9) arg = [`${z} ungemessen`, 1e9];
+                continue;
+            }
+            const br = Math.max(1e-6, b[1] - b[0]);
+            const d = x < b[0] ? (b[0] - x) / br : x > b[1] ? (x - b[1]) / br : 0;
+            if (d === 0) drin++;
+            teile.push(`${z} ${+x.toFixed(3)} [${b[0]}, ${b[1]}]`);
+            if (d > 0 && (!arg || d > arg[1])) arg = [`${z} ${+x.toFixed(3)} außerhalb [${b[0]}, ${b[1]}]`, d];
+        }
+        return { ist: +(drin / n).toFixed(3), taeter: arg ? arg[0] : null, teile: teile.join(" · ") };
     },
     // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz)
     lichtVerhaeltnis(ma) {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
-        for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
+        for (const f of ["datum", "stand", "E_alle", "E_umgebung"])
+            if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
         if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
             return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
         return {
@@ -895,7 +1173,26 @@ function albedoZeile(ma, q) {
     const z = (t.zeilen || []).find((x) => x.id === ro.zeile);
     if (!z || !z.ist) return { fehler: `Rohdatei ${ro.datei}: Zeile „${ro.zeile}" ohne Ist` };
     const w = (t.gemessen && t.gemessen.welt) || {};
-    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}` };
+    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w] };
+}
+// DER STAND einer Messung (K63-n2; Prüfer K63 R2: das Kopf-GRÜN stand auf der Albedo-Tafel vom 07.10., mit dem Datum 2020 blieb
+// es GRÜN): ein Ist gilt nur für den Stamm, an dem es gemessen ist (`stand.version` = AnazhRealm.VERSION), und für die Bytes der
+// Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen` die Prüfsummen, die das Werkzeug beim
+// Schreiben nimmt). Ein Block ohne Version oder Prüfsumme ist ungeprüft, einer mit fremder veraltet — beides ROT, nie GRÜN.
+function messStand(bloecke, quellen, q) {
+    if (!q.version) return "der Stamm ohne Version (q.version)";
+    for (const b of bloecke) {
+        const v = b && ((b.stand && b.stand.version) || b.version);
+        if (!v) return "Stand ungeprüft: die Messung trägt keine Version";
+        if (v !== q.version) return `veraltet: gemessen an V${v}, der Stamm ist V${q.version}`;
+        for (const d of quellen) {
+            const h = b.quellen && b.quellen[d];
+            if (!h) return `Stand ungeprüft: die Messung ohne Prüfsumme von ${d}`;
+            const jetzt = q.pruefsumme ? q.pruefsumme(d) : null;
+            if (h !== jetzt) return `veraltet: ${d} geändert seit der Messung (${h} → ${jetzt})`;
+        }
+    }
+    return null;
 }
 MASS_RECHNER.albedoVerhaeltnis = (ma, q) => {
     const a = albedoZeile(ma, q);
@@ -905,12 +1202,18 @@ MASS_RECHNER.albedoVerhaeltnis = (ma, q) => {
         ist: v,
         taeter: `Labor ${a.z.ist.labor.Y} gegen Welt ${a.z.ist.welt.Y} (${ma.rohdatei.zeile})`,
         stand: a.stand,
+        bloecke: a.bloecke,
     };
 };
 MASS_RECHNER.albedo = (ma, q) => {
     const a = albedoZeile(ma, q);
     if (a.fehler) return a;
-    return { ist: a.z.ist.welt.Y, taeter: `Welt-Albedo ${a.z.ist.welt.Y} (${ma.rohdatei.zeile})`, stand: a.stand };
+    return {
+        ist: a.z.ist.welt.Y,
+        taeter: `Welt-Albedo ${a.z.ist.welt.Y} (${ma.rohdatei.zeile})`,
+        stand: a.stand,
+        bloecke: a.bloecke,
+    };
 };
 
 // Das Band einer Soll-Eigenschaft: eigen (`band` mit Quelle), gerechnet (`rechnung`, nie ein abgeschriebenes Ergebnis) oder
@@ -918,9 +1221,14 @@ MASS_RECHNER.albedo = (ma, q) => {
 // Tafel: das Band [1 − t, 1 + t]). Ein Verweis, den nichts liest, ist ein Bruch.
 function eigenschaftBand(e, q, wo) {
     const n = [e.band != null, e.rechnung != null, e.verweis != null].filter(Boolean).length;
-    if (n !== 1) return { fehler: `${wo}: Soll ${e.groesse} trägt ${n} statt EINER Quelle des Bands (band · rechnung · verweis)` };
+    if (n !== 1)
+        return {
+            fehler: `${wo}: Soll ${e.groesse} trägt ${n} statt EINER Quelle des Bands (band · rechnung · verweis)`,
+        };
     if (/\[gerechnet\]/.test(e.quelle || "") && !e.rechnung)
-        return { fehler: `${wo}: Soll ${e.groesse} heißt „[gerechnet]" ohne Rechnung — die Linse rechnet jedes gerechnete Band` };
+        return {
+            fehler: `${wo}: Soll ${e.groesse} heißt „[gerechnet]" ohne Rechnung — die Linse rechnet jedes gerechnete Band`,
+        };
     if (e.band != null)
         return Array.isArray(e.band) && e.band.length === 2 && (e.band[0] != null || e.band[1] != null)
             ? { band: e.band }
@@ -932,7 +1240,20 @@ function eigenschaftBand(e, q, wo) {
     const v = e.verweis;
     if (v.symbol) {
         const wert = q.kern ? q.kern(v.datei, v.symbol) : undefined;
-        if (wert === undefined) return { fehler: `${wo}: Verweis ${v.datei} ${v.symbol} — das Symbol ist dort nicht definiert` };
+        if (wert === undefined)
+            return { fehler: `${wo}: Verweis ${v.datei} ${v.symbol} — das Symbol ist dort nicht definiert` };
+        // mehrere Züge (`felder`, das Gesicht): je Feld ein Band, gelesen; das Soll des Maßes ist „jeder Zug in seinem Band“ [1, 1]
+        if (Array.isArray(v.felder)) {
+            if (!v.felder.length) return { fehler: `${wo}: Verweis ${v.datei} ${v.symbol} ohne Felder` };
+            const felder = {};
+            for (const fe of v.felder) {
+                const bf = wert && wert[fe];
+                if (!(Array.isArray(bf) && bf.length === 2))
+                    return { fehler: `${wo}: Verweis ${v.datei} ${v.symbol}.${fe} trägt kein Band [min, max]` };
+                felder[fe] = bf.slice();
+            }
+            return { band: [1, 1], felder, gelesen: `${v.symbol}.{${v.felder.join(", ")}}` };
+        }
         const b = v.feld != null ? wert && wert[v.feld] : wert;
         if (!(Array.isArray(b) && b.length === 2))
             return { fehler: `${wo}: Verweis ${v.datei} ${v.symbol}.${v.feld} trägt kein Band [min, max]` };
@@ -950,6 +1271,28 @@ function eigenschaftBand(e, q, wo) {
     if (v.art === "toleranz" && typeof wert === "number")
         return { band: [+(1 - wert).toFixed(4), +(1 + wert).toFixed(4)], gelesen: `${v.datei} ${v.feld}` };
     return { fehler: `${wo}: Verweis ${v.datei} ${v.feld} — kein lesbares Band (art toleranz)` };
+}
+
+// DER STAND-LESER (K63-n2): die EINE Stelle, an der Werkzeug (werkbank `--ist`) und Linse (K5) Version und Prüfsummen lesen —
+// AnazhRealm.VERSION aus der Naht des Stamms, sha256 (16 Zeichen) einer Datei des Baums; CI-fest (keine git-Geschichte).
+function standLeser(root) {
+    const fs = require("fs"),
+        path = require("path"),
+        crypto = require("crypto");
+    return {
+        stammVersion: () => {
+            const m = /AnazhRealm\.VERSION = "([^"]+)"/.exec(
+                fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8")
+            );
+            return m ? m[1] : null;
+        },
+        pruefsumme: (d) => {
+            const p = path.join(root, d);
+            return fs.existsSync(p)
+                ? crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex").slice(0, 16)
+                : null;
+        },
+    };
 }
 
 // DAS URTEIL DER TAFEL (rein): je Klasse das Soll (eigen, gerechnet oder gelesen), das Budget je LOD-Stufe aus dem Haushalt des
@@ -976,6 +1319,17 @@ function sollTafelUrteil(tafel, q) {
         ids.add(k.id);
         if (!(k.referenz || []).some((r) => r.titel && r.technik))
             fehler.push(`${wo}: keine benannte AAA-Referenz (Titel + Technik)`);
+        // DIE VORLAGE (K63-n2): ein Soll, das schon im System steht (K57 KOPF_SOLL, K58 BLATT_ATLAS_WEDEL), wird REFERENZIERT —
+        // die Linse liest das Symbol im Kern; eine Vorlage ins Leere ist ein Bruch (Prüfer K63 R2: der K58-Verweis fiel still).
+        for (const vl of k.vorlage || []) {
+            const w = vl && vl.symbol && q.kern ? q.kern(vl.datei, vl.symbol) : undefined;
+            if (w === undefined)
+                fehler.push(
+                    `${wo}: Vorlage ${(vl && vl.karte) || "?"} ${vl && vl.datei} ${vl && vl.symbol} — das Symbol ist dort nicht definiert`
+                );
+        }
+        if (!Array.isArray(k.quellen))
+            fehler.push(`${wo}: ohne quellen (die Dateien, deren Bytes das Ist trägt) — sein Stand ist unprüfbar`);
         const so = k.soll || {};
         const baender = {};
         if (!(so.eigenschaften || []).length) fehler.push(`${wo}: kein Soll`);
@@ -1012,23 +1366,44 @@ function sollTafelUrteil(tafel, q) {
                 fehler.push(`${wo}: Verweis ${e.verweis.datei} (${e.groesse}) — kein Maß liest ihn`);
         const band = sb ? sb.band : null;
         const rechner = MASS_RECHNER[ma.name];
-        const r = !rechner ? { fehler: "kein Rechner" } : ma.messung == null && !ma.rohdatei ? { ungemessen: true } : rechner(ma, q, sb ? sb.band : null);
+        const r = !rechner
+            ? { fehler: "kein Rechner" }
+            : ma.messung == null && !ma.rohdatei
+              ? { ungemessen: true }
+              : rechner(ma, q, sb ? sb.band : null, sb);
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
         const ist = zahl(r.ist) ? r.ist : null;
+        // der Stand der Messung: veraltet oder ungeprüft ist ROT ohne Wirkung (die Zahl bleibt sichtbar)
+        const bloecke =
+            r.bloecke ||
+            (ma.messung ? (ma.messung.nah || ma.messung.fern ? [ma.messung.nah, ma.messung.fern] : [ma.messung]) : []);
+        const stand = ist != null && Array.isArray(k.quellen) ? messStand(bloecke, k.quellen, q) : null;
+        const e = MASS_AUFLOESUNG[ma.name] || 0.01;
+        const weit = (rand) => Math.abs(Math.log((ist + e) / (rand + e)));
         let urteil = "ROT",
             grund = null,
             abstand = null;
         if (ist == null) grund = `${ma.name} ungemessen`;
+        else if (stand) grund = `${ma.name} ${ist} — ${stand}`;
         else if (band && band[0] != null && ist < band[0]) {
             grund = `${ma.name} ${ist} < ${band[0]}`;
-            abstand = Math.abs(Math.log(ist / band[0]));
+            abstand = weit(band[0]);
         } else if (band && band[1] != null && ist > band[1]) {
             grund = `${ma.name} ${ist} > ${band[1]}`;
-            abstand = Math.abs(Math.log(ist / band[1]));
+            abstand = weit(band[1]);
         } else if (band) {
             urteil = "GRÜN";
             abstand = 0;
         }
+        // DER BENANNTE MANGEL (K63-n2; Prüfer K63 R2: Kopf, Laub und Tore standen GRÜN, ihre Maße sahen den Mangel des Plans nicht):
+        // trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen — ein GRÜNES Maß neben einem
+        // benannten Mangel ist ein Bruch: das Maß ist blind oder der Mangel geheilt (dann fällt die Zeile mit dem Bild-Paar).
+        const mg = (k.wirkung || {}).mangel;
+        if (mg != null && !(mg.befund && mg.quelle)) fehler.push(`${wo}: der Mangel ohne Befund oder Quelle`);
+        if (mg && urteil === "GRÜN")
+            fehler.push(
+                `${wo}: der benannte Mangel „${mg.befund}" (${mg.quelle}) steht, das Maß ${ma.name} ist GRÜN — es sieht ihn nicht`
+            );
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
         let anteil = zahl(r.anteil) ? r.anteil : null;
@@ -1058,12 +1433,17 @@ function sollTafelUrteil(tafel, q) {
             teile: r.teile || null,
             anteil: anteil == null ? null : +anteil.toFixed(3),
             wirkung: anteil == null || abstand == null ? null : +(anteil * abstand).toFixed(3),
-            stand: r.stand || (me && me.datum ? `${String(me.datum).slice(0, 10)} ${String(me.stand.sha || "").slice(0, 8)} ${me.geraet.adapter || ""}`.trim() : null),
+            veraltet: !!stand,
+            stand:
+                r.stand ||
+                (me && me.datum
+                    ? `${String(me.datum).slice(0, 10)} ${String(me.stand.sha || "").slice(0, 8)} ${me.geraet.adapter || ""}`.trim()
+                    : null),
             stufen,
         });
     }
     // DIE REIHENFOLGE nach Wirkung: ROT gemessen (Wirkung absteigend), ROT ungemessen, GRÜN
-    const rangVon = (z) => (z.urteil === "GRÜN" ? 2 : z.ist == null ? 1 : 0);
+    const rangVon = (z) => (z.urteil === "GRÜN" ? 2 : z.ist == null || z.veraltet ? 1 : 0);
     zeilen.sort((a, b) => rangVon(a) - rangVon(b) || (b.wirkung || 0) - (a.wirkung || 0));
     zeilen.forEach((z, i) => (z.rang = i + 1));
     return { ok: fehler.length === 0, fehler, zeilen, rot: zeilen.filter((z) => z.urteil === "ROT").length };
@@ -1077,7 +1457,7 @@ function sollTafelZeile(z) {
     const w =
         z.wirkung != null
             ? ` · Wirkung ${z.wirkung} (Anteil ${z.anteil})`
-            : z.urteil === "ROT" && z.ist != null
+            : z.urteil === "ROT" && z.ist != null && !z.veraltet
               ? " · Wirkung ungemessen (der Bildanteil fehlt)"
               : "";
     return (
@@ -1153,7 +1533,8 @@ function sollTafelSelbsttest(tafel, q) {
     const mA = new Uint8Array(W * H);
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
-    if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6)) v.push("Maß luma: die Klasse liest falsch");
+    if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6))
+        v.push("Maß luma: die Klasse liest falsch");
     // die Rechnungen: weißes Rauschen ⅓, 1/f^β fällt mit β, einsDurch kehrt das Band um
     const weiss = nyquistNatur(0);
     if (!(Math.abs(weiss - 1 / 3) < 0.03)) v.push(`Rechnung nyquist1f: weißes Rauschen ${weiss} statt ⅓`);
@@ -1184,15 +1565,79 @@ function sollTafelSelbsttest(tafel, q) {
         abstand: { baender, ring: 14, cos, klassen: { "halm:L0": halmZ, grund: grundZ } },
     };
     const lai = MASS_RECHNER.laiWirk({ messung: laiMe, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } });
-    if (!(Math.abs(lai.ist - 2) < 0.02)) v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
+    if (!(Math.abs(lai.ist - 2) < 0.02))
+        v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
     // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen
     const echt = sollTafelUrteil(tafel, q);
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
     const klon = () => JSON.parse(JSON.stringify(tafel));
     const finde = (t, f) => (t.klassen || []).find(f);
     const mitMessung = (t) => finde(t, (k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild");
-    const mitVerweis = (t) => finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
+    const mitVerweis = (t) =>
+        finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
     const mitAlbedo = (t) => finde(t, (k) => k.mass && k.mass.rohdatei);
+    // eine Messung auf den Stand DIESES Baums setzen (Version + Prüfsummen der Klassen-Quellen)
+    const frisch = (k, me) => {
+        me.stand = Object.assign({}, me.stand, { version: q.version });
+        me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
+    };
+    const mitMangel = (t) =>
+        finde(t, (k) => k.wirkung && k.wirkung.mangel && k.mass && k.mass.name === "zweiton" && k.mass.messung);
+    // DIE MASSE DES MANGELS (K63-n2): das Raster aus zwei Tönen ist Zweiton 1, ein Verlauf 0, Bilder ohne Muster 0; die
+    // Stufen-Treue ohne Stufen-Wechsel ist ein Bruch, mit Wechsel ein Verhältnis; das Gesicht nennt den Zug außerhalb
+    const zw = klassenMasse(
+        bild((x, y) => ((x + y) & 1 ? 40 : 200)),
+        new Uint8Array(W * H).fill(1),
+        W,
+        H
+    );
+    if (!(zw.zweiton > 0.99)) v.push(`Maß zweiton: das Schachbrett zweier Töne ${zw.zweiton} statt 1`);
+    if (
+        klassenMasse(
+            bild((x) => 40 + x * 8),
+            new Uint8Array(W * H).fill(1),
+            W,
+            H
+        ).zweiton !== 0
+    )
+        v.push("Maß zweiton: ein Verlauf trägt Raster");
+    const zb = sollRechnung({ art: "zweiton1f", beta: [0, 2.4] });
+    if (!(zb.band && zb.band[1] === 0))
+        v.push(`Rechnung zweiton1f: Bilder ohne Muster tragen Raster (${JSON.stringify(zb)})`);
+    const stufeMe = (namen) => ({
+        werkzeug: "bild",
+        datum: "x",
+        stand: { sha: "x" },
+        geraet: { adapter: "x" },
+        leinwand: [100, 100],
+        schwelle: 18,
+        rauschen: { anteil: 0 },
+        klassen: Object.fromEntries(namen.map(([n, l]) => [n, { pixel: 400, luma: l }])),
+    });
+    const gleich = MASS_RECHNER.stufenTreue({
+        messung: { nah: stufeMe([["f:tor:L0", 100]]), fern: stufeMe([["f:tor:L0", 100]]) },
+    });
+    if (!(gleich.fehler && gleich.fehler.includes("wechselt die Stufe")))
+        v.push(`Maß stufenTreue: fern = nah ohne Stufen-Wechsel nicht beim Namen (${gleich.fehler || gleich.ist})`);
+    const ohneSt = MASS_RECHNER.stufenTreue({
+        messung: { nah: stufeMe([["bau:tor", 100]]), fern: stufeMe([["bau:tor", 100]]) },
+    });
+    if (!(ohneSt.fehler && ohneSt.fehler.includes("ohne LOD-Stufe")))
+        v.push("Maß stufenTreue: ein Name ohne Stufe nicht beim Namen");
+    const weiss2 = MASS_RECHNER.stufenTreue({
+        messung: { nah: stufeMe([["f:tor:L0", 100]]), fern: stufeMe([["fimp:tor:L1", 220]]) },
+    });
+    if (!(weiss2.ist === 2.2)) v.push(`Maß stufenTreue: L0 100 → L1 220 liest ${weiss2.ist} statt 2,2`);
+    const ge = MASS_RECHNER.gesicht(
+        { messung: Object.assign(stufeMe([["spieler:kopf/haut", 100]]), { gesicht: { augeFrei: 0.45, lippeA: 6 } }) },
+        q,
+        [1, 1],
+        { felder: { augeFrei: [0.9, 1], lippeA: [4, 14] } }
+    );
+    if (!(ge.ist === 0.5 && /augeFrei 0\.45/.test(ge.taeter || "")))
+        v.push(`Maß gesicht: halb im Band liest ${ge.ist}, Täter ${ge.taeter}`);
+    if (!Number.isFinite(Math.log((0 + MASS_AUFLOESUNG.zweiton) / (0 + MASS_AUFLOESUNG.zweiton))))
+        v.push("Auflösung: ein Rand 0 ist unendlich");
     const faelle = [
         ["Haushalt-Klasse fehlt", (t) => (t.klassen[0].budget.haushalt = "phantom"), '„phantom" fehlt'],
         [
@@ -1202,7 +1647,12 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         [
             "Verweis ohne Leser",
-            (t) => mitVerweis(t).soll.eigenschaften.push({ groesse: "zier", verweis: { datei: "koerper-core.js", symbol: "KOPF_SOLL", feld: "augenLinie" }, quelle: "x" }),
+            (t) =>
+                mitVerweis(t).soll.eigenschaften.push({
+                    groesse: "zier",
+                    verweis: { datei: "koerper-core.js", symbol: "KOPF_SOLL", feld: "augenLinie" },
+                    quelle: "x",
+                }),
             "kein Maß liest ihn",
         ],
         ["Maß unbekannt", (t) => (t.klassen[0].mass.name = "schoenheit"), '„schoenheit" unbekannt'],
@@ -1215,11 +1665,37 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         [
             "Band und Rechnung zugleich",
-            (t) => t.klassen[0].soll.eigenschaften.push({ groesse: "y", band: [5, 12], rechnung: { art: "einsDurch", von: [0.08, 0.2] }, quelle: "x" }),
+            (t) =>
+                t.klassen[0].soll.eigenschaften.push({
+                    groesse: "y",
+                    band: [5, 12],
+                    rechnung: { art: "einsDurch", von: [0.08, 0.2] },
+                    quelle: "x",
+                }),
             "statt EINER Quelle",
         ],
-        ["Rauschen über der Wand", (t) => (mitMessung(t).mass.messung.rauschen.anteil = 0.05), "hält ihr Rauschen nicht"],
-        ["Albedo-Zeile fehlt", (t) => (mitAlbedo(t).mass.rohdatei.zeile = "phantom"), "„phantom\" ohne Ist"],
+        [
+            "Rauschen über der Wand",
+            (t) => (mitMessung(t).mass.messung.rauschen.anteil = 0.05),
+            "hält ihr Rauschen nicht",
+        ],
+        ["Albedo-Zeile fehlt", (t) => (mitAlbedo(t).mass.rohdatei.zeile = "phantom"), '„phantom" ohne Ist'],
+        [
+            "Vorlage ins Leere",
+            (t) => (finde(t, (k) => (k.vorlage || []).length).vorlage[0].symbol = "PHANTOM_ATLAS"),
+            "Vorlage",
+        ],
+        ["Klasse ohne Quellen", (t) => delete t.klassen[0].quellen, "ohne quellen"],
+        ["Mangel ohne Quelle", (t) => (mitMangel(t).wirkung.mangel.quelle = ""), "ohne Befund oder Quelle"],
+        [
+            "das Maß sieht den benannten Mangel nicht",
+            (t) => {
+                const k = mitMangel(t);
+                for (const z of Object.values(k.mass.messung.klassen)) z.zt = 0;
+                frisch(k, k.mass.messung);
+            },
+            "es sieht ihn nicht",
+        ],
     ];
     for (const [name, fn, wort] of faelle) {
         if (!tafel || !(tafel.klassen || []).length) break;
@@ -1252,7 +1728,8 @@ function sollTafelSelbsttest(tafel, q) {
         });
         const z0 = echt.zeilen.find((z) => z.id === ka.id);
         const z1 = sollTafelUrteil(tafel, q2).zeilen.find((z) => z.id === ka.id);
-        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1 && z1.ist})`);
+        if (!z0 || !z1 || z1.ist === z0.ist)
+            v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1 && z1.ist})`);
     }
     if (tafel && (tafel.klassen || []).length) {
         const t = klon();
@@ -1261,13 +1738,34 @@ function sollTafelSelbsttest(tafel, q) {
         const z = sollTafelUrteil(t, q).zeilen.find((x) => x.id === t.klassen[0].id);
         if (!z || z.urteil !== "ROT") v.push("ein ungemessenes Ist ist GRÜN");
         const t3 = klon();
-        const k3 = mitMessung(t3);
+        const k3 = finde(t3, (k) => k.mass && k.mass.name === "laiWirk" && k.mass.messung);
+        if (k3) frisch(k3, k3.mass.messung);
         if (k3 && k3.mass.name === "laiWirk") {
             const ab = k3.mass.messung.abstand.klassen;
             for (const n of Object.keys(ab)) if (new RegExp(k3.mass.rechnung.grund).test(n)) ab[n] = ab[n].map(() => 0);
             const z3 = sollTafelUrteil(t3, q).zeilen.find((x) => x.id === k3.id);
             if (!z3 || z3.urteil !== "GRÜN") v.push(`${k3.id}: eine Wiese ohne Lücke ist nicht GRÜN (${z3 && z3.ist})`);
         }
+    }
+    if (tafel && mitMangel(klon())) {
+        const t4 = klon();
+        const k4 = mitMangel(t4);
+        for (const z of Object.values(k4.mass.messung.klassen)) z.zt = 0;
+        frisch(k4, k4.mass.messung);
+        k4.wirkung.mangel = undefined;
+        const gruen = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
+        k4.mass.messung.stand.version = "17.0.0";
+        const alt = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
+        frisch(k4, k4.mass.messung);
+        const d0 = (k4.quellen || [])[0];
+        if (d0) k4.mass.messung.quellen[d0] = "0000000000000000";
+        const fremd = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
+        if (!gruen || gruen.urteil !== "GRÜN")
+            v.push(`Stand: die frische Messung ohne Raster ist nicht GRÜN (${gruen && gruen.grund})`);
+        if (!alt || alt.urteil !== "ROT" || !/veraltet/.test(alt.grund || ""))
+            v.push("Stand: eine Messung an V17.0.0 bleibt GRÜN");
+        if (d0 && (!fremd || fremd.urteil !== "ROT" || !/geändert seit/.test(fremd.grund || "")))
+            v.push(`Stand: eine geänderte Quelle ${d0} bleibt GRÜN`);
     }
     if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
     return v;
@@ -1281,10 +1779,15 @@ module.exports = {
     klassenTeilung,
     bildRauschen,
     klassenMasse,
+    gesichtMasse,
+    zweitonNatur,
+    MASS_AUFLOESUNG,
     rauschBild,
     nyquistNatur,
     sollRechnung,
     sollTafelUrteil,
+    standLeser,
+    messStand,
     sollTafelZeile,
     sollTafelSelbsttest,
     abnahmeUrteil,
@@ -1300,5 +1803,6 @@ module.exports = {
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
-        `window.__klassenMasse = ${klassenMasse.toString()};`,
+        `window.__klassenMasse = ${klassenMasse.toString()};` +
+        `window.__gesichtMasse = ${gesichtMasse.toString()};`,
 };

@@ -6,7 +6,11 @@
             "id": "boden-nah",
             "titel": "Gras und Boden nah (die Nah-Wiese über dem Boden-Satz)",
             "wirkung": {
-                "grund": "der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“"
+                "grund": "der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“",
+                "mangel": {
+                    "befund": "Gras als einzelne Büschel auf glattem Grün",
+                    "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)"
+                }
             },
             "referenz": [
                 {
@@ -188,7 +192,11 @@
                     },
                     "bild": "../../../artifacts/profiband/soll-tafel/n1/boden.png"
                 }
-            }
+            },
+            "quellen": [
+                "gelaende-core.js",
+                "phyto-core.js"
+            ]
         },
         {
             "id": "himmel-licht",
@@ -247,13 +255,18 @@
                         0.272
                     ]
                 }
-            }
+            },
+            "quellen": []
         },
         {
             "id": "laub",
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
-                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster"
+                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster",
+                "mangel": {
+                    "befund": "Laub-Karten mit Dither-Muster (Nadelbaum-Karten groß und kantig)",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                }
             },
             "referenz": [
                 {
@@ -268,16 +281,16 @@
             "soll": {
                 "eigenschaften": [
                     {
-                        "groesse": "nyquist",
+                        "groesse": "zweiton",
                         "rechnung": {
-                            "art": "nyquist1f",
+                            "art": "zweiton1f",
                             "beta": [
-                                1.6,
+                                0,
                                 2.4
                             ]
                         },
-                        "einheit": "Schachbrett-Anteil der Gradient-Energie in der Krone (klassenMasse); ein Dither- oder Hash-Muster hebt ihn",
-                        "quelle": "natürliche Bild-Statistik, Leistungsspektrum 1/f^β mit β 1,6–2,4 (Field 1987, JOSA A 4:2379; van der Schaaf & van Hateren 1996, Vision Res. 36:2759): klassenMasse auf 1/f^β-Bildern ohne Unschärfe [gerechnet]"
+                        "einheit": "Anteil der Kronen-Pixel im Dither-Raster (klassenMasse zweiton: Fenster 8×8 aus zwei Tönen im Pixel-Takt, ≤ 20 % Zwischentöne, Wechsel in beiden Achsen)",
+                        "quelle": "Horizon Zero Dawn: kein sichtbares Raster im Blätterdach (zeitlich aufgelöstes Alpha); Bilder ohne Muster (Leistungsspektrum 1/f^β, β 0–2,4, weißes Rauschen eingeschlossen) zeigen kein Raster-Fenster — Unschärfe fügt nur Zwischentöne hinzu, das Band gilt für jede Kamera [gerechnet]"
                     }
                 ]
             },
@@ -285,22 +298,22 @@
                 "haushalt": "baum"
             },
             "mass": {
-                "name": "nyquist",
+                "name": "zweiton",
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T22:45:14.451Z",
+                    "datum": "2026-10-14T23:30:41.145Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
+                        "sha": "d84721a6b12b1b0e4f038f2991be6584614150bf+geaendert"
                     },
                     "geraet": {
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
                     "leinwand": [
-                        640,
-                        360
+                        1920,
+                        1080
                     ],
                     "kamera": [
                         -284,
@@ -314,65 +327,90 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 12543,
+                    "misch": 96495,
                     "klassen": {
                         "f:fichte:L1": {
                             "objekte": 9,
-                            "pixel": 28391,
-                            "deckung": 0.1232,
-                            "deckungUnten": 0.0035,
-                            "luma": 52.59,
-                            "kontrast": 0.385,
-                            "detail": 0.1293,
-                            "nyquist": 0.212,
-                            "ek": 91449.6,
-                            "eg": 339819.3,
-                            "silhouette": 52.0249
+                            "zweiton": 0.0141,
+                            "zt": 3612,
+                            "pixel": 256782,
+                            "deckung": 0.1238,
+                            "deckungUnten": 0.0033,
+                            "luma": 52.06,
+                            "kontrast": 0.378,
+                            "detail": 0.1044,
+                            "nyquist": 0.1759,
+                            "ek": 525282.6,
+                            "eg": 2460656.6,
+                            "silhouette": 122.5607
                         },
                         "f:tanne:L0": {
                             "objekte": 4,
-                            "pixel": 7114,
-                            "deckung": 0.0309,
+                            "zweiton": 0.0424,
+                            "zt": 2697,
+                            "pixel": 63622,
+                            "deckung": 0.0307,
                             "deckungUnten": 0,
-                            "luma": 66.92,
-                            "kontrast": 0.5063,
-                            "detail": 0.1291,
-                            "nyquist": 0.2107,
-                            "ek": 51396.4,
-                            "eg": 192548.7,
-                            "silhouette": 21.5189
+                            "luma": 63.99,
+                            "kontrast": 0.4219,
+                            "detail": 0.0725,
+                            "nyquist": 0.1849,
+                            "ek": 124778.8,
+                            "eg": 550084.7,
+                            "silhouette": 45.0812
                         },
                         "f:tanne:L1": {
                             "objekte": 9,
-                            "pixel": 34767,
-                            "deckung": 0.1509,
-                            "deckungUnten": 0.0058,
-                            "luma": 56.07,
-                            "kontrast": 0.357,
-                            "detail": 0.1189,
-                            "nyquist": 0.2078,
-                            "ek": 160819.4,
-                            "eg": 612909.2,
-                            "silhouette": 35.5413
+                            "zweiton": 0.0109,
+                            "zt": 3440,
+                            "pixel": 315914,
+                            "deckung": 0.1524,
+                            "deckungUnten": 0.0052,
+                            "luma": 56.23,
+                            "kontrast": 0.4112,
+                            "detail": 0.1064,
+                            "nyquist": 0.1888,
+                            "ek": 1420010.7,
+                            "eg": 6102430.5,
+                            "silhouette": 80.0659
                         },
                         "fimp:atlas:L2": {
                             "objekte": 1,
-                            "pixel": 48867,
-                            "deckung": 0.2121,
-                            "deckungUnten": 0.1096,
-                            "luma": 63.5,
-                            "kontrast": 0.5611,
-                            "detail": 0.1496,
-                            "nyquist": 0.1986,
-                            "ek": 349246.1,
-                            "eg": 1409004.2,
-                            "silhouette": 42.0295
+                            "zweiton": 0.0632,
+                            "zt": 27327,
+                            "pixel": 432402,
+                            "deckung": 0.2085,
+                            "deckungUnten": 0.106,
+                            "luma": 62.23,
+                            "kontrast": 0.5696,
+                            "detail": 0.1204,
+                            "nyquist": 0.2167,
+                            "ek": 2771529.3,
+                            "eg": 10020807.1,
+                            "silhouette": 100.6474
                         }
                     },
                     "abstand": null,
-                    "bild": "../../../artifacts/profiband/soll-tafel/n1/laub.png"
+                    "gesicht": null,
+                    "bild": "../../../artifacts/profiband/soll-tafel/n2/laub.png",
+                    "quellen": {
+                        "phyto-core.js": "95f967fc8a37fd95",
+                        "foundry-core.js": "b957a6823f5b6a9e"
+                    }
                 }
-            }
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js"
+            ],
+            "vorlage": [
+                {
+                    "karte": "K58",
+                    "datei": "phyto-core.js",
+                    "symbol": "BLATT_ATLAS_WEDEL",
+                    "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (Klingen-Index Mip 3 0,834 → 0,680, Soll ≤ 0,70; gate:asset-contract malt den Atlas gegen die Füllung) — die Kante der Karte; die Tafel misst ihr Raster im Bild"
+                }
+            ]
         },
         {
             "id": "haus",
@@ -414,7 +452,11 @@
                     "zeile": "haus"
                 },
                 "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: werkbank bild am Messort dorf --klasse '^(bauSatz|f:alemannisch:L[01])$' --ist haus:wirkung"
-            }
+            },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js"
+            ]
         },
         {
             "id": "wasser",
@@ -451,13 +493,20 @@
             "mass": {
                 "name": "detail",
                 "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser — ein Messort mit Wasser fehlt im Haushalt"
-            }
+            },
+            "quellen": [
+                "gelaende-core.js"
+            ]
         },
         {
             "id": "tor-fern",
-            "titel": "Tore (der Genesis-Ring: Rahmen bau:welt_* und Membran)",
+            "titel": "Tore (die Studio-Tore des Genesis-Rings: Foundry-Tore mit LOD-Stufe, nah L0, fern L1)",
             "wirkung": {
-                "grund": "die Tore der Ankunft aus 8 m und aus 30 m; das Tor-Studio-Tor fern (Augen-Befund 14.10.) misst K64"
+                "grund": "die Studio-Tore des Genesis-Rings (Foundry, Stufe L0 bis 9,5 m, dann L1) aus der Nähe und aus 30 m",
+                "mangel": {
+                    "befund": "aus 30 m weiße Tafeln (Stufe 1/3)",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 3"
+                }
             },
             "referenz": [
                 {
@@ -477,7 +526,7 @@
                             0.8,
                             1.25
                         ],
-                        "einheit": "Luma desselben Exemplars aus 30 m / aus 8 m (Ausgabe-Pfad, gleiche Bühne)",
+                        "einheit": "Luma desselben Exemplars aus 30 m (Stufe L1) / aus der Nähe (Stufe L0), Ausgabe-Pfad, gleiche Bühne",
                         "quelle": "± ⅓ Blende: der kleinste Belichtungs-Schritt, den das Auge an einer Fläche als Sprung liest; HLOD/Impostor aus derselben Albedo"
                     }
                 ]
@@ -487,167 +536,12 @@
             },
             "mass": {
                 "name": "stufenTreue",
-                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 --klasse '^(bau:welt_[a-z_]+|portal-membran)$' --ist tor-fern:nah; dasselbe aus 29.4 93.7 4.5 --wahl 0 --ist tor-fern:fern",
-                "messung": {
-                    "nah": {
-                        "werkzeug": "bild",
-                        "datum": "2026-10-14T22:45:21.541Z",
-                        "stand": {
-                            "version": "18.546.2",
-                            "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
-                        },
-                        "geraet": {
-                            "backend": "WebGPU",
-                            "adapter": "amd rdna-3"
-                        },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            3.4,
-                            92.2,
-                            -2.5
-                        ],
-                        "ausdruck": "^(bau:welt_[a-z_]+|portal-membran)$",
-                        "schwelle": 18,
-                        "rauschen": {
-                            "anteil": 0,
-                            "pixel": 0,
-                            "max": 0
-                        },
-                        "misch": 0,
-                        "klassen": {
-                            "bau:welt_klang": {
-                                "objekte": 3,
-                                "pixel": 5471,
-                                "deckung": 0.0237,
-                                "deckungUnten": 0,
-                                "luma": 149.16,
-                                "kontrast": 0.1884,
-                                "detail": 0.0406,
-                                "nyquist": 0.0335,
-                                "ek": 3442.4,
-                                "eg": 99288,
-                                "silhouette": 14.5742
-                            },
-                            "bau:welt_koerperstudio": {
-                                "objekte": 5,
-                                "pixel": 15459,
-                                "deckung": 0.0671,
-                                "deckungUnten": 0,
-                                "luma": 122.77,
-                                "kontrast": 0.4554,
-                                "detail": 0.0704,
-                                "nyquist": 0.132,
-                                "ek": 87163.3,
-                                "eg": 573164.4,
-                                "silhouette": 10.1501
-                            },
-                            "bau:welt_tetrapoda": {
-                                "objekte": 2,
-                                "pixel": 35597,
-                                "deckung": 0.1545,
-                                "deckungUnten": 0.1424,
-                                "luma": 136.58,
-                                "kontrast": 0.2997,
-                                "detail": 0.028,
-                                "nyquist": 0.1225,
-                                "ek": 41336,
-                                "eg": 296107.4,
-                                "silhouette": 7.9503
-                            }
-                        },
-                        "abstand": null,
-                        "bild": "../../../artifacts/profiband/soll-tafel/n1/tor-nah.png"
-                    },
-                    "fern": {
-                        "werkzeug": "bild",
-                        "datum": "2026-10-14T22:45:24.335Z",
-                        "stand": {
-                            "version": "18.546.2",
-                            "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
-                        },
-                        "geraet": {
-                            "backend": "WebGPU",
-                            "adapter": "amd rdna-3"
-                        },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            29.4,
-                            93.7,
-                            4.5
-                        ],
-                        "ausdruck": "^(bau:welt_[a-z_]+|portal-membran)$",
-                        "schwelle": 18,
-                        "rauschen": {
-                            "anteil": 0,
-                            "pixel": 0,
-                            "max": 0
-                        },
-                        "misch": 243,
-                        "klassen": {
-                            "bau:welt_klang": {
-                                "objekte": 3,
-                                "pixel": 167,
-                                "deckung": 0.0007,
-                                "deckungUnten": 0,
-                                "luma": 132.17,
-                                "kontrast": 0.231,
-                                "detail": 0.083,
-                                "nyquist": 0.1928,
-                                "ek": 679.6,
-                                "eg": 2845.7,
-                                "silhouette": 7.4287
-                            },
-                            "bau:welt_koerperstudio": {
-                                "objekte": 5,
-                                "pixel": 317,
-                                "deckung": 0.0014,
-                                "deckungUnten": 0,
-                                "luma": 139.32,
-                                "kontrast": 0.3465,
-                                "detail": 0.1283,
-                                "nyquist": 0.127,
-                                "ek": 3279.2,
-                                "eg": 22545.8,
-                                "silhouette": 8.3687
-                            },
-                            "bau:welt_tetrapoda": {
-                                "objekte": 2,
-                                "pixel": 1132,
-                                "deckung": 0.0049,
-                                "deckungUnten": 0,
-                                "luma": 130.2,
-                                "kontrast": 0.3015,
-                                "detail": 0.1169,
-                                "nyquist": 0.063,
-                                "ek": 3606.5,
-                                "eg": 53624.9,
-                                "silhouette": 11.7104
-                            },
-                            "portal-membran": {
-                                "objekte": 8,
-                                "pixel": 789,
-                                "deckung": 0.0034,
-                                "deckungUnten": 0,
-                                "luma": 141.22,
-                                "kontrast": 0.3678,
-                                "detail": 0.1162,
-                                "nyquist": 0.148,
-                                "ek": 4766.9,
-                                "eg": 27440.4,
-                                "silhouette": 11.3211
-                            }
-                        },
-                        "abstand": null,
-                        "bild": "../../../artifacts/profiband/soll-tafel/n1/tor-fern.png"
-                    }
-                }
-            }
+                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 --klasse '^(bau:welt_[a-z_]+|portal-membran)$' --ist tor-fern:nah; dasselbe aus 29.4 93.7 4.5 --wahl 0 --ist tor-fern:fern"
+            },
+            "quellen": [
+                "porta-core.js",
+                "foundry-core.js"
+            ]
         },
         {
             "id": "fels",
@@ -684,13 +578,73 @@
                     "zeile": "fels"
                 },
                 "werkzeug": "werkbank albedo --tafel (Zeile fels) + --nachziehen"
-            }
+            },
+            "quellen": [
+                "gelaende-core.js"
+            ]
         },
         {
             "id": "mensch-kopf",
-            "titel": "Mensch-Kopf (der gebackene Kopf L0: Haut, Augen, Haar)",
+            "titel": "Mensch-Kopf (der Kopf des Spielers im Bild: Iris, Lippe, Höhle, Haar)",
             "wirkung": {
-                "grund": "der Spieler im Third-Blick; die Gestalt des Kopfs hält gate:mensch-anatomie gegen KOPF_SOLL und MENSCH_SOLL"
+                "grund": "der Spieler im Third-Blick; Plan Nr. 1: heute die schwächste sichtbare Stelle",
+                "mangel": {
+                    "befund": "Augen, Mund, Haar-Fleck",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 1"
+                },
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-14T23:30:07.151Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "d84721a6b12b1b0e4f038f2991be6584614150bf+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [
+                        1920,
+                        1080
+                    ],
+                    "kamera": [
+                        -900.6,
+                        109.87,
+                        -856
+                    ],
+                    "ausdruck": "^spieler$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 0,
+                    "klassen": {
+                        "spieler": {
+                            "objekte": 14,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "pixel": 9293,
+                            "deckung": 0.0045,
+                            "deckungUnten": 0,
+                            "luma": 21.97,
+                            "kontrast": 2.1408,
+                            "detail": 0.1504,
+                            "nyquist": 0.1317,
+                            "ek": 22826.3,
+                            "eg": 150436.7,
+                            "silhouette": 8.9108
+                        }
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "../../../artifacts/profiband/soll-tafel/n2/mensch-kopf-third.png",
+                    "quellen": {
+                        "koerper-core.js": "94a8359fccad2ea4",
+                        "foundry-core.js": "b957a6823f5b6a9e"
+                    }
+                }
             },
             "referenz": [
                 {
@@ -701,14 +655,21 @@
             "soll": {
                 "eigenschaften": [
                     {
-                        "groesse": "hautAlbedo",
+                        "groesse": "gesicht",
                         "verweis": {
                             "datei": "koerper-core.js",
                             "symbol": "KOPF_SOLL",
-                            "feld": "hautAlbedo"
+                            "felder": [
+                                "augeFrei",
+                                "lippeL",
+                                "lippeA",
+                                "hoehleL",
+                                "hoehleA",
+                                "haarDeckung"
+                            ]
                         },
-                        "einheit": "lineare Luma der Haut des Spielers in der Welt",
-                        "quelle": "K57 KOPF_SOLL hautAlbedo: die Hautreflexion bei 550 nm, dunkel bis hell"
+                        "einheit": "Anteil der Züge des Gesichts, die das BILD in ihrem KOPF_SOLL-Band zeigt (gesichtMasse: Iris frei, Lippe und Höhle gegen die Wange in CIELAB, Haar über der Haarlinie)",
+                        "quelle": "K57 KOPF_SOLL (Farkas-Normen, CIELAB der Lippe und Höhle gegen die Wange, Haar als Volumen) — gelesen, nie kopiert; MetaHuman: jeder Zug im Band"
                     }
                 ]
             },
@@ -716,14 +677,136 @@
                 "haushalt": "einzelstuecke"
             },
             "mass": {
-                "name": "albedo",
-                "soll": "hautAlbedo",
-                "rohdatei": {
-                    "datei": "spec/farbe/albedo-tafel.json",
-                    "zeile": "haut"
-                },
-                "werkzeug": "werkbank albedo --tafel (Zeile haut: der Spieler) + --nachziehen; der Bildanteil: werkbank bild -278 29.22 -1037.55 -278 29.2 -1038 --wahl 0 --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung"
-            }
+                "name": "gesicht",
+                "werkzeug": "werkbank umstellen --ort wiese --sicht third; werkbank bild 0 0 0 0 0 0 --gesicht 0.7 --wahl 0 --spieler --klasse '^spieler:kopf/' --ist mensch-kopf; der Bildanteil: werkbank bild (Third-Blick) --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-14T23:29:30.584Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "d84721a6b12b1b0e4f038f2991be6584614150bf+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [
+                        1920,
+                        1080
+                    ],
+                    "kamera": [
+                        -899.96,
+                        108.98,
+                        -849.39
+                    ],
+                    "ausdruck": "^spieler:kopf/",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0.000009,
+                        "pixel": 19,
+                        "max": 379
+                    },
+                    "misch": 689,
+                    "klassen": {
+                        "spieler:kopf/auge": {
+                            "objekte": 2,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "pixel": 422,
+                            "deckung": 0.0002,
+                            "deckungUnten": 0,
+                            "luma": 92.09,
+                            "kontrast": 0.7746,
+                            "detail": 0.2428,
+                            "nyquist": 0.0818,
+                            "ek": 4209.8,
+                            "eg": 47229,
+                            "silhouette": 5.5008
+                        },
+                        "spieler:kopf/hair": {
+                            "objekte": 2,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "pixel": 551,
+                            "deckung": 0.0003,
+                            "deckungUnten": 0,
+                            "luma": 64.12,
+                            "kontrast": 0.6495,
+                            "detail": 0.36,
+                            "nyquist": 0.1694,
+                            "ek": 3675.5,
+                            "eg": 18021.2,
+                            "silhouette": 17.6796
+                        },
+                        "spieler:kopf/haut": {
+                            "objekte": 2,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "pixel": 27378,
+                            "deckung": 0.0132,
+                            "deckungUnten": 0,
+                            "luma": 51.89,
+                            "kontrast": 0.8383,
+                            "detail": 0.0638,
+                            "nyquist": 0.0924,
+                            "ek": 16391.1,
+                            "eg": 161029.1,
+                            "silhouette": 8.999
+                        },
+                        "spieler:kopf/skin": {
+                            "objekte": 1,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "pixel": 495,
+                            "deckung": 0.0002,
+                            "deckungUnten": 0,
+                            "luma": 21.65,
+                            "kontrast": 0.3749,
+                            "detail": 0.0611,
+                            "nyquist": 0.2205,
+                            "ek": 37.4,
+                            "eg": 132.1,
+                            "silhouette": 11.5513
+                        }
+                    },
+                    "abstand": null,
+                    "gesicht": {
+                        "augeFrei": 0.45,
+                        "lippeL": -8.18,
+                        "lippeA": 1.23,
+                        "hoehleL": -2.85,
+                        "hoehleA": -1.19,
+                        "haarDeckung": 0.738,
+                        "proben": {
+                            "iris": 180,
+                            "irisSicht": 81,
+                            "lippe": 175,
+                            "wange": 649,
+                            "kalotte": 84,
+                            "haarPixel": 551
+                        },
+                        "zeilen": {
+                            "auge": 525.1,
+                            "mund": 599.7
+                        },
+                        "toene": {
+                            "haut": "6a4230",
+                            "lippe": "5e271a",
+                            "hoehle": "5d3322",
+                            "kappe": "cecbc5"
+                        }
+                    },
+                    "bild": "../../../artifacts/profiband/soll-tafel/n2/mensch-kopf.png",
+                    "quellen": {
+                        "koerper-core.js": "94a8359fccad2ea4",
+                        "foundry-core.js": "b957a6823f5b6a9e"
+                    }
+                }
+            },
+            "quellen": [
+                "koerper-core.js",
+                "foundry-core.js"
+            ]
         }
     ]
 }
