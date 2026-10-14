@@ -113,3 +113,10 @@ Flackern), lokale Linsen auf swiftshader (Pipeline-Bau 42–292 s, gate:haus-wel
 2. **Flacker-Linsen** (Zweig flackern, B1): S0-Frist und Gelände-Kosten — kein Wiederlauf je Runde.
 3. **Teure Gates schneiden:** gate:haus-welt 12,5 min lokal (seit K52), die S0-Bühne (drei swiftshader-Szenen).
 4. **Mehr Karten parallel:** Warten kostet keine Tokens — die Zahl gleichzeitiger Fertigsteller ist durch das Wochenbudget begrenzt, nicht durch die Wand-Zeit.
+
+## ERSTER AUFTRAG der nächsten Woche: der eigene CI-Runner auf dem OMEN (Schöpfer 14.10.: „ja champ … auf dem OMEN am besten“)
+
+- **Zweck:** die GPU-gebundenen Linsen-Gruppen (Echt-Renderer, auf swiftshader 42–292 s je Programm) laufen auf der GTX 1060; CPU-Gruppen bleiben in der Cloud (11 parallele Runner — ein einzelner eigener Runner seriell wäre langsamer). Vorher die Gruppen per CI-Diät (Zweig ci-diaet) nach CPU/GPU trennen und messen.
+- **Messplatz-Schutz:** der Runner nimmt keine Jobs an, solange das GPU-Schloss gehalten wird (ABAB, Ratschen) — sonst fälscht er die Zeiten.
+- **Sicherheit (das Repo MiguellD/AnazhRealm ist ÖFFENTLICH):** der Runner bekommt ein eigenes Label (z. B. `omen-gpu`), Jobs darauf NUR aus `push` auf eigene Zweige, nie aus `pull_request`; Repo-Einstellung Actions → General → „Require approval for all outside collaborators“ — diese Einstellung setzt der Schöpfer selbst oder bestätigt sie ausdrücklich, der Agent ändert sie nicht eigenmächtig. Den Runner aus der offiziellen Quelle (github.com/actions/runner Releases) laden, Datei/Quelle/Größe vor dem Download nennen.
+- **Einrichtung:** die OMEN-Sitzung (Remote Control, koordination auftrag/) — Registrierungs-Token per API mit Admin-Recht (vorhanden).
