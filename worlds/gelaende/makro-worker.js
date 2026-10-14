@@ -119,7 +119,8 @@ const LICHT = (() => {
     });
 })();
 // `schneeAus` (optional, n×n): der Schnee, den das Bild je Land-Zelle malt (0…255) — kein zweiter Rechner neben dem Bild.
-function faerbe(H, n, schritt, L, schneeAus) {
+// `x0`: der Ursprung des Rasters (x und z) — der Schnee des Kerns liest den Ort (K16: die Grenze franst je Ort in Zungen).
+function faerbe(H, n, schritt, x0, L, schneeAus) {
     if (!SCHNEE) throw new Error("die Karte kennt die Schnee-Farbe der Welt nicht (terrain:PORTAL_GROUND.schnee)");
     const wl = L.waterLevel;
     const px = new Uint8ClampedArray(n * n * 4);
@@ -173,7 +174,7 @@ function faerbe(H, n, schritt, L, schneeAus) {
                     c[q] += (FELS[q] - c[q]) * fels;
                     c[q] += (KLIFF[q] - c[q]) * kliff;
                 }
-                const sn = G.schnee(L, h);
+                const sn = G.schnee(L, h, x0 + i * schritt, x0 + j * schritt);
                 for (let q = 0; q < 3; q++) c[q] += (SCHNEE[q] - c[q]) * sn;
                 if (schneeAus) schneeAus[k] = Math.round(255 * sn);
                 const s = 0.3 + 0.95 * licht;
@@ -221,14 +222,14 @@ async function rechne(id, spur, abbild, stufen) {
         const R = RASTER.grob;
         const H = await raster(L, R, id, spur);
         if (!H) return;
-        const px = faerbe(H, R.n, R.schritt, L);
+        const px = faerbe(H, R.n, R.schritt, R.x0, L);
         self.postMessage({ id, stufe: "grob", n: R.n, raster: R, px }, [px.buffer]);
     }
     const R = RASTER.voll;
     const H = await raster(L, R, id, spur);
     if (!H) return;
     const schneeKarte = new Uint8Array(R.n * R.n);
-    const px = faerbe(H, R.n, R.schritt, L, schneeKarte);
+    const px = faerbe(H, R.n, R.schritt, R.x0, L, schneeKarte);
     const statistik = G.messStatistik(H, L);
     const voll = {
         id,

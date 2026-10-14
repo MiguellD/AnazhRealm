@@ -16,7 +16,10 @@
 //   K4  TIER AM HANG: an der Stelle mit dem größten Abstand Gesetz ↔ Karte im Hang (≥ 12°) stehen der Leib (seine Lage) und
 //       die vier Sohlen auf der Boden-Karte (Median |Lage − Karte| und |Sohle − Karte| ≤ 6 cm — seit der Pfoten-IK der
 //       Welle LF finden die Sohlen die Karte selbst, gleich wo der Leib steht: der Leib ist der Zeuge der Sicht); entlang
-//       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe)
+//       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe; der
+//       Täter heißt mit seiner Box, wenn ein Werk den Sprung trägt) — und (K4c, K24-N1) keine FUGE trägt einen Leib: die
+//       Oberkante einer Box, auf der eine Box desselben Werks sitzt (zwei Stamm-Abschnitte), hebt weder die Kapsel noch das
+//       Tier. Vorher stieg das Tier an einer Tanne 0,6 m auf die erste Stamm-Fuge (Treppe 55,1 cm, jede der 2803 Fugen trug)
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
 //       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter — auf TROCKENEM ebenem Grund (das Tier
 //       steht dort; die flachste Stelle war ein Seegrund, der Wolf schwamm 16 cm über ihm, und der Selbsttest las nur die
@@ -39,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
@@ -80,6 +84,11 @@ const BASIS = {
         ],
     ],
     tod: [["creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);", "void 0;"]],
+    // K24-N1: die Auflage von Kapsel und Tier liest die Fuge nicht — die Stamm-Fuge trägt (die Leser vor K24-N1)
+    fuge: [
+        ["box.gedeckt !== true &&", "true &&"],
+        ["if (box.gedeckt === true || !(box.topY >= lo", "if (false || !(box.topY >= lo"],
+    ],
     // K07: der Stand-Leser liest nur die Karte des Eigners — im Rand-Streifen trägt der Träger
     rand: [
         [
@@ -102,6 +111,20 @@ const BASIS = {
 };
 let patch = null;
 let patchFehler = [];
+// Der Patch wirkt auf den virtuellen Stamm (scripts/lib/stamm.cjs) — EINMAL je Patch-Satz; ausgeliefert wird je Stamm-
+// Datei ihr Teil (`liefere`), so trifft jede Zeile die Datei, die sie trägt.
+let gepatcht = { patch: null, text: null };
+function stammGepatcht() {
+    if (gepatcht.patch !== patch) {
+        let txt = stammLib.text(ROOT);
+        for (const [geheilt, basis] of patch) {
+            if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
+            else txt = txt.replace(geheilt, basis);
+        }
+        gepatcht = { patch, text: txt };
+    }
+    return gepatcht.text;
+}
 
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
@@ -110,14 +133,7 @@ const server = http.createServer((req, res) => {
     if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
-        if (patch && p === "/anazhRealm.js") {
-            let txt = data.toString("utf8");
-            for (const [geheilt, basis] of patch) {
-                if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
-                else txt = txt.replace(geheilt, basis);
-            }
-            data = Buffer.from(txt, "utf8");
-        }
+        if (patch && stammLib.istStammUrl(ROOT, p)) data = stammLib.liefere(ROOT, p, stammGepatcht());
         res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
         res.end(data);
     });
@@ -446,19 +462,112 @@ async function proben(mitWiese) {
             const uz = kz / lg;
             let yAlt = null;
             let maxUeber = 0;
+            let traeger = null;
+            // der Täter beim Namen: die Box-Oberkante eines Werks, auf der die Lage nach dem größten Sprung steht (sonst Boden)
+            const traegerBox = (x, z, y) => {
+                for (const e of s.architectures || []) {
+                    const bx = e && e.blockerAABBs;
+                    if (!bx || !e.position || Math.abs(e.position.x - x) > 12 || Math.abs(e.position.z - z) > 12)
+                        continue;
+                    for (let i = 0; i < bx.length; i++) {
+                        const b = bx[i];
+                        if (!(Math.abs(b.topY - y) < 0.005)) continue;
+                        if (x > b.minX - 1.5 && x < b.maxX + 1.5 && z > b.minZ - 1.5 && z < b.maxZ + 1.5)
+                            return `${e.type}#${e.id} Box ${i} Oberkante ${b.topY.toFixed(2)}`;
+                    }
+                }
+                return "Boden";
+            };
             tiere(140, (k) => {
                 const sx = hang.x + ux * (-8 + k * 0.12);
                 const sz = hang.z + uz * (-8 + k * 0.12);
                 const yJetzt = c.position.y;
                 if (yAlt !== null && k > 4) {
                     const erwartet = Math.abs(Math.tan((hang.neig * Math.PI) / 180) * 0.12);
-                    maxUeber = Math.max(maxUeber, Math.abs(yJetzt - yAlt) - erwartet);
+                    const ueber = Math.abs(yJetzt - yAlt) - erwartet;
+                    if (ueber > maxUeber) {
+                        maxUeber = ueber;
+                        traeger = traegerBox(c.position.x, c.position.z, yJetzt);
+                    }
                 }
                 yAlt = yJetzt;
                 c.position.x = sx;
                 c.position.z = sz;
             });
-            o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10 };
+            o.k4b = { treppeCm: Math.round(maxUeber * 1000) / 10, traeger };
+            // ── K4c DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt (sie beginnt höchstens
+            // PLAYER_GROUND_SNAP über ihr, deckt ihre Mitte, und der Rand daneben ist schmaler als der Wand-Radius der Kapsel —
+            // die Fuge zweier Stamm-Abschnitte, zweier Fels-Lagen, Pfosten unter dem Bogen), ist keine Fläche: an ihrem Rand, der
+            // Fuß 0,3 m unter ihr, trägt sie weder die Kapsel des Spielers (`_stepCharacterStructures`) noch die Auflage des
+            // Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit achsparallelen Boxen im Umkreis 60 m um den Start. Befund
+            // (K24-N1): an der Hang-Stelle stieg das Tier auf die erste Stamm-Fuge einer Tanne, 0,6 m je Takt (K4 Treppe 55,1 cm).
+            {
+                const R = A.PLAYER_WALL_RADIUS;
+                const SNAP = A.PLAYER_GROUND_SNAP;
+                let fugen = 0;
+                let traegt = 0;
+                const taeter = [];
+                const saveNah = c.userData._huellenNah;
+                const cp = c.position.clone();
+                for (const e of s.architectures || []) {
+                    const bx = e && e.blockerAABBs;
+                    if (!bx || !e.position || bx.some((b) => b.obb)) continue;
+                    if (Math.hypot(e.position.x - start.x, e.position.z - start.z) > 60) continue;
+                    for (let i = 0; i < bx.length; i++) {
+                        const a = bx[i];
+                        const mx = (a.minX + a.maxX) / 2;
+                        const mz = (a.minZ + a.maxZ) / 2;
+                        const deckel = bx.findIndex(
+                            (b) =>
+                                b !== a &&
+                                b.botY <= a.topY + SNAP &&
+                                b.topY > a.topY &&
+                                mx >= b.minX &&
+                                mx <= b.maxX &&
+                                mz >= b.minZ &&
+                                mz <= b.maxZ &&
+                                b.minX <= a.minX + R &&
+                                b.maxX >= a.maxX - R &&
+                                b.minZ <= a.minZ + R &&
+                                b.maxZ >= a.maxZ - R
+                        );
+                        if (deckel < 0) continue;
+                        fugen++;
+                        // je Leser die Fuge ALLEIN (die Auflage einer Nachbar-Box gleicher Höhe zählt nicht): die Kapsel
+                        // über ihren Chokepoint `_resolveCapsuleVsAABB`, das Tier über `_kreaturAuflage` mit dem Werk aus ihr
+                        const fuss = a.topY - 0.3;
+                        const kapsel = r._resolveCapsuleVsAABB(
+                            a,
+                            { x: a.maxX + 0.1, z: mz },
+                            fuss,
+                            fuss + 1.7,
+                            R,
+                            -Infinity
+                        );
+                        c.position.set(a.maxX - 0.02, fuss, mz);
+                        const nurA = { position: e.position, blockerAABBs: [a], _blockerReach: e._blockerReach };
+                        c.userData._huellenNah = {
+                            x: c.position.x,
+                            z: c.position.z,
+                            t: s.creatureAnimationTime,
+                            liste: [nurA],
+                        };
+                        const tier = r._kreaturAuflage(c, 0);
+                        const wer = [];
+                        if (Math.abs(kapsel - a.topY) < 0.005) wer.push("Kapsel");
+                        if (Math.abs(tier - a.topY) < 0.005) wer.push("Tier");
+                        if (!wer.length) continue;
+                        traegt++;
+                        if (taeter.length < 3)
+                            taeter.push(
+                                `${e.type}#${e.id} Box ${i} unter Box ${deckel} (Oberkante ${a.topY.toFixed(2)}, trägt ${wer.join("+")})`
+                            );
+                    }
+                }
+                c.userData._huellenNah = saveNah;
+                c.position.copy(cp);
+                o.k4c = { fugen, traegt, taeter };
+            }
             // ── K5 TOD-LAGE ── (auf der ebenen Stelle: das Tier stirbt, kippt, liegt — die tiefste Stelle gegen den Boden)
             const ort = eben || hang;
             pm.position.set(ort.x + 6, r._voxelSurfaceY(ort.x + 6, ort.z + 6) + 1.7, ort.z + 6);
@@ -882,7 +991,15 @@ function urteil(o) {
                 `K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`
             );
         if (!o.k4b || !(o.k4b.treppeCm <= 8))
-            f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
+            f.push(
+                `K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus (Träger: ${o.k4b ? o.k4b.traeger : "?"})`
+            );
+        if (!o.k4c || !(o.k4c.fugen >= 20))
+            f.push(`K4 Aufbau: ${o.k4c ? o.k4c.fugen : "?"} Fugen im Umkreis (Soll ≥ 20)`);
+        else if (o.k4c.traegt > 0)
+            f.push(
+                `K4 Fuge: ${o.k4c.traegt} von ${o.k4c.fugen} Fugen tragen einen Leib — Täter ${o.k4c.taeter.join("; ")} (die Auflage _resolveCapsuleVsAABB/_kreaturAuflage liest box.gedeckt nicht)`
+            );
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
             f.push(
@@ -927,6 +1044,7 @@ function zeile(o) {
         `K1 Becken ${v(o.k1.beckenCm)} cm · Sprung ${v(o.k1.sprungBeckenCm)} cm` +
         ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
         ` · K4 Leib−Karte Median ${o.k4 ? v(o.k4.leibMedianCm) : "?"} cm · Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
+        ` · K4 Fuge ${o.k4c ? v(o.k4c.traegt) + "/" + v(o.k4c.fugen) + " tragen" : "?"}` +
         ` · K5 Tod ${o.k5 ? v(o.k5.gegenStandCm) : "?"} cm gegen den Stand (Weg ${o.k5 ? v(o.k5.wegMinCm) + "…" + v(o.k5.wegMaxCm) : "?"})` +
         ` · K6 Leser ${o.k6leser ? v(o.k6leser.fehl) + "/" + v(o.k6leser.n) + " (max " + v(o.k6leser.maxCm) + " cm)" : "?"}` +
         ` · K6 Rand schlechteste Pfote ${o.k6 ? v(o.k6.schlechtCm) : "?"} cm (je Pfote ${o.k6 && o.k6.jePfoteCm ? o.k6.jePfoteCm.join("/") : "?"}) · Leib ${o.k6 ? v(o.k6.leibMedianCm) : "?"} cm` +
@@ -956,6 +1074,7 @@ function zeile(o) {
         const lauf = async (inj) => {
             patch = inj && BASIS[inj] ? BASIS[inj] : null;
             patchFehler = [];
+            gepatcht = { patch: null, text: null }; // je Lauf neu gepatcht (die Fehl-Zeilen zählen je Lauf)
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
@@ -1004,6 +1123,7 @@ function zeile(o) {
                 hoehle: ["K3 Tier in der Höhle"],
                 sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
+                fuge: ["K4 Fuge"],
                 rand: ["K6 Leser im Rand-Streifen", "K6 Sohlen am Chunk-Rand"],
                 wiese: ["K7 Wiese im Rand-Streifen", "K7 Streu im Rand-Streifen"],
             };

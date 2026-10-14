@@ -30,11 +30,12 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 const { WORKER_SCRIPTS } = require("./lib/asset-worker-harness.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FAHRZEUG_FERN_PORT || 4553);
-const STAMM = fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8");
+const STAMM = stammLib.text(ROOT);
 const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
 const MIME = {
     ".html": "text/html",
@@ -199,8 +200,10 @@ function pruefeQuelle(quelle) {
         const pm = { x: 100, y: 5, z: -30 };
         // Der Schätzer fragt die EINE Stufen-Wahl (`_chooseLODForDistance`) mit der Sichthöhe (`_lodTreeVisHeight`,
         // ein Fahrzeug ist kein Baum: 0 = rohe Distanz) — beide aus der Quelle, nie nachgebaut.
+        // Die Stufen-Wahl misst vom Auge der Stufen (`_lodAuge`, K36): der Reiter sitzt im Gefährt, das Ego-Auge mit ihm.
         const stub = {
             state: { playerMesh: { position: pm } },
+            _lodAuge: () => pm,
             _chooseLODForDistance: wahl({ LOD_DISTANCES: D }),
             _lodTreeVisHeight: () => 0,
         };

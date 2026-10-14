@@ -5,7 +5,7 @@
 // Herd · Treppe · Türen · Fenster · Möbel · Anbau/Flügel/Balkon · Kuppel/Portikus/Hof/Arkade/
 // Turm/Zinnen/Veranda/Vorkragung/Pilotis/Terrasse/Rundbau) · die KULTUR-Archetypen (32
 // klickbare Haus-Typen, `kulturParams` = die reine Ableitung) · das Bake-Vokabular der
-// Dorf-Pipeline (bakeHaus/bakeLOD · stapelBau · fragFuer · lod2Koerper · bandFassade ·
+// Dorf-Pipeline (bakeHaus/bakeLOD · stapelBau · fragFuer · lod2Koerper · fensterFern ·
 // mischeGeoms · hofFuer · wandTonAus). Byte-treu aus dem Schöpfer-Werk extrahiert
 // (Zeilen-Slices, Paritäts-Hash-bewiesen) — die Shell UND AnazhRealm lesen DIESE eine
 // Quelle (G2.1), ein Nachbau ist verboten.
@@ -35,7 +35,7 @@
 //   1 ≙ „Chunk Stufe 1 · nah":   fragFuer(B,1) — die System-Hülle (LOD1F: kein Innenleben)
 //       + FENSTER-SCHLAF + INNENDÄMMER-Liner, bakeLOD(0, alles).
 //   2 ≙ „Chunk Stufe 2 · Destillat": Warm-Pfad fragFuer(B,1) für den wandTon (exakt die
-//       LOD-Sonde), dann fragFuer(B,2) — DESTNUR + KULLVOL + lod2Koerper + bandFassade.
+//       LOD-Sonde), dann fragFuer(B,2) — DESTNUR + KULLVOL + lod2Koerper + fensterFern.
 //   „Editor · voll (live)" bleibt Lab-UI (Regler-Editor); „Chunk Stufe 3 · Vogel" bleibt
 //   die DORF-Fernstufe (Siedlungs-Streaming) — sie dockt mit N5.7 settlement an (W-A5b).
 //
@@ -89,10 +89,14 @@
                 // DAS EINE WURF-GESETZ (S3, E1): jede gezeigte Stufe wirft die Stufe 3 — der grundriss-treue Fernkörper,
                 // nurWurf (nie gezeigt, ≤ 96 Dreiecke in EINEM Draw, gate:haus-fern); vorher warf die L0 sich selbst
                 // (31 660–101 716 Dreiecke je Kaskade), die L1 ebenso, die L2 gar nicht (der Schatten sprang bei 26 m weg).
+                // DAS FENSTER JEDER STUFE (K38, 13.10.): der Schlaf der Fenster würfelt in jeder Stufe gleich — die L0 trägt das
+                // schlafende Glas als eigenen Stoff (gotisch 11 → 12); die L2 trägt das Glas der L0 (Stoff + Glas, 2 Befehle), der
+                // Glas-Stil dazu seinen Fern-Körper und sein Metall (volle_moderne: Stoff · Metall · Fern-Glas · Glas, 3 → 4); das
+                // Fern-Fenster kostet 14–16 Dreiecke (Rahmen-Kasten, Scheibe, Kreuz): L2 tris 7000 → 7250 (marokkanisch/1 7224, 31 Fenster).
                 haus: {
-                    0: { tris: 132000, band: 40000, draws: 11, schatten: 3 },
+                    0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
-                    2: { tris: 7000, band: 2000, draws: 3, schatten: 3 },
+                    2: { tris: 7250, band: 2000, draws: 4, schatten: 3 },
                     3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
                     // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel
@@ -876,27 +880,27 @@
     if(backDoor) addCircR(backDoor.cx-0.55,Dp/2-1.05,backDoor.cx+0.55,Dp/2-0.05,0,'hintertür');                                     // Hintertür-Schwung
     return g; }
 
-  function windowSash(w,h,horiz,role){ const sg=grp(); const sw=0.06,t=0.05;
+  function windowSash(w,h,horiz,role,glasRolle){ const sg=grp(); const sw=0.06,t=0.05, gl=glasRolle||'glas';   // gl: das Glas des Fensters — wach oder schlafend (fensterSchlaeft, EIN Würfel für jede Stufe)
     if(horiz){ beam(sg,-w/2+sw/2,0,0,sw,h,t,role); beam(sg,w/2-sw/2,0,0,sw,h,t,role);
       beam(sg,0,h/2-sw/2,0,w,sw,t,role); beam(sg,0,-h/2+sw/2,0,w,sw,t,role);
-      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,'glas');
+      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,gl);
     } else { beam(sg,0,0,-w/2+sw/2,t,h,sw,role); beam(sg,0,0,w/2-sw/2,t,h,sw,role);
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
-      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,'glas'); }
+      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
   function bogenRahmen(g,cx,yS,cz,R,horiz,typ,role){   // BOGEN-GESETZ über jeder Öffnung (rund/spitz/hufeisen) — dieselbe Kurve wie die Arkade, ein Vektor
     const N=10, dp=0.42, deeper=0.14; for(let i=0;i<N;i++){ const t=i/(N-1), a=Math.PI*t; let lat=-R*Math.cos(a), off=R*Math.sin(a);
       if(typ==='spitz'){ off=R*Math.sin(a)+0.62*R*Math.sin(a)*(1-Math.abs(Math.cos(a))); lat=-R*Math.cos(a)*(1-0.16*Math.sin(a)); }
       if(typ==='hufeisen'){ if(t<0.14||t>0.86) lat+=(t<0.5?1:-1)*0.2*R; }
       const rot=a-Math.PI/2, oz=(cz<0?-deeper:deeper), ox=(cx<0?-deeper:deeper); if(horiz) beam(g,cx+lat,yS+off,cz+oz,0.30,0.19,dp,role,[0,0,rot]); else beam(g,cx+ox,yS+off,cz+lat,dp,0.19,0.30,role,[rot,0,0]); } }
-  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
+  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none' && (cy+h/2+0.12+w*0.58)<_cap-0.10)bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
-      const L=grp(); const inner=windowSash(w,h,true,fr); inner.position.x=w/2; L.add(inner);
+      const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
       L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?0.62:-0.62)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
     } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none' && (cy+h/2+0.12+w*0.58)<_cap-0.10)bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
-      const L=grp(); const inner=windowSash(w,h,false,fr); inner.position.z=w/2; L.add(inner);
+      const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
   function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win)return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
     if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
@@ -1572,7 +1576,9 @@
       tuer:(ROUND?null:{x:0,z:-Dp/2,w:doorW,h:doorH,y:baseY, hinten:(backDoor?{x:backDoor.cx,z:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2)}:null)}),   // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE — Position/Maß der Haustür (Front −z, tueren()-Wahrheit) + Hintertür; exportSettlement reicht sie je Slot an den Host (Blocker-Tür-Lücke + Betreten). ROUND-Bauten tragen keine Haustür (tueren() baut dort nichts).
       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
-      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY, masse };
+      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY, masse,
+      rahmen:(function(){ const m=mat('holz'); return (m&&m.__role)||_roleByMat.get(m)||'holz'; })(),   // der Rahmen-Stoff des Stils (das Fern-Fenster liest ihn)
+      raum:(function(){ const m=mat('gefach'); return (m&&m.__role)||_roleByMat.get(m)||'gefach'; })() };   // der Wand-Stoff, den die L0 hinter dem Glas zeigt (der Innenkörper der L1 und des Fern-Fensters liest ihn)
 }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1710,7 +1716,7 @@
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
-      M.glas.userData.__licht=M.glasfern.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
+      M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
       M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
       return M; }
     // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × 2,5 (die Flammen-Wurzel 0,55/0,30/0,08 leuchtet
@@ -1799,7 +1805,7 @@
     //  (KULLVOL/DESTNUR/TURMNUR/MASSNUR/LOD1F) · Rollen-Materialien
     //  (_mmFor/mLay) · der Rollen-Bake (bakeHaus/bakeLOD, Kontakt-AO +
     //  MATERIAL-ILLUSION + WELT-UV) · wandTonAus · stapelBau (Turm-Stapel) ·
-    //  bandFassade · fpVon · lod2Koerper (grundriss-treuer Fernkörper) ·
+    //  fensterFern · fpVon · lod2Koerper (grundriss-treuer Fernkörper) ·
     //  mischeGeoms · hofFuer (Parzelle — Kern-Export für Sonde/Dorf, reist
     //  NICHT in buildInstance, s. Kopf (a)) · fragFuer (die EINE Stufen-Quelle).
     //  LOD1SKIP (Lab Z.1697) bleibt als ruhende Saat in der Shell (0 Leser).
@@ -1930,22 +1936,99 @@
   const g=new THREE.Group(); g.add(gB); g.add(wrapT);
   return {g, H:base, off, topH:top};
 }
+    // DAS FENSTER JEDER STUFE (K38, 13.10.) — die Stufe wechselt die Kosten, nie das Material. Befund (Auge 1310 Nr. 11,
+    // gate:haus-fern G): die L2 (und die L1 der Türme) legte die Fensterreihen als Bänder im Stoff `dunkel` (0x14161a) über
+    // den Fernkörper — kein Glas, keine Glut: tags und nachts schwarze Streifen; an den Fenster-Pixeln Glas-Anteil 0, Glut 0.
+    // Und der Schlaf der Fenster würfelte nur die L1 (in Lauf-Reihenfolge): nah wachten alle, ab 20 m schlief fast die Hälfte.
+    // DER EINE WÜRFEL je Fenster aus Samen und Lage (Wand-Achse, Seite, Lage längs der Wand und Höhe auf 0,25 m): der Bau
+    // jeder Stufe (fensterAt nah und mittel, fensterFern fern) fragt ihn — dasselbe Fenster schläft in jeder Stufe.
+    var FENSTER_SCHLAF = 0.45;
+    function fensterSchlaeft(seed, perp, wand, u, cy) {
+        var h = Math.imul(((seed == null ? 3 : seed) | 0) ^ 0x632be5ab, 0x9e3779b1) ^ (perp === "x" ? 0x68e31da4 : 0x1b56c4e9) ^ (wand < 0 ? 0x2c1b3c6d : 0);
+        h = Math.imul(h ^ Math.round(u * 4), 0x85ebca6b);
+        h ^= h >>> 13;
+        h = Math.imul(h ^ Math.round(cy * 4), 0xc2b2ae35);
+        h ^= h >>> 16;
+        return ((h >>> 0) & 0xffff) / 0x10000 < FENSTER_SCHLAF;
+    }
+    // DER INNENKÖRPER hinter dem Glas (INNENDÄMMER-GESETZ der L1, kalibriert auf die gemessene Voll-Interieur-Leuchtdichte
+    // 176 vs 60 bei 0,34): der Raum × 0,92 — die L1 (der Körper hinter den Laibungen) und die Fern-Stufe (die Fläche hinter
+    // der Scheibe) lesen dieselbe Zahl. DER RAUM ist die Wand von innen: der GEMESSENE Wand-Ton der L1 (`B.wandTon`, Gefach
+    // und Balken, Backstein, Blockholz — gegen den Raum, den der Strahl der L0 durchs Fenster trifft: hollaendisch
+    // 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe
+    // trägt den Wand-Stoff seines Stils (`H.raum`), wie sein Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil
+    // (Farbe gegen die L0 bis 0,34, gate:haus-fern G). Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
+    var INNEN_DAEMMER = 0.92;
+    function _innenFaktor(B, raum) {
+        var pu = _colFor("putz", B.p.col),
+            ra = B.wandTon || _colFor(raum || "putz", B.p.col);
+        return [0, 1, 2].map(function (i) {
+            return (ra[i] * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
+        });
+    }
+    // DAS FERN-FENSTER: je Öffnung des Gesetzbuchs (`H.windows`, jede Art: Stockwerk, Giebel, Anbau) das Fenster der L0 in
+    // ihren Kosten — der RAHMEN als Kasten vor der Wand (`w + 0,2` × `h + 0,2`, RAHMEN_TIEFE: Pfosten und Sturz der L0 stehen
+    // 0,09 vor der Wand, die Bank 0,12; Front und die Seiten längs der Wand, im Rahmen-Stoff des Hauses — ist er kein Stoff, das Metall des
+    // Glas-Stils, trägt der Stoff seinen Ton: kein eigener Befehl), davor die SCHEIBE der L0 (`w − 2·SCHEIBE_RAND`: die Scheibe
+    // liegt im Flügel-Rahmen, windowSash sw 0,06) — der Innenkörper (der Raum × INNEN_DAEMMER) und das Glas (`glas`,
+    // durchsichtig 0,42, glüht nach LICHT_GESETZ.fenster). Ein schlafendes Fenster trägt fern seine Mischung opak im Stoff
+    // (`glasdunkel` deckt 0,92 über dem Raum — der Ton derselbe, ohne den Glas-Befehl). Steht die Dachhaut der L2 vor der
+    // Wand (der Ortgang über dem Giebel, `_hautKappen`), steht das Fenster vor ihr — vorher lagen die Giebel-Fenster der L2
+    // hinter ihr (holzhuette Glut 0). Vor der Scheibe das FENSTERKREUZ der L0 (windowSash: Pfosten und Kämpfer 0,04 m, im
+    // Rahmen-Stoff). Die Fern-Stufe kostet Stoff + Glas, zwei Befehle; 14 bis 16 Dreiecke je Fenster.
+    var RAHMEN_TIEFE = 0.1,
+        SCHEIBE_RAND = 0.06,
+        KREUZ = 0.02;
     // prettier-ignore
-    function bandFassade(H, B, geoms){                                                          // BAND-FASSADEN-GESETZ: Fensterreihen aus SYSTEMDATEN (h.windows) als Bänder
-  if(!H||!H.windows||!H.windows.length) return;
-  const gr={}; H.windows.forEach(o=>{ if(o.kind!=='stockwerk')return;
-    const key=o.perp+'_'+(o.perp==='z'?(o.cz>0?1:0):(o.cx>0?1:0))+'_'+Math.round(o.cy*2);
-    (gr[key]=gr[key]||[]).push(o); });
-  const grp2=new THREE.Group();
-  const mat2=(B.p.stil==='glas')?M.metall:M.dunkel;                                          // Glas-Turm: helle Geschossbänder auf glasfern-Körper — Glas-auf-Glas war unsichtbar
-  for(const k in gr){ const os=gr[k], o0=os[0];
-    if(o0.perp==='z'){ let lo=1e9,hi=-1e9; os.forEach(o=>{lo=Math.min(lo,o.cx-o.w/2);hi=Math.max(hi,o.cx+o.w/2);});
-      const m=new THREE.Mesh(new THREE.BoxGeometry(hi-lo,o0.h,0.1),mat2); m.position.set((lo+hi)/2,o0.cy,o0.cz+(o0.cz>0?0.05:-0.05)); grp2.add(m); }
-    else { let lo=1e9,hi=-1e9; os.forEach(o=>{lo=Math.min(lo,o.cz-o.w/2);hi=Math.max(hi,o.cz+o.w/2);});
-      const m=new THREE.Mesh(new THREE.BoxGeometry(0.1,o0.h,hi-lo),mat2); m.position.set(o0.cx+(o0.cx>0?0.05:-0.05),o0.cy,(lo+hi)/2); grp2.add(m); } }
+    function fensterFern(fen, B, geoms){
+  const liste=fen&&fen.liste; if(!liste||!liste.length) return;
+  const kol=B.p.col, pu=_colFor('putz',kol), rr=fen.rahmen||'holz', rStoff=SEH_DER_ROLLE[rr]==='stoff';
+  const rahmenM=rStoff?M[rr]:M.putz, rahmenF=rStoff?[1,1,1]:_colFor(rr,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
+  const innen=_innenFaktor(B,fen.raum), gd=_colFor('glasdunkel',kol), da=M.glasdunkel.opacity;
+  const schlafF=[0,1,2].map(i=>(da*gd[i]+(1-da)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // die Mischung, als Faktor auf den Putz-Ton
+  const kappen=_hautKappen(B), grp2=new THREE.Group(), eins=[1,1,1];
+  // Flächen aus Ecken, ohne Drehung (kein sin/cos im Bau — die Plattform-Ratsche v6 zählt jede Drift); die Wicklung folgt der Normale
+  const teile=(Qs,mat,f)=>{ const pos=[],nrm=[],col=[],idx=[];
+    for(const [Q,n] of Qs){ const v0=pos.length/3; for(const q of Q){ pos.push(q[0],q[1],q[2]); nrm.push(n[0],n[1],n[2]); col.push(f[0],f[1],f[2]); }
+      const a=Q[0],b=Q[1],c=Q[2], x=(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]), y=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]), z=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+      idx.push(...(x*n[0]+y*n[1]+z*n[2]>0?[v0,v0+1,v0+2,v0,v0+2,v0+3]:[v0,v0+2,v0+1,v0,v0+3,v0+2])); }
+    const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); pg.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3)); pg.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); pg.setIndex(idx);
+    grp2.add(new THREE.Mesh(pg,mat)); };
+  for(const o of liste){ const z=o.perp==='z', s=z?(o.cz<0?-1:1):(o.cx<0?-1:1), u=z?o.cx:o.cz, schlaf=fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
+    const e0=_fernVorn(kappen,o,s), P=(uu,y,d)=>z?[uu,y,e0+s*d]:[e0+s*d,y,uu], aus=z?[0,0,s]:[s,0,0], uR=z?[1,0,0]:[0,0,1];
+    const rw=(o.w+0.2)/2, rh=(o.h+0.2)/2, y0=o.cy-rh, y1=o.cy+rh, d0=-0.02, d1=RAHMEN_TIEFE;   // der Kasten greift 2 cm in die Wand: keine Fuge zum Körper (der liegt 1,5 cm innen)
+    teile([[[P(u-rw,y0,d1),P(u+rw,y0,d1),P(u+rw,y1,d1),P(u-rw,y1,d1)],aus],                // Front und die Seiten längs der Wand (Ober- und Unterseite sieht von der Gasse kein Pixel: 0,4 px bei 30 m)
+      [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
+    const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
+    if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
+    else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
+    const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
+    teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF); }
   const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp2); wrap.updateMatrixWorld(true);
-  bakeLOD(grp2, B.p.col, geoms, 0);
+  bakeLOD(grp2, kol, geoms, 0);
 }
+    // DIE DACHHAUT DER L2 (`_mitHaut`, lod2Koerper): der Keil um die Ziegel-Lage gehoben, der Ortgang über die Giebel verlängert.
+    // prettier-ignore
+    function _mitHaut(x){ if(!x.haut||x.teil.art!=='keil') return x.teil; const t=Object.assign({},x.teil), amX=(t.first==='+z'||t.first==='-z');
+  t.c=[t.c[0],t.c[1]+x.haut.lift,t.c[2]]; t.h=amX?[t.h[0]+x.haut.ende,t.h[1],t.h[2]]:[t.h[0],t.h[1],t.h[2]+x.haut.ende]; return t; }
+    // Ihre senkrechten, achsparallelen Stirnflächen (je Achse und Seite, die Ecken in der Wand-Ebene (u, y)) — wo eine vor der
+    // Wand eines Fensters steht, steht das Fern-Fenster vor ihr (`_fernVorn`).
+    // prettier-ignore
+    function _hautKappen(B){ const aus=[];
+  for(const x of koerperListe(B)){ if(!x.haut||x.teil.art!=='keil') continue; const t=_mitHaut(x);
+    for(const Q of _keilFlaechen(t,false)){ let nx=0,ny=0,nz=0;
+      for(let k=0;k<Q.length;k++){ const a=Q[k], b=Q[(k+1)%Q.length]; nx+=(a[1]-b[1])*(a[2]+b[2]); ny+=(a[2]-b[2])*(a[0]+b[0]); nz+=(a[0]-b[0])*(a[1]+b[1]); }
+      const l=Math.hypot(nx,ny,nz); if(!(l>1e-9)||Math.abs(ny)>0.02*l) continue;
+      const perp=Math.abs(nx)>Math.abs(nz)?'x':'z', i=perp==='x'?0:2, d=Q[0][i]; if(Q.some(q=>Math.abs(q[i]-d)>1e-6)) continue;
+      aus.push({perp, s:d>t.c[i]?1:-1, d, Q:Q.map(q=>[perp==='z'?q[0]:q[2], q[1]])}); } }
+  return aus; }
+    // prettier-ignore
+    function _fernVorn(kappen, o, s){ const z=o.perp==='z', u=z?o.cx:o.cz; let e=z?o.cz:o.cx;
+  const drin=(Q,uu,y)=>{ let w=false; for(let i=0,j=Q.length-1;i<Q.length;j=i++){ const a=Q[i], b=Q[j]; if((a[1]>y)!==(b[1]>y) && uu<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]) w=!w; } return w; };
+  for(const k of kappen) if(k.perp===o.perp&&k.s===s&&s*k.d>s*e&&(drin(k.Q,u-1e-3,o.cy)||drin(k.Q,u+1e-3,o.cy))) e=k.d;   // die Mitte auf der First-Kante zweier Keile: eine Seite trägt sie
+  return e; }
+    // Die Öffnungen eines Stapel-Baus (`stapelBau`: der Aufsatz eines Turms steht um `off` höher) — die Liste des Fern-Fensters.
+    function fensterVon(st){ const a=(st.H&&st.H.windows)||[], rahmen=(st.H&&st.H.rahmen)||'holz', raum=(st.H&&st.H.raum)||'gefach'; if(!st.topH||!st.topH.windows) return {liste:a, rahmen, raum}; return {liste:a.concat(st.topH.windows.map(function(o){ return Object.assign({},o,{cy:o.cy+st.off}); })), rahmen, raum}; }
     // prettier-ignore
     function fpVon(H){ const d=H.dims;                                                          // GRUNDRISS-QUELLE: Hauptkörper + Flügel-Rechtecke (lokal) — speist den silhouetten-treuen Fernkörper
   return [{x0:-d.W/2,x1:d.W/2,z0:-d.D/2,z1:d.D/2,eY:d.eaveY,rY:d.ridgeY}]
@@ -2440,9 +2523,7 @@
     // prettier-ignore
     function lod2Koerper(B, geoms){
   const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group();
-  const mitHaut=(x)=>{ if(!x.haut||x.teil.art!=='keil') return x.teil; const t=Object.assign({},x.teil), amX=(t.first==='+z'||t.first==='-z');   // DIE DACHHAUT (nur sichtbar, die L2): der Keil um die Ziegel-Lage gehoben, der Ortgang über die Giebel
-    t.c=[t.c[0],t.c[1]+x.haut.lift,t.c[2]]; t.h=amX?[t.h[0]+x.haut.ende,t.h[1],t.h[2]]:[t.h[0],t.h[1],t.h[2]+x.haut.ende]; return t; };
-  for(const x of liste){ const G={pos:[],nrm:[],idx:[]}; _teilGitter(mitHaut(x), alle, G, true); if(!G.pos.length) continue;
+  for(const x of liste){ const G={pos:[],nrm:[],idx:[]}; _teilGitter(_mitHaut(x), alle, G, true); if(!G.pos.length) continue;   // DIE DACHHAUT (nur sichtbar, die L2)
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
     if(x.faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=x.faktor[0]; att[i*3+1]=x.faktor[1]; att[i*3+2]=x.faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     grp2.add(new THREE.Mesh(bg, M[x.rolle]||M.putz)); }
@@ -2580,25 +2661,25 @@
   if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
   const geoms={};
   if(stufe===3){ huelleGeoms(koerperListe(B).map(x=>x.teil), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
-  else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); }                               // ferner Turm: der gebakte Körper der Liste, KEIN build
+  else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:null));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
-    if(stufe===1&&!turm){ let wseed=((B.p.seed||3)*2246822519)>>>0; const wr2=()=>{ wseed^=wseed<<13; wseed^=wseed>>>17; wseed^=wseed<<5; wseed>>>=0; return (wseed&0xffff)/0x10000; };
-      st.g.traverse(o=>{ if(o.userData&&o.userData.window){ const schlaf=wr2()<0.45;          // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — je Fenster gewürfelt, im Bake versiegelt
-        if(schlaf) o.traverse(c2=>{ if(c2.isMesh&&c2.material===M.glas) c2.material=M.glasdunkel; }); } });
-      const fpx=(B.fp&&B.fp.length)?B.fp:[{x0:-((B.dims&&B.dims.W)||8)/2,x1:((B.dims&&B.dims.W)||8)/2,z0:-((B.dims&&B.dims.D)||8)/2,z1:((B.dims&&B.dims.D)||8)/2,eY:(B.dims&&B.dims.eaveY)||6}];
-      for(const f2 of fpx){ const lw=f2.x1-f2.x0-0.55, ld=f2.z1-f2.z0-0.55, lh=Math.max(2,(f2.eY||6)-0.25);   // INNENDÄMMER-GESETZ: der Innenkörper ist GEDIMMTER RAUM (putz×0.34), nicht Void-Schwarz — durch Laibungen und Geschoss-Schlitze las sich Schwarz, promoviert wurde es weiß (Michis Sprung); jetzt verschatteter Raum, der Promotions-Wechsel flüstert
-        if(lw>0.7&&ld>0.7){ const lg=new THREE.BoxGeometry(lw,lh,ld), att=new Float32Array(24*3);
-          for(let i2=0;i2<72;i2++) att[i2]=0.92;                                              // KALIBRIERT auf die GEMESSENE Voll-Interieur-Leuchtdichte (176 vs 60 bei 0.34): der Stufen-Sprung an Fenstern fällt von 51.8k Pixeln auf ~0
-          lg.setAttribute('color', new THREE.Float32BufferAttribute(att,3));
-          const li=new THREE.Mesh(lg, M.putz); li.position.set((f2.x0+f2.x1)/2, lh/2+0.05, (f2.z0+f2.z1)/2); st.g.add(li); } } }
     const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(st.g);
     wrap.updateMatrixWorld(true);                                                             // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
-    if(stufe===2||turm){ lod2Koerper(B, geoms); bandFassade(st.H, B, geoms); if(st.topH) bandFassade(st.topH, B, geoms); }
-    st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
-    if(stufe===1&&!turm&&!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY)
-      B.wandTon=wandTonAus(geoms, 2.6, Math.max(3.4,eY)); } }
+    if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
+      if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
+        B.wandTon=wandTonAus(geoms, 2.6, Math.max(3.4,eY)); }
+      const rf=_innenFaktor(B, st.H&&st.H.raum), innen=new THREE.Group();                     // INNENDÄMMER-GESETZ: der Innenkörper ist GEDIMMTER RAUM, nicht Void-Schwarz — durch Laibungen und Geschoss-Schlitze las sich Schwarz, promoviert wurde es weiß (Michis Sprung); jetzt verschatteter Raum, der Promotions-Wechsel flüstert
+      const fpx=(B.fp&&B.fp.length)?B.fp:[{x0:-((B.dims&&B.dims.W)||8)/2,x1:((B.dims&&B.dims.W)||8)/2,z0:-((B.dims&&B.dims.D)||8)/2,z1:((B.dims&&B.dims.D)||8)/2,eY:(B.dims&&B.dims.eaveY)||6}];
+      for(const f2 of fpx){ const lw=f2.x1-f2.x0-0.55, ld=f2.z1-f2.z0-0.55, lh=Math.max(2,(f2.eY||6)-0.25);
+        if(lw>0.7&&ld>0.7){ const lg=new THREE.BoxGeometry(lw,lh,ld), att=new Float32Array(24*3);
+          for(let i2=0;i2<72;i2+=3){ att[i2]=rf[0]; att[i2+1]=rf[1]; att[i2+2]=rf[2]; }       // der Raum × INNEN_DAEMMER (KALIBRIERT auf die GEMESSENE Voll-Interieur-Leuchtdichte, 176 vs 60 bei 0.34: der Stufen-Sprung an Fenstern fällt von 51.8k Pixeln auf ~0)
+          lg.setAttribute('color', new THREE.Float32BufferAttribute(att,3));
+          const li=new THREE.Mesh(lg, M.putz); li.position.set((f2.x0+f2.x1)/2, lh/2+0.05, (f2.z0+f2.z1)/2); innen.add(li); } }
+      wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
+    if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
+    st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -3278,6 +3359,7 @@
             dims: mass.H.dims,
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
+            fenster: fensterVon(mass), // DIE ÖFFNUNGEN (K38): das Fern-Fenster des fernen Turms liest sie
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
             meshes: [],
@@ -5205,7 +5287,8 @@
         bakeLOD: bakeLOD,
         wandTonAus: wandTonAus,
         stapelBau: stapelBau,
-        bandFassade: bandFassade,
+        fensterFern: fensterFern,
+        fensterSchlaeft: fensterSchlaeft,
         fpVon: fpVon,
         lod2Koerper: lod2Koerper,
         // DER FERNKÖRPER (S3): die EINE Hüllen-Form — die Liste, ihr Gitter (Stufe 3), die Massen, der Beipack

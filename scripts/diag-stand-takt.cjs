@@ -35,6 +35,7 @@
 "use strict";
 
 const STAND = require("./lib/stand-linse.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const urteil = (b) => STAND.standUrteil(b);
 
@@ -92,6 +93,7 @@ function selbsttest() {
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
         },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -267,9 +269,8 @@ function selbsttest() {
 // und `_scatterRegionWork` (der Hauptpfad von `_scatterRegion`) beim Namen; jede Form eines Schreibers und jeder ungedeckte
 // Pfad wird gefunden; Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt und Leser bleiben grün.
 function schreiberSelbsttest(fehler) {
-    const fs = require("fs");
     const path = require("path");
-    const stamm = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(path.join(__dirname, ".."));
     const wand = STAND.schreiberWand(stamm);
     const wv = STAND.schreiberUrteil(wand);
     const zahl = Object.entries(wand.schreiber)
@@ -469,7 +470,8 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
-const MESS = { x: -900, z: -850 };
+const { messort } = require("./lib/welt-orte.cjs");
+const MESS = messort("wiese");
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -831,7 +833,7 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     befund.pageErrors = pageErrors;
-    befund.schreiber = STAND.schreiberWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.schreiber = STAND.schreiberWand(stammLib.text(root));
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
         `  ${n.padEnd(8)} ${x.frames} Frames · Σ ${x.summe} Einheiten · ` +

@@ -49,6 +49,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
@@ -618,7 +619,7 @@ const server = http.createServer((req, res) => {
     // (auch der Verdopplungs-Pool) — ein Pool, der erst später ins Bild kommt (das Auto-Dorf während der Inventur), trägt
     // seinen Stempel von Geburt an.
     {
-        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const stamm = stammLib.text(root);
         for (const m of ["_stlZaunEnsurePool", "_stlZaunAddStrip", "_archFundamentEnsure"]) {
             const a = stamm.indexOf(`\n    ${m}(`);
             const e = a < 0 ? -1 : stamm.indexOf("\n    }\n", a);

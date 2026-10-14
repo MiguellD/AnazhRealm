@@ -15,6 +15,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
 const root = path.resolve(__dirname, "..");
@@ -119,6 +120,7 @@ async function driveImpostor(page) {
                 const vor = new Set(r.state.archInstanceGroups ? r.state.archInstanceGroups.keys() : []);
                 const sE = r._scatterInstanceAdd("fscatter:eiche:1:2", 10, 0, 10, 0.3, 1.1, null, "3,4", flat1);
                 const sF = r._scatterInstanceAdd("fscatter:fichte:1:2", 20, 0, 10, 0.7, 0.9, null, "3,4", flat2);
+                // BÜHNE: Eintrag einer Einheits-Probe, kein gesetzter Ort
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...r.state.archInstanceGroups.keys()].filter((k) => !vor.has(k));
@@ -142,6 +144,9 @@ async function driveImpostor(page) {
                     // die Sichthöhe je Slot = Höhe der Höhen-Stufe × Instanz-Skala (dieselbe Zahl wie der aH0-Stempel)
                     sicht: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[3]),
                     erwartetSicht: [l1.sicht * 1.1, l2.sicht * 0.9, l1.sicht * 1.2],
+                    // VOLL je Slot (das Vorzeichen): die Streu-Slots frei, die frisch gesetzte Primär-Stufe hält, bis ihre
+                    // Band-Pflege urteilt (K36, `_lodSlotVoll`)
+                    voll: [false, false, r._lodSlotVoll(entry)],
                     instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
                     vertexPuffer: puffer,
                     attribute: geo ? Object.keys(geo.attributes) : [],
@@ -177,7 +182,10 @@ async function driveImpostor(page) {
                 if ((window.__impostorRttBaked || 0) > out.rttBaked) break;
             }
             out.rttBakedAfter = (typeof window !== "undefined" && window.__impostorRttBaked) || 0;
-            out.rttErrorAfter = (typeof window !== "undefined" && window.__impostorRttError) || null;
+            // der Bruch der Karte steht beim Namen im Log (`_stoffBruch`, K22); hier zählt der Zensus die gescheiterten
+            const cz = r._impostorCensus && r._impostorCensus();
+            out.rttErrorAfter =
+                cz && cz.gescheitert ? `gescheitert ${cz.gescheitert} (${cz.gescheitertArten.join(", ")})` : null;
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -224,7 +232,7 @@ async function kleberProbe(page, fmtWunsch) {
             r.state.foundryCrossfade = prevCf;
             out.billboard = !!(mat && mat.userData && mat.userData.impostorBillboard);
             if (!out.billboard) {
-                out.err = "Impostor-TSL-Wiring fehlgeschlagen: " + (window.__impostorAtlasError || "unbekannt");
+                out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
                 return out;
             }
             // (1) die synthetische Studio-Karte: Albedo linear, links oben opak; Normale zur Kamera
@@ -293,6 +301,7 @@ async function kleberProbe(page, fmtWunsch) {
             szene.add(mesh);
             szene.add(new T.AmbientLight(0xffffff, 3));
             const cam = new T.PerspectiveCamera(60, W / H, 0.5, 500);
+            // BÜHNE: eigene Szene des Impostor-Vergleichs
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);
@@ -458,9 +467,12 @@ function strichWand(src) {
                 errs.push(`A: aKarte.x je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
             const rOk = G.rahmen.every((v, i) => Math.abs(v - G.erwartetRahmen[i]) < 1e-5);
             if (!rOk) errs.push(`A: aKarte.yz je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
-            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv
-            const sOk = G.sicht.every((v, i) => v > 0 && Math.abs(v - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i]));
-            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ${JSON.stringify(G.erwartetSicht)} (Sichthöhe × Skala)`);
+            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv,
+            // VOLL (verdeckt, Brücke, die Stufe im Halt — K36) = negativ
+            const sOk = G.sicht.every(
+                (v, i) => v < 0 === G.voll[i] && Math.abs(Math.abs(v) - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i])
+            );
+            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
     if (A.vereinigung) {
@@ -517,7 +529,7 @@ function strichWand(src) {
 
     console.log("\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ===");
     {
-        const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const quelle = stammLib.text(root);
         const echt = strichWand(quelle);
         console.log(`  echte Quelle: ${echt.length ? echt.join(" · ") : "hält"}`);
         for (const f of echt) errs.push("D: " + f);

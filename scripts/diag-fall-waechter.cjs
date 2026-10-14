@@ -43,6 +43,8 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
@@ -430,7 +432,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${name}" → rot: ${v.join(" · ") || "(nichts)"}`);
     }
     // die Quellen-Wand am Stamm (grün) und an einer Kopie mit dem alten Leser (rot, beim Namen)
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const amStamm = quellenWand(stamm);
     console.log(`  ${amStamm.length ? "❌" : "✅"} Quellen-Wand am Stamm: ${amStamm.join(" · ") || "sauber"}`);
     if (amStamm.length) fehler.push("die Quellen-Wand ist am Stamm rot: " + amStamm.join(" · "));
@@ -719,10 +721,11 @@ async function probe(K) {
         }
         return out;
     };
-    // ── O1 DER WAGEN UNTER DEM ÜBERHANG (Spaltgrund −900,6/−976,1)
+    // ── O1 DER WAGEN UNTER DEM ÜBERHANG
     // Seit K16 (das Flussnetz-Gelände, die Canyon-Maske fiel) liegt dort kein offener Spalt mehr: der Ort ist die nächste
     // Spalte, in die der Wagen passt, mit ≥ 4 m Fels über ≥ 3 m Luft (`spaltenUm`) — gelesen aus der Welt, nie ein Literal.
-    const O1 = { x: -900.6, z: -976.1 };
+    // die Mitte der Suche ist der Messort der Band-Serie (spec/profiband/haushalt.json, `K.mess`), nie ein Ort der alten Welt
+    const O1 = K.mess;
     let O1s;
     const o1 = async (name) => {
         if (O1s === undefined) {
@@ -776,12 +779,18 @@ async function probe(K) {
     // ── O2 DIE SCHAU-FAHRT über die Spaltkante
     {
         const name = "O2 Schau-Fahrt über die Spaltkante";
-        const S = { x: -912, z: -975 };
-        const grund = grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z);
-        const e = await wagen(S.x, S.z, grund, Math.PI / 2);
-        if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
+        // der Start liegt 11,4 m vor der Spalte aus O1 (aus der Welt, `spaltenUm`), die Fahrt quert ihre Kante längs +x
+        if (O1s === undefined) {
+            await einschwingen(O1.x, O1.z);
+            O1s = spaltenUm(O1.x, O1.z, 1, 4, 3)[0] || null;
+        }
+        const S = O1s ? { x: O1s.x - 11.4, z: O1s.z + 1.1 } : null;
+        const grund = S ? grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z) : NaN;
+        const e = S ? await wagen(S.x, S.z, grund, Math.PI / 2) : null;
+        if (!S) proben.push({ name, fehler: `keine Spalte um ${ort(O1.x, O1.z)} (O1) — die Kante fehlt` });
+        else if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
         else {
-            raeumen(-900, -975, 40);
+            raeumen(O1s.x, O1s.z, 40);
             for (let i = 0; i < 12; i++) takt();
             st.playerVel.setValue(10.6, 0, 0);
             if (e._fahr) e._fahr.vlong = 10.6;
@@ -798,7 +807,7 @@ async function probe(K) {
         }
     }
     // ── O3 DIE HÖHLE der Boden-Funktion
-    const O3 = { x: -875.5, z: -1229.4 };
+    const O3 = K.mess; // die Mitte der Suche: der Messort (s. O1)
     await einschwingen(O3.x, O3.z);
     // die Höhle am Ort der Schau: die nächste Spalte mit ≥ 4 m Fels über ≥ 3 m Luft, in die der Leib passt (K16: die Gänge des
     // Flussnetz-Geländes, gelesen aus der Welt) — der Wagen in der nächsten Kammer (`hk`), der Wolf und der Spieler an der
@@ -1201,7 +1210,13 @@ async function probe(K) {
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 180000,
         });
-        befund = await page.evaluate(probe, { FALL_M, DACH_M, spaltenJeOrt: 6, todGier: TOD_GIER });
+        befund = await page.evaluate(probe, {
+            FALL_M,
+            DACH_M,
+            spaltenJeOrt: 6,
+            todGier: TOD_GIER,
+            mess: messort("wiese"),
+        });
     } catch (e) {
         befund = { fehler: (e && e.message) || String(e) };
     }
@@ -1212,7 +1227,7 @@ async function probe(K) {
         process.exit(1);
     }
     befund.pageErrors = pageErrors;
-    befund.quelle = quellenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.quelle = quellenWand(stammLib.text(root));
     const fx = (v) => (Number.isFinite(v) ? v.toFixed(3) : String(v));
     for (const p of befund.proben)
         console.log(

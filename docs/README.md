@@ -15,7 +15,7 @@
 | `docs/taille-spec.md`                           | **NORMATIV** — die gefrorene Taille (Serialisierungs-Norm; Goldens in `spec/golden/v1/`).                                                      |
 | `docs/neues-kleid-verfassung.md`                | **NORMATIV** — die Pipeline-Verfassung (die Gesetze der EINEN Pipe; die Maschine dazu ist `gate:pipeline-constitution`).                       |
 | `docs/das-lebendige-feld.md`                    | **DER WAHRE NORDEN** — die Welt als EIN Feld, das alle lesen · schreiben · WERTEN. Vor Arbeit an Feld/Emotion/Nexus/DSL/Kreaturen ZUERST.      |
-| `docs/das-feld-zeichnet.md`                     | **NORMATIV** — der Render-Bogen des Feldes (der vierte Vers): drei Stufen · der dritte Spiegel (WGSL, Seh-Toleranz) · Warm-Start. Vor Render-/Perf-Bögen ZUERST. |
+| `docs/das-feld-zeichnet.md`                     | **NORMATIV** — der Render-Bogen des Feldes (der vierte Vers): drei Stufen · kein dritter Spiegel (die Ferne liest den Gelände-Kern) · Warm-Start. Vor Render-/Perf-Bögen ZUERST. |
 | `docs/state-of-realm.md`                        | **DIE VISION** — die Pfeiler · die Heilige Lektion · die Stand-vs-Vision-Matrix · das Welten-Ultiversum.                                       |
 | `docs/PFLICHT-OFFEN.md`                         | **DIE FROZEN-LISTE** — die EINE Offen-Wahrheit (max 5, vom Schöpfer gesetzt; `gate:betriebsgesetz` bewacht sie).                                 |
 | `docs/abnahme-analog.md`                        | **DER ANALOG-BEWEIS** — A–E: die Klassen im Code · die Messung (8 Bild-Paare, dc/Dreiecke) · das Urteil · der echte GPU-Trace.                  |

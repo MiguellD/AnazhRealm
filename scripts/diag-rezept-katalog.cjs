@@ -1,7 +1,7 @@
 // diag-rezept-katalog.cjs — W-A1 (DER KATALYSATOR-BOGEN §5): DER REZEPT-KATALOG + DIE
 // GENERISCHEN B4-REGLER + DER OV-ROUNDTRIP + DER DONOR-ABSCHIED + DAS EHRLICHE INTERIM.
 // Headless (Null-Renderer, foundry-ON; Warm-Anker: f.ready → recipes/paramsByKind →
-// !_prefetching, 120-s-Cap). Fuenf Pruef-Familien, jede mit ehrlicher Zahl:
+// !_vorrat, 120-s-Cap). Fuenf Pruef-Familien, jede mit ehrlicher Zahl:
 //   (a) f.paramsByKind traegt gate + vehicle (Arrays mit id/min/max; gate zusaetzlich def —
 //       vehicle-core PARAMS tragen GEMESSEN kein def-Feld, der Startwert kommt dort aus
 //       rec.s[dial]); gate-Laenge == porta-core.PARAMS.length (Node-direkt gelesen).
@@ -81,7 +81,7 @@ function check(name, ok, detail) {
     const out = await page.evaluate(async (portaLen) => {
         const res = { warm: {}, a: {}, b: {}, c: {}, d: {}, e: {} };
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
-        // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_prefetching (120-s-Cap) =====
+        // ===== WARM-ANKER: Boot → f.ready → Buch+paramsByKind → !_vorrat (120-s-Cap) =====
         const dl0 = performance.now() + 120000;
         while (
             (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
@@ -100,14 +100,14 @@ function check(name, ok, detail) {
                 f.recipes.gras &&
                 f.paramsByKind &&
                 f.paramsByKind.gate &&
-                !f._prefetching
+                !f._vorrat
             )
                 break;
             await sleep(120);
         }
         res.warm.ready = !!(f && f.ready);
         res.warm.recipeCount = f && f.recipes ? Object.keys(f.recipes).length : 0;
-        res.warm.prefetching = !!(f && f._prefetching);
+        res.warm.vorrat = (f && f._vorrat) || false; // die Phase des Vorrats (VORRAT_PHASE), false = durch
         if (!f || !f.ready || !f.recipes) return res;
 
         // ===== (a) paramsByKind: gate + vehicle als Regler-DATEN =====
@@ -289,9 +289,9 @@ function check(name, ok, detail) {
     }
     console.log("\n=== WARM-ANKER ===");
     check(
-        "Foundry warm (ready + Buch + !prefetching)",
-        out.warm.ready && out.warm.recipeCount > 0 && !out.warm.prefetching,
-        `ready=${out.warm.ready} recipes=${out.warm.recipeCount} prefetching=${out.warm.prefetching}`
+        "Foundry warm (ready + Buch + Vorrat durch)",
+        out.warm.ready && out.warm.recipeCount > 0 && !out.warm.vorrat,
+        `ready=${out.warm.ready} recipes=${out.warm.recipeCount} vorrat=${out.warm.vorrat || "durch"}`
     );
 
     console.log("\n=== (a) paramsByKind — die B4-Tabellen reisen ===");

@@ -171,7 +171,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 Error.stackTraceLimit = 40;
                 const z = (new Error().stack || "").split("\n").slice(3).map((x) => x.trim().replace(/^at /, "").replace(/ \(.*/, ""));
                 Error.stackTraceLimit = lim;
-                const stamm = z.filter((x) => /AnazhRealm\.|anazhRealm\.js/.test(x)).slice(0, 4);
+                const stamm = z.filter((x) => /AnazhRealm\.|anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(x)).slice(0, 4);
                 // und das OBJEKT, dessen Zeichnung kompiliert (der Haken an renderObject unten): Art · Stoff · Pfad
                 const ob = window.__ccObjekt;
                 let lichter = 0;
@@ -230,7 +230,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             const zeilen = String(new Error().stack || "").split("\n");
             const namen = [];
             for (const l of zeilen) {
-                if (!/anazhRealm\.js/.test(l)) continue;
+                if (!/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(l)) continue;
                 const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
                 namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
             }

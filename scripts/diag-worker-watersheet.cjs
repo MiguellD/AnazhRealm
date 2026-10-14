@@ -105,12 +105,26 @@ const server = http.createServer((req, res) => {
         const px = s.playerMesh.position.x,
             pz = s.playerMesh.position.z;
         const O = window.__wasserOrte({ mess: [px, pz] });
-        if (!O || !O.see) return { err: "kein See in der Welt (`__wasserOrte`)" };
-        const spot = { x: O.see.x, z: O.see.z, L: O.see.level };
+        // DAS NÄCHSTE WASSER (K16): See ODER Fluss, was näher liegt — das Gelände des Kerns füllt keine Mulden mehr (Senken
+        // ≤ 1/km²), der nächste benannte See lag 5 km weit, und der Strom baute dort in der Frist keinen Chunk (0 verglichen)
+        const kand = [];
+        if (O && O.see) kand.push({ x: O.see.x, z: O.see.z, L: O.see.level });
+        if (O && O.fluss) kand.push({ x: O.fluss.x, z: O.fluss.z, L: r._atlasWaterLevelAt(O.fluss.x, O.fluss.z, -Infinity) });
+        const spot = kand
+            .filter((k) => Number.isFinite(k.L))
+            .sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz))[0];
+        if (!spot) return { err: "kein See und kein Fluss in der Welt (`__wasserOrte`)" };
         // Spieler ans Wasser (Body-frei seit V18.331 — nur die Mesh-Position treibt das Streaming).
         s.playerMesh.position.set(spot.x, spot.L + 3, spot.z);
         // Streaming-Pump: der Worker baut die Chunks um den Spieler + liefert waterCells.
-        for (let i = 0; i < 280; i++) {
+        // bis der Ort steht: Chunks um den Spieler mit Wasser-Zellen (Frist 60 s), mindestens 280 Takte
+        const t0 = performance.now();
+        const steht = () => {
+            let n = 0;
+            for (const e of s.voxelChunks.values()) if (e && e.waterCells && e.waterCells.length) n++;
+            return s.voxelChunks.size > 8 && n > 0;
+        };
+        for (let i = 0; i < 280 || (!steht() && performance.now() - t0 < 60000); i++) {
             try {
                 if (typeof r._tickVoxelChunkStreaming === "function") r._tickVoxelChunkStreaming();
                 r._gameLoopTick(performance.now());

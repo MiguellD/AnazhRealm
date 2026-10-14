@@ -1,0 +1,5 @@
+{
+    "quelle": "Stamm-Zerlegung 13.10. (plan section 7): R1 der Kern traegt genau kern_glieder Glieder und faellt nur, R2 keine Stamm-Datei ueber decke_zeilen; gelesen von scripts/diag-atlas.cjs --check",
+    "kern_glieder": 9,
+    "decke_zeilen": 4000
+}

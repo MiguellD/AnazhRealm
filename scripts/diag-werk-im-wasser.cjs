@@ -52,6 +52,12 @@
 //       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Befund am Kopf
 //       e162430b (1800 Takte): 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
 //       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
+//       DER ORT TRÄGT EINEN STAU (K37, 13.10.): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
+//       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
+//       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. Der Damm steht darum
+//       im Tal 26/−120 (seit K16 am Fluss aus der Welt, `befund.orte.fluss`), und D misst das Feld gegen die Zellen:
+//       ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält der Automat Wasser über der Flut, keine Stau-Quelle ohne Raum über ihrem Boden
+//       (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37: gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
@@ -63,6 +69,8 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
     tiefeStamm: 0.05, // m sichtbares Wasser über dem Fuß eines Stamms
@@ -82,7 +90,10 @@ const SCHWELLE = {
     schwimmAnteil: 0.5, // Anteil der Frames nach dem Aussteigen in tiefem Wasser, in denen der Spieler schwimmt
     aussteigTiefMin: 1.35, // m Wasser am Wagen, in dem der Spieler aussteigt (Karte K02: 1,5 m)
     aussteigBoden: 0.3, // m: so weit stehen die Füße nach dem Aussteigen an Land vom Boden (sonst steht er auf dem Wagen)
-    stauMin: 300, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (sonst prüft D nichts)
+    stauMin: 100, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (Kopf K37: 180 im Tal 26/−120)
+    hubMin: 20, // Fluss-Spalten, die das Stau-Feld des Damms über ihre Flut hebt (sonst trägt der Ort keinen Stau)
+    hubFuell: 0.5, // Anteil dieser Spalten, in denen der Automat Wasser über der Flut hält
+    quelleOhneRaum: 0, // Stau-Quellen (src 2), deren Kappe nicht über ihrem Boden liegt
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
     randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
 };
@@ -267,7 +278,20 @@ function urteil(b) {
     // D
     const D = b.damm;
     if (!D || D.fehler) v.push(`D: ${D ? D.fehler : "die Damm-Probe lief nicht"}`);
+    else if (!(D.hub >= S.hubMin))
+        v.push(
+            `D LEER: das Stau-Feld des Damms #${D.id} (${m(D.x)}/${m(D.z)}) hebt ${D.hub} Fluss-Spalten über ihre Flut (Soll ≥ ${S.hubMin}) — der Ort trägt keinen Stau`
+        );
     else {
+        if (!(D.hubNass >= S.hubFuell * D.hub))
+            v.push(
+                `D: das Stau-Feld des Damms #${D.id} hebt ${D.hub} Fluss-Spalten über ihre Flut, der Automat hält Wasser in ${D.hubNass} (Soll ≥ ${Math.ceil(S.hubFuell * D.hub)})`
+            );
+        const ohneRaum = Math.max(D.quelleOhneRaum || 0, D.quelleOhneRaum2 || 0);
+        if (!(ohneRaum <= S.quelleOhneRaum))
+            v.push(
+                `D: ${D.quelleOhneRaum} Stau-Quellen am Damm #${D.id} (nach dem Reload ${D.quelleOhneRaum2}) tragen ihre Kappe nicht über ihrem Boden — eine Spalte, die kein Wasser halten kann, ist Quelle (_ensureWaterCALevel)`
+            );
         const stau = D.w1 - D.w0;
         if (!(stau >= S.stauMin))
             v.push(
@@ -277,11 +301,11 @@ function urteil(b) {
             v.push(
                 `D: der Stausee des Damms #${D.id} (${m(D.x)}/${m(D.z)}) bildet sich nach dem Reload nicht neu — ${D.w2} statt ${D.w1} nasse Punkte nach ${D.takte} Takten (ohne Damm ${D.w0})`
             );
-        if (!(D.abriss >= 1))
-            v.push(
-                `D: der Abbau des Damms #${D.id} nach dem Reload weckt den Wasser-Automaten nicht (${D.abriss} Invalidierungen)`
-            );
     }
+    if (D && !D.fehler && !(D.abriss >= 1))
+        v.push(
+            `D: der Abbau des Damms #${D.id} nach dem Reload weckt den Wasser-Automaten nicht (${D.abriss} Invalidierungen)`
+        );
     // K
     for (const x of b.kern || []) v.push(`K: ${x}`);
     return v;
@@ -1425,6 +1449,9 @@ async function probe(A) {
                         frame();
                     } catch (_e) {}
                 stelle(cx, cz);
+                // der Blick auf DIESEN See (`_blickVorn`: vorn = (sin, cos) der Gier) — die Gier des Birken-Falls zeigte auf
+                // ein anderes Ufer, der Tempel stand 13.10. acht Meter landein und wurde gebaut (E LEER)
+                st.yaw = Math.atan2(A.rand.see[0] - cx, A.rand.see[1] - cz);
                 fall("Tempel im See", "baue tempel hier", 1, "tempel vor dir gebaut", G.wasser);
                 {
                     const vorA = new Set(st.architectures);
@@ -1707,6 +1734,51 @@ async function dammProbe(A) {
         for (let i = -A.R; i <= A.R; i++) for (let j = -A.R; j <= A.R; j++) if (r._nassAt(X + i, Z + j)) n++;
         return n;
     };
+    // Das Stau-Feld des Damms gegen die Zellen (Fenster des Felds): `hub` = Fluss-Spalten, die das Feld über ihre Flut hebt
+    // (der Ort trägt einen Stau), `hubNass` = davon die, in denen der Automat Wasser über der Flut hält, `quelleOhneRaum` =
+    // Stau-Quellen (src 2), deren Kappe nicht über ihrem Boden liegt (eine Quelle, die kein Wasser halten kann).
+    const feld = (X, Z) => {
+        const cl = r
+            ._stauWorkClusters()
+            .find((c) => c.minX < X + 2 && c.maxX > X - 2 && c.minZ < Z + 2 && c.maxZ > Z - 2);
+        const f = cl ? r._ensureStauField(cl) : null;
+        const out = { hub: 0, hubNass: 0, quelleOhneRaum: 0 };
+        if (!f) return out;
+        const cfg = r._voxelChunkConfig(0);
+        const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
+        const { dim, dimY, step } = cfg;
+        const dimSq = dim * dim;
+        const ZS = r.constructor.CELL_STATE;
+        for (let kz = 0; kz < f.h; kz++)
+            for (let ix = 0; ix < f.w; ix++) {
+                const gx = f.gx0 + ix;
+                const gz = f.gz0 + kz;
+                const ccx = Math.floor(gx / dim);
+                const ccz = Math.floor(gz / dim);
+                const key = `${ccx},${ccz}`;
+                const ent = st.voxelChunks.get(key);
+                if (!ent || !ent.waterCells) continue;
+                const c = gx - ccx * dim + (gz - ccz * dim) * dim;
+                let gj = -1;
+                let flutJ = -1;
+                for (let j = dimY - 1; j >= 0 && (gj < 0 || flutJ < 0); j--) {
+                    const z = ent.waterCells[c + j * dimSq];
+                    if (z === ZS.SOLID && gj < 0) gj = j;
+                    else if (z === ZS.WATER && flutJ < 0) flutJ = j;
+                }
+                const src = st.waterSourceCols && st.waterSourceCols.get(key);
+                const cap = st.waterCapJ && st.waterCapJ.get(key);
+                if (src && cap && src[c] === 2 && cap[c] <= gj) out.quelleOhneRaum++;
+                const stauJ = Math.floor((f.fillY[ix + kz * f.w] - oy) / step) - 1;
+                if (flutJ < 0 || stauJ <= flutJ) continue;
+                out.hub++;
+                const lv = st.waterLevelCells && st.waterLevelCells.get(key);
+                let s = 0;
+                if (lv) for (let j = flutJ + 1; j <= stauJ; j++) s += lv[c + j * dimSq];
+                if (s > 0.5) out.hubNass++;
+            }
+        return out;
+    };
     if (A.phase === "bau") {
         const [X, Z] = A.ort;
         await stroemen(X, Z);
@@ -1741,9 +1813,21 @@ async function dammProbe(A) {
         if (!e) return { fehler: "der Damm wurde nicht gebaut" };
         await takte(A.takte);
         const w1 = nass(ort.x, ort.z);
+        const fb = feld(ort.x, ort.z);
         st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
         r.saveState();
-        return { x: ort.x, z: ort.z, breite: ort.breite, id: e.id, w0, w1, takte: A.takte };
+        return {
+            x: ort.x,
+            z: ort.z,
+            breite: ort.breite,
+            id: e.id,
+            w0,
+            w1,
+            takte: A.takte,
+            hub: fb.hub,
+            hubNass: fb.hubNass,
+            quelleOhneRaum: fb.quelleOhneRaum,
+        };
     }
     // "reload": dieselbe Welt, der Damm aus dem Save
     const e = st.architectures.find((a) => a && a.type === "damm");
@@ -1751,6 +1835,7 @@ async function dammProbe(A) {
     await stroemen(A.x, A.z);
     await takte(A.takte);
     const w2 = nass(A.x, A.z);
+    const quelleOhneRaum2 = feld(A.x, A.z).quelleOhneRaum;
     const inv = { n: 0 };
     const invAlt = r._invalidateWaterCapsAround;
     r._invalidateWaterCapsAround = function () {
@@ -1762,7 +1847,7 @@ async function dammProbe(A) {
     } finally {
         r._invalidateWaterCapsAround = invAlt;
     }
-    return { w2, abriss: inv.n };
+    return { w2, abriss: inv.n, quelleOhneRaum2 };
 }
 
 function selbsttest() {
@@ -1798,7 +1883,21 @@ function selbsttest() {
                 ueberSpiegel: -0.94,
             },
         },
-        damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+        damm: {
+            id: 425,
+            x: 26,
+            z: -120,
+            w0: 2070,
+            w1: 2250,
+            w2: 2247,
+            abriss: 1,
+            takte: 1200,
+            hub: 51,
+            hubNass: 48,
+            quelleOhneRaum: 0,
+            quelleOhneRaum2: 0,
+        },
         setzen: {
             faelle: [
                 {
@@ -1874,6 +1973,7 @@ function selbsttest() {
         [
             "Z Haus aus dem Satz im Wasser",
             (b) =>
+                // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
                 b.zensus.imWasser.push({
                     typ: "haus_alemannisch",
                     id: 4,
@@ -1941,15 +2041,31 @@ function selbsttest() {
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
             "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
-            (b) => (b.damm.w2 = 1557),
-            /D: der Stausee des Damms #504 .* bildet sich nach dem Reload nicht neu — 1557 statt 3574/,
+            (b) => (b.damm.w2 = 2070),
+            /D: der Stausee des Damms #425 .* bildet sich nach dem Reload nicht neu — 2070 statt 2250/,
         ],
         [
             "D Abbau weckt nicht",
             (b) => (b.damm.abriss = 0),
-            /D: der Abbau des Damms #504 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
+            /D: der Abbau des Damms #425 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
         ],
-        ["D leer", (b) => (b.damm.w1 = 1600), /D LEER/],
+        ["D leer", (b) => (b.damm.w1 = 2100), /D LEER: der Damm staute 30 /],
+        [
+            "D Ort ohne Stau (die Furt −937/−1064 am Kopf a0d6a81b: die 1 715 Punkte der Basis waren die Deck-Zeile)",
+            // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
+            (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0, hubNass: 0 }),
+            /D LEER: das Stau-Feld des Damms #425 \(-937\.00\/-1064\.00\) hebt 0 Fluss-Spalten .*der Ort trägt keinen Stau/,
+        ],
+        [
+            "D Automat füllt das Feld nicht",
+            (b) => (b.damm.hubNass = 12),
+            /D: das Stau-Feld des Damms #425 hebt 51 Fluss-Spalten über ihre Flut, der Automat hält Wasser in 12 \(Soll ≥ 26\)/,
+        ],
+        [
+            "D Quelle ohne Raum (der Befund am Kopf a0d6a81b)",
+            (b) => Object.assign(b.damm, { quelleOhneRaum: 21, quelleOhneRaum2: 21 }),
+            /D: 21 Stau-Quellen am Damm #425 \(nach dem Reload 21\) tragen ihre Kappe nicht über ihrem Boden/,
+        ],
         [
             "R Fehl-Wecker am Seerand (der Befund am Kopf f5b331ae)",
             (b) => ((b.rand.invalidierungen = 3), (b.rand.ca = 6), (b.rand.nass1 = 2637), (b.rand.bild1 = 685)),
@@ -2013,7 +2129,7 @@ function selbsttest() {
         if (!t) ok = false;
     }
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm
-    const src = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const src = stammLib.text(path.join(__dirname, ".."));
     const echt = leserUrteil(src);
     const gifte = [
         [
@@ -2356,7 +2472,7 @@ function argListe(name) {
 async function lauf() {
     const puppeteer = require("puppeteer");
     const http = require("http");
-    const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     const PORT = Number(process.env.WERK_WASSER_PORT || 4643);
     const root = path.resolve(__dirname, "..");
     const mime = {
@@ -2369,7 +2485,7 @@ async function lauf() {
         ".woff2": "font/woff2",
     };
     const befund = {};
-    befund.leser = leserUrteil(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.leser = leserUrteil(stammLib.text(root));
     require(path.join(root, "vehicle-core.js"));
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = http.createServer((req, res) => {
@@ -2384,7 +2500,8 @@ async function lauf() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const seitenFehler = [];
     let exit = 2;
     try {
@@ -2396,7 +2513,12 @@ async function lauf() {
         });
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
         // die Orte aus der Welt (K16): Fluss, Ufer, See, Seeufer, Rampe nächst der Mess-Wiese
-        const ORTE = await page.evaluate(weltOrte, { mess: [-900, -850], R: 1500, rampeStufe: 0.25, ansaugTief: 1.3 });
+        const ORTE = await page.evaluate(weltOrte, {
+            mess: ((m) => [m.x, m.z])(messort("wiese")),
+            R: 1500,
+            rampeStufe: 0.25,
+            ansaugTief: 1.3,
+        });
         befund.orte = ORTE;
         console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
         if (!ORTE.fluss || !ORTE.see)
@@ -2452,10 +2574,12 @@ async function lauf() {
                     timeout: 120000,
                 });
                 const D = { takte: 1200, R: 40 };
-                const bau = await p2.evaluate(
-                    dammProbe,
-                    Object.assign({ phase: "bau", ort: [befund.orte.fluss.x, befund.orte.fluss.z] }, D)
-                );
+                // der Ort: der Fluss aus der Welt (K16, `befund.orte.fluss`), dessen Ufer der Damm fasst (`--damm x,z` fragt
+                // einen anderen; s. Kopf D)
+                const dammOrt = argListe("--damm")
+                    ? argListe("--damm").map(Number)
+                    : [befund.orte.fluss.x, befund.orte.fluss.z];
+                const bau = await p2.evaluate(dammProbe, Object.assign({ phase: "bau", ort: dammOrt }, D));
                 if (bau.fehler) befund.damm = bau;
                 else {
                     await p2.reload({ waitUntil: "domcontentloaded", timeout: 120000 });

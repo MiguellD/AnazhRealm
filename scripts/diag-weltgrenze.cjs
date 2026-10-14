@@ -45,6 +45,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
@@ -224,6 +225,7 @@ function seitenPruefer() {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
                 // das Altfeld eines Spielstands von vor K16 (der Ein-Massiv-Anker fiel) — es reist nie in Welt B
                 macro: { herkunft: T },
+                // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
                 voxelEdits: [{ x: 12345, y: 10, z: 12345, r: 2, strength: 48, mode: "carve", herkunft: T }],
                 settlementCells: { [T]: { seed: 7, nH: 3, x: 12345, z: 12345 }, start: { herkunft: T } },
                 genesisPortalRing: T,
@@ -253,6 +255,7 @@ function seitenPruefer() {
             const z = pm ? pm.position.z + 6 : 6;
             // DIE LICHT-GEDÄCHTNISSE (K11) über ihre echten Schreiber: die Laterne eines Plans (`_laternenLesen`, Marke im
             // Schlüssel), das wache Tor (`_tickPortalLicht`) und der Licht-Pool, der es hält (`_leuchtTakt`)
+            // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
             r._laternenLesen({ laternen: [{ x: 0, z: 0 }] }, { x: 12345, z: 12345 }, T);
             r._tickPortalLicht({
                 entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },
@@ -351,7 +354,7 @@ async function bereit(page, weltId) {
 // EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel `_weltWechselNeuLaden`. Jeder andere Ort fällt
 // beim Namen seiner Methode.
 function absenz() {
-    const zeilen = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8").split("\n");
+    const zeilen = stammLib.text(root).split("\n");
     const methodeAn = (i) => {
         for (let j = i; j >= 0; j--) {
             const m = /^ {4}(?:static |async )*([A-Za-z_$][\w$]*)\(.*\)\s*\{\s*$/.exec(zeilen[j]);
@@ -364,7 +367,7 @@ function absenz() {
         zeilen.forEach((z, i) => {
             if (!re.test(z) || /^\s*\/\//.test(z)) return;
             const m = methodeAn(i);
-            if (!erlaubt.includes(m)) out.push(`${was}: ${m} (anazhRealm.js:${i + 1})`);
+            if (!erlaubt.includes(m)) out.push(`${was}: ${m} (${stammLib.ort(root, i + 1)})`);
         });
     pruefe(
         /localStorage\.setItem\(this\.worldStorageKey\(/,

@@ -1,3 +1,4 @@
+const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 // wasser-linse.cjs — DIE WASSER-LINSE der Leben-Prüfung (Welle L, Klassen Q6 + Q7): drei Proben, die den Defekt beim
 // NAMEN nennen und den Chokepoint selbst rufen (nie einen Stub). Befund 06.10. (sichtbares Fenster, echte Radeon,
 // artifacts/profiband/leben/befund-wasser-fluss.md): der Fluss steigt bergauf (14,3 % der 2-m-Schritte), wölbt sich
@@ -17,7 +18,7 @@
 //   window.__wasserRegen(o)          Q7-Regen: der Sturm-Regen der Welt allein auf Schwarz — Schlieren und Neigung
 //
 // Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL; Gate: scripts/diag-wasser-leben.cjs.
-"use strict";
+("use strict");
 
 // ── Q7-Gestalt ──
 function wasserFluss() {
@@ -521,7 +522,7 @@ function wasserKoerper(opts) {
 function __wasserKroneVon(r, p) {
     const A = r.constructor;
     const HC = A.HYDROSPHERE;
-    const w = p.width || HC.widthMin;
+    const w = p.width;
     const D = typeof A._flussTiefe === "function" ? A._flussTiefe(p) : HC.carveBedMin + HC.carveBedK * w;
     if (!Number.isFinite(HC.bankNeigung)) throw new Error("HYDROSPHERE.bankNeigung fehlt (das Gesetz der Bank)");
     return w * 0.5 + D / HC.bankNeigung;
@@ -892,18 +893,32 @@ function wasserBild(opts) {
         // und verschluckte jede Strähne): Licht des Orts 1 (Schaum 0,93 · Deckung 0,7 bleibt unter 1), kein Sonnen-Glanz.
         // Der Spiel-Loop ruht während der Probe (Lehre 17): zwischen den beiden Uhren schrieb der Tag-Nacht-Takt Licht
         // und Himmel neu (06.10.: die Stromschnelle bei Uhr 3600 2,5× heller als bei 60 — das Licht, nicht das Wasser).
-        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum
-        // über JEDEM Wasser, ohne Ort und ohne Gesetz-Grund; die Stimmung driftet mit der Boot-Zeit (lokal 0,06, in der CI
-        // ≈ 0,17: 5,4 % des ruhigen Flusses über der Hell-Schwelle). B1 misst den Schaum des Gesetzes, nicht die Laune.
+        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum des
+        // Gesetzes bis auf das Doppelte (bis K16 legte er + 0,25 · uEmotion über JEDES Wasser); die Stimmung driftet mit der
+        // Boot-Zeit (lokal 0,06, in der CI ≈ 0,17). B1 misst den Schaum des Gesetzes, nicht die Laune.
         renderer.setAnimationLoop(null);
+        // DER HIMMEL DER PROBE FEST (K40, Lehre 17): das Wasser spiegelt die Himmels-Umgebung der Tageszeit — der Boot
+        // dauert je Adapter verschieden lang, also spiegelte jeder Adapter eine andere Stunde (ruhiger Fluss hell auf
+        // swiftshader 6,7 %, auf dem Radeon 0,9 % bei bit-gleichem Rauschen). Die Probe spiegelt den Mittag.
+        const tagAlt = st.timeOfDay;
+        const weltTagAlt = st.world ? st.world.timeOfDay : undefined;
+        const himmelMittag = (zeit, welt) => {
+            st.timeOfDay = zeit;
+            if (st.world && welt !== undefined) st.world.timeOfDay = welt;
+            if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+            if (typeof r._ensureSkyEnvironment === "function") r._ensureSkyEnvironment(true);
+        };
+        himmelMittag(0.5, 0.5);
+        // Das Gefühl der Welt ruht (uEmotion hebt den Schaum, der Takt schreibt es aus dem Feld): je nach Boot-Dauer
+        // trug die Probe ein anderes Gefühl — zwei Zustände (ruhig hell 0,9 % oder 6,7 %), je Lauf, nie je Adapter.
+        const gefuehlAlt = U.emotion ? U.emotion.value : null;
+        if (U.emotion) U.emotion.value = 0;
         const irrAlt = U.irr.value.clone();
         const lichtAlt = U.light.value;
-        const stimmungAlt = U.emotion.value;
         const mess = async (zeit) => {
             U.time.value = zeit;
             U.irr.value.setRGB(1, 1, 1);
             U.light.value = 0;
-            U.emotion.value = 0;
             const px = await lese();
             const L = new Float32Array(W * H);
             for (let p = 0; p < W * H; p++) L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
@@ -966,7 +981,8 @@ function wasserBild(opts) {
             U.time.value = zeitAlt;
             U.irr.value.copy(irrAlt);
             U.light.value = lichtAlt;
-            U.emotion.value = stimmungAlt;
+            himmelMittag(tagAlt, weltTagAlt);
+            if (U.emotion) U.emotion.value = gefuehlAlt;
             geom.dispose();
             maskMat.dispose();
             rt.dispose();
@@ -1706,7 +1722,7 @@ function wasserQuelle(opts) {
     const qBett = Number.isFinite(HC.quellBett) ? HC.quellBett : 1.2;
     const G = Number.isFinite(HC.quellWeitung) ? HC.quellWeitung : 0.25;
     const huelleVon = (h) => {
-        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : HC.widthMin;
+        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : globalThis.__gelaendeCore.FLUSS_BREITE.min;
         const dRel = HC.carveBedMin / bett + HC.carveBedK;
         const huelle = (s) => {
             const w = qBett + G * Math.max(0, s);
@@ -1983,6 +1999,9 @@ function wasserQuelle(opts) {
 // dem gezeichneten Boden, `__wasserSichtNetz`): die Breiten-Summen des Körper-Wassers, des gezeichneten, des Unsichtbaren
 // (der Körper liest Wasser, das niemand sieht) und der Phantome (gezeichnetes Wasser, in dem der Körper trocken steht). Dazu
 // die Pflanzen am Lauf (`__wasserFlora`, ±6 m um die Mittellinie).
+// die Länge der Bach-Probe (m auf der Bahn ab der Quelle; F8 urteilt ab 80 Querschnitten zu 2 m) — die Seite erhält sie mit
+// `WASSER_INSTALL`
+const BACH_PROBE_M = 200;
 function wasserBach(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
@@ -2006,7 +2025,11 @@ function wasserBach(opts) {
     if (!rv || bd > 40) return { fehler: `kein Fluss an ${ZX}/${ZZ} (nächster Punkt ${R(bd)} m)` };
     const P = rv.points;
     const sicht = window.__wasserSichtNetz();
-    const segmente = Math.min(o.segmente || 10, P.length - 1);
+    // DIE ERSTEN `BACH_PROBE_M` METER des Bachs, nie eine Zahl seiner Punkte: die Abtastung der Bahn ist Sache des Gesetzes
+    // (K16: der Mäander tastet nach seinen Knicken ab, zehn Stücke trugen 13.10. nur noch 140 m, F8 fiel LEER)
+    let segmente = 0;
+    for (let lang = 0; segmente < P.length - 1 && lang < BACH_PROBE_M; segmente++)
+        lang += Math.hypot(P[segmente + 1].x - P[segmente].x, P[segmente + 1].z - P[segmente].z);
     const aus = {
         quelle: [R(P[0].x, 0), R(P[0].z, 0)],
         segmente,
@@ -2241,7 +2264,7 @@ function wasserBank(opts) {
     const raster = new Map();
     for (const [a, b] of punkte) {
         const sp = spiegelVon(a);
-        const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
+        const hw = Math.max(1, a.width * 0.5);
         const L = Math.hypot(b.x - a.x, b.z - a.z);
         for (let t = 0; t <= L; t += 0.5) {
             const x = a.x + ((b.x - a.x) * t) / (L || 1),
@@ -2452,7 +2475,9 @@ function wasserOrte(opts) {
     const r = window.anazhRealm;
     const st = r.state;
     const G = window.__gelaendeCore;
-    const [MX, MZ] = o.mess || [-900, -850];
+    const mitte = o.mess || window.__messWiese; // der Messort aus spec/profiband/haushalt.json (welt-orte.cjs)
+    if (!mitte) throw new Error("__wasserOrte: keine Mitte (weder opts.mess noch __messWiese)");
+    const [MX, MZ] = mitte;
     const wl = st.waterLevel || 0;
     const R1 = (v) => Math.round(v * 10) / 10;
     const tiefe = (x, z) => {
@@ -2520,7 +2545,10 @@ function wasserOrte(opts) {
                 const d = Math.hypot(p.x - MX, p.z - MZ);
                 if (d < fd) ((fd = d), (aus.fluss = { x: R1(p.x), z: R1(p.z), breite: R1(p.width) }));
             }
-            if (P.length >= 11) {
+            let lang = 0;
+            for (let k = 1; k < P.length && lang < BACH_PROBE_M; k++)
+                lang += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+            if (lang >= BACH_PROBE_M) {
                 const d = Math.hypot(P[0].x - MX, P[0].z - MZ);
                 if (d < bd) ((bd = d), (aus.bach = { x: R1(P[0].x), z: R1(P[0].z) }));
             }
@@ -2622,6 +2650,8 @@ function wasserOrte(opts) {
 
 module.exports = {
     WASSER_INSTALL:
+        WELT_ORTE_INSTALL +
+        `var BACH_PROBE_M = ${BACH_PROBE_M};` +
         `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +

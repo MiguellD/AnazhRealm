@@ -810,7 +810,8 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.SICHT_ARBEIT_PORT) || 4506;
-const MESS = { x: -900, z: -850 };
+const { messort } = require("./lib/welt-orte.cjs");
+const MESS = messort("wiese");
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",

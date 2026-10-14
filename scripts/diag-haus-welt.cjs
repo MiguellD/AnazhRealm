@@ -42,6 +42,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.HAUS_WELT_PORT || 4486);
 const ROOT = path.resolve(__dirname, "..");
@@ -72,7 +73,12 @@ const BASIS = {
         // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit); seit Schau-2
         // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss
         ["const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "const g = false;"],
-        ["if (entry) this._grundrissRaeumen(entry);", ""],
+        // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
+        ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
+        [
+            "if (entry.position && this.state.architectures && this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
+            "",
+        ],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
     streu: [["this._streuZelleRaeumen(cell);", "void 0;"]],
@@ -146,6 +152,8 @@ const BASIS = {
 let patch = null;
 let patchFehler = [];
 let patchAngewandt = new Set();
+const patchZiel = (z) =>
+    z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
@@ -154,11 +162,10 @@ const server = http.createServer((req, res) => {
     if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
-        // eine Patch-Zeile [geheilt, basis] gilt anazhRealm.js, [datei, geheilt, basis] der genannten Datei (das Gesetzbuch
-        // reist über den Foundry-Worker: /fachwerk-core.js)
-        const meine = patch
-            ? patch.map((z) => (z.length === 3 ? z : ["/anazhRealm.js", z[0], z[1]])).filter((z) => z[0] === p)
-            : [];
+        // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs
+        // `dateiMit`; trägt sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der
+        // genannten Datei (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
+        const meine = patch ? patch.map(patchZiel).filter((z) => z[0] === p) : [];
         if (meine.length) {
             let txt = data.toString("utf8");
             for (const [, geheilt, basis] of meine) {
@@ -1434,7 +1441,7 @@ function zeile(o) {
             const o = await page.evaluate(proben, phasen || null);
             await kontext.close();
             for (const z of patch || []) {
-                const [d, g] = z.length === 3 ? z : ["/anazhRealm.js", z[0]];
+                const [d, g] = patchZiel(z);
                 if (!patchAngewandt.has(d + "|" + g)) patchFehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
             }
             patch = null;
