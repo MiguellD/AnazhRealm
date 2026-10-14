@@ -93,7 +93,11 @@ class AnazhRealm_Z20b {
     // während der Bäcker den Abgelaufenen noch buk (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
     // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
     _foundryFrist(f, reqId, dauerMs, beiAblauf) {
-        const nr = (id) => Number(String(id).replace(/^\D+/, ""));
+        // die Nummer steht am Ende (die Bahn eines Werk-Helfers trägt ihren Faden davor, `_foundryPumpe`)
+        const nr = (id) => {
+            const m = /(\d+)$/.exec(String(id));
+            return m ? Number(m[1]) : NaN;
+        };
         const meine = nr(reqId);
         const bahn = this._foundryBahn(reqId);
         let start = null;
@@ -197,24 +201,45 @@ class AnazhRealm_Z20b {
         return dx * dx + dz * dz;
     }
     // Die BAHN eines Auftrags (Präfix der Request-Nummer bzw. Nachrichten-Art): die Karte geht in den Bäcker-Faden
-    // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk.
+    // (`_foundryBaecker`), alles andere — Körper, Vorrat, Siedlung — ins Werk. Ein Werk-Helfer (`_foundryHelfer`) trägt
+    // seinen Faden in der Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>".
     _foundryBahn(reqIdOderMsg) {
-        if (typeof reqIdOderMsg === "string") return reqIdOderMsg.startsWith("imp") ? "baecker" : "werk";
+        if (typeof reqIdOderMsg === "string") {
+            if (reqIdOderMsg.startsWith("imp")) return "baecker";
+            const h = /w(\d+)_\d+$/.exec(reqIdOderMsg);
+            return h ? "werk" + h[1] : "werk";
+        }
         return reqIdOderMsg && reqIdOderMsg.type === "bake-impostor" ? "baecker" : "werk";
     }
-    // Die Pumpe speist ZWEI Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
+    // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
     // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Der Bäcker wird beim
-    // ersten Karten-Auftrag geboren; bis er bereit ist, wartet die Karte, die Geometrie fließt.
+    // ersten Karten-Auftrag geboren; bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
+    // die Werk-Bahn mit den meisten freien Plätzen (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen
+    // das Werk).
     _foundryPumpe(f) {
         const q = f && f.warte;
         if (!q || !f.worker) return;
         let werkFrei = 0,
-            baeckerFrei = 0;
+            baeckerFrei = 0,
+            werkZiel = null;
+        const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
+        for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
         const plaetze = () => {
-            let b = 0;
-            for (const k of f.pending.keys()) if (this._foundryBahn(k) === "baecker") b++;
-            werkFrei = AnazhRealm.FOUNDRY_IM_FLUG - (f.pending.size - b);
-            baeckerFrei = f.baecker && f.baeckerBereit ? AnazhRealm.FOUNDRY_IM_FLUG - b : 0;
+            const im = new Map();
+            for (const k of f.pending.keys()) {
+                const b = this._foundryBahn(k);
+                im.set(b, (im.get(b) || 0) + 1);
+            }
+            werkFrei = 0;
+            werkZiel = null;
+            for (const w of werke) {
+                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
+                if (fr > werkFrei) {
+                    werkFrei = fr;
+                    werkZiel = w;
+                }
+            }
+            baeckerFrei = f.baecker && f.baeckerBereit ? AnazhRealm.FOUNDRY_IM_FLUG - (im.get("baecker") || 0) : 0;
         };
         const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
         for (plaetze(); q.length; plaetze()) {
@@ -240,8 +265,9 @@ class AnazhRealm_Z20b {
                 }
             }
             const a = q.splice(i, 1)[0];
-            const reqId = a.praefix + f.reqSeq++;
-            const ziel = this._foundryBahn(a.msg) === "baecker" ? f.baecker : f.worker;
+            const imBaecker = this._foundryBahn(a.msg) === "baecker";
+            const reqId = a.praefix + (!imBaecker && werkZiel.k ? "w" + werkZiel.k + "_" : "") + f.reqSeq++;
+            const ziel = imBaecker ? f.baecker : werkZiel.ziel;
             f.pending.set(reqId, a.resolve);
             try {
                 ziel.postMessage(Object.assign({ reqId }, a.msg));

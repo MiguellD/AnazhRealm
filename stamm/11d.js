@@ -1309,10 +1309,19 @@ class AnazhRealm_Z11d {
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
         // Frame → kleinerer Spike. `?? 4/6` = sicherer Default (alte Welten/Tests).
-        const FRAME_BUDGET_MS = Number.isFinite(this.state._voxelStreamBudgetMs) ? this.state._voxelStreamBudgetMs : 4;
-        const MAX_PER_FRAME = Number.isFinite(this.state._voxelStreamMaxPerFrame)
-            ? this.state._voxelStreamMaxPerFrame
-            : 6;
+        // Im Lade-Takt (`_ladeTakt`) trägt der Strom das Budget des Lade-Frames, ohne Stück-Deckel: der Boden des ersten
+        // Weltbilds (RING_EXIST_FLOOR) wuchs sonst mit einem Chunk je Lade-Frame.
+        const lade = this._ladeTakt();
+        const FRAME_BUDGET_MS = lade
+            ? AnazhRealm.LADE_TAKT_MS
+            : Number.isFinite(this.state._voxelStreamBudgetMs)
+              ? this.state._voxelStreamBudgetMs
+              : 4;
+        const MAX_PER_FRAME = lade
+            ? Infinity
+            : Number.isFinite(this.state._voxelStreamMaxPerFrame)
+              ? this.state._voxelStreamMaxPerFrame
+              : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen nur Spieler-Zelle und Chunk-Menge. Nachwuchs läuft weiter.
         if (this._standRuht("strom", 1, pcx + "," + pcz, "boden")) {

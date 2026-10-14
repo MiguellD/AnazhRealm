@@ -920,7 +920,8 @@ class AnazhRealm_Z11c {
     // Per-Frame-Tick: baut ≤maxPerFrame Gras-Chunks, NAHE zuerst; ferne (Ring
     // > 2, der V16.1-Gras-Ring) aus der Queue werfen. maxPerFrame=1 (Default),
     // weil EIN Gras-Build ~34 ms kostet — nie zwei in einem Frame.
-    _tickPendingGrass(maxPerFrame = 1) {
+    // `frist` (optional, der Lade-Takt): baut, solange die Frist offen ist — mindestens einen.
+    _tickPendingGrass(maxPerFrame = 1, frist) {
         const queue = this.state.pendingGrass;
         if (!queue || queue.size === 0) return 0;
         const lpc = this.state.lastPlayerVoxelChunk;
@@ -941,6 +942,7 @@ class AnazhRealm_Z11c {
         let built = 0;
         for (const key of keys) {
             if (built >= maxPerFrame) break;
+            if (built > 0 && Number.isFinite(frist) && performance.now() > frist) break;
             queue.delete(key);
             if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
             if (this.state.voxelChunkGrass && this.state.voxelChunkGrass.has(key)) continue;

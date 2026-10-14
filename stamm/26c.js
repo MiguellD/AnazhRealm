@@ -1175,6 +1175,9 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
+// Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
+// (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
+AnazhRealm.LADE_TAKT_MS = 100;
 // V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
 // die EINE Obergrenze des Spiel-Takts, an der Wurzel in startEternalLoop: ein 2-s-Hitch akkumuliert nicht
 // 120 Steps, eine 10-s-Pause trägt kein Tier 40 m weit (jede Bewegung liest den gedeckelten Takt, nie die
@@ -1298,6 +1301,8 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
+// Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
+AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;
 // Wie lange ein abgelaufener Auftrag als Geist seinen Faden hält (× seine Frist, `_foundryFrist`): auf CPU-Raster unter
 // Fremdlast lief ein Karten-Bake über zwei Fristen (gate:arch-feld 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
 // vier tragen ihn, ein toter Auftrag fällt.

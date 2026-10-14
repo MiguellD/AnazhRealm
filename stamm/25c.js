@@ -2444,6 +2444,14 @@ class AnazhRealm_Z25c {
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
         if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
+        // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
+        // noch kein Eintrag — ohne diese Zeile stand das Bild vor ihm, und er wuchs im Bild nach.
+        let gesetzt = 0;
+        for (const t of st.pendingVegSpawns || []) {
+            const q = t && t.position;
+            if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
+        }
+        if (gesetzt) out.push(`${gesetzt} Bäume werden gepflanzt`);
         const warten = this._streuWartet(p);
         if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =

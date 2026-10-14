@@ -1317,11 +1317,14 @@ class AnazhRealm_Z20d {
 
     // Pops bis zu maxPerFrame Tasks und ruft `spawnArchitecture` je Task: 4/Frame ≈ 20-25 ms statt
     // 200-500-ms-Burst; ein 9-Chunk-Ring verteilt sich über ~10-25 Frames.
+    // Im Lade-Takt (`_ladeTakt`) setzt sie, solange LADE_TAKT_MS offen ist (mindestens `maxPerFrame`): die gepflanzten Bäume
+    // um den Spieler gehören ins erste Weltbild (`_weltbildFehlt`), nicht in die Frames danach.
     _tickPendingVegSpawns(maxPerFrame = 4) {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
         let spawned = 0;
-        for (let i = 0; i < maxPerFrame && queue.length > 0; i++) {
+        const frist = this._ladeTakt() ? performance.now() + AnazhRealm.LADE_TAKT_MS : -Infinity;
+        for (let i = 0; (i < maxPerFrame || performance.now() < frist) && queue.length > 0; i++) {
             const task = queue.shift();
             if (!task) continue;
             this._naturSetzen(task.name, task.position, task.opts);

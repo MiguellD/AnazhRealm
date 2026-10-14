@@ -527,6 +527,7 @@ class AnazhRealm_Z20a {
                             } catch (_e) {
                                 throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
                             }
+                            this._foundryHelfer(f);
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
                             // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
@@ -599,6 +600,36 @@ class AnazhRealm_Z20a {
             this._foundryPumpe(f);
         };
         return w;
+    }
+    // DIE WERK-FÄDEN (K60): das Werk baut jeden Körper in EINEM Faden — Radeon kalt bis zum ersten Bild hielt er 19 s Arbeit
+    // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
+    // Boot-Blob (dieselbe Schale, dieselbe Platte, dasselbe Studio — der Bäcker-Weg, `_foundryBaecker`); die EINE Schlange
+    // speist sie (`_foundryPumpe`). Ihre Zahl folgt der Maschine: ein Werk-Faden je vier Kerne, höchstens
+    // FOUNDRY_WERK_FAEDEN (das Werk zählt mit). Unter dem Null-Renderer baut das Werk allein (die Gates bleiben byte-alt).
+    _foundryHelfer(f) {
+        if (f.helfer || !f.bootUrl) return;
+        f.helfer = [];
+        const rend = this.state.renderer;
+        if (rend && rend._isHeadlessNull) return;
+        const kerne =
+            typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+                ? navigator.hardwareConcurrency
+                : 4;
+        const n = Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
+        for (let k = 1; k < n; k++) {
+            const h = { k, w: new Worker(f.bootUrl), bereit: false };
+            // ein Boot-/Laufzeit-Fehler eines Helfers bricht LAUT (K22) wie der des Werks
+            h.w.onerror = (ev) =>
+                this._stoffBruch(`der Werk-Faden ${k} fällt — ` + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
+            h.w.onmessage = (ev) => {
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready" && m.world === "terrain") h.bereit = true;
+                else this._foundryAntwort(f, m);
+                this._foundryPumpe(f);
+            };
+            f.helfer.push(h);
+        }
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
     // (PRESETS: Regler s + fx) wird die EINE Quelle, der Blueprint liest daraus statt Hardcodes. Feste

@@ -280,7 +280,9 @@ class AnazhRealm_Z05b {
         // Frame über Budget = gemessene Frame-ZEIT über dem Drossel-Sollwert (nie ein Draw-Call-Proxy,
         // der Welt-Größe mit Render-Druck verwechselt). Steuert NUR sichtbare Deko-Arbeit (Laub-Wachstum/
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
+        // Unter dem Ladeschirm zeigt kein Frame die Welt (`_ladeTakt`): kein Frame reißt ein Budget.
         st._frameOverBudget =
+            !this._ladeTakt() &&
             sense.frameMs > (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS);
         // Architektur (vormals der Bang-Bang-Governor — jetzt EINE Quelle): das Ziel; der Radius selbst geht
         // durch dieselbe Grenzzyklus-Wand wie das Laub (unten).
