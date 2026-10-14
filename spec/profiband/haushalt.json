@@ -29,6 +29,11 @@
             "kamera": "third"
         }
     },
+    "renderZiele": {
+        "mb": 60,
+        "erzeuger": "^tex:(TRAANode[.](history|resolve)|output|depth|szene|kaskade[0-9]+|r184-ausgabe)$",
+        "quelle": "K50 (14.10.): die Ziele der Bild-Kette zählen je Schirm, nie je Welt — am Kopf 45f1eeae (Genesis third, 1920x1080, DPR 1) 71,4 MB: Geschichte 15,8 + 4,0 Tiefe, Resolve 15,8, Szenen-Ziel 7,9 + Tiefe 7,9, Tiefen-Abbild 4,0, Kaskaden 2 x 8,0. Das Band 118 MB minus die Welt am Genesis-Ring (Puffer 37,1 + Karten und Atlanten 18,0 MB, K44) lässt 62,9 MB; der Haushalt 60 MB. Die zeitliche Hochskalierung (`_zeitAufloesung`, Szenen-Skala 0,75) trägt ihn."
+    },
     "paesse": [
         "haupt",
         "k0",

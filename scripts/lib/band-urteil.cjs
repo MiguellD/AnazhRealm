@@ -415,6 +415,27 @@ function bandHuelle(laeufe) {
     return { zensus, vram, texturen };
 }
 
+// DIE RENDER-ZIEL-KLASSE (K50): die Ziele der Bild-Kette — Szenen-Ziel und -Tiefe, Tiefen-Abbild, die Ziele der zeitlichen
+// Auflösung, die Schatten-Kaskaden, das Rahmen-Ziel — zählen fest je Schirm, nie je Welt (bei 1080p 71,4 MB am Kopf 45f1eeae,
+// Genesis third). Ihr Haushalt (`renderZiele`: MB und das Muster ihrer Erzeuger) hält sie als EINE Klasse: darüber ROT mit
+// jedem Erzeuger beim Namen (Art `renderziele`, eine Haushalts-Verletzung wie die Stufen-Wand, keine Linsen-Art).
+function renderZieleUrteil(haushalt, erzeuger, rot) {
+    const rz = haushalt && haushalt.renderZiele;
+    if (!rz) return null;
+    const muster = new RegExp(rz.erzeuger);
+    const taeter = erzeuger.filter((e) => muster.test(e.erzeuger));
+    const mb = +taeter.reduce((a, e) => a + e.mb, 0).toFixed(1);
+    if (mb > rz.mb)
+        rot.push({
+            art: "renderziele",
+            text:
+                `Render-Ziele ${mb} MB über ihrem Haushalt ${rz.mb} MB (Täter: ` +
+                taeter.map((e) => `${e.erzeuger} ${e.mb}`).join(" · ") +
+                ")",
+        });
+    return { mb, soll: rz.mb, taeter: taeter.map((e) => e.erzeuger) };
+}
+
 function haushaltPruefen(h) {
     const f = [];
     if (!h || h.version !== 1) f.push("haushalt.version ist nicht 1");
@@ -442,6 +463,15 @@ function haushaltPruefen(h) {
         if (!/^[a-z][a-z0-9]*$/.test(k) || !s || !s.titel || !["first", "third"].includes(s.kamera))
             f.push(`sichten.${k}: titel und kamera (first | third)`);
     f.push(...messortePruefen(h));
+    const rz = h && h.renderZiele;
+    if (!rz || !(rz.mb > 0) || typeof rz.erzeuger !== "string" || !rz.erzeuger || !rz.quelle)
+        f.push("renderZiele braucht {mb > 0, erzeuger (Muster der Erzeuger), quelle}");
+    else
+        try {
+            new RegExp(rz.erzeuger);
+        } catch (_e) {
+            f.push("renderZiele.erzeuger ist kein Muster");
+        }
     const kl = (h && h.klassen) || [];
     if (!kl.length) f.push("keine Klassen");
     const ids = new Set();
@@ -714,6 +744,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
         }
         // gebunden = ohne die freien Erzeuger (wie die Summen-Ratsche der Befehle): die Ratsche hält, was Kosten sind
         speicher = { mb: vram.mb, gebunden: +(vram.mb - frei).toFixed(1), band: haushalt.band.vramMB, erzeuger: liste };
+        speicher.renderZiele = renderZieleUrteil(haushalt, liste, rot);
     }
     rot.push(...rahmenZielBefunde(vram, texturen));
     // DIE TEXTUR-OBJEKTE (Backend-unabhängig): jedes trägt seinen Erzeuger — selbst oder über sein Render-Ziel.
@@ -1114,6 +1145,10 @@ function bandTabelle(u) {
     if (u.vram) {
         z.push("");
         z.push(`VRAM ${u.vram.mb} MB / Band ${u.vram.band} MB (${u.abstand.vram}×) — je Erzeuger:`);
+        if (u.vram.renderZiele)
+            z.push(
+                `  Render-Ziele ${u.vram.renderZiele.mb} MB / Haushalt ${u.vram.renderZiele.soll} MB (${u.vram.renderZiele.taeter.join(" · ")})`
+            );
         for (const e of u.vram.erzeuger.slice(0, 18))
             z.push(
                 "  " +

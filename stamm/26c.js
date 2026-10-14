@@ -1203,9 +1203,7 @@ AnazhRealm.RING_BOOT_WINDOW_MS = 10000;
 // Streamen/Spawn); headless → 1.
 AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 90 % der GPU-Last (gemessen 2.21M Tris) → eine kämpfende GPU darf es weiter ausdünnen (perf-gated: starke Hardware bleibt voll)
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
-// Laub-Auflösungs-Regler, dritte Schwester zu foliageRadius/-density, gefahren vom EINEN Perf-Regler
-// (effArch): `_foliageResScale` ∈ [MIN..1] (= Vorlage-`_folRes`) für einen Laub-Pass mit reduzierter
-// Auflösung (Laub ≈ 90 % der Fill-Last). FOLIAGE_LAYER ist die non-breaking Vorbedingung: das Laub
+// Die Laub-Layer: FOLIAGE_LAYER ist die non-breaking Vorbedingung eines eigenen Laub-Passes: das Laub
 // trägt die Layer ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unverändert), ist so aber für einen
 // Laub-Pass (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1.
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
@@ -1214,17 +1212,15 @@ AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelö
 // `directionalLight.shadow.camera.layers.enable(2)` (vor der CSM-Konstruktion, die Kaskaden erben
 // es) lässt nur den Schatten-Render ihn als Caster zählen.
 AnazhRealm.SHADOW_TWIN_LAYER = 2;
-AnazhRealm.PERF_FOLIAGE_RES_MIN = 0.5; // absoluter Boden der Szene-Auflösung (0.5 = 25 % Fill — noch nicht Matsch)
-AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Zurück-auf-volle-Auflösung
-// Bewegungs-gekoppelte Szene-Auflösung: `_foliageResScale` fährt der EINE Regler aus dem MINIMUM
-// zweier Erlaubnisse — (a) PID-Last, (b) Wahrnehmung (schnelle Kamera → tiefer, imperzeptibel).
-// Das Szene-RT bleibt dennoch auf Skala 1 (jeder Realloc zerstört die Depth-View, s. _loopRender);
-// der Wert lebt in HUD + Flugschreiber.
-AnazhRealm.PERF_SCENE_RES_MOTION_FLOOR = 0.6; // schnelle Kamera: 60 % Auflösung (36 % Fill) — unter Bewegungsunschärfe unsichtbar
-AnazhRealm.PERF_SCENE_RES_LOAD_FLOOR = 0.68; // ertrinkende GPU im STAND: 68 % (im Stand sieht das Auge scharf → konservativer als der Bewegungs-Boden)
-AnazhRealm.PERF_CAM_ANGVEL_FULL = 1.6; // rad/s Blick-Winkelgeschwindigkeit für volle Bewegungs-Absenkung (~92°/s, ein zügiger Umsehen-Schwenk)
-AnazhRealm.PERF_CAM_POSVEL_FULL = 11; // m/s Translations-Geschwindigkeit für volle Absenkung (Gehen 1.5 vernachlässigbar, Fahren ≥11 voll)
-AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief bei Bewegung, ~170 ms zurück zur Schärfe im Stand (kein Schärfe-Pop)
+// DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
+// (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
+AnazhRealm.SZENE_SKALA = 0.75;
+AnazhRealm.SZENE_SKALA_MIN = 0.5;
+// Der Resolve der Hochskalierung (`_zeitAufloesung`): das Gewicht je Eingangs-Texel exp(−ZEIT_KERN · d²), d in Ausgabe-Pixeln;
+// die Breite der Varianz-Klemme im Stand (r184: 1); die Nach-Schärfe je fehlendem Skalen-Anteil (`nachSchaerfe`).
+AnazhRealm.ZEIT_KERN = 7;
+AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
+AnazhRealm.ZEIT_SCHAERFE = 1;
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
@@ -1343,12 +1339,6 @@ AnazhRealm.BERG_CULL = Object.freeze({
     queryTakt: 10, // Occlusion-Query-Probe-Fenster: nur jeder N-te Frame fragt (Dawn-QuerySet-Cliff)
     stummFenster: 6, // so viele Probe-Fenster ohne begonnene Abfrage, dann meldet der Berg-Cull den Stellvertreter laut
 });
-// Adaptive Render-Auflösung (Vorlage `_rScale`/`setRenderScale`): unter Last gibt die Pixel-Ratio
-// nach, mit Kopfraum wächst sie zurück (dieselbe effArch-Quelle); 0.05-Rast-Stufen + Dead-Band
-// (`_applyRenderScale`). Deaktiviert per PERF_RENDER_SCALE_MIN = 1 (setPixelRatio flackert schwarz).
-AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
-AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
-AnazhRealm.RES_SCALE_DWELL_MS = 1200; // Verweil-Hysterese je Auflösungs-Stufe (Destroyed-Texture-Wand: Realloc gebunden + Bundle-Re-Record amortisiert)
 // Die zwei Radius-Wände gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne
 // Über-Budget-Frame (kein Jagen kurzlebigen Kopfraums); Schrumpfen erst ab diesem Ziel-Abstand in
 // Metern (Kanten-Zellen flattern nicht; ein echter Überlast-Sturz schrumpft voll).
