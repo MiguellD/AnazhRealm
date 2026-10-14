@@ -377,9 +377,12 @@
         // K57: trägt der Stil eine Kappe (HAAR_KAPPE, das Volumen), sind die Strähnen ihr Rand — halbe Dichte
         var vol = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0) * (HAAR_KAPPE[stil] ? 0.5 : 1);
         var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
-        var K = [0, 0.5 + MENSCH_GESTALT.schaedel.hoch, -0.02], // Kalotten-Schale (Zentrum · Radius · Skala; K57: hebt sich mit der Kalotte)
-            KR = 0.42,
-            KS = [0.96, 0.82, 1.0];
+        // K57: die Kalotten-Schale IST die Haar-Kappe des Stils (die Strähnen wurzeln auf dem Volumen; vorher eine eigene
+        // Schale, deren Vorderseite auf Stirnhöhe lag — die Strähnen stachen als Punkte aus der Stirn)
+        var kap = haarKappe({ hairStyle: HAAR_KAPPE[stil] ? stil : "mittel" })[0];
+        var K = kap.c, // Kalotten-Schale (Zentrum · Radius · Skala)
+            KR = kap.r,
+            KS = kap.sc;
         var N = [0, 0.28, -0.16], // Nacken-Schale
             NR = 0.36,
             NS = [0.9, 0.75, 0.7];
@@ -781,7 +784,7 @@
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
         kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.065 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.04 }),
         schaedel: Object.freeze({ hoch: 0.08 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
@@ -811,7 +814,10 @@
     //   ist die sichtbare Spalte: Augapfel samt Lidern) · mundZuPupille = Mundbreite / Pupillen-Abstand (die
     //   Mundwinkel unter den Pupillen) · ohrOben / ohrUnten = Ohr-Oberkante über der Augenlinie und Ohr-Unterkante über
     //   der Nasen-Basis, je / kH (das Ohr zwischen Augen- und Nasenlinie) · ohrLaenge = Ohr-Länge / kH ·
-    //   augenVorstand = die Hornhaut vor der Haut ringsum / kH (das Auge liegt IN der Höhle, nie aufgesetzt) ·
+    //   augenVorstand = die Hornhaut vor dem Median der Haut ringsum / kH (Hertel: der seitliche Orbita-Rand 16–18 mm
+    //   hinter der Hornhaut, die Braue ~5–10 mm davor, die Wange dahinter — der Median liegt 2–8 mm hinter dem Scheitel;
+    //   0,056 = 13 mm war das aufgesetzte Auge, ≤ 0 das begrabene) · augeFrei = Anteil der Iris-Vorderseite, den keine
+    //   Kopf-Haut verdeckt (Strahl nach vorn; die Lider sind das Rig, nicht der Guss) ·
     //   lippeL / lippeA = ΔL* / Δa* der Lippe gegen die Haut (dunkler und röter, nie ein roter Fleck: ΔL* −8…−12,
     //   Δa* +8…+12) · hoehleL / hoehleA = ΔL* / Δa* der Augenhöhle gegen die Haut (ein Schatten der Haut, kein
     //   brauner Ring) · hautAlbedo = die lineare Luma jedes Hauttons der Palette (Hautreflexion 550 nm, dunkel bis hell)
@@ -821,7 +827,7 @@
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         kopfAnteil: [0.127, 0.14], augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
-        ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [-0.03, 0.012],
+        ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
     });

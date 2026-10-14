@@ -322,7 +322,7 @@
         {
             "id": "haut",
             "gruppe": "Haut/Fell",
-            "titel": "Mensch, die Haut im Ton Mahagoni 0x5f3826 (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
+            "titel": "Mensch, die Haut im Ton Mahagoni 0x6a4230 (K57: vorher 0x5f3826) (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
             "labor": {
                 "studio": "koerperstudio",
                 "stoff": {
