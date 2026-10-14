@@ -156,3 +156,5 @@ Vergessene Prozesse zogen stundenlang Radeon-Leistung und verrauschten die lokal
 
 - **OMEN:** Gehend-ABAB boden-stufen 9e2f9c7c gegen main 062ec357 läuft (bericht/1410-boden3-abab.md); danach Werkpaket K59 `takt-kreatur` (Kreaturen außerhalb des Bilds, updateMatrixWorld statisch; bericht/1410-k59-takt.md).
 - **CI-Runner auf dem OMEN:** nach K61; das Ja zum Download holt der Koordinator frisch beim Schöpfer.
+- **22:40:** OMEN 1410-boden3-abab: boden-stufen gehend nicht langsamer (Einströmen besser, eingeschwungen Frame gleich, CPU p95 +1,0 ms benannt) → V18.546.2 auf integ-probe d2e06032 (voller Playtest „Alle Invarianten OK“ 108 s, Augen-Runde Ankunft/Wiese/Wald ohne Naht), volle CI läuft; danach FF main.
+- **OMEN-Runner online** (Id 21 `omen-gtx1060`, Labels self-hosted,Windows,X64,omen-gpu; bericht/1410-runner.md): Job-Start-Wand (nur Repo, push, Actor MiguellD) + GPU-Schloss „ci-runner …“ als Hook. Jobs bekommt er erst, wenn eine Karte nach K61 die GPU-Gruppen auf `runs-on: [self-hosted, omen-gpu]` stellt. OMEN jetzt an K59 takt-kreatur.
