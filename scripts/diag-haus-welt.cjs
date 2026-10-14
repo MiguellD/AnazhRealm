@@ -136,8 +136,8 @@ const BASIS = {
     // (der Stand vor dem Raster): die neue Landform trägt keine Kuppe zwischen den Ecken (am Hang 0,52 und an einer Kuppe
     // 0,09 je m blieb die Tür 1–6 m über dem Gelände) — die Mitte allein legt am Hang die bergseitige Tür in den Boden.
     raster: [
-        ["const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));", "const nx = 1;"],
-        ["const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));", "const nz = 1;"],
+        ["const nx = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ex) / schritt)));", "const nx = 1;"],
+        ["const nz = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ez) / schritt)));", "const nz = 1;"],
         [
             "out.push([ox + fp.ex * ((2 * i) / nx - 1), oz + fp.ez * ((2 * j) / nz - 1), true]);",
             "out.push([ox, oz, true]);",

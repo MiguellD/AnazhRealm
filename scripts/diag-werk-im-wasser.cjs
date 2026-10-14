@@ -54,10 +54,17 @@
 //       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
 //       DER ORT TRÄGT EINEN STAU (K37, 13.10.): an der Furt −937/−1064 hebt das Stau-Feld keine Fluss-Spalte über ihre Flut
 //       (die Aue liegt auf der Zeile des Flusses, der Damm wird bei 25,2 m umflossen) — die 1 715 Punkte „Stau" der Basis
-//       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. Der Damm steht darum
-//       im Tal 26/−120 (seit K16 am Fluss aus der Welt, `befund.orte.fluss`), und D misst das Feld gegen die Zellen:
-//       ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält der Automat Wasser über der Flut, keine Stau-Quelle ohne Raum über ihrem Boden
-//       (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37: gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
+//       c5a4d0f8 waren die Deck-Zeile über der Ruhe, die K37 als Täter des weißen Ufer-Bands schloss. D misst das Feld gegen
+//       die Zellen: ≥ 20 Fluss-Spalten gehoben (sonst trägt der Ort keinen Stau), in ≥ 50 % davon hält der Automat Wasser über
+//       der Flut, keine Stau-Quelle ohne Raum über ihrem Boden (am Kopf a0d6a81b 21, nach dem Reload 21). Kopf K37 (Tal
+//       26/−120 der alten Welt): gehoben 51, gefüllt 48, Stau 2 070 → 2 250 Punkte, Reload 2 247.
+//       DIE KLAMM DER PRÜFBÜHNE (werk-ufer, 14.10.): die K16-Welt trägt keinen Ort, an dem ein Damm staut — ihr Fluss liegt
+//       in der Aue (Bett 0,8 m, Ufer 10 m hinter der Kante ≤ 0,96 m über dem Spiegel: das Bankvoll-Bett des Tieflands), das
+//       Stau-Fenster (29 m, Rand auf Spiegel + 0,5 m) hebt dort nichts; von 7 668 Fluss-Punkten in 7 km um die Mess-Wiese lag
+//       keiner in einer Engstelle mit ≥ 4 % Gefälle und ≥ 2,5 m Ufer (außer einer Kaskade von 74 %). Am K16-Fluss −884/−623:
+//       gehoben 0, Stau 498 → 497. Der Damm steht darum in der Klamm S6 der Prüfbühne (spec/pruefbuehne, Term `rinne`: 14 %
+//       Gefälle, 20 m Sohle), geboren wie im Spiel, und er fasst das Ufer: je Seite bis 4 m über dem Spiegel + 1 m.
+//       Kopf werk-ufer: gehoben 34, gefüllt 34, Stau 684 → 898 Punkte, Reload 898.
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
@@ -429,6 +436,18 @@ function leserUrteil(srcRoh) {
     const fl = fnBody(src, /\n {4}_fundamentLand\([^)]*\) \{/);
     if (!fl || !/_fundamentRaster\(/.test(fl) || !/_landAt\(/.test(fl))
         v.push("`_fundamentLand` fragt nicht jeden Raster-Punkt des Fundaments (`_fundamentRaster` × `_landAt`)");
+    // DAS LAND MISST FEINER ALS DER RICHTER (werk-ufer): Z misst die Hülle auf dem 1-m-Gitter; ein Land-Raster von 1–2 m ließ
+    // die Wasserlinie zwischen seinen Punkten durch (am Gleithang 0,27 m Wasser an einem Knoten im Grundriss)
+    const flS = fl && /_fundamentRaster\([^)]*,\s*([\d.]+)\s*\)/.exec(fl);
+    if (fl && !(flS && Number(flS[1]) <= 0.5))
+        v.push(
+            `\`_fundamentLand\` fragt das Land gröber als das 1-m-Gitter von Z (Raster-Schritt ${flS ? flS[1] : "2 (Vorgabe)"} m, Soll ≤ 0,5 m)`
+        );
+    // DAS MASS DER ORT-SUCHE IST DER GEKLEMMTE ORT (werk-ufer): Ringe um `p0` und Abstand zu `p0` — gemessen an `pos` lag
+    // jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, das Haus am Gleithang stand 13,5 m vom Wasser
+    const wos = fnBody(src, /\n {4}_werkOrtSuchen\([^)]*\) \{/);
+    if (!wos || !/p0\.x \+ Math\.cos\(a\) \* r/.test(wos) || !/Math\.hypot\(q\.x - p0\.x, q\.z - p0\.z\)/.test(wos))
+        v.push("die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)");
     const slot = fnBody(src, /\n {4}_spawnSettlementSlot\([^)]*\) \{/);
     if (!slot || !/_fundamentLand\(/.test(slot))
         v.push("die Siedlung (`_spawnSettlementSlot`) fragt nicht das Land des Fundaments (`_fundamentLand`)");
@@ -1804,11 +1823,26 @@ async function dammProbe(A) {
         if (!ort) return { fehler: `kein Fluss-Querschnitt (2–14 m) im Umkreis von 60 m um ${X}/${Z}` };
         const w0 = nass(ort.x, ort.z);
         const grund = r._voxelSurfaceY(ort.x, ort.z);
-        // der Damm des Studios (8 × 3 × 1,2 m) quer zur Strömung, so breit, dass er das Ufer fasst, 0,3 m im Grund
+        // DER DAMM FASST DAS UFER (werk-ufer): je Seite quer zur Strömung bis dorthin, wo der Boden `A.fassen` m über dem
+        // Spiegel liegt, + 1 m — so lang ist der Damm. Bis werk-ufer war er Breite + 6 m lang: seine Enden lagen 2 m hinter
+        // der Krone der Bank, 2,5 m über dem Spiegel, das Wasser umfloss ihn.
+        const spiegel = r._atlasWaterLevelAt(ort.x, ort.z, grund);
+        let halb = 0;
+        for (const sg of [1, -1]) {
+            let d = ort.breite / 2;
+            const ufer = (dd) => r._voxelSurfaceY(ort.x + ort.quer[0] * sg * dd, ort.z + ort.quer[1] * sg * dd);
+            while (d < 40 && !(ufer(d) >= spiegel + A.fassen)) d += 0.5;
+            if (d >= 40)
+                return {
+                    fehler: `das Ufer fasst keinen Damm: binnen 40 m liegt der Boden nie ${A.fassen} m über dem Spiegel (${ort.x}/${ort.z})`,
+                };
+            halb = Math.max(halb, d + 1);
+        }
+        // der Damm des Studios (8 × 3 × 1,2 m) quer zur Strömung, 0,3 m im Grund
         const e = r.spawnArchitecture(
             "damm",
             { x: ort.x, y: grund + 0.2, z: ort.z },
-            { precise: true, scale: Math.max(1, (ort.breite + 6) / 8), rotationY: ort.quer[0] === 1 ? 0 : Math.PI / 2 }
+            { precise: true, scale: Math.max(1, (2 * halb) / 8), rotationY: ort.quer[0] === 1 ? 0 : Math.PI / 2 }
         );
         if (!e) return { fehler: "der Damm wurde nicht gebaut" };
         await takte(A.takte);
@@ -1820,6 +1854,7 @@ async function dammProbe(A) {
             x: ort.x,
             z: ort.z,
             breite: ort.breite,
+            laenge: +(2 * halb).toFixed(1),
             id: e.id,
             w0,
             w1,
@@ -2249,6 +2284,24 @@ function selbsttest() {
             /der Satz .* sucht keinen Ort/,
         ],
         [
+            "Ort-Suche misst an pos",
+            (s) =>
+                s.replace(
+                    "kand.push([Math.hypot(q.x - p0.x, q.z - p0.z), q]);",
+                    "kand.push([Math.hypot(q.x - pos.x, q.z - pos.z), q]);"
+                ),
+            /Ort-Suche .* nicht am geklemmten Ort/,
+        ],
+        [
+            "Land im 2-m-Raster",
+            (s) =>
+                s.replace(
+                    "AnazhRealm._fundamentRaster(raster, tuer, 0.5))",
+                    "AnazhRealm._fundamentRaster(raster, tuer))"
+                ),
+            /gröber als das 1-m-Gitter von Z/,
+        ],
+        [
             "Siedlung fragt die Mitte",
             (s) =>
                 s.replace(
@@ -2573,12 +2626,28 @@ async function lauf() {
                     waitUntil: "domcontentloaded",
                     timeout: 120000,
                 });
-                const D = { takte: 1200, R: 40 };
-                // der Ort: der Fluss aus der Welt (K16, `befund.orte.fluss`), dessen Ufer der Damm fasst (`--damm x,z` fragt
-                // einen anderen; s. Kopf D)
-                const dammOrt = argListe("--damm")
-                    ? argListe("--damm").map(Number)
-                    : [befund.orte.fluss.x, befund.orte.fluss.z];
+                // die Bühne, geboren wie im Spiel (Welt-Tor + aktiv + Reload): ihre Klamm S6 trägt den Stau (s. Kopf D)
+                const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
+                const S6 = JSON.parse(
+                    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
+                ).stationen.find((s) => s.id === "s6-klamm");
+                if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
+                const weltId = await p2.evaluate(async (json) => {
+                    const t0 = performance.now();
+                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t0 < 120000)
+                        await new Promise((res) => setTimeout(res, 200));
+                    const r = window.anazhRealm;
+                    if (!r || !r.importWorldBeside) return null;
+                    const res = r.importWorldBeside(json);
+                    if (!res.ok) return null;
+                    r.activeWorldSet(res.worldId);
+                    return res.worldId;
+                }, buehne);
+                if (!weltId) throw new Error("D: die Prüfbühne ließ sich nicht importieren");
+                await p2.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+                const D = { takte: 1200, R: 40, fassen: 4 };
+                // der Ort: die Klamm der Prüfbühne (S6), deren Bach der Damm fasst (`--damm x,z` fragt einen anderen Ort der Bühne)
+                const dammOrt = argListe("--damm") ? argListe("--damm").map(Number) : [S6.x, S6.z];
                 const bau = await p2.evaluate(dammProbe, Object.assign({ phase: "bau", ort: dammOrt }, D));
                 if (bau.fehler) befund.damm = bau;
                 else {

@@ -1281,13 +1281,16 @@ class AnazhRealm_Z20a {
     // je drei Punkte über die Türbreite; flaeche false). Integration Welle L: vier Ecken und die Mitte ließen den Buckel
     // zwischen sich durch — an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände (gate:haus-welt W1). Leser: die
     // Höhe der Siedlung (`_spawnSettlementSlot`) und das Land jedes Fundaments (`_fundamentLand`).
-    static _fundamentRaster(fp, tuer) {
+    // `schritt` (m, Vorgabe 2): die Höhe misst Buckel in 2 m, das Land misst die Wasserlinie in 1 m (werk-ufer: zwischen
+    // den 2-m-Punkten lag die Linie 0,85 m tief im Grundriss, das Haus am Gleithang stand 0,27 m im Wasser — Z misst ≤ 1 m).
+    static _fundamentRaster(fp, tuer, schritt = 2) {
         const out = [];
         if (!fp || !Number.isFinite(fp.ex) || !Number.isFinite(fp.ez) || !(fp.ex > 0) || !(fp.ez > 0)) return out;
         const ox = Number.isFinite(fp.ox) ? fp.ox : 0;
         const oz = Number.isFinite(fp.oz) ? fp.oz : 0;
-        const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));
-        const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));
+        const deckel = Math.ceil(24 / schritt);
+        const nx = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ex) / schritt)));
+        const nz = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ez) / schritt)));
         for (let i = 0; i <= nx; i++)
             for (let j = 0; j <= nz; j++)
                 out.push([ox + fp.ex * ((2 * i) / nx - 1), oz + fp.ez * ((2 * j) / nz - 1), true]);

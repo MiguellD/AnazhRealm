@@ -1450,6 +1450,7 @@ class AnazhRealm_Z11b {
                 if (points.length >= 2) {
                     const rv = { points, mouth: m };
                     if (m === "see" && Number.isFinite(seeY)) rv.seeY = seeY;
+                    if (lf.term) rv.term = lf.term; // der Lauf eines Terms (die Klamm `rinne`): Gesetz des Erbguts, kein Wurf des Feldes
                     rivers.push(rv);
                 }
                 points = [];
