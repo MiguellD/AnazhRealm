@@ -2042,8 +2042,9 @@ class AnazhRealm_Z25c {
     // Leser: die NAHE Kaskade rendert jeden `nahMax`-ten Frame (laufende Tiere werfen nah), die FERNE im
     // `fernFaktor`-fachen Takt des Regler-Intervalls (höchstens so dicht wie die nahe); ein Sonnen-Sprung erzwingt
     // alle. JE FRAME HÖCHSTENS EINE KASKADE (1410-3): unter Regler voll renderte die nahe JEDEN Frame und jeder dritte
-    // trug beide — der CPU-Takt eines Frames mit zwei Schatten-Renders bildete den p95 (Genesis Third, eine Sitzung,
-    // abwechselnd: p50 5,5 → 5,0 ms). Eine fällige Kaskade wartet hinter der Vor-Kaskade dieses Frames auf den
+    // trug beide — der CPU-Takt eines Frames mit zwei Schatten-Renders hob den p95 (ABAB OMEN GTX, Regler voll, CPU-Takt p95:
+    // Wiese Ego 6,0 → 5,8 · Third 6,7 → 6,4 · Genesis Ego 6,8 → 6,3 · Third 8,4 → 7,5 ms; GPU und Frame gleich). Eine
+    // fällige Kaskade wartet hinter der Vor-Kaskade dieses Frames auf den
     // nächsten; die nahe Phase und die ferne wechseln. Ohne CSM trägt das Haupt-Licht die EINE Map im Nah-Takt.
     // Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft nur in `renderShadow`
     // (Vendor-Anker), die Matrix gehört zur Map.
