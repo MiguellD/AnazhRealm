@@ -1344,8 +1344,28 @@ class AnazhRealm_Z10 {
             const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
-            const _f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
-            const _feinV = AnazhRealm._zweigTSL(_T)(_T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, wp.x, wp.z)), _gate);
+            // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
+            // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
+            // (`felsZufall`) — ausgeschrieben stand jede Ziehung 78-mal im Boden-Programm (96 050 → 149 521 Zeichen WGSL), und
+            // swiftshader übersetzte sie vor dem ersten Bild. Die Welle liest der Graph (EINE Probe im Rausch-Atlas, `felsWelle`)
+            // und reicht sie hinein; der Aufruf steht im Zweig (die Wiese zahlt ihn nicht).
+            const _welle = GK.felsWelle(_O, wp.x, wp.y, wp.z);
+            const _felsFn = _T
+                .Fn(([x, y, z, w]) => {
+                    const _f = GK.felsFein(_O, FS.basis, x, y, z, w);
+                    return _T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, x, z));
+                })
+                .setLayout({
+                    name: "felsFein",
+                    type: "vec3",
+                    inputs: [
+                        { name: "x", type: "float" },
+                        { name: "y", type: "float" },
+                        { name: "z", type: "float" },
+                        { name: "w", type: "float" },
+                    ],
+                });
+            const _feinV = AnazhRealm._zweigTSL(_T)(_felsFn(wp.x, wp.y, wp.z, _welle), _gate);
             const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
             const _rockCol = _felsGrund.mul(_fein);
@@ -1431,25 +1451,36 @@ class AnazhRealm_Z10 {
                         .mul(0.5)
                         .add(0.5)
                 );
-                let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
-                let _trefH = _T.float(0.0); // Halm-Höhe des Treffers (0 = Wurzelgrund)
-                for (let _s = 0; _s < 8; _s++) {
-                    const _li = 1.0 - _s / 8.0; // Schicht von oben (1.0) nach unten (0.125)
-                    const _px = wp.x.add(_wanderX.mul(_T.float(_s / 8.0)));
-                    const _pz = wp.z.add(_wanderZ.mul(_T.float(_s / 8.0)));
-                    const _hN = _ra
-                        .ebene(_T.vec2(_px.mul(_f), _pz.mul(_f)), 11, "y")
-                        .mul(0.5)
-                        .add(0.5);
-                    // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
-                    // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
-                    const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(_tuft);
-                    const _erst = _T.step(_T.float(_li), _h).mul(_T.float(1.0).sub(_traf));
-                    // Die Treffer-Höhe ist die HALM-Höhe (stetig), nie die Schicht: acht Schicht-Stufen lasen sich
-                    // auf Armlänge als Höhenlinien (Linse 05.10.).
-                    _trefH = _trefH.add(_erst.mul(_h));
-                    _traf = _traf.add(_erst);
-                }
+                // Die acht Schichten sind EINE Schleife in EINER WGSL-Funktion (`wieseRelief`, K17-3): ausgeschrieben
+                // standen sie achtmal im Boden-Programm (≈ 17 000 Zeichen, swiftshader übersetzte jede vor dem ersten Bild) —
+                // dieselbe Rechnung je Schicht (s/8 ist exakt), der Zustand (getroffen, Treffer-Höhe) in EINER Variable.
+                const _wieseMarsch = _T
+                    .Fn(([x, z, wx, wz, tuft]) => {
+                        const st = _T.vec2(0.0, 0.0).toVar(); // (getroffen 0/1 — branchenlos, Halm-Höhe des Treffers)
+                        _T.Loop(8, ({ i }) => {
+                            const _s8 = _T.float(i).div(8.0); // Schicht von oben (1 − s/8 = 1.0) nach unten (0.125)
+                            const _hN = _ra
+                                .ebene(_T.vec2(x.add(wx.mul(_s8)).mul(_f), z.add(wz.mul(_s8)).mul(_f)), 11, "y")
+                                .mul(0.5)
+                                .add(0.5);
+                            // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
+                            // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
+                            const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(tuft).toVar();
+                            const _erst = _T.step(_T.float(1.0).sub(_s8), _h).mul(_T.float(1.0).sub(st.x)).toVar();
+                            // Die Treffer-Höhe ist die HALM-Höhe (stetig), nie die Schicht: acht Schicht-Stufen lasen sich
+                            // auf Armlänge als Höhenlinien (Linse 05.10.).
+                            st.assign(_T.vec2(st.x.add(_erst), st.y.add(_erst.mul(_h))));
+                        });
+                        return st;
+                    })
+                    .setLayout({
+                        name: "wieseRelief",
+                        type: "vec2",
+                        inputs: ["x", "z", "wx", "wz", "tuft"].map((name) => ({ name, type: "float" })),
+                    });
+                const _marsch = _wieseMarsch(wp.x, wp.z, _wanderX, _wanderZ, _tuft);
+                const _traf = _marsch.x; // 0 = noch kein Halm getroffen
+                const _trefH = _marsch.y; // Halm-Höhe des Treffers (0 = Wurzelgrund)
                 // Der getroffene Halm trägt die Farbe SEINER Höhe — derselbe Verlauf Wurzel → Spitze wie das Nah-Gras —,
                 // tiefer liegende Treffer im Eigen-Schatten der Büschel (0,65 … 1); die Lücke zeigt den Wurzelgrund im
                 // Schatten (0,5 × Wurzel). Bis 05.10. war der Halm die Wurzelfarbe × 0,35 … 1,30: ein Oliv-Tarnmuster

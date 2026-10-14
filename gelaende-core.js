@@ -1825,7 +1825,19 @@
     // EINE Probe im Rausch-Atlas). Die Reihenfolge der Rechnung ist die des Gesetzes vor dem Rechenwerk. Ein Rauschen rechnet
     // das Rechenwerk nie aus Hash-Zügen nach (das Rausch-Gesetz: bis K17-2 Nachbesserung 1 wellte ein Wert-Rauschen aus acht
     // Ziehungen die Bänke im Fragment).
+    // DIE FALTE (K17-3): falte(n, start, schritt) = der Zustand nach n Schritten, schritt(q, zustand) → der neue Zustand (eine
+    // Liste, q = 0 … n − 1). Wo das Gesetz dieselbe Rechnung über Nachbarn wiederholt (die neun Zellen des Schutts, die vier
+    // Bank-Grenzen der Lage), schreibt es sie EINMAL: die Zahl rechnet die Schleife, der Shader trägt EINE Schleife statt
+    // n ausgeschriebener Kopien (seit K17 stand jede Ziehung 78-mal im Boden-Programm: 96 050 → 149 521 Zeichen WGSL, und
+    // swiftshader übersetzte sie vor dem ersten Bild — die Prüfbühne S0 riss ihre Frist). fest(v) = v: ein Wert, den das Gesetz
+    // mehrfach liest, steht im Shader als EINE Variable (r184 baut einen Knoten in einer Schleife je Leser neu).
     const ZAHL = Object.freeze({
+        fest: (v) => v,
+        falte: (n, start, schritt) => {
+            let z = start;
+            for (let q = 0; q < n; q++) z = schritt(q, z);
+            return z;
+        },
         add: (a, b) => a + b,
         sub: (a, b) => a - b,
         mul: (a, b) => a * b,
@@ -1870,7 +1882,7 @@
     const paketGrenzeO = (o, k) => o.mul(o.add(k, o.mul(o.sub(fzO(o, k, 31, 0), 0.5), FELS.paketStreu)), FELS.paket);
     // Das Paket an der Schicht-Höhe s (die Grenzen wandern um weniger als ein halbes Paket: Nachbarn genügen).
     function paketAnO(o, s) {
-        const k = o.floor(o.div(s, FELS.paket));
+        const k = o.fest(o.floor(o.div(s, FELS.paket)));
         return o.add(o.sub(k, o.sub(1, o.step(paketGrenzeO(o, k), s))), o.step(paketGrenzeO(o, o.add(k, 1)), s));
     }
     const paketAn = (s) => paketAnO(ZAHL, s);
@@ -1907,32 +1919,41 @@
     // um weniger als 0,65 Bänke): die oberste darunter, die unterste darüber — wo sich zwei Fugen kreuzen, keilt die Bank aus.
     function felsLageO(o, x, y, z, welle, aus) {
         const F = FELS;
-        const h1 = o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN)),
-            h2 = o.sub(o.mul(z, FELS_CS), o.mul(x, FELS_SN));
-        const s = o.add(o.add(y, o.mul(FELS_TE, h1)), o.mul(o.mul(welle, F.fein.welle), F.bank));
-        const p = paketAnO(o, s);
-        const pa = paketGrenzeO(o, p);
-        const d = paketBankO(o, p);
-        const u = o.div(o.sub(s, pa), d);
+        const h1 = o.fest(o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))),
+            h2 = o.fest(o.sub(o.mul(z, FELS_CS), o.mul(x, FELS_SN)));
+        const s = o.fest(o.add(o.add(y, o.mul(FELS_TE, h1)), o.mul(o.mul(welle, F.fein.welle), F.bank)));
+        const p = o.fest(paketAnO(o, s));
+        const pa = o.fest(paketGrenzeO(o, p));
+        const d = o.fest(paketBankO(o, p));
+        const u = o.fest(o.div(o.sub(s, pa), d));
         const top = o.div(o.sub(paketGrenzeO(o, o.add(p, 1)), pa), d);
-        const j = o.floor(u);
-        const b0 = bankGrenzeO(o, p, o.sub(j, 1), h1, h2),
-            b1 = bankGrenzeO(o, p, j, h1, h2),
-            b2 = bankGrenzeO(o, p, o.add(j, 1), h1, h2),
-            b3 = bankGrenzeO(o, p, o.add(j, 2), h1, h2);
-        const ist1 = o.step(b1, u),
-            ist2 = o.step(b2, u);
-        const lo = o.max(b0, o.max(o.wahl(ist1, b1, -1e9), o.wahl(ist2, b2, -1e9)));
-        const hi = o.min(o.min(o.wahl(ist1, 1e9, b1), o.wahl(ist2, 1e9, b2)), o.min(b3, top));
+        const j = o.fest(o.floor(u));
+        // die vier Grenzen j − 1 … j + 2 in EINER Falte (q = 0 … 3): die erste ist die Untergrenze, die zweite und dritte zählen
+        // unten, wo u über ihnen liegt (ist1, ist2), sonst oben, die vierte ist die Obergrenze — min und max sind exakt, die
+        // Reihenfolge der Falte gibt dieselben Zahlen wie die vier ausgeschriebenen Grenzen
+        const [lo, hiB, ist1, ist2] = o.falte(4, [-1e9, 1e9, 0, 0], (q, z) => {
+            const b = o.fest(bankGrenzeO(o, p, o.add(o.sub(j, 1), q), h1, h2));
+            const erst = o.sub(1, o.step(0.5, q)),
+                letzt = o.step(2.5, q);
+            const mitte = o.sub(o.sub(1, erst), letzt);
+            const ist = o.fest(o.mul(o.step(b, u), mitte));
+            return [
+                o.wahl(erst, b, o.max(z[0], o.wahl(ist, b, -1e9))),
+                o.min(z[1], o.wahl(mitte, o.wahl(ist, 1e9, b), o.wahl(letzt, b, 1e9))),
+                o.wahl(o.mul(mitte, o.sub(1, o.step(1.5, q))), ist, z[2]),
+                o.wahl(o.mul(mitte, o.step(1.5, q)), ist, z[3]),
+            ];
+        });
+        const hi = o.fest(o.min(hiB, top));
         aus.s = s;
         aus.h1 = h1;
         aus.h2 = h2;
         aus.paket = p;
-        aus.bank = o.sub(o.add(j, ist2), o.sub(1, ist1));
+        aus.bank = o.fest(o.sub(o.add(j, ist2), o.sub(1, ist1)));
         aus.d = d;
         aus.dicke = o.mul(o.sub(hi, lo), d);
-        aus.unten = o.mul(o.sub(u, lo), d);
-        aus.oben = o.mul(o.sub(hi, u), d);
+        aus.unten = o.fest(o.mul(o.sub(u, lo), d));
+        aus.oben = o.fest(o.mul(o.sub(hi, u), d));
         return aus;
     }
     const felsLage = (x, y, z, welle, aus) => felsLageO(ZAHL, x, y, z, welle || 0, aus);
@@ -1945,26 +1966,26 @@
         const F = FELS;
         const p = L.paket,
             k = L.bank;
-        const kw = o.mul(
+        const kw = o.fest(o.mul(
             o.mul(F.kehle, o.add(1, o.mul(F.fugeStreu, o.sub(o.mul(2, fzO(o, p, k, 19)), 1)))),
             fugeOffenO(o, p, k, L.h1, L.h2)
-        );
+        ));
         const kIn = o.mul(o.sub(1, o.step(kw, 1e-4)), o.sub(1, o.step(kw, L.unten)));
-        const ke = o.wahl(kIn, o.sub(1, o.div(L.unten, o.max(kw, 1e-4))), 0);
+        const ke = o.fest(o.wahl(kIn, o.sub(1, o.div(L.unten, o.max(kw, 1e-4))), 0));
         aus.kehle = o.mul(ke, ke);
-        const rw = o.mul(F.rand, fugeOffenO(o, p, o.add(k, 1), L.h1, L.h2));
+        const rw = o.fest(o.mul(F.rand, fugeOffenO(o, p, o.add(k, 1), L.h1, L.h2)));
         const rIn = o.mul(o.sub(1, o.step(rw, 1e-4)), o.sub(1, o.step(rw, L.oben)));
-        const t = o.wahl(rIn, o.sub(1, o.div(L.oben, o.max(rw, 1e-4))), 0);
+        const t = o.fest(o.wahl(rIn, o.sub(1, o.div(L.oben, o.max(rw, 1e-4))), 0));
         aus.rand = o.mul(o.mul(4, t), o.sub(1, t));
-        const kd = o.mul(F.kluft, o.add(F.kluftDicht[0], o.mul(F.kluftDicht[1] - F.kluftDicht[0], fzO(o, p, 29, 0))));
-        const kb = o.mul(F.kluftBreite, o.add(0.5, fzO(o, p, k, 71)));
+        const kd = o.fest(o.mul(F.kluft, o.add(F.kluftDicht[0], o.mul(F.kluftDicht[1] - F.kluftDicht[0], fzO(o, p, 29, 0)))));
+        const kb = o.fest(o.mul(F.kluftBreite, o.add(0.5, fzO(o, p, k, 71))));
         const v = 2 * F.kluftVersatz;
         const u1 = o.add(o.add(o.div(o.add(L.h1, o.mul(L.s, F.kluftSchraeg)), kd), fzO(o, p, 13, 0)), o.mul(o.sub(fzO(o, p, k, 61), 0.5), v));
         const u2 = o.add(
             o.add(o.div(o.sub(L.h2, o.mul(o.mul(0.6, L.s), F.kluftSchraeg)), kd), fzO(o, p, 17, 0)),
             o.mul(o.sub(fzO(o, p, k, 67), 0.5), v)
         );
-        const ik = o.wahl(o.sub(1, o.step(F.kluftAnteil, fzO(o, p, k, 23))), o.max(inKluftO(o, u1, kb), inKluftO(o, u2, kb)), 0);
+        const ik = o.fest(o.wahl(o.sub(1, o.step(F.kluftAnteil, fzO(o, p, k, 23))), o.max(inKluftO(o, u1, kb), inKluftO(o, u2, kb)), 0));
         aus.kluft = o.mul(ik, ik);
         return aus;
     }
@@ -1972,15 +1993,21 @@
     const _kanten = { kehle: 0, rand: 0, kluft: 0 };
     // DER FEIN-TERM DES FELSENS relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`): `bank` = Helligkeit × helle Bank
     // × Kluft, `kante` = Kehle × Oberkante — je mit dem Mittel 1. B = `felsBasis` (die Töne der dunklen Lage und der hellen
-    // Bank relativ zum Grundton). Die große Welle ist DASSELBE Gradienten-Rauschen wie im Vertex (`felsFarbe`, `rausch`).
-    function felsFeinO(o, B, x, y, z) {
+    // Bank relativ zum Grundton). Die große Welle ist DASSELBE Gradienten-Rauschen wie im Vertex (`felsFarbe`, `rausch`) —
+    // `felsWelle` an (x, y, z); wer sie schon trägt, reicht sie als `w` (der Shader liest sie EINMAL im Rausch-Atlas, außerhalb
+    // der Fels-Funktion: K17-3).
+    function felsWelleO(o, x, y, z) {
+        const F = FELS;
+        const sy = o.add(y, o.mul(FELS_TE, o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))));
+        return o.mul(F.fein.rausch, o.rausch(o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz)));
+    }
+    function felsFeinO(o, B, x, y, z, welle) {
         const F = FELS;
         const FM = felsMittelWerte();
         const Yl = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const aRel = 0.6 * (Yl(B.akzent) / Yl(B.basis) - 1);
         const dRel = 1 - Yl(B.dunkel) / Yl(B.basis);
-        const sy = o.add(y, o.mul(FELS_TE, o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))));
-        const w = o.mul(F.fein.rausch, o.rausch(o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz)));
+        const w = welle === undefined ? felsWelleO(o, x, y, z) : welle;
         const L = felsLageO(o, x, y, z, w, {});
         const K = felsKantenO(o, L, {});
         const hell = o.div(o.add(1, o.mul(F.bankKontrast, o.sub(o.mul(2, fzO(o, L.paket, L.bank, 3)), 1))), FM.hell);
@@ -2002,30 +2029,30 @@
     function schuttKornO(o, x, z) {
         const S = FELS.geroell;
         // die Ebene des Hangs leicht gewellt (`welle` Zellen): die Kanten der Steine runden, kein Vieleck-Mosaik
-        const u0 = o.div(x, S.korn),
-            v0 = o.div(z, S.korn);
-        const u = o.add(u0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(v0, 1.9), 1.1)), o.mul(0.6, o.sin(o.add(o.mul(u0, 0.73), o.mul(v0, 1.31)))))));
-        const v = o.add(v0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(u0, 2.1), 0.7)), o.mul(0.6, o.sin(o.sub(o.mul(v0, 0.67), o.mul(u0, 1.23)))))));
-        const iu = o.floor(u),
-            iv = o.floor(v);
-        let d1 = 9,
-            d2 = 9,
-            hb = 0.5,
-            ho = 0.5;
-        for (let a = -1; a <= 1; a++)
-            for (let b = -1; b <= 1; b++) {
-                const ci = o.add(iu, a),
-                    cj = o.add(iv, b);
-                const du = o.sub(o.add(ci, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 0)))), u);
-                const dv = o.sub(o.add(cj, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 1)))), v);
-                const r = o.add(S.groesse[0], o.mul(S.groesse[1] - S.groesse[0], o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 3)));
-                const d = o.div(o.sqrt(o.add(o.mul(du, du), o.mul(dv, dv))), r);
-                const c = o.step(d, d1); // näher als der bisher nächste (im Maß des Steins)
-                d2 = o.wahl(c, d1, o.min(d2, d));
-                hb = o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 2), hb);
-                ho = o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 4), ho);
-                d1 = o.min(d1, d);
-            }
+        const u0 = o.fest(o.div(x, S.korn)),
+            v0 = o.fest(o.div(z, S.korn));
+        const u = o.fest(o.add(u0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(v0, 1.9), 1.1)), o.mul(0.6, o.sin(o.add(o.mul(u0, 0.73), o.mul(v0, 1.31))))))));
+        const v = o.fest(o.add(v0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(u0, 2.1), 0.7)), o.mul(0.6, o.sin(o.sub(o.mul(v0, 0.67), o.mul(u0, 1.23))))))));
+        const iu = o.fest(o.floor(u)),
+            iv = o.fest(o.floor(v));
+        // die neun Zellen um (iu, iv) in EINER Falte (q = 0 … 8: a = ⌊q/3⌋ − 1 außen, b = q − 3⌊q/3⌋ − 1 innen); der Zustand ist
+        // der nächste und der zweitnächste Abstand (im Maß des Steins), die Helligkeit und das Klaffen des nächsten
+        const [d1, d2, hb, ho] = o.falte(9, [9, 9, 0.5, 0.5], (q, z) => {
+            const qa = o.floor(o.div(q, 3));
+            const ci = o.fest(o.add(iu, o.sub(qa, 1))),
+                cj = o.fest(o.add(iv, o.sub(o.sub(q, o.mul(3, qa)), 1)));
+            const du = o.fest(o.sub(o.add(ci, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 0)))), u));
+            const dv = o.fest(o.sub(o.add(cj, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 1)))), v));
+            const r = o.add(S.groesse[0], o.mul(S.groesse[1] - S.groesse[0], o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 3)));
+            const d = o.fest(o.div(o.sqrt(o.add(o.mul(du, du), o.mul(dv, dv))), r));
+            const c = o.fest(o.step(d, z[0])); // näher als der bisher nächste (im Maß des Steins)
+            return [
+                o.min(z[0], d),
+                o.wahl(c, z[0], o.min(z[1], d)),
+                o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 2), z[2]),
+                o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 4), z[3]),
+            ];
+        });
         // e: 1 in der Mitte des Steins, 0 an seiner Kante (die gewichtete Grenze liegt bei d1 = d2)
         const e = o.div(o.sub(d2, d1), o.add(d2, d1));
         const ke = o.sub(1, e);
@@ -2742,6 +2769,7 @@
         felsMittelWerte: felsMittelWerte,
         felsBankung: felsBankung,
         felsFein: felsFeinO,
+        felsWelle: felsWelleO,
         schuttKorn: schuttKornO,
         schuttMittel: schuttMittel,
         FELS_SAAT: FELS_SAAT,
