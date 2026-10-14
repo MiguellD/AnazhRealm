@@ -329,15 +329,20 @@ function check(name, ok, detail) {
                         }
                     return o;
                 };
+                // zurück wartet die Probe auf den GANZEN Wechsel: die Scheibe um das Ziel UND jede Instanz jenseits des
+                // Totbands (an der Mess-Wiese −278/−1038 lag eine Mesh-Zelle 30–64 m vom Ziel, die Probe brach nach der
+                // Scheibe ab und zählte sie in B)
                 pm.set(heim.x, heim.y, heim.z);
                 const dlZ = performance.now() + 90000;
                 while (performance.now() < dlZ) {
                     r._tickScatterLod(pm, 64, 4000);
-                    if (umZiel().mesh === 0) break;
+                    if (umZiel().mesh === 0 && absenz().n === 0) break;
                     await sleep(100);
                 }
                 g.zurueck = umZiel();
-                g.bNachZurueck = absenz().n;
+                const bz = absenz();
+                g.bNachZurueck = bz.n;
+                g.bTreffer = bz.treffer;
             }
         }
         res.g = g;
@@ -613,7 +618,7 @@ function check(name, ok, detail) {
             gz.mesh === 0 &&
             gz.gesetz > 0 &&
             gg.bNachZurueck === 0,
-        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}`
+        `Ziel ${gg.zielD} m · hin: Mesh ${gh.mesh} (ohne Instanz ${gh.ohneSlots}) · Fernform ${gh.fern} · zurück um das Ziel: Gesetz ${gz.gesetz} · Mesh ${gz.mesh} · B danach ${gg.bNachZurueck}${gg.bTreffer && gg.bTreffer.length ? " (" + gg.bTreffer.join(", ") + ")" : ""}`
     );
     const d = out.d || {};
     check(
