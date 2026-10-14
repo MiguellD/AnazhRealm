@@ -1335,11 +1335,30 @@ async function probeLeben(expected) {
             quer: 6,
             n: 0,
         });
+        // DER FAHRER DER LINIE (K55-5): W und die Lenkung eines Spielers, der auf die Kante zuhält — die Gier zielt auf die
+        // Linie (Ziel-Gier = Fahrt − 0,35 · Quer-Abstand, höchstens ±0,6 rad), A dreht die Gier auf, D zurück (der Fahr-Satz:
+        // steer = A − D, die Gier wächst mit steer). Ohne Lenkung glitt der GT am Grat vor der Kante der Mitte der Welt
+        // (589,7/147,9, Querhang 23–38°) 17° von der Linie und fuhr 3 m neben der Kante vorbei (Flug 0,32 m, S4 vakuös).
+        let gierVor = null;
+        const halteLinie = (g, k) => {
+            for (const t of ["w", "a", "s", "d", "shift", " "]) st.keys[t] = false;
+            st.keys.w = true;
+            const gier = Number.isFinite(g._rideYaw) ? g._rideYaw : k.fahrt;
+            const q = (g.position.x - k.sx) * Math.cos(k.fahrt) - (g.position.z - k.sz) * Math.sin(k.fahrt);
+            const ziel = k.fahrt - Math.max(-0.6, Math.min(0.6, 0.35 * q));
+            const dreh = gierVor === null ? 0 : gier - gierVor;
+            gierVor = gier;
+            let e = ziel - gier - 3 * dreh;
+            e = Math.atan2(Math.sin(e), Math.cos(e));
+            if (e > 0.02) st.keys.a = true;
+            else if (e < -0.02) st.keys.d = true;
+        };
         if (kl) {
             bahnWache = klippenBahn(kl);
             const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
             if (g2) {
                 tasten(true, false);
+                gierVor = null;
                 let yv = g2.position.y;
                 let sprung = 0;
                 let luft = 0;
@@ -1352,7 +1371,10 @@ async function probeLeben(expected) {
                     schritte++;
                     if (g2._fahr && g2._fahr.luft) luft++;
                 };
-                for (let i = 0; i < 420; i++) frame(i);
+                for (let i = 0; i < 420; i++) {
+                    halteLinie(g2, kl);
+                    frame(i);
+                }
                 tasten(false);
                 for (let i = 0; i < 60; i++) frame(i);
                 r._stepFixedSim = P2;
@@ -1380,7 +1402,9 @@ async function probeLeben(expected) {
                 let hoeheMax = -Infinity;
                 let luftN = 0;
                 let gefahren = 0;
+                gierVor = null;
                 for (let i = 0; i < 420; i++) {
+                    halteLinie(g4, kl);
                     frame(i);
                     gefahren++;
                     hoehe = g4.position.y - 0.5 - hh(g4.position.x, g4.position.z);
@@ -1390,10 +1414,12 @@ async function probeLeben(expected) {
                     }
                     if (g4._fahr && g4._fahr.luft && hoehe >= expected.flugM) break;
                 }
-                const weg4 = (g4.position.x - kl.sx) * Math.sin(kl.fahrt) + (g4.position.z - kl.sz) * Math.cos(kl.fahrt);
+                const weg4 =
+                    (g4.position.x - kl.sx) * Math.sin(kl.fahrt) + (g4.position.z - kl.sz) * Math.cos(kl.fahrt);
                 const diag4 =
                     `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m` +
-                    ` · ${weg4.toFixed(1)} m längs der Bahn in ${gefahren} Frames (Kante bei ` +
+                    ` · ${weg4.toFixed(1)} m längs der Bahn, ` +
+                    `${((g4.position.x - kl.sx) * Math.cos(kl.fahrt) - (g4.position.z - kl.sz) * Math.sin(kl.fahrt)).toFixed(2)} m quer, in ${gefahren} Frames (Kante bei ` +
                     `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
                     (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
                 tasten(false);
@@ -2214,10 +2240,18 @@ async function probeLeben(expected) {
             // im Rahmen der Box: ein Teil quer zu den Welt-Achsen trägt seine gedrehte Box (`obb` { cx, cz, c, s, hx, hz }, lokal
             // = (Δx·c − Δz·s, Δx·s + Δz·c)), in der die Kapsel löst; die Welt-AABB ist nur ihr Vorfilter. An der Gasse von K55
             // (diagonal) las die Welt-AABB den Spieler 1,97 m „im Wagen", wo er an der gedrehten Flanke abprallte.
+            // Gezählt wird nur eine WAND des Lösers (`_resolveCapsuleVsAABB`): die Oberkante der Box über der Stufe des Fußes
+            // (Fuß + PLAYER_STEP_UP), ihre Unterkante unter dem Kopf. Eine Box, die der Fuß als Stufe nimmt, trägt ihn — W gegen
+            // die frische Wand KLETTERT (Parkour): an der Gasse von K55 stieg der Spieler auf den Wagen (Fuß 0,85 m über dem Grund,
+            // über der Unterkörper-Box), und die flache Probe las ihn 0,42 m „im Wagen", während er auf ihm stand.
+            const AK = r.constructor;
             const kapselAbstand = (e) => {
                 const pmP = st.playerMesh.position;
+                const fuss = pmP.y - AK.PLAYER_FOOT_OFFSET;
+                const kopf = pmP.y + AK.PLAYER_FOOT_OFFSET;
                 let d = Infinity;
                 for (const b of e.blockerAABBs) {
+                    if (!(b.topY > fuss + AK.PLAYER_STEP_UP && b.botY < kopf)) continue;
                     const ob = b.obb;
                     const dx = pmP.x - (ob ? ob.cx : (b.minX + b.maxX) / 2);
                     const dz = pmP.z - (ob ? ob.cz : (b.minZ + b.maxZ) / 2);
@@ -2231,7 +2265,7 @@ async function probeLeben(expected) {
                     const innen = aussen > 0 ? 0 : Math.min(hx - Math.abs(lx), hz - Math.abs(lz));
                     d = Math.min(d, aussen > 0 ? aussen : -innen);
                 }
-                return d - 0.35;
+                return d - AK.PLAYER_WALL_RADIUS;
             };
             const sw = { a: null, b: null };
             // (a) der GT quer zur Gasse 8 m voraus, der Spieler 3,5 m vor der Gasse, Blick und W längs der Gasse
@@ -4613,7 +4647,11 @@ function quellenAbgriff() {
     for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "linse", frist: 300000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
+    const browser = await starteBrowser({
+        art: "linse",
+        frist: 300000,
+        zusatz: ["--autoplay-policy=no-user-gesture-required"],
+    });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
