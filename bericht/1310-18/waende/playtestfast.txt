@@ -1,0 +1,28 @@
+
+=== Schnell-Playtest (Kern-Gesundheit) ===
+  ✅ Keine Page-/Console-Fehler (Crash-Wand)
+  ✅ window.anazhRealm.state erreichbar
+  ✅ voxelChunks gebaut (81 ≥ 1)
+  ✅ Terrain-Substanz: Chunks mit surfMap (81 > 0)
+  ✅ Baupläne geladen (136 > 0)
+  ✅ getTerrainHeightAt(0,0) endlich
+  ✅ AVATAR baut (_buildHumanGroup ohne Crash)
+  ✅ AVATAR ist der Studio-Baum aus der PIPE (14 gemergte Teile + Gelenk-Gruppen)
+  ✅ KREATUR 'wesen' baut (1 Teile)
+  ✅ ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär
+  ✅ DIE NEUEN TIERE bauen (Wolf·Fuchs·Bär aus den tetrapoda-Gattungen)
+  ✅ WERDE DAS TIER: koerper_wolf ist tragbar (generischer embody-Pfad) + koerper_wesen/Hirsch existiert
+  ✅ KÖRPER→EIGENSCHAFTEN: Bär>Wolf>Fuchs (HP) · Fuchs>Wolf>Bär (Tempo) + werde-Alias + fail-soft
+  ✅ HERZ: werde wolf trägt den Studio-Baum (derselbe Guss wie die Welt-Kreatur)
+  ✅ HERZ: Mensch-Dials tragen Stats (mehr Masse/Höhe → mehr HP, weniger Tempo — EINE Größen-Achse)
+  ✅ KERN-BAUPLÄNE bauen (Schwert-Substanz·Esse·Portal·Rüstung)
+  ✅ RESONANZ: Schwert-Substanz→weapon · Rüstung→armor · Portal→portal
+  ✅ Spieler-Stats sinnvoll (hp>0, speed>0)
+  ✅ K24 RICHTER Selbsttest: ein Rinden-Zwilling fällt beim Namen (rindeA)
+  ✅ K24 RICHTER = GESETZ: gefühlter Baum = treeParams der Art, 9 Arten × 2 Gestalten × 3 Stufen (54 Fälle, 0 abweichend)
+  ✅ CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)
+  ✅ CO-SCHÖPFER: KI-Antwort → Studio-Birken in der Welt (END-ZU-END, gestubbt)
+
+Laufzeit: 26s · 22 ✅ · 0 ❌
+
+✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll).

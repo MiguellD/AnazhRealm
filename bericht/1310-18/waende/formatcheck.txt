@@ -1,0 +1,74 @@
+=== FORMAT IN TEILEN — Selbsttest (Teil-Urteil gegen Datei-Urteil) ===
+  ✅ Selbsttest „gut" → ganze Datei formatiert, in 20 Teilen formatiert
+  ✅ Selbsttest „drei Umbrüche zwischen zwei Gliedern" → ganze Datei ROT, in 19 Teilen ROT (der blinde Schneider irrt hier)
+  ✅ Selbsttest „Leerraum in der Leerzeile" → ganze Datei ROT, in 19 Teilen ROT (der blinde Schneider irrt hier)
+  ✅ Selbsttest „Leerzeile nach der Klassen-Klammer" → ganze Datei ROT, in 7 Teilen ROT
+  ✅ Selbsttest „Leerzeile vor der schließenden Klammer" → ganze Datei ROT, in 7 Teilen ROT
+  ✅ Selbsttest „zwei Anweisungen auf einer Zeile" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „falscher Einzug im Glied" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „fehlendes Semikolon am Feld" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „zu lange Zeile" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „CRLF" → ganze Datei ROT, in 1 Teilen ROT
+  ✅ Selbsttest „kein Umbruch am Datei-Ende" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „zwei Umbrüche am Datei-Ende" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „Zeichenkette nach einem Schnitt" → ganze Datei ROT, in 20 Teilen ROT
+  ✅ Selbsttest „Kommentar mit Leerzeile vor dem Glied (bleibt)" → ganze Datei formatiert, in 20 Teilen formatiert
+  ✅ Selbsttest „nachgestellter Kommentar am Glied-Ende" → ganze Datei formatiert, in 20 Teilen formatiert
+  ✅ Selbsttest „drei Umbrüche auf der obersten Ebene" → ganze Datei ROT, in 19 Teilen ROT (der blinde Schneider irrt hier)
+  ✅ Selbsttest „Leerzeile nach der Direktive (bleibt)" → ganze Datei formatiert, in 20 Teilen formatiert
+✅ SELBSTTEST GRÜN — in Teilen urteilt Prettier wie über die ganze Datei, der blinde Schneider irrt.
+=== FORMAT IN TEILEN — 52 Dateien (Prettier 3.9.4) ===
+  stamm\01.js: formatiert (1 Teil)
+  stamm\02a.js: formatiert (1 Teil)
+  stamm\02b.js: formatiert (1 Teil)
+  stamm\03a.js: formatiert (1 Teil)
+  stamm\03b.js: formatiert (1 Teil)
+  stamm\04.js: formatiert (1 Teil)
+  stamm\05a.js: formatiert (1 Teil)
+  stamm\05b.js: formatiert (1 Teil)
+  stamm\06a.js: formatiert (1 Teil)
+  stamm\06b.js: formatiert (1 Teil)
+  stamm\06c.js: formatiert (1 Teil)
+  stamm\07.js: formatiert (1 Teil)
+  stamm\08.js: formatiert (1 Teil)
+  stamm\09.js: formatiert (1 Teil)
+  stamm\10.js: formatiert (1 Teil)
+  stamm\11a.js: formatiert (1 Teil)
+  stamm\11b.js: formatiert (1 Teil)
+  stamm\11c.js: formatiert (1 Teil)
+  stamm\11d.js: formatiert (1 Teil)
+  stamm\12.js: formatiert (1 Teil)
+  stamm\13a.js: formatiert (1 Teil)
+  stamm\13b.js: formatiert (1 Teil)
+  stamm\13c.js: formatiert (1 Teil)
+  stamm\14.js: formatiert (1 Teil)
+  stamm\15a.js: formatiert (1 Teil)
+  stamm\15b.js: formatiert (1 Teil)
+  stamm\15c.js: formatiert (1 Teil)
+  stamm\16.js: formatiert (1 Teil)
+  stamm\17a.js: formatiert (1 Teil)
+  stamm\17b.js: formatiert (1 Teil)
+  stamm\17c.js: formatiert (1 Teil)
+  stamm\18.js: formatiert (1 Teil)
+  stamm\19.js: formatiert (1 Teil)
+  stamm\20a.js: formatiert (1 Teil)
+  stamm\20b.js: formatiert (1 Teil)
+  stamm\20c.js: formatiert (1 Teil)
+  stamm\20d.js: formatiert (1 Teil)
+  stamm\21.js: formatiert (1 Teil)
+  stamm\22.js: formatiert (1 Teil)
+  stamm\23a.js: formatiert (1 Teil)
+  stamm\23b.js: formatiert (1 Teil)
+  stamm\24.js: formatiert (1 Teil)
+  stamm\25a.js: formatiert (1 Teil)
+  stamm\25b.js: formatiert (1 Teil)
+  stamm\25c.js: formatiert (1 Teil)
+  stamm\26a.js: formatiert (1 Teil)
+  stamm\26b.js: formatiert (1 Teil)
+  stamm\26c.js: formatiert (1 Teil)
+  phyto-core.js: formatiert (1 Teil)
+  voxel-worker.js: formatiert (1 Teil)
+  save-server.js: formatiert (1 Teil)
+  signaling-server.js: formatiert (1 Teil)
+  52 Teile auf 12 Arbeitern
+✅ Alle Dateien formatiert (5.8 s).

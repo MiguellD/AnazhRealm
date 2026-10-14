@@ -1,0 +1,58 @@
+=== W-A3 PORTAL-GESTALT — TEIL S: die statischen Gesetze (Node) ===
+  ℹ️ abgeleitete Gestalt-Traeger (7): welt_portal->geisttor · welt_strom->drachentor · welt_terrain->verkalkt · welt_garage->maschine · welt_portale->kathedrale · welt_schmiede->maurentor · welt_fachwerk->ruine
+  ✅ S0: >= 6 Gestalt-Traeger aus der Quelle abgeleitet (7)
+  ✅ S0: ANKER welt_terrain -> "verkalkt" (traegt B/C/D/F) + welt_schmiede -> "maurentor" (W-A4c) — terrain=verkalkt schmiede=maurentor
+  ✅ S0: jede Gestalt ist UNVERWECHSELBAR (keine zwei Portale teilen ein Preset)
+  ✅ S1: welt_portal ("geisttor") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S1: welt_strom ("drachentor") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S1: welt_terrain ("verkalkt") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S1: welt_garage ("maschine") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S1: welt_portale ("kathedrale") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S1: welt_schmiede ("maurentor") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S1: welt_fachwerk ("ruine") ist ein portal-Blueprint (role portal + portalMeta am Traeger)
+  ✅ S2: der Resolver-Block ist GENERISCH (liest studioGestalt + LIVE-Buch, foundry-gegated, KEIN welt_-Literal)
+
+=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===
+  ✅ A: das LIVE-Buch ist warm (porta-Rezepte angekommen)
+  ✅ A: Set-Paritaet — die LIVE-Gestalt-Traeger sind exakt die Quelle-Ableitung (dynamische Wahrheit beidseitig) — live=welt_fachwerk,welt_garage,welt_portal,welt_portale,welt_schmiede,welt_strom,welt_terrain
+  ✅ A: welt_portal -> "geisttor" steht im LIVE-Buch (kind gate) — value=geisttor inBook=true
+  ✅ A: welt_strom -> "drachentor" steht im LIVE-Buch (kind gate) — value=drachentor inBook=true
+  ✅ A: welt_terrain -> "verkalkt" steht im LIVE-Buch (kind gate) — value=verkalkt inBook=true
+  ✅ A: welt_garage -> "maschine" steht im LIVE-Buch (kind gate) — value=maschine inBook=true
+  ✅ A: welt_portale -> "kathedrale" steht im LIVE-Buch (kind gate) — value=kathedrale inBook=true
+  ✅ A: welt_schmiede -> "maurentor" steht im LIVE-Buch (kind gate) — value=maurentor inBook=true
+  ✅ A: welt_fachwerk -> "ruine" steht im LIVE-Buch (kind gate) — value=ruine inBook=true
+  ✅ B: der Resolver loest welt_terrain -> "verkalkt" (die Daten-Zeile traegt) — verkalkt
+  ✅ B: Regression 0 — baum_eiche loest unveraendert auf eiche — eiche
+  ✅ B: Regression 0 — esse (ohne studioGestalt) loest auf null — null
+  ✅ B: Regression 0 — fahrzeug_wagen (Donor) loest auf null — null
+  ✅ C: das gespawnte welt_terrain materialisiert als Studio-Asset (instanced + instFoundry) — instanced=true foundry=true
+  ✅ C: Tor-Geometrie angekommen auf der Budget-Zeile (9 Züge aus 13 Slots, 1..9 = gate[0].draws) — zuege=9 slots=13 (+ Wurf-Zwilling 1) budget=9
+  ✅ C: der Flügel-Takt dreht je Flügel × Stoff (8 Flügel-Slots, 1..8) — 8
+  ✅ C: alle Slots leben im f:verkalkt-Namensraum
+  ℹ️ Kalt-Verhalten: nach dem Spawn (Buch warm, Asset kalt) KALT ohne Interim (Baum-Kalt-Regel; E-Trigger lebt schon) · Materialisierung nach 1533 ms (headless swiftshader-Worker)
+  ✅ C: KEIN Doppel-Bild (kein entry.mesh, keine lebende Part-Gruppe) — partGroupsAlive=0
+  ✅ D: portalMeta byte-unveraendert am Blueprint (role portal)
+  ✅ D: der Entry traegt affordances.isPortal
+  ✅ D: blockerAABBs vorhanden (8 — die Substanz-Wahrheit lebt)
+  ✅ D: der E-Trigger ist von einem freien Steh-Punkt vor dem Tor erreichbar (Distanz 2.56 m <= 4.5 m) — standFree=true
+  ℹ️ Durchgangs-Zone gemessen: frei
+  ℹ️ welt_portal -> geisttor: ALT 4.32×4.41×3.36 m · NEU 4.7×7.47×3.86 m (Welt-Skala ×1, 8 Meshes) · Hoehen-Ratio 1.69
+  ✅ E: welt_portal Hoehen-Ratio 1.69 in [0.5, 3]
+  ℹ️ welt_strom -> drachentor: ALT 3.37×3.37×3.38 m · NEU 5.39×8.83×3.95 m (Welt-Skala ×1, 13 Meshes) · Hoehen-Ratio 2.62
+  ✅ E: welt_strom Hoehen-Ratio 2.62 in [0.5, 3]
+  ℹ️ welt_terrain -> verkalkt: ALT 3.82×3.85×3.83 m · NEU 6.7×8.07×5.63 m (Welt-Skala ×1, 13 Meshes) · Hoehen-Ratio 2.1
+  ✅ E: welt_terrain Hoehen-Ratio 2.1 in [0.5, 3]
+  ℹ️ welt_garage -> maschine: ALT 3.55×3.74×3.54 m · NEU 5.82×7.8×5.23 m (Welt-Skala ×1, 10 Meshes) · Hoehen-Ratio 2.09
+  ✅ E: welt_garage Hoehen-Ratio 2.09 in [0.5, 3]
+  ℹ️ welt_portale -> kathedrale: ALT 4.07×3.64×2.64 m · NEU 8.39×9.69×8.39 m (Welt-Skala ×1, 7 Meshes) · Hoehen-Ratio 2.66
+  ✅ E: welt_portale Hoehen-Ratio 2.66 in [0.5, 3]
+  ℹ️ welt_schmiede -> maurentor: ALT 4.55×3.81×1.97 m · NEU 7.56×7.71×5.46 m (Welt-Skala ×1, 13 Meshes) · Hoehen-Ratio 2.02
+  ✅ E: welt_schmiede Hoehen-Ratio 2.02 in [0.5, 3]
+  ℹ️ welt_fachwerk -> ruine: ALT 4.69×3.67×0.96 m · NEU 11.13×7.93×6.51 m (Welt-Skala ×1, 7 Meshes) · Hoehen-Ratio 2.16
+  ✅ E: welt_fachwerk Hoehen-Ratio 2.16 in [0.5, 3]
+  ✅ F: unter dem Gate-Hook faellt der Resolver auf null (gate-treu) — null
+  ✅ F: der Part-Pfad lebt byte-alt (klassischer Part-Group-Mesh, kein Foundry-Merker) — mesh=true foundry=false kinder=3
+  ✅ F: die Substanz ist regime-frei (blockerAABBs relativ IDENTISCH Studio- vs Part-Spawn)
+
+✅ GRÜN — W-A3 STEHT: die 7 welt_-Portale (dynamisch aus der Quelle) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.

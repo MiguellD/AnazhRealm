@@ -1,0 +1,365 @@
+{
+ "ergebnis": {
+  "boden-satz": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "fern-ring": {
+   "n": 3,
+   "count": 3,
+   "sichtbar": 3,
+   "sig": null,
+   "wind": null,
+   "pos": false
+  },
+  "feld-pass": {
+   "n": 2,
+   "count": 2,
+   "sichtbar": 0,
+   "sig": null,
+   "wind": null,
+   "pos": false
+  },
+  "dorf-rauch": {
+   "n": 1,
+   "count": 15,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": false
+  },
+  "f:weide|1|1:0#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:weide|1|1:2#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:weide|1|1:3#S#schatten": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|1|1:0#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|1|1:2#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|1|1:3#S#schatten": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:birke|2|1:0#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:birke|2|1:2#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:birke|2|1:3#S#schatten": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:birke|2|0:0#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:birke|2|0:2#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|2|0:0#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|2|0:2#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|2|1:3#S#schatten": {
+   "n": 1,
+   "count": 5,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|2|1:0#haupt": {
+   "n": 1,
+   "count": 5,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|2|1:2#haupt": {
+   "n": 1,
+   "count": 5,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|1|1:0#haupt": {
+   "n": 1,
+   "count": 3,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|1|1:2#haupt": {
+   "n": 1,
+   "count": 3,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:tanne|1|1:3#S#schatten": {
+   "n": 1,
+   "count": 3,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|2|1:0#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|2|1:2#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|2|1:3#S#schatten": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:strauch|1|1:0#haupt": {
+   "n": 1,
+   "count": 6,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:strauch|1|1:2#haupt": {
+   "n": 1,
+   "count": 6,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:strauch|1|1:0#S#schatten": {
+   "n": 1,
+   "count": 6,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:strauch|1|1:2#S#schatten": {
+   "n": 1,
+   "count": 6,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:fichte|1|1:0#haupt": {
+   "n": 1,
+   "count": 4,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:fichte|1|1:2#haupt": {
+   "n": 1,
+   "count": 4,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:fichte|1|1:3#S#schatten": {
+   "n": 1,
+   "count": 4,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|1|0:0#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:eiche|1|0:2#haupt": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:strauch|1|0:0#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:strauch|1|0:2#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:fichte|2|1:0#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:fichte|2|1:2#haupt": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "f:fichte|2|1:3#S#schatten": {
+   "n": 1,
+   "count": 2,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "impostor#fimp:atlas#haupt": {
+   "n": 1,
+   "count": 254,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "formationenSatz": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": false
+  },
+  "bauSatz": {
+   "n": 2,
+   "count": 2,
+   "sichtbar": 2,
+   "sig": null,
+   "wind": null,
+   "pos": false
+  },
+  "bauWurf": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  },
+  "wasser": {
+   "n": 1,
+   "count": 1,
+   "sichtbar": 1,
+   "sig": null,
+   "wind": null,
+   "pos": true
+  }
+ },
+ "ms": 4
+}

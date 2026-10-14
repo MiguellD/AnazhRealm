@@ -1,0 +1,9 @@
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\welle-m-e-stoffe\stamm\11c.js
+  2047:21  warning  'fr' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\welle-m-e-stoffe\stamm\15b.js
+  939:15  warning  'SC' is assigned a value but never used. Allowed unused vars must match /^AnazhRealm(_Z\w+)?$/u  no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+

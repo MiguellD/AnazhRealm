@@ -1,0 +1,152 @@
+=== SELBST-TEST: die Linse feuert auf verfälschte Kopien ===
+  ✅ Selbst-Test 1: verfälschter IGN-Koeffizient → Dither-Äquivalenz feuert
+  ✅ Selbst-Test 2: verfälschte f1o-Rampe → Masken-Äquivalenz feuert
+  ✅ Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz
+  ✅ Selbst-Test Schatten: „Pass-Kamera" → das Gesetz nennt ihn — die Foundry-Maske misst von cameraPosition (im Schattenpass die Licht-Kamera) · die Foundry-Maske liest das Auge (uLodAuge) nicht
+  ✅ Selbst-Test Schatten: „Blatt-Alpha in opacityNode" → das Gesetz nennt ihn — werfender Stoff schneidet über opacityNode aus: atl.a
+  ✅ Selbst-Test Schatten: „Zwilling mit L1-Stempel" → das Gesetz nennt ihn — der Schatten-Zwilling wirft mit der L1-Gestalt (L1-Stempel: blendet nah aus)
+  ✅ Selbst-Test Schatten: „Zwillings-Gestalt als L1 gestempelt" → das Gesetz nennt ihn — die Zwillings-Gestalt trägt nicht den Nah-Stempel (aLodLevel 3: wirft für L0 und L1, blendet zur Karte aus)
+  ✅ Selbst-Test Schatten: „zwei Werfer je Gestalt" → das Gesetz nennt ihn — die Wurf-Quelle (L1) wirft über ihre Teile UND als Zwilling der L0 — zwei Gruppen je Gestalt in jeder Kaskade
+  ✅ Selbst-Test Schatten: „Kosten-Regel wirft doppelt" → das Gesetz nennt ihn — die Kosten-Regel lässt die eigene Stufe werfen UND den Zwilling mitreisen — zwei Werfer je Gestalt
+  ✅ Selbst-Test Schatten: „L0 baut eigenen Zwilling" → das Gesetz nennt ihn — die L0 baut einen eigenen Zwilling statt die Zwillings-Leaves der Wurf-Stufe zu tragen
+  ✅ Selbst-Test Schatten: „Band wirft doppelt" → das Gesetz nennt ihn — der Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal
+  ✅ Selbst-Test Schatten: „Streu-Band wirft doppelt" → das Gesetz nennt ihn — der gestreute Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal
+  ✅ Selbst-Test Schatten: „Schatten-Teil im Hauptbild, jedes Teil wirft" → das Gesetz nennt ihn — der Schatten-Teil ist nicht selbst der Zwilling (er zeichnete im Hauptbild, oder jedes Teil würfe)
+  ✅ Selbst-Test Schatten: „Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf" → das Gesetz nennt ihn — eine Wurf-Zeile ohne Teil-Namen macht die ganze Stufe still zum Zwilling (undefined === undefined) statt KERN-PFLICHT
+  ✅ Selbst-Test Schatten: „Schatten-Teil fehlt still" → das Gesetz nennt ihn — eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT
+  ✅ Selbst-Test Schatten: „Schatten-Stoff über opacityNode" → das Gesetz nennt ihn — werfender Stoff schneidet über opacityNode aus: TSL.max(deckt, atl.a) · der Schatten-Stoff schneidet nicht über colorNode.a = max(aDeckt, Atlas-Alpha) aus
+  ✅ Selbst-Test Schatten: „Index-Vorsatz kehrt zurück" → das Gesetz nennt ihn — der drawRange-Vorsatz (lf.wurf/__wurf) lebt noch — der Zwilling würfe einen Index-Vorsatz
+  ✅ Selbst-Test Schatten: „Fassade verliert den Wurf" → das Gesetz nennt ihn — die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)
+  ✅ Selbst-Test Schatten: „Zwillings-Gestalt leckt" → das Gesetz nennt ihn — die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)
+  ✅ Selbst-Test Schatten: „Zwilling besitzt L1-Geometrie" → das Gesetz nennt ihn — der ganze Zwilling (ohne Wurf-Teil) erbt das Eigentum der Quell-Geometrie (doppelter Dispose)
+  ✅ Selbst-Test Schatten: „L0-Kehraus räumt die Wurf-Gestalt der L1" → das Gesetz nennt ihn — der Kehraus räumt Leaves fremder Gruppen (die L0 gibt die Wurf-Gestalt der lebenden L1 frei)
+  ✅ Selbst-Test Schatten: „Zwilling liest das Stufen-Flag" → das Gesetz nennt ihn — der Schatten-Zwilling wirft nach lf.castShadow statt nach dem Wurf-Recht seines Teils (teilWirft) — Bäume und Sträucher werfen still nicht
+  ✅ Selbst-Test Schatten: „Wurf-Grenze neben dem Texel" → das Gesetz nennt ihn — die Wurf-Grenze des Studios (0.12 m) ist nicht der Kaskaden-Texel k0 der Welt (0.17 m)
+  ✅ Selbst-Test Perf: die echte Quelle hält die Perf-Wahrheit
+  ✅ Selbst-Test Perf: „CPU ohne Perf-Helfer" → die Wahrheit nennt ihn — _lodPerceptionDistance liest den Perf-Streck nicht aus _lodPerfMul
+  ✅ Selbst-Test Perf: „kein Frame-Spiegel" → die Wahrheit nennt ihn — uLodPerf wird nicht je Frame aus _lodPerfMul gespiegelt
+  ✅ Selbst-Test Perf: „Maske ohne Perf" → die Wahrheit nennt ihn — die Stufen-Maske misst die Auge-Distanz ohne uLodPerf
+  ✅ Selbst-Test Perf: „Billboard ohne Perf" → die Wahrheit nennt ihn — die Billboard-Maske misst ohne uLodPerf
+  ✅ Selbst-Test Perf: „Billboard-Höhe ersetzt den Streck" → die Wahrheit nennt ihn — die Billboard-Maske ersetzt die gestreckte Distanz durch die rohe (Perf-Streck verloren)
+  ✅ Selbst-Test Perf: „Billboard mit Rahmen-Höhe" → die Wahrheit nennt ihn — das Billboard misst mit eigener Höhe statt dem Sichthöhen-Stempel der L1 (|aKarte.w|)
+  ✅ Selbst-Test Perf: „Karte ohne Höhen-Buch" → die Wahrheit nennt ihn — die Karte trägt nicht die Höhe der Höhen-Stufe (das Höhen-Buch) als Sichthöhe
+  ✅ Selbst-Test Perf: „Karten-Stempel ohne Instanz-Skala" → die Wahrheit nennt ihn — der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala
+  ✅ Selbst-Test Perf: „Strauch-L1 ungemaskt" → die Wahrheit nennt ihn — die L1 einer Art ohne L0 ist ungemaskt — sie blendet nicht zum Billboard aus
+  ✅ Selbst-Test Perf: „Wagen-L0 dithert zu einer L1, die es nicht gibt" → die Wahrheit nennt ihn — die L0 einer Art ohne L1 blendet zu einer L1 aus, die es nicht gibt (Wagen und Tor)
+  ✅ Selbst-Test Perf: „Maske ohne einzige Nah-Stufe" → die Wahrheit nennt ihn — die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)
+  ✅ Selbst-Test Perf: „Sichthöhe still 0" → die Wahrheit nennt ihn — _foundrySichtHoehe fällt ohne Höhe still auf 0 (roh) zurück
+  ✅ Selbst-Test Perf: „Höhe nur im LRU" → die Wahrheit nennt ihn — der Cache-Chokepoint schreibt das Höhen-Buch nicht
+  ✅ Selbst-Test Perf: „LOD-Takt urteilt ohne Höhe" → die Wahrheit nennt ihn — _tickArchitectureLOD urteilt ohne bekannte Höhe (visH null)
+  ✅ Selbst-Test Perf: „CPU-Blatt-Kappe auf der skalierten Höhe" → die Wahrheit nennt ihn — die CPU-Blatt-Kappe kappt die skalierte Höhe (min(h·s, 24)) statt der Vorlage (min(h, 24)·s)
+  ✅ Selbst-Test Perf: „Streu-Partner ohne Skala" → die Wahrheit nennt ihn — ein Aufrufer von _lodBandPartnerFor reicht keine Instanz-Skala: dist, visH, _curLod
+  ✅ Selbst-Test Perf: „Sichthöhe aus dem Grammatik-Bauplan" → die Wahrheit nennt ihn — _lodTreeVisHeight liest den Foundry-Stempel nicht (_foundrySichtHoehe)
+  ✅ Selbst-Test Fenster: „L0 aus" 1 m nach innen → die Linse nennt Löcher — 48 Löcher
+  ✅ Selbst-Test Fenster: „L1 ein" 1 m nach innen → die Linse nennt Löcher — 54 Löcher
+  ✅ Selbst-Test Fenster: „L1 aus" 1 m nach innen → die Linse nennt Löcher — 96 Löcher
+  ✅ Selbst-Test Fenster: „Karte ein" 1 m nach innen → die Linse nennt Löcher — 54 Löcher
+  ✅ Selbst-Test Stufe ohne Bild: die Weite der Gestalt (Krone 10 m) im Fenster → die L1 der nahen Birke wird genannt — ohne Bild 787 · die L1: {"art":"birke","stufe":2,"d":0,"dL":0}
+  ✅ Selbst-Test Maß: „Maske zum Fragment" → die Linse nennt ihn — die Foundry-Maske misst zum Fragment (positionWorld)
+  ✅ Selbst-Test Maß: „Karte zum Quad" → die Linse nennt ihn — die Karte misst zum Fragment ihres Quads statt zu ihrem Anker
+  ✅ Selbst-Test Maß: „Haken ohne Matrix" → die Linse nennt ihn — der Haken legt die Matrix der Instanz nicht am Builder ab
+  ✅ Selbst-Test Geister-Baum: die echte Quelle hält Auge und Halt
+  ✅ Selbst-Test Geister-Baum: „Wahl vom Spieler" → die Linse nennt ihn — der Takt reicht der Architektur-Wahl nicht das Auge (_lodAuge)
+  ✅ Selbst-Test Geister-Baum: „Streu vom Spieler" → die Linse nennt ihn — der Takt reicht der Streu-Wahl nicht das Auge (_lodAuge)
+  ✅ Selbst-Test Geister-Baum: „Maske ohne Halt" → die Linse nennt ihn — die Stufen-Maske liest den Halt nicht (|aH0L|, max(_halt))
+  ✅ Selbst-Test Geister-Baum: „Stempel ohne Halt" → die Linse nennt ihn — der Slot-Stempel trägt den Halt nicht im Vorzeichen von aH0L
+  ✅ Selbst-Test Geister-Baum: „Band ohne Halt" → die Linse nennt ihn — die Band-Pflege urteilt keinen Halt, wo der Partner fehlt (_lodHaltSetzen)
+  ✅ Selbst-Test Geister-Baum: „Auge ohne Sprung" → die Linse nennt ihn — _lodAuge trägt den Sprung des Spielers nicht (die Wahl vom alten Ort)
+  ✅ Selbst-Test Geister-Baum: „Rig setzt nicht" → die Linse nennt ihn — das Rig (_loopCamera) setzt das Auge der Stufen nicht
+  ✅ Selbst-Test Geister-Baum: „Geburt vom Spieler" → die Linse nennt ihn — die Geburt der Streu (_scatterPass) wählt die Stufe nicht vom Auge
+  ✅ Selbst-Test laute Blende: „Maske gibt null" → die Linse nennt ihn — die Maske gibt still null zurück (der Stoff zeichnet ohne Maske)
+  ✅ Selbst-Test laute Blende: „catch schluckt" → die Linse nennt ihn — die Maske gibt still null zurück (der Stoff zeichnet ohne Maske) · der catch der Maske schluckt den Fehler
+  ✅ Selbst-Test laute Blende: „Baum-Stoff unter Wenn" → die Linse nennt ihn — der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX))
+  ✅ Selbst-Test laute Blende: „Karte unter Wenn" → die Linse nennt ihn — die Karte zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepFin))
+  ✅ Selbst-Test laute Blende: „Karte schluckt den Bruch" → die Linse nennt ihn — der catch der Karten-Verdrahtung schluckt den Bruch der Blende
+  ✅ Selbst-Test laute Blende: „Blatt-Karte springt still" → die Linse nennt ihn — die Blatt-Karte überspringt die Blende still
+  ✅ Selbst-Test laute Blende: „Stoff-Bruch ohne Melder" → die Linse nennt ihn — _blendeBruch meldet nicht laut beim Namen
+  ✅ Selbst-Test laute Blende: „Melder meldet INFO" → die Linse nennt ihn — _blendeBruch meldet nicht laut beim Namen
+
+✅ SELBST-TEST GRÜN — die Linse feuert auf jede Verfälschungs-Klasse.
+=== W5.3 — DIE GETEILTE MASKEN-QUELLE (phyto-core ↔ Studio-GLSL) ===
+--- Teil 3: die Drift-Wand (Studio-GLSL-Struktur + Konstanten geparst) ---
+  ✅ GLSL: _dh-IGN-Koeffizienten geparst — 52.9829189 · 0.06711056 · 0.00583715
+  ✅ GLSL: _f1-Rampe = (vLodD − (LOD_D1−LOD_FADE)) / LOD_FADE
+  ✅ GLSL: _f0-Rampe = (vLodDL − (LOD_D0−LOD_FADE0)) / LOD_FADE0
+  ✅ GLSL: _f1o = clamp(_f1·2 − 1, 0, 1) (verzögerte Fern-Ausblendung)
+  ✅ GLSL: der Laub-Branch (überlappende Rampen, FIX v37) steht wörtlich
+  ✅ GLSL: der Rinden-Branch (exakte Partition) steht wörtlich
+  ✅ GLSL: PORTAL_RENDER_CONFIG.lod geparst — d0=12 d1=26 fade=8 fade0=4
+  ✅ GLSL: die fin-EINblendung des Billboards (phytogenesis _impMat)
+  ✅ LOD_DISTANCES-Defaults == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0) — 12/26/8/4
+  ✅ phyto-core lodDitherIGN trägt die GEPARSTEN Koeffizienten wörtlich
+  ✅ TSL-Hälfte (_lodCrossfadeMaskNode): dieselben IGN-Koeffizienten + die Uniform-Quellen
+  ✅ Uniform-Seed + Live-Spiegel: uLodD0..Fade0 aus LOD_DISTANCES (thresh01/thresh12/fade/fade0)
+  ✅ PERF-WAHRHEIT: CPU-Stufenwahl und jede Maske lesen denselben Perf-Streck und dieselbe Sichthöhe
+  ✅ SCHATTEN-WAHRHEIT: Masken vom Auge · kein opacityNode-Ausschnitt an Werfern · Zwilling L0-gestempelt
+--- Teil 1+2: die Masken-Invarianten auf dem 64×64-Raster übers Band ---
+  ✅ phyto-core exportiert lodCrossfadeMask + lodDitherIGN
+  ✅ Dither-Äquivalenz: lodDitherIGN == geparste GLSL-IGN (2 uDitherT-Phasen)
+  ✅ Masken-Äquivalenz: keep == Referenz aus den geparsten Konstanten (alle Stufen)
+  ✅ RINDE: keepL0 XOR keepL1 == 1 an jedem Rasterpunkt × Sample im Partitions-Band — Samples=37
+  ✅ RINDE: Fern-Band lückenlos (L1 ∪ Impostor — verzögerte Ausblendung)
+  ✅ RINDE: Voll-Band lückenlos (L0 ∪ L1 ∪ Impostor)
+  ✅ LAUB: Union lückenlos an jedem Band-Punkt (überlappende Rampen)
+  ✅ LAUB: Union lückenlos auch bei divergenter Blatt-Metrik (vLodDL = 1.6·vLodD)
+  ✅ LAUB: Union-Deckung ≥ max(Einzel-Deckung) an jedem Band-Punkt
+  ✅ LAUB: Band-Anfang ~100 % L0 — 100.00 %
+  ✅ LAUB: Band-Ende ~100 % Impostor — 100.00 %
+  ✅ LAUB: monotoner Übergang (L0 fällt, Impostor steigt)
+  ✅ FENSTER (W7): die Instanz-Wahl verwirft nie, was das Blend-Gesetz zeigt — je Stufe kein Loch — 32544 Intervalle · 1: 0 Löcher · Überschuss 8/8136 · 2: 0 Löcher · Überschuss 76/8136 · 3: 0 Löcher · Überschuss 72/8136 · karte: 0 Löcher · Überschuss 18/8136
+  ✅ FENSTER (W7): der Stamm liest die Kanten aus dem EINEN Gesetz (_blendeKanten(pc.lodCrossfadeMask, …) in _passWahlLage)
+  ✅ MASS DER BLENDE: Maske · Blattmaske · Karte · Fenster messen die Instanz, nie das Fragment
+  ✅ STUFE OHNE BILD: keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält (doppelt außerhalb des Fade-Fensters) — 4800 Proben · ohne Bild 0 · Löcher 0
+  ✅ DER GEISTER-BAUM (statisch): EIN Auge für Wahl und Maske, die Stufe ohne Partner hält (Band → Stempel → Maske → Fenster)
+  ✅ DIE LAUTE BLENDE (statisch): kein null, kein schluckender catch, keine Maske unter Wenn
+  ✅ CPU-Band-Pflege: Baum-Wand + Chokepoint-Disziplin (_updateFoundryLodBand)
+--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---
+  ✅ KEHRAUS DES WURFS: die L0 trägt die Zwillings-Leaves ihrer L1 · ihr Räumen lässt die Wurf-Gestalt der lebenden L1 stehen · das Räumen der L1 gibt jede genau einmal frei — {"tw0":1,"tw1":1,"geteilt":true,"geoms":1,"nachL0":0,"nachL1":1}
+  ✅ ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie — geprüft=130 · Verstöße=0
+  ✅ GNADENFRIST: headless sofort · echt hält die Hülle · Realloc mintet nicht neu · Reaper räumt nach Ablauf — {"hlSofortWeg":true,"echtBleibt":true,"reMintInFrist":0,"lebtNachReaper":true,"reaperRaeumt":true}
+  ✅ W5.4: foundryCrossfade ist DEFAULT AN
+  ✅ Foundry ready + Preset aufgelöst — eiche
+  ✅ alle drei Stufen warm vor der Baseline (L0/L1/Impostor) — {"l0":true,"l1":true,"l2":true}
+  ✅ der Proben-Baum platziert (instanced)
+  ✅ Sweep gelaufen (13 Proben, hin + zurück)
+  ✅ NIE 0 Stufen resident
+  ✅ IM L0/L1-Band: Slots in BEIDEN Stufen-Gruppen ({0,1})
+  ✅ IM L1/L2-Band: Slots in BEIDEN Stufen-Gruppen ({1,2})
+  ✅ AUSSERHALB der Bänder: exakt EINE Stufe
+  ✅ SLOT-BILANZ: Σ liveCount zurück auf die Baseline (kein Leck) — 139 → 139
+  ✅ SLOT-BILANZ: je Gruppe dicht (count == liveCount, Marke i trägt Slot i)
+  ✅ SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)
+   Sweep: 6m→[0,1]B01 14m→[0,1]B01 18m→[1,2]B12 22m→[1,2]B12 26m→[1,2]B12 31m→[2] 36m→[2] 42m→[2] 55m→[2] 36m→[2] 26m→[1,2]B12 18m→[1,2]B12 6m→[0,1]B01
+  ✅ DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen — STOFF: BLENDE: es fehlt uLodD0 — kein Stoff zeichnet ohne seine Maske
+  ✅ Z (Stufen-Zensus): der Host serviert bei Studio-äquivalenten Distanzen DIESELBE Stufe (5 Sichthöhen × 7 Distanzen) — 35/35
+  ✅ Z: die Blatt-Kappe ist die Studio-24 (phytogenesis Z.2392) und der L1-Partner folgt dem LIVE-Formel-Zwilling — cap=24 partner=1 erwartet=1 (dnL=10 Kante=4.6)
+  ✅ Z: die SSE-Sichthöhe ist UNGEDECKELT (foundry-core Z.196) — dn(100, 36) = 33.33 (der alte 15-m-Deckel gab 80) — 33.33
+  ✅ STUFEN-WAHRHEIT: die CPU-Sichthöhe IST der Fassaden-Stempel jeder residenten Stufe (L0 = L1 = Höhen-Stufe) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1
+  ✅ STUFEN-WAHRHEIT: kein Loch über den Sweep (volle Leistung) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1
+  ✅ STUFEN-WAHRHEIT: kein Loch unter Last (Perf-Streck in CPU UND Maske) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3
+  ✅ STUFEN-WAHRHEIT Gegenprobe: der alte Leser (Sichthöhe 0) zeigt Löcher — die Probe sieht den Geist — 54 Proben · Löcher 28 · Stempel≠CPU 86 · Perf ×1/1.3 · z. B. {"raw":16,"modi":["l1","fin"],"visH":0,"stempel":[17.27,17.27],"laub":false}
+  ✅ STUFEN-WAHRHEIT: das Billboard stand im Sweep mit SEINEM Stempel (= die Höhe der L1, kein Rahmen-Modell) — {"voll":{"l0":28,"l1":44,"fin":13},"last":{"l0":20,"l1":36,"fin":17}}
+  ✅ STRAUCH: Preset strauch, L0, L1 und Billboard warm — {"preset":"strauch","warm":{"l0":true,"l1":true,"l2":true}}
+  ✅ STRAUCH: die Kette wie der Baum — L0 (aLodLevel 1) und L1 (aLodLevel 2) im Sweep, das Billboard im Band — {"l0":16,"l1":32,"fin":19}
+  ✅ STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1
+  ✅ STRAUCH: kein Loch unter Last (Perf-Streck) — 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3
+  ✅ KETTE OHNE PARTNER (fahrzeug_gt): Preset, nur die L0 gezeigt, L0 warm — {"preset":"gt","stufen":[0],"gezeigt":[0],"warm":true}
+  ✅ KETTE OHNE PARTNER (fahrzeug_gt): kein Loch über den Sweep, voll und unter Last (die L0 bleibt ganz) — voll 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1 — last 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3 — Stempel {"l1e":378,"fin":19}
+  ✅ KETTE OHNE PARTNER (tor_drachentor): Preset, nur die L0 gezeigt, L0 warm — {"preset":"drachentor","stufen":[0,3],"gezeigt":[0],"warm":true}
+  ✅ KETTE OHNE PARTNER (tor_drachentor): kein Loch über den Sweep, voll und unter Last (die L0 bleibt ganz) — voll 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1 — last 27 Proben · Löcher 0 · Stempel≠CPU 0 · Perf ×1.3 — Stempel {"l1e":234,"fin":19}
+  ✅ GEISTER-BAUM: der Partner steht — keine Instanz halb maskiert (die Linse schweigt bei der Blende) — 0 Geister · 0 Löcher · 0 Schatten-Geister in 14 Proben (12 mit Zwilling)
+  ✅ GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner) — 0 Geister · 0 Löcher · 0 Schatten-Geister in 14 Proben (14 mit Zwilling)
+  ✅ GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske (der Täter: Wahl vom Spieler) — 0 Geister · 0 Löcher · 0 Schatten-Geister in 14 Proben (12 mit Zwilling)
+  ✅ GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte — 2 Geister · 4 Löcher · 0 Schatten-Geister in 14 Proben (14 mit Zwilling) — z. B. {"dn":24,"D":{"rinde":0.5,"laub":0.5},"S":{"wurf":0.5,"gestalt":0.5},"primaer":1,"band":null,"halt":true}
+  ✅ GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, zählt die Linse den Geist der Verfolger-Kamera — 1 Geister · 0 Löcher · 0 Schatten-Geister in 14 Proben (13 mit Zwilling) — z. B. {"dn":10,"D":{"rinde":0.5,"laub":1},"S":{"wurf":1,"gestalt":1},"primaer":0,"band":null,"halt":false}
+  ✅ GEISTER-BAUM Selbsttest: trägt der Zwilling den Halt nicht, zählt die Linse den Halbschatten unter dem vollen Baum — 0 Geister · 0 Löcher · 6 Schatten-Geister in 14 Proben (14 mit Zwilling) — z. B. {"dn":24,"D":{"rinde":1,"laub":1},"S":{"wurf":0.5,"gestalt":1},"primaer":1,"band":null,"halt":true}
+  ✅ GEISTER-BAUM Auge: ungesetzt, im Sprung und unter der Sonde wählt die Kalt-Wahl vom Auge der Stufen (der Täter: _lodAuge = die Kamera allein) — 0 falsche Wahlen in 3 Proben · 0 von 205 Geburten nicht vom Auge
+  ✅ GEISTER-BAUM Auge: jede Streu-Geburt trägt die Distanz vom Auge (der Täter: _scatterPass wählt vom Spieler) — 0 falsche Wahlen in 3 Proben · 0 von 205 Geburten nicht vom Auge
+  ✅ GEISTER-BAUM Auge Selbsttest: das Auge = die Kamera allein — die Linse zählt die Wahl des ungesetzten Auges und des Sprungs — 2 falsche Wahlen in 3 Proben · 0 von 205 Geburten nicht vom Auge — z. B. [{"name":"ungesetzt","ist":2,"soll":0},{"name":"Sprung","ist":2,"soll":0}]
+  ✅ GEISTER-BAUM Auge Selbsttest: das Auge = der Spieler — die Linse zählt die Sonde und jede Geburt — 1 falsche Wahlen in 3 Proben · 205 von 205 Geburten nicht vom Auge — z. B. [{"name":"Sonde","ist":2,"soll":0},{"name":"Geburt","ist":142.6,"soll":139.11},{"name":"Geburt","ist":137.61,"soll":134.71},{"name":"Geburt","ist":137.14,"soll":134.68}]
+  (die Geister-Linse lief 204 ms)
+
+✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN.
