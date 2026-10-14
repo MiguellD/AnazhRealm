@@ -1247,13 +1247,16 @@ class AnazhRealm_Z20c {
         AnazhRealm._instanzZeichner(m);
         return m;
     }
-    // Die Senke projiziert r184 als GRUPPE (`_projectObject`: eine Gruppe zeichnet nicht, ihre Kinder schon) — sie zeichnet nur
-    // über ihr Kind, den Zeichner. Die Gänge der Welt (`traverse`) sehen ihn nicht: er ist r184s Werkzeug, nicht ein Teil der
+    // Die Senke projiziert r184 als LOD OHNE TAKT (`_projectObject`: ein LOD zeichnet nicht, ohne `autoUpdate` stellt er nichts,
+    // seine Kinder projizieren mit der Reihe seiner Eltern) — sie zeichnet nur über ihr Kind, den Zeichner, und der sortiert wie
+    // die Senke zuvor (Reihe der Eltern · ihre renderOrder · ihr Abstand). Als GRUPPE setzte sie die Reihe ihrer Kinder auf ihre
+    // eigene renderOrder (r = e.renderOrder): eine Senke außerhalb der Bündel zeichnete in anderer Folge (gpu-bank am Tor nah
+    // +0,29 ms, 1410-1). Die Gänge der Welt (`traverse`) sehen den Zeichner nicht: er ist r184s Werkzeug, nicht ein Teil der
     // Welt (Zählungen, Kehraus und Linsen lesen die Senke, wie bisher).
     static _instanzZeichner(m) {
         const Z = AnazhRealm._instanzZeichnerKlasse();
         const z = new Z(m);
-        m.isGroup = true;
+        m.isLOD = true;
         m.add(z);
         m.__zeichner = z;
         m.traverse = function (cb) {
