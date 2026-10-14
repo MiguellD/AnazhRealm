@@ -43,8 +43,7 @@
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
-const { starteBrowser } = require("./lib/welt-boot.cjs");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -56,15 +55,6 @@ const SELBST = process.argv.includes("--selftest");
 const NUR = (process.argv.find((a) => a.startsWith("--nur=")) || "--nur=").slice(6).split(",").filter(Boolean);
 // --phasen=lichtung,w4: der Hauptlauf fährt nur diese Phasen (eine gezielte Messung; ohne die Option alle)
 const PHASEN = (process.argv.find((a) => a.startsWith("--phasen=")) || "--phasen=").slice(9).split(",").filter(Boolean);
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
 
 // DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form].
 const BASIS = {
@@ -181,32 +171,24 @@ let patchAngewandt = new Set();
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(ROOT, p);
-    if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs
-        // `dateiMit`; trägt sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der
-        // genannten Datei (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
-        const meine = patch ? patch.map(patchZiel).filter((z) => z[0] === p) : [];
-        if (meine.length) {
-            let txt = data.toString("utf8");
-            for (const [, geheilt, basis] of meine) {
-                if (!txt.includes(geheilt))
-                    patchFehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
-                else {
-                    txt = txt.replace(geheilt, basis);
-                    patchAngewandt.add(p + "|" + geheilt);
-                }
+// eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs `dateiMit`; trägt
+// sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der genannten Datei (das
+// Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
+const server = statikServer({
+    root: ROOT,
+    wandle: (p, data) => {
+        const meine = data && patch ? patch.map(patchZiel).filter((z) => z[0] === p) : [];
+        if (!meine.length) return data;
+        let txt = data.toString("utf8");
+        for (const [, geheilt, basis] of meine) {
+            if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
+            else {
+                txt = txt.replace(geheilt, basis);
+                patchAngewandt.add(p + "|" + geheilt);
             }
-            data = Buffer.from(txt, "utf8");
         }
-        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+        return Buffer.from(txt, "utf8");
+    },
 });
 
 async function proben(phasen) {

@@ -19,55 +19,25 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 
-const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
     const i = argv.indexOf(k);
     return i >= 0 ? argv[i + 1] : d;
 };
 const PORT = Number(process.env.ALBEDO_PORT || 4587);
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-    ".woff2": "font/woff2",
-};
 
-function statisch(seiten) {
-    return http.createServer((req, res) => {
-        const p = req.url.split("?")[0];
-        if (seiten && seiten[p]) {
-            res.setHeader("Content-Type", "text/html");
-            return res.end(seiten[p]);
-        }
-        const fp = path.join(root, decodeURIComponent(p));
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
-}
+const statisch = (seiten) => statikServer({ seiten });
 
-async function browser(echt) {
-    const puppeteer = require("puppeteer");
-    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
-    const b = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: [...(echt ? echteWebGpuArgs() : linsenWebGpuArgs()), "--window-size=1280,800"],
-        defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 },
+const browser = (echt) =>
+    starteBrowser({
+        art: echt ? "echt" : "linse",
+        frist: 900000,
+        zusatz: ["--window-size=1280,800"],
+        viewport: { width: 1280, height: 800, deviceScaleFactor: 1 },
     });
-    await adapterZeile(b);
-    return b;
-}
 
 // ── Die Labor-Seite ─────────────────────────────────────────────────────────────────────────────────────────────────────
 // Je Studio: die Seite laden, auf die Wurzel warten, je Zeile die Labor-Aktion (der echte UI-Pfad: Vorlagen-Knopf, Lack-

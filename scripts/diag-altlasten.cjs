@@ -3203,14 +3203,12 @@ function scanPortWand(dateien) {
 // nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
 // nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
-    "scripts/diag-albedo-tafel.cjs", "scripts/diag-boot-rettung.cjs", "scripts/diag-boot-stage.cjs",
-    "scripts/diag-fluss.cjs", "scripts/diag-gpu-fehler.cjs", "scripts/diag-haus-welt.cjs",
-    "scripts/diag-kamera-laub.cjs", "scripts/diag-klang-zensus.cjs", "scripts/diag-koerper-stand.cjs",
-    "scripts/diag-parity.cjs", "scripts/diag-portal-konformanz.cjs", "scripts/diag-pruefbuehne.cjs",
-    "scripts/diag-studio-begehen.cjs", "scripts/diag-studio-huelle.cjs", "scripts/diag-weltgrenze.cjs",
-    "scripts/playtest.cjs", "scripts/werkbank.cjs",
-];
-// Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
+    // der volle Playtest: Browser-Start mit eigenem Seiten-Wächter (Urteil „Keine Script-Exceptions“), Boot über den save-server
+    "scripts/playtest.cjs",
+    // die Werkbank: der Steuer-Server ist ein JSON-Kanal der offenen Welt (kein Statik-Boot), ihre Seiten-Fehler sind das Urteil
+    // der Wache der Mess-Folge (omen-messfolge) — der Zug in den Fehler-Sammler ändert das Mess-Urteil und braucht ein OMEN-ABAB
+    "scripts/werkbank.cjs",
+];// Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
 function eigenBoots(dateien) {
     const acorn = require("acorn");
     const startet = (src) => {

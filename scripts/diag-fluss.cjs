@@ -37,7 +37,6 @@
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
 const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -381,17 +380,12 @@ self.onmessage = (e) => {
 };`;
 
 async function verhalten(schaleSrc) {
-    const server = http.createServer((req, res) => {
-        if (req.url.startsWith("/kern.js")) {
-            res.setHeader("Content-Type", "application/javascript");
-            return res.end("// kern");
-        }
-        if (req.url.startsWith("/phyto-core.js")) {
-            res.setHeader("Content-Type", "application/javascript");
-            return res.end(fs.readFileSync(path.join(root, "phyto-core.js")));
-        }
-        res.setHeader("Content-Type", "text/html");
-        res.end("<!doctype html><meta charset=utf-8><title>fluss</title>");
+    const server = statikServer({
+        seiten: {
+            "/": "<!doctype html><meta charset=utf-8><title>fluss</title>",
+            "/kern.js": "// kern",
+            "/phyto-core.js": () => fs.readFileSync(path.join(root, "phyto-core.js")),
+        },
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "standard" });

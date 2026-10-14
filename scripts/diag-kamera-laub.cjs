@@ -21,8 +21,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (anazhRealm.js) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { starteBrowser } = require("./lib/welt-boot.cjs");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
@@ -46,15 +45,6 @@ const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_
 // die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
 const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,ninja").split(",");
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
@@ -752,21 +742,13 @@ function ninja(arg) {
 // KAMERA_LAUB_STAMM: der Stamm-Text des Vorher (eine Stamm-Datei oder ein Baum, scripts/lib/stamm.cjs), ausgeliefert in
 // der Form dieses Baums (`liefere`: die Datei, die die Zeile trägt)
 const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
-    if (vorher) {
-        res.setHeader("Content-Type", mime[".js"]);
-        return res.end(vorher);
-    }
-    const fp = STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? STUDIO : path.join(root, p);
-    if (fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+const server = statikServer({
+    root,
+    wandle: (p, data) => {
+        const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
+        if (vorher) return vorher;
+        return STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? fs.readFileSync(STUDIO) : data;
+    },
 });
 
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
