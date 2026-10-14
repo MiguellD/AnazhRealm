@@ -648,9 +648,10 @@ AnazhRealm.CA_STAU = Object.freeze({
 });
 
 // DETAIL_CASCADE (unten) — die EINE frozen Distanz→Detail-Tabelle für `_detailBand(r)` (r =
-// Chebyshev-Chunk-Distanz); die ganze Welt leitet ihr Detail hier ab, kein per-Schicht-Schwellenwert.
-// `maxRing` = obere Ring-Grenze (× 43.2 m), `lod` = Geometrie-Stufe, `aiDiv` = KI-Richtung nur jeden
-// N-ten Frame (dazwischen glatt weiter). Ein Feld wächst erst mit seinem Leser (kein Passagier).
+// Chebyshev-Chunk-Distanz): `maxRing` = obere Ring-Grenze (× 43.2 m; die Band-0-Kante teilt die Schatten-Kaskaden),
+// `aiDiv` = KI-Richtung nur jeden N-ten Frame (dazwischen glatt weiter). Ein Feld wächst erst mit seinem Leser (kein
+// Passagier). Die Geometrie-Stufe des Bodens ist die Kette seines Netzes (`BODEN_STUFEN`, K51): sie lag hier als `lod`
+// und koppelte das Netz an die Schatten-Kante — L0 bis Ring 2 hiess 25 volle Chunks, wo die Nah-Zone 9 braucht.
 // FAR_WATER — grobes Atlas-Wasser-Sheet jenseits des Voxel-Rings bis `maxRadius` (dahinter trägt der
 // Fern-Ring den Spiegel flach, die Luft dunstet beide): `step` = span/4 (Grid auf Chunk-Grenzen), `drop` = Spiegel knapp unter der
 // Nah-Kräusel-Zone, `dip` taucht Ufer-Anker unters Terrain (edgeFade), `depth` = konstante
@@ -767,17 +768,32 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, driftMax: 2.5 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
-    // Band 0 ist 5×5 (maxRing 2): die LOD0↔LOD1-Naht liegt ~100 m weg (die Luft dunstet sie, der Nebel deckte sie bis
-    // V18.530) statt bei ~50 m. (Die Deko-Bänder fielen 04.10. mit dem Klein-Vegetations-Zwilling: die Nah-Streu hängt am Schirm.)
-    Object.freeze({ maxRing: 2, lod: 0, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
-    Object.freeze({ maxRing: 8, lod: 1, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
-    Object.freeze({ maxRing: 10, lod: 2, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring (16× billiger)
-    Object.freeze({ maxRing: Infinity, lod: 3, aiDiv: 6 }), // Band 3 — ≤ 518 m: die gröbste Stufe (~300×), so grob wie der Fern-Ring dort
+    // Band 0 ist 5×5 (maxRing 2): seine Kante (~108 m) teilt Kaskade 0 und 1 des Schattens. (Die Deko-Bänder fielen 04.10.
+    // mit dem Klein-Vegetations-Zwilling: die Nah-Streu hängt am Schirm.)
+    Object.freeze({ maxRing: 2, aiDiv: 1 }), // Band 0 — ≤ 130 m (5×5): volles Detail
+    Object.freeze({ maxRing: 8, aiDiv: 1 }), // Band 1 — ≤ 346 m: die geliebte Mittelsicht
+    Object.freeze({ maxRing: 10, aiDiv: 3 }), // Band 2 — ≤ 432 m: ferner Ring
+    Object.freeze({ maxRing: Infinity, aiDiv: 6 }), // Band 3 — ≤ 518 m
 ]);
 
-// LOD-Hysterese: ein bestehender Chunk wechselt die LOD erst, wenn r die Band-Grenze um diese
-// Ring-Zahl KLAR überschreitet (Deadband gegen Flip-Flop-Pop). Asymmetrisch (`_voxelChunkLodFor`):
-// verfeinern sofort, vergröbern nur im klaren Überschritt.
+// DIE BODEN-STUFEN (K51) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 · 14,4 m)
+// je Chebyshev-Ring um den Spieler-Chunk. Die Nah-Zone (Ring ≤ 1: ≥ 43,2 m um das Auge) trägt L0 — dort lesen Stand,
+// Nah-Wiese (14 m) und Nah-Streu (24 m) den Boden (`_bodenSichtAt`, Lehre 22). Jenseits verdoppelt sich der Schritt mit dem
+// Abstand: eine Zelle steht an jeder Stufen-Grenze gleich gross im Bild (3,6 m ab 43,2 m, 7,2 m ab 86,4 m — ~59 px bei 1080
+// Zeilen und 75°, kleiner als eine L0-Zelle auf 30 m); Stufe 3 erst ab Ring 10, wo die Maschen des Fern-Rings breiter sind
+// als 7,2 m. Befund 14.10. (integ-probe 45f1eeae, Ring 4, drei Pässe): L0 bis Ring 2 (25 Chunks à ~5 300 Dreiecke) hielt
+// den Boden-Satz an der Wiese auf 130k, im Dorf auf 146k — der Haushalt trägt 120k für die ganze Klasse samt Fern-Ring.
+// Die Naht zwischen zwei Stufen schliesst der Morph (`_applyCrossLodGeomorph`), das Naht-Band brückt nur, wo er nicht greift.
+AnazhRealm.BODEN_STUFEN = Object.freeze([
+    Object.freeze({ maxRing: 1, lod: 0 }), // die Nah-Zone (3×3)
+    Object.freeze({ maxRing: 2, lod: 1 }),
+    Object.freeze({ maxRing: 9, lod: 2 }),
+    Object.freeze({ maxRing: Infinity, lod: 3 }),
+]);
+
+// Die Hysterese der Boden-Stufen: ein bestehender Chunk wechselt die Stufe erst, wenn r die Grenze seiner Stufe um diese
+// Ring-Zahl KLAR überschreitet (Deadband gegen Flip-Flop-Pop). Asymmetrisch (`_voxelChunkLodFor`): verfeinern sofort,
+// vergröbern nur im klaren Überschritt.
 AnazhRealm.LOD_HYSTERESIS_RINGS = 1;
 
 // GESTURE_CRYSTAL — GESTE → GESETZ: eine wiederholt bewährte Geste (finalized, fitness ≥ minFitness,

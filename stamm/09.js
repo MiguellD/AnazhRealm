@@ -1,15 +1,20 @@
 class AnazhRealm_Z09 {
     // ===== ATLAS §09 · KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten =====
-    // Terrain-Chunk-LOD aus der Kaskaden-Tabelle (r≤2→0, r3-8→1, r9-10→2, r≥11→3). Mit `currentLod`
-    // (Streaming-Tick) hält die Hysterese den Chunk im Deadband am Grat; ohne ist es die reine Band-LOD.
+    // Terrain-Chunk-Stufe aus der Kette des Boden-Netzes (`BODEN_STUFEN`: r≤1→0, r2→1, r3-9→2, r≥10→3). Mit `currentLod`
+    // (Streaming-Tick) hält die Hysterese den Chunk im Deadband am Grat; ohne ist es die reine Stufe des Rings.
     _voxelChunkLodFor(cx, cz, pcx, pcz, currentLod = null) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        const lod = this._detailBand(r).lod;
-        // Hysterese nur beim VERGRÖBERN: ein Chunk wird gehalten, bis r die obere Grenze seines Bandes um
+        const band = AnazhRealm.BODEN_STUFEN;
+        let lod = band[band.length - 1].lod;
+        for (let i = 0; i < band.length; i++)
+            if (r <= band[i].maxRing) {
+                lod = band[i].lod;
+                break;
+            }
+        // Hysterese nur beim VERGRÖBERN: ein Chunk wird gehalten, bis r die obere Grenze seiner Stufe um
         // LOD_HYSTERESIS_RINGS überschreitet. Verfeinern greift sofort — Detail erscheint prompt, nur das
         // Entfernen ist träge.
         if (currentLod === null || !Number.isFinite(currentLod) || currentLod >= lod) return lod;
-        const band = AnazhRealm.DETAIL_CASCADE;
         for (let i = 0; i < band.length; i++) {
             if (band[i].lod === currentLod) {
                 return r <= band[i].maxRing + AnazhRealm.LOD_HYSTERESIS_RINGS ? currentLod : lod;

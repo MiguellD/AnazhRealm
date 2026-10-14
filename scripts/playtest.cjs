@@ -19438,17 +19438,15 @@ async function checkBandVoxelTerrainCore(ctx) {
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
                 Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
             const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
-            // N3 (Naht §12): der LOD0-Ring ist 5×5 (maxRing 2) → die Cross-LOD-Grenze
-            // sitzt jetzt bei r=2→3 (~100 m), nicht mehr r=1→2 (~50 m).
+            // K51 (die Boden-Stufen): die Nah-Zone ist 3×3 (r≤1 → L0), dann verdoppelt sich der Schritt mit dem Abstand
+            // (r2 → L1, r3–9 → L2, ab r10 → L3)
             out.lodPyramidBands =
                 lf(0) === 0 &&
                 lf(1) === 0 &&
-                lf(2) === 0 &&
-                lf(3) === 1 &&
-                lf(8) === 1 &&
+                lf(2) === 1 &&
+                lf(3) === 2 &&
                 lf(9) === 2 &&
-                lf(10) === 2 &&
-                lf(11) === 3 &&
+                lf(10) === 3 &&
                 lf(12) === 3;
             let lod23Builds = true;
             try {
@@ -19466,32 +19464,27 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
             out.lod23Builds = lod23Builds;
 
-            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle,
-            // `_voxelChunkLodFor` liest sie (byte-identisch), die Tabelle ist frozen,
+            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+            // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
             // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
             out.detailBandFn = typeof r._detailBand === "function";
             if (out.detailBandFn) {
                 const b = (rr) => r._detailBand(rr);
-                out.bandLods =
-                    b(0).lod === 0 &&
-                    b(1).lod === 0 &&
-                    b(2).lod === 0 &&
-                    b(3).lod === 1 &&
-                    b(8).lod === 1 &&
-                    b(9).lod === 2 &&
-                    b(10).lod === 2 &&
-                    b(11).lod === 3 &&
-                    b(99).lod === 3;
+                // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
+                out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
+                const BS = r.constructor.BODEN_STUFEN;
+                const kette = (rr) => BS.find((x) => rr <= x.maxRing).lod;
                 out.lodReadsBand =
-                    r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
-                // LOD-Hysterese: ein Chunk hält seine feinere LOD im Deadband (r ≤ Band-Grenze +
-                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat LOD0(maxRing 2)↔LOD1: r=3/lod0 → 0
-                // (kein Pop), r=4/lod0 → 1, r=2/lod1 → 0, ohne currentLod → reine Band-LOD (lf(3)===1).
+                    Object.isFrozen(BS) &&
+                    [0, 1, 2, 3, 9, 10, 12].every((rr) => r._voxelChunkLodFor(rr, 0, 0, 0) === kette(rr));
+                // LOD-Hysterese: ein Chunk hält seine feinere Stufe im Deadband (r ≤ Stufen-Grenze +
+                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat L0(maxRing 1)↔L1: r=2/lod0 → 0
+                // (kein Pop), r=3/lod0 → 2, r=1/lod1 → 0, ohne currentLod → reine Stufe (lf(2)===1).
                 out.lodHysteresis =
-                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 0 &&
-                    r._voxelChunkLodFor(4, 0, 0, 0, 0) === 1 &&
-                    r._voxelChunkLodFor(2, 0, 0, 0, 1) === 0 &&
-                    r._voxelChunkLodFor(3, 0, 0, 0) === 1 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0, 0) === 0 &&
+                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 2 &&
+                    r._voxelChunkLodFor(1, 0, 0, 0, 1) === 0 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0) === 1 &&
                     typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
                 // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
@@ -19543,7 +19536,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.lodPyramidConfig
         );
         check(
-            "N3 (Naht §12): LOD0-Ring 5×5 (r≤2→0, r3-8→1, r9-10→2, r≥11→3) — die Cross-LOD-Grenze in den Fog",
+            "K51 Boden-Stufen: Nah-Zone 3×3 (r≤1→0, r2→1, r3-9→2, r≥10→3) — der Schritt verdoppelt sich mit dem Abstand",
             voxelP2bResults.lodPyramidBands
         );
         check(
@@ -19555,13 +19548,13 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.detailBandFn === true
         );
         if (voxelP2bResults.detailBandFn) {
-            check("N3 (Naht §12): Kaskaden-Bänder (r≤2→0, r3-8→1, r9-10→2, r≥11→3)", voxelP2bResults.bandLods === true);
+            check("K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)", voxelP2bResults.bandLods === true);
             check(
-                "V17.114 U1: _voxelChunkLodFor liest die Kaskade (kein Parallel-Pfad)",
+                "K51: _voxelChunkLodFor liest die EINE Kette des Bodens (BODEN_STUFEN, frozen, kein Parallel-Pfad)",
                 voxelP2bResults.lodReadsBand === true
             );
             check(
-                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Band-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
+                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Stufen-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
                 voxelP2bResults.lodHysteresis === true
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
@@ -21613,9 +21606,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         if (out.hasLodHelper) {
             out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
             out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
-            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 0 (N3: LOD0-Ring 5×5)
-            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 1 (N3: Grenze bei r=3)
-            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
+            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1 (K51: die Nah-Zone ist 3×3)
+            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 2
+            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 2
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
@@ -21683,9 +21676,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     if (res.hasLodHelper) {
         check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
         check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
-        check("N3 (Naht §12): r=2 (LOD0-Ring 5×5) → LOD 0", res.lodMidRing === 0);
-        check("N3 (Naht §12): r=3 (jenseits des LOD0-Rings) → LOD 1", res.lodFar === 1);
-        check("Welle Perf-3.b V9.88: r=4 (sehr ferner Chunk) → LOD 1", res.lodVeryFar === 1);
+        check("K51 Boden-Stufen: r=2 (jenseits der Nah-Zone 3×3) → LOD 1", res.lodMidRing === 1);
+        check("K51 Boden-Stufen: r=3 → LOD 2", res.lodFar === 2);
+        check("K51 Boden-Stufen: r=4 (sehr ferner Chunk) → LOD 2", res.lodVeryFar === 2);
     }
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
     check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
@@ -27988,7 +27981,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
-        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.lod));
+        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.aiDiv));
         const jobs = window.__codeOf(r._buildDeferrableJobs);
         out.loopTicktNahStreu = /_tickNahStreu\(/.test(jobs) && /_tickNahWiese\(/.test(jobs);
         const NS = r.constructor.NAH_STREU;
@@ -28000,7 +27993,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         check("Waldboden-Kaskade: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (LOD + KI-Takt)", res.kaskadeOhneDeko === true);
+    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (Ring + KI-Takt)", res.kaskadeOhneDeko === true);
     check("Waldboden: der scatterDeco-Job tickt Nah-Wiese UND Nah-Streu", res.loopTicktNahStreu === true);
     check(
         "Waldboden: die Nah-Streu ist schirm-gebunden (Armlänge < Radius ≤ 40 m, Kachel = n · Zelle)",
