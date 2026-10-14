@@ -630,9 +630,6 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
             // Kachel je Takt, bis keine mehr fehlt).
             if (typeof r._tickNahWiese === "function") for (let i = 0; i < 200 && r._tickNahWiese() > 0; i++);
-            // DER RUHENDE LEIB (K59): dieser Blick läuft ohne Kreatur-Takt — wer im letzten Takt außer Bild ruhte, erwacht
-            // und schreibt sein Feld, bevor die Aufnahme ihn zeichnet (`_leiberWecken`; ein Stand vor K59 kennt keine Ruhe).
-            if (typeof r._leiberWecken === "function") r._leiberWecken();
             // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
             // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
             // erfüllt sich kein Versprechen (gemessen 07.10., Werkbank, Wiese: ein Bär, der eben ins Bild kam, fehlte im

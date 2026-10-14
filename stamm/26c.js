@@ -1265,13 +1265,15 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
-// DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung): ein lebendes Tier außer Bild, jenseits der Nah-Gestalt
-// (`KREATUR_NAH_MESH.aus` — dort trägt das Feld die Gestalt, und das Feld wirft keinen Schatten) und ohne laufenden
-// Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame, mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit
-// geht nie verloren), schreibt kein Feld und verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als
-// `wegMax` m (der Hüllen-Kontakt schiebt hinaus, er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test hinkt
-// einen Frame (die Kamera dreht nach dem Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des
-// Vor-Frames, dazu `saumM` m. In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
+// DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung): ein lebendes Tier außer Bild, dem das Feld die Gestalt
+// trägt (`_kzBesitztFeld`: jenseits der Nah-Gestalt `KREATUR_NAH_MESH.aus` und gebacken — sein Mesh zeichnet und wirft
+// nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame,
+// mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist aus (er zeichnet nirgends), und
+// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (der Hüllen-Kontakt schiebt hinaus,
+// er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
+// Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
+// des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
+// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
 AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60 });
 // Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
 // steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über

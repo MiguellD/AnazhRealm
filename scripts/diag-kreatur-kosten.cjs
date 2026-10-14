@@ -53,7 +53,11 @@
 //      in ein angehängtes Kind). Ein Leser der Glieder (der Treffer) liest die JETZIGE Lage über `_leibMatrix`; das
 //      Erwachen im Blick zieht den Leib vor jedem Szenen-Gang nach. Nah, im Stoß, zu schnell für `wegMax` und gefallen ruht
 //      keiner. (S8) der Leser ohne Chokepoint verfehlt die Probe; (S9) das Erwachen ohne Nachziehen lässt das angehängte
-//      Kind ohne Matrix — beide rot an genau dieser Zeile.
+//      Kind ohne Matrix — beide rot an genau dieser Zeile. Ein ruhender Leib ZEICHNET NIRGENDS (Prüfung K59-1): die
+//      Nah-Gestalt (`_kzNah`, ihr Mesh wirft) ruht nie, sein Satz geht beim Ruhe-Beginn sofort aus, und der Blick des
+//      Bilds (`_ruheImBild` in `_loopRender`) weckt ihn, wenn die Kamera nach dem Takt auf ihn dreht; im Band aiDiv 3
+//      rechnet er die KI in jedem Schritt, in dessen Spanne ein KI-Takt fiel. (S10) der Feld-Besitz ohne Nah-Gestalt →
+//      ruht mit sichtbarem Mesh; (S11) der Blick des Bilds gestubbt → ruht im Bild weiter.
 //  (S) SELBST-TESTS (die Linse feuert): (S1) mit gestubbter Raten-Leiter
 //      (_creatureAnimDiv ≡ 1) tickt auch die Hinter-Kreatur voll — der
 //      Zähler misst die echte Leiter, nicht sich selbst. (S2) mit gestubbter
@@ -1202,10 +1206,109 @@ const server = statikServer();
                     g.g7 = { ruhteVorher: ruhte7, wach: u._ruht === false };
                     s.leichname.splice(s.leichname.indexOf(probe), 1);
                     s.creatures.splice(iW, 0, probe);
+                    // (G8) DIE NAH-GESTALT ruht nie: ein Leib, dessen Mesh noch die Gestalt trägt (`_kzNah` — er kreuzte eben
+                    // `aus` nach außen, der Ziegel schaltet erst in seinem Takt), zeichnet und wirft in die Kaskaden (bis
+                    // 306 m) — ruhte er, stünde sein Werfer, wo die Ruhe begann (Prüfung K59-1: 10 m daneben, 1 Werfer statt 0)
+                    const nahGestalt = () => {
+                        if (u._ruht === true) r._kreaturErwacht(probe);
+                        blick(1, 0);
+                        let ruhte = 0;
+                        u._kzNah = true;
+                        takt(8, () => {
+                            probe.position.x = pm.x - 120;
+                            probe.position.z = pm.z;
+                            if (u._ruht === true) ruhte++;
+                        });
+                        if (u._ruht === true) ruhte++;
+                        delete u._kzNah;
+                        return ruhte;
+                    };
+                    g.g8 = { ruhte: nahGestalt() };
+                    // (S10) SELBST-TEST: der Besitz des Felds ohne die Nah-Gestalt (die Formel vor der Nachbesserung) → ruht
+                    r._kzBesitztFeld = function (c) {
+                        const v = c && c.userData;
+                        return !!(v && (v._kzGlieder || v._kzVersuch));
+                    };
+                    g.s10 = { ruhte: nahGestalt() };
+                    delete r._kzBesitztFeld;
+                    // (G9) DAS FELD RUHT MIT: ein ruhender Leib zeichnet nirgends — sein Satz geht beim Ruhe-Beginn SOFORT aus
+                    // (sonst stünde er, wo die Ruhe begann, und käme dieser Ort ins Bild, zeigte er den Leib dort)
+                    if (u._ruht === true) r._kreaturErwacht(probe);
+                    const H = { feld: -1, brick: { d: 1 } };
+                    const feldBuch = [];
+                    r._weltFeldAktiv = function (h, an, sofort) {
+                        if (h === H) return void feldBuch.push({ an: !!an, sofort: !!sofort });
+                        return P._weltFeldAktiv.apply(this, arguments);
+                    };
+                    u._kzGlieder = [{ handle: H, teil: probe }];
+                    takt(6, () => {
+                        probe.position.x = pm.x - 120;
+                        probe.position.z = pm.z;
+                    });
+                    const letzt = feldBuch[feldBuch.length - 1];
+                    g.g9 = { ruht: u._ruht === true, aus: !!letzt && !letzt.an && letzt.sofort, buch: feldBuch.length };
+                    // (G10) DER BLICK DES BILDS weckt: die Kamera dreht nach dem Kreatur-Takt auf den ruhenden Leib (Teleport,
+                    // Portal, ein Schwenk über den Rand, die Aufnahme) — der Render-Pfad (`_loopRender`) prüft den Blick DIESES
+                    // Bilds und weckt ihn, bevor er zeichnet
+                    const bildProbe = (stumm) => {
+                        blick(1, 0);
+                        takt(3, () => {
+                            probe.position.x = pm.x - 120;
+                            probe.position.z = pm.z;
+                        });
+                        const ruhteVorher = u._ruht === true;
+                        let gerufen = 0;
+                        const rib = r._ruheImBild;
+                        r._ruheImBild = function () {
+                            gerufen++;
+                            if (!stumm && typeof rib === "function") return rib.apply(this, arguments);
+                        };
+                        blick(-1, 0);
+                        let fehler = null;
+                        try {
+                            r._loopRender(performance.now());
+                        } catch (e) {
+                            fehler = String((e && e.message) || e).slice(0, 120);
+                        }
+                        delete r._ruheImBild;
+                        return { ruhteVorher, ruht: u._ruht === true, gerufen, fehler };
+                    };
+                    g.g10 = bildProbe(false);
+                    // (S11) SELBST-TEST: der Blick des Bilds gestubbt → der Leib ruht im Bild weiter
+                    g.s11 = bildProbe(true);
+                    delete r._weltFeldAktiv;
+                    delete u._kzGlieder;
+                    // (G11) DIE KI IM GROBEN TAKT: im Band aiDiv 3 (346–432 m) rechnet ein ruhender Leib die KI in jedem Schritt,
+                    // in dessen Spanne ein KI-Takt fiel — bei Takt 4 in jedem (die Kadenz, nie die Entscheidung)
+                    if (u._ruht === true) r._kreaturErwacht(probe);
+                    blick(1, 0);
+                    // gepinnt: die Lage und das Tempo (ein Wanderer beschleunigt über `wegMax` hinaus und ginge dann voll — (G6))
+                    const pinFern = () => {
+                        probe.position.x = pm.x - 400;
+                        probe.position.z = pm.z;
+                        if (u._steuer) u._steuer.v = Math.min(u._steuer.v, 1);
+                    };
+                    let ki = 0;
+                    r._tickCreatureTaskDirection = function (c) {
+                        if (c === probe) ki++;
+                        return P._tickCreatureTaskDirection.apply(this, arguments);
+                    };
+                    takt(4, pinFern);
+                    nullen();
+                    ki = 0;
+                    takt(24, pinFern);
+                    g.g11 = { band: r._detailBand(400 / 43.2).aiDiv, ruht: u._ruht === true, schritte: g.schritte, ki };
+                    delete r._tickCreatureTaskDirection;
                 } finally {
                     delete r._kreaturHuellenKontakt;
                     delete r._kreaturLaufTakt;
                     delete r._leibMatrix;
+                    delete r._kzBesitztFeld;
+                    delete r._weltFeldAktiv;
+                    delete r._ruheImBild;
+                    delete r._tickCreatureTaskDirection;
+                    delete u._kzGlieder;
+                    delete u._kzNah;
                     if (u._ruht === true) r._kreaturErwacht(probe);
                     probe.remove(kind);
                     cleanup([probe]);
@@ -1237,6 +1340,13 @@ const server = statikServer();
                 o.checks.gZustand = !!G.g5 && G.g5.schritte === 12 && !G.g5.ruht;
                 o.checks.gWeg = !!G.g6 && G.g6.ruhteVorher && !G.g6.ruht;
                 o.checks.gGefallen = !!G.g7 && G.g7.ruhteVorher && G.g7.wach;
+                o.checks.gNahGestalt = !!G.g8 && G.g8.ruhte === 0;
+                o.checks.s10LensFires = !!G.s10 && G.s10.ruhte > 0;
+                o.checks.gFeldRuht = !!G.g9 && G.g9.ruht && G.g9.aus;
+                o.checks.gBildWeckt = !!G.g10 && G.g10.ruhteVorher && !G.g10.ruht && G.g10.gerufen > 0;
+                o.checks.s11LensFires = !!G.s11 && G.s11.ruhteVorher && G.s11.ruht && G.s11.gerufen > 0;
+                o.checks.gKi =
+                    !!G.g11 && G.g11.band === 3 && G.g11.ruht && G.g11.schritte >= 5 && G.g11.ki === G.g11.schritte;
             }
 
             o.ruheTakt = A.KREATUR_RUHE && A.KREATUR_RUHE.takt;
@@ -1431,6 +1541,27 @@ const server = statikServer();
             check(c.gZustand, `(G) ZUSTAND: ein Leib im Stoß ruht nie: ${G.g5 && G.g5.schritte}/12 Schritte`);
             check(c.gWeg, "(G) WEG: ein Leib, dessen grober Schritt `wegMax` überschritte, geht voll");
             check(c.gGefallen, "(G) der Gefallene ruht nie (ein ruhender Leib unter den Gefallenen erwacht)");
+            check(
+                c.gNahGestalt,
+                `(G) NAH-GESTALT: ein Leib, dessen Mesh die Gestalt trägt (\`_kzNah\`), ruht 120 m hinter dem Blick nie — ruhte ${G.g8 && G.g8.ruhte}/9 Takte (\`_kreaturRuht\` fragt \`_kzBesitztFeld\`; sonst wirft sein Mesh mit eingefrorener Matrix)`
+            );
+            check(
+                c.s10LensFires,
+                `SELBST-TEST (S10): der Feld-Besitz ohne Nah-Gestalt → der Leib ruht mit sichtbarem Mesh (${G.s10 && G.s10.ruhte}/9 Takte)`
+            );
+            check(
+                c.gFeldRuht,
+                `(G) FELD: der ruhende Leib zeichnet nirgends — sein Satz geht beim Ruhe-Beginn sofort aus (${G.g9 ? `ruht ${G.g9.ruht}, aus ${G.g9.aus}, ${G.g9.buch} Schalter` : "?"})`
+            );
+            check(
+                c.gBildWeckt,
+                `(G) BLICK DES BILDS: die Kamera dreht nach dem Kreatur-Takt auf den ruhenden Leib — \`_loopRender\` weckt ihn vor dem Zeichnen (\`_ruheImBild\` ${G.g10 ? `${G.g10.gerufen}× gerufen, ruht danach ${G.g10.ruht}${G.g10.fehler ? `, Fehler ${G.g10.fehler}` : ""}` : "?"})`
+            );
+            check(c.s11LensFires, "SELBST-TEST (S11): der Blick des Bilds gestubbt → der Leib ruht im Bild weiter");
+            check(
+                c.gKi,
+                `(G) KI: im Band aiDiv ${G.g11 && G.g11.band} rechnet der ruhende Leib die KI in jedem Schritt, in dessen Spanne ein KI-Takt fiel (${G.g11 ? `${G.g11.ki} KI bei ${G.g11.schritte} Schritten, ruht ${G.g11.ruht}` : "?"})`
+            );
         }
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
