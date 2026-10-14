@@ -197,28 +197,62 @@ function wieseUrteil(m, S, mitGras) {
     return f;
 }
 
-// In der Seite: die nächste Stelle der gewünschten Art um (mx, mz). Arten:
+// In der Seite: die Stellen der gewünschten Art, gesucht in Ringen um die MITTE DER WELT (K55-2): den Ursprung des
+// Gesetzes — dort kommt jede Welt an (die Start-Plattform steht an der nächsten freien Stelle um ihn, `_genesisMitte`; ihr
+// Ort hängt am Takt des Boots und taugt nicht als Mitte einer Suche, die je Lauf dieselbe Stelle finden muss), nie ein Messort. Bis K55-2 suchten die
+// Proben von der Mess-Wiese aus; seit sie in der flachen Aue liegt (−278/−1038), fanden fünf Gates dort weder Höhle noch
+// Hang, Kliff oder Querhang (CI 38546830515, 8/13). Jede Art ist EIN Gesetz am Gelände der Welt (Gesetz-Höhe, Dichtefeld,
+// Land, Bauten):
 //   eben      — Land ohne Nässe, die Spanne des Bodens im Umkreis `r` (8 Speichen) ≤ `spanne` m, kein Fels darüber
-//   hang      — die Neigung des Gesetzes (zentrale Differenz über 2 m) zwischen `min` und `max` Grad, Land ohne Nässe
+//   hang      — die Neigung des Gesetzes (zentrale Differenz über ±`basis` m, Vorgabe 1) zwischen `min` und `max` Grad, Land
+//               ohne Nässe; `bergab` [d, Grad]: d m talwärts steht noch mindestens diese Neigung (ein gleichmäßiger Hang);
+//               zurück auch `gier` (rad, rotation.y-Sinn: 0 = +z) bergauf
 //   hangfuss  — eine ebene Stelle (Neigung ≤ `fussMax` Grad), hinter der binnen `bis` m ein Hang ≥ `hangMin` Grad steigt;
-//               zurück kommt auch die Richtung `gier` (rad, rotation.y-Sinn: 0 = +z), die auf den Hang zeigt
-// opts: { mitte: [x, z] (Vorgabe der Messort `__messWiese`), rMax (m, Vorgabe 400), schritt (m, Vorgabe 6), ... }
-function weltOrt(art, opts) {
+//               zurück kommt auch die Richtung `gier`, die auf den Hang zeigt
+//   querhang  — die Neigung (±1 m) zwischen `min` und `max` Grad (Vorgabe 25,2–40,1), die Höhenlinie ±`linie` m gerade (je
+//               2 m Neigung ≥ `linieMin` Grad, Fall-Richtung binnen `winkel` Grad), trocken, die Fahrt-Linie frei von Bauten;
+//               zurück der Start `sx`/`sz` (`linie` m vor der Stelle) und `gier` längs der Höhenlinie
+//   kante     — das Kliff: in einer von 8 Richtungen fällt der Boden binnen 3 m um mehr als `kanteMin` m und binnen 6 m um
+//               `fall` [3, 14] m auf trockenen Grund, davor ein Anlauf von `anlauf` m trocken und eben (≤ 0,3 m je 2 m);
+//               zurück die schärfste Richtung: `gier` (die Fahrt über die Kante), `kante`, `fall`, der Start `sx`/`sz`
+//   hoehle    — die Spalte, in der ein Leib steht: von der Oberkante (`_voxelSurfaceY`) abwärts Fels ≥ `fels` m, dann Luft
+//               ≥ `luft` m, dann ein Grund aus Fels (≥ 1 m); im Umkreis `R` m ein GRUND (der Fels im Abstand d höchstens d/3
+//               über oder unter dem der Spalte, darüber Luft bis +2,4 m); `wand`: verlangt die Wand der Höhle binnen 2,5 m (16
+//               Richtungen, Fels vom Fuß + Stufe bis 2,1 m darüber) — zurück `grund`, `dach`, `wand` { dx, dz, d } oder null
+//   wiese     — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`)
+// opts: { mitte: [x, z] (Vorgabe die Mitte der Welt), rMax (m, Vorgabe 400), schritt (m, Vorgabe 6), anzahl (Vorgabe 1),
+// abstand (m zwischen zwei Funden, Vorgabe 5), ... }. Findet die Suche nichts, kommt eine leere Liste (die Probe nennt das
+// laut, nie ein Ersatz-Ort).
+function weltOrte(art, opts) {
     const o = opts || {};
     const r = window.anazhRealm;
-    const mitte = o.mitte || window.__messWiese;
-    if (!mitte) throw new Error("__weltOrt: keine Mitte (weder opts.mitte noch __messWiese)");
-    const [mx, mz] = mitte;
+    const [mx, mz] = o.mitte || window.__weltMitte;
     const rMax = o.rMax || 400;
     const schritt = o.schritt || 6;
+    const anzahl = o.anzahl || 1;
+    const abstand = o.abstand == null ? 5 : o.abstand;
     const H = (x, z) => r.getTerrainHeightAt(x, z);
     const trocken = (x, z) => r._landAt(x, z) && !(typeof r._nassAt === "function" && r._nassAt(x, z));
-    const neigung = (x, z) => {
-        const gx = (H(x + 1, z) - H(x - 1, z)) / 2;
-        const gz = (H(x, z + 1) - H(x, z - 1)) / 2;
-        return (Math.atan(Math.hypot(gx, gz)) * 180) / Math.PI;
-    };
+    const grad = (t) => (Math.atan(t) * 180) / Math.PI;
+    const gefaelle = (x, z, b) => [(H(x + b, z) - H(x - b, z)) / (2 * b), (H(x, z + b) - H(x, z - b)) / (2 * b)];
+    const neigung = (x, z, b) => grad(Math.hypot(...gefaelle(x, z, b || 1)));
     const unterFels = (x, z) => typeof r._kreaturUnterFels === "function" && r._kreaturUnterFels(x, H(x, z), z);
+    const fest = (x, y, z) => r._fieldSolid(x, y, z);
+    // die Fahrt-Linie ab (sx, sz) längs (ux, uz): kein Blocker eines Baus von l0 bis l1 m, quer binnen q m (+ halbe Box)
+    const bahnFrei = (sx, sz, ux, uz, l0, l1, q) => {
+        for (const e of r.state.architectures || []) {
+            if (!e || !e.position || !e.blockerAABBs) continue;
+            if (Math.hypot(e.position.x - sx, e.position.z - sz) > l1 + 20) continue;
+            for (const b of e.blockerAABBs) {
+                const bx = (b.minX + b.maxX) / 2 - sx;
+                const bz = (b.minZ + b.maxZ) / 2 - sz;
+                const l = bx * ux + bz * uz;
+                const halb = Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / 2;
+                if (l > l0 && l < l1 && Math.abs(bx * uz - bz * ux) < q + halb) return false;
+            }
+        }
+        return true;
+    };
     const pruefe = {
         eben: (x, z) => {
             const rr = o.r || 6;
@@ -239,10 +273,18 @@ function weltOrt(art, opts) {
         },
         hang: (x, z) => {
             if (!trocken(x, z) || unterFels(x, z)) return null;
-            const n = neigung(x, z);
-            return n >= (o.min == null ? 25 : o.min) && n <= (o.max == null ? 35 : o.max)
-                ? { neigung: Math.round(n * 10) / 10 }
-                : null;
+            const b = o.basis || 1;
+            const [gx, gz] = gefaelle(x, z, b);
+            const t = Math.hypot(gx, gz);
+            const n = grad(t);
+            if (!(n >= (o.min == null ? 25 : o.min) && n <= (o.max == null ? 35 : o.max))) return null;
+            const ux = gx / t,
+                uz = gz / t;
+            if (o.bergab) {
+                const [d, min] = o.bergab;
+                if (!trocken(x - ux * d, z - uz * d) || !(neigung(x - ux * d, z - uz * d, b) >= min)) return null;
+            }
+            return { neigung: Math.round(n * 10) / 10, gier: Math.atan2(ux, uz) };
         },
         hangfuss: (x, z) => {
             if (!trocken(x, z) || unterFels(x, z)) return null;
@@ -261,6 +303,107 @@ function weltOrt(art, opts) {
                 }
             }
             return null;
+        },
+        querhang: (x, z) => {
+            const [gx, gz] = gefaelle(x, z, 1);
+            const t = Math.hypot(gx, gz);
+            const n = grad(t);
+            if (!(n >= (o.min == null ? 25.2 : o.min) && n <= (o.max == null ? 40.1 : o.max)) || !trocken(x, z))
+                return null;
+            const cx = -gz / t,
+                cz = gx / t;
+            const L = o.linie || 8;
+            const cosW = Math.cos(((o.winkel == null ? 20 : o.winkel) * Math.PI) / 180);
+            for (let s = -L; s <= L; s += 2) {
+                const [ax, az] = gefaelle(x + cx * s, z + cz * s, 1);
+                const ag = Math.hypot(ax, az);
+                if (!(grad(ag) >= (o.linieMin == null ? 16.7 : o.linieMin))) return null;
+                if ((ax * gx + az * gz) / (ag * t) < cosW || !trocken(x + cx * s, z + cz * s)) return null;
+            }
+            const sx = x - cx * L,
+                sz = z - cz * L;
+            if (!bahnFrei(sx, sz, cx, cz, -4, 2 * L + 6, 3)) return null;
+            return { neigung: Math.round(n * 10) / 10, sx, sz, gier: Math.atan2(cx, cz) };
+        },
+        kante: (x, z) => {
+            const h0 = H(x, z);
+            if (!Number.isFinite(h0) || !trocken(x, z)) return null;
+            const kMin = o.kanteMin == null ? 1.5 : o.kanteMin;
+            const [f0, f1] = o.fall || [3, 14];
+            const anlauf = o.anlauf || 24;
+            let best = null;
+            for (let k = 0; k < 8; k++) {
+                const ux = Math.sin((k * Math.PI) / 4),
+                    uz = Math.cos((k * Math.PI) / 4);
+                const kante = h0 - H(x + ux * 3, z + uz * 3);
+                if (!(kante > kMin) || (best && kante <= best.kante)) continue;
+                const fall = h0 - H(x + ux * 6, z + uz * 6);
+                if (!(fall >= f0 && fall <= f1) || !trocken(x + ux * 6, z + uz * 6)) continue;
+                let gut = true;
+                for (let s = 2; s <= anlauf && gut; s += 2) {
+                    const a = H(x - ux * s, z - uz * s);
+                    const b = H(x - ux * (s - 2), z - uz * (s - 2));
+                    if (!Number.isFinite(a) || Math.abs(a - b) > 0.3 || !trocken(x - ux * s, z - uz * s)) gut = false;
+                }
+                if (!gut) continue;
+                best = { kante, fall, gier: Math.atan2(ux, uz), sx: x - ux * anlauf, sz: z - uz * anlauf };
+            }
+            return best;
+        },
+        hoehle: (x, z) => {
+            const felsMin = o.fels == null ? 2 : o.fels;
+            const luftMin = o.luft == null ? 3 : o.luft;
+            const R = o.R == null ? 1.8 : o.R;
+            const top = r._voxelSurfaceY(x, z);
+            if (!Number.isFinite(top)) return null;
+            let y = top - 0.05;
+            let fels = 0;
+            while (y > top - 50 && fest(x, y, z)) {
+                y -= 0.25;
+                fels += 0.25;
+            }
+            if (fels < felsMin) return null;
+            let luft = 0;
+            while (y > top - 70 && !fest(x, y, z)) {
+                y -= 0.25;
+                luft += 0.25;
+            }
+            if (luft < luftMin || y <= top - 70 || !fest(x, y - 1, z)) return null;
+            while (fest(x, y + 0.02, z)) y += 0.02;
+            const g = y;
+            // der Leib passt: im Umkreis R ein Grund (Fels höchstens d/3 über oder unter dem der Spalte), Luft bis +2,4 m
+            for (let k = 0; k < 12; k++) {
+                const w = (k / 12) * Math.PI * 2;
+                for (const rr of [R / 2, R]) {
+                    const px = x + Math.cos(w) * rr,
+                        pz = z + Math.sin(w) * rr;
+                    const d = rr / 3;
+                    for (let yy = g + d + 0.05; yy <= g + 2.4; yy += 0.3) if (fest(px, yy, pz)) return null;
+                    let fy = g + d + 0.05;
+                    while (fy > g - d && !fest(px, fy, pz)) fy -= 0.05;
+                    if (fy <= g - d) return null;
+                }
+            }
+            // die Wand der Höhle: je Richtung (16) der erste Abstand, an dem der Fels vom Fuß + einer Stufe bis über zwei weitere
+            // Meter reicht — die nächste binnen 2,5 m, sonst null (`wand` verlangt sie)
+            let wand = null;
+            const stufe = r.constructor.PLAYER_STEP_UP;
+            for (let k = 0; k < 16; k++) {
+                const w = (k / 16) * Math.PI * 2;
+                const dx = Math.cos(w),
+                    dz = Math.sin(w);
+                for (let d = 0.1; d <= 2.5 && (!wand || d < wand.d); d += 0.1) {
+                    let ganz = true;
+                    for (let yy = g + stufe; yy <= g + stufe + 2.1 && ganz; yy += 0.25)
+                        ganz = fest(x + dx * d, yy, z + dz * d);
+                    if (ganz) {
+                        wand = { dx, dz, d };
+                        break;
+                    }
+                }
+            }
+            if (o.wand && !wand) return null;
+            return { grund: g, dach: top, wand };
         },
         // wiese — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`): erst Boden (Hang,
         // Nässe), dann Wald, Blick und Horizont; zurück kommt die Messung samt dem besten Blick-Punkt
@@ -287,24 +430,29 @@ function weltOrt(art, opts) {
             return window.__wieseUrteil(m, S).length ? null : Object.assign(m, { grasGesetz: Math.round(g * 1000) / 1000 });
         },
     }[art];
-    if (!pruefe) throw new Error(`__weltOrt: unbekannte Art "${art}"`);
-    for (let rr = 0; rr <= rMax; rr += schritt) {
+    if (!pruefe) throw new Error(`__weltOrte: unbekannte Art "${art}"`);
+    const funde = [];
+    for (let rr = 0; rr <= rMax && funde.length < anzahl; rr += schritt) {
         const n = Math.max(1, Math.round((2 * Math.PI * rr) / schritt));
-        for (let q = 0; q < n; q++) {
+        for (let q = 0; q < n && funde.length < anzahl; q++) {
             const a = (q / n) * Math.PI * 2 + rr * 0.37;
             const x = mx + Math.cos(a) * rr,
                 z = mz + Math.sin(a) * rr;
+            if (funde.some((f) => Math.hypot(f.x - x, f.z - z) < abstand)) continue;
             const p = pruefe(x, z);
-            if (p)
-                return Object.assign(
-                    { art, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10, y: H(x, z), abstand: rr },
-                    p
-                );
+            if (p) funde.push(Object.assign({ art, x, z, y: H(x, z), abstand: rr, mitte: [mx, mz] }, p));
         }
     }
-    return null;
+    return funde;
 }
 
+// Die nächste Stelle der Art (`weltOrte` mit anzahl 1) oder null.
+function weltOrt(art, opts) {
+    return window.__weltOrte(art, Object.assign({}, opts, { anzahl: 1 }))[0] || null;
+}
+
+// DIE MITTE DER WELT: der Ursprung des Gesetzes (s. `weltOrte`) — die EINE Mitte jeder Orts-Suche einer Probe
+const WELT_MITTE = [0, 0];
 const WIESE = messort("wiese");
 // In die Seite: der Messort, sein Wiesen-Gesetz, die EINE Messung und ihr Urteil, die Orts-Suche.
 const WIESE_INSTALL =
@@ -317,6 +465,11 @@ module.exports = {
     wieseUrteil,
     wirtAmGesetz,
     WIESE_INSTALL,
+    WELT_MITTE,
     WELT_ORTE_INSTALL:
-        `window.__messWiese = [${WIESE.x}, ${WIESE.z}];` + WIESE_INSTALL + `window.__weltOrt = ${weltOrt.toString()};`,
+        `window.__messWiese = [${WIESE.x}, ${WIESE.z}];` +
+        WIESE_INSTALL +
+        `window.__weltMitte = ${JSON.stringify(WELT_MITTE)};` +
+        `window.__weltOrte = ${weltOrte.toString()};` +
+        `window.__weltOrt = ${weltOrt.toString()};`,
 };
