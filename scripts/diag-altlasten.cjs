@@ -3208,11 +3208,10 @@ const BOOT_REST = [
     "scripts/diag-foundry-parity.cjs", "scripts/diag-garage-labor.cjs", "scripts/diag-gpu-fehler.cjs",
     "scripts/diag-haus-welt.cjs", "scripts/diag-kamera-laub.cjs", "scripts/diag-klang-zensus.cjs",
     "scripts/diag-koerper-stand.cjs", "scripts/diag-parity.cjs", "scripts/diag-portal-konformanz.cjs",
-    "scripts/diag-portal-membran.cjs", "scripts/diag-pruefbuehne.cjs", "scripts/diag-render-tap.cjs",
-    "scripts/diag-schatten-bias.cjs", "scripts/diag-studio-begehen.cjs", "scripts/diag-studio-huelle.cjs",
-    "scripts/diag-tier-gang.cjs", "scripts/diag-wasser-leben.cjs", "scripts/diag-weltbild-frost.cjs",
-    "scripts/diag-weltgrenze.cjs", "scripts/lib/asset-worker-harness.cjs", "scripts/playtest.cjs",
-    "scripts/werkbank.cjs",
+    "scripts/diag-pruefbuehne.cjs", "scripts/diag-render-tap.cjs", "scripts/diag-schatten-bias.cjs",
+    "scripts/diag-studio-begehen.cjs", "scripts/diag-studio-huelle.cjs", "scripts/diag-wasser-leben.cjs",
+    "scripts/diag-weltbild-frost.cjs", "scripts/diag-weltgrenze.cjs", "scripts/lib/asset-worker-harness.cjs",
+    "scripts/playtest.cjs", "scripts/werkbank.cjs",
 ];
 // Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
 function eigenBoots(dateien) {
