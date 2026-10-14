@@ -3203,12 +3203,10 @@ function scanPortWand(dateien) {
 // nicht) ist ROT mit Datei; die Rest-Liste nennt die noch nicht gezogenen und darf nur SCHRUMPFEN: eine Zeile, deren Datei
 // nicht mehr selbst startet, ist ebenfalls ROT (streichen). Ein neuer Eintrag ist ein Vertrags-Akt im Commit.
 const BOOT_REST = [
-    "scripts/diag-albedo-tafel.cjs", "scripts/diag-boot-rettung.cjs", "scripts/diag-boot-stage.cjs",
-    "scripts/diag-fluss.cjs", "scripts/diag-gpu-fehler.cjs", "scripts/diag-haus-welt.cjs",
-    "scripts/diag-kamera-laub.cjs", "scripts/diag-klang-zensus.cjs", "scripts/diag-koerper-stand.cjs",
-    "scripts/diag-parity.cjs", "scripts/diag-portal-konformanz.cjs", "scripts/diag-pruefbuehne.cjs",
-    "scripts/diag-studio-begehen.cjs", "scripts/diag-studio-huelle.cjs", "scripts/diag-weltgrenze.cjs",
-    "scripts/playtest.cjs", "scripts/werkbank.cjs",
+    // die Werkbank: ihr Steuer-Server ist der JSON-Kanal einer offenen Mess-Welt (kein Statik-Boot), ihre Seiten-Fehler sind das
+    // Urteil der Wache der Mess-Folge (omen-messfolge `wachenUrteil`) — der Zug in den Fehler-Sammler schärft dieses Urteil
+    // (console.error zählt dann mit) und braucht ein OMEN-ABAB der Mess-Folge, kein Gate
+    "scripts/werkbank.cjs",
 ];
 // Gezählt am AST (acorn): ein Aufruf puppeteer.launch(…) oder http.createServer(…) — Kommentare und Texte sind keine Knoten.
 function eigenBoots(dateien) {

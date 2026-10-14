@@ -28,13 +28,23 @@ const MIME = {
     ".json": "application/json",
     ".css": "text/css",
     ".png": "image/png",
+    ".gif": "image/gif",
     ".svg": "image/svg+xml",
     ".woff2": "font/woff2",
 };
 
 // Der Statik-Server: liefert die Datei unter der Wurzel (Query fällt), `/` heißt `start`; außerhalb der Wurzel 403, fehlt
-// die Datei 404. `seiten` liefert eigene Seiten nach Pfad (Text oder Funktion), `keinCache` setzt no-store.
-function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false } = {}) {
+// die Datei 404. `seiten` liefert eigene Seiten nach Pfad (Text, Puffer oder Funktion des Requests, auch als Promise; der
+// Typ nach der Endung des Pfads, ohne Endung text/html), `keinCache` setzt no-store. `wandle(pfad, daten)` ist der EINE
+// Haken der Selbsttests (Patch auf die Basis-Zeile, Überlagerung einer anderen Wurzel, Verzögerung): er bekommt die Bytes
+// der Datei (null, wenn sie fehlt) und gibt die ausgelieferten zurück (auch als Promise; null heißt 404). Ein Wurf im Haken
+// oder in einer Seite ist 500 und ein Fehler der Linse beim Namen (der Fehler-Sammler).
+function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false, wandle = null } = {}) {
+    const bruch = (res, p, e) => {
+        melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
+        res.statusCode = 500;
+        res.end();
+    };
     return http.createServer((req, res) => {
         let p;
         try {
@@ -45,17 +55,24 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         }
         if (seiten && Object.prototype.hasOwnProperty.call(seiten, p)) {
             const s = seiten[p];
-            res.setHeader("Content-Type", "text/html");
-            return res.end(typeof s === "function" ? s() : s);
+            const typ = MIME[path.extname(p)] || "text/html";
+            return Promise.resolve()
+                .then(() => (typeof s === "function" ? s(req) : s))
+                .then((inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)), (e) => bruch(res, p, e));
         }
         if (p === "/") p = start;
         const fp = path.join(root, p);
         if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
         fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            if (keinCache) res.setHeader("Cache-Control", "no-store");
-            res.end(data);
+            const roh = err ? null : data;
+            Promise.resolve()
+                .then(() => (wandle ? wandle(p, roh) : roh))
+                .then((inhalt) => {
+                    if (inhalt == null) return ((res.statusCode = 404), res.end());
+                    res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
+                    if (keinCache) res.setHeader("Cache-Control", "no-store");
+                    res.end(inhalt);
+                }, (e) => bruch(res, p, e));
         });
     });
 }

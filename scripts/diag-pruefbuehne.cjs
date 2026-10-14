@@ -36,7 +36,6 @@
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const puppeteer = require("puppeteer");
 const fs = require("fs");
 const path = require("path");
 
@@ -746,7 +745,6 @@ const S0_STOFF = (() => {
 })();
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
-    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
@@ -772,13 +770,13 @@ async function lichtLauf() {
         }
     };
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        protocolTimeout: (S0_FRIST_S + 60) * 1000,
-        defaultViewport: ECHT ? null : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : linsenWebGpuArgs(),
+        frist: (S0_FRIST_S + 60) * 1000,
+        viewport: ECHT ? null : { width: 640, height: 360 },
+        zusatz: ECHT ? ["--window-size=1280,800"] : [],
     });
-    await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});

@@ -26,8 +26,7 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { starteBrowser } = require("./lib/welt-boot.cjs");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -55,39 +54,11 @@ const FORMEN = opt("--formen", ALLE.join(","))
     .split(",")
     .filter((f) => ALLE.includes(f));
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-};
-const server = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split("?")[0]);
-    if (p === "/__leer") {
-        // die leere Seite desselben Ursprungs: hier legt die Linse die Speicher-Form, ohne eine Welt zu booten
-        res.setHeader("Content-Type", "text/html");
-        return res.end('<!doctype html><meta charset="utf-8"><title>leer</title>');
-    }
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.setHeader("Cache-Control", "no-store");
-        res.end(data);
-    });
+// die leere Seite desselben Ursprungs (`/__leer`): hier legt die Linse die Speicher-Form, ohne eine Welt zu booten
+const server = statikServer({
+    root,
+    keinCache: true,
+    seiten: { "/__leer": '<!doctype html><meta charset="utf-8"><title>leer</title>' },
 });
 
 // Der Schein des Selbsttests: die Rettungs-Kette liest nur den Platz (das Verhalten vor dem Schnitt, an Korrupt und IDB).
